@@ -51,6 +51,28 @@ class SingleWriter:
         self.memory._events.append({"event": "commit", "handle": atom.handle})
         return admitted
 
+    def commit_residual(
+        self,
+        residual: ResidualCandidate,
+        atom: CommittedAtom,
+        gate: ResidualGate,
+    ) -> CommittedAtom:
+        """Commit only a residual that the configured gate admits."""
+        disposition = gate.evaluate(residual)
+        if disposition is not ResidualDisposition.COMMIT_REQUEST:
+            raise ValueError(
+                f"Residual {residual.residual_id!r} is {disposition.value}, not commit_request"
+            )
+        committed = self.commit(atom)
+        self.memory._events.append(
+            {
+                "event": "residual_commit",
+                "residual_id": residual.residual_id,
+                "handle": atom.handle,
+            }
+        )
+        return committed
+
     def accrue_evidence(self, handle: str, confidence: float, evidence: str) -> CommittedAtom:
         if not 0.0 <= confidence < 1.0:
             raise ValueError("confidence must be in [0, 1)")
