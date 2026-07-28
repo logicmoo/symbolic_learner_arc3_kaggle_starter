@@ -19,7 +19,7 @@ from .models import (
     TransitionRule,
 )
 from .memory import ResidualGate, SingleWriter, SymbolicMemory
-from .prediction import PredictionLedger
+from .prediction import PredictionLedger, RuleStore
 from .providers import ArtifactProvider, GptArtifactProvider, PrologProvider, PythonProvider
 
 __all__ = [
@@ -43,6 +43,7 @@ __all__ = [
     "ResidualCandidate",
     "ResidualDisposition",
     "ResidualGate",
+    "RuleStore",
     "SingleWriter",
     "SymbolicMemory",
     "TransitionRule",
