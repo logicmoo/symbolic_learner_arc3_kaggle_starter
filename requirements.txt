@@ -1,0 +1,10 @@
+openai
+pillow
+numpy
+jupyterlab
+ipywidgets
+ansi2html
+fastapi
+uvicorn[standard]
+pywinpty; platform_system == "Windows"
+ptyprocess; platform_system != "Windows"

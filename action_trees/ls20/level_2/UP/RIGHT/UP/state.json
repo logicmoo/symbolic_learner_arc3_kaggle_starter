@@ -1,0 +1,38 @@
+{
+  "state": "NOT_FINISHED",
+  "level": "2",
+  "level_source": "scorecard.completed_levels+1",
+  "next_level_expected": null,
+  "observation": {
+    "game_id": "ls20-9607627b",
+    "state": "NOT_FINISHED",
+    "levels_completed": 1,
+    "win_levels": 7,
+    "action_input": {
+      "id": "ACTION1",
+      "data": {},
+      "reasoning": null
+    },
+    "guid": "0d3344cb-1e3f-402f-8f0e-a937582f5f1a",
+    "full_reset": false,
+    "available_actions": [
+      1,
+      2,
+      3,
+      4
+    ]
+  },
+  "step_count": 22,
+  "game_id": "ls20",
+  "game_directory": "ls20",
+  "image_hash": "05277bee1ab4e958",
+  "incoming_action": "ACTION1",
+  "action_directory": "UP",
+  "action_data": {},
+  "parent_node": "..",
+  "action_path": [
+    "UP",
+    "RIGHT",
+    "UP"
+  ]
+}
