@@ -4,6 +4,9 @@
   debugger and protected Kaggle workflow.
 - [SoW phase architecture](SOW_PHASE_ARCHITECTURE.md) — maps the existing code
   to Phases 1–3 and explains the shared PROLOG/GPT/PYTHON contract.
+- [Implementation backlog](IMPLEMENTATION_BACKLOG.md) — reconciles the detailed
+  coding plan with current files, connected contracts, next integration work, and
+  acceptance tasks.
 - [Annotated repository file tree](FILE_TREE.md) — describes the purpose of each
   existing or newly added architecture file.
 
