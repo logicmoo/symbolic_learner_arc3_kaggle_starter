@@ -18,7 +18,7 @@ action_trees/
         ├── README.md
         ├── image.png
         ├── state.json
-        └── ... action branches ...
+        └── ... state and action branches ...
 ```
 
 Override these roots when needed:
@@ -42,17 +42,52 @@ state/history/action-tree storage
 GPT artifacts or SWI-Prolog providers
 ```
 
-The debugger does not implement a separate game engine. The ARC3 toolkit environment is authoritative.
+The debugger does not implement a separate game engine. The ARC3 toolkit environment remains authoritative.
 
 ## Start the terminal debugger
 
-From the repository root:
+Run from the repository root:
 
 ```bash
 python scripts/interactive_runner.py ls20
 ```
 
-The first positional argument is the initial game ID. The default is `ls20`.
+The positional argument is the initial game ID. The default is `ls20`.
+
+## Start the browser debugger
+
+```bash
+python scripts/run_webui.py --game ls20
+```
+
+Open:
+
+```text
+http://127.0.0.1:8765/
+```
+
+`scripts/run_webui.py` adds the repository root to `sys.path` before importing `webui.server`, so it works while remaining with the other runnable launchers.
+
+Each browser connection starts an isolated `scripts/interactive_runner.py` process. Saved action-tree files remain after the browser tab closes.
+
+### Browser dimensions
+
+```bash
+ARC3_WEB_COLS=320
+ARC3_WEB_ROWS=100
+python scripts/run_webui.py --game ls20
+```
+
+### Non-loopback binding
+
+Binding outside localhost requires a token:
+
+```bash
+ARC3_WEB_TOKEN=choose-a-long-random-token \
+python scripts/run_webui.py --host 0.0.0.0 --port 8765 --game ls20
+```
+
+Do not expose an unrestricted terminal, Prolog execution endpoint, API keys, or private files without authentication and HTTPS.
 
 ## Controls
 
@@ -170,7 +205,7 @@ The Prolog menu uses the same state tree and artifact contracts:
 6  recompute similarities.pl
 ```
 
-The deterministic Prolog implementations are being connected incrementally. The shared contracts and provider interfaces are documented in [SOW_PHASE_ARCHITECTURE.md](SOW_PHASE_ARCHITECTURE.md) and [TODO.md](TODO.md).
+The shared contracts and provider interfaces are documented in [SOW_PHASE_ARCHITECTURE.md](SOW_PHASE_ARCHITECTURE.md) and [TODO.md](TODO.md).
 
 ## Friendly persistent object identities
 
@@ -264,54 +299,6 @@ python scripts/prolog_controlled_runner.py
 ```
 
 This calls `python/swipl_bridge.py`, loads `prolog/arc3_agent.pl`, asks Prolog for an action, and applies it through `Arc3Runner`.
-
-## Browser terminal
-
-The browser interface launches the same script used by the terminal debugger:
-
-```text
-xterm.js
-    ⇅ WebSocket
-FastAPI PTY server
-    ⇅
-scripts/interactive_runner.py
-    ↓
-Arc3Runner
-```
-
-Start it:
-
-```bash
-python run_webui.py --game ls20
-```
-
-Open:
-
-```text
-http://127.0.0.1:8765/
-```
-
-Each browser connection gets an isolated debugger process. Saved action-tree files remain after the tab closes.
-
-### Terminal dimensions
-
-Defaults can be changed with:
-
-```bash
-ARC3_WEB_COLS=320
-ARC3_WEB_ROWS=100
-```
-
-### Non-loopback binding
-
-Binding outside localhost requires a token:
-
-```bash
-ARC3_WEB_TOKEN=choose-a-long-random-token \
-python run_webui.py --host 0.0.0.0 --port 8765 --game ls20
-```
-
-Do not expose an unrestricted terminal, Prolog execution endpoint, API keys, or private files without authentication and HTTPS.
 
 ## Notebooks
 
