@@ -4,9 +4,8 @@ This is the clickable source map for the maintained repository. Every listed pat
 
 ## Root documentation
 
-- [`README.md`](README.md) — top-level navigation hub linking every maintained root-level Markdown document.
+- [`README.md`](README.md) — top-level documentation index linking every maintained root-level Markdown document.
 - [`ARC3_DEBUGGER_AND_KAGGLE.md`](ARC3_DEBUGGER_AND_KAGGLE.md) — complete ARC3 debugger and Kaggle operating guide preserved from the former top-level README.
-- [`DOCUMENTATION.md`](DOCUMENTATION.md) — documentation index.
 - [`SOW_PHASE_ARCHITECTURE.md`](SOW_PHASE_ARCHITECTURE.md) — mapping of existing code and connected contracts to SoW Phases 1–3.
 - [`IMPLEMENTATION_BACKLOG.md`](IMPLEMENTATION_BACKLOG.md) — reconciled implementation status, detailed TODOs, cross-language mapping, and implementation order.
 - [`FILE_TREE.md`](FILE_TREE.md) — this clickable source map.
