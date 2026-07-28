@@ -10,11 +10,13 @@ working debugger or Kaggle workflow.
 │   Main ARC3 debugger and Kaggle operating guide. Kept unchanged.
 ├── docs/
 │   ├── README.md
-│   │   Architecture documentation index linking the two documents below.
+│   │   Architecture documentation index.
 │   ├── FILE_TREE.md
 │   │   This annotated directory tree.
-│   └── SOW_PHASE_ARCHITECTURE.md
-│       Mapping from existing code to the three SoW phases and execution modes.
+│   ├── SOW_PHASE_ARCHITECTURE.md
+│   │   Mapping from existing code to the three SoW phases and execution modes.
+│   └── IMPLEMENTATION_BACKLOG.md
+│       Reconciled status, detailed TODOs, cross-language mapping, and order of work.
 ├── agent/
 │   └── my_agent.py
 │       Protected Kaggle agent entry point. Kept unchanged.
@@ -44,8 +46,7 @@ working debugger or Kaggle workflow.
 │       ├── __init__.py
 │       │   Public imports for the shared SoW contracts.
 │       ├── models.py
-│       │   Backend-neutral records: CandidateObject, ResidualCandidate,
-│       │   CommittedAtom, TransitionRule, PredictionRecord, NormalizedResult.
+│       │   Backend-neutral object, residual, atom, rule, and prediction records.
 │       ├── providers.py
 │       │   One provider contract with PROLOG, GPT, and PYTHON implementations.
 │       ├── forms.py
@@ -56,8 +57,12 @@ working debugger or Kaggle workflow.
 │       │   ResidualGate, SymbolicMemory reference store, and SingleWriter.
 │       ├── prediction.py
 │       │   Exact-identity RuleStore and PredictionLedger with predict-before-check.
+│       ├── learning.py
+│       │   Connected transition analysis, transformation learning, rule induction,
+│       │   ranking, execution, prediction, and outcome-evaluation pipeline.
 │       └── integration.py
-│           GameObjectLearnerPlugin and normalized Phase 3 handoff payload.
+│           Validated Game Object Learner payload/result contracts and concrete
+│           PipelineGameObjectLearnerPlugin.
 ├── prolog/
 │   ├── arc3_agent.pl
 │   │   Existing SWI-Prolog action-selection skeleton.
@@ -71,16 +76,28 @@ working debugger or Kaggle workflow.
 │   │   Symbolic residual disposition and admission decision.
 │   ├── single_writer.pl
 │   │   Sole Prolog mutation path for committed atoms and evidence.
+│   ├── transition_analysis.pl
+│   │   Stable callback-driven transition-analysis contract.
+│   ├── transformation_learning.pl
+│   │   Candidate transformation learning, application, and validation seam.
+│   ├── rule_induction.pl
+│   │   Rule proposal, specialization, and generalization seam.
+│   ├── rule_ranking.pl
+│   │   Deterministic scoring and ranking over normalized rules.
 │   ├── transition_rules.pl
 │   │   Exact rule storage with caller-supplied applicability and execution.
 │   ├── prediction_ledger.pl
 │   │   Durable predictions and prediction-before-outcome grading checks.
+│   ├── prediction_evaluation.pl
+│   │   Independent comparison and grading of prior predictions.
+│   ├── game_object_learner_api.pl
+│   │   Connected Prolog Phase 3 orchestration over the shared providers/stores.
 │   └── test_object_memory.pl
-│       Prolog unit tests for residuals, commitments, rules, and predictions.
+│       Prolog unit tests for residuals, commitments, learning, rules, and predictions.
 └── tests/
     └── test_object_memory_contracts.py
-        Focused provider-mode, zero-confidence, residual, rule, prediction,
-        protected-Kaggle-path, and no-duplicate-runner tests.
+        Provider-mode, zero-confidence, residual, rule, connected Phase 3,
+        prediction, protected-Kaggle-path, and no-duplicate-runner tests.
 ```
 
 ## Why the runners were not moved
