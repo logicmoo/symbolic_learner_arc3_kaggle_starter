@@ -11,7 +11,15 @@ from object_memory import (  # noqa: E402
     CandidateObject,
     CommittedAtom,
     ExecutionMode,
+    GameLearningPipeline,
+    GameObjectLearnerPayload,
     GptArtifactProvider,
+    IntegrationError,
+    IntegrationValidator,
+    OutcomeChannel,
+    PipelineGameObjectLearnerPlugin,
+    PredictionEvaluator,
+    PredictionGrade,
     PredictionLedger,
     PredictionRecord,
     PrologProvider,
@@ -19,9 +27,16 @@ from object_memory import (  # noqa: E402
     ResidualCandidate,
     ResidualDisposition,
     ResidualGate,
+    RuleExecutor,
+    RuleInducer,
+    RuleRanker,
     RuleStore,
     SingleWriter,
     SymbolicMemory,
+    TransformationCandidate,
+    TransformationLearner,
+    TransitionAnalyzer,
+    TransitionRecord,
     TransitionRule,
 )
 
@@ -127,6 +142,91 @@ def test_prediction_must_precede_outcome() -> None:
     assert closed.grade == 1.0
 
 
+def test_phase3_pipeline_learns_predicts_and_grades() -> None:
+    rule_store = RuleStore()
+    ledger = PredictionLedger()
+    pipeline = GameLearningPipeline(
+        TransitionAnalyzer(
+            lambda before, action, after: TransitionRecord(
+                before.state_id,
+                action,
+                after.state_id,
+                ("moved_right",),
+            )
+        ),
+        TransformationLearner(
+            lambda transition: (
+                TransformationCandidate(
+                    "move-right",
+                    transition.changes[0],
+                    evidence=(transition.before_state_id, transition.after_state_id),
+                ),
+            )
+        ),
+        RuleInducer(
+            lambda candidates: (
+                TransitionRule(
+                    "rule-move-right",
+                    ("player_present",),
+                    "right",
+                    (candidates[0].transformation,),
+                ),
+            )
+        ),
+        RuleRanker(lambda rule: float(len(rule.predicted_effects))),
+        rule_store,
+        ledger,
+    )
+    plugin = PipelineGameObjectLearnerPlugin(pipeline)
+    before = GameObjectLearnerPayload("state-1", ({"id": "player", "x": 1},))
+    after = GameObjectLearnerPayload("state-2", ({"id": "player", "x": 2},))
+
+    learned = plugin.consume_transition(before, "right", after)
+    assert learned.mode is ExecutionMode.PYTHON
+    assert learned.value.learning_step.rules[0].rule_id == "rule-move-right"
+
+    executor = RuleExecutor(
+        rule_store,
+        checker=lambda _rule, state: bool(state.get("player_present")),
+        executor=lambda rule, state: {**state, "effect": rule.predicted_effects[0]},
+    )
+    predicted, record = pipeline.predict(
+        prediction_id="prediction-1",
+        rule_id="rule-move-right",
+        source_state_id="state-2",
+        state={"player_present": True},
+        created_sequence=20,
+        executor=executor,
+    )
+    assert record.outcome_sequence is None
+    closed = pipeline.grade_prediction(
+        prediction_id="prediction-1",
+        outcome_sequence=21,
+        outcome_channel=OutcomeChannel(lambda: predicted),
+        evaluator=PredictionEvaluator(
+            lambda expected, observed: PredictionGrade(
+                1.0 if expected == observed else 0.0,
+                evidence=("independent_outcome",),
+            )
+        ),
+    )
+    assert closed.grade == 1.0
+
+
+def test_integration_validator_rejects_duplicate_object_identities() -> None:
+    validator = IntegrationValidator()
+    payload = GameObjectLearnerPayload(
+        "state-1",
+        ({"id": "player"}, {"id": "player"}),
+    )
+    try:
+        validator.validate(payload)
+    except IntegrationError:
+        pass
+    else:
+        raise AssertionError("duplicate object identities must be rejected")
+
+
 def test_protected_kaggle_paths_exist() -> None:
     for relative in (
         "notebooks/submission.ipynb",
@@ -146,3 +246,4 @@ def test_no_duplicate_debugger_runner_was_added() -> None:
 def test_architecture_and_annotated_tree_are_present() -> None:
     assert (ROOT / "docs" / "SOW_PHASE_ARCHITECTURE.md").exists()
     assert (ROOT / "docs" / "FILE_TREE.md").exists()
+    assert (ROOT / "docs" / "IMPLEMENTATION_BACKLOG.md").exists()
