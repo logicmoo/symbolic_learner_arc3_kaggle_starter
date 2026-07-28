@@ -1,9 +1,45 @@
 from __future__ import annotations
 
 from dataclasses import replace
-from typing import Any
+from typing import Any, Callable
 
-from .models import PredictionRecord
+from .models import PredictionRecord, TransitionRule
+
+
+class RuleStore:
+    """Exact-identity rule registry with caller-supplied domain execution."""
+
+    def __init__(self) -> None:
+        self._rules: dict[str, TransitionRule] = {}
+
+    def store(self, rule: TransitionRule) -> TransitionRule:
+        existing = self._rules.get(rule.rule_id)
+        if existing is not None and existing != rule:
+            raise ValueError(f"Rule identity conflict for {rule.rule_id!r}")
+        self._rules[rule.rule_id] = rule
+        return rule
+
+    def get(self, rule_id: str) -> TransitionRule:
+        return self._rules[rule_id]
+
+    def rules(self) -> tuple[TransitionRule, ...]:
+        return tuple(self._rules.values())
+
+    def applicable(
+        self,
+        rule_id: str,
+        state: Any,
+        checker: Callable[[TransitionRule, Any], bool],
+    ) -> bool:
+        return bool(checker(self.get(rule_id), state))
+
+    def apply(
+        self,
+        rule_id: str,
+        state: Any,
+        executor: Callable[[TransitionRule, Any], Any],
+    ) -> Any:
+        return executor(self.get(rule_id), state)
 
 
 class PredictionLedger:
