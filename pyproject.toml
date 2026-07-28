@@ -1,9 +1,100 @@
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "logicmoo-arc3"
 version = "0.1.0"
-description = "Add your description here"
+description = "LogicMOO symbolic-learning tools for ARC-AGI-3 debugging, object memory, and predictive rule learning."
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = [
-    "arc-agi>=0.9.9",
+license = "LGPL-2.1-or-later"
+license-files = ["LICENSE"]
+authors = [{ name = "LogicMOO" }]
+keywords = [
+  "arc-agi",
+  "arc-agi-3",
+  "prolog",
+  "symbolic-ai",
+  "object-memory",
+  "rule-learning",
 ]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Science/Research",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+  "arc-agi>=0.9.9",
+  "numpy>=1.26",
+  "Pillow>=10.0",
+]
+
+[project.optional-dependencies]
+debugger = [
+  "openai>=1.0",
+  "ansi2html>=1.9",
+  "fastapi>=0.115",
+  "uvicorn[standard]>=0.30",
+  "pywinpty>=2.0; platform_system == 'Windows'",
+  "ptyprocess>=0.7; platform_system != 'Windows'",
+]
+notebooks = [
+  "jupyterlab>=4.0",
+  "ipywidgets>=8.0",
+]
+kaggle = [
+  "kaggle>=2.2",
+  "python-dotenv>=1.0",
+  "pandas>=2.2",
+  "pyarrow>=15",
+]
+test = [
+  "pytest>=8.0",
+]
+all = [
+  "openai>=1.0",
+  "ansi2html>=1.9",
+  "fastapi>=0.115",
+  "uvicorn[standard]>=0.30",
+  "pywinpty>=2.0; platform_system == 'Windows'",
+  "ptyprocess>=0.7; platform_system != 'Windows'",
+  "jupyterlab>=4.0",
+  "ipywidgets>=8.0",
+  "kaggle>=2.2",
+  "python-dotenv>=1.0",
+  "pandas>=2.2",
+  "pyarrow>=15",
+  "pytest>=8.0",
+]
+
+[project.urls]
+Homepage = "https://logicmoo.org/"
+Repository = "https://github.com/logicmoo/symbolic_learner_arc3_kaggle_starter"
+Issues = "https://github.com/logicmoo/symbolic_learner_arc3_kaggle_starter/issues"
+
+[tool.setuptools]
+packages = ["object_memory", "webui"]
+py-modules = [
+  "action_tree",
+  "arc3_runner",
+  "gpt_bridge",
+  "image_codec",
+  "project_paths",
+  "swipl_bridge",
+]
+include-package-data = true
+
+[tool.setuptools.package-dir]
+"" = "python"
+webui = "webui"
+
+[tool.setuptools.package-data]
+webui = ["static/*.html"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["python"]
+addopts = "-ra"
