@@ -5,6 +5,9 @@
 
 :- use_module(prediction_ledger).
 
+:- meta_predicate evaluate_prediction(+, +, 3, -).
+:- meta_predicate grade_recorded_prediction(+, +, +, 3, -, -).
+
 evaluate_prediction(Predicted, Observed, Comparator, Grade) :-
     must_be(callable, Comparator),
     call(Comparator, Predicted, Observed, Grade),
