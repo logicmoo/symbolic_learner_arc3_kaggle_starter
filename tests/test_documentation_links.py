@@ -96,6 +96,7 @@ def test_file_tree_links_all_connected_architecture_files() -> None:
         "TODO.md",
         "FILE_TREE.md",
         "scripts/interactive_runner.py",
+        "scripts/run_webui.py",
         "scripts/prolog_controlled_runner.py",
         "python/object_memory/models.py",
         "python/object_memory/providers.py",
@@ -128,7 +129,7 @@ def test_readme_documents_every_runnable_demo() -> None:
     text = (ROOT / "README.md").read_text(encoding="utf-8")
     required_commands = (
         "python scripts/interactive_runner.py ls20",
-        "python run_webui.py --game ls20",
+        "python scripts/run_webui.py --game ls20",
         "python scripts/prolog_controlled_runner.py",
         "python scripts/play_local.py --game ls20 --max-steps 200",
         "python scripts/build_notebook.py",
@@ -144,10 +145,18 @@ def test_readme_documents_every_runnable_demo() -> None:
 
 
 def test_runnable_examples_were_consolidated_into_scripts() -> None:
-    assert (ROOT / "scripts" / "interactive_runner.py").is_file()
-    assert (ROOT / "scripts" / "prolog_controlled_runner.py").is_file()
-    assert not (ROOT / "examples" / "interactive_runner.py").exists()
-    assert not (ROOT / "examples" / "prolog_controlled_runner.py").exists()
+    for relative in (
+        "scripts/interactive_runner.py",
+        "scripts/run_webui.py",
+        "scripts/prolog_controlled_runner.py",
+    ):
+        assert (ROOT / relative).is_file(), relative
+
+    assert not (ROOT / "run_webui.py").exists()
+
+    examples_dir = ROOT / "examples"
+    if examples_dir.exists():
+        assert not tuple(examples_dir.glob("*.py")), "runnable Python belongs in scripts/"
 
     server_text = (ROOT / "webui" / "server.py").read_text(encoding="utf-8")
     assert 'PROJECT_ROOT / "scripts" / "interactive_runner.py"' in server_text
