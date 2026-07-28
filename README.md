@@ -31,7 +31,7 @@ python scripts/interactive_runner.py ls20
 ### Browser terminal exposing the same debugger
 
 ```bash
-python run_webui.py --game ls20
+python scripts/run_webui.py --game ls20
 ```
 
 Then open `http://127.0.0.1:8765/`.
