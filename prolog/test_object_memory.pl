@@ -5,6 +5,7 @@
 :- use_module(single_writer).
 :- use_module(prediction_ledger).
 :- use_module(transition_rules).
+:- use_module(game_object_learner_api).
 
 reset_state :-
     retractall(object_memory_contract:candidate_object(_, _)),
@@ -60,9 +61,82 @@ copy_effect(Rule, State0, State) :-
 test(transition_rule_storage_and_application, [setup(reset_state)]) :-
     Rule = _{effect: moved_right},
     transition_rules:store_transition_rule(rule_1, Rule),
-    transition_rules:applicable_transition_rule(rule_1, _{}, always_applicable),
-    transition_rules:apply_transition_rule(rule_1, _{}, copy_effect, State),
+    transition_rules:applicable_transition_rule(
+        rule_1, _{}, plunit_object_memory:always_applicable
+    ),
+    transition_rules:apply_transition_rule(
+        rule_1, _{}, plunit_object_memory:copy_effect, State
+    ),
     assertion(State.effect == moved_right),
     assertion(object_memory_contract:transition_rule(rule_1, Rule)).
+
+test_analyze(Before, Action, After, Transition) :-
+    Transition = _{
+        before_state_id: Before.state_id,
+        action_or_event: Action,
+        after_state_id: After.state_id,
+        changes: [moved_right]
+    }.
+
+test_learn(Transition, _Context, Candidates) :-
+    Candidates = [_{
+        candidate_id: move_right,
+        transformation: Transition.changes
+    }].
+
+test_induce(_Candidates, _Context, Rules) :-
+    Rules = [_{
+        rule_id: rule_move_right,
+        preconditions: [player_present],
+        action_or_event: right,
+        predicted_effects: [moved_right],
+        effect: moved_right
+    }].
+
+test_score(_Rule, 1.0).
+
+test_outcome(Observed) :-
+    Observed = _{player_present:true, effect:moved_right}.
+
+test_compare([Predicted], Observed, 1.0) :-
+    Predicted == Observed.
+
+test(phase3_pipeline_learns_predicts_and_grades, [setup(reset_state)]) :-
+    Before = _{state_id:state_1, objects:[_{id:player, x:1}]},
+    After = _{state_id:state_2, objects:[_{id:player, x:2}]},
+    Providers = _{
+        analyzer: plunit_object_memory:test_analyze,
+        learner: plunit_object_memory:test_learn,
+        inducer: plunit_object_memory:test_induce,
+        scorer: plunit_object_memory:test_score,
+        context: _{}
+    },
+    game_object_learner_api:process_transition(
+        Before, right, After, Providers, Result
+    ),
+    Result.rules = [ranked(1.0, Rule)],
+    assertion(Rule.rule_id == rule_move_right),
+    game_object_learner_api:predict_with_rule(
+        prediction_2,
+        rule_move_right,
+        state_2,
+        _{player_present:true},
+        plunit_object_memory:copy_effect,
+        20,
+        Predicted,
+        Record
+    ),
+    assertion(Record.outcome_sequence == none),
+    game_object_learner_api:grade_prediction(
+        prediction_2,
+        21,
+        plunit_object_memory:test_outcome,
+        plunit_object_memory:test_compare,
+        Grade,
+        Closed
+    ),
+    assertion(Predicted.effect == moved_right),
+    assertion(Grade =:= 1.0),
+    assertion(Closed.outcome_sequence =:= 21).
 
 :- end_tests(object_memory).
