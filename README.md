@@ -10,7 +10,7 @@ This repository combines the delivered ARC3 debugger, the protected ARC-AGI-3 Ka
 - [Reconciled implementation backlog](docs/IMPLEMENTATION_BACKLOG.md)
 - [Annotated, clickable repository file tree](docs/FILE_TREE.md)
 
-The operating guide preserves the complete former top-level README. The architecture documents describe the shared PROLOG/GPT/PYTHON contracts, the connected Phase 3 pipeline, current implementation status, and remaining work.
+The architecture documents describe the shared PROLOG/GPT/PYTHON contracts, the connected Phase 3 pipeline, current implementation status, and remaining work.
 
 ## Protected Kaggle entry points
 
