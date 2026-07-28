@@ -1,6 +1,6 @@
 :- begin_tests(object_memory).
 
-:- use_module(object_memory_contract).
+:- use_module(object_memory_contract, []).
 :- use_module(residual_gate).
 :- use_module(single_writer).
 :- use_module(prediction_ledger).
@@ -10,7 +10,6 @@ reset_state :-
     retractall(object_memory_contract:candidate_object(_, _)),
     retractall(object_memory_contract:residual_candidate(_, _)),
     retractall(object_memory_contract:committed_atom(_, _)),
-    retractall(object_memory_contract:transition_rule(_, _)),
     prediction_ledger:clear_prediction_records,
     transition_rules:clear_transition_rules.
 
@@ -63,6 +62,7 @@ test(transition_rule_storage_and_application, [setup(reset_state)]) :-
     transition_rules:store_transition_rule(rule_1, Rule),
     transition_rules:applicable_transition_rule(rule_1, _{}, always_applicable),
     transition_rules:apply_transition_rule(rule_1, _{}, copy_effect, State),
-    assertion(State.effect == moved_right).
+    assertion(State.effect == moved_right),
+    assertion(object_memory_contract:transition_rule(rule_1, Rule)).
 
 :- end_tests(object_memory).
