@@ -7,7 +7,8 @@ working debugger or Kaggle workflow.
 ```text
 .
 ├── README.md
-│   Main ARC3 debugger documentation and operating instructions.
+│   Main ARC3 debugger documentation and operating instructions; links to the
+│   SoW architecture and this annotated tree.
 ├── docs/
 │   ├── FILE_TREE.md
 │   │   This annotated directory tree.
@@ -53,7 +54,7 @@ working debugger or Kaggle workflow.
 │       ├── memory.py
 │       │   ResidualGate, SymbolicMemory reference store, and SingleWriter.
 │       ├── prediction.py
-│       │   PredictionLedger with prediction-before-outcome enforcement.
+│       │   Exact-identity RuleStore and PredictionLedger with predict-before-check.
 │       └── integration.py
 │           GameObjectLearnerPlugin and normalized Phase 3 handoff payload.
 ├── prolog/
@@ -69,11 +70,16 @@ working debugger or Kaggle workflow.
 │   │   Symbolic residual disposition and admission decision.
 │   ├── single_writer.pl
 │   │   Sole Prolog mutation path for committed atoms and evidence.
-│   └── prediction_ledger.pl
-│       Durable predictions and prediction-before-outcome grading checks.
+│   ├── transition_rules.pl
+│   │   Exact rule storage with caller-supplied applicability and execution.
+│   ├── prediction_ledger.pl
+│   │   Durable predictions and prediction-before-outcome grading checks.
+│   └── test_object_memory.pl
+│       Prolog unit tests for residuals, commitments, rules, and predictions.
 └── tests/
     └── test_object_memory_contracts.py
-        Focused provider, zero-confidence, residual, prediction, and Kaggle-path tests.
+        Focused provider-mode, zero-confidence, residual, rule, prediction,
+        protected-Kaggle-path, and no-duplicate-runner tests.
 ```
 
 ## Why the runners were not moved
