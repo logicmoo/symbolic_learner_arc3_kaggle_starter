@@ -16,10 +16,11 @@ Existing code fulfills Phase 1:
 - `python/swipl_bridge.py` plus `prolog/arc3_agent.pl` — SWI-Prolog control seam.
 - `prolog/turtle_dsl.pl` — authoritative Turtle execution semantics.
 - `scripts/interactive_runner.py` — terminal debugger.
+- `scripts/run_webui.py` — browser-UI launcher with repository-root import bootstrap.
 - `scripts/prolog_controlled_runner.py` — executable Prolog-controlled demonstration.
 - `webui/server.py` — browser terminal exposing the same interactive runner rather than a second debugger.
 
-No Phase 1 implementation is renamed or duplicated beyond moving runnable launchers from `examples/` to `scripts/`.
+No Phase 1 implementation is duplicated. Runnable launchers formerly under `examples/` or the repository root now live in `scripts/`.
 
 ## Phase 2 — perception, representation, correspondence, and memory
 
@@ -76,12 +77,13 @@ See [KAGGLE.md](KAGGLE.md) for the operational workflow.
 All runnable Python launchers live in `scripts/`:
 
 - `scripts/interactive_runner.py`
+- `scripts/run_webui.py`
 - `scripts/prolog_controlled_runner.py`
 - `scripts/play_local.py`
 - `scripts/build_notebook.py`
 - `scripts/slim_framework.py`
 
-`webui/server.py`, [DEBUGGER.md](DEBUGGER.md), [KAGGLE.md](KAGGLE.md), tests, and the root README reference these canonical paths. No duplicate implementation remains under `examples/`.
+`webui/server.py`, [DEBUGGER.md](DEBUGGER.md), [KAGGLE.md](KAGGLE.md), tests, and the root README reference these canonical paths. No duplicate implementation remains under `examples/` or at the repository root.
 
 ## Components intentionally not duplicated
 
