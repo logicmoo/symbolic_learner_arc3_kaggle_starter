@@ -30,8 +30,8 @@ This is the clickable source map for the maintained repository. Every listed pat
 ## Runnable debugger and demonstration scripts
 
 - [`scripts/interactive_runner.py`](scripts/interactive_runner.py) — sole terminal debugger implementation and keyboard UI.
+- [`scripts/run_webui.py`](scripts/run_webui.py) — browser-UI launcher that bootstraps the repository root before importing `webui.server`.
 - [`scripts/prolog_controlled_runner.py`](scripts/prolog_controlled_runner.py) — executable SWI-Prolog action-selection demonstration.
-- [`run_webui.py`](run_webui.py) — browser-UI launcher.
 - [`webui/server.py`](webui/server.py) — FastAPI/WebSocket PTY server launching `scripts/interactive_runner.py` rather than duplicating the debugger.
 - [`webui/static/index.html`](webui/static/index.html) — browser terminal page and client-side controls.
 
