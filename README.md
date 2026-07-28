@@ -10,13 +10,29 @@ This repository combines the delivered ARC3 debugger, the protected ARC-AGI-3 Ka
 - [Implementation TODO](TODO.md) — reconciled status, remaining coding work, cross-language mapping, and acceptance tasks.
 - [Clickable repository file tree](FILE_TREE.md) — links to maintained files with descriptions of their responsibilities.
 
-## Install debugger dependencies
+## Install
+
+Python 3.12 or newer is required.
+
+For debugger, web UI, notebooks, and tests:
 
 ```bash
-pip install -r requirements.txt
+python -m pip install -e ".[debugger,notebooks,test]"
 ```
 
-For the protected Kaggle workflow, use the setup instructions in [KAGGLE.md](KAGGLE.md).
+The compatibility requirements file installs the same bundle:
+
+```bash
+python -m pip install -r requirements.txt
+```
+
+For every optional dependency, including Kaggle tooling:
+
+```bash
+python -m pip install -e ".[all]"
+```
+
+The protected Kaggle workflow still uses the setup instructions in [KAGGLE.md](KAGGLE.md) and the existing Makefile targets.
 
 ## Runnable Python entry points and demonstrations
 
@@ -43,6 +59,34 @@ python scripts/prolog_controlled_runner.py
 ```
 
 This uses `python/swipl_bridge.py` and `prolog/arc3_agent.pl`.
+
+### Minimal direct ARC3 smoke demos
+
+Print the action space, take one `ACTION1`, and show the scorecard:
+
+```bash
+python scripts/re_play.py
+```
+
+Take ten `ACTION1` steps and show the scorecard:
+
+```bash
+python scripts/my_play.py
+```
+
+Run up to 100 random actions with terminal rendering:
+
+```bash
+python scripts/me_play.py
+```
+
+Run up to 100 random actions with human rendering:
+
+```bash
+python scripts/he_play.py
+```
+
+These four scripts exercise the ARC3 client directly. They intentionally do not use the debugger or object-memory orchestration.
 
 ### Protected local Kaggle-compatible agent run
 
