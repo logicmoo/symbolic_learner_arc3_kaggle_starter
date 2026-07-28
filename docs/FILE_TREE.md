@@ -6,7 +6,7 @@ This is the clickable source map for the maintained architecture and executable 
 
 - [`README.md`](../README.md) — top-level navigation hub linking every maintained README, the implementation backlog, and this file tree.
 - [`docs/README.md`](README.md) — documentation index.
-- [`docs/ARC3_DEBUGGER_AND_KAGGLE.md`](ARC3_DEBUGGER_AND_KAGGLE.md) — complete ARC3 debugger and Kaggle operating guide preserved from the former top-level README.
+- [`docs/ARC3_DEBUGGER_AND_KAGGLE.md`](ARC3_DEBUGGER_AND_KAGGLE.md) — ARC3 debugger and Kaggle operating guide.
 - [`docs/SOW_PHASE_ARCHITECTURE.md`](SOW_PHASE_ARCHITECTURE.md) — mapping of existing code and connected contracts to SoW Phases 1–3.
 - [`docs/IMPLEMENTATION_BACKLOG.md`](IMPLEMENTATION_BACKLOG.md) — reconciled implementation status, detailed TODOs, cross-language mapping, and implementation order.
 - [`docs/FILE_TREE.md`](FILE_TREE.md) — this clickable source map.
@@ -74,6 +74,7 @@ This is the clickable source map for the maintained architecture and executable 
 ## Tests
 
 - [`tests/test_object_memory_contracts.py`](../tests/test_object_memory_contracts.py) — PROLOG/GPT/PYTHON normalization, residual admission, `SingleWriter`, rule application, connected Phase 3 flow, prediction ordering, documentation, Kaggle-path, and no-duplicate-runner tests.
+- [`tests/test_documentation_links.py`](../tests/test_documentation_links.py) — enforces top-level README navigation, required architecture links, resolvable file-tree paths, and per-file descriptions.
 - [`prolog/test_object_memory.pl`](../prolog/test_object_memory.pl) — Prolog unit tests for residuals, commitments, rule storage/application, the connected Phase 3 path, and prediction grading.
 - [`prolog/test_turtle_dsl.pl`](../prolog/test_turtle_dsl.pl) — existing Turtle semantics and pen-width equivalence tests.
 
@@ -94,4 +95,4 @@ These files are created beneath `action_trees/<game>/level_<n>/` and are not dup
 
 ## Runner placement
 
-`examples/interactive_runner.py` remains the single debugger implementation because `webui/server.py`, notebooks, and the existing operating guide reference it. A future move into `scripts/` must update all references and retain at most a thin forwarding launcher; no duplicate implementation should remain.
+`examples/interactive_runner.py` remains the single debugger implementation because `webui/server.py`, notebooks, and the operating guide reference it. A future move into `scripts/` must update all references and retain at most a thin forwarding launcher; no duplicate implementation should remain.
