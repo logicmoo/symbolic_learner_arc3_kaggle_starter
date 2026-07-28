@@ -6,7 +6,7 @@ This is the clickable source map for the maintained repository. Every listed pat
 
 ## Root documentation
 
-- [`README.md`](README.md) — top-level documentation index plus runnable commands for every maintained Python and Prolog demonstration.
+- [`README.md`](README.md) — top-level documentation index, install commands, and runnable Python and Prolog demonstrations.
 - [`DEBUGGER.md`](DEBUGGER.md) — ARC3 debugger controls, action trees, symbolic artifacts, replay, browser terminal, and Turtle DSL.
 - [`KAGGLE.md`](KAGGLE.md) — ARC Prize 2026 local-development, notebook generation, accelerator, submission, and troubleshooting guide.
 - [`SOW_PHASE_ARCHITECTURE.md`](SOW_PHASE_ARCHITECTURE.md) — mapping of existing and connected contracts to SoW Phases 1–3.
@@ -15,9 +15,11 @@ This is the clickable source map for the maintained repository. Every listed pat
 
 ## Repository configuration and protected Kaggle surface
 
+- [`pyproject.toml`](pyproject.toml) — canonical Python project metadata, package layout, dependency extras, web static data, and pytest configuration.
+- [`requirements.txt`](requirements.txt) — compatibility installer delegating to the debugger, notebook, and test extras in `pyproject.toml`.
 - [`Makefile`](Makefile) — existing setup, local-play, notebook-build, submission, status, and cleanup commands.
 - [`.gitignore`](.gitignore) — excludes credentials, generated notebooks, environments, caches, and runtime artifacts.
-- [`requirements.txt`](requirements.txt) — debugger, GPT, image, notebook, FastAPI, and PTY dependencies.
+- [`LICENSE`](LICENSE) — GNU Lesser General Public License version 2.1 text.
 - [`agent/my_agent.py`](agent/my_agent.py) — protected ARC-AGI-3 agent entry point used by local play and notebook generation.
 - [`scripts/play_local.py`](scripts/play_local.py) — protected local runner that exercises `MyAgent` against real ARC3 games.
 - [`scripts/build_notebook.py`](scripts/build_notebook.py) — protected builder that inserts `agent/my_agent.py` into the Kaggle submission notebook.
@@ -32,6 +34,10 @@ This is the clickable source map for the maintained repository. Every listed pat
 - [`scripts/interactive_runner.py`](scripts/interactive_runner.py) — sole terminal debugger implementation and keyboard UI.
 - [`scripts/run_webui.py`](scripts/run_webui.py) — browser-UI launcher that bootstraps the repository root before importing `webui.server`.
 - [`scripts/prolog_controlled_runner.py`](scripts/prolog_controlled_runner.py) — executable SWI-Prolog action-selection demonstration.
+- [`scripts/re_play.py`](scripts/re_play.py) — minimal direct ARC3 smoke test that prints legal actions, executes one `ACTION1`, and prints the scorecard.
+- [`scripts/my_play.py`](scripts/my_play.py) — direct ARC3 smoke test that executes ten `ACTION1` steps and prints the scorecard.
+- [`scripts/me_play.py`](scripts/me_play.py) — random-action ARC3 demonstration using terminal rendering for up to 100 steps.
+- [`scripts/he_play.py`](scripts/he_play.py) — random-action ARC3 demonstration using human rendering for up to 100 steps.
 - [`webui/server.py`](webui/server.py) — FastAPI/WebSocket PTY server launching `scripts/interactive_runner.py` rather than duplicating the debugger.
 - [`webui/static/index.html`](webui/static/index.html) — browser terminal page and client-side controls.
 
@@ -77,7 +83,7 @@ This is the clickable source map for the maintained repository. Every listed pat
 ## Tests and runnable checks
 
 - [`tests/test_object_memory_contracts.py`](tests/test_object_memory_contracts.py) — provider normalization, residual admission, `SingleWriter`, rules, connected Phase 3 flow, prediction ordering, Kaggle-path, and runner-placement tests.
-- [`tests/test_documentation_links.py`](tests/test_documentation_links.py) — enforces Markdown back-links, root documentation coverage, valid file-tree links, and per-link descriptions.
+- [`tests/test_documentation_links.py`](tests/test_documentation_links.py) — enforces Markdown back-links, root documentation coverage, valid file-tree links, runnable-command coverage, and project metadata.
 - [`prolog/test_object_memory.pl`](prolog/test_object_memory.pl) — Prolog tests for residuals, commitments, rules, the connected Phase 3 path, and prediction grading.
 - [`prolog/test_turtle_dsl.pl`](prolog/test_turtle_dsl.pl) — Turtle semantics and pen-width equivalence tests.
 
