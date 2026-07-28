@@ -59,6 +59,19 @@ One contract is shared by all modes:
 
 Every provider returns `NormalizedResult`; there are not three object models. Phase 3 analyzers and learners accept replaceable callbacks/providers so the same orchestration can be backed by any mode.
 
+## Python project definition
+
+`pyproject.toml` is the canonical Python metadata and dependency source. It defines:
+
+- the `logicmoo-arc3` package metadata and LGPL-2.1-or-later license;
+- the base ARC3, NumPy, and Pillow requirements;
+- debugger, notebook, Kaggle, test, and complete optional dependency groups;
+- packaging for the `object_memory` and `webui` packages plus the existing Python modules;
+- inclusion of the web terminal static page;
+- pytest discovery and the `python/` import path.
+
+`requirements.txt` remains only as a compatibility installer for the debugger, notebook, and test extras.
+
 ## Protected Kaggle surface
 
 These paths and their behavior remain protected:
@@ -74,11 +87,15 @@ See [KAGGLE.md](KAGGLE.md) for the operational workflow.
 
 ## Runnable scripts
 
-All runnable Python launchers live in `scripts/`:
+All runnable Python launchers and direct ARC3 demonstrations live in `scripts/`:
 
 - `scripts/interactive_runner.py`
 - `scripts/run_webui.py`
 - `scripts/prolog_controlled_runner.py`
+- `scripts/re_play.py`
+- `scripts/my_play.py`
+- `scripts/me_play.py`
+- `scripts/he_play.py`
 - `scripts/play_local.py`
 - `scripts/build_notebook.py`
 - `scripts/slim_framework.py`
