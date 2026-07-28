@@ -4,6 +4,10 @@
     validate_transformation/4
 ]).
 
+:- meta_predicate infer_transformations(+, +, 3, -).
+:- meta_predicate apply_transformation(+, +, 3, -).
+:- meta_predicate validate_transformation(+, +, +, 3).
+
 infer_transformations(Transition, Context, Learner, Candidates) :-
     must_be(callable, Learner),
     call(Learner, Transition, Context, Candidates).
