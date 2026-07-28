@@ -5,6 +5,8 @@
 
 :- use_module(library(pairs)).
 
+:- meta_predicate rank_rules(+, 2, -).
+
 rank_rules(Rules, Scorer, Ranked) :-
     must_be(callable, Scorer),
     maplist(score_rule(Scorer), Rules, Scored),
