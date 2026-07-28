@@ -244,6 +244,8 @@ def test_no_duplicate_debugger_runner_was_added() -> None:
 
 
 def test_architecture_and_annotated_tree_are_present() -> None:
-    assert (ROOT / "docs" / "SOW_PHASE_ARCHITECTURE.md").exists()
-    assert (ROOT / "docs" / "FILE_TREE.md").exists()
-    assert (ROOT / "docs" / "IMPLEMENTATION_BACKLOG.md").exists()
+    assert (ROOT / "SOW_PHASE_ARCHITECTURE.md").exists()
+    assert (ROOT / "FILE_TREE.md").exists()
+    assert (ROOT / "IMPLEMENTATION_BACKLOG.md").exists()
+    assert (ROOT / "ARC3_DEBUGGER_AND_KAGGLE.md").exists()
+    assert (ROOT / "DOCUMENTATION.md").exists()
