@@ -45,16 +45,31 @@ Persistent friendly identity remains owned by the existing level-wide
 `object_registry.pl`. The new contracts do not introduce another identity
 registry.
 
-## Phase 3 — transformations, rules, and prediction
+## Phase 3 — present and connected, not declared complete
 
-- `TransitionRule`: normalized rule record.
-- `PredictionRecord`: prior prediction plus later outcome fields.
-- `PredictionLedger`: enforces that an outcome occurs after the prediction.
-- `GameObjectLearnerPlugin`: stable handoff boundary for the game-learning side.
+Phase 3 is not deferred to a later architecture rewrite. Its contracts are
+present now and connected through runnable provider-driven pipelines:
+
+- `python/object_memory/learning.py` connects `TransitionAnalyzer`,
+  `TransformationLearner`, `RuleInducer`, `RuleRanker`, `RuleStore`,
+  `RuleExecutor`, `PredictionLedger`, `OutcomeChannel`, and
+  `PredictionEvaluator`.
+- `python/object_memory/integration.py` provides validated
+  `GameObjectLearnerPayload` and `GameObjectLearnerResult` records plus a
+  concrete `PipelineGameObjectLearnerPlugin`.
+- `prolog/game_object_learner_api.pl` connects transition analysis,
+  transformation learning, rule induction/ranking/storage/application,
+  prediction recording, and later outcome grading.
+- Python and Prolog tests exercise the connected learning/prediction path.
+
+These are stable contracts and orchestration seams, not a claim that final rule
+induction quality, task coverage, or benchmark acceptance has been achieved.
+Real object correspondences, learned transformations, environment predictions,
+and evidence grading will be connected incrementally to these interfaces.
 
 Rule facts already generated in action-tree `rules.pl` remain valid GPT-backed
-artifacts. Native Prolog rule learning and application should extend those
-contracts rather than create unrelated formats.
+artifacts. Native Prolog rule learning and application extend that shape instead
+of creating an unrelated format.
 
 ## Three execution modes
 
@@ -68,6 +83,8 @@ One contract is shared by all modes:
 3. **PYTHON** — `PythonProvider` runs deterministic native resolvers when useful.
 
 Every provider returns `NormalizedResult`; there are not three object models.
+The Phase 3 analyzers and learners accept replaceable callbacks/providers so the
+same pipeline can be backed by any of these modes.
 
 ## Protected Kaggle surface
 
@@ -104,20 +121,26 @@ The following were not added because existing code already fulfills the role:
 - another Turtle interpreter (`turtle_dsl.pl` exists);
 - another friendly identity database (`object_registry.pl` exists);
 - duplicate runners under both `examples/` and `scripts/`;
-- phase-specific directory trees.
+- phase-specific directory trees;
+- separate Python rule storage apart from `RuleStore`;
+- separate Prolog rule facts apart from `object_memory_contract:transition_rule/2`.
 
 ## Gradual integration plan
 
-1. Use `CandidateObject` and providers as facades over current action-tree facts.
-2. Connect Prolog-mode debugger commands to the normalized Prolog predicates.
-3. Add deterministic grid extraction behind `GridAdapter` only where existing
+1. Freeze the normalized observation, object, atom, transition, and learner
+   payload schemas.
+2. Use `CandidateObject` and providers as facades over current action-tree facts.
+3. Connect Prolog-mode debugger commands to the normalized Prolog predicates.
+4. Add deterministic grid extraction behind `GridAdapter` only where existing
    extraction code does not already satisfy the contract.
-4. Route accepted symbolic changes through `SingleWriter`.
-5. Add transition learning and rule application against the existing `rules.pl`
-   shape.
-6. Record predictions before executing or observing the tested transition.
-7. Add raster adapters only after the grid path passes deterministic replay and
+5. Route accepted symbolic changes through `SingleWriter`.
+6. Feed actual object correspondences into the connected Phase 3 transition and
+   transformation pipeline.
+7. Record predictions before actions and grade them from the independent ARC3
+   environment response.
+8. Add raster adapters only after the grid path passes deterministic replay and
    identity tests.
 
-See [FILE_TREE.md](FILE_TREE.md) for an annotated description of every relevant
-file.
+See [IMPLEMENTATION_BACKLOG.md](IMPLEMENTATION_BACKLOG.md) for detailed status
+and remaining work, and [FILE_TREE.md](FILE_TREE.md) for the annotated repository
+layout.
