@@ -7,7 +7,6 @@ ROOT = Path(__file__).resolve().parents[1]
 MARKDOWN_LINK = re.compile(r"\[[^\]]+\]\(([^)]+)\)")
 ROOT_DOCUMENTS = (
     "ARC3_DEBUGGER_AND_KAGGLE.md",
-    "DOCUMENTATION.md",
     "SOW_PHASE_ARCHITECTURE.md",
     "IMPLEMENTATION_BACKLOG.md",
     "FILE_TREE.md",
@@ -27,23 +26,17 @@ def test_all_maintained_documentation_is_at_repository_root() -> None:
     for relative in ROOT_DOCUMENTS:
         assert (ROOT / relative).is_file(), relative
 
+    assert not (ROOT / "DOCUMENTATION.md").exists()
     docs_dir = ROOT / "docs"
     if docs_dir.exists():
         assert not tuple(docs_dir.glob("*.md")), "maintained Markdown must stay at root"
 
 
-def test_top_level_readme_links_every_root_document() -> None:
+def test_top_level_readme_is_documentation_index() -> None:
     root_text = (ROOT / "README.md").read_text(encoding="utf-8")
     for relative in ROOT_DOCUMENTS:
         assert f"]({relative})" in root_text, relative
-
-
-def test_documentation_index_links_every_root_document() -> None:
-    index_text = (ROOT / "DOCUMENTATION.md").read_text(encoding="utf-8")
-    assert "](README.md)" in index_text
-    for relative in ROOT_DOCUMENTS:
-        if relative != "DOCUMENTATION.md":
-            assert f"]({relative})" in index_text, relative
+    assert "documentation index" in root_text.lower()
 
 
 def test_file_tree_local_links_exist_and_have_descriptions() -> None:
@@ -70,7 +63,6 @@ def test_file_tree_links_all_connected_architecture_files() -> None:
     expected = {
         "README.md",
         "ARC3_DEBUGGER_AND_KAGGLE.md",
-        "DOCUMENTATION.md",
         "SOW_PHASE_ARCHITECTURE.md",
         "IMPLEMENTATION_BACKLOG.md",
         "FILE_TREE.md",
