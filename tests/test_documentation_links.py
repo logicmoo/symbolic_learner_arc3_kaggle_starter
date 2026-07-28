@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 import re
+import tomllib
 
 ROOT = Path(__file__).resolve().parents[1]
 MARKDOWN_LINK = re.compile(r"\[[^\]]+\]\(([^)]+)\)")
@@ -95,9 +96,15 @@ def test_file_tree_links_all_connected_architecture_files() -> None:
         "SOW_PHASE_ARCHITECTURE.md",
         "TODO.md",
         "FILE_TREE.md",
+        "pyproject.toml",
+        "requirements.txt",
         "scripts/interactive_runner.py",
         "scripts/run_webui.py",
         "scripts/prolog_controlled_runner.py",
+        "scripts/re_play.py",
+        "scripts/my_play.py",
+        "scripts/me_play.py",
+        "scripts/he_play.py",
         "python/object_memory/models.py",
         "python/object_memory/providers.py",
         "python/object_memory/forms.py",
@@ -131,6 +138,10 @@ def test_readme_documents_every_runnable_demo() -> None:
         "python scripts/interactive_runner.py ls20",
         "python scripts/run_webui.py --game ls20",
         "python scripts/prolog_controlled_runner.py",
+        "python scripts/re_play.py",
+        "python scripts/my_play.py",
+        "python scripts/me_play.py",
+        "python scripts/he_play.py",
         "python scripts/play_local.py --game ls20 --max-steps 200",
         "python scripts/build_notebook.py",
         "python scripts/slim_framework.py",
@@ -149,6 +160,10 @@ def test_runnable_examples_were_consolidated_into_scripts() -> None:
         "scripts/interactive_runner.py",
         "scripts/run_webui.py",
         "scripts/prolog_controlled_runner.py",
+        "scripts/re_play.py",
+        "scripts/my_play.py",
+        "scripts/me_play.py",
+        "scripts/he_play.py",
     ):
         assert (ROOT / relative).is_file(), relative
 
@@ -156,8 +171,34 @@ def test_runnable_examples_were_consolidated_into_scripts() -> None:
 
     examples_dir = ROOT / "examples"
     if examples_dir.exists():
-        assert not tuple(examples_dir.glob("*.py")), "runnable Python belongs in scripts/"
+        assert not tuple(examples_dir.iterdir()), "examples/ should be empty or absent"
 
     server_text = (ROOT / "webui" / "server.py").read_text(encoding="utf-8")
     assert 'PROJECT_ROOT / "scripts" / "interactive_runner.py"' in server_text
     assert 'PROJECT_ROOT / "examples" / "interactive_runner.py"' not in server_text
+
+
+def test_pyproject_metadata_and_extras_match_repository() -> None:
+    project_file = ROOT / "pyproject.toml"
+    data = tomllib.loads(project_file.read_text(encoding="utf-8"))
+    project = data["project"]
+
+    assert project["name"] == "logicmoo-arc3"
+    assert project["description"] != "Add your description here"
+    assert project["readme"] == "README.md"
+    assert project["requires-python"] == ">=3.12"
+    assert project["license"] == "LGPL-2.1-or-later"
+    assert "arc-agi>=0.9.9" in project["dependencies"]
+
+    extras = project["optional-dependencies"]
+    assert {"debugger", "notebooks", "kaggle", "test", "all"}.issubset(extras)
+
+    setuptools = data["tool"]["setuptools"]
+    assert {"object_memory", "webui"}.issubset(set(setuptools["packages"]))
+    assert data["tool"]["setuptools"]["package-dir"]["webui"] == "webui"
+    assert "python" in data["tool"]["pytest"]["ini_options"]["pythonpath"]
+
+
+def test_requirements_delegates_to_pyproject_extras() -> None:
+    requirements = (ROOT / "requirements.txt").read_text(encoding="utf-8")
+    assert "-e .[debugger,notebooks,test]" in requirements
