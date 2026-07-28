@@ -7,9 +7,10 @@ working debugger or Kaggle workflow.
 ```text
 .
 ├── README.md
-│   Main ARC3 debugger documentation and operating instructions; links to the
-│   SoW architecture and this annotated tree.
+│   Main ARC3 debugger and Kaggle operating guide. Kept unchanged.
 ├── docs/
+│   ├── README.md
+│   │   Architecture documentation index linking the two documents below.
 │   ├── FILE_TREE.md
 │   │   This annotated directory tree.
 │   └── SOW_PHASE_ARCHITECTURE.md
