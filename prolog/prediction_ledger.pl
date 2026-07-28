@@ -2,7 +2,8 @@
     prediction_record/2,
     record_prediction/2,
     grade_prediction/5,
-    prediction_precedes_outcome/2
+    prediction_precedes_outcome/2,
+    clear_prediction_records/0
 ]).
 
 :- dynamic prediction_record/2.
@@ -18,7 +19,7 @@ prediction_precedes_outcome(Prediction, OutcomeSequence) :-
     OutcomeSequence > Created.
 
 grade_prediction(Id, OutcomeSequence, Outcome, Grade, Closed) :-
-    retract(prediction_record(Id, Prediction)),
+    prediction_record(Id, Prediction),
     prediction_precedes_outcome(Prediction, OutcomeSequence),
     Prediction.get(outcome_sequence, none) == none,
     Closed = Prediction.put(_{
@@ -26,4 +27,8 @@ grade_prediction(Id, OutcomeSequence, Outcome, Grade, Closed) :-
         outcome: Outcome,
         grade: Grade
     }),
+    retract(prediction_record(Id, Prediction)),
     assertz(prediction_record(Id, Closed)).
+
+clear_prediction_records :-
+    retractall(prediction_record(_, _)).
