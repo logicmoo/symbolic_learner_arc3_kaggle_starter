@@ -1,13 +1,16 @@
+[← Back to top-level README](README.md)
+
 # Repository File Tree and Responsibilities
 
 This is the clickable source map for the maintained repository. Every listed path links directly to the file and includes its responsibility.
 
 ## Root documentation
 
-- [`README.md`](README.md) — top-level documentation index linking every maintained root-level Markdown document.
-- [`ARC3_DEBUGGER_AND_KAGGLE.md`](ARC3_DEBUGGER_AND_KAGGLE.md) — complete ARC3 debugger and Kaggle operating guide preserved from the former top-level README.
-- [`SOW_PHASE_ARCHITECTURE.md`](SOW_PHASE_ARCHITECTURE.md) — mapping of existing code and connected contracts to SoW Phases 1–3.
-- [`IMPLEMENTATION_BACKLOG.md`](IMPLEMENTATION_BACKLOG.md) — reconciled implementation status, detailed TODOs, cross-language mapping, and implementation order.
+- [`README.md`](README.md) — top-level documentation index plus runnable commands for every maintained Python and Prolog demonstration.
+- [`DEBUGGER.md`](DEBUGGER.md) — ARC3 debugger controls, action trees, symbolic artifacts, replay, browser terminal, and Turtle DSL.
+- [`KAGGLE.md`](KAGGLE.md) — ARC Prize 2026 local-development, notebook generation, accelerator, submission, and troubleshooting guide.
+- [`SOW_PHASE_ARCHITECTURE.md`](SOW_PHASE_ARCHITECTURE.md) — mapping of existing and connected contracts to SoW Phases 1–3.
+- [`TODO.md`](TODO.md) — reconciled implementation status, detailed TODOs, cross-language mapping, and implementation order.
 - [`FILE_TREE.md`](FILE_TREE.md) — this clickable source map.
 
 ## Repository configuration and protected Kaggle surface
@@ -24,6 +27,14 @@ This is the clickable source map for the maintained repository. Every listed pat
 - [`notebooks/arc3_debugger.ipynb`](notebooks/arc3_debugger.ipynb) — guided notebook interface over the same ARC3 debugger runtime.
 - [`notebooks/arc3_runner.ipynb`](notebooks/arc3_runner.ipynb) — lower-level notebook interface for scripted ARC3 runner use.
 
+## Runnable debugger and demonstration scripts
+
+- [`scripts/interactive_runner.py`](scripts/interactive_runner.py) — sole terminal debugger implementation and keyboard UI.
+- [`scripts/prolog_controlled_runner.py`](scripts/prolog_controlled_runner.py) — executable SWI-Prolog action-selection demonstration.
+- [`run_webui.py`](run_webui.py) — browser-UI launcher.
+- [`webui/server.py`](webui/server.py) — FastAPI/WebSocket PTY server launching `scripts/interactive_runner.py` rather than duplicating the debugger.
+- [`webui/static/index.html`](webui/static/index.html) — browser terminal page and client-side controls.
+
 ## Phase 1 debugger and runtime
 
 - [`python/arc3_runner.py`](python/arc3_runner.py) — ARC3 lifecycle, legal actions, level handling, history, replay, state capture, exports, and GPT/Prolog command entry points.
@@ -32,21 +43,16 @@ This is the clickable source map for the maintained repository. Every listed pat
 - [`python/swipl_bridge.py`](python/swipl_bridge.py) — existing subprocess bridge into SWI-Prolog; normalized symbolic queries extend this bridge.
 - [`python/project_paths.py`](python/project_paths.py) — canonical prompt, action-tree, history, and export path resolution.
 - [`python/image_codec.py`](python/image_codec.py) — authoritative frame extraction and PNG encoding used by state capture.
-- [`examples/interactive_runner.py`](examples/interactive_runner.py) — sole terminal debugger implementation and keyboard UI.
-- [`examples/prolog_controlled_runner.py`](examples/prolog_controlled_runner.py) — executable SWI-Prolog action-selection demonstration.
-- [`run_webui.py`](run_webui.py) — small browser-UI launcher.
-- [`webui/server.py`](webui/server.py) — FastAPI/WebSocket PTY server exposing the same interactive runner rather than a duplicate debugger.
-- [`webui/static/index.html`](webui/static/index.html) — browser terminal page and client-side controls.
 - [`prompts/gpt_prompts.json`](prompts/gpt_prompts.json) — Git-friendly combined GPT prompt definitions.
 
 ## Shared Python object-memory contracts
 
 - [`python/object_memory/__init__.py`](python/object_memory/__init__.py) — public exports for all shared Phase 2 and connected Phase 3 contracts.
-- [`python/object_memory/models.py`](python/object_memory/models.py) — backend-neutral execution-mode, normalized-result, object, residual, atom, rule, and prediction records.
+- [`python/object_memory/models.py`](python/object_memory/models.py) — backend-neutral execution mode, normalized result, object, residual, atom, rule, and prediction records.
 - [`python/object_memory/providers.py`](python/object_memory/providers.py) — one provider interface with PROLOG, GPT-artifact, and deterministic PYTHON implementations.
 - [`python/object_memory/forms.py`](python/object_memory/forms.py) — `GenerativeForm` interface and `CellLogoForm` facade over existing Turtle programs.
 - [`python/object_memory/adapters.py`](python/object_memory/adapters.py) — modality-neutral perception adapter and thin grid-extractor adapter.
-- [`python/object_memory/memory.py`](python/object_memory/memory.py) — residual admission, in-memory reference store, zero-confidence commitments, evidence updates, and tombstones through `SingleWriter`.
+- [`python/object_memory/memory.py`](python/object_memory/memory.py) — residual admission, reference storage, zero-confidence commitments, evidence updates, and tombstones through `SingleWriter`.
 - [`python/object_memory/prediction.py`](python/object_memory/prediction.py) — exact-identity rule store and prediction-before-outcome ledger.
 - [`python/object_memory/learning.py`](python/object_memory/learning.py) — connected transition analysis, transformation learning, rule induction/ranking/execution, prediction, and independent outcome grading pipeline.
 - [`python/object_memory/integration.py`](python/object_memory/integration.py) — validated Game Object Learner payload/result contracts and concrete pipeline plugin.
@@ -68,10 +74,10 @@ This is the clickable source map for the maintained repository. Every listed pat
 - [`prolog/prediction_evaluation.pl`](prolog/prediction_evaluation.pl) — independent comparison and grading of prior predictions.
 - [`prolog/game_object_learner_api.pl`](prolog/game_object_learner_api.pl) — connected Prolog orchestration from transition analysis through rule storage, prediction, and later grading.
 
-## Tests
+## Tests and runnable checks
 
-- [`tests/test_object_memory_contracts.py`](tests/test_object_memory_contracts.py) — provider normalization, residual admission, `SingleWriter`, rules, connected Phase 3 flow, prediction ordering, Kaggle-path, and no-duplicate-runner tests.
-- [`tests/test_documentation_links.py`](tests/test_documentation_links.py) — enforces root-level Markdown placement, README coverage, valid file-tree links, and per-link descriptions.
+- [`tests/test_object_memory_contracts.py`](tests/test_object_memory_contracts.py) — provider normalization, residual admission, `SingleWriter`, rules, connected Phase 3 flow, prediction ordering, Kaggle-path, and runner-placement tests.
+- [`tests/test_documentation_links.py`](tests/test_documentation_links.py) — enforces Markdown back-links, root documentation coverage, valid file-tree links, and per-link descriptions.
 - [`prolog/test_object_memory.pl`](prolog/test_object_memory.pl) — Prolog tests for residuals, commitments, rules, the connected Phase 3 path, and prediction grading.
 - [`prolog/test_turtle_dsl.pl`](prolog/test_turtle_dsl.pl) — Turtle semantics and pen-width equivalence tests.
 
@@ -90,6 +96,4 @@ These files are created beneath `action_trees/<game>/level_<n>/` and are not dup
 - `turtle_from_diff.pl` — parent-to-current Turtle transformation.
 - `rules.pl` — candidate rules and supporting symbolic context.
 
-## Runner placement
-
-`examples/interactive_runner.py` remains the single debugger implementation because `webui/server.py`, notebooks, and the operating guide reference it. A future move into `scripts/` must update every reference and retain at most a thin forwarding launcher; no duplicate implementation should remain.
+[← Back to top-level README](README.md)

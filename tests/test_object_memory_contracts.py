@@ -237,15 +237,19 @@ def test_protected_kaggle_paths_exist() -> None:
         assert (ROOT / relative).exists(), relative
 
 
-def test_no_duplicate_debugger_runner_was_added() -> None:
-    assert (ROOT / "examples" / "interactive_runner.py").exists()
-    assert not (ROOT / "scripts" / "interactive_runner.py").exists()
-    assert not (ROOT / "scripts" / "prolog_controlled_runner.py").exists()
+def test_runnable_scripts_are_canonical() -> None:
+    assert (ROOT / "scripts" / "interactive_runner.py").exists()
+    assert (ROOT / "scripts" / "prolog_controlled_runner.py").exists()
+    assert not (ROOT / "examples" / "interactive_runner.py").exists()
+    assert not (ROOT / "examples" / "prolog_controlled_runner.py").exists()
 
 
-def test_architecture_and_annotated_tree_are_present() -> None:
-    assert (ROOT / "SOW_PHASE_ARCHITECTURE.md").exists()
-    assert (ROOT / "FILE_TREE.md").exists()
-    assert (ROOT / "IMPLEMENTATION_BACKLOG.md").exists()
-    assert (ROOT / "ARC3_DEBUGGER_AND_KAGGLE.md").exists()
-    assert (ROOT / "DOCUMENTATION.md").exists()
+def test_architecture_and_todo_documents_are_present() -> None:
+    for relative in (
+        "DEBUGGER.md",
+        "KAGGLE.md",
+        "SOW_PHASE_ARCHITECTURE.md",
+        "TODO.md",
+        "FILE_TREE.md",
+    ):
+        assert (ROOT / relative).exists(), relative

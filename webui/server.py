@@ -16,7 +16,7 @@ from fastapi.responses import FileResponse, JSONResponse
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 STATIC_ROOT = Path(__file__).resolve().parent / "static"
-RUNNER = PROJECT_ROOT / "examples" / "interactive_runner.py"
+RUNNER = PROJECT_ROOT / "scripts" / "interactive_runner.py"
 
 
 class TerminalProcess:
@@ -198,7 +198,6 @@ def create_app(
         cols = int(websocket.query_params.get("cols") or os.environ.get("ARC3_WEB_COLS", "320"))
 
         await websocket.accept()
-
         env = os.environ.copy()
         env.setdefault("TERM", "xterm-256color")
         env.setdefault("COLORTERM", "truecolor")

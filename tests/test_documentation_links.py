@@ -6,9 +6,10 @@ import re
 ROOT = Path(__file__).resolve().parents[1]
 MARKDOWN_LINK = re.compile(r"\[[^\]]+\]\(([^)]+)\)")
 ROOT_DOCUMENTS = (
-    "ARC3_DEBUGGER_AND_KAGGLE.md",
+    "DEBUGGER.md",
+    "KAGGLE.md",
     "SOW_PHASE_ARCHITECTURE.md",
-    "IMPLEMENTATION_BACKLOG.md",
+    "TODO.md",
     "FILE_TREE.md",
 )
 
@@ -22,21 +23,48 @@ def _local_links(path: Path) -> tuple[str, ...]:
     )
 
 
-def test_all_maintained_documentation_is_at_repository_root() -> None:
+def _maintained_markdown() -> tuple[Path, ...]:
+    excluded = {".git", ".venv", "vendor", "action_trees", "reference"}
+    return tuple(
+        path
+        for path in ROOT.rglob("*.md")
+        if not excluded.intersection(path.relative_to(ROOT).parts)
+    )
+
+
+def test_root_document_set_and_old_names() -> None:
     for relative in ROOT_DOCUMENTS:
         assert (ROOT / relative).is_file(), relative
 
-    assert not (ROOT / "DOCUMENTATION.md").exists()
+    for obsolete in (
+        "ARC3_DEBUGGER_AND_KAGGLE.md",
+        "IMPLEMENTATION_BACKLOG.md",
+        "DOCUMENTATION.md",
+    ):
+        assert not (ROOT / obsolete).exists(), obsolete
+
     docs_dir = ROOT / "docs"
     if docs_dir.exists():
         assert not tuple(docs_dir.glob("*.md")), "maintained Markdown must stay at root"
 
 
-def test_top_level_readme_is_documentation_index() -> None:
+def test_top_level_readme_links_every_root_document() -> None:
     root_text = (ROOT / "README.md").read_text(encoding="utf-8")
     for relative in ROOT_DOCUMENTS:
         assert f"]({relative})" in root_text, relative
-    assert "documentation index" in root_text.lower()
+
+
+def test_every_markdown_links_back_to_root_readme() -> None:
+    root_readme = (ROOT / "README.md").resolve()
+    for path in _maintained_markdown():
+        if path.resolve() == root_readme:
+            continue
+        resolved_links = {
+            (path.parent / target.split("#", 1)[0]).resolve()
+            for target in _local_links(path)
+            if target.split("#", 1)[0]
+        }
+        assert root_readme in resolved_links, path.relative_to(ROOT).as_posix()
 
 
 def test_file_tree_local_links_exist_and_have_descriptions() -> None:
@@ -55,17 +83,20 @@ def test_file_tree_local_links_exist_and_have_descriptions() -> None:
         if match:
             target = match.group(1)
             if not target.startswith(("http://", "https://", "mailto:", "#")):
-                assert " — " in line, line
+                assert " — " in line or "Back to top-level README" in line, line
 
 
 def test_file_tree_links_all_connected_architecture_files() -> None:
     links = set(_local_links(ROOT / "FILE_TREE.md"))
     expected = {
         "README.md",
-        "ARC3_DEBUGGER_AND_KAGGLE.md",
+        "DEBUGGER.md",
+        "KAGGLE.md",
         "SOW_PHASE_ARCHITECTURE.md",
-        "IMPLEMENTATION_BACKLOG.md",
+        "TODO.md",
         "FILE_TREE.md",
+        "scripts/interactive_runner.py",
+        "scripts/prolog_controlled_runner.py",
         "python/object_memory/models.py",
         "python/object_memory/providers.py",
         "python/object_memory/forms.py",
@@ -91,3 +122,33 @@ def test_file_tree_links_all_connected_architecture_files() -> None:
         "prolog/test_object_memory.pl",
     }
     assert expected.issubset(links), sorted(expected.difference(links))
+
+
+def test_readme_documents_every_runnable_demo() -> None:
+    text = (ROOT / "README.md").read_text(encoding="utf-8")
+    required_commands = (
+        "python scripts/interactive_runner.py ls20",
+        "python run_webui.py --game ls20",
+        "python scripts/prolog_controlled_runner.py",
+        "python scripts/play_local.py --game ls20 --max-steps 200",
+        "python scripts/build_notebook.py",
+        "python scripts/slim_framework.py",
+        "pytest -q tests/test_object_memory_contracts.py tests/test_documentation_links.py",
+        "swipl -q -s prolog/test_turtle_dsl.pl -g run_tests,halt",
+        "swipl -q -s prolog/test_object_memory.pl -g run_tests,halt",
+        "use_module('prolog/arc3_agent.pl')",
+        "use_module('prolog/game_object_learner_api.pl')",
+    )
+    for command in required_commands:
+        assert command in text, command
+
+
+def test_runnable_examples_were_consolidated_into_scripts() -> None:
+    assert (ROOT / "scripts" / "interactive_runner.py").is_file()
+    assert (ROOT / "scripts" / "prolog_controlled_runner.py").is_file()
+    assert not (ROOT / "examples" / "interactive_runner.py").exists()
+    assert not (ROOT / "examples" / "prolog_controlled_runner.py").exists()
+
+    server_text = (ROOT / "webui" / "server.py").read_text(encoding="utf-8")
+    assert 'PROJECT_ROOT / "scripts" / "interactive_runner.py"' in server_text
+    assert 'PROJECT_ROOT / "examples" / "interactive_runner.py"' not in server_text
