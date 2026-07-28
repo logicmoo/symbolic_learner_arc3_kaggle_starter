@@ -6,13 +6,12 @@ This repository combines the delivered ARC3 debugger, the protected ARC-AGI-3 Ka
 
 All maintained project Markdown documents live at the repository root and are linked here:
 
-- [ARC3 debugger and Kaggle operating guide](ARC3_DEBUGGER_AND_KAGGLE.md)
-- [Documentation index](DOCUMENTATION.md)
-- [SoW phase architecture](SOW_PHASE_ARCHITECTURE.md)
-- [Reconciled implementation backlog](IMPLEMENTATION_BACKLOG.md)
-- [Annotated, clickable repository file tree](FILE_TREE.md)
+- [ARC3 debugger and Kaggle operating guide](ARC3_DEBUGGER_AND_KAGGLE.md) — complete operational documentation preserved from the former top-level README.
+- [SoW phase architecture](SOW_PHASE_ARCHITECTURE.md) — maps existing code and connected contracts to SoW Phases 1–3.
+- [Reconciled implementation backlog](IMPLEMENTATION_BACKLOG.md) — coding plan, current status, next integration work, and acceptance tasks.
+- [Annotated, clickable repository file tree](FILE_TREE.md) — direct links to maintained source files with descriptions of their responsibilities.
 
-The architecture documents describe the shared PROLOG/GPT/PYTHON contracts, the connected Phase 3 pipeline, current implementation status, and remaining work.
+The top-level README is the documentation index. The detailed documents cover debugger and Kaggle operation, the shared PROLOG/GPT/PYTHON contracts, the connected Phase 3 pipeline, current implementation status, and remaining work.
 
 ## Protected Kaggle entry points
 
