@@ -15,10 +15,10 @@ import argparse
 import importlib.util
 import logging
 import sys
-from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT))
+from _runtime import configure_runtime_home
+
+ROOT = configure_runtime_home(__file__)
 
 VENDOR = ROOT / "vendor" / "ARC-AGI-3-Agents"
 if not VENDOR.exists():
