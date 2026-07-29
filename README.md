@@ -10,6 +10,27 @@ This repository combines the delivered ARC3 debugger, the protected ARC-AGI-3 Ka
 - [Implementation TODO](TODO.md) — reconciled status, remaining coding work, cross-language mapping, and acceptance tasks.
 - [Clickable repository file tree](FILE_TREE.md) — links to maintained files with descriptions of their responsibilities.
 
+## Runtime home selection
+
+Every runnable Python script resolves and enters one project root before importing project modules or using relative paths. The resolution order is:
+
+1. `ARC3_RUNTIME_HOME`, when explicitly set.
+2. The current working directory, including its parent directories.
+3. The project root inferred from the script's own location.
+
+An invalid explicit `ARC3_RUNTIME_HOME` is treated as an error instead of silently selecting another checkout. The resolved root is exported back through `ARC3_RUNTIME_HOME` for child processes.
+
+Examples:
+
+```bash
+# Explicit checkout/runtime location
+ARC3_RUNTIME_HOME=/path/to/symbolic_learner_arc3_kaggle_starter \
+python /another/path/to/scripts/interactive_runner.py ls20
+
+# Or launch from anywhere without setting the variable; the script location is used.
+python /path/to/symbolic_learner_arc3_kaggle_starter/scripts/re_play.py
+```
+
 ## Install
 
 Python 3.12 or newer is required.
@@ -36,7 +57,7 @@ The protected Kaggle workflow still uses the setup instructions in [KAGGLE.md](K
 
 ## Runnable Python entry points and demonstrations
 
-Run these commands from the repository root.
+Run these commands from the repository root, or rely on the runtime-home resolution described above.
 
 ### Interactive terminal debugger
 
@@ -160,7 +181,7 @@ swipl -q -g "use_module('prolog/arc3_agent.pl'),halt"
 swipl -q -g "use_module('prolog/game_object_learner_api.pl'),halt"
 ```
 
-The remaining `.pl` files are library modules exercised through these two test suites and the Python-controlled Prolog demonstration. See [FILE_TREE.md](FILE_TREE.md) for each module’s purpose.
+The remaining `.pl` files are library modules exercised through these two test suites and the Python-controlled Prolog demonstration. See [FILE_TREE.md](FILE_TREE.md) for each module's purpose.
 
 ## Protected Kaggle entry points
 
