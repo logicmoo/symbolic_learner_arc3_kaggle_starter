@@ -16,8 +16,11 @@ You don't normally need to call this directly — `make submit` runs it for you.
 from __future__ import annotations
 
 import json
-from pathlib import Path
 from textwrap import dedent
+
+from _runtime import configure_runtime_home
+
+ROOT = configure_runtime_home(__file__)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # CHANGE THIS ONE LINE TO PICK YOUR KAGGLE ACCELERATOR
@@ -38,7 +41,6 @@ _ACCELERATORS = {
     "rtx6000": {"name": "nvidiaRtx6000",   "gpu": True},
 }
 
-ROOT = Path(__file__).resolve().parents[1]
 AGENT_SRC = ROOT / "agent" / "my_agent.py"
 NOTEBOOK_PATH = ROOT / "notebooks" / "submission.ipynb"
 METADATA_PATH = ROOT / "notebooks" / "kernel-metadata.json"
@@ -98,7 +100,7 @@ def build() -> dict:
             # __init__.py because the upstream version eagerly imports
             # templates with deps we don't ship (langgraph, smolagents, etc.).
             with open('/kaggle/working/ARC-AGI-3-Agents/agents/__init__.py', 'w') as f:
-                f.write(\"\"\"from typing import Type
+                f.write("""from typing import Type
         from dotenv import load_dotenv
         from .agent import Agent, Playback
         from .swarm import Swarm
@@ -111,11 +113,11 @@ def build() -> dict:
             'random': Random,
             'myagent': MyAgent,
         }
-        \"\"\")
+        """)
 
             # Point the framework at the gateway sidecar.
             with open('/kaggle/working/ARC-AGI-3-Agents/.env', 'w') as f:
-                f.write(\"\"\"SCHEME=http
+                f.write("""SCHEME=http
         HOST=gateway
         PORT=8001
         ARC_API_KEY=test-key-123
@@ -123,7 +125,7 @@ def build() -> dict:
         OPERATION_MODE=online
         ENVIRONMENTS_DIR=
         RECORDINGS_DIR=/kaggle/working/server_recording
-        \"\"\")
+        """)
 
             # Run it. The gateway records every action and emits submission.parquet.
             !cd /kaggle/working/ARC-AGI-3-Agents && \\
@@ -202,7 +204,6 @@ def main() -> None:
     NOTEBOOK_PATH.write_text(json.dumps(build(), indent=1))
     print(f"[build_notebook] Wrote {NOTEBOOK_PATH.relative_to(ROOT)}  "
           f"(accelerator: {ACCELERATOR})")
-
     # Keep notebooks/kernel-metadata.json in sync so the user never has to
     # edit it just to flip CPU ↔ GPU.
     if METADATA_PATH.exists():
