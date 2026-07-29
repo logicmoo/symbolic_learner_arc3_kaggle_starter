@@ -1,10 +1,8 @@
 from __future__ import annotations
 
-import sys
-from pathlib import Path
+from _runtime import configure_runtime_home
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(PROJECT_ROOT / "python"))
+PROJECT_ROOT = configure_runtime_home(__file__)
 
 from arc3_runner import Arc3Runner
 from swipl_bridge import SWIPrologBridge
