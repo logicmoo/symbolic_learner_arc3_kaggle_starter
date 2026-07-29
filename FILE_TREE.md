@@ -6,7 +6,7 @@ This is the clickable source map for the maintained repository. Every listed pat
 
 ## Root documentation
 
-- [`README.md`](README.md) — top-level documentation index, install commands, and runnable Python and Prolog demonstrations.
+- [`README.md`](README.md) — top-level documentation index, runtime-home rules, and runnable commands.
 - [`DEBUGGER.md`](DEBUGGER.md) — ARC3 debugger controls, action trees, symbolic artifacts, replay, browser terminal, and Turtle DSL.
 - [`KAGGLE.md`](KAGGLE.md) — ARC Prize 2026 local-development, notebook generation, accelerator, submission, and troubleshooting guide.
 - [`SOW_PHASE_ARCHITECTURE.md`](SOW_PHASE_ARCHITECTURE.md) — mapping of existing and connected contracts to SoW Phases 1–3.
@@ -15,29 +15,30 @@ This is the clickable source map for the maintained repository. Every listed pat
 
 ## Repository configuration and protected Kaggle surface
 
-- [`pyproject.toml`](pyproject.toml) — canonical Python project metadata, package layout, dependency extras, web static data, and pytest configuration.
-- [`requirements.txt`](requirements.txt) — compatibility installer delegating to the debugger, notebook, and test extras in `pyproject.toml`.
+- [`pyproject.toml`](pyproject.toml) — canonical package metadata, dependency extras, package layout, and pytest configuration.
+- [`requirements.txt`](requirements.txt) — compatibility installer for debugger, notebook, and test extras.
 - [`Makefile`](Makefile) — existing setup, local-play, notebook-build, submission, status, and cleanup commands.
 - [`.gitignore`](.gitignore) — excludes credentials, generated notebooks, environments, caches, and runtime artifacts.
-- [`LICENSE`](LICENSE) — GNU Lesser General Public License version 2.1 text.
 - [`agent/my_agent.py`](agent/my_agent.py) — protected ARC-AGI-3 agent entry point used by local play and notebook generation.
-- [`scripts/play_local.py`](scripts/play_local.py) — protected local runner that exercises `MyAgent` against real ARC3 games.
-- [`scripts/build_notebook.py`](scripts/build_notebook.py) — protected builder that inserts `agent/my_agent.py` into the Kaggle submission notebook.
-- [`scripts/slim_framework.py`](scripts/slim_framework.py) — trims optional framework imports for the lightweight Kaggle workflow.
+- [`scripts/play_local.py`](scripts/play_local.py) — protected local runner that exercises `MyAgent` against real ARC3 games after resolving the runtime home.
+- [`scripts/build_notebook.py`](scripts/build_notebook.py) — protected builder that resolves the runtime home and inserts `agent/my_agent.py` into the Kaggle submission notebook.
+- [`scripts/slim_framework.py`](scripts/slim_framework.py) — trims optional framework imports in the vendored ARC-AGI-3 Agents framework.
 - [`notebooks/submission.ipynb`](notebooks/submission.ipynb) — generated Kaggle submission notebook; do not edit by hand.
 - [`notebooks/kernel-metadata.json`](notebooks/kernel-metadata.json) — Kaggle kernel metadata and accelerator settings.
 - [`notebooks/arc3_debugger.ipynb`](notebooks/arc3_debugger.ipynb) — guided notebook interface over the same ARC3 debugger runtime.
 - [`notebooks/arc3_runner.ipynb`](notebooks/arc3_runner.ipynb) — lower-level notebook interface for scripted ARC3 runner use.
 
-## Runnable debugger and demonstration scripts
+## Runnable scripts and runtime bootstrap
 
-- [`scripts/interactive_runner.py`](scripts/interactive_runner.py) — sole terminal debugger implementation and keyboard UI.
-- [`scripts/run_webui.py`](scripts/run_webui.py) — browser-UI launcher that bootstraps the repository root before importing `webui.server`.
-- [`scripts/prolog_controlled_runner.py`](scripts/prolog_controlled_runner.py) — executable SWI-Prolog action-selection demonstration.
-- [`scripts/re_play.py`](scripts/re_play.py) — minimal direct ARC3 smoke test that prints legal actions, executes one `ACTION1`, and prints the scorecard.
-- [`scripts/my_play.py`](scripts/my_play.py) — direct ARC3 smoke test that executes ten `ACTION1` steps and prints the scorecard.
-- [`scripts/me_play.py`](scripts/me_play.py) — random-action ARC3 demonstration using terminal rendering for up to 100 steps.
-- [`scripts/he_play.py`](scripts/he_play.py) — random-action ARC3 demonstration using human rendering for up to 100 steps.
+- [`scripts/_runtime.py`](scripts/_runtime.py) — shared resolver that checks `ARC3_RUNTIME_HOME`, then the working directory, then the script location; it changes into the selected project root and configures import paths.
+- [`scripts/interactive_runner.py`](scripts/interactive_runner.py) — runtime-aware terminal-debugger launcher.
+- [`python/interactive_runner.py`](python/interactive_runner.py) — full terminal debugger implementation imported by the launcher.
+- [`scripts/run_webui.py`](scripts/run_webui.py) — runtime-aware browser-UI launcher.
+- [`scripts/prolog_controlled_runner.py`](scripts/prolog_controlled_runner.py) — runtime-aware SWI-Prolog action-selection demonstration.
+- [`scripts/re_play.py`](scripts/re_play.py) — direct ARC3 action-space and one-step smoke demo.
+- [`scripts/my_play.py`](scripts/my_play.py) — direct ARC3 repeated-`ACTION1` smoke demo.
+- [`scripts/me_play.py`](scripts/me_play.py) — random-action ARC3 demo with terminal rendering.
+- [`scripts/he_play.py`](scripts/he_play.py) — random-action ARC3 demo with human rendering.
 - [`webui/server.py`](webui/server.py) — FastAPI/WebSocket PTY server launching `scripts/interactive_runner.py` rather than duplicating the debugger.
 - [`webui/static/index.html`](webui/static/index.html) — browser terminal page and client-side controls.
 
@@ -83,7 +84,8 @@ This is the clickable source map for the maintained repository. Every listed pat
 ## Tests and runnable checks
 
 - [`tests/test_object_memory_contracts.py`](tests/test_object_memory_contracts.py) — provider normalization, residual admission, `SingleWriter`, rules, connected Phase 3 flow, prediction ordering, Kaggle-path, and runner-placement tests.
-- [`tests/test_documentation_links.py`](tests/test_documentation_links.py) — enforces Markdown back-links, root documentation coverage, valid file-tree links, runnable-command coverage, and project metadata.
+- [`tests/test_documentation_links.py`](tests/test_documentation_links.py) — enforces Markdown back-links, root documentation coverage, valid file-tree links, and per-link descriptions.
+- [`tests/test_runtime_home.py`](tests/test_runtime_home.py) — validates runtime-home precedence, working-directory fallback, script-location fallback, and script bootstrap coverage.
 - [`prolog/test_object_memory.pl`](prolog/test_object_memory.pl) — Prolog tests for residuals, commitments, rules, the connected Phase 3 path, and prediction grading.
 - [`prolog/test_turtle_dsl.pl`](prolog/test_turtle_dsl.pl) — Turtle semantics and pen-width equivalence tests.
 
