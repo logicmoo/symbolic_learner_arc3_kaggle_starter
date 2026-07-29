@@ -57,7 +57,7 @@ The protected Kaggle workflow still uses the setup instructions in [KAGGLE.md](K
 
 ## Runnable Python entry points and demonstrations
 
-Run these commands from the repository root, or rely on the runtime-home resolution described above.
+These commands may be run from the repository root or from another directory. Each script normalizes its process working directory through the runtime-home selection above before doing project-relative work.
 
 ### Interactive terminal debugger
 
