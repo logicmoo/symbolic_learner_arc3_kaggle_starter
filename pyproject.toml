@@ -82,6 +82,7 @@ py-modules = [
   "arc3_runner",
   "gpt_bridge",
   "image_codec",
+  "interactive_runner",
   "project_paths",
   "swipl_bridge",
 ]
