@@ -141,10 +141,10 @@ python scripts/slim_framework.py
 
 Normally this is run by `make setup`.
 
-### Run Python contract and documentation tests
+### Run Python tests
 
 ```bash
-pytest -q tests/test_object_memory_contracts.py tests/test_documentation_links.py
+pytest -q
 ```
 
 ### Open the notebooks
