@@ -201,6 +201,7 @@ def test_pyproject_metadata_and_extras_match_repository() -> None:
 
     setuptools = data["tool"]["setuptools"]
     assert {"object_memory", "webui"}.issubset(set(setuptools["packages"]))
+    assert "interactive_runner" in setuptools["py-modules"]
     assert data["tool"]["setuptools"]["package-dir"]["webui"] == "webui"
     assert "python" in data["tool"]["pytest"]["ini_options"]["pythonpath"]
 
