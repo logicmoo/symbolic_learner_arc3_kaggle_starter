@@ -11,9 +11,9 @@ This is the *exact same* slimming trick the official Kaggle sample
 """
 from __future__ import annotations
 
-from pathlib import Path
+from _runtime import configure_runtime_home
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = configure_runtime_home(__file__)
 INIT = ROOT / "vendor" / "ARC-AGI-3-Agents" / "agents" / "__init__.py"
 
 SLIM = '''\
