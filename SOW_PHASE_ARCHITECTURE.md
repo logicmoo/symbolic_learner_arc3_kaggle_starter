@@ -15,12 +15,23 @@ Existing code fulfills Phase 1:
 - `python/gpt_bridge.py` — one combined GPT request and cached Prolog artifacts.
 - `python/swipl_bridge.py` plus `prolog/arc3_agent.pl` — SWI-Prolog control seam.
 - `prolog/turtle_dsl.pl` — authoritative Turtle execution semantics.
-- `scripts/interactive_runner.py` — terminal debugger.
-- `scripts/run_webui.py` — browser-UI launcher with repository-root import bootstrap.
+- `scripts/interactive_runner.py` — runtime-aware terminal debugger launcher.
+- `python/interactive_runner.py` — full terminal debugger implementation.
+- `scripts/run_webui.py` — browser-UI launcher.
 - `scripts/prolog_controlled_runner.py` — executable Prolog-controlled demonstration.
 - `webui/server.py` — browser terminal exposing the same interactive runner rather than a second debugger.
 
 No Phase 1 implementation is duplicated. Runnable launchers formerly under `examples/` or the repository root now live in `scripts/`.
+
+## Runtime-home contract
+
+Every runnable Python entry point calls the shared `scripts/_runtime.py` resolver before project imports or relative-path work. Resolution is deterministic:
+
+1. use `ARC3_RUNTIME_HOME` when explicitly configured;
+2. otherwise inspect the current working directory and its parents;
+3. otherwise infer the project root from the script location.
+
+The selected directory becomes the process working directory, is exported through `ARC3_RUNTIME_HOME`, and is added to the Python import path together with its `python/` directory. An invalid explicit value fails instead of silently selecting another checkout.
 
 ## Phase 2 — perception, representation, correspondence, and memory
 
@@ -66,7 +77,7 @@ Every provider returns `NormalizedResult`; there are not three object models. Ph
 - the `logicmoo-arc3` package metadata and LGPL-2.1-or-later license;
 - the base ARC3, NumPy, and Pillow requirements;
 - debugger, notebook, Kaggle, test, and complete optional dependency groups;
-- packaging for the `object_memory` and `webui` packages plus the existing Python modules;
+- packaging for the object-memory package, web UI, interactive debugger implementation, and existing Python modules;
 - inclusion of the web terminal static page;
 - pytest discovery and the `python/` import path.
 
@@ -87,7 +98,7 @@ See [KAGGLE.md](KAGGLE.md) for the operational workflow.
 
 ## Runnable scripts
 
-All runnable Python launchers and direct ARC3 demonstrations live in `scripts/`:
+All runnable Python launchers and direct ARC3 demonstrations live in `scripts/` and use the runtime-home resolver:
 
 - `scripts/interactive_runner.py`
 - `scripts/run_webui.py`
