@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import importlib.util
 import os
+import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -21,11 +23,15 @@ def _load_runtime_module():
 def _make_project_root(path: Path) -> Path:
     path.mkdir(parents=True)
     (path / "README.md").write_text("# test project\n", encoding="utf-8")
-    (path / "pyproject.toml").write_text("[project]\nname='test'\nversion='0'\n", encoding="utf-8")
+    (path / "pyproject.toml").write_text(
+        "[project]\nname='test'\nversion='0'\n", encoding="utf-8"
+    )
     return path.resolve()
 
 
-def test_explicit_runtime_home_has_priority(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_explicit_runtime_home_has_priority(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     runtime = _load_runtime_module()
     configured = _make_project_root(tmp_path / "configured")
     working = _make_project_root(tmp_path / "working")
@@ -65,7 +71,9 @@ def test_working_directory_is_checked_before_script_location(
     assert Path.cwd() == working
 
 
-def test_script_location_is_final_fallback(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_script_location_is_final_fallback(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     runtime = _load_runtime_module()
     unrelated = tmp_path / "unrelated"
     unrelated.mkdir()
@@ -98,6 +106,77 @@ def test_invalid_explicit_runtime_home_is_not_silently_ignored(
 
     with pytest.raises(RuntimeError, match="ARC3_RUNTIME_HOME"):
         runtime.configure_runtime_home(script)
+
+
+def test_shared_pycharm_hook_uses_established_defaults(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    runtime = _load_runtime_module()
+    calls: list[dict[str, object]] = []
+    fake_pydevd = SimpleNamespace(settrace=lambda **kwargs: calls.append(kwargs))
+    monkeypatch.setitem(sys.modules, "pydevd_pycharm", fake_pydevd)
+
+    assert runtime.hook_debugger(timeout=0.01, retry_interval=0.001)
+    assert calls == [
+        {
+            "host": "localhost",
+            "port": 5678,
+            "suspend": True,
+            "stdout_to_server": False,
+            "stderr_to_server": False,
+        }
+    ]
+
+
+def test_runtime_home_invokes_shared_debugger(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    runtime = _load_runtime_module()
+    project_root = _make_project_root(tmp_path / "project")
+    script = project_root / "scripts" / "demo.py"
+    script.parent.mkdir()
+    script.write_text("", encoding="utf-8")
+    calls: list[bool] = []
+
+    monkeypatch.setenv("ARC3_RUNTIME_HOME", str(project_root))
+    monkeypatch.setattr(
+        runtime, "configure_pycharm_debugger", lambda: calls.append(True) or False
+    )
+
+    assert runtime.configure_runtime_home(script) == project_root
+    assert calls == [True]
+
+
+def test_pytest_disables_debugger_by_default(monkeypatch: pytest.MonkeyPatch) -> None:
+    runtime = _load_runtime_module()
+    monkeypatch.delenv("ARC3_PYCHARM_DEBUG", raising=False)
+
+    assert runtime.configure_pycharm_debugger() is False
+
+
+def test_explicit_debug_setting_enables_shared_hook(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    runtime = _load_runtime_module()
+    received: list[dict[str, object]] = []
+    monkeypatch.setenv("ARC3_PYCHARM_DEBUG", "1")
+    monkeypatch.setattr(
+        runtime,
+        "hook_debugger",
+        lambda **kwargs: received.append(kwargs) or True,
+    )
+
+    assert runtime.configure_pycharm_debugger() is True
+    assert received == [
+        {
+            "host": "localhost",
+            "port": 5678,
+            "suspend": True,
+            "timeout": 7.0,
+            "retry_interval": 1.0,
+            "wait_for_user_if_not_started": False,
+        }
+    ]
 
 
 def test_every_runnable_script_uses_shared_runtime_resolver() -> None:
