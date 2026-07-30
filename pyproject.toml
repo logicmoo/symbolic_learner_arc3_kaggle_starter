@@ -38,6 +38,7 @@ debugger = [
   "ansi2html>=1.9",
   "fastapi>=0.115",
   "uvicorn[standard]>=0.30",
+  "pydevd-pycharm",
   "pywinpty>=2.0; platform_system == 'Windows'",
   "ptyprocess>=0.7; platform_system != 'Windows'",
 ]
@@ -59,6 +60,7 @@ all = [
   "ansi2html>=1.9",
   "fastapi>=0.115",
   "uvicorn[standard]>=0.30",
+  "pydevd-pycharm",
   "pywinpty>=2.0; platform_system == 'Windows'",
   "ptyprocess>=0.7; platform_system != 'Windows'",
   "jupyterlab>=4.0",
