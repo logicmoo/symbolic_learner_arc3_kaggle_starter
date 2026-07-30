@@ -21,8 +21,9 @@
 
 ## Files
 
+- [image.png](image.png)
 - [state.json](state.json)
-- [object_registry.pl](../../../object_registry.pl)
+- [object_registry.pl](../../../object_registry.pl) — shared level registry (25 canonical identities)
 - [differences.pl](differences.pl)
 - [objects.pl](objects.pl)
 - [redraw.pl](redraw.pl)
@@ -32,513 +33,637 @@
 - [turtle_from_diff.pl](turtle_from_diff.pl)
 - [turtle_from_image.pl](turtle_from_image.pl)
 
-## `objects.pl`
+## Embedded files
 
-```prolog
-% Canonical friendly object identities for this entire ARC3 level.
-% Names are created once and reused from the beginning to the end.
+*Canonical identities are shared through [`object_registry.pl`](../../../object_registry.pl) and are not repeated in every node.*
 
-object_identity(black_player_head, player_component, 'black upper portion of the player marker').
-object_identity(blue_black_player, player, 'small blue and black player marker').
-object_identity(blue_player_tail, player_component, 'blue lower-left portion of the player marker').
-object_identity(bottom_center_gate, compound_block, 'two-color gate embedded in the bottom of the green structure').
-object_identity(bottom_dark_status_bar, bar, 'dark horizontal bar inside the bottom status panel').
-object_identity(bottom_status_panel, interface_bar, 'long gray status panel along the bottom edge').
-object_identity(gray_gate_cap, rectangle, 'gray upper cap of the bottom-center gate').
-object_identity(gray_upper_chamber_interior, chamber, 'gray interior of the upper chamber').
-object_identity(green_chamber_stem, vertical_bar, 'green vertical stem connecting the upper chamber to the main platform').
-object_identity(green_main_platform, platform, 'broad central green platform').
-object_identity(green_maze_structure, compound_structure, 'large green maze-like structure').
-object_identity(green_upper_chamber_frame, enclosure, 'green frame around the upper chamber').
-object_identity(left_cyan_status_cell, indicator, 'left cyan status cell').
-object_identity(left_gray_border, border, 'left vertical gray boundary').
-object_identity(lower_left_control_panel, panel, 'gray control panel at the lower left').
-object_identity(lower_left_red_hook_glyph, glyph, 'large dark red hooked symbol on the lower-left panel').
-object_identity(lower_left_red_square, glyph_component, 'small detached dark red square on the lower-left panel').
-object_identity(middle_cyan_status_cell, indicator, 'middle cyan status cell').
-object_identity(red_gate_base, rectangle, 'dark red lower block of the bottom-center gate').
-object_identity(right_cyan_status_cell, indicator, 'right cyan status cell at the image edge').
-object_identity(upper_red_hook_glyph, glyph, 'dark red hooked symbol in the upper chamber').
-object_identity(upper_red_square, glyph_component, 'small detached dark red square in the upper chamber').
-object_identity(yellow_inner_cavity, hole, 'yellow stepped cavity enclosed within the green structure').
-object_identity(yellow_playfield, background, 'yellow playfield background').
+<details>
+<summary><code>state.json</code></summary>
 
-% State-specific object facts generated for this node.
-% Canonical friendly object identities for this entire ARC3 level.
-% Names are created once and reused from the beginning to the end.
+````json
+{
+  "state": "NOT_FINISHED",
+  "level": "1",
+  "level_source": "default",
+  "next_level_expected": null,
+  "observation": {
+    "game_id": "ls20-9607627b",
+    "state": "NOT_FINISHED",
+    "levels_completed": 0,
+    "win_levels": 7,
+    "action_input": {
+      "id": "ACTION2",
+      "data": {},
+      "reasoning": null
+    },
+    "guid": "36f2d7f2-25ea-4100-8983-30d4c064bef5",
+    "full_reset": false,
+    "available_actions": [
+      1,
+      2,
+      3,
+      4
+    ]
+  },
+  "step_count": 2,
+  "game_id": "ls20",
+  "game_directory": "ls20",
+  "image_hash": "c21b4677850b6e9c",
+  "incoming_action": "ACTION2",
+  "action_directory": "DOWN",
+  "action_data": {},
+  "parent_node": "..",
+  "action_path": [
+    "LEFT",
+    "LEFT",
+    "DOWN"
+  ]
+}
+````
 
+[Open `state.json`](state.json)
 
-% State-specific object facts generated for this node.
-% Canonical friendly object identities for this entire ARC3 level.
-% Names are created once and reused from the beginning to the end.
+</details>
 
+<details>
+<summary><code>differences.pl</code></summary>
 
-% State-specific object facts generated for this node.
-% Canonical friendly object identities for this entire ARC3 level.
-% Names are created once and reused from the beginning to the end.
+````prolog
+transition_action(parent,current,action2).
+changed_cells(parent,current,[]).
+unchanged(parent,current,logical_grid(bbox(0,0,64,64),area(4096))).
+unchanged(parent,current,visible_color_partition,evidence(exact_cellwise_match,4096)).
+unchanged(parent,current,blue_black_player,evidence(bbox(20,31,3,3),occupied_cells([cell(21,31),cell(20,32),cell(21,32),cell(22,32),cell(21,33)]))).
+unchanged(parent,current,bottom_green_status_bar,evidence(bbox(13,61,2,2),cell_runs([rows(61,62,13,14)]))).
+````
 
+[Open `differences.pl`](differences.pl)
 
-% State-specific object facts generated for this node.
-coordinate_system(canvas_pixels, 640, 640, origin_top_left, x_right, y_down).
-cell_scale(10).
+</details>
 
-color(yellow, rgb(255,220,0)).
-color(green, rgb(46,204,64)).
-color(light_gray, rgb(170,170,170)).
-color(dark_gray, rgb(102,102,102)).
-color(maroon, rgb(133,20,75)).
-color(blue, rgb(0,116,217)).
-color(light_blue, rgb(127,219,255)).
-color(black, rgb(0,0,0)).
+<details>
+<summary><code>objects.pl</code></summary>
 
-object(background, background).
-bbox(background, 0, 0, 640, 640).
-object_colors(background, [yellow]).
-geometry(background, rectangle(0,0,640,640)).
-layer(background, 0).
-turtle_program(background,
-    [penup,set_pos(0,0),setcolor(yellow),pendown,fill_rect(640,640),penup]).
+````prolog
+% Canonical identities are loaded from the level registry.
+:- ensure_loaded('../../../object_registry.pl').
 
-object(left_sidebar, boundary_strip).
-bbox(left_sidebar, 0, 0, 40, 520).
-object_colors(left_sidebar, [light_gray]).
-geometry(left_sidebar, rectangle(0,0,40,520)).
-layer(left_sidebar, 1).
-touches_canvas_edge(left_sidebar, left).
-touches_canvas_edge(left_sidebar, top).
-adjacent(left_sidebar, background, right_edge).
-turtle_program(left_sidebar,
-    [penup,set_pos(0,0),setcolor(light_gray),pendown,fill_rect(40,520),penup]).
+% State-specific facts for this action-tree node.
+object(yellow_playfield,background,current).
+color(yellow_playfield,yellow).
+bbox(yellow_playfield,0,0,64,64).
+area(yellow_playfield,2509).
+cell_runs(yellow_playfield,[rows(0,7,4,63),rows(8,16,4,31),rows(8,16,41,63),rows(17,24,4,33),rows(17,24,39,63),rows(25,29,4,13),rows(25,29,54,63),rows(30,39,4,13),rows(30,39,54,63),rows(40,44,4,18),rows(40,44,54,63),rows(45,49,4,18),rows(45,49,54,63),rows(50,51,4,63),rows(52,52,0,63),rows(53,59,0,0),rows(53,59,11,63),rows(60,62,0,0),rows(60,62,11,11),rows(63,63,0,11)]).
+shape(yellow_playfield,irregular_background).
+role(yellow_playfield,playfield_background).
+confidence(yellow_playfield,1.0).
 
-object(main_green_structure, traversable_structure).
-bbox(main_green_structure, 140, 80, 400, 420).
-object_colors(main_green_structure, [green]).
-geometry(main_green_structure,
-    union_rectangles([
-        rect(320,80,90,90),
-        rect(340,160,50,90),
-        rect(140,250,400,150),
-        rect(190,400,50,100),
-        rect(340,400,200,100),
-        rect(290,450,50,50)
-    ])).
-connected(main_green_structure).
-layer(main_green_structure, 2).
-turtle_program(main_green_structure,
-    [penup,setcolor(green),
-     set_pos(320,80),pendown,fill_rect(90,90),penup,
-     set_pos(340,160),pendown,fill_rect(50,90),penup,
-     set_pos(140,250),pendown,fill_rect(400,150),penup,
-     set_pos(190,400),pendown,fill_rect(50,100),penup,
-     set_pos(340,400),pendown,fill_rect(200,100),penup,
-     set_pos(290,450),pendown,fill_rect(50,50),penup]).
+object(left_gray_border,border,current).
+color(left_gray_border,gray).
+bbox(left_gray_border,0,0,4,52).
+size(left_gray_border,4,52).
+area(left_gray_border,208).
+cell_runs(left_gray_border,[rows(0,51,0,3)]).
+shape(left_gray_border,solid_rectangle).
+orientation(left_gray_border,vertical).
+role(left_gray_border,boundary).
+touches(left_gray_border,yellow_playfield).
+confidence(left_gray_border,1.0).
 
-object(main_cutout, open_negative_space).
-bbox(main_cutout, 240, 300, 100, 150).
-object_colors(main_cutout, [yellow]).
-geometry(main_cutout,
-    union_rectangles([
-        rect(290,300,50,150),
-        rect(240,400,50,50)
-    ])).
-open_to_background(main_cutout, left).
-adjacent(main_cutout, main_green_structure, upper_edge).
-adjacent(main_cutout, main_green_structure, right_edge).
-adjacent(main_cutout, main_green_structure, lower_edge).
-layer(main_cutout, 3).
-turtle_program(main_cutout,
-    [penup,setcolor(yellow),
-     set_pos(290,300),pendown,fill_rect(50,150),penup,
-     set_pos(240,400),pendown,fill_rect(50,50),penup]).
+object(green_maze_structure,compound_structure,current).
+color(green_maze_structure,green).
+bbox(green_maze_structure,14,8,40,42).
+area(green_maze_structure,892).
+cell_runs(green_maze_structure,[rows(8,8,32,40),rows(9,15,32,32),rows(9,15,40,40),rows(16,16,32,40),rows(17,24,34,38),rows(25,29,14,53),rows(30,30,14,28),rows(30,30,34,53),rows(31,31,14,20),rows(31,31,22,28),rows(31,31,34,53),rows(32,32,14,19),rows(32,32,23,28),rows(32,32,34,53),rows(33,33,14,20),rows(33,33,22,28),rows(33,33,34,53),rows(34,39,14,28),rows(34,39,34,53),rows(40,44,19,23),rows(40,44,34,53),rows(45,49,19,23),rows(45,49,29,53)]).
+shape(green_maze_structure,connected_maze_structure).
+contains(green_maze_structure,gray_upper_chamber_interior).
+contains(green_maze_structure,yellow_inner_cavity).
+contains(green_maze_structure,bottom_center_gate).
+role(green_maze_structure,main_play_structure).
+confidence(green_maze_structure,1.0).
 
-object(top_terminal_panel, inset_panel).
-bbox(top_terminal_panel, 330, 90, 70, 70).
-object_colors(top_terminal_panel, [light_gray]).
-geometry(top_terminal_panel, rectangle(330,90,70,70)).
-embedded_in(top_terminal_panel, main_green_structure).
-adjacent(top_terminal_panel, main_green_structure, all_four_edges).
-layer(top_terminal_panel, 4).
-turtle_program(top_terminal_panel,
-    [penup,set_pos(330,90),setcolor(light_gray),pendown,fill_rect(70,70),penup]).
+object(green_upper_chamber_frame,enclosure,current).
+color(green_upper_chamber_frame,green).
+bbox(green_upper_chamber_frame,32,8,9,9).
+size(green_upper_chamber_frame,9,9).
+area(green_upper_chamber_frame,32).
+cell_runs(green_upper_chamber_frame,[rows(8,8,32,40),rows(9,15,32,32),rows(9,15,40,40),rows(16,16,32,40)]).
+shape(green_upper_chamber_frame,rectangular_frame).
+symmetry(green_upper_chamber_frame,vertical).
+component_of(green_upper_chamber_frame,green_maze_structure).
+contains(green_upper_chamber_frame,gray_upper_chamber_interior).
+contains(green_upper_chamber_frame,upper_red_hook_glyph).
+contains(green_upper_chamber_frame,upper_red_square).
+confidence(green_upper_chamber_frame,1.0).
 
-object(top_terminal_glyph, glyph).
-bbox(top_terminal_glyph, 350, 110, 30, 30).
-object_colors(top_terminal_glyph, [maroon]).
-geometry(top_terminal_glyph,
-    union_rectangles([
-        rect(350,110,30,10),
-        rect(370,120,10,20),
-        rect(350,130,10,10)
-    ])).
-component_count(top_terminal_glyph, 2).
-contains(top_terminal_panel, top_terminal_glyph).
-layer(top_terminal_glyph, 5).
-turtle_program(top_terminal_glyph,
-    [penup,setcolor(maroon),
-     set_pos(350,110),pendown,fill_rect(30,10),penup,
-     set_pos(370,120),pendown,fill_rect(10,20),penup,
-     set_pos(350,130),pendown,fill_rect(10,10),penup]).
+object(gray_upper_chamber_interior,chamber,current).
+color(gray_upper_chamber_interior,gray).
+bbox(gray_upper_chamber_interior,33,9,7,7).
+size(gray_upper_chamber_interior,7,7).
+area(gray_upper_chamber_interior,43).
+cell_runs(gray_upper_chamber_interior,[rows(9,10,33,39),rows(11,11,33,34),rows(11,11,38,39),rows(12,12,33,36),rows(12,12,38,39),rows(13,13,33,34),rows(13,13,36,36),rows(13,13,38,39),rows(14,15,33,39)]).
+shape(gray_upper_chamber_interior,rectangular_interior_with_glyph_occlusions).
+inside(gray_upper_chamber_interior,green_upper_chamber_frame).
+confidence(gray_upper_chamber_interior,1.0).
 
-object(player_black, player_component).
-bbox(player_black, 210, 310, 20, 20).
-object_colors(player_black, [black]).
-geometry(player_black, rectangle(210,310,20,20)).
-contained_in(player_black, main_green_structure).
-adjacent(player_black, player_blue, edge_contact).
-layer(player_black, 6).
-turtle_program(player_black,
-    [penup,set_pos(210,310),setcolor(black),pendown,fill_rect(20,20),penup]).
+object(upper_red_hook_glyph,glyph,current).
+color(upper_red_hook_glyph,dark_red).
+bbox(upper_red_hook_glyph,35,11,3,3).
+size(upper_red_hook_glyph,3,3).
+area(upper_red_hook_glyph,5).
+cell_runs(upper_red_hook_glyph,[rows(11,11,35,37),rows(12,13,37,37)]).
+shape(upper_red_hook_glyph,hook).
+inside(upper_red_hook_glyph,green_upper_chamber_frame).
+component_of(upper_red_hook_glyph,gray_upper_chamber_interior).
+confidence(upper_red_hook_glyph,1.0).
 
-object(player_blue, player_component).
-bbox(player_blue, 200, 320, 20, 20).
-object_colors(player_blue, [blue]).
-geometry(player_blue,
-    union_rectangles([
-        rect(200,320,10,10),
-        rect(210,330,10,10)
-    ])).
-component_count(player_blue, 2).
-contained_in(player_blue, main_green_structure).
-adjacent(player_blue, player_black, edge_contact).
-layer(player_blue, 7).
-turtle_program(player_blue,
-    [penup,setcolor(blue),
-     set_pos(200,320),pendown,fill_rect(10,10),penup,
-     set_pos(210,330),pendown,fill_rect(10,10),penup]).
+object(upper_red_square,glyph_component,current).
+color(upper_red_square,dark_red).
+bbox(upper_red_square,35,13,1,1).
+size(upper_red_square,1,1).
+area(upper_red_square,1).
+occupied_cells(upper_red_square,[cell(35,13)]).
+shape(upper_red_square,single_cell_square).
+inside(upper_red_square,green_upper_chamber_frame).
+aligned_with(upper_red_square,upper_red_hook_glyph,left_edge).
+confidence(upper_red_square,1.0).
 
-composite_object(player, [player_black,player_blue]).
-bbox(player, 200, 310, 30, 30).
-object_colors(player, [black,blue]).
-contained_in(player, main_green_structure).
+object(green_chamber_stem,vertical_bar,current).
+color(green_chamber_stem,green).
+bbox(green_chamber_stem,34,17,5,8).
+size(green_chamber_stem,5,8).
+area(green_chamber_stem,40).
+cell_runs(green_chamber_stem,[rows(17,24,34,38)]).
+shape(green_chamber_stem,solid_rectangle).
+orientation(green_chamber_stem,vertical).
+component_of(green_chamber_stem,green_maze_structure).
+touches(green_chamber_stem,green_upper_chamber_frame).
+touches(green_chamber_stem,green_main_platform).
+confidence(green_chamber_stem,1.0).
 
-object(lower_terminal_cap, terminal_component).
-bbox(lower_terminal_cap, 240, 450, 50, 20).
-object_colors(lower_terminal_cap, [light_gray]).
-geometry(lower_terminal_cap, rectangle(240,450,50,20)).
-adjacent(lower_terminal_cap, lower_terminal_core, lower_edge).
-adjacent(lower_terminal_cap, main_green_structure, left_right_edges).
-layer(lower_terminal_cap, 8).
-turtle_program(lower_terminal_cap,
-    [penup,set_pos(240,450),setcolor(light_gray),pendown,fill_rect(50,20),penup]).
+object(green_main_platform,platform,current).
+color(green_main_platform,green).
+bbox(green_main_platform,14,25,40,25).
+size(green_main_platform,40,25).
+area(green_main_platform,820).
+cell_runs(green_main_platform,[rows(25,29,14,53),rows(30,30,14,28),rows(30,30,34,53),rows(31,31,14,20),rows(31,31,22,28),rows(31,31,34,53),rows(32,32,14,19),rows(32,32,23,28),rows(32,32,34,53),rows(33,33,14,20),rows(33,33,22,28),rows(33,33,34,53),rows(34,39,14,28),rows(34,39,34,53),rows(40,44,19,23),rows(40,44,34,53),rows(45,49,19,23),rows(45,49,29,53)]).
+shape(green_main_platform,stepped_platform_with_enclosed_cavity).
+component_of(green_main_platform,green_maze_structure).
+contains(green_main_platform,yellow_inner_cavity).
+contains(green_main_platform,bottom_center_gate).
+confidence(green_main_platform,1.0).
 
-object(lower_terminal_core, terminal_component).
-bbox(lower_terminal_core, 240, 470, 50, 30).
-object_colors(lower_terminal_core, [maroon]).
-geometry(lower_terminal_core, rectangle(240,470,50,30)).
-adjacent(lower_terminal_core, lower_terminal_cap, upper_edge).
-adjacent(lower_terminal_core, main_green_structure, left_right_edges).
-layer(lower_terminal_core, 9).
-turtle_program(lower_terminal_core,
-    [penup,set_pos(240,470),setcolor(maroon),pendown,fill_rect(50,30),penup]).
+object(yellow_inner_cavity,hole,current).
+color(yellow_inner_cavity,yellow).
+bbox(yellow_inner_cavity,24,30,10,15).
+size(yellow_inner_cavity,10,15).
+area(yellow_inner_cavity,100).
+cell_runs(yellow_inner_cavity,[rows(30,39,29,33),rows(40,44,24,33)]).
+shape(yellow_inner_cavity,stepped_cavity).
+inside(yellow_inner_cavity,green_main_platform).
+inside(yellow_inner_cavity,green_maze_structure).
+adjacent(yellow_inner_cavity,green_main_platform).
+adjacent(yellow_inner_cavity,bottom_center_gate).
+role(yellow_inner_cavity,enclosed_hole).
+confidence(yellow_inner_cavity,1.0).
 
-composite_object(lower_terminal, [lower_terminal_cap,lower_terminal_core]).
-bbox(lower_terminal, 240, 450, 50, 50).
-object_colors(lower_terminal, [light_gray,maroon]).
-embedded_in(lower_terminal, main_green_structure).
+object(blue_black_player,player,current).
+colors(blue_black_player,[black,blue]).
+bbox(blue_black_player,20,31,3,3).
+size(blue_black_player,3,3).
+area(blue_black_player,5).
+occupied_cells(blue_black_player,[cell(21,31),cell(20,32),cell(21,32),cell(22,32),cell(21,33)]).
+shape(blue_black_player,asymmetric_cross_marker).
+inside(blue_black_player,green_main_platform).
+role(blue_black_player,player_marker).
+confidence(blue_black_player,1.0).
 
-object(lower_left_panel, ui_panel).
-bbox(lower_left_panel, 10, 530, 100, 100).
-object_colors(lower_left_panel, [light_gray]).
-geometry(lower_left_panel, rectangle(10,530,100,100)).
-contained_in(lower_left_panel, background).
-layer(lower_left_panel, 10).
-turtle_program(lower_left_panel,
-    [penup,set_pos(10,530),setcolor(light_gray),pendown,fill_rect(100,100),penup]).
+object(black_player_head,player_component,current).
+color(black_player_head,black).
+bbox(black_player_head,21,31,2,2).
+size(black_player_head,2,2).
+area(black_player_head,3).
+occupied_cells(black_player_head,[cell(21,31),cell(21,32),cell(22,32)]).
+shape(black_player_head,right_facing_corner).
+component_of(black_player_head,blue_black_player).
+confidence(black_player_head,1.0).
 
-object(lower_left_glyph, glyph).
-bbox(lower_left_glyph, 30, 550, 60, 60).
-object_colors(lower_left_glyph, [maroon]).
-geometry(lower_left_glyph,
-    union_rectangles([
-        rect(30,550,60,20),
-        rect(30,570,20,40),
-        rect(70,590,20,20)
-    ])).
-component_count(lower_left_glyph, 2).
-contains(lower_left_panel, lower_left_glyph).
-layer(lower_left_glyph, 11).
-turtle_program(lower_left_glyph,
-    [penup,setcolor(maroon),
-     set_pos(30,550),pendown,fill_rect(60,20),penup,
-     set_pos(30,570),pendown,fill_rect(20,40),penup,
-     set_pos(70,590),pendown,fill_rect(20,20),penup]).
+object(blue_player_tail,player_component,current).
+color(blue_player_tail,blue).
+bbox(blue_player_tail,20,32,2,2).
+size(blue_player_tail,2,2).
+area(blue_player_tail,2).
+occupied_cells(blue_player_tail,[cell(20,32),cell(21,33)]).
+shape(blue_player_tail,diagonal_pair).
+component_of(blue_player_tail,blue_black_player).
+confidence(blue_player_tail,1.0).
 
-object(bottom_toolbar, ui_panel).
-bbox(bottom_toolbar, 120, 600, 520, 40).
-object_colors(bottom_toolbar, [light_gray]).
-geometry(bottom_toolbar, rectangle(120,600,520,40)).
-touches_canvas_edge(bottom_toolbar, right).
-touches_canvas_edge(bottom_toolbar, bottom).
-layer(bottom_toolbar, 12).
-turtle_program(bottom_toolbar,
-    [penup,set_pos(120,600),setcolor(light_gray),pendown,fill_rect(520,40),penup]).
+object(bottom_center_gate,compound_block,current).
+colors(bottom_center_gate,[gray,dark_red]).
+bbox(bottom_center_gate,24,45,5,5).
+size(bottom_center_gate,5,5).
+area(bottom_center_gate,25).
+cell_runs(bottom_center_gate,[rows(45,49,24,28)]).
+shape(bottom_center_gate,two_color_rectangle).
+inside(bottom_center_gate,green_main_platform).
+component_of(bottom_center_gate,green_maze_structure).
+contains(bottom_center_gate,gray_gate_cap).
+contains(bottom_center_gate,red_gate_base).
+adjacent(bottom_center_gate,yellow_inner_cavity).
+role(bottom_center_gate,embedded_gate).
+confidence(bottom_center_gate,1.0).
 
-object(toolbar_green_segment, status_segment).
-bbox(toolbar_green_segment, 130, 610, 30, 20).
-object_colors(toolbar_green_segment, [green]).
-geometry(toolbar_green_segment, rectangle(130,610,30,20)).
-contained_in(toolbar_green_segment, bottom_toolbar).
-adjacent(toolbar_green_segment, toolbar_dark_segment, right_edge).
-layer(toolbar_green_segment, 13).
-turtle_program(toolbar_green_segment,
-    [penup,set_pos(130,610),setcolor(green),pendown,fill_rect(30,20),penup]).
+object(gray_gate_cap,rectangle,current).
+color(gray_gate_cap,gray).
+bbox(gray_gate_cap,24,45,5,2).
+size(gray_gate_cap,5,2).
+area(gray_gate_cap,10).
+cell_runs(gray_gate_cap,[rows(45,46,24,28)]).
+shape(gray_gate_cap,solid_rectangle).
+orientation(gray_gate_cap,horizontal).
+component_of(gray_gate_cap,bottom_center_gate).
+touches(gray_gate_cap,red_gate_base).
+confidence(gray_gate_cap,1.0).
 
-object(toolbar_dark_segment, status_segment).
-bbox(toolbar_dark_segment, 160, 610, 390, 20).
-object_colors(toolbar_dark_segment, [dark_gray]).
-geometry(toolbar_dark_segment, rectangle(160,610,390,20)).
-contained_in(toolbar_dark_segment, bottom_toolbar).
-adjacent(toolbar_dark_segment, toolbar_green_segment, left_edge).
-layer(toolbar_dark_segment, 13).
-turtle_program(toolbar_dark_segment,
-    [penup,set_pos(160,610),setcolor(dark_gray),pendown,fill_rect(390,20),penup]).
+object(red_gate_base,rectangle,current).
+color(red_gate_base,dark_red).
+bbox(red_gate_base,24,47,5,3).
+size(red_gate_base,5,3).
+area(red_gate_base,15).
+cell_runs(red_gate_base,[rows(47,49,24,28)]).
+shape(red_gate_base,solid_rectangle).
+orientation(red_gate_base,horizontal).
+component_of(red_gate_base,bottom_center_gate).
+touches(red_gate_base,gray_gate_cap).
+confidence(red_gate_base,1.0).
 
-object(toolbar_blue_slot_1, status_slot).
-bbox(toolbar_blue_slot_1, 560, 610, 20, 20).
-object_colors(toolbar_blue_slot_1, [light_blue]).
-geometry(toolbar_blue_slot_1, rectangle(560,610,20,20)).
-contained_in(toolbar_blue_slot_1, bottom_toolbar).
-layer(toolbar_blue_slot_1, 13).
-turtle_program(toolbar_blue_slot_1,
-    [penup,set_pos(560,610),setcolor(light_blue),pendown,fill_rect(20,20),penup]).
+object(lower_left_control_panel,panel,current).
+colors(lower_left_control_panel,[gray,dark_red]).
+bbox(lower_left_control_panel,1,53,10,10).
+size(lower_left_control_panel,10,10).
+area(lower_left_control_panel,100).
+cell_runs(lower_left_control_panel,[rows(53,62,1,10)]).
+shape(lower_left_control_panel,square_panel).
+contains(lower_left_control_panel,lower_left_red_hook_glyph).
+contains(lower_left_control_panel,lower_left_red_square).
+role(lower_left_control_panel,control_panel).
+confidence(lower_left_control_panel,1.0).
 
-object(toolbar_blue_slot_2, status_slot).
-bbox(toolbar_blue_slot_2, 590, 610, 20, 20).
-object_colors(toolbar_blue_slot_2, [light_blue]).
-geometry(toolbar_blue_slot_2, rectangle(590,610,20,20)).
-contained_in(toolbar_blue_slot_2, bottom_toolbar).
-layer(toolbar_blue_slot_2, 13).
-turtle_program(toolbar_blue_slot_2,
-    [penup,set_pos(590,610),setcolor(light_blue),pendown,fill_rect(20,20),penup]).
+object(lower_left_red_hook_glyph,glyph,current).
+color(lower_left_red_hook_glyph,dark_red).
+bbox(lower_left_red_hook_glyph,3,55,6,6).
+size(lower_left_red_hook_glyph,6,6).
+area(lower_left_red_hook_glyph,20).
+cell_runs(lower_left_red_hook_glyph,[rows(55,56,3,8),rows(57,60,3,4)]).
+shape(lower_left_red_hook_glyph,thick_hook).
+inside(lower_left_red_hook_glyph,lower_left_control_panel).
+confidence(lower_left_red_hook_glyph,1.0).
 
-object(toolbar_blue_slot_3, status_slot).
-bbox(toolbar_blue_slot_3, 620, 610, 20, 20).
-object_colors(toolbar_blue_slot_3, [light_blue]).
-geometry(toolbar_blue_slot_3, rectangle(620,610,20,20)).
-contained_in(toolbar_blue_slot_3, bottom_toolbar).
-touches_canvas_edge(toolbar_blue_slot_3, right).
-layer(toolbar_blue_slot_3, 13).
-turtle_program(toolbar_blue_slot_3,
-    [penup,set_pos(620,610),setcolor(light_blue),pendown,fill_rect(20,20),penup]).
+object(lower_left_red_square,glyph_component,current).
+color(lower_left_red_square,dark_red).
+bbox(lower_left_red_square,7,59,2,2).
+size(lower_left_red_square,2,2).
+area(lower_left_red_square,4).
+cell_runs(lower_left_red_square,[rows(59,60,7,8)]).
+shape(lower_left_red_square,solid_square).
+inside(lower_left_red_square,lower_left_control_panel).
+aligned_with(lower_left_red_square,lower_left_red_hook_glyph,right_edge).
+confidence(lower_left_red_square,1.0).
 
-aligned_vertical(top_terminal_panel, main_green_structure).
-aligned_vertical(top_terminal_glyph, lower_terminal).
-aligned_horizontal(player, main_cutout).
-above(top_terminal_panel, player).
-above(player, lower_terminal).
-left_of(lower_left_panel, bottom_toolbar).
-disjoint(lower_left_panel, bottom_toolbar).
-render_order([
-    background,
-    left_sidebar,
-    main_green_structure,
-    main_cutout,
-    top_terminal_panel,
-    top_terminal_glyph,
-    player_black,
-    player_blue,
-    lower_terminal_cap,
-    lower_terminal_core,
-    lower_left_panel,
-    lower_left_glyph,
-    bottom_toolbar,
-    toolbar_green_segment,
-    toolbar_dark_segment,
-    toolbar_blue_slot_1,
-    toolbar_blue_slot_2,
-    toolbar_blue_slot_3
+object(bottom_status_panel,interface_bar,current).
+colors(bottom_status_panel,[gray,dark_gray,green,cyan]).
+bbox(bottom_status_panel,12,60,52,4).
+size(bottom_status_panel,52,4).
+area(bottom_status_panel,208).
+cell_runs(bottom_status_panel,[rows(60,63,12,63)]).
+shape(bottom_status_panel,horizontal_status_panel).
+orientation(bottom_status_panel,horizontal).
+contains(bottom_status_panel,bottom_dark_status_bar).
+contains(bottom_status_panel,bottom_green_status_bar).
+contains(bottom_status_panel,left_cyan_status_cell).
+contains(bottom_status_panel,middle_cyan_status_cell).
+contains(bottom_status_panel,right_cyan_status_cell).
+role(bottom_status_panel,status_display).
+confidence(bottom_status_panel,1.0).
+
+object(bottom_dark_status_bar,bar,current).
+color(bottom_dark_status_bar,dark_gray).
+bbox(bottom_dark_status_bar,15,61,40,2).
+size(bottom_dark_status_bar,40,2).
+area(bottom_dark_status_bar,80).
+cell_runs(bottom_dark_status_bar,[rows(61,62,15,54)]).
+shape(bottom_dark_status_bar,solid_rectangle).
+orientation(bottom_dark_status_bar,horizontal).
+component_of(bottom_dark_status_bar,bottom_status_panel).
+adjacent(bottom_dark_status_bar,bottom_green_status_bar).
+confidence(bottom_dark_status_bar,1.0).
+
+object(bottom_green_status_bar,bar,current).
+color(bottom_green_status_bar,green).
+bbox(bottom_green_status_bar,13,61,2,2).
+size(bottom_green_status_bar,2,2).
+area(bottom_green_status_bar,4).
+cell_runs(bottom_green_status_bar,[rows(61,62,13,14)]).
+shape(bottom_green_status_bar,solid_square).
+component_of(bottom_green_status_bar,bottom_status_panel).
+adjacent(bottom_green_status_bar,bottom_dark_status_bar).
+role(bottom_green_status_bar,progress_indicator).
+confidence(bottom_green_status_bar,1.0).
+
+object(left_cyan_status_cell,indicator,current).
+color(left_cyan_status_cell,cyan).
+bbox(left_cyan_status_cell,56,61,2,2).
+size(left_cyan_status_cell,2,2).
+area(left_cyan_status_cell,4).
+cell_runs(left_cyan_status_cell,[rows(61,62,56,57)]).
+shape(left_cyan_status_cell,solid_square).
+component_of(left_cyan_status_cell,bottom_status_panel).
+confidence(left_cyan_status_cell,1.0).
+
+object(middle_cyan_status_cell,indicator,current).
+color(middle_cyan_status_cell,cyan).
+bbox(middle_cyan_status_cell,59,61,2,2).
+size(middle_cyan_status_cell,2,2).
+area(middle_cyan_status_cell,4).
+cell_runs(middle_cyan_status_cell,[rows(61,62,59,60)]).
+shape(middle_cyan_status_cell,solid_square).
+component_of(middle_cyan_status_cell,bottom_status_panel).
+aligned_with(middle_cyan_status_cell,left_cyan_status_cell,horizontal_centerline).
+confidence(middle_cyan_status_cell,1.0).
+
+object(right_cyan_status_cell,indicator,current).
+color(right_cyan_status_cell,cyan).
+bbox(right_cyan_status_cell,62,61,2,2).
+size(right_cyan_status_cell,2,2).
+area(right_cyan_status_cell,4).
+cell_runs(right_cyan_status_cell,[rows(61,62,62,63)]).
+shape(right_cyan_status_cell,solid_square).
+component_of(right_cyan_status_cell,bottom_status_panel).
+aligned_with(right_cyan_status_cell,middle_cyan_status_cell,horizontal_centerline).
+confidence(right_cyan_status_cell,1.0).
+
+turtle_program(bottom_center_gate,[penup,setcolor(gray),pen_width(2),set_pos(24,45),pendown,fwd(4),penup,setcolor(dark_red),pen_width(3),set_pos(24,47),pendown,fwd(4),penup]).
+turtle_program(bottom_green_status_bar,[penup,setcolor(green),pen_width(2),set_pos(13,61),pendown,fwd(1),penup]).
+turtle_program(blue_black_player,[penup,setcolor(black),pen_width(1),set_pos(21,31),pendown,rot(90),fwd(1),rot(-90),fwd(1),penup,setcolor(blue),set_pos(20,32),set_cell,set_pos(21,33),set_cell]).
+````
+
+[Open `objects.pl`](objects.pl)
+
+</details>
+
+<details>
+<summary><code>redraw.pl</code></summary>
+
+````prolog
+canvas(640, 640, top_left).
+
+turtle(1, fill_rect(0, 0, 640, 640, '#FFDC00')).
+
+turtle(2, fill_rect(0, 0, 40, 520, '#AAAAAA')).
+
+turtle(10, fill_rect(320, 80, 90, 90, '#2ECC40')).
+turtle(11, fill_rect(330, 90, 70, 70, '#AAAAAA')).
+turtle(12, fill_rect(340, 160, 50, 100, '#2ECC40')).
+
+turtle(20, fill_rect(140, 250, 400, 250, '#2ECC40')).
+turtle(21, fill_rect(290, 300, 50, 100, '#FFDC00')).
+turtle(22, fill_rect(140, 400, 50, 100, '#FFDC00')).
+turtle(23, fill_rect(240, 400, 100, 50, '#FFDC00')).
+
+turtle(30, fill_rect(350, 110, 30, 10, '#85144B')).
+turtle(31, fill_rect(370, 110, 10, 30, '#85144B')).
+turtle(32, fill_rect(350, 130, 10, 10, '#85144B')).
+
+turtle(40, fill_rect(200, 320, 10, 10, '#0074D9')).
+turtle(41, fill_rect(210, 330, 10, 10, '#0074D9')).
+turtle(42, fill_rect(210, 310, 10, 20, '#000000')).
+turtle(43, fill_rect(220, 320, 10, 10, '#000000')).
+
+turtle(50, fill_rect(240, 450, 50, 20, '#AAAAAA')).
+turtle(51, fill_rect(240, 470, 50, 30, '#85144B')).
+
+turtle(60, fill_rect(10, 530, 100, 100, '#AAAAAA')).
+turtle(61, fill_rect(30, 550, 60, 20, '#85144B')).
+turtle(62, fill_rect(30, 550, 20, 60, '#85144B')).
+turtle(63, fill_rect(70, 590, 20, 20, '#85144B')).
+
+turtle(70, fill_rect(120, 600, 520, 40, '#AAAAAA')).
+turtle(71, fill_rect(130, 610, 420, 20, '#666666')).
+turtle(72, fill_rect(560, 610, 20, 20, '#7FDBFF')).
+turtle(73, fill_rect(590, 610, 20, 20, '#7FDBFF')).
+turtle(74, fill_rect(620, 610, 20, 20, '#7FDBFF')).
+````
+
+[Open `redraw.pl`](redraw.pl)
+
+</details>
+
+<details>
+<summary><code>redraw_diff.pl</code></summary>
+
+````prolog
+patch([
+    fill_rect(130, 610, 20, 20, rgb(102, 102, 102))
 ]).
-```
+````
 
-## `differences.pl`
+[Open `redraw_diff.pl`](redraw_diff.pl)
 
-```prolog
-comparison_basis(rendered_pixels_and_supplied_object_descriptions).
+</details>
 
-cell_scale(10).
+<details>
+<summary><code>rules.pl</code></summary>
 
-color_equivalent(gray, light_gray).
-color_equivalent(cyan, light_blue).
+````prolog
+observed_rule(action2_no_change_in_observed_transition,holds_for_transition(parent,current,action2,no_changed_cells)).
+evidence(action2_no_change_in_observed_transition,evidence_full_grid_identity,cellwise_comparison(bbox(0,0,64,64),matched_cells(4096),changed_cells(0))).
+evidence(action2_no_change_in_observed_transition,evidence_player_identity,player_cells([cell(21,31,black),cell(20,32,blue),cell(21,32,black),cell(22,32,black),cell(21,33,blue)])).
+supported_by(action2_no_change_in_observed_transition,evidence_full_grid_identity).
+supported_by(action2_no_change_in_observed_transition,evidence_player_identity).
+confidence(action2_no_change_in_observed_transition,1.0).
+````
 
-object_correspondence(background_1, background).
-object_correspondence(left_wall_1, left_sidebar).
-object_correspondence(structure_1, main_green_structure).
-object_correspondence(chamber_1, top_terminal_panel).
-object_correspondence(chamber_glyph_1, top_terminal_glyph).
-object_correspondence(player_1, player).
-object_correspondence(portal_cap_1, lower_terminal_cap).
-object_correspondence(portal_1, lower_terminal_core).
-object_correspondence(control_panel_1, lower_left_panel).
-object_correspondence(control_glyph_1, lower_left_glyph).
-object_correspondence(status_panel_1, bottom_toolbar).
-object_correspondence(status_green_1, toolbar_green_segment).
-object_correspondence(status_bar_1, toolbar_dark_segment).
-object_correspondence(status_slot_1, toolbar_blue_slot_1).
-object_correspondence(status_slot_2, toolbar_blue_slot_2).
-object_correspondence(status_slot_3, toolbar_blue_slot_3).
+[Open `rules.pl`](rules.pl)
 
-observation(unchanged_object(background_1, background)).
-observation(unchanged_object(left_wall_1, left_sidebar)).
-observation(unchanged_object(structure_1, main_green_structure)).
-observation(unchanged_object(chamber_1, top_terminal_panel)).
-observation(unchanged_object(chamber_glyph_1, top_terminal_glyph)).
-observation(unchanged_object(player_1, player)).
-observation(unchanged_object(portal_cap_1, lower_terminal_cap)).
-observation(unchanged_object(portal_1, lower_terminal_core)).
-observation(unchanged_object(control_panel_1, lower_left_panel)).
-observation(unchanged_object(control_glyph_1, lower_left_glyph)).
-observation(unchanged_object(status_panel_1, bottom_toolbar)).
-observation(unchanged_object(status_slot_1, toolbar_blue_slot_1)).
-observation(unchanged_object(status_slot_2, toolbar_blue_slot_2)).
-observation(unchanged_object(status_slot_3, toolbar_blue_slot_3)).
+</details>
 
-observation(changed_object(
-    status_green_1,
-    toolbar_green_segment,
-    [resized(size(20,20), size(30,20)),
-     right_edge_shifted(150,160)]
-)).
+<details>
+<summary><code>similarities.pl</code></summary>
 
-observation(changed_object(
-    status_bar_1,
-    toolbar_dark_segment,
-    [moved(point(150,610), point(160,610)),
-     resized(size(400,20), size(390,20)),
-     left_edge_shifted(150,160),
-     right_edge_unchanged(550)]
-)).
+````prolog
+correspondence(parent,current,yellow_playfield,yellow_playfield).
+similarity_score(parent,current,yellow_playfield,1.0).
+matched_properties(parent,current,yellow_playfield,[color,bbox,area,cell_runs,shape]).
+changed_properties(parent,current,yellow_playfield,[]).
+correspondence_evidence(parent,current,yellow_playfield,exact_color_geometry_and_cells).
 
-observation(resized_object(
-    status_green_1,
-    toolbar_green_segment,
-    resize(size(20,20), size(30,20))
-)).
+correspondence(parent,current,left_gray_border,left_gray_border).
+similarity_score(parent,current,left_gray_border,1.0).
+matched_properties(parent,current,left_gray_border,[color,bbox,size,area,cell_runs,shape]).
+changed_properties(parent,current,left_gray_border,[]).
+correspondence_evidence(parent,current,left_gray_border,exact_color_geometry_and_cells).
 
-observation(resized_object(
-    status_bar_1,
-    toolbar_dark_segment,
-    resize(size(400,20), size(390,20))
-)).
+correspondence(parent,current,green_maze_structure,green_maze_structure).
+similarity_score(parent,current,green_maze_structure,1.0).
+matched_properties(parent,current,green_maze_structure,[color,bbox,area,cell_runs,shape]).
+changed_properties(parent,current,green_maze_structure,[]).
+correspondence_evidence(parent,current,green_maze_structure,exact_color_geometry_and_cells).
 
-observation(moved_object(
-    status_bar_1,
-    toolbar_dark_segment,
-    point(150,610),
-    point(160,610)
-)).
+correspondence(parent,current,green_upper_chamber_frame,green_upper_chamber_frame).
+similarity_score(parent,current,green_upper_chamber_frame,1.0).
+matched_properties(parent,current,green_upper_chamber_frame,[color,bbox,size,area,cell_runs,shape]).
+changed_properties(parent,current,green_upper_chamber_frame,[]).
+correspondence_evidence(parent,current,green_upper_chamber_frame,exact_color_geometry_and_cells).
 
-observation(pixel_region_recolored(
-    rectangle(150,610,10,20),
-    dark_gray,
-    green
-)).
+correspondence(parent,current,gray_upper_chamber_interior,gray_upper_chamber_interior).
+similarity_score(parent,current,gray_upper_chamber_interior,1.0).
+matched_properties(parent,current,gray_upper_chamber_interior,[color,bbox,size,area,cell_runs,shape]).
+changed_properties(parent,current,gray_upper_chamber_interior,[]).
+correspondence_evidence(parent,current,gray_upper_chamber_interior,exact_color_geometry_and_cells).
 
-observation(status_boundary_shift(
-    boundary(status_green_1, status_bar_1),
-    boundary(toolbar_green_segment, toolbar_dark_segment),
-    delta(10,0)
-)).
+correspondence(parent,current,upper_red_hook_glyph,upper_red_hook_glyph).
+similarity_score(parent,current,upper_red_hook_glyph,1.0).
+matched_properties(parent,current,upper_red_hook_glyph,[color,bbox,size,area,cell_runs,shape]).
+changed_properties(parent,current,upper_red_hook_glyph,[]).
+correspondence_evidence(parent,current,upper_red_hook_glyph,exact_color_geometry_and_cells).
 
-observation(total_status_meter_extent_unchanged(
-    interval(130,550),
-    interval(130,550)
-)).
+correspondence(parent,current,upper_red_square,upper_red_square).
+similarity_score(parent,current,upper_red_square,1.0).
+matched_properties(parent,current,upper_red_square,[color,bbox,size,area,occupied_cells,shape]).
+changed_properties(parent,current,upper_red_square,[]).
+correspondence_evidence(parent,current,upper_red_square,exact_color_geometry_and_cells).
 
-observation(no_scene_object_added).
-observation(no_scene_object_removed).
-observation(no_whole_object_recolored).
-observation(no_player_motion).
-observation(no_terminal_change).
-observation(no_canvas_size_change).
+correspondence(parent,current,green_chamber_stem,green_chamber_stem).
+similarity_score(parent,current,green_chamber_stem,1.0).
+matched_properties(parent,current,green_chamber_stem,[color,bbox,size,area,cell_runs,shape]).
+changed_properties(parent,current,green_chamber_stem,[]).
+correspondence_evidence(parent,current,green_chamber_stem,exact_color_geometry_and_cells).
 
-representation_change(structure_1, main_green_structure,
-    explicit_negative_space(main_cutout)).
-representation_change(player_1, player,
-    decomposed_into([player_black, player_blue])).
-representation_change(lower_terminal_pair, lower_terminal,
-    composite_grouping([lower_terminal_cap, lower_terminal_core])).
-representation_change(gray, light_gray, palette_name_only).
-representation_change(cyan, light_blue, palette_name_only).
+correspondence(parent,current,green_main_platform,green_main_platform).
+similarity_score(parent,current,green_main_platform,1.0).
+matched_properties(parent,current,green_main_platform,[color,bbox,size,area,cell_runs,shape]).
+changed_properties(parent,current,green_main_platform,[]).
+correspondence_evidence(parent,current,green_main_platform,exact_color_geometry_and_cells).
 
-representation_added_object(main_cutout).
-representation_added_component(player_black).
-representation_added_component(player_blue).
-representation_added_composite(player).
-representation_added_composite(lower_terminal).
+correspondence(parent,current,yellow_inner_cavity,yellow_inner_cavity).
+similarity_score(parent,current,yellow_inner_cavity,1.0).
+matched_properties(parent,current,yellow_inner_cavity,[color,bbox,size,area,cell_runs,shape]).
+changed_properties(parent,current,yellow_inner_cavity,[]).
+correspondence_evidence(parent,current,yellow_inner_cavity,exact_color_geometry_and_cells).
 
-hypothesis(action_effect(
-    last_action,
-    advanced_status_meter(one_cell)
-)).
+correspondence(parent,current,blue_black_player,blue_black_player).
+similarity_score(parent,current,blue_black_player,1.0).
+matched_properties(parent,current,blue_black_player,[colors,bbox,size,area,occupied_cells,shape]).
+changed_properties(parent,current,blue_black_player,[]).
+correspondence_evidence(parent,current,blue_black_player,exact_color_geometry_and_cells).
 
-hypothesis(action_effect(
-    last_action,
-    transferred_status_area(dark_gray, green, rectangle(150,610,10,20))
-)).
+correspondence(parent,current,black_player_head,black_player_head).
+similarity_score(parent,current,black_player_head,1.0).
+matched_properties(parent,current,black_player_head,[color,bbox,size,area,occupied_cells,shape]).
+changed_properties(parent,current,black_player_head,[]).
+correspondence_evidence(parent,current,black_player_head,exact_color_geometry_and_cells).
 
-hypothesis(status_meter_semantics(
-    toolbar_green_segment,
-    completed_or_available_amount
-)).
+correspondence(parent,current,blue_player_tail,blue_player_tail).
+similarity_score(parent,current,blue_player_tail,1.0).
+matched_properties(parent,current,blue_player_tail,[color,bbox,size,area,occupied_cells,shape]).
+changed_properties(parent,current,blue_player_tail,[]).
+correspondence_evidence(parent,current,blue_player_tail,exact_color_geometry_and_cells).
 
-hypothesis(status_meter_semantics(
-    toolbar_dark_segment,
-    remaining_amount
-)).
+correspondence(parent,current,bottom_center_gate,bottom_center_gate).
+similarity_score(parent,current,bottom_center_gate,1.0).
+matched_properties(parent,current,bottom_center_gate,[colors,bbox,size,area,cell_runs,shape]).
+changed_properties(parent,current,bottom_center_gate,[]).
+correspondence_evidence(parent,current,bottom_center_gate,exact_color_geometry_and_cells).
 
-hypothesis_confidence(advanced_status_meter(one_cell), high).
-hypothesis_confidence(status_meter_semantics, medium).
+correspondence(parent,current,gray_gate_cap,gray_gate_cap).
+similarity_score(parent,current,gray_gate_cap,1.0).
+matched_properties(parent,current,gray_gate_cap,[color,bbox,size,area,cell_runs,shape]).
+changed_properties(parent,current,gray_gate_cap,[]).
+correspondence_evidence(parent,current,gray_gate_cap,exact_color_geometry_and_cells).
 
-added_object(Object) :-
-    observation(added_object(Object)).
+correspondence(parent,current,red_gate_base,red_gate_base).
+similarity_score(parent,current,red_gate_base,1.0).
+matched_properties(parent,current,red_gate_base,[color,bbox,size,area,cell_runs,shape]).
+changed_properties(parent,current,red_gate_base,[]).
+correspondence_evidence(parent,current,red_gate_base,exact_color_geometry_and_cells).
 
-removed_object(Object) :-
-    observation(removed_object(Object)).
+correspondence(parent,current,lower_left_control_panel,lower_left_control_panel).
+similarity_score(parent,current,lower_left_control_panel,1.0).
+matched_properties(parent,current,lower_left_control_panel,[colors,bbox,size,area,cell_runs,shape]).
+changed_properties(parent,current,lower_left_control_panel,[]).
+correspondence_evidence(parent,current,lower_left_control_panel,exact_color_geometry_and_cells).
 
-changed_object(Previous, Current, Changes) :-
-    observation(changed_object(Previous, Current, Changes)).
+correspondence(parent,current,lower_left_red_hook_glyph,lower_left_red_hook_glyph).
+similarity_score(parent,current,lower_left_red_hook_glyph,1.0).
+matched_properties(parent,current,lower_left_red_hook_glyph,[color,bbox,size,area,cell_runs,shape]).
+changed_properties(parent,current,lower_left_red_hook_glyph,[]).
+correspondence_evidence(parent,current,lower_left_red_hook_glyph,exact_color_geometry_and_cells).
 
-moved_object(Previous, Current, From, To) :-
-    observation(moved_object(Previous, Current, From, To)).
+correspondence(parent,current,lower_left_red_square,lower_left_red_square).
+similarity_score(parent,current,lower_left_red_square,1.0).
+matched_properties(parent,current,lower_left_red_square,[color,bbox,size,area,cell_runs,shape]).
+changed_properties(parent,current,lower_left_red_square,[]).
+correspondence_evidence(parent,current,lower_left_red_square,exact_color_geometry_and_cells).
 
-recolored_object(Previous, Current, Recoloring) :-
-    observation(recolored_object(Previous, Current, Recoloring)).
+correspondence(parent,current,bottom_status_panel,bottom_status_panel).
+similarity_score(parent,current,bottom_status_panel,1.0).
+matched_properties(parent,current,bottom_status_panel,[colors,bbox,size,area,cell_runs,shape]).
+changed_properties(parent,current,bottom_status_panel,[]).
+correspondence_evidence(parent,current,bottom_status_panel,exact_color_geometry_and_cells).
 
-resized_object(Previous, Current, Resizing) :-
-    observation(resized_object(Previous, Current, Resizing)).
+correspondence(parent,current,bottom_dark_status_bar,bottom_dark_status_bar).
+similarity_score(parent,current,bottom_dark_status_bar,1.0).
+matched_properties(parent,current,bottom_dark_status_bar,[color,bbox,size,area,cell_runs,shape]).
+changed_properties(parent,current,bottom_dark_status_bar,[]).
+correspondence_evidence(parent,current,bottom_dark_status_bar,exact_color_geometry_and_cells).
 
-unchanged_object(Previous, Current) :-
-    observation(unchanged_object(Previous, Current)).
+correspondence(parent,current,bottom_green_status_bar,bottom_green_status_bar).
+similarity_score(parent,current,bottom_green_status_bar,1.0).
+matched_properties(parent,current,bottom_green_status_bar,[color,bbox,size,area,cell_runs,shape]).
+changed_properties(parent,current,bottom_green_status_bar,[]).
+correspondence_evidence(parent,current,bottom_green_status_bar,exact_color_geometry_and_cells).
 
-action_effect(Action, Effect) :-
-    hypothesis(action_effect(Action, Effect)).
+correspondence(parent,current,left_cyan_status_cell,left_cyan_status_cell).
+similarity_score(parent,current,left_cyan_status_cell,1.0).
+matched_properties(parent,current,left_cyan_status_cell,[color,bbox,size,area,cell_runs,shape]).
+changed_properties(parent,current,left_cyan_status_cell,[]).
+correspondence_evidence(parent,current,left_cyan_status_cell,exact_color_geometry_and_cells).
 
-scene_object_added(Object) :-
-    added_object(Object).
+correspondence(parent,current,middle_cyan_status_cell,middle_cyan_status_cell).
+similarity_score(parent,current,middle_cyan_status_cell,1.0).
+matched_properties(parent,current,middle_cyan_status_cell,[color,bbox,size,area,cell_runs,shape]).
+changed_properties(parent,current,middle_cyan_status_cell,[]).
+correspondence_evidence(parent,current,middle_cyan_status_cell,exact_color_geometry_and_cells).
 
-scene_object_removed(Object) :-
-    removed_object(Object).
+correspondence(parent,current,right_cyan_status_cell,right_cyan_status_cell).
+similarity_score(parent,current,right_cyan_status_cell,1.0).
+matched_properties(parent,current,right_cyan_status_cell,[color,bbox,size,area,cell_runs,shape]).
+changed_properties(parent,current,right_cyan_status_cell,[]).
+correspondence_evidence(parent,current,right_cyan_status_cell,exact_color_geometry_and_cells).
+````
 
-representation_only_change(Previous, Current) :-
-    representation_change(Previous, Current, _),
-    \+ changed_object(Previous, Current, _).
+[Open `similarities.pl`](similarities.pl)
 
-status_meter_advanced_by_cells(Cells) :-
-    observation(status_boundary_shift(_, _, delta(DX,0))),
-    cell_scale(Scale),
-    Cells is DX // Scale.
+</details>
 
-status_meter_advanced_by_pixels(Pixels) :-
-    observation(status_boundary_shift(_, _, delta(Pixels,0))).
+<details>
+<summary><code>turtle_from_diff.pl</code></summary>
 
-only_rendered_change(rectangle(150,610,10,20)) :-
-    observation(pixel_region_recolored(
-        rectangle(150,610,10,20),
-        dark_gray,
-        green
-    )),
-    observation(no_player_motion),
-    observation(no_terminal_change),
-    observation(no_scene_object_added),
-    observation(no_scene_object_removed).
-```
+````prolog
+turtle_program(parent_to_current_patch,[penup]).
+````
+
+[Open `turtle_from_diff.pl`](turtle_from_diff.pl)
+
+</details>
+
+<details>
+<summary><code>turtle_from_image.pl</code></summary>
+
+````prolog
+turtle_program(current_grid,[penup,setcolor(yellow),pen_width(4),set_pos(0,0),pendown,fwd(63),penup,set_pos(0,4),pendown,fwd(63),penup,set_pos(0,8),pendown,fwd(63),penup,set_pos(0,12),pendown,fwd(63),penup,set_pos(0,16),pendown,fwd(63),penup,set_pos(0,20),pendown,fwd(63),penup,set_pos(0,24),pendown,fwd(63),penup,set_pos(0,28),pendown,fwd(63),penup,set_pos(0,32),pendown,fwd(63),penup,set_pos(0,36),pendown,fwd(63),penup,set_pos(0,40),pendown,fwd(63),penup,set_pos(0,44),pendown,fwd(63),penup,set_pos(0,48),pendown,fwd(63),penup,set_pos(0,52),pendown,fwd(63),penup,set_pos(0,56),pendown,fwd(63),penup,set_pos(0,60),pendown,fwd(63),penup,setcolor(gray),pen_width(4),set_pos(0,0),rot(90),pendown,fwd(51),penup,rot(-90),setcolor(green),pen_width(1),set_pos(32,8),pendown,fwd(8),penup,set_pos(32,9),rot(90),pendown,fwd(6),penup,rot(-90),set_pos(40,9),rot(90),pendown,fwd(6),penup,rot(-90),set_pos(32,16),pendown,fwd(8),penup,setcolor(gray),pen_width(4),set_pos(33,9),pendown,fwd(6),penup,setcolor(gray),pen_width(3),set_pos(33,13),pendown,fwd(6),penup,setcolor(dark_red),pen_width(1),set_pos(35,11),pendown,fwd(2),penup,set_pos(37,12),rot(90),pendown,fwd(1),penup,rot(-90),set_pos(35,13),set_cell,setcolor(green),pen_width(4),set_pos(34,17),pendown,fwd(4),penup,set_pos(34,21),pendown,fwd(4),penup,set_pos(14,25),pendown,fwd(39),penup,pen_width(1),set_pos(14,29),pendown,fwd(39),penup,pen_width(4),set_pos(14,30),pendown,fwd(14),penup,set_pos(14,34),pendown,fwd(14),penup,pen_width(2),set_pos(14,38),pendown,fwd(14),penup,pen_width(4),set_pos(34,30),pendown,fwd(19),penup,set_pos(34,34),pendown,fwd(19),penup,set_pos(34,38),pendown,fwd(19),penup,pen_width(3),set_pos(34,42),pendown,fwd(19),penup,pen_width(4),set_pos(19,40),pendown,fwd(4),penup,set_pos(19,44),pendown,fwd(4),penup,pen_width(2),set_pos(19,48),pendown,fwd(4),penup,pen_width(4),set_pos(29,45),pendown,fwd(24),penup,pen_width(1),set_pos(29,49),pendown,fwd(24),penup,setcolor(gray),pen_width(2),set_pos(24,45),pendown,fwd(4),penup,setcolor(dark_red),pen_width(3),set_pos(24,47),pendown,fwd(4),penup,setcolor(black),pen_width(1),set_pos(21,31),pendown,rot(90),fwd(1),rot(-90),fwd(1),penup,setcolor(blue),set_pos(20,32),set_cell,set_pos(21,33),set_cell,setcolor(gray),pen_width(4),set_pos(1,53),pendown,fwd(9),penup,set_pos(1,57),pendown,fwd(9),penup,pen_width(2),set_pos(1,61),pendown,fwd(9),penup,setcolor(dark_red),pen_width(2),set_pos(3,55),pendown,fwd(5),penup,set_pos(3,57),rot(90),pendown,fwd(3),penup,rot(-90),set_pos(7,59),pendown,fwd(1),penup,setcolor(gray),pen_width(4),set_pos(12,60),pendown,fwd(51),penup,setcolor(dark_gray),pen_width(2),set_pos(15,61),pendown,fwd(39),penup,setcolor(green),set_pos(13,61),pendown,fwd(1),penup,setcolor(cyan),set_pos(56,61),pendown,fwd(1),penup,set_pos(59,61),pendown,fwd(1),penup,set_pos(62,61),pendown,fwd(1),penup]).
+````
+
+[Open `turtle_from_image.pl`](turtle_from_image.pl)
+
+</details>

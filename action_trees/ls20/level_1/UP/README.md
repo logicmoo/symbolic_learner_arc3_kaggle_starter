@@ -6,11 +6,11 @@
 
 ### Actions
 
-[`UP`](UP/README.md)
+[`DOWN`](DOWN/README.md) · [`UP`](UP/README.md)
 
 ---
 
-- **Full game ID:** `ls20-9607627b`
+- **Full game ID:** `ls20`
 - **State:** `NOT_FINISHED`
 - **Image hash:** `aa5950876442c616`
 - **Incoming action:** `ACTION1`
@@ -23,7 +23,7 @@
 
 - [image.png](image.png)
 - [state.json](state.json)
-- [object_registry.pl](../object_registry.pl) — shared level registry (24 canonical identities)
+- [object_registry.pl](../object_registry.pl) — shared level registry (25 canonical identities)
 
 ## Embedded files
 
@@ -37,6 +37,7 @@
   "state": "NOT_FINISHED",
   "level": "1",
   "level_source": "default",
+  "next_level_expected": null,
   "observation": {
     "game_id": "ls20-9607627b",
     "state": "NOT_FINISHED",
@@ -47,7 +48,7 @@
       "data": {},
       "reasoning": null
     },
-    "guid": "90fdd99d-e99b-4519-aefb-0d1d499b9895",
+    "guid": "19932de0-785e-4ecb-9e62-22098df36105",
     "full_reset": false,
     "available_actions": [
       1,
@@ -57,7 +58,7 @@
     ]
   },
   "step_count": 0,
-  "game_id": "ls20-9607627b",
+  "game_id": "ls20",
   "game_directory": "ls20",
   "image_hash": "aa5950876442c616",
   "incoming_action": "ACTION1",

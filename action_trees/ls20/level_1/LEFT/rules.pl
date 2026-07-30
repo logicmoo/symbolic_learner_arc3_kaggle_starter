@@ -1,188 +1,36 @@
-action_path(['ACTION3']).
+observed_rule(action3_gate_translation,translates(bottom_center_gate,delta(-5,0))).
+observed_rule(action3_status_change,recolors([rows(61,62,13,13)],dark_gray,green)).
+observed_rule(action3_gate_preservation,preserves(bottom_center_gate,[size(5,5),colors([gray,dark_red]),internal_partition])).
 
-evidence_reference(e_action3,
-    action_history,
-    incoming_action('ACTION3', empty_parameters)).
+evidence(action3_gate_translation,parent_gate_bbox,bbox(34,45,5,5)).
+evidence(action3_gate_translation,current_gate_bbox,bbox(29,45,5,5)).
+evidence(action3_status_change,parent_status_cells,color(dark_gray,[cell(13,61),cell(13,62)])).
+evidence(action3_status_change,current_status_cells,color(green,[cell(13,61),cell(13,62)])).
+evidence(action3_gate_preservation,current_gate_geometry,[gray(rows(45,46,29,33)),dark_red(rows(47,49,29,33))]).
 
-evidence_reference(e_gate_shift,
-    differences_pl,
-    movement(bottom_center_gate, grid_delta(-5, 0))).
+supported_by(action3_gate_translation,parent_gate_bbox).
+supported_by(action3_gate_translation,current_gate_bbox).
+supported_by(action3_status_change,parent_status_cells).
+supported_by(action3_status_change,current_status_cells).
+supported_by(action3_gate_preservation,current_gate_geometry).
 
-evidence_reference(e_gate_components_shift,
-    differences_pl,
-    rigid_component_movement(
-        [gray_gate_cap, red_gate_base],
-        grid_delta(-5, 0))).
+hypothetical_rule(gate_targets_cavity_exit,assumes(action3_selects_leftward_gate_position),places(bottom_center_gate,directly_below(yellow_inner_cavity))).
+hypothetical_rule(status_records_action3_progress,assumes(bottom_green_status_bar_is_progress),increments_green_status_by(one_column_two_cells)).
+hypothetical_rule(gate_motion_uses_gate_width,assumes(discrete_gate_positions),moves_horizontally_by(one_gate_width)).
 
-evidence_reference(e_gate_current_position,
-    objects_pl,
-    component_regions(
-        gray_gate_cap, grid_rect(29, 45, 5, 2),
-        red_gate_base, grid_rect(29, 47, 5, 3))).
+evidence(gate_targets_cavity_exit,cavity_bottom_run,rows(40,44,24,33)).
+evidence(gate_targets_cavity_exit,current_gate_top_run,rows(45,46,29,33)).
+evidence(status_records_action3_progress,new_green_segment,[rows(61,62,13,13)]).
+evidence(gate_motion_uses_gate_width,translation_and_width,[delta_x(-5),gate_width(5)]).
 
-evidence_reference(e_terrain_replacement,
-    differences_pl,
-    terrain_replacement(
-        green_maze_structure,
-        covered_region(grid_rect(29, 45, 5, 5)),
-        restored_region(grid_rect(34, 45, 5, 5)))).
+supported_by(gate_targets_cavity_exit,cavity_bottom_run).
+supported_by(gate_targets_cavity_exit,current_gate_top_run).
+supported_by(status_records_action3_progress,new_green_segment).
+supported_by(gate_motion_uses_gate_width,translation_and_width).
 
-evidence_reference(e_status_advance,
-    differences_pl,
-    status_advance(
-        bottom_dark_status_bar,
-        recolored_region(grid_rect(13, 61, 1, 2),
-                         dark_gray, green),
-        left_edge_delta(1))).
-
-evidence_reference(e_player_stationary,
-    differences_pl,
-    unchanged_objects(
-        [blue_black_player, black_player_head, blue_player_tail])).
-
-evidence_reference(e_markers_stationary,
-    differences_pl,
-    unchanged_objects(
-        [gray_upper_chamber_interior,
-         upper_red_hook_glyph,
-         upper_red_square,
-         lower_left_control_panel,
-         lower_left_red_hook_glyph,
-         lower_left_red_square])).
-
-evidence_reference(e_status_cells_stationary,
-    differences_pl,
-    unchanged_objects(
-        [left_cyan_status_cell,
-         middle_cyan_status_cell,
-         right_cyan_status_cell])).
-
-observed_rule('ACTION3',
-    transition(
-        bottom_center_gate,
-        rigid_translate(grid_delta(-5, 0)),
-        evidence([e_action3, e_gate_shift, e_gate_components_shift]))).
-
-observed_rule('ACTION3',
-    transition(
-        gray_gate_cap,
-        move(grid_rect(34, 45, 5, 2),
-             grid_rect(29, 45, 5, 2)),
-        evidence([e_gate_shift, e_gate_current_position]))).
-
-observed_rule('ACTION3',
-    transition(
-        red_gate_base,
-        move(grid_rect(34, 47, 5, 3),
-             grid_rect(29, 47, 5, 3)),
-        evidence([e_gate_shift, e_gate_current_position]))).
-
-observed_rule('ACTION3',
-    transition(
-        green_maze_structure,
-        replace_regions(
-            [paint(grid_rect(29, 45, 5, 2), light_gray),
-             paint(grid_rect(29, 47, 5, 3), maroon),
-             paint(grid_rect(34, 45, 5, 5), green)]),
-        evidence([e_terrain_replacement]))).
-
-observed_rule('ACTION3',
-    transition(
-        bottom_dark_status_bar,
-        advance_progress_from_left(
-            grid_rect(13, 61, 1, 2),
-            dark_gray,
-            green),
-        evidence([e_status_advance]))).
-
-observed_rule('ACTION3',
-    invariant(
-        [blue_black_player, black_player_head, blue_player_tail],
-        no_motion,
-        evidence([e_player_stationary]))).
-
-observed_rule('ACTION3',
-    invariant(
-        [gray_upper_chamber_interior,
-         upper_red_hook_glyph,
-         upper_red_square,
-         lower_left_control_panel,
-         lower_left_red_hook_glyph,
-         lower_left_red_square],
-        no_motion,
-        evidence([e_markers_stationary]))).
-
-observed_rule('ACTION3',
-    invariant(
-        [left_cyan_status_cell,
-         middle_cyan_status_cell,
-         right_cyan_status_cell],
-        no_visual_change,
-        evidence([e_status_cells_stationary]))).
-
-hypothetical_rule('ACTION3',
-    guarded_transition(
-        conditions(
-            [current_region(bottom_center_gate,
-                            grid_rect(29, 45, 5, 5)),
-             destination_region_is_green(
-                            grid_rect(24, 45, 5, 5))]),
-        effects(
-            [move(bottom_center_gate,
-                  grid_rect(29, 45, 5, 5),
-                  grid_rect(24, 45, 5, 5)),
-             move(gray_gate_cap,
-                  grid_rect(29, 45, 5, 2),
-                  grid_rect(24, 45, 5, 2)),
-             move(red_gate_base,
-                  grid_rect(29, 47, 5, 3),
-                  grid_rect(24, 47, 5, 3)),
-             paint(green_maze_structure,
-                   grid_rect(29, 45, 5, 5),
-                   green)]),
-        evidence([e_gate_shift,
-                  e_gate_components_shift,
-                  e_terrain_replacement,
-                  e_gate_current_position])),
-    medium).
-
-hypothetical_rule('ACTION3',
-    guarded_transition(
-        conditions(
-            [successful_transition(bottom_center_gate,
-                                   grid_delta(-5, 0)),
-             current_dark_leading_region(
-                 bottom_dark_status_bar,
-                 grid_rect(14, 61, 1, 2))]),
-        effects(
-            [recolor_region(bottom_dark_status_bar,
-                            grid_rect(14, 61, 1, 2),
-                            dark_gray,
-                            green),
-             advance_left_edge(bottom_dark_status_bar, 1)]),
-        evidence([e_gate_shift, e_status_advance])),
-    medium).
-
-hypothetical_rule('ACTION3',
-    invariant(
-        [blue_black_player, black_player_head, blue_player_tail],
-        no_motion_unless_gate_interaction_occurs,
-        evidence([e_player_stationary])),
-    medium).
-
-hypothetical_rule('ACTION3',
-    invariant(
-        [left_cyan_status_cell,
-         middle_cyan_status_cell,
-         right_cyan_status_cell],
-        unchanged_during_gate_progress,
-        evidence([e_status_cells_stationary, e_status_advance])),
-    medium_low).
-
-hypothetical_rule('ACTION3',
-    interpretation(
-        advances_portal_and_progress_state(
-            bottom_center_gate,
-            bottom_dark_status_bar),
-        evidence([e_gate_shift, e_terrain_replacement, e_status_advance])),
-    medium).
+confidence(action3_gate_translation,1.0).
+confidence(action3_status_change,1.0).
+confidence(action3_gate_preservation,1.0).
+confidence(gate_targets_cavity_exit,0.82).
+confidence(status_records_action3_progress,0.72).
+confidence(gate_motion_uses_gate_width,0.68).

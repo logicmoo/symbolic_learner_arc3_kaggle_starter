@@ -48,7 +48,7 @@
       "data": {},
       "reasoning": null
     },
-    "guid": "0d3344cb-1e3f-402f-8f0e-a937582f5f1a",
+    "guid": "3e112924-b3b7-4e6a-bf50-53ec0c543bd7",
     "full_reset": false,
     "available_actions": [
       1,
@@ -57,7 +57,7 @@
       4
     ]
   },
-  "step_count": 20,
+  "step_count": 18,
   "game_id": "ls20",
   "game_directory": "ls20",
   "image_hash": "ff09f0a0cc0dc4a6",

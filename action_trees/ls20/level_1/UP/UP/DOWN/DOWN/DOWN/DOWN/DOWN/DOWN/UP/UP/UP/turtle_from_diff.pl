@@ -1,0 +1,1 @@
+turtle_program(parent_to_current_patch,[penup,setcolor(green),pen_width(4),set_pos(34,35),pendown,fwd(4),penup,pen_width(1),set_pos(34,39),pendown,fwd(4),penup,setcolor(light_gray),pen_width(2),set_pos(34,30),pendown,fwd(4),penup,setcolor(dark_red),pen_width(3),set_pos(34,32),pendown,fwd(4),penup,setcolor(green),pen_width(1),set_pos(23,61),pendown,rot(90),fwd(1),rot(-90),penup]).

@@ -1,371 +1,301 @@
-% Canonical friendly object identities for this entire ARC3 level.
-% Names are created once and reused from the beginning to the end.
+% Canonical identities are loaded from the level registry.
+:- ensure_loaded('../object_registry.pl').
 
-object_identity(black_player_head, player_component, 'black upper portion of the player marker').
-object_identity(blue_black_player, player, 'small blue and black player marker').
-object_identity(blue_player_tail, player_component, 'blue lower-left portion of the player marker').
-object_identity(bottom_center_gate, compound_block, 'two-color gate embedded in the bottom of the green structure').
-object_identity(bottom_dark_status_bar, bar, 'dark horizontal bar inside the bottom status panel').
-object_identity(bottom_status_panel, interface_bar, 'long gray status panel along the bottom edge').
-object_identity(gray_gate_cap, rectangle, 'gray upper cap of the bottom-center gate').
-object_identity(gray_upper_chamber_interior, chamber, 'gray interior of the upper chamber').
-object_identity(green_chamber_stem, vertical_bar, 'green vertical stem connecting the upper chamber to the main platform').
-object_identity(green_main_platform, platform, 'broad central green platform').
-object_identity(green_maze_structure, compound_structure, 'large green maze-like structure').
-object_identity(green_upper_chamber_frame, enclosure, 'green frame around the upper chamber').
-object_identity(left_cyan_status_cell, indicator, 'left cyan status cell').
-object_identity(left_gray_border, border, 'left vertical gray boundary').
-object_identity(lower_left_control_panel, panel, 'gray control panel at the lower left').
-object_identity(lower_left_red_hook_glyph, glyph, 'large dark red hooked symbol on the lower-left panel').
-object_identity(lower_left_red_square, glyph_component, 'small detached dark red square on the lower-left panel').
-object_identity(middle_cyan_status_cell, indicator, 'middle cyan status cell').
-object_identity(red_gate_base, rectangle, 'dark red lower block of the bottom-center gate').
-object_identity(right_cyan_status_cell, indicator, 'right cyan status cell at the image edge').
-object_identity(upper_red_hook_glyph, glyph, 'dark red hooked symbol in the upper chamber').
-object_identity(upper_red_square, glyph_component, 'small detached dark red square in the upper chamber').
-object_identity(yellow_inner_cavity, hole, 'yellow stepped cavity enclosed within the green structure').
-object_identity(yellow_playfield, background, 'yellow playfield background').
+% State-specific facts for this action-tree node.
+object(yellow_playfield,background,current).
+color(yellow_playfield,yellow).
+bbox(yellow_playfield,0,0,64,64).
+area(yellow_playfield,2509).
+cell_runs(yellow_playfield,[rows(0,7,4,63),rows(8,16,4,31),rows(8,16,41,63),rows(17,24,4,33),rows(17,24,39,63),rows(25,29,4,13),rows(25,29,54,63),rows(30,39,4,13),rows(30,39,54,63),rows(40,44,4,18),rows(40,44,54,63),rows(45,49,4,18),rows(45,49,54,63),rows(50,51,4,63),rows(52,52,0,63),rows(53,59,0,0),rows(53,59,11,63),rows(60,62,0,0),rows(60,62,11,11),rows(63,63,0,11)]).
+shape(yellow_playfield,irregular_background).
+role(yellow_playfield,playfield_background).
+confidence(yellow_playfield,1.0).
 
-% State-specific object facts generated for this node.
-% Canonical friendly object identities for this entire ARC3 level.
-% Names are created once and reused from the beginning to the end.
+object(left_gray_border,border,current).
+color(left_gray_border,gray).
+bbox(left_gray_border,0,0,4,52).
+size(left_gray_border,4,52).
+area(left_gray_border,208).
+cell_runs(left_gray_border,[rows(0,51,0,3)]).
+shape(left_gray_border,solid_rectangle).
+orientation(left_gray_border,vertical).
+role(left_gray_border,boundary).
+touches(left_gray_border,yellow_playfield).
+confidence(left_gray_border,1.0).
 
+object(green_maze_structure,compound_structure,current).
+color(green_maze_structure,green).
+bbox(green_maze_structure,14,8,40,42).
+area(green_maze_structure,892).
+cell_runs(green_maze_structure,[rows(8,8,32,40),rows(9,15,32,32),rows(9,15,40,40),rows(16,16,32,40),rows(17,24,34,38),rows(25,29,14,53),rows(30,30,14,28),rows(30,30,34,53),rows(31,31,14,20),rows(31,31,22,28),rows(31,31,34,53),rows(32,32,14,19),rows(32,32,23,28),rows(32,32,34,53),rows(33,33,14,20),rows(33,33,22,28),rows(33,33,34,53),rows(34,39,14,28),rows(34,39,34,53),rows(40,44,19,23),rows(40,44,34,53),rows(45,49,19,28),rows(45,49,34,53)]).
+shape(green_maze_structure,connected_maze_structure).
+contains(green_maze_structure,gray_upper_chamber_interior).
+contains(green_maze_structure,yellow_inner_cavity).
+contains(green_maze_structure,bottom_center_gate).
+role(green_maze_structure,main_play_structure).
+confidence(green_maze_structure,1.0).
 
-% State-specific object facts generated for this node.
-% Canonical friendly object identities for this entire ARC3 level.
-% Names are created once and reused from the beginning to the end.
+object(green_upper_chamber_frame,enclosure,current).
+color(green_upper_chamber_frame,green).
+bbox(green_upper_chamber_frame,32,8,9,9).
+size(green_upper_chamber_frame,9,9).
+area(green_upper_chamber_frame,32).
+cell_runs(green_upper_chamber_frame,[rows(8,8,32,40),rows(9,15,32,32),rows(9,15,40,40),rows(16,16,32,40)]).
+shape(green_upper_chamber_frame,rectangular_frame).
+symmetry(green_upper_chamber_frame,vertical).
+component_of(green_upper_chamber_frame,green_maze_structure).
+contains(green_upper_chamber_frame,gray_upper_chamber_interior).
+contains(green_upper_chamber_frame,upper_red_hook_glyph).
+contains(green_upper_chamber_frame,upper_red_square).
+confidence(green_upper_chamber_frame,1.0).
 
+object(gray_upper_chamber_interior,chamber,current).
+color(gray_upper_chamber_interior,gray).
+bbox(gray_upper_chamber_interior,33,9,7,7).
+size(gray_upper_chamber_interior,7,7).
+area(gray_upper_chamber_interior,43).
+cell_runs(gray_upper_chamber_interior,[rows(9,10,33,39),rows(11,11,33,34),rows(11,11,38,39),rows(12,12,33,36),rows(12,12,38,39),rows(13,13,33,34),rows(13,13,36,36),rows(13,13,38,39),rows(14,15,33,39)]).
+shape(gray_upper_chamber_interior,rectangular_interior_with_glyph_occlusions).
+inside(gray_upper_chamber_interior,green_upper_chamber_frame).
+confidence(gray_upper_chamber_interior,1.0).
 
-% State-specific object facts generated for this node.
-% Canonical friendly object identities for this entire ARC3 level.
-% Names are created once and reused from the beginning to the end.
+object(upper_red_hook_glyph,glyph,current).
+color(upper_red_hook_glyph,dark_red).
+bbox(upper_red_hook_glyph,35,11,3,3).
+size(upper_red_hook_glyph,3,3).
+area(upper_red_hook_glyph,5).
+cell_runs(upper_red_hook_glyph,[rows(11,11,35,37),rows(12,13,37,37)]).
+shape(upper_red_hook_glyph,hook).
+inside(upper_red_hook_glyph,green_upper_chamber_frame).
+component_of(upper_red_hook_glyph,gray_upper_chamber_interior).
+confidence(upper_red_hook_glyph,1.0).
 
+object(upper_red_square,glyph_component,current).
+color(upper_red_square,dark_red).
+bbox(upper_red_square,35,13,1,1).
+size(upper_red_square,1,1).
+area(upper_red_square,1).
+occupied_cells(upper_red_square,[cell(35,13)]).
+shape(upper_red_square,single_cell_square).
+inside(upper_red_square,green_upper_chamber_frame).
+aligned_with(upper_red_square,upper_red_hook_glyph,left_edge).
+confidence(upper_red_square,1.0).
 
-% State-specific object facts generated for this node.
-% Canonical friendly object identities for this entire ARC3 level.
-% Names are created once and reused from the beginning to the end.
+object(green_chamber_stem,vertical_bar,current).
+color(green_chamber_stem,green).
+bbox(green_chamber_stem,34,17,5,8).
+size(green_chamber_stem,5,8).
+area(green_chamber_stem,40).
+cell_runs(green_chamber_stem,[rows(17,24,34,38)]).
+shape(green_chamber_stem,solid_rectangle).
+orientation(green_chamber_stem,vertical).
+component_of(green_chamber_stem,green_maze_structure).
+touches(green_chamber_stem,green_upper_chamber_frame).
+touches(green_chamber_stem,green_main_platform).
+confidence(green_chamber_stem,1.0).
 
+object(green_main_platform,platform,current).
+color(green_main_platform,green).
+bbox(green_main_platform,14,25,40,25).
+size(green_main_platform,40,25).
+area(green_main_platform,820).
+cell_runs(green_main_platform,[rows(25,29,14,53),rows(30,30,14,28),rows(30,30,34,53),rows(31,31,14,20),rows(31,31,22,28),rows(31,31,34,53),rows(32,32,14,19),rows(32,32,23,28),rows(32,32,34,53),rows(33,33,14,20),rows(33,33,22,28),rows(33,33,34,53),rows(34,39,14,28),rows(34,39,34,53),rows(40,44,19,23),rows(40,44,34,53),rows(45,49,19,28),rows(45,49,34,53)]).
+shape(green_main_platform,stepped_platform_with_enclosed_cavity).
+component_of(green_main_platform,green_maze_structure).
+contains(green_main_platform,yellow_inner_cavity).
+contains(green_main_platform,bottom_center_gate).
+confidence(green_main_platform,1.0).
 
-% State-specific object facts generated for this node.
-% Canonical friendly object identities for this entire ARC3 level.
-% Names are created once and reused from the beginning to the end.
+object(yellow_inner_cavity,hole,current).
+color(yellow_inner_cavity,yellow).
+bbox(yellow_inner_cavity,24,30,10,15).
+size(yellow_inner_cavity,10,15).
+area(yellow_inner_cavity,100).
+cell_runs(yellow_inner_cavity,[rows(30,39,29,33),rows(40,44,24,33)]).
+shape(yellow_inner_cavity,stepped_cavity).
+inside(yellow_inner_cavity,green_main_platform).
+inside(yellow_inner_cavity,green_maze_structure).
+adjacent(yellow_inner_cavity,green_main_platform).
+adjacent(yellow_inner_cavity,bottom_center_gate).
+role(yellow_inner_cavity,enclosed_hole).
+confidence(yellow_inner_cavity,1.0).
 
+object(blue_black_player,player,current).
+colors(blue_black_player,[black,blue]).
+bbox(blue_black_player,20,31,3,3).
+size(blue_black_player,3,3).
+area(blue_black_player,5).
+occupied_cells(blue_black_player,[cell(21,31),cell(20,32),cell(21,32),cell(22,32),cell(21,33)]).
+shape(blue_black_player,asymmetric_cross_marker).
+inside(blue_black_player,green_main_platform).
+role(blue_black_player,player_marker).
+confidence(blue_black_player,1.0).
 
-% State-specific object facts generated for this node.
-% Canonical friendly object identities for this entire ARC3 level.
-% Names are created once and reused from the beginning to the end.
+object(black_player_head,player_component,current).
+color(black_player_head,black).
+bbox(black_player_head,21,31,2,2).
+size(black_player_head,2,2).
+area(black_player_head,3).
+occupied_cells(black_player_head,[cell(21,31),cell(21,32),cell(22,32)]).
+shape(black_player_head,right_facing_corner).
+component_of(black_player_head,blue_black_player).
+confidence(black_player_head,1.0).
 
+object(blue_player_tail,player_component,current).
+color(blue_player_tail,blue).
+bbox(blue_player_tail,20,32,2,2).
+size(blue_player_tail,2,2).
+area(blue_player_tail,2).
+occupied_cells(blue_player_tail,[cell(20,32),cell(21,33)]).
+shape(blue_player_tail,diagonal_pair).
+component_of(blue_player_tail,blue_black_player).
+confidence(blue_player_tail,1.0).
 
-% State-specific object facts generated for this node.
-% Canonical friendly object identities for this entire ARC3 level.
-% Names are created once and reused from the beginning to the end.
+object(bottom_center_gate,compound_block,current).
+colors(bottom_center_gate,[gray,dark_red]).
+bbox(bottom_center_gate,29,45,5,5).
+size(bottom_center_gate,5,5).
+area(bottom_center_gate,25).
+cell_runs(bottom_center_gate,[rows(45,49,29,33)]).
+shape(bottom_center_gate,two_color_rectangle).
+inside(bottom_center_gate,green_main_platform).
+component_of(bottom_center_gate,green_maze_structure).
+contains(bottom_center_gate,gray_gate_cap).
+contains(bottom_center_gate,red_gate_base).
+adjacent(bottom_center_gate,yellow_inner_cavity).
+role(bottom_center_gate,embedded_gate).
+confidence(bottom_center_gate,1.0).
 
+object(gray_gate_cap,rectangle,current).
+color(gray_gate_cap,gray).
+bbox(gray_gate_cap,29,45,5,2).
+size(gray_gate_cap,5,2).
+area(gray_gate_cap,10).
+cell_runs(gray_gate_cap,[rows(45,46,29,33)]).
+shape(gray_gate_cap,solid_rectangle).
+orientation(gray_gate_cap,horizontal).
+component_of(gray_gate_cap,bottom_center_gate).
+touches(gray_gate_cap,red_gate_base).
+confidence(gray_gate_cap,1.0).
 
-% State-specific object facts generated for this node.
-% Canonical friendly object identities for this entire ARC3 level.
-% Names are created once and reused from the beginning to the end.
+object(red_gate_base,rectangle,current).
+color(red_gate_base,dark_red).
+bbox(red_gate_base,29,47,5,3).
+size(red_gate_base,5,3).
+area(red_gate_base,15).
+cell_runs(red_gate_base,[rows(47,49,29,33)]).
+shape(red_gate_base,solid_rectangle).
+orientation(red_gate_base,horizontal).
+component_of(red_gate_base,bottom_center_gate).
+touches(red_gate_base,gray_gate_cap).
+confidence(red_gate_base,1.0).
 
+object(lower_left_control_panel,panel,current).
+colors(lower_left_control_panel,[gray,dark_red]).
+bbox(lower_left_control_panel,1,53,10,10).
+size(lower_left_control_panel,10,10).
+area(lower_left_control_panel,100).
+cell_runs(lower_left_control_panel,[rows(53,62,1,10)]).
+shape(lower_left_control_panel,square_panel).
+contains(lower_left_control_panel,lower_left_red_hook_glyph).
+contains(lower_left_control_panel,lower_left_red_square).
+role(lower_left_control_panel,control_panel).
+confidence(lower_left_control_panel,1.0).
 
-% State-specific object facts generated for this node.
-% Canonical friendly object identities for this entire ARC3 level.
-% Names are created once and reused from the beginning to the end.
+object(lower_left_red_hook_glyph,glyph,current).
+color(lower_left_red_hook_glyph,dark_red).
+bbox(lower_left_red_hook_glyph,3,55,6,6).
+size(lower_left_red_hook_glyph,6,6).
+area(lower_left_red_hook_glyph,20).
+cell_runs(lower_left_red_hook_glyph,[rows(55,56,3,8),rows(57,60,3,4)]).
+shape(lower_left_red_hook_glyph,thick_hook).
+inside(lower_left_red_hook_glyph,lower_left_control_panel).
+confidence(lower_left_red_hook_glyph,1.0).
 
+object(lower_left_red_square,glyph_component,current).
+color(lower_left_red_square,dark_red).
+bbox(lower_left_red_square,7,59,2,2).
+size(lower_left_red_square,2,2).
+area(lower_left_red_square,4).
+cell_runs(lower_left_red_square,[rows(59,60,7,8)]).
+shape(lower_left_red_square,solid_square).
+inside(lower_left_red_square,lower_left_control_panel).
+aligned_with(lower_left_red_square,lower_left_red_hook_glyph,right_edge).
+confidence(lower_left_red_square,1.0).
 
-% State-specific object facts generated for this node.
-% Canonical friendly object identities for this entire ARC3 level.
-% Names are created once and reused from the beginning to the end.
+object(bottom_status_panel,interface_bar,current).
+colors(bottom_status_panel,[gray,dark_gray,green,cyan]).
+bbox(bottom_status_panel,12,60,52,4).
+size(bottom_status_panel,52,4).
+area(bottom_status_panel,208).
+cell_runs(bottom_status_panel,[rows(60,63,12,63)]).
+shape(bottom_status_panel,horizontal_status_panel).
+orientation(bottom_status_panel,horizontal).
+contains(bottom_status_panel,bottom_dark_status_bar).
+contains(bottom_status_panel,bottom_green_status_bar).
+contains(bottom_status_panel,left_cyan_status_cell).
+contains(bottom_status_panel,middle_cyan_status_cell).
+contains(bottom_status_panel,right_cyan_status_cell).
+role(bottom_status_panel,status_display).
+confidence(bottom_status_panel,1.0).
 
+object(bottom_dark_status_bar,bar,current).
+color(bottom_dark_status_bar,dark_gray).
+bbox(bottom_dark_status_bar,14,61,41,2).
+size(bottom_dark_status_bar,41,2).
+area(bottom_dark_status_bar,82).
+cell_runs(bottom_dark_status_bar,[rows(61,62,14,54)]).
+shape(bottom_dark_status_bar,solid_rectangle).
+orientation(bottom_dark_status_bar,horizontal).
+component_of(bottom_dark_status_bar,bottom_status_panel).
+adjacent(bottom_dark_status_bar,bottom_green_status_bar).
+confidence(bottom_dark_status_bar,1.0).
 
-% State-specific object facts generated for this node.
-% Canonical friendly object identities for this entire ARC3 level.
-% Names are created once and reused from the beginning to the end.
+object(bottom_green_status_bar,bar,current).
+color(bottom_green_status_bar,green).
+bbox(bottom_green_status_bar,13,61,1,2).
+size(bottom_green_status_bar,1,2).
+area(bottom_green_status_bar,2).
+cell_runs(bottom_green_status_bar,[rows(61,62,13,13)]).
+shape(bottom_green_status_bar,vertical_two_cell_segment).
+orientation(bottom_green_status_bar,vertical).
+component_of(bottom_green_status_bar,bottom_status_panel).
+adjacent(bottom_green_status_bar,bottom_dark_status_bar).
+role(bottom_green_status_bar,progress_indicator).
+confidence(bottom_green_status_bar,1.0).
 
+object(left_cyan_status_cell,indicator,current).
+color(left_cyan_status_cell,cyan).
+bbox(left_cyan_status_cell,56,61,2,2).
+size(left_cyan_status_cell,2,2).
+area(left_cyan_status_cell,4).
+cell_runs(left_cyan_status_cell,[rows(61,62,56,57)]).
+shape(left_cyan_status_cell,solid_square).
+component_of(left_cyan_status_cell,bottom_status_panel).
+confidence(left_cyan_status_cell,1.0).
 
-% State-specific object facts generated for this node.
-% Canonical friendly object identities for this entire ARC3 level.
-% Names are created once and reused from the beginning to the end.
+object(middle_cyan_status_cell,indicator,current).
+color(middle_cyan_status_cell,cyan).
+bbox(middle_cyan_status_cell,59,61,2,2).
+size(middle_cyan_status_cell,2,2).
+area(middle_cyan_status_cell,4).
+cell_runs(middle_cyan_status_cell,[rows(61,62,59,60)]).
+shape(middle_cyan_status_cell,solid_square).
+component_of(middle_cyan_status_cell,bottom_status_panel).
+aligned_with(middle_cyan_status_cell,left_cyan_status_cell,horizontal_centerline).
+confidence(middle_cyan_status_cell,1.0).
 
+object(right_cyan_status_cell,indicator,current).
+color(right_cyan_status_cell,cyan).
+bbox(right_cyan_status_cell,62,61,2,2).
+size(right_cyan_status_cell,2,2).
+area(right_cyan_status_cell,4).
+cell_runs(right_cyan_status_cell,[rows(61,62,62,63)]).
+shape(right_cyan_status_cell,solid_square).
+component_of(right_cyan_status_cell,bottom_status_panel).
+aligned_with(right_cyan_status_cell,middle_cyan_status_cell,horizontal_centerline).
+confidence(right_cyan_status_cell,1.0).
 
-% State-specific object facts generated for this node.
-% Canonical friendly object identities for this entire ARC3 level.
-% Names are created once and reused from the beginning to the end.
-
-
-% State-specific object facts generated for this node.
-canvas(arc3_state, 64, 64).
-render_scale(10).
-coordinate_origin(top_left).
-bbox_convention(inclusive).
-
-palette(yellow, rgb(255,220,0)).
-palette(green, rgb(46,204,64)).
-palette(light_gray, rgb(170,170,170)).
-palette(dark_gray, rgb(102,102,102)).
-palette(maroon, rgb(135,12,45)).
-palette(black, rgb(0,0,0)).
-palette(blue, rgb(0,116,217)).
-palette(light_blue, rgb(127,219,255)).
-
-object(background_yellow).
-type(background_yellow, background).
-color(background_yellow, yellow).
-geometry(background_yellow, filled_rectangle).
-grid_bbox(background_yellow, 0, 0, 63, 63).
-pixel_bbox(background_yellow, 0, 0, 639, 639).
-layer(background_yellow, 0).
-turtle_program(background_yellow,
-    [penup, set_pos(0,0), setcolor(yellow), pendown,
-     fill_rect(64,64), penup]).
-
-object(left_wall).
-type(left_wall, boundary).
-color(left_wall, light_gray).
-geometry(left_wall, filled_rectangle).
-grid_bbox(left_wall, 0, 0, 3, 51).
-pixel_bbox(left_wall, 0, 0, 39, 519).
-layer(left_wall, 1).
-touches_canvas_edge(left_wall, left).
-touches_canvas_edge(left_wall, top).
-turtle_program(left_wall,
-    [penup, set_pos(0,0), setcolor(light_gray), pendown,
-     fill_rect(4,52), penup]).
-
-object(green_terrain).
-type(green_terrain, connected_terrain).
-color(green_terrain, green).
-geometry(green_terrain, union_of_rectangles).
-grid_bbox(green_terrain, 14, 8, 53, 49).
-pixel_bbox(green_terrain, 140, 80, 539, 499).
-component_rect(green_terrain, 32, 8, 9, 9).
-component_rect(green_terrain, 34, 17, 5, 8).
-component_rect(green_terrain, 14, 25, 40, 5).
-component_rect(green_terrain, 14, 30, 15, 10).
-component_rect(green_terrain, 34, 30, 20, 20).
-component_rect(green_terrain, 19, 40, 5, 10).
-component_rect(green_terrain, 24, 45, 5, 5).
-layer(green_terrain, 2).
-connected(green_terrain).
-turtle_program(green_terrain,
-    [penup, setcolor(green),
-     set_pos(32,8), pendown, fill_rect(9,9), penup,
-     set_pos(34,17), pendown, fill_rect(5,8), penup,
-     set_pos(14,25), pendown, fill_rect(40,5), penup,
-     set_pos(14,30), pendown, fill_rect(15,10), penup,
-     set_pos(34,30), pendown, fill_rect(20,20), penup,
-     set_pos(19,40), pendown, fill_rect(5,10), penup,
-     set_pos(24,45), pendown, fill_rect(5,5), penup]).
-
-object(top_panel).
-type(top_panel, inset_panel).
-color(top_panel, light_gray).
-geometry(top_panel, filled_rectangle).
-grid_bbox(top_panel, 33, 9, 39, 15).
-pixel_bbox(top_panel, 330, 90, 399, 159).
-layer(top_panel, 3).
-contained_in(top_panel, green_terrain).
-surrounded_by(top_panel, green_terrain).
-adjacent(top_panel, green_terrain, left).
-adjacent(top_panel, green_terrain, right).
-adjacent(top_panel, green_terrain, top).
-adjacent(top_panel, green_terrain, bottom).
-turtle_program(top_panel,
-    [penup, set_pos(33,9), setcolor(light_gray), pendown,
-     fill_rect(7,7), penup]).
-
-object(top_glyph).
-type(top_glyph, symbol).
-color(top_glyph, maroon).
-geometry(top_glyph, union_of_rectangles).
-grid_bbox(top_glyph, 35, 11, 37, 13).
-pixel_bbox(top_glyph, 350, 110, 379, 139).
-component_rect(top_glyph, 35, 11, 3, 1).
-component_rect(top_glyph, 37, 12, 1, 2).
-component_rect(top_glyph, 35, 13, 1, 1).
-layer(top_glyph, 4).
-contained_in(top_glyph, top_panel).
-turtle_program(top_glyph,
-    [penup, setcolor(maroon),
-     set_pos(35,11), pendown, fill_rect(3,1), penup,
-     set_pos(37,12), pendown, fill_rect(1,2), penup,
-     set_pos(35,13), pendown, fill_rect(1,1), penup]).
-
-object(player_blue).
-type(player_blue, player_component).
-color(player_blue, blue).
-geometry(player_blue, two_cell_diagonal).
-grid_bbox(player_blue, 20, 32, 21, 33).
-pixel_bbox(player_blue, 200, 320, 219, 339).
-cell(player_blue, 20, 32).
-cell(player_blue, 21, 33).
-layer(player_blue, 4).
-contained_in(player_blue, green_terrain).
-corner_adjacent(player_blue, 20, 32, 21, 33).
-turtle_program(player_blue,
-    [penup, setcolor(blue),
-     set_pos(20,32), pendown, set_cell, penup,
-     set_pos(21,33), pendown, set_cell, penup]).
-
-object(player_black).
-type(player_black, player_component).
-color(player_black, black).
-geometry(player_black, l_tromino).
-grid_bbox(player_black, 21, 31, 22, 32).
-pixel_bbox(player_black, 210, 310, 229, 329).
-cell(player_black, 21, 31).
-cell(player_black, 21, 32).
-cell(player_black, 22, 32).
-layer(player_black, 5).
-contained_in(player_black, green_terrain).
-edge_adjacent(player_black, 21, 31, 21, 32).
-edge_adjacent(player_black, 21, 32, 22, 32).
-adjacent(player_black, player_blue, left).
-turtle_program(player_black,
-    [penup, setcolor(black),
-     set_pos(21,31), pendown, set_cell, penup,
-     set_pos(21,32), pendown, fill_rect(2,1), penup]).
-
-object(door_cap).
-type(door_cap, portal_component).
-color(door_cap, light_gray).
-geometry(door_cap, filled_rectangle).
-grid_bbox(door_cap, 29, 45, 33, 46).
-pixel_bbox(door_cap, 290, 450, 339, 469).
-layer(door_cap, 3).
-adjacent(door_cap, green_terrain, left).
-adjacent(door_cap, green_terrain, right).
-adjacent(door_cap, door_body, bottom).
-turtle_program(door_cap,
-    [penup, set_pos(29,45), setcolor(light_gray), pendown,
-     fill_rect(5,2), penup]).
-
-object(door_body).
-type(door_body, portal_component).
-color(door_body, maroon).
-geometry(door_body, filled_rectangle).
-grid_bbox(door_body, 29, 47, 33, 49).
-pixel_bbox(door_body, 290, 470, 339, 499).
-layer(door_body, 3).
-adjacent(door_body, door_cap, top).
-adjacent(door_body, green_terrain, left).
-adjacent(door_body, green_terrain, right).
-adjacent(door_body, background_yellow, bottom).
-turtle_program(door_body,
-    [penup, set_pos(29,47), setcolor(maroon), pendown,
-     fill_rect(5,3), penup]).
-
-object(lower_icon_panel).
-type(lower_icon_panel, inset_panel).
-color(lower_icon_panel, light_gray).
-geometry(lower_icon_panel, filled_rectangle).
-grid_bbox(lower_icon_panel, 1, 53, 10, 62).
-pixel_bbox(lower_icon_panel, 10, 530, 109, 629).
-layer(lower_icon_panel, 2).
-turtle_program(lower_icon_panel,
-    [penup, set_pos(1,53), setcolor(light_gray), pendown,
-     fill_rect(10,10), penup]).
-
-object(lower_glyph).
-type(lower_glyph, symbol).
-color(lower_glyph, maroon).
-geometry(lower_glyph, union_of_rectangles).
-grid_bbox(lower_glyph, 3, 55, 8, 60).
-pixel_bbox(lower_glyph, 30, 550, 89, 609).
-component_rect(lower_glyph, 3, 55, 6, 2).
-component_rect(lower_glyph, 3, 57, 2, 4).
-component_rect(lower_glyph, 7, 59, 2, 2).
-layer(lower_glyph, 3).
-contained_in(lower_glyph, lower_icon_panel).
-turtle_program(lower_glyph,
-    [penup, setcolor(maroon),
-     set_pos(3,55), pendown, fill_rect(6,2), penup,
-     set_pos(3,57), pendown, fill_rect(2,4), penup,
-     set_pos(7,59), pendown, fill_rect(2,2), penup]).
-
-object(hud_panel).
-type(hud_panel, user_interface_panel).
-color(hud_panel, light_gray).
-geometry(hud_panel, filled_rectangle).
-grid_bbox(hud_panel, 12, 60, 63, 63).
-pixel_bbox(hud_panel, 120, 600, 639, 639).
-layer(hud_panel, 2).
-touches_canvas_edge(hud_panel, right).
-touches_canvas_edge(hud_panel, bottom).
-turtle_program(hud_panel,
-    [penup, set_pos(12,60), setcolor(light_gray), pendown,
-     fill_rect(52,4), penup]).
-
-object(hud_green_marker).
-type(hud_green_marker, status_marker).
-color(hud_green_marker, green).
-geometry(hud_green_marker, filled_rectangle).
-grid_bbox(hud_green_marker, 13, 61, 13, 62).
-pixel_bbox(hud_green_marker, 130, 610, 139, 629).
-layer(hud_green_marker, 3).
-contained_in(hud_green_marker, hud_panel).
-adjacent(hud_green_marker, hud_dark_bar, right).
-turtle_program(hud_green_marker,
-    [penup, set_pos(13,61), setcolor(green), pendown,
-     fill_rect(1,2), penup]).
-
-object(hud_dark_bar).
-type(hud_dark_bar, status_bar).
-color(hud_dark_bar, dark_gray).
-geometry(hud_dark_bar, filled_rectangle).
-grid_bbox(hud_dark_bar, 14, 61, 54, 62).
-pixel_bbox(hud_dark_bar, 140, 610, 549, 629).
-layer(hud_dark_bar, 3).
-contained_in(hud_dark_bar, hud_panel).
-adjacent(hud_dark_bar, hud_green_marker, left).
-turtle_program(hud_dark_bar,
-    [penup, set_pos(14,61), setcolor(dark_gray), pendown,
-     fill_rect(41,2), penup]).
-
-object(hud_blue_slot_1).
-type(hud_blue_slot_1, status_slot).
-color(hud_blue_slot_1, light_blue).
-geometry(hud_blue_slot_1, filled_rectangle).
-grid_bbox(hud_blue_slot_1, 56, 61, 57, 62).
-pixel_bbox(hud_blue_slot_1, 560, 610, 579, 629).
-layer(hud_blue_slot_1, 3).
-contained_in(hud_blue_slot_1, hud_panel).
-turtle_program(hud_blue_slot_1,
-    [penup, set_pos(56,61), setcolor(light_blue), pendown,
-     fill_rect(2,2), penup]).
-
-object(hud_blue_slot_2).
-type(hud_blue_slot_2, status_slot).
-color(hud_blue_slot_2, light_blue).
-geometry(hud_blue_slot_2, filled_rectangle).
-grid_bbox(hud_blue_slot_2, 59, 61, 60, 62).
-pixel_bbox(hud_blue_slot_2, 590, 610, 609, 629).
-layer(hud_blue_slot_2, 3).
-contained_in(hud_blue_slot_2, hud_panel).
-turtle_program(hud_blue_slot_2,
-    [penup, set_pos(59,61), setcolor(light_blue), pendown,
-     fill_rect(2,2), penup]).
-
-object(hud_blue_slot_3).
-type(hud_blue_slot_3, status_slot).
-color(hud_blue_slot_3, light_blue).
-geometry(hud_blue_slot_3, filled_rectangle).
-grid_bbox(hud_blue_slot_3, 62, 61, 63, 62).
-pixel_bbox(hud_blue_slot_3, 620, 610, 639, 629).
-layer(hud_blue_slot_3, 3).
-contained_in(hud_blue_slot_3, hud_panel).
-touches_canvas_edge(hud_blue_slot_3, right).
-turtle_program(hud_blue_slot_3,
-    [penup, set_pos(62,61), setcolor(light_blue), pendown,
-     fill_rect(2,2), penup]).
-
-aligned_horizontally(hud_green_marker, hud_dark_bar).
-aligned_horizontally(hud_blue_slot_1, hud_blue_slot_2).
-aligned_horizontally(hud_blue_slot_2, hud_blue_slot_3).
-equal_size(hud_blue_slot_1, hud_blue_slot_2).
-equal_size(hud_blue_slot_2, hud_blue_slot_3).
-gap_between(hud_dark_bar, hud_blue_slot_1, 1).
-gap_between(hud_blue_slot_1, hud_blue_slot_2, 1).
-gap_between(hud_blue_slot_2, hud_blue_slot_3, 1).
-above(top_panel, player_black).
-above(player_black, door_cap).
-above(door_cap, hud_panel).
-left_of(lower_icon_panel, hud_panel).
+turtle_program(bottom_center_gate,[penup,setcolor(gray),pen_width(2),set_pos(29,45),pendown,fwd(4),penup,setcolor(dark_red),pen_width(3),set_pos(29,47),pendown,fwd(4),penup]).
+turtle_program(bottom_green_status_bar,[penup,setcolor(green),pen_width(1),set_pos(13,61),rot(90),pendown,fwd(1),penup,rot(-90)]).
+turtle_program(blue_black_player,[penup,setcolor(black),pen_width(1),set_pos(21,31),set_cell,set_pos(21,32),pendown,fwd(1),penup,setcolor(blue),set_pos(20,32),set_cell,set_pos(21,33),set_cell]).

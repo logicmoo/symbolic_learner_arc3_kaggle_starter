@@ -1,40 +1,30 @@
-object_match(previous_background, current_background,
-    match_info(1.0, [same_color(yellow), same_extent, unchanged])).
+object_correspondence(yellow_playfield,yellow_playfield,1.0,[color,bbox,cell_runs,area,role],[]).
+object_correspondence(left_gray_border,left_gray_border,1.0,[color,bbox,size,area,shape],[]).
+object_correspondence(green_maze_structure,green_maze_structure,0.945,[color,bbox,area,connectivity,contained_objects],[cell_runs]).
+object_correspondence(green_upper_chamber_frame,green_upper_chamber_frame,1.0,[color,bbox,size,area,shape,symmetry],[]).
+object_correspondence(gray_upper_chamber_interior,gray_upper_chamber_interior,1.0,[color,bbox,cell_runs,area,shape],[]).
+object_correspondence(upper_red_hook_glyph,upper_red_hook_glyph,1.0,[color,bbox,occupied_geometry,shape],[]).
+object_correspondence(upper_red_square,upper_red_square,1.0,[color,bbox,occupied_cells,shape],[]).
+object_correspondence(green_chamber_stem,green_chamber_stem,1.0,[color,bbox,size,area,orientation],[]).
+object_correspondence(green_main_platform,green_main_platform,0.941,[color,bbox,area,contained_objects],[cell_runs]).
+object_correspondence(yellow_inner_cavity,yellow_inner_cavity,1.0,[color,bbox,size,area,cell_runs,shape],[]).
+object_correspondence(blue_black_player,blue_black_player,1.0,[colors,bbox,size,occupied_cells,shape],[]).
+object_correspondence(black_player_head,black_player_head,1.0,[color,bbox,occupied_cells,shape],[]).
+object_correspondence(blue_player_tail,blue_player_tail,1.0,[color,bbox,occupied_cells,shape],[]).
+object_correspondence(bottom_center_gate,bottom_center_gate,0.98,[colors,size,area,shape,subcomponents],[bbox,position]).
+object_correspondence(gray_gate_cap,gray_gate_cap,0.98,[color,size,area,shape,orientation],[bbox,position]).
+object_correspondence(red_gate_base,red_gate_base,0.98,[color,size,area,shape,orientation],[bbox,position]).
+object_correspondence(lower_left_control_panel,lower_left_control_panel,1.0,[colors,bbox,size,area,shape,contained_objects],[]).
+object_correspondence(lower_left_red_hook_glyph,lower_left_red_hook_glyph,1.0,[color,bbox,size,area,cell_runs,shape],[]).
+object_correspondence(lower_left_red_square,lower_left_red_square,1.0,[color,bbox,size,area,cell_runs,shape],[]).
+object_correspondence(bottom_status_panel,bottom_status_panel,0.99,[bbox,size,area,shape,orientation,cyan_indicators],[colors,internal_bar_partition]).
+object_correspondence(bottom_dark_status_bar,bottom_dark_status_bar,0.976,[color,height,orientation,right_edge],[bbox,width,area,left_edge]).
+object_correspondence(left_cyan_status_cell,left_cyan_status_cell,1.0,[color,bbox,size,area,shape],[]).
+object_correspondence(middle_cyan_status_cell,middle_cyan_status_cell,1.0,[color,bbox,size,area,shape],[]).
+object_correspondence(right_cyan_status_cell,right_cyan_status_cell,1.0,[color,bbox,size,area,shape],[]).
 
-object_match(previous_left_wall, current_left_wall,
-    match_info(1.0, [same_color(light_gray), same_bbox(0, 0, 39, 519), same_shape])).
-
-object_match(previous_green_structure, current_green_structure,
-    match_info(0.99, [same_color(green), same_position, same_shape, locally_occluded_by_moved_gate])).
-
-object_match(previous_avatar, current_avatar,
-    match_info(1.0, [same_colors([blue, black]), same_bbox(200, 310, 229, 339), same_shape, same_position])).
-
-object_match(previous_top_panel, current_top_panel,
-    match_info(1.0, [same_colors([light_gray, maroon]), same_bbox(330, 90, 399, 159), same_shape, same_position])).
-
-object_match(previous_lower_left_panel, current_lower_left_panel,
-    match_info(1.0, [same_colors([light_gray, maroon]), same_bbox(10, 530, 109, 629), same_shape, same_position])).
-
-object_match(previous_gate, current_gate,
-    match_info(1.0, [same_colors([light_gray, maroon]), same_size(50, 50), same_shape, displacement(-50, 0), moved_left])).
-
-object_match(previous_bottom_panel, current_bottom_panel,
-    match_info(0.99, [same_color(light_gray), same_bbox(120, 600, 639, 639), same_shape, same_position])).
-
-object_match(previous_bottom_dark_track, current_bottom_dark_track,
-    match_info(0.97, [same_color(dark_gray), same_vertical_extent(610, 629), shared_right_edge(549), shortened_from_left_by(10)])).
-
-object_match(previous_cyan_indicator_1, current_cyan_indicator_1,
-    match_info(1.0, [same_color(cyan), same_bbox(560, 610, 579, 629), same_shape, same_position])).
-
-object_match(previous_cyan_indicator_2, current_cyan_indicator_2,
-    match_info(1.0, [same_color(cyan), same_bbox(590, 610, 609, 629), same_shape, same_position])).
-
-object_match(previous_cyan_indicator_3, current_cyan_indicator_3,
-    match_info(1.0, [same_color(cyan), same_bbox(620, 610, 639, 629), same_shape, same_position])).
-
-unmatched_objects(previous, []).
-
-unmatched_object(current, bottom_green_progress_segment,
-    unmatched_info(0.99, [new_object, color(green), bbox(130, 610, 139, 629), replaces_leftmost_part_of_dark_track])).
+correspondence_evidence(bottom_center_gate,translation,delta(-5,0)).
+correspondence_evidence(bottom_center_gate,parent_cells,[rows(45,49,34,38)]).
+correspondence_evidence(bottom_center_gate,current_cells,[rows(45,49,29,33)]).
+correspondence_evidence(green_main_platform,changed_green_cells,[removed(rows(45,49,29,33)),added(rows(45,49,34,38))]).
+correspondence_evidence(bottom_dark_status_bar,current_is_parent_subset,[rows(61,62,14,54)]).
