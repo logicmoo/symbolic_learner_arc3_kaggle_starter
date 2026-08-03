@@ -28,7 +28,7 @@ Press **`g` repeatedly**. Each press selects the next configured LLM and prints 
 
 Pressing `p` still enters Prolog mode. The generated `object_registry.pl`, `objects.pl`, differences, similarities, Turtle programs, rules, caches, and action-tree paths do not change when the provider changes.
 
-Providers that require an API key are skipped when their key is absent. A local provider whose key is optional remains selectable, and a failed health probe is shown as `offline` rather than silently changing providers.
+Providers that require an API key are skipped when their key is absent. A generic local provider may explicitly declare `api_key_optional: true`, but **Unsloth Studio's external `/v1/*` API requires a Studio API key** even when the server is running on localhost.
 
 ## OpenAI / ChatGPT
 
@@ -82,18 +82,41 @@ Health endpoint:    http://127.0.0.1:8888/api/health
 Model:              unsloth/gemma-4-E2B-it-GGUF
 ```
 
-Override these values without editing the repository:
+### Create and configure the required API key
+
+A successful `/api/health` response proves that Studio is running, but it does **not** authenticate `/v1/responses`.
+
+In the Unsloth Studio browser UI:
+
+1. Open **Settings**.
+2. Open **API Access** (called **API** in some Studio versions).
+3. Create or reveal an API key.
+4. Copy the key beginning with `sk-unsloth-`.
+
+Set it in the same shell that will launch the ARC3 debugger.
+
+Command Prompt:
+
+```bat
+set ARC3_UNSLOTH_API_KEY=sk-unsloth-your-key
+scripts\interactive_runner.bat ls20
+```
+
+PowerShell:
+
+```powershell
+$env:ARC3_UNSLOTH_API_KEY = "sk-unsloth-your-key"
+.\scripts\interactive_runner.bat ls20
+```
+
+Without this variable, Unsloth is shown as `missing ARC3_UNSLOTH_API_KEY` and is skipped while cycling with `g`. This is intentional: sending a fabricated bearer value causes Unsloth Studio to return `401 Invalid token payload`.
+
+Override the endpoint or model without editing the repository:
 
 ```bat
 set ARC3_UNSLOTH_MODEL=your-loaded-model-id
 set ARC3_UNSLOTH_BASE_URL=http://127.0.0.1:8888/v1
 set ARC3_UNSLOTH_HEALTH_URL=http://127.0.0.1:8888/api/health
-```
-
-If Unsloth authentication is enabled:
-
-```bat
-set ARC3_UNSLOTH_API_KEY=your-key
 ```
 
 Do not bind Unsloth to `0.0.0.0` unless LAN access is intentional and protected. The ARC3 debugger needs only the local endpoint when both programs run on the same machine.
@@ -106,7 +129,7 @@ The JSON file defines `default_provider`. Override it for one shell with:
 set ARC3_LLM_PROVIDER=unsloth
 ```
 
-The first press of `g` selects that provider when it is configured. Later presses cycle in JSON list order.
+The first press of `g` selects that provider when it is fully configured. Later presses cycle in JSON list order.
 
 ## Using another configuration file
 
@@ -123,7 +146,7 @@ Add another provider object to `providers` using one of the supported adapters:
 - `openai_responses` for OpenAI and OpenAI-compatible `/v1/responses` servers;
 - `anthropic_messages` for Anthropic-compatible `/v1/messages` servers.
 
-Example OpenAI-compatible local entry:
+Example OpenAI-compatible local entry whose server genuinely accepts a placeholder key:
 
 ```json
 {
@@ -136,5 +159,7 @@ Example OpenAI-compatible local entry:
   "enabled": true
 }
 ```
+
+Do not copy `api_key_optional: true` into the Unsloth Studio provider. Unsloth Studio's API authentication is separate from whether the loaded llama.cpp backend itself would accept a dummy key.
 
 `model_env`, `base_url_env`, `health_url_env`, and `api_key_env` may be added so the checked-in file contains no machine-specific secrets.
