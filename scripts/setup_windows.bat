@@ -14,14 +14,22 @@ echo Repository: %CD%
 echo.
 
 rem Prefer the Python launcher because it bypasses the Microsoft Store
-rem python.exe app-execution alias. Fall back to python.exe only when it is
-rem a real Python 3.12-or-newer installation.
+rem python.exe app-execution alias. Prefer Python 3.12 for reproducibility,
+rem then accept a newer Python 3 release, then fall back to a real python.exe.
 set "PYTHON_COMMAND="
 
 where py >nul 2>nul
 if not errorlevel 1 (
     py -3.12 -c "import sys; raise SystemExit(0 if sys.version_info >= (3, 12) else 1)" >nul 2>nul
     if not errorlevel 1 set "PYTHON_COMMAND=py -3.12"
+)
+
+if not defined PYTHON_COMMAND (
+    where py >nul 2>nul
+    if not errorlevel 1 (
+        py -3 -c "import sys; raise SystemExit(0 if sys.version_info >= (3, 12) else 1)" >nul 2>nul
+        if not errorlevel 1 set "PYTHON_COMMAND=py -3"
+    )
 )
 
 if not defined PYTHON_COMMAND (
@@ -36,8 +44,9 @@ if not defined PYTHON_COMMAND (
     echo ERROR: Python 3.12 or newer was not found.
     echo.
     echo Install 64-bit Python from python.org and select "Add python.exe to PATH".
-    echo The recommended verification command is:
-    echo     py -3.12 --version
+    echo Recommended verification commands:
+    echo     py -0p
+    echo     py -3 --version
     echo.
     echo If Windows opens the Microsoft Store instead, disable the python.exe
     echo and python3.exe aliases under:
