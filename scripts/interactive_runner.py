@@ -4,8 +4,11 @@ from _runtime import configure_runtime_home
 
 PROJECT_ROOT = configure_runtime_home(__file__)
 
-from interactive_runner import main
+import interactive_runner as interactive_runner_ui
+from multillm_runner import install_interactive_runner
+
+install_interactive_runner(interactive_runner_ui)
 
 
 if __name__ == "__main__":
-    main()
+    interactive_runner_ui.main()

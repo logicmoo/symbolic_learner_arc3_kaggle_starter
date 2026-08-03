@@ -85,6 +85,8 @@ py-modules = [
   "gpt_bridge",
   "image_codec",
   "interactive_runner",
+  "llm_providers",
+  "multillm_runner",
   "project_paths",
   "swipl_bridge",
 ]
