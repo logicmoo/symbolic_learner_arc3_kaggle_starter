@@ -6,8 +6,9 @@ from typing import Any
 
 from arc3_runner import Arc3Runner
 from gpt_bridge import GptArcAnalyzer
-from llm_providers import LlmProviderRouter, ProviderSpec
+from llm_providers import ProviderSpec
 from project_paths import prompts_path
+from unsloth_studio import StudioAwareLlmProviderRouter
 
 _LAST_RUNNER: "MultiLlmArc3Runner | None" = None
 
@@ -20,14 +21,14 @@ class MultiLlmArc3Runner(Arc3Runner):
     """
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        self._llm_router: LlmProviderRouter | None = None
+        self._llm_router: StudioAwareLlmProviderRouter | None = None
         super().__init__(*args, **kwargs)
         global _LAST_RUNNER
         _LAST_RUNNER = self
 
-    def llm_router(self) -> LlmProviderRouter:
+    def llm_router(self) -> StudioAwareLlmProviderRouter:
         if self._llm_router is None:
-            self._llm_router = LlmProviderRouter()
+            self._llm_router = StudioAwareLlmProviderRouter()
         return self._llm_router
 
     def _analyzer(self) -> GptArcAnalyzer:
