@@ -4,6 +4,7 @@ This repository combines the delivered ARC3 debugger, the protected ARC-AGI-3 Ka
 
 ## Documentation
 
+- [Native Windows setup and troubleshooting](README_WINDOWS.md) — administrator long-path setup, Python and virtual-environment installation, batch launchers, line endings, SWI-Prolog, PyCharm, UNC paths, and native Kaggle commands.
 - [ARC3 debugger guide](DEBUGGER.md) — debugger controls, action trees, GPT/Prolog analysis, Turtle reconstruction, web UI, and replay.
 - [ARC Prize 2026 local-development and Kaggle guide](KAGGLE.md) — setup, local play, notebook generation, submission, accelerators, and troubleshooting.
 - [SoW phase architecture](SOW_PHASE_ARCHITECTURE.md) — mapping of existing and connected code to Phases 1–3.
@@ -35,6 +36,12 @@ python /path/to/symbolic_learner_arc3_kaggle_starter/scripts/re_play.py
 
 Python 3.12 or newer is required.
 
+Native Windows users should first follow [README_WINDOWS.md](README_WINDOWS.md), then run:
+
+```bat
+scripts\setup_windows.bat
+```
+
 For debugger, web UI, notebooks, and tests:
 
 ```bash
@@ -53,7 +60,7 @@ For every optional dependency, including Kaggle tooling:
 python -m pip install -e ".[all]"
 ```
 
-The protected Kaggle workflow still uses the setup instructions in [KAGGLE.md](KAGGLE.md) and the existing Makefile targets.
+The protected Kaggle workflow still uses the setup instructions in [KAGGLE.md](KAGGLE.md) and the existing Makefile targets. On native Windows, use the direct commands documented in [README_WINDOWS.md](README_WINDOWS.md) because the Makefile is POSIX-oriented.
 
 ## Runnable Python entry points and demonstrations
 
@@ -63,6 +70,12 @@ These commands may be run from the repository root or from another directory. Ea
 
 ```bash
 python scripts/interactive_runner.py ls20
+```
+
+On native Windows after setup:
+
+```bat
+scripts\interactive_runner.bat ls20
 ```
 
 ### Browser terminal exposing the same debugger
@@ -139,7 +152,7 @@ make notebook
 python scripts/slim_framework.py
 ```
 
-Normally this is run by `make setup`.
+Normally this is run by `make setup` or `scripts\setup_windows.bat`.
 
 ### Run Python tests
 
