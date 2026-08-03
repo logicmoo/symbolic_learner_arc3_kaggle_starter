@@ -22,6 +22,17 @@ def test_env_example_parses_and_covers_runtime_configuration() -> None:
         "ARC3_UNSLOTH_MODEL",
         "ARC3_UNSLOTH_BASE_URL",
         "ARC3_UNSLOTH_HEALTH_URL",
+        "ARC3_UNSLOTH_STATUS_URL",
+        "ARC3_UNSLOTH_LOAD_URL",
+        "ARC3_UNSLOTH_AUTO_LOAD",
+        "ARC3_UNSLOTH_GGUF_VARIANT",
+        "ARC3_UNSLOTH_MAX_SEQ_LENGTH",
+        "ARC3_UNSLOTH_N_PARALLEL",
+        "ARC3_UNSLOTH_GPU_MEMORY_MODE",
+        "ARC3_UNSLOTH_LOAD_TIMEOUT",
+        "ARC3_UNSLOTH_FORCE_CANCEL_ACTIVE",
+        "ARC3_UNSLOTH_TRUST_REMOTE_CODE",
+        "HF_TOKEN",
         "ARC3_RUNTIME_HOME",
         "ARC3_PROMPTS_ROOT",
         "ARC3_TREE_ROOT",
@@ -37,4 +48,7 @@ def test_env_example_parses_and_covers_runtime_configuration() -> None:
     assert required.issubset(values)
     assert values["ARC3_UNSLOTH_API_KEY"].startswith("sk-unsloth-")
     assert "EXAMPLE" in values["ARC3_UNSLOTH_API_KEY"]
+    assert values["ARC3_UNSLOTH_AUTO_LOAD"] == "1"
+    assert values["ARC3_UNSLOTH_GGUF_VARIANT"] == "UD-Q4_K_XL"
+    assert values["ARC3_UNSLOTH_MAX_SEQ_LENGTH"] == "131072"
     assert values["ARC3_WEB_HOST"] == "127.0.0.1"
