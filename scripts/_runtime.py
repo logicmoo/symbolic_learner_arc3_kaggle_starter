@@ -36,6 +36,23 @@ def _env_bool(name: str, default: bool) -> bool:
     raise RuntimeError(f"{name} must be a boolean value, not {value!r}")
 
 
+def _load_project_environment(project_root: Path) -> None:
+    """Load project-root .env values without replacing the caller's shell."""
+    env_path = project_root / ".env"
+    if not env_path.is_file():
+        return
+
+    try:
+        from dotenv import load_dotenv
+    except ImportError as error:
+        raise RuntimeError(
+            f"{env_path} exists but python-dotenv is not installed. "
+            "Reinstall the project dependencies before launching ARC3."
+        ) from error
+
+    load_dotenv(dotenv_path=env_path, override=False)
+
+
 def hook_debugger(
     host: str = "localhost",
     port: int = 5678,
@@ -143,7 +160,6 @@ def configure_pycharm_debugger() -> bool:
 
     _DEBUGGER_ATTEMPTED = True
 
-    explicit_setting = os.environ.get("ARC3_PYCHARM_DEBUG")
     default_enabled = "pytest" not in sys.modules
     if not _env_bool("ARC3_PYCHARM_DEBUG", default_enabled):
         return False
@@ -175,15 +191,17 @@ def configure_pycharm_debugger() -> bool:
 
 
 def configure_runtime_home(script_file: str | Path) -> Path:
-    """Resolve the project root, enter it, and configure shared debugging.
+    """Resolve the project root, load .env, enter it, and configure debugging.
 
     Runtime-home resolution order:
 
-    1. ``ARC3_RUNTIME_HOME`` when explicitly configured.
+    1. ``ARC3_RUNTIME_HOME`` when explicitly configured by the caller.
     2. The current working directory, including its parent directories.
     3. The repository root inferred from the script location.
 
-    The PyCharm attach attempt runs after the root and import paths are ready.
+    Once the root is known, project-root ``.env`` values are loaded with
+    ``override=False``. Explicit shell and IDE variables therefore take
+    precedence. The PyCharm attach attempt runs after environment loading.
     """
     configured = os.environ.get("ARC3_RUNTIME_HOME")
     if configured:
@@ -202,6 +220,7 @@ def configure_runtime_home(script_file: str | Path) -> Path:
                 f"Unable to locate the ARC3 project root from {script_file!r}"
             )
 
+    _load_project_environment(project_root)
     os.environ["ARC3_RUNTIME_HOME"] = str(project_root)
     os.chdir(project_root)
 
