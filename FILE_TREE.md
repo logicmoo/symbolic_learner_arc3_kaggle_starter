@@ -8,6 +8,7 @@ This is the clickable source map for the maintained repository. Every listed pat
 
 - [`README.md`](README.md) — top-level documentation index, runtime-home rules, installation, and runnable commands.
 - [`README_WINDOWS.md`](README_WINDOWS.md) — native Windows installation, long paths, Python aliases, `.venv`, line endings, batch launchers, Prolog, Kaggle, PyCharm, and UNC-path troubleshooting.
+- [`config/README.md`](config/README.md) — LLM-provider cycling, credentials, model overrides, Unsloth Studio, Claude, OpenAI, and custom compatible endpoints.
 - [`DEBUGGER.md`](DEBUGGER.md) — ARC3 debugger controls, action trees, symbolic artifacts, replay, browser terminal, and Turtle DSL.
 - [`KAGGLE.md`](KAGGLE.md) — ARC Prize 2026 local-development, notebook generation, accelerator, submission, and troubleshooting guide.
 - [`SOW_PHASE_ARCHITECTURE.md`](SOW_PHASE_ARCHITECTURE.md) — mapping of existing and connected contracts to SoW Phases 1–3.
@@ -17,6 +18,7 @@ This is the clickable source map for the maintained repository. Every listed pat
 ## Repository configuration and protected Kaggle surface
 
 - [`.gitattributes`](.gitattributes) — enforces LF repository text with CRLF only for native Windows `.bat` and `.cmd` scripts.
+- [`config/llm_providers.json`](config/llm_providers.json) — ordered OpenAI, Claude, and Unsloth provider definitions with environment-based keys, models, endpoints, and health checks.
 - [`pyproject.toml`](pyproject.toml) — canonical package metadata, dependency extras, platform-specific terminal dependencies, package layout, and pytest configuration.
 - [`requirements.txt`](requirements.txt) — compatibility installer for debugger, notebook, and test extras.
 - [`Makefile`](Makefile) — POSIX setup, local-play, notebook-build, submission, status, and cleanup commands; native Windows alternatives are documented separately.
@@ -35,9 +37,9 @@ This is the clickable source map for the maintained repository. Every listed pat
 - [`scripts/_runtime.py`](scripts/_runtime.py) — shared resolver that checks `ARC3_RUNTIME_HOME`, then the working directory, then the script location; it changes into the selected project root and configures import paths.
 - [`scripts/setup_windows.bat`](scripts/setup_windows.bat) — native Windows setup using Python 3.12+, `.venv`, all optional dependencies, the vendored Agents framework, and import verification.
 - [`scripts/interactive_runner.bat`](scripts/interactive_runner.bat) — native Windows debugger launcher that calls `.venv\Scripts\python.exe` directly and avoids the Microsoft Store alias.
-- [`scripts/interactive_runner.py`](scripts/interactive_runner.py) — runtime-aware terminal-debugger launcher.
-- [`python/interactive_runner.py`](python/interactive_runner.py) — full terminal debugger implementation imported by the launcher.
-- [`scripts/run_webui.py`](scripts/run_webui.py) — runtime-aware browser-UI launcher.
+- [`scripts/interactive_runner.py`](scripts/interactive_runner.py) — runtime-aware terminal launcher that installs the multi-LLM runner into the existing debugger UI loop.
+- [`python/interactive_runner.py`](python/interactive_runner.py) — full terminal debugger implementation imported and extended by the launcher.
+- [`scripts/run_webui.py`](scripts/run_webui.py) — runtime-aware browser-UI launcher; the browser subprocess uses the same multi-LLM interactive script.
 - [`scripts/prolog_controlled_runner.py`](scripts/prolog_controlled_runner.py) — runtime-aware SWI-Prolog action-selection demonstration.
 - [`scripts/re_play.py`](scripts/re_play.py) — direct ARC3 action-space and one-step smoke demo.
 - [`scripts/my_play.py`](scripts/my_play.py) — direct ARC3 repeated-`ACTION1` smoke demo.
@@ -48,13 +50,15 @@ This is the clickable source map for the maintained repository. Every listed pat
 
 ## Phase 1 debugger and runtime
 
-- [`python/arc3_runner.py`](python/arc3_runner.py) — ARC3 lifecycle, legal actions, level handling, history, replay, state capture, exports, and GPT/Prolog command entry points.
+- [`python/arc3_runner.py`](python/arc3_runner.py) — ARC3 lifecycle, legal actions, level handling, history, replay, state capture, exports, and GPT/Prolog-compatible command entry points.
+- [`python/multillm_runner.py`](python/multillm_runner.py) — provider-switching `Arc3Runner` extension, `g` cycling UI hook, provider-aware cache regeneration, and per-node LLM provenance.
+- [`python/llm_providers.py`](python/llm_providers.py) — provider registry and request adapters for OpenAI Responses, OpenAI-compatible local servers such as Unsloth, and Anthropic Messages.
 - [`python/action_tree.py`](python/action_tree.py) — deterministic filesystem action tree, state metadata, image hashes, parent/child links, generated node READMEs, and level-wide friendly identities.
-- [`python/gpt_bridge.py`](python/gpt_bridge.py) — combined GPT request, cached artifact generation, normalization, and shared Prolog artifact output.
+- [`python/gpt_bridge.py`](python/gpt_bridge.py) — shared combined multimodal analysis request, cached artifact generation, normalization, and Prolog artifact output; retained under its compatibility name.
 - [`python/swipl_bridge.py`](python/swipl_bridge.py) — existing subprocess bridge into SWI-Prolog; normalized symbolic queries extend this bridge.
 - [`python/project_paths.py`](python/project_paths.py) — canonical prompt, action-tree, history, and export path resolution.
 - [`python/image_codec.py`](python/image_codec.py) — authoritative frame extraction and PNG encoding used by state capture.
-- [`prompts/gpt_prompts.json`](prompts/gpt_prompts.json) — Git-friendly combined GPT prompt definitions.
+- [`prompts/gpt_prompts.json`](prompts/gpt_prompts.json) — Git-friendly combined LLM prompt definitions retained at the protected compatibility path.
 
 ## Shared Python object-memory contracts
 
@@ -87,6 +91,7 @@ This is the clickable source map for the maintained repository. Every listed pat
 
 ## Tests and runnable checks
 
+- [`tests/test_llm_providers.py`](tests/test_llm_providers.py) — provider availability and cycling, selected-model routing, reasoning-field behavior, and Claude image-block conversion.
 - [`tests/test_object_memory_contracts.py`](tests/test_object_memory_contracts.py) — provider normalization, residual admission, `SingleWriter`, rules, connected Phase 3 flow, prediction ordering, Kaggle-path, and runner-placement tests.
 - [`tests/test_documentation_links.py`](tests/test_documentation_links.py) — enforces Markdown back-links, root documentation coverage, valid file-tree links, and per-link descriptions.
 - [`tests/test_runtime_home.py`](tests/test_runtime_home.py) — validates runtime-home precedence, working-directory fallback, script-location fallback, and script bootstrap coverage.
@@ -100,6 +105,7 @@ These files are created beneath `action_trees/<game>/level_<n>/` and are not dup
 - `README.md` — generated state-node navigation and embedded local artifacts.
 - `image.png` — authoritative captured frame.
 - `state.json` — state metadata and action path.
+- `llm_provider.json` — provider, adapter, model, endpoint, analysis level, and generation timestamp for the cached LLM artifacts at that node.
 - `object_registry.pl` — authoritative friendly object identities for the level.
 - `objects.pl` — current-state facts referencing the shared registry.
 - `differences.pl` — parent/current symbolic delta.
