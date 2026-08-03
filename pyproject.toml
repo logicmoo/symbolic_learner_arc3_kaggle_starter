@@ -30,6 +30,7 @@ dependencies = [
   "arc-agi>=0.9.9",
   "numpy>=1.26",
   "Pillow>=10.0",
+  "python-dotenv>=1.0",
 ]
 
 [project.optional-dependencies]

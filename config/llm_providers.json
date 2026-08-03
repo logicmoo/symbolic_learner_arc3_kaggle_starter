@@ -29,12 +29,12 @@
       "model": "unsloth/gemma-4-E2B-it-GGUF",
       "model_env": "ARC3_UNSLOTH_MODEL",
       "api_key_env": "ARC3_UNSLOTH_API_KEY",
-      "api_key_optional": true,
+      "api_key_optional": false,
       "base_url": "http://127.0.0.1:8888/v1",
       "base_url_env": "ARC3_UNSLOTH_BASE_URL",
       "health_url": "http://127.0.0.1:8888/api/health",
       "health_url_env": "ARC3_UNSLOTH_HEALTH_URL",
-      "enabled": true,
+      "enabled": "auto",
       "supports_reasoning": false
     }
   ]

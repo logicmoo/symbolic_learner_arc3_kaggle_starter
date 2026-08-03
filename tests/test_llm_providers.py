@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from types import SimpleNamespace
 
-from llm_providers import LlmProviderRouter, _anthropic_blocks
+from llm_providers import DEFAULT_CONFIG_PATH, LlmProviderRouter, _anthropic_blocks
 
 
 class FakeResponses:
@@ -99,6 +99,27 @@ def test_openai_route_uses_selected_model(tmp_path, monkeypatch):
         ],
         "max_output_tokens": 99,
     }
+
+
+def test_default_unsloth_requires_studio_api_key(monkeypatch):
+    monkeypatch.delenv("ARC3_UNSLOTH_API_KEY", raising=False)
+    router = LlmProviderRouter(DEFAULT_CONFIG_PATH, openai_client_factory=FakeOpenAI)
+    unsloth = next(spec for spec in router.specs if spec.provider_id == "unsloth")
+
+    assert unsloth.configuration_state() == (
+        False,
+        "missing ARC3_UNSLOTH_API_KEY",
+    )
+    assert "unsloth" not in {spec.provider_id for spec in router.configured_specs()}
+
+
+def test_default_unsloth_accepts_studio_api_key(monkeypatch):
+    monkeypatch.setenv("ARC3_UNSLOTH_API_KEY", "sk-unsloth-test-key")
+    router = LlmProviderRouter(DEFAULT_CONFIG_PATH, openai_client_factory=FakeOpenAI)
+    unsloth = next(spec for spec in router.specs if spec.provider_id == "unsloth")
+
+    assert unsloth.configuration_state() == (True, "configured")
+    assert "unsloth" in {spec.provider_id for spec in router.configured_specs()}
 
 
 def test_anthropic_image_translation():
