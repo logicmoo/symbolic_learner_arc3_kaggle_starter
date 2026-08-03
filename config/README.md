@@ -68,7 +68,7 @@ The adapter converts the existing OpenAI-style input text and base64 PNG image b
 
 ## Unsloth Studio local
 
-Start Unsloth Studio and load a vision-capable model. For local-only access:
+Start Unsloth Studio. For local-only access:
 
 ```powershell
 unsloth studio -H 127.0.0.1 -p 8888
@@ -79,12 +79,15 @@ The default provider uses:
 ```text
 Responses endpoint: http://127.0.0.1:8888/v1/responses
 Health endpoint:    http://127.0.0.1:8888/api/health
+Status endpoint:    http://127.0.0.1:8888/api/inference/status
+Load endpoint:      http://127.0.0.1:8888/api/inference/load
 Model:              unsloth/gemma-4-E2B-it-GGUF
+GGUF variant:       UD-Q4_K_XL
 ```
 
 ### Create and configure the required API key
 
-A successful `/api/health` response proves that Studio is running, but it does **not** authenticate `/v1/responses`.
+A successful `/api/health` response proves that Studio is running, but it does **not** authenticate `/v1/responses` or prove that an inference model is loaded.
 
 In the Unsloth Studio browser UI:
 
@@ -111,12 +114,51 @@ $env:ARC3_UNSLOTH_API_KEY = "sk-unsloth-your-key"
 
 Without this variable, Unsloth is shown as `missing ARC3_UNSLOTH_API_KEY` and is skipped while cycling with `g`. This is intentional: sending a fabricated bearer value causes Unsloth Studio to return `401 Invalid token payload`.
 
-Override the endpoint or model without editing the repository:
+### Automatic model loading
+
+Studio can be healthy and authenticated while its inference subprocess has no resident model. In that state `/v1/responses` returns `400 No model loaded`.
+
+Before every Unsloth analysis request, ARC3 now:
+
+1. calls the authenticated `/api/inference/status` endpoint;
+2. checks `active_model`, `model_identifier`, `gguf_variant`, `loading`, and `loaded`;
+3. reuses the model when the configured model and variant are already resident;
+4. otherwise posts the configured GGUF to `/api/inference/load`;
+5. waits until the status endpoint reports that model as loaded;
+6. sends the original multimodal `/v1/responses` request.
+
+The provider list therefore distinguishes `ready`, `loading`, `different model loaded`, and `no model loaded; will auto-load` rather than treating the public health endpoint as inference readiness.
+
+Default auto-load settings:
+
+```dotenv
+ARC3_UNSLOTH_AUTO_LOAD=1
+ARC3_UNSLOTH_GGUF_VARIANT=UD-Q4_K_XL
+ARC3_UNSLOTH_MAX_SEQ_LENGTH=131072
+ARC3_UNSLOTH_N_PARALLEL=1
+ARC3_UNSLOTH_GPU_MEMORY_MODE=auto
+ARC3_UNSLOTH_LOAD_TIMEOUT=900
+ARC3_UNSLOTH_FORCE_CANCEL_ACTIVE=0
+ARC3_UNSLOTH_TRUST_REMOTE_CODE=0
+```
+
+The 131072 context matches the native context reported by the default Gemma GGUF. Change it when another model or available VRAM requires a different value. Set `ARC3_UNSLOTH_AUTO_LOAD=0` to require manual loading in Studio.
+
+For a private or gated Hugging Face repository, also set:
 
 ```bat
-set ARC3_UNSLOTH_MODEL=your-loaded-model-id
+set HF_TOKEN=hf_your-token
+```
+
+Override endpoints, model, or variant without editing the repository:
+
+```bat
+set ARC3_UNSLOTH_MODEL=your-model-id
+set ARC3_UNSLOTH_GGUF_VARIANT=your-quant-name
 set ARC3_UNSLOTH_BASE_URL=http://127.0.0.1:8888/v1
 set ARC3_UNSLOTH_HEALTH_URL=http://127.0.0.1:8888/api/health
+set ARC3_UNSLOTH_STATUS_URL=http://127.0.0.1:8888/api/inference/status
+set ARC3_UNSLOTH_LOAD_URL=http://127.0.0.1:8888/api/inference/load
 ```
 
 Do not bind Unsloth to `0.0.0.0` unless LAN access is intentional and protected. The ARC3 debugger needs only the local endpoint when both programs run on the same machine.
