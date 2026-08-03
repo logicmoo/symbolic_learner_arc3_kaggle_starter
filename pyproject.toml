@@ -90,6 +90,7 @@ py-modules = [
   "multillm_runner",
   "project_paths",
   "swipl_bridge",
+  "unsloth_studio",
 ]
 include-package-data = true
 
