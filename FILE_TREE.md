@@ -6,7 +6,8 @@ This is the clickable source map for the maintained repository. Every listed pat
 
 ## Root documentation
 
-- [`README.md`](README.md) — top-level documentation index, runtime-home rules, and runnable commands.
+- [`README.md`](README.md) — top-level documentation index, runtime-home rules, installation, and runnable commands.
+- [`README_WINDOWS.md`](README_WINDOWS.md) — native Windows installation, long paths, Python aliases, `.venv`, line endings, batch launchers, Prolog, Kaggle, PyCharm, and UNC-path troubleshooting.
 - [`DEBUGGER.md`](DEBUGGER.md) — ARC3 debugger controls, action trees, symbolic artifacts, replay, browser terminal, and Turtle DSL.
 - [`KAGGLE.md`](KAGGLE.md) — ARC Prize 2026 local-development, notebook generation, accelerator, submission, and troubleshooting guide.
 - [`SOW_PHASE_ARCHITECTURE.md`](SOW_PHASE_ARCHITECTURE.md) — mapping of existing and connected contracts to SoW Phases 1–3.
@@ -15,9 +16,10 @@ This is the clickable source map for the maintained repository. Every listed pat
 
 ## Repository configuration and protected Kaggle surface
 
-- [`pyproject.toml`](pyproject.toml) — canonical package metadata, dependency extras, package layout, and pytest configuration.
+- [`.gitattributes`](.gitattributes) — enforces LF repository text with CRLF only for native Windows `.bat` and `.cmd` scripts.
+- [`pyproject.toml`](pyproject.toml) — canonical package metadata, dependency extras, platform-specific terminal dependencies, package layout, and pytest configuration.
 - [`requirements.txt`](requirements.txt) — compatibility installer for debugger, notebook, and test extras.
-- [`Makefile`](Makefile) — existing setup, local-play, notebook-build, submission, status, and cleanup commands.
+- [`Makefile`](Makefile) — POSIX setup, local-play, notebook-build, submission, status, and cleanup commands; native Windows alternatives are documented separately.
 - [`.gitignore`](.gitignore) — excludes credentials, generated notebooks, environments, caches, and runtime artifacts.
 - [`agent/my_agent.py`](agent/my_agent.py) — protected ARC-AGI-3 agent entry point used by local play and notebook generation.
 - [`scripts/play_local.py`](scripts/play_local.py) — protected local runner that exercises `MyAgent` against real ARC3 games after resolving the runtime home.
@@ -31,6 +33,8 @@ This is the clickable source map for the maintained repository. Every listed pat
 ## Runnable scripts and runtime bootstrap
 
 - [`scripts/_runtime.py`](scripts/_runtime.py) — shared resolver that checks `ARC3_RUNTIME_HOME`, then the working directory, then the script location; it changes into the selected project root and configures import paths.
+- [`scripts/setup_windows.bat`](scripts/setup_windows.bat) — native Windows setup using Python 3.12+, `.venv`, all optional dependencies, the vendored Agents framework, and import verification.
+- [`scripts/interactive_runner.bat`](scripts/interactive_runner.bat) — native Windows debugger launcher that calls `.venv\Scripts\python.exe` directly and avoids the Microsoft Store alias.
 - [`scripts/interactive_runner.py`](scripts/interactive_runner.py) — runtime-aware terminal-debugger launcher.
 - [`python/interactive_runner.py`](python/interactive_runner.py) — full terminal debugger implementation imported by the launcher.
 - [`scripts/run_webui.py`](scripts/run_webui.py) — runtime-aware browser-UI launcher.
@@ -39,7 +43,7 @@ This is the clickable source map for the maintained repository. Every listed pat
 - [`scripts/my_play.py`](scripts/my_play.py) — direct ARC3 repeated-`ACTION1` smoke demo.
 - [`scripts/me_play.py`](scripts/me_play.py) — random-action ARC3 demo with terminal rendering.
 - [`scripts/he_play.py`](scripts/he_play.py) — random-action ARC3 demo with human rendering.
-- [`webui/server.py`](webui/server.py) — FastAPI/WebSocket PTY server launching `scripts/interactive_runner.py` rather than duplicating the debugger.
+- [`webui/server.py`](webui/server.py) — FastAPI/WebSocket cross-platform PTY server launching `scripts/interactive_runner.py`; Windows uses ConPTY through `pywinpty`.
 - [`webui/static/index.html`](webui/static/index.html) — browser terminal page and client-side controls.
 
 ## Phase 1 debugger and runtime
