@@ -1,0 +1,41 @@
+{
+  "default_provider": "openai",
+  "providers": [
+    {
+      "id": "openai",
+      "label": "ChatGPT / OpenAI API",
+      "adapter": "openai_responses",
+      "model": "gpt-5.6",
+      "model_env": "ARC3_OPENAI_MODEL",
+      "api_key_env": "OPENAI_API_KEY",
+      "enabled": "auto",
+      "supports_reasoning": true
+    },
+    {
+      "id": "claude",
+      "label": "Claude / Anthropic API",
+      "adapter": "anthropic_messages",
+      "model": "claude-sonnet-4-20250514",
+      "model_env": "ARC3_CLAUDE_MODEL",
+      "api_key_env": "ANTHROPIC_API_KEY",
+      "base_url": "https://api.anthropic.com/v1",
+      "base_url_env": "ARC3_CLAUDE_BASE_URL",
+      "enabled": "auto"
+    },
+    {
+      "id": "unsloth",
+      "label": "Unsloth Studio local",
+      "adapter": "openai_responses",
+      "model": "unsloth/gemma-4-E2B-it-GGUF",
+      "model_env": "ARC3_UNSLOTH_MODEL",
+      "api_key_env": "ARC3_UNSLOTH_API_KEY",
+      "api_key_optional": true,
+      "base_url": "http://127.0.0.1:8888/v1",
+      "base_url_env": "ARC3_UNSLOTH_BASE_URL",
+      "health_url": "http://127.0.0.1:8888/api/health",
+      "health_url_env": "ARC3_UNSLOTH_HEALTH_URL",
+      "enabled": true,
+      "supports_reasoning": false
+    }
+  ]
+}
