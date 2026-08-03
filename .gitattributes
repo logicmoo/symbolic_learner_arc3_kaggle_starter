@@ -1,0 +1,18 @@
+# Keep the repository Linux-friendly and deterministic across platforms.
+# Git normalizes text files to LF unless a more specific rule overrides it.
+* text=auto eol=lf
+
+# Native Windows command scripts are the only CRLF exception.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binary files must never be line-ending normalized.
+*.gif binary
+*.ico binary
+*.jpeg binary
+*.jpg binary
+*.pdf binary
+*.png binary
+*.webp binary
+*.zip binary
+*.ipynb text eol=lf
