@@ -128,7 +128,7 @@ def test_unloaded_studio_loads_model_before_response(tmp_path, monkeypatch):
         max_output_tokens=10,
     )
 
-    assert result.output_text == '{"ok":true}'
+    assert json.loads(result.output_text) == {"ok": True}
     assert result.provider_metadata["prompt_text"] == ["response_contract", "objects"]
     assert [call[0].get_method() for call in http.calls] == ["GET", "POST", "GET"]
     assert http.calls[0][0].full_url.endswith("/api/inference/status")
