@@ -8,6 +8,7 @@ from arc3_runner import Arc3Runner
 from gpt_bridge import GptArcAnalyzer
 from llm_json_patch import install_llm_json_resilience
 from llm_providers import ProviderSpec
+from llm_readme_patch import transcript_is_restorable
 from llm_transcripts import (
     finalize_last_transcript,
     list_transcripts,
@@ -39,7 +40,7 @@ class MultiLlmArc3Runner(Arc3Runner):
 
     def llm_router(self) -> StudioAwareLlmProviderRouter:
         if self._llm_router is None:
-            self._llm_router = StudioAwareLlmProviderRouter()
+            self._llm_router = StudioAwareLlmProviderRouter(prompts_path())
         return self._llm_router
 
     def _analyzer(self) -> GptArcAnalyzer:
@@ -89,6 +90,7 @@ class MultiLlmArc3Runner(Arc3Runner):
             "model": provider.resolved_model(),
             "base_url": provider.resolved_base_url(),
             "analysis_level": analysis_level,
+            "prompt_text": list(self.llm_router().prompt_section_names(provider)),
             "generated_at": datetime.now(timezone.utc).isoformat(),
         }
         self._provenance_path(node).write_text(
@@ -97,30 +99,37 @@ class MultiLlmArc3Runner(Arc3Runner):
         )
 
     def gpt_command_1(self) -> None:
-        """Restore a historical transcript or open the shared prompt editor."""
+        """Restore a historical transcript or open the unified LLM config."""
         store, node = self._require_node()
         transcripts = list_transcripts(node)
+        active = next(
+            (path for path in transcripts if transcript_is_restorable(path)),
+            None,
+        )
         print("\nLLM transcript cache for this state:")
         if not transcripts:
-            print("  No completed transcript snapshots exist yet.")
+            print("  No transcript records exist yet.")
         else:
             for index, path in enumerate(transcripts, start=1):
                 metadata = transcript_metadata(path)
-                active = ">" if index == 1 else " "
+                restorable = transcript_is_restorable(path)
+                marker = ">" if active is not None and path.resolve() == active.resolve() else " "
+                kind = "restorable" if restorable else "debug-only"
                 print(
-                    f" {active} {index:>2}. {path.name}\n"
-                    f"       provider={metadata.get('provider_id')} "
+                    f" {marker} {index:>2}. {path.name}\n"
+                    f"       kind={kind} status={metadata.get('status')} "
+                    f"provider={metadata.get('provider_id')} "
                     f"model={metadata.get('model')} "
                     f"level={metadata.get('analysis_level')} "
                     f"profile={(metadata.get('analysis_profile') or {}).get('name')} "
                     f"tokens={metadata.get('max_output_tokens')}"
                 )
-        print("  [E] Edit shared LLM prompts  [Enter] Cancel")
+        print("  [E] Edit unified providers/prompt_text config  [Enter] Cancel")
         choice = input("Restore transcript number or E: ").strip()
         if not choice:
             print("Transcript selection cancelled.")
             return
-        if choice.lower() in {"e", "edit", "prompts"}:
+        if choice.lower() in {"e", "edit", "prompts", "config"}:
             self._analyzer().edit_prompts()
             return
         try:
@@ -130,6 +139,10 @@ class MultiLlmArc3Runner(Arc3Runner):
         if not 0 <= selected_index < len(transcripts):
             raise RuntimeError("Transcript number is out of range")
         selected = transcripts[selected_index]
+        if not transcript_is_restorable(selected):
+            raise RuntimeError(
+                f"Transcript is debug-only and has no completed artifact snapshot: {selected.name}"
+            )
         restored = restore_transcript(store, node, selected)
         print(f"Restored transcript: {selected}")
         for path in restored:
@@ -264,7 +277,7 @@ def install_interactive_runner(ui_module: Any) -> None:
     """Install multi-LLM behavior without duplicating the debugger UI loop."""
     ui_module.Arc3Runner = MultiLlmArc3Runner
     ui_module.CONTROL_MODES["gpt"]["title"] = "LLM"
-    ui_module.CONTROL_MODES["gpt"][1] = "Cached transcripts / edit shared prompts"
+    ui_module.CONTROL_MODES["gpt"][1] = "Cached transcripts / edit unified config"
 
     original_print_controls = ui_module.print_controls
     original_print_mode_menu = ui_module.print_mode_menu
@@ -282,9 +295,13 @@ def install_interactive_runner(ui_module: Any) -> None:
             if runner is not None:
                 try:
                     selected = runner.cycle_llm_provider()
+                    prompt_names = ",".join(
+                        runner.llm_router().prompt_section_names(selected)
+                    )
                     print(
                         f"\nSelected LLM: {selected.label} [{selected.provider_id}] "
-                        f"model={selected.resolved_model()}"
+                        f"model={selected.resolved_model()} "
+                        f"prompt_text=[{prompt_names}]"
                     )
                     print("LLM provider list:")
                     for status in runner.llm_router().statuses(probe=True):
