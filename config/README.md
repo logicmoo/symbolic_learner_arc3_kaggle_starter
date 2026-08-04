@@ -1,107 +1,184 @@
 [← Back to top-level README](../README.md)
 
-# LLM Provider Configuration
+# LLM Providers, Prompt Sections, and Comparison Transcripts
 
-The debugger keeps one analysis and artifact pipeline while allowing its final multimodal request to be sent to different LLM implementations.
+The debugger keeps one analysis/artifact pipeline while routing the final multimodal request through different LLM providers. Provider definitions and prompt text now live together in [`llm_providers.json`](llm_providers.json); there is no separate `prompts/` directory.
 
-The provider list is stored in [`llm_providers.json`](llm_providers.json). The default list contains:
+## Unified configuration shape
 
-- **ChatGPT / OpenAI API** through the OpenAI Responses API;
-- **Claude / Anthropic API** through the Anthropic Messages API;
-- **Unsloth Studio local** through its OpenAI-compatible Responses endpoint.
+The file has two main sections:
 
-## Switching providers in the debugger
+- `prompt_text` — reusable named text blocks;
+- `llm_providers` — provider definitions, each with an ordered `prompt_text` list selecting which blocks are sent.
 
-Start the debugger normally:
+A simplified example:
+
+```json
+{
+  "prompt_text": {
+    "response_contract": ["Return strict JSON."],
+    "objects": ["Describe current-state objects."],
+    "transitions": ["TRANSITIONS: describe parent/current changes."],
+    "rules": ["Analyze supported and hypothetical rules."]
+  },
+  "llm_providers": [
+    {
+      "id": "cloud-full",
+      "adapter": "openai_responses",
+      "model": "example-cloud-model",
+      "prompt_text": [
+        "response_contract",
+        "objects",
+        "transitions",
+        "rules"
+      ]
+    },
+    {
+      "id": "local-no-transitions",
+      "adapter": "openai_responses",
+      "model": "example-local-model",
+      "prompt_text": [
+        "response_contract",
+        "objects",
+        "rules"
+      ]
+    }
+  ]
+}
+```
+
+The second provider excludes `transitions` simply by omitting that section name. Sections may be created for one provider only, so provider-specific instructions do not require copying the complete prompt.
+
+The checked-in reusable sections currently include:
+
+- `response_contract`;
+- `coordinate_contract`;
+- `identity_contract`;
+- `object_extraction`;
+- `turtle_reconstruction`;
+- `transitions`;
+- `correspondences`;
+- `rule_analysis`;
+- `file_separation`;
+- `root_state`;
+- `quality_control`.
+
+The router validates unknown or duplicate section names before any provider request. The exact assembled text and selected section list are recorded in each comparison transcript.
+
+## Switching providers
+
+Start the debugger:
 
 ```bat
 scripts\interactive_runner.bat ls20
 ```
 
-or:
+Press **`g` repeatedly** to select the next configured provider. The provider display includes the provider, adapter endpoint, model, and selected `prompt_text` list. Press `2`, `3`, or `4` for the demo, deep, or extreme analysis profile.
 
-```bash
-python scripts/interactive_runner.py ls20
+Pressing `p` still enters Prolog mode.
+
+## Markdown comparison/cache transcripts
+
+Every actual LLM request creates a uniquely named Markdown transcript in the current action-tree node. A typical filename is:
+
+```text
+llm_adapter_openai_responses_unsloth_unsloth_gemma-4-E2B-it-GGUF_L4_extreme_tokens_32000_20260804T145700_000000Z.md
 ```
 
-Press **`g` repeatedly**. Each press selects the next configured LLM and prints the complete provider list, model, endpoint, and configuration or health status. Then press `1` through `6` to run the existing LLM-mode command with the selected provider.
+The filename carries the adapter, provider, model, analysis level/profile, requested token budget, and timestamp so runs can be compared directly.
 
-Pressing `p` still enters Prolog mode. The generated `object_registry.pl`, `objects.pl`, differences, similarities, Turtle programs, rules, caches, and action-tree paths do not change when the provider changes.
+Each completed transcript has two major halves:
 
-Providers that require an API key are skipped when their key is absent. A generic local provider may explicitly declare `api_key_optional: true`, but **Unsloth Studio's external `/v1/*` API requires a Studio API key** even when the server is running on localhost.
+1. **Restorable Prolog artifact snapshot first** — `object_registry.pl`, `objects.pl`, differences, similarities, Turtle programs, and rules exactly as they existed for that run.
+2. **Debug transcript second** — state/action context, provider/adapter/model, prompt section list, profile and token settings, timing, provider-reported usage, image hashes/details, the exact request text, repair history, normalized JSON, and raw provider responses at the very bottom.
+
+The initial prompt text is rendered as ordinary Markdown between hidden markers rather than buried in a code fence. Raw responses remain fenced at the end so arbitrary output cannot break the document.
+
+Configure transcript behavior with:
+
+```dotenv
+ARC3_LLM_SAVE_TRANSCRIPT=1
+ARC3_LLM_RESPONSE_DIR=C:/symbolic_learner_arc3_kaggle_starter/.llm_responses
+ARC3_LLM_JSON_RETRY=1
+```
+
+`ARC3_LLM_RESPONSE_DIR` is only a fallback for calls made without an active action-tree node.
+
+### Latest files versus historical cache
+
+The individual `.pl` files remain the mutable **latest view** used by the debugger and Prolog code. Markdown transcripts are immutable historical cache/comparison records.
+
+After a completed run:
+
+- its Markdown transcript stores copies of all generated `.pl` artifacts;
+- the normal individual `.pl` files remain on disk as the latest view;
+- the node `README.md` identifies the active completed transcript;
+- the README links every historical transcript but does not recursively embed their large bodies;
+- the README continues embedding the latest mutable `.pl` files.
+
+### Restore an older run
+
+In LLM mode, press `1` to open the transcript cache chooser. Select a completed transcript number to:
+
+1. extract its embedded artifact snapshot;
+2. rewrite the individual latest `.pl` files;
+3. rewrite `llm_provider.json` with the restored provider/model/level;
+4. make that transcript active;
+5. regenerate the node `README.md` so its embedded artifacts and active link match the restored run.
+
+The same menu uses `E` to edit the unified provider-and-prompt config.
+
+Failed or incomplete LLM runs remain linked as **debug-only** transcripts, but they are not considered restorable active snapshots.
 
 ## Malformed JSON recovery
 
-Local and hosted models occasionally produce an almost-correct artifact bundle with a missing comma, quote, bracket, escaped newline, or required key. ARC3 now protects the expensive multimodal result in this order:
+For almost-correct LLM output, ARC3:
 
-1. save the original response as `llm_response.raw.txt` in the active action-tree node;
-2. parse it with strict `json.loads`;
-3. deterministically repair common JSON syntax defects locally;
-4. validate that every requested top-level artifact key is present;
-5. only when local repair cannot recover a complete bundle, ask the selected provider for one compact text-only repair pass;
-6. save repaired output as `llm_response.repaired.json` and any retry output as `llm_response.retry.raw.txt`.
+1. records the raw response in the current Markdown transcript;
+2. attempts strict JSON parsing;
+3. deterministically repairs common syntax defects locally;
+4. validates every requested artifact key;
+5. uses one text-only provider repair request only when local recovery is incomplete;
+6. records both interactions in the same transcript;
+7. never repeats the original image request merely because JSON syntax was malformed.
 
-The original image request is not repeated merely because of malformed JSON. Configure this behavior with:
+## Default providers
 
-```dotenv
-ARC3_LLM_SAVE_RAW_RESPONSE=1
-ARC3_LLM_JSON_RETRY=1
-ARC3_LLM_RESPONSE_DIR=C:/symbolic_learner_arc3_kaggle_starter/.llm_responses
-```
+The checked-in providers are:
 
-`ARC3_LLM_RESPONSE_DIR` is only the fallback for calls made without an active action-tree node. Set `ARC3_LLM_JSON_RETRY=0` to allow deterministic local repair but disable the provider repair call.
+- **ChatGPT / OpenAI API** through the OpenAI Responses API;
+- **Claude / Anthropic API** through the Anthropic Messages API;
+- **Unsloth Studio local** through its OpenAI-compatible Responses endpoint.
 
-After pulling a version that adds JSON recovery to an existing virtual environment, refresh dependencies once:
-
-```bat
-.venv\Scripts\python.exe -m pip install -e ".[all]"
-```
+Providers requiring an API key are skipped when the key is absent.
 
 ## OpenAI / ChatGPT
 
-Set an OpenAI API key before launching:
-
 ```bat
 set OPENAI_API_KEY=your-key
-```
-
-PowerShell:
-
-```powershell
-$env:OPENAI_API_KEY = "your-key"
-```
-
-A ChatGPT web subscription is separate from OpenAI API authentication. Override the configured model with:
-
-```bat
 set ARC3_OPENAI_MODEL=your-openai-model
 ```
 
-## Claude / Anthropic
+A ChatGPT web subscription is separate from OpenAI API authentication.
 
-Set:
+## Claude / Anthropic
 
 ```bat
 set ANTHROPIC_API_KEY=your-key
-```
-
-Override the model when needed:
-
-```bat
 set ARC3_CLAUDE_MODEL=your-claude-model
 ```
 
-The adapter converts the existing OpenAI-style input text and base64 PNG image blocks into Anthropic Messages content blocks. It uses only the Python standard library for the HTTP request, so a separate Anthropic SDK is not required.
+The adapter converts the existing Responses-style text and base64 PNG blocks into Anthropic Messages content blocks.
 
 ## Unsloth Studio local
 
-Start Unsloth Studio. For local-only access:
+Start Studio locally:
 
 ```powershell
 unsloth studio -H 127.0.0.1 -p 8888
 ```
 
-The default provider uses:
+The default configuration uses:
 
 ```text
 Responses endpoint: http://127.0.0.1:8888/v1/responses
@@ -112,51 +189,15 @@ Model:              unsloth/gemma-4-E2B-it-GGUF
 GGUF variant:       UD-Q4_K_XL
 ```
 
-### Create and configure the required API key
-
-A successful `/api/health` response proves that Studio is running, but it does **not** authenticate `/v1/responses` or prove that an inference model is loaded.
-
-In the Unsloth Studio browser UI:
-
-1. Open **Settings**.
-2. Open **API Access** (called **API** in some Studio versions).
-3. Create or reveal an API key.
-4. Copy the key beginning with `sk-unsloth-`.
-
-Set it in the same shell that will launch the ARC3 debugger.
-
-Command Prompt:
+Create a Studio API key under **Settings → API Access** (called **API** in some versions). Real keys begin with `sk-unsloth-`:
 
 ```bat
 set ARC3_UNSLOTH_API_KEY=sk-unsloth-your-key
-scripts\interactive_runner.bat ls20
 ```
 
-PowerShell:
+Before an Unsloth request, ARC3 checks authenticated inference status, reuses a matching loaded model, or loads the configured GGUF and waits for it to become resident.
 
-```powershell
-$env:ARC3_UNSLOTH_API_KEY = "sk-unsloth-your-key"
-.\scripts\interactive_runner.bat ls20
-```
-
-Without this variable, Unsloth is shown as `missing ARC3_UNSLOTH_API_KEY` and is skipped while cycling with `g`. This is intentional: sending a fabricated bearer value causes Unsloth Studio to return `401 Invalid token payload`.
-
-### Automatic model loading
-
-Studio can be healthy and authenticated while its inference subprocess has no resident model. In that state `/v1/responses` returns `400 No model loaded`.
-
-Before every Unsloth analysis request, ARC3 now:
-
-1. calls the authenticated `/api/inference/status` endpoint;
-2. checks `active_model`, `model_identifier`, `gguf_variant`, `loading`, and `loaded`;
-3. reuses the model when the configured model and variant are already resident;
-4. otherwise posts the configured GGUF to `/api/inference/load`;
-5. waits until the status endpoint reports that model as loaded;
-6. sends the original multimodal `/v1/responses` request.
-
-The provider list therefore distinguishes `ready`, `loading`, `different model loaded`, and `no model loaded; will auto-load` rather than treating the public health endpoint as inference readiness.
-
-Default auto-load settings:
+Default lifecycle settings:
 
 ```dotenv
 ARC3_UNSLOTH_AUTO_LOAD=1
@@ -169,66 +210,16 @@ ARC3_UNSLOTH_FORCE_CANCEL_ACTIVE=0
 ARC3_UNSLOTH_TRUST_REMOTE_CODE=0
 ```
 
-The 131072 context matches the native context reported by the default Gemma GGUF. Change it when another model or available VRAM requires a different value. Set `ARC3_UNSLOTH_AUTO_LOAD=0` to require manual loading in Studio.
-
-For a private or gated Hugging Face repository, also set:
+For private or gated Hugging Face repositories:
 
 ```bat
 set HF_TOKEN=hf_your-token
 ```
 
-Override endpoints, model, or variant without editing the repository:
-
-```bat
-set ARC3_UNSLOTH_MODEL=your-model-id
-set ARC3_UNSLOTH_GGUF_VARIANT=your-quant-name
-set ARC3_UNSLOTH_BASE_URL=http://127.0.0.1:8888/v1
-set ARC3_UNSLOTH_HEALTH_URL=http://127.0.0.1:8888/api/health
-set ARC3_UNSLOTH_STATUS_URL=http://127.0.0.1:8888/api/inference/status
-set ARC3_UNSLOTH_LOAD_URL=http://127.0.0.1:8888/api/inference/load
-```
-
-Do not bind Unsloth to `0.0.0.0` unless LAN access is intentional and protected. The ARC3 debugger needs only the local endpoint when both programs run on the same machine.
-
-## Selecting a default provider
-
-The JSON file defines `default_provider`. Override it for one shell with:
-
-```bat
-set ARC3_LLM_PROVIDER=unsloth
-```
-
-The first press of `g` selects that provider when it is fully configured. Later presses cycle in JSON list order.
-
-## Using another configuration file
+## Alternate configuration file
 
 ```bat
 set ARC3_LLM_CONFIG=C:\path\to\my_llm_providers.json
 ```
 
-This is useful for private endpoints or machine-specific models. Keep API keys in environment variables, not in JSON.
-
-## Adding more local or hosted models
-
-Add another provider object to `providers` using one of the supported adapters:
-
-- `openai_responses` for OpenAI and OpenAI-compatible `/v1/responses` servers;
-- `anthropic_messages` for Anthropic-compatible `/v1/messages` servers.
-
-Example OpenAI-compatible local entry whose server genuinely accepts a placeholder key:
-
-```json
-{
-  "id": "other-local",
-  "label": "Other local server",
-  "adapter": "openai_responses",
-  "model": "my-model",
-  "base_url": "http://127.0.0.1:9000/v1",
-  "api_key_optional": true,
-  "enabled": true
-}
-```
-
-Do not copy `api_key_optional: true` into the Unsloth Studio provider. Unsloth Studio's API authentication is separate from whether the loaded llama.cpp backend itself would accept a dummy key.
-
-`model_env`, `base_url_env`, `health_url_env`, and `api_key_env` may be added so the checked-in file contains no machine-specific secrets.
+Keep API keys in environment variables rather than JSON. A replacement config must define `prompt_text` and `llm_providers`, and each provider must select at least one valid prompt section.
