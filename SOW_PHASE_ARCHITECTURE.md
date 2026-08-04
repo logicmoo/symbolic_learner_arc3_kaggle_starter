@@ -1,384 +1,666 @@
 [← Back to top-level README](README.md)
 
-# SoW Phase Architecture — Image Perception to Recognizable Memory
+# Architecture — Image Perception to Recognizable Memory
 
-## Purpose
+## Document scope
 
-This document maps the current repository and its planned integration work to the three deliverable-based phases in the *Image Perception to Recognizable Memory* Statement of Work. It describes engineering scope, repository ownership, demonstration workflows, and acceptance evidence. Commercial terms are intentionally outside this repository document.
+This is the large technical overview. It describes the runtime, class and module ownership, data flow, cross-language contracts, persistent-memory model, learning architecture, and detailed architecture work still required.
 
-## Schedule baseline
+Related documents:
 
-| Scope | Anticipated delivery window |
-|---|---:|
-| Phase 1 — Grid Infrastructure and ARC3 Debugger Foundation | 3 weeks |
-| Phase 2 — Object Perception, Recognition, and Persistent Memory | 1 month |
-| Phase 3 — Game Object Learner Integration and Predictive Rule Learning | 1 month |
-| Overall sequence | Approximately 3 months from the effective date |
+- [TODO.md](TODO.md) — the concrete work we are actively doing, in execution order.
+- [SOW_DELIVERABLES.md](SOW_DELIVERABLES.md) — the phase-by-phase deliverable checklist and evidence links.
+- [FILE_TREE.md](FILE_TREE.md) — the complete repository ownership map.
 
-Deliverables may be completed earlier or may require additional time. Any material schedule change should be communicated in writing.
+The architecture document explains **how the system is intended to work**. The TODO explains **what we need to implement next**. The deliverables document explains **what must be demonstrated and checked off**.
 
-## Governing principles
+## Architectural principles
 
-- Extend the working repository rather than replacing delivered components.
-- Keep one ARC3 runner, one action-tree store, one provider router, one artifact pipeline, and one Turtle execution semantics.
-- Preserve stable, human-readable object identities across states, encounters, providers, and learned rules.
-- Keep generated evidence, provenance, prompts, raw responses, artifacts, and prediction outcomes inspectable and replayable.
-- Use PROLOG, GPT/LLM, and deterministic PYTHON implementations behind shared contracts rather than maintaining three unrelated object models.
-- Do not create phase directories or duplicate runnable examples outside `scripts/`.
-- Do not rename or repurpose the protected Kaggle notebook, build scripts, submission agent, or runner scripts.
-- Treat similarity and embeddings as candidate-retrieval aids; they do not independently commit identity or evidence.
-- Give positive rule evidence only to predictions recorded before the independently observed outcome.
+- Extend the working ARC3 debugger rather than replacing it.
+- Keep one runtime resolver, one ARC3 runner, one action-tree store, one provider router, one artifact pipeline, one identity authority, and one Turtle execution semantics.
+- Keep runnable entry points under `scripts/`; do not recreate `examples/`.
+- Do not create phase directories.
+- Keep stable, human-readable identities across states, encounters, providers, transformations, predictions, and learned rules.
+- Preserve prompts, provider settings, images, raw responses, normalized artifacts, timing, token usage, repairs, outcomes, and evidence as inspectable provenance.
+- Keep raw observations as artifacts rather than durable semantic concepts.
+- Treat similarity and embeddings as retrieval and proposal mechanisms only; they may not independently commit identity, merge objects, or increase evidence.
+- Route durable memory and evidence mutation through `SingleWriter` or its authoritative Prolog equivalent.
+- Credit a learned rule only when its prediction existed before the independently observed outcome.
+- Preserve the protected Kaggle surface.
 
-## End-to-end architecture
+## End-to-end data flow
 
 ```text
-ARC3 game, grid, image, or simple video input
-    → captured observation and action-tree state
-    → object extraction and generative representation
-    → stable identity and object correspondence
-    → before/after differences and transition evidence
+ARC3 game, grid, image, or simple video
+    → runtime and resource resolution
+    → captured state, image, action, and history
+    → deterministic action-tree node
+    → object extraction
+    → normalized object representation
+    → generative form and residual analysis
+    → stable identity and correspondence
+    → direct parent/current differences
     → persistent encounter and artifact memory
     → Game Object Learner payload
-    → candidate transformations and competing rules
+    → candidate transformations
+    → competing transition rules
     → prediction recorded before outcome
-    → independent outcome observation and grading
-    → updated evidence, learned rule, or action recommendation
+    → independent environment outcome
+    → deterministic prediction grading
+    → evidence update, learned rule, predicted state, or action recommendation
 ```
 
-The mutable node-local `.pl` files represent the latest selected analysis. Per-run LLM Markdown transcripts preserve immutable comparison snapshots containing the generated Prolog artifacts, exact prompt, provider configuration, images, timing, token details, repair history, and raw provider responses. Restoring a transcript rewrites the latest `.pl` view without erasing the historical run.
+## Shared execution modes
+
+The same contracts support three implementations:
+
+1. **PROLOG** — SWI-Prolog predicates and generated or persistent `.pl` data.
+2. **GPT/LLM** — provider-generated artifacts with explicit prompt and provider provenance.
+3. **PYTHON** — deterministic native resolvers and orchestration.
+
+Core shared classes:
+
+- `ExecutionMode` — identifies PROLOG, GPT, or PYTHON execution.
+- `NormalizedResult` — common result envelope.
+- `CandidateObject` — provider-backed facade for object capabilities.
+- `PrologProvider` — delegates to SWI-Prolog predicates.
+- `GptArtifactProvider` — reads provider-generated artifacts and transcripts.
+- `PythonProvider` — invokes deterministic native resolvers.
+
+Architecture work:
+
+- add explicit provider capability discovery;
+- return structured unsupported-operation errors;
+- attach source artifact, transcript, provider, and evidence references to every result;
+- add equivalence fixtures across all three modes.
 
 ---
 
-# Phase 1 — Grid Infrastructure and ARC3 Debugger Foundation
+# Runtime and workspace architecture
 
-## Required outcomes
+## `scripts/_runtime.py`
 
-Phase 1 establishes the working ARC3 experimentation and evidence surface:
+Responsibilities:
 
-- adapt the existing ARC debugger workflow to ARC3;
-- load and interact with selected games and levels;
-- capture game states, actions, observations, and execution history;
-- store explored states in a GitHub-browsable action tree;
-- generate structured artifacts for states, objects, differences, similarities, reconstructions, and candidate rules;
-- maintain stable, readable object identities across transitions;
-- support replay, reset, restart, and navigation through captured states;
-- analyze the current state together with its transition from the parent state;
-- cache generated artifacts for repeatable inspection and reuse;
-- establish grid infrastructure for extraction, correspondence, transformation analysis, and rule inspection;
-- document the debugger, state trees, artifacts, and evidence records.
+- preserve the launch directory;
+- locate the code checkout;
+- load applicable `.env` files without overriding shell or IDE variables;
+- resolve `config/llm_providers.json` independently;
+- resolve writable `action_trees/` independently;
+- configure import paths;
+- optionally attach the PyCharm debugger;
+- print the resolved path summary.
 
-## Current repository mapping
+Resolution order for config and action trees:
 
-### Runtime and interaction
-
-- `python/arc3_runner.py` — authoritative ARC3 game lifecycle, actions, level handling, observations, history, replay, reset, restart, exports, and analysis commands.
-- `scripts/interactive_runner.py` — runtime-aware terminal entry point.
-- `python/interactive_runner.py` — full keyboard debugger implementation.
-- `scripts/run_webui.py` and `webui/server.py` — browser terminal exposing the same runner rather than a second debugger.
-- `scripts/prolog_controlled_runner.py` — executable SWI-Prolog-controlled demonstration.
-
-### State, action trees, and evidence
-
-- `python/action_tree.py` — deterministic action-tree directories, images, `state.json`, parent/child links, hashes, generated node READMEs, and the shared level identity registry.
-- `object_registry.pl` — authoritative friendly identity source for the level.
-- node-local `objects.pl`, `differences.pl`, `similarities.pl`, Turtle artifacts, and `rules.pl` — the mutable latest analysis view.
-- per-run `llm_adapter_*.md` transcripts — immutable provider/model/profile comparison and restorable artifact snapshots.
-- node `README.md` — state navigation, active transcript, historical transcript links, image, metadata, and embedded latest artifacts.
-
-### LLM analysis and caching
-
-- `config/llm_providers.json` — one provider registry plus reusable `prompt_text` sections. Each provider selects an ordered section list and may omit sections such as `transitions` when appropriate.
-- `python/llm_providers.py` and `python/unsloth_studio.py` — OpenAI Responses, Anthropic Messages, and local Unsloth Studio routing and lifecycle management.
-- `python/gpt_bridge.py` — one combined multimodal request and artifact-splitting pipeline.
-- `python/llm_json.py` and `python/llm_json_patch.py` — strict parsing, deterministic repair, one text-only recovery pass, and required-key validation.
-- `python/llm_transcripts.py` and `python/llm_readme_patch.py` — Markdown interaction records, artifact restoration, and README history integration.
-
-### Symbolic execution
-
-- `python/swipl_bridge.py` plus `prolog/arc3_agent.pl` — SWI-Prolog control seam.
-- `prolog/turtle_dsl.pl` — authoritative motion-based Turtle execution semantics.
-
-### Runtime resource discovery
-
-Code, configuration, and generated action trees are resolved independently:
-
-1. explicit path environment variables;
-2. the launch directory and its parents;
+1. explicit environment path;
+2. launch directory and parents;
 3. `ARC3_RUNTIME_HOME` when it contains the requested resource;
-4. the script/code checkout.
+4. script/code checkout.
 
-Startup reports the launch directory, code root, environment files, selected LLM configuration, and action-tree output path. The Windows launcher preserves the caller’s working directory so workspace-local `config/` and `action_trees/` remain discoverable.
+## `python/project_paths.py`
 
-## Phase 1 completion evidence
+Responsibilities:
 
-Phase 1 acceptance should include:
+- expose the selected config file;
+- expose the writable action-tree root;
+- create history and export directories;
+- retain compatibility aliases without restoring a separate prompt directory.
 
-- repeatable game and level selection;
-- captured actions, observations, images, and histories;
-- deterministic action-tree navigation and replay;
-- stable identity reuse through `object_registry.pl`;
-- current-state and parent-transition artifacts;
-- provider/model/profile comparison transcripts;
-- restoration of a historical transcript into the latest artifact view;
-- reset, restart, history navigation, and replay demonstrations;
-- validation of cached artifacts before reuse;
-- documentation for terminal, browser, Windows, provider configuration, and generated evidence;
-- automated tests for action-tree storage, replay hashes, prompt composition, transcript layout/restoration, provider routing, and path discovery.
+## Windows launchers
 
-Phase 1 infrastructure is substantially present. Remaining work is normalization and acceptance hardening rather than creation of a second debugger.
+- `scripts/setup_windows.bat` — environment creation and dependency verification.
+- `scripts/interactive_runner.bat` — venv-direct execution while preserving caller workspace discovery.
 
----
+Architecture work:
 
-# Phase 2 — Object Perception, Recognition, and Persistent Memory
+- keep launcher behavior thin and deterministic;
+- keep configuration in `.env` and `config/`, not in batch scripts;
+- add a native Windows smoke test that records the resolved paths and launches one ARC3 state.
 
-## Required outcomes
-
-Phase 2 extends captured states into reusable object knowledge:
-
-- extract and represent objects from grids, images, and simple video inputs;
-- represent properties, structure, relationships, position, orientation, scale, and appearance;
-- maintain stable identities across examples, encounters, and transitions;
-- match corresponding objects between states and repeated encounters;
-- recognize recurring objects under supported translation, rotation, scale, reflection, recolor, noise, and partial visibility;
-- detect movement, recoloring, resizing, addition, removal, and structural change;
-- store objects in normalized generative forms;
-- distinguish recognized content from potentially new object structure;
-- prevent duplicate storage of already recognized objects;
-- accumulate evidence and provenance across encounters;
-- preserve encounter history and deterministic replay;
-- provide persistent symbolic memory for objects, observations, and artifacts;
-- regenerate objects from stored representations;
-- demonstrate recognition under modest degradation and partial occlusion;
-- provide tests and documentation for identity, recognition, regeneration, memory, and replay.
-
-## Demonstration workflow
-
-```text
-Input image or game state
-    → object extraction
-    → object representation
-    → object matching and correspondence
-    → before-and-after comparison
-    → persistent storage
-    → later recognition as the same object
-```
-
-## Current repository mapping
-
-The `python/object_memory/` package supplies shared contracts around existing and future providers:
-
-- `CandidateObject` — stable provider-backed object facade.
-- `PerceptionAdapter` and `GridAdapter` — modality and grid front ends without replacing the existing extractor.
-- `GenerativeForm` and `CellLogoForm` — normalized regeneration interface reusing Turtle programs.
-- `ResidualCandidate`, `ResidualDisposition`, and `ResidualGate` — explicit unexplained structure and admission policy.
-- `CommittedAtom`, `SymbolicMemory`, and `SingleWriter` — normalized durable records and the single mutation path.
-- shared provenance, rule, prediction, and transition records in `python/object_memory/models.py`.
-
-The corresponding Prolog contracts include:
-
-- `prolog/object_memory_contract.pl`;
-- `prolog/generative_form.pl`;
-- `prolog/residual_gate.pl`;
-- `prolog/single_writer.pl`.
-
-Persistent friendly identity continues to use the generated level-wide `object_registry.pl`; Phase 2 must not introduce a second identity database.
-
-## Required Phase 2 services
-
-The final Phase 2 implementation should expose:
-
-- normalized observation and encounter identifiers;
-- object extraction and canonicalization;
-- object property and relationship queries;
-- correspondence proposals with explicit evidence;
-- identity merge/split proposals governed by the authoritative writer;
-- generative-form fitting and residual measurement;
-- faithful regeneration and observation comparison;
-- append-only encounter history;
-- durable symbolic object storage;
-- artifact indexing for frames, masks, traces, embeddings, and reconstructions;
-- lifecycle states such as active, demoted, and tombstoned without deleting provenance;
-- deterministic replay from the same starting store and encounter log.
-
-## Phase 2 completion evidence
-
-Acceptance should demonstrate:
-
-- extraction and normalized representation on ARC-style grids;
-- stable correspondence across parent/current states and repeated encounters;
-- recognition under modest translation, rotation, reflection, recolor, scale change, noise, and partial occlusion where supported;
-- no duplicate durable identity when the same object is recognized again;
-- explicit handling of genuinely new residual structure;
-- successful regeneration through Turtle or another approved generative form;
-- faithful comparison between regenerated and observed content;
-- deterministic encounter replay;
-- tests for false merge, false split, duplicate identity, evidence updates, and provenance preservation;
-- documentation and runnable scripts showing the complete demonstration workflow.
-
-The contracts and reference implementations are connected, but full perception, durable encounter storage, re-recognition quality, degradation handling, and acceptance demonstrations remain active work.
+Corresponding deliverables: [Phase 1 runtime and interaction](SOW_DELIVERABLES.md#phase-1--grid-infrastructure-and-arc3-debugger-foundation).
 
 ---
 
-# Phase 3 — Game Object Learner Integration and Predictive Rule Learning
+# ARC3 debugger and state architecture
 
-## Required outcomes
+## `Arc3Runner`
 
-Phase 3 connects persistent object memory to learning and prediction:
+Location: `python/arc3_runner.py`
 
-- define a stable interface and data contract between perception/memory and the Game Object Learner;
-- provide detected objects, properties, relationships, correspondences, differences, and encounter history;
-- keep the learner independent of debugger and perception internals;
-- validate interfaces and return structured errors;
-- provide integration tests and example workflows;
-- infer candidate object-level transformations and transition rules;
-- retain multiple interpretations and evidence for successful and unsuccessful rules;
-- apply learned transformations to new cases;
-- record predictions before outcomes are observed;
-- compare predictions with independently observed outcomes;
-- update rule evidence from prediction success or failure;
-- prevent post-hoc explanation from being counted as successful prediction;
-- demonstrate recognition and completion of partly occluded objects;
-- demonstrate operation across approved grid and raster environments;
-- provide integration documentation, examples, acceptance results, and developer notes.
+Responsibilities:
 
-## Demonstration workflow
+- create and control the ARC3 environment;
+- select games and levels;
+- expose legal actions;
+- execute simple and coordinate actions;
+- capture observations and game state;
+- manage `StepRecord` history;
+- replay actions;
+- reset levels and restart games;
+- export state and score information;
+- expose LLM and Prolog command entry points.
 
-```text
-Input game state
-    → object perception and recognition
-    → persistent object identity
-    → structured Game Object Learner handoff
-    → transition analysis
-    → candidate transformation learning
-    → prediction of a later state
-    → application to a new case
-    → independent evaluation
-    → prediction, learned rule, or action recommendation
-```
+Detailed architecture work:
 
-## Representative environment progression
+- define canonical state and action ordinals;
+- add immutable `Observation` or `StateSnapshot` records;
+- connect `StepRecord`, image hash, action data, and environment state to normalized observations;
+- expose real transitions to object memory and learning;
+- record predictions before action execution;
+- capture post-action outcomes independently for grading.
 
-```text
-ARC-style grids
-    → rendered arcade environments
-    → fixed-camera physics examples
-    → top-down manipulation with partial occlusion
-```
+## `StepRecord`
 
-The exact grid path should be made deterministic before broader raster and occlusion demonstrations are treated as accepted.
+`StepRecord` remains the lightweight execution-history record. It should reference normalized observations and transitions instead of becoming the persistent semantic memory model.
 
-## Current repository mapping
+## `ActionTreeStore`
 
-### Python path
+Location: `python/action_tree.py`
 
-- `python/object_memory/integration.py` — `GameObjectLearnerPayload`, result records, validation, structured integration errors, plugin interface, and pipeline plugin.
-- `python/object_memory/learning.py` — transition analysis, transformation candidates, rule induction, ranking, storage, execution, prediction ledger, independent outcome channel, and grading.
-- `GameLearningPipeline` — connected orchestration from observed transition through prediction and later evaluation.
+Responsibilities:
 
-### Prolog path
+- create deterministic state-node directories;
+- store `image.png` and `state.json`;
+- encode action paths in directory names;
+- maintain parent and child navigation;
+- generate GitHub-browsable READMEs;
+- maintain the level-wide `object_registry.pl`;
+- reject opaque object IDs;
+- normalize state-local object files against the registry;
+- provide deterministic hashes and replay paths.
 
-- `prolog/transition_analysis.pl`;
-- `prolog/transformation_learning.pl`;
-- `prolog/rule_induction.pl`;
-- `prolog/rule_ranking.pl`;
-- `prolog/transition_rules.pl`;
-- `prolog/prediction_ledger.pl`;
-- `prolog/prediction_evaluation.pl`;
-- `prolog/game_object_learner_api.pl`.
+Detailed architecture work:
 
-Generated `rules.pl` remains a valid LLM-backed evidence artifact. Native learning should extend the same observable/evidence-oriented shape rather than creating an unrelated rule format.
+- add schema versions to node metadata;
+- add normalized observation and encounter IDs;
+- include artifact-set, registry-version, and provenance metadata;
+- validate cache compatibility before reuse;
+- attach prediction, outcome, and grading references;
+- expose stable artifact and evidence references to Phase 2 and Phase 3.
 
-## Stable learner boundary
+## `StateNode`
 
-The learner payload must contain normalized references instead of debugger implementation objects. At minimum it should provide:
+`StateNode` is the filesystem-backed handle. It should reference semantic observations, encounters, artifacts, and evidence rather than absorbing those schemas itself.
 
+## `object_registry.pl`
+
+The level-wide registry is the authoritative debugger identity source.
+
+Rules:
+
+- state-local files load rather than duplicate identities;
+- newly observed identities are proposed and merged through controlled logic;
+- opaque IDs are rejected;
+- persistent Phase 2 identity either extends or explicitly maps to this authority;
+- identity merge/split decisions preserve provenance.
+
+Corresponding work: [TODO — Phase 1 normalization](TODO.md#phase-1-normalization-and-acceptance).
+
+---
+
+# LLM provider, prompt, and transcript architecture
+
+## `config/llm_providers.json`
+
+This is the unified source for:
+
+- reusable `prompt_text` sections;
+- ordered provider definitions;
+- provider-specific prompt-section lists;
+- model, key, endpoint, health, and reasoning capabilities.
+
+A provider may omit a section such as `transitions` without duplicating the complete prompt.
+
+## `LlmProviderRouter`
+
+Location: `python/llm_providers.py`
+
+Responsibilities:
+
+- select and cycle configured providers;
+- compose the selected provider’s prompt sections;
+- adapt OpenAI-compatible Responses and Anthropic Messages calls;
+- capture provider response metadata and usage;
+- return a Responses-shaped result to the shared analyzer.
+
+## `StudioAwareLlmProviderRouter`
+
+Location: `python/unsloth_studio.py`
+
+Responsibilities:
+
+- authenticate to Unsloth Studio;
+- inspect inference status;
+- detect missing or different models;
+- load the configured GGUF variant;
+- wait for readiness;
+- retry a no-model race once.
+
+## `GptArcAnalyzer`
+
+Location: `python/gpt_bridge.py`
+
+Responsibilities:
+
+- configure demo/deep/extreme analysis profiles;
+- compose the selected provider prompt;
+- add persistent context and parent/current images;
+- request only needed artifact keys;
+- split the normalized response into `.pl` artifacts;
+- merge friendly identities;
+- normalize `objects.pl` against the registry;
+- refresh state READMEs.
+
+## JSON recovery
+
+- `python/llm_json.py` — strict parsing, local repair, required-key validation, normalized serialization.
+- `python/llm_json_patch.py` — wraps the provider call, records the initial output, performs local repair or one text-only repair request, and keeps all interactions in one transcript.
+
+## `LlmTranscriptRun`
+
+Location: `python/llm_transcripts.py`
+
+Responsibilities:
+
+- produce unique provider/model/profile/token filenames;
+- place restorable Prolog artifacts at the top;
+- record state/action context, images, prompt sections, exact sent prompt, timing, usage, repair path, normalized JSON, and raw responses;
+- preserve raw responses at the bottom;
+- parse embedded artifacts;
+- restore historical artifacts into the mutable latest view.
+
+## README transcript integration
+
+`python/llm_readme_patch.py` marks the active completed transcript, links every historical run, and prevents recursive transcript embedding.
+
+Detailed architecture work:
+
+- add transcript schema-version migration;
+- add explicit artifact-set hashes;
+- compare providers and analysis levels automatically;
+- score restored/generated artifacts against later observations;
+- link prediction and rule evidence into transcripts.
+
+Corresponding deliverables: [Phase 1 generated artifacts and caching](SOW_DELIVERABLES.md#phase-1--grid-infrastructure-and-arc3-debugger-foundation).
+
+---
+
+# Phase 2 object perception and memory architecture
+
+## `CandidateObject`
+
+A stable facade representing a candidate semantic object. `part(name)` delegates a requested capability to the selected provider.
+
+Required capabilities:
+
+- properties;
+- structure;
+- relationships;
+- generative form;
+- correspondence proposals;
+- differences;
+- recognition evidence;
+- provenance.
+
+## `PerceptionAdapter`
+
+A modality-neutral front end that converts a raw source into normalized observations and candidates.
+
+## `GridAdapter`
+
+A thin adapter over the existing grid extractor. It must not become a second object engine.
+
+Architecture work:
+
+- inspect and wrap the current extractor;
+- normalize components, topology, holes, enclosures, bars, lines, and compounds;
+- emit exact logical-grid geometry;
+- preserve source artifact references.
+
+## `GenerativeForm`
+
+Interface for a normalized representation capable of regenerating an object.
+
+Required methods conceptually include:
+
+- `render()`;
+- `fit(observation)`;
+- `distance(observation)`;
+- `residual(observation)`;
+- `description_length()`;
+- `supports(transform)`.
+
+## `CellLogoForm`
+
+Exact-grid generative form backed by existing Turtle programs and `prolog/turtle_dsl.pl`.
+
+Architecture work:
+
+- establish normalized Turtle program references;
+- render through `SWIPrologBridge`;
+- compare regenerated cells to observed cells;
+- measure residuals explicitly;
+- preserve exact holes, topology, and disconnected strokes.
+
+## `ResidualCandidate` and `ResidualGate`
+
+A residual is unexplained structure remaining after known forms are fitted. The gate decides whether it remains provisional, is rejected, or becomes a commit request.
+
+## `CommittedAtom`
+
+Backend-neutral durable semantic record. New atoms begin at zero confidence and accumulate evidence through controlled mutation.
+
+## `SingleWriter`
+
+The only authoritative mutation path for durable objects and evidence.
+
+Responsibilities:
+
+- commit admitted objects;
+- add positive or negative evidence;
+- merge or split identities through explicit decisions;
+- demote or tombstone concepts;
+- preserve provenance;
+- prevent uncontrolled confidence changes.
+
+## Planned `Observation`
+
+Normalized immutable observation containing:
+
+- observation ID;
+- source modality;
+- state/action ordinal;
+- image/grid artifact references;
+- dimensions and coordinate contract;
+- candidate-object references;
+- provenance and schema version.
+
+## Planned `EncounterRecord` and `EncounterLog`
+
+Append-only persistent record of an object encounter.
+
+Required fields:
+
+- encounter ID;
+- observation ID;
+- object identity or candidate identity;
+- instance parameters;
+- matched and changed properties;
+- residuals;
+- artifacts;
+- evidence links;
+- previous/next encounter references;
+- deterministic hash.
+
+## Planned `RecognitionAccount`
+
+Explains why a candidate was or was not recognized as an existing object.
+
+It should contain:
+
+- candidate and stored identity references;
+- matched properties;
+- changed properties;
+- allowed transformations;
+- residual score;
+- supporting and contradicting evidence;
+- rival identity proposals;
+- final decision source.
+
+## Planned `SymbolicStore`
+
+Durable access facade over Prolog or Atomspace storage. It should expose exact identity, atoms, evidence, lifecycle, and provenance without making embeddings authoritative.
+
+## Planned `ArtifactIndex`
+
+Indexes:
+
+- frames;
+- masks;
+- Turtle programs;
+- reconstructed images;
+- embeddings;
+- traces;
+- transcripts;
+- correspondence evidence;
+- predictions and outcomes.
+
+## Phase 2 correspondence architecture
+
+The correspondence pipeline should:
+
+1. generate candidates using geometry, identity, properties, topology, and optional embeddings;
+2. score matched and changed properties;
+3. preserve multiple proposals;
+4. distinguish moved/recolored/resized/reshaped objects from appeared/disappeared objects;
+5. submit merge/split decisions to the authoritative writer;
+6. record evidence and provenance.
+
+## Phase 2 recognition invariants
+
+- recognition does not duplicate a known durable object;
+- new residual structure remains explicit;
+- partial visibility does not silently overwrite the complete form;
+- false merges and false splits remain reversible through provenance;
+- regeneration can be compared against the source observation;
+- replay from the same store and encounter log is deterministic.
+
+Corresponding work: [TODO — Phase 2 active work](TODO.md#phase-2-object-perception-and-persistent-memory).
+
+Corresponding deliverables: [Phase 2 checklist](SOW_DELIVERABLES.md#phase-2--object-perception-recognition-and-persistent-memory).
+
+---
+
+# Phase 3 Game Object Learner architecture
+
+## `GameObjectLearnerPayload`
+
+Stable serialized boundary from perception/memory to learning.
+
+It should include:
+
+- schema version;
 - observation and encounter IDs;
-- object identities and properties;
-- relationships and spatial structure;
-- parent/current correspondence;
+- stable object identities;
+- normalized properties and relationships;
+- parent/current correspondences;
 - direct state differences;
 - action information;
-- generative representations and artifact references;
-- encounter history and provenance;
-- candidate interpretations and confidence/evidence records.
+- generative-form and artifact references;
+- encounter history;
+- evidence and provenance;
+- competing interpretations.
 
-The learner returns normalized transformation candidates, competing rules, predictions, evidence updates, and optional action recommendations. It must not mutate perception memory directly.
+It must not contain debugger implementation objects such as `StateNode` or adapter instances.
 
-## Phase 3 completion evidence
+## `IntegrationValidator`
 
-Acceptance should include:
+Responsibilities:
 
-- payload-schema validation and stable serialization;
-- structured error demonstrations;
-- real handoff from Phase 2 objects and correspondences;
-- transformation induction over observed transitions;
-- multiple competing interpretations with retained evidence;
-- application of learned transformations to unseen cases;
-- predictions recorded before actions or outcomes;
-- independent environment outcomes and deterministic grading;
-- positive and negative rule evidence updates;
-- proof that post-hoc rules do not receive prediction credit;
-- integration demonstrations across the approved environment progression;
-- partial-occlusion recognition/completion demonstration;
-- reproducible benchmark and acceptance commands;
-- integration documentation, examples, developer notes, and acceptance reports.
+- validate schema version;
+- validate unique and resolvable identities;
+- validate artifact and provenance references;
+- validate before/after ordering;
+- reject duplicate objects and malformed transitions;
+- return structured integration errors.
 
-The Python and Prolog contracts are connected and tested with provider-driven examples. Real Phase 2 payloads, task-quality rule induction, prediction quality, broad environment coverage, and formal acceptance results remain incomplete.
+## `GameObjectLearnerPlugin`
+
+Stable interface used by callers. It should accept normalized state or transition payloads and return normalized results without directly mutating perception memory.
+
+## `PipelineGameObjectLearnerPlugin`
+
+Concrete plugin wrapping `GameLearningPipeline`.
+
+## `TransitionAnalyzer`
+
+Consumes normalized before/action/after data and emits direct observations only.
+
+It should distinguish:
+
+- unchanged;
+- moved;
+- appeared/disappeared;
+- recolored;
+- resized/reshaped;
+- split/merged;
+- opened/closed;
+- consumed/created/destroyed;
+- overwritten;
+- HUD/status changes.
+
+## `TransformationLearner`
+
+Generates candidate transformations from observed deltas.
+
+Required behavior:
+
+- preserve competing candidates;
+- cite concrete supporting evidence;
+- expose assumptions;
+- apply candidates to new states;
+- compare predicted and actual transformed states.
+
+## `RuleInducer`
+
+Builds candidate rules from transformations and context. It should support specialization, generalization, rival interpretations, and explicit assumptions.
+
+## `RuleRanker`
+
+Ranks rules using:
+
+- prior prediction success and failure;
+- contradiction evidence;
+- simplicity and description length;
+- coverage;
+- rival interpretations;
+- applicability precision.
+
+## `RuleStore` and `RuleExecutor`
+
+`RuleStore` maintains exact rule identity and evidence. `RuleExecutor` applies a selected rule through domain-supplied applicability and execution callbacks.
+
+## `PredictionLedger`
+
+Append-only record proving prediction-before-outcome ordering.
+
+Each prediction should include:
+
+- prediction ID;
+- rule and source-state IDs;
+- predicted objects, relationships, changes, state, or action;
+- creation ordinal and timestamp;
+- evidence available at prediction time;
+- later outcome reference;
+- grade and grading evidence.
+
+## `OutcomeChannel`
+
+Obtains the independent later observation. It must not reuse the prediction as the outcome.
+
+## `PredictionEvaluator`
+
+Compares expected and observed results and returns a `PredictionGrade` with concrete evidence.
+
+## `GameLearningPipeline`
+
+Connected orchestration:
+
+```text
+transition analysis
+    → transformation candidates
+    → rule induction
+    → rule ranking
+    → rule storage
+    → rule application
+    → prior prediction
+    → independent outcome
+    → prediction grading
+    → rule evidence update
+```
+
+## Prolog modules
+
+- `transition_analysis.pl`;
+- `transformation_learning.pl`;
+- `rule_induction.pl`;
+- `rule_ranking.pl`;
+- `transition_rules.pl`;
+- `prediction_ledger.pl`;
+- `prediction_evaluation.pl`;
+- `game_object_learner_api.pl`.
+
+These modules should remain provider-driven and use the canonical object-memory contracts rather than duplicating Python models.
+
+## Phase 3 integration architecture work
+
+- freeze serialized payload and result schemas;
+- build real payloads from Phase 2 objects and encounters;
+- connect `Arc3Runner` transitions to the plugin;
+- connect generated artifacts and native Prolog facts through providers;
+- preserve competing transformations and rules;
+- record predictions before actions;
+- capture independent outcomes;
+- update evidence through the authoritative writer;
+- expose optional action recommendations to `agent/my_agent.py` through a stable seam.
+
+Corresponding work: [TODO — Phase 3 active work](TODO.md#phase-3-game-object-learner-and-prediction).
+
+Corresponding deliverables: [Phase 3 checklist](SOW_DELIVERABLES.md#phase-3--game-object-learner-integration-and-predictive-rule-learning).
 
 ---
 
-# Shared execution modes
+# Environment progression
 
-One normalized contract supports three implementations:
+The implementation should progress in this order:
 
-1. **PROLOG** — SWI-Prolog predicates and existing/generated `.pl` artifacts.
-2. **GPT/LLM** — provider-generated, cached, and restorable analysis artifacts with explicit provenance.
-3. **PYTHON** — deterministic native resolvers where appropriate.
+1. ARC-style exact grids;
+2. rendered arcade environments;
+3. fixed-camera physics examples;
+4. top-down manipulation with partial occlusion.
 
-Every provider returns a `NormalizedResult`. Provider capability discovery should state which operations are available rather than returning speculative empty interfaces.
+The exact grid path should become deterministic and reproducible before broader raster environments are treated as accepted.
 
 # Protected Kaggle surface
 
-These paths and their behavior remain protected:
+Do not rename or repurpose:
 
 - `agent/my_agent.py`;
 - `scripts/play_local.py`;
 - `scripts/build_notebook.py`;
 - generated `notebooks/submission.ipynb`;
 - `notebooks/kernel-metadata.json`;
-- existing Kaggle Makefile targets, imports, paths, and packaging behavior.
-
-Game Object Learner recommendations may be connected through a stable seam, but these protected entry points must not be renamed or repurposed.
+- existing Kaggle Makefile targets and packaging behavior.
 
 # Components intentionally not duplicated
 
 - another ARC3 runner;
 - another action-tree store;
-- another LLM analyzer or provider pipeline;
-- another prompt directory separate from `config/`;
-- another raw-response cache separate from the Markdown transcript history;
+- another LLM analyzer/provider pipeline;
+- another prompt directory;
+- another raw-response cache outside transcripts;
 - another SWI subprocess bridge;
 - another Turtle interpreter;
 - another friendly identity database;
-- parallel runners under `examples/`;
-- phase-specific source directory trees;
-- unrelated Python and Prolog rule-storage formats.
+- parallel example runners;
+- phase-specific source trees;
+- unrelated Python and Prolog rule formats.
 
-# Recommended integration order
+# Architecture implementation sequence
 
-1. Freeze observation, object, committed-atom, transition, artifact-reference, and learner-payload schemas.
-2. Complete Phase 1 artifact validation, replay hashes, provenance, and acceptance demonstrations.
-3. Implement append-only encounter persistence and artifact indexing.
-4. Connect the existing grid extractor through `GridAdapter`.
-5. Fit and regenerate exact grid objects through the existing Turtle semantics.
+1. Freeze observation, object, atom, transition, artifact-reference, evidence, payload, and result schemas.
+2. Complete Phase 1 cache validation, replay hashes, provenance, and acceptance evidence.
+3. Implement encounter persistence and artifact indexing.
+4. Connect the existing object extractor through `GridAdapter`.
+5. Fit and regenerate exact grid forms through `turtle_dsl.pl`.
 6. Implement deterministic correspondence, recognition, duplicate prevention, and identity governance.
-7. Pass grid identity, replay, regeneration, and degradation tests.
-8. Build real Game Object Learner payloads from Phase 2 objects and transitions.
-9. Learn and apply candidate transformations while retaining rival interpretations.
-10. Record predictions before ARC3 actions and grade independent responses.
-11. Add raster, physics, degradation, and occlusion providers after the exact grid path is stable.
-12. Produce reproducible acceptance reports for each phase.
+7. Feed real Phase 2 transitions into the connected Phase 3 pipeline.
+8. Learn and apply competing transformations and rules.
+9. Record predictions before ARC3 actions and grade independent outcomes.
+10. Add raster, physics, degradation, and occlusion providers after exact-grid acceptance.
+11. Add benchmark, ablation, provider comparison, and acceptance reporting.
 
-See [TODO.md](TODO.md) for the executable backlog and [FILE_TREE.md](FILE_TREE.md) for the repository map.
+[TODO.md](TODO.md) tracks the concrete implementation steps. [SOW_DELIVERABLES.md](SOW_DELIVERABLES.md) tracks delivery completion.
 
 [← Back to top-level README](README.md)
