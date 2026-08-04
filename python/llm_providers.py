@@ -204,7 +204,7 @@ class LlmProviderRouter:
         urlopen: Callable[..., Any] | None = None,
     ) -> None:
         selected_path = Path(
-            os.environ.get("ARC3_LLM_CONFIG") or config_path or DEFAULT_CONFIG_PATH
+            config_path or os.environ.get("ARC3_LLM_CONFIG") or DEFAULT_CONFIG_PATH
         ).expanduser().resolve()
         self.config_path = selected_path
         raw = json.loads(selected_path.read_text(encoding="utf-8"))
@@ -227,7 +227,7 @@ class LlmProviderRouter:
 
         providers = raw.get("llm_providers")
         if providers is None:
-            providers = raw.get("providers")  # compatibility with earlier configs
+            providers = raw.get("providers")
         if not isinstance(providers, list) or not providers:
             raise LlmConfigurationError(
                 f"LLM config must contain a nonempty llm_providers list: {selected_path}"
