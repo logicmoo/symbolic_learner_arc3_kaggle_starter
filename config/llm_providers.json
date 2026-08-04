@@ -1,5 +1,6 @@
 {
-  "default_provider": "openai",
+  "default_model": "openai-gpt-5.6",
+  "default_profile": "openai-gpt-5.6-extreme",
   "prompt_text": {
     "response_contract": [
       "Analyze the current ARC3 state and return exactly one valid JSON object. Do not return Markdown or commentary. Return only the dynamically requested subset of these allowed keys: new_identities, objects_pl, differences_pl, similarities_pl, turtle_from_image_pl, turtle_from_diff_pl, and rules_pl.",
@@ -22,18 +23,18 @@
     "turtle_reconstruction": [
       "TURTLE RECONSTRUCTION: turtle_from_image_pl must faithfully reconstruct the complete current logical grid as motion-based Turtle programs. The canonical drawing vocabulary is penup, pendown, set_pos/2, setcolor/1, pen_width/1, fwd/1, rot/1, and set_cell. pen_width/1 accepts only widths 1 through 4 logical cells. Use set_pos/2 only to establish an initial position or begin a genuinely disconnected stroke. Once positioned, trace geometry with fwd/1 and rot/1. Prefer the largest exact pen width up to 4, so one width-4 stroke is preferred over four parallel width-1 strokes when both paint exactly the same cells.",
       "",
-      "Do not generate rect/4, rectangle/4, fill/1, block/4, draw_cells/1, direct four-coordinate box commands, or long lists of independent cell placements. Do not describe a rectangle merely by its x, y, width, and height in a Turtle program. Draw rectangle borders by moving and rotating around their perimeter. Draw solid rectangles and other filled regions as motion-based scan lines, using pen_width/1 where exact, with penup repositioning only between disconnected scan strokes. Preserve holes by tracing around or scanning around them rather than painting an oversized block. Each turtle_program/2 in objects_pl must follow these same movement-based rules.",
+      "Do not generate rect/4, rectangle/4, fill/1, block/4, draw_cells/1, direct four-coordinate box commands, or long lists of independent cell placements. Do not describe a rectangle merely by its x, y, width, and height in a Turtle program. Draw rectangle borders by moving and rotating around their perimeter. Draw solid rectangles and other filled regions as motion-based scan lines, using pen_width/1 where exact, with penup repositioning only between disconnected scan strokes. Preserve holes by tracing around or scanning around them rather than painting an oversized block. Each turtle_program/2 in objects.pl must follow these same movement-based rules.",
       "",
-      "turtle_from_diff_pl must provide an executable and complete parent-to-current motion-based patch covering exactly the changed cells whenever possible. It must include cells that were cleared, overwritten, recolored, added, or restored. Minimize the patch by changed logical cells, use pen_width/1 for exact parallel changes, and never omit a required change merely to make the program shorter. The diff program must obey the same prohibition on rect/4 and direct block commands."
+      "turtle_from_diff.pl must provide an executable and complete parent-to-current motion-based patch covering exactly the changed cells whenever possible. It must include cells that were cleared, overwritten, recolored, added, or restored. Minimize the patch by changed logical cells, use pen_width/1 for exact parallel changes, and never omit a required change merely to make the program shorter. The diff program must obey the same prohibition on rect/4 and direct block commands."
     ],
     "transitions": [
-      "TRANSITIONS: differences_pl must contain direct parent-to-current observations only. Represent applicable changes such as unchanged, moved, appeared, disappeared, recolored, resized, reshaped, split, merged, opened, closed, consumed, created, destroyed, overwritten, or HUD/status changes. Every claimed transition must include concrete coordinate, color, geometry, or cell-set evidence. Do not infer a game rule in differences_pl."
+      "TRANSITIONS: differences.pl must contain direct parent-to-current observations only. Represent applicable changes such as unchanged, moved, appeared, disappeared, recolored, resized, reshaped, split, merged, opened, closed, consumed, created, destroyed, overwritten, or HUD/status changes. Every claimed transition must include concrete coordinate, color, geometry, or cell-set evidence. Do not infer a game rule in differences.pl."
     ],
     "correspondences": [
-      "CORRESPONDENCES: similarities_pl must contain parent-to-current object correspondences only. Record persistent-object matches, similarity scores, matched properties, changed properties, and supporting evidence. Do not force a correspondence when appearance or disappearance is better supported. Reuse canonical IDs from object_registry.pl."
+      "CORRESPONDENCES: similarities.pl must contain parent-to-current object correspondences only. Record persistent-object matches, similarity scores, matched properties, changed properties, and supporting evidence. Do not force a correspondence when appearance or disappearance is better supported. Reuse canonical IDs from object_registry.pl."
     ],
     "rule_analysis": [
-      "RULE ANALYSIS: rules_pl must separate observed_rule/2, hypothetical_rule/3, evidence/3, supported_by/2, contradicted_by/2, and confidence/2. observed_rule/2 is reserved for directly established transition regularities. hypothetical_rule/3 must clearly identify assumptions or unresolved alternatives. Evidence must cite concrete state or transition facts rather than restating the hypothesis. Do not promote a hypothesis to an observed rule from a single ambiguous coincidence."
+      "RULE ANALYSIS: rules.pl must separate observed_rule/2, hypothetical_rule/3, evidence/3, supported_by/2, contradicted_by/2, and confidence/2. observed_rule/2 is reserved for directly established transition regularities. hypothetical_rule/3 must clearly identify assumptions or unresolved alternatives. Evidence must cite concrete state or transition facts rather than restating the hypothesis. Do not promote a hypothesis to an observed rule from a single ambiguous coincidence."
     ],
     "file_separation": [
       "FILE SEPARATION: Put proposed identities only in new_identities; current-state facts only in objects_pl; direct transition facts only in differences_pl; cross-state correspondences only in similarities_pl; full-frame drawing code only in turtle_from_image_pl; changed-cell patch code only in turtle_from_diff_pl; and rule hypotheses, rule evidence, support links, contradictions, and rule confidence only in rules_pl."
@@ -46,130 +47,42 @@
     ]
   },
   "llm_providers": [
-    {
-      "id": "openai",
-      "label": "ChatGPT / OpenAI API",
-      "adapter": "openai_responses",
-      "model": "gpt-5.6",
-      "model_env": "ARC3_OPENAI_MODEL",
-      "api_key_env": "OPENAI_API_KEY",
-      "enabled": "auto",
-      "supports_reasoning": true,
-      "prompt_text": [
-        "response_contract",
-        "coordinate_contract",
-        "identity_contract",
-        "object_extraction",
-        "turtle_reconstruction",
-        "transitions",
-        "correspondences",
-        "rule_analysis",
-        "file_separation",
-        "root_state",
-        "quality_control"
-      ]
-    },
-    {
-      "id": "claude",
-      "label": "Claude / Anthropic API",
-      "adapter": "anthropic_messages",
-      "model": "claude-sonnet-4-20250514",
-      "model_env": "ARC3_CLAUDE_MODEL",
-      "api_key_env": "ANTHROPIC_API_KEY",
-      "base_url": "https://api.anthropic.com/v1",
-      "base_url_env": "ARC3_CLAUDE_BASE_URL",
-      "enabled": "auto",
-      "prompt_text": [
-        "response_contract",
-        "coordinate_contract",
-        "identity_contract",
-        "object_extraction",
-        "turtle_reconstruction",
-        "transitions",
-        "correspondences",
-        "rule_analysis",
-        "file_separation",
-        "root_state",
-        "quality_control"
-      ]
-    },
-    {
-      "id": "groq-free",
-      "label": "Groq Free / Qwen 3.6 27B",
-      "adapter": "openai_responses",
-      "model": "qwen/qwen3.6-27b",
-      "model_env": "ARC3_GROQ_MODEL",
-      "api_key_env": "GROQ_API_KEY",
-      "base_url": "https://api.groq.com/openai/v1",
-      "base_url_env": "ARC3_GROQ_BASE_URL",
-      "enabled": "auto",
-      "supports_reasoning": false,
-      "prompt_text": [
-        "response_contract",
-        "coordinate_contract",
-        "identity_contract",
-        "object_extraction",
-        "turtle_reconstruction",
-        "transitions",
-        "correspondences",
-        "rule_analysis",
-        "file_separation",
-        "root_state",
-        "quality_control"
-      ]
-    },
-    {
-      "id": "openrouter-free",
-      "label": "OpenRouter Free / automatic multimodal model",
-      "adapter": "openai_responses",
-      "model": "openrouter/free",
-      "model_env": "ARC3_OPENROUTER_MODEL",
-      "api_key_env": "OPENROUTER_API_KEY",
-      "base_url": "https://openrouter.ai/api/v1",
-      "base_url_env": "ARC3_OPENROUTER_BASE_URL",
-      "enabled": "auto",
-      "supports_reasoning": false,
-      "prompt_text": [
-        "response_contract",
-        "coordinate_contract",
-        "identity_contract",
-        "object_extraction",
-        "turtle_reconstruction",
-        "transitions",
-        "correspondences",
-        "rule_analysis",
-        "file_separation",
-        "root_state",
-        "quality_control"
-      ]
-    },
-    {
-      "id": "unsloth",
-      "label": "Unsloth Studio local",
-      "adapter": "openai_responses",
-      "model": "unsloth/gemma-4-E2B-it-GGUF",
-      "model_env": "ARC3_UNSLOTH_MODEL",
-      "api_key_env": "ARC3_UNSLOTH_API_KEY",
-      "api_key_optional": false,
-      "base_url": "http://127.0.0.1:8888/v1",
-      "base_url_env": "ARC3_UNSLOTH_BASE_URL",
-      "health_url": "http://127.0.0.1:8888/api/health",
-      "health_url_env": "ARC3_UNSLOTH_HEALTH_URL",
-      "enabled": "auto",
-      "supports_reasoning": false,
-      "prompt_text": [
-        "response_contract",
-        "coordinate_contract",
-        "identity_contract",
-        "object_extraction",
-        "turtle_reconstruction",
-        "transitions",
-        "correspondences",
-        "rule_analysis",
-        "file_separation",
-        "root_state",
-        "quality_control"
-      ]
-    }
+    {"id":"openai","label":"OpenAI API","adapter":"openai_responses","api_key_env":"OPENAI_API_KEY","enabled":"auto","supports_reasoning":true,"default_model":"openai-gpt-5.6"},
+    {"id":"anthropic","label":"Anthropic API","adapter":"anthropic_messages","api_key_env":"ANTHROPIC_API_KEY","base_url":"https://api.anthropic.com/v1","base_url_env":"ARC3_CLAUDE_BASE_URL","enabled":"auto","supports_reasoning":false,"default_model":"anthropic-claude-sonnet"},
+    {"id":"groq","label":"Groq Cloud","adapter":"openai_responses","api_key_env":"GROQ_API_KEY","base_url":"https://api.groq.com/openai/v1","base_url_env":"ARC3_GROQ_BASE_URL","enabled":"auto","supports_reasoning":false,"default_model":"groq-qwen-3.6-27b"},
+    {"id":"openrouter","label":"OpenRouter","adapter":"openai_responses","api_key_env":"OPENROUTER_API_KEY","base_url":"https://openrouter.ai/api/v1","base_url_env":"ARC3_OPENROUTER_BASE_URL","enabled":"auto","supports_reasoning":true,"default_model":"openrouter-auto-free"},
+    {"id":"unsloth","label":"Unsloth Studio local","adapter":"openai_responses","api_key_env":"ARC3_UNSLOTH_API_KEY","api_key_optional":false,"base_url":"http://127.0.0.1:8888/v1","base_url_env":"ARC3_UNSLOTH_BASE_URL","health_url":"http://127.0.0.1:8888/api/health","health_url_env":"ARC3_UNSLOTH_HEALTH_URL","enabled":"auto","supports_reasoning":false,"default_model":"unsloth-gemma-4-e2b"}
+  ],
+  "llm_models": [
+    {"id":"openai-gpt-5.6","provider":"openai","label":"GPT-5.6","model":"gpt-5.6","model_env":"ARC3_OPENAI_MODEL","supports_reasoning":true,"vision":true,"default_level":4},
+    {"id":"anthropic-claude-sonnet","provider":"anthropic","label":"Claude Sonnet","model":"claude-sonnet-4-20250514","model_env":"ARC3_CLAUDE_MODEL","supports_reasoning":false,"vision":true,"default_level":4},
+    {"id":"groq-qwen-3.6-27b","provider":"groq","label":"Qwen 3.6 27B on Groq","model":"qwen/qwen3.6-27b","model_env":"ARC3_GROQ_MODEL","supports_reasoning":false,"vision":true,"default_level":3},
+    {"id":"openrouter-auto-free","provider":"openrouter","label":"OpenRouter automatic free","model":"openrouter/free","model_env":"ARC3_OPENROUTER_MODEL","supports_reasoning":true,"vision":true,"default_level":3},
+    {"id":"openrouter-nemotron-12b-vl","provider":"openrouter","label":"Nemotron Nano 12B 2 VL free","model":"nvidia/nemotron-nano-12b-v2-vl:free","supports_reasoning":false,"vision":true,"default_level":3},
+    {"id":"openrouter-nemotron-omni","provider":"openrouter","label":"Nemotron 3 Nano Omni free","model":"nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free","supports_reasoning":true,"vision":true,"default_level":3},
+    {"id":"unsloth-gemma-4-e2b","provider":"unsloth","label":"Gemma 4 E2B local","model":"unsloth/gemma-4-E2B-it-GGUF","model_env":"ARC3_UNSLOTH_MODEL","supports_reasoning":false,"vision":true,"default_level":3}
+  ],
+  "llm_profiles": [
+    {"id":"openai-gpt-5.6-light","label":"GPT-5.6 — light","model":"openai-gpt-5.6","analysis_level":2,"single_enabled":true,"batch_enabled":false,"max_output_tokens":12000,"temperature":0.1,"top_p":0.95,"reasoning_effort":"low","current_image_detail":"low","parent_image_detail":"low","timeout_seconds":180,"seed":null,"prompt_text":["response_contract","coordinate_contract","identity_contract","object_extraction","turtle_reconstruction","transitions","file_separation","root_state","quality_control"]},
+    {"id":"openai-gpt-5.6-deep","label":"GPT-5.6 — deep","model":"openai-gpt-5.6","analysis_level":3,"single_enabled":true,"batch_enabled":false,"max_output_tokens":22000,"temperature":0.05,"top_p":0.95,"reasoning_effort":"medium","current_image_detail":"high","parent_image_detail":"low","timeout_seconds":420,"seed":null,"prompt_text":["response_contract","coordinate_contract","identity_contract","object_extraction","turtle_reconstruction","transitions","correspondences","file_separation","root_state","quality_control"]},
+    {"id":"openai-gpt-5.6-extreme","label":"GPT-5.6 — extreme","model":"openai-gpt-5.6","analysis_level":4,"single_enabled":true,"batch_enabled":false,"max_output_tokens":32000,"temperature":0.0,"top_p":1.0,"reasoning_effort":"high","current_image_detail":"high","parent_image_detail":"high","timeout_seconds":900,"seed":null,"prompt_text":["response_contract","coordinate_contract","identity_contract","object_extraction","turtle_reconstruction","transitions","correspondences","rule_analysis","file_separation","root_state","quality_control"]},
+    {"id":"anthropic-claude-sonnet-light","label":"Claude Sonnet — light","model":"anthropic-claude-sonnet","analysis_level":2,"single_enabled":true,"batch_enabled":false,"max_output_tokens":10000,"temperature":0.1,"top_p":0.95,"reasoning_effort":"low","current_image_detail":"low","parent_image_detail":"low","timeout_seconds":180,"seed":null,"prompt_text":["response_contract","coordinate_contract","identity_contract","object_extraction","turtle_reconstruction","transitions","file_separation","root_state","quality_control"]},
+    {"id":"anthropic-claude-sonnet-deep","label":"Claude Sonnet — deep","model":"anthropic-claude-sonnet","analysis_level":3,"single_enabled":true,"batch_enabled":false,"max_output_tokens":18000,"temperature":0.05,"top_p":0.95,"reasoning_effort":"medium","current_image_detail":"high","parent_image_detail":"low","timeout_seconds":420,"seed":null,"prompt_text":["response_contract","coordinate_contract","identity_contract","object_extraction","turtle_reconstruction","transitions","correspondences","file_separation","root_state","quality_control"]},
+    {"id":"anthropic-claude-sonnet-extreme","label":"Claude Sonnet — extreme","model":"anthropic-claude-sonnet","analysis_level":4,"single_enabled":true,"batch_enabled":false,"max_output_tokens":28000,"temperature":0.0,"top_p":1.0,"reasoning_effort":"high","current_image_detail":"high","parent_image_detail":"high","timeout_seconds":900,"seed":null,"prompt_text":["response_contract","coordinate_contract","identity_contract","object_extraction","turtle_reconstruction","transitions","correspondences","rule_analysis","file_separation","root_state","quality_control"]},
+    {"id":"groq-qwen-3.6-27b-light","label":"Qwen 3.6 27B on Groq — light","model":"groq-qwen-3.6-27b","analysis_level":2,"single_enabled":true,"batch_enabled":false,"max_output_tokens":7000,"temperature":0.1,"top_p":0.9,"reasoning_effort":"low","current_image_detail":"low","parent_image_detail":"low","timeout_seconds":120,"seed":null,"prompt_text":["response_contract","coordinate_contract","identity_contract","object_extraction","turtle_reconstruction","transitions","file_separation","root_state","quality_control"]},
+    {"id":"groq-qwen-3.6-27b-deep","label":"Qwen 3.6 27B on Groq — deep","model":"groq-qwen-3.6-27b","analysis_level":3,"single_enabled":true,"batch_enabled":true,"max_output_tokens":12000,"temperature":0.05,"top_p":0.95,"reasoning_effort":"medium","current_image_detail":"high","parent_image_detail":"low","timeout_seconds":300,"seed":null,"prompt_text":["response_contract","coordinate_contract","identity_contract","object_extraction","turtle_reconstruction","transitions","correspondences","file_separation","root_state","quality_control"]},
+    {"id":"groq-qwen-3.6-27b-extreme","label":"Qwen 3.6 27B on Groq — extreme","model":"groq-qwen-3.6-27b","analysis_level":4,"single_enabled":true,"batch_enabled":false,"max_output_tokens":18000,"temperature":0.0,"top_p":1.0,"reasoning_effort":"high","current_image_detail":"high","parent_image_detail":"high","timeout_seconds":600,"seed":null,"prompt_text":["response_contract","coordinate_contract","identity_contract","object_extraction","turtle_reconstruction","transitions","correspondences","rule_analysis","file_separation","root_state","quality_control"]},
+    {"id":"openrouter-auto-free-light","label":"OpenRouter automatic free — light","model":"openrouter-auto-free","analysis_level":2,"single_enabled":true,"batch_enabled":false,"max_output_tokens":8000,"temperature":0.1,"top_p":0.9,"reasoning_effort":"low","current_image_detail":"low","parent_image_detail":"low","timeout_seconds":180,"seed":null,"prompt_text":["response_contract","coordinate_contract","identity_contract","object_extraction","turtle_reconstruction","transitions","file_separation","root_state","quality_control"]},
+    {"id":"openrouter-auto-free-deep","label":"OpenRouter automatic free — deep","model":"openrouter-auto-free","analysis_level":3,"single_enabled":true,"batch_enabled":true,"max_output_tokens":14000,"temperature":0.05,"top_p":0.95,"reasoning_effort":"medium","current_image_detail":"high","parent_image_detail":"low","timeout_seconds":420,"seed":null,"prompt_text":["response_contract","coordinate_contract","identity_contract","object_extraction","turtle_reconstruction","transitions","correspondences","file_separation","root_state","quality_control"]},
+    {"id":"openrouter-auto-free-extreme","label":"OpenRouter automatic free — extreme","model":"openrouter-auto-free","analysis_level":4,"single_enabled":true,"batch_enabled":false,"max_output_tokens":24000,"temperature":0.0,"top_p":1.0,"reasoning_effort":"high","current_image_detail":"high","parent_image_detail":"high","timeout_seconds":720,"seed":null,"prompt_text":["response_contract","coordinate_contract","identity_contract","object_extraction","turtle_reconstruction","transitions","correspondences","rule_analysis","file_separation","root_state","quality_control"]},
+    {"id":"openrouter-nemotron-12b-vl-light","label":"Nemotron Nano 12B 2 VL free — light","model":"openrouter-nemotron-12b-vl","analysis_level":2,"single_enabled":true,"batch_enabled":false,"max_output_tokens":7000,"temperature":0.15,"top_p":0.9,"reasoning_effort":"low","current_image_detail":"low","parent_image_detail":"low","timeout_seconds":240,"seed":null,"prompt_text":["response_contract","coordinate_contract","identity_contract","object_extraction","turtle_reconstruction","transitions","file_separation","root_state","quality_control"]},
+    {"id":"openrouter-nemotron-12b-vl-deep","label":"Nemotron Nano 12B 2 VL free — deep","model":"openrouter-nemotron-12b-vl","analysis_level":3,"single_enabled":true,"batch_enabled":true,"max_output_tokens":14000,"temperature":0.05,"top_p":0.95,"reasoning_effort":"medium","current_image_detail":"high","parent_image_detail":"low","timeout_seconds":420,"seed":null,"prompt_text":["response_contract","coordinate_contract","identity_contract","object_extraction","turtle_reconstruction","transitions","correspondences","file_separation","root_state","quality_control"]},
+    {"id":"openrouter-nemotron-12b-vl-extreme","label":"Nemotron Nano 12B 2 VL free — extreme","model":"openrouter-nemotron-12b-vl","analysis_level":4,"single_enabled":true,"batch_enabled":false,"max_output_tokens":24000,"temperature":0.0,"top_p":1.0,"reasoning_effort":"high","current_image_detail":"high","parent_image_detail":"high","timeout_seconds":720,"seed":null,"prompt_text":["response_contract","coordinate_contract","identity_contract","object_extraction","turtle_reconstruction","transitions","correspondences","rule_analysis","file_separation","root_state","quality_control"]},
+    {"id":"openrouter-nemotron-omni-light","label":"Nemotron 3 Nano Omni free — light","model":"openrouter-nemotron-omni","analysis_level":2,"single_enabled":true,"batch_enabled":false,"max_output_tokens":8000,"temperature":0.1,"top_p":0.9,"reasoning_effort":"low","current_image_detail":"low","parent_image_detail":"low","timeout_seconds":240,"seed":null,"prompt_text":["response_contract","coordinate_contract","identity_contract","object_extraction","turtle_reconstruction","transitions","file_separation","root_state","quality_control"]},
+    {"id":"openrouter-nemotron-omni-deep","label":"Nemotron 3 Nano Omni free — deep","model":"openrouter-nemotron-omni","analysis_level":3,"single_enabled":true,"batch_enabled":true,"max_output_tokens":16000,"temperature":0.05,"top_p":0.95,"reasoning_effort":"medium","current_image_detail":"high","parent_image_detail":"low","timeout_seconds":480,"seed":null,"prompt_text":["response_contract","coordinate_contract","identity_contract","object_extraction","turtle_reconstruction","transitions","correspondences","file_separation","root_state","quality_control"]},
+    {"id":"openrouter-nemotron-omni-extreme","label":"Nemotron 3 Nano Omni free — extreme","model":"openrouter-nemotron-omni","analysis_level":4,"single_enabled":true,"batch_enabled":false,"max_output_tokens":28000,"temperature":0.0,"top_p":1.0,"reasoning_effort":"high","current_image_detail":"high","parent_image_detail":"high","timeout_seconds":900,"seed":null,"prompt_text":["response_contract","coordinate_contract","identity_contract","object_extraction","turtle_reconstruction","transitions","correspondences","rule_analysis","file_separation","root_state","quality_control"]},
+    {"id":"unsloth-gemma-4-e2b-light","label":"Gemma 4 E2B local — light","model":"unsloth-gemma-4-e2b","analysis_level":2,"single_enabled":true,"batch_enabled":false,"max_output_tokens":8000,"temperature":0.1,"top_p":0.9,"reasoning_effort":"low","current_image_detail":"low","parent_image_detail":"low","timeout_seconds":300,"seed":null,"prompt_text":["response_contract","coordinate_contract","identity_contract","object_extraction","turtle_reconstruction","transitions","file_separation","root_state","quality_control"]},
+    {"id":"unsloth-gemma-4-e2b-deep","label":"Gemma 4 E2B local — deep","model":"unsloth-gemma-4-e2b","analysis_level":3,"single_enabled":true,"batch_enabled":true,"max_output_tokens":16000,"temperature":0.05,"top_p":0.95,"reasoning_effort":"medium","current_image_detail":"high","parent_image_detail":"low","timeout_seconds":600,"seed":null,"prompt_text":["response_contract","coordinate_contract","identity_contract","object_extraction","turtle_reconstruction","transitions","correspondences","file_separation","root_state","quality_control"]},
+    {"id":"unsloth-gemma-4-e2b-extreme","label":"Gemma 4 E2B local — extreme","model":"unsloth-gemma-4-e2b","analysis_level":4,"single_enabled":true,"batch_enabled":false,"max_output_tokens":28000,"temperature":0.0,"top_p":1.0,"reasoning_effort":"high","current_image_detail":"high","parent_image_detail":"high","timeout_seconds":1200,"seed":null,"prompt_text":["response_contract","coordinate_contract","identity_contract","object_extraction","turtle_reconstruction","transitions","correspondences","rule_analysis","file_separation","root_state","quality_control"]}
   ]
 }
