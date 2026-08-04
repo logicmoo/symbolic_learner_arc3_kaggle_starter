@@ -4,6 +4,10 @@ from _runtime import configure_runtime_home
 
 PROJECT_ROOT = configure_runtime_home(__file__)
 
+from llm_json_patch import install_llm_json_resilience
+
+install_llm_json_resilience()
+
 import interactive_runner as interactive_runner_ui
 from multillm_runner import install_interactive_runner
 
