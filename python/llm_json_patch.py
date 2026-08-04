@@ -2,11 +2,17 @@ from __future__ import annotations
 
 import os
 import re
-from pathlib import Path
+import time
 from types import SimpleNamespace
 from typing import Any, Callable, Mapping
 
 from llm_json import LlmJsonError, parse_or_repair_json_object, strict_json_text
+from llm_transcripts import (
+    begin_transcript,
+    record_initial_response,
+    record_repair_response,
+    save_transcript,
+)
 from unsloth_studio import StudioAwareLlmProviderRouter
 
 _REQUIRED_KEYS_RE = re.compile(
@@ -52,34 +58,6 @@ def _required_keys(request_input: Any) -> tuple[str, ...]:
     )
 
 
-def _response_directory() -> Path:
-    try:
-        from multillm_runner import last_runner
-
-        runner = last_runner()
-        node = getattr(runner, "current_node", None) if runner is not None else None
-        path = getattr(node, "path", None)
-        if path is not None:
-            return Path(path)
-    except Exception:
-        pass
-
-    configured = os.environ.get("ARC3_LLM_RESPONSE_DIR", "").strip()
-    root = Path(configured or ".llm_responses").expanduser().resolve()
-    root.mkdir(parents=True, exist_ok=True)
-    return root
-
-
-def _write_response(name: str, text: str) -> Path | None:
-    if not _env_bool("ARC3_LLM_SAVE_RAW_RESPONSE", True):
-        return None
-    directory = _response_directory()
-    directory.mkdir(parents=True, exist_ok=True)
-    path = directory / name
-    path.write_text(text + ("" if text.endswith("\n") else "\n"), encoding="utf-8")
-    return path
-
-
 def _repair_prompt(raw: str, required_keys: tuple[str, ...]) -> str:
     return (
         "Repair the malformed JSON below. Return exactly one strict JSON object "
@@ -92,18 +70,44 @@ def _repair_prompt(raw: str, required_keys: tuple[str, ...]) -> str:
     )
 
 
+def _save_failed_transcript(run: Any, error: BaseException) -> None:
+    if run is None:
+        return
+    run.error = str(error)
+    run.status = "failed"
+    run.repair_method = "failed"
+    run.metadata["completed_at"] = __import__("datetime").datetime.now(
+        __import__("datetime").timezone.utc
+    ).isoformat()
+    save_transcript(run)
+
+
 def _resilient_create_response(
     original_create_response: Callable[..., Any],
     router: StudioAwareLlmProviderRouter,
     **kwargs: Any,
 ) -> Any:
-    response = original_create_response(router, **kwargs)
+    run = begin_transcript(router, kwargs)
+    started = time.perf_counter()
+    try:
+        response = original_create_response(router, **kwargs)
+    except Exception as error:
+        if run is not None:
+            run.elapsed_seconds = time.perf_counter() - started
+        _save_failed_transcript(run, error)
+        raise
+
+    elapsed = time.perf_counter() - started
+    record_initial_response(run, response, elapsed_seconds=elapsed)
     raw = getattr(response, "output_text", None)
     if not raw:
-        return response
+        error = RuntimeError("LLM response contained no output_text")
+        _save_failed_transcript(run, error)
+        raise error
 
     required_keys = _required_keys(kwargs.get("input"))
-    raw_path = _write_response("llm_response.raw.txt", str(raw))
+    if run is not None:
+        run.required_keys = required_keys
     used_provider_retry = False
 
     try:
@@ -113,7 +117,8 @@ def _resilient_create_response(
         )
     except LlmJsonError as first_error:
         if not _env_bool("ARC3_LLM_JSON_RETRY", True):
-            location = f" Raw response: {raw_path}" if raw_path else ""
+            _save_failed_transcript(run, first_error)
+            location = f" Transcript: {run.path}" if run is not None else ""
             raise RuntimeError(f"{first_error}.{location}") from first_error
 
         print(
@@ -121,62 +126,94 @@ def _resilient_create_response(
             "text-only JSON repair pass..."
         )
         used_provider_retry = True
-        repair_response = original_create_response(
-            router,
-            model=kwargs.get("model"),
-            input=[
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "input_text",
-                            "text": _repair_prompt(str(raw), required_keys),
-                        }
-                    ],
-                }
-            ],
-            reasoning={"effort": "low"},
-            max_output_tokens=kwargs.get("max_output_tokens"),
+        repair_prompt = _repair_prompt(str(raw), required_keys)
+        repair_started = time.perf_counter()
+        try:
+            repair_response = original_create_response(
+                router,
+                model=kwargs.get("model"),
+                input=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "input_text",
+                                "text": repair_prompt,
+                            }
+                        ],
+                    }
+                ],
+                reasoning={"effort": "low"},
+                max_output_tokens=kwargs.get("max_output_tokens"),
+            )
+        except Exception as error:
+            if run is not None:
+                run.repair_prompt = repair_prompt
+                run.repair_elapsed_seconds = time.perf_counter() - repair_started
+            _save_failed_transcript(run, error)
+            raise
+        repair_elapsed = time.perf_counter() - repair_started
+        record_repair_response(
+            run,
+            prompt=repair_prompt,
+            response=repair_response,
+            elapsed_seconds=repair_elapsed,
         )
         retry_raw = getattr(repair_response, "output_text", None)
         if not retry_raw:
-            raise RuntimeError(
+            error = RuntimeError(
                 f"LLM JSON repair pass returned no output. Original error: {first_error}"
-            ) from first_error
-        retry_path = _write_response("llm_response.retry.raw.txt", str(retry_raw))
+            )
+            _save_failed_transcript(run, error)
+            raise error from first_error
         try:
             bundle, repaired = parse_or_repair_json_object(
                 str(retry_raw),
                 required_keys=required_keys,
             )
         except LlmJsonError as retry_error:
-            locations = [path for path in (raw_path, retry_path) if path is not None]
-            suffix = (
-                " Saved responses: " + ", ".join(str(path) for path in locations)
-                if locations
-                else ""
-            )
+            _save_failed_transcript(run, retry_error)
+            suffix = f" Transcript: {run.path}" if run is not None else ""
             raise RuntimeError(
                 f"LLM JSON remained invalid after repair pass: {retry_error}.{suffix}"
             ) from retry_error
         repaired = True
 
     strict = strict_json_text(bundle)
+    if run is not None:
+        run.normalized_response = strict
+        run.repair_method = (
+            "provider_text_retry"
+            if used_provider_retry
+            else ("local_json_repair" if repaired else "strict_json")
+        )
+        run.status = "normalized"
+        run.metadata["completed_at"] = __import__("datetime").datetime.now(
+            __import__("datetime").timezone.utc
+        ).isoformat()
+        transcript_path = save_transcript(run)
+    else:
+        transcript_path = None
+
     if repaired:
-        repaired_path = _write_response("llm_response.repaired.json", strict)
-        location = f" Saved: {repaired_path}" if repaired_path else ""
         method = (
             "with a text-only provider repair pass"
             if used_provider_retry
             else "locally"
         )
+        location = f" Transcript: {transcript_path}" if transcript_path else ""
         print(f"Recovered malformed LLM JSON {method}.{location}")
+    elif transcript_path is not None:
+        print(f"LLM transcript: {transcript_path}")
 
-    return SimpleNamespace(output_text=strict)
+    return SimpleNamespace(
+        output_text=strict,
+        provider_metadata=getattr(response, "provider_metadata", {}),
+    )
 
 
 def install_llm_json_resilience() -> None:
-    """Wrap provider responses with strict parse, local repair, and one retry."""
+    """Wrap provider responses with transcripts, local repair, and one retry."""
     global _INSTALLED
     if _INSTALLED:
         return
