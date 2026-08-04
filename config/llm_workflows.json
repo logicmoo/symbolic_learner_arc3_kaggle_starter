@@ -1,0 +1,400 @@
+{
+  "verified_at": "2026-08-04",
+  "verification_source": "https://openrouter.ai/collections/free-models",
+  "prompt_text": {
+    "transaction_extract_scene_objects": [
+      "TRANSACTION: Extract stable semantic objects from the requested before/current ARC images. Concentrate on object identity, geometry, topology, color, role, and motion-relevant substructure. Return only the artifact keys requested by the transaction."
+    ],
+    "transaction_explain_object_changes": [
+      "TRANSACTION: Explain what changed using the supplied object, Turtle, and transition Prolog files as primary evidence. Prefer exact symbolic evidence over visual speculation. Return only the requested transition artifacts."
+    ],
+    "transaction_induce_rules_from_prolog": [
+      "TRANSACTION: Read the supplied Prolog artifacts and induce conservative executable or testable rules. Separate direct observations from hypotheses, cite supporting predicates, and record contradictions. Return only rules_pl."
+    ],
+    "transaction_audit_artifact_bundle": [
+      "TRANSACTION: Audit the complete artifact bundle for internal consistency. Check identities, coordinates, object facts, Turtle reconstructions, differences, similarities, and rules. Return strict JSON with one audit_md string."
+    ]
+  },
+  "llm_models": [
+    {
+      "id": "openrouter-gemma-4-26b-a4b",
+      "provider": "openrouter",
+      "label": "Gemma 4 26B A4B free",
+      "model": "google/gemma-4-26b-a4b-it:free",
+      "supports_reasoning": true,
+      "vision": true,
+      "default_level": 3,
+      "verified_available": true,
+      "verified_at": "2026-08-04",
+      "source_url": "https://openrouter.ai/google/gemma-4-26b-a4b-it:free"
+    },
+    {
+      "id": "openrouter-nemotron-3-ultra",
+      "provider": "openrouter",
+      "label": "Nemotron 3 Ultra free",
+      "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+      "supports_reasoning": true,
+      "vision": false,
+      "default_level": 4,
+      "verified_available": true,
+      "verified_at": "2026-08-04",
+      "source_url": "https://openrouter.ai/nvidia/nemotron-3-ultra-550b-a55b:free"
+    },
+    {
+      "id": "openrouter-nemotron-3-super",
+      "provider": "openrouter",
+      "label": "Nemotron 3 Super free",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "supports_reasoning": true,
+      "vision": false,
+      "default_level": 4,
+      "verified_available": true,
+      "verified_at": "2026-08-04",
+      "source_url": "https://openrouter.ai/nvidia/nemotron-3-super-120b-a12b:free"
+    },
+    {
+      "id": "openrouter-nemotron-3-nano",
+      "provider": "openrouter",
+      "label": "Nemotron 3 Nano 30B A3B free",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "supports_reasoning": true,
+      "vision": false,
+      "default_level": 3,
+      "verified_available": true,
+      "verified_at": "2026-08-04",
+      "source_url": "https://openrouter.ai/nvidia/nemotron-3-nano-30b-a3b:free"
+    },
+    {
+      "id": "openrouter-gpt-oss-20b",
+      "provider": "openrouter",
+      "label": "gpt-oss-20b free",
+      "model": "openai/gpt-oss-20b:free",
+      "supports_reasoning": true,
+      "vision": false,
+      "default_level": 3,
+      "verified_available": true,
+      "verified_at": "2026-08-04",
+      "source_url": "https://openrouter.ai/openai/gpt-oss-20b:free"
+    },
+    {
+      "id": "openrouter-north-mini-code",
+      "provider": "openrouter",
+      "label": "North Mini Code free",
+      "model": "cohere/north-mini-code:free",
+      "supports_reasoning": true,
+      "vision": false,
+      "default_level": 3,
+      "verified_available": true,
+      "verified_at": "2026-08-04",
+      "source_url": "https://openrouter.ai/cohere/north-mini-code:free"
+    },
+    {
+      "id": "openrouter-laguna-xs-2.1",
+      "provider": "openrouter",
+      "label": "Laguna XS 2.1 free",
+      "model": "poolside/laguna-xs-2.1:free",
+      "supports_reasoning": true,
+      "vision": false,
+      "default_level": 3,
+      "verified_available": true,
+      "verified_at": "2026-08-04",
+      "source_url": "https://openrouter.ai/poolside/laguna-xs-2.1:free"
+    },
+    {
+      "id": "openrouter-ling-3.0-flash",
+      "provider": "openrouter",
+      "label": "Ling 3.0 Flash free",
+      "model": "inclusionai/ling-3.0-flash:free",
+      "supports_reasoning": true,
+      "vision": false,
+      "default_level": 3,
+      "verified_available": true,
+      "verified_at": "2026-08-04",
+      "source_url": "https://openrouter.ai/inclusionai/ling-3.0-flash:free"
+    }
+  ],
+  "llm_profiles": [
+    {
+      "id": "openrouter-gemma-4-26b-a4b-light",
+      "label": "Gemma 4 26B A4B free — light",
+      "model": "openrouter-gemma-4-26b-a4b",
+      "transaction": "full_artifact_bundle",
+      "analysis_level": 2,
+      "single_enabled": true,
+      "batch_enabled": false,
+      "max_output_tokens": 8000,
+      "temperature": 0.1,
+      "top_p": 0.9,
+      "reasoning_effort": "low",
+      "current_image_detail": "low",
+      "parent_image_detail": "low",
+      "timeout_seconds": 240,
+      "seed": null,
+      "prompt_text": ["response_contract", "coordinate_contract", "identity_contract", "object_extraction", "turtle_reconstruction", "transitions", "file_separation", "root_state", "quality_control"]
+    },
+    {
+      "id": "openrouter-gemma-4-26b-a4b-deep",
+      "label": "Gemma 4 26B A4B free — deep",
+      "model": "openrouter-gemma-4-26b-a4b",
+      "transaction": "full_artifact_bundle",
+      "analysis_level": 3,
+      "single_enabled": true,
+      "batch_enabled": true,
+      "max_output_tokens": 16000,
+      "temperature": 0.05,
+      "top_p": 0.95,
+      "reasoning_effort": "medium",
+      "current_image_detail": "high",
+      "parent_image_detail": "low",
+      "timeout_seconds": 480,
+      "seed": null,
+      "prompt_text": ["response_contract", "coordinate_contract", "identity_contract", "object_extraction", "turtle_reconstruction", "transitions", "correspondences", "file_separation", "root_state", "quality_control"]
+    },
+    {
+      "id": "openrouter-gemma-4-26b-a4b-extreme",
+      "label": "Gemma 4 26B A4B free — extreme",
+      "model": "openrouter-gemma-4-26b-a4b",
+      "transaction": "full_artifact_bundle",
+      "analysis_level": 4,
+      "single_enabled": true,
+      "batch_enabled": false,
+      "max_output_tokens": 26000,
+      "temperature": 0.0,
+      "top_p": 1.0,
+      "reasoning_effort": "high",
+      "current_image_detail": "high",
+      "parent_image_detail": "high",
+      "timeout_seconds": 900,
+      "seed": null,
+      "prompt_text": ["response_contract", "coordinate_contract", "identity_contract", "object_extraction", "turtle_reconstruction", "transitions", "correspondences", "rule_analysis", "file_separation", "root_state", "quality_control"]
+    },
+    {
+      "id": "openrouter-nemotron-3-ultra-rules",
+      "label": "Nemotron 3 Ultra — induce rules from Prolog",
+      "model": "openrouter-nemotron-3-ultra",
+      "transaction": "induce_rules_from_prolog",
+      "analysis_level": 4,
+      "single_enabled": false,
+      "batch_enabled": false,
+      "max_output_tokens": 24000,
+      "temperature": 0.0,
+      "top_p": 1.0,
+      "reasoning_effort": "high",
+      "current_image_detail": "low",
+      "parent_image_detail": "low",
+      "timeout_seconds": 900,
+      "seed": null,
+      "prompt_text": ["response_contract", "identity_contract", "rule_analysis", "file_separation", "quality_control", "transaction_induce_rules_from_prolog"]
+    },
+    {
+      "id": "openrouter-nemotron-3-super-rules",
+      "label": "Nemotron 3 Super — induce rules from Prolog",
+      "model": "openrouter-nemotron-3-super",
+      "transaction": "induce_rules_from_prolog",
+      "analysis_level": 4,
+      "single_enabled": false,
+      "batch_enabled": false,
+      "max_output_tokens": 20000,
+      "temperature": 0.0,
+      "top_p": 1.0,
+      "reasoning_effort": "high",
+      "current_image_detail": "low",
+      "parent_image_detail": "low",
+      "timeout_seconds": 720,
+      "seed": null,
+      "prompt_text": ["response_contract", "identity_contract", "rule_analysis", "file_separation", "quality_control", "transaction_induce_rules_from_prolog"]
+    },
+    {
+      "id": "openrouter-nemotron-3-nano-changes",
+      "label": "Nemotron 3 Nano — explain object changes",
+      "model": "openrouter-nemotron-3-nano",
+      "transaction": "explain_object_changes",
+      "analysis_level": 3,
+      "single_enabled": false,
+      "batch_enabled": false,
+      "max_output_tokens": 12000,
+      "temperature": 0.05,
+      "top_p": 0.95,
+      "reasoning_effort": "medium",
+      "current_image_detail": "low",
+      "parent_image_detail": "low",
+      "timeout_seconds": 420,
+      "seed": null,
+      "prompt_text": ["response_contract", "identity_contract", "transitions", "correspondences", "file_separation", "quality_control", "transaction_explain_object_changes"]
+    },
+    {
+      "id": "openrouter-gpt-oss-20b-audit",
+      "label": "gpt-oss-20b — audit artifact bundle",
+      "model": "openrouter-gpt-oss-20b",
+      "transaction": "audit_artifact_bundle",
+      "analysis_level": 3,
+      "single_enabled": false,
+      "batch_enabled": false,
+      "max_output_tokens": 8000,
+      "temperature": 0.0,
+      "top_p": 1.0,
+      "reasoning_effort": "medium",
+      "current_image_detail": "low",
+      "parent_image_detail": "low",
+      "timeout_seconds": 360,
+      "seed": null,
+      "prompt_text": ["quality_control", "transaction_audit_artifact_bundle"]
+    },
+    {
+      "id": "openrouter-north-mini-code-rules",
+      "label": "North Mini Code — inspect Prolog rules",
+      "model": "openrouter-north-mini-code",
+      "transaction": "induce_rules_from_prolog",
+      "analysis_level": 3,
+      "single_enabled": false,
+      "batch_enabled": false,
+      "max_output_tokens": 14000,
+      "temperature": 0.0,
+      "top_p": 1.0,
+      "reasoning_effort": "medium",
+      "current_image_detail": "low",
+      "parent_image_detail": "low",
+      "timeout_seconds": 480,
+      "seed": null,
+      "prompt_text": ["response_contract", "identity_contract", "rule_analysis", "file_separation", "quality_control", "transaction_induce_rules_from_prolog"]
+    },
+    {
+      "id": "openrouter-laguna-xs-2.1-changes",
+      "label": "Laguna XS 2.1 — explain symbolic changes",
+      "model": "openrouter-laguna-xs-2.1",
+      "transaction": "explain_object_changes",
+      "analysis_level": 3,
+      "single_enabled": false,
+      "batch_enabled": false,
+      "max_output_tokens": 12000,
+      "temperature": 0.05,
+      "top_p": 0.95,
+      "reasoning_effort": "medium",
+      "current_image_detail": "low",
+      "parent_image_detail": "low",
+      "timeout_seconds": 420,
+      "seed": null,
+      "prompt_text": ["response_contract", "identity_contract", "transitions", "correspondences", "file_separation", "quality_control", "transaction_explain_object_changes"]
+    },
+    {
+      "id": "openrouter-ling-3.0-flash-audit",
+      "label": "Ling 3.0 Flash — quick artifact audit",
+      "model": "openrouter-ling-3.0-flash",
+      "transaction": "audit_artifact_bundle",
+      "analysis_level": 2,
+      "single_enabled": false,
+      "batch_enabled": false,
+      "max_output_tokens": 6000,
+      "temperature": 0.0,
+      "top_p": 1.0,
+      "reasoning_effort": "low",
+      "current_image_detail": "low",
+      "parent_image_detail": "low",
+      "timeout_seconds": 240,
+      "seed": null,
+      "prompt_text": ["quality_control", "transaction_audit_artifact_bundle"]
+    }
+  ],
+  "llm_transactions": [
+    {
+      "id": "full_artifact_bundle",
+      "label": "Full artifact bundle",
+      "kind": "full_analysis",
+      "requires_vision": true,
+      "output_keys": ["objects_pl", "differences_pl", "similarities_pl", "turtle_from_image_pl", "turtle_from_diff_pl", "rules_pl"],
+      "input_files": ["object_registry.pl", "objects.pl", "differences.pl", "similarities.pl", "turtle_from_image.pl", "turtle_from_diff.pl", "rules.pl"]
+    },
+    {
+      "id": "extract_scene_objects",
+      "label": "Extract objects from before/current images",
+      "kind": "llm_artifacts",
+      "requires_vision": true,
+      "include_parent_image": true,
+      "include_current_image": true,
+      "output_keys": ["objects_pl", "turtle_from_image_pl"],
+      "input_files": ["object_registry.pl"],
+      "instructions": "Extract semantic objects and a faithful Turtle reconstruction. Propose only genuinely new friendly identities.",
+      "combine_safe": true
+    },
+    {
+      "id": "explain_object_changes",
+      "label": "Explain object and Turtle changes",
+      "kind": "llm_artifacts",
+      "requires_vision": false,
+      "include_parent_image": false,
+      "include_current_image": false,
+      "output_keys": ["differences_pl", "similarities_pl", "turtle_from_diff_pl"],
+      "input_files": ["object_registry.pl", "objects.pl", "turtle_from_image.pl", "differences.pl", "similarities.pl", "turtle_from_diff.pl"],
+      "instructions": "Use the symbolic object and Turtle files to explain exactly what changed.",
+      "combine_safe": true
+    },
+    {
+      "id": "induce_rules_from_prolog",
+      "label": "Induce rules from Prolog evidence",
+      "kind": "llm_artifacts",
+      "requires_vision": false,
+      "include_parent_image": false,
+      "include_current_image": false,
+      "output_keys": ["rules_pl"],
+      "input_files": ["object_registry.pl", "objects.pl", "differences.pl", "similarities.pl", "turtle_from_image.pl", "turtle_from_diff.pl", "rules.pl"],
+      "instructions": "Induce conservative rules from the supplied Prolog evidence.",
+      "combine_safe": false
+    },
+    {
+      "id": "audit_artifact_bundle",
+      "label": "Audit artifact bundle",
+      "kind": "llm_text",
+      "requires_vision": false,
+      "include_parent_image": false,
+      "include_current_image": false,
+      "output_file": "artifact_audit.md",
+      "input_files": ["object_registry.pl", "objects.pl", "differences.pl", "similarities.pl", "turtle_from_image.pl", "turtle_from_diff.pl", "rules.pl"],
+      "instructions": "Audit the bundle and return strict JSON containing audit_md.",
+      "combine_safe": false
+    },
+    {
+      "id": "prolog_render_symbolic_evidence",
+      "label": "Render symbolic evidence with Prolog",
+      "kind": "runner_method",
+      "runner_method": "prolog_command_4",
+      "requires_vision": false,
+      "combine_safe": false
+    }
+  ],
+  "llm_workflows": [
+    {
+      "id": "level4_then_prolog_review",
+      "label": "Selected model Level 4, Prolog cherry-pick, final audit",
+      "description": "Preserves the normal pick-a-model-and-run-level-4 workflow, then optionally lets Prolog cherry-pick evidence and performs a light consistency audit.",
+      "steps": [
+        {"id": "level4", "transaction": "full_artifact_bundle", "model": "$selected", "analysis_level": 4},
+        {"id": "prolog", "transaction": "prolog_render_symbolic_evidence"},
+        {"id": "audit", "transaction": "audit_artifact_bundle", "profile": "openai-gpt-5.6-light", "continue_on_error": true}
+      ]
+    },
+    {
+      "id": "staged_symbolic_analysis",
+      "label": "Staged OpenAI, Groq, Prolog, rules, and audit",
+      "description": "Extract objects from images, explain symbolic changes, render with Prolog, induce rules from the generated Prolog, and audit the final bundle.",
+      "steps": [
+        {"id": "objects", "transaction": "extract_scene_objects", "profile": "openai-gpt-5.6-light", "combine_group": "perception"},
+        {"id": "changes", "transaction": "explain_object_changes", "profile": "groq-qwen-3.6-27b-deep"},
+        {"id": "prolog", "transaction": "prolog_render_symbolic_evidence"},
+        {"id": "rules", "transaction": "induce_rules_from_prolog", "profile": "openrouter-nemotron-3-ultra-rules"},
+        {"id": "audit", "transaction": "audit_artifact_bundle", "profile": "openai-gpt-5.6-light", "continue_on_error": true}
+      ]
+    },
+    {
+      "id": "free_staged_symbolic_analysis",
+      "label": "All-free staged symbolic analysis",
+      "description": "Uses a verified free vision model for perception and verified free text/code models for symbolic change explanation, rule induction, and auditing.",
+      "steps": [
+        {"id": "objects", "transaction": "extract_scene_objects", "profile": "openrouter-gemma-4-26b-a4b-deep"},
+        {"id": "changes", "transaction": "explain_object_changes", "profile": "openrouter-nemotron-3-nano-changes"},
+        {"id": "prolog", "transaction": "prolog_render_symbolic_evidence"},
+        {"id": "rules", "transaction": "induce_rules_from_prolog", "profile": "openrouter-north-mini-code-rules"},
+        {"id": "audit", "transaction": "audit_artifact_bundle", "profile": "openrouter-gpt-oss-20b-audit", "continue_on_error": true}
+      ]
+    }
+  ]
+}

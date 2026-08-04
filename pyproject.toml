@@ -97,6 +97,7 @@ py-modules = [
   "llm_providers",
   "llm_readme_patch",
   "llm_transcripts",
+  "llm_workflows",
   "multillm_runner",
   "project_paths",
   "swipl_bridge",
