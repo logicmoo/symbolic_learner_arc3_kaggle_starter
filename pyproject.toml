@@ -28,6 +28,7 @@ classifiers = [
 ]
 dependencies = [
   "arc-agi>=0.9.9",
+  "json-repair>=0.61.6,<0.62",
   "numpy>=1.26",
   "Pillow>=10.0",
   "python-dotenv>=1.0",
@@ -86,6 +87,8 @@ py-modules = [
   "gpt_bridge",
   "image_codec",
   "interactive_runner",
+  "llm_json",
+  "llm_json_patch",
   "llm_providers",
   "multillm_runner",
   "project_paths",
