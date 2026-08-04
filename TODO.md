@@ -4,174 +4,253 @@
 
 ## Document scope
 
-This is the concrete implementation list for the work we are actively doing together. It is intentionally shorter than the architecture and avoids repeating the complete SOW.
+This is the concrete implementation list for the work we are actively doing together. It is intentionally shorter than the architecture and does not repeat the complete SOW.
 
 Related documents:
 
-- [SOW_PHASE_ARCHITECTURE.md](SOW_PHASE_ARCHITECTURE.md) — detailed classes, modules, contracts, and design rationale.
-- [SOW_DELIVERABLES.md](SOW_DELIVERABLES.md) — contractual deliverables and check-off evidence.
+- [SOW_PHASE_ARCHITECTURE.md](SOW_PHASE_ARCHITECTURE.md) — detailed classes, modules, contracts, boundaries, and design rationale.
+- [SOW_DELIVERABLES.md](SOW_DELIVERABLES.md) — delivered, partial, and open SOW outcomes with evidence links.
 - [FILE_TREE.md](FILE_TREE.md) — repository ownership map.
 
 When a task here is completed, update the relevant checkbox in [SOW_DELIVERABLES.md](SOW_DELIVERABLES.md) and link the implementation or evidence.
 
 ## Working rules
 
-- Keep one runner, action-tree store, provider pipeline, prompt config, transcript history, identity authority, and Turtle implementation.
+- Treat Phase 1 as the delivered debugger, evidence, replay, provider-hook, README, transcript, and artifact-inspection foundation.
+- Keep semantic object perception, persistent recognition, calibrated confidence, learning, and prediction out of the debugger core.
+- Keep one runner, action-tree store, provider pipeline, prompt config, transcript history, debugger identity registry, and Turtle interpreter.
+- Extend `object_registry.pl`; do not create an unrelated identity namespace.
 - Keep runnable programs in `scripts/`.
 - Do not create phase directories.
 - Do not rename protected Kaggle files.
-- Do not treat LLM artifacts as native deterministic reasoning.
-- Do not let embeddings or similarity commit identity.
+- Do not present provider-generated artifacts as independently verified native reasoning.
+- Do not let embeddings or similarity alone commit identity.
+- Store grid objects with movement-and-pen-width Turtle programs rather than box-filling programs.
 - Record predictions before observing outcomes.
 
 ---
 
-# Now — Stabilize the Phase 1 evidence path
+# Phase 1 — Post-delivery debugger maintenance
 
-Architecture: [ARC3 debugger and state architecture](SOW_PHASE_ARCHITECTURE.md#arc3-debugger-and-state-architecture)
+Architecture: [Phase 1 debugger architecture](SOW_PHASE_ARCHITECTURE.md#phase-1--arc3-debugger-and-extensible-inspection-foundation)
 
-Deliverables: [Phase 1 checklist](SOW_DELIVERABLES.md#phase-1--grid-infrastructure-and-arc3-debugger-foundation)
+Deliverables: [Completed Phase 1 checklist](SOW_DELIVERABLES.md#phase-1--arc3-debugger-and-extensible-inspection-foundation)
 
-- [ ] Define canonical state and action ordinals shared by history, action trees, replay, observations, and learner payloads.
-- [ ] Add schema versions to `state.json`, transcript metadata, generated artifact metadata, and learner records.
-- [ ] Add immutable `Observation` or `StateSnapshot` records without replacing `StateNode` or `StepRecord`.
-- [ ] Bridge `StepRecord`, `StateNode`, image hash, action data, and environment state into normalized observations.
-- [ ] Validate cached artifacts before reuse using schema version, image/state hash, registry version, provider/model/profile, prompt sections, and requested artifact set.
-- [ ] Add explicit artifact-set hashes to LLM transcripts.
-- [ ] Ensure every artifact from one combined request uses the same registry version and identity set.
-- [ ] Add stable evidence and provenance references shared by LLM and native symbolic paths.
-- [ ] Connect all six Prolog debugger commands to normalized Prolog APIs.
-- [ ] Add a native Windows smoke test that records resolved paths and captures one ARC3 state.
-- [ ] Add deterministic replay and state/image-hash tests.
-- [ ] Add stale-cache rejection tests.
-- [ ] Add Prolog syntax and artifact-schema validation before cache acceptance.
+These are maintenance and extension tasks, not missing Phase 1 SOW deliverables:
 
-## Phase 1 demonstrations to record
-
-- [ ] Record game and level selection.
-- [ ] Record state, action, observation, image, and execution history capture.
-- [ ] Record action-tree browsing and parent/child navigation.
-- [ ] Record reset, restart, replay, and history navigation.
-- [ ] Record stable object identities over a multi-step branch.
-- [ ] Record current-state and parent-transition analysis.
-- [ ] Compare at least two providers or analysis levels using Markdown transcripts.
-- [ ] Restore an older transcript and verify the latest `.pl` files and README.
+- [ ] Keep command registration pluggable so new Phase 2 and Phase 3 services can be added without changing the debugger UI loop.
+- [ ] Add explicit provider capability discovery and structured unsupported-command messages.
+- [ ] Keep provider outputs visibly labeled by provider, model, prompt sections, source node, and generation time.
+- [ ] Add stronger cache compatibility checks where useful without changing the delivered inspection behavior.
+- [ ] Keep restored transcript provenance and `object_registry.pl` identity provenance visible in node READMEs.
+- [ ] Add optional native Windows smoke coverage for launch-path resolution and one recorded ARC3 node.
+- [ ] Keep Phase 2 semantic records and Phase 3 prediction records linked from nodes rather than embedded into `Arc3Runner`.
 
 ---
 
-# Phase 2 — Object perception and persistent memory
+# Phase 2 — Object Perception, Recognition, and Persistent Memory
 
-Architecture: [Phase 2 object perception and memory architecture](SOW_PHASE_ARCHITECTURE.md#phase-2-object-perception-and-memory-architecture)
+Architecture: [Phase 2 object architecture](SOW_PHASE_ARCHITECTURE.md#phase-2--object-perception-recognition-and-persistent-memory)
 
 Deliverables: [Phase 2 checklist](SOW_DELIVERABLES.md#phase-2--object-perception-recognition-and-persistent-memory)
 
-## Normalize the core records
+## Freeze the Phase 2 records
 
-- [ ] Add `Observation`.
-- [ ] Add `EncounterRecord`.
-- [ ] Add `RecognitionAccount`.
+Keep the shared records in `python/object_memory/models.py`; do not create another model package.
+
+- [ ] Add or finalize `Observation` as a semantic record layered over the rendered observation already stored by Phase 1.
+- [ ] Add or finalize `EncounterRecord` with a reference to its Phase 1 action-tree node.
+- [ ] Add `RecognitionAccount` explaining matches, changes, rivals, residuals, confidence, and decision source.
 - [ ] Add `ArtifactRef` and `ProvenanceRef`.
-- [ ] Add `InstanceParameters`.
+- [ ] Add `InstanceParameters` for position, orientation, scale, appearance, and supported transformations.
 - [ ] Add `MatchProposal`, `MergeDecision`, and `SplitDecision`.
-- [ ] Add `EvidenceRecord`.
-- [ ] Keep these in `python/object_memory/models.py`; do not create another model package.
+- [ ] Add `EvidenceRecord` supporting positive and negative evidence.
+- [ ] Add normalized per-object Turtle-program references.
+- [ ] Add schema versions and deterministic identifiers for observations, encounters, objects, artifacts, and evidence.
 
-## Connect the existing grid extractor
+## Connect perception providers
 
 - [ ] Inspect the current symbolic grid-object extraction code.
-- [ ] Wrap it behind `GridAdapter` instead of rewriting it.
-- [ ] Normalize components, properties, relationships, topology, holes, enclosures, bars, lines, and compound objects.
+- [ ] Wrap it behind `GridAdapter` rather than rewriting it.
+- [ ] Normalize components, geometry, properties, relationships, topology, holes, enclosures, bars, lines, and compound objects.
 - [ ] Preserve exact logical-grid coordinates and source artifact references.
-- [ ] Add fixtures for irregular geometry and topology preservation.
+- [ ] Add pluggable image and simple-video adapters behind the same normalized contracts.
+- [ ] Keep provider-specific intermediate data out of persistent object records unless referenced through provenance.
+- [ ] Add fixtures for irregular geometry, topology, holes, enclosure, line thickness, and disconnected strokes.
 
-## Make stored objects generative
+## Store one Turtle program per recognized grid object
 
+- [ ] Make each recognized grid object store or reference a Turtle program that redraws that object.
+- [ ] Use forward movement and rotation rather than coordinate-box enumeration.
+- [ ] Use pen-up and pen-down state for disconnected strokes and repositioning.
+- [ ] Use pen width for thick lines rather than drawing adjacent filled rectangles.
+- [ ] Preserve supported color or drawing-state changes.
 - [ ] Connect `CellLogoForm.render()` to `prolog/turtle_dsl.pl` through `SWIPrologBridge`.
-- [ ] Define normalized Turtle-program references.
+- [ ] Define normalized Turtle-program storage and artifact references.
 - [ ] Implement `fit`, `distance`, residual measurement, and description length.
-- [ ] Compare regenerated cells to observed cells.
-- [ ] Preserve holes, disconnected strokes, and exact topology.
+- [ ] Compare regenerated cells with the source object.
+- [ ] Preserve holes, disconnected strokes, topology, and line thickness.
+- [ ] Retain competing Turtle programs with their fit scores and provenance when the representation is ambiguous.
+- [ ] Add tests rejecting box-filling shortcuts for shapes that should use movement and pen width.
 
-## Implement correspondence and recognition
+## Extend `object_registry.pl` into persistent identity
 
+- [ ] Reuse the readable identities maintained by the Phase 1 debugger.
+- [ ] Map provider-proposed identities to persistent semantic identities without discarding provenance.
 - [ ] Match objects across parent/current states.
 - [ ] Match objects across repeated encounters and examples.
-- [ ] Record matched and changed properties plus supporting and contradicting evidence.
 - [ ] Preserve multiple competing match proposals.
-- [ ] Support translation, rotation, reflection, recolor, scale, noise, and partial visibility where appropriate.
+- [ ] Record matched and changed properties plus supporting and contradicting evidence.
+- [ ] Route identity merge and split decisions through `SingleWriter` or authoritative Prolog logic.
+- [ ] Prevent duplicate durable storage when an existing object is recognized again.
+- [ ] Keep false merges and false splits reversible through evidence and provenance.
+
+## Implement recognition and change detection
+
+- [ ] Recognize supported translation, rotation, reflection, recoloring, scaling, noise, and partial visibility.
 - [ ] Detect moved, recolored, resized, reshaped, appeared, disappeared, split, and merged objects.
-- [ ] Prevent duplicate durable storage when an object is recognized again.
-- [ ] Route merge/split decisions through `SingleWriter` or authoritative Prolog logic.
+- [ ] Distinguish recognized or explained content from residual, potentially new object structure.
+- [ ] Keep incomplete or partially occluded observations from overwriting the complete stored form.
+- [ ] Compare Turtle reconstruction fit as one source of recognition evidence.
+- [ ] Keep embeddings advisory for retrieval and proposal generation only.
 
-## Implement persistence
+## Implement evidence and calibrated confidence
 
-- [ ] Implement append-only `EncounterLog` with deterministic hashes and replay.
+- [ ] Accumulate positive and negative recognition evidence across repeated encounters.
+- [ ] Calibrate confidence for object identity, correspondence, and competing interpretations.
+- [ ] Prevent similarity scores from being treated directly as committed confidence.
+- [ ] Make confidence updates reproducible and attributable to evidence records.
+- [ ] Preserve confidence history when identities are merged, split, demoted, or tombstoned.
+- [ ] Show recognition accounts, evidence, rivals, and confidence through the Phase 1 README inspection surface.
+
+## Implement persistent memory
+
+- [ ] Implement append-only semantic `EncounterLog` linked to the encounter history already recorded by Phase 1.
+- [ ] Implement deterministic replay of semantic memory updates from the same Phase 1 history and starting store.
 - [ ] Implement `SymbolicStore` over the selected Prolog or Atomspace storage.
-- [ ] Implement `ArtifactIndex` for frames, masks, Turtle programs, reconstructions, embeddings, transcripts, evidence, predictions, and outcomes.
+- [ ] Implement `ArtifactIndex` for source frames, masks, Turtle programs, reconstructions, embeddings, transcripts, evidence, predictions, and outcomes.
 - [ ] Add active, demoted, and tombstoned lifecycle states.
 - [ ] Preserve provenance when identities are merged, split, demoted, or tombstoned.
-- [ ] Keep embeddings advisory only.
+- [ ] Store recognized objects, observations, Turtle programs, recognition accounts, confidence, and associated artifacts.
 
 ## Phase 2 tests and demonstrations
 
-- [ ] Stable identity across multiple encounters.
-- [ ] Correspondence across before/after states.
-- [ ] Movement, recolor, resize, addition, removal, and structural-change detection.
-- [ ] Object regeneration and comparison with the observation.
+- [ ] Stable persistent identity across multiple encounters and state transitions.
+- [ ] Correspondence across before/after states and repeated examples.
+- [ ] Movement, recolor, resize, addition, removal, split, merge, and structural-change detection.
+- [ ] Per-object Turtle regeneration using movement, rotation, pen state, and pen width.
+- [ ] Regenerated/source comparison and residual measurement.
 - [ ] Duplicate-prevention test.
 - [ ] False-merge and false-split tests.
-- [ ] Translation, rotation, reflection, recolor, scale, and noise fixtures.
-- [ ] Modest degradation and partial-occlusion fixtures.
-- [ ] Deterministic encounter replay.
+- [ ] Translation, rotation, reflection, recolor, scale, noise, and partial-visibility fixtures.
+- [ ] Modest degradation and partial-occlusion recognition.
+- [ ] Positive and negative evidence accumulation.
+- [ ] Confidence calibration and reproducibility.
+- [ ] Deterministic semantic-memory replay over Phase 1 history.
+
+## Phase 2 demonstration workflow
+
+```text
+Input image or game state
+    → object extraction
+    → normalized object representation and Turtle program
+    → matching and correspondence
+    → before-and-after comparison
+    → evidence and confidence update
+    → persistent storage
+    → Turtle regeneration
+    → later recognition as the same object
+```
 
 ---
 
-# Phase 3 — Game Object Learner and prediction
+# Phase 3 — Game Object Learner Integration and Predictive Rule Learning
 
-Architecture: [Phase 3 Game Object Learner architecture](SOW_PHASE_ARCHITECTURE.md#phase-3-game-object-learner-architecture)
+Architecture: [Phase 3 learner architecture](SOW_PHASE_ARCHITECTURE.md#phase-3--game-object-learner-integration-and-predictive-rule-learning)
 
 Deliverables: [Phase 3 checklist](SOW_DELIVERABLES.md#phase-3--game-object-learner-integration-and-predictive-rule-learning)
 
 ## Freeze the learner boundary
 
-- [ ] Freeze `GameObjectLearnerPayload` schema and version.
-- [ ] Include observation and encounter IDs.
-- [ ] Include stable identities, properties, relationships, correspondences, and differences.
-- [ ] Include action information, generative forms, artifacts, history, evidence, and provenance.
-- [ ] Exclude debugger implementation objects such as `StateNode` and adapter instances.
+- [ ] Freeze the serialized `GameObjectLearnerPayload` schema and version.
+- [ ] Include semantic observation and encounter IDs.
+- [ ] Include stable identities, properties, relationships, correspondences, and direct differences.
+- [ ] Include action information, Turtle-program references, artifacts, history, evidence, confidence, and provenance.
+- [ ] Include competing object and correspondence interpretations where relevant.
+- [ ] Exclude debugger implementation objects such as `StateNode`, terminal controls, and adapter instances.
 - [ ] Add structured validation errors and serialization compatibility tests.
+- [ ] Validate source, Turtle-program, identity, evidence, and provenance references.
 
-## Connect real transitions
+## Connect real Phase 2 transitions
 
-- [ ] Build payloads from real Phase 2 objects and encounters.
-- [ ] Connect `Arc3Runner` transitions to `PipelineGameObjectLearnerPlugin`.
-- [ ] Connect Prolog providers to registry, objects, differences, similarities, rules, and transcript evidence.
-- [ ] Generate candidate object-level transformations from actual deltas.
-- [ ] Preserve competing transformation and rule interpretations.
-- [ ] Apply transformations to unseen cases.
+- [ ] Build learner payloads from real Phase 2 objects, correspondences, and semantic encounters.
+- [ ] Connect `Arc3Runner` transitions to `PipelineGameObjectLearnerPlugin` through normalized payloads.
+- [ ] Connect Prolog providers to registry, objects, differences, similarities, rules, transcripts, and evidence.
+- [ ] Analyze actual before/action/after object transitions.
+- [ ] Generate candidate object-level transformations from real deltas.
+- [ ] Preserve competing transformation interpretations.
+- [ ] Apply transformations to previously unseen cases.
+
+## Learn, critique, and rank competing rules
+
+- [ ] Induce multiple candidate rules with explicit assumptions.
+- [ ] Generate critiques identifying missing evidence, contradictions, and overgeneralization.
+- [ ] Attach supporting and contradicting evidence.
+- [ ] Maintain rival rule sets rather than selecting one explanation too early.
+- [ ] Rank rules using simplicity, coverage, contradiction, applicability precision, and prediction history.
+- [ ] Refine calibrated rule confidence or probability from actual prediction results.
+- [ ] Keep bootstrap probabilities displayed by Phase 1 separate from verified Phase 3 probability updates.
+- [ ] Store rule identity, assumptions, critiques, probability, evidence, and provenance.
 
 ## Make prediction evidence real
 
-- [ ] Record predictions before ARC3 actions are executed.
-- [ ] Predict object identities, properties, relationships, changes, later state, or action as appropriate.
-- [ ] Capture the independent environment outcome.
-- [ ] Grade success, failure, partial match, and contradiction deterministically.
-- [ ] Update rule evidence through the authoritative writer/store path.
+- [ ] Record predictions before ARC3 actions or later outcomes are observed.
+- [ ] Predict object identities, properties, relationships, changes, later state, or action recommendation as appropriate.
+- [ ] Store the evidence available at prediction time.
+- [ ] Capture the independent environment outcome through a separate outcome channel.
+- [ ] Grade success, failure, partial match, contradiction, and ungradable outcomes deterministically.
+- [ ] Update positive and negative rule evidence, probability, and ranking from prediction results.
 - [ ] Prove that post-hoc explanations receive no prediction credit.
-- [ ] Link predictions, outcomes, grades, and rule evidence into action-tree artifacts and READMEs.
-- [ ] Expose optional action recommendations to `agent/my_agent.py` through a stable seam.
+- [ ] Preserve the original prediction, outcome, grade, and update history.
+
+## Write learner evidence back to the debugger
+
+- [ ] Link candidate transformations into action-tree evidence.
+- [ ] Link competing rules, assumptions, critiques, and confidence or probability estimates.
+- [ ] Link pre-outcome predictions and independently observed outcomes.
+- [ ] Link grades and positive or negative evidence updates.
+- [ ] Link learned rules and optional action recommendations.
+- [ ] Make node READMEs trace each result back to source observations, Phase 2 objects, provider calls, and learner records.
+- [ ] Keep this writeback pluggable so the debugger remains independent of learner internals.
 
 ## Phase 3 tests and demonstrations
 
 - [ ] Payload validation and structured errors.
 - [ ] Real Phase 2-to-Phase 3 handoff.
-- [ ] Candidate transformation induction.
-- [ ] Rival interpretations with positive and negative evidence.
+- [ ] Candidate transformation induction from actual object deltas.
+- [ ] Rival interpretations with assumptions, critiques, positive evidence, and negative evidence.
 - [ ] Learned transformation applied to a new case.
+- [ ] Rule ranking and confidence refinement from prediction history.
 - [ ] Prediction recorded before outcome.
 - [ ] Independent outcome grading.
 - [ ] Post-hoc-credit rejection.
+- [ ] Debugger README writeback of rules, critiques, probabilities, predictions, and grades.
 - [ ] Partial-occlusion recognition and completion.
+
+## Phase 3 demonstration workflow
+
+```text
+Input game state
+    → object perception and persistent identity
+    → structured learner handoff
+    → transition analysis
+    → competing transformations and rules
+    → assumptions, critiques, confidence, and evidence
+    → pre-outcome prediction
+    → application to a new case
+    → independent evaluation
+    → updated evidence, learned rule, or action recommendation
+```
 
 ---
 
@@ -195,8 +274,8 @@ Architecture: [Environment progression](SOW_PHASE_ARCHITECTURE.md#environment-pr
 For each finished task:
 
 1. merge the implementation and tests;
-2. add or update the demonstration evidence;
-3. link the relevant files, transcripts, tests, or reports from [SOW_DELIVERABLES.md](SOW_DELIVERABLES.md);
+2. add or update demonstration evidence;
+3. link the relevant files, action-tree nodes, Turtle programs, transcripts, tests, predictions, or reports from [SOW_DELIVERABLES.md](SOW_DELIVERABLES.md);
 4. check off the deliverable only when the evidence is reproducible.
 
 [← Back to top-level README](README.md)
