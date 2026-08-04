@@ -6,9 +6,12 @@ from typing import Any
 
 from arc3_runner import Arc3Runner
 from gpt_bridge import GptArcAnalyzer
+from llm_json_patch import install_llm_json_resilience
 from llm_providers import ProviderSpec
 from project_paths import prompts_path
 from unsloth_studio import StudioAwareLlmProviderRouter
+
+install_llm_json_resilience()
 
 _LAST_RUNNER: "MultiLlmArc3Runner | None" = None
 
