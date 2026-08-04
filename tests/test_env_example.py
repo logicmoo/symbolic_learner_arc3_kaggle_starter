@@ -13,6 +13,9 @@ def test_env_example_parses_and_covers_runtime_configuration() -> None:
     required = {
         "ARC3_LLM_PROVIDER",
         "ARC3_LLM_CONFIG",
+        "ARC3_LLM_SAVE_RAW_RESPONSE",
+        "ARC3_LLM_RESPONSE_DIR",
+        "ARC3_LLM_JSON_RETRY",
         "OPENAI_API_KEY",
         "ARC3_OPENAI_MODEL",
         "ANTHROPIC_API_KEY",
@@ -51,4 +54,6 @@ def test_env_example_parses_and_covers_runtime_configuration() -> None:
     assert values["ARC3_UNSLOTH_AUTO_LOAD"] == "1"
     assert values["ARC3_UNSLOTH_GGUF_VARIANT"] == "UD-Q4_K_XL"
     assert values["ARC3_UNSLOTH_MAX_SEQ_LENGTH"] == "131072"
+    assert values["ARC3_LLM_SAVE_RAW_RESPONSE"] == "1"
+    assert values["ARC3_LLM_JSON_RETRY"] == "1"
     assert values["ARC3_WEB_HOST"] == "127.0.0.1"

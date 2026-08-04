@@ -30,6 +30,33 @@ Pressing `p` still enters Prolog mode. The generated `object_registry.pl`, `obje
 
 Providers that require an API key are skipped when their key is absent. A generic local provider may explicitly declare `api_key_optional: true`, but **Unsloth Studio's external `/v1/*` API requires a Studio API key** even when the server is running on localhost.
 
+## Malformed JSON recovery
+
+Local and hosted models occasionally produce an almost-correct artifact bundle with a missing comma, quote, bracket, escaped newline, or required key. ARC3 now protects the expensive multimodal result in this order:
+
+1. save the original response as `llm_response.raw.txt` in the active action-tree node;
+2. parse it with strict `json.loads`;
+3. deterministically repair common JSON syntax defects locally;
+4. validate that every requested top-level artifact key is present;
+5. only when local repair cannot recover a complete bundle, ask the selected provider for one compact text-only repair pass;
+6. save repaired output as `llm_response.repaired.json` and any retry output as `llm_response.retry.raw.txt`.
+
+The original image request is not repeated merely because of malformed JSON. Configure this behavior with:
+
+```dotenv
+ARC3_LLM_SAVE_RAW_RESPONSE=1
+ARC3_LLM_JSON_RETRY=1
+ARC3_LLM_RESPONSE_DIR=C:/symbolic_learner_arc3_kaggle_starter/.llm_responses
+```
+
+`ARC3_LLM_RESPONSE_DIR` is only the fallback for calls made without an active action-tree node. Set `ARC3_LLM_JSON_RETRY=0` to allow deterministic local repair but disable the provider repair call.
+
+After pulling a version that adds JSON recovery to an existing virtual environment, refresh dependencies once:
+
+```bat
+.venv\Scripts\python.exe -m pip install -e ".[all]"
+```
+
 ## OpenAI / ChatGPT
 
 Set an OpenAI API key before launching:
