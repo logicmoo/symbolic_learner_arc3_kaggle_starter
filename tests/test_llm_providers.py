@@ -5,6 +5,9 @@ from pathlib import Path
 from types import SimpleNamespace
 
 from llm_providers import DEFAULT_CONFIG_PATH, LlmProviderRouter, _anthropic_blocks
+from project_paths import prompts_path
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 class FakeResponses:
@@ -147,6 +150,14 @@ def test_default_config_uses_unified_sections(monkeypatch):
     assert "transitions" in openai.prompt_text
     assert "TRANSITIONS:" in router.compose_prompt(openai)
     assert DEFAULT_CONFIG_PATH.parent.name == "config"
+
+
+def test_legacy_prompt_path_points_to_unified_config(monkeypatch):
+    monkeypatch.delenv("ARC3_CONFIG_ROOT", raising=False)
+    monkeypatch.delenv("ARC3_LLM_CONFIG", raising=False)
+
+    assert prompts_path() == DEFAULT_CONFIG_PATH
+    assert not (ROOT / "prompts" / "gpt_prompts.json").exists()
 
 
 def test_default_unsloth_requires_studio_api_key(monkeypatch):
