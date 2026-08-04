@@ -1,6 +1,10 @@
 from __future__ import annotations
 
 import json
+import os
+import time
+import urllib.error
+import urllib.request
 from datetime import datetime, timezone
 from typing import Any, Callable
 
@@ -29,11 +33,20 @@ class MultiLlmArc3Runner(Arc3Runner):
     The mutable `.pl` files remain the latest view. Every provider call also
     creates a restorable Markdown transcript containing an immutable artifact
     snapshot and the complete request/response debugging record.
+
+    Pressing ``g`` advances to the next provider that is both configured and
+    reachable. A provider that fails an ARC3 analysis is skipped for the rest
+    of the current debugger session, making repeated ``g 4`` runs useful for
+    collecting independent provider outputs without repeatedly hitting a bad
+    key, offline endpoint, unavailable model, or exhausted free-tier service.
     """
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         self._llm_router: StudioAwareLlmProviderRouter | None = None
         self._active_llm_analysis_level: int | None = None
+        self._llm_probe_cache: dict[str, tuple[float, bool, str]] = {}
+        self._llm_session_failures: dict[str, str] = {}
+        self._llm_urlopen: Callable[..., Any] = urllib.request.urlopen
         super().__init__(*args, **kwargs)
         global _LAST_RUNNER
         _LAST_RUNNER = self
@@ -52,8 +65,172 @@ class MultiLlmArc3Runner(Arc3Runner):
             )
         return self._gpt_analyzer
 
+    @staticmethod
+    def _float_environment(name: str, default: float) -> float:
+        try:
+            return max(0.0, float(os.environ.get(name, str(default))))
+        except ValueError:
+            return default
+
+    @staticmethod
+    def _provider_probe_url(provider: ProviderSpec) -> str | None:
+        health_url = provider.resolved_health_url()
+        if health_url:
+            return health_url
+        base_url = provider.resolved_base_url()
+        if not base_url:
+            return None
+        return base_url if base_url.endswith("/models") else base_url + "/models"
+
+    @staticmethod
+    def _provider_probe_headers(provider: ProviderSpec) -> dict[str, str]:
+        headers = {"Accept": "application/json"}
+        api_key = provider.resolved_api_key()
+        if not api_key:
+            return headers
+        if provider.adapter == "anthropic_messages":
+            headers["x-api-key"] = api_key
+            headers["anthropic-version"] = provider.anthropic_version
+        else:
+            headers["Authorization"] = f"Bearer {api_key}"
+        return headers
+
+    def _provider_readiness(
+        self,
+        provider: ProviderSpec,
+        *,
+        refresh: bool = False,
+    ) -> tuple[bool, str]:
+        configured, configuration_state = provider.configuration_state()
+        if not configured:
+            return False, configuration_state
+
+        prior_failure = self._llm_session_failures.get(provider.provider_id)
+        if prior_failure:
+            return False, f"failed this session: {prior_failure}"
+
+        now = time.monotonic()
+        ttl = self._float_environment("ARC3_LLM_PROBE_TTL", 60.0)
+        cached = self._llm_probe_cache.get(provider.provider_id)
+        if not refresh and cached is not None and now - cached[0] <= ttl:
+            return cached[1], cached[2]
+
+        probe_url = self._provider_probe_url(provider)
+        if not probe_url:
+            result = (True, "configured; no readiness URL")
+            self._llm_probe_cache[provider.provider_id] = (now, *result)
+            return result
+
+        request = urllib.request.Request(
+            probe_url,
+            headers=self._provider_probe_headers(provider),
+        )
+        timeout = self._float_environment("ARC3_LLM_PROBE_TIMEOUT", 1.5)
+        try:
+            with self._llm_urlopen(request, timeout=timeout) as response:
+                status = int(getattr(response, "status", 200))
+                result = (
+                    200 <= status < 300,
+                    "ready" if 200 <= status < 300 else f"HTTP {status}",
+                )
+        except urllib.error.HTTPError as exc:
+            try:
+                detail = exc.read().decode("utf-8", errors="replace").strip()
+            except Exception:
+                detail = ""
+            suffix = f": {detail[:160]}" if detail else ""
+            result = (False, f"HTTP {exc.code}{suffix}")
+        except urllib.error.URLError as exc:
+            result = (False, str(exc.reason))
+        except TimeoutError:
+            result = (False, "timeout")
+        except Exception as exc:
+            result = (False, str(exc))
+
+        self._llm_probe_cache[provider.provider_id] = (now, *result)
+        return result
+
+    def llm_provider_statuses(
+        self,
+        *,
+        refresh: bool = False,
+    ) -> tuple[dict[str, Any], ...]:
+        router = self.llm_router()
+        active_id = getattr(router, "_active_id", None)
+        rows: list[dict[str, Any]] = []
+        for provider in router.specs:
+            ready, state = self._provider_readiness(provider, refresh=refresh)
+            rows.append(
+                {
+                    "provider": provider,
+                    "ready": ready,
+                    "state": state,
+                    "active": provider.provider_id == active_id,
+                }
+            )
+        return tuple(rows)
+
     def cycle_llm_provider(self) -> ProviderSpec:
-        return self.llm_router().cycle()
+        router = self.llm_router()
+        configured = list(router.configured_specs())
+        if not configured:
+            reasons = ", ".join(
+                f"{provider.provider_id}: {provider.configuration_state()[1]}"
+                for provider in router.specs
+            )
+            raise RuntimeError(f"No configured LLM providers ({reasons})")
+
+        active_id = getattr(router, "_active_id", None)
+        if active_id is None:
+            start = next(
+                (
+                    index
+                    for index, provider in enumerate(configured)
+                    if provider.provider_id == router.default_provider
+                ),
+                0,
+            )
+        else:
+            current_index = next(
+                (
+                    index
+                    for index, provider in enumerate(configured)
+                    if provider.provider_id == active_id
+                ),
+                -1,
+            )
+            start = (current_index + 1) % len(configured)
+
+        attempted: list[str] = []
+        for offset in range(len(configured)):
+            provider = configured[(start + offset) % len(configured)]
+            ready, state = self._provider_readiness(provider)
+            if ready:
+                return router.select(provider.provider_id)
+            attempted.append(f"{provider.provider_id}: {state}")
+
+        raise RuntimeError(
+            "No configured LLM provider is currently ready ("
+            + "; ".join(attempted)
+            + ")"
+        )
+
+    def _mark_llm_provider_failed(
+        self,
+        provider: ProviderSpec,
+        error: BaseException,
+    ) -> None:
+        detail = " ".join(str(error).split()) or error.__class__.__name__
+        self._llm_session_failures[provider.provider_id] = detail[:240]
+        self._llm_probe_cache.pop(provider.provider_id, None)
+
+    def _mark_llm_provider_succeeded(self, provider: ProviderSpec) -> None:
+        self._llm_session_failures.pop(provider.provider_id, None)
+        self._llm_probe_cache[provider.provider_id] = (
+            time.monotonic(),
+            True,
+            "ready; completed ARC3 analysis",
+        )
 
     def current_llm_summary(self) -> str:
         return self.llm_router().describe_current()
@@ -168,6 +345,7 @@ class MultiLlmArc3Runner(Arc3Runner):
                 analysis_level=level,
             )
         except Exception as exc:
+            self._mark_llm_provider_failed(provider, exc)
             transcript = finalize_last_transcript(store, node, error=str(exc))
             expected = (
                 "object_registry.pl",
@@ -187,11 +365,13 @@ class MultiLlmArc3Runner(Arc3Runner):
             transcript_note = f" Transcript: {transcript}." if transcript else ""
             raise RuntimeError(
                 f"LLM level {level} analysis stopped using {provider.label}. "
+                f"This provider will be skipped by subsequent g presses in this session. "
                 f"Files present: {detail}. Cause: {exc}.{transcript_note}"
             ) from exc
         finally:
             self._active_llm_analysis_level = None
 
+        self._mark_llm_provider_succeeded(provider)
         if any(
             result.get(key)
             for key in (
@@ -245,17 +425,20 @@ class MultiLlmArc3Runner(Arc3Runner):
         operation: Callable[[], None],
     ) -> None:
         store, node = self._require_node()
+        provider = self.llm_router().current_spec()
         self._active_llm_analysis_level = analysis_level
         try:
             operation()
         except Exception as exc:
+            self._mark_llm_provider_failed(provider, exc)
             finalize_last_transcript(store, node, error=str(exc))
             raise
         finally:
             self._active_llm_analysis_level = None
+        self._mark_llm_provider_succeeded(provider)
         self._write_provider_provenance(
             node,
-            self.llm_router().current_spec(),
+            provider,
             analysis_level=analysis_level,
         )
         transcript = finalize_last_transcript(store, node)
@@ -287,7 +470,8 @@ def install_interactive_runner(ui_module: Any) -> None:
         rows: list[dict[str, Any]],
     ) -> None:
         original_print_controls(runner, rows)
-        print("LLM: press (g) repeatedly to select the next configured provider")
+        print("LLM: (g) next configured+ready provider; then (2/3/4) saves its transcript")
+        print("Compare providers by repeating: g 4, g 4, g 4 ...")
 
     def print_mode_menu(mode: str) -> None:
         if mode == "gpt":
@@ -303,15 +487,21 @@ def install_interactive_runner(ui_module: Any) -> None:
                         f"model={selected.resolved_model()} "
                         f"prompt_text=[{prompt_names}]"
                     )
-                    print("LLM provider list:")
-                    for status in runner.llm_router().statuses(probe=True):
-                        marker = ">" if status.provider_id == selected.provider_id else " "
-                        endpoint = f" @ {status.base_url}" if status.base_url else ""
-                        print(
-                            f" {marker} {status.provider_id:<10} "
-                            f"{status.label:<24} {status.state}; "
-                            f"model={status.model}{endpoint}"
+                    print("LLM provider list (missing, offline, and session-failed providers are skipped):")
+                    for row in runner.llm_provider_statuses():
+                        provider = row["provider"]
+                        marker = ">" if row["active"] else " "
+                        endpoint = (
+                            f" @ {provider.resolved_base_url()}"
+                            if provider.resolved_base_url()
+                            else ""
                         )
+                        print(
+                            f" {marker} {provider.provider_id:<18} "
+                            f"{provider.label:<42} {row['state']}; "
+                            f"model={provider.resolved_model()}{endpoint}"
+                        )
+                    print("Press 4 to save this provider's extreme output, then g for the next one.")
                 except Exception as exc:
                     print(f"\nUnable to select an LLM provider: {exc}")
         original_print_mode_menu(mode)
