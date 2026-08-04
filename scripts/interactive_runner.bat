@@ -54,8 +54,8 @@ if errorlevel 1 (
         echo Run this exact Command Prompt command:
         echo     .venv\Scripts\python.exe -m pip install -e ".[all]"
         echo.
-        echo Command Prompt requires double quotes here; single quotes are
-        echo passed literally and make '.^[all^]' an invalid requirement.
+        echo Command Prompt requires double quotes here. Single quotes are
+        echo passed literally and make the requirement invalid.
         exit /b 1
     )
 )
