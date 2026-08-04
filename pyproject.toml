@@ -90,6 +90,8 @@ py-modules = [
   "llm_json",
   "llm_json_patch",
   "llm_providers",
+  "llm_readme_patch",
+  "llm_transcripts",
   "multillm_runner",
   "project_paths",
   "swipl_bridge",
