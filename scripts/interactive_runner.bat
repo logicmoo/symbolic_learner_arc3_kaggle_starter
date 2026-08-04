@@ -49,12 +49,17 @@ rem editable base installation automatically instead of crashing on import.
 if errorlevel 1 (
     echo.
     echo Updating core project dependencies in .venv ...
-    "%VENV_PYTHON%" -m pip install -e "%REPO_ROOT%"
-    if errorlevel 1 (
+    pushd "%REPO_ROOT%" >nul
+    "%VENV_PYTHON%" -m pip install -e "."
+    set "INSTALL_EXIT_CODE=%ERRORLEVEL%"
+    popd >nul
+    if not "%INSTALL_EXIT_CODE%"=="0" (
         echo.
         echo ERROR: Unable to update the project dependencies.
-        echo Run this exact Command Prompt command:
-        echo     "%VENV_PYTHON%" -m pip install -e "%REPO_ROOT%[all]"
+        echo Run these exact Command Prompt commands:
+        echo     pushd "%REPO_ROOT%"
+        echo     "%VENV_PYTHON%" -m pip install -e ".[all]"
+        echo     popd
         echo.
         echo Command Prompt requires double quotes here. Single quotes are
         echo passed literally and make the requirement invalid.
