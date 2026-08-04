@@ -3,10 +3,12 @@ from __future__ import annotations
 import os
 import re
 import time
+from datetime import datetime, timezone
 from types import SimpleNamespace
 from typing import Any, Callable, Mapping
 
 from llm_json import LlmJsonError, parse_or_repair_json_object, strict_json_text
+from llm_readme_patch import install_llm_readme_patch
 from llm_transcripts import (
     begin_transcript,
     record_initial_response,
@@ -76,9 +78,7 @@ def _save_failed_transcript(run: Any, error: BaseException) -> None:
     run.error = str(error)
     run.status = "failed"
     run.repair_method = "failed"
-    run.metadata["completed_at"] = __import__("datetime").datetime.now(
-        __import__("datetime").timezone.utc
-    ).isoformat()
+    run.metadata["completed_at"] = datetime.now(timezone.utc).isoformat()
     save_transcript(run)
 
 
@@ -188,9 +188,7 @@ def _resilient_create_response(
             else ("local_json_repair" if repaired else "strict_json")
         )
         run.status = "normalized"
-        run.metadata["completed_at"] = __import__("datetime").datetime.now(
-            __import__("datetime").timezone.utc
-        ).isoformat()
+        run.metadata["completed_at"] = datetime.now(timezone.utc).isoformat()
         transcript_path = save_transcript(run)
     else:
         transcript_path = None
@@ -218,6 +216,7 @@ def install_llm_json_resilience() -> None:
     if _INSTALLED:
         return
     _INSTALLED = True
+    install_llm_readme_patch()
 
     original_create_response = StudioAwareLlmProviderRouter.create_response
 
