@@ -4,97 +4,118 @@
 
 ## Document scope
 
-This is the delivery checklist. It restates the three SOW phases as checkable outcomes and links each item to current evidence or remaining work.
+This is the delivery checklist. It follows the revised three-phase SOW language and links each outcome to implementation evidence or remaining work.
 
 Related documents:
 
-- [SOW_PHASE_ARCHITECTURE.md](SOW_PHASE_ARCHITECTURE.md) — detailed technical design, classes, modules, and architecture work.
+- [SOW_PHASE_ARCHITECTURE.md](SOW_PHASE_ARCHITECTURE.md) — detailed technical design, classes, modules, boundaries, and architecture work.
 - [TODO.md](TODO.md) — the concrete work we are actively implementing.
 - [FILE_TREE.md](FILE_TREE.md) — repository ownership map.
 
 ## Status rules
 
-- `[x]` — implemented with repository evidence.
-- `[ ] **Partial**` — meaningful infrastructure exists, but the complete deliverable or acceptance evidence is not yet finished.
+- `[x]` — delivered with repository or demonstration evidence.
+- `[ ] **Partial**` — meaningful contracts or infrastructure exist, but the complete deliverable or acceptance evidence is unfinished.
 - `[ ] **Open**` — not yet implemented or not yet demonstrated.
 
-A deliverable should be checked only when its implementation, tests, and demonstration evidence are reproducible.
+A Phase 1 provider artifact can be delivered as a visible debugger output even when later phases are responsible for improving the underlying semantic or predictive algorithm.
 
 ## Delivery windows
 
 | Phase | Anticipated delivery window |
 |---|---:|
-| Phase 1 — Grid Infrastructure and ARC3 Debugger Foundation | 3 weeks |
+| Phase 1 — ARC3 Debugger and Extensible Inspection Foundation | 3 weeks |
 | Phase 2 — Object Perception, Recognition, and Persistent Memory | 1 month |
 | Phase 3 — Game Object Learner Integration and Predictive Rule Learning | 1 month |
 | Overall sequence | Approximately 3 months |
 
 ---
 
-# Phase 1 — Grid Infrastructure and ARC3 Debugger Foundation
+# Phase 1 — ARC3 Debugger and Extensible Inspection Foundation
 
-Architecture: [ARC3 debugger and state architecture](SOW_PHASE_ARCHITECTURE.md#arc3-debugger-and-state-architecture)
+Architecture: [Phase 1 debugger architecture](SOW_PHASE_ARCHITECTURE.md#phase-1--arc3-debugger-and-extensible-inspection-foundation)
 
-Active work: [TODO — Phase 1 normalization and acceptance](TODO.md#now--stabilize-the-phase-1-evidence-path)
+Post-delivery maintenance: [TODO — Phase 1 maintenance](TODO.md#phase-1--post-delivery-debugger-maintenance)
 
-## Runtime and interaction
+Phase 1 delivers the debugger, evidence-recording surface, expandable command framework, provider-artifact inspection, and replay foundation. It does not claim that the debugger itself implements the final algorithms shown by bootstrap providers.
 
-- [x] Adapt the existing ARC debugger workflow to the ARC3 environment.  
+## ARC3 interaction and recorded evidence
+
+- [x] Adapt the existing ARC debugger workflow to ARC3.  
   Evidence: [`python/arc3_runner.py`](python/arc3_runner.py), [`scripts/interactive_runner.py`](scripts/interactive_runner.py), [`DEBUGGER.md`](DEBUGGER.md).
 
 - [x] Load and interact with selected ARC3 games and levels.  
-  Evidence: `Arc3Runner` game/level lifecycle and interactive controls.
+  Evidence: game/level lifecycle and interactive controls in `Arc3Runner`.
 
-- [x] Capture game states, actions, observations, and execution history.  
-  Evidence: `StepRecord`, `state.json`, `image.png`, history and export paths.
+- [x] Display and record rendered observations, actions, available metadata, and execution history.  
+  Evidence: `StepRecord`, `image.png`, `state.json`, action history, exports, and node READMEs.
 
-- [x] Support replay, reset, restart, and navigation through previously captured states.  
-  Evidence: `Arc3Runner` replay/history/reset/restart commands and action-tree navigation.
+- [x] Store gameplay encounters and explored action paths in a GitHub-browsable action tree.  
+  Evidence: [`python/action_tree.py`](python/action_tree.py), deterministic action directories, parent/child links, and generated READMEs.
 
-## Action trees and structured artifacts
+- [x] Preserve encounter and action history with deterministic replay, reset, restart, and path navigation.  
+  Evidence: runner history/replay/reset/restart behavior and action-tree navigation.
 
-- [x] Store explored states in a GitHub-browsable action tree.  
-  Evidence: [`python/action_tree.py`](python/action_tree.py), generated node READMEs and parent/child links.
+## Pluggable command and provider framework
 
-- [x] Generate structured artifacts describing states, objects, differences, similarities, reconstructions, and candidate rules.  
-  Evidence: `state.json`, `objects.pl`, `differences.pl`, `similarities.pl`, `turtle_from_image.pl`, `turtle_from_diff.pl`, and `rules.pl`.
+- [x] Provide expandable command hooks for replaceable LLM, Prolog, Python, and external providers.  
+  Evidence: `python/multillm_runner.py`, `python/gpt_bridge.py`, `python/swipl_bridge.py`, provider cycling, and symbolic command entry points.
 
-- [x] Maintain stable and human-readable object identities across state transitions.  
-  Evidence: level-wide `object_registry.pl`, opaque-ID rejection, registry-backed state files.
+- [x] Supply current and previous observations, action context, and available metadata to providers and display their results.  
+  Evidence: combined parent/current image and context requests in `GptArcAnalyzer`.
 
-- [x] Provide combined analysis of the current state and its transition from the previous state.  
-  Evidence: [`python/gpt_bridge.py`](python/gpt_bridge.py), parent/current context and images.
+- [x] Keep the debugger independent of the provider’s internal algorithm.  
+  Evidence: provider routing, normalized artifact handling, separate `.pl` outputs, and replaceable command hooks.
 
-- [x] Cache generated artifacts for repeatable inspection and reuse.  
-  Evidence: mutable latest `.pl` files, cache checks, immutable Markdown transcripts, transcript restoration.
+## Readable identities and inspectable provider artifacts
 
-- [x] Establish the initial grid infrastructure for object extraction, correspondence, transformation analysis, and rule inspection.  
-  Evidence: action-tree artifacts, Turtle reconstruction, object-memory provider contracts, transition/rule modules.
+- [x] Maintain `object_registry.pl` plus readable provider identities and provenance for browsing and later workflows.  
+  Evidence: level-wide registry handling, friendly-ID enforcement, registry-backed state artifacts, and restored-transcript provenance.
 
-## LLM comparison and debugging evidence
+- [x] Display provider-generated object descriptions.  
+  Evidence: `objects.pl` embedded and linked from node READMEs.
 
-- [x] Preserve provider, adapter, model, analysis level, profile, token budget, images, exact prompt, timing, repair history, and raw response for each LLM run.  
+- [x] Display provider-generated differences and proposed changes.  
+  Evidence: `differences.pl` and current/previous observation context.
+
+- [x] Display provider-generated similarities and proposed correspondences.  
+  Evidence: `similarities.pl`.
+
+- [x] Display Turtle mocks and reconstructions.  
+  Evidence: `turtle_from_image.pl`, `turtle_from_diff.pl`, Turtle interpreter support, and the Phase 1 demonstration video.
+
+- [x] Display candidate rules, critiques, and probability or confidence outputs.  
+  Evidence: `rules.pl`, provider prompt/output schema, and README-visible provider artifacts demonstrated during Phase 1.
+
+- [x] Make the provider artifacts inspectable through node README files.  
+  Evidence: generated README embedding and transcript links.
+
+The checked items above claim the delivered ability to **show and preserve** these outputs. Phase 2 implements and calibrates object, identity, correspondence, confidence, and Turtle-object quality. Phase 3 implements and evaluates transformation rules, predictions, probabilities, and recommendations.
+
+## Artifact cache, comparison, and restoration
+
+- [x] Save, cache, link, compare, and restore provider-generated artifacts.  
+  Evidence: mutable latest `.pl` view, immutable `llm_adapter_*.md` transcripts, transcript selection, and `restore_transcript()`.
+
+- [x] Preserve provider, adapter, model, analysis level, profile, token budget, images, exact prompt, timing, repair history, and raw response.  
   Evidence: [`python/llm_transcripts.py`](python/llm_transcripts.py).
 
-- [x] Keep restorable generated artifacts in the upper part of each transcript and debugging interaction details below.  
-  Evidence: artifact-first `llm_adapter_*.md` layout.
+- [x] Place restorable generated artifacts at the top of each completed transcript.  
+  Evidence: artifact-first transcript layout and tests.
 
-- [x] Keep the raw provider response at the bottom of the transcript.  
-  Evidence: transcript rendering tests.
+- [x] Keep debugging details and raw provider responses below the artifact snapshot.  
+  Evidence: transcript layout and response-at-bottom tests.
 
-- [x] Restore a historical transcript into the current individual `.pl` files.  
-  Evidence: LLM command `1`, `restore_transcript()`, `llm_provider.json` restored provenance.
-
-- [x] Make node `README.md` identify the active transcript and link all historical runs.  
+- [x] Make node `README.md` identify the active transcript and link historical runs.  
   Evidence: [`python/llm_readme_patch.py`](python/llm_readme_patch.py).
 
-## Configuration and runtime locations
+## Runtime and documentation
 
 - [x] Keep provider definitions and reusable prompt text together under `config/`.  
   Evidence: [`config/llm_providers.json`](config/llm_providers.json).
 
 - [x] Allow each provider to select an ordered prompt-section list and omit sections such as `transitions`.  
-  Evidence: `prompt_text` provider configuration and tests.
+  Evidence: provider prompt-section configuration and tests.
 
 - [x] Resolve code, config, and action-tree storage independently.  
   Evidence: [`scripts/_runtime.py`](scripts/_runtime.py), [`python/project_paths.py`](python/project_paths.py).
@@ -102,124 +123,136 @@ Active work: [TODO — Phase 1 normalization and acceptance](TODO.md#now--stabil
 - [x] Print where configuration is loaded from and where action trees are saved.  
   Evidence: startup resolved-path report.
 
-## Phase 1 completion evidence still required
+- [x] Provide integration seams for later perception, memory, transformation, rule-learning, prediction, and action-recommendation stages.  
+  Evidence: shared providers, object-memory contracts, learner plugin contracts, Prolog bridge, and action-tree artifact slots.
 
-- [ ] **Partial** Provide one canonical state/action ordinal and normalized immutable observation record.  
-  Work: [TODO Phase 1](TODO.md#now--stabilize-the-phase-1-evidence-path).
+- [x] Document debugger architecture, action trees, hooks, artifacts, evidence, provenance, and replay controls.  
+  Evidence: [`README.md`](README.md), [`DEBUGGER.md`](DEBUGGER.md), [`config/README.md`](config/README.md), [`SOW_PHASE_ARCHITECTURE.md`](SOW_PHASE_ARCHITECTURE.md), and [`FILE_TREE.md`](FILE_TREE.md).
 
-- [ ] **Partial** Validate every cached artifact against schema, state/image hash, registry version, provider/model/profile, prompt sections, and requested artifact set.  
-  Work: stale-cache and compatibility validation.
+## Phase 1 status
 
-- [ ] **Partial** Connect all six Prolog debugger commands to normalized Prolog APIs.  
-  Work: shared Prolog provider boundary.
-
-- [ ] **Open** Record a complete Phase 1 acceptance demonstration with reproducible commands and linked evidence.  
-  Required evidence: game/level interaction, history capture, replay/reset/restart, multi-step identity reuse, provider comparison, and transcript restoration.
-
-- [ ] **Open** Add native Windows smoke evidence for one captured ARC3 state.  
-  Work: [TODO Phase 1 demonstrations](TODO.md#phase-1-demonstrations-to-record).
+**Phase 1 is delivered.** Optional cache hardening, capability discovery, schema improvements, additional smoke tests, and later-phase integration are maintenance or extension work, not missing Phase 1 semantic deliverables.
 
 ---
 
 # Phase 2 — Object Perception, Recognition, and Persistent Memory
 
-Architecture: [Phase 2 object perception and memory architecture](SOW_PHASE_ARCHITECTURE.md#phase-2-object-perception-and-memory-architecture)
+Architecture: [Phase 2 object architecture](SOW_PHASE_ARCHITECTURE.md#phase-2--object-perception-recognition-and-persistent-memory)
 
-Active work: [TODO — Phase 2](TODO.md#phase-2--object-perception-and-persistent-memory)
+Active work: [TODO — Phase 2](TODO.md#phase-2--object-perception-recognition-and-persistent-memory)
 
-## Perception and representation
+Phase 2 implements the semantic object layer behind the Phase 1 debugger. It uses the history and provider demonstrations already preserved by the debugger but is responsible for repeatable object quality, persistent identity, regeneration, evidence, confidence, and memory.
 
-- [ ] **Partial** Extract and represent objects from grid inputs.  
-  Existing evidence: `CandidateObject`, `PerceptionAdapter`, `GridAdapter`, current LLM object artifacts.  
-  Remaining: connect the existing deterministic grid extractor through `GridAdapter`.
+## Perception and normalized representation
 
-- [ ] **Open** Extract and represent objects from image and simple video inputs.  
-  Remaining: raster adapters and fixed-camera sequence support after exact-grid acceptance.
+- [ ] **Partial** Implement pluggable perception providers for grid inputs.  
+  Existing evidence: `CandidateObject`, `PerceptionAdapter`, `GridAdapter`, current provider-generated object artifacts.  
+  Remaining: connect the existing deterministic grid extractor through the adapter and shared schemas.
 
-- [ ] **Partial** Represent object properties, structure, relationships, position, orientation, scale, and appearance.  
-  Existing evidence: object-memory records and generated Prolog predicates.  
-  Remaining: normalized deterministic extraction and shared schemas.
+- [ ] **Open** Implement pluggable perception providers for image and simple-video inputs.
 
-- [ ] **Partial** Store objects in a normalized form from which they can be regenerated.  
-  Existing evidence: `GenerativeForm`, `CellLogoForm`, Turtle artifacts.  
-  Remaining: connected render/fit/distance/residual implementation.
+- [ ] **Partial** Extract objects and represent geometry, structure, properties, relationships, position, orientation, scale, and appearance.  
+  Existing evidence: object-memory contracts and provider artifacts.  
+  Remaining: deterministic extraction and normalized persistent records.
 
-- [ ] **Partial** Demonstrate object regeneration from stored representations.  
-  Existing evidence: Turtle reconstruction artifacts.  
-  Remaining: persistent-form regeneration with source comparison.
+## Persistent identity and correspondence
 
-## Identity, correspondence, and recognition
+- [ ] **Partial** Extend `object_registry.pl` into persistent identities across examples, encounters, and transitions while preserving Phase 1 provenance.  
+  Existing evidence: readable state-transition identities.  
+  Remaining: cross-encounter semantic identity governance.
 
-- [ ] **Partial** Maintain stable object identities across examples, encounters, and state transitions.  
-  Existing evidence: state-transition identity through `object_registry.pl`.  
-  Remaining: persistent cross-encounter identity governance.
+- [ ] **Partial** Match corresponding objects between states and repeated encounters while retaining competing proposals.  
+  Existing evidence: `similarities.pl`, provider contracts, and candidate records.  
+  Remaining: deterministic matching, rival proposals, and evidence records.
 
-- [ ] **Partial** Match corresponding objects between states and across repeated encounters.  
-  Existing evidence: `similarities.pl` and correspondence contracts.  
-  Remaining: deterministic correspondence implementation and evidence records.
+- [ ] **Open** Recognize recurring objects under supported translation, rotation, scale, reflection, recoloring, noise, and partial visibility.
 
-- [ ] **Open** Recognize recurring objects under supported position, orientation, scale, reflection, color, noise, and partial-visibility changes.
+- [ ] **Partial** Detect movement, recoloring, resizing, addition, removal, splitting, merging, and structural change.  
+  Existing evidence: provider difference artifacts and transition contracts.  
+  Remaining: repeatable object-level implementation and fixtures.
 
-- [ ] **Partial** Detect movement, recoloring, resizing, addition, removal, and structural change.  
-  Existing evidence: generated difference artifacts and transition contracts.  
-  Remaining: deterministic object-level implementation and fixtures.
+## Per-object Turtle programs and regeneration
 
-- [ ] **Open** Distinguish recognized content from genuinely new object structure through residual analysis.
+- [ ] **Partial** Store every recognized grid object with a Turtle program.  
+  Existing evidence: `GenerativeForm`, `CellLogoForm`, Turtle artifacts, and Turtle DSL.  
+  Remaining: persistent one-program-per-object storage and normalized references.
 
-- [ ] **Open** Prevent duplicate durable storage of already recognized objects.
+- [ ] **Open** Require the Turtle program to redraw the object through movement, rotation, pen state, and pen width rather than filled coordinate boxes.
 
-## Persistent memory and provenance
+- [ ] **Partial** Execute the stored Turtle program to regenerate the object and compare it with the source observation.  
+  Existing evidence: Turtle execution and reconstruction mocks.  
+  Remaining: object-level render/fit/distance/residual integration.
 
-- [ ] **Partial** Accumulate evidence and provenance across repeated encounters.  
-  Existing evidence: `SingleWriter`, evidence records, action-tree/transcript provenance.  
-  Remaining: durable encounter-linked evidence.
+- [ ] **Open** Preserve exact holes, disconnected strokes, topology, and supported thickness through the stored Turtle program.
 
-- [ ] **Open** Preserve encounter history and support deterministic replay through an append-only `EncounterLog`.
+## Residuals, duplicates, evidence, and confidence
 
-- [ ] **Partial** Provide persistent symbolic memory for recognized objects, observations, and associated artifacts.  
+- [ ] **Open** Distinguish recognized or explained content from residual, potentially new object structure.
+
+- [ ] **Open** Prevent duplicate persistent storage when an existing object is recognized again.
+
+- [ ] **Partial** Accumulate positive and negative recognition evidence and provenance across the encounter history preserved by Phase 1.  
+  Existing evidence: `SingleWriter`, evidence structures, action-tree provenance.  
+  Remaining: durable encounter-linked recognition evidence.
+
+- [ ] **Open** Refine and calibrate confidence for object identity, correspondence, and competing interpretations.
+
+## Persistent symbolic memory and replay
+
+- [ ] **Partial** Maintain persistent symbolic memory for recognized objects, observations, Turtle programs, and associated artifacts.  
   Existing evidence: `SymbolicMemory` reference implementation and generated action-tree storage.  
   Remaining: durable `SymbolicStore`, `ArtifactIndex`, and lifecycle governance.
 
-- [ ] **Open** Demonstrate recognition under modest degradation and partial occlusion.
+- [ ] **Partial** Associate semantic encounters and memory updates with the history already preserved by Phase 1.  
+  Existing evidence: deterministic debugger history and node references.  
+  Remaining: semantic `EncounterLog` and stable links.
+
+- [ ] **Open** Support deterministic semantic-memory replay and reproducible updates from the debugger’s recorded history.
+
+- [ ] **Open** Demonstrate recognition and reconstruction under modest degradation and partial occlusion.
 
 ## Phase 2 tests and documentation
 
-- [ ] **Open** Provide tests for stable identity, correspondence, duplicate prevention, false merge, false split, regeneration, degradation, partial visibility, and deterministic encounter replay.
+- [ ] **Open** Provide tests for identity, correspondence, Turtle regeneration, confidence, duplicate prevention, false merge, false split, degradation, partial visibility, memory, and replay.
 
-- [ ] **Open** Provide a reproducible demonstration of the full Phase 2 workflow:
+- [ ] **Open** Provide a reproducible Phase 2 workflow demonstration:
 
 ```text
 Input image or game state
     → object extraction
-    → object representation
-    → object matching and correspondence
-    → before-and-after state comparison
+    → normalized object representation and Turtle program
+    → matching and correspondence
+    → before-and-after comparison
+    → evidence and confidence update
     → persistent storage
+    → Turtle regeneration
     → later recognition as the same object
 ```
 
-- [ ] **Open** Provide Phase 2 identity, recognition, regeneration, memory, and replay documentation with linked evidence.
+- [ ] **Open** Provide Phase 2 identity, correspondence, regeneration, confidence, memory, and replay documentation with linked evidence.
 
 ---
 
 # Phase 3 — Game Object Learner Integration and Predictive Rule Learning
 
-Architecture: [Phase 3 Game Object Learner architecture](SOW_PHASE_ARCHITECTURE.md#phase-3-game-object-learner-architecture)
+Architecture: [Phase 3 learner architecture](SOW_PHASE_ARCHITECTURE.md#phase-3--game-object-learner-integration-and-predictive-rule-learning)
 
-Active work: [TODO — Phase 3](TODO.md#phase-3--game-object-learner-and-prediction)
+Active work: [TODO — Phase 3](TODO.md#phase-3--game-object-learner-integration-and-predictive-rule-learning)
 
-## Stable integration boundary
+Phase 3 implements learning and prediction over the persistent objects and evidence produced by Phase 2. The Phase 1 debugger remains the inspection surface for its rules, critiques, probabilities, predictions, grades, and recommendations.
 
-- [ ] **Partial** Define the interface and data contract connecting perception/memory to the Game Object Learner.  
+## Stable learner boundary
+
+- [ ] **Partial** Define a stable, versioned data contract from object perception and memory to the Game Object Learner.  
   Existing evidence: `GameObjectLearnerPayload`, result records, plugin interface.  
   Remaining: freeze serialized schema and build real Phase 2 payloads.
 
-- [ ] **Partial** Provide objects, properties, relationships, correspondences, state differences, and encounter history to the learner.  
+- [ ] **Partial** Provide objects, properties, relationships, correspondences, state differences, actions, encounter history, evidence, confidence, and provenance.  
   Existing evidence: fields and provider contracts.  
-  Remaining: real data wiring and persistent encounter history.
+  Remaining: real data wiring.
 
-- [x] Keep the Game Object Learner independent of debugger and perception-layer internals.  
-  Evidence: plugin and normalized payload boundary.
+- [x] Keep the learner independent of debugger and perception internals while returning normalized artifacts the debugger can display.  
+  Evidence: plugin and normalized payload/result boundaries.
 
 - [x] Add interface validation and structured errors.  
   Evidence: `IntegrationValidator`, `IntegrationError`.
@@ -228,38 +261,53 @@ Active work: [TODO — Phase 3](TODO.md#phase-3--game-object-learner-and-predict
   Existing evidence: synthetic Python and Prolog pipeline tests.  
   Remaining: real ARC3/Phase 2 integration workflow.
 
-## Transformations and rules
+## Transformations, rules, critiques, and ranking
 
-- [ ] **Partial** Infer candidate object-level transformations and transition rules.  
-  Existing evidence: `TransitionAnalyzer`, `TransformationLearner`, `RuleInducer`, and Prolog equivalents.  
+- [ ] **Partial** Analyze observed transitions and infer candidate object-level transformations.  
+  Existing evidence: `TransitionAnalyzer`, `TransformationLearner`, and Prolog equivalents.  
   Remaining: real object-transition inputs and quality evaluation.
 
-- [x] Support multiple candidate interpretations and retain rule evidence structures.  
-  Evidence: transformation candidates, rule rival/evidence records, provider-driven pipelines.
+- [ ] **Partial** Induce multiple candidate rules with assumptions, critiques, confidence estimates, and supporting or contradicting evidence.  
+  Existing evidence: rule, rival, and evidence structures.  
+  Remaining: real induction, critique, and confidence refinement.
 
-- [ ] **Partial** Apply learned object-level transformations to new cases.  
+- [ ] **Partial** Rank and refine competing rules using simplicity, coverage, contradiction, applicability, and prediction history.  
+  Existing evidence: `RuleRanker` contracts.  
+  Remaining: real evidence and prediction-history integration.
+
+- [ ] **Partial** Apply learned transformations and rules to previously unseen cases.  
   Existing evidence: rule execution contracts.  
-  Remaining: learned transformations from real cases and unseen-case demonstration.
+  Remaining: unseen-case demonstration from learned real examples.
 
 ## Prediction and independent outcome grading
 
 - [x] Provide a prediction ledger that enforces prediction-before-outcome ordering.  
   Evidence: Python and Prolog prediction-ledger tests.
 
-- [ ] **Partial** Predict later states before outcomes are observed.  
+- [ ] **Partial** Record real ARC3 predictions before outcomes, including expected objects, relationships, state changes, or action recommendations.  
   Existing evidence: connected synthetic pipeline.  
-  Remaining: predictions generated from real ARC3 transitions before action execution.
+  Remaining: real predictions before action execution.
 
 - [x] Compare predictions with independently supplied outcomes through a separate outcome channel.  
-  Evidence: `OutcomeChannel`, `PredictionEvaluator`, Prolog evaluation module.
+  Evidence: `OutcomeChannel`, `PredictionEvaluator`, and Prolog evaluation module.
 
-- [x] Update rule evidence from prediction success or failure through grading records.  
+- [x] Update positive and negative rule evidence from prediction success or failure through grading records.  
   Evidence: connected Python and Prolog tests.
 
-- [x] Prevent post-hoc explanations from being treated as successful predictions.  
+- [x] Prevent post-hoc explanations from receiving predictive credit.  
   Evidence: ordering enforcement in prediction ledgers.
 
-## Environment and occlusion demonstrations
+- [ ] **Open** Refine rule probability, confidence, and ranking from real prediction history.
+
+## Debugger evidence writeback
+
+- [ ] **Partial** Write rules, critiques, probabilities, predictions, and grades back to the debugger and action-tree README evidence.  
+  Existing evidence: Phase 1 can already display provider-generated rules, critiques, and confidence outputs.  
+  Remaining: normalized real learner records, outcome links, grades, and evidence updates.
+
+- [ ] **Open** Link learned rules and action recommendations to their source observations, Phase 2 objects, evidence, predictions, and outcomes.
+
+## Environment and acceptance demonstrations
 
 - [ ] **Open** Demonstrate recognition and completion of partly occluded objects.
 
@@ -269,36 +317,33 @@ Active work: [TODO — Phase 3](TODO.md#phase-3--game-object-learner-and-predict
   - fixed-camera physics examples;
   - top-down manipulation with partial occlusion.
 
-## Phase 3 delivery evidence
-
 - [ ] **Open** Demonstrate the complete Phase 3 workflow:
 
 ```text
 Input game state
-    → object perception and recognition
-    → persistent object identity
-    → structured Game Object Learner handoff
-    → state-transition analysis
-    → candidate transformation learning
-    → prediction of a later state
+    → object perception and persistent identity
+    → structured learner handoff
+    → transition analysis
+    → competing transformations and rules
+    → assumptions, critiques, confidence, and evidence
+    → pre-outcome prediction
     → application to a new case
-    → independent prediction evaluation
-    → prediction, learned rule, or action recommendation
+    → independent evaluation
+    → updated evidence, learned rule, or action recommendation
 ```
 
 - [ ] **Open** Provide reproducible integration commands, example scripts, acceptance-test results, and developer notes.
-
-- [ ] **Open** Link predictions, outcomes, grades, learned rules, and action recommendations into action-tree evidence.
 
 ---
 
 # Project-level completion checklist
 
-- [ ] Every checked deliverable has reproducible implementation, tests, and demonstration evidence.
-- [ ] Every partial deliverable is either completed or explicitly deferred with written rationale.
+- [x] Phase 1 debugger and inspection deliverables are identified separately from later semantic and learning quality.
+- [ ] Every checked Phase 2 and Phase 3 deliverable has reproducible implementation, tests, and demonstration evidence.
+- [ ] Every partial deliverable is completed or explicitly deferred with written rationale.
 - [ ] Architecture, TODO, deliverables, file tree, debugger, provider, and Kaggle documentation agree.
 - [ ] Protected Kaggle files remain unchanged in name and purpose.
-- [ ] Exact-grid behavior is deterministic before raster/occlusion environments are accepted.
-- [ ] Final acceptance report links repository commits, tests, action-tree artifacts, transcripts, predictions, and demonstrations.
+- [ ] Exact-grid identity, Turtle regeneration, memory replay, and prediction ordering are deterministic before raster/occlusion environments are accepted.
+- [ ] Final acceptance evidence links repository commits, tests, action-tree artifacts, Turtle programs, transcripts, predictions, outcomes, and demonstrations.
 
 [← Back to top-level README](README.md)
