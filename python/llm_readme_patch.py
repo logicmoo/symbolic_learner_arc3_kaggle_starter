@@ -1,12 +1,21 @@
 from __future__ import annotations
 
 import re
+from pathlib import Path
 from typing import Any
 
 from action_tree import ActionTreeStore
 from llm_transcripts import list_transcripts, transcript_metadata
 
 _INSTALLED = False
+_ARTIFACT_MARKER = "<!-- ARC3_LLM_ARTIFACT_BEGIN: "
+
+
+def transcript_is_restorable(path: str | Path) -> bool:
+    try:
+        return _ARTIFACT_MARKER in Path(path).read_text(encoding="utf-8")
+    except OSError:
+        return False
 
 
 def _remove_transcript_embedding(text: str, filename: str) -> str:
@@ -29,40 +38,55 @@ def _transcript_section(node: Any) -> str:
     if not transcripts:
         return ""
 
-    active = transcripts[0]
-    active_meta = transcript_metadata(active)
+    active = next((path for path in transcripts if transcript_is_restorable(path)), None)
     lines = [
         "## LLM comparison transcripts",
         "",
-        (
-            "The mutable latest `.pl` files embedded below currently reflect "
-            f"[`{active.name}`]({active.name}). Restoring another transcript "
-            "rewrites those latest files and makes that run active."
-        ),
-        "",
-        "### Active run",
-        "",
-        f"- **Transcript:** [`{active.name}`]({active.name})",
-        f"- **Provider:** `{active_meta.get('provider_id')}`",
-        f"- **Adapter:** `{active_meta.get('adapter')}`",
-        f"- **Model:** `{active_meta.get('model')}`",
-        f"- **Analysis level:** `{active_meta.get('analysis_level')}`",
-        f"- **Profile:** `{(active_meta.get('analysis_profile') or {}).get('name')}`",
-        f"- **Requested max output tokens:** `{active_meta.get('max_output_tokens')}`",
-        "",
-        "### All runs",
-        "",
     ]
+    if active is not None:
+        active_meta = transcript_metadata(active)
+        lines.extend(
+            [
+                (
+                    "The mutable latest `.pl` files embedded below currently reflect "
+                    f"[`{active.name}`]({active.name}). Restoring another completed "
+                    "transcript rewrites those latest files and makes that run active."
+                ),
+                "",
+                "### Active run",
+                "",
+                f"- **Transcript:** [`{active.name}`]({active.name})",
+                f"- **Provider:** `{active_meta.get('provider_id')}`",
+                f"- **Adapter:** `{active_meta.get('adapter')}`",
+                f"- **Model:** `{active_meta.get('model')}`",
+                f"- **Analysis level:** `{active_meta.get('analysis_level')}`",
+                f"- **Profile:** `{(active_meta.get('analysis_profile') or {}).get('name')}`",
+                f"- **Requested max output tokens:** `{active_meta.get('max_output_tokens')}`",
+                "",
+            ]
+        )
+    else:
+        lines.extend(
+            [
+                "*No transcript with a completed restorable artifact snapshot exists yet.*",
+                "",
+            ]
+        )
+
+    lines.extend(["### All runs", ""])
     for index, path in enumerate(transcripts, start=1):
         metadata = transcript_metadata(path)
-        marker = " **(active)**" if index == 1 else ""
+        is_active = active is not None and path.resolve() == active.resolve()
+        marker = " **(active)**" if is_active else ""
+        kind = "restorable" if transcript_is_restorable(path) else "debug-only"
         lines.append(
             f"{index}. [`{path.name}`]({path.name}){marker} — "
-            f"provider `{metadata.get('provider_id')}`, "
+            f"`{kind}`, provider `{metadata.get('provider_id')}`, "
             f"model `{metadata.get('model')}`, "
             f"level `{metadata.get('analysis_level')}`, "
             f"profile `{(metadata.get('analysis_profile') or {}).get('name')}`, "
-            f"tokens `{metadata.get('max_output_tokens')}`"
+            f"tokens `{metadata.get('max_output_tokens')}`, "
+            f"status `{metadata.get('status')}`"
         )
     return "\n".join(lines).rstrip() + "\n\n"
 
