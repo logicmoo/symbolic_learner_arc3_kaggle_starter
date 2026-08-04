@@ -12,8 +12,9 @@ def test_env_example_parses_and_covers_runtime_configuration() -> None:
     values = dotenv_values(ROOT / ".env.example")
     required = {
         "ARC3_LLM_PROVIDER",
+        "ARC3_CONFIG_ROOT",
         "ARC3_LLM_CONFIG",
-        "ARC3_LLM_SAVE_RAW_RESPONSE",
+        "ARC3_LLM_SAVE_TRANSCRIPT",
         "ARC3_LLM_RESPONSE_DIR",
         "ARC3_LLM_JSON_RETRY",
         "OPENAI_API_KEY",
@@ -37,7 +38,6 @@ def test_env_example_parses_and_covers_runtime_configuration() -> None:
         "ARC3_UNSLOTH_TRUST_REMOTE_CODE",
         "HF_TOKEN",
         "ARC3_RUNTIME_HOME",
-        "ARC3_PROMPTS_ROOT",
         "ARC3_TREE_ROOT",
         "ARC3_WEB_HOST",
         "ARC3_WEB_PORT",
@@ -54,6 +54,10 @@ def test_env_example_parses_and_covers_runtime_configuration() -> None:
     assert values["ARC3_UNSLOTH_AUTO_LOAD"] == "1"
     assert values["ARC3_UNSLOTH_GGUF_VARIANT"] == "UD-Q4_K_XL"
     assert values["ARC3_UNSLOTH_MAX_SEQ_LENGTH"] == "131072"
-    assert values["ARC3_LLM_SAVE_RAW_RESPONSE"] == "1"
+    assert values["ARC3_LLM_SAVE_TRANSCRIPT"] == "1"
     assert values["ARC3_LLM_JSON_RETRY"] == "1"
+    assert values["ARC3_CONFIG_ROOT"].endswith("/config")
+    assert values["ARC3_LLM_CONFIG"].endswith("/config/llm_providers.json")
+    assert "ARC3_PROMPTS_ROOT" not in values
+    assert "ARC3_ENVIRONMENT_FILES" not in values
     assert values["ARC3_WEB_HOST"] == "127.0.0.1"
