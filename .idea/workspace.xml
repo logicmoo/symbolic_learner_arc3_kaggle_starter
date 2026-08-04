@@ -5,11 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="edb8fea1-73c1-4416-9e9a-8ac50d562623" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/logicmoo-arc3.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/logicmoo-arc3.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/interactive_runner.bat" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/interactive_runner.bat" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/setup_windows.bat" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/setup_windows.bat" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/vendor/ARC-AGI-3-Agents/agents/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/vendor/ARC-AGI-3-Agents/agents/__init__.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
