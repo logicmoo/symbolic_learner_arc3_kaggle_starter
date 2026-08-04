@@ -4,6 +4,7 @@ from types import SimpleNamespace
 from typing import Any
 
 from llm_batch_profiles import _install_sampling_parameters
+from llm_catalog_sampling import install_anthropic_profile_sampling
 from llm_model_catalog import CatalogAwareLlmProviderRouter
 from project_paths import prompts_path
 
@@ -138,3 +139,4 @@ def install_catalog_runner() -> None:
     MultiLlmArc3Runner._run_gpt_analysis_level = run_gpt_analysis_level
     MultiLlmArc3Runner._arc3_catalog_installed = True
     _install_sampling_parameters()
+    install_anthropic_profile_sampling()
