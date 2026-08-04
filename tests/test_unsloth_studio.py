@@ -54,7 +54,11 @@ def write_config(path: Path) -> None:
         json.dumps(
             {
                 "default_provider": "unsloth",
-                "providers": [
+                "prompt_text": {
+                    "response_contract": ["Return strict JSON."],
+                    "objects": ["Describe current objects."],
+                },
+                "llm_providers": [
                     {
                         "id": "unsloth",
                         "label": "Unsloth Studio local",
@@ -63,6 +67,7 @@ def write_config(path: Path) -> None:
                         "api_key_env": "ARC3_UNSLOTH_API_KEY",
                         "base_url": "http://127.0.0.1:8888/v1",
                         "enabled": "auto",
+                        "prompt_text": ["response_contract", "objects"],
                     }
                 ],
             }
@@ -124,6 +129,7 @@ def test_unloaded_studio_loads_model_before_response(tmp_path, monkeypatch):
     )
 
     assert result.output_text == '{"ok":true}'
+    assert result.provider_metadata["prompt_text"] == ["response_contract", "objects"]
     assert [call[0].get_method() for call in http.calls] == ["GET", "POST", "GET"]
     assert http.calls[0][0].full_url.endswith("/api/inference/status")
     assert http.calls[1][0].full_url.endswith("/api/inference/load")
