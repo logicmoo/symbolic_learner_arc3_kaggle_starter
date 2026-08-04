@@ -4,7 +4,7 @@ import os
 import re
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any, Mapping
+from typing import Any, Callable, Mapping
 
 from llm_json import LlmJsonError, parse_or_repair_json_object, strict_json_text
 from unsloth_studio import StudioAwareLlmProviderRouter
@@ -92,6 +92,82 @@ def _repair_prompt(raw: str, required_keys: tuple[str, ...]) -> str:
     )
 
 
+def _resilient_create_response(
+    original_create_response: Callable[..., Any],
+    router: StudioAwareLlmProviderRouter,
+    **kwargs: Any,
+) -> Any:
+    response = original_create_response(router, **kwargs)
+    raw = getattr(response, "output_text", None)
+    if not raw:
+        return response
+
+    required_keys = _required_keys(kwargs.get("input"))
+    raw_path = _write_response("llm_response.raw.txt", str(raw))
+
+    try:
+        bundle, repaired = parse_or_repair_json_object(
+            str(raw),
+            required_keys=required_keys,
+        )
+    except LlmJsonError as first_error:
+        if not _env_bool("ARC3_LLM_JSON_RETRY", True):
+            location = f" Raw response: {raw_path}" if raw_path else ""
+            raise RuntimeError(f"{first_error}.{location}") from first_error
+
+        print(
+            "LLM response was not recoverable locally; requesting one "
+            "text-only JSON repair pass..."
+        )
+        repair_response = original_create_response(
+            router,
+            model=kwargs.get("model"),
+            input=[
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "input_text",
+                            "text": _repair_prompt(str(raw), required_keys),
+                        }
+                    ],
+                }
+            ],
+            reasoning={"effort": "low"},
+            max_output_tokens=kwargs.get("max_output_tokens"),
+        )
+        retry_raw = getattr(repair_response, "output_text", None)
+        if not retry_raw:
+            raise RuntimeError(
+                f"LLM JSON repair pass returned no output. Original error: {first_error}"
+            ) from first_error
+        retry_path = _write_response("llm_response.retry.raw.txt", str(retry_raw))
+        try:
+            bundle, repaired = parse_or_repair_json_object(
+                str(retry_raw),
+                required_keys=required_keys,
+            )
+        except LlmJsonError as retry_error:
+            locations = [path for path in (raw_path, retry_path) if path is not None]
+            suffix = (
+                " Saved responses: " + ", ".join(str(path) for path in locations)
+                if locations
+                else ""
+            )
+            raise RuntimeError(
+                f"LLM JSON remained invalid after repair pass: {retry_error}.{suffix}"
+            ) from retry_error
+        repaired = True
+
+    strict = strict_json_text(bundle)
+    if repaired:
+        repaired_path = _write_response("llm_response.repaired.json", strict)
+        location = f" Saved: {repaired_path}" if repaired_path else ""
+        print(f"Recovered malformed LLM JSON locally.{location}")
+
+    return SimpleNamespace(output_text=strict)
+
+
 def install_llm_json_resilience() -> None:
     """Wrap provider responses with strict parse, local repair, and one retry."""
     global _INSTALLED
@@ -105,74 +181,6 @@ def install_llm_json_resilience() -> None:
         self: StudioAwareLlmProviderRouter,
         **kwargs: Any,
     ) -> Any:
-        response = original_create_response(self, **kwargs)
-        raw = getattr(response, "output_text", None)
-        if not raw:
-            return response
-
-        required_keys = _required_keys(kwargs.get("input"))
-        raw_path = _write_response("llm_response.raw.txt", str(raw))
-
-        try:
-            bundle, repaired = parse_or_repair_json_object(
-                str(raw),
-                required_keys=required_keys,
-            )
-        except LlmJsonError as first_error:
-            if not _env_bool("ARC3_LLM_JSON_RETRY", True):
-                location = f" Raw response: {raw_path}" if raw_path else ""
-                raise RuntimeError(f"{first_error}.{location}") from first_error
-
-            print(
-                "LLM response was not recoverable locally; requesting one "
-                "text-only JSON repair pass..."
-            )
-            repair_response = original_create_response(
-                self,
-                model=kwargs.get("model"),
-                input=[
-                    {
-                        "role": "user",
-                        "content": [
-                            {
-                                "type": "input_text",
-                                "text": _repair_prompt(str(raw), required_keys),
-                            }
-                        ],
-                    }
-                ],
-                reasoning={"effort": "low"},
-                max_output_tokens=kwargs.get("max_output_tokens"),
-            )
-            retry_raw = getattr(repair_response, "output_text", None)
-            if not retry_raw:
-                raise RuntimeError(
-                    f"LLM JSON repair pass returned no output. Original error: {first_error}"
-                ) from first_error
-            retry_path = _write_response("llm_response.retry.raw.txt", str(retry_raw))
-            try:
-                bundle, repaired = parse_or_repair_json_object(
-                    str(retry_raw),
-                    required_keys=required_keys,
-                )
-            except LlmJsonError as retry_error:
-                locations = [path for path in (raw_path, retry_path) if path is not None]
-                suffix = (
-                    " Saved responses: " + ", ".join(str(path) for path in locations)
-                    if locations
-                    else ""
-                )
-                raise RuntimeError(
-                    f"LLM JSON remained invalid after repair pass: {retry_error}.{suffix}"
-                ) from retry_error
-            repaired = True
-
-        strict = strict_json_text(bundle)
-        if repaired:
-            repaired_path = _write_response("llm_response.repaired.json", strict)
-            location = f" Saved: {repaired_path}" if repaired_path else ""
-            print(f"Recovered malformed LLM JSON locally.{location}")
-
-        return SimpleNamespace(output_text=strict)
+        return _resilient_create_response(original_create_response, self, **kwargs)
 
     StudioAwareLlmProviderRouter.create_response = resilient_create_response
