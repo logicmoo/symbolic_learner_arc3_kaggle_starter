@@ -94,6 +94,56 @@
       ]
     },
     {
+      "id": "groq-free",
+      "label": "Groq Free / Qwen 3.6 27B",
+      "adapter": "openai_responses",
+      "model": "qwen/qwen3.6-27b",
+      "model_env": "ARC3_GROQ_MODEL",
+      "api_key_env": "GROQ_API_KEY",
+      "base_url": "https://api.groq.com/openai/v1",
+      "base_url_env": "ARC3_GROQ_BASE_URL",
+      "enabled": "auto",
+      "supports_reasoning": false,
+      "prompt_text": [
+        "response_contract",
+        "coordinate_contract",
+        "identity_contract",
+        "object_extraction",
+        "turtle_reconstruction",
+        "transitions",
+        "correspondences",
+        "rule_analysis",
+        "file_separation",
+        "root_state",
+        "quality_control"
+      ]
+    },
+    {
+      "id": "openrouter-free",
+      "label": "OpenRouter Free / automatic multimodal model",
+      "adapter": "openai_responses",
+      "model": "openrouter/free",
+      "model_env": "ARC3_OPENROUTER_MODEL",
+      "api_key_env": "OPENROUTER_API_KEY",
+      "base_url": "https://openrouter.ai/api/v1",
+      "base_url_env": "ARC3_OPENROUTER_BASE_URL",
+      "enabled": "auto",
+      "supports_reasoning": false,
+      "prompt_text": [
+        "response_contract",
+        "coordinate_contract",
+        "identity_contract",
+        "object_extraction",
+        "turtle_reconstruction",
+        "transitions",
+        "correspondences",
+        "rule_analysis",
+        "file_separation",
+        "root_state",
+        "quality_control"
+      ]
+    },
+    {
       "id": "unsloth",
       "label": "Unsloth Studio local",
       "adapter": "openai_responses",
