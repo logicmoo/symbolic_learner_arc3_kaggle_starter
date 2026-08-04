@@ -5,7 +5,13 @@ import re
 from collections.abc import Iterable
 from typing import Any
 
-from json_repair import repair_json
+try:
+    from json_repair import repair_json
+except ImportError as error:  # pragma: no cover - installation failure path
+    raise RuntimeError(
+        "LLM JSON recovery requires json-repair. Update the environment with: "
+        "python -m pip install -e '.[all]'"
+    ) from error
 
 
 class LlmJsonError(RuntimeError):
