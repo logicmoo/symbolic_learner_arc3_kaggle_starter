@@ -39,6 +39,7 @@ def test_env_example_parses_and_covers_runtime_configuration() -> None:
         "HF_TOKEN",
         "ARC3_RUNTIME_HOME",
         "ARC3_TREE_ROOT",
+        "ARC3_SHOW_PATHS",
         "ARC3_WEB_HOST",
         "ARC3_WEB_PORT",
         "ARC3_WEB_TOKEN",
@@ -58,6 +59,7 @@ def test_env_example_parses_and_covers_runtime_configuration() -> None:
     assert values["ARC3_LLM_JSON_RETRY"] == "1"
     assert values["ARC3_CONFIG_ROOT"].endswith("/config")
     assert values["ARC3_LLM_CONFIG"].endswith("/config/llm_providers.json")
+    assert values["ARC3_SHOW_PATHS"] == "1"
     assert "ARC3_PROMPTS_ROOT" not in values
     assert "ARC3_ENVIRONMENT_FILES" not in values
     assert values["ARC3_WEB_HOST"] == "127.0.0.1"
