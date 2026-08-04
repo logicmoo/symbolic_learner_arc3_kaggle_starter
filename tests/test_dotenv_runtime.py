@@ -26,6 +26,9 @@ _RUNTIME_ENV_NAMES = (
 def _clean_runtime_environment(monkeypatch: pytest.MonkeyPatch):
     for name in _RUNTIME_ENV_NAMES:
         monkeypatch.delenv(name, raising=False)
+    yield
+    for name in _RUNTIME_ENV_NAMES:
+        os.environ.pop(name, None)
 
 
 def _load_runtime_module():

@@ -1,12 +1,14 @@
 @echo off
 setlocal EnableExtensions
 
-rem Change to the repository root regardless of the caller's current directory.
-cd /d "%~dp0.."
-if errorlevel 1 (
-    echo ERROR: Unable to enter the repository root.
-    exit /b 1
-)
+rem Preserve the directory from which the user launched ARC3. Python uses this
+rem workspace first when resolving config\ and action_trees\ independently.
+set "ARC3_CALLER_CWD=%CD%"
+set "ARC3_LAUNCH_CWD=%CD%"
+
+rem Resolve the code checkout from this batch file without changing the caller's
+rem working directory. This keeps workspace-local resources discoverable.
+for %%I in ("%~dp0..") do set "REPO_ROOT=%%~fI"
 
 rem A project virtual environment must not inherit a machine-wide PYTHONHOME or
 rem PYTHONPATH. Either variable can make Python search an unrelated installation
@@ -16,17 +18,17 @@ set "PYTHONPATH="
 
 rem Use the project interpreter directly. Activation is unnecessary and this
 rem avoids accidentally invoking the Microsoft Store python.exe alias.
-set "VENV_PYTHON=%CD%\.venv\Scripts\python.exe"
+set "VENV_PYTHON=%REPO_ROOT%\.venv\Scripts\python.exe"
 
 if not exist "%VENV_PYTHON%" (
     echo ERROR: The project virtual environment does not exist:
-    echo     %CD%\.venv
+    echo     %REPO_ROOT%\.venv
     echo.
-    echo Run this first:
-    echo     scripts\setup_windows.bat
+    echo Run this first from the code checkout:
+    echo     "%REPO_ROOT%\scripts\setup_windows.bat"
     echo.
-    echo See README_WINDOWS.md for Python, long-path, Git, SWI-Prolog,
-    echo PyCharm, UNC-path, and Microsoft Store alias troubleshooting.
+    echo See "%REPO_ROOT%\README_WINDOWS.md" for Python, long-path, Git,
+    echo SWI-Prolog, PyCharm, UNC-path, and Microsoft Store alias troubleshooting.
     exit /b 1
 )
 
@@ -35,9 +37,9 @@ rem Detect a damaged or non-venv interpreter before attempting package repairs.
 if errorlevel 1 (
     echo ERROR: .venv is damaged or is not a usable Python virtual environment.
     echo.
-    echo Recreate it with:
-    echo     rmdir /s /q .venv
-    echo     scripts\setup_windows.bat
+    echo Recreate it from the code checkout with:
+    echo     rmdir /s /q "%REPO_ROOT%\.venv"
+    echo     "%REPO_ROOT%\scripts\setup_windows.bat"
     exit /b 1
 )
 
@@ -47,12 +49,17 @@ rem editable base installation automatically instead of crashing on import.
 if errorlevel 1 (
     echo.
     echo Updating core project dependencies in .venv ...
+    pushd "%REPO_ROOT%" >nul
     "%VENV_PYTHON%" -m pip install -e "."
-    if errorlevel 1 (
+    set "INSTALL_EXIT_CODE=%ERRORLEVEL%"
+    popd >nul
+    if not "%INSTALL_EXIT_CODE%"=="0" (
         echo.
         echo ERROR: Unable to update the project dependencies.
-        echo Run this exact Command Prompt command:
-        echo     .venv\Scripts\python.exe -m pip install -e ".[all]"
+        echo Run these exact Command Prompt commands:
+        echo     pushd "%REPO_ROOT%"
+        echo     "%VENV_PYTHON%" -m pip install -e ".[all]"
+        echo     popd
         echo.
         echo Command Prompt requires double quotes here. Single quotes are
         echo passed literally and make the requirement invalid.
@@ -60,7 +67,7 @@ if errorlevel 1 (
     )
 )
 
-"%VENV_PYTHON%" ".\scripts\interactive_runner.py" %*
+"%VENV_PYTHON%" "%REPO_ROOT%\scripts\interactive_runner.py" %*
 set "EXIT_CODE=%ERRORLEVEL%"
 
 endlocal & exit /b %EXIT_CODE%

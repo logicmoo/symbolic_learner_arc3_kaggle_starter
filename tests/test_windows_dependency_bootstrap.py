@@ -10,17 +10,22 @@ def _batch(name: str) -> str:
     return (ROOT / "scripts" / name).read_text(encoding="utf-8")
 
 
-def test_interactive_launcher_uses_isolated_venv_and_repairs_core_dependencies() -> None:
+def test_interactive_launcher_preserves_workspace_and_repairs_dependencies() -> None:
     source = _batch("interactive_runner.bat")
 
+    assert 'set "ARC3_CALLER_CWD=%CD%"' in source
+    assert 'set "ARC3_LAUNCH_CWD=%CD%"' in source
+    assert 'for %%I in ("%~dp0..") do set "REPO_ROOT=%%~fI"' in source
+    assert 'cd /d "%~dp0.."' not in source
     assert 'set "PYTHONHOME="' in source
     assert 'set "PYTHONPATH="' in source
-    assert 'set "VENV_PYTHON=%CD%\\.venv\\Scripts\\python.exe"' in source
+    assert 'set "VENV_PYTHON=%REPO_ROOT%\\.venv\\Scripts\\python.exe"' in source
     assert '"%VENV_PYTHON%" -c "import json_repair"' in source
+    assert 'pushd "%REPO_ROOT%"' in source
     assert '"%VENV_PYTHON%" -m pip install -e "."' in source
-    assert '.venv\\Scripts\\python.exe -m pip install -e ".[all]"' in source
+    assert '"%VENV_PYTHON%" -m pip install -e ".[all]"' in source
     assert "pip install -e '.[all]'" not in source
-    assert '"%VENV_PYTHON%" ".\\scripts\\interactive_runner.py" %*' in source
+    assert '"%VENV_PYTHON%" "%REPO_ROOT%\\scripts\\interactive_runner.py" %*' in source
 
 
 def test_windows_setup_sanitizes_python_paths_and_verifies_json_repair() -> None:

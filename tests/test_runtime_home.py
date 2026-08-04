@@ -28,6 +28,9 @@ _RUNTIME_ENV_NAMES = (
 def _clean_runtime_environment(monkeypatch: pytest.MonkeyPatch):
     for name in _RUNTIME_ENV_NAMES:
         monkeypatch.delenv(name, raising=False)
+    yield
+    for name in _RUNTIME_ENV_NAMES:
+        os.environ.pop(name, None)
 
 
 def _load_runtime_module():
@@ -70,7 +73,6 @@ def test_explicit_runtime_home_has_priority(
     assert selected == configured
     assert Path.cwd() == configured
     assert os.environ["ARC3_RUNTIME_HOME"] == str(configured)
-    # Resources are resolved independently; the launch workspace wins first.
     assert Path(os.environ["ARC3_LLM_CONFIG"]) == working / "config" / "llm_providers.json"
     assert Path(os.environ["ARC3_TREE_ROOT"]) == working / "action_trees"
 
