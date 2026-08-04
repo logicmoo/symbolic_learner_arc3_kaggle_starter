@@ -29,6 +29,64 @@ def _optional_text(value: Any) -> str | None:
     return text or None
 
 
+def _normalize_prompt_text(value: Any, *, key: str) -> str:
+    if isinstance(value, str):
+        text = value
+    elif isinstance(value, list) and all(isinstance(line, str) for line in value):
+        text = "\n".join(value)
+    else:
+        raise LlmConfigurationError(
+            f"prompt_text {key!r} must be a string or an array of strings"
+        )
+    text = text.replace("\r\n", "\n").replace("\r", "\n")
+    return "\n".join(line.rstrip() for line in text.split("\n")).strip("\n")
+
+
+def _prompt_names(value: Any, *, provider_id: str) -> tuple[str, ...]:
+    if value is None:
+        return ()
+    if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
+        raise LlmConfigurationError(
+            f"Provider {provider_id!r} prompt_text must be an array of section names"
+        )
+    names = tuple(item.strip() for item in value if item.strip())
+    if len(names) != len(set(names)):
+        raise LlmConfigurationError(
+            f"Provider {provider_id!r} prompt_text contains duplicate section names"
+        )
+    return names
+
+
+def _metadata_value(value: Any, depth: int = 0) -> Any:
+    if depth > 5:
+        return repr(value)
+    if value is None or isinstance(value, (str, int, float, bool)):
+        return value
+    if isinstance(value, Mapping):
+        return {
+            str(key): _metadata_value(item, depth + 1)
+            for key, item in value.items()
+        }
+    if isinstance(value, (list, tuple)):
+        return [_metadata_value(item, depth + 1) for item in value]
+    for method_name in ("model_dump", "dict"):
+        method = getattr(value, method_name, None)
+        if callable(method):
+            try:
+                return _metadata_value(method(), depth + 1)
+            except Exception:
+                pass
+    if hasattr(value, "__dict__"):
+        public = {
+            key: item
+            for key, item in vars(value).items()
+            if not key.startswith("_")
+        }
+        if public:
+            return _metadata_value(public, depth + 1)
+    return repr(value)
+
+
 @dataclass(frozen=True)
 class ProviderSpec:
     provider_id: str
@@ -46,6 +104,7 @@ class ProviderSpec:
     supports_reasoning: bool = False
     timeout_seconds: float = 600.0
     anthropic_version: str = "2023-06-01"
+    prompt_text: tuple[str, ...] = ()
 
     @classmethod
     def from_mapping(cls, raw: Mapping[str, Any]) -> "ProviderSpec":
@@ -78,6 +137,7 @@ class ProviderSpec:
             supports_reasoning=bool(raw.get("supports_reasoning", False)),
             timeout_seconds=float(raw.get("timeout_seconds", 600.0)),
             anthropic_version=str(raw.get("anthropic_version") or "2023-06-01"),
+            prompt_text=_prompt_names(raw.get("prompt_text"), provider_id=provider_id),
         )
 
     def resolved_model(self) -> str:
@@ -130,8 +190,10 @@ class _ResponsesFacade:
 class LlmProviderRouter:
     """OpenAI-Responses-shaped router over cloud and local LLM providers.
 
-    GptArcAnalyzer already emits one multimodal Responses-style request. This
-    router preserves that contract while translating only at the provider edge.
+    Provider definitions and reusable prompt sections share one JSON config.
+    Each provider selects an ordered list of ``prompt_text`` section names, so
+    expensive or irrelevant sections such as ``transitions`` can be omitted
+    without copying or editing one monolithic combined prompt.
     """
 
     def __init__(
@@ -146,15 +208,47 @@ class LlmProviderRouter:
         ).expanduser().resolve()
         self.config_path = selected_path
         raw = json.loads(selected_path.read_text(encoding="utf-8"))
-        providers = raw.get("providers") if isinstance(raw, dict) else None
+        if not isinstance(raw, dict):
+            raise LlmConfigurationError(f"LLM config must be one JSON object: {selected_path}")
+
+        raw_prompt_text = raw.get("prompt_text")
+        if not isinstance(raw_prompt_text, Mapping) or not raw_prompt_text:
+            raise LlmConfigurationError(
+                f"LLM config must contain a nonempty prompt_text object: {selected_path}"
+            )
+        self.prompt_text = {
+            str(key): _normalize_prompt_text(value, key=str(key))
+            for key, value in raw_prompt_text.items()
+        }
+        self.default_prompt_text = _prompt_names(
+            raw.get("default_prompt_text"),
+            provider_id="default_prompt_text",
+        )
+
+        providers = raw.get("llm_providers")
+        if providers is None:
+            providers = raw.get("providers")  # compatibility with earlier configs
         if not isinstance(providers, list) or not providers:
             raise LlmConfigurationError(
-                f"LLM config must contain a nonempty providers list: {selected_path}"
+                f"LLM config must contain a nonempty llm_providers list: {selected_path}"
             )
         self.specs = tuple(ProviderSpec.from_mapping(item) for item in providers)
         ids = [spec.provider_id for spec in self.specs]
         if len(ids) != len(set(ids)):
             raise LlmConfigurationError("LLM provider ids must be unique")
+        for spec in self.specs:
+            names = spec.prompt_text or self.default_prompt_text
+            if not names:
+                raise LlmConfigurationError(
+                    f"Provider {spec.provider_id!r} must select at least one prompt_text section"
+                )
+            missing = [name for name in names if name not in self.prompt_text]
+            if missing:
+                raise LlmConfigurationError(
+                    f"Provider {spec.provider_id!r} references unknown prompt_text sections: "
+                    + ", ".join(missing)
+                )
+
         self.default_provider = str(raw.get("default_provider") or "").strip() or None
         env_default = os.environ.get("ARC3_LLM_PROVIDER", "").strip()
         if env_default:
@@ -190,6 +284,20 @@ class LlmProviderRouter:
         chosen = preferred or configured[0]
         self._active_id = chosen.provider_id
         return chosen
+
+    def prompt_section_names(self, spec: ProviderSpec | None = None) -> tuple[str, ...]:
+        selected = spec or self.current_spec()
+        return selected.prompt_text or self.default_prompt_text
+
+    def prompt_sections(
+        self,
+        spec: ProviderSpec | None = None,
+    ) -> tuple[tuple[str, str], ...]:
+        names = self.prompt_section_names(spec)
+        return tuple((name, self.prompt_text[name]) for name in names)
+
+    def compose_prompt(self, spec: ProviderSpec | None = None) -> str:
+        return "\n\n".join(text for _, text in self.prompt_sections(spec)).strip()
 
     def cycle(self) -> ProviderSpec:
         configured = self.configured_specs()
@@ -256,7 +364,11 @@ class LlmProviderRouter:
     def describe_current(self) -> str:
         spec = self.current_spec()
         endpoint = f" @ {spec.resolved_base_url()}" if spec.resolved_base_url() else ""
-        return f"{spec.label} [{spec.provider_id}] model={spec.resolved_model()}{endpoint}"
+        prompt_names = ",".join(self.prompt_section_names(spec))
+        return (
+            f"{spec.label} [{spec.provider_id}] model={spec.resolved_model()}{endpoint} "
+            f"prompt_text=[{prompt_names}]"
+        )
 
     def create_response(self, **kwargs: Any) -> Any:
         spec = self.current_spec()
@@ -264,16 +376,24 @@ class LlmProviderRouter:
         if not model:
             raise LlmConfigurationError(f"Provider {spec.provider_id} has no model")
         if spec.adapter == "openai_responses":
-            output = self._openai_response(spec, model=model, request=kwargs)
+            output, metadata = self._openai_response(spec, model=model, request=kwargs)
         elif spec.adapter == "anthropic_messages":
-            output = self._anthropic_response(spec, model=model, request=kwargs)
+            output, metadata = self._anthropic_response(spec, model=model, request=kwargs)
         else:
             raise LlmConfigurationError(f"Unsupported adapter: {spec.adapter}")
         if not output.strip():
             raise LlmRequestError(
                 f"Provider {spec.provider_id} returned no textual response"
             )
-        return SimpleNamespace(output_text=output)
+        metadata.update(
+            {
+                "provider_id": spec.provider_id,
+                "adapter": spec.adapter,
+                "requested_model": model,
+                "prompt_text": list(self.prompt_section_names(spec)),
+            }
+        )
+        return SimpleNamespace(output_text=output, provider_metadata=metadata)
 
     def _openai_response(
         self,
@@ -281,7 +401,7 @@ class LlmProviderRouter:
         *,
         model: str,
         request: Mapping[str, Any],
-    ) -> str:
+    ) -> tuple[str, dict[str, Any]]:
         api_key = spec.resolved_api_key()
         if not api_key and not spec.api_key_optional:
             raise LlmConfigurationError(
@@ -315,9 +435,16 @@ class LlmProviderRouter:
                 f"{spec.label} request failed{endpoint}: {exc}"
             ) from exc
         output = getattr(response, "output_text", None)
-        if output:
-            return str(output)
-        return _extract_openai_output_text(response)
+        if not output:
+            output = _extract_openai_output_text(response)
+        metadata = {
+            "response_id": getattr(response, "id", None),
+            "response_model": getattr(response, "model", None),
+            "status": getattr(response, "status", None),
+            "usage": _metadata_value(getattr(response, "usage", None)),
+            "base_url": base_url,
+        }
+        return str(output or ""), metadata
 
     def _anthropic_response(
         self,
@@ -325,7 +452,7 @@ class LlmProviderRouter:
         *,
         model: str,
         request: Mapping[str, Any],
-    ) -> str:
+    ) -> tuple[str, dict[str, Any]]:
         api_key = spec.resolved_api_key()
         if not api_key:
             raise LlmConfigurationError(
@@ -383,11 +510,20 @@ class LlmProviderRouter:
         content = result.get("content") if isinstance(result, dict) else None
         if not isinstance(content, list):
             raise LlmRequestError(f"{spec.label} response had no content list")
-        return "".join(
+        output = "".join(
             str(block.get("text") or "")
             for block in content
             if isinstance(block, Mapping) and block.get("type") == "text"
         )
+        metadata = {
+            "response_id": result.get("id"),
+            "response_model": result.get("model"),
+            "stop_reason": result.get("stop_reason"),
+            "stop_sequence": result.get("stop_sequence"),
+            "usage": _metadata_value(result.get("usage")),
+            "base_url": base_url,
+        }
+        return output, metadata
 
 
 def _anthropic_blocks(value: Any) -> list[dict[str, Any]]:
