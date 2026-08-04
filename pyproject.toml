@@ -87,6 +87,7 @@ py-modules = [
   "gpt_bridge",
   "image_codec",
   "interactive_runner",
+  "llm_catalog_environment",
   "llm_catalog_integration",
   "llm_catalog_sampling",
   "llm_json",
