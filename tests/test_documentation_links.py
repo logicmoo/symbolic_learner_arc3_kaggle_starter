@@ -13,6 +13,9 @@ ROOT_DOCUMENTS = (
     "TODO.md",
     "FILE_TREE.md",
 )
+GENERATED_IGNORED_PATHS = {
+    "notebooks/submission.ipynb",
+}
 
 
 def _local_links(path: Path) -> tuple[str, ...]:
@@ -73,9 +76,13 @@ def test_file_tree_local_links_exist_and_have_descriptions() -> None:
     lines = file_tree.read_text(encoding="utf-8").splitlines()
     links = _local_links(file_tree)
     assert links
+    gitignore = (ROOT / ".gitignore").read_text(encoding="utf-8")
 
     for target in links:
         clean_target = target.split("#", 1)[0]
+        if clean_target in GENERATED_IGNORED_PATHS:
+            assert clean_target in gitignore
+            continue
         resolved = (file_tree.parent / clean_target).resolve()
         assert resolved.exists(), target
 
