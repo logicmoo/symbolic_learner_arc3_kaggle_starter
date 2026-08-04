@@ -75,6 +75,8 @@ scripts\interactive_runner.bat ls20
 
 Press **`g` repeatedly** to select the next configured provider. The provider display includes the provider, adapter endpoint, model, and selected `prompt_text` list. Press `2`, `3`, or `4` for the demo, deep, or extreme analysis profile.
 
+A provider with `enabled: "auto"` participates in the cycle only when its required API-key environment variable is set. This means users can add one or both free cloud keys without changing code or disabling the paid/local choices.
+
 Pressing `p` still enters Prolog mode.
 
 ## Markdown comparison/cache transcripts
@@ -148,9 +150,11 @@ The checked-in providers are:
 
 - **ChatGPT / OpenAI API** through the OpenAI Responses API;
 - **Claude / Anthropic API** through the Anthropic Messages API;
+- **Groq Free / Qwen 3.6 27B** through Groq's OpenAI-compatible Responses API;
+- **OpenRouter Free** through the `openrouter/free` multimodal model router;
 - **Unsloth Studio local** through its OpenAI-compatible Responses endpoint.
 
-Providers requiring an API key are skipped when the key is absent.
+Providers requiring an API key are skipped when the key is absent. Groq and OpenRouter are free-tier choices with provider-controlled quotas, rate limits, and model availability; they are intended for experimentation and low-volume analysis rather than guaranteed unlimited service.
 
 ## OpenAI / ChatGPT
 
@@ -169,6 +173,32 @@ set ARC3_CLAUDE_MODEL=your-claude-model
 ```
 
 The adapter converts the existing Responses-style text and base64 PNG blocks into Anthropic Messages content blocks.
+
+## Groq Free / Qwen
+
+Create a Groq API key, then configure:
+
+```bat
+set GROQ_API_KEY=your-free-tier-key
+set ARC3_GROQ_MODEL=qwen/qwen3.6-27b
+set ARC3_GROQ_BASE_URL=https://api.groq.com/openai/v1
+```
+
+The checked-in Qwen model accepts text and image inputs. Groq Free-plan rate limits can be lower than the ARC3 deep and extreme profiles; when necessary, start with command `2` and reduce `ARC3_GPT_2_MAX_OUTPUT_TOKENS` in `.env`.
+
+## OpenRouter Free
+
+Create an OpenRouter API key, then configure:
+
+```bat
+set OPENROUTER_API_KEY=your-key
+set ARC3_OPENROUTER_MODEL=openrouter/free
+set ARC3_OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
+```
+
+`openrouter/free` chooses an available zero-cost model and filters for capabilities required by the request, including image understanding. The selected upstream model can differ between runs, and free-model capacity can temporarily be unavailable. The transcript records the model reported by the provider for comparison.
+
+To pin a particular free variant instead, override `ARC3_OPENROUTER_MODEL` with a current OpenRouter model id ending in `:free`.
 
 ## Unsloth Studio local
 
