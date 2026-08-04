@@ -8,6 +8,11 @@ if errorlevel 1 (
     exit /b 1
 )
 
+rem Do not let machine-wide Python path variables corrupt the selected base
+rem interpreter or the project virtual environment.
+set "PYTHONHOME="
+set "PYTHONPATH="
+
 echo.
 echo === LogicMOO ARC3 Windows setup ===
 echo Repository: %CD%
@@ -72,6 +77,16 @@ if not exist ".venv\Scripts\python.exe" (
 
 set "VENV_PYTHON=%CD%\.venv\Scripts\python.exe"
 
+"%VENV_PYTHON%" -c "import encodings, sys, sysconfig; raise SystemExit(0 if sys.prefix != sys.base_prefix else 1)" >nul 2>nul
+if errorlevel 1 (
+    echo.
+    echo ERROR: The existing .venv is damaged or is not a usable virtual environment.
+    echo Recreate it with:
+    echo     rmdir /s /q .venv
+    echo     scripts\setup_windows.bat
+    exit /b 1
+)
+
 echo.
 echo Updating pip, setuptools, and wheel ...
 "%VENV_PYTHON%" -m pip install --upgrade pip setuptools wheel
@@ -113,7 +128,7 @@ if exist "vendor\ARC-AGI-3-Agents" (
 
 echo.
 echo Verifying imports ...
-"%VENV_PYTHON%" -c "import arc_agi, PIL, numpy; print('Core Python imports: OK')"
+"%VENV_PYTHON%" -c "import arc_agi, json_repair, numpy, PIL; print('Core Python imports: OK')"
 if errorlevel 1 exit /b 1
 
 echo.
