@@ -4,9 +4,28 @@ import importlib.util
 import os
 from pathlib import Path
 
+import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 RUNTIME_PATH = ROOT / "scripts" / "_runtime.py"
+_RUNTIME_ENV_NAMES = (
+    "ARC3_RUNTIME_HOME",
+    "ARC3_CODE_ROOT",
+    "ARC3_LAUNCH_CWD",
+    "ARC3_CONFIG_ROOT",
+    "ARC3_LLM_CONFIG",
+    "ARC3_TREE_ROOT",
+    "ARC3_CONFIG_SOURCE",
+    "ARC3_TREE_SOURCE",
+    "ARC3_ENV_FILES",
+    "ARC3_SHOW_PATHS",
+)
+
+
+@pytest.fixture(autouse=True)
+def _clean_runtime_environment(monkeypatch: pytest.MonkeyPatch):
+    for name in _RUNTIME_ENV_NAMES:
+        monkeypatch.delenv(name, raising=False)
 
 
 def _load_runtime_module():
@@ -24,6 +43,10 @@ def _make_project(path: Path) -> tuple[Path, Path]:
         "[project]\nname='test'\nversion='0'\n",
         encoding="utf-8",
     )
+    config = path / "config"
+    config.mkdir()
+    (config / "llm_providers.json").write_text("{}\n", encoding="utf-8")
+    (path / "action_trees").mkdir()
     script = path / "scripts" / "demo.py"
     script.parent.mkdir()
     script.write_text("", encoding="utf-8")
@@ -31,7 +54,7 @@ def _make_project(path: Path) -> tuple[Path, Path]:
 
 
 def test_runtime_loads_project_dotenv_without_overriding_shell(
-    tmp_path: Path, monkeypatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     runtime = _load_runtime_module()
     project, script = _make_project(tmp_path / "project")
@@ -43,7 +66,6 @@ def test_runtime_loads_project_dotenv_without_overriding_shell(
     )
 
     monkeypatch.chdir(project)
-    monkeypatch.delenv("ARC3_RUNTIME_HOME", raising=False)
     monkeypatch.delenv("ARC3_LLM_PROVIDER", raising=False)
     monkeypatch.delenv("ARC3_UNSLOTH_API_KEY", raising=False)
     monkeypatch.setenv("OPENAI_API_KEY", "from-shell")
@@ -53,3 +75,6 @@ def test_runtime_loads_project_dotenv_without_overriding_shell(
     assert os.environ["ARC3_LLM_PROVIDER"] == "unsloth"
     assert os.environ["ARC3_UNSLOTH_API_KEY"] == "sk-unsloth-from-dotenv"
     assert os.environ["OPENAI_API_KEY"] == "from-shell"
+    assert Path(os.environ["ARC3_LLM_CONFIG"]) == project / "config" / "llm_providers.json"
+    assert Path(os.environ["ARC3_TREE_ROOT"]) == project / "action_trees"
+    assert str(project / ".env") in os.environ["ARC3_ENV_FILES"]
