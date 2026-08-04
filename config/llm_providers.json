@@ -2,7 +2,7 @@
   "default_provider": "openai",
   "prompt_text": {
     "response_contract": [
-      "Analyze the current ARC3 state and return exactly one valid JSON object. Do not return Markdown, commentary, or keys other than: new_identities, objects_pl, differences_pl, similarities_pl, turtle_from_image_pl, turtle_from_diff_pl, and rules_pl.",
+      "Analyze the current ARC3 state and return exactly one valid JSON object. Do not return Markdown or commentary. Return only the dynamically requested subset of these allowed keys: new_identities, objects_pl, differences_pl, similarities_pl, turtle_from_image_pl, turtle_from_diff_pl, and rules_pl.",
       "",
       "OUTPUT TYPES: new_identities must be a JSON array. Every *_pl value must be a JSON string containing plain SWI-Prolog source. Escape all newlines, quotation marks, backslashes, and control characters as required by strict JSON. The decoded string must contain Prolog source without Markdown fences."
     ],
@@ -42,7 +42,7 @@
       "ROOT STATE: When the current state has no parent, differences_pl, similarities_pl, and turtle_from_diff_pl must be empty strings. rules_pl may still contain current-state hypotheses only when they are explicitly marked hypothetical and do not claim parent-transition evidence."
     ],
     "quality_control": [
-      "QUALITY CONTROL: Before returning, verify that the result parses as strict JSON, contains exactly the seven required keys, uses no Markdown fences, uses no opaque object IDs, uses only logical grid coordinates, and contains syntactically plausible SWI-Prolog source in every nonempty *_pl string."
+      "QUALITY CONTROL: Before returning, verify that the result parses as strict JSON, contains exactly the keys requested by the final request note, uses no Markdown fences, uses no opaque object IDs, uses only logical grid coordinates, and contains syntactically plausible SWI-Prolog source in every nonempty *_pl string."
     ]
   },
   "llm_providers": [
