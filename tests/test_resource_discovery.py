@@ -28,6 +28,9 @@ def _clean_environment(monkeypatch: pytest.MonkeyPatch):
     for name in _RUNTIME_ENV_NAMES:
         monkeypatch.delenv(name, raising=False)
     monkeypatch.setenv("ARC3_PYCHARM_DEBUG", "0")
+    yield
+    for name in _RUNTIME_ENV_NAMES:
+        os.environ.pop(name, None)
 
 
 def _runtime_module():
