@@ -63,10 +63,10 @@ class GptArcAnalyzer:
         model: str | None = None,
         client: Any | None = None,
     ) -> None:
+        # Compatibility name: this now normally points at the unified LLM config
+        # containing both llm_providers and reusable prompt_text sections.
         self.prompts_path = Path(prompts_path).resolve()
         self.model = model or os.environ.get("ARC3_GPT_MODEL", "gpt-5.6")
-        # Command-level profiles are selected by Arc3Runner. Environment
-        # variables can override each independent dimension.
         self.analysis_profiles = {
             2: {
                 "name": "demo",
@@ -123,13 +123,6 @@ class GptArcAnalyzer:
 
     @staticmethod
     def _normalize_prompt(value: Any, *, key: str) -> str:
-        """Normalize Git-friendly prompt representations into API text.
-
-        Prompts may be stored either as a legacy JSON string or as an array of
-        physical lines.  The array form keeps GitHub diffs readable: changing
-        one prompt line changes one JSON line instead of one enormous escaped
-        string.
-        """
         if isinstance(value, str):
             text = value
         elif isinstance(value, list) and all(isinstance(line, str) for line in value):
@@ -139,31 +132,71 @@ class GptArcAnalyzer:
                 f"Prompt {key!r} must be a string or an array of strings; "
                 f"got {type(value).__name__}"
             )
-
-        # Normalize editor/platform differences without altering intentional
-        # blank lines or internal indentation.
         text = text.replace("\r\n", "\n").replace("\r", "\n")
         return "\n".join(line.rstrip() for line in text.split("\n")).strip("\n")
 
     def prompts(self) -> dict[str, str]:
+        """Return a compatibility combined prompt from the unified config."""
         raw = json.loads(self.prompts_path.read_text(encoding="utf-8"))
         if not isinstance(raw, dict):
-            raise ValueError("Prompt file must contain a JSON object")
-        return {
+            raise ValueError("LLM configuration must contain one JSON object")
+        if "combined" in raw:
+            return {
+                "combined": self._normalize_prompt(raw["combined"], key="combined")
+            }
+
+        raw_sections = raw.get("prompt_text")
+        providers = raw.get("llm_providers") or raw.get("providers")
+        if not isinstance(raw_sections, dict) or not isinstance(providers, list):
+            raise ValueError(
+                "LLM configuration must contain prompt_text and llm_providers"
+            )
+        sections = {
             str(key): self._normalize_prompt(value, key=str(key))
-            for key, value in raw.items()
+            for key, value in raw_sections.items()
+        }
+        selected_provider = str(raw.get("default_provider") or "")
+        provider = next(
+            (
+                item
+                for item in providers
+                if isinstance(item, dict)
+                and str(item.get("id") or "") == selected_provider
+            ),
+            providers[0] if providers else None,
+        )
+        if not isinstance(provider, dict):
+            raise ValueError("No LLM provider is available for prompt composition")
+        names = provider.get("prompt_text") or raw.get("default_prompt_text") or []
+        if not isinstance(names, list) or not names:
+            raise ValueError("Selected LLM provider has no prompt_text list")
+        missing = [str(name) for name in names if str(name) not in sections]
+        if missing:
+            raise ValueError("Unknown prompt_text sections: " + ", ".join(missing))
+        return {
+            "combined": "\n\n".join(sections[str(name)] for name in names).strip()
         }
 
+    def _combined_prompt(self) -> str:
+        compose = getattr(self.client, "compose_prompt", None)
+        if callable(compose):
+            prompt = str(compose()).strip()
+            if not prompt:
+                raise RuntimeError("Selected LLM provider composed an empty prompt")
+            return prompt
+        return self.prompts()["combined"]
+
     def edit_prompts(self) -> None:
+        target = Path(getattr(self.client, "config_path", self.prompts_path)).resolve()
         if os.name == "nt":
-            os.startfile(self.prompts_path)  # type: ignore[attr-defined]
+            os.startfile(target)  # type: ignore[attr-defined]
             return
         editor = os.environ.get("EDITOR") or os.environ.get("VISUAL")
         if editor:
-            subprocess.run([editor, str(self.prompts_path)], check=False)
+            subprocess.run([editor, str(target)], check=False)
         else:
-            print(self.prompts_path.read_text(encoding="utf-8"))
-            print(f"Edit prompts at: {self.prompts_path}")
+            print(target.read_text(encoding="utf-8"))
+            print(f"Edit LLM providers and prompt_text at: {target}")
 
     def _context(self, store: ActionTreeStore, node: StateNode) -> str:
         parent = store.parent_node(node)
@@ -207,7 +240,7 @@ class GptArcAnalyzer:
         node: StateNode,
         requested_keys: list[str],
     ) -> dict[str, Any]:
-        prompt = self.prompts()["combined"]
+        prompt = self._combined_prompt()
         request_note = (
             "\n\nRETURN ONLY THESE ARTIFACT KEYS: "
             + ", ".join(["new_identities", *requested_keys])
@@ -392,8 +425,6 @@ class GptArcAnalyzer:
             result[f"{prefix}_called"] = called and applicable
         return result
 
-    # Targeted commands remain available, but each regeneration still uses the
-    # same combined request so all artifacts remain mutually consistent.
     def ensure_differences(self, store: ActionTreeStore, node: StateNode, *, force: bool = True):
         result = self.ensure_full_analysis(store, node, force=force)
         return result["differences_path"], result["differences_called"]
