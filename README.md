@@ -5,7 +5,7 @@ This repository combines the delivered ARC3 debugger, the protected ARC-AGI-3 Ka
 ## Documentation
 
 - [Native Windows setup and troubleshooting](README_WINDOWS.md) — administrator long-path setup, Python and virtual-environment installation, batch launchers, line endings, SWI-Prolog, PyCharm, UNC paths, and native Kaggle commands.
-- [LLM provider configuration](config/README.md) — switch the shared analyzer among OpenAI/ChatGPT, Claude, Unsloth Studio, and other compatible endpoints.
+- [LLM providers, prompt sections, and comparison transcripts](config/README.md) — switch providers, compose provider-specific prompts, compare runs, and restore historical artifacts.
 - [ARC3 debugger guide](DEBUGGER.md) — debugger controls, action trees, GPT/Prolog analysis, Turtle reconstruction, web UI, and replay.
 - [ARC Prize 2026 local-development and Kaggle guide](KAGGLE.md) — setup, local play, notebook generation, submission, accelerators, and troubleshooting.
 - [SoW phase architecture](SOW_PHASE_ARCHITECTURE.md) — mapping of existing and connected code to Phases 1–3.
@@ -79,9 +79,13 @@ On native Windows after setup:
 scripts\interactive_runner.bat ls20
 ```
 
-The debugger has one shared artifact pipeline and a configurable LLM provider list. Press `g` repeatedly to cycle through the configured OpenAI/ChatGPT, Claude, Unsloth Studio, or custom providers, then press `1` through `6` to run the selected LLM command. Press `p` for Prolog mode. See [config/README.md](config/README.md).
+The debugger has one shared artifact pipeline and a configurable LLM provider list. Press `g` repeatedly to cycle through OpenAI/ChatGPT, Claude, Unsloth Studio, or custom providers. Providers and reusable prompt blocks share one file, [`config/llm_providers.json`](config/llm_providers.json); each provider selects the ordered `prompt_text` sections it receives.
 
-When a different provider, model, or endpoint is selected for a node, command `2` regenerates rather than silently reusing another provider's cache. Generated nodes record the selection in `llm_provider.json`.
+Press `2`, `3`, or `4` for the demo, deep, or extreme profile. Every actual LLM request creates a uniquely named Markdown transcript containing a restorable artifact snapshot followed by the full debugging interaction. The normal `.pl` files remain the mutable latest view.
+
+Press `1` in LLM mode to list historical transcripts for the current node, restore an older completed run back into the individual `.pl` files, or open the unified provider/prompt configuration for editing. The node `README.md` identifies the active completed transcript, links all historical runs, and embeds the latest mutable artifacts. Press `p` for Prolog mode. See [config/README.md](config/README.md).
+
+Generated nodes also record the active provider selection in `llm_provider.json`.
 
 ### Browser terminal exposing the same debugger
 
@@ -91,7 +95,7 @@ python scripts/run_webui.py --game ls20
 
 Then open `http://127.0.0.1:8765/`.
 
-The browser terminal launches the same interactive runner and therefore uses the same `g` provider cycling behavior.
+The browser terminal launches the same interactive runner and therefore uses the same provider cycling, composable prompts, transcript cache, and restore behavior.
 
 ### SWI-Prolog-controlled ARC3 demonstration
 
