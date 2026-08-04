@@ -1,25 +1,31 @@
 # Symbolic Learner ARC3 Kaggle Starter
 
-This repository combines the delivered ARC3 debugger, the protected ARC-AGI-3 Kaggle workflow, and the connected object-memory and game-learning architecture.
+This repository combines the delivered ARC3 debugger and extensible inspection framework, the protected ARC-AGI-3 Kaggle workflow, and the connected architecture for later object memory, learning, and prediction.
 
 ## Documentation
 
 - [Native Windows setup and troubleshooting](README_WINDOWS.md) — administrator long-path setup, Python and virtual-environment installation, batch launchers, line endings, SWI-Prolog, PyCharm, UNC paths, and native Kaggle commands.
 - [LLM providers, prompt sections, and comparison transcripts](config/README.md) — switch providers, compose provider-specific prompts, compare runs, and restore historical artifacts.
-- [ARC3 debugger guide](DEBUGGER.md) — debugger controls, action trees, GPT/Prolog analysis, Turtle reconstruction, web UI, and replay.
+- [ARC3 debugger guide](DEBUGGER.md) — debugger controls, action trees, pluggable GPT/Prolog analysis, Turtle mock display, web UI, replay, and provider evidence.
 - [ARC Prize 2026 local-development and Kaggle guide](KAGGLE.md) — setup, local play, notebook generation, submission, accelerators, and troubleshooting.
-- [Architecture](SOW_PHASE_ARCHITECTURE.md) — large technical overview with classes, modules, data contracts, ownership boundaries, and detailed architecture work.
-- [Active implementation TODO](TODO.md) — the concrete work we need to execute next, in practical order.
-- [SOW deliverables checklist](SOW_DELIVERABLES.md) — phase-by-phase checkboxes, current status, and implementation/evidence links.
+- [Architecture](SOW_PHASE_ARCHITECTURE.md) — large technical overview with phase boundaries, classes, modules, data contracts, ownership rules, per-object Turtle programs, learning, and prediction.
+- [Active implementation TODO](TODO.md) — Phase 1 maintenance plus the concrete Phase 2 and Phase 3 work we need to execute next.
+- [SOW deliverables checklist](SOW_DELIVERABLES.md) — delivered Phase 1 debugger outcomes and partial/open Phase 2 and Phase 3 outcomes with evidence links.
 - [Clickable repository file tree](FILE_TREE.md) — links to maintained files with descriptions of their responsibilities.
 
 The three project-planning documents deliberately have different scopes and link to one another:
 
 ```text
-SOW_PHASE_ARCHITECTURE.md  → how the system is designed
+SOW_PHASE_ARCHITECTURE.md  → how the debugger, object memory, and learner are designed
 TODO.md                    → what we are actively implementing
-SOW_DELIVERABLES.md        → what must be demonstrated and checked off
+SOW_DELIVERABLES.md        → what is delivered and what remains to be checked off
 ```
+
+## Project phase boundaries
+
+- **Phase 1 is delivered:** the ARC3 debugger records rendered observations, actions, history, replay paths, provider calls, `object_registry.pl`, node READMEs, transcripts, Turtle mocks, objects, differences, similarities, candidate rules, critiques, and confidence outputs. These are inspectable provider artifacts; the debugger does not claim to implement their final semantic algorithms.
+- **Phase 2 implements object semantics:** repeatable perception, persistent identities, correspondence, positive and negative recognition evidence, calibrated confidence, symbolic memory, and one regenerating Turtle program per recognized grid object using movement, rotation, pen state, and pen width rather than box filling.
+- **Phase 3 implements learning and prediction:** competing transformations and rules, assumptions, critiques, probabilities, pre-outcome predictions, independent grades, evidence updates, and optional action recommendations written back through the debugger evidence surface.
 
 ## Layered code and resource discovery
 
@@ -137,6 +143,8 @@ Press `g` repeatedly to cycle configured OpenAI/ChatGPT, Claude, Unsloth Studio,
 Press `2`, `3`, or `4` for demo, deep, or extreme analysis. Each LLM request creates a uniquely named Markdown transcript containing a restorable artifact snapshot followed by the full debugging interaction. The normal `.pl` files remain the mutable latest view.
 
 Press `1` in LLM mode to list historical transcripts for the current node, restore an older completed run into the individual `.pl` files, or open the unified provider/prompt configuration. The node `README.md` identifies the active transcript, links historical runs, and embeds the latest artifacts. Press `p` for Prolog mode.
+
+The provider-generated object, difference, similarity, Turtle, rule, critique, and confidence artifacts demonstrate the debugger’s pluggable inspection surface. Later phases implement and validate their semantic and predictive quality.
 
 ### Browser terminal
 
