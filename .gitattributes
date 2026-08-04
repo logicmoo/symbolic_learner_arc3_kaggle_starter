@@ -3,8 +3,10 @@
 * text=auto eol=lf
 
 # Native Windows command scripts are the only CRLF exception.
-*.bat text eol=crlf
-*.cmd text eol=crlf
+# *.bat text eol=crlf
+# *.cmd text eol=crlf
+*.bat text eol=lf
+*.cmd text eol=lf
 
 # Binary files must never be line-ending normalized.
 *.gif binary

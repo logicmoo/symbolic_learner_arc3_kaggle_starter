@@ -5,45 +5,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="edb8fea1-73c1-4416-9e9a-8ac50d562623" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/action_trees/ls20/level_1/DOWN/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/action_trees/ls20/level_1/DOWN/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/action_trees/ls20/level_1/DOWN/UP/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/action_trees/ls20/level_1/DOWN/UP/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/action_trees/ls20/level_1/DOWN/UP/state.json" beforeDir="false" afterPath="$PROJECT_DIR$/action_trees/ls20/level_1/DOWN/UP/state.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/action_trees/ls20/level_1/DOWN/state.json" beforeDir="false" afterPath="$PROJECT_DIR$/action_trees/ls20/level_1/DOWN/state.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/action_trees/ls20/level_1/LEFT/LEFT/DOWN/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/action_trees/ls20/level_1/LEFT/LEFT/DOWN/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/action_trees/ls20/level_1/LEFT/LEFT/DOWN/differences.pl" beforeDir="false" afterPath="$PROJECT_DIR$/action_trees/ls20/level_1/LEFT/LEFT/DOWN/differences.pl" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/action_trees/ls20/level_1/LEFT/LEFT/DOWN/objects.pl" beforeDir="false" afterPath="$PROJECT_DIR$/action_trees/ls20/level_1/LEFT/LEFT/DOWN/objects.pl" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/action_trees/ls20/level_1/LEFT/LEFT/DOWN/rules.pl" beforeDir="false" afterPath="$PROJECT_DIR$/action_trees/ls20/level_1/LEFT/LEFT/DOWN/rules.pl" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/action_trees/ls20/level_1/LEFT/LEFT/DOWN/similarities.pl" beforeDir="false" afterPath="$PROJECT_DIR$/action_trees/ls20/level_1/LEFT/LEFT/DOWN/similarities.pl" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/action_trees/ls20/level_1/LEFT/LEFT/DOWN/state.json" beforeDir="false" afterPath="$PROJECT_DIR$/action_trees/ls20/level_1/LEFT/LEFT/DOWN/state.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/action_trees/ls20/level_1/LEFT/LEFT/DOWN/turtle_from_diff.pl" beforeDir="false" afterPath="$PROJECT_DIR$/action_trees/ls20/level_1/LEFT/LEFT/DOWN/turtle_from_diff.pl" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/action_trees/ls20/level_1/LEFT/LEFT/DOWN/turtle_from_image.pl" beforeDir="false" afterPath="$PROJECT_DIR$/action_trees/ls20/level_1/LEFT/LEFT/DOWN/turtle_from_image.pl" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/action_trees/ls20/level_1/LEFT/LEFT/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/action_trees/ls20/level_1/LEFT/LEFT/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/action_trees/ls20/level_1/LEFT/LEFT/differences.pl" beforeDir="false" afterPath="$PROJECT_DIR$/action_trees/ls20/level_1/LEFT/LEFT/differences.pl" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/action_trees/ls20/level_1/LEFT/LEFT/objects.pl" beforeDir="false" afterPath="$PROJECT_DIR$/action_trees/ls20/level_1/LEFT/LEFT/objects.pl" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/action_trees/ls20/level_1/LEFT/LEFT/rules.pl" beforeDir="false" afterPath="$PROJECT_DIR$/action_trees/ls20/level_1/LEFT/LEFT/rules.pl" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/action_trees/ls20/level_1/LEFT/LEFT/similarities.pl" beforeDir="false" afterPath="$PROJECT_DIR$/action_trees/ls20/level_1/LEFT/LEFT/similarities.pl" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/action_trees/ls20/level_1/LEFT/LEFT/state.json" beforeDir="false" afterPath="$PROJECT_DIR$/action_trees/ls20/level_1/LEFT/LEFT/state.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/action_trees/ls20/level_1/LEFT/LEFT/turtle_from_diff.pl" beforeDir="false" afterPath="$PROJECT_DIR$/action_trees/ls20/level_1/LEFT/LEFT/turtle_from_diff.pl" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/action_trees/ls20/level_1/LEFT/LEFT/turtle_from_image.pl" beforeDir="false" afterPath="$PROJECT_DIR$/action_trees/ls20/level_1/LEFT/LEFT/turtle_from_image.pl" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/action_trees/ls20/level_1/LEFT/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/action_trees/ls20/level_1/LEFT/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/action_trees/ls20/level_1/LEFT/differences.pl" beforeDir="false" afterPath="$PROJECT_DIR$/action_trees/ls20/level_1/LEFT/differences.pl" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/action_trees/ls20/level_1/LEFT/objects.pl" beforeDir="false" afterPath="$PROJECT_DIR$/action_trees/ls20/level_1/LEFT/objects.pl" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/action_trees/ls20/level_1/LEFT/rules.pl" beforeDir="false" afterPath="$PROJECT_DIR$/action_trees/ls20/level_1/LEFT/rules.pl" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/action_trees/ls20/level_1/LEFT/similarities.pl" beforeDir="false" afterPath="$PROJECT_DIR$/action_trees/ls20/level_1/LEFT/similarities.pl" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/action_trees/ls20/level_1/LEFT/state.json" beforeDir="false" afterPath="$PROJECT_DIR$/action_trees/ls20/level_1/LEFT/state.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/action_trees/ls20/level_1/LEFT/turtle_from_diff.pl" beforeDir="false" afterPath="$PROJECT_DIR$/action_trees/ls20/level_1/LEFT/turtle_from_diff.pl" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/action_trees/ls20/level_1/LEFT/turtle_from_image.pl" beforeDir="false" afterPath="$PROJECT_DIR$/action_trees/ls20/level_1/LEFT/turtle_from_image.pl" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/action_trees/ls20/level_1/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/action_trees/ls20/level_1/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/action_trees/ls20/level_1/UP/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/action_trees/ls20/level_1/UP/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/action_trees/ls20/level_1/UP/UP/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/action_trees/ls20/level_1/UP/UP/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/action_trees/ls20/level_1/UP/UP/state.json" beforeDir="false" afterPath="$PROJECT_DIR$/action_trees/ls20/level_1/UP/UP/state.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/action_trees/ls20/level_1/UP/state.json" beforeDir="false" afterPath="$PROJECT_DIR$/action_trees/ls20/level_1/UP/state.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/action_trees/ls20/level_1/object_registry.pl" beforeDir="false" afterPath="$PROJECT_DIR$/action_trees/ls20/level_1/object_registry.pl" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/action_trees/ls20/level_1/objects.pl" beforeDir="false" afterPath="$PROJECT_DIR$/action_trees/ls20/level_1/objects.pl" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/action_trees/ls20/level_1/rules.pl" beforeDir="false" afterPath="$PROJECT_DIR$/action_trees/ls20/level_1/rules.pl" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/action_trees/ls20/level_1/state.json" beforeDir="false" afterPath="$PROJECT_DIR$/action_trees/ls20/level_1/state.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/action_trees/ls20/level_1/turtle_from_image.pl" beforeDir="false" afterPath="$PROJECT_DIR$/action_trees/ls20/level_1/turtle_from_image.pl" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/python/interactive_runner.py" beforeDir="false" afterPath="$PROJECT_DIR$/python/interactive_runner.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/logicmoo-arc3.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/logicmoo-arc3.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/interactive_runner.bat" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/interactive_runner.bat" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/setup_windows.bat" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/setup_windows.bat" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/vendor/ARC-AGI-3-Agents/agents/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/vendor/ARC-AGI-3-Agents/agents/__init__.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -74,61 +41,61 @@
   </component>
   <component name="NextEditCompletionFeaturesState">
     <decayedCancelled>
-      <entry key="MS100" value="1.0000000224299244" />
-      <entry key="MS500" value="1.029916846731634" />
-      <entry key="S2" value="1.6509352705695073" />
-      <entry key="S5" value="2.5542855594166856" />
-      <entry key="S10" value="3.143226930394883" />
-      <entry key="S30" value="3.6798047615027003" />
-      <entry key="S60" value="4.018201084418541" />
-      <entry key="M2" value="5.6945455709515045" />
-      <entry key="M5" value="11.207332856039526" />
-      <entry key="M10" value="15.672842638932954" />
-      <entry key="M15" value="17.722042904848326" />
-      <entry key="M30" value="20.14117815036019" />
-      <entry key="H1" value="21.510762083301753" />
-      <entry key="H2" value="22.239766983846195" />
-      <entry key="H4" value="22.615894529216927" />
-      <entry key="D1" value="22.935420988042928" />
-      <entry key="W1" value="22.99076057974892" />
+      <entry key="MS100" value="1.2191514352445587" />
+      <entry key="MS500" value="1.760240538742675" />
+      <entry key="S2" value="2.5302671709589135" />
+      <entry key="S5" value="3.4779031872824877" />
+      <entry key="S10" value="4.0958733083000745" />
+      <entry key="S30" value="4.661232071840116" />
+      <entry key="S60" value="5.008047936154934" />
+      <entry key="M2" value="6.687346561534021" />
+      <entry key="M5" value="12.201663408768743" />
+      <entry key="M10" value="16.66887793134649" />
+      <entry key="M15" value="18.719054054122722" />
+      <entry key="M30" value="21.139479657877416" />
+      <entry key="H1" value="22.509855069875865" />
+      <entry key="H2" value="23.239298102738967" />
+      <entry key="H4" value="23.61565612245736" />
+      <entry key="D1" value="23.935380692021567" />
+      <entry key="W1" value="23.99075480928038" />
     </decayedCancelled>
     <decayedSelected>
       <entry key="MS100" value="0.0" />
-      <entry key="MS500" value="9.38602117086464E-271" />
-      <entry key="S2" value="3.1125789953162367E-68" />
-      <entry key="S5" value="9.937120351517997E-28" />
-      <entry key="S10" value="3.1691166830228083E-14" />
-      <entry key="S30" value="3.7111823601072186E-5" />
-      <entry key="S60" value="0.00797042873185362" />
-      <entry key="M2" value="0.12344625904337442" />
-      <entry key="M5" value="0.6527736687957333" />
-      <entry key="M10" value="1.1415223914999997" />
-      <entry key="M15" value="1.375861184324399" />
-      <entry key="M30" value="1.6586564917097353" />
-      <entry key="H1" value="1.8213011362918887" />
-      <entry key="H2" value="1.9085476643236823" />
-      <entry key="H4" value="1.9537355837411883" />
-      <entry key="D1" value="1.9922134199251575" />
-      <entry key="W1" value="1.9988857596670553" />
+      <entry key="MS500" value="6.92835913329576E-271" />
+      <entry key="S2" value="2.885078257432614E-68" />
+      <entry key="S5" value="9.639964529674297E-28" />
+      <entry key="S10" value="3.121373024322556E-14" />
+      <entry key="S30" value="3.692451301607424E-5" />
+      <entry key="S60" value="0.007950289136313508" />
+      <entry key="M2" value="0.12329019904344402" />
+      <entry key="M5" value="0.6524434505410841" />
+      <entry key="M10" value="1.1412336243254697" />
+      <entry key="M15" value="1.3756291431471388" />
+      <entry key="M30" value="1.658516618284177" />
+      <entry key="H1" value="1.8212243401013677" />
+      <entry key="H2" value="1.9085074264047015" />
+      <entry key="H4" value="1.95371498832459" />
+      <entry key="D1" value="1.9922099197376282" />
+      <entry key="W1" value="1.9988852579651932" />
     </decayedSelected>
     <decayedShown>
-      <entry key="MS100" value="4.580244963619279E-8" />
-      <entry key="MS500" value="0.034770865322802706" />
-      <entry key="S2" value="0.7880352744627074" />
-      <entry key="S5" value="1.9911232460496089" />
-      <entry key="S10" value="2.801330528065835" />
-      <entry key="S30" value="3.548890349862977" />
-      <entry key="S60" value="3.956744310942236" />
-      <entry key="M2" value="5.773413907249571" />
-      <entry key="M5" value="11.826527216305038" />
-      <entry key="M10" value="16.790546814155725" />
-      <entry key="M15" value="19.079799288169795" />
-      <entry key="M30" value="21.789444790429265" />
-      <entry key="H1" value="23.32648479954889" />
-      <entry key="H2" value="24.145422721785856" />
-      <entry key="H4" value="24.568157567456602" />
-      <entry key="D1" value="24.92738521273784" />
-      <entry key="W1" value="24.989610646700726" />
+      <entry key="MS100" value="0.21915144036668108" />
+      <entry key="MS500" value="0.7638235675284721" />
+      <entry key="S2" value="1.657346432536341" />
+      <entry key="S5" value="2.9016778478885725" />
+      <entry key="S10" value="3.7440623850810475" />
+      <entry key="S30" value="4.525931216361929" />
+      <entry key="S60" value="4.9442196615191545" />
+      <entry key="M2" value="6.764850999129994" />
+      <entry key="M5" value="12.820038668079139" />
+      <entry key="M10" value="17.786046397891337" />
+      <entry key="M15" value="20.07641279807976" />
+      <entry key="M30" value="22.78752297133933" />
+      <entry key="H1" value="24.32545905958522" />
+      <entry key="H2" value="25.14489258072565" />
+      <entry key="H4" value="25.56788803924555" />
+      <entry key="D1" value="25.92733966003275" />
+      <entry key="W1" value="25.989604123548517" />
     </decayedShown>
   </component>
   <component name="ProjectColorInfo">{
@@ -140,28 +107,28 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "Python Debug Server.Unnamed.executor": "Debug",
-    "Python.interactive_runner.executor": "Run",
-    "RunOnceActivity.MCP Project settings loaded": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
-    "codeWithMe.voiceChat.enabledByDefault": "false",
-    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
-    "git-widget-placeholder": "main",
-    "junie.onboarding.icon.badge.shown": "true",
-    "last_opened_file_path": "C:/symbolic_learner_arc3_kaggle_starter",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "yarn",
-    "settings.editor.selected.configurable": "ml.llm.LLMConfigurable",
-    "to.speed.mode.migration.done": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Python Debug Server.Unnamed.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.interactive_runner.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
+    &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
+    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/symbolic_learner_arc3_kaggle_starter&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;yarn&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;ml.llm.LLMConfigurable&quot;,
+    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RunManager" selected="Python Debug Server.Unnamed">
     <configuration name="Unnamed" type="PyRemoteDebugConfigurationType" factoryName="Python Remote Debug" nameIsGenerated="true">
       <module name="logicmoo-arc3" />
