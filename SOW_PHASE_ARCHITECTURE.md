@@ -195,7 +195,7 @@ Rules:
 - persistent Phase 2 identity either extends or explicitly maps to this authority;
 - identity merge/split decisions preserve provenance.
 
-Corresponding work: [TODO — Phase 1 normalization](TODO.md#phase-1-normalization-and-acceptance).
+Corresponding work: [TODO — Phase 1 normalization](TODO.md#now--stabilize-the-phase-1-evidence-path).
 
 ---
 
@@ -446,7 +446,7 @@ The correspondence pipeline should:
 - regeneration can be compared against the source observation;
 - replay from the same store and encounter log is deterministic.
 
-Corresponding work: [TODO — Phase 2 active work](TODO.md#phase-2-object-perception-and-persistent-memory).
+Corresponding work: [TODO — Phase 2 active work](TODO.md#phase-2--object-perception-and-persistent-memory).
 
 Corresponding deliverables: [Phase 2 checklist](SOW_DELIVERABLES.md#phase-2--object-perception-recognition-and-persistent-memory).
 
@@ -605,7 +605,7 @@ These modules should remain provider-driven and use the canonical object-memory 
 - update evidence through the authoritative writer;
 - expose optional action recommendations to `agent/my_agent.py` through a stable seam.
 
-Corresponding work: [TODO — Phase 3 active work](TODO.md#phase-3-game-object-learner-and-prediction).
+Corresponding work: [TODO — Phase 3 active work](TODO.md#phase-3--game-object-learner-and-prediction).
 
 Corresponding deliverables: [Phase 3 checklist](SOW_DELIVERABLES.md#phase-3--game-object-learner-integration-and-predictive-rule-learning).
 
