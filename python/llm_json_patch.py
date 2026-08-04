@@ -104,6 +104,7 @@ def _resilient_create_response(
 
     required_keys = _required_keys(kwargs.get("input"))
     raw_path = _write_response("llm_response.raw.txt", str(raw))
+    used_provider_retry = False
 
     try:
         bundle, repaired = parse_or_repair_json_object(
@@ -119,6 +120,7 @@ def _resilient_create_response(
             "LLM response was not recoverable locally; requesting one "
             "text-only JSON repair pass..."
         )
+        used_provider_retry = True
         repair_response = original_create_response(
             router,
             model=kwargs.get("model"),
@@ -163,7 +165,12 @@ def _resilient_create_response(
     if repaired:
         repaired_path = _write_response("llm_response.repaired.json", strict)
         location = f" Saved: {repaired_path}" if repaired_path else ""
-        print(f"Recovered malformed LLM JSON locally.{location}")
+        method = (
+            "with a text-only provider repair pass"
+            if used_provider_retry
+            else "locally"
+        )
+        print(f"Recovered malformed LLM JSON {method}.{location}")
 
     return SimpleNamespace(output_text=strict)
 
