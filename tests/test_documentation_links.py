@@ -11,6 +11,7 @@ ROOT_DOCUMENTS = (
     "KAGGLE.md",
     "SOW_PHASE_ARCHITECTURE.md",
     "TODO.md",
+    "SOW_DELIVERABLES.md",
     "FILE_TREE.md",
 )
 GENERATED_IGNORED_PATHS = {
@@ -58,6 +59,17 @@ def test_top_level_readme_links_every_root_document() -> None:
         assert f"]({relative})" in root_text, relative
 
 
+def test_planning_documents_link_to_each_other() -> None:
+    planning = {
+        "SOW_PHASE_ARCHITECTURE.md",
+        "TODO.md",
+        "SOW_DELIVERABLES.md",
+    }
+    for name in planning:
+        links = set(_local_links(ROOT / name))
+        assert planning.difference({name}).issubset(links), name
+
+
 def test_every_markdown_links_back_to_root_readme() -> None:
     root_readme = (ROOT / "README.md").resolve()
     for path in _maintained_markdown():
@@ -102,6 +114,7 @@ def test_file_tree_links_all_connected_architecture_files() -> None:
         "KAGGLE.md",
         "SOW_PHASE_ARCHITECTURE.md",
         "TODO.md",
+        "SOW_DELIVERABLES.md",
         "FILE_TREE.md",
         "pyproject.toml",
         "requirements.txt",
