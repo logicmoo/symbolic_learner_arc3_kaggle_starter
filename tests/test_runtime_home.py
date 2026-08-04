@@ -10,6 +10,24 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 RUNTIME_PATH = ROOT / "scripts" / "_runtime.py"
+_RUNTIME_ENV_NAMES = (
+    "ARC3_RUNTIME_HOME",
+    "ARC3_CODE_ROOT",
+    "ARC3_LAUNCH_CWD",
+    "ARC3_CONFIG_ROOT",
+    "ARC3_LLM_CONFIG",
+    "ARC3_TREE_ROOT",
+    "ARC3_CONFIG_SOURCE",
+    "ARC3_TREE_SOURCE",
+    "ARC3_ENV_FILES",
+    "ARC3_SHOW_PATHS",
+)
+
+
+@pytest.fixture(autouse=True)
+def _clean_runtime_environment(monkeypatch: pytest.MonkeyPatch):
+    for name in _RUNTIME_ENV_NAMES:
+        monkeypatch.delenv(name, raising=False)
 
 
 def _load_runtime_module():
@@ -26,6 +44,10 @@ def _make_project_root(path: Path) -> Path:
     (path / "pyproject.toml").write_text(
         "[project]\nname='test'\nversion='0'\n", encoding="utf-8"
     )
+    config = path / "config"
+    config.mkdir()
+    (config / "llm_providers.json").write_text("{}\n", encoding="utf-8")
+    (path / "action_trees").mkdir()
     return path.resolve()
 
 
@@ -48,6 +70,9 @@ def test_explicit_runtime_home_has_priority(
     assert selected == configured
     assert Path.cwd() == configured
     assert os.environ["ARC3_RUNTIME_HOME"] == str(configured)
+    # Resources are resolved independently; the launch workspace wins first.
+    assert Path(os.environ["ARC3_LLM_CONFIG"]) == working / "config" / "llm_providers.json"
+    assert Path(os.environ["ARC3_TREE_ROOT"]) == working / "action_trees"
 
 
 def test_working_directory_is_checked_before_script_location(
@@ -62,13 +87,15 @@ def test_working_directory_is_checked_before_script_location(
     script.parent.mkdir()
     script.write_text("", encoding="utf-8")
 
-    monkeypatch.delenv("ARC3_RUNTIME_HOME", raising=False)
     monkeypatch.chdir(nested_working)
 
     selected = runtime.configure_runtime_home(script)
 
     assert selected == working
     assert Path.cwd() == working
+    assert Path(os.environ["ARC3_LAUNCH_CWD"]) == nested_working
+    assert Path(os.environ["ARC3_LLM_CONFIG"]) == working / "config" / "llm_providers.json"
+    assert Path(os.environ["ARC3_TREE_ROOT"]) == working / "action_trees"
 
 
 def test_script_location_is_final_fallback(
@@ -82,13 +109,14 @@ def test_script_location_is_final_fallback(
     script.parent.mkdir()
     script.write_text("", encoding="utf-8")
 
-    monkeypatch.delenv("ARC3_RUNTIME_HOME", raising=False)
     monkeypatch.chdir(unrelated)
 
     selected = runtime.configure_runtime_home(script)
 
     assert selected == script_root
     assert Path.cwd() == script_root
+    assert Path(os.environ["ARC3_LLM_CONFIG"]) == script_root / "config" / "llm_providers.json"
+    assert Path(os.environ["ARC3_TREE_ROOT"]) == script_root / "action_trees"
 
 
 def test_invalid_explicit_runtime_home_is_not_silently_ignored(
