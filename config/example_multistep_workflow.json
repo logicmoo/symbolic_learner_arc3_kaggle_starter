@@ -1,0 +1,33 @@
+{
+  "id": "example_multistep_artifact_review",
+  "label": "Example: objects → changes → Prolog → rules → audit",
+  "description": "Extract objects from the before/current images with a light vision call, explain the symbolic object and Turtle changes with another model, let Prolog render/check the symbolic evidence, induce rules from the generated Prolog, and finish with an independent artifact audit.",
+  "steps": [
+    {
+      "id": "extract_objects_and_turtle",
+      "transaction": "extract_scene_objects",
+      "profile": "openai-gpt-5.6-light",
+      "combine_group": "perception"
+    },
+    {
+      "id": "explain_symbolic_changes",
+      "transaction": "explain_object_changes",
+      "profile": "groq-qwen-3.6-27b-deep"
+    },
+    {
+      "id": "render_with_prolog",
+      "transaction": "prolog_render_symbolic_evidence"
+    },
+    {
+      "id": "induce_rules",
+      "transaction": "induce_rules_from_prolog",
+      "profile": "openrouter-north-mini-code-rules"
+    },
+    {
+      "id": "audit_everything",
+      "transaction": "audit_artifact_bundle",
+      "profile": "openai-gpt-5.6-light",
+      "continue_on_error": true
+    }
+  ]
+}
