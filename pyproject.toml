@@ -92,6 +92,7 @@ py-modules = [
   "llm_catalog_sampling",
   "llm_json",
   "llm_json_patch",
+  "llm_key_controls",
   "llm_model_catalog",
   "llm_profile_editor",
   "llm_providers",
