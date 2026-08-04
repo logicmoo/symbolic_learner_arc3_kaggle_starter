@@ -13,7 +13,13 @@ class FakeResponses:
 
     def create(self, **kwargs):
         self.calls.append(kwargs)
-        return SimpleNamespace(output_text='{"ok":true}')
+        return SimpleNamespace(
+            output_text='{"ok":true}',
+            id="response-test",
+            model=kwargs.get("model"),
+            status="completed",
+            usage=SimpleNamespace(input_tokens=10, output_tokens=4, total_tokens=14),
+        )
 
 
 class FakeOpenAI:
@@ -27,7 +33,12 @@ def write_config(path: Path) -> None:
         json.dumps(
             {
                 "default_provider": "cloud",
-                "providers": [
+                "prompt_text": {
+                    "base": ["BASE CONTRACT"],
+                    "transitions": ["TRANSITIONS: include parent/current changes"],
+                    "local_short": ["LOCAL OUTPUT MUST BE SHORT"],
+                },
+                "llm_providers": [
                     {
                         "id": "cloud",
                         "label": "Cloud",
@@ -36,6 +47,7 @@ def write_config(path: Path) -> None:
                         "api_key_env": "TEST_CLOUD_KEY",
                         "enabled": "auto",
                         "supports_reasoning": True,
+                        "prompt_text": ["base", "transitions"],
                     },
                     {
                         "id": "local",
@@ -45,6 +57,7 @@ def write_config(path: Path) -> None:
                         "base_url": "http://localhost:8888/v1",
                         "api_key_optional": True,
                         "enabled": True,
+                        "prompt_text": ["base", "local_short"],
                     },
                 ],
             }
@@ -61,6 +74,24 @@ def test_cycle_skips_missing_key(tmp_path, monkeypatch):
 
     assert router.cycle().provider_id == "local"
     assert router.cycle().provider_id == "local"
+
+
+def test_provider_selects_ordered_prompt_sections(tmp_path, monkeypatch):
+    config = tmp_path / "providers.json"
+    write_config(config)
+    monkeypatch.setenv("TEST_CLOUD_KEY", "secret")
+    router = LlmProviderRouter(config, openai_client_factory=FakeOpenAI)
+
+    router.select("cloud")
+    assert router.prompt_section_names() == ("base", "transitions")
+    assert router.compose_prompt() == (
+        "BASE CONTRACT\n\nTRANSITIONS: include parent/current changes"
+    )
+
+    router.select("local")
+    assert router.prompt_section_names() == ("base", "local_short")
+    assert "TRANSITIONS:" not in router.compose_prompt()
+    assert router.compose_prompt().endswith("LOCAL OUTPUT MUST BE SHORT")
 
 
 def test_openai_route_uses_selected_model(tmp_path, monkeypatch):
@@ -89,6 +120,12 @@ def test_openai_route_uses_selected_model(tmp_path, monkeypatch):
     )
 
     assert response.output_text == '{"ok":true}'
+    assert response.provider_metadata["prompt_text"] == ["base", "local_short"]
+    assert response.provider_metadata["usage"] == {
+        "input_tokens": 10,
+        "output_tokens": 4,
+        "total_tokens": 14,
+    }
     assert clients[0].responses.calls[0] == {
         "model": "local-model",
         "input": [
@@ -99,6 +136,17 @@ def test_openai_route_uses_selected_model(tmp_path, monkeypatch):
         ],
         "max_output_tokens": 99,
     }
+
+
+def test_default_config_uses_unified_sections(monkeypatch):
+    monkeypatch.setenv("OPENAI_API_KEY", "test")
+    router = LlmProviderRouter(DEFAULT_CONFIG_PATH, openai_client_factory=FakeOpenAI)
+    openai = next(spec for spec in router.specs if spec.provider_id == "openai")
+
+    assert "response_contract" in openai.prompt_text
+    assert "transitions" in openai.prompt_text
+    assert "TRANSITIONS:" in router.compose_prompt(openai)
+    assert DEFAULT_CONFIG_PATH.parent.name == "config"
 
 
 def test_default_unsloth_requires_studio_api_key(monkeypatch):
