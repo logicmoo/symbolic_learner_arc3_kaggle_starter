@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from types import SimpleNamespace
 from typing import Any
 
@@ -7,6 +8,81 @@ from llm_batch_profiles import _install_sampling_parameters
 from llm_catalog_sampling import install_anthropic_profile_sampling
 from llm_model_catalog import CatalogAwareLlmProviderRouter
 from project_paths import prompts_path
+
+
+def _install_catalog_prompt_compatibility() -> None:
+    from gpt_bridge import GptArcAnalyzer
+
+    current = GptArcAnalyzer.prompts
+    if getattr(current, "_arc3_catalog_prompts", False):
+        return
+    original = current
+
+    def prompts(self: GptArcAnalyzer) -> dict[str, str]:
+        raw = json.loads(self.prompts_path.read_text(encoding="utf-8"))
+        if not isinstance(raw, dict) or not isinstance(raw.get("llm_profiles"), list):
+            return original(self)
+        sections = {
+            str(key): self._normalize_prompt(value, key=str(key))
+            for key, value in (raw.get("prompt_text") or {}).items()
+        }
+        profile_id = str(raw.get("default_profile") or "").strip()
+        profile = next(
+            (
+                item
+                for item in raw["llm_profiles"]
+                if isinstance(item, dict) and str(item.get("id") or "") == profile_id
+            ),
+            raw["llm_profiles"][0],
+        )
+        names = profile.get("prompt_text") if isinstance(profile, dict) else None
+        if not isinstance(names, list) or not names:
+            raise ValueError("Selected LLM profile has no prompt_text list")
+        missing = [str(name) for name in names if str(name) not in sections]
+        if missing:
+            raise ValueError("Unknown prompt_text sections: " + ", ".join(missing))
+        return {
+            "combined": "\n\n".join(sections[str(name)] for name in names).strip()
+        }
+
+    prompts._arc3_catalog_prompts = True  # type: ignore[attr-defined]
+    GptArcAnalyzer.prompts = prompts
+
+
+def _install_catalog_transcript_metadata() -> None:
+    import llm_json_patch
+    import llm_transcripts
+
+    current = llm_json_patch.begin_transcript
+    if getattr(current, "_arc3_catalog_metadata", False):
+        return
+    original = current
+
+    def begin_transcript(router: Any, request: Any):
+        run = original(router, request)
+        if run is None or not isinstance(router, CatalogAwareLlmProviderRouter):
+            return run
+        spec = router.current_spec()
+        profile = router.profile_for_spec(spec)
+        model = router.model_for_profile(profile)
+        backend = router.backend_for_profile(profile)
+        run.metadata.update(
+            {
+                "backend_id": backend.backend_id,
+                "backend_label": backend.label,
+                "model_id": model.model_id,
+                "model_label": model.label,
+                "profile_id": profile.profile_id,
+                "profile_label": profile.label,
+                "single_enabled": profile.single_enabled,
+                "batch_enabled": profile.batch_enabled,
+            }
+        )
+        return run
+
+    begin_transcript._arc3_catalog_metadata = True  # type: ignore[attr-defined]
+    llm_json_patch.begin_transcript = begin_transcript
+    llm_transcripts.begin_transcript = begin_transcript
 
 
 def install_catalog_runner() -> None:
@@ -17,6 +93,7 @@ def install_catalog_runner() -> None:
         return
 
     original_run = MultiLlmArc3Runner._run_gpt_analysis_level
+    original_provenance = MultiLlmArc3Runner._write_provider_provenance
 
     def llm_router(self: Any) -> CatalogAwareLlmProviderRouter:
         if self._llm_router is None:
@@ -90,7 +167,7 @@ def install_catalog_runner() -> None:
             backend = router.backend_by_id[model.provider_id]
             display = SimpleNamespace(
                 provider_id=model.model_id,
-                label=model.label,
+                label=f"{model.label} via {backend.label}",
                 resolved_model=model.resolved_model,
                 resolved_base_url=spec.resolved_base_url,
             )
@@ -131,12 +208,51 @@ def install_catalog_runner() -> None:
         with router.profile_environment(profile):
             original_run(self, level)
 
+    def write_provider_provenance(
+        self: Any,
+        node: Any,
+        provider: Any,
+        *,
+        analysis_level: int,
+    ) -> None:
+        original_provenance(
+            self,
+            node,
+            provider,
+            analysis_level=analysis_level,
+        )
+        router = self.llm_router()
+        profile = router.profile_for_spec(provider)
+        model = router.model_for_profile(profile)
+        backend = router.backend_for_profile(profile)
+        path = self._provenance_path(node)
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        payload.update(
+            {
+                "backend_id": backend.backend_id,
+                "backend_label": backend.label,
+                "model_id": model.model_id,
+                "model_label": model.label,
+                "profile_id": profile.profile_id,
+                "profile_label": profile.label,
+                "single_enabled": profile.single_enabled,
+                "batch_enabled": profile.batch_enabled,
+            }
+        )
+        path.write_text(
+            json.dumps(payload, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+
     MultiLlmArc3Runner.llm_router = llm_router
     MultiLlmArc3Runner.reload_llm_router = reload_llm_router
     MultiLlmArc3Runner.cycle_llm_provider = cycle_llm_provider
     MultiLlmArc3Runner.llm_provider_statuses = llm_provider_statuses
     MultiLlmArc3Runner.current_llm_summary = current_llm_summary
     MultiLlmArc3Runner._run_gpt_analysis_level = run_gpt_analysis_level
+    MultiLlmArc3Runner._write_provider_provenance = write_provider_provenance
     MultiLlmArc3Runner._arc3_catalog_installed = True
     _install_sampling_parameters()
     install_anthropic_profile_sampling()
+    _install_catalog_prompt_compatibility()
+    _install_catalog_transcript_metadata()
