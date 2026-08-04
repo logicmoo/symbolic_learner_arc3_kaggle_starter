@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 from types import SimpleNamespace
 
+from llm_model_catalog import CatalogAwareLlmProviderRouter
 from llm_providers import DEFAULT_CONFIG_PATH, LlmProviderRouter, _anthropic_blocks
 from project_paths import prompts_path
 
@@ -141,14 +142,16 @@ def test_openai_route_uses_selected_model(tmp_path, monkeypatch):
     }
 
 
-def test_default_config_uses_unified_sections(monkeypatch):
+def test_default_config_uses_profile_selected_sections(monkeypatch):
     monkeypatch.setenv("OPENAI_API_KEY", "test")
-    router = LlmProviderRouter(DEFAULT_CONFIG_PATH, openai_client_factory=FakeOpenAI)
-    openai = next(spec for spec in router.specs if spec.provider_id == "openai")
+    monkeypatch.delenv("ARC3_LLM_PROVIDER", raising=False)
+    router = CatalogAwareLlmProviderRouter(DEFAULT_CONFIG_PATH)
+    spec = router.select_profile("openai-gpt-5.6-extreme", mode="single")
 
-    assert "response_contract" in openai.prompt_text
-    assert "transitions" in openai.prompt_text
-    assert "TRANSITIONS:" in router.compose_prompt(openai)
+    assert "response_contract" in spec.prompt_text
+    assert "transitions" in spec.prompt_text
+    assert "rule_analysis" in spec.prompt_text
+    assert "TRANSITIONS:" in router.compose_prompt(spec)
     assert DEFAULT_CONFIG_PATH.parent.name == "config"
 
 
@@ -162,23 +165,37 @@ def test_legacy_prompt_path_points_to_unified_config(monkeypatch):
 
 def test_default_unsloth_requires_studio_api_key(monkeypatch):
     monkeypatch.delenv("ARC3_UNSLOTH_API_KEY", raising=False)
-    router = LlmProviderRouter(DEFAULT_CONFIG_PATH, openai_client_factory=FakeOpenAI)
-    unsloth = next(spec for spec in router.specs if spec.provider_id == "unsloth")
+    monkeypatch.delenv("ARC3_LLM_PROVIDER", raising=False)
+    router = CatalogAwareLlmProviderRouter(DEFAULT_CONFIG_PATH)
+    unsloth = next(
+        spec
+        for spec in router.specs
+        if router.backend_for_profile(spec).backend_id == "unsloth"
+    )
 
     assert unsloth.configuration_state() == (
         False,
         "missing ARC3_UNSLOTH_API_KEY",
     )
-    assert "unsloth" not in {spec.provider_id for spec in router.configured_specs()}
+    assert unsloth.provider_id not in {
+        spec.provider_id for spec in router.configured_profile_specs()
+    }
 
 
 def test_default_unsloth_accepts_studio_api_key(monkeypatch):
     monkeypatch.setenv("ARC3_UNSLOTH_API_KEY", "sk-unsloth-test-key")
-    router = LlmProviderRouter(DEFAULT_CONFIG_PATH, openai_client_factory=FakeOpenAI)
-    unsloth = next(spec for spec in router.specs if spec.provider_id == "unsloth")
+    monkeypatch.delenv("ARC3_LLM_PROVIDER", raising=False)
+    router = CatalogAwareLlmProviderRouter(DEFAULT_CONFIG_PATH)
+    unsloth = next(
+        spec
+        for spec in router.specs
+        if router.backend_for_profile(spec).backend_id == "unsloth"
+    )
 
     assert unsloth.configuration_state() == (True, "configured")
-    assert "unsloth" in {spec.provider_id for spec in router.configured_specs()}
+    assert unsloth.provider_id in {
+        spec.provider_id for spec in router.configured_profile_specs()
+    }
 
 
 def test_anthropic_image_translation():
