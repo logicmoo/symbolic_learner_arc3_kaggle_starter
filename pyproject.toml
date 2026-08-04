@@ -89,6 +89,7 @@ py-modules = [
   "interactive_runner",
   "llm_batch_profiles",
   "llm_catalog_integration",
+  "llm_catalog_sampling",
   "llm_json",
   "llm_json_patch",
   "llm_model_catalog",
