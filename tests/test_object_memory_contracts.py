@@ -227,14 +227,19 @@ def test_integration_validator_rejects_duplicate_object_identities() -> None:
         raise AssertionError("duplicate object identities must be rejected")
 
 
-def test_protected_kaggle_paths_exist() -> None:
+def test_protected_kaggle_paths_and_generated_notebook_contract() -> None:
     for relative in (
-        "notebooks/submission.ipynb",
         "scripts/build_notebook.py",
         "scripts/play_local.py",
         "agent/my_agent.py",
+        "notebooks/kernel-metadata.json",
     ):
         assert (ROOT / relative).exists(), relative
+
+    builder = (ROOT / "scripts" / "build_notebook.py").read_text(encoding="utf-8")
+    gitignore = (ROOT / ".gitignore").read_text(encoding="utf-8")
+    assert 'NOTEBOOK_PATH = ROOT / "notebooks" / "submission.ipynb"' in builder
+    assert "notebooks/submission.ipynb" in gitignore
 
 
 def test_runnable_scripts_are_canonical() -> None:
