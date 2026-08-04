@@ -1,42 +1,68 @@
 [← Back to top-level README](../README.md)
 
-# LLM Providers, Prompt Sections, and Comparison Transcripts
+# LLM Provider, Model, and Profile Catalog
 
-The debugger keeps one analysis/artifact pipeline while routing the final multimodal request through different LLM providers. Provider definitions and prompt text now live together in [`llm_providers.json`](llm_providers.json); there is no separate `prompts/` directory.
+ARC3 routes one shared multimodal artifact pipeline through an editable catalog:
 
-## Unified configuration shape
+[`llm_providers.json`](llm_providers.json)
 
-The file has two main sections:
+The file contains reusable prompt blocks plus three normalized lists:
 
-- `prompt_text` — reusable named text blocks;
-- `llm_providers` — provider definitions, each with an ordered `prompt_text` list selecting which blocks are sent.
+- `llm_providers` — backend transport, authentication, endpoints, and health settings;
+- `llm_models` — selectable model IDs that reference provider backends;
+- `llm_profiles` — level-specific request configurations that reference models.
 
-A simplified example:
+This means OpenRouter authentication and endpoint settings appear once even though OpenRouter supplies several selectable models.
+
+See [Single and Batch Model Profiles](LLM_BATCH.md) for the interactive editor and batch workflow.
+
+## Catalog shape
 
 ```json
 {
+  "default_model": "openrouter-nemotron-omni",
+  "default_profile": "openrouter-nemotron-omni-deep",
   "prompt_text": {
     "response_contract": ["Return strict JSON."],
     "objects": ["Describe current-state objects."],
-    "transitions": ["TRANSITIONS: describe parent/current changes."],
-    "rules": ["Analyze supported and hypothetical rules."]
+    "rules": ["Analyze rules and evidence."]
   },
   "llm_providers": [
     {
-      "id": "cloud-full",
+      "id": "openrouter",
       "adapter": "openai_responses",
-      "model": "example-cloud-model",
-      "prompt_text": [
-        "response_contract",
-        "objects",
-        "transitions",
-        "rules"
-      ]
-    },
+      "api_key_env": "OPENROUTER_API_KEY",
+      "base_url": "https://openrouter.ai/api/v1",
+      "enabled": "auto",
+      "default_model": "openrouter-auto-free"
+    }
+  ],
+  "llm_models": [
     {
-      "id": "local-no-transitions",
-      "adapter": "openai_responses",
-      "model": "example-local-model",
+      "id": "openrouter-nemotron-omni",
+      "provider": "openrouter",
+      "label": "Nemotron 3 Nano Omni free",
+      "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+      "supports_reasoning": true,
+      "vision": true,
+      "default_level": 3
+    }
+  ],
+  "llm_profiles": [
+    {
+      "id": "openrouter-nemotron-omni-deep",
+      "model": "openrouter-nemotron-omni",
+      "analysis_level": 3,
+      "single_enabled": true,
+      "batch_enabled": true,
+      "max_output_tokens": 16000,
+      "temperature": 0.05,
+      "top_p": 0.95,
+      "reasoning_effort": "medium",
+      "current_image_detail": "high",
+      "parent_image_detail": "low",
+      "timeout_seconds": 480,
+      "seed": null,
       "prompt_text": [
         "response_contract",
         "objects",
@@ -47,9 +73,11 @@ A simplified example:
 }
 ```
 
-The second provider excludes `transitions` simply by omitting that section name. Sections may be created for one provider only, so provider-specific instructions do not require copying the complete prompt.
+## Prompt composition
 
-The checked-in reusable sections currently include:
+Each profile owns an ordered `prompt_text` list. A light and extreme profile for the same model can therefore differ in both request parameters and instructions.
+
+The checked-in reusable prompt sections are:
 
 - `response_contract`;
 - `coordinate_contract`;
@@ -63,9 +91,9 @@ The checked-in reusable sections currently include:
 - `root_state`;
 - `quality_control`.
 
-The router validates unknown or duplicate section names before any provider request. The exact assembled text and selected section list are recorded in each comparison transcript.
+Unknown or duplicate section names are rejected before a provider request. The exact ordered list and assembled request are preserved in the comparison transcript.
 
-## Switching providers
+## Interactive controls
 
 Start the debugger:
 
@@ -73,28 +101,28 @@ Start the debugger:
 scripts\interactive_runner.bat ls20
 ```
 
-Press **`g` repeatedly** to select the next configured provider. The provider display includes the provider, adapter endpoint, model, and selected `prompt_text` list. Press `2`, `3`, or `4` for the demo, deep, or extreme analysis profile.
+- lowercase **`g`** cycles configured and ready models;
+- commands **`2`**, **`3`**, and **`4`** run that model's Single-enabled level profile;
+- uppercase **`G`** opens the unified backend/model/profile editor and can run all Batch-enabled profiles;
+- **`p`** enters Prolog mode;
+- LLM command **`1`** lists and restores historical transcripts or opens the raw catalog.
 
-A provider with `enabled: "auto"` participates in the cycle only when its required API-key environment variable is set. This means users can add one or both free cloud keys without changing code or disabling the paid/local choices.
+## Comparison transcripts
 
-Pressing `p` still enters Prolog mode.
+Every actual LLM request creates a uniquely named Markdown transcript in the current action-tree node.
 
-## Markdown comparison/cache transcripts
+Each completed transcript contains:
 
-Every actual LLM request creates a uniquely named Markdown transcript in the current action-tree node. A typical filename is:
+1. a restorable Prolog artifact snapshot;
+2. backend, model, and profile identity;
+3. profile level, prompt sections, token and sampling settings;
+4. timing and provider-reported usage;
+5. image hashes and links;
+6. the exact request text;
+7. malformed-JSON repair history;
+8. normalized JSON and raw provider responses.
 
-```text
-llm_adapter_openai_responses_unsloth_unsloth_gemma-4-E2B-it-GGUF_L4_extreme_tokens_32000_20260804T145700_000000Z.md
-```
-
-The filename carries the adapter, provider, model, analysis level/profile, requested token budget, and timestamp so runs can be compared directly.
-
-Each completed transcript has two major halves:
-
-1. **Restorable Prolog artifact snapshot first** — `object_registry.pl`, `objects.pl`, differences, similarities, Turtle programs, and rules exactly as they existed for that run.
-2. **Debug transcript second** — state/action context, provider/adapter/model, prompt section list, profile and token settings, timing, provider-reported usage, image hashes/details, the exact request text, repair history, normalized JSON, and raw provider responses at the very bottom.
-
-The initial prompt text is rendered as ordinary Markdown between hidden markers rather than buried in a code fence. Raw responses remain fenced at the end so arbitrary output cannot break the document.
+The individual `.pl` files remain the mutable latest view. Restoring a completed transcript rewrites those files and makes that transcript active in the node `README.md`.
 
 Configure transcript behavior with:
 
@@ -104,91 +132,34 @@ ARC3_LLM_RESPONSE_DIR=C:/symbolic_learner_arc3_kaggle_starter/.llm_responses
 ARC3_LLM_JSON_RETRY=1
 ```
 
-`ARC3_LLM_RESPONSE_DIR` is only a fallback for calls made without an active action-tree node.
+## Credentials and endpoints
 
-### Latest files versus historical cache
+Keep keys in `.env` or the process environment, never in JSON.
 
-The individual `.pl` files remain the mutable **latest view** used by the debugger and Prolog code. Markdown transcripts are immutable historical cache/comparison records.
-
-After a completed run:
-
-- its Markdown transcript stores copies of all generated `.pl` artifacts;
-- the normal individual `.pl` files remain on disk as the latest view;
-- the node `README.md` identifies the active completed transcript;
-- the README links every historical transcript but does not recursively embed their large bodies;
-- the README continues embedding the latest mutable `.pl` files.
-
-### Restore an older run
-
-In LLM mode, press `1` to open the transcript cache chooser. Select a completed transcript number to:
-
-1. extract its embedded artifact snapshot;
-2. rewrite the individual latest `.pl` files;
-3. rewrite `llm_provider.json` with the restored provider/model/level;
-4. make that transcript active;
-5. regenerate the node `README.md` so its embedded artifacts and active link match the restored run.
-
-The same menu uses `E` to edit the unified provider-and-prompt config.
-
-Failed or incomplete LLM runs remain linked as **debug-only** transcripts, but they are not considered restorable active snapshots.
-
-## Malformed JSON recovery
-
-For almost-correct LLM output, ARC3:
-
-1. records the raw response in the current Markdown transcript;
-2. attempts strict JSON parsing;
-3. deterministically repairs common syntax defects locally;
-4. validates every requested artifact key;
-5. uses one text-only provider repair request only when local recovery is incomplete;
-6. records both interactions in the same transcript;
-7. never repeats the original image request merely because JSON syntax was malformed.
-
-## Default providers
-
-The checked-in providers are:
-
-- **ChatGPT / OpenAI API** through the OpenAI Responses API;
-- **Claude / Anthropic API** through the Anthropic Messages API;
-- **Groq Free / Qwen 3.6 27B** through Groq's OpenAI-compatible Responses API;
-- **OpenRouter Free** through the `openrouter/free` multimodal model router;
-- **Unsloth Studio local** through its OpenAI-compatible Responses endpoint.
-
-Providers requiring an API key are skipped when the key is absent. Groq and OpenRouter are free-tier choices with provider-controlled quotas, rate limits, and model availability; they are intended for experimentation and low-volume analysis rather than guaranteed unlimited service.
-
-## OpenAI / ChatGPT
+### OpenAI
 
 ```bat
 set OPENAI_API_KEY=your-key
-set ARC3_OPENAI_MODEL=your-openai-model
+set ARC3_OPENAI_MODEL=gpt-5.6
 ```
 
-A ChatGPT web subscription is separate from OpenAI API authentication.
-
-## Claude / Anthropic
+### Anthropic
 
 ```bat
 set ANTHROPIC_API_KEY=your-key
-set ARC3_CLAUDE_MODEL=your-claude-model
+set ARC3_CLAUDE_MODEL=claude-sonnet-4-20250514
+set ARC3_CLAUDE_BASE_URL=https://api.anthropic.com/v1
 ```
 
-The adapter converts the existing Responses-style text and base64 PNG blocks into Anthropic Messages content blocks.
-
-## Groq Free / Qwen
-
-Create a Groq API key, then configure:
+### Groq
 
 ```bat
-set GROQ_API_KEY=your-free-tier-key
+set GROQ_API_KEY=your-key
 set ARC3_GROQ_MODEL=qwen/qwen3.6-27b
 set ARC3_GROQ_BASE_URL=https://api.groq.com/openai/v1
 ```
 
-The checked-in Qwen model accepts text and image inputs. Groq Free-plan rate limits can be lower than the ARC3 deep and extreme profiles; when necessary, start with command `2` and reduce `ARC3_GPT_2_MAX_OUTPUT_TOKENS` in `.env`.
-
-## OpenRouter Free
-
-Create an OpenRouter API key, then configure:
+### OpenRouter
 
 ```bat
 set OPENROUTER_API_KEY=your-key
@@ -196,11 +167,11 @@ set ARC3_OPENROUTER_MODEL=openrouter/free
 set ARC3_OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
 ```
 
-`openrouter/free` chooses an available zero-cost model and filters for capabilities required by the request, including image understanding. The selected upstream model can differ between runs, and free-model capacity can temporarily be unavailable. The transcript records the model reported by the provider for comparison.
+The OpenRouter backend currently supplies model entries for automatic free routing and two explicit free Nemotron vision models. Add more models by adding `llm_models` rows that reference `openrouter`, then add level profiles for those model IDs.
 
-To pin a particular free variant instead, override `ARC3_OPENROUTER_MODEL` with a current OpenRouter model id ending in `:free`.
+Free endpoints have changing quotas and availability. Review upstream privacy and retention terms before sending confidential state images.
 
-## Unsloth Studio local
+### Unsloth Studio
 
 Start Studio locally:
 
@@ -208,26 +179,15 @@ Start Studio locally:
 unsloth studio -H 127.0.0.1 -p 8888
 ```
 
-The default configuration uses:
-
-```text
-Responses endpoint: http://127.0.0.1:8888/v1/responses
-Health endpoint:    http://127.0.0.1:8888/api/health
-Status endpoint:    http://127.0.0.1:8888/api/inference/status
-Load endpoint:      http://127.0.0.1:8888/api/inference/load
-Model:              unsloth/gemma-4-E2B-it-GGUF
-GGUF variant:       UD-Q4_K_XL
-```
-
-Create a Studio API key under **Settings → API Access** (called **API** in some versions). Real keys begin with `sk-unsloth-`:
+Create an API key under **Settings → API Access** and configure:
 
 ```bat
 set ARC3_UNSLOTH_API_KEY=sk-unsloth-your-key
+set ARC3_UNSLOTH_MODEL=unsloth/gemma-4-E2B-it-GGUF
+set ARC3_UNSLOTH_BASE_URL=http://127.0.0.1:8888/v1
 ```
 
-Before an Unsloth request, ARC3 checks authenticated inference status, reuses a matching loaded model, or loads the configured GGUF and waits for it to become resident.
-
-Default lifecycle settings:
+ARC3 checks inference status, reuses a matching loaded model, or loads the configured GGUF and waits for readiness.
 
 ```dotenv
 ARC3_UNSLOTH_AUTO_LOAD=1
@@ -240,16 +200,20 @@ ARC3_UNSLOTH_FORCE_CANCEL_ACTIVE=0
 ARC3_UNSLOTH_TRUST_REMOTE_CODE=0
 ```
 
-For private or gated Hugging Face repositories:
+## Initial selection compatibility
 
-```bat
-set HF_TOKEN=hf_your-token
-```
+`ARC3_LLM_PROVIDER` remains accepted for compatibility. It may name:
 
-## Alternate configuration file
+- a profile ID;
+- a model ID;
+- a provider backend ID, in which case that backend's default model and the model's default level are selected.
+
+The GUI writes the catalog itself; restarting or reloading the runner applies saved changes.
+
+## Alternate catalog
 
 ```bat
 set ARC3_LLM_CONFIG=C:\path\to\my_llm_providers.json
 ```
 
-Keep API keys in environment variables rather than JSON. A replacement config must define `prompt_text` and `llm_providers`, and each provider must select at least one valid prompt section.
+A replacement catalog must define `prompt_text`, `llm_providers`, `llm_models`, and `llm_profiles` with valid references between the three layers.
