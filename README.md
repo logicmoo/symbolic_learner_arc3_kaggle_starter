@@ -12,25 +12,71 @@ This repository combines the delivered ARC3 debugger, the protected ARC-AGI-3 Ka
 - [Implementation TODO](TODO.md) — reconciled status, remaining coding work, cross-language mapping, and acceptance tasks.
 - [Clickable repository file tree](FILE_TREE.md) — links to maintained files with descriptions of their responsibilities.
 
-## Runtime home selection
+## Layered code and resource discovery
 
-Every runnable Python script resolves and enters one project root before importing project modules or using relative paths. The resolution order is:
+ARC3 no longer assumes that code, configuration, and generated action trees must all share one global root. Startup records the directory from which the command was launched, resolves each resource independently, then enters the code checkout only for imports and legacy relative-script behavior.
 
-1. `ARC3_RUNTIME_HOME`, when explicitly set.
-2. The current working directory, including its parent directories.
-3. The project root inferred from the script's own location.
+### Code/runtime checkout
 
-An invalid explicit `ARC3_RUNTIME_HOME` is treated as an error instead of silently selecting another checkout. The resolved root is exported back through `ARC3_RUNTIME_HOME` for child processes.
+The Python code root is resolved in this order:
+
+1. `ARC3_RUNTIME_HOME`, when explicitly set to a valid checkout.
+2. The nearest valid project root found while walking upward from the launch directory.
+3. The project root inferred from the running script/code location.
+
+An invalid explicit `ARC3_RUNTIME_HOME` remains an error because it claims to select the code checkout.
+
+### LLM provider and prompt configuration
+
+The selected `config/llm_providers.json` is resolved independently:
+
+1. `ARC3_LLM_CONFIG`.
+2. `ARC3_CONFIG_ROOT/llm_providers.json`.
+3. The nearest `config/llm_providers.json` found while walking upward from the launch directory.
+4. `ARC3_RUNTIME_HOME/config/llm_providers.json`, when present.
+5. The config beside the running script/code checkout.
+
+This allows an experiment workspace to supply its own provider list and prompt sections while running code from another checkout.
+
+### Action-tree output
+
+The writable action-tree root is resolved independently:
+
+1. `ARC3_TREE_ROOT`.
+2. The nearest existing `action_trees/` found while walking upward from the launch directory.
+3. `ARC3_RUNTIME_HOME/action_trees/`, when present.
+4. The action-tree directory beside the running script/code checkout.
+5. A newly created `action_trees/` beside the selected code root when none exists.
+
+Thus launching from a workspace that already contains `./action_trees/` keeps all generated state, transcripts, and `.pl` artifacts in that workspace.
+
+### Environment files and startup report
+
+The nearest launch-directory `.env` is loaded first, followed by distinct runtime/script checkout `.env` files. Loading uses `override=False`, so shell and IDE variables still win. The resolved paths are exported through `ARC3_LAUNCH_CWD`, `ARC3_RUNTIME_HOME`, `ARC3_LLM_CONFIG`, `ARC3_CONFIG_ROOT`, and `ARC3_TREE_ROOT`.
+
+At startup ARC3 prints:
+
+```text
+ARC3 resolved paths
+  Launch directory: ...
+  Code/runtime root: ...
+  Environment files: ...
+  LLM config source: ...
+  Action-tree output: ...
+```
+
+Set `ARC3_SHOW_PATHS=0` to suppress this report.
 
 Examples:
 
 ```bash
-# Explicit checkout/runtime location
+# Run code from one checkout while using config/action_trees discovered from cwd.
+cd /path/to/experiment-workspace
+python /path/to/symbolic_learner_arc3_kaggle_starter/scripts/interactive_runner.py ls20
+
+# Explicitly select only the code checkout; cwd resources still win when present.
 ARC3_RUNTIME_HOME=/path/to/symbolic_learner_arc3_kaggle_starter \
 python /another/path/to/scripts/interactive_runner.py ls20
-
-# Or launch from anywhere without setting the variable; the script location is used.
-python /path/to/symbolic_learner_arc3_kaggle_starter/scripts/re_play.py
 ```
 
 ## Install
@@ -65,7 +111,7 @@ The protected Kaggle workflow still uses the setup instructions in [KAGGLE.md](K
 
 ## Runnable Python entry points and demonstrations
 
-These commands may be run from the repository root or from another directory. Each script normalizes its process working directory through the runtime-home selection above before doing project-relative work.
+These commands may be run from the repository root or from another directory. Each script resolves code and data resources through the layered discovery above before importing project modules.
 
 ### Interactive terminal debugger
 
