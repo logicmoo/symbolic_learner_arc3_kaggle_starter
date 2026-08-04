@@ -6,47 +6,49 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
-def prompts_root() -> Path:
-    """Return the shared editable prompt directory at arc3_debugger/prompts/."""
-    # ARC3_ENVIRONMENT_FILES remains a compatibility fallback for older launchers.
-    root = Path(
-        os.environ.get("ARC3_PROMPTS_ROOT")
-        or os.environ.get("ARC3_ENVIRONMENT_FILES")
-        or PROJECT_ROOT / "prompts"
-    ).expanduser().resolve()
+def config_root() -> Path:
+    root = Path(os.environ.get("ARC3_CONFIG_ROOT") or PROJECT_ROOT / "config")
+    root = root.expanduser().resolve()
     root.mkdir(parents=True, exist_ok=True)
     return root
 
 
+def llm_config_path() -> Path:
+    configured = os.environ.get("ARC3_LLM_CONFIG", "").strip()
+    if configured:
+        return Path(configured).expanduser().resolve()
+    return config_root() / "llm_providers.json"
+
+
+def prompts_root() -> Path:
+    """Compatibility alias for the unified configuration directory."""
+    return config_root()
+
+
 def environment_files_root() -> Path:
-    """Backward-compatible alias for older code; prompts now live in prompts/."""
-    return prompts_root()
+    """Compatibility alias for the unified configuration directory."""
+    return config_root()
 
 
 def action_trees_root() -> Path:
-    """Return the canonical action-tree root at arc3_debugger/action_trees/."""
-    root = Path(
-        os.environ.get("ARC3_TREE_ROOT")
-        or PROJECT_ROOT / "action_trees"
-    ).expanduser().resolve()
+    root = Path(os.environ.get("ARC3_TREE_ROOT") or PROJECT_ROOT / "action_trees")
+    root = root.expanduser().resolve()
     root.mkdir(parents=True, exist_ok=True)
     return root
 
 
 def prompts_path() -> Path:
-    """Return the editable combined-GPT prompt definition file."""
-    return prompts_root() / "gpt_prompts.json"
+    """Compatibility alias for the unified provider and prompt config."""
+    return llm_config_path()
 
 
 def histories_root(level_root: str | Path) -> Path:
-    """Return histories/ inside the active game-level action-tree directory."""
     root = Path(level_root) / "histories"
     root.mkdir(parents=True, exist_ok=True)
     return root
 
 
 def exports_root(level_root: str | Path) -> Path:
-    """Return exports/ inside the active game-level action-tree directory."""
     root = Path(level_root) / "exports"
     root.mkdir(parents=True, exist_ok=True)
     return root
