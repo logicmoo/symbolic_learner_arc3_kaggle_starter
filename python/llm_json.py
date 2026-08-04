@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 from collections.abc import Iterable
 from typing import Any
@@ -8,9 +9,14 @@ from typing import Any
 try:
     from json_repair import repair_json
 except ImportError as error:  # pragma: no cover - installation failure path
+    install_command = (
+        r'.venv\Scripts\python.exe -m pip install -e ".[all]"'
+        if os.name == "nt"
+        else 'python -m pip install -e ".[all]"'
+    )
     raise RuntimeError(
         "LLM JSON recovery requires json-repair. Update the environment with: "
-        "python -m pip install -e '.[all]'"
+        + install_command
     ) from error
 
 
