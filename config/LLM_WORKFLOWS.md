@@ -10,6 +10,32 @@ The ordinary ARC3 path remains intentionally simple:
 
 Press uppercase **`W`** only when a state needs more specialized orchestration.
 
+## Workflow GUI
+
+Uppercase **`W`** opens the Tkinter workflow editor. The editor provides:
+
+- a list of workflows;
+- editable workflow ID, label, and description;
+- an ordered step table;
+- Add, Edit, Delete, Move Up, and Move Down controls for steps;
+- transaction, exact-profile, model, level, combine-group, and continue-on-error fields;
+- a transaction-reference tab;
+- Save and **Save and Run Selected** buttons;
+- an OpenRouter availability refresh button;
+- raw-JSON access for advanced fields.
+
+Set `ARC3_LLM_WORKFLOW_EDITOR=text` to force the original terminal chooser/editor fallback.
+
+The checked-in [`example_multistep_workflow.json`](example_multistep_workflow.json) is automatically offered in the GUI. It demonstrates:
+
+1. `openai-gpt-5.6-light` extracting objects and Turtle reconstruction from the before/current images;
+2. Groq Qwen explaining symbolic object and Turtle changes;
+3. Prolog rendering/checking the symbolic evidence;
+4. a free OpenRouter code model inducing rules from the generated Prolog;
+5. `openai-gpt-5.6-light` performing a final consistency audit.
+
+The first transaction already combines object extraction and Turtle reconstruction in one provider call. Additional adjacent calls are combined only when their dependencies and profiles make that safe.
+
 ## Catalog hierarchy
 
 The optional workflow layer extends the existing hierarchy:
@@ -78,7 +104,7 @@ The companion catalog was checked against OpenRouter's official free-model colle
 
 The earlier multimodal Nemotron Omni and Nemotron Nano VL entries remain in the base catalog.
 
-From the `W` menu, choose **Refresh live OpenRouter model availability** to query OpenRouter's `/models` endpoint. Missing or no-longer-free models are skipped. If the live endpoint cannot be reached, statically verified extension entries remain usable and are reported as a fallback rather than falsely reported as live-confirmed.
+Use uppercase `O`, or the GUI's **Refresh OpenRouter** button, to query OpenRouter's `/models` endpoint. Missing or no-longer-free models are skipped. If the live endpoint cannot be reached, statically verified extension entries remain usable and are reported as a fallback rather than falsely reported as live-confirmed.
 
 ## Privacy and reliability
 

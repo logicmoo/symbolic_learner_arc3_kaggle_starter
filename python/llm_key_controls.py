@@ -60,7 +60,7 @@ def refresh_openrouter_models(runner: Any) -> None:
     refresh_error: Exception | None = None
     try:
         router._openrouter_models(refresh=True)
-    except Exception as exc:  # The per-model checker provides static fallback details.
+    except Exception as exc:
         refresh_error = exc
         print(f"Live OpenRouter refresh failed: {exc}")
 
@@ -168,7 +168,7 @@ def install_llm_key_controls(ui_module: Any) -> None:
             "(2/3/4) Light/Deep/Extreme"
         )
         print(
-            "LLM run:  (b) Run Batch  (W) Choose Workflow  "
+            "LLM run:  (b) Run Batch  (W) Workflow Editor/Run  "
             "(w) Repeat Workflow  (O) Refresh OpenRouter"
         )
 
