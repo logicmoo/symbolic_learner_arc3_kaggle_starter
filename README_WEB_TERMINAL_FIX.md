@@ -1,3 +1,5 @@
+[← Back to top-level README](README.md)
+
 # ARC3 Web Terminal Fixed-Scale Patch
 
 This ZIP contains a replacement for:
@@ -56,3 +58,5 @@ At browser zoom 100%:
 - The terminal and ARC image are not compressed to fit.
 - Increasing the configured terminal dimensions enlarges the scrollable surface
   instead of reducing the font.
+
+[← Back to top-level README](README.md)
