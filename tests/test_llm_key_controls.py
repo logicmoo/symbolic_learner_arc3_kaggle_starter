@@ -4,6 +4,7 @@ from types import SimpleNamespace
 
 import llm_key_controls
 import llm_profile_editor
+import llm_workflow_editor
 import llm_workflows
 import multillm_runner
 
@@ -21,7 +22,7 @@ class DummyUi(SimpleNamespace):
 
 def install_all(ui: DummyUi) -> None:
     llm_profile_editor.install_profile_editor_ui(ui)
-    llm_workflows.install_workflow_ui(ui)
+    llm_workflow_editor.install_workflow_editor_ui(ui)
     llm_key_controls.install_llm_key_controls(ui)
 
 
@@ -35,8 +36,8 @@ def test_agreed_keys_dispatch(monkeypatch) -> None:
         lambda value: calls.append("G"),
     )
     monkeypatch.setattr(
-        llm_workflows,
-        "run_workflow_menu",
+        llm_workflow_editor,
+        "open_workflow_editor",
         lambda value: calls.append("W"),
     )
     monkeypatch.setattr(
@@ -81,7 +82,7 @@ def test_help_shows_every_llm_key_and_remaps_history(capsys) -> None:
         "(G) Catalog/Batch Editor",
         "(2/3/4) Light/Deep/Extreme",
         "(b) Run Batch",
-        "(W) Choose Workflow",
+        "(W) Workflow Editor/Run",
         "(w) Repeat Workflow",
         "(O) Refresh OpenRouter",
     ):
