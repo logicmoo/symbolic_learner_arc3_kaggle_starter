@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "title": "ARC3 Workflow Task Catalog",
+  "title": "Symbolic Workflow Task Catalog",
   "datatypes_manifest": "workflow_datatypes.json",
   "tasks": [
     {

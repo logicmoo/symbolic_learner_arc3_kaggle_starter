@@ -2,7 +2,7 @@
 
 # LLM Provider, Model, and Profile Catalog
 
-ARC3 routes one shared multimodal artifact pipeline through an editable catalog:
+The symbolic workbench routes one shared multimodal artifact pipeline through an editable catalog:
 
 [`llm_providers.json`](llm_providers.json)
 
@@ -16,7 +16,7 @@ This means OpenRouter authentication and endpoint settings appear once even thou
 
 See [Single and Batch Model Profiles](LLM_BATCH.md) for the interactive editor and batch workflow.
 
-See [ARC3 Datatypes Manifest Explained](../docs/DATATYPES_MANIFEST_EXPLAINED.md) for the semantic-information, typed-silo, task-port, implementation-species, provenance, and event-driven workflow model, together with the generated datatype graph.
+See [Symbolic Datatypes Manifest Explained](../docs/DATATYPES_MANIFEST_EXPLAINED.md) for the semantic-information, typed-silo, task-port, implementation-species, provenance, and event-driven workflow model, together with the generated datatype graph.
 
 ## Catalog shape
 
@@ -189,7 +189,7 @@ set ARC3_UNSLOTH_MODEL=unsloth/gemma-4-E2B-it-GGUF
 set ARC3_UNSLOTH_BASE_URL=http://127.0.0.1:8888/v1
 ```
 
-ARC3 checks inference status, reuses a matching loaded model, or loads the configured GGUF and waits for readiness.
+The workbench checks inference status, reuses a matching loaded model, or loads the configured GGUF and waits for readiness.
 
 ```dotenv
 ARC3_UNSLOTH_AUTO_LOAD=1

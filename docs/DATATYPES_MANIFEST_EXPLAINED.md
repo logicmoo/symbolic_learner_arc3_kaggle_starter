@@ -1,8 +1,8 @@
 [← Back to top-level README](../README.md) · [LLM and workflow configuration](../config/README.md)
 
-# ARC3 Datatypes Manifest Explained
+# Symbolic Datatypes Manifest Explained
 
-The ARC3 workflow system does not merely pass files or strings from one task to another. It passes **typed information silos** through a graph of workflow tasks.
+The symbolic workflow system does not merely pass files or strings from one task to another. It passes **typed information silos** through a graph of workflow tasks.
 
 Each silo contains information. That information may be represented as text, an image, a Turtle program, Prolog facts, JSON, a report, or another concrete form. The representation alone is not enough to explain the information. A text value may be a free-form description, a birthdate, a rule explanation, an object identity, or a validation result. Those values may share the same physical representation while having very different meanings.
 
@@ -14,7 +14,7 @@ The datatype manifest therefore separates:
 - **task contracts** from the implementations that perform them;
 - and **workflow routing** from the data events that activate new branches.
 
-![ARC3 Workflow Datatype Graph](../config/workflow_datatypes.svg)
+![Symbolic Workflow Datatype Graph](../config/workflow_datatypes.svg)
 
 The machine-readable form of this graph is stored in [`workflow_datatypes.json`](../config/workflow_datatypes.json). Reusable task contracts and implementation routes are stored in [`workflow_tasks.json`](../config/workflow_tasks.json).
 
@@ -22,7 +22,7 @@ The machine-readable form of this graph is stored in [`workflow_datatypes.json`]
 
 ## 1. Information is the root concept
 
-Every ARC3 datatype depicts, carries, or organizes information.
+Every symbolic datatype depicts, carries, or organizes information.
 
 A useful root hierarchy is:
 
@@ -62,7 +62,7 @@ ISO Date
 Text-encoded Value
 ```
 
-Likewise, an ARC object can be simultaneously:
+Likewise, an observed object can be simultaneously:
 
 ```text
 Information
@@ -174,7 +174,7 @@ A silo may contain:
 - reports;
 - or a semantic bundle composed of several synchronized representations.
 
-Typical ARC3 silos include:
+Typical symbolic silos include:
 
 ```text
 current_scene_images
@@ -271,7 +271,7 @@ graph
 semantic_bundle
 ```
 
-Examples in ARC3:
+Examples in symbolic workflows:
 
 ```text
 before_scene_objects:
@@ -293,7 +293,7 @@ Cardinality is part of the contract. A task expecting one image should not silen
 
 ## 5. Semantic types may have several valid representations
 
-An important semantic type in ARC3 is:
+An important semantic type in symbolic analysis is:
 
 ```text
 individual_object
@@ -349,7 +349,7 @@ Individual Object
 └── Participation in knowledge  → rule references
 ```
 
-This is one of the central design ideas behind the ARC3 symbolic learner:
+This is one of the central design ideas behind the symbolic learner framework:
 
 > An object is not merely a pixel region. It is a semantic bundle with multiple synchronized representations.
 
@@ -403,7 +403,7 @@ dataset_bundle
 
 ### Artifact bundle
 
-An ARC3 artifact bundle may aggregate:
+A symbolic artifact bundle may aggregate:
 
 ```text
 artifact_bundle
@@ -556,7 +556,7 @@ Possible implementations include:
 
 ```text
 python:video_to_frames
-python:pull_from_arc3_state
+python:pull_from_world_state
 python:ask_user_to_upload
 python:pull_from_disk_directory
 python:clipboard_image
@@ -938,7 +938,7 @@ Branch Rule
 
 ## 18. Plain-English summary
 
-ARC3 represents the same information in several forms at once.
+The symbolic workbench may represent the same information in several forms at once.
 
 A single object may exist as:
 
