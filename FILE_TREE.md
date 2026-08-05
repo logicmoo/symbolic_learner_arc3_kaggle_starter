@@ -15,12 +15,24 @@ This is the clickable source map for the maintained repository. Every listed pat
 - [`TODO.md`](TODO.md) — post-delivery debugger maintenance plus concrete Phase 2 and Phase 3 implementation work.
 - [`SOW_DELIVERABLES.md`](SOW_DELIVERABLES.md) — completed Phase 1 debugger checklist and partial/open Phase 2 and Phase 3 outcomes with evidence links.
 - [`FILE_TREE.md`](FILE_TREE.md) — this clickable source map.
+- [`docs/WORLD_ANALYSIS_WORKBENCH.md`](docs/WORLD_ANALYSIS_WORKBENCH.md) — domain-neutral observations, information silos, world models, goals, simulations, and ARC3 human-demonstration workflow.
 
 The planning documents have deliberately separate scopes and cross-link one another:
 
 - architecture explains how the debugger, object memory, and learner are designed;
 - TODO tracks what is actively being implemented;
 - deliverables tracks what is delivered and what remains to be checked off.
+
+## World Analysis Workbench core
+
+- [`python/worldworkbench/core.py`](python/worldworkbench/core.py) — versioned information silos, observations, interventions, human demonstrations, world models, goals, simulations, and orchestration contracts.
+- [`python/worldworkbench/__init__.py`](python/worldworkbench/__init__.py) — public domain-neutral workbench API.
+- [`python/worldworkbench/adapters/arc3.py`](python/worldworkbench/adapters/arc3.py) — ARC3 observation, intervention, human-choice, and artifact translation boundary.
+- [`python/worldworkbench/adapters/__init__.py`](python/worldworkbench/adapters/__init__.py) — public ARC3 adapter exports.
+- [`config/world_workbench_datatypes.json`](config/world_workbench_datatypes.json) — domain-neutral semantic and representation datatype manifest.
+- [`config/world_workbench_tasks.json`](config/world_workbench_tasks.json) — reusable processing-resource contracts, including object extraction and Turtle representation tasks.
+- [`config/llm_workflows.json`](config/llm_workflows.json) — runnable workflow-desktop catalog, including the seven-step `ls20` human-observation workflow and its nested subworkflows.
+- [`python/workflow_task_editor.py`](python/workflow_task_editor.py) — MeTTaFlowWorkbench desktop for composing, validating, inspecting, saving, and running typed tasks and nested subworkflows.
 
 ## Repository configuration and protected Kaggle surface
 
@@ -69,7 +81,7 @@ The planning documents have deliberately separate scopes and cross-link one anot
 - [`python/action_tree.py`](python/action_tree.py) — deterministic action tree, rendered state metadata, encounter/action history, replay paths, generated READMEs, level-wide `object_registry.pl`, and provider artifact storage.
 - [`python/gpt_bridge.py`](python/gpt_bridge.py) — provider-selected prompt, shared multimodal request, artifact generation, friendly-identity normalization, and debugger-visible Prolog outputs; it is a bridge, not the final native object learner.
 - [`python/swipl_bridge.py`](python/swipl_bridge.py) — subprocess bridge into SWI-Prolog and the Turtle interpreter; later semantic queries extend this bridge.
-- [`python/project_paths.py`](python/project_paths.py) — unified config, action-tree, history, and export path access.
+- [`python/project_paths.py`](python/project_paths.py) — unified workbench/legacy ARC3 config, analysis-run/action-tree, history, and export path access.
 - [`python/image_codec.py`](python/image_codec.py) — authoritative rendered-frame extraction and PNG encoding used by debugger state capture.
 
 ## Shared Python object-memory and learner contracts
@@ -114,6 +126,7 @@ The planning documents have deliberately separate scopes and cross-link one anot
 - [`tests/test_object_memory_contracts.py`](tests/test_object_memory_contracts.py) — provider normalization, residual admission, `SingleWriter`, rules, connected Phase 3 flow, prediction ordering, Kaggle-path, and runner-placement tests.
 - [`tests/test_documentation_links.py`](tests/test_documentation_links.py) — root-document coverage, cross-links, valid file-tree links, and descriptions.
 - [`tests/test_runtime_home.py`](tests/test_runtime_home.py) — code-root precedence and script bootstrap coverage.
+- [`tests/test_world_workbench.py`](tests/test_world_workbench.py) — versioned silos, goal-directed simulation, human-demonstration observation, ARC3 adapter isolation, and seven-step workflow tests.
 - [`prolog/test_object_memory.pl`](prolog/test_object_memory.pl) — Prolog tests for residuals, commitments, rules, connected Phase 3 flow, and prediction grading.
 - [`prolog/test_turtle_dsl.pl`](prolog/test_turtle_dsl.pl) — Turtle movement, pen state, pen width, and thick/thin equivalence tests.
 

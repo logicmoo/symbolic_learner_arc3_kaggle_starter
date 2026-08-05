@@ -395,6 +395,75 @@
         {"id": "rules", "transaction": "induce_rules_from_prolog", "profile": "openrouter-north-mini-code-rules"},
         {"id": "audit", "transaction": "audit_artifact_bundle", "profile": "openrouter-gpt-oss-20b-audit", "continue_on_error": true}
       ]
+    },
+    {
+      "id": "arc3_objectify_observation",
+      "kind": "subworkflow",
+      "label": "Subworkflow: objectify one ARC3 observation",
+      "description": "Normalize an observation, extract stable objects, synchronize image/Prolog/Turtle forms, and render the Turtle programs.",
+      "input_slots": {"images": "source_images"},
+      "output_slots": {"object_manifest": "object_manifest", "turtle_images": "turtle_images"},
+      "steps": [
+        {"id": "normalize", "task": "normalize_image_collection", "implementation": "pillow_png", "inputs": {"images": "source_images"}, "outputs": {"images": "normalized_images", "manifest": "normalized_manifest"}},
+        {"id": "extract_objects", "task": "extract_individual_objects", "implementation": "vision_llm", "profile": "openai-gpt-5.6-light", "inputs": {"images": "normalized_images"}, "outputs": {"objects": "objects", "object_manifest": "object_manifest", "turtle": "turtle_programs"}},
+        {"id": "synchronize", "task": "synchronize_object_representations", "implementation": "python_manifest", "inputs": {"objects": "objects", "images": "normalized_images"}, "outputs": {"object_manifest": "object_manifest"}},
+        {"id": "render_turtle", "task": "turtlized_objects_to_images", "implementation": "python_turtle_renderer", "inputs": {"turtle": "turtle_programs", "objects": "object_manifest"}, "outputs": {"images": "turtle_images", "render_manifest": "turtle_render_manifest"}}
+      ]
+    },
+    {
+      "id": "arc3_capture_and_objectify",
+      "kind": "subworkflow",
+      "label": "Subworkflow: capture and objectify current ARC3 state",
+      "description": "Capture the runner's current state and reuse the objectification subworkflow.",
+      "input_slots": {},
+      "output_slots": {"images": "captured_images", "object_manifest": "object_manifest", "turtle_images": "turtle_images"},
+      "steps": [
+        {"id": "capture", "task": "grab_image_source", "implementation": "arc3_state", "outputs": {"images": "captured_images", "manifest": "captured_manifest"}},
+        {"id": "objectify", "subworkflow": "arc3_objectify_observation", "inputs": {"images": "captured_images"}, "outputs": {"object_manifest": "object_manifest", "turtle_images": "turtle_images"}}
+      ]
+    },
+    {
+      "id": "arc3_analyze_demonstration",
+      "kind": "subworkflow",
+      "label": "Subworkflow: analyze before/action/after",
+      "description": "Compare objectified states and produce transition evidence for one human demonstration.",
+      "input_slots": {"before": "before_scene", "after": "after_scene", "objects": "object_manifest"},
+      "output_slots": {"transition": "transition_evidence"},
+      "steps": [
+        {"id": "compare", "task": "compare_scene_objects", "implementation": "symbolic_llm", "profile": "groq-qwen-3.6-27b-deep", "inputs": {"before": "before_scene", "after": "after_scene", "objects": "object_manifest"}, "outputs": {"transition": "transition_evidence"}}
+      ]
+    },
+    {
+      "id": "arc3_update_world_understanding",
+      "kind": "subworkflow",
+      "label": "Subworkflow: update world rules and evidence",
+      "description": "Induce candidate dynamics, validate the evidence bundle, publish a report, and ask whether to observe another action.",
+      "input_slots": {"transition": "transition_evidence", "objects": "object_manifest", "next": "next_object_manifest"},
+      "output_slots": {"rules": "candidate_rules", "report": "world_report", "current": "updated_current_object_manifest", "continue": "continue_observing"},
+      "steps": [
+        {"id": "induce_rules", "task": "induce_transition_rules", "implementation": "rule_llm", "profile": "openrouter-north-mini-code-rules", "inputs": {"transition": "transition_evidence", "objects": "object_manifest"}, "outputs": {"rules": "candidate_rules"}},
+        {"id": "validate", "task": "validate_artifact_bundle", "implementation": "python_validator", "inputs": {"bundle": "artifact_bundle"}, "outputs": {"validation": "validation", "audit": "audit_report"}},
+        {"id": "report", "task": "publish_workflow_report", "implementation": "markdown_report", "inputs": {"bundle": "artifact_bundle", "validation": "validation"}, "outputs": {"report": "world_report"}},
+        {"id": "advance", "task": "advance_observation", "implementation": "slot_passthrough", "inputs": {"next": "next_object_manifest"}, "outputs": {"current": "updated_current_object_manifest"}},
+        {"id": "continue", "task": "continue_human_observation", "implementation": "human_confirmation", "outputs": {"continue": "continue_observing"}}
+      ]
+    },
+    {
+      "id": "arc3_human_observation",
+      "kind": "workflow",
+      "mode": "human_demonstration",
+      "label": "ARC3: learn a world by observing a human",
+      "description": "Seven top-level stages. Running this from the workflow desktop starts ls20, objectifies the initial state, pauses for human actions, learns from transitions, and repeats while requested.",
+      "repeat": {"from": "human_chooses_action", "while_slot": "continue_observing", "max_iterations": 1000},
+      "steps": [
+        {"id": "select_world", "task": "select_arc3_world", "implementation": "arc3_game_selector", "parameters": {"game_id": "ls20"}, "outputs": {"world": "selected_world"}},
+        {"id": "capture_initial_observation", "task": "grab_image_source", "implementation": "arc3_state", "outputs": {"images": "current_images", "manifest": "current_image_manifest"}},
+        {"id": "objectify_observation", "subworkflow": "arc3_objectify_observation", "inputs": {"images": "current_images"}, "outputs": {"object_manifest": "current_object_manifest", "turtle_images": "current_turtle_images"}},
+        {"id": "human_chooses_action", "task": "await_human_arc3_action", "implementation": "interactive_runner_controls", "inputs": {"world": "selected_world"}, "outputs": {"intervention": "human_intervention"}},
+        {"id": "capture_resulting_observation", "subworkflow": "arc3_capture_and_objectify", "inputs": {}, "outputs": {"images": "next_images", "object_manifest": "next_object_manifest", "turtle_images": "next_turtle_images"}},
+        {"id": "analyze_transition", "subworkflow": "arc3_analyze_demonstration", "inputs": {"before": "current_object_manifest", "after": "next_object_manifest", "objects": "next_object_manifest"}, "outputs": {"transition": "transition_evidence"}},
+        {"id": "update_world_understanding", "subworkflow": "arc3_update_world_understanding", "inputs": {"transition": "transition_evidence", "objects": "next_object_manifest", "next": "next_object_manifest"}, "outputs": {"rules": "candidate_rules", "report": "world_report", "current": "current_object_manifest", "continue": "continue_observing"}}
+      ]
     }
   ]
 }

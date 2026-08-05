@@ -138,3 +138,58 @@ def test_text_only_profile_cannot_run_vision_transaction(monkeypatch):
 
     with pytest.raises(RuntimeError, match="needs vision"):
         engine._resolve_profile(step, transaction)
+
+
+def test_workflow_repeat_restarts_at_named_step_while_slot_is_true(
+    tmp_path, monkeypatch
+):
+    monkeypatch.setenv("ARC3_OPENROUTER_VERIFY_MODELS", "0")
+    path = tmp_path / "repeat_workflow.json"
+    path.write_text(
+        json.dumps(
+            {
+                "llm_transactions": [
+                    {"id": "mark", "kind": "runner_method", "runner_method": "mark"},
+                    {"id": "decide", "kind": "runner_method", "runner_method": "decide"},
+                ],
+                "llm_workflows": [
+                    {
+                        "id": "repeat_twice",
+                        "repeat": {
+                            "from": "mark",
+                            "while_slot": "again",
+                            "max_iterations": 3,
+                        },
+                        "steps": [
+                            {"id": "mark", "transaction": "mark"},
+                            {"id": "decide", "transaction": "decide"},
+                        ],
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    router = WorkflowAwareLlmProviderRouter(DEFAULT_CONFIG_PATH, workflow_path=path)
+
+    class Runner:
+        def __init__(self):
+            self.marks = 0
+            self.engine = None
+
+        def llm_router(self):
+            return router
+
+        def mark(self):
+            self.marks += 1
+
+        def decide(self):
+            self.engine._workflow_slots = {
+                "again": SimpleNamespace(value=self.marks < 2)
+            }
+
+    runner = Runner()
+    engine = LlmWorkflowEngine(runner)
+    runner.engine = engine
+    engine.run("repeat_twice")
+    assert runner.marks == 2

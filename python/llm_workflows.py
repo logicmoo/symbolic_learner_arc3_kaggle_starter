@@ -146,6 +146,9 @@ class WorkflowDefinition:
     label: str
     description: str
     steps: tuple[WorkflowStep, ...]
+    repeat_from: str | None
+    repeat_while_slot: str | None
+    max_iterations: int
 
     @classmethod
     def from_mapping(cls, raw: Mapping[str, Any]) -> "WorkflowDefinition":
@@ -157,15 +160,35 @@ class WorkflowDefinition:
             raise LlmConfigurationError(
                 f"Workflow {workflow_id!r} requires a nonempty steps list"
             )
+        repeat = raw.get("repeat") or {}
+        if not isinstance(repeat, Mapping):
+            raise LlmConfigurationError(f"Workflow {workflow_id!r} repeat must be an object")
+        repeat_from = _text(repeat.get("from")) or None
+        repeat_while_slot = _text(repeat.get("while_slot")) or None
+        max_iterations = int(repeat.get("max_iterations", 1000))
+        if bool(repeat_from) != bool(repeat_while_slot):
+            raise LlmConfigurationError(
+                f"Workflow {workflow_id!r} repeat needs from and while_slot"
+            )
+        if max_iterations < 1:
+            raise LlmConfigurationError("repeat max_iterations must be at least 1")
+        steps = tuple(
+            WorkflowStep.from_mapping(item)
+            for item in raw_steps
+            if isinstance(item, Mapping)
+        )
+        if repeat_from and repeat_from not in {step.step_id for step in steps}:
+            raise LlmConfigurationError(
+                f"Workflow {workflow_id!r} repeat starts at unknown step {repeat_from!r}"
+            )
         return cls(
             workflow_id=workflow_id,
             label=_text(raw.get("label")) or workflow_id,
             description=_text(raw.get("description")),
-            steps=tuple(
-                WorkflowStep.from_mapping(item)
-                for item in raw_steps
-                if isinstance(item, Mapping)
-            ),
+            steps=steps,
+            repeat_from=repeat_from,
+            repeat_while_slot=repeat_while_slot,
+            max_iterations=max_iterations,
         )
 
 
@@ -188,6 +211,7 @@ class WorkflowAwareLlmProviderRouter(CatalogAwareLlmProviderRouter):
         self.base_catalog_path = Path(config_path).expanduser().resolve()
         self.workflow_path = Path(
             workflow_path
+            or os.environ.get("WORLD_WORKBENCH_WORKFLOW_CONFIG")
             or os.environ.get("ARC3_LLM_WORKFLOW_CONFIG")
             or DEFAULT_WORKFLOW_PATH
         ).expanduser().resolve()
@@ -261,6 +285,10 @@ class WorkflowAwareLlmProviderRouter(CatalogAwareLlmProviderRouter):
             WorkflowDefinition.from_mapping(item)
             for item in extension.get("llm_workflows") or []
             if isinstance(item, Mapping)
+            and all(
+                isinstance(step, Mapping) and _text(step.get("transaction"))
+                for step in item.get("steps") or []
+            )
         )
         self.workflow_by_id = {item.workflow_id: item for item in self.workflows}
         if len(self.workflow_by_id) != len(self.workflows):
@@ -695,76 +723,104 @@ class LlmWorkflowEngine:
             result.append((group, transaction, profile))
         return result
 
+    def _run_step_group(
+        self,
+        group: list[WorkflowStep],
+        transaction: TransactionDefinition,
+        profile: ProfileDefinition | None,
+    ) -> None:
+        if len(group) > 1:
+            transactions = [
+                self.router.transaction_by_id[step.transaction_id] for step in group
+            ]
+            output_keys: list[str] = []
+            for item in transactions:
+                for key in item.output_keys:
+                    if key not in output_keys:
+                        output_keys.append(key)
+            instructions = "\n\n".join(
+                item.instructions for item in transactions if item.instructions
+            )
+            merged = replace(
+                transaction,
+                label=" + ".join(item.label for item in transactions),
+                include_parent_image=any(item.include_parent_image for item in transactions),
+                include_current_image=any(item.include_current_image for item in transactions),
+                input_files=tuple(
+                    dict.fromkeys(
+                        filename for item in transactions for filename in item.input_files
+                    )
+                ),
+            )
+            assert profile is not None
+            self._run_artifact_transaction(
+                merged,
+                profile,
+                output_keys=output_keys,
+                combined_instructions=instructions,
+            )
+            return
+
+        step = group[0]
+        transaction = self.router.transaction_by_id[step.transaction_id]
+        profile = self._resolve_profile(step, transaction)
+        if transaction.kind == "runner_method":
+            self._run_runner_method(transaction)
+        elif transaction.kind == "full_analysis":
+            assert profile is not None
+            self._run_full_analysis(transaction, profile)
+        elif transaction.kind == "llm_artifacts":
+            assert profile is not None
+            self._run_artifact_transaction(transaction, profile)
+        elif transaction.kind == "llm_text":
+            assert profile is not None
+            self._run_text_transaction(transaction, profile)
+
     def run(self, workflow_id: str) -> None:
         workflow = self.router.workflow_by_id[workflow_id]
         selected_model = self.router.active_model().model_id
         print(f"\nWORKFLOW: {workflow.label}")
         if workflow.description:
             print(workflow.description)
-        for group, transaction, profile in self._combined_steps(workflow):
+        groups = self._combined_steps(workflow)
+        repeat_index = None
+        if workflow.repeat_from:
+            repeat_index = next(
+                index
+                for index, (group, _transaction, _profile) in enumerate(groups)
+                if any(step.step_id == workflow.repeat_from for step in group)
+            )
+        index = 0
+        iteration = 1
+        while index < len(groups):
+            group, transaction, profile = groups[index]
             step_names = ", ".join(step.step_id for step in group)
             print(f"\nWorkflow step(s): {step_names}")
             try:
-                if len(group) > 1:
-                    transactions = [
-                        self.router.transaction_by_id[step.transaction_id]
-                        for step in group
-                    ]
-                    output_keys: list[str] = []
-                    for item in transactions:
-                        for key in item.output_keys:
-                            if key not in output_keys:
-                                output_keys.append(key)
-                    instructions = "\n\n".join(
-                        item.instructions for item in transactions if item.instructions
-                    )
-                    merged = replace(
-                        transaction,
-                        label=" + ".join(item.label for item in transactions),
-                        include_parent_image=any(
-                            item.include_parent_image for item in transactions
-                        ),
-                        include_current_image=any(
-                            item.include_current_image for item in transactions
-                        ),
-                        input_files=tuple(
-                            dict.fromkeys(
-                                filename
-                                for item in transactions
-                                for filename in item.input_files
-                            )
-                        ),
-                    )
-                    assert profile is not None
-                    self._run_artifact_transaction(
-                        merged,
-                        profile,
-                        output_keys=output_keys,
-                        combined_instructions=instructions,
-                    )
-                    continue
-
-                step = group[0]
-                transaction = self.router.transaction_by_id[step.transaction_id]
-                profile = self._resolve_profile(step, transaction)
-                if transaction.kind == "runner_method":
-                    self._run_runner_method(transaction)
-                elif transaction.kind == "full_analysis":
-                    assert profile is not None
-                    self._run_full_analysis(transaction, profile)
-                elif transaction.kind == "llm_artifacts":
-                    assert profile is not None
-                    self._run_artifact_transaction(transaction, profile)
-                elif transaction.kind == "llm_text":
-                    assert profile is not None
-                    self._run_text_transaction(transaction, profile)
+                self._run_step_group(group, transaction, profile)
             except Exception as exc:
                 if all(step.continue_on_error for step in group):
                     print(f"Workflow step failed but is optional: {exc}")
+                    index += 1
                     continue
                 raise RuntimeError(
                     f"Workflow {workflow.workflow_id!r} stopped at {step_names}: {exc}"
                 ) from exc
+            index += 1
+            if index == len(groups) and repeat_index is not None:
+                slot = getattr(self, "_workflow_slots", {}).get(
+                    workflow.repeat_while_slot
+                )
+                should_repeat = bool(getattr(slot, "value", slot))
+                if should_repeat:
+                    iteration += 1
+                    if iteration > workflow.max_iterations:
+                        raise RuntimeError(
+                            f"Workflow {workflow.workflow_id!r} exceeded "
+                            f"{workflow.max_iterations} iterations"
+                        )
+                    print(f"\nRepeating workflow from {workflow.repeat_from} (iteration {iteration}).")
+                    index = repeat_index
         try:
             self.router.select_model(selected_model)
         except Exception:
