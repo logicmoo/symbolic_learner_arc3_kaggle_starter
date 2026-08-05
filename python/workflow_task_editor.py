@@ -35,12 +35,12 @@ def validate_write(runner,path,raw):
 
 def gui(runner,path,raw):
     import tkinter as tk
-    from tkinter import messagebox,ttk
+    from tkinter import messagebox,simpledialog,ttk
     router=runner.llm_router();ensure_example(raw);workflows=raw["llm_workflows"]
-    catalog=read_obj(DEFAULT_TASK_PATH);tasks={x["id"]:x for x in catalog["tasks"]};task_ids=list(tasks)
+    catalog=read_obj(DEFAULT_TASK_PATH);tasks={x["id"]:x for x in catalog["tasks"]};task_ids=list(tasks);subworkflow_ids=[txt for txt in (str(x.get("id") or "") for x in workflows) if txt]
     datatypes=read_obj(DEFAULT_DATATYPE_PATH)["types"];profiles=sorted(router.profile_by_id);models=["$selected",*sorted(router.model_by_id)]
-    root=tk.Tk();root.title("ARC3 Typed Workflow Editor");root.geometry("1600x900")
-    ttk.Label(root,text="Task items bind typed input/output slots and route to LLM, Prolog, or Python implementations.").pack(anchor="w",padx=10,pady=(10,3))
+    root=tk.Tk();root.title("MeTTaFlowWorkbench — Workflow Desktop");root.geometry("1600x900")
+    ttk.Label(root,text="Compose typed tasks and reusable subworkflows, then run the selected world-analysis workflow.").pack(anchor="w",padx=10,pady=(10,3))
     tabs=ttk.Notebook(root);tabs.pack(fill="both",expand=True,padx=10)
     wf_tab=ttk.Frame(tabs);task_tab=ttk.Frame(tabs);dt_tab=ttk.Frame(tabs)
     tabs.add(wf_tab,text="Workflows");tabs.add(task_tab,text="Tasks / implementations");tabs.add(dt_tab,text="Datatype manifest")
@@ -69,6 +69,9 @@ def gui(runner,path,raw):
         for i,w in enumerate(workflows):wtree.insert("","end",iid=str(i),values=(w.get("label") or w.get("id"),len(w.get("steps") or [])))
         if select is not None:wtree.selection_set(str(select));wtree.focus(str(select))
     def summary(s):
+        if s.get("subworkflow"):
+            ins=", ".join(f"{a}←{b}" for a,b in (s.get("inputs") or {}).items());outs=", ".join(f"{a}→{b}" for a,b in (s.get("outputs") or {}).items())
+            return ("subworkflow",s.get("subworkflow",""),"nested workflow",ins,outs)
         if s.get("task"):
             ins=", ".join(f"{a}←{b}" for a,b in (s.get("inputs") or {}).items());outs=", ".join(f"{a}→{b}" for a,b in (s.get("outputs") or {}).items())
             return ("task",s.get("task",""),s.get("implementation",""),ins,outs)
@@ -123,10 +126,26 @@ def gui(runner,path,raw):
         if not current():return
         s={"id":f"task_{len(current().setdefault('steps',[]))+1}","task":task_ids[0],"implementation":tasks[task_ids[0]]["implementations"][0]["id"],"inputs":{},"outputs":{},"parameters":{}}
         if task_dialog(s,"Add typed task"):current()["steps"].append(s);refresh_s()
+    def subworkflow_dialog(step,title):
+        available=[x for x in subworkflow_ids if x!=wid.get().strip()]
+        chosen=simpledialog.askstring(title,"Subworkflow ID:\n"+"\n".join(available),initialvalue=step.get("subworkflow",available[0] if available else ""),parent=root)
+        if not chosen:return False
+        try:
+            inputs=json.loads(simpledialog.askstring(title,"Input bindings JSON (subworkflow port → current slot)",initialvalue=json.dumps(step.get("inputs") or {},indent=2),parent=root) or "{}")
+            outputs=json.loads(simpledialog.askstring(title,"Output bindings JSON (subworkflow port → new slot)",initialvalue=json.dumps(step.get("outputs") or {},indent=2),parent=root) or "{}")
+        except Exception as e:messagebox.showerror("Invalid JSON",str(e),parent=root);return False
+        step_id=step.get("id") or f"subworkflow_{len(current().setdefault('steps',[]))+1}";step.clear();step.update({"id":step_id,"subworkflow":chosen.strip(),"inputs":inputs,"outputs":outputs});return True
+    def add_subworkflow():
+        if not current():return
+        s={"id":f"subworkflow_{len(current().setdefault('steps',[]))+1}","subworkflow":"","inputs":{},"outputs":{}}
+        if subworkflow_dialog(s,"Add subworkflow"):current()["steps"].append(s);refresh_s()
     def edit_task():
         i=step_index()
         if i is None:return
         s=current()["steps"][i]
+        if s.get("subworkflow"):
+            if subworkflow_dialog(s,"Edit subworkflow"):refresh_s();stree.selection_set(str(i))
+            return
         if not s.get("task"):messagebox.showinfo("Legacy transaction","Use Edit Raw JSON for legacy transaction items.");return
         if task_dialog(s,"Edit typed task"):refresh_s();stree.selection_set(str(i))
     def delete_step():
@@ -139,7 +158,7 @@ def gui(runner,path,raw):
         if 0<=j<len(current()["steps"]):current()["steps"][i],current()["steps"][j]=current()["steps"][j],current()["steps"][i];refresh_s();stree.selection_set(str(j))
     wtree.bind("<<TreeviewSelect>>",load);stree.bind("<Double-1>",lambda _:edit_task())
     ttk.Button(lbuttons,text="New",command=new_workflow).pack(side="left");ttk.Button(lbuttons,text="Add Typed Example",command=add_example).pack(side="left",padx=4);ttk.Button(lbuttons,text="Delete",command=delete_workflow).pack(side="right")
-    for text,cmd in (("Add Task",add_task),("Edit Task",edit_task),("Delete",delete_step),("Move Up",lambda:move(-1)),("Move Down",lambda:move(1))):ttk.Button(sbuttons,text=text,command=cmd).pack(side="left",padx=2)
+    for text,cmd in (("Add Task",add_task),("Add Subworkflow",add_subworkflow),("Edit Item",edit_task),("Delete",delete_step),("Move Up",lambda:move(-1)),("Move Down",lambda:move(1))):ttk.Button(sbuttons,text=text,command=cmd).pack(side="left",padx=2)
     task_tab.columnconfigure(0,weight=1);task_tab.rowconfigure(0,weight=1);tt=ttk.Treeview(task_tab,columns=("task","ports","routes"),show="headings");tt.heading("task",text="Task");tt.heading("ports",text="Typed ports");tt.heading("routes",text="Implementation species / routes");tt.column("task",width=250);tt.column("ports",width=550);tt.column("routes",width=700);tt.grid(row=0,column=0,sticky="nsew",padx=8,pady=8)
     for t in tasks.values():tt.insert("","end",values=(t["id"],", ".join([*[f"in {k}:{v}" for k,v in t.get("inputs",{}).items()],*[f"out {k}:{v}" for k,v in t.get("outputs",{}).items()]]),", ".join(f"{x['id']} [{x['species']}]" for x in t["implementations"])))
     dt_tab.columnconfigure(0,weight=1);dt_tab.rowconfigure(0,weight=1);dt=ttk.Treeview(dt_tab,columns=("id","kind","meaning","relations"),show="headings")
@@ -160,7 +179,7 @@ def open_task_editor(runner):
     r=runner.llm_router()
     if not isinstance(r,TaskAwareWorkflowRouter):raise RuntimeError("Typed task router not installed")
     path=Path(r.workflow_path);raw=read_obj(path)
-    if os.getenv("ARC3_LLM_WORKFLOW_EDITOR","").lower() in {"text","cli","console"}:return run_workflow_menu(runner)
+    if (os.getenv("METTAFLOW_WORKFLOW_DESKTOP") or os.getenv("ARC3_LLM_WORKFLOW_EDITOR","")).lower() in {"text","cli","console"}:return run_workflow_menu(runner)
     try:gui(runner,path,raw)
     except Exception as e:print(f"Typed workflow GUI unavailable ({e}); using text menu.");run_workflow_menu(runner)
 

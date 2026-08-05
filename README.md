@@ -1,9 +1,104 @@
-# Symbolic Learner ARC3 Kaggle Starter
+# LogicMOO MeTTaFlowWorkbench
 
-This repository combines the delivered ARC3 debugger and extensible inspection framework, the protected ARC-AGI-3 Kaggle workflow, and the connected architecture for later object memory, learning, and prediction.
+**MeTTaFlowWorkbench** is a workflow desktop for running inspectable experiments
+that mix symbolic AI, LLMs, visual analysis, executable representations, and
+ordinary software modules. This repository uses it as a general workbench for
+learning worlds from observation and
+using goals to decide what to simulate, test, or do next. It converts raw
+observations into typed information, entities, relationships, evidence,
+hypotheses, rules, and an executable internal world model. Supplied or inferred
+goals then focus simulation on the outcomes that matter.
+
+ARC-AGI-3 is the first complete application of the workbench. It supplies visual
+observations, interventions, episodes, and success conditions, but it does not
+define the core architecture. The protected ARC3 debugger and Kaggle workflow
+remain available as an application adapter.
+
+```mermaid
+flowchart TD
+    O["Observe a world"] --> A["Analyze observations"]
+    A --> M["Update internal world model"]
+    M --> G["Infer or receive goals"]
+    G --> S["Select and run simulations"]
+    S --> E["Evaluate, act, or observe again"]
+    E --> O
+```
+
+The domain-neutral Python API lives in [`python/worldworkbench`](python/worldworkbench).
+Its central shared resource is `WorldAnalysisState`: an append-only set of
+named, typed, versioned information silos. See
+[`docs/WORLD_ANALYSIS_WORKBENCH.md`](docs/WORLD_ANALYSIS_WORKBENCH.md) for the
+architecture and the ARC3 adapter boundary.
+
+## MeTTaFlowWorkbench workflow desktop
+
+MeTTaFlowWorkbench combines the strongest ideas of several analysis systems
+into one workflow desktop suited to neurosymbolic experiments:
+
+| Inspiration | Idea retained in MeTTaFlowWorkbench |
+|---|---|
+| GATE | Reusable processing resources, visual resources, controllers, and inspection of every intermediate analysis |
+| Apache UIMA | A shared, typed analysis state that processors enrich instead of reducing everything to untyped files or JSON |
+| Galaxy | Saved experiment workflows, reproducible histories, provenance, reruns, and inspectable outputs at each stage |
+| LogicMOO / MeTTa | Symbolic facts, executable rules, object identities, learned world models, and composable reasoning modules |
+| LLM agent tooling | Selectable models, prompts, reasoning budgets, multimodal calls, transcripts, critiques, and independent validation |
+
+The result is not an NLP-only pipeline, a generic job scheduler, or an
+image-generation graph. A workflow is an experiment over typed information.
+Its top-level steps may be individual tasks or reusable nested subworkflows.
+Each task declares its input and output ports, while its selected implementation
+may be Python, SWI-Prolog, an LLM, Turtle execution, or another registered
+module. MeTTa is an intended symbolic implementation route; the current checked
+in routes are Python, Prolog, and LLM-backed tasks.
+
+During execution, intermediate values are retained as named information silos
+with type, producer, version, confidence, and provenance. The desktop exposes
+the workflow, task/implementation catalog, and datatype manifest; execution
+also writes the observation images, Prolog facts, Turtle programs and renders,
+LLM transcripts, validation reports, and learned rules into the evidence
+history so an experiment can be inspected as it runs and revisited afterward.
+
+Inside the interactive debugger, press uppercase **`W`** to open the workflow
+desktop. Select a workflow and choose **Save and Run Selected**. The desktop
+validates typed task ports, recursively expands subworkflows with isolated
+internal slots, rejects cycles or invalid port bindings, and then runs the
+experiment through the active workbench runner.
+
+### First ARC3 workflow: learn by watching a human
+
+The first application workflow starts `ls20` by default, captures and
+objectifies the initial state, pauses for a human-selected action, captures and
+objectifies the resulting state, analyzes the before/action/after example, and
+updates the emerging world model before repeating. Objectification includes
+stable identities, Prolog properties, Turtle programs, and Turtle render
+comparison. The seven top-level steps are defined in
+the runnable [`config/llm_workflows.json`](config/llm_workflows.json) catalog as
+`arc3_human_observation` and can be launched with **Save and Run Selected** in
+the workflow desktop.
+
+### Flagship demonstration: an ARC3 solver built in the framework
+
+From the same desktop we will demonstrate an ARC3 solver authored as a
+MeTTaFlowWorkbench experiment. The solver is not a separate hard-wired program:
+its perception, objectification, identity tracking, Turtle reconstruction,
+transition analysis, world learning, goal reasoning, simulation, action
+selection, and outcome evaluation are tasks and subworkflows in the framework.
+
+The human-observation workflow is the solver's apprenticeship and debugging
+mode. It lets a person supply actions while the system learns what changes and
+which outcomes appear important. Autonomous mode keeps the same observation,
+objectification, evidence, and world-model subworkflows, but replaces the
+human-action step with goal-directed candidate simulation and action selection.
+This makes every solver decision inspectable through the same workflow ports,
+intermediate silos, Prolog/Turtle artifacts, LLM transcripts, and experiment
+history used during learning.
 
 ## Documentation
 
+- [World Analysis Workbench architecture](docs/WORLD_ANALYSIS_WORKBENCH.md) — observations, information silos, world models, goals, simulations, processing resources, and adapters.
+- [Domain-neutral datatype manifest](config/world_workbench_datatypes.json) — machine-readable types for the workbench core.
+- [Domain-neutral task catalog](config/world_workbench_tasks.json) — task contracts from observation through goal-directed simulation.
+- [Runnable workflows and subworkflows](config/llm_workflows.json) — includes the seven-stage `ls20` human-observation loop and its reusable objectification, capture, transition-analysis, and world-update subworkflows.
 - [Native Windows setup and troubleshooting](README_WINDOWS.md) — administrator long-path setup, Python and virtual-environment installation, batch launchers, line endings, SWI-Prolog, PyCharm, UNC paths, and native Kaggle commands.
 - [LLM providers, prompt sections, and comparison transcripts](config/README.md) — switch providers, compose provider-specific prompts, compare runs, and restore historical artifacts.
 - [ARC3 debugger guide](DEBUGGER.md) — debugger controls, action trees, pluggable GPT/Prolog analysis, Turtle mock display, web UI, replay, and provider evidence.
@@ -35,20 +130,20 @@ ARC3 does not assume that code, configuration, and generated action trees share 
 
 The Python code root is resolved in this order:
 
-1. `ARC3_RUNTIME_HOME`, when explicitly set to a valid checkout.
+1. `WORLD_WORKBENCH_HOME` (or legacy `ARC3_RUNTIME_HOME`), when explicitly set to a valid checkout.
 2. The nearest valid project root found while walking upward from the launch directory.
 3. The project root inferred from the running script/code location.
 
-An invalid explicit `ARC3_RUNTIME_HOME` is an error because it claims to select the code checkout.
+An invalid explicit `WORLD_WORKBENCH_HOME`/`ARC3_RUNTIME_HOME` is an error because it claims to select the code checkout.
 
 ### LLM provider and prompt configuration
 
 The selected `config/llm_providers.json` is resolved independently:
 
-1. `ARC3_LLM_CONFIG`.
-2. `ARC3_CONFIG_ROOT/llm_providers.json`.
+1. `WORLD_WORKBENCH_LLM_CONFIG` (or legacy `ARC3_LLM_CONFIG`).
+2. `WORLD_WORKBENCH_CONFIG_ROOT/llm_providers.json` (or legacy `ARC3_CONFIG_ROOT`).
 3. The nearest `config/llm_providers.json` found while walking upward from the launch directory.
-4. `ARC3_RUNTIME_HOME/config/llm_providers.json`, when present.
+4. The selected workbench/runtime home's `config/llm_providers.json`, when present.
 5. The config beside the running script/code checkout.
 
 This allows an experiment workspace to supply its own provider list and prompt sections while running code from another checkout.
@@ -57,9 +152,9 @@ This allows an experiment workspace to supply its own provider list and prompt s
 
 The writable action-tree root is resolved independently:
 
-1. `ARC3_TREE_ROOT`.
+1. `WORLD_WORKBENCH_RUN_ROOT` (or legacy `ARC3_TREE_ROOT`).
 2. The nearest existing `action_trees/` found while walking upward from the launch directory.
-3. `ARC3_RUNTIME_HOME/action_trees/`, when present.
+3. The selected workbench/runtime home's `action_trees/`, when present.
 4. The action-tree directory beside the running script/code checkout.
 5. A newly created `action_trees/` beside the selected code root when none exists.
 
@@ -67,7 +162,7 @@ Launching from a workspace that already contains `./action_trees/` keeps generat
 
 ### Environment files and startup report
 
-The nearest launch-directory `.env` is loaded first, followed by distinct runtime/script checkout `.env` files. Loading uses `override=False`, so shell and IDE variables still win. The resolved paths are exported through `ARC3_LAUNCH_CWD`, `ARC3_RUNTIME_HOME`, `ARC3_LLM_CONFIG`, `ARC3_CONFIG_ROOT`, and `ARC3_TREE_ROOT`.
+The nearest launch-directory `.env` is loaded first, followed by distinct runtime/script checkout `.env` files. Loading uses `override=False`, so shell and IDE variables still win. `WORLD_WORKBENCH_*` names are preferred by the general core; the existing `ARC3_*` names remain compatibility aliases for the application scripts.
 
 At startup ARC3 prints:
 

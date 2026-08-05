@@ -6,6 +6,11 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
+def _environment(primary: str, legacy: str) -> str:
+    """Read a workbench setting while preserving the ARC3-era name."""
+    return os.environ.get(primary, "").strip() or os.environ.get(legacy, "").strip()
+
+
 def _resolved_path(value: str | Path, *, base: Path) -> Path:
     path = Path(value).expanduser()
     if not path.is_absolute():
@@ -14,7 +19,7 @@ def _resolved_path(value: str | Path, *, base: Path) -> Path:
 
 
 def _launch_cwd() -> Path:
-    configured = os.environ.get("ARC3_LAUNCH_CWD", "").strip()
+    configured = _environment("WORLD_WORKBENCH_LAUNCH_CWD", "ARC3_LAUNCH_CWD")
     if configured:
         return _resolved_path(configured, base=Path.cwd())
     return Path.cwd().expanduser().resolve()
@@ -48,17 +53,17 @@ def _find_upward_directory(start: Path, name: str) -> Path | None:
 
 
 def _runtime_root() -> Path | None:
-    value = os.environ.get("ARC3_RUNTIME_HOME", "").strip()
+    value = _environment("WORLD_WORKBENCH_HOME", "ARC3_RUNTIME_HOME")
     return _resolved_path(value, base=_launch_cwd()) if value else None
 
 
 def config_root() -> Path:
     """Return the selected config directory without creating a fake source."""
-    explicit_root = os.environ.get("ARC3_CONFIG_ROOT", "").strip()
+    explicit_root = _environment("WORLD_WORKBENCH_CONFIG_ROOT", "ARC3_CONFIG_ROOT")
     if explicit_root:
         return _resolved_path(explicit_root, base=_launch_cwd())
 
-    explicit_file = os.environ.get("ARC3_LLM_CONFIG", "").strip()
+    explicit_file = _environment("WORLD_WORKBENCH_LLM_CONFIG", "ARC3_LLM_CONFIG")
     if explicit_file:
         return _resolved_path(explicit_file, base=_launch_cwd()).parent
 
@@ -79,7 +84,7 @@ def config_root() -> Path:
 
 
 def llm_config_path() -> Path:
-    configured = os.environ.get("ARC3_LLM_CONFIG", "").strip()
+    configured = _environment("WORLD_WORKBENCH_LLM_CONFIG", "ARC3_LLM_CONFIG")
     if configured:
         path = _resolved_path(configured, base=_launch_cwd())
     else:
@@ -100,7 +105,7 @@ def environment_files_root() -> Path:
 
 
 def action_trees_root() -> Path:
-    explicit = os.environ.get("ARC3_TREE_ROOT", "").strip()
+    explicit = _environment("WORLD_WORKBENCH_RUN_ROOT", "ARC3_TREE_ROOT")
     if explicit:
         root = _resolved_path(explicit, base=_launch_cwd())
     else:
@@ -118,6 +123,11 @@ def action_trees_root() -> Path:
                 root = (PROJECT_ROOT / "action_trees").resolve()
     root.mkdir(parents=True, exist_ok=True)
     return root
+
+
+def analysis_runs_root() -> Path:
+    """Domain-neutral name for the persisted observation/action evidence tree."""
+    return action_trees_root()
 
 
 def prompts_path() -> Path:

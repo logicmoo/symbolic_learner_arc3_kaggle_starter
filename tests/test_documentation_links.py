@@ -29,7 +29,14 @@ def _local_links(path: Path) -> tuple[str, ...]:
 
 
 def _maintained_markdown() -> tuple[Path, ...]:
-    excluded = {".git", ".venv", "vendor", "action_trees", "reference"}
+    excluded = {
+        ".git",
+        ".pytest_cache",
+        ".venv",
+        "vendor",
+        "action_trees",
+        "reference",
+    }
     return tuple(
         path
         for path in ROOT.rglob("*.md")
@@ -47,10 +54,6 @@ def test_root_document_set_and_old_names() -> None:
         "DOCUMENTATION.md",
     ):
         assert not (ROOT / obsolete).exists(), obsolete
-
-    docs_dir = ROOT / "docs"
-    if docs_dir.exists():
-        assert not tuple(docs_dir.glob("*.md")), "maintained Markdown must stay at root"
 
 
 def test_top_level_readme_links_every_root_document() -> None:
@@ -116,6 +119,7 @@ def test_file_tree_links_all_connected_architecture_files() -> None:
         "TODO.md",
         "SOW_DELIVERABLES.md",
         "FILE_TREE.md",
+        "docs/WORLD_ANALYSIS_WORKBENCH.md",
         "pyproject.toml",
         "requirements.txt",
         "scripts/_runtime.py",
@@ -130,6 +134,13 @@ def test_file_tree_links_all_connected_architecture_files() -> None:
         "scripts/build_notebook.py",
         "scripts/slim_framework.py",
         "python/interactive_runner.py",
+        "python/worldworkbench/__init__.py",
+        "python/worldworkbench/core.py",
+        "python/worldworkbench/adapters/__init__.py",
+        "python/worldworkbench/adapters/arc3.py",
+        "config/world_workbench_datatypes.json",
+        "config/world_workbench_tasks.json",
+        "config/llm_workflows.json",
         "python/object_memory/models.py",
         "python/object_memory/providers.py",
         "python/object_memory/forms.py",
@@ -153,6 +164,7 @@ def test_file_tree_links_all_connected_architecture_files() -> None:
         "tests/test_object_memory_contracts.py",
         "tests/test_documentation_links.py",
         "tests/test_runtime_home.py",
+        "tests/test_world_workbench.py",
         "prolog/test_object_memory.pl",
     }
     assert expected.issubset(links), sorted(expected.difference(links))
@@ -209,18 +221,25 @@ def test_pyproject_metadata_and_extras_match_repository() -> None:
     data = tomllib.loads(project_file.read_text(encoding="utf-8"))
     project = data["project"]
 
-    assert project["name"] == "logicmoo-arc3"
+    assert project["name"] == "logicmoo-world-workbench"
     assert project["description"] != "Add your description here"
     assert project["readme"] == "README.md"
     assert project["requires-python"] == ">=3.12"
     assert project["license"] == "LGPL-2.1-or-later"
-    assert "arc-agi>=0.9.9" in project["dependencies"]
+    assert "arc-agi>=0.9.9" not in project["dependencies"]
 
     extras = project["optional-dependencies"]
     assert {"debugger", "notebooks", "kaggle", "test", "all"}.issubset(extras)
+    assert "arc-agi>=0.9.9" in extras["debugger"]
+    assert "arc-agi>=0.9.9" in extras["kaggle"]
 
     setuptools = data["tool"]["setuptools"]
-    assert {"object_memory", "webui"}.issubset(set(setuptools["packages"]))
+    assert {
+        "object_memory",
+        "webui",
+        "worldworkbench",
+        "worldworkbench.adapters",
+    }.issubset(set(setuptools["packages"]))
     assert "interactive_runner" in setuptools["py-modules"]
     assert data["tool"]["setuptools"]["package-dir"]["webui"] == "webui"
     assert "python" in data["tool"]["pytest"]["ini_options"]["pythonpath"]

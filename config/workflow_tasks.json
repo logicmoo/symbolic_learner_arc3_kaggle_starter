@@ -4,6 +4,46 @@
   "datatypes_manifest": "workflow_datatypes.json",
   "tasks": [
     {
+      "id": "select_arc3_world",
+      "label": "Select ARC3 world",
+      "description": "Select and start an ARC3 environment such as ls20.",
+      "inputs": {"request": "source_request"},
+      "outputs": {"world": "json_object"},
+      "implementations": [
+        {"id": "arc3_game_selector", "label": "ARC3 game selector", "species": "python", "handler": "select_arc3_world"}
+      ]
+    },
+    {
+      "id": "await_human_arc3_action",
+      "label": "Await human ARC3 action",
+      "description": "Pause so a human demonstrator can choose an action, apply it, and record the intervention.",
+      "inputs": {"world": "json_object"},
+      "outputs": {"intervention": "json_object"},
+      "implementations": [
+        {"id": "interactive_runner_controls", "label": "Interactive runner controls", "species": "python", "handler": "await_human_arc3_action"}
+      ]
+    },
+    {
+      "id": "continue_human_observation",
+      "label": "Continue human observation",
+      "description": "Ask whether another before/action/after demonstration should be observed.",
+      "inputs": {},
+      "outputs": {"continue": "boolean"},
+      "implementations": [
+        {"id": "human_confirmation", "label": "Human confirmation", "species": "python", "handler": "continue_human_observation"}
+      ]
+    },
+    {
+      "id": "advance_observation",
+      "label": "Advance current observation",
+      "description": "Promote the newly objectified state to the before-state for the next demonstration.",
+      "inputs": {"next": "object_manifest"},
+      "outputs": {"current": "object_manifest"},
+      "implementations": [
+        {"id": "slot_passthrough", "label": "Typed slot passthrough", "species": "python", "handler": "advance_observation"}
+      ]
+    },
+    {
       "id": "grab_image_source",
       "label": "Grab image source",
       "description": "Acquire and normalize one or more source images before symbolic analysis.",

@@ -3,15 +3,19 @@ requires = ["setuptools>=77", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "logicmoo-arc3"
-version = "0.1.0"
-description = "LogicMOO symbolic-learning tools for ARC-AGI-3 debugging, object memory, and predictive rule learning."
+name = "logicmoo-world-workbench"
+version = "0.2.0"
+description = "A workbench for learning internal world models from observation and using goals to direct simulation."
 readme = "README.md"
 requires-python = ">=3.12"
 license = "LGPL-2.1-or-later"
 license-files = ["LICENSE"]
 authors = [{ name = "LogicMOO" }]
 keywords = [
+  "world-models",
+  "goal-reasoning",
+  "simulation",
+  "neurosymbolic-ai",
   "arc-agi",
   "arc-agi-3",
   "prolog",
@@ -27,7 +31,6 @@ classifiers = [
   "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 dependencies = [
-  "arc-agi>=0.9.9",
   "json-repair>=0.61.6,<0.62",
   "numpy>=1.26",
   "Pillow>=10.0",
@@ -36,6 +39,7 @@ dependencies = [
 
 [project.optional-dependencies]
 debugger = [
+  "arc-agi>=0.9.9",
   "openai>=1.0",
   "ansi2html>=1.9",
   "fastapi>=0.115",
@@ -49,6 +53,7 @@ notebooks = [
   "ipywidgets>=8.0",
 ]
 kaggle = [
+  "arc-agi>=0.9.9",
   "kaggle>=2.2",
   "python-dotenv>=1.0",
   "pandas>=2.2",
@@ -58,6 +63,7 @@ test = [
   "pytest>=8.0",
 ]
 all = [
+  "arc-agi>=0.9.9",
   "openai>=1.0",
   "ansi2html>=1.9",
   "fastapi>=0.115",
@@ -80,7 +86,7 @@ Repository = "https://github.com/logicmoo/symbolic_learner_arc3_kaggle_starter"
 Issues = "https://github.com/logicmoo/symbolic_learner_arc3_kaggle_starter/issues"
 
 [tool.setuptools]
-packages = ["object_memory", "webui"]
+packages = ["object_memory", "webui", "worldworkbench", "worldworkbench.adapters"]
 py-modules = [
   "action_tree",
   "arc3_runner",
