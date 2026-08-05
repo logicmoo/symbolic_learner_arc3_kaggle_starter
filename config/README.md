@@ -16,6 +16,8 @@ This means OpenRouter authentication and endpoint settings appear once even thou
 
 See [Single and Batch Model Profiles](LLM_BATCH.md) for the interactive editor and batch workflow.
 
+See [ARC3 Datatypes Manifest Explained](../docs/DATATYPES_MANIFEST_EXPLAINED.md) for the semantic-information, typed-silo, task-port, implementation-species, provenance, and event-driven workflow model, together with the generated datatype graph.
+
 ## Catalog shape
 
 ```json
