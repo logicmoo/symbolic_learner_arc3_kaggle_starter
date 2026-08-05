@@ -1,6 +1,6 @@
-# LogicMOO MeTTaFlowWorkbench
+# MeTTaSymbolicLearnerWorkbench
 
-**MeTTaFlowWorkbench** is a workflow desktop for building and running
+**MeTTaSymbolicLearnerWorkbench** is a workflow desktop for building and running
 inspectable experiments that mix symbolic AI, LLMs, visual analysis,
 executable representations, and ordinary software modules.
 
@@ -33,15 +33,15 @@ information silos.
 
 ## The workflow desktop
 
-MeTTaFlowWorkbench combines ideas from several mature analysis environments
+MeTTaSymbolicLearnerWorkbench combines ideas from several mature analysis environments
 with the needs of neurosymbolic experimentation:
 
-| Inspiration | Idea retained in MeTTaFlowWorkbench |
+| Inspiration | Idea retained in the workbench |
 |---|---|
 | GATE | Reusable processing resources, visual resources, controllers, and inspection of every intermediate analysis |
 | Apache UIMA | A shared typed analysis state that processors enrich rather than reducing everything to untyped files or JSON |
 | Galaxy | Saved experiment workflows, reproducible histories, provenance, reruns, and inspectable outputs at every stage |
-| LogicMOO / MeTTa | Symbolic facts, executable rules, stable identities, learned world models, and composable reasoning modules |
+| MeTTa | Symbolic facts, executable rules, stable identities, learned world models, and composable reasoning modules |
 | LLM agent tooling | Selectable models, prompts, reasoning budgets, multimodal calls, transcripts, critiques, and independent validation |
 
 The result is not an NLP-only pipeline, generic job scheduler, or
@@ -310,7 +310,7 @@ General framework references:
 ## Flagship application and evaluation: ARC-AGI-3
 
 ARC-AGI-3 is the first complete application adapter and the flagship solver
-demonstration built in MeTTaFlowWorkbench. It supplies visual observations,
+demonstration built in MeTTaSymbolicLearnerWorkbench. It supplies visual observations,
 interventions, episodes, and success conditions, but it does not define the
 workbench architecture.
 

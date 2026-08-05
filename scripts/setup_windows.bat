@@ -14,7 +14,7 @@ set "PYTHONHOME="
 set "PYTHONPATH="
 
 echo.
-echo === LogicMOO ARC3 Windows setup ===
+echo === MeTTaSymbolicLearnerWorkbench Windows setup ===
 echo Repository: %CD%
 echo.
 

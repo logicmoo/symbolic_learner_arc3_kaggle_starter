@@ -116,7 +116,7 @@ their own observation and intervention adapters rather than depending on
 `arc3_runner`.
 
 The flagship demonstration will be an ARC3 solver assembled inside
-MeTTaFlowWorkbench. Human-demonstration mode supplies actions for observational
+MeTTaSymbolicLearnerWorkbench. Human-demonstration mode supplies actions for observational
 learning; autonomous mode substitutes goal-directed simulation and action
 selection while retaining the same objectification, transition, world-model,
 evidence, and inspection subworkflows.

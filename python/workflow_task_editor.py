@@ -39,7 +39,7 @@ def gui(runner,path,raw):
     router=runner.llm_router();ensure_example(raw);workflows=raw["llm_workflows"]
     catalog=read_obj(DEFAULT_TASK_PATH);tasks={x["id"]:x for x in catalog["tasks"]};task_ids=list(tasks);subworkflow_ids=[txt for txt in (str(x.get("id") or "") for x in workflows) if txt]
     datatypes=read_obj(DEFAULT_DATATYPE_PATH)["types"];profiles=sorted(router.profile_by_id);models=["$selected",*sorted(router.model_by_id)]
-    root=tk.Tk();root.title("MeTTaFlowWorkbench — Workflow Desktop");root.geometry("1600x900")
+    root=tk.Tk();root.title("MeTTaSymbolicLearnerWorkbench — Workflow Desktop");root.geometry("1600x900")
     ttk.Label(root,text="Compose typed tasks and reusable subworkflows, then run the selected world-analysis workflow.").pack(anchor="w",padx=10,pady=(10,3))
     tabs=ttk.Notebook(root);tabs.pack(fill="both",expand=True,padx=10)
     wf_tab=ttk.Frame(tabs);task_tab=ttk.Frame(tabs);dt_tab=ttk.Frame(tabs)
