@@ -1,18 +1,20 @@
 # LogicMOO MeTTaFlowWorkbench
 
-**MeTTaFlowWorkbench** is a workflow desktop for running inspectable experiments
-that mix symbolic AI, LLMs, visual analysis, executable representations, and
-ordinary software modules. This repository uses it as a general workbench for
-learning worlds from observation and
-using goals to decide what to simulate, test, or do next. It converts raw
-observations into typed information, entities, relationships, evidence,
-hypotheses, rules, and an executable internal world model. Supplied or inferred
-goals then focus simulation on the outcomes that matter.
+**MeTTaFlowWorkbench** is a workflow desktop for building and running
+inspectable experiments that mix symbolic AI, LLMs, visual analysis,
+executable representations, and ordinary software modules.
 
-ARC-AGI-3 is the first complete application of the workbench. It supplies visual
-observations, interventions, episodes, and success conditions, but it does not
-define the core architecture. The protected ARC3 debugger and Kaggle workflow
-remain available as an application adapter.
+The workbench is organized around **worlds** and **goals**. A world is anything
+the system attempts to reconstruct as an internal simulation from observation.
+A goal describes, or must itself be learned from, which outcomes matter in
+that world. Goals focus attention and determine which hypotheses, experiments,
+and simulations are worth running.
+
+The system begins with observation. Processing resources progressively enrich
+those observations into typed information: entities, properties, relations,
+events, actions, evidence, hypotheses, rules, and executable world models.
+Every intermediate result remains available for inspection instead of
+disappearing inside a monolithic solver.
 
 ```mermaid
 flowchart TD
@@ -24,180 +26,185 @@ flowchart TD
     E --> O
 ```
 
-The domain-neutral Python API lives in [`python/worldworkbench`](python/worldworkbench).
-Its central shared resource is `WorldAnalysisState`: an append-only set of
-named, typed, versioned information silos. See
-[`docs/WORLD_ANALYSIS_WORKBENCH.md`](docs/WORLD_ANALYSIS_WORKBENCH.md) for the
-architecture and the ARC3 adapter boundary.
+The domain-neutral Python API lives in
+[`python/worldworkbench`](python/worldworkbench). Its central shared resource
+is `WorldAnalysisState`: an append-only collection of named, typed, versioned
+information silos.
 
-## MeTTaFlowWorkbench workflow desktop
+## The workflow desktop
 
-MeTTaFlowWorkbench combines the strongest ideas of several analysis systems
-into one workflow desktop suited to neurosymbolic experiments:
+MeTTaFlowWorkbench combines ideas from several mature analysis environments
+with the needs of neurosymbolic experimentation:
 
 | Inspiration | Idea retained in MeTTaFlowWorkbench |
 |---|---|
 | GATE | Reusable processing resources, visual resources, controllers, and inspection of every intermediate analysis |
-| Apache UIMA | A shared, typed analysis state that processors enrich instead of reducing everything to untyped files or JSON |
-| Galaxy | Saved experiment workflows, reproducible histories, provenance, reruns, and inspectable outputs at each stage |
-| LogicMOO / MeTTa | Symbolic facts, executable rules, object identities, learned world models, and composable reasoning modules |
+| Apache UIMA | A shared typed analysis state that processors enrich rather than reducing everything to untyped files or JSON |
+| Galaxy | Saved experiment workflows, reproducible histories, provenance, reruns, and inspectable outputs at every stage |
+| LogicMOO / MeTTa | Symbolic facts, executable rules, stable identities, learned world models, and composable reasoning modules |
 | LLM agent tooling | Selectable models, prompts, reasoning budgets, multimodal calls, transcripts, critiques, and independent validation |
 
-The result is not an NLP-only pipeline, a generic job scheduler, or an
-image-generation graph. A workflow is an experiment over typed information.
-Its top-level steps may be individual tasks or reusable nested subworkflows.
-Each task declares its input and output ports, while its selected implementation
-may be Python, SWI-Prolog, an LLM, Turtle execution, or another registered
-module. MeTTa is an intended symbolic implementation route; the current checked
-in routes are Python, Prolog, and LLM-backed tasks.
+The result is not an NLP-only pipeline, generic job scheduler, or
+image-generation graph. A workflow is a reproducible experiment over typed
+information. It can combine deterministic code, symbolic reasoning, learned
+components, and human interaction without hiding the boundaries among them.
 
-During execution, intermediate values are retained as named information silos
-with type, producer, version, confidence, and provenance. The desktop exposes
-the workflow, task/implementation catalog, and datatype manifest; execution
-also writes the observation images, Prolog facts, Turtle programs and renders,
-LLM transcripts, validation reports, and learned rules into the evidence
-history so an experiment can be inspected as it runs and revisited afterward.
+The desktop provides:
 
-Inside the interactive debugger, press uppercase **`W`** to open the workflow
-desktop. Select a workflow and choose **Save and Run Selected**. The desktop
-validates typed task ports, recursively expands subworkflows with isolated
-internal slots, rejects cycles or invalid port bindings, and then runs the
-experiment through the active workbench runner.
+- A catalog of workflows, subworkflows, tasks, and implementations.
+- Typed input and output ports with connection validation.
+- Reusable nested workflows with isolated internal slots and explicit port
+  bindings.
+- Implementations backed by Python, SWI-Prolog, LLM calls, Turtle execution,
+  or other registered modules.
+- Editable prompts, models, parameters, and reasoning budgets.
+- Stepwise execution, pausing for human input, and repeat-from-stage control.
+- Inspectors for observations, objects, facts, programs, rendered output,
+  hypotheses, rules, comparisons, and evidence.
+- Versioned information silos with producer, confidence, and provenance.
+- Saved histories that support replay, comparison, restoration, and audit.
+- Cycle detection and validation before nested workflows are run.
 
-### First ARC3 workflow: learn by watching a human
+MeTTa is an intended symbolic implementation route. The currently checked-in
+routes include Python, Prolog, LLM-backed tasks, and Turtle programs.
 
-The first application workflow starts `ls20` by default, captures and
-objectifies the initial state, pauses for a human-selected action, captures and
-objectifies the resulting state, analyzes the before/action/after example, and
-updates the emerging world model before repeating. Objectification includes
-stable identities, Prolog properties, Turtle programs, and Turtle render
-comparison. The seven top-level steps are defined in
-the runnable [`config/llm_workflows.json`](config/llm_workflows.json) catalog as
-`arc3_human_observation` and can be launched with **Save and Run Selected** in
-the workflow desktop.
+## Worlds, observations, and goals
 
-### Flagship demonstration: an ARC3 solver built in the framework
+The framework deliberately does not equate a world with a game. A world may be
+a visual environment, software interface, robot workspace, scientific
+process, sequence of events, or any partially observable system whose
+structure and behavior must be learned.
 
-From the same desktop we will demonstrate an ARC3 solver authored as a
-MeTTaFlowWorkbench experiment. The solver is not a separate hard-wired program:
-its perception, objectification, identity tracking, Turtle reconstruction,
-transition analysis, world learning, goal reasoning, simulation, action
-selection, and outcome evaluation are tasks and subworkflows in the framework.
+An **observation** is evidence received from that world. It may be an image,
+grid, state record, action result, text response, measurement, or a collection
+of synchronized views.
 
-The human-observation workflow is the solver's apprenticeship and debugging
-mode. It lets a person supply actions while the system learns what changes and
-which outcomes appear important. Autonomous mode keeps the same observation,
-objectification, evidence, and world-model subworkflows, but replaces the
-human-action step with goal-directed candidate simulation and action selection.
-This makes every solver decision inspectable through the same workflow ports,
-intermediate silos, Prolog/Turtle artifacts, LLM transcripts, and experiment
-history used during learning.
+A **world model** is the system's current internal account of entities,
+relationships, constraints, actions, state transitions, and uncertainties. It
+is explicitly revisable: later evidence can support, refine, or contradict
+earlier hypotheses without erasing their history.
 
-## Documentation
+A **goal** can be supplied by a person, exposed by the environment, or inferred
+from demonstrations and outcomes. Goals do not merely score the final answer;
+they guide what the system observes, which uncertainties it investigates, and
+which possible futures it simulates.
 
-- [World Analysis Workbench architecture](docs/WORLD_ANALYSIS_WORKBENCH.md) — observations, information silos, world models, goals, simulations, processing resources, and adapters.
-- [Domain-neutral datatype manifest](config/world_workbench_datatypes.json) — machine-readable types for the workbench core.
-- [Domain-neutral task catalog](config/world_workbench_tasks.json) — task contracts from observation through goal-directed simulation.
-- [Runnable workflows and subworkflows](config/llm_workflows.json) — includes the seven-stage `ls20` human-observation loop and its reusable objectification, capture, transition-analysis, and world-update subworkflows.
-- [Native Windows setup and troubleshooting](README_WINDOWS.md) — administrator long-path setup, Python and virtual-environment installation, batch launchers, line endings, SWI-Prolog, PyCharm, UNC paths, and native Kaggle commands.
-- [LLM providers, prompt sections, and comparison transcripts](config/README.md) — switch providers, compose provider-specific prompts, compare runs, and restore historical artifacts.
-- [ARC3 debugger guide](DEBUGGER.md) — debugger controls, action trees, pluggable GPT/Prolog analysis, Turtle mock display, web UI, replay, and provider evidence.
-- [ARC Prize 2026 local-development and Kaggle guide](KAGGLE.md) — setup, local play, notebook generation, submission, accelerators, and troubleshooting.
-- [Architecture](SOW_PHASE_ARCHITECTURE.md) — large technical overview with phase boundaries, classes, modules, data contracts, ownership rules, per-object Turtle programs, learning, and prediction.
-- [Active implementation TODO](TODO.md) — Phase 1 maintenance plus the concrete Phase 2 and Phase 3 work we need to execute next.
-- [SOW deliverables checklist](SOW_DELIVERABLES.md) — delivered Phase 1 debugger outcomes and partial/open Phase 2 and Phase 3 outcomes with evidence links.
-- [Clickable repository file tree](FILE_TREE.md) — links to maintained files with descriptions of their responsibilities.
+## A workflow for learning by observation
 
-The three project-planning documents deliberately have different scopes and link to one another:
+The first complete top-level pattern is an apprenticeship workflow in which
+the workbench observes a person interacting with a world:
 
-```text
-SOW_PHASE_ARCHITECTURE.md  → how the debugger, object memory, and learner are designed
-TODO.md                    → what we are actively implementing
-SOW_DELIVERABLES.md        → what is delivered and what remains to be checked off
-```
+1. Select a world or scenario.
+2. Start it and capture the initial observation.
+3. Objectify the observation.
+4. Pause while a human chooses and performs an action.
+5. Capture and objectify the resulting observation.
+6. Compare before, action, and after; then update the emerging explanation.
+7. Repeat until the world's behavior and goals become intelligible.
 
-## Project phase boundaries
+Those seven items are themselves a runnable workflow. Complex stages are not
+flattened into opaque tasks: they invoke reusable named subworkflows.
 
-- **Phase 1 is delivered:** the ARC3 debugger records rendered observations, actions, history, replay paths, provider calls, `object_registry.pl`, node READMEs, transcripts, Turtle mocks, objects, differences, similarities, candidate rules, critiques, and confidence outputs. These are inspectable provider artifacts; the debugger does not claim to implement their final semantic algorithms.
-- **Phase 2 implements object semantics:** repeatable perception, persistent identities, correspondence, positive and negative recognition evidence, calibrated confidence, symbolic memory, and one regenerating Turtle program per recognized grid object using movement, rotation, pen state, and pen width rather than box filling.
-- **Phase 3 implements learning and prediction:** competing transformations and rules, assumptions, critiques, probabilities, pre-outcome predictions, independent grades, evidence updates, and optional action recommendations written back through the debugger evidence surface.
+For example, **Objectify observation** can expand into:
 
-## Layered code and resource discovery
+1. Extract candidate entities and structures.
+2. Assign stable identities.
+3. Derive properties and relationships.
+4. Generate symbolic facts.
+5. Generate executable Turtle programs for visual objects.
+6. Render those programs.
+7. Compare the reconstruction with the source observation.
+8. Save validation evidence and unresolved differences.
 
-ARC3 does not assume that code, configuration, and generated action trees share one global root. Startup records the launch directory, resolves each resource independently, and enters the code checkout only for imports and legacy relative-script behavior.
+Turtle is therefore not the purpose of the top-level system. It is one useful
+executable representation inside objectification: a visual object can be
+described as a program, rendered again, and checked against what was observed.
+The same workflow can retain raster, symbolic, programmatic, and feature-based
+views of one semantic entity without pretending that those views are the
+entity itself.
 
-### Code/runtime checkout
+## Typed analysis state
 
-The Python code root is resolved in this order:
-
-1. `WORLD_WORKBENCH_HOME` (or legacy `ARC3_RUNTIME_HOME`), when explicitly set to a valid checkout.
-2. The nearest valid project root found while walking upward from the launch directory.
-3. The project root inferred from the running script/code location.
-
-An invalid explicit `WORLD_WORKBENCH_HOME`/`ARC3_RUNTIME_HOME` is an error because it claims to select the code checkout.
-
-### LLM provider and prompt configuration
-
-The selected `config/llm_providers.json` is resolved independently:
-
-1. `WORLD_WORKBENCH_LLM_CONFIG` (or legacy `ARC3_LLM_CONFIG`).
-2. `WORLD_WORKBENCH_CONFIG_ROOT/llm_providers.json` (or legacy `ARC3_CONFIG_ROOT`).
-3. The nearest `config/llm_providers.json` found while walking upward from the launch directory.
-4. The selected workbench/runtime home's `config/llm_providers.json`, when present.
-5. The config beside the running script/code checkout.
-
-This allows an experiment workspace to supply its own provider list and prompt sections while running code from another checkout.
-
-### Action-tree output
-
-The writable action-tree root is resolved independently:
-
-1. `WORLD_WORKBENCH_RUN_ROOT` (or legacy `ARC3_TREE_ROOT`).
-2. The nearest existing `action_trees/` found while walking upward from the launch directory.
-3. The selected workbench/runtime home's `action_trees/`, when present.
-4. The action-tree directory beside the running script/code checkout.
-5. A newly created `action_trees/` beside the selected code root when none exists.
-
-Launching from a workspace that already contains `./action_trees/` keeps generated state, transcripts, and `.pl` artifacts in that workspace.
-
-### Environment files and startup report
-
-The nearest launch-directory `.env` is loaded first, followed by distinct runtime/script checkout `.env` files. Loading uses `override=False`, so shell and IDE variables still win. `WORLD_WORKBENCH_*` names are preferred by the general core; the existing `ARC3_*` names remain compatibility aliases for the application scripts.
-
-At startup ARC3 prints:
+Processors communicate through `WorldAnalysisState`, not by silently passing
+unstructured blobs. Each processor reads declared silos and appends new silo
+versions with provenance. Typical views include:
 
 ```text
-ARC3 resolved paths
-  Launch directory: ...
-  Code/runtime root: ...
-  Environment files: ...
-  LLM config source: ...
-  Action-tree output: ...
+source_observation
+observed_state
+entity_set
+object_identities
+properties
+relationships
+turtle_programs
+symbolic_facts
+differences
+similarities
+candidate_rules
+world_model
+goals
+simulation_candidates
+predicted_state
+evidence
+execution_trace
 ```
 
-Set `ARC3_SHOW_PATHS=0` to suppress this report.
+Several views may represent the same underlying semantic object. That makes it
+possible to ask whether a symbolic description, generated program, rendered
+image, and extracted feature set agree—and to preserve the exact evidence when
+they do not.
 
-Examples:
+The machine-readable contracts are maintained in:
 
-```bash
-cd /path/to/experiment-workspace
-python /path/to/symbolic_learner_arc3_kaggle_starter/scripts/interactive_runner.py ls20
+- [`config/world_workbench_datatypes.json`](config/world_workbench_datatypes.json)
+  for domain-neutral datatypes.
+- [`config/world_workbench_tasks.json`](config/world_workbench_tasks.json) for
+  task input/output contracts.
+- [`config/llm_workflows.json`](config/llm_workflows.json) for runnable workflows
+  and nested subworkflows.
+- [`config/workflow_tasks.json`](config/workflow_tasks.json) for task
+  implementations.
+- [`config/llm_providers.json`](config/llm_providers.json) for model providers
+  and reusable prompt sections.
 
-ARC3_RUNTIME_HOME=/path/to/symbolic_learner_arc3_kaggle_starter \
-python /another/path/to/scripts/interactive_runner.py ls20
-```
+## Inspection and provenance
 
-## Install
+Execution retains intermediate values as named silos with type, producer,
+version, confidence, and provenance. Depending on the workflow, an experiment
+may save:
+
+- Source and derived observations.
+- Entity identities, properties, and relationships.
+- Prolog facts and query results.
+- Turtle programs, renders, and source/render comparisons.
+- Prompts, responses, critiques, and complete LLM transcripts.
+- Candidate rules, predictions, independent grades, and confidence updates.
+- Actions, state transitions, simulation branches, and goal evaluations.
+- Timing, failures, implementation choices, and configuration snapshots.
+
+This evidence history allows a researcher to inspect an experiment while it is
+running, compare alternative implementations, replay earlier stages, and
+restore earlier generated artifacts.
+
+## Running the workbench
+
+Inside a supported interactive host, press uppercase **`W`** to open the
+workflow desktop. Select a workflow and choose **Save and Run Selected**. The
+desktop validates typed task ports, expands nested subworkflows recursively,
+rejects cycles and invalid bindings, and executes the experiment through the
+active workbench runner.
+
+The workflow and datatype editors can also be used without committing a
+particular experimental domain to the core architecture. Application adapters
+translate external observations and actions at the boundary while the
+workbench continues to operate on general world, goal, simulation, and
+evidence types.
+
+## Installation
 
 Python 3.12 or newer is required.
 
-Native Windows users should first follow [README_WINDOWS.md](README_WINDOWS.md), then run:
-
-```bat
-scripts\setup_windows.bat
-```
-
-For debugger, web UI, notebooks, and tests:
+For the workflow desktop, browser UI, notebooks, and tests:
 
 ```bash
 python -m pip install -e ".[debugger,notebooks,test]"
@@ -209,19 +216,120 @@ The compatibility requirements file installs the same bundle:
 python -m pip install -r requirements.txt
 ```
 
-For every optional dependency, including Kaggle tooling:
+For every optional dependency:
 
 ```bash
 python -m pip install -e ".[all]"
 ```
 
-The protected Kaggle workflow still uses [KAGGLE.md](KAGGLE.md) and the existing Makefile targets. On native Windows, use the direct commands in [README_WINDOWS.md](README_WINDOWS.md).
+Native Windows users should first follow
+[`README_WINDOWS.md`](README_WINDOWS.md), then run:
 
-## Runnable Python entry points and demonstrations
+```bat
+scripts\setup_windows.bat
+```
 
-These commands may be run from the repository root or another directory. Each script resolves code and data resources through layered discovery before importing project modules.
+## Layered code and resource discovery
 
-### Interactive terminal debugger
+The workbench does not assume that code, configuration, and generated evidence
+share one global root. Startup records the launch directory and resolves each
+resource independently.
+
+### Code/runtime checkout
+
+The Python code root is resolved in this order:
+
+1. `WORLD_WORKBENCH_HOME`, when explicitly set to a valid checkout.
+2. The nearest valid project root found while walking upward from the launch
+   directory.
+3. The project root inferred from the running script or code location.
+
+An invalid explicit `WORLD_WORKBENCH_HOME` is an error because it claims to
+select the code checkout.
+
+### Model and prompt configuration
+
+The selected provider configuration is resolved independently:
+
+1. `WORLD_WORKBENCH_LLM_CONFIG`.
+2. `WORLD_WORKBENCH_CONFIG_ROOT/llm_providers.json`.
+3. The nearest `config/llm_providers.json` found while walking upward from the
+   launch directory.
+4. The selected workbench/runtime home's configuration, when present.
+5. The configuration beside the running code checkout.
+
+This allows an experiment workspace to supply its own provider list and prompt
+sections while running code from another checkout.
+
+### Evidence output
+
+The writable experiment-history root is resolved independently:
+
+1. `WORLD_WORKBENCH_RUN_ROOT`.
+2. The nearest existing compatible evidence directory found while walking
+   upward from the launch directory.
+3. The selected workbench/runtime home's evidence directory, when present.
+4. The evidence directory beside the running code checkout.
+5. A newly created evidence directory beside the selected code root.
+
+The nearest launch-directory `.env` is loaded first, followed by distinct
+runtime and script-checkout `.env` files. Loading uses `override=False`, so
+shell and IDE variables still win.
+
+## Development and documentation
+
+Run the Python test suite with:
+
+```bash
+pytest -q
+```
+
+Run the Turtle DSL checks with:
+
+```bash
+swipl -q -s prolog/test_turtle_dsl.pl -g run_tests,halt
+```
+
+Run the object-memory checks with:
+
+```bash
+swipl -q -s prolog/test_object_memory.pl -g run_tests,halt
+```
+
+General framework references:
+
+- [World Analysis Workbench architecture](docs/WORLD_ANALYSIS_WORKBENCH.md) —
+  observations, information silos, world models, goals, simulations,
+  processing resources, and adapter boundaries.
+- [LLM providers, prompt composition, and comparison transcripts](config/README.md)
+  — provider selection, reusable prompt blocks, run comparison, and artifact
+  restoration.
+- [Clickable repository file tree](FILE_TREE.md) — maintained files and their
+  responsibilities.
+
+## Flagship application and evaluation: ARC-AGI-3
+
+ARC-AGI-3 is the first complete application adapter and the flagship solver
+demonstration built in MeTTaFlowWorkbench. It supplies visual observations,
+interventions, episodes, and success conditions, but it does not define the
+workbench architecture.
+
+The initial `arc3_human_observation` workflow starts `ls20`, captures and
+objectifies its initial state, pauses for a human action, captures and
+objectifies the resulting state, analyzes the before/action/after transition,
+updates the emerging world model, and repeats. Its complex stages invoke the
+reusable capture, objectification, transition-analysis, and world-update
+subworkflows declared in
+[`config/llm_workflows.json`](config/llm_workflows.json).
+
+From the same desktop, the autonomous solver will reuse perception,
+objectification, stable identity, Turtle reconstruction, transition analysis,
+world learning, goal reasoning, simulation, action selection, and outcome
+evaluation as framework tasks and subworkflows. It replaces the human-action
+stage with goal-directed candidate simulation while preserving the same
+inspectors, ports, intermediate silos, transcripts, and evidence history.
+
+### Start the interactive application
 
 ```bash
 python scripts/interactive_runner.py ls20
@@ -233,115 +341,55 @@ On native Windows:
 scripts\interactive_runner.bat ls20
 ```
 
-Press `g` repeatedly to cycle configured OpenAI/ChatGPT, Claude, Unsloth Studio, or custom providers. Providers and reusable prompt blocks share [`config/llm_providers.json`](config/llm_providers.json); each provider selects the ordered `prompt_text` sections it receives.
+Press **`W`**, select the human-observation workflow, and choose **Save and Run
+Selected**. Press `g` to cycle configured LLM providers; press `2`, `3`, or `4`
+for progressively deeper analysis; press `1` to inspect, restore, or configure
+historical model runs; and press `p` for Prolog mode.
 
-Press `2`, `3`, or `4` for demo, deep, or extreme analysis. Each LLM request creates a uniquely named Markdown transcript containing a restorable artifact snapshot followed by the full debugging interaction. The normal `.pl` files remain the mutable latest view.
-
-Press `1` in LLM mode to list historical transcripts for the current node, restore an older completed run into the individual `.pl` files, or open the unified provider/prompt configuration. The node `README.md` identifies the active transcript, links historical runs, and embeds the latest artifacts. Press `p` for Prolog mode.
-
-The provider-generated object, difference, similarity, Turtle, rule, critique, and confidence artifacts demonstrate the debugger’s pluggable inspection surface. Later phases implement and validate their semantic and predictive quality.
-
-### Browser terminal
+Start the browser terminal with:
 
 ```bash
 python scripts/run_webui.py --game ls20
 ```
 
-Open `http://127.0.0.1:8765/`.
+Then open `http://127.0.0.1:8765/`.
 
-### SWI-Prolog-controlled ARC3 demonstration
+Other application demonstrations and protected evaluation commands:
 
 ```bash
 python scripts/prolog_controlled_runner.py
-```
-
-### Minimal direct ARC3 smoke demos
-
-```bash
 python scripts/re_play.py
 python scripts/my_play.py
 python scripts/me_play.py
 python scripts/he_play.py
-```
-
-### Protected local Kaggle-compatible agent run
-
-```bash
 python scripts/play_local.py --game ls20 --max-steps 200
-```
-
-Equivalent Makefile command:
-
-```bash
 make play-local GAME=ls20 STEPS=200
-```
-
-### Build the protected Kaggle submission notebook
-
-```bash
 python scripts/build_notebook.py
-```
-
-Equivalent Makefile command:
-
-```bash
 make notebook
-```
-
-### Slim the vendored framework
-
-```bash
 python scripts/slim_framework.py
-```
-
-### Run Python tests
-
-```bash
-pytest -q
-```
-
-### Open notebooks
-
-```bash
-jupyter lab
-```
-
-Use `notebooks/arc3_debugger.ipynb` for the guided debugger and `notebooks/arc3_runner.ipynb` for lower-level scripting.
-
-## Runnable Prolog demonstrations and checks
-
-### Turtle DSL tests
-
-```bash
-swipl -q -s prolog/test_turtle_dsl.pl -g run_tests,halt
-```
-
-### Object-memory and connected Phase 3 tests
-
-```bash
-swipl -q -s prolog/test_object_memory.pl -g run_tests,halt
-```
-
-### Load the action-selection controller
-
-```bash
 swipl -q -g "use_module('prolog/arc3_agent.pl'),halt"
-```
-
-### Load the connected Game Object Learner pipeline
-
-```bash
 swipl -q -g "use_module('prolog/game_object_learner_api.pl'),halt"
 ```
 
-See [FILE_TREE.md](FILE_TREE.md) for each module’s purpose.
+Application-specific documentation:
 
-## Protected Kaggle entry points
+- [Debugger guide](DEBUGGER.md) — controls, action trees, pluggable GPT/Prolog
+  analysis, Turtle mock display, web UI, replay, and provider evidence.
+- [Local development and Kaggle guide](KAGGLE.md) — setup, local play, notebook
+  generation, submission, accelerators, and troubleshooting.
+- [Architecture](SOW_PHASE_ARCHITECTURE.md) — phase boundaries, classes,
+  modules, data contracts, per-object Turtle programs, learning, and
+  prediction.
+- [Active implementation TODO](TODO.md) — current maintenance and upcoming
+  semantic-learning work.
+- [SOW deliverables](SOW_DELIVERABLES.md) — delivered, partial, and open
+  outcomes with evidence links.
 
-Do not rename or repurpose:
+Legacy `ARC3_*` environment variables remain compatibility aliases for the
+preferred `WORLD_WORKBENCH_*` names. The protected Kaggle entry points remain
+intact and must not be renamed or repurposed:
 
 - [`agent/my_agent.py`](agent/my_agent.py)
 - [`scripts/play_local.py`](scripts/play_local.py)
 - [`scripts/build_notebook.py`](scripts/build_notebook.py)
-- [`notebooks/submission.ipynb`](notebooks/submission.ipynb)
 - [`Makefile`](Makefile)
