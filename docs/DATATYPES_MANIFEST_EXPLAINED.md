@@ -1,0 +1,954 @@
+[← Back to top-level README](../README.md) · [LLM and workflow configuration](../config/README.md)
+
+# ARC3 Datatypes Manifest Explained
+
+The ARC3 workflow system does not merely pass files or strings from one task to another. It passes **typed information silos** through a graph of workflow tasks.
+
+Each silo contains information. That information may be represented as text, an image, a Turtle program, Prolog facts, JSON, a report, or another concrete form. The representation alone is not enough to explain the information. A text value may be a free-form description, a birthdate, a rule explanation, an object identity, or a validation result. Those values may share the same physical representation while having very different meanings.
+
+The datatype manifest therefore separates:
+
+- **information meaning** from **information representation**;
+- **semantic types** from **physical or syntactic datatypes**;
+- **individual values** from **collections and aggregates**;
+- **task contracts** from the implementations that perform them;
+- and **workflow routing** from the data events that activate new branches.
+
+![ARC3 Workflow Datatype Graph](../config/workflow_datatypes.svg)
+
+The machine-readable form of this graph is stored in [`workflow_datatypes.json`](../config/workflow_datatypes.json). Reusable task contracts and implementation routes are stored in [`workflow_tasks.json`](../config/workflow_tasks.json).
+
+---
+
+## 1. Information is the root concept
+
+Every ARC3 datatype depicts, carries, or organizes information.
+
+A useful root hierarchy is:
+
+```text
+Information
+├── Visual Information
+├── Textual Information
+├── Temporal Information
+├── Spatial Information
+├── Identity Information
+├── Descriptive Information
+├── Symbolic Information
+├── Program Information
+├── Evidence
+├── Rule Information
+├── Validation Information
+├── Provenance Information
+└── Aggregate Information
+```
+
+A value may belong to several information categories simultaneously.
+
+For example:
+
+```text
+"1970-04-12"
+```
+
+may be all of the following:
+
+```text
+Information
+Temporal Information
+Personal Information
+Birthdate
+ISO Date
+Text-encoded Value
+```
+
+Likewise, an ARC object can be simultaneously:
+
+```text
+Information
+Visual Information
+Spatial Information
+Identity Information
+Individual Object
+Semantic Bundle
+```
+
+The type system should preserve both the concrete representation and the semantic meaning.
+
+---
+
+## 2. Representation datatype versus semantic information type
+
+### Representation datatype
+
+A representation datatype describes how information is encoded, stored, transported, or interpreted by software.
+
+Examples include:
+
+```text
+text
+markdown
+integer
+iso_date
+json_object
+image_file
+image_collection
+prolog_file
+prolog_fact_set
+turtle_program
+turtle_program_file
+```
+
+It answers:
+
+> In what concrete form is this information available?
+
+### Semantic information type
+
+A semantic type describes what the information means.
+
+Examples include:
+
+```text
+description
+birthdate
+individual_object
+scene
+transition_evidence
+object_identity
+candidate_rule
+validation_result
+provenance_record
+```
+
+It answers:
+
+> What kind of information is this value expressing?
+
+Two values may therefore share the same representation datatype but have different semantic types:
+
+```json
+{
+  "representation_type": "text",
+  "semantic_type": "biographical_description",
+  "value": "Douglas is a neurologist and computer scientist."
+}
+```
+
+versus:
+
+```json
+{
+  "representation_type": "text",
+  "semantic_type": "birthdate",
+  "value": "1970-04-12"
+}
+```
+
+The second value may also be normalized into a more specific representation:
+
+```json
+{
+  "representation_type": "iso_date",
+  "semantic_type": "birthdate",
+  "value": "1970-04-12"
+}
+```
+
+The semantic meaning remains `birthdate`; only its encoding becomes more precise.
+
+---
+
+## 3. The silo is the central workflow unit
+
+A **silo** is a named, versioned container of typed information.
+
+A silo may contain:
+
+- one scalar value;
+- one file;
+- a set or ordered sequence of values;
+- images;
+- symbolic facts;
+- programs;
+- reports;
+- or a semantic bundle composed of several synchronized representations.
+
+Typical ARC3 silos include:
+
+```text
+current_scene_images
+before_scene_objects
+current_scene_objects
+object_turtle_programs
+transition_evidence
+candidate_rules
+validation_results
+artifact_bundle
+```
+
+A silo is more than a variable name. It should describe:
+
+- its semantic type;
+- its representation datatype;
+- its cardinality or container shape;
+- its semantic subject;
+- its provenance;
+- its validation state;
+- its confidence;
+- and the task and implementation that produced it.
+
+### Example silo record
+
+```json
+{
+  "silo_id": "person_birthdate",
+  "version": 3,
+  "representation_type": "iso_date",
+  "semantic_type": "birthdate",
+  "value": "1970-04-12",
+  "subject": "person:douglas",
+  "cardinality": "one",
+  "status": "validated",
+  "confidence": 1.0,
+  "produced_by": {
+    "task": "normalize_person_record",
+    "implementation": "python:normalize_dates"
+  },
+  "derived_from": [
+    "uploaded_profile_text:v1"
+  ],
+  "created_at": "2026-08-06T04:47:00+08:00"
+}
+```
+
+A description silo may use the same physical representation while carrying different information:
+
+```json
+{
+  "silo_id": "person_description",
+  "version": 1,
+  "representation_type": "markdown",
+  "semantic_type": "biographical_description",
+  "value": "Douglas is a neurologist and computer scientist.",
+  "subject": "person:douglas",
+  "cardinality": "one",
+  "status": "generated",
+  "produced_by": {
+    "task": "describe_person",
+    "implementation": "llm:openai-gpt-5.6-light"
+  }
+}
+```
+
+---
+
+## 4. Cardinality and container shape
+
+The same semantic type may appear in different container forms.
+
+```text
+individual_object
+optional<individual_object>
+list<individual_object>
+ordered_sequence<individual_object>
+set<individual_object>
+map<object_id, individual_object>
+graph<individual_object, relationship>
+semantic_bundle<individual_object>
+```
+
+Useful silo cardinalities include:
+
+```text
+one
+optional
+list
+ordered_sequence
+set
+map
+graph
+semantic_bundle
+```
+
+Examples in ARC3:
+
+```text
+before_scene_objects:
+    semantic_type: individual_object
+    cardinality: set
+
+movement_frames:
+    semantic_type: scene_image
+    cardinality: ordered_sequence
+
+object_bundle:
+    semantic_type: individual_object
+    cardinality: semantic_bundle
+```
+
+Cardinality is part of the contract. A task expecting one image should not silently receive an unordered dataset of images.
+
+---
+
+## 5. Semantic types may have several valid representations
+
+An important semantic type in ARC3 is:
+
+```text
+individual_object
+```
+
+An individual object is not identical to one image crop or one Prolog term. It is a semantic entity that may be represented by several information silos:
+
+```text
+individual_object:object_17
+├── object_17_image_region
+├── object_17_turtle_program
+├── object_17_prolog_properties
+├── object_17_feature_vector
+├── object_17_identity_record
+└── object_17_rule_references
+```
+
+These representations should share a semantic subject:
+
+```json
+{
+  "semantic_subject": "individual_object:object_17"
+}
+```
+
+That lets the system understand that the silos are not unrelated artifacts. They are different realizations of the same semantic individual.
+
+### Semantic equivalence
+
+An image region and a Turtle program may be semantically equivalent when both depict the same object.
+
+```text
+image_region(object_17)
+        ≈
+turtle_program(object_17)
+        ≈
+prolog_object_properties(object_17)
+```
+
+The representations are not byte-for-byte equal. They are semantically aligned.
+
+### Semantic bundles
+
+An object is therefore best understood as a bundle:
+
+```text
+Individual Object
+├── Appearance                  → image or image region
+├── Geometry                    → Turtle program
+├── Logical properties          → Prolog facts
+├── Derived measurements        → feature vector
+├── Identity                    → identity record
+└── Participation in knowledge  → rule references
+```
+
+This is one of the central design ideas behind the ARC3 symbolic learner:
+
+> An object is not merely a pixel region. It is a semantic bundle with multiple synchronized representations.
+
+---
+
+## 6. Aggregates and larger semantic structures
+
+Larger semantic structures aggregate smaller silos.
+
+### Scene
+
+A scene may aggregate:
+
+```text
+scene
+├── scene image
+├── object collection
+├── object manifest
+├── spatial relations
+└── scene metadata
+```
+
+### Scene pair
+
+A before/after or parent/current pair may aggregate:
+
+```text
+scene_pair
+├── before scene
+├── after scene
+├── action metadata
+├── correspondence evidence
+└── transition evidence
+```
+
+### Dataset or bundle
+
+A dataset or bundle may aggregate:
+
+```text
+dataset_bundle
+├── examples
+├── individual objects
+├── images
+├── Turtle programs
+├── Prolog files
+├── results
+├── comparisons
+└── provenance
+```
+
+### Artifact bundle
+
+An ARC3 artifact bundle may aggregate:
+
+```text
+artifact_bundle
+├── object manifests
+├── Prolog files
+├── Turtle programs
+├── image manifests
+├── transition evidence
+├── candidate rules
+├── validation reports
+├── audit reports
+└── workflow report
+```
+
+### Rule
+
+A rule is semantic knowledge that may be represented by:
+
+```text
+rule
+├── Prolog rule
+├── induced logic
+├── LLM-derived rule
+├── assumptions
+├── confidence
+├── supporting examples
+└── provenance
+```
+
+---
+
+## 7. Workflow tasks consume and produce silos
+
+A workflow task should not merely declare that it consumes a file or emits text. It should declare typed ports.
+
+```text
+Workflow Task
+    consumes one or more typed input silos
+    performs one selected implementation
+    produces one or more typed output silos
+    emits creation, update, completion, or validation events
+    enables the next eligible branches in the workflow graph
+```
+
+### Typed port contract
+
+```json
+{
+  "task_id": "turtlized_objects_to_images",
+  "inputs": {
+    "objects": {
+      "semantic_type": "individual_object",
+      "cardinality": "set",
+      "accepted_representations": [
+        "turtle_program",
+        "turtle_program_file"
+      ]
+    }
+  },
+  "outputs": {
+    "rendered_images": {
+      "semantic_type": "object_visualization",
+      "representation_type": "image_collection"
+    },
+    "render_manifest": {
+      "semantic_type": "representation_correspondence",
+      "representation_type": "json_object"
+    }
+  }
+}
+```
+
+The image display task can accept several compatible representations:
+
+```json
+{
+  "task_id": "images_displayer",
+  "inputs": {
+    "images": {
+      "semantic_type": "visual_information",
+      "accepted_representations": [
+        "image_file",
+        "image_collection",
+        "image_manifest"
+      ]
+    }
+  },
+  "outputs": {
+    "display_session": {
+      "semantic_type": "visual_inspection_session",
+      "representation_type": "json_object"
+    }
+  }
+}
+```
+
+---
+
+## 8. Task types and implementation species
+
+A **task type** is an abstract operation. An **implementation** is one concrete mechanism that performs that operation.
+
+The implementation species currently include:
+
+```text
+llm
+python
+prolog
+hybrid
+```
+
+A task such as `extract_objects` may be performed by several implementations:
+
+```text
+llm:openai-gpt-5.6-light
+llm:nemotron-vl
+python:connected_component_extractor
+prolog:object_detection_rules
+hybrid:python_then_prolog
+```
+
+All implementations should satisfy the same semantic output contract:
+
+```text
+semantic_type: object_collection
+```
+
+Their physical products may differ:
+
+```text
+Prolog facts
+JSON object manifest
+cropped images
+semantic object bundles
+```
+
+A synchronization task may then align those representations.
+
+---
+
+## 9. Example reusable workflow tasks
+
+The current task catalog includes reusable task types such as the following.
+
+### `grab_image_source`
+
+Purpose: route one of several possible visual sources into a normalized image silo.
+
+Possible implementations include:
+
+```text
+python:video_to_frames
+python:pull_from_arc3_state
+python:ask_user_to_upload
+python:pull_from_disk_directory
+python:clipboard_image
+python:remote_image_url
+python:camera_capture
+python:generated_test_pattern
+```
+
+Typical outputs:
+
+```text
+image_collection
+image_sequence
+image_manifest
+source_metadata
+```
+
+### `normalize_images`
+
+Consumes images from any supported source and produces normalized dimensions, formats, orientation, metadata, and hashes.
+
+### `extract_objects`
+
+Consumes scene images and produces object collections, object manifests, Turtle programs, crops, and/or Prolog object properties.
+
+### `synchronize_object_representations`
+
+Aligns image regions, Turtle programs, Prolog properties, feature vectors, and identity records under one semantic subject.
+
+### `turtlized_objects_to_images`
+
+Consumes Turtle object programs and renders image files plus a render manifest.
+
+### `images_displayer`
+
+Consumes image files, collections, sequences, or manifests and produces a display session and contact sheet.
+
+### `explain_object_changes`
+
+Consumes before/after object silos and Turtle/Prolog evidence and produces transition descriptions and correspondence evidence.
+
+### `induce_rules_from_prolog`
+
+Consumes object facts, transitions, examples, and existing rules and produces candidate rule sets with assumptions and provenance.
+
+### `validate_artifact_bundle`
+
+Checks the expected files, representations, identities, and correspondences and produces a validation report.
+
+### `audit_artifact_bundle`
+
+Uses a deterministic or LLM-based implementation to evaluate whether the generated artifacts agree semantically.
+
+### `publish_workflow_report`
+
+Aggregates task results, slot bindings, provenance, validation, and artifact links into a final workflow report.
+
+---
+
+## 10. Workflow item, task, implementation, and slot binding
+
+The complete hierarchy is:
+
+```text
+Workflow
+    contains Workflow Items
+
+Workflow Item
+    instantiates a Task Type
+    chooses an Implementation
+    binds Input Ports to existing Silos
+    binds Output Ports to new Silos
+    may define conditions and branch behavior
+
+Task Type
+    declares semantic input and output contracts
+    lists compatible implementation routes
+
+Implementation
+    has a species: LLM, Python, Prolog, or hybrid
+    performs the concrete operation
+
+Silo
+    contains typed information
+    has semantic meaning and concrete representation
+    emits lifecycle events
+```
+
+Example task item:
+
+```json
+{
+  "id": "render_objects",
+  "task": "turtlized_objects_to_images",
+  "implementation": "python:render_turtle_artifacts",
+  "inputs": {
+    "objects": "recognized_objects"
+  },
+  "outputs": {
+    "rendered_images": "object_render_images",
+    "render_manifest": "object_render_manifest"
+  },
+  "parameters": {
+    "grid_size": 64,
+    "scale": 8
+  }
+}
+```
+
+The input binding means:
+
+```text
+input port `objects`
+    consumes silo `recognized_objects`
+```
+
+The output binding means:
+
+```text
+output port `rendered_images`
+    produces silo `object_render_images`
+```
+
+---
+
+## 11. Silo lifecycle and workflow branching
+
+Tasks should not always hard-code one next task. Workflow branches can watch for silo events and conditions.
+
+Useful events include:
+
+```text
+silo_created
+silo_updated
+silo_completed
+silo_validated
+silo_rejected
+silo_expired
+silo_missing
+silo_conflict_detected
+```
+
+### Branch on successful object validation
+
+```text
+When:
+    silo semantic_type = object_collection
+    and event = silo_validated
+
+Then:
+    enable turtlize_objects
+```
+
+### Branch on failed validation
+
+```text
+When:
+    validation_result.valid = false
+
+Then:
+    run repair_symbolic_artifacts
+```
+
+### Branch when complementary evidence exists
+
+```text
+When:
+    candidate_rules exists
+    and rendered_object_images exists
+
+Then:
+    run audit_artifact_bundle
+```
+
+A machine-readable branch rule might be:
+
+```json
+{
+  "when": {
+    "event": "silo_validated",
+    "semantic_type": "object_collection",
+    "minimum_confidence": 0.8
+  },
+  "run": "explain_object_changes"
+}
+```
+
+This turns the workflow into an event-driven graph rather than only a fixed sequence.
+
+---
+
+## 12. Provenance, validation, and confidence
+
+Every generated silo should retain enough information to answer:
+
+- Which task produced it?
+- Which implementation species and exact implementation were used?
+- Which model and profile were used for an LLM task?
+- Which source silos were consumed?
+- Which workflow item initiated the operation?
+- When was it created?
+- Has it been validated?
+- What confidence is attached to it?
+- Has a newer version superseded it?
+
+Example provenance block:
+
+```json
+{
+  "produced_by": {
+    "workflow": "typed_object_reasoning_example",
+    "workflow_item": "extract_before_objects",
+    "task": "extract_objects",
+    "implementation_species": "llm",
+    "implementation": "openai-gpt-5.6-light",
+    "transaction": "extract_scene_objects"
+  },
+  "derived_from": [
+    "before_scene_images:v2"
+  ],
+  "status": "validated",
+  "confidence": 0.91
+}
+```
+
+Provenance is itself information and therefore has a semantic type and representation datatype.
+
+---
+
+## 13. Serialization and persistence
+
+Silos and their contained artifacts may be serialized to disk and later restored into a workflow.
+
+Typical formats include:
+
+```text
+JSON
+Markdown
+PNG
+Turtle DSL
+SWI-Prolog
+plain text
+SVG
+```
+
+Persistence should not erase semantic meaning. A restored file should be re-associated with:
+
+- its silo ID;
+- semantic type;
+- representation datatype;
+- semantic subject;
+- provenance;
+- validation state;
+- and version.
+
+The workflow slot manifest records these bindings so downstream tasks do not need to guess what a path or string means.
+
+---
+
+## 14. Reading the datatype graph
+
+The generated SVG groups declared datatypes by kind:
+
+- **Root and structural types** — `any`, `scalar`;
+- **Physical types** — text, boolean, integer, JSON, paths, URLs;
+- **Media types** — image, image file, image region, video;
+- **Collection types** — image collection, image sequence, object collection;
+- **Syntactic types** — Prolog, Turtle, image manifests, object manifests;
+- **Semantic types** — individual object, scene, transition evidence, rule set, reports;
+- **Aggregate types** — artifact bundles and other bundles.
+
+Highlighted graph relationships represent:
+
+- semantic representation;
+- collection membership;
+- aggregate membership;
+- and semantic equivalence between concrete forms.
+
+The most important relationship is:
+
+```text
+individual_object
+    may be represented by
+        image_region
+        turtle_program
+        object_properties
+```
+
+The full machine-readable relationships are in [`workflow_datatypes.json`](../config/workflow_datatypes.json).
+
+---
+
+## 15. Recommended terminology
+
+| Term | Meaning |
+|---|---|
+| **Information** | The root concept represented or conveyed by all values and artifacts. |
+| **Representation datatype** | Concrete encoding, storage form, or software-level structure. |
+| **Semantic type** | Meaning of the information. |
+| **Silo** | Named, versioned container holding typed information. |
+| **Port** | A task's declared input or output. |
+| **Slot binding** | Connection between a task port and a silo. |
+| **Task type** | Abstract reusable operation. |
+| **Implementation** | LLM, Python, Prolog, or hybrid mechanism performing a task. |
+| **Implementation species** | Broad execution family such as `llm`, `python`, or `prolog`. |
+| **Semantic subject** | Entity that the information describes. |
+| **Cardinality** | One, optional, list, set, sequence, map, graph, or semantic bundle. |
+| **Event** | Lifecycle change emitted by a silo. |
+| **Branch rule** | Condition that enables another workflow item. |
+| **Aggregate** | Silo containing or organizing other information silos. |
+| **Provenance** | Information describing origin, derivation, implementation, and history. |
+
+---
+
+## 16. Design rules
+
+The workflow and datatype systems should follow these rules:
+
+1. **Every value depicts information.**
+2. **Every silo declares semantic meaning and concrete representation.**
+3. **Text is never semantically self-describing.** A description and a birthdate are not interchangeable simply because both are text.
+4. **Task ports declare semantic contracts.**
+5. **Implementations are replaceable when they satisfy the same task contract.**
+6. **Semantic identity survives changes in representation.**
+7. **Collections and aggregates declare their contained types and cardinality.**
+8. **Every generated silo retains provenance.**
+9. **Validation state and confidence belong to the information record.**
+10. **Workflow branches respond to silo events and conditions, not only hard-coded sequence positions.**
+11. **Legacy transaction-only steps may remain as shorthand, but typed task items are the preferred form for complex orchestration.**
+12. **The simple `g → 4` workflow remains valid; typed workflows are used when decomposition, routing, or verification adds value.**
+
+---
+
+## 17. Complete conceptual model
+
+```text
+Workflow
+    contains Workflow Items
+
+Workflow Item
+    instantiates a Task Type
+    selects an Implementation
+    binds Input Ports to existing Silos
+    binds Output Ports to new Silos
+    declares conditions, optionality, and branch behavior
+
+Task Type
+    declares typed input and output ports
+    defines semantic expectations
+    lists implementation routes
+
+Implementation
+    belongs to a species
+        LLM
+        Python
+        Prolog
+        Hybrid
+    consumes bound silo values
+    produces contract-compatible outputs
+
+Silo
+    contains Information
+    has Representation Datatype
+    has Semantic Information Type
+    has Cardinality
+    has Semantic Subject
+    has Provenance
+    has Validation State
+    has Confidence
+    has Version
+    emits Events
+
+Branch Rule
+    watches Silo Events and Conditions
+    activates additional Workflow Items
+```
+
+---
+
+## 18. Plain-English summary
+
+ARC3 represents the same information in several forms at once.
+
+A single object may exist as:
+
+- an image region;
+- a Turtle drawing program;
+- a set of Prolog properties;
+- a feature vector;
+- an identity record;
+- and references to learned rules.
+
+Those artifacts belong to separate silos, but they may describe the same semantic subject. Workflow tasks consume typed silos, choose an LLM, Python, Prolog, or hybrid implementation, and produce new silos. The appearance or validation of those new silos can activate later branches in the workflow.
+
+The system therefore reasons not only about bytes, files, or strings, but about **information with declared meaning, representation, provenance, cardinality, validation state, and workflow role**.
