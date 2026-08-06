@@ -5,13 +5,7 @@
   "implementation": "llm.complete",
   "inputs": {"transitions": "ChangeDescription", "evidence": "Evidence"},
   "outputs": {"rules": "RuleSet"},
-  "prompts": [
-    "structured_json_response",
-    "transition_observation",
-    "object_correspondence",
-    "rule_hypothesis",
-    "output_quality_control"
-  ],
+  "promptSelection": {"prompts": ["structured_json_response", "transition_observation", "object_correspondence", "rule_hypothesis", "output_quality_control"], "separator": "\n\n"},
   "modelSelection": {"models": [], "strategy": "single"},
   "parameters": {}
 }
