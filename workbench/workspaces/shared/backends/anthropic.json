@@ -1,0 +1,19 @@
+{
+  "kind": "backend",
+  "id": "anthropic",
+  "label": "Claude Sonnet",
+  "provider": "anthropic",
+  "description": "Shared Anthropic Messages API backend inherited by every workspace.",
+  "enabled": true,
+  "capabilities": ["llm.complete", "llm.vision"],
+  "configuration": {
+    "adapter": "anthropic_messages",
+    "baseUrl": "https://api.anthropic.com/v1",
+    "apiKeyEnvironmentVariable": "ANTHROPIC_API_KEY",
+    "baseUrlEnvironmentVariable": "ARC3_CLAUDE_BASE_URL",
+    "defaultModel": "claude-sonnet-4-20250514",
+    "modelEnvironmentVariable": "ARC3_CLAUDE_MODEL",
+    "defaultAnalysisLevel": 4,
+    "timeoutSeconds": 900
+  }
+}
