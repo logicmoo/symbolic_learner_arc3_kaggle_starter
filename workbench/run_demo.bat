@@ -70,6 +70,10 @@ if not exist "%ROOT%.venv\Scripts\python.exe" (
   if errorlevel 1 goto :failed
 )
 
+echo Normalizing workspace JSON resource kinds and filenames...
+"%ROOT%.venv\Scripts\python.exe" "%ROOT%scripts\normalize_workspace_json.py" --write
+if errorlevel 1 goto :failed
+
 "%ROOT%.venv\Scripts\python.exe" -c "import fastapi, pydantic, uvicorn" >nul 2>nul
 if errorlevel 1 (
   echo Installing Python packages for the first run...
