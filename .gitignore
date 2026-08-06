@@ -239,6 +239,11 @@ __marimo__/
 __pycache__/
 *.pyc
 
+# Local workbench runtime state
+node_modules/
+workbench/data/
+*.tsbuildinfo
+
 # Vendored framework + downloaded game source + agent recordings
 vendor/
 environment_files/

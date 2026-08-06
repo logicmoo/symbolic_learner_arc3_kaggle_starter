@@ -188,6 +188,12 @@ restore earlier generated artifacts.
 
 ## Running the workbench
 
+For the complete local browser demo on Windows, pull `main` and run
+[`run_workbench.bat`](run_workbench.bat). It starts the local FastAPI
+event backend and live-editing Vite web interface, then opens the workbench at
+`http://127.0.0.1:5173/`. No deployment is required; frontend and backend edits
+reload from your checkout. See the [local web demo guide](workbench/README.md).
+
 Inside a supported interactive host, press uppercase **`W`** to open the
 workflow desktop. Select a workflow and choose **Save and Run Selected**. The
 desktop validates typed task ports, expands nested subworkflows recursively,
