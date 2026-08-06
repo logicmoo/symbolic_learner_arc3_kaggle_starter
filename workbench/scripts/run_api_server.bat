@@ -23,7 +23,7 @@ echo    "%PYTHON_EXE%" -m uvicorn app:app --reload --host %BIND_IP% --port %API_
 echo.
 echo  If you stop it with Ctrl+C:
 echo    type restart
- echo  or rerun the full command shown above.
+echo  or rerun the full command shown above.
 echo  This command window stays open after the server exits.
 echo ============================================================
 echo.
