@@ -4,6 +4,7 @@ import { App } from "./App";
 import "./styles/workbench.css";
 import "./styles/workspace_backed.css";
 import "./styles/llm_models.css";
+import "./styles/model_inheritance_tree.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
