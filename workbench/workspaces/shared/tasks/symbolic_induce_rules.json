@@ -5,12 +5,7 @@
   "implementation":"llm.complete",
   "inputs":{"facts":"ArtifactBundle","transitions":"ChangeDescription"},
   "outputs":{"rules":"RuleSet"},
-  "prompts":[
-    "structured_json_response",
-    "rule_hypothesis",
-    "transaction_induce_rules_from_symbolic",
-    "output_quality_control"
-  ],
+  "promptSelection":{"prompts":["structured_json_response","rule_hypothesis","transaction_induce_rules_from_symbolic","output_quality_control"],"separator":"\n\n"},
   "modelSelection":{"models":[],"strategy":"single"},
   "parameters":{"requiresVision":false}
 }
