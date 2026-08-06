@@ -28,7 +28,7 @@
       ],
       "form": {
         "action": {
-          "type": "String"
+          "type": "Object"
         }
       },
       "outputs": {
