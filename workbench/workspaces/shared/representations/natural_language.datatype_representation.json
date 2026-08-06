@@ -1,0 +1,11 @@
+{
+  "kind": "datatype_representation",
+  "id": "natural_language",
+  "label": "Natural-Language Description",
+  "implements": "image",
+  "language": "natural_language",
+  "encodings": [
+    {"id": "markdown", "mimeTypes": ["text/markdown"], "extensions": [".md"]},
+    {"id": "plain_text", "mimeTypes": ["text/plain"], "extensions": [".txt"]}
+  ]
+}
