@@ -1,0 +1,10 @@
+{
+  "kind": "datatype_representation",
+  "id": "latent_embedding",
+  "label": "Latent Embedding",
+  "implements": "image",
+  "encodings": [
+    {"id": "vector_json", "mimeTypes": ["application/json"], "extensions": [".json"]},
+    {"id": "numpy", "mimeTypes": ["application/x-npy"], "extensions": [".npy"]}
+  ]
+}
