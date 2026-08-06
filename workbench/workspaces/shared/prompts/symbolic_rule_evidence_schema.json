@@ -1,0 +1,13 @@
+{
+  "kind":"prompt",
+  "id":"symbolic_rule_evidence_schema",
+  "label":"Symbolic Rule Evidence Schema",
+  "description":"Reusable Prolog-style rule/evidence vocabulary extracted from the legacy ARC3 rule prompt.",
+  "text":[
+    "Represent established regularities separately from hypotheses and evidence.",
+    "A useful Prolog-oriented vocabulary is observed_rule/2, hypothetical_rule/3, evidence/3, supported_by/2, contradicted_by/2, and confidence/2.",
+    "Evidence should cite concrete state or transition facts rather than restating the hypothesis.",
+    "Do not promote a hypothesis to an observed rule from one ambiguous coincidence."
+  ],
+  "metadata":{"domain":"symbolic-learning","representation":"prolog"}
+}
