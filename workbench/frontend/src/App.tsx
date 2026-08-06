@@ -1,5 +1,5 @@
-import { UnmockedWorkflowEnginePage } from "./pages/UnmockedWorkflowEnginePage";
+import { WorkspaceWorkbenchPage } from "./pages/WorkspaceWorkbenchPage";
 
 export function App() {
-  return <UnmockedWorkflowEnginePage />;
+  return <WorkspaceWorkbenchPage />;
 }
