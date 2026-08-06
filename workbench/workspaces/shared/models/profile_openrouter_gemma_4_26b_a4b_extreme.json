@@ -1,0 +1,10 @@
+{
+  "kind":"profile",
+  "id":"openrouter-gemma-4-26b-a4b-extreme",
+  "label":"Gemma 4 26B A4B free — extreme",
+  "description":"Prompt-free execution profile migrated from the legacy LLM workflow catalog.",
+  "inherits":"openrouter-gemma-4-26b-a4b",
+  "enabled":true,
+  "defaults":{"analysisLevel":4,"singleEnabled":true,"batchEnabled":false,"maxOutputTokens":26000,"temperature":0.0,"topP":1.0,"reasoningEffort":"high","currentImageDetail":"high","parentImageDetail":"high","timeoutSeconds":900,"seed":null},
+  "metadata":{"legacyTransaction":"full_artifact_bundle"}
+}
