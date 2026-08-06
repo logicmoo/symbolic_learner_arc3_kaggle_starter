@@ -1,0 +1,17 @@
+{
+  "id": "vision.object_analysis",
+  "label": "Vision Object Analysis",
+  "description": "Analyze one visual state into structured objects and an executable reconstruction. This is the reusable vision core extracted from the older ARC3 prompt package.",
+  "implementation": "llm.complete",
+  "inputs": {"image": "Image"},
+  "outputs": {"analysis": "Object", "reconstruction": "Program"},
+  "prompts": [
+    "structured_json_response",
+    "logical_image_coordinates",
+    "object_extraction",
+    "turtle_reconstruction",
+    "output_quality_control"
+  ],
+  "modelSelection": {"models": [], "strategy": "single"},
+  "parameters": {}
+}
