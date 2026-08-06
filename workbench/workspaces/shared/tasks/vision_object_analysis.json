@@ -5,13 +5,10 @@
   "implementation": "llm.complete",
   "inputs": {"image": "Image"},
   "outputs": {"analysis": "Object", "reconstruction": "Program"},
-  "prompts": [
-    "structured_json_response",
-    "logical_image_coordinates",
-    "object_extraction",
-    "turtle_reconstruction",
-    "output_quality_control"
-  ],
+  "promptSelection": {
+    "prompts": ["structured_json_response", "logical_image_coordinates", "object_extraction", "turtle_reconstruction", "output_quality_control"],
+    "separator": "\n\n"
+  },
   "modelSelection": {"models": [], "strategy": "single"},
   "parameters": {}
 }
