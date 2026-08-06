@@ -7,16 +7,16 @@ from typing import Any
 
 from fastapi import APIRouter, Body, HTTPException, Query
 
+from task_library import DEFAULT_WORKSPACES_ROOT, load_workspace_task_records
+
 router = APIRouter(prefix="/workspaces", tags=["workspaces"])
 
-REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_WORKSPACES_ROOT = REPOSITORY_ROOT / "workbench" / "workspaces"
-DEFAULT_WORKSPACE_ID = "default"
 TEXT_SUFFIXES = {".json", ".md", ".txt", ".py", ".pl", ".metta", ".yaml", ".yml", ".toml"}
 IGNORED_DIRECTORIES = {".git", ".venv", "node_modules", "__pycache__"}
 
 
 def _workspace_roots() -> list[Path]:
+    """Return directories whose immediate children are independent workspaces."""
     raw = os.getenv("WORKBENCH_WORKSPACE_ROOTS", "")
     roots = [Path(part).expanduser().resolve() for part in raw.split(os.pathsep) if part.strip()]
     default = DEFAULT_WORKSPACES_ROOT.resolve()
@@ -100,13 +100,6 @@ def _resolve_workspace(workspace_id: str) -> dict[str, Any]:
     raise KeyError("workspace not found")
 
 
-def _default_workspace() -> dict[str, Any] | None:
-    try:
-        return _resolve_workspace(DEFAULT_WORKSPACE_ID)
-    except KeyError:
-        return None
-
-
 def _safe_child(root: Path, relative: str) -> Path:
     resolved_root = root.resolve()
     resolved = (resolved_root / relative).resolve()
@@ -131,7 +124,7 @@ def _load_documents(root: Path, directory: Path, source: str) -> list[dict[str, 
     result: list[dict[str, Any]] = []
     if not directory.exists():
         return result
-    for path in sorted(directory.glob("*.json")):
+    for path in sorted(directory.glob("*.json"), key=lambda item: item.name.lower()):
         record: dict[str, Any] = {"path": path.relative_to(root).as_posix(), "source": source}
         try:
             record["document"] = _read_json(path)
@@ -147,27 +140,7 @@ def _load_workflows(workspace: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def _load_tasks(workspace: dict[str, Any]) -> list[dict[str, Any]]:
-    """Merge disk-backed default tasks with workspace-specific tasks.
-
-    Workspace task IDs override shared default task IDs while both remain visibly
-    attributed to their source directory in the task editor.
-    """
-    combined: dict[str, dict[str, Any]] = {}
-    default = _default_workspace()
-    if default:
-        default_root = Path(default["root"])
-        for record in _load_documents(default_root, Path(default["taskDirectory"]), "shared"):
-            document = record.get("document") or {}
-            key = str(document.get("id") or record["path"])
-            record["workspaceId"] = default["id"]
-            combined[key] = record
-    root = Path(workspace["root"])
-    for record in _load_documents(root, Path(workspace["taskDirectory"]), "workspace"):
-        document = record.get("document") or {}
-        key = str(document.get("id") or record["path"])
-        record["workspaceId"] = workspace["id"]
-        combined[key] = record
-    return sorted(combined.values(), key=lambda item: str((item.get("document") or {}).get("label") or item["path"]).lower())
+    return load_workspace_task_records(Path(workspace["root"]))
 
 
 @router.get("")
