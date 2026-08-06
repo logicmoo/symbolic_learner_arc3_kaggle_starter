@@ -1,0 +1,10 @@
+{
+  "kind": "datatype",
+  "id": "text",
+  "label": "Text",
+  "description": "Textual information independent of language, markup, file encoding, or model-oriented prompt representation.",
+  "representationSelection": {
+    "default": "plain_text",
+    "variants": ["plain_text", "natural_language"]
+  }
+}
