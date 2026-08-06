@@ -7,6 +7,7 @@ from typing import Any
 from task_library import DEFAULT_WORKSPACES_ROOT
 
 SHARED_WORKSPACE_ID = "shared"
+MODEL_CATALOG_DIRECTORY = "models"
 
 
 def read_backend_file(path: Path) -> dict[str, Any]:
@@ -26,11 +27,18 @@ def read_backend_file(path: Path) -> dict[str, Any]:
 
 
 def _backend_records(workspace_root: Path, source: str, workspace_id: str) -> list[dict[str, Any]]:
-    directory = workspace_root / "backends"
+    """Read kind=backend files from the unified models/ catalog."""
+    directory = workspace_root / MODEL_CATALOG_DIRECTORY
     if not directory.is_dir():
         return []
     records: list[dict[str, Any]] = []
     for path in sorted(directory.glob("*.json"), key=lambda item: item.name.lower()):
+        try:
+            raw = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if not isinstance(raw, dict) or raw.get("kind") != "backend":
+            continue
         record: dict[str, Any] = {
             "path": path.relative_to(workspace_root).as_posix(),
             "source": source,
@@ -60,16 +68,13 @@ def load_workspace_backend_records(
     *,
     workspaces_root: Path = DEFAULT_WORKSPACES_ROOT,
 ) -> list[dict[str, Any]]:
-    """Merge shared backends with workspace-specific overrides by backend ID."""
     combined: dict[str, dict[str, Any]] = {}
     for record in load_shared_backend_records(workspaces_root):
         document = record.get("document") or {}
         combined[str(document.get("id") or record["path"])] = record
-
     for record in load_workspace_local_backend_records(workspace_root):
         document = record.get("document") or {}
         combined[str(document.get("id") or record["path"])] = record
-
     return sorted(
         combined.values(),
         key=lambda item: str((item.get("document") or {}).get("label") or item["path"]).lower(),
@@ -81,7 +86,6 @@ def load_backend_library_records(
     *,
     workspaces_root: Path = DEFAULT_WORKSPACES_ROOT,
 ) -> dict[str, list[dict[str, Any]]]:
-    """Return both source libraries plus the effective inherited backend set."""
     return {
         "shared": load_shared_backend_records(workspaces_root),
         "workspace": load_workspace_local_backend_records(workspace_root),
