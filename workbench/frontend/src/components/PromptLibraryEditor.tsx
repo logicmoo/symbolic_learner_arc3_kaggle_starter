@@ -1,43 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
+import {useEffect,useMemo,useState} from "react";
+import {HierarchyResourceEditor} from "./HierarchyResourceEditor";
 import "../styles/task_editor.css";
 
-type Source = "shared" | "workspace";
-type RecordFile<T> = {path:string;source?:Source;workspaceId?:string;document?:T;error?:string};
-type PromptDef = {
-  kind:"prompt";
-  id:string;
-  label?:string;
-  description?:string;
-  inputs?:Record<string,string>;
-  outputs?:Record<string,string>;
-  text?:string|string[];
-  variables?:string[];
-  implementationSelection?:{default?:string;variants?:string[]};
-  metadata?:Record<string,unknown>;
-};
-type PromptImplementationDef = {
-  kind:"prompt_implementation";
-  id:string;
-  implements:string;
-  label?:string;
-  description?:string;
-  version?:number;
-  targets?:string[];
-  language?:string;
-  text:string|string[];
-  metadata?:Record<string,unknown>;
-};
-type PromptResource = PromptDef | PromptImplementationDef;
-type PromptHierarchy = {
-  prompts:RecordFile<PromptDef>[];
-  promptImplementations:RecordFile<PromptImplementationDef>[];
-  implementationsByPrompt:Record<string,RecordFile<PromptImplementationDef>[]>;
-};
-type PromptPayload = {
-  workspace:{id:string;label:string;root:string};
-  prompts:RecordFile<PromptDef>[];
-  promptLibrary?:{hierarchy?:PromptHierarchy};
-};
+type Source="shared"|"workspace";
+type RecordFile<T>={path:string;source?:Source;workspaceId?:string;document?:T;error?:string};
+type PromptDef={kind:"prompt";id:string;label?:string;description?:string;inputs?:Record<string,string>;outputs?:Record<string,string>;text?:string|string[];variables?:string[];implementationSelection?:{default?:string;variants?:string[]};metadata?:Record<string,unknown>};
+type PromptImplementationDef={kind:"prompt_implementation";id:string;implements:string;label?:string;description?:string;version?:number;targets?:string[];language?:string;text:string|string[];metadata?:Record<string,unknown>};
+type PromptResource=PromptDef|PromptImplementationDef;
+type PromptHierarchy={prompts:RecordFile<PromptDef>[];promptImplementations:RecordFile<PromptImplementationDef>[];implementationsByPrompt:Record<string,RecordFile<PromptImplementationDef>[]>};
+type PromptPayload={workspace:{id:string;label:string;root:string};prompts:RecordFile<PromptDef>[];promptLibrary?:{hierarchy?:PromptHierarchy}};
 type OpenDocument={key:string;record:RecordFile<PromptResource>;source:string;dirty:boolean};
 
 const slug=(value:string)=>value.toLowerCase().replace(/[^a-z0-9]+/g,"_").replace(/^_+|_+$/g,"")||"prompt";
@@ -55,9 +26,8 @@ export function PromptLibraryEditor({workspaceId}:{workspaceId:string}){
  const featuredPrompts=useMemo(()=>[...prompts].sort((a,b)=>{const aid=a.document?.id||"",bid=b.document?.id||"";const ac=(children[aid]||[]).length,bc=(children[bid]||[]).length;if(aid==="titlecase_received_text"&&bid!=="titlecase_received_text")return -1;if(bid==="titlecase_received_text"&&aid!=="titlecase_received_text")return 1;if(bc!==ac)return bc-ac;return String(a.document?.label||aid||a.path).localeCompare(String(b.document?.label||bid||b.path))}),[prompts,children]);
  const open=(record:RecordFile<PromptResource>)=>{const key=recordKey(record);setOpenDocs(current=>current.some(doc=>doc.key===key)?current:[...current,{key,record,source:record.document?JSON.stringify(record.document,null,2):"",dirty:false}]);setActiveKey(key)};
  useEffect(()=>{if(payload&&openDocs.length===0&&featuredPrompts[0])open(featuredPrompts[0] as RecordFile<PromptResource>)},[payload,featuredPrompts]);
- const active=openDocs.find(doc=>doc.key===activeKey)||null;
- const comparison=openDocs.find(doc=>doc.key===compareKey)||null;
  const updateSource=(key:string,source:string)=>setOpenDocs(current=>current.map(doc=>doc.key===key?{...doc,source,dirty:true}:doc));
+ const active=openDocs.find(doc=>doc.key===activeKey)||null;
  const close=(key:string)=>{setOpenDocs(current=>{const index=current.findIndex(doc=>doc.key===key);const next=current.filter(doc=>doc.key!==key);if(activeKey===key)setActiveKey(next[Math.max(0,index-1)]?.key||next[0]?.key||null);if(compareKey===key)setCompareKey(null);return next})};
  const chooseComparison=()=>{if(compareKey){setCompareKey(null);return}const other=[...openDocs].reverse().find(doc=>doc.key!==activeKey);if(other)setCompareKey(other.key)};
  const perform=async(work:()=>Promise<void>)=>{setBusy(true);setError(null);try{await work()}catch(reason){setError(reason instanceof Error?reason.message:String(reason))}finally{setBusy(false)}};
@@ -68,24 +38,11 @@ export function PromptLibraryEditor({workspaceId}:{workspaceId:string}){
  const renderEditor=(doc:OpenDocument,secondary=false)=>{let document:PromptResource|null=null;try{document=doc.source?JSON.parse(doc.source) as PromptResource:null}catch{document=null}const parent=document?.kind==="prompt"?document:null;const impl=document?.kind==="prompt_implementation"?document:null;const variants=parent?(children[parent.id]||[]):[];
   const patchParent=(patch:Partial<PromptDef>)=>{if(!parent)return;updateSource(doc.key,JSON.stringify({...parent,...patch},null,2))};
   const setPreferred=(id:string)=>{if(!parent)return;const current=parent.implementationSelection||{};const ids=current.variants?.length?current.variants:variants.map(row=>row.document?.id).filter(Boolean) as string[];patchParent({implementationSelection:{...current,default:id||undefined,variants:ids}})};
-  return <section className={`model-editor-document ${secondary?"secondary":"primary"}`} key={doc.key}>
-   <div className="model-editor-toolbar"><div><span>{document?.kind==="prompt"?"ABSTRACT PROMPT":"PROMPT IMPLEMENTATION"}{doc.dirty?" · UNSAVED":""}</span><h2>{document?.label||document?.id||doc.record.path}</h2><small>{doc.record.source} · {doc.record.path}</small></div><div className="model-editor-actions">{!secondary&&<button onClick={chooseComparison}>{compareKey?"Single pane":"Split view"}</button>}{parent&&<button onClick={()=>newImplementation(parent)}>+ Alternative</button>}<button className="primary" disabled={busy||!document} onClick={()=>saveDoc(doc)}>Save</button></div></div>
-   <div className="model-editor-scroll">
-    {!document&&<div className="demo-notice"><b>Invalid JSON</b><span>Fix the JSON before saving.</span></div>}
-    {parent&&<><div className="task-abstract-summary"><div><span>PREFERRED ALTERNATIVE</span><select value={parent.implementationSelection?.default||""} onChange={e=>setPreferred(e.target.value)}><option value="">planner-selected</option>{variants.map(row=><option key={row.document?.id} value={row.document?.id}>{row.document?.label||row.document?.id}</option>)}</select></div><div><span>ALTERNATIVES</span><code>{variants.length}</code></div><div><span>INPUTS</span><code>{Object.keys(parent.inputs||{}).join(", ")||"—"}</code></div><div><span>OUTPUTS</span><code>{Object.keys(parent.outputs||{}).join(", ")||"—"}</code></div></div><div className="task-model-list compact">{variants.map(row=>{const child=row.document!;const preferred=parent.implementationSelection?.default===child.id;return <button className={`task-model-option ${preferred?"selected":""}`} key={child.id} onClick={()=>open(row as RecordFile<PromptResource>)}><span><b>{child.label||child.id}</b><small>{(child.targets||[]).join(", ")||"generic"} · v{child.version||1}</small></span><em>{preferred?"preferred":"alternative"}</em></button>})}</div></>}
-    {impl&&<div className="implementation-summary"><div><span>IMPLEMENTS</span><b>{impl.implements}</b></div><div><span>TARGETS</span><b>{(impl.targets||[]).join(", ")||"generic"}</b></div><div><span>VERSION</span><b>{impl.version||1}</b></div></div>}
-    <div className="task-json-block"><div className="llm-subhead"><div><span>RESOURCE JSON</span><b>Edit the selected prompt asset directly</b></div></div><textarea className="raw-json-editor task-visible-editor" value={doc.source} onChange={e=>updateSource(doc.key,e.target.value)}/></div>
-   </div>
-  </section>};
+  return <section className={`task-editor-document ${secondary?"secondary":"primary"}`} key={doc.key}><div className="task-editor-toolbar"><div><span>{parent?"ABSTRACT PROMPT":"PROMPT IMPLEMENTATION"}{doc.dirty?" · UNSAVED":""}</span><h2>{document?.label||document?.id||doc.record.path}</h2><small>{doc.record.source} · {doc.record.path}</small></div><div className="task-editor-actions">{!secondary&&<button onClick={chooseComparison}>{compareKey?"Single pane":"Split view"}</button>}{parent&&<button onClick={()=>newImplementation(parent)}>+ Alternative</button>}<button className="primary" disabled={busy||!document} onClick={()=>saveDoc(doc)}>Save</button></div></div><div className="task-editor-scroll">{!document&&<div className="demo-notice"><b>Invalid JSON</b><span>Fix the JSON before saving.</span></div>}{parent&&<><div className="task-abstract-summary"><div><span>PREFERRED ALTERNATIVE</span><select value={parent.implementationSelection?.default||""} onChange={e=>setPreferred(e.target.value)}><option value="">planner-selected</option>{variants.map(row=><option key={row.document?.id} value={row.document?.id}>{row.document?.label||row.document?.id}</option>)}</select></div><div><span>ALTERNATIVES</span><code>{variants.length}</code></div><div><span>INPUTS</span><code>{Object.keys(parent.inputs||{}).join(", ")||"—"}</code></div><div><span>OUTPUTS</span><code>{Object.keys(parent.outputs||{}).join(", ")||"—"}</code></div></div><div className="task-model-list compact">{variants.map(row=>{const child=row.document!;const preferred=parent.implementationSelection?.default===child.id;return <button className={`task-model-option ${preferred?"selected":""}`} key={child.id} onClick={()=>open(row as RecordFile<PromptResource>)}><span><b>{child.label||child.id}</b><small>{(child.targets||[]).join(", ")||"generic"} · v{child.version||1}</small></span><em>{preferred?"preferred":"alternative"}</em></button>})}</div></>}{impl&&<div className="implementation-summary"><div><span>IMPLEMENTS</span><b>{impl.implements}</b></div><div><span>TARGETS</span><b>{(impl.targets||[]).join(", ")||"generic"}</b></div><div><span>VERSION</span><b>{impl.version||1}</b></div></div>}<div className="task-json-block"><div className="llm-subhead"><div><span>RESOURCE JSON</span><b>Edit the selected prompt asset directly</b></div></div><textarea className="raw-json-editor task-visible-editor" value={doc.source} onChange={e=>updateSource(doc.key,e.target.value)}/></div></div></section>};
 
  if(!payload)return <section className="resource-view"><div className="studio-empty">Loading prompt library…</div></section>;
- return <section className="resource-view task-hierarchy-page">
-  <div className="resource-heading"><div><span>PROMPT CONTRACT SYSTEM</span><h1>Prompts & alternatives</h1><p>Select abstract prompts and their alternatives on the left. Open several as tabs, compare two side-by-side, and choose the preferred alternative directly on the abstract prompt.</p></div><button onClick={newPrompt}>+ Abstract prompt</button></div>
-  {error&&<div className="demo-notice"><b>Prompt editor error</b><span>{error}</span></div>}
-  <div className="task-hierarchy-layout">
-   <div className="task-tree-pane">{featuredPrompts.map(prompt=>{const item=prompt.document;if(!item)return null;const variants=children[item.id]||[];return <div className="task-tree-group" key={item.id}><div className="inheritance-row"><button className={`task-tree-row task-parent ${active?.record.document?.id===item.id?"selected":""}`} onClick={()=>open(prompt as RecordFile<PromptResource>)}><span className="task-kind-badge">PROMPT</span><span><b>{item.label||item.id}</b><small>{item.description||item.id}</small></span><em>{variants.length} alternatives</em></button><button className="hier-mini" onClick={()=>newImplementation(item)}>+ alt</button></div><div className="task-tree-children">{variants.map(variant=>{const child=variant.document!;const preferred=item.implementationSelection?.default===child.id;return <button className={`task-tree-row task-child ${active?.record.document?.id===child.id?"selected":""}`} key={child.id} onClick={()=>open(variant as RecordFile<PromptResource>)}><span className="task-kind-badge llm">ALT</span><span><b>{child.label||child.id}</b><small>{(child.targets||[]).join(", ")||"generic"} · v{child.version||1}</small></span><em>{preferred?"preferred":""}</em></button>})}</div></div>})}</div>
-   <div className="task-editor-workspace"><div className="task-document-tabs">{openDocs.map(doc=><div className={`task-document-tab ${doc.key===activeKey?"active":""}`} key={doc.key}><button onClick={()=>setActiveKey(doc.key)}><span>{doc.record.document?.kind==="prompt"?"PROMPT":"ALT"}</span><b>{doc.record.document?.label||doc.record.document?.id||doc.record.path}</b>{doc.dirty&&<i>●</i>}</button><button className="close" onClick={()=>close(doc.key)}>×</button></div>)}</div><div className={`task-editor-panes ${comparison?"split":"single"}`}>{active?renderEditor(active):<div className="studio-empty">Select a prompt or alternative.</div>}{comparison&&renderEditor(comparison,true)}</div></div>
-  </div>
-  <div className="demo-notice"><b>Hierarchy proof</b><span>{prompts.length} abstract prompt(s) · {implementations.length} alternatives. A multi-alternative prompt is automatically featured on first open.</span></div>
- </section>;
+ const leftPane=<>{featuredPrompts.map(prompt=>{const item=prompt.document;if(!item)return null;const variants=children[item.id]||[];return <div className="task-tree-group" key={item.id}><div className="inheritance-row"><button className={`task-tree-row task-parent ${active?.record.document?.id===item.id?"selected":""}`} onClick={()=>open(prompt as RecordFile<PromptResource>)}><span className="task-kind-badge">PROMPT</span><span><b>{item.label||item.id}</b><small>{item.description||item.id}</small></span><em>{variants.length} alternatives</em></button><button className="hier-mini" onClick={()=>newImplementation(item)}>+ alt</button></div><div className="task-tree-children">{variants.map(variant=>{const child=variant.document!;const preferred=item.implementationSelection?.default===child.id;return <button className={`task-tree-row task-child ${active?.record.document?.id===child.id?"selected":""}`} key={child.id} onClick={()=>open(variant as RecordFile<PromptResource>)}><span className="task-kind-badge llm">ALT</span><span><b>{child.label||child.id}</b><small>{(child.targets||[]).join(", ")||"generic"} · v{child.version||1}</small></span><em>{preferred?"preferred":""}</em></button>})}</div></div>})}</>;
+ const tabs=openDocs.map(doc=>({key:doc.key,kind:doc.record.document?.kind==="prompt"?"PROMPT":"ALT",label:doc.record.document?.label||doc.record.document?.id||doc.record.path,dirty:doc.dirty}));
+ const featured=featuredPrompts[0]?.document;const featuredChildren=featured?(children[featured.id]||[]):[];
+ return <HierarchyResourceEditor eyebrow="PROMPT CONTRACT SYSTEM" title="Prompts & alternatives" description="Abstract prompts use the same hierarchy/tree/tab/split-view editor shell as Tasks, Data, and Models." headerActions={<button onClick={newPrompt}>+ Abstract prompt</button>} notice={featured&&featuredChildren.length?<div className="demo-notice"><b>Alternatives visible now: {featured.label||featured.id}</b><span>{featuredChildren.map(row=>row.document?.label||row.document?.id).join(" · ")}</span></div>:undefined} error={error} onDismissError={()=>setError(null)} leftPane={leftPane} tabs={tabs} activeKey={activeKey} compareKey={compareKey} onActivate={setActiveKey} onClose={close} renderEditor={(key,secondary)=>{const doc=openDocs.find(item=>item.key===key);return doc?renderEditor(doc,secondary):null}} emptyEditor={<div className="studio-empty">Select a prompt or alternative.</div>} footer={<div className="demo-notice"><b>Hierarchy proof</b><span>{prompts.length} abstract prompt(s) · {implementations.length} alternatives.</span></div>}/>;
 }
