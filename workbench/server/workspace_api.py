@@ -35,9 +35,12 @@ def _read_json(path: Path) -> dict[str, Any]:
 def _workspace_from_manifest(manifest_path: Path) -> dict[str, Any]:
     manifest = _read_json(manifest_path)
     root = manifest_path.parent.parent if manifest_path.parent.name == ".workbench" else manifest_path.parent
-    workflow_dir = root / str(manifest.get("workflowDirectory") or "workflows")
-    prompt_dir = root / str(manifest.get("promptDirectory") or "prompts")
-    config_dir = root / str(manifest.get("configDirectory") or "config")
+    workflow_relative = str(manifest.get("workflowDirectory") or "workflows").replace("\\", "/").strip("/")
+    prompt_relative = str(manifest.get("promptDirectory") or "prompts").replace("\\", "/").strip("/")
+    config_relative = str(manifest.get("configDirectory") or "config").replace("\\", "/").strip("/")
+    workflow_dir = root / workflow_relative
+    prompt_dir = root / prompt_relative
+    config_dir = root / config_relative
     return {
         "id": str(manifest.get("id") or root.name),
         "label": str(manifest.get("label") or root.name),
@@ -45,8 +48,11 @@ def _workspace_from_manifest(manifest_path: Path) -> dict[str, Any]:
         "root": str(root.resolve()),
         "manifest": str(manifest_path.resolve()),
         "workflowDirectory": str(workflow_dir.resolve()),
+        "workflowDirectoryRelative": workflow_relative,
         "promptDirectory": str(prompt_dir.resolve()),
+        "promptDirectoryRelative": prompt_relative,
         "configDirectory": str(config_dir.resolve()),
+        "configDirectoryRelative": config_relative,
         "metadata": manifest.get("metadata") or {},
         "workflowFileCount": len(list(workflow_dir.glob("*.json"))) if workflow_dir.exists() else 0,
     }
