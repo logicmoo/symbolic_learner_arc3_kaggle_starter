@@ -1,0 +1,10 @@
+{
+  "kind": "datatype",
+  "id": "information",
+  "label": "Information",
+  "description": "Root semantic type for information carried through the workbench.",
+  "representationSelection": {
+    "default": "json_object",
+    "variants": ["json_object", "plain_text", "python_object"]
+  }
+}
