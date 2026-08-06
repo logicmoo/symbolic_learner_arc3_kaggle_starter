@@ -1,0 +1,12 @@
+{
+  "kind": "model",
+  "id": "gpt-5.6-exploratory",
+  "label": "GPT-5.6 Exploratory",
+  "description": "Exploratory GPT-5.6 preset inheriting the base GPT-5.6 model and overriding only generation behavior.",
+  "inherits": "gpt-5.6",
+  "enabled": true,
+  "defaults": {
+    "temperature": 0.35,
+    "reasoningEffort": "medium"
+  }
+}
