@@ -153,8 +153,9 @@ def test_human_demonstration_mode_observes_without_selecting_actions() -> None:
 
 
 def test_domain_neutral_manifests_keep_arc3_at_the_adapter_boundary() -> None:
+    shared_config = ROOT / "workbench" / "workspaces" / "shared" / "config"
     datatypes = json.loads(
-        (ROOT / "config" / "world_workbench_datatypes.json").read_text(encoding="utf-8")
+        (shared_config / "world_workbench_datatypes.json").read_text(encoding="utf-8")
     )
     by_id = {item["id"]: item for item in datatypes["types"]}
     assert by_id["arc3_state"]["kind"] == "adapter"
@@ -162,7 +163,7 @@ def test_domain_neutral_manifests_keep_arc3_at_the_adapter_boundary() -> None:
     assert {"world_model", "goal_set", "simulation_result"}.issubset(by_id)
 
     tasks = json.loads(
-        (ROOT / "config" / "world_workbench_tasks.json").read_text(encoding="utf-8")
+        (shared_config / "world_workbench_tasks.json").read_text(encoding="utf-8")
     )
     task_ids = {item["id"] for item in tasks["tasks"]}
     assert {
