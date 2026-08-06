@@ -1,0 +1,10 @@
+{
+  "kind":"profile",
+  "id":"openrouter-nemotron-3-super-rules",
+  "label":"Nemotron 3 Super — high reasoning",
+  "description":"Prompt-free execution profile migrated from the legacy rules transaction.",
+  "inherits":"openrouter-nemotron-3-super",
+  "enabled":true,
+  "defaults":{"analysisLevel":4,"singleEnabled":false,"batchEnabled":false,"maxOutputTokens":20000,"temperature":0.0,"topP":1.0,"reasoningEffort":"high","currentImageDetail":"low","parentImageDetail":"low","timeoutSeconds":720,"seed":null},
+  "metadata":{"legacyTransaction":"induce_rules_from_prolog"}
+}
