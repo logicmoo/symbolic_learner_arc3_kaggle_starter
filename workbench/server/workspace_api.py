@@ -9,6 +9,7 @@ from fastapi import APIRouter, Body, HTTPException, Query
 
 from backend_library import MODEL_CATALOG_DIRECTORY, load_backend_library_records, load_workspace_backend_records
 from model_library import load_model_library_records, resolve_model_records
+from prompt_library import load_prompt_library_records, load_workspace_prompt_records
 from task_library import DEFAULT_WORKSPACES_ROOT, load_workspace_task_records
 
 router = APIRouter(prefix="/workspaces", tags=["workspaces"])
@@ -59,6 +60,7 @@ def _workspace_from_directory(root: Path) -> dict[str, Any]:
     model_dir = root / MODEL_CATALOG_DIRECTORY
     backend_count = len(load_workspace_backend_records(root))
     model_count = len(resolve_model_records(root))
+    prompt_count = len(load_workspace_prompt_records(root))
     return {
         "id": root.name,
         "label": str(metadata.get("label") or _humanize(root.name)),
@@ -83,6 +85,7 @@ def _workspace_from_directory(root: Path) -> dict[str, Any]:
         "taskFileCount": len(list(task_dir.glob("*.json"))) if task_dir.exists() else 0,
         "backendFileCount": backend_count,
         "modelFileCount": model_count,
+        "promptFileCount": prompt_count,
         "catalogFileCount": len(list(model_dir.glob("*.json"))) if model_dir.exists() else 0,
     }
 
@@ -162,12 +165,20 @@ def _load_models(workspace: dict[str, Any]) -> list[dict[str, Any]]:
     return resolve_model_records(Path(workspace["root"]))
 
 
+def _load_prompts(workspace: dict[str, Any]) -> list[dict[str, Any]]:
+    return load_workspace_prompt_records(Path(workspace["root"]))
+
+
 def _load_backend_library(workspace: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:
     return load_backend_library_records(Path(workspace["root"]))
 
 
 def _load_model_library(workspace: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:
     return load_model_library_records(Path(workspace["root"]))
+
+
+def _load_prompt_library(workspace: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:
+    return load_prompt_library_records(Path(workspace["root"]))
 
 
 @router.get("")
@@ -210,6 +221,15 @@ def workspace_models(workspace_id: str) -> dict[str, Any]:
         raise HTTPException(status_code=404, detail=str(error)) from error
 
 
+@router.get("/{workspace_id}/prompts")
+def workspace_prompts(workspace_id: str) -> dict[str, Any]:
+    try:
+        workspace = _resolve_workspace(workspace_id)
+        return {"workspace": workspace, "prompts": _load_prompts(workspace), "promptLibrary": _load_prompt_library(workspace)}
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+
+
 @router.get("/{workspace_id}/snapshot")
 def workspace_snapshot(workspace_id: str) -> dict[str, Any]:
     try:
@@ -233,6 +253,8 @@ def workspace_snapshot(workspace_id: str) -> dict[str, Any]:
         "backendLibrary": _load_backend_library(workspace),
         "models": _load_models(workspace),
         "modelLibrary": _load_model_library(workspace),
+        "prompts": _load_prompts(workspace),
+        "promptLibrary": _load_prompt_library(workspace),
         "files": files,
     }
 
