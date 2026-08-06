@@ -1,0 +1,17 @@
+{
+  "kind": "model",
+  "id": "gpt-5.6",
+  "label": "GPT-5.6",
+  "description": "Base GPT-5.6 model configuration inheriting from the shared OpenAI backend.",
+  "inherits": "openai",
+  "model": "gpt-5.6",
+  "enabled": true,
+  "defaults": {
+    "temperature": 0,
+    "topP": 1,
+    "maxOutputTokens": 16000,
+    "reasoningEffort": "medium",
+    "analysisLevel": 1,
+    "timeoutSeconds": 300
+  }
+}
