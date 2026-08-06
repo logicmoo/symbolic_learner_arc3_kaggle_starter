@@ -7,7 +7,7 @@ from typing import Any, Iterable
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_WORKSPACES_ROOT = REPOSITORY_ROOT / "workbench" / "workspaces"
-DEFAULT_WORKSPACE_ID = "default"
+SHARED_WORKSPACE_ID = "shared"
 
 
 def read_task_file(path: Path) -> dict[str, Any]:
@@ -44,8 +44,8 @@ def _task_records(workspace_root: Path, source: str, workspace_id: str) -> list[
 
 
 def load_shared_task_records(workspaces_root: Path = DEFAULT_WORKSPACES_ROOT) -> list[dict[str, Any]]:
-    default_root = workspaces_root / DEFAULT_WORKSPACE_ID
-    return _task_records(default_root, "shared", DEFAULT_WORKSPACE_ID)
+    shared_root = workspaces_root / SHARED_WORKSPACE_ID
+    return _task_records(shared_root, "shared", SHARED_WORKSPACE_ID)
 
 
 def load_workspace_task_records(
@@ -53,11 +53,7 @@ def load_workspace_task_records(
     *,
     workspaces_root: Path = DEFAULT_WORKSPACES_ROOT,
 ) -> list[dict[str, Any]]:
-    """Return the effective task library for a workspace.
-
-    Shared defaults are loaded first. Workspace definitions with the same task
-    id override the shared definition while retaining source provenance.
-    """
+    """Return shared tasks plus workspace-specific overrides by task ID."""
     combined: dict[str, dict[str, Any]] = {}
     for record in load_shared_task_records(workspaces_root):
         document = record.get("document") or {}
@@ -65,10 +61,11 @@ def load_workspace_task_records(
         combined[key] = record
 
     workspace_id = workspace_root.name
-    for record in _task_records(workspace_root, "workspace", workspace_id):
-        document = record.get("document") or {}
-        key = str(document.get("id") or record["path"])
-        combined[key] = record
+    if workspace_id != SHARED_WORKSPACE_ID:
+        for record in _task_records(workspace_root, "workspace", workspace_id):
+            document = record.get("document") or {}
+            key = str(document.get("id") or record["path"])
+            combined[key] = record
 
     return sorted(
         combined.values(),
@@ -93,11 +90,6 @@ def task_ids(documents: Iterable[dict[str, Any]]) -> set[str]:
 
 
 def legacy_catalog_view(documents: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Compatibility shape for the old /api/workflows response.
-
-    This is derived from the filesystem task definitions; it is not a second
-    catalog and should be removed when the legacy endpoint is retired.
-    """
     result: list[dict[str, Any]] = []
     for document in documents:
         inputs = document.get("inputs") or {}
@@ -111,6 +103,7 @@ def legacy_catalog_view(documents: Iterable[dict[str, Any]]) -> list[dict[str, A
                 "ports": f"{left} → {right}",
                 "routes": str(document.get("implementation") or ""),
                 "definition": document,
+                "source": "workbench/workspaces/shared/tasks",
             }
         )
     return sorted(result, key=lambda item: str(item["label"]).lower())
