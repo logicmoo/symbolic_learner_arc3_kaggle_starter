@@ -24,13 +24,6 @@
     "reload": false
   },
   "parameters": {
-    "source": {
-      "importMode": "module",
-      "module": "shared_task_callables",
-      "file": "workbench/server/shared_task_callables.py",
-      "className": null,
-      "callable": "to_titlecase"
-    },
     "inputBinding": "text",
     "outputBinding": "text"
   }
