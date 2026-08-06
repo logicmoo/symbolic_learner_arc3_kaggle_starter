@@ -1,0 +1,6 @@
+{
+  "kind": "datatype",
+  "id": "entity",
+  "label": "Entity",
+  "description": "A stable thing or candidate object represented independently of any concrete encoding."
+}
