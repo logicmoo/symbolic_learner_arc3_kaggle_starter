@@ -9,8 +9,10 @@
       "bitmap",
       "svg",
       "logo_program",
+      "turtle_program",
       "scene_graph",
       "object_list",
+      "image_region",
       "natural_language",
       "latent_embedding"
     ]
