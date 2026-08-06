@@ -31,9 +31,6 @@
     ]
   },
   "parameters": {
-    "executable": "swipl",
-    "predicate": "titlecase_text",
-    "sourceCode": "titlecase_text(Input, Output) :-\n    split_string(Input, \" \", \"\", Words),\n    maplist(titlecase_word, Words, Titled),\n    atomics_to_string(Titled, \" \", Output).\n\ntitlecase_word(\"\", \"\") :- !.\ntitlecase_word(Word, Title) :-\n    string_chars(Word, [First|Rest]),\n    upcase_atom(First, UpperFirst),\n    string_chars(Tail, Rest),\n    string_lower(Tail, LowerTail),\n    string_concat(UpperFirst, LowerTail, Title).",
     "inputBinding": "text",
     "outputBinding": "text",
     "timeoutSeconds": 30
