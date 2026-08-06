@@ -8,6 +8,7 @@ const docTabs:HelpTab[]=[
  {id:"llms",label:"LLMs",path:"docs/llm_catalog.md"},
  {id:"tasks",label:"Tasks",path:"docs/tasks.md"},
  {id:"prompts",label:"Prompts",path:"docs/prompts.md"},
+ {id:"migration",label:"Migration",path:"docs/legacy_llm_migration.md"},
 ];
 
 async function readShared(path:string){
