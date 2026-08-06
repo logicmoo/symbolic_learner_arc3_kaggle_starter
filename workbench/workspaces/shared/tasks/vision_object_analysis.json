@@ -6,7 +6,7 @@
   "inputs": {"image": "Image"},
   "outputs": {"analysis": "Object", "reconstruction": "Program"},
   "promptSelection": {
-    "prompts": ["structured_json_response", "logical_image_coordinates", "object_extraction", "turtle_reconstruction", "output_quality_control"],
+    "prompts": ["structured_json_response", "logical_image_coordinates", "object_extraction", "symbolic_scene_fact_schema", "turtle_reconstruction", "turtle_motion_dsl", "output_quality_control"],
     "separator": "\n\n"
   },
   "modelSelection": {"models": [], "strategy": "single"},
