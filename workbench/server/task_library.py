@@ -8,6 +8,7 @@ from typing import Any, Iterable
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_WORKSPACES_ROOT = REPOSITORY_ROOT / "workbench" / "workspaces"
 SHARED_WORKSPACE_ID = "shared"
+TASK_KINDS = {"task", "task-implementation"}
 
 
 def read_task_file(path: Path) -> dict[str, Any]:
@@ -17,14 +18,17 @@ def read_task_file(path: Path) -> dict[str, Any]:
         raise ValueError(f"Invalid task definition {path}: {error}") from error
     if not isinstance(value, dict):
         raise ValueError(f"Task definition must be a JSON object: {path}")
-    declared_kind = value.get("kind")
-    if declared_kind not in (None, "task"):
-        raise ValueError(f"Task definition must declare kind='task': {path}")
-    value.setdefault("kind", "task")
+    kind = str(value.get("kind") or "task")
+    if kind not in TASK_KINDS:
+        raise ValueError(f"Task definition must declare kind='task' or kind='task-implementation': {path}")
+    value["kind"] = kind
     if not str(value.get("id") or "").strip():
         raise ValueError(f"Task definition requires id: {path}")
-    if not str(value.get("implementation") or "").strip():
-        raise ValueError(f"Task definition requires implementation: {path}")
+    if kind == "task-implementation":
+        if not str(value.get("implements") or "").strip():
+            raise ValueError(f"Task implementation requires implements: {path}")
+        if not str(value.get("implementation") or "").strip():
+            raise ValueError(f"Task implementation requires implementation: {path}")
     return value
 
 
@@ -38,55 +42,83 @@ def _task_records(workspace_root: Path, source: str, workspace_id: str) -> list[
             "path": path.relative_to(workspace_root).as_posix(),
             "source": source,
             "workspaceId": workspace_id,
-            "convention": "canonical" if path.name.endswith(".task.json") else "legacy-filename",
         }
         try:
-            record["document"] = read_task_file(path)
+            document = read_task_file(path)
+            record["document"] = document
+            expected = f".{document['kind']}.json"
+            record["convention"] = "canonical" if path.name.endswith(expected) else "legacy-filename"
         except ValueError as error:
             record["error"] = str(error)
         records.append(record)
     return records
 
 
-def load_shared_task_records(workspaces_root: Path = DEFAULT_WORKSPACES_ROOT) -> list[dict[str, Any]]:
-    shared_root = workspaces_root / SHARED_WORKSPACE_ID
-    return _task_records(shared_root, "shared", SHARED_WORKSPACE_ID)
+def load_shared_task_resource_records(workspaces_root: Path = DEFAULT_WORKSPACES_ROOT) -> list[dict[str, Any]]:
+    return _task_records(workspaces_root / SHARED_WORKSPACE_ID, "shared", SHARED_WORKSPACE_ID)
 
 
-def load_workspace_task_records(
-    workspace_root: Path,
-    *,
-    workspaces_root: Path = DEFAULT_WORKSPACES_ROOT,
-) -> list[dict[str, Any]]:
-    """Return shared tasks plus workspace-specific overrides by task ID."""
+def load_workspace_local_task_resource_records(workspace_root: Path) -> list[dict[str, Any]]:
+    if workspace_root.name == SHARED_WORKSPACE_ID:
+        return []
+    return _task_records(workspace_root, "workspace", workspace_root.name)
+
+
+def _effective_resources(workspace_root: Path, *, workspaces_root: Path = DEFAULT_WORKSPACES_ROOT) -> list[dict[str, Any]]:
     combined: dict[str, dict[str, Any]] = {}
-    for record in load_shared_task_records(workspaces_root):
+    for record in load_shared_task_resource_records(workspaces_root):
         document = record.get("document") or {}
-        key = str(document.get("id") or record["path"])
-        combined[key] = record
+        combined[str(document.get("id") or record["path"])] = record
+    for record in load_workspace_local_task_resource_records(workspace_root):
+        document = record.get("document") or {}
+        combined[str(document.get("id") or record["path"])] = record
+    return sorted(combined.values(), key=lambda item: str((item.get("document") or {}).get("label") or item["path"]).lower())
 
-    workspace_id = workspace_root.name
-    if workspace_id != SHARED_WORKSPACE_ID:
-        for record in _task_records(workspace_root, "workspace", workspace_id):
-            document = record.get("document") or {}
-            key = str(document.get("id") or record["path"])
-            combined[key] = record
 
-    return sorted(
-        combined.values(),
-        key=lambda item: str((item.get("document") or {}).get("label") or item["path"]).lower(),
-    )
+def load_shared_task_records(workspaces_root: Path = DEFAULT_WORKSPACES_ROOT) -> list[dict[str, Any]]:
+    return [r for r in load_shared_task_resource_records(workspaces_root) if (r.get("document") or {}).get("kind") == "task"]
+
+
+def load_shared_task_implementation_records(workspaces_root: Path = DEFAULT_WORKSPACES_ROOT) -> list[dict[str, Any]]:
+    return [r for r in load_shared_task_resource_records(workspaces_root) if (r.get("document") or {}).get("kind") == "task-implementation"]
+
+
+def load_workspace_task_records(workspace_root: Path, *, workspaces_root: Path = DEFAULT_WORKSPACES_ROOT) -> list[dict[str, Any]]:
+    return [r for r in _effective_resources(workspace_root, workspaces_root=workspaces_root) if (r.get("document") or {}).get("kind") == "task"]
+
+
+def load_workspace_task_implementation_records(workspace_root: Path, *, workspaces_root: Path = DEFAULT_WORKSPACES_ROOT) -> list[dict[str, Any]]:
+    return [r for r in _effective_resources(workspace_root, workspaces_root=workspaces_root) if (r.get("document") or {}).get("kind") == "task-implementation"]
+
+
+def resolve_task_implementation(workspace_root: Path, task_id: str, requested: str | None = None, *, workspaces_root: Path = DEFAULT_WORKSPACES_ROOT) -> dict[str, Any]:
+    tasks = {str((r.get("document") or {}).get("id")): r for r in load_workspace_task_records(workspace_root, workspaces_root=workspaces_root)}
+    implementations = {str((r.get("document") or {}).get("id")): r for r in load_workspace_task_implementation_records(workspace_root, workspaces_root=workspaces_root)}
+    task_record = tasks.get(task_id)
+    if not task_record:
+        raise KeyError(f"task not found: {task_id}")
+    task = task_record["document"]
+    selection = task.get("implementationSelection") or {}
+    variants = [str(v) for v in selection.get("variants") or []]
+    chosen = requested or selection.get("default") or (variants[0] if variants else None)
+    if not chosen:
+        raise ValueError(f"task has no implementation variant: {task_id}")
+    if variants and chosen not in variants:
+        raise ValueError(f"implementation {chosen} is not allowed by task {task_id}")
+    record = implementations.get(str(chosen))
+    if not record:
+        raise KeyError(f"task implementation not found: {chosen}")
+    implementation = record["document"]
+    if implementation.get("implements") != task_id:
+        raise ValueError(f"implementation {chosen} does not implement {task_id}")
+    return {"task": task, "taskRecord": task_record, "implementation": implementation, "implementationRecord": record}
 
 
 def load_shared_task_documents(workspaces_root: Path = DEFAULT_WORKSPACES_ROOT) -> list[dict[str, Any]]:
     return [record["document"] for record in load_shared_task_records(workspaces_root) if "document" in record]
 
 
-def load_effective_task_documents(
-    workspace_root: Path,
-    *,
-    workspaces_root: Path = DEFAULT_WORKSPACES_ROOT,
-) -> list[dict[str, Any]]:
+def load_effective_task_documents(workspace_root: Path, *, workspaces_root: Path = DEFAULT_WORKSPACES_ROOT) -> list[dict[str, Any]]:
     return [record["document"] for record in load_workspace_task_records(workspace_root, workspaces_root=workspaces_root) if "document" in record]
 
 
@@ -101,14 +133,7 @@ def legacy_catalog_view(documents: Iterable[dict[str, Any]]) -> list[dict[str, A
         outputs = document.get("outputs") or {}
         left = " + ".join(inputs) or "∅"
         right = " + ".join(outputs) or "∅"
-        result.append(
-            {
-                "id": document["id"],
-                "label": document.get("label") or document["id"],
-                "ports": f"{left} → {right}",
-                "routes": str(document.get("implementation") or ""),
-                "definition": document,
-                "source": "workbench/workspaces/shared/tasks",
-            }
-        )
+        selection = document.get("implementationSelection") or {}
+        routes = str(selection.get("default") or document.get("implementation") or "")
+        result.append({"id": document["id"], "label": document.get("label") or document["id"], "ports": f"{left} → {right}", "routes": routes, "definition": document, "source": "workbench/workspaces/shared/tasks"})
     return sorted(result, key=lambda item: str(item["label"]).lower())
