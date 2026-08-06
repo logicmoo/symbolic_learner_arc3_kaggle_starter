@@ -7,11 +7,38 @@ from typing import Any
 from fastapi import APIRouter, Body, HTTPException, Query
 
 from advanced_workflow_engine import AdvancedWorkflowEngine
+from task_resolution import materialize_workflow, materialize_workflow_step
 from workflow_providers import probe_capabilities, register_real_providers
+
+
+class WorkspaceAwareWorkflowEngine(AdvancedWorkflowEngine):
+    """Advanced engine that resolves abstract task IDs only when validating/executing.
+
+    The persisted workflow keeps `kind: workflow_step` + `task: <abstract-id>`.
+    Resolution chooses the task's requested/default concrete implementation variant
+    at runtime, so workflows are not coupled to Python/LLM/Prolog routes.
+    """
+
+    def validate(self, document: dict[str, Any]) -> list[str]:
+        try:
+            executable = materialize_workflow(document)
+        except (KeyError, ValueError) as error:
+            return [str(error)]
+        return super().validate(executable)
+
+    def _execute_advanced_step(self, run_id: str, step: dict[str, Any]) -> None:
+        run = self.get_run(run_id)
+        workflow = self.get_workflow(run['workflowId'], run['workflowVersion'])
+        try:
+            executable = materialize_workflow_step(workflow, step)
+        except (KeyError, ValueError) as error:
+            return self._handle_failure(run_id, step, error)
+        super()._execute_advanced_step(run_id, executable)
+
 
 router = APIRouter(prefix='/engine', tags=['workflow-engine'])
 _db = Path(os.getenv('WORKFLOW_ENGINE_DB', Path(__file__).resolve().parents[1] / 'data' / 'workflow_engine.db'))
-engine = AdvancedWorkflowEngine(_db)
+engine = WorkspaceAwareWorkflowEngine(_db)
 register_real_providers(engine.registry)
 
 
