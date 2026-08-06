@@ -25,6 +25,11 @@ type HierarchyResourceEditorProps = {
   renderEditor: (key: string, secondary: boolean) => ReactNode;
   emptyEditor?: ReactNode;
   footer?: ReactNode;
+  className?: string;
+  treeClassName?: string;
+  workspaceClassName?: string;
+  tabsClassName?: string;
+  panesClassName?: string;
 };
 
 export function HierarchyResourceEditor({
@@ -44,8 +49,13 @@ export function HierarchyResourceEditor({
   renderEditor,
   emptyEditor,
   footer,
+  className = "",
+  treeClassName = "task-tree-pane",
+  workspaceClassName = "task-editor-workspace",
+  tabsClassName = "task-document-tabs",
+  panesClassName = "task-editor-panes",
 }: HierarchyResourceEditorProps) {
-  return <section className="resource-view task-hierarchy-page generic-hierarchy-editor">
+  return <section className={`resource-view task-hierarchy-page generic-hierarchy-editor ${className}`.trim()}>
     <div className="resource-heading">
       <div><span>{eyebrow}</span><h1>{title}</h1><p>{description}</p></div>
       {headerActions && <div className="studio-actions">{headerActions}</div>}
@@ -55,15 +65,15 @@ export function HierarchyResourceEditor({
     {error && <div className="backend-error"><b>{title}</b><span>{error}</span>{onDismissError && <button onClick={onDismissError}>×</button>}</div>}
 
     <div className="task-hierarchy-layout">
-      <div className="task-tree-pane">{leftPane}</div>
-      <div className="task-editor-workspace">
-        <div className="task-document-tabs">
+      <div className={treeClassName}>{leftPane}</div>
+      <div className={workspaceClassName}>
+        <div className={tabsClassName}>
           {tabs.map(tab => <div className={`task-document-tab ${tab.key===activeKey?"active":""}`} key={tab.key}>
             <button onClick={()=>onActivate(tab.key)}><span>{tab.kind}</span><b>{tab.label}</b>{tab.dirty&&<i>●</i>}</button>
             <button className="close" onClick={()=>onClose(tab.key)}>×</button>
           </div>)}
         </div>
-        <div className={`task-editor-panes ${compareKey?"split":"single"}`}>
+        <div className={`${panesClassName} ${compareKey?"split":"single"}`}>
           {activeKey ? renderEditor(activeKey,false) : (emptyEditor || <div className="studio-empty">Select a resource.</div>)}
           {compareKey ? renderEditor(compareKey,true) : null}
         </div>
