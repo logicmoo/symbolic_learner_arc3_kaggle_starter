@@ -7,6 +7,9 @@ if [[ ! -x "$WORKBENCH_ROOT/.venv/bin/python" ]]; then
   python3 -m venv "$WORKBENCH_ROOT/.venv"
 fi
 
+echo "Normalizing workspace JSON resource kinds and filenames..."
+"$WORKBENCH_ROOT/.venv/bin/python" "$WORKBENCH_ROOT/scripts/normalize_workspace_json.py" --write
+
 "$WORKBENCH_ROOT/.venv/bin/python" -m pip install \
   --disable-pip-version-check -q \
   -r "$WORKBENCH_ROOT/server/requirements.txt"
