@@ -21,10 +21,8 @@ def read_model_file(path: Path) -> dict[str, Any]:
         raise ValueError(f"Model definition must declare kind='model': {path}")
     if not str(value.get("id") or "").strip():
         raise ValueError(f"Model definition requires id: {path}")
-    if not str(value.get("backend") or "").strip():
-        raise ValueError(f"Model definition requires backend: {path}")
-    if not str(value.get("model") or "").strip():
-        raise ValueError(f"Model definition requires model: {path}")
+    if not str(value.get("inherits") or "").strip():
+        raise ValueError(f"Model definition requires inherits: {path}")
     defaults = value.get("defaults")
     if defaults is not None and not isinstance(defaults, dict):
         raise ValueError(f"Model defaults must be a JSON object: {path}")
@@ -32,7 +30,6 @@ def read_model_file(path: Path) -> dict[str, Any]:
 
 
 def _model_records(workspace_root: Path, source: str, workspace_id: str) -> list[dict[str, Any]]:
-    """Read kind=model files from the unified models/ catalog."""
     directory = workspace_root / MODEL_CATALOG_DIRECTORY
     if not directory.is_dir():
         return []
@@ -84,30 +81,72 @@ def load_workspace_model_records(workspace_root: Path, *, workspaces_root: Path 
 
 
 def resolve_model_records(workspace_root: Path, model_records: list[dict[str, Any]] | None = None, *, workspaces_root: Path = DEFAULT_WORKSPACES_ROOT) -> list[dict[str, Any]]:
+    """Resolve model inheritance chains until they terminate at a backend.
+
+    A model can inherit either a backend directly or another model. This lets a
+    base model define its remote model identifier and broad defaults while
+    variants inherit it and override only temperature, reasoning effort, token
+    budget, or other settings.
+    """
     records = model_records or load_workspace_model_records(workspace_root, workspaces_root=workspaces_root)
     backend_records = load_workspace_backend_records(workspace_root, workspaces_root=workspaces_root)
     backends = {str((record.get("document") or {}).get("id")): record for record in backend_records if (record.get("document") or {}).get("id")}
+    models = {str((record.get("document") or {}).get("id")): record for record in records if (record.get("document") or {}).get("id")}
+
+    def resolve(model_id: str, trail: tuple[str, ...] = ()) -> dict[str, Any]:
+        if model_id in trail:
+            raise ValueError(f"Model inheritance cycle: {' -> '.join((*trail, model_id))}")
+        record = models[model_id]
+        model = record.get("document") or {}
+        parent_id = str(model.get("inherits") or "")
+        own_defaults = dict(model.get("defaults") or {})
+        own_model = model.get("model")
+
+        backend_record = backends.get(parent_id)
+        if backend_record:
+            backend = backend_record.get("document") or {}
+            configuration = dict(backend.get("configuration") or {})
+            inherited_defaults = dict(backend.get("modelDefaults") or {})
+            return {
+                "parentId": parent_id,
+                "parentKind": "backend",
+                "backendId": parent_id,
+                "backendSource": backend_record.get("source"),
+                "backendPath": backend_record.get("path"),
+                "backend": backend,
+                "inheritance": [parent_id, model_id],
+                "configuration": configuration,
+                "model": own_model or configuration.get("defaultModel"),
+                "defaults": {**inherited_defaults, **own_defaults},
+                "enabled": backend.get("enabled", True) is not False and model.get("enabled", True) is not False,
+            }
+
+        parent_record = models.get(parent_id)
+        if parent_record:
+            parent = resolve(parent_id, (*trail, model_id))
+            return {
+                **parent,
+                "parentId": parent_id,
+                "parentKind": "model",
+                "inheritance": [*parent.get("inheritance", []), model_id],
+                "model": own_model or parent.get("model"),
+                "defaults": {**dict(parent.get("defaults") or {}), **own_defaults},
+                "enabled": bool(parent.get("enabled", False)) and model.get("enabled", True) is not False,
+            }
+
+        raise ValueError(f"Model {model_id} inherits unavailable item: {parent_id}")
+
     resolved: list[dict[str, Any]] = []
     for source_record in records:
         record = dict(source_record)
         model = record.get("document") or {}
-        backend_id = str(model.get("backend") or "")
-        backend_record = backends.get(backend_id)
-        backend = (backend_record or {}).get("document") or {}
-        inherited_configuration = dict(backend.get("configuration") or {})
-        inherited_defaults = dict(backend.get("modelDefaults") or {})
-        model_defaults = dict(model.get("defaults") or {})
-        record["resolved"] = {
-            "backendId": backend_id,
-            "backendSource": (backend_record or {}).get("source"),
-            "backendPath": (backend_record or {}).get("path"),
-            "backend": backend if backend else None,
-            "configuration": inherited_configuration,
-            "defaults": {**inherited_defaults, **model_defaults},
-            "enabled": bool(backend) and backend.get("enabled", True) is not False and model.get("enabled", True) is not False,
-        }
-        if not backend and not record.get("error"):
-            record["error"] = f"Model references unavailable backend: {backend_id}"
+        model_id = str(model.get("id") or "")
+        try:
+            record["resolved"] = resolve(model_id)
+        except ValueError as error:
+            record["resolved"] = {"enabled": False, "inheritance": [model_id]}
+            if not record.get("error"):
+                record["error"] = str(error)
         resolved.append(record)
     return _sort_records(resolved)
 
