@@ -1,0 +1,19 @@
+{
+  "kind": "backend",
+  "id": "openrouter",
+  "label": "OpenRouter automatic free",
+  "provider": "openrouter",
+  "description": "Shared OpenRouter OpenAI-compatible backend inherited by every workspace.",
+  "enabled": true,
+  "capabilities": ["llm.complete", "llm.reasoning", "llm.vision"],
+  "configuration": {
+    "adapter": "openai_responses",
+    "baseUrl": "https://openrouter.ai/api/v1",
+    "apiKeyEnvironmentVariable": "OPENROUTER_API_KEY",
+    "baseUrlEnvironmentVariable": "ARC3_OPENROUTER_BASE_URL",
+    "defaultModel": "openrouter/free",
+    "modelEnvironmentVariable": "ARC3_OPENROUTER_MODEL",
+    "defaultAnalysisLevel": 3,
+    "timeoutSeconds": 900
+  }
+}
