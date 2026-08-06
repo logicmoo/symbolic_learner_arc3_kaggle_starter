@@ -1,0 +1,10 @@
+{
+  "kind": "datatype_representation",
+  "id": "plain_text",
+  "label": "Plain Text",
+  "implements": "information",
+  "encodings": [
+    {"id": "utf8_text", "mimeTypes": ["text/plain"], "extensions": [".txt"]},
+    {"id": "markdown", "mimeTypes": ["text/markdown"], "extensions": [".md"]}
+  ]
+}
