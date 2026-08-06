@@ -7,10 +7,12 @@ from typing import Any
 from fastapi import APIRouter, Body, HTTPException, Query
 
 from advanced_workflow_engine import AdvancedWorkflowEngine
+from workflow_providers import probe_capabilities, register_real_providers
 
 router = APIRouter(prefix='/engine', tags=['workflow-engine'])
 _db = Path(os.getenv('WORKFLOW_ENGINE_DB', Path(__file__).resolve().parents[1] / 'data' / 'workflow_engine.db'))
 engine = AdvancedWorkflowEngine(_db)
+register_real_providers(engine.registry)
 
 
 def _http(error: Exception) -> HTTPException:
@@ -19,28 +21,7 @@ def _http(error: Exception) -> HTTPException:
 
 @router.get('/capabilities')
 def capabilities() -> dict[str, Any]:
-    return {'capabilities': {
-        'durableRuns': True,
-        'versionedWorkflows': True,
-        'typedArtifacts': True,
-        'dependencyGraph': True,
-        'conditions': True,
-        'foreachFanOut': True,
-        'fanIn': True,
-        'boundedLoops': True,
-        'timeouts': True,
-        'retries': True,
-        'retryBackoff': True,
-        'compensation': True,
-        'humanInput': True,
-        'nestedWorkflows': True,
-        'pauseResumeCancel': True,
-        'subprocessTasks': True,
-        'httpTasks': True,
-        'taskLogs': True,
-        'restartRecovery': True,
-        'replay': True,
-    }}
+    return {'capabilities': probe_capabilities(engine.registry)}
 
 
 @router.get('/implementations')
