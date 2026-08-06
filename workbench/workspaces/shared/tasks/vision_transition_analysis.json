@@ -5,14 +5,7 @@
   "implementation": "llm.complete",
   "inputs": {"before": "Image", "after": "Image"},
   "outputs": {"changes": "ChangeDescription", "correspondences": "Object"},
-  "prompts": [
-    "structured_json_response",
-    "logical_image_coordinates",
-    "object_extraction",
-    "transition_observation",
-    "object_correspondence",
-    "output_quality_control"
-  ],
+  "promptSelection": {"prompts": ["structured_json_response", "logical_image_coordinates", "object_extraction", "transition_observation", "object_correspondence", "output_quality_control"], "separator": "\n\n"},
   "modelSelection": {"models": [], "strategy": "single"},
   "parameters": {}
 }
