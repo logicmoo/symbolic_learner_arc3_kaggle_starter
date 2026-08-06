@@ -17,7 +17,9 @@ KNOWN_RESOURCE_KINDS = {
     "prompt",
     "schema",
     "task",
+    "task-implementation",
     "workflow",
+    "workflow-step",
     "workspace",
 }
 
@@ -57,7 +59,7 @@ def infer_resource_kind(path: Path, document: dict[str, Any]) -> str:
     parent = path.parent.name.lower()
     name = path.stem.lower()
     if parent == "tasks":
-        return "task"
+        return "task-implementation" if document.get("implements") else "task"
     if parent == "prompts":
         return "prompt"
     if parent == "workflows":
