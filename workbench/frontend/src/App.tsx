@@ -1,5 +1,5 @@
-import { BackendWorkbenchPage } from "./pages/BackendWorkbenchPage";
+import { RealWorkbenchPage } from "./pages/RealWorkbenchPage";
 
 export function App() {
-  return <BackendWorkbenchPage />;
+  return <RealWorkbenchPage />;
 }
