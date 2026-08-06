@@ -4,28 +4,28 @@ import re
 from pathlib import Path
 from typing import Any
 
-KIND_PATTERN = re.compile(r"^[a-z][a-z0-9-]*$")
+KIND_PATTERN = re.compile(r"^[a-z][a-z0-9_]*$")
 KNOWN_RESOURCE_KINDS = {
-    "artifact-catalog",
+    "artifact_catalog",
     "backend",
     "config",
     "data",
-    "datatype-catalog",
+    "datatype_catalog",
     "manifest",
     "model",
     "profile",
     "prompt",
     "schema",
     "task",
-    "task-implementation",
+    "task_implementation",
     "workflow",
-    "workflow-step",
+    "workflow_step",
     "workspace",
 }
 
 
 def normalize_kind(kind: str) -> str:
-    value = re.sub(r"[^a-z0-9]+", "-", str(kind).strip().lower()).strip("-")
+    value = re.sub(r"[^a-z0-9]+", "_", str(kind).strip().lower()).strip("_")
     if not value or not KIND_PATTERN.fullmatch(value):
         raise ValueError(f"Invalid resource kind: {kind!r}")
     return value
@@ -59,7 +59,7 @@ def infer_resource_kind(path: Path, document: dict[str, Any]) -> str:
     parent = path.parent.name.lower()
     name = path.stem.lower()
     if parent == "tasks":
-        return "task-implementation" if document.get("implements") else "task"
+        return "task_implementation" if document.get("implements") else "task"
     if parent == "prompts":
         return "prompt"
     if parent == "workflows":
@@ -72,9 +72,9 @@ def infer_resource_kind(path: Path, document: dict[str, Any]) -> str:
         return "model"
     if parent == "config":
         if "datatype" in name:
-            return "datatype-catalog"
+            return "datatype_catalog"
         if "artifact" in name:
-            return "artifact-catalog"
+            return "artifact_catalog"
         if "schema" in name:
             return "schema"
         if "manifest" in name:
