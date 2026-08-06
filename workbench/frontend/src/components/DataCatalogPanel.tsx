@@ -1,236 +1,50 @@
 import { useEffect, useMemo, useState } from "react";
+import "../styles/task_editor.css";
 
-type RecordFile<T> = {
-  path: string;
-  source?: "shared" | "workspace";
-  workspaceId?: string;
-  document?: T;
-  error?: string;
-};
+type RecordFile<T>={path:string;source?:"shared"|"workspace";workspaceId?:string;document?:T;error?:string};
+type DatatypeDef={kind:"datatype";id:string;label?:string;description?:string;extends?:string[];representationSelection?:{default?:string;variants?:string[]};[key:string]:unknown};
+type RepresentationDef={kind:"datatype_representation";id:string;label?:string;description?:string;implements:string|string[];[key:string]:unknown};
+type DataResource=DatatypeDef|RepresentationDef;
+type ConversionEdge={taskId:string;label?:string;datatype:string;from:string;to:string;cost:number;lossy?:boolean;expectedAccuracy?:number};
+type InventoryRef={ownerKind:string;ownerId:string;direction:string;port:string;datatype:string;representation?:string|null};
+type OpenDocument={key:string;record:RecordFile<DataResource>;source:string;dirty:boolean};
 
-type DatatypeDef = {
-  kind: "datatype";
-  id: string;
-  label?: string;
-  description?: string;
-  extends?: string[];
-  representationSelection?: {default?: string; variants?: string[]};
-  [key: string]: unknown;
-};
+async function jsonRequest(path:string,init?:RequestInit){const response=await fetch(path,{headers:{"Content-Type":"application/json",...(init?.headers||{})},...init});const payload=await response.json();if(!response.ok)throw new Error(String(payload.error||payload.detail||response.statusText));return payload;}
+const slug=(value:string)=>value.toLowerCase().replace(/[^a-z0-9]+/g,"_").replace(/^_+|_+$/g,"")||"item";
+const recordKey=(record:RecordFile<DataResource>)=>`${record.workspaceId||record.source||"resource"}:${record.path}:${record.document?.id||"unknown"}`;
+const implementsType=(representation:RepresentationDef,datatypeId:string)=>Array.isArray(representation.implements)?representation.implements.includes(datatypeId):representation.implements===datatypeId;
 
-type RepresentationDef = {
-  kind: "datatype_representation";
-  id: string;
-  label?: string;
-  description?: string;
-  implements: string | string[];
-  [key: string]: unknown;
-};
+export function DataCatalogPanel({workspaceId}:{workspaceId:string}){
+ const[datatypes,setDatatypes]=useState<RecordFile<DatatypeDef>[]>([]),[representations,setRepresentations]=useState<RecordFile<RepresentationDef>[]>([]),[edges,setEdges]=useState<ConversionEdge[]>([]),[references,setReferences]=useState<InventoryRef[]>([]),[undeclaredDatatypes,setUndeclaredDatatypes]=useState<string[]>([]),[undeclaredRepresentations,setUndeclaredRepresentations]=useState<string[]>([]),[openDocs,setOpenDocs]=useState<OpenDocument[]>([]),[activeKey,setActiveKey]=useState<string|null>(null),[compareKey,setCompareKey]=useState<string|null>(null),[tab,setTab]=useState<"types"|"conversions"|"usage">("types"),[error,setError]=useState<string|null>(null),[busy,setBusy]=useState(false);
+ const refresh=async()=>{const[graph,inventory]=await Promise.all([jsonRequest(`/api/workspaces/${encodeURIComponent(workspaceId)}/representation-graph`),jsonRequest(`/api/workspaces/${encodeURIComponent(workspaceId)}/data-inventory`)]);setDatatypes(graph.datatypes||[]);setRepresentations(graph.representations||[]);setEdges(graph.conversionEdges||[]);setReferences(inventory.references||[]);setUndeclaredDatatypes(inventory.undeclaredDatatypes||[]);setUndeclaredRepresentations(inventory.undeclaredRepresentations||[])};
+ useEffect(()=>{setOpenDocs([]);setActiveKey(null);setCompareKey(null);setTab("types");void refresh().catch(reason=>setError(String(reason)))},[workspaceId]);
+ const byDatatype=useMemo(()=>{const result=new Map<string,RecordFile<RepresentationDef>[]>();for(const datatype of datatypes)result.set(datatype.document?.id||datatype.path,[]);for(const representation of representations){if(!representation.document)continue;for(const datatype of datatypes){const id=datatype.document?.id;if(id&&implementsType(representation.document,id))result.get(id)?.push(representation)}}for(const rows of result.values())rows.sort((a,b)=>String(a.document?.label||a.document?.id||a.path).localeCompare(String(b.document?.label||b.document?.id||b.path)));return result},[datatypes,representations]);
+ const featuredDatatypes=useMemo(()=>[...datatypes].sort((a,b)=>{const aid=a.document?.id||"",bid=b.document?.id||"",ac=(byDatatype.get(aid)||[]).length,bc=(byDatatype.get(bid)||[]).length;if(aid==="image"&&bid!=="image")return-1;if(bid==="image"&&aid!=="image")return 1;if(bc!==ac)return bc-ac;return String(a.document?.label||aid||a.path).localeCompare(String(b.document?.label||bid||b.path))}),[datatypes,byDatatype]);
+ const open=(record:RecordFile<DataResource>)=>{const key=recordKey(record);setOpenDocs(current=>current.some(doc=>doc.key===key)?current:[...current,{key,record,source:record.document?JSON.stringify(record.document,null,2):"",dirty:false}]);setActiveKey(key)};
+ useEffect(()=>{if(openDocs.length===0&&featuredDatatypes[0])open(featuredDatatypes[0] as RecordFile<DataResource>)},[featuredDatatypes]);
+ const active=openDocs.find(doc=>doc.key===activeKey)||null,comparison=openDocs.find(doc=>doc.key===compareKey)||null;
+ const updateSource=(key:string,source:string)=>setOpenDocs(current=>current.map(doc=>doc.key===key?{...doc,source,dirty:true}:doc));
+ const close=(key:string)=>{setOpenDocs(current=>{const index=current.findIndex(doc=>doc.key===key),next=current.filter(doc=>doc.key!==key);if(activeKey===key)setActiveKey(next[Math.max(0,index-1)]?.key||next[0]?.key||null);if(compareKey===key)setCompareKey(null);return next})};
+ const chooseComparison=()=>{if(compareKey){setCompareKey(null);return}const other=[...openDocs].reverse().find(doc=>doc.key!==activeKey);if(other)setCompareKey(other.key)};
+ const saveDoc=async(doc:OpenDocument)=>{setBusy(true);setError(null);try{const document=JSON.parse(doc.source) as DataResource;if(!document.id||!["datatype","datatype_representation"].includes(document.kind))throw new Error("Data resource must declare id and kind=datatype or datatype_representation");const directory=document.kind==="datatype"?"datatypes":"representations";const path=workspaceId==="shared"||doc.record.source==="workspace"?doc.record.path:`${directory}/${slug(document.id)}.${document.kind}.json`;await jsonRequest(`/api/workspaces/${encodeURIComponent(workspaceId)}/file`,{method:"PUT",body:JSON.stringify({path,content:JSON.stringify(document,null,2)})});await refresh();setOpenDocs(current=>current.map(item=>item.key===doc.key?{...item,source:JSON.stringify(document,null,2),dirty:false}:item))}catch(reason){setError(reason instanceof Error?reason.message:String(reason))}finally{setBusy(false)}};
 
-type ConversionEdge = {
-  taskId: string;
-  label?: string;
-  datatype: string;
-  from: string;
-  to: string;
-  cost: number;
-  lossy?: boolean;
-  expectedAccuracy?: number;
-};
+ const renderEditor=(doc:OpenDocument,secondary=false)=>{let document:DataResource|null=null;try{document=doc.source?JSON.parse(doc.source) as DataResource:null}catch{document=null}const datatype=document?.kind==="datatype"?document:null,representation=document?.kind==="datatype_representation"?document:null,variants=datatype?(byDatatype.get(datatype.id)||[]):[];const refs=document?references.filter(ref=>ref.datatype===document!.id||ref.representation===document!.id):[];
+  const patchDatatype=(patch:Partial<DatatypeDef>)=>{if(!datatype)return;updateSource(doc.key,JSON.stringify({...datatype,...patch},null,2))};
+  const setPreferred=(id:string)=>{if(!datatype)return;const current=datatype.representationSelection||{};const ids=current.variants?.length?current.variants:variants.map(row=>row.document?.id).filter(Boolean) as string[];patchDatatype({representationSelection:{...current,default:id||undefined,variants:ids}})};
+  return <section className={`task-editor-document ${secondary?"secondary":"primary"}`} key={doc.key}><div className="task-editor-toolbar"><div><span>{datatype?"ABSTRACT DATATYPE":"DATA REPRESENTATION"}{doc.dirty?" · UNSAVED":""}</span><h2>{document?.label||document?.id||doc.record.path}</h2><small>{doc.record.source} · {doc.record.path}</small></div><div className="task-editor-actions">{!secondary&&<button onClick={chooseComparison}>{compareKey?"Single pane":"Split view"}</button>}<button className="primary" disabled={busy||!document} onClick={()=>saveDoc(doc)}>Save</button></div></div><div className="task-editor-scroll">
+   {!document&&<div className="demo-notice"><b>Invalid JSON</b><span>Fix the JSON before saving.</span></div>}
+   {datatype&&<><div className="task-abstract-summary"><div><span>PREFERRED REPRESENTATION</span><select value={datatype.representationSelection?.default||""} onChange={e=>setPreferred(e.target.value)}><option value="">planner-selected</option>{variants.map(row=><option key={row.document?.id} value={row.document?.id}>{row.document?.label||row.document?.id}</option>)}</select></div><div><span>ALTERNATIVES</span><code>{variants.length}</code></div><div><span>USED BY</span><code>{refs.length} interfaces</code></div><div><span>EXTENDS</span><code>{datatype.extends?.join(", ")||"—"}</code></div></div><div className="task-model-list compact">{variants.map(row=>{const child=row.document!,preferred=datatype.representationSelection?.default===child.id;return <button className={`task-model-option ${preferred?"selected":""}`} key={child.id} onClick={()=>open(row as RecordFile<DataResource>)}><span><b>{child.label||child.id}</b><small>{child.description||`implements ${datatype.id}`}</small></span><em>{preferred?"preferred":"alternative"}</em></button>})}</div></>}
+   {representation&&<div className="implementation-summary"><div><span>IMPLEMENTS</span><b>{Array.isArray(representation.implements)?representation.implements.join(", "):representation.implements}</b></div><div><span>USED BY</span><b>{refs.length} interface(s)</b></div></div>}
+   <div className="task-json-block"><div className="llm-subhead"><div><span>RESOURCE JSON</span><b>Edit this datatype or representation directly</b></div></div><textarea className="raw-json-editor task-visible-editor" value={doc.source} onChange={e=>updateSource(doc.key,e.target.value)}/></div>
+  </div></section>};
 
-type InventoryRef = {
-  ownerKind: string;
-  ownerId: string;
-  direction: string;
-  port: string;
-  datatype: string;
-  representation?: string | null;
-};
-
-async function jsonRequest(path: string, init?: RequestInit) {
-  const response = await fetch(path, {
-    headers: {"Content-Type": "application/json", ...(init?.headers || {})},
-    ...init,
-  });
-  const payload = await response.json();
-  if (!response.ok) throw new Error(String(payload.error || payload.detail || response.statusText));
-  return payload;
-}
-
-const slug = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "") || "item";
-const implementsType = (representation: RepresentationDef, datatypeId: string) => {
-  const value = representation.implements;
-  return Array.isArray(value) ? value.includes(datatypeId) : value === datatypeId;
-};
-
-export function DataCatalogPanel({workspaceId}: {workspaceId: string}) {
-  const [datatypes, setDatatypes] = useState<RecordFile<DatatypeDef>[]>([]);
-  const [representations, setRepresentations] = useState<RecordFile<RepresentationDef>[]>([]);
-  const [edges, setEdges] = useState<ConversionEdge[]>([]);
-  const [references, setReferences] = useState<InventoryRef[]>([]);
-  const [undeclaredDatatypes, setUndeclaredDatatypes] = useState<string[]>([]);
-  const [undeclaredRepresentations, setUndeclaredRepresentations] = useState<string[]>([]);
-  const [selected, setSelected] = useState<RecordFile<DatatypeDef | RepresentationDef> | null>(null);
-  const [source, setSource] = useState("");
-  const [targetPath, setTargetPath] = useState<string | null>(null);
-  const [tab, setTab] = useState<"types" | "conversions" | "usage">("types");
-  const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-
-  const refresh = async () => {
-    const [graph, inventory] = await Promise.all([
-      jsonRequest(`/api/workspaces/${encodeURIComponent(workspaceId)}/representation-graph`),
-      jsonRequest(`/api/workspaces/${encodeURIComponent(workspaceId)}/data-inventory`),
-    ]);
-    setDatatypes(graph.datatypes || []);
-    setRepresentations(graph.representations || []);
-    setEdges(graph.conversionEdges || []);
-    setReferences(inventory.references || []);
-    setUndeclaredDatatypes(inventory.undeclaredDatatypes || []);
-    setUndeclaredRepresentations(inventory.undeclaredRepresentations || []);
-  };
-
-  useEffect(() => {
-    setSelected(null);
-    setSource("");
-    setTargetPath(null);
-    setTab("types");
-    void refresh().catch(reason => setError(String(reason)));
-  }, [workspaceId]);
-
-  const byDatatype = useMemo(() => {
-    const result = new Map<string, RecordFile<RepresentationDef>[]>();
-    for (const datatype of datatypes) result.set(datatype.document?.id || datatype.path, []);
-    for (const representation of representations) {
-      if (!representation.document) continue;
-      for (const datatype of datatypes) {
-        const id = datatype.document?.id;
-        if (id && implementsType(representation.document, id)) result.get(id)?.push(representation);
-      }
-    }
-    for (const rows of result.values()) rows.sort((a,b)=>String(a.document?.label||a.document?.id||a.path).localeCompare(String(b.document?.label||b.document?.id||b.path)));
-    return result;
-  }, [datatypes, representations]);
-
-  const featuredDatatypes = useMemo(() => [...datatypes].sort((a,b) => {
-    const aid = a.document?.id || "";
-    const bid = b.document?.id || "";
-    const ac = (byDatatype.get(aid) || []).length;
-    const bc = (byDatatype.get(bid) || []).length;
-    if (aid === "image" && bid !== "image") return -1;
-    if (bid === "image" && aid !== "image") return 1;
-    if (bc !== ac) return bc - ac;
-    return String(a.document?.label || aid || a.path).localeCompare(String(b.document?.label || bid || b.path));
-  }), [datatypes, byDatatype]);
-
-  const selectRecord = (record: RecordFile<DatatypeDef | RepresentationDef>) => {
-    setSelected(record);
-    setSource(record.document ? JSON.stringify(record.document, null, 2) : "");
-    setTargetPath(record.source === "workspace" || workspaceId === "shared" ? record.path : null);
-  };
-
-  useEffect(() => {
-    if (!selected && featuredDatatypes.length) selectRecord(featuredDatatypes[0] as RecordFile<DatatypeDef | RepresentationDef>);
-  }, [featuredDatatypes, selected]);
-
-  const makeLocal = () => {
-    if (!selected?.document || workspaceId === "shared") return;
-    const doc = selected.document;
-    const directory = doc.kind === "datatype" ? "datatypes" : "representations";
-    setTargetPath(`${directory}/${slug(doc.id)}.${doc.kind}.json`);
-  };
-
-  const save = async () => {
-    if (!source.trim()) return;
-    setBusy(true);
-    setError(null);
-    try {
-      const document = JSON.parse(source) as DatatypeDef | RepresentationDef;
-      if (!document.id || !["datatype", "datatype_representation"].includes(document.kind)) {
-        throw new Error("Data resource must declare id and kind=datatype or kind=datatype_representation");
-      }
-      const directory = document.kind === "datatype" ? "datatypes" : "representations";
-      const path = targetPath || `${directory}/${slug(document.id)}.${document.kind}.json`;
-      await jsonRequest(`/api/workspaces/${encodeURIComponent(workspaceId)}/file`, {
-        method: "PUT",
-        body: JSON.stringify({path, content: JSON.stringify(document, null, 2)}),
-      });
-      await refresh();
-      setTargetPath(path);
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : String(reason));
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const selectedId = selected?.document?.id;
-  const selectedRefs = references.filter(ref => ref.datatype === selectedId || ref.representation === selectedId);
-  const featured = featuredDatatypes[0]?.document;
-  const featuredChildren = featured ? (byDatatype.get(featured.id) || []) : [];
-
-  return <section className="resource-view">
-    <div className="resource-heading">
-      <div>
-        <span>DATA CONTRACT SYSTEM</span>
-        <h1>Datatypes & representations</h1>
-        <p>Abstract meaning is separate from concrete encoding. The first visible example always shows a datatype with its interchangeable representations.</p>
-      </div>
-      <div className="studio-actions">
-        <button className={tab === "types" ? "primary" : ""} onClick={() => setTab("types")}>Hierarchy</button>
-        <button className={tab === "conversions" ? "primary" : ""} onClick={() => setTab("conversions")}>Conversions</button>
-        <button className={tab === "usage" ? "primary" : ""} onClick={() => setTab("usage")}>Usage</button>
-      </div>
-    </div>
-
-    {featured && featuredChildren.length > 0 && <div className="demo-notice"><b>Alternatives visible now: {featured.label || featured.id}</b><span>{featuredChildren.map(row => row.document?.label || row.document?.id).join(" · ")}</span></div>}
-    {error && <div className="backend-error"><b>Data editor</b><span>{error}</span><button onClick={() => setError(null)}>×</button></div>}
-
-    {(undeclaredDatatypes.length > 0 || undeclaredRepresentations.length > 0) && <div className="demo-notice">
-      <b>Interface references still need first-class definitions</b>
-      <span>{undeclaredDatatypes.length ? `Datatypes: ${undeclaredDatatypes.join(", ")}. ` : ""}{undeclaredRepresentations.length ? `Representations: ${undeclaredRepresentations.join(", ")}.` : ""}</span>
-    </div>}
-
-    {tab === "types" && <div style={{display:"grid",gridTemplateColumns:"minmax(360px, 1fr) minmax(420px, 1.15fr)",gap:14}}>
-      <div className="resource-table">
-        <div className="resource-row resource-head"><span>Abstract datatype / representation</span><span>Kind</span><span>Source</span><span>Default</span><span>State</span></div>
-        {featuredDatatypes.map(datatype => {
-          const doc = datatype.document;
-          const children = doc ? (byDatatype.get(doc.id) || []) : [];
-          return <div key={`${datatype.workspaceId}:${datatype.path}`}>
-            <button className="resource-row" onDoubleClick={() => selectRecord(datatype)} onClick={() => selectRecord(datatype)}>
-              <b>{doc?.label || doc?.id || datatype.path}</b><code>datatype</code><span>{datatype.source}</span><span>{doc?.representationSelection?.default || "—"}</span><em>{children.length ? `${children.length} alternatives` : datatype.error ? "error" : "abstract"}</em>
-            </button>
-            <div className="task-tree-children">{children.map(rep => <button className="resource-row" style={{paddingLeft:28}} key={`${rep.workspaceId}:${rep.path}`} onDoubleClick={() => selectRecord(rep)} onClick={() => selectRecord(rep)}>
-              <b>↳ {rep.document?.label || rep.document?.id || rep.path}</b><code>representation</code><span>{rep.source}</span><span>{rep.document?.id}</span><em>{rep.error ? "error" : "implementation"}</em>
-            </button>)}</div>
-          </div>;
-        })}
-      </div>
-      <div className="prompt-preview">
-        <div>
-          <span>DATA RESOURCE EDITOR</span>
-          <b>{selected?.document?.id || "Select a datatype or representation"}</b>
-          <small>{selected?.path || "Select an item in the hierarchy."}</small>
-          {selected?.document && <><span>USED BY</span><small>{selectedRefs.length ? `${selectedRefs.length} interface reference(s)` : "No discovered interface references"}</small></>}
-          <div className="studio-actions">
-            {selected?.source === "shared" && workspaceId !== "shared" && <button onClick={makeLocal}>Make workspace override</button>}
-            <button className="primary" disabled={!selected || busy} onClick={save}>Save</button>
-          </div>
-        </div>
-        <textarea className="raw-json-editor" style={{height:420,margin:0,border:0}} value={source} onChange={event => setSource(event.target.value)} placeholder="Select a data resource to edit it."/>
-      </div>
-    </div>}
-
-    {tab === "conversions" && <div className="resource-table">
-      <div className="resource-row resource-head"><span>Conversion task</span><span>Datatype</span><span>From</span><span>To</span><span>Planning</span></div>
-      {edges.map(edge => <div className="resource-row" key={`${edge.taskId}:${edge.from}:${edge.to}`}><b>{edge.label || edge.taskId}</b><code>{edge.datatype}</code><span>{edge.from}</span><span>{edge.to}</span><em>cost {edge.cost}{edge.lossy ? " · lossy" : ""}</em></div>)}
-      {!edges.length && <div className="studio-empty">No representation conversion tasks are currently declared.</div>}
-    </div>}
-
-    {tab === "usage" && <div className="resource-table">
-      <div className="resource-row resource-head"><span>Owner</span><span>Kind</span><span>Port</span><span>Datatype</span><span>Representation</span></div>
-      {references.map((ref, index) => <div className="resource-row" key={`${ref.ownerKind}:${ref.ownerId}:${ref.port}:${index}`}><b>{ref.ownerId}</b><code>{ref.ownerKind}</code><span>{ref.direction}:{ref.port}</span><span>{ref.datatype}</span><em>{ref.representation || "planner-selected"}</em></div>)}
-    </div>}
-  </section>;
+ const featured=featuredDatatypes[0]?.document,featuredChildren=featured?(byDatatype.get(featured.id)||[]):[];
+ return <section className="resource-view task-hierarchy-page"><div className="resource-heading"><div><span>DATA CONTRACT SYSTEM</span><h1>Datatypes & representations</h1><p>The rich editor matches Tasks: hierarchy on the left, persistent editor tabs, split comparison, and preferred alternative selection on the abstract datatype.</p></div><div className="studio-actions"><button className={tab==="types"?"primary":""} onClick={()=>setTab("types")}>Hierarchy</button><button className={tab==="conversions"?"primary":""} onClick={()=>setTab("conversions")}>Conversions</button><button className={tab==="usage"?"primary":""} onClick={()=>setTab("usage")}>Usage</button></div></div>
+ {featured&&featuredChildren.length>0&&<div className="demo-notice"><b>Alternatives visible now: {featured.label||featured.id}</b><span>{featuredChildren.map(row=>row.document?.label||row.document?.id).join(" · ")}</span></div>}
+ {error&&<div className="backend-error"><b>Data editor</b><span>{error}</span><button onClick={()=>setError(null)}>×</button></div>}
+ {(undeclaredDatatypes.length>0||undeclaredRepresentations.length>0)&&<div className="demo-notice"><b>Interface references still need first-class definitions</b><span>{undeclaredDatatypes.length?`Datatypes: ${undeclaredDatatypes.join(", ")}. `:""}{undeclaredRepresentations.length?`Representations: ${undeclaredRepresentations.join(", ")}.`:""}</span></div>}
+ {tab==="types"&&<div className="task-hierarchy-layout"><div className="task-tree-pane">{featuredDatatypes.map(row=>{const item=row.document;if(!item)return null;const variants=byDatatype.get(item.id)||[];return <div className="task-tree-group" key={item.id}><button className={`task-tree-row task-parent ${active?.record.document?.id===item.id?"selected":""}`} onClick={()=>open(row as RecordFile<DataResource>)}><span className="task-kind-badge">TYPE</span><span><b>{item.label||item.id}</b><small>{item.description||item.id}</small></span><em>{variants.length} alternatives</em></button><div className="task-tree-children">{variants.map(rep=>{const child=rep.document!,preferred=item.representationSelection?.default===child.id;return <button className={`task-tree-row task-child ${active?.record.document?.id===child.id?"selected":""}`} key={child.id} onClick={()=>open(rep as RecordFile<DataResource>)}><span className="task-kind-badge llm">REP</span><span><b>{child.label||child.id}</b><small>{child.description||child.id}</small></span><em>{preferred?"preferred":""}</em></button>})}</div></div>})}</div><div className="task-editor-workspace"><div className="task-document-tabs">{openDocs.map(doc=><div className={`task-document-tab ${doc.key===activeKey?"active":""}`} key={doc.key}><button onClick={()=>setActiveKey(doc.key)}><span>{doc.record.document?.kind==="datatype"?"TYPE":"REP"}</span><b>{doc.record.document?.label||doc.record.document?.id||doc.record.path}</b>{doc.dirty&&<i>●</i>}</button><button className="close" onClick={()=>close(doc.key)}>×</button></div>)}</div><div className={`task-editor-panes ${comparison?"split":"single"}`}>{active?renderEditor(active):<div className="studio-empty">Select a datatype or representation.</div>}{comparison&&renderEditor(comparison,true)}</div></div></div>}
+ {tab==="conversions"&&<div className="resource-table"><div className="resource-row resource-head"><span>Conversion task</span><span>Datatype</span><span>From</span><span>To</span><span>Planning</span></div>{edges.map(edge=><div className="resource-row" key={`${edge.taskId}:${edge.from}:${edge.to}`}><b>{edge.label||edge.taskId}</b><code>{edge.datatype}</code><span>{edge.from}</span><span>{edge.to}</span><em>cost {edge.cost}{edge.lossy?" · lossy":""}</em></div>)}</div>}
+ {tab==="usage"&&<div className="resource-table"><div className="resource-row resource-head"><span>Owner</span><span>Kind</span><span>Port</span><span>Datatype</span><span>Representation</span></div>{references.map((ref,index)=><div className="resource-row" key={`${ref.ownerKind}:${ref.ownerId}:${ref.port}:${index}`}><b>{ref.ownerId}</b><code>{ref.ownerKind}</code><span>{ref.direction}:{ref.port}</span><span>{ref.datatype}</span><em>{ref.representation||"planner-selected"}</em></div>)}</div>}
+ </section>;
 }
