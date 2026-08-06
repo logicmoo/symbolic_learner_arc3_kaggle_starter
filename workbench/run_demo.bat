@@ -4,8 +4,8 @@ set "ROOT=%~dp0"
 
 title MeTTaSymbolicLearnerWorkbench Launcher
 echo.
-echo  MeTTaSymbolicLearnerWorkbench - local development demo
-echo  ------------------------------------------------------
+echo  MeTTaSymbolicLearnerWorkbench - local development
+echo  -----------------------------------------------
 echo.
 
 where python >nul 2>nul
