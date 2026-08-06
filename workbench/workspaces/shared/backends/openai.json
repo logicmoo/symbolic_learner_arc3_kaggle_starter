@@ -1,0 +1,15 @@
+{
+  "kind": "backend",
+  "id": "openai",
+  "label": "OpenAI-Compatible LLM",
+  "provider": "openai-compatible",
+  "description": "Runs LLM completion tasks against an OpenAI-compatible HTTP API.",
+  "enabled": true,
+  "capabilities": ["llm.complete"],
+  "configuration": {
+    "baseUrl": "https://api.openai.com/v1",
+    "apiKeyEnvironmentVariable": "OPENAI_API_KEY",
+    "defaultModel": "gpt-5.6",
+    "timeoutSeconds": 300
+  }
+}
