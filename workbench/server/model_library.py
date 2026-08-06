@@ -28,9 +28,7 @@ def read_model_file(path: Path) -> dict[str, Any]:
     if defaults is not None and not isinstance(defaults, dict):
         raise ValueError(f"Model/profile defaults must be a JSON object: {path}")
     if "prompt_text" in value or "prompts" in value:
-        raise ValueError(
-            f"Prompt lists belong on tasks, not model/profile definitions: {path}"
-        )
+        raise ValueError(f"Prompt lists belong on tasks, not model/profile definitions: {path}")
     return value
 
 
@@ -54,7 +52,10 @@ def _model_records(workspace_root: Path, source: str, workspace_id: str) -> list
         try:
             record["document"] = read_model_file(path)
         except ValueError as error:
+            # Keep invalid catalog entries visible to the UI, but never let one
+            # malformed file make workspace enumeration fail.
             record["error"] = str(error)
+            record["raw"] = raw
         records.append(record)
     return records
 
@@ -71,36 +72,74 @@ def load_workspace_local_model_records(workspace_root: Path) -> list[dict[str, A
 
 
 def _sort_records(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    return sorted(records, key=lambda item: str((item.get("document") or {}).get("label") or item["path"]).lower())
+    return sorted(
+        records,
+        key=lambda item: str(
+            (item.get("document") or item.get("raw") or {}).get("label")
+            or item.get("path")
+            or ""
+        ).lower(),
+    )
 
 
-def load_workspace_model_records(workspace_root: Path, *, workspaces_root: Path = DEFAULT_WORKSPACES_ROOT) -> list[dict[str, Any]]:
+def _record_key(record: dict[str, Any]) -> str:
+    document = record.get("document") or record.get("raw") or {}
+    return str(document.get("id") or record.get("path") or "")
+
+
+def load_workspace_model_records(
+    workspace_root: Path,
+    *,
+    workspaces_root: Path = DEFAULT_WORKSPACES_ROOT,
+) -> list[dict[str, Any]]:
     combined: dict[str, dict[str, Any]] = {}
     for record in load_shared_model_records(workspaces_root):
-        document = record.get("document") or {}
-        combined[str(document.get("id") or record["path"])] = record
+        combined[_record_key(record)] = record
     for record in load_workspace_local_model_records(workspace_root):
-        document = record.get("document") or {}
-        combined[str(document.get("id") or record["path"])] = record
+        combined[_record_key(record)] = record
     return _sort_records(list(combined.values()))
 
 
-def resolve_model_records(workspace_root: Path, model_records: list[dict[str, Any]] | None = None, *, workspaces_root: Path = DEFAULT_WORKSPACES_ROOT) -> list[dict[str, Any]]:
+def resolve_model_records(
+    workspace_root: Path,
+    model_records: list[dict[str, Any]] | None = None,
+    *,
+    workspaces_root: Path = DEFAULT_WORKSPACES_ROOT,
+) -> list[dict[str, Any]]:
     """Resolve model/profile inheritance chains until they terminate at a backend.
 
     Backends, models, and profiles share one catalog. A model can inherit a
     backend or model. A profile normally inherits a model/profile and changes
     only generation/runtime defaults. Prompt composition is deliberately not
     part of this graph; prompt lists belong to task definitions.
+
+    Invalid catalog files are returned with an error and disabled resolution;
+    they never abort workspace discovery.
     """
-    records = model_records or load_workspace_model_records(workspace_root, workspaces_root=workspaces_root)
-    backend_records = load_workspace_backend_records(workspace_root, workspaces_root=workspaces_root)
-    backends = {str((record.get("document") or {}).get("id")): record for record in backend_records if (record.get("document") or {}).get("id")}
-    nodes = {str((record.get("document") or {}).get("id")): record for record in records if (record.get("document") or {}).get("id")}
+    records = model_records or load_workspace_model_records(
+        workspace_root, workspaces_root=workspaces_root
+    )
+    backend_records = load_workspace_backend_records(
+        workspace_root, workspaces_root=workspaces_root
+    )
+    backends = {
+        str((record.get("document") or {}).get("id")): record
+        for record in backend_records
+        if (record.get("document") or {}).get("id")
+    }
+    nodes = {
+        str((record.get("document") or {}).get("id")): record
+        for record in records
+        if (record.get("document") or {}).get("id")
+    }
 
     def resolve(node_id: str, trail: tuple[str, ...] = ()) -> dict[str, Any]:
+        if not node_id or node_id not in nodes:
+            raise ValueError(f"Model/profile has no resolvable id: {node_id!r}")
         if node_id in trail:
-            raise ValueError(f"Model/profile inheritance cycle: {' -> '.join((*trail, node_id))}")
+            raise ValueError(
+                f"Model/profile inheritance cycle: {' -> '.join((*trail, node_id))}"
+            )
         record = nodes[node_id]
         node = record.get("document") or {}
         parent_id = str(node.get("inherits") or "")
@@ -123,13 +162,16 @@ def resolve_model_records(workspace_root: Path, model_records: list[dict[str, An
                 "configuration": configuration,
                 "model": own_model or configuration.get("defaultModel"),
                 "defaults": {**inherited_defaults, **own_defaults},
-                "enabled": backend.get("enabled", True) is not False and node.get("enabled", True) is not False,
+                "enabled": backend.get("enabled", True) is not False
+                and node.get("enabled", True) is not False,
             }
 
         parent_record = nodes.get(parent_id)
         if parent_record:
             parent = resolve(parent_id, (*trail, node_id))
-            parent_kind = str((parent_record.get("document") or {}).get("kind") or "model")
+            parent_kind = str(
+                (parent_record.get("document") or {}).get("kind") or "model"
+            )
             return {
                 **parent,
                 "parentId": parent_id,
@@ -137,19 +179,33 @@ def resolve_model_records(workspace_root: Path, model_records: list[dict[str, An
                 "inheritance": [*parent.get("inheritance", []), node_id],
                 "model": own_model or parent.get("model"),
                 "defaults": {**dict(parent.get("defaults") or {}), **own_defaults},
-                "enabled": bool(parent.get("enabled", False)) and node.get("enabled", True) is not False,
+                "enabled": bool(parent.get("enabled", False))
+                and node.get("enabled", True) is not False,
             }
 
-        raise ValueError(f"Model/profile {node_id} inherits unavailable item: {parent_id}")
+        raise ValueError(
+            f"Model/profile {node_id} inherits unavailable item: {parent_id}"
+        )
 
     resolved: list[dict[str, Any]] = []
     for source_record in records:
         record = dict(source_record)
         node = record.get("document") or {}
         node_id = str(node.get("id") or "")
+        if not node_id:
+            raw = record.get("raw") or {}
+            raw_id = str(raw.get("id") or "")
+            record["resolved"] = {
+                "enabled": False,
+                "inheritance": [raw_id] if raw_id else [],
+            }
+            if not record.get("error"):
+                record["error"] = "Model/profile definition has no valid id"
+            resolved.append(record)
+            continue
         try:
             record["resolved"] = resolve(node_id)
-        except ValueError as error:
+        except (KeyError, ValueError) as error:
             record["resolved"] = {"enabled": False, "inheritance": [node_id]}
             if not record.get("error"):
                 record["error"] = str(error)
@@ -157,12 +213,28 @@ def resolve_model_records(workspace_root: Path, model_records: list[dict[str, An
     return _sort_records(resolved)
 
 
-def load_model_library_records(workspace_root: Path, *, workspaces_root: Path = DEFAULT_WORKSPACES_ROOT) -> dict[str, list[dict[str, Any]]]:
+def load_model_library_records(
+    workspace_root: Path,
+    *,
+    workspaces_root: Path = DEFAULT_WORKSPACES_ROOT,
+) -> dict[str, list[dict[str, Any]]]:
     shared = load_shared_model_records(workspaces_root)
     local = load_workspace_local_model_records(workspace_root)
-    effective = load_workspace_model_records(workspace_root, workspaces_root=workspaces_root)
-    return {"shared": shared, "workspace": local, "effective": resolve_model_records(workspace_root, effective, workspaces_root=workspaces_root)}
+    effective = load_workspace_model_records(
+        workspace_root, workspaces_root=workspaces_root
+    )
+    return {
+        "shared": shared,
+        "workspace": local,
+        "effective": resolve_model_records(
+            workspace_root, effective, workspaces_root=workspaces_root
+        ),
+    }
 
 
 def load_effective_model_documents(workspace_root: Path) -> list[dict[str, Any]]:
-    return [record["document"] for record in load_workspace_model_records(workspace_root) if "document" in record]
+    return [
+        record["document"]
+        for record in load_workspace_model_records(workspace_root)
+        if "document" in record
+    ]
