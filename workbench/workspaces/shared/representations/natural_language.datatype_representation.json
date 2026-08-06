@@ -2,7 +2,7 @@
   "kind": "datatype_representation",
   "id": "natural_language",
   "label": "Natural-Language Description",
-  "implements": "image",
+  "implements": ["image", "text"],
   "language": "natural_language",
   "encodings": [
     {"id": "markdown", "mimeTypes": ["text/markdown"], "extensions": [".md"]},
