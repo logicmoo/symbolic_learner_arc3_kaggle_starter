@@ -1,5 +1,5 @@
-import { RealWorkspaceDesktopPage } from "./pages/RealWorkspaceDesktopPage";
+import { WorkspaceBackedWorkbenchPage } from "./pages/WorkspaceBackedWorkbenchPage";
 
 export function App() {
-  return <RealWorkspaceDesktopPage />;
+  return <WorkspaceBackedWorkbenchPage />;
 }
