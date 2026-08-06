@@ -2,7 +2,7 @@
   "kind": "model",
   "id": "qwen-3.6-27b-groq",
   "label": "Qwen 3.6 27B on Groq",
-  "description": "Fast Qwen model routed through the shared Groq backend.",
+  "description": "Fast Qwen model inheriting the shared Groq backend.",
   "backend": "groq",
   "model": "qwen/qwen3.6-27b",
   "enabled": true,
@@ -17,6 +17,7 @@
     "parentImageDetail": "low"
   },
   "environment": {
-    "model": "ARC3_GROQ_MODEL"
+    "model": "WORKBENCH_GROQ_MODEL",
+    "legacyModel": "ARC3_GROQ_MODEL"
   }
 }
