@@ -4,10 +4,10 @@
   "label": "Titlecase Received Text",
   "description": "Transform received text to title case without coupling the task to a specific model prompt.",
   "inputs": {
-    "text": "information"
+    "text": "text"
   },
   "outputs": {
-    "text": "information"
+    "text": "text"
   },
   "implementationSelection": {
     "default": "titlecase_received_text.default",
