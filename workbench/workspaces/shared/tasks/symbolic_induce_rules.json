@@ -1,0 +1,16 @@
+{
+  "id":"symbolic.induce_rules",
+  "label":"Induce Rules from Symbolic Evidence",
+  "description":"Reusable rule-induction task migrated from the legacy ARC3 induce_rules_from_prolog transaction.",
+  "implementation":"llm.complete",
+  "inputs":{"facts":"ArtifactBundle","transitions":"ChangeDescription"},
+  "outputs":{"rules":"RuleSet"},
+  "prompts":[
+    "structured_json_response",
+    "rule_hypothesis",
+    "transaction_induce_rules_from_symbolic",
+    "output_quality_control"
+  ],
+  "modelSelection":{"models":[],"strategy":"single"},
+  "parameters":{"requiresVision":false}
+}
