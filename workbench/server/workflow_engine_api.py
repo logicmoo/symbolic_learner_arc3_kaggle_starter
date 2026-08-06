@@ -4,17 +4,43 @@ import os
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, Body, HTTPException
+from fastapi import APIRouter, Body, HTTPException, Query
 
-from workflow_engine import WorkflowEngine
+from advanced_workflow_engine import AdvancedWorkflowEngine
 
 router = APIRouter(prefix='/engine', tags=['workflow-engine'])
 _db = Path(os.getenv('WORKFLOW_ENGINE_DB', Path(__file__).resolve().parents[1] / 'data' / 'workflow_engine.db'))
-engine = WorkflowEngine(_db)
+engine = AdvancedWorkflowEngine(_db)
 
 
 def _http(error: Exception) -> HTTPException:
-    return HTTPException(status_code=400 if isinstance(error, ValueError) else 404, detail=str(error))
+    return HTTPException(status_code=400 if isinstance(error, (ValueError, TypeError)) else 404, detail=str(error))
+
+
+@router.get('/capabilities')
+def capabilities() -> dict[str, Any]:
+    return {'capabilities': {
+        'durableRuns': True,
+        'versionedWorkflows': True,
+        'typedArtifacts': True,
+        'dependencyGraph': True,
+        'conditions': True,
+        'foreachFanOut': True,
+        'fanIn': True,
+        'boundedLoops': True,
+        'timeouts': True,
+        'retries': True,
+        'retryBackoff': True,
+        'compensation': True,
+        'humanInput': True,
+        'nestedWorkflows': True,
+        'pauseResumeCancel': True,
+        'subprocessTasks': True,
+        'httpTasks': True,
+        'taskLogs': True,
+        'restartRecovery': True,
+        'replay': True,
+    }}
 
 
 @router.get('/implementations')
@@ -60,15 +86,43 @@ def start_run(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
 @router.get('/runs/{run_id}')
 def get_run(run_id: str) -> dict[str, Any]:
     try:
+        engine.refresh_children(run_id)
         return {'run': engine.get_run(run_id)}
+    except KeyError as error:
+        raise _http(error) from error
+
+
+@router.get('/runs/{run_id}/events')
+def get_events(run_id: str, after: int = Query(default=0, ge=0)) -> dict[str, Any]:
+    try:
+        run = engine.get_run(run_id)
+        events = [event for event in run['events'] if event['id'] > after]
+        return {'events': events, 'cursor': events[-1]['id'] if events else after}
+    except KeyError as error:
+        raise _http(error) from error
+
+
+@router.get('/runs/{run_id}/logs')
+def get_logs(run_id: str, step_id: str | None = None) -> dict[str, Any]:
+    try:
+        logs = engine.get_run(run_id)['logs']
+        if step_id:
+            logs = [entry for entry in logs if entry['stepId'] == step_id]
+        return {'logs': logs}
     except KeyError as error:
         raise _http(error) from error
 
 
 @router.post('/runs/{run_id}/commands')
 def command_run(run_id: str, body: dict[str, Any] = Body(...)) -> dict[str, Any]:
+    command = str(body.get('command') or '')
     try:
-        return {'run': engine.command(run_id, str(body['command']))}
+        if command == 'replay':
+            return {'run': engine.replay(run_id)}
+        if command == 'advance':
+            engine.advance(run_id)
+            return {'run': engine.get_run(run_id)}
+        return {'run': engine.command(run_id, command)}
     except (ValueError, KeyError) as error:
         raise _http(error) from error
 
