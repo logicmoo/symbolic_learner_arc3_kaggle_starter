@@ -3,16 +3,32 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+from prompt_library import load_workspace_prompt_records
 from task_library import DEFAULT_WORKSPACES_ROOT, SHARED_WORKSPACE_ID, resolve_task_implementation
 
 
-def materialize_workflow_step(workflow: dict[str, Any], step: dict[str, Any]) -> dict[str, Any]:
-    """Resolve a workflow_step/task reference into an executable engine task step.
+def _prompt_prefix(workspace_root: Path, prompt_ids: list[str], separator: str) -> str:
+    if not prompt_ids:
+        return ""
+    prompts = {
+        str((record.get("document") or {}).get("id")): record.get("document") or {}
+        for record in load_workspace_prompt_records(workspace_root)
+    }
+    parts: list[str] = []
+    for prompt_id in prompt_ids:
+        prompt = prompts.get(prompt_id)
+        if not prompt:
+            raise KeyError(f"prompt not found: {prompt_id}")
+        text = prompt.get("text", "")
+        if isinstance(text, list):
+            parts.append("\n".join(str(item) for item in text))
+        else:
+            parts.append(str(text))
+    return separator.join(parts)
 
-    Workflows point at abstract task IDs. The task chooses allowed implementation
-    variants, and the workflow may optionally request one with
-    `implementationVariant`. If omitted, the task's default implementation wins.
-    """
+
+def materialize_workflow_step(workflow: dict[str, Any], step: dict[str, Any]) -> dict[str, Any]:
+    """Resolve a workflow_step/task reference into an executable engine task step."""
     task_id = step.get("task")
     if not task_id:
         return step
@@ -25,14 +41,21 @@ def materialize_workflow_step(workflow: dict[str, Any], step: dict[str, Any]) ->
     )
     task = resolved["task"]
     implementation = resolved["implementation"]
+    bindings = implementation.get("bindings") or {}
+    parameters = {**(implementation.get("parameters") or {}), **(step.get("parameters") or {})}
+    prompt_ids = [str(item) for item in bindings.get("prompts") or []]
+    if prompt_ids:
+        separator = str(bindings.get("separator") or "\n\n")
+        parameters["promptPrefix"] = _prompt_prefix(workspace_root, prompt_ids, separator)
+        parameters["promptIds"] = prompt_ids
     return {
         **step,
         "kind": "task",
         "implementation": implementation["implementation"],
-        "parameters": {**(implementation.get("parameters") or {}), **(step.get("parameters") or {})},
+        "parameters": parameters,
         "task": task["id"],
         "implementationVariant": implementation["id"],
-        "taskBindings": implementation.get("bindings") or {},
+        "taskBindings": bindings,
         "modelSelection": implementation.get("modelSelection") or {},
     }
 
