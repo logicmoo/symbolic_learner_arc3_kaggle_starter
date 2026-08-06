@@ -7,7 +7,7 @@ from typing import Any
 
 from fastapi import APIRouter, Body, HTTPException, Query
 
-from backend_library import load_backend_library_records, load_workspace_backend_records
+from backend_library import MODEL_CATALOG_DIRECTORY, load_backend_library_records, load_workspace_backend_records
 from model_library import load_model_library_records, resolve_model_records
 from task_library import DEFAULT_WORKSPACES_ROOT, load_workspace_task_records
 
@@ -56,8 +56,9 @@ def _workspace_from_directory(root: Path) -> dict[str, Any]:
     prompt_dir = root / "prompts"
     config_dir = root / "config"
     task_dir = root / "tasks"
-    backend_dir = root / "backends"
-    model_dir = root / "models"
+    model_dir = root / MODEL_CATALOG_DIRECTORY
+    backend_count = len(load_workspace_backend_records(root))
+    model_count = len(resolve_model_records(root))
     return {
         "id": root.name,
         "label": str(metadata.get("label") or _humanize(root.name)),
@@ -73,15 +74,16 @@ def _workspace_from_directory(root: Path) -> dict[str, Any]:
         "configDirectoryRelative": "config",
         "taskDirectory": str(task_dir.resolve()),
         "taskDirectoryRelative": "tasks",
-        "backendDirectory": str(backend_dir.resolve()),
-        "backendDirectoryRelative": "backends",
+        "backendDirectory": str(model_dir.resolve()),
+        "backendDirectoryRelative": MODEL_CATALOG_DIRECTORY,
         "modelDirectory": str(model_dir.resolve()),
-        "modelDirectoryRelative": "models",
+        "modelDirectoryRelative": MODEL_CATALOG_DIRECTORY,
         "metadata": metadata.get("metadata") or {},
         "workflowFileCount": len(list(workflow_dir.glob("*.json"))) if workflow_dir.exists() else 0,
         "taskFileCount": len(list(task_dir.glob("*.json"))) if task_dir.exists() else 0,
-        "backendFileCount": len(list(backend_dir.glob("*.json"))) if backend_dir.exists() else 0,
-        "modelFileCount": len(list(model_dir.glob("*.json"))) if model_dir.exists() else 0,
+        "backendFileCount": backend_count,
+        "modelFileCount": model_count,
+        "catalogFileCount": len(list(model_dir.glob("*.json"))) if model_dir.exists() else 0,
     }
 
 
@@ -157,8 +159,7 @@ def _load_backends(workspace: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def _load_models(workspace: dict[str, Any]) -> list[dict[str, Any]]:
-    root = Path(workspace["root"])
-    return resolve_model_records(root)
+    return resolve_model_records(Path(workspace["root"]))
 
 
 def _load_backend_library(workspace: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:
@@ -195,11 +196,7 @@ def workspace_tasks(workspace_id: str) -> dict[str, Any]:
 def workspace_backends(workspace_id: str) -> dict[str, Any]:
     try:
         workspace = _resolve_workspace(workspace_id)
-        return {
-            "workspace": workspace,
-            "backends": _load_backends(workspace),
-            "backendLibrary": _load_backend_library(workspace),
-        }
+        return {"workspace": workspace, "backends": _load_backends(workspace), "backendLibrary": _load_backend_library(workspace)}
     except KeyError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error
 
@@ -208,11 +205,7 @@ def workspace_backends(workspace_id: str) -> dict[str, Any]:
 def workspace_models(workspace_id: str) -> dict[str, Any]:
     try:
         workspace = _resolve_workspace(workspace_id)
-        return {
-            "workspace": workspace,
-            "models": _load_models(workspace),
-            "modelLibrary": _load_model_library(workspace),
-        }
+        return {"workspace": workspace, "models": _load_models(workspace), "modelLibrary": _load_model_library(workspace)}
     except KeyError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error
 
