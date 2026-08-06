@@ -1,0 +1,6 @@
+{
+  "kind": "datatype",
+  "id": "relationship",
+  "label": "Relationship",
+  "description": "A semantic relationship between entities or other information objects."
+}
