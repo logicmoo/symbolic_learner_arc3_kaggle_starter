@@ -1,4 +1,5 @@
 import {useEffect,useState} from "react";
+import "../styles/help_tabs.css";
 
 type HelpTab={id:string;label:string;path:string};
 
