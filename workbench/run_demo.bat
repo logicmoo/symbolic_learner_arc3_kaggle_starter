@@ -40,12 +40,6 @@ set "WEB_URL=http://%CONNECT_IP%:%WEB_PORT%/"
 set "API_URL=http://%CONNECT_IP%:%API_PORT%"
 set "API_HEALTH_URL=%API_URL%/api/health"
 
-rem Vite reads these at startup.  They keep each frontend instance pointed at
-rem the FastAPI instance launched by this same invocation.
-set "WORKBENCH_WEB_HOST=%BIND_IP%"
-set "WORKBENCH_WEB_PORT=%WEB_PORT%"
-set "WORKBENCH_API_TARGET=%API_URL%"
-
 title MeTTaSymbolicLearnerWorkbench %BIND_IP%:%WEB_PORT%
 echo.
 echo  MeTTaSymbolicLearnerWorkbench - local development
@@ -95,7 +89,7 @@ if not exist "%ROOT%frontend\node_modules\.bin\vite.cmd" (
 )
 
 echo Starting the local event backend on %BIND_IP%:%API_PORT%...
-start "MeTTa Workbench API %API_PORT%" /D "%ROOT%server" "%ComSpec%" /k ""%ROOT%.venv\Scripts\python.exe" -m uvicorn app:app --reload --host %BIND_IP% --port %API_PORT%"
+start "MeTTa Workbench API %API_PORT%" /D "%ROOT%" "%ComSpec%" /k scripts\run_api_server.bat %BIND_IP% %API_PORT%
 
 echo Waiting for the backend...
 powershell -NoProfile -ExecutionPolicy Bypass -Command "$limit=(Get-Date).AddSeconds(45); $url='%API_HEALTH_URL%'; do { try { $r=Invoke-WebRequest -UseBasicParsing $url -TimeoutSec 2; if ($r.StatusCode -eq 200) { exit 0 } } catch {}; Start-Sleep -Milliseconds 400 } while ((Get-Date) -lt $limit); exit 1"
@@ -104,12 +98,12 @@ if errorlevel 1 (
 )
 
 echo Starting the live-editing web interface on %BIND_IP%:%WEB_PORT%...
-start "MeTTa Workbench Web %WEB_PORT%" /D "%ROOT%frontend" "%ComSpec%" /k npm run dev
+start "MeTTa Workbench Vite %WEB_PORT%" /D "%ROOT%" "%ComSpec%" /k scripts\run_vite_server.bat %BIND_IP% %WEB_PORT% %API_URL%
 
 echo Waiting for the website...
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$limit=(Get-Date).AddSeconds(45); $url='%WEB_URL%'; do { try { $r=Invoke-WebRequest -UseBasicParsing $url -TimeoutSec 2; if ($r.StatusCode -eq 200) { exit 0 } } catch {}; Start-Sleep -Milliseconds 400 } while ((Get-Date) -lt $limit); exit 1"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$limit=(Get-Date).AddSeconds(45); do { try { $r=Invoke-WebRequest -UseBasicParsing '%WEB_URL%' -TimeoutSec 2; if ($r.StatusCode -eq 200) { exit 0 } } catch {}; Start-Sleep -Milliseconds 400 } while ((Get-Date) -lt $limit); exit 1"
 if errorlevel 1 (
-  echo WARNING: The web interface did not answer yet. Check the MeTTa Workbench Web %WEB_PORT% window.
+  echo WARNING: The web interface did not answer yet. Check the MeTTa Workbench Vite %WEB_PORT% window.
 ) else (
   start "" "%WEB_URL%"
 )
@@ -119,6 +113,7 @@ echo The workbench is running locally at %WEB_URL%
 echo API documentation is at %API_URL%/docs
 echo Edit files under workbench\frontend\src or workbench\server;
 echo the appropriate process reloads automatically.
+echo Each API/Vite window shows the exact command to rerun after Ctrl+C.
 echo Close the two server windows for this instance when you are finished.
 echo.
 pause
