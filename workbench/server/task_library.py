@@ -17,10 +17,10 @@ def read_task_file(path: Path) -> dict[str, Any]:
         raise ValueError(f"Invalid task definition {path}: {error}") from error
     if not isinstance(value, dict):
         raise ValueError(f"Task definition must be a JSON object: {path}")
-    if value.get("kind") != "task":
+    declared_kind = value.get("kind")
+    if declared_kind not in (None, "task"):
         raise ValueError(f"Task definition must declare kind='task': {path}")
-    if not path.name.endswith(".task.json"):
-        raise ValueError(f"Task filename must end in .task.json: {path}")
+    value.setdefault("kind", "task")
     if not str(value.get("id") or "").strip():
         raise ValueError(f"Task definition requires id: {path}")
     if not str(value.get("implementation") or "").strip():
@@ -38,6 +38,7 @@ def _task_records(workspace_root: Path, source: str, workspace_id: str) -> list[
             "path": path.relative_to(workspace_root).as_posix(),
             "source": source,
             "workspaceId": workspace_id,
+            "convention": "canonical" if path.name.endswith(".task.json") else "legacy-filename",
         }
         try:
             record["document"] = read_task_file(path)
