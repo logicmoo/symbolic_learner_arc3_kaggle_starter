@@ -48,6 +48,13 @@ def load_shared_backend_records(workspaces_root: Path = DEFAULT_WORKSPACES_ROOT)
     return _backend_records(workspaces_root / SHARED_WORKSPACE_ID, "shared", SHARED_WORKSPACE_ID)
 
 
+def load_workspace_local_backend_records(workspace_root: Path) -> list[dict[str, Any]]:
+    workspace_id = workspace_root.name
+    if workspace_id == SHARED_WORKSPACE_ID:
+        return []
+    return _backend_records(workspace_root, "workspace", workspace_id)
+
+
 def load_workspace_backend_records(
     workspace_root: Path,
     *,
@@ -59,16 +66,27 @@ def load_workspace_backend_records(
         document = record.get("document") or {}
         combined[str(document.get("id") or record["path"])] = record
 
-    workspace_id = workspace_root.name
-    if workspace_id != SHARED_WORKSPACE_ID:
-        for record in _backend_records(workspace_root, "workspace", workspace_id):
-            document = record.get("document") or {}
-            combined[str(document.get("id") or record["path"])] = record
+    for record in load_workspace_local_backend_records(workspace_root):
+        document = record.get("document") or {}
+        combined[str(document.get("id") or record["path"])] = record
 
     return sorted(
         combined.values(),
         key=lambda item: str((item.get("document") or {}).get("label") or item["path"]).lower(),
     )
+
+
+def load_backend_library_records(
+    workspace_root: Path,
+    *,
+    workspaces_root: Path = DEFAULT_WORKSPACES_ROOT,
+) -> dict[str, list[dict[str, Any]]]:
+    """Return both source libraries plus the effective inherited backend set."""
+    return {
+        "shared": load_shared_backend_records(workspaces_root),
+        "workspace": load_workspace_local_backend_records(workspace_root),
+        "effective": load_workspace_backend_records(workspace_root, workspaces_root=workspaces_root),
+    }
 
 
 def load_effective_backend_documents(workspace_root: Path) -> list[dict[str, Any]]:
