@@ -1,0 +1,40 @@
+name: Normalize workspace JSON resources
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "workbench/workspaces/**/*.json"
+      - "workbench/server/resource_convention.py"
+      - "workbench/scripts/normalize_workspace_json.py"
+      - ".github/workflows/normalize-workspace-json.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  normalize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Normalize resources
+        run: python workbench/scripts/normalize_workspace_json.py --write
+      - name: Commit normalized resources
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo "Workspace JSON resources already follow the convention."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add workbench/workspaces
+          git commit -m "Normalize workspace JSON resource names and kinds"
+          git push origin HEAD:main
