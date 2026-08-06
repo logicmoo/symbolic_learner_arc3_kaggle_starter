@@ -1,0 +1,20 @@
+{
+  "kind": "backend",
+  "id": "openai",
+  "label": "OpenAI API",
+  "provider": "openai",
+  "official": true,
+  "description": "Shared OpenAI Responses/API transport inherited by every workspace. Model files inherit this connection and add model-specific generation settings.",
+  "enabled": true,
+  "capabilities": ["llm.complete", "llm.reasoning", "llm.vision"],
+  "configuration": {
+    "adapter": "openai_responses",
+    "baseUrl": "https://api.openai.com/v1",
+    "apiKeyEnvironmentVariable": "OPENAI_API_KEY",
+    "defaultModel": "gpt-5.6",
+    "modelEnvironmentVariable": "WORKBENCH_OPENAI_MODEL",
+    "legacyModelEnvironmentVariable": "ARC3_OPENAI_MODEL",
+    "defaultAnalysisLevel": 4,
+    "timeoutSeconds": 900
+  }
+}
