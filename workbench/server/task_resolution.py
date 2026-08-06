@@ -48,10 +48,18 @@ def materialize_workflow_step(workflow: dict[str, Any], step: dict[str, Any]) ->
         separator = str(bindings.get("separator") or "\n\n")
         parameters["promptPrefix"] = _prompt_prefix(workspace_root, prompt_ids, separator)
         parameters["promptIds"] = prompt_ids
+
+    executable_inputs = dict(step.get("inputs") or {})
+    if implementation.get("implementation") == "llm.complete" and "prompt" not in executable_inputs:
+        input_binding = str(parameters.get("inputBinding") or "text")
+        if input_binding in executable_inputs:
+            executable_inputs = {"prompt": executable_inputs[input_binding]}
+
     return {
         **step,
         "kind": "task",
         "implementation": implementation["implementation"],
+        "inputs": executable_inputs,
         "parameters": parameters,
         "task": task["id"],
         "implementationVariant": implementation["id"],
