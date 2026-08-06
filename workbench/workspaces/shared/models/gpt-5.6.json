@@ -2,7 +2,7 @@
   "kind": "model",
   "id": "gpt-5.6",
   "label": "GPT-5.6",
-  "description": "Frontier OpenAI reasoning and multimodal model used through the shared OpenAI backend.",
+  "description": "OpenAI reasoning and multimodal model inheriting the shared OpenAI backend.",
   "backend": "openai",
   "model": "gpt-5.6",
   "enabled": true,
@@ -17,6 +17,7 @@
     "parentImageDetail": "high"
   },
   "environment": {
-    "model": "ARC3_OPENAI_MODEL"
+    "model": "WORKBENCH_OPENAI_MODEL",
+    "legacyModel": "ARC3_OPENAI_MODEL"
   }
 }
