@@ -7,8 +7,8 @@ from typing import Any
 
 from fastapi import APIRouter, Body, HTTPException, Query
 
-from backend_library import load_workspace_backend_records
-from model_library import load_workspace_model_records
+from backend_library import load_backend_library_records, load_workspace_backend_records
+from model_library import load_model_library_records, resolve_model_records
 from task_library import DEFAULT_WORKSPACES_ROOT, load_workspace_task_records
 
 router = APIRouter(prefix="/workspaces", tags=["workspaces"])
@@ -157,7 +157,16 @@ def _load_backends(workspace: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def _load_models(workspace: dict[str, Any]) -> list[dict[str, Any]]:
-    return load_workspace_model_records(Path(workspace["root"]))
+    root = Path(workspace["root"])
+    return resolve_model_records(root)
+
+
+def _load_backend_library(workspace: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:
+    return load_backend_library_records(Path(workspace["root"]))
+
+
+def _load_model_library(workspace: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:
+    return load_model_library_records(Path(workspace["root"]))
 
 
 @router.get("")
@@ -186,7 +195,11 @@ def workspace_tasks(workspace_id: str) -> dict[str, Any]:
 def workspace_backends(workspace_id: str) -> dict[str, Any]:
     try:
         workspace = _resolve_workspace(workspace_id)
-        return {"workspace": workspace, "backends": _load_backends(workspace)}
+        return {
+            "workspace": workspace,
+            "backends": _load_backends(workspace),
+            "backendLibrary": _load_backend_library(workspace),
+        }
     except KeyError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error
 
@@ -195,7 +208,11 @@ def workspace_backends(workspace_id: str) -> dict[str, Any]:
 def workspace_models(workspace_id: str) -> dict[str, Any]:
     try:
         workspace = _resolve_workspace(workspace_id)
-        return {"workspace": workspace, "models": _load_models(workspace)}
+        return {
+            "workspace": workspace,
+            "models": _load_models(workspace),
+            "modelLibrary": _load_model_library(workspace),
+        }
     except KeyError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error
 
@@ -220,7 +237,9 @@ def workspace_snapshot(workspace_id: str) -> dict[str, Any]:
         "workflows": _load_workflows(workspace),
         "tasks": _load_tasks(workspace),
         "backends": _load_backends(workspace),
+        "backendLibrary": _load_backend_library(workspace),
         "models": _load_models(workspace),
+        "modelLibrary": _load_model_library(workspace),
         "files": files,
     }
 
