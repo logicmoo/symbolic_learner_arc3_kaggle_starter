@@ -1,0 +1,17 @@
+{
+  "id":"symbolic.explain_object_changes",
+  "label":"Explain Object Changes",
+  "description":"Reusable symbolic transition task migrated from the legacy ARC3 explain_object_changes transaction.",
+  "implementation":"llm.complete",
+  "inputs":{"objects":"ObjectAnnotation","before":"ArtifactBundle","after":"ArtifactBundle"},
+  "outputs":{"changes":"ChangeDescription","correspondences":"Object"},
+  "prompts":[
+    "structured_json_response",
+    "transition_observation",
+    "object_correspondence",
+    "transaction_explain_object_changes",
+    "output_quality_control"
+  ],
+  "modelSelection":{"models":[],"strategy":"single"},
+  "parameters":{"requiresVision":false}
+}
