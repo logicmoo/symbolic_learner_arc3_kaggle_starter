@@ -8,7 +8,7 @@ from typing import Any, Iterable
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_WORKSPACES_ROOT = REPOSITORY_ROOT / "workbench" / "workspaces"
 SHARED_WORKSPACE_ID = "shared"
-TASK_KINDS = {"task", "task-implementation"}
+TASK_KINDS = {"task", "task_implementation"}
 
 
 def read_task_file(path: Path) -> dict[str, Any]:
@@ -18,13 +18,14 @@ def read_task_file(path: Path) -> dict[str, Any]:
         raise ValueError(f"Invalid task definition {path}: {error}") from error
     if not isinstance(value, dict):
         raise ValueError(f"Task definition must be a JSON object: {path}")
-    kind = str(value.get("kind") or "task")
+    raw_kind = str(value.get("kind") or "task")
+    kind = raw_kind.replace("-", "_")
     if kind not in TASK_KINDS:
-        raise ValueError(f"Task definition must declare kind='task' or kind='task-implementation': {path}")
+        raise ValueError(f"Task definition must declare kind='task' or kind='task_implementation': {path}")
     value["kind"] = kind
     if not str(value.get("id") or "").strip():
         raise ValueError(f"Task definition requires id: {path}")
-    if kind == "task-implementation":
+    if kind == "task_implementation":
         if not str(value.get("implements") or "").strip():
             raise ValueError(f"Task implementation requires implements: {path}")
         if not str(value.get("implementation") or "").strip():
@@ -80,7 +81,7 @@ def load_shared_task_records(workspaces_root: Path = DEFAULT_WORKSPACES_ROOT) ->
 
 
 def load_shared_task_implementation_records(workspaces_root: Path = DEFAULT_WORKSPACES_ROOT) -> list[dict[str, Any]]:
-    return [r for r in load_shared_task_resource_records(workspaces_root) if (r.get("document") or {}).get("kind") == "task-implementation"]
+    return [r for r in load_shared_task_resource_records(workspaces_root) if (r.get("document") or {}).get("kind") == "task_implementation"]
 
 
 def load_workspace_task_records(workspace_root: Path, *, workspaces_root: Path = DEFAULT_WORKSPACES_ROOT) -> list[dict[str, Any]]:
@@ -88,7 +89,7 @@ def load_workspace_task_records(workspace_root: Path, *, workspaces_root: Path =
 
 
 def load_workspace_task_implementation_records(workspace_root: Path, *, workspaces_root: Path = DEFAULT_WORKSPACES_ROOT) -> list[dict[str, Any]]:
-    return [r for r in _effective_resources(workspace_root, workspaces_root=workspaces_root) if (r.get("document") or {}).get("kind") == "task-implementation"]
+    return [r for r in _effective_resources(workspace_root, workspaces_root=workspaces_root) if (r.get("document") or {}).get("kind") == "task_implementation"]
 
 
 def resolve_task_implementation(workspace_root: Path, task_id: str, requested: str | None = None, *, workspaces_root: Path = DEFAULT_WORKSPACES_ROOT) -> dict[str, Any]:
