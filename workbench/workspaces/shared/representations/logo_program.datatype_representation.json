@@ -1,0 +1,9 @@
+{
+  "kind": "datatype_representation",
+  "id": "logo_program",
+  "label": "LOGO/Turtle Program",
+  "implements": "image",
+  "language": "logo",
+  "mediaTypes": ["text/x-logo", "text/plain"],
+  "extensions": [".logo", ".txt"]
+}
