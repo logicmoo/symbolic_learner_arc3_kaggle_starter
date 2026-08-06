@@ -11,12 +11,12 @@ router = APIRouter(prefix="/workspaces", tags=["workspaces"])
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_WORKSPACES_ROOT = REPOSITORY_ROOT / "workbench" / "workspaces"
+DEFAULT_WORKSPACE_ID = "default"
 TEXT_SUFFIXES = {".json", ".md", ".txt", ".py", ".pl", ".metta", ".yaml", ".yml", ".toml"}
 IGNORED_DIRECTORIES = {".git", ".venv", "node_modules", "__pycache__"}
 
 
 def _workspace_roots() -> list[Path]:
-    """Return directories whose immediate children are workspaces."""
     raw = os.getenv("WORKBENCH_WORKSPACE_ROOTS", "")
     roots = [Path(part).expanduser().resolve() for part in raw.split(os.pathsep) if part.strip()]
     default = DEFAULT_WORKSPACES_ROOT.resolve()
@@ -36,7 +36,6 @@ def _read_json(path: Path) -> dict[str, Any]:
 
 
 def _optional_metadata(root: Path) -> dict[str, Any]:
-    """Read optional display metadata; discovery never depends on this file."""
     path = root / "workspace.json"
     if not path.is_file():
         return {}
@@ -55,6 +54,7 @@ def _workspace_from_directory(root: Path) -> dict[str, Any]:
     workflow_dir = root / "workflows"
     prompt_dir = root / "prompts"
     config_dir = root / "config"
+    task_dir = root / "tasks"
     return {
         "id": root.name,
         "label": str(metadata.get("label") or _humanize(root.name)),
@@ -68,13 +68,15 @@ def _workspace_from_directory(root: Path) -> dict[str, Any]:
         "promptDirectoryRelative": "prompts",
         "configDirectory": str(config_dir.resolve()),
         "configDirectoryRelative": "config",
+        "taskDirectory": str(task_dir.resolve()),
+        "taskDirectoryRelative": "tasks",
         "metadata": metadata.get("metadata") or {},
         "workflowFileCount": len(list(workflow_dir.glob("*.json"))) if workflow_dir.exists() else 0,
+        "taskFileCount": len(list(task_dir.glob("*.json"))) if task_dir.exists() else 0,
     }
 
 
 def discover_workspaces() -> list[dict[str, Any]]:
-    """Enumerate each immediate child directory as one independent workspace."""
     found: dict[str, dict[str, Any]] = {}
     for container in _workspace_roots():
         if not container.is_dir():
@@ -98,6 +100,13 @@ def _resolve_workspace(workspace_id: str) -> dict[str, Any]:
     raise KeyError("workspace not found")
 
 
+def _default_workspace() -> dict[str, Any] | None:
+    try:
+        return _resolve_workspace(DEFAULT_WORKSPACE_ID)
+    except KeyError:
+        return None
+
+
 def _safe_child(root: Path, relative: str) -> Path:
     resolved_root = root.resolve()
     resolved = (resolved_root / relative).resolve()
@@ -118,18 +127,47 @@ def _file_record(root: Path, path: Path) -> dict[str, Any]:
     }
 
 
-def _load_workflows(workspace: dict[str, Any]) -> list[dict[str, Any]]:
-    root = Path(workspace["root"])
-    directory = Path(workspace["workflowDirectory"])
+def _load_documents(root: Path, directory: Path, source: str) -> list[dict[str, Any]]:
     result: list[dict[str, Any]] = []
     if not directory.exists():
         return result
     for path in sorted(directory.glob("*.json")):
+        record: dict[str, Any] = {"path": path.relative_to(root).as_posix(), "source": source}
         try:
-            result.append({"path": path.relative_to(root).as_posix(), "document": _read_json(path)})
+            record["document"] = _read_json(path)
         except ValueError as error:
-            result.append({"path": path.relative_to(root).as_posix(), "error": str(error)})
+            record["error"] = str(error)
+        result.append(record)
     return result
+
+
+def _load_workflows(workspace: dict[str, Any]) -> list[dict[str, Any]]:
+    root = Path(workspace["root"])
+    return _load_documents(root, Path(workspace["workflowDirectory"]), "workspace")
+
+
+def _load_tasks(workspace: dict[str, Any]) -> list[dict[str, Any]]:
+    """Merge disk-backed default tasks with workspace-specific tasks.
+
+    Workspace task IDs override shared default task IDs while both remain visibly
+    attributed to their source directory in the task editor.
+    """
+    combined: dict[str, dict[str, Any]] = {}
+    default = _default_workspace()
+    if default:
+        default_root = Path(default["root"])
+        for record in _load_documents(default_root, Path(default["taskDirectory"]), "shared"):
+            document = record.get("document") or {}
+            key = str(document.get("id") or record["path"])
+            record["workspaceId"] = default["id"]
+            combined[key] = record
+    root = Path(workspace["root"])
+    for record in _load_documents(root, Path(workspace["taskDirectory"]), "workspace"):
+        document = record.get("document") or {}
+        key = str(document.get("id") or record["path"])
+        record["workspaceId"] = workspace["id"]
+        combined[key] = record
+    return sorted(combined.values(), key=lambda item: str((item.get("document") or {}).get("label") or item["path"]).lower())
 
 
 @router.get("")
@@ -141,6 +179,15 @@ def list_workspaces() -> dict[str, Any]:
 def get_workspace(workspace_id: str) -> dict[str, Any]:
     try:
         return {"workspace": _resolve_workspace(workspace_id)}
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+
+
+@router.get("/{workspace_id}/tasks")
+def workspace_tasks(workspace_id: str) -> dict[str, Any]:
+    try:
+        workspace = _resolve_workspace(workspace_id)
+        return {"workspace": workspace, "tasks": _load_tasks(workspace)}
     except KeyError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error
 
@@ -160,7 +207,12 @@ def workspace_snapshot(workspace_id: str) -> dict[str, Any]:
             files.append(_file_record(root, path))
         if len(files) >= 2000:
             break
-    return {"workspace": workspace, "workflows": _load_workflows(workspace), "files": files}
+    return {
+        "workspace": workspace,
+        "workflows": _load_workflows(workspace),
+        "tasks": _load_tasks(workspace),
+        "files": files,
+    }
 
 
 @router.get("/{workspace_id}/file")
