@@ -1,0 +1,6 @@
+{
+  "kind": "datatype",
+  "id": "hypothesis",
+  "label": "Hypothesis",
+  "description": "A revisable semantic explanation or candidate rule."
+}
