@@ -1,0 +1,13 @@
+{
+  "kind": "prompt",
+  "id": "object_extraction",
+  "label": "Object Extraction",
+  "description": "Generic vision prompt for extracting meaningful objects and relations from an image or grid.",
+  "text": [
+    "Describe the current visual state comprehensively but nonredundantly.",
+    "Detect meaningful connected color regions and useful structures such as blocks, rectangles, bars, line segments, glyphs, holes, enclosures, borders, status indicators, compound objects, and meaningful sub-objects.",
+    "Do not treat every individual cell or pixel as a separate object unless it has an independent semantic role.",
+    "Preserve exact topology, connectivity, cavities, holes, borders, containment, adjacency, and overlap relationships rather than replacing irregular geometry with oversized rectangles."
+  ],
+  "metadata": {"domain": "vision", "category": "segmentation-and-objects"}
+}
