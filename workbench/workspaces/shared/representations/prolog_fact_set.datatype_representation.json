@@ -1,0 +1,19 @@
+{
+  "kind": "datatype_representation",
+  "id": "prolog_fact_set",
+  "label": "Prolog Fact Set",
+  "implements": [
+    "information",
+    "entity_collection",
+    "relationship",
+    "world_state",
+    "world_model",
+    "transition_evidence",
+    "hypothesis",
+    "evaluation"
+  ],
+  "language": "prolog",
+  "encodings": [
+    {"id": "prolog_source", "mimeTypes": ["text/x-prolog", "text/plain"], "extensions": [".pl"]}
+  ]
+}
