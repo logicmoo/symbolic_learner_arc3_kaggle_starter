@@ -15,6 +15,7 @@
     "default": "echo_into_titlecased_python",
     "variants": [
       "echo_into_titlecased_python",
+      "echo_into_titlecased_prolog",
       "echo_into_titlecased_llm"
     ]
   }
