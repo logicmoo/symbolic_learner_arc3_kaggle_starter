@@ -1,2 +1,2 @@
 @echo off
-call "%~dp0workbench\run_demo.bat"
+call "%~dp0workbench\run_demo.bat" %*
