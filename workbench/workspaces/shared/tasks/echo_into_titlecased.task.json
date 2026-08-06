@@ -2,26 +2,20 @@
   "kind": "task",
   "id": "echo_into_titlecased",
   "label": "Echo Into Titlecased",
-  "description": "Take received text, send it through an LLM with the shared titlecase prompt, and return the title-cased text.",
-  "implementation": "llm.complete",
+  "description": "Take received text and return the title-cased text.",
+  "role": "abstract_stage",
   "inputs": {
     "text": "Text"
   },
   "outputs": {
     "text": "Text"
   },
-  "modelSelection": {
-    "models": [],
-    "strategy": "single"
-  },
-  "promptSelection": {
-    "prompts": [
-      "titlecase_received_text"
-    ],
-    "separator": "\n\n"
-  },
-  "parameters": {
-    "inputBinding": "text",
-    "outputBinding": "text"
+  "implementationSelection": {
+    "strategy": "single",
+    "default": "echo_into_titlecased_python",
+    "variants": [
+      "echo_into_titlecased_python",
+      "echo_into_titlecased_llm"
+    ]
   }
 }
