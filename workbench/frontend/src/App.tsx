@@ -1,5 +1,5 @@
-import { WorkspaceBackedWorkbenchPage } from "./pages/WorkspaceBackedWorkbenchPage";
+import { PolishedFilesystemWorkbenchPage } from "./pages/PolishedFilesystemWorkbenchPage";
 
 export function App() {
-  return <WorkspaceBackedWorkbenchPage />;
+  return <PolishedFilesystemWorkbenchPage />;
 }
