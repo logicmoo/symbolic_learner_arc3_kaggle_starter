@@ -1,9 +1,10 @@
 {
   "kind": "backend",
   "id": "openai",
-  "label": "GPT-5.6",
+  "label": "OpenAI API",
   "provider": "openai",
-  "description": "Shared OpenAI Responses/API backend inherited by every workspace.",
+  "official": true,
+  "description": "Shared OpenAI Responses/API transport inherited by every workspace. Model files inherit this connection and add model-specific generation settings.",
   "enabled": true,
   "capabilities": ["llm.complete", "llm.reasoning", "llm.vision"],
   "configuration": {
@@ -11,7 +12,8 @@
     "baseUrl": "https://api.openai.com/v1",
     "apiKeyEnvironmentVariable": "OPENAI_API_KEY",
     "defaultModel": "gpt-5.6",
-    "modelEnvironmentVariable": "ARC3_OPENAI_MODEL",
+    "modelEnvironmentVariable": "WORKBENCH_OPENAI_MODEL",
+    "legacyModelEnvironmentVariable": "ARC3_OPENAI_MODEL",
     "defaultAnalysisLevel": 4,
     "timeoutSeconds": 900
   }
