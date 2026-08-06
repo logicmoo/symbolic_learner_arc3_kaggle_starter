@@ -8,6 +8,7 @@ from typing import Any
 from fastapi import APIRouter, Body, HTTPException, Query
 
 from backend_library import load_workspace_backend_records
+from model_library import load_workspace_model_records
 from task_library import DEFAULT_WORKSPACES_ROOT, load_workspace_task_records
 
 router = APIRouter(prefix="/workspaces", tags=["workspaces"])
@@ -56,6 +57,7 @@ def _workspace_from_directory(root: Path) -> dict[str, Any]:
     config_dir = root / "config"
     task_dir = root / "tasks"
     backend_dir = root / "backends"
+    model_dir = root / "models"
     return {
         "id": root.name,
         "label": str(metadata.get("label") or _humanize(root.name)),
@@ -73,10 +75,13 @@ def _workspace_from_directory(root: Path) -> dict[str, Any]:
         "taskDirectoryRelative": "tasks",
         "backendDirectory": str(backend_dir.resolve()),
         "backendDirectoryRelative": "backends",
+        "modelDirectory": str(model_dir.resolve()),
+        "modelDirectoryRelative": "models",
         "metadata": metadata.get("metadata") or {},
         "workflowFileCount": len(list(workflow_dir.glob("*.json"))) if workflow_dir.exists() else 0,
         "taskFileCount": len(list(task_dir.glob("*.json"))) if task_dir.exists() else 0,
         "backendFileCount": len(list(backend_dir.glob("*.json"))) if backend_dir.exists() else 0,
+        "modelFileCount": len(list(model_dir.glob("*.json"))) if model_dir.exists() else 0,
     }
 
 
@@ -151,6 +156,10 @@ def _load_backends(workspace: dict[str, Any]) -> list[dict[str, Any]]:
     return load_workspace_backend_records(Path(workspace["root"]))
 
 
+def _load_models(workspace: dict[str, Any]) -> list[dict[str, Any]]:
+    return load_workspace_model_records(Path(workspace["root"]))
+
+
 @router.get("")
 def list_workspaces() -> dict[str, Any]:
     return {"workspaceRoots": [str(path) for path in _workspace_roots()], "workspaces": discover_workspaces()}
@@ -182,6 +191,15 @@ def workspace_backends(workspace_id: str) -> dict[str, Any]:
         raise HTTPException(status_code=404, detail=str(error)) from error
 
 
+@router.get("/{workspace_id}/models")
+def workspace_models(workspace_id: str) -> dict[str, Any]:
+    try:
+        workspace = _resolve_workspace(workspace_id)
+        return {"workspace": workspace, "models": _load_models(workspace)}
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+
+
 @router.get("/{workspace_id}/snapshot")
 def workspace_snapshot(workspace_id: str) -> dict[str, Any]:
     try:
@@ -202,6 +220,7 @@ def workspace_snapshot(workspace_id: str) -> dict[str, Any]:
         "workflows": _load_workflows(workspace),
         "tasks": _load_tasks(workspace),
         "backends": _load_backends(workspace),
+        "models": _load_models(workspace),
         "files": files,
     }
 
