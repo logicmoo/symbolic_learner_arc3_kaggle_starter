@@ -11,7 +11,7 @@ from backend_library import MODEL_CATALOG_DIRECTORY, load_backend_library_record
 from model_library import load_model_library_records, resolve_model_records
 from prompt_library import load_prompt_library_records, load_workspace_prompt_records
 from resource_convention import canonical_resource_path, infer_resource_kind
-from task_library import DEFAULT_WORKSPACES_ROOT, load_workspace_task_records
+from task_library import DEFAULT_WORKSPACES_ROOT, load_workspace_task_implementation_records, load_workspace_task_records
 
 router = APIRouter(prefix="/workspaces", tags=["workspaces"])
 
@@ -66,6 +66,8 @@ def _workspace_from_directory(root: Path) -> dict[str, Any]:
     backend_count = len(load_workspace_backend_records(root))
     model_count = len(resolve_model_records(root))
     prompt_count = len(load_workspace_prompt_records(root))
+    task_count = len(load_workspace_task_records(root))
+    task_implementation_count = len(load_workspace_task_implementation_records(root))
     return {
         "id": root.name,
         "label": str(metadata.get("label") or _humanize(root.name)),
@@ -87,7 +89,8 @@ def _workspace_from_directory(root: Path) -> dict[str, Any]:
         "modelDirectoryRelative": MODEL_CATALOG_DIRECTORY,
         "metadata": metadata.get("metadata") or {},
         "workflowFileCount": len(list(workflow_dir.glob("*.json"))) if workflow_dir.exists() else 0,
-        "taskFileCount": len(list(task_dir.glob("*.json"))) if task_dir.exists() else 0,
+        "taskFileCount": task_count,
+        "taskImplementationFileCount": task_implementation_count,
         "backendFileCount": backend_count,
         "modelFileCount": model_count,
         "promptFileCount": prompt_count,
@@ -169,6 +172,10 @@ def _load_tasks(workspace: dict[str, Any]) -> list[dict[str, Any]]:
     return load_workspace_task_records(Path(workspace["root"]))
 
 
+def _load_task_implementations(workspace: dict[str, Any]) -> list[dict[str, Any]]:
+    return load_workspace_task_implementation_records(Path(workspace["root"]))
+
+
 def _load_backends(workspace: dict[str, Any]) -> list[dict[str, Any]]:
     return load_workspace_backend_records(Path(workspace["root"]))
 
@@ -210,7 +217,7 @@ def get_workspace(workspace_id: str) -> dict[str, Any]:
 def workspace_tasks(workspace_id: str) -> dict[str, Any]:
     try:
         workspace = _resolve_workspace(workspace_id)
-        return {"workspace": workspace, "tasks": _load_tasks(workspace)}
+        return {"workspace": workspace, "tasks": _load_tasks(workspace), "taskImplementations": _load_task_implementations(workspace)}
     except KeyError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error
 
@@ -261,6 +268,7 @@ def workspace_snapshot(workspace_id: str) -> dict[str, Any]:
         "workspace": workspace,
         "workflows": _load_workflows(workspace),
         "tasks": _load_tasks(workspace),
+        "taskImplementations": _load_task_implementations(workspace),
         "backends": _load_backends(workspace),
         "backendLibrary": _load_backend_library(workspace),
         "models": _load_models(workspace),
