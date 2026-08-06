@@ -111,7 +111,9 @@ def _llm_complete(inputs: dict[str, Any], parameters: dict[str, Any]) -> dict[st
     if not api_key:
         raise RuntimeError("LLM API key is not configured")
     endpoint = str(parameters.get("endpoint") or "https://api.openai.com/v1/chat/completions")
-    prompt = str(inputs.get("prompt") or parameters.get("prompt") or "")
+    received = str(inputs.get("prompt") or parameters.get("prompt") or "")
+    prefix = str(parameters.get("promptPrefix") or "")
+    prompt = f"{prefix}\n\n{received}" if prefix and received else prefix or received
     body = {
         "model": str(parameters.get("model") or "gpt-4.1-mini"),
         "messages": parameters.get("messages") or [{"role": "user", "content": prompt}],
