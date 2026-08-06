@@ -14,6 +14,7 @@ set "WORKBENCH_API_TARGET=%API_TARGET%"
 
 title MeTTa Workbench Vite %BIND_IP%:%WEB_PORT%
 cd /d "%ROOT%\frontend"
+doskey restart=npm run dev
 
 echo.
 echo ============================================================
@@ -30,7 +31,9 @@ echo.
 echo  Command being run:
 echo    npm run dev
 echo.
-echo  If you stop it with Ctrl+C, rerun: npm run dev
+echo  If you stop it with Ctrl+C:
+echo    type restart
+echo  or rerun: npm run dev
 echo  The instance environment above remains set in this window.
 echo  This command window stays open after Vite exits.
 echo ============================================================
@@ -41,7 +44,8 @@ call npm run dev
 echo.
 echo ------------------------------------------------------------
 echo  Vite frontend stopped.
-echo  Restart command in this same window:
+echo  Type: restart
+echo  Full restart command:
 echo    npm run dev
 echo ------------------------------------------------------------
 echo.
