@@ -10,7 +10,9 @@ KNOWN_RESOURCE_KINDS = {
     "backend",
     "config",
     "data",
+    "datatype",
     "datatype_catalog",
+    "datatype_representation",
     "manifest",
     "model",
     "profile",
@@ -64,6 +66,10 @@ def infer_resource_kind(path: Path, document: dict[str, Any]) -> str:
         return "prompt"
     if parent == "workflows":
         return "workflow"
+    if parent == "datatypes":
+        return "datatype"
+    if parent == "representations":
+        return "datatype_representation"
     if parent == "models":
         if document.get("provider"):
             return "backend"
