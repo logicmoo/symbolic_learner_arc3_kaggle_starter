@@ -2,7 +2,7 @@
   "kind": "model",
   "id": "claude-sonnet",
   "label": "Claude Sonnet",
-  "description": "Anthropic Sonnet model available through the shared Anthropic backend.",
+  "description": "Anthropic Sonnet model inheriting the shared Anthropic backend.",
   "backend": "anthropic",
   "model": "claude-sonnet-4-20250514",
   "enabled": true,
@@ -17,6 +17,7 @@
     "parentImageDetail": "low"
   },
   "environment": {
-    "model": "ARC3_CLAUDE_MODEL"
+    "model": "WORKBENCH_ANTHROPIC_MODEL",
+    "legacyModel": "ARC3_CLAUDE_MODEL"
   }
 }
