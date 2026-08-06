@@ -8,6 +8,12 @@ from typing import Any
 from fastapi import APIRouter, Body, HTTPException, Query
 
 from backend_library import MODEL_CATALOG_DIRECTORY, load_backend_library_records, load_workspace_backend_records
+from datatype_library import (
+    DATATYPE_DIRECTORY,
+    REPRESENTATION_DIRECTORY,
+    load_workspace_datatype_records,
+    load_workspace_representation_records,
+)
 from model_library import load_model_library_records, resolve_model_records
 from prompt_library import load_prompt_library_records, load_workspace_prompt_records
 from resource_convention import canonical_resource_path, infer_resource_kind
@@ -62,12 +68,16 @@ def _workspace_from_directory(root: Path) -> dict[str, Any]:
     prompt_dir = root / "prompts"
     config_dir = root / "config"
     task_dir = root / "tasks"
+    datatype_dir = root / DATATYPE_DIRECTORY
+    representation_dir = root / REPRESENTATION_DIRECTORY
     model_dir = root / MODEL_CATALOG_DIRECTORY
     backend_count = len(load_workspace_backend_records(root))
     model_count = len(resolve_model_records(root))
     prompt_count = len(load_workspace_prompt_records(root))
     task_count = len(load_workspace_task_records(root))
     task_implementation_count = len(load_workspace_task_implementation_records(root))
+    datatype_count = len(load_workspace_datatype_records(root))
+    representation_count = len(load_workspace_representation_records(root))
     return {
         "id": root.name,
         "label": str(metadata.get("label") or _humanize(root.name)),
@@ -83,6 +93,10 @@ def _workspace_from_directory(root: Path) -> dict[str, Any]:
         "configDirectoryRelative": "config",
         "taskDirectory": str(task_dir.resolve()),
         "taskDirectoryRelative": "tasks",
+        "datatypeDirectory": str(datatype_dir.resolve()),
+        "datatypeDirectoryRelative": DATATYPE_DIRECTORY,
+        "representationDirectory": str(representation_dir.resolve()),
+        "representationDirectoryRelative": REPRESENTATION_DIRECTORY,
         "backendDirectory": str(model_dir.resolve()),
         "backendDirectoryRelative": MODEL_CATALOG_DIRECTORY,
         "modelDirectory": str(model_dir.resolve()),
@@ -91,6 +105,8 @@ def _workspace_from_directory(root: Path) -> dict[str, Any]:
         "workflowFileCount": len(list(workflow_dir.glob("*.json"))) if workflow_dir.exists() else 0,
         "taskFileCount": task_count,
         "taskImplementationFileCount": task_implementation_count,
+        "datatypeFileCount": datatype_count,
+        "representationFileCount": representation_count,
         "backendFileCount": backend_count,
         "modelFileCount": model_count,
         "promptFileCount": prompt_count,
@@ -176,6 +192,14 @@ def _load_task_implementations(workspace: dict[str, Any]) -> list[dict[str, Any]
     return load_workspace_task_implementation_records(Path(workspace["root"]))
 
 
+def _load_datatypes(workspace: dict[str, Any]) -> list[dict[str, Any]]:
+    return load_workspace_datatype_records(Path(workspace["root"]))
+
+
+def _load_representations(workspace: dict[str, Any]) -> list[dict[str, Any]]:
+    return load_workspace_representation_records(Path(workspace["root"]))
+
+
 def _load_backends(workspace: dict[str, Any]) -> list[dict[str, Any]]:
     return load_workspace_backend_records(Path(workspace["root"]))
 
@@ -218,6 +242,24 @@ def workspace_tasks(workspace_id: str) -> dict[str, Any]:
     try:
         workspace = _resolve_workspace(workspace_id)
         return {"workspace": workspace, "tasks": _load_tasks(workspace), "taskImplementations": _load_task_implementations(workspace)}
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+
+
+@router.get("/{workspace_id}/datatypes")
+def workspace_datatypes(workspace_id: str) -> dict[str, Any]:
+    try:
+        workspace = _resolve_workspace(workspace_id)
+        return {"workspace": workspace, "datatypes": _load_datatypes(workspace)}
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+
+
+@router.get("/{workspace_id}/representations")
+def workspace_representations(workspace_id: str) -> dict[str, Any]:
+    try:
+        workspace = _resolve_workspace(workspace_id)
+        return {"workspace": workspace, "representations": _load_representations(workspace)}
     except KeyError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error
 
@@ -269,6 +311,8 @@ def workspace_snapshot(workspace_id: str) -> dict[str, Any]:
         "workflows": _load_workflows(workspace),
         "tasks": _load_tasks(workspace),
         "taskImplementations": _load_task_implementations(workspace),
+        "datatypes": _load_datatypes(workspace),
+        "representations": _load_representations(workspace),
         "backends": _load_backends(workspace),
         "backendLibrary": _load_backend_library(workspace),
         "models": _load_models(workspace),
