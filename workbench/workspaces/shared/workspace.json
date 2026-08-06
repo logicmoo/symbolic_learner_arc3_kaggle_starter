@@ -1,0 +1,9 @@
+{
+  "label": "Shared Library",
+  "description": "Editable reusable tasks, backends, datatypes, artifact specifications, prompts, and other resources inherited by every workspace.",
+  "metadata": {
+    "role": "shared-library",
+    "editable": true,
+    "inheritedByDefault": true
+  }
+}
