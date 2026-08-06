@@ -1,15 +1,18 @@
 {
   "kind": "backend",
   "id": "openai",
-  "label": "OpenAI-Compatible LLM",
-  "provider": "openai-compatible",
-  "description": "Runs LLM completion tasks against an OpenAI-compatible HTTP API.",
+  "label": "GPT-5.6",
+  "provider": "openai",
+  "description": "Shared OpenAI Responses/API backend inherited by every workspace.",
   "enabled": true,
-  "capabilities": ["llm.complete"],
+  "capabilities": ["llm.complete", "llm.reasoning", "llm.vision"],
   "configuration": {
+    "adapter": "openai_responses",
     "baseUrl": "https://api.openai.com/v1",
     "apiKeyEnvironmentVariable": "OPENAI_API_KEY",
     "defaultModel": "gpt-5.6",
-    "timeoutSeconds": 300
+    "modelEnvironmentVariable": "ARC3_OPENAI_MODEL",
+    "defaultAnalysisLevel": 4,
+    "timeoutSeconds": 900
   }
 }
