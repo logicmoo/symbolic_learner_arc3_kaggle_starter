@@ -70,7 +70,8 @@ def _python_callable(inputs: dict[str, Any], parameters: dict[str, Any]) -> dict
     args = parameters.get("args", [])
     kwargs = {**(parameters.get("kwargs") or {}), **inputs}
     value = function(*args, **kwargs)
-    return {"value": value}
+    output_binding = str(parameters.get("outputBinding") or "value")
+    return {output_binding: value}
 
 
 def _prolog_query(inputs: dict[str, Any], parameters: dict[str, Any]) -> dict[str, Any]:
@@ -144,7 +145,7 @@ def _artifact_convert(inputs: dict[str, Any], parameters: dict[str, Any]) -> dic
 def register_real_providers(registry: TaskRegistry) -> None:
     existing = {item["name"] for item in registry.describe()}
     specs = [
-        TaskSpec("python.callable", {}, {"value": "Any"}, _python_callable),
+        TaskSpec("python.callable", {}, {"value": "Any", "text": "Text"}, _python_callable),
         TaskSpec("prolog.query", {"program": "Text", "query": "Text"}, {"result": "PrologResult"}, _prolog_query),
         TaskSpec("metta.evaluate", {"source": "Text"}, {"result": "MeTTaResult"}, _metta_evaluate),
         TaskSpec("llm.complete", {"prompt": "Text"}, {"text": "Text", "response": "Object"}, _llm_complete),
