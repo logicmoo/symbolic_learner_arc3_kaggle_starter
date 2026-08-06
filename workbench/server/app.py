@@ -10,20 +10,17 @@ from routes.artifacts import router as artifacts_router
 from routes.workflow import router as workflow_router
 from runtime import analyze_grid
 from store import DATATYPE_MANIFEST, TASK_CATALOG, WorkbenchStore
+from workflow_engine_api import router as workflow_engine_router
 
 
-app = FastAPI(title="MeTTaSymbolicLearnerWorkbench API", version="0.3.0")
+app = FastAPI(title="MeTTaSymbolicLearnerWorkbench API", version="0.4.0")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-    ],
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 store = WorkbenchStore()
 
 
@@ -34,26 +31,16 @@ async def http_error(_request: Request, error: HTTPException) -> JSONResponse:
 
 app.include_router(workflow_router, prefix="/api")
 app.include_router(artifacts_router, prefix="/api")
+app.include_router(workflow_engine_router, prefix="/api")
 
 
 @app.get("/api/health")
 def health() -> dict[str, str]:
-    return {
-        "status": "ok",
-        "service": "MeTTaSymbolicLearnerWorkbench",
-        "persistence": "sqlite",
-        "analysis": "real-backend-runtime",
-    }
+    return {"status": "ok", "service": "MeTTaSymbolicLearnerWorkbench", "persistence": "sqlite", "workflowEngine": "durable-typed-runtime"}
 
 
 @app.post("/api/analyze")
 def analyze(body: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
-    """Run the real local symbolic image pipeline.
-
-    The endpoint validates an ARC-style grid, extracts 4-connected objects,
-    derives stable identities/properties, emits Prolog and Turtle views,
-    reconstructs the image, and computes an exact pixel difference report.
-    """
     try:
         return {"analysis": analyze_grid(body.get("grid"))}
     except ValueError as error:
@@ -63,13 +50,7 @@ def analyze(body: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]
 @app.post("/api/runs", status_code=201)
 def create_run(body: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
     try:
-        return {
-            "run": store.create_run(
-                workflow_id=str(body.get("workflowId") or "arc3_human_observation"),
-                world_id=str(body.get("worldId") or "ls20"),
-                parent_task_id=body.get("parentTaskId"),
-            )
-        }
+        return {"run": store.create_run(workflow_id=str(body.get("workflowId") or "arc3_human_observation"), world_id=str(body.get("worldId") or "ls20"), parent_task_id=body.get("parentTaskId"))}
     except (KeyError, ValueError) as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
 
@@ -83,21 +64,12 @@ def get_run(run_id: str) -> dict[str, Any]:
 
 
 @app.post("/api/runs/{run_id}/commands")
-def command_run(
-    run_id: str,
-    body: dict[str, Any] = Body(default_factory=dict),
-) -> dict[str, Any]:
+def command_run(run_id: str, body: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
     command = str(body.get("command") or "")
     if not command:
         raise HTTPException(status_code=400, detail="command is required")
     try:
-        return {
-            "run": store.command_run(
-                run_id,
-                command,
-                body.get("input") if isinstance(body.get("input"), dict) else {},
-            )
-        }
+        return {"run": store.command_run(run_id, command, body.get("input") if isinstance(body.get("input"), dict) else {})}
     except KeyError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error
     except ValueError as error:
@@ -120,31 +92,21 @@ def list_tasks(limit: int = Query(default=20, ge=1, le=200)) -> dict[str, Any]:
 
 @app.get("/api/workflows")
 def list_workflows() -> dict[str, Any]:
-    return {
-        "workflows": store.list_workflows(),
-        "tasks": TASK_CATALOG,
-        "datatypes": DATATYPE_MANIFEST,
-    }
+    return {"workflows": store.list_workflows(), "tasks": TASK_CATALOG, "datatypes": DATATYPE_MANIFEST}
 
 
 @app.post("/api/workflows")
 def mutate_workflow(body: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
     operation = body.get("operation")
     try:
-        if operation == "new":
-            return {"workflows": store.create_workflow(False)}
-        if operation == "example":
-            return {"workflows": store.create_workflow(True)}
-        if operation == "delete" and body.get("id"):
-            return {"workflows": store.delete_workflow(str(body["id"]))}
+        if operation == "new": return {"workflows": store.create_workflow(False)}
+        if operation == "example": return {"workflows": store.create_workflow(True)}
+        if operation == "delete" and body.get("id"): return {"workflows": store.delete_workflow(str(body["id"]))}
         if operation == "validate":
             workflow = body.get("workflow")
             return {"validation": store.validate_workflows(workflow if isinstance(workflow, dict) else None)}
         if operation == "save" and isinstance(body.get("workflow"), dict):
-            workflows, task = store.save_workflow(
-                body["workflow"],
-                str(body["originalId"]) if body.get("originalId") else None,
-            )
+            workflows, task = store.save_workflow(body["workflow"], str(body["originalId"]) if body.get("originalId") else None)
             return {"workflows": workflows, "task": task}
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
