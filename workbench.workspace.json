@@ -1,0 +1,12 @@
+{
+  "id": "symbolic_learner_arc3",
+  "label": "Symbolic Learner ARC3",
+  "description": "Repository workspace for the generic symbolic workflow engine and ARC3 adapters.",
+  "workflowDirectory": "workbench/workspaces/default/workflows",
+  "promptDirectory": "workbench/workspaces/default/prompts",
+  "configDirectory": "workbench/workspaces/default/config",
+  "metadata": {
+    "engine": "MeTTaSymbolicLearnerWorkbench",
+    "source": "filesystem"
+  }
+}
