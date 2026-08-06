@@ -1,0 +1,40 @@
+{
+  "id": "tic_tac_toe_observe_and_choose",
+  "label": "Observe board and choose a move",
+  "inputs": {
+    "board": "Array"
+  },
+  "outputs": {
+    "observedBoard": "$observed_board",
+    "move": "$selected_move"
+  },
+  "steps": [
+    {
+      "id": "observe_board",
+      "kind": "task",
+      "implementation": "core.echo",
+      "inputs": {
+        "value": "$board"
+      },
+      "outputs": {
+        "value": "observed_board"
+      }
+    },
+    {
+      "id": "choose_move",
+      "kind": "human",
+      "dependsOn": [
+        "observe_board"
+      ],
+      "form": {
+        "move": {
+          "type": "String",
+          "description": "Choose an empty cell such as center, top_left, or bottom_right"
+        }
+      },
+      "outputs": {
+        "move": "selected_move"
+      }
+    }
+  ]
+}
