@@ -1,0 +1,18 @@
+{
+  "id":"vision.extract_scene_objects",
+  "label":"Extract Scene Objects",
+  "description":"Reusable vision task migrated from the legacy ARC3 extract_scene_objects transaction.",
+  "implementation":"llm.complete",
+  "inputs":{"current_image":"Image","previous_image":"Image"},
+  "outputs":{"objects":"ObjectAnnotation","reconstruction":"Program"},
+  "prompts":[
+    "structured_json_response",
+    "logical_image_coordinates",
+    "object_extraction",
+    "turtle_reconstruction",
+    "transaction_extract_scene_objects",
+    "output_quality_control"
+  ],
+  "modelSelection":{"models":[],"strategy":"single"},
+  "parameters":{"requiresVision":true}
+}
