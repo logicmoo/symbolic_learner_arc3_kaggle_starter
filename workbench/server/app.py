@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from datatype_api import router as datatype_router
+from prompt_api import router as prompt_router
 from routes.artifacts import router as artifacts_router
 from routes.workflow import router as workflow_router
 from runtime import analyze_grid
@@ -16,7 +17,7 @@ from workflow_engine_api import router as workflow_engine_router
 from workspace_api import router as workspace_router
 
 
-app = FastAPI(title="MeTTaSymbolicLearnerWorkbench API", version="0.6.0")
+app = FastAPI(title="MeTTaSymbolicLearnerWorkbench API", version="0.6.1")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
@@ -37,6 +38,7 @@ app.include_router(artifacts_router, prefix="/api")
 app.include_router(workflow_engine_router, prefix="/api")
 app.include_router(workspace_router, prefix="/api")
 app.include_router(datatype_router, prefix="/api")
+app.include_router(prompt_router, prefix="/api")
 
 
 @app.get("/api/health")
@@ -50,6 +52,7 @@ def health() -> dict[str, str]:
         "taskCatalog": "filesystem",
         "datatypeCatalog": "filesystem",
         "representationCatalog": "filesystem",
+        "promptCatalog": "filesystem-hierarchical",
     }
 
 
