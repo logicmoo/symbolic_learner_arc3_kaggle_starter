@@ -18,7 +18,7 @@
     "separator": "\n\n"
   },
   "parameters": {
-    "callable": "to_titlecase",
+    "target": "shared_task_callables:to_titlecase",
     "inputBinding": "text",
     "outputBinding": "text"
   }
