@@ -87,9 +87,17 @@ def infer_resource_kind(path: Path, document: dict[str, Any]) -> str:
     return "data"
 
 
+def _base_name_without_kind(path: Path) -> str:
+    stem = path.name[:-5] if path.name.lower().endswith(".json") else path.stem
+    suffix_kind = filename_kind(path)
+    if suffix_kind:
+        return stem[: -(len(suffix_kind) + 1)]
+    return stem
+
+
 def canonical_resource_path(path: Path, document: dict[str, Any]) -> Path:
     kind = infer_resource_kind(path, document)
-    resource_id = str(document.get("id") or document.get("title") or path.name[:-5])
+    resource_id = str(document.get("id") or _base_name_without_kind(path))
     if kind == "workspace" and not document.get("id"):
         resource_id = path.parent.name
     return path.with_name(resource_filename(resource_id, kind))
