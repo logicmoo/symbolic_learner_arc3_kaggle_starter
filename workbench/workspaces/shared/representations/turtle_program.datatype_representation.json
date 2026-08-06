@@ -1,0 +1,11 @@
+{
+  "kind": "datatype_representation",
+  "id": "turtle_program",
+  "label": "Turtle Program",
+  "implements": "image",
+  "language": "logo",
+  "description": "Movement-based Turtle/LOGO program representation retained as a first-class alias used by existing tasks.",
+  "encodings": [
+    {"id": "turtle_source", "mimeTypes": ["text/x-logo", "text/plain"], "extensions": [".logo", ".txt"]}
+  ]
+}
