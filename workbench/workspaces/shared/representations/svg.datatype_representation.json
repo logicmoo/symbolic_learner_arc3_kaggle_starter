@@ -1,0 +1,10 @@
+{
+  "kind": "datatype_representation",
+  "id": "svg",
+  "label": "SVG",
+  "implements": "image",
+  "language": "image/svg+xml",
+  "encodings": [
+    {"id": "svg_xml", "mimeTypes": ["image/svg+xml"], "extensions": [".svg"]}
+  ]
+}
