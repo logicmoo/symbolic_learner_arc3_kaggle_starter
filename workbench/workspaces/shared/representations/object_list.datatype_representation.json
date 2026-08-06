@@ -1,0 +1,10 @@
+{
+  "kind": "datatype_representation",
+  "id": "object_list",
+  "label": "Object List",
+  "implements": "image",
+  "encodings": [
+    {"id": "json", "mimeTypes": ["application/json"], "extensions": [".json"]},
+    {"id": "prolog_facts", "mimeTypes": ["text/x-prolog", "text/plain"], "extensions": [".pl"]}
+  ]
+}
