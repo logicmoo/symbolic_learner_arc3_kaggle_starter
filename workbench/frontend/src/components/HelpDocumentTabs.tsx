@@ -5,6 +5,7 @@ type HelpTab={id:string;label:string;path?:string};
 
 const docTabs:HelpTab[]=[
  {id:"overview",label:"Overview",path:"docs/models_profiles_tasks_prompts.md"},
+ {id:"data",label:"Data",path:"docs/data.md"},
  {id:"llms",label:"LLMs",path:"docs/llm_catalog.md"},
  {id:"tasks",label:"Tasks",path:"docs/tasks.md"},
  {id:"prompts",label:"Prompts",path:"docs/prompts.md"},
