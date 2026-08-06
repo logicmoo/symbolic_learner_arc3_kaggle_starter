@@ -1,0 +1,8 @@
+{
+  "kind": "datatype_representation",
+  "id": "python_object",
+  "label": "Python Object",
+  "implements": "information",
+  "language": "python",
+  "description": "An in-memory Python object representation used by Python task implementations."
+}
