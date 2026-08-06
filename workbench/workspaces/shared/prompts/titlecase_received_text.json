@@ -1,0 +1,11 @@
+{
+  "kind": "prompt",
+  "id": "titlecase_received_text",
+  "label": "Titlecase Received Text",
+  "description": "Convert whatever text is received into title case and return only the transformed text.",
+  "text": [
+    "Convert the received text to title case.",
+    "Preserve the original words and punctuation except for capitalization changes needed for title case.",
+    "Return only the title-cased text, with no explanation, labels, Markdown, or extra commentary."
+  ]
+}
