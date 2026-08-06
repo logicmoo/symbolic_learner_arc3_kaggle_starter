@@ -91,6 +91,10 @@ export function DataCatalogPanel({workspaceId}: {workspaceId: string}) {
   };
 
   useEffect(() => {
+    setSelected(null);
+    setSource("");
+    setTargetPath(null);
+    setTab("types");
     void refresh().catch(reason => setError(String(reason)));
   }, [workspaceId]);
 
@@ -104,14 +108,30 @@ export function DataCatalogPanel({workspaceId}: {workspaceId: string}) {
         if (id && implementsType(representation.document, id)) result.get(id)?.push(representation);
       }
     }
+    for (const rows of result.values()) rows.sort((a,b)=>String(a.document?.label||a.document?.id||a.path).localeCompare(String(b.document?.label||b.document?.id||b.path)));
     return result;
   }, [datatypes, representations]);
+
+  const featuredDatatypes = useMemo(() => [...datatypes].sort((a,b) => {
+    const aid = a.document?.id || "";
+    const bid = b.document?.id || "";
+    const ac = (byDatatype.get(aid) || []).length;
+    const bc = (byDatatype.get(bid) || []).length;
+    if (aid === "image" && bid !== "image") return -1;
+    if (bid === "image" && aid !== "image") return 1;
+    if (bc !== ac) return bc - ac;
+    return String(a.document?.label || aid || a.path).localeCompare(String(b.document?.label || bid || b.path));
+  }), [datatypes, byDatatype]);
 
   const selectRecord = (record: RecordFile<DatatypeDef | RepresentationDef>) => {
     setSelected(record);
     setSource(record.document ? JSON.stringify(record.document, null, 2) : "");
     setTargetPath(record.source === "workspace" || workspaceId === "shared" ? record.path : null);
   };
+
+  useEffect(() => {
+    if (!selected && featuredDatatypes.length) selectRecord(featuredDatatypes[0] as RecordFile<DatatypeDef | RepresentationDef>);
+  }, [featuredDatatypes, selected]);
 
   const makeLocal = () => {
     if (!selected?.document || workspaceId === "shared") return;
@@ -146,13 +166,15 @@ export function DataCatalogPanel({workspaceId}: {workspaceId: string}) {
 
   const selectedId = selected?.document?.id;
   const selectedRefs = references.filter(ref => ref.datatype === selectedId || ref.representation === selectedId);
+  const featured = featuredDatatypes[0]?.document;
+  const featuredChildren = featured ? (byDatatype.get(featured.id) || []) : [];
 
   return <section className="resource-view">
     <div className="resource-heading">
       <div>
         <span>DATA CONTRACT SYSTEM</span>
         <h1>Datatypes & representations</h1>
-        <p>Abstract meaning is separate from concrete encoding. Every type used by tasks, prompts, and workflows is inventoried here.</p>
+        <p>Abstract meaning is separate from concrete encoding. The first visible example always shows a datatype with its interchangeable representations.</p>
       </div>
       <div className="studio-actions">
         <button className={tab === "types" ? "primary" : ""} onClick={() => setTab("types")}>Hierarchy</button>
@@ -161,6 +183,7 @@ export function DataCatalogPanel({workspaceId}: {workspaceId: string}) {
       </div>
     </div>
 
+    {featured && featuredChildren.length > 0 && <div className="demo-notice"><b>Alternatives visible now: {featured.label || featured.id}</b><span>{featuredChildren.map(row => row.document?.label || row.document?.id).join(" · ")}</span></div>}
     {error && <div className="backend-error"><b>Data editor</b><span>{error}</span><button onClick={() => setError(null)}>×</button></div>}
 
     {(undeclaredDatatypes.length > 0 || undeclaredRepresentations.length > 0) && <div className="demo-notice">
@@ -171,16 +194,16 @@ export function DataCatalogPanel({workspaceId}: {workspaceId: string}) {
     {tab === "types" && <div style={{display:"grid",gridTemplateColumns:"minmax(360px, 1fr) minmax(420px, 1.15fr)",gap:14}}>
       <div className="resource-table">
         <div className="resource-row resource-head"><span>Abstract datatype / representation</span><span>Kind</span><span>Source</span><span>Default</span><span>State</span></div>
-        {datatypes.map(datatype => {
+        {featuredDatatypes.map(datatype => {
           const doc = datatype.document;
           const children = doc ? (byDatatype.get(doc.id) || []) : [];
           return <div key={`${datatype.workspaceId}:${datatype.path}`}>
             <button className="resource-row" onDoubleClick={() => selectRecord(datatype)} onClick={() => selectRecord(datatype)}>
-              <b>{doc?.label || doc?.id || datatype.path}</b><code>datatype</code><span>{datatype.source}</span><span>{doc?.representationSelection?.default || "—"}</span><em>{datatype.error ? "error" : "abstract"}</em>
+              <b>{doc?.label || doc?.id || datatype.path}</b><code>datatype</code><span>{datatype.source}</span><span>{doc?.representationSelection?.default || "—"}</span><em>{children.length ? `${children.length} alternatives` : datatype.error ? "error" : "abstract"}</em>
             </button>
-            {children.map(rep => <button className="resource-row" style={{paddingLeft:28}} key={`${rep.workspaceId}:${rep.path}`} onDoubleClick={() => selectRecord(rep)} onClick={() => selectRecord(rep)}>
+            <div className="task-tree-children">{children.map(rep => <button className="resource-row" style={{paddingLeft:28}} key={`${rep.workspaceId}:${rep.path}`} onDoubleClick={() => selectRecord(rep)} onClick={() => selectRecord(rep)}>
               <b>↳ {rep.document?.label || rep.document?.id || rep.path}</b><code>representation</code><span>{rep.source}</span><span>{rep.document?.id}</span><em>{rep.error ? "error" : "implementation"}</em>
-            </button>)}
+            </button>)}</div>
           </div>;
         })}
       </div>
@@ -188,7 +211,7 @@ export function DataCatalogPanel({workspaceId}: {workspaceId: string}) {
         <div>
           <span>DATA RESOURCE EDITOR</span>
           <b>{selected?.document?.id || "Select a datatype or representation"}</b>
-          <small>{selected?.path || "Double-click or select an item in the hierarchy."}</small>
+          <small>{selected?.path || "Select an item in the hierarchy."}</small>
           {selected?.document && <><span>USED BY</span><small>{selectedRefs.length ? `${selectedRefs.length} interface reference(s)` : "No discovered interface references"}</small></>}
           <div className="studio-actions">
             {selected?.source === "shared" && workspaceId !== "shared" && <button onClick={makeLocal}>Make workspace override</button>}
