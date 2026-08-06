@@ -36,7 +36,7 @@ def test_foreach_aggregates_outputs(tmp_path: Path) -> None:
         'outputs': {'values': '$values'},
         'steps': [{
             'id': 'map', 'kind': 'task', 'implementation': 'core.echo',
-            'inputs': {'value': '$item'},
+            'inputs': {'value': None},
             'foreach': {'items': '$items', 'itemPort': 'value', 'maxItems': 10},
             'outputs': {'value': 'values'},
         }],
