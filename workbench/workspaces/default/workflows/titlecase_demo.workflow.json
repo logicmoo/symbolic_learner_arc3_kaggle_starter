@@ -1,0 +1,26 @@
+{
+  "kind": "workflow",
+  "id": "titlecase_demo",
+  "label": "Titlecase Demo",
+  "description": "Minimal starter workflow demonstrating an abstract task resolved to a concrete implementation at runtime.",
+  "workspaceId": "default",
+  "inputs": {
+    "text": "Text"
+  },
+  "outputs": {
+    "text": "$titlecased_text"
+  },
+  "steps": [
+    {
+      "kind": "workflow_step",
+      "id": "step_titlecase",
+      "task": "echo_into_titlecased",
+      "inputs": {
+        "text": "$text"
+      },
+      "outputs": {
+        "text": "titlecased_text"
+      }
+    }
+  ]
+}
