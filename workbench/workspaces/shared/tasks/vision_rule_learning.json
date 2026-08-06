@@ -1,0 +1,17 @@
+{
+  "id": "vision.rule_learning",
+  "label": "Vision Rule Learning",
+  "description": "Infer candidate world rules from visual transitions while preserving evidence, alternatives, and contradictions.",
+  "implementation": "llm.complete",
+  "inputs": {"transitions": "ChangeDescription", "evidence": "Evidence"},
+  "outputs": {"rules": "RuleSet"},
+  "prompts": [
+    "structured_json_response",
+    "transition_observation",
+    "object_correspondence",
+    "rule_hypothesis",
+    "output_quality_control"
+  ],
+  "modelSelection": {"models": [], "strategy": "single"},
+  "parameters": {}
+}
