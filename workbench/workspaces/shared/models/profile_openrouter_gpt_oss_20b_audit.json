@@ -1,0 +1,10 @@
+{
+  "kind":"profile",
+  "id":"openrouter-gpt-oss-20b-audit",
+  "label":"gpt-oss-20b — medium deterministic",
+  "description":"Prompt-free execution profile migrated from the legacy artifact-audit transaction.",
+  "inherits":"openrouter-gpt-oss-20b",
+  "enabled":true,
+  "defaults":{"analysisLevel":3,"singleEnabled":false,"batchEnabled":false,"maxOutputTokens":8000,"temperature":0.0,"topP":1.0,"reasoningEffort":"medium","currentImageDetail":"low","parentImageDetail":"low","timeoutSeconds":360,"seed":null},
+  "metadata":{"legacyTransaction":"audit_artifact_bundle"}
+}
