@@ -1,0 +1,41 @@
+{
+  "kind": "task_implementation",
+  "id": "echo_into_titlecased_prolog",
+  "implements": "echo_into_titlecased",
+  "label": "Echo Into Titlecased / SWI-Prolog",
+  "description": "Take received text, execute the embedded Prolog source with SWI-Prolog, and return the title-cased text.",
+  "implementation": "prolog.source",
+  "inputs": {
+    "text": "Text"
+  },
+  "outputs": {
+    "text": "Text"
+  },
+  "prolog": {
+    "engine": "swipl",
+    "predicate": "titlecase_text",
+    "arity": 2,
+    "source_code": [
+      "titlecase_text(Input, Output) :-",
+      "    split_string(Input, \" \", \"\", Words),",
+      "    maplist(titlecase_word, Words, Titled),",
+      "    atomics_to_string(Titled, \" \", Output).",
+      "",
+      "titlecase_word(\"\", \"\") :- !.",
+      "titlecase_word(Word, Title) :-",
+      "    string_chars(Word, [First|Rest]),",
+      "    upcase_atom(First, UpperFirst),",
+      "    string_chars(Tail, Rest),",
+      "    string_lower(Tail, LowerTail),",
+      "    string_concat(UpperFirst, LowerTail, Title)."
+    ]
+  },
+  "parameters": {
+    "executable": "swipl",
+    "predicate": "titlecase_text",
+    "sourceCode": "titlecase_text(Input, Output) :-\n    split_string(Input, \" \", \"\", Words),\n    maplist(titlecase_word, Words, Titled),\n    atomics_to_string(Titled, \" \", Output).\n\ntitlecase_word(\"\", \"\") :- !.\ntitlecase_word(Word, Title) :-\n    string_chars(Word, [First|Rest]),\n    upcase_atom(First, UpperFirst),\n    string_chars(Tail, Rest),\n    string_lower(Tail, LowerTail),\n    string_concat(UpperFirst, LowerTail, Title).",
+    "inputBinding": "text",
+    "outputBinding": "text",
+    "timeoutSeconds": 30
+  }
+}
