@@ -1,0 +1,19 @@
+{
+  "kind": "backend",
+  "id": "groq",
+  "label": "Qwen 3.6 27B on Groq",
+  "provider": "groq",
+  "description": "Shared Groq OpenAI-compatible backend inherited by every workspace.",
+  "enabled": true,
+  "capabilities": ["llm.complete", "llm.vision"],
+  "configuration": {
+    "adapter": "openai_responses",
+    "baseUrl": "https://api.groq.com/openai/v1",
+    "apiKeyEnvironmentVariable": "GROQ_API_KEY",
+    "baseUrlEnvironmentVariable": "ARC3_GROQ_BASE_URL",
+    "defaultModel": "qwen/qwen3.6-27b",
+    "modelEnvironmentVariable": "ARC3_GROQ_MODEL",
+    "defaultAnalysisLevel": 3,
+    "timeoutSeconds": 600
+  }
+}
