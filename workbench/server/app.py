@@ -8,10 +8,11 @@ from fastapi.responses import JSONResponse
 
 from routes.artifacts import router as artifacts_router
 from routes.workflow import router as workflow_router
+from runtime import analyze_grid
 from store import DATATYPE_MANIFEST, TASK_CATALOG, WorkbenchStore
 
 
-app = FastAPI(title="MeTTaSymbolicLearnerWorkbench API", version="0.2.0")
+app = FastAPI(title="MeTTaSymbolicLearnerWorkbench API", version="0.3.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -30,7 +31,7 @@ store = WorkbenchStore()
 async def http_error(_request: Request, error: HTTPException) -> JSONResponse:
     return JSONResponse(status_code=error.status_code, content={"error": str(error.detail)})
 
-# Compatibility routes used by the earlier Tk/web demonstration.
+
 app.include_router(workflow_router, prefix="/api")
 app.include_router(artifacts_router, prefix="/api")
 
@@ -41,7 +42,22 @@ def health() -> dict[str, str]:
         "status": "ok",
         "service": "MeTTaSymbolicLearnerWorkbench",
         "persistence": "sqlite",
+        "analysis": "real-backend-runtime",
     }
+
+
+@app.post("/api/analyze")
+def analyze(body: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
+    """Run the real local symbolic image pipeline.
+
+    The endpoint validates an ARC-style grid, extracts 4-connected objects,
+    derives stable identities/properties, emits Prolog and Turtle views,
+    reconstructs the image, and computes an exact pixel difference report.
+    """
+    try:
+        return {"analysis": analyze_grid(body.get("grid"))}
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
 
 
 @app.post("/api/runs", status_code=201)
