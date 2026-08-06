@@ -1,0 +1,12 @@
+{
+  "kind": "prompt",
+  "id": "structured_json_response",
+  "label": "Structured JSON Response",
+  "description": "Generic contract for returning machine-readable JSON without prose or Markdown wrappers.",
+  "text": [
+    "Return exactly one valid JSON value matching the requested output contract.",
+    "Do not wrap JSON in Markdown fences and do not add commentary outside the JSON.",
+    "Escape newlines, quotation marks, backslashes, and control characters correctly inside JSON strings."
+  ],
+  "metadata": {"domain": "shared", "category": "output-contract"}
+}
