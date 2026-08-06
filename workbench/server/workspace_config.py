@@ -7,7 +7,7 @@ from typing import Any
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 WORKSPACES_ROOT = Path(os.getenv("WORKBENCH_WORKSPACES_ROOT", REPOSITORY_ROOT / "workbench" / "workspaces")).resolve()
-DEFAULT_WORKSPACE = WORKSPACES_ROOT / "default"
+SHARED_WORKSPACE = WORKSPACES_ROOT / "shared"
 
 
 def _read_json(path: Path, default: Any) -> Any:
@@ -20,13 +20,13 @@ def _read_json(path: Path, default: Any) -> Any:
 
 
 def load_datatype_manifest() -> list[dict[str, Any]]:
-    data = _read_json(DEFAULT_WORKSPACE / "config" / "datatypes.json", {})
+    data = _read_json(SHARED_WORKSPACE / "config" / "datatypes.json", {})
     value = data.get("datatypes", []) if isinstance(data, dict) else []
     return value if isinstance(value, list) else []
 
 
 def load_artifact_specs() -> dict[str, tuple[str, str, str, float]]:
-    data = _read_json(DEFAULT_WORKSPACE / "config" / "artifact_specs.json", {})
+    data = _read_json(SHARED_WORKSPACE / "config" / "artifact_specs.json", {})
     raw = data.get("artifacts", {}) if isinstance(data, dict) else {}
     result: dict[str, tuple[str, str, str, float]] = {}
     if not isinstance(raw, dict):
@@ -43,9 +43,9 @@ def load_artifact_specs() -> dict[str, tuple[str, str, str, float]]:
     return result
 
 
-def load_default_tasks() -> list[dict[str, Any]]:
+def load_shared_tasks() -> list[dict[str, Any]]:
     tasks: list[dict[str, Any]] = []
-    directory = DEFAULT_WORKSPACE / "tasks"
+    directory = SHARED_WORKSPACE / "tasks"
     if not directory.is_dir():
         return tasks
     for path in sorted(directory.glob("*.json")):
@@ -56,7 +56,6 @@ def load_default_tasks() -> list[dict[str, Any]]:
 
 
 def load_workspace_workflows() -> list[dict[str, Any]]:
-    """Enumerate all real workflow files from all filesystem workspaces."""
     workflows: dict[str, dict[str, Any]] = {}
     if not WORKSPACES_ROOT.is_dir():
         return []
@@ -73,7 +72,7 @@ def load_workspace_workflows() -> list[dict[str, Any]]:
 
 def task_catalog_for_legacy_api() -> list[dict[str, Any]]:
     result: list[dict[str, Any]] = []
-    for task in load_default_tasks():
+    for task in load_shared_tasks():
         inputs = task.get("inputs") or {}
         outputs = task.get("outputs") or {}
         result.append({
@@ -81,13 +80,12 @@ def task_catalog_for_legacy_api() -> list[dict[str, Any]]:
             "label": task.get("label"),
             "ports": f"{', '.join(inputs)} → {', '.join(outputs)}",
             "routes": task.get("implementation"),
-            "source": "workbench/workspaces/default/tasks",
+            "source": "workbench/workspaces/shared/tasks",
         })
     return result
 
 
 def apply_to_legacy_store(store_module: Any) -> None:
-    """Keep old routes compatible while making workspace files authoritative."""
     store_module.TASK_CATALOG = task_catalog_for_legacy_api()
     store_module.DATATYPE_MANIFEST = load_datatype_manifest()
     artifact_specs = load_artifact_specs()
