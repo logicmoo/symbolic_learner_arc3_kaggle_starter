@@ -2,14 +2,32 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterable
 
-from task_library import DEFAULT_WORKSPACES_ROOT, SHARED_WORKSPACE_ID
+from prompt_library import (
+    load_workspace_prompt_implementation_records,
+    load_workspace_prompt_records,
+)
+from task_library import (
+    DEFAULT_WORKSPACES_ROOT,
+    SHARED_WORKSPACE_ID,
+    load_workspace_task_implementation_records,
+    load_workspace_task_records,
+)
 
 DATATYPE_DIRECTORY = "datatypes"
 REPRESENTATION_DIRECTORY = "representations"
 DATATYPE_KIND = "datatype"
 REPRESENTATION_KIND = "datatype_representation"
+
+
+def _implemented_datatypes(document: dict[str, Any]) -> list[str]:
+    raw = document.get("implements")
+    if isinstance(raw, str):
+        return [raw] if raw.strip() else []
+    if isinstance(raw, list):
+        return [str(value) for value in raw if str(value).strip()]
+    return []
 
 
 def _read_resource(path: Path, expected_kind: str) -> dict[str, Any]:
@@ -25,7 +43,7 @@ def _read_resource(path: Path, expected_kind: str) -> dict[str, Any]:
     value["kind"] = expected_kind
     if not str(value.get("id") or "").strip():
         raise ValueError(f"{expected_kind} definition requires id: {path}")
-    if expected_kind == REPRESENTATION_KIND and not str(value.get("implements") or "").strip():
+    if expected_kind == REPRESENTATION_KIND and not _implemented_datatypes(value):
         raise ValueError(f"Datatype representation requires implements: {path}")
     return value
 
@@ -90,7 +108,7 @@ def resolve_datatype_representation(workspace_root: Path, datatype_id: str, requ
     if not representation_record:
         raise KeyError(f"datatype representation not found: {chosen}")
     representation = representation_record["document"]
-    if representation.get("implements") != datatype_id:
+    if datatype_id not in _implemented_datatypes(representation):
         raise ValueError(f"representation {chosen} does not implement {datatype_id}")
     return {
         "datatype": datatype,
@@ -106,11 +124,119 @@ def representation_graph(workspace_root: Path, *, workspaces_root: Path = DEFAUL
     by_datatype: dict[str, list[str]] = {}
     for record in representations:
         document = record.get("document") or {}
-        datatype_id = str(document.get("implements") or "")
-        if datatype_id:
+        for datatype_id in _implemented_datatypes(document):
             by_datatype.setdefault(datatype_id, []).append(str(document.get("id")))
     return {
         "datatypes": datatypes,
         "representations": representations,
         "representationIdsByDatatype": {key: sorted(values) for key, values in sorted(by_datatype.items())},
+    }
+
+
+def _port_contract_types(value: Any) -> Iterable[tuple[str, str | None]]:
+    """Yield (datatype, representation) pairs from old and new port syntax."""
+    if isinstance(value, str):
+        if value.strip():
+            yield value, None
+        return
+    if isinstance(value, dict):
+        datatype = value.get("datatype") or value.get("type")
+        representation = value.get("representation")
+        if isinstance(datatype, str) and datatype.strip():
+            yield datatype, str(representation) if representation else None
+
+
+def _collect_contract(owner_kind: str, owner_id: str, ports: Any, direction: str, refs: list[dict[str, Any]]) -> None:
+    if not isinstance(ports, dict):
+        return
+    for port, contract in ports.items():
+        for datatype, representation in _port_contract_types(contract):
+            refs.append({
+                "ownerKind": owner_kind,
+                "ownerId": owner_id,
+                "direction": direction,
+                "port": str(port),
+                "datatype": datatype,
+                "representation": representation,
+            })
+
+
+def interface_type_inventory(
+    workspace_root: Path,
+    *,
+    workspaces_root: Path = DEFAULT_WORKSPACES_ROOT,
+) -> dict[str, Any]:
+    """Inventory every datatype/representation referenced by executable interfaces.
+
+    This deliberately scans both abstract resources and implementations. The Data
+    editor can therefore show types mentioned inside tasks, prompt contracts, and
+    workflows even when someone forgot to add a first-class definition yet.
+    """
+    refs: list[dict[str, Any]] = []
+
+    task_records = [
+        *load_workspace_task_records(workspace_root, workspaces_root=workspaces_root),
+        *load_workspace_task_implementation_records(workspace_root, workspaces_root=workspaces_root),
+    ]
+    for record in task_records:
+        document = record.get("document") or {}
+        owner_id = str(document.get("id") or record.get("path"))
+        owner_kind = str(document.get("kind") or "task")
+        _collect_contract(owner_kind, owner_id, document.get("inputs"), "input", refs)
+        _collect_contract(owner_kind, owner_id, document.get("outputs"), "output", refs)
+
+    prompt_records = [
+        *load_workspace_prompt_records(workspace_root, workspaces_root=workspaces_root),
+        *load_workspace_prompt_implementation_records(workspace_root, workspaces_root=workspaces_root),
+    ]
+    for record in prompt_records:
+        document = record.get("document") or {}
+        owner_id = str(document.get("id") or record.get("path"))
+        owner_kind = str(document.get("kind") or "prompt")
+        _collect_contract(owner_kind, owner_id, document.get("inputs"), "input", refs)
+        _collect_contract(owner_kind, owner_id, document.get("outputs"), "output", refs)
+
+    workflow_dir = workspace_root / "workflows"
+    if workflow_dir.is_dir():
+        for path in sorted(workflow_dir.glob("*.json")):
+            try:
+                document = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                continue
+            if not isinstance(document, dict):
+                continue
+            owner_id = str(document.get("id") or path.stem)
+            _collect_contract("workflow", owner_id, document.get("inputs"), "input", refs)
+            _collect_contract("workflow", owner_id, document.get("outputs"), "output", refs)
+            steps = document.get("steps") or []
+            if isinstance(steps, list):
+                for step in steps:
+                    if not isinstance(step, dict):
+                        continue
+                    step_id = f"{owner_id}/{step.get('id') or 'step'}"
+                    # Step outputs are often artifact bindings rather than type declarations,
+                    # but new-style typed contracts are still harvested when present.
+                    for direction in ("inputs", "outputs"):
+                        contracts = step.get(f"{direction}Contract") or step.get(f"{direction}Types")
+                        _collect_contract("workflow_step", step_id, contracts, direction[:-1], refs)
+
+    declared_datatypes = {
+        str((record.get("document") or {}).get("id"))
+        for record in load_workspace_datatype_records(workspace_root, workspaces_root=workspaces_root)
+        if (record.get("document") or {}).get("id")
+    }
+    declared_representations = {
+        str((record.get("document") or {}).get("id"))
+        for record in load_workspace_representation_records(workspace_root, workspaces_root=workspaces_root)
+        if (record.get("document") or {}).get("id")
+    }
+    referenced_datatypes = sorted({ref["datatype"] for ref in refs})
+    referenced_representations = sorted({ref["representation"] for ref in refs if ref.get("representation")})
+
+    return {
+        "references": refs,
+        "referencedDatatypes": referenced_datatypes,
+        "referencedRepresentations": referenced_representations,
+        "undeclaredDatatypes": sorted(set(referenced_datatypes) - declared_datatypes),
+        "undeclaredRepresentations": sorted(set(referenced_representations) - declared_representations),
     }
