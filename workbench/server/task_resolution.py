@@ -27,6 +27,25 @@ def _prompt_prefix(workspace_root: Path, prompt_ids: list[str], separator: str) 
     return separator.join(parts)
 
 
+def _implementation_parameters(implementation: dict[str, Any], step: dict[str, Any]) -> dict[str, Any]:
+    parameters = dict(implementation.get("parameters") or {})
+    route = str(implementation.get("implementation") or "")
+
+    if route == "python.callable" and isinstance(implementation.get("python"), dict):
+        parameters.setdefault("source", dict(implementation["python"]))
+
+    if route == "prolog.source" and isinstance(implementation.get("prolog"), dict):
+        prolog = dict(implementation["prolog"])
+        parameters.setdefault("executable", prolog.get("engine") or "swipl")
+        parameters.setdefault("predicate", prolog.get("predicate"))
+        source_code = prolog.get("source_code")
+        if isinstance(source_code, list):
+            source_code = "\n".join(str(line) for line in source_code)
+        parameters.setdefault("sourceCode", source_code)
+
+    return {**parameters, **(step.get("parameters") or {})}
+
+
 def materialize_workflow_step(workflow: dict[str, Any], step: dict[str, Any]) -> dict[str, Any]:
     """Resolve a workflow_step/task reference into an executable engine task step."""
     task_id = step.get("task")
@@ -42,7 +61,7 @@ def materialize_workflow_step(workflow: dict[str, Any], step: dict[str, Any]) ->
     task = resolved["task"]
     implementation = resolved["implementation"]
     bindings = implementation.get("bindings") or {}
-    parameters = {**(implementation.get("parameters") or {}), **(step.get("parameters") or {})}
+    parameters = _implementation_parameters(implementation, step)
     prompt_ids = [str(item) for item in bindings.get("prompts") or []]
     if prompt_ids:
         separator = str(bindings.get("separator") or "\n\n")
