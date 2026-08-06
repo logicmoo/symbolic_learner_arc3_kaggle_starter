@@ -1,7 +1,7 @@
 {
   "id": "arc3.symbolic_state_analysis",
-  "label": "ARC3 Symbolic State Analysis",
-  "description": "ARC3 specialization of the shared vision-analysis prompts. Keeps ARC3 file/identity contracts local while reusing generic vision, transition, reconstruction, and rule-learning prompts.",
+  "label": "ARC3 Symbolic State Analysis — extreme",
+  "description": "Legacy extreme ARC3 prompt composition expressed correctly as a Task. ARC3-only file/identity contracts stay local while generic vision, transition, reconstruction, correspondence, and rule-learning prompts remain shared.",
   "implementation": "llm.complete",
   "inputs": {"current_image": "Image", "parent_image": "Image", "object_registry": "FileReference"},
   "outputs": {"analysis": "ArtifactBundle"},
@@ -10,5 +10,5 @@
     "separator": "\n\n"
   },
   "modelSelection": {"models": [], "strategy": "single"},
-  "parameters": {"domain": "arc3"}
+  "parameters": {"domain": "arc3", "analysisTier": "extreme"}
 }
