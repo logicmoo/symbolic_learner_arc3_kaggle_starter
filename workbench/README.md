@@ -80,7 +80,9 @@ launches reuse `workbench\.venv` and `workbench\frontend\node_modules`.
 - Topology and chronology views
 - Workflow library, structured editor, and raw JSON editor
 - Shared and workspace-specific task definitions
-- Shared and workspace-specific backend definitions
+- First-class abstract datatypes and concrete datatype representations
+- Representation-conversion tasks and cost-based conversion path planning
+- Shared and workspace-specific backend/model definitions
 - Nested-workflow validation and cycle detection
 - Artifact, evidence, LLM, validation, and setup views
 - SQLite state in `workbench/data/workbench.db`
@@ -88,6 +90,37 @@ launches reuse `workbench\.venv` and `workbench\frontend\node_modules`.
 The Python, SWI-Prolog, LLM, Turtle, and ARC3 execution engines remain adapter
 boundaries. The local server implements the shared command/event contract and
 persists workflows, tasks, runs, artifacts, and history.
+
+## Datatypes and representations
+
+The workbench treats the semantic datatype and its concrete representation as
+separate first-class resources. For example, `image` is an abstract datatype,
+while bitmap, SVG, LOGO/Turtle, scene graph, object list, natural-language
+description, and latent embedding are representations of that same meaning.
+
+Shared resources are stored as one JSON file per definition:
+
+```text
+workbench/workspaces/shared/datatypes/
+workbench/workspaces/shared/representations/
+```
+
+A normal workspace inherits these definitions and can override a shared
+resource by defining the same resource ID locally. Conversion tasks are normal
+abstract tasks with a `conversion` contract, so the planner can find paths such
+as:
+
+```text
+bitmap -> scene_graph -> logo_program
+bitmap -> object_list -> logo_program
+natural_language -> scene_graph
+```
+
+PNG, JPEG, and BMP are modeled as encodings of the bitmap representation rather
+than as different semantic datatypes.
+
+The design and resource schemas are described in
+`workbench/docs/DATA_REPRESENTATIONS.md`.
 
 ## Run it on Linux or macOS
 
@@ -132,6 +165,13 @@ environment values.
 
 ```text
 GET  /api/health
+GET  /api/workspaces/{workspace_id}/snapshot
+GET  /api/workspaces/{workspace_id}/tasks
+GET  /api/workspaces/{workspace_id}/datatypes
+GET  /api/workspaces/{workspace_id}/representations
+GET  /api/workspaces/{workspace_id}/representation-graph
+GET  /api/workspaces/{workspace_id}/datatypes/{datatype_id}/resolve
+GET  /api/workspaces/{workspace_id}/datatypes/{datatype_id}/plan?source=bitmap&target=logo_program
 POST /api/runs
 GET  /api/runs/{run_id}
 POST /api/runs/{run_id}/commands
