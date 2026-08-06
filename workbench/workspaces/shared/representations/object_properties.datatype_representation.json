@@ -1,0 +1,7 @@
+{
+  "kind": "datatype_representation",
+  "id": "object_properties",
+  "label": "Object Properties",
+  "implements": ["entity", "entity_collection", "world_state"],
+  "description": "Structured symbolic properties and relationships describing objects independently of the underlying implementation language."
+}
