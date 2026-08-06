@@ -5,7 +5,7 @@
   "implementation":"llm.complete",
   "inputs":{"current_image":"Image","previous_image":"Image"},
   "outputs":{"objects":"ObjectAnnotation","reconstruction":"Program"},
-  "promptSelection":{"prompts":["structured_json_response","logical_image_coordinates","object_extraction","turtle_reconstruction","transaction_extract_scene_objects","output_quality_control"],"separator":"\n\n"},
+  "promptSelection":{"prompts":["structured_json_response","logical_image_coordinates","object_extraction","symbolic_scene_fact_schema","turtle_reconstruction","turtle_motion_dsl","transaction_extract_scene_objects","output_quality_control"],"separator":"\n\n"},
   "modelSelection":{"models":[],"strategy":"single"},
   "parameters":{"requiresVision":true}
 }
