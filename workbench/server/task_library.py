@@ -17,6 +17,10 @@ def read_task_file(path: Path) -> dict[str, Any]:
         raise ValueError(f"Invalid task definition {path}: {error}") from error
     if not isinstance(value, dict):
         raise ValueError(f"Task definition must be a JSON object: {path}")
+    if value.get("kind") != "task":
+        raise ValueError(f"Task definition must declare kind='task': {path}")
+    if not path.name.endswith(".task.json"):
+        raise ValueError(f"Task filename must end in .task.json: {path}")
     if not str(value.get("id") or "").strip():
         raise ValueError(f"Task definition requires id: {path}")
     if not str(value.get("implementation") or "").strip():
