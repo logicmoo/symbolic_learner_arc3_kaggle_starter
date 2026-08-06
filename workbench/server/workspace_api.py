@@ -10,6 +10,7 @@ from fastapi import APIRouter, Body, HTTPException, Query
 from backend_library import MODEL_CATALOG_DIRECTORY, load_backend_library_records, load_workspace_backend_records
 from model_library import load_model_library_records, resolve_model_records
 from prompt_library import load_prompt_library_records, load_workspace_prompt_records
+from resource_convention import canonical_resource_path, infer_resource_kind
 from task_library import DEFAULT_WORKSPACES_ROOT, load_workspace_task_records
 
 router = APIRouter(prefix="/workspaces", tags=["workspaces"])
@@ -38,13 +39,17 @@ def _read_json(path: Path) -> dict[str, Any]:
 
 
 def _optional_metadata(root: Path) -> dict[str, Any]:
-    path = root / "workspace.json"
-    if not path.is_file():
-        return {}
-    try:
-        return _read_json(path)
-    except ValueError:
-        return {}
+    candidates = [root / f"{root.name}.workspace.json", root / "workspace.json"]
+    for path in candidates:
+        if not path.is_file():
+            continue
+        try:
+            value = _read_json(path)
+            value.setdefault("kind", "workspace")
+            return value
+        except ValueError:
+            continue
+    return {}
 
 
 def _humanize(name: str) -> str:
@@ -134,14 +139,21 @@ def _file_record(root: Path, path: Path) -> dict[str, Any]:
     }
 
 
-def _load_documents(root: Path, directory: Path, source: str) -> list[dict[str, Any]]:
+def _load_documents(root: Path, directory: Path, source: str, expected_kind: str | None = None) -> list[dict[str, Any]]:
     result: list[dict[str, Any]] = []
     if not directory.exists():
         return result
     for path in sorted(directory.glob("*.json"), key=lambda item: item.name.lower()):
         record: dict[str, Any] = {"path": path.relative_to(root).as_posix(), "source": source}
         try:
-            record["document"] = _read_json(path)
+            document = _read_json(path)
+            if expected_kind:
+                declared = document.get("kind")
+                if declared not in (None, expected_kind):
+                    raise ValueError(f"Expected kind={expected_kind!r}, found {declared!r}: {path}")
+                document.setdefault("kind", expected_kind)
+                record["convention"] = "canonical" if path.name.endswith(f".{expected_kind}.json") else "legacy-filename"
+            record["document"] = document
         except ValueError as error:
             record["error"] = str(error)
         result.append(record)
@@ -150,7 +162,7 @@ def _load_documents(root: Path, directory: Path, source: str) -> list[dict[str, 
 
 def _load_workflows(workspace: dict[str, Any]) -> list[dict[str, Any]]:
     root = Path(workspace["root"])
-    return _load_documents(root, Path(workspace["workflowDirectory"]), "workspace")
+    return _load_documents(root, Path(workspace["workflowDirectory"]), "workspace", "workflow")
 
 
 def _load_tasks(workspace: dict[str, Any]) -> list[dict[str, Any]]:
@@ -284,14 +296,27 @@ def write_workspace_file(workspace_id: str, body: dict[str, Any] = Body(...)) ->
         relative = str(body.get("path") or "")
         if not relative:
             raise ValueError("path is required")
-        target = _safe_child(root, relative)
-        if target.suffix.lower() not in TEXT_SUFFIXES:
+        requested = _safe_child(root, relative)
+        if requested.suffix.lower() not in TEXT_SUFFIXES:
             raise ValueError("file type is not editable text")
-        target.parent.mkdir(parents=True, exist_ok=True)
         content = str(body.get("content") or "")
+        target = requested
+        if requested.suffix.lower() == ".json":
+            document = json.loads(content)
+            if not isinstance(document, dict):
+                raise ValueError("JSON resource must contain an object")
+            kind = infer_resource_kind(requested, document)
+            document["kind"] = kind
+            target = canonical_resource_path(requested, document)
+            content = json.dumps(document, indent=2, ensure_ascii=False) + "\n"
+        target.parent.mkdir(parents=True, exist_ok=True)
+        if target != requested and target.exists() and requested.exists():
+            raise ValueError(f"canonical target already exists: {target.relative_to(root).as_posix()}")
         target.write_text(content, encoding="utf-8")
+        if target != requested and requested.is_file():
+            requested.unlink()
         return {"file": {**_file_record(root, target), "content": content}}
     except KeyError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error
-    except (OSError, ValueError) as error:
+    except (OSError, ValueError, json.JSONDecodeError) as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
