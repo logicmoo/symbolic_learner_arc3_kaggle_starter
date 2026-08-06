@@ -5,11 +5,7 @@
   "implementation":"llm.complete",
   "inputs":{"artifacts":"ArtifactBundle"},
   "outputs":{"audit":"Evidence"},
-  "prompts":[
-    "structured_json_response",
-    "transaction_audit_artifact_bundle",
-    "output_quality_control"
-  ],
+  "promptSelection":{"prompts":["structured_json_response","transaction_audit_artifact_bundle","output_quality_control"],"separator":"\n\n"},
   "modelSelection":{"models":[],"strategy":"single"},
   "parameters":{"requiresVision":false}
 }
