@@ -1,0 +1,21 @@
+{
+  "kind": "backend",
+  "id": "unsloth",
+  "label": "Gemma 4 E2B local",
+  "provider": "unsloth",
+  "description": "Shared local Unsloth Studio OpenAI-compatible backend inherited by every workspace.",
+  "enabled": true,
+  "capabilities": ["llm.complete", "llm.vision", "llm.local"],
+  "configuration": {
+    "adapter": "openai_responses",
+    "baseUrl": "http://127.0.0.1:8888/v1",
+    "apiKeyEnvironmentVariable": "ARC3_UNSLOTH_API_KEY",
+    "baseUrlEnvironmentVariable": "ARC3_UNSLOTH_BASE_URL",
+    "healthUrl": "http://127.0.0.1:8888/api/health",
+    "healthUrlEnvironmentVariable": "ARC3_UNSLOTH_HEALTH_URL",
+    "defaultModel": "unsloth/gemma-4-E2B-it-GGUF",
+    "modelEnvironmentVariable": "ARC3_UNSLOTH_MODEL",
+    "defaultAnalysisLevel": 3,
+    "timeoutSeconds": 900
+  }
+}
