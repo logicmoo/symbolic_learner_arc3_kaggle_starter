@@ -5,12 +5,7 @@ from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
 
-from datatype_library import (
-    load_workspace_datatype_records,
-    load_workspace_representation_records,
-    representation_graph,
-    resolve_datatype_representation,
-)
+from datatype_library import representation_graph, resolve_datatype_representation
 from representation_planner import conversion_edges, plan_representation_conversion
 from workspace_api import _resolve_workspace
 
@@ -23,18 +18,6 @@ def _root(workspace_id: str) -> tuple[dict[str, Any], Path]:
     except KeyError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error
     return workspace, Path(workspace["root"])
-
-
-@router.get("/{workspace_id}/datatypes")
-def workspace_datatypes(workspace_id: str) -> dict[str, Any]:
-    workspace, root = _root(workspace_id)
-    return {"workspace": workspace, "datatypes": load_workspace_datatype_records(root)}
-
-
-@router.get("/{workspace_id}/representations")
-def workspace_representations(workspace_id: str) -> dict[str, Any]:
-    workspace, root = _root(workspace_id)
-    return {"workspace": workspace, "representations": load_workspace_representation_records(root)}
 
 
 @router.get("/{workspace_id}/representation-graph")
