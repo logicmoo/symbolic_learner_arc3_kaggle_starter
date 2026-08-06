@@ -1,0 +1,7 @@
+{
+  "kind": "datatype_representation",
+  "id": "executable_view",
+  "label": "Executable View",
+  "implements": ["information", "image"],
+  "description": "An executable program or procedure that reconstructs or transforms the represented information, including Turtle/LOGO-style views."
+}
