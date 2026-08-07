@@ -252,6 +252,80 @@ Do not put all variants back into a monolithic catalog file.
 
 
 
+\## Repository Structure and Working Conventions
+
+
+
+Core Python modules live in `python/`, including the `object_memory/` and
+
+`worldworkbench/` packages. The active browser workbench is split between
+
+`workbench/server/` and `workbench/frontend/`. Keep Prolog rules and native
+
+tests in `prolog/`, reusable configuration in `config/`, command-line helpers
+
+in `scripts/`, and Python tests in `tests/`. ARC agent code belongs in
+
+`agent/`; `notebooks/` contains Kaggle notebook inputs and metadata. Consult
+
+`README.md`, `workbench/README.md`, and `README_WINDOWS.md` before changing
+
+setup or runtime behavior.
+
+
+
+Development commands:
+
+
+
+\- `python -m pip install -e ".[test,debugger]"` installs Python 3.12+
+
+development dependencies.
+
+\- `python -m pytest -q` runs the Python suite used by CI.
+
+\- `make verify-local` smoke-tests the ARC agent; `make play-local GAME=ls20
+
+STEPS=200` runs a targeted session. These Make targets assume a Unix-like
+
+shell; use `README_WINDOWS.md` on Windows.
+
+\- From `workbench/frontend/`, `npm install && npm run dev` starts Vite and
+
+`npm run build` type-checks and builds the frontend. Node.js 22+ is required.
+
+\- `swipl -q -s prolog/run_tests.pl` runs the SWI-Prolog test entrypoint.
+
+
+
+Use four spaces in Python and two spaces in TypeScript and JSON. Use
+
+`snake_case` for Python functions and modules, `PascalCase` for classes and
+
+React components, `camelCase` for TypeScript helpers and hooks, and uppercase
+
+names for constants. Prefer type hints, focused functions, `pathlib`, and
+
+platform-neutral behavior. Preserve resource suffixes such as `*.task.json`,
+
+`*.prompt.json`, and `*.datatype.json`. No repository-wide formatter is
+
+configured; match nearby code and avoid unrelated reformatting.
+
+
+
+Pytest discovers `tests/test_*.py`; name tests `test_<behavior>` and add a
+
+regression test for every bug fix. Keep tests deterministic and mock network,
+
+LLM, and external-service boundaries. Run focused tests while developing, then
+
+the full suite before completion. Add Prolog tests beside related `.pl`
+
+modules when symbolic logic changes.
+
+
+
 \## Git Safety
 
 
