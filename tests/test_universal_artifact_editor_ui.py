@@ -124,3 +124,15 @@ def test_universal_tree_is_collapsible_and_independently_scrollable() -> None:
     assert "overflow-y:scroll" in styles
     workbench_styles = (ROOT / "workbench" / "frontend" / "src" / "styles" / "workbench.css").read_text(encoding="utf-8")
     assert ".main-stage{min-height:0;overflow:hidden}" in workbench_styles
+
+
+def test_all_artifact_trees_share_filter_and_parent_path_controls() -> None:
+    universal = _text("UniversalArtifactEditor.tsx")
+    operations = _text("OperationLibraryEditor.tsx")
+    filtering = _text("useArtifactTreeFilter.ts")
+    for source in (universal, operations):
+        assert "Filter tree…" in source
+        assert "Show Parents" in source
+        assert "useArtifactTreeFilter" in source
+    assert "childBranchMatch" in filtering
+    assert "head.hidden = !ownMatch && !showParents" in filtering
