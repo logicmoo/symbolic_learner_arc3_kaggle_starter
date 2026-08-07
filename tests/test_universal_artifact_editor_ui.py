@@ -9,13 +9,12 @@ def _text(name: str) -> str:
     return (COMPONENTS / name).read_text(encoding="utf-8")
 
 
-def test_universal_editor_is_the_shared_hierarchy_chrome() -> None:
+def test_universal_editor_keeps_compatibility_chrome_for_adapted_panels() -> None:
     universal = _text("UniversalArtifactEditor.tsx")
     compatibility = _text("HierarchyResourceEditor.tsx")
     assert 'UNIVERSAL_ARTIFACT_EDITOR_BASELINE = "b42249b"' in universal
     assert "UniversalArtifactEditor as HierarchyResourceEditor" in compatibility
     for component in (
-        "TaskLibraryEditor.tsx",
         "DataCatalogPanel.tsx",
         "PromptLibraryEditor.tsx",
         "LlmModelsEditor.tsx",
@@ -27,7 +26,7 @@ def test_universal_editor_is_the_shared_hierarchy_chrome() -> None:
 def test_tasks_preserve_rich_baseline_features() -> None:
     source = _text("TaskLibraryEditor.tsx")
     required = (
-        "PREFERRED IMPLEMENTATION",
+        "DEFAULT IMPLEMENTATION",
         "PYTHON SOURCE",
         "SWI-PROLOG SOURCE",
         "METTA SOURCE",
@@ -37,9 +36,24 @@ def test_tasks_preserve_rich_baseline_features() -> None:
         "task-document-tabs",
         "task-tree-children",
         "echo_into_titlecased",
+        "TaskPlayground",
     )
     for token in required:
         assert token in source, f"rich Tasks baseline feature disappeared: {token}"
+
+
+def test_task_playground_exposes_typed_inputs_variant_switching_and_results() -> None:
+    source = _text("TaskPlayground.tsx")
+    for token in (
+        "TASK PLAYGROUND",
+        "RUN VARIANT",
+        "OUTPUT CONTRACT",
+        "implementationVariant",
+        "/invoke",
+        "elapsedMs",
+        "resolvedPrompts",
+    ):
+        assert token in source
 
 
 def test_other_artifact_families_keep_their_variant_controls() -> None:
