@@ -79,6 +79,8 @@ def test_other_artifact_families_keep_their_variant_controls() -> None:
     models = _text("LlmModelsEditor.tsx")
     assert "INHERITS FROM" in models
     assert "RESOLVED INHERITANCE" in models
+    for component in ("DataCatalogPanel.tsx", "PromptLibraryEditor.tsx", "GoalPlanLibraryEditor.tsx", "LlmModelsEditor.tsx"):
+        assert "ArtifactTreeBranch" in _text(component)
 
 
 def test_universal_shell_keeps_tabs_compare_inspector_and_docks() -> None:

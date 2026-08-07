@@ -1,4 +1,5 @@
 import { useMemo, useState, type ReactNode } from "react";
+import { ArtifactTreeCommandContext, type ArtifactTreeCommand } from "./ArtifactTreeBranch";
 import "../styles/task_editor.css";
 
 export const UNIVERSAL_ARTIFACT_EDITOR_BASELINE = "current-rich-editor";
@@ -110,6 +111,8 @@ export function UniversalArtifactEditor({
   const [navigatorCollapsed, setNavigatorCollapsed] = useState(false);
   const [variantsHidden, setVariantsHidden] = useState(false);
   const [variantsCollapsed, setVariantsCollapsed] = useState(false);
+  const [treeCommand, setTreeCommand] = useState<ArtifactTreeCommand>(null);
+  const commandTree = (action: "collapse" | "expand") => setTreeCommand(current => ({ action, revision: (current?.revision || 0) + 1 }));
   const activeBottomPanel = useMemo(
     () => bottomPanels.find(panel => panel.id === bottomPanelId) || bottomPanels[0] || null,
     [bottomPanels, bottomPanelId],
@@ -142,17 +145,17 @@ export function UniversalArtifactEditor({
       {inspector && <div className="artifact-inspector-extension">{inspector}</div>}
     </div>
 
-    <div className={`task-hierarchy-layout artifact-editor-body ${navigatorCollapsed?"navigator-collapsed":"navigator-expanded"} ${variantsHidden?"variants-hidden":"variants-visible"} ${variantsCollapsed?"variants-collapsed":"variants-expanded"}`}>
+    <div className={`task-hierarchy-layout artifact-editor-body ${navigatorCollapsed?"navigator-collapsed":"navigator-expanded"}`}>
       <div className={`${treeClassName} artifact-navigator`.trim()}>
         <div className="artifact-navigator-toolbar">
           <span>HIERARCHY</span>
           <div className="artifact-navigator-actions">
-            <button type="button" aria-label={variantsHidden?"Unhide Variants":"Hide Variants"} aria-pressed={variantsHidden} onClick={()=>setVariantsHidden(value=>!value)}><b>{variantsHidden?"Unhide Variants":"Hide Variants"}</b></button>
-            <button type="button" aria-label={variantsCollapsed?"Show Tree":"Only Toplevel"} aria-pressed={variantsCollapsed} onClick={()=>setVariantsCollapsed(value=>!value)}><b>{variantsCollapsed?"Show Tree":"Only Toplevel"}</b></button>
+            <button type="button" aria-label={variantsHidden?"Unhide Variants":"Hide Variants"} aria-pressed={variantsHidden} onClick={()=>{const hidden=!variantsHidden;setVariantsHidden(hidden);commandTree(hidden?"collapse":"expand")}}><b>{variantsHidden?"Unhide Variants":"Hide Variants"}</b></button>
+            <button type="button" aria-label={variantsCollapsed?"Show Tree":"Only Toplevel"} aria-pressed={variantsCollapsed} onClick={()=>{const collapsed=!variantsCollapsed;setVariantsCollapsed(collapsed);commandTree(collapsed?"collapse":"expand")}}><b>{variantsCollapsed?"Show Tree":"Only Toplevel"}</b></button>
             <button type="button" aria-label={navigatorCollapsed?"Expand hierarchy":"Collapse hierarchy"} aria-expanded={!navigatorCollapsed} onClick={()=>setNavigatorCollapsed(value=>!value)}>{navigatorCollapsed?"›":"‹"}<b>{navigatorCollapsed?"":"Pane"}</b></button>
           </div>
         </div>
-        <div className="artifact-navigator-content">{leftPane}</div>
+        <ArtifactTreeCommandContext.Provider value={treeCommand}><div className="artifact-navigator-content">{leftPane}</div></ArtifactTreeCommandContext.Provider>
       </div>
       <div className={workspaceClassName}>
         <div className={tabsClassName}>
