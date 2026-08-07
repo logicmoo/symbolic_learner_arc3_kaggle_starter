@@ -110,3 +110,7 @@ def test_universal_tree_is_collapsible_and_independently_scrollable() -> None:
     assert ".task-hierarchy-layout.navigator-collapsed" in styles
     assert ".variants-collapsed .task-tree-children" in styles
     assert ".variants-collapsed .inheritance-children" in styles
+    assert ".main-stage>.task-hierarchy-page" in styles
+    assert "overflow-y:scroll" in styles
+    workbench_styles = (ROOT / "workbench" / "frontend" / "src" / "styles" / "workbench.css").read_text(encoding="utf-8")
+    assert ".main-stage{min-height:0;overflow:hidden}" in workbench_styles
