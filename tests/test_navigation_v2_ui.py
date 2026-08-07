@@ -38,6 +38,13 @@ def test_navigation_v2_has_required_groups_and_labels() -> None:
         assert f'label:"{label}"' in source
 
 
+def test_artifact_editors_hide_the_run_pipeline_column() -> None:
+    source = ACTIVE_PAGE.read_text(encoding="utf-8")
+    styles = (ROOT / "workbench" / "frontend" / "src" / "styles" / "workbench.css").read_text(encoding="utf-8")
+    assert 'relationshipView?"artifact-focused":""' in source
+    assert ".workspace.artifact-focused>.stages-panel{display:none}" in styles
+
+
 def test_navigation_reuses_current_rich_editors() -> None:
     source = ACTIVE_PAGE.read_text(encoding="utf-8")
     expected = {

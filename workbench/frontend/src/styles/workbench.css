@@ -24,4 +24,7 @@ footer{height:26px;border-top:1px solid #20313b;background:#081118;display:flex;
 @media(max-width:560px){.resource-heading{display:block}.resource-heading>button{margin-top:13px}.action-pad{grid-template-columns:repeat(4,38px)}.action-pad .space-action{grid-column:1/5;width:auto}.resource-row{grid-template-columns:1.3fr 1fr .5fr}.resource-row span:nth-child(3),.resource-row span:nth-child(4),.resource-head span:nth-child(3),.resource-head span:nth-child(4){display:none}.event-console p{grid-template-columns:48px 7px 1fr}}
 @media(max-width:1180px) and (min-width:821px){.workspace{grid-template-columns:154px 220px 1fr}}
 .main-stage{min-height:0;overflow:hidden}
+@media(min-width:1181px){.workspace.artifact-focused{grid-template-columns:174px minmax(540px,1fr) 310px}.workspace.artifact-focused>.stages-panel{display:none}}
+@media(max-width:1180px) and (min-width:821px){.workspace.artifact-focused{grid-template-columns:154px minmax(540px,1fr)}.workspace.artifact-focused>.stages-panel{display:none}}
+@media(max-width:820px){.workspace.artifact-focused{grid-template-columns:54px minmax(0,1fr)}.workspace.artifact-focused>.stages-panel{display:none}.workspace.artifact-focused>.main-stage{grid-column:2}}
 @media(max-width:820px){.rail.navigation-v2{padding:8px 4px}.navigation-v2 .rail-section{align-items:center}.navigation-v2 .rail-section>span,.navigation-v2 .rail-icon small{display:none}.navigation-v2 .rail-icon{width:44px;grid-template-columns:1fr;padding:3px}}
