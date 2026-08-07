@@ -2,6 +2,8 @@
 
 \# MeTTaSymbolicLearnerWorkbench — Codex Instructions
 
+[Back to repository README](README.md)
+
 
 
 \## Project Purpose

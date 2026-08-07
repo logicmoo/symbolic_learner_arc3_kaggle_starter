@@ -1,0 +1,106 @@
+# Codex Current Implementation Inventory
+
+[Back to repository README](../../../README.md)
+
+## Scope and Active Entrypoint
+
+This inventory records the repository before Navigation V2 implementation. `workbench/frontend/src/main.tsx` renders `App`; `workbench/frontend/src/App.tsx` imports and returns only `FilesystemWorkbenchPage`. Therefore `workbench/frontend/src/pages/FilesystemWorkbenchPage.tsx` is the active application. No other page under `src/pages/` is reachable through the current entrypoint.
+
+The backend is FastAPI, launched from `workbench/server/app.py`. The active page uses `/api/workspaces/{id}/snapshot` for filesystem state and `/api/engine/*` for workflow execution.
+
+## Navigation Mapping
+
+| Navigation V2 item | Current backing component/data | Status |
+| --- | --- | --- |
+| Goals | No goal resource loader/editor | New contract required |
+| Plans | No plan resource loader/editor | New contract required |
+| Workflows | Active canvas and raw workflow editor in `FilesystemWorkbenchPage` | Real, reuse |
+| Operations | `TaskLibraryEditor` and `TaskPlayground` | Real, relabel Tasks |
+| Datatypes | `DataCatalogPanel` | Real, relabel Data |
+| Prompts | `PromptLibraryEditor` | Real, reuse |
+| Models | `LlmModelsEditor` | Real, reuse |
+| Goal Runs | No goal-run contract | New contract required |
+| Workflow Runs | Active engine `Run`, steps, artifacts, events, commands, and human input | Real, reorganize |
+| Execs | Task playground invocation API plus engine step execution | Partly present |
+| Events | Active run evidence and `/api/engine/runs/{id}/events` | Real, reuse |
+| States | Run/artifact state exists, but no dedicated state-snapshot page/contract | Partial |
+| Logs | `/api/engine/runs/{id}/logs` exists; no active dedicated page | Backend real, UI needed |
+| Model Policy | Requirements document only | Pending; documentation view |
+| Benchmarks | No discovered benchmark resource/API | Pending; resource-status view |
+| Contexts | No first-class context resource/API | Pending; resource-status view |
+| Settings | Active workspace Setup view in `FilesystemWorkbenchPage` | Real, reuse |
+
+## Active Editors and Baseline Features
+
+`TaskLibraryEditor`, `DataCatalogPanel`, `PromptLibraryEditor`, and `LlmModelsEditor` use `HierarchyResourceEditor`, a compatibility export of `UniversalArtifactEditor`. The shared shell provides hierarchy chrome, persistent closeable tabs, dirty markers, split comparison, common inspector space, variant controls, and bottom docks.
+
+The Tasks editor additionally has abstract task/implementation hierarchy, default implementation selection, Python, SWI-Prolog, MeTTa, and model/profile dispatch panels, prompt composition, raw JSON, filesystem save, and the typed `TaskPlayground`. Datatypes provides representation selection, conversions, and usage. Prompts provides preferred implementations. Models provides backend/model/profile inheritance, resolved settings, rich configuration, and raw JSON. The active right pane loads real shared Markdown through `HelpDocumentTabs` for these families.
+
+## Real, Obsolete, and Mock Pages
+
+- **Active and real:** `FilesystemWorkbenchPage.tsx`; its workspace lists, snapshots, workflow definitions, capabilities, editors, artifacts, and events come from backend APIs.
+- **Inactive but mostly filesystem/backend-backed predecessors:** `PolishedFilesystemWorkbenchPage.tsx`, `PolishedFilesystemWorkbenchPageV2.tsx`, `RealWorkspaceDesktopPage.tsx`, `WorkspaceBackedWorkbenchPage.tsx`, `WorkspaceWorkbenchPage.tsx`, `BackendWorkbenchPage.tsx`, `RealWorkbenchPage.tsx`, and `UnmockedWorkflowEnginePage.tsx`. They may be consulted for behavior, but are not routing targets.
+- **Inactive mock/reference pages:** `WorkflowEnginePage.tsx` declares a local sample workflow. `WorkbenchPage.tsx` includes hard-coded validation results and presentation/demo data and talks to deprecated compatibility endpoints. Neither may supply active Navigation V2 data.
+
+Some inactive pages expose views not currently promoted to dedicated active navigation items, including chronology-oriented run presentations and older command/configuration surfaces. Reuse only behavior that can be wired to current real APIs; do not copy their embedded sample records.
+
+## Backend Routes Already Available
+
+Workspace and file APIs:
+
+- `GET /api/workspaces`, `GET /api/workspaces/{id}`
+- `GET /api/workspaces/{id}/snapshot`
+- `GET|PUT /api/workspaces/{id}/file`
+- Workspace task, datatype, representation, backend, model, and prompt collection routes
+- Prompt hierarchy, implementation, and resolution routes
+- Datatype resolution, representation graph, inventory, and conversion-planning routes
+- `POST /api/workspaces/{id}/tasks/{task_id}/invoke`
+
+Workflow-engine APIs:
+
+- capabilities and implementations
+- workflow list/create/get/validate
+- run create/get, commands, human step input, events, and logs
+
+The app also exposes health, analysis, SQLite-backed legacy run/event/task APIs, artifact lookup, and session workflow/reset routes. `/api/workflows` is explicitly deprecated for the retired mock client; Navigation V2 should use workspace snapshots and engine routes.
+
+## Filesystem Resource Kinds
+
+Existing first-class loaders cover `workflow`, `task`, `task_implementation`, `datatype`, `datatype_representation`, `prompt`, `prompt_implementation`, `backend`, `model`, and `profile`. Workspaces also contain catalog/config/Markdown files that appear in the editable-file inventory but are not all first-class semantic loaders.
+
+Shared inheritance plus workspace override resolution exists for tasks and implementations, datatypes and representations, prompts and implementations, backends, models, and profiles. Goals, goal interpretations/variants, plans/variants, AtomSpaces, model policies, benchmark policies/results, contexts, goal runs, and dedicated state snapshots are not yet first-class resource kinds in the workspace snapshot.
+
+## Exact Navigation V2 Change Surface
+
+Task 2 should remain narrowly scoped to:
+
+1. `workbench/frontend/src/pages/FilesystemWorkbenchPage.tsx` — replace the flat `View`/`nav` contract with grouped Design, Runtime, and System navigation; map existing components without editing their internals; add real pending/resource views.
+2. `workbench/frontend/src/styles/workbench.css` and, only if required by the active shell, `workspace_backed.css` — style grouped navigation and overflow while preserving current editor CSS.
+3. A focused Python source-regression test under `tests/` — assert all Navigation V2 labels and their component/view mappings.
+4. `tests/test_universal_artifact_editor_ui.py` and `workbench/frontend/src/components/UniversalArtifactEditor.tsx` — remove the stale historical commit-name assertion/constant and express the baseline as current behavior. This is regression-test semantics, not an editor redesign.
+
+`App.tsx` needs no change unless the active entrypoint itself changes; Navigation V2 should not change it. No backend file is required merely to establish the shell because the active snapshot and engine APIs can support real status/TODO views.
+
+## Current Rich Tasks Regression Checklist
+
+Before and after Navigation V2:
+
+- [ ] `App.tsx` still launches the page containing `TaskLibraryEditor`.
+- [ ] Operations opens the existing `TaskLibraryEditor`, not a replacement.
+- [ ] Abstract tasks remain parents and implementations remain children.
+- [ ] Default implementation selection edits the abstract task document.
+- [ ] Python, SWI-Prolog, MeTTa, model/profile dispatch, and prompt-composition panels remain available.
+- [ ] Persistent tabs open, activate, show dirty state, close, and retain unsaved drafts.
+- [ ] Split comparison works and returns to single-pane mode.
+- [ ] Raw JSON edits and rich controls update the intended document.
+- [ ] Saving inherited resources creates/updates the correct workspace override; shared resources remain protected.
+- [ ] Save followed by snapshot reload preserves changes.
+- [ ] `TaskPlayground` resolves a real implementation, accepts typed input, switches variants, runs, and shows outputs/prompts/timing.
+- [ ] Right-side documentation remains visible and filesystem-backed.
+- [ ] Horizontal and vertical scrolling expose all editor content.
+- [ ] Existing universal-editor and task-playground tests pass, with no historical commit identifier used as the baseline.
+- [ ] Frontend build succeeds and the running application works after restart.
+
+## Review Gate
+
+Do not implement Navigation V2 until this inventory is reviewed. The next change must alter the active shell only, preserve all current rich editors, and avoid normalization, broad renames, or unrelated cleanup.
