@@ -2,7 +2,7 @@
   "kind": "model_policy",
   "id": "default_model_runtime",
   "label": "Default Model Runtime Policy",
-  "description": "Abstract shared policy controlling wanted, runtime, benchmark, health, and fallback behavior.",
+  "description": "Defines the shared contract for model selection without naming a specific provider or model. It separates user intent (wanted, runtime, and benchmark states) from observed vendor and model health, then applies health thresholds and fallback rules when effective eligibility is calculated. Enabled variants implement this policy with different selection priorities.",
   "enabled": true,
   "example": true,
   "variantSelection": {

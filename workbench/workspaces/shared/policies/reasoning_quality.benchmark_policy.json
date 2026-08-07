@@ -2,7 +2,7 @@
   "kind": "benchmark_policy",
   "id": "reasoning_quality",
   "label": "Reasoning Quality Matrix",
-  "description": "Compare enabled prompt profiles across eligible benchmark models.",
+  "description": "Defines a repeatable reasoning-quality benchmark matrix rather than storing a result. At execution time it selects models whose effective benchmark state is eligible, runs each listed prompt profile three times, and records accuracy, latency, token use, and estimated cost for comparison and later policy decisions.",
   "enabled": true,
   "example": true,
   "modelPolicyId": "default_model_runtime",

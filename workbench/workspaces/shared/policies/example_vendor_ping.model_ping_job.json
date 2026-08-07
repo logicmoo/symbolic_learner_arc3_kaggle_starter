@@ -2,6 +2,7 @@
   "kind": "model_ping_job",
   "id": "example_vendor_ping",
   "label": "Example Concurrent Vendor Ping",
+  "description": "Example record of a bounded concurrent health-check job. It identifies the model targets, timeout, concurrency, and error-continuation behavior used for one run; disabling the resource prevents it from being treated as a scheduled job while preserving it as an inspectable example and execution record.",
   "enabled": false,
   "example": true,
   "status": "completed",

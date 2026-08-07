@@ -3,7 +3,7 @@
   "id": "balanced_model_runtime",
   "implements": "default_model_runtime",
   "label": "Balanced Runtime",
-  "description": "Prefer healthy capable models while retaining automatic fallbacks and benchmark coverage.",
+  "description": "General-purpose implementation of the default model-runtime policy. It balances measured quality, latency, cost, and reliability when ranking healthy eligible models, keeps automatic fallbacks available, and includes selected models in benchmark runs so future choices can use comparable evidence.",
   "enabled": true,
   "example": true,
   "selection": {

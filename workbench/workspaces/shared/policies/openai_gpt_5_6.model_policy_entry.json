@@ -5,6 +5,7 @@
   "modelId": "gpt-5.6",
   "modelResourceId": "gpt-5.6",
   "name": "GPT-5.6",
+  "description": "Declares the workspace policy and selection metadata for the OpenAI GPT-5.6 model. Capability, context, output, lifecycle, and pricing fields support filtering and ranking, while the three policy switches express intent; effective runtime and benchmark eligibility must also satisfy vendor policy and current health requirements.",
   "enabled": true,
   "example": true,
   "policy": {"wanted": "on", "runtime": "on", "benchmark": "on"},
