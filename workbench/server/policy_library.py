@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 
 from operation_library import DEFAULT_WORKSPACES_ROOT, SHARED_WORKSPACE_ID
+from resource_relationships import relationship_ids
 
 POLICY_KINDS = {"model_policy", "model_policy_variant", "vendor_policy", "model_policy_entry", "model_health_observation", "model_ping_job", "model_ping_event", "benchmark_policy", "benchmark_result"}
 
@@ -34,7 +35,9 @@ def load_workspace_policy_records(workspace_root: Path, *, workspaces_root: Path
 def policy_hierarchy(records: list[dict[str, Any]]) -> dict[str, Any]:
     roots: list[dict[str, Any]] = []; variants: list[dict[str, Any]] = []; children: dict[str, list[dict[str, Any]]] = {}
     for record in records:
-        document = record.get("document") or {}; parent = document.get("implements")
-        if document.get("kind") == "model_policy_variant" and parent: variants.append(record); children.setdefault(str(parent), []).append(record)
+        document = record.get("document") or {}; parents = relationship_ids(document.get("implements"))
+        if document.get("kind") == "model_policy_variant" and parents:
+            variants.append(record)
+            for parent in parents: children.setdefault(parent, []).append(record)
         else: roots.append(record)
     return {"roots": roots, "variants": variants, "variantsByParent": children}

@@ -2,8 +2,18 @@
   "kind": "datatype_representation",
   "id": "scene_graph",
   "label": "Scene Graph",
-  "implements": "image",
   "encodings": [
-    {"id": "json", "mimeTypes": ["application/json"], "extensions": [".json"]}
+    {
+      "id": "json",
+      "mimeTypes": [
+        "application/json"
+      ],
+      "extensions": [
+        ".json"
+      ]
+    }
+  ],
+  "represents": [
+    "image"
   ]
 }

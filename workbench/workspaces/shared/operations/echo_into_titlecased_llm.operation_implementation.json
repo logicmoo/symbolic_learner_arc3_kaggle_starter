@@ -1,7 +1,9 @@
 {
   "kind": "operation_implementation",
   "id": "echo_into_titlecased_llm",
-  "implements": "echo_into_titlecased",
+  "implements": [
+    "echo_into_titlecased"
+  ],
   "label": "Echo Into Titlecased / LLM",
   "description": "Take received text, send it through an LLM with the shared titlecase prompt, and return the title-cased text.",
   "implementation": "llm.complete",

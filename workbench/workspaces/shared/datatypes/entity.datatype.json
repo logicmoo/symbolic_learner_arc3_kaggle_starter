@@ -2,5 +2,9 @@
   "kind": "datatype",
   "id": "entity",
   "label": "Entity",
-  "description": "A stable thing or candidate object represented independently of any concrete encoding."
+  "description": "A stable thing or candidate object represented independently of any concrete encoding.",
+  "representations": [
+    "image_region",
+    "object_properties"
+  ]
 }

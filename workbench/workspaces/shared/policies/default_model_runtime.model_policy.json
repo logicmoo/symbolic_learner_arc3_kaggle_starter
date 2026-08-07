@@ -7,7 +7,10 @@
   "example": true,
   "variantSelection": {
     "default": "balanced_model_runtime",
-    "variants": ["balanced_model_runtime", "economy_model_runtime"]
+    "variants": [
+      "balanced_model_runtime",
+      "economy_model_runtime"
+    ]
   },
   "rules": {
     "requireHealthyVendor": true,
@@ -17,5 +20,9 @@
     "slowLatencyMs": 5000,
     "maxFailureRate": 0.2,
     "continueConcurrentPingsOnFailure": true
-  }
+  },
+  "variants": [
+    "balanced_model_runtime",
+    "economy_model_runtime"
+  ]
 }

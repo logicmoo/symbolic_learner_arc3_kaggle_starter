@@ -4,6 +4,8 @@ import json
 from pathlib import Path
 from typing import Any, Iterable
 
+from resource_relationships import points_to, relationship_ids
+
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_WORKSPACES_ROOT = REPOSITORY_ROOT / "workbench" / "workspaces"
@@ -26,7 +28,7 @@ def read_operation_file(path: Path) -> dict[str, Any]:
     if not str(value.get("id") or "").strip():
         raise ValueError(f"Operation definition requires id: {path}")
     if kind == "operation_implementation":
-        if not str(value.get("implements") or "").strip():
+        if not relationship_ids(value.get("implements")):
             raise ValueError(f"Operation implementation requires implements: {path}")
         if not str(value.get("implementation") or "").strip():
             raise ValueError(f"Operation implementation requires implementation: {path}")
@@ -100,7 +102,7 @@ def resolve_operation_implementation(workspace_root: Path, operation_id: str, re
         raise KeyError(f"operation not found: {operation_id}")
     operation = operation_record["document"]
     selection = operation.get("implementationSelection") or {}
-    variants = [str(v) for v in selection.get("variants") or []]
+    variants = relationship_ids(operation.get("implementations")) or relationship_ids(selection.get("variants"))
     chosen = requested or selection.get("default") or (variants[0] if variants else None)
     if not chosen:
         raise ValueError(f"operation has no implementation variant: {operation_id}")
@@ -110,7 +112,7 @@ def resolve_operation_implementation(workspace_root: Path, operation_id: str, re
     if not record:
         raise KeyError(f"operation implementation not found: {chosen}")
     implementation = record["document"]
-    if implementation.get("implements") != operation_id:
+    if not points_to(implementation, "implements", operation_id):
         raise ValueError(f"implementation {chosen} does not implement {operation_id}")
     return {"operation": operation, "operationRecord": operation_record, "implementation": implementation, "implementationRecord": record}
 

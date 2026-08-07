@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 
 from operation_library import DEFAULT_WORKSPACES_ROOT, SHARED_WORKSPACE_ID
+from resource_relationships import relationship_ids
 
 
 FAMILIES = {
@@ -22,7 +23,7 @@ def _read(path: Path, kinds: set[str]) -> dict[str, Any]:
         raise ValueError(f"Resource must declare one of {sorted(kinds)}: {path}")
     if not str(value.get("id") or "").strip():
         raise ValueError(f"Resource requires id: {path}")
-    if value["kind"] not in {"goal", "plan"} and not str(value.get("implements") or "").strip():
+    if value["kind"] not in {"goal", "plan"} and not relationship_ids(value.get("implements")):
         raise ValueError(f"Variant requires implements: {path}")
     return value
 
@@ -60,5 +61,6 @@ def symbolic_hierarchy(records: list[dict[str, Any]], parent_kind: str) -> dict[
     variants = [record for record in records if (record.get("document") or {}).get("kind") != parent_kind]
     by_parent: dict[str, list[dict[str, Any]]] = {}
     for record in variants:
-        by_parent.setdefault(str(record["document"]["implements"]), []).append(record)
+        for parent in relationship_ids(record["document"].get("implements")):
+            by_parent.setdefault(parent, []).append(record)
     return {"specifications": parents, "variants": variants, "variantsBySpecification": by_parent}

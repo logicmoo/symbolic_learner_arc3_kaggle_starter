@@ -3,7 +3,7 @@ import { ArtifactTreeBranch } from "./ArtifactTreeBranch";
 import { HierarchyResourceEditor } from "./HierarchyResourceEditor";
 import "../styles/operation_editor.css";
 
-type Policy = { kind:string; id:string; label?:string; description?:string; enabled?:boolean; implements?:string; variantSelection?:{default?:string;variants?:string[]}; [key:string]:unknown };
+type Policy = { kind:string; id:string; label?:string; description?:string; enabled?:boolean; implements?:string[]; variants?:string[]; variantSelection?:{default?:string;variants?:string[]}; [key:string]:unknown };
 type RecordFile = { path:string; source?:"shared"|"workspace"; workspaceId?:string; document?:Policy; error?:string };
 type Payload = { resources:RecordFile[]; hierarchy:{roots:RecordFile[];variants:RecordFile[];variantsByParent:Record<string,RecordFile[]>} };
 type OpenDocument = { key:string; record:RecordFile; source:string; dirty:boolean };

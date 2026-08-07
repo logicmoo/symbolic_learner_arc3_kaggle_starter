@@ -2,5 +2,8 @@
   "kind": "datatype",
   "id": "evaluation",
   "label": "Evaluation",
-  "description": "A semantic assessment, score, validation result, or comparison."
+  "description": "A semantic assessment, score, validation result, or comparison.",
+  "representations": [
+    "prolog_fact_set"
+  ]
 }

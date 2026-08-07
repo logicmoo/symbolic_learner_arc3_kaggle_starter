@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 
 from operation_library import DEFAULT_WORKSPACES_ROOT, SHARED_WORKSPACE_ID
+from resource_relationships import points_to, relationship_ids
 
 PROMPT_DIRECTORY = "prompts"
 PROMPT_KIND = "prompt"
@@ -31,7 +32,7 @@ def read_prompt_file(path: Path) -> dict[str, Any]:
         raise ValueError(f"Prompt definition requires id: {path}")
 
     if raw_kind == PROMPT_IMPLEMENTATION_KIND:
-        if not str(value.get("implements") or "").strip():
+        if not relationship_ids(value.get("implements")):
             raise ValueError(f"Prompt implementation requires implements: {path}")
         text = value.get("text")
         if not isinstance(text, (str, list)):
@@ -181,7 +182,7 @@ def resolve_prompt_implementation(
 
     prompt = prompt_record["document"]
     selection = prompt.get("implementationSelection") or {}
-    variants = [str(value) for value in selection.get("variants") or []]
+    variants = relationship_ids(prompt.get("implementations")) or relationship_ids(selection.get("variants"))
     chosen = requested or selection.get("default") or (variants[0] if variants else None)
 
     if not chosen:
@@ -202,7 +203,7 @@ def resolve_prompt_implementation(
     if not implementation_record:
         raise KeyError(f"prompt implementation not found: {chosen}")
     implementation = implementation_record["document"]
-    if implementation.get("implements") != prompt_id:
+    if not points_to(implementation, "implements", prompt_id):
         raise ValueError(f"prompt implementation {chosen} does not implement {prompt_id}")
 
     return {
@@ -226,8 +227,7 @@ def prompt_hierarchy(
     by_prompt: dict[str, list[dict[str, Any]]] = {}
     for record in implementations:
         document = record.get("document") or {}
-        parent = str(document.get("implements") or "")
-        if parent:
+        for parent in relationship_ids(document.get("implements")):
             by_prompt.setdefault(parent, []).append(record)
     for values in by_prompt.values():
         values.sort(key=lambda item: str((item.get("document") or {}).get("label") or item["path"]).lower())

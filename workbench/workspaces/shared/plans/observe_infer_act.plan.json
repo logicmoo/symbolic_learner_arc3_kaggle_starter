@@ -12,5 +12,9 @@
       "observe_infer_act.conservative_loop",
       "observe_infer_act.fast_probe"
     ]
-  }
+  },
+  "variants": [
+    "observe_infer_act.conservative_loop",
+    "observe_infer_act.fast_probe"
+  ]
 }

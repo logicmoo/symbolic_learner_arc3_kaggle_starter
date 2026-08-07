@@ -10,12 +10,16 @@
   "variantSelection": {
     "default": "solve_arc3_game.maximize_score",
     "variants": [
-      "solve_arc3_game.maximize_score",
-      "solve_arc3_game.explore_safely"
+      "solve_arc3_game.explore_safely",
+      "solve_arc3_game.maximize_score"
     ]
   },
   "metadata": {
     "domain": "arc3",
     "shared": true
-  }
+  },
+  "variants": [
+    "solve_arc3_game.explore_safely",
+    "solve_arc3_game.maximize_score"
+  ]
 }

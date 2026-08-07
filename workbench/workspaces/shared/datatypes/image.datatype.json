@@ -7,14 +7,27 @@
     "default": "bitmap",
     "variants": [
       "bitmap",
-      "svg",
-      "logo_program",
-      "turtle_program",
-      "scene_graph",
-      "object_list",
+      "executable_view",
       "image_region",
+      "latent_embedding",
+      "logo_program",
       "natural_language",
-      "latent_embedding"
+      "object_list",
+      "scene_graph",
+      "svg",
+      "turtle_program"
     ]
-  }
+  },
+  "representations": [
+    "bitmap",
+    "executable_view",
+    "image_region",
+    "latent_embedding",
+    "logo_program",
+    "natural_language",
+    "object_list",
+    "scene_graph",
+    "svg",
+    "turtle_program"
+  ]
 }

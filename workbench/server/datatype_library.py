@@ -14,6 +14,7 @@ from operation_library import (
     load_workspace_operation_implementation_records,
     load_workspace_operation_records,
 )
+from resource_relationships import points_to, relationship_ids
 
 DATATYPE_DIRECTORY = "datatypes"
 REPRESENTATION_DIRECTORY = "representations"
@@ -22,12 +23,7 @@ REPRESENTATION_KIND = "datatype_representation"
 
 
 def _implemented_datatypes(document: dict[str, Any]) -> list[str]:
-    raw = document.get("implements")
-    if isinstance(raw, str):
-        return [raw] if raw.strip() else []
-    if isinstance(raw, list):
-        return [str(value) for value in raw if str(value).strip()]
-    return []
+    return relationship_ids(document.get("represents", document.get("implements")))
 
 
 def _read_resource(path: Path, expected_kind: str) -> dict[str, Any]:
@@ -98,7 +94,7 @@ def resolve_datatype_representation(workspace_root: Path, datatype_id: str, requ
         raise KeyError(f"datatype not found: {datatype_id}")
     datatype = datatype_record["document"]
     selection = datatype.get("representationSelection") or {}
-    variants = [str(value) for value in selection.get("variants") or []]
+    variants = relationship_ids(datatype.get("representations")) or relationship_ids(selection.get("variants"))
     chosen = requested or selection.get("default") or (variants[0] if variants else None)
     if not chosen:
         raise ValueError(f"datatype has no representation variant: {datatype_id}")
@@ -108,7 +104,7 @@ def resolve_datatype_representation(workspace_root: Path, datatype_id: str, requ
     if not representation_record:
         raise KeyError(f"datatype representation not found: {chosen}")
     representation = representation_record["document"]
-    if datatype_id not in _implemented_datatypes(representation):
+    if not (points_to(representation, "represents", datatype_id) or points_to(representation, "implements", datatype_id)):
         raise ValueError(f"representation {chosen} does not implement {datatype_id}")
     return {
         "datatype": datatype,

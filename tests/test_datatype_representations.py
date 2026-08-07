@@ -27,7 +27,7 @@ def test_image_is_abstract_datatype_with_multiple_representations() -> None:
 def test_bitmap_encodings_are_not_separate_semantic_datatypes() -> None:
     representations = {record["document"]["id"]: record["document"] for record in load_workspace_representation_records(SHARED) if record.get("document")}
     bitmap = representations["bitmap"]
-    assert bitmap["implements"] == "image"
+    assert bitmap["represents"] == ["image"]
     encoding_ids = {encoding["id"] for encoding in bitmap["encodings"]}
     assert encoding_ids == {"png", "jpeg", "bmp"}
 

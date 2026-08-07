@@ -2,8 +2,18 @@
   "kind": "datatype_representation",
   "id": "json_object",
   "label": "JSON Object",
-  "implements": "information",
   "encodings": [
-    {"id": "json", "mimeTypes": ["application/json"], "extensions": [".json"]}
+    {
+      "id": "json",
+      "mimeTypes": [
+        "application/json"
+      ],
+      "extensions": [
+        ".json"
+      ]
+    }
+  ],
+  "represents": [
+    "information"
   ]
 }

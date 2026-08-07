@@ -2,9 +2,28 @@
   "kind": "datatype_representation",
   "id": "plain_text",
   "label": "Plain Text",
-  "implements": ["information", "text"],
   "encodings": [
-    {"id": "utf8_text", "mimeTypes": ["text/plain"], "extensions": [".txt"]},
-    {"id": "markdown", "mimeTypes": ["text/markdown"], "extensions": [".md"]}
+    {
+      "id": "utf8_text",
+      "mimeTypes": [
+        "text/plain"
+      ],
+      "extensions": [
+        ".txt"
+      ]
+    },
+    {
+      "id": "markdown",
+      "mimeTypes": [
+        "text/markdown"
+      ],
+      "extensions": [
+        ".md"
+      ]
+    }
+  ],
+  "represents": [
+    "information",
+    "text"
   ]
 }

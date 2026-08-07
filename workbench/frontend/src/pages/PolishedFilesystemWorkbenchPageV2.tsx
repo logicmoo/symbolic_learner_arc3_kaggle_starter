@@ -52,7 +52,7 @@ type ResourceDef = {
   description?: string;
   provider?: string;
   implementation?: string;
-  implements?: string;
+  implements?: string[];
   inherits?: string;
   model?: string;
   enabled?: boolean;

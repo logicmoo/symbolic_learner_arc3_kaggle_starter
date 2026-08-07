@@ -5,6 +5,21 @@
   "description": "Root semantic type for information carried through the workbench.",
   "representationSelection": {
     "default": "json_object",
-    "variants": ["json_object", "plain_text", "python_object"]
-  }
+    "variants": [
+      "executable_view",
+      "json_object",
+      "plain_text",
+      "prolog_fact_set",
+      "python_object",
+      "symbolic_fact_set"
+    ]
+  },
+  "representations": [
+    "executable_view",
+    "json_object",
+    "plain_text",
+    "prolog_fact_set",
+    "python_object",
+    "symbolic_fact_set"
+  ]
 }

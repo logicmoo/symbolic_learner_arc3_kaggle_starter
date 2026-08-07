@@ -2,6 +2,9 @@
   "kind": "datatype_representation",
   "id": "image_region",
   "label": "Image Region",
-  "implements": ["image", "entity"],
-  "description": "A bounded visual subregion associated with an entity or candidate object."
+  "description": "A bounded visual subregion associated with an entity or candidate object.",
+  "represents": [
+    "image",
+    "entity"
+  ]
 }

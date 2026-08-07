@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { relationshipIds } from "./resourceRelationships";
 
 type RecordFile<T> = {
   path: string;
@@ -25,7 +26,7 @@ type PromptImplementation = {
   id: string;
   label?: string;
   description?: string;
-  implements: string;
+  implements: string[];
   version?: number;
   targets?: string[];
   locale?: string;
@@ -69,8 +70,9 @@ export function PromptHierarchyPanel({workspaceId}: {workspaceId: string}) {
     const map = new Map<string, RecordFile<PromptImplementation>[]>();
     for (const prompt of prompts) if (prompt.document) map.set(prompt.document.id, []);
     for (const implementation of implementations) {
-      const parent = implementation.document?.implements;
-      if (parent) map.get(parent)?.push(implementation);
+      for (const parent of relationshipIds(implementation.document?.implements)) {
+        map.get(parent)?.push(implementation);
+      }
     }
     return map;
   }, [prompts, implementations]);
@@ -106,13 +108,13 @@ export function PromptHierarchyPanel({workspaceId}: {workspaceId: string}) {
     const parent = selected?.document?.kind === "prompt"
       ? selected.document.id
       : selected?.document?.kind === "prompt_implementation"
-        ? selected.document.implements
+        ? relationshipIds(selected.document.implements)[0]
         : prompts[0]?.document?.id || "prompt";
     const document: PromptImplementation = {
       kind: "prompt_implementation",
       id: `${parent}.new_variant`,
       label: `${parent} — New Variant`,
-      implements: parent,
+      implements: [parent],
       version: 1,
       targets: ["generic-chat"],
       text: ["Write the prompt implementation here."],
@@ -162,7 +164,7 @@ export function PromptHierarchyPanel({workspaceId}: {workspaceId: string}) {
   const parentPromptId = selected?.document?.kind === "prompt"
     ? selected.document.id
     : selected?.document?.kind === "prompt_implementation"
-      ? selected.document.implements
+      ? relationshipIds(selected.document.implements)[0] || null
       : null;
 
   return <section className="resource-view">

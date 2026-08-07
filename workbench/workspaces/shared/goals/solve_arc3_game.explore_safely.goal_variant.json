@@ -1,7 +1,9 @@
 {
   "kind": "goal_variant",
   "id": "solve_arc3_game.explore_safely",
-  "implements": "solve_arc3_game",
+  "implements": [
+    "solve_arc3_game"
+  ],
   "label": "Explore Safely",
   "description": "Prioritize information gain while avoiding irreversible low-confidence actions.",
   "priority": 80,
