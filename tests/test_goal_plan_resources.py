@@ -50,3 +50,15 @@ def test_goal_plan_editor_preserves_rich_hierarchy_features() -> None:
     source = (ROOT / "workbench" / "frontend" / "src" / "components" / "GoalPlanLibraryEditor.tsx").read_text(encoding="utf-8")
     for token in ("HierarchyResourceEditor", "PREFERRED VARIANT", "Split view", "+ Alternative", "+ Abstract", "raw-json-editor", "variantSelection"):
         assert token in source
+
+
+def test_goal_and_plan_pages_load_their_shared_right_panel_docs() -> None:
+    components = ROOT / "workbench" / "frontend" / "src" / "components"
+    help_source = (components / "HelpDocumentTabs.tsx").read_text(encoding="utf-8")
+    page_source = (ROOT / "workbench" / "frontend" / "src" / "pages" / "FilesystemWorkbenchPage.tsx").read_text(encoding="utf-8")
+    assert '{id:"goals",label:"Goals",path:"docs/goals.md"}' in help_source
+    assert '{id:"plans",label:"Plans",path:"docs/plans.md"}' in help_source
+    assert 'view==="goals"?"goals":view==="plans"?"plans"' in page_source
+    assert 'view==="goals"||view==="plans"' in page_source
+    assert (ROOT / "workbench" / "workspaces" / "shared" / "docs" / "goals.md").is_file()
+    assert (ROOT / "workbench" / "workspaces" / "shared" / "docs" / "plans.md").is_file()
