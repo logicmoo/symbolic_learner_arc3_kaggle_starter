@@ -1,0 +1,730 @@
+
+
+\# MeTTaSymbolicLearnerWorkbench — Codex Instructions
+
+
+
+\## Project Purpose
+
+
+
+This repository implements the MeTTaSymbolicLearnerWorkbench: a
+
+filesystem-backed symbolic artifact workbench.
+
+
+
+The workbench edits semantic specifications and interchangeable variants:
+
+
+
+\- Goals and interpretations
+
+\- Plans and plan strategies
+
+\- Workflows
+
+\- Operations and implementations
+
+\- Datatypes and representations
+
+\- Prompts and prompt implementations
+
+\- Models, profiles, and backends
+
+\- AtomSpaces and knowledge representations
+
+\- Runtime runs, executions, events, states, and logs
+
+\- Benchmark and model-runtime policies
+
+
+
+\## Active Application
+
+
+
+Before changing UI code, determine the active entrypoint from:
+
+
+
+\- workbench/frontend/src/App.tsx
+
+
+
+Do not assume that an older polished page or mock page is active.
+
+
+
+Backend entrypoint:
+
+
+
+\- workbench/server/app.py
+
+
+
+Filesystem workspaces:
+
+
+
+\- workbench/workspaces/
+
+
+
+\## Non-Negotiable UI Baseline
+
+
+
+The current active application and its existing rich editors are the minimum
+
+feature baseline.
+
+
+
+Do not replace a rich editor with a simpler generic editor.
+
+
+
+The global artifact editor must preserve the union of useful features from
+
+all prior editors, never the lowest common denominator.
+
+
+
+Every hierarchical artifact editor must support:
+
+
+
+1\. Specification parent in the left hierarchy
+
+2\. Concrete alternatives beneath it
+
+3\. Preferred/default alternative selector
+
+4\. Persistent open-document tabs
+
+5\. Dirty markers
+
+6\. Closeable tabs
+
+7\. Split comparison
+
+8\. Rich artifact-specific editor panels
+
+9\. Raw JSON editing
+
+10\. Filesystem save
+
+11\. Shared inheritance and workspace override
+
+12\. Documentation on the right
+
+13\. Tests, history, benchmarks, diff, and logs where available
+
+14\. A playground/run surface where the artifact is executable
+
+
+
+\## No Mocks
+
+
+
+All displayed workspaces, tasks, implementations, models, prompts,
+
+datatypes, representations, goals, plans, runs, events, states, and logs
+
+must come from real filesystem or backend resources.
+
+
+
+A visual mock may be used only as a design reference.
+
+
+
+Do not leave hard-coded mock arrays in the active application.
+
+
+
+\## Navigation Contract
+
+
+
+The new left navigation is:
+
+
+
+DESIGN
+
+\- Goals
+
+\- Plans
+
+\- Workflows
+
+\- Operations
+
+\- Datatypes
+
+\- Prompts
+
+\- Models
+
+
+
+RUNTIME
+
+\- Goal Runs
+
+\- Workflow Runs
+
+\- Execs
+
+\- Events
+
+\- States
+
+\- Logs
+
+
+
+SYSTEM
+
+\- Model Policy
+
+\- Benchmarks
+
+\- Contexts
+
+\- Settings
+
+
+
+Reuse existing editors rather than duplicating them:
+
+
+
+\- Operations -> existing rich TaskLibraryEditor
+
+\- Datatypes -> existing DataCatalogPanel / datatype-representation editor
+
+\- Prompts -> existing hierarchical prompt editor
+
+\- Models -> existing backend/model/profile editor
+
+\- Workflows -> existing workflow canvas and editor
+
+\- Workflow Runs / Events / Logs -> existing engine runtime data where possible
+
+\- Settings -> existing workspace setup functionality
+
+
+
+\## Filesystem Conventions
+
+
+
+Semantic specifications and concrete variants are separate resources.
+
+
+
+Examples:
+
+
+
+\- task / task\_implementation
+
+\- datatype / datatype\_representation
+
+\- prompt / prompt\_implementation
+
+\- goal / goal\_interpretation or goal\_variant
+
+\- plan / plan\_variant
+
+\- atomspace / atomspace\_implementation
+
+\- model / profile / backend
+
+
+
+Do not put all variants back into a monolithic catalog file.
+
+
+
+\## Git Safety
+
+
+
+\- Work on a named branch or isolated Codex worktree.
+
+\- Do not push directly to main during development.
+
+\- Do not run broad `git checkout <old-commit> .`.
+
+\- Do not reset, clean, normalize, rename, or delete unrelated files.
+
+\- Inspect `git status` and `git diff --stat` before and after changes.
+
+\- Keep each commit coherent.
+
+\- Open a pull request after validation.
+
+
+
+\## Required Validation
+
+
+
+Run before reporting completion:
+
+
+
+```bat
+
+git diff --check
+
+
+
+.\\.venv\\Scripts\\python.exe -m pytest -q
+
+
+
+cd workbench\\frontend
+
+npm run build
+
+cd ..\\..
+
+
+
+run\_workbench.bat 127.0.0.1 16666 17777
+
+For UI changes:
+
+- open the relevant workspace;
+
+- verify every new menu item;
+
+- verify left hierarchy and alternatives;
+
+- verify selectors mutate the correct document;
+
+- verify save and reload;
+
+- verify horizontal and vertical scrolling;
+
+- capture screenshots for visual comparison.
+
+## Definition of Done
+
+A task is not complete merely because TypeScript compiles.
+
+It is complete only when:
+
+- the active application uses the change;
+
+- data comes from the real backend/filesystem;
+
+- old rich functionality has not disappeared;
+
+- tests pass;
+
+- the frontend builds;
+
+- the page works after restart;
+
+- the diff contains no unrelated cleanup.
+
+
+
+
+This file is what stops Codex from repeatedly replacing the feature-rich editor with a simpler version.
+
+
+
+\## 4. Store this conversation’s decisions inside the repository
+
+
+
+Codex will not automatically inherit the full architectural history from this chat. Important decisions need to become repository files.
+
+
+
+I would add:
+
+
+
+```text
+
+workbench/docs/design/
+
+├── WORKBENCH\_NAVIGATION\_V2.md
+
+├── UNIVERSAL\_ARTIFACT\_EDITOR.md
+
+├── GOALS\_AND\_PLANS\_ARCHITECTURE.md
+
+└── FILESYSTEM\_RESOURCE\_MODEL.md
+
+
+
+workbench/docs/todo/
+
+├── MODEL\_RUNTIME\_USAGE\_AND\_BENCHMARKING\_POLICIES.md
+
+└── assets/
+
+&#x20;   └── model\_runtime\_policy\_mockup.png
+
+The full TODO text you just wrote should be saved verbatim as:
+
+
+workbench/docs/todo/MODEL\_RUNTIME\_USAGE\_AND\_BENCHMARKING\_POLICIES.md
+
+Save the latest model-policy mockup as:
+
+
+workbench/docs/todo/assets/model\_runtime\_policy\_mockup.png
+
+The model-policy screenshot becomes an explicit visual design reference rather than a temporary image trapped in chat history. The current active Tasks editor is the acceptance baseline; verify it directly in the running application.
+
+## 5. Map the new navigation to what already exists
+
+The first Codex change should **not** implement every page. It should only establish the new shell and reuse current editors.
+
+| New menu | Existing functionality |
+
+|---|---|
+
+| Goals | New hierarchical Goal editor |
+
+| Plans | New hierarchical Plan editor |
+
+| Workflows | Existing workflow canvas/editor |
+
+| Operations | Existing rich Tasks editor |
+
+| Datatypes | Existing Types/Data datatype-representation editor |
+
+| Prompts | Existing hierarchical Prompts editor |
+
+| Models | Existing Models/backends/profiles editor |
+
+| Goal Runs | New goal-pursuit runtime history |
+
+| Workflow Runs | Existing workflow run state |
+
+| Execs | Task/operation execution records and playground runs |
+
+| Events | Existing durable events/evidence |
+
+| States | Persisted workflow/world state snapshots |
+
+| Logs | Existing workflow/task logs |
+
+| Model Policy | New page from your TODO/mockup |
+
+| Benchmarks | Benchmark definitions and results |
+
+| Contexts | Runtime context and knowledge bindings |
+
+| Settings | Existing Setup page |
+
+This means **Tasks becomes Operations**, and **Types/Data becomes Datatypes**, while the underlying editors remain the same.
+
+## 6. Give Codex small, ordered tasks
+
+Do not start with “implement the entire workbench.” That encourages broad rewrites.
+
+### Codex Task 1 — Repository inventory only
+
+Paste this first:
+
+
+Read AGENTS.md and all files under workbench/docs/design and
+
+workbench/docs/todo.
+
+
+
+Do not modify implementation code yet.
+
+
+
+Inspect the active React entrypoint, active workbench page, current navigation,
+
+TaskLibraryEditor, DataCatalogPanel, PromptLibraryEditor, LlmModelsEditor,
+
+workflow editor, runtime engine routes, workspace snapshot API, and filesystem
+
+resource loaders.
+
+
+
+Create:
+
+
+
+workbench/docs/design/CODEX\_CURRENT\_IMPLEMENTATION\_INVENTORY.md
+
+
+
+Document:
+
+
+
+1\. Which page App.tsx actually launches
+
+2\. Which current component should back each new navigation item
+
+3\. Which pages are real versus mock or obsolete
+
+4\. Which backend routes already exist
+
+5\. Which filesystem resource kinds already exist
+
+6\. Which features exist only in defunct pages
+
+7\. Exact files that must change for navigation V2
+
+8\. A regression checklist protecting the current active rich Tasks editor
+
+
+
+Do not remove or simplify any editor.
+
+Run no normalization or broad rename.
+
+Stop after producing the inventory document.
+
+Review that document before allowing code changes.
+
+### Codex Task 2 — Navigation shell only
+
+
+Implement WORKBENCH\_NAVIGATION\_V2.md.
+
+
+
+Change only the active application shell and navigation routing.
+
+
+
+Use these groups and labels:
+
+
+
+DESIGN
+
+Goals
+
+Plans
+
+Workflows
+
+Operations
+
+Datatypes
+
+Prompts
+
+Models
+
+
+
+RUNTIME
+
+Goal Runs
+
+Workflow Runs
+
+Execs
+
+Events
+
+States
+
+Logs
+
+
+
+SYSTEM
+
+Model Policy
+
+Benchmarks
+
+Contexts
+
+Settings
+
+
+
+Reuse existing editor components:
+
+
+
+Operations -> TaskLibraryEditor
+
+Datatypes -> DataCatalogPanel
+
+Prompts -> PromptLibraryEditor
+
+Models -> LlmModelsEditor
+
+Workflows -> existing workflow editor/canvas
+
+Settings -> existing Setup page
+
+
+
+For not-yet-implemented pages, use a filesystem-backed TODO/resource view,
+
+not hard-coded fake data.
+
+
+
+Do not change the internals of the rich Tasks editor during this task.
+
+
+
+Add regression tests for route labels and component mapping.
+
+Run the frontend build and relevant tests.
+
+### Codex Task 3 — Preserve the model-policy page as a TODO
+
+
+Add the supplied Model Runtime Usage and Benchmarking Policies specification
+
+and mockup to workbench/docs/todo.
+
+
+
+Add a Model Policy navigation page that reads and displays the TODO document
+
+from the filesystem.
+
+
+
+Do not implement fake model-policy data yet.
+
+
+
+The page must clearly say that implementation is pending and link its sections
+
+to the TODO document.
+
+### Codex Task 4 — Backend model-policy contract
+
+Have Codex implement only:
+
+
+policy files
+
+vendor files
+
+model files
+
+health observations
+
+effective eligibility calculation
+
+ping job/event records
+
+benchmark policy files
+
+API routes
+
+tests
+
+No major frontend work in that branch.
+
+### Codex Task 5 — Model-policy frontend
+
+Then implement the mockup against the real API:
+
+
+vendor registry
+
+dynamic model grid
+
+frozen columns
+
+horizontal property scrolling
+
+composable filters
+
+concurrent ping controls
+
+prompt profiles
+
+benchmark matrix
+
+performance history
+
+testing rules
+
+filesystem load/save
+
+## 7. Use parallel Codex agents carefully
+
+Codex supports multiple concurrent agents and isolated worktrees, which is useful here.
+
+A practical split is:
+
+
+Agent A
+
+Navigation shell and route mapping
+
+
+
+Agent B
+
+Model-policy backend schemas, persistence, and API
+
+
+
+Agent C
+
+Model-policy React page
+
+
+
+Agent D
+
+Regression tests and visual acceptance checks
+
+But Agent C should not begin until Agent B has committed the API contract. Otherwise the frontend will invent another temporary schema.
+
+## 8. Use pull requests instead of direct-to-main commits
+
+For the first Codex phase:
+
+
+codex/navigation-v2
+
+codex/model-policy-backend
+
+codex/model-policy-ui
+
+codex/model-policy-tests
+
+Merge order:
+
+
+navigation-v2
+
+    ↓
+
+model-policy-backend
+
+    ↓
+
+model-policy-ui
+
+    ↓
+
+model-policy-tests / cleanup
