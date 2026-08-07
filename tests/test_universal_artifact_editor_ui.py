@@ -49,6 +49,7 @@ def test_operations_tree_supports_global_and_per_operation_folding() -> None:
         "Only Toplevel",
         "Show Tree",
         'branchCollapsed?"Unhide Variants":"Hide Variants"',
+        '<b>{branchCollapsed?"Unhide Variants":"Hide Variants"}</b>',
         "tree-branch-toggle",
         "branch-collapsed",
     ):
