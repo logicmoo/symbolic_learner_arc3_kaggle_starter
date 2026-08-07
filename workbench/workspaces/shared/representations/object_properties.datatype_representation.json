@@ -3,7 +3,7 @@
   "id": "object_properties",
   "label": "Object Properties",
   "description": "Structured symbolic properties and relationships describing objects independently of the underlying implementation language.",
-  "represents": [
+  "parents": [
     "entity",
     "entity_collection",
     "world_state"

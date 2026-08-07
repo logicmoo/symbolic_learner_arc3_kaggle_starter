@@ -39,7 +39,7 @@ The matching JSON contains exactly the same semantic kind:
 {
   "kind": "operation_implementation",
   "id": "echo_into_titlecased_python",
-  "implements": "echo_into_titlecased"
+  "parents": ["echo_into_titlecased"]
 }
 ```
 
@@ -65,7 +65,7 @@ A workflow step therefore points to the abstract operation:
 }
 ```
 
-The runtime resolves the implementation according to the operation's `implementationSelection`. A step may request an allowed variant explicitly with `implementationVariant`; otherwise the operation's default variant is selected.
+The parent operation lists implementations in `children` and selects its default with `preferredChild`. A step may request an allowed child explicitly with `implementationVariant`; otherwise the preferred child is selected.
 
 Directories remain useful organizational hints, but they are not the only way to identify a resource. A file can be understood from its name and contents even when copied elsewhere.
 

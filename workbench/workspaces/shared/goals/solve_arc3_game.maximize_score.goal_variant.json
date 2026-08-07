@@ -1,9 +1,6 @@
 {
   "kind": "goal_variant",
   "id": "solve_arc3_game.maximize_score",
-  "implements": [
-    "solve_arc3_game"
-  ],
   "label": "Maximize Score",
   "description": "Prefer actions with the highest expected progress toward the game objective.",
   "priority": 100,
@@ -11,5 +8,8 @@
     "primaryMetric": "score_delta",
     "terminalSuccessRequired": true,
     "riskTolerance": "medium"
-  }
+  },
+  "parents": [
+    "solve_arc3_game"
+  ]
 }

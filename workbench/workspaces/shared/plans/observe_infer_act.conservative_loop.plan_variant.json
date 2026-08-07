@@ -1,9 +1,6 @@
 {
   "kind": "plan_variant",
   "id": "observe_infer_act.conservative_loop",
-  "implements": [
-    "observe_infer_act"
-  ],
   "label": "Conservative Learning Loop",
   "description": "Require transition evidence before escalating to higher-risk actions.",
   "workflow": "arc3_observe_choose_record",
@@ -11,5 +8,8 @@
     "maxUnverifiedActions": 1,
     "requireExplanation": true,
     "replanOnContradiction": true
-  }
+  },
+  "parents": [
+    "observe_infer_act"
+  ]
 }

@@ -44,18 +44,8 @@ Example:
   "id": "image",
   "label": "Image",
   "description": "A visual scene independent of its concrete representation.",
-  "representationSelection": {
-    "default": "bitmap",
-    "variants": [
-      "bitmap",
-      "svg",
-      "logo_program",
-      "scene_graph",
-      "object_list",
-      "natural_language",
-      "latent_embedding"
-    ]
-  }
+  "children": ["bitmap", "svg", "logo_program", "scene_graph", "object_list", "natural_language", "latent_embedding"],
+  "preferredChild": "bitmap"
 }
 ```
 
@@ -70,7 +60,7 @@ A representation says how the same semantic value is encoded.
   "kind": "datatype_representation",
   "id": "scene_graph",
   "label": "Scene Graph",
-  "implements": "image",
+  "parents": ["image"],
   "encodings": [
     {
       "id": "json",

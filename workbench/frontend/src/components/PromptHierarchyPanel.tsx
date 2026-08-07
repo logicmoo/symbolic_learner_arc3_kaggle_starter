@@ -17,7 +17,7 @@ type PromptDef = {
   inputs?: Record<string, unknown>;
   outputs?: Record<string, unknown>;
   text?: string | string[];
-  implementationSelection?: {default?: string; variants?: string[]};
+  children?: string[]; preferredChild?: string;
   [key: string]: unknown;
 };
 
@@ -26,7 +26,7 @@ type PromptImplementation = {
   id: string;
   label?: string;
   description?: string;
-  implements: string[];
+  parents: string[];
   version?: number;
   targets?: string[];
   locale?: string;
@@ -70,7 +70,7 @@ export function PromptHierarchyPanel({workspaceId}: {workspaceId: string}) {
     const map = new Map<string, RecordFile<PromptImplementation>[]>();
     for (const prompt of prompts) if (prompt.document) map.set(prompt.document.id, []);
     for (const implementation of implementations) {
-      for (const parent of relationshipIds(implementation.document?.implements)) {
+      for (const parent of relationshipIds(implementation.document?.parents)) {
         map.get(parent)?.push(implementation);
       }
     }
@@ -96,7 +96,7 @@ export function PromptHierarchyPanel({workspaceId}: {workspaceId: string}) {
       label: "New Prompt",
       inputs: {input: "information"},
       outputs: {output: "information"},
-      implementationSelection: {default: "new_prompt.default", variants: ["new_prompt.default"]},
+      children: ["new_prompt.default"], preferredChild: "new_prompt.default",
     };
     setSelected({path:"",source:"workspace",workspaceId,document});
     setSource(JSON.stringify(document, null, 2));
@@ -108,13 +108,13 @@ export function PromptHierarchyPanel({workspaceId}: {workspaceId: string}) {
     const parent = selected?.document?.kind === "prompt"
       ? selected.document.id
       : selected?.document?.kind === "prompt_implementation"
-        ? relationshipIds(selected.document.implements)[0]
+        ? relationshipIds(selected.document.parents)[0]
         : prompts[0]?.document?.id || "prompt";
     const document: PromptImplementation = {
       kind: "prompt_implementation",
       id: `${parent}.new_variant`,
       label: `${parent} — New Variant`,
-      implements: [parent],
+      parents: [parent],
       version: 1,
       targets: ["generic-chat"],
       text: ["Write the prompt implementation here."],
@@ -164,7 +164,7 @@ export function PromptHierarchyPanel({workspaceId}: {workspaceId: string}) {
   const parentPromptId = selected?.document?.kind === "prompt"
     ? selected.document.id
     : selected?.document?.kind === "prompt_implementation"
-      ? relationshipIds(selected.document.implements)[0] || null
+      ? relationshipIds(selected.document.parents)[0] || null
       : null;
 
   return <section className="resource-view">
@@ -187,7 +187,7 @@ export function PromptHierarchyPanel({workspaceId}: {workspaceId: string}) {
           const children = doc ? (byPrompt.get(doc.id) || []) : [];
           return <div key={`${prompt.workspaceId}:${prompt.path}`}>
             <button className="resource-row" onClick={() => select(prompt)} onDoubleClick={() => select(prompt)}>
-              <b>{doc?.label || doc?.id || prompt.path}</b><code>abstract</code><span>{doc?.implementationSelection?.default || "inline"}</span><span>{prompt.source}</span><em>contract</em>
+              <b>{doc?.label || doc?.id || prompt.path}</b><code>abstract</code><span>{doc?.preferredChild || "inline"}</span><span>{prompt.source}</span><em>contract</em>
             </button>
             {children.map(child => <button className="resource-row" style={{paddingLeft:28}} key={`${child.workspaceId}:${child.path}`} onClick={() => select(child)} onDoubleClick={() => select(child)}>
               <b>↳ {child.document?.label || child.document?.id || child.path}</b><code>implementation</code><span>{(child.document?.targets || []).join(", ") || "generic"}</span><span>{child.source}</span><em>v{child.document?.version || 1}</em>

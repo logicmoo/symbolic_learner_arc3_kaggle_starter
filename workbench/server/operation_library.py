@@ -28,8 +28,8 @@ def read_operation_file(path: Path) -> dict[str, Any]:
     if not str(value.get("id") or "").strip():
         raise ValueError(f"Operation definition requires id: {path}")
     if kind == "operation_implementation":
-        if not relationship_ids(value.get("implements")):
-            raise ValueError(f"Operation implementation requires implements: {path}")
+        if not relationship_ids(value.get("parents")):
+            raise ValueError(f"Operation implementation requires parents: {path}")
         if not str(value.get("implementation") or "").strip():
             raise ValueError(f"Operation implementation requires implementation: {path}")
     return value
@@ -101,9 +101,8 @@ def resolve_operation_implementation(workspace_root: Path, operation_id: str, re
     if not operation_record:
         raise KeyError(f"operation not found: {operation_id}")
     operation = operation_record["document"]
-    selection = operation.get("implementationSelection") or {}
-    variants = relationship_ids(operation.get("implementations")) or relationship_ids(selection.get("variants"))
-    chosen = requested or selection.get("default") or (variants[0] if variants else None)
+    variants = relationship_ids(operation.get("children"))
+    chosen = requested or operation.get("preferredChild") or (variants[0] if variants else None)
     if not chosen:
         raise ValueError(f"operation has no implementation variant: {operation_id}")
     if variants and chosen not in variants:
@@ -112,7 +111,7 @@ def resolve_operation_implementation(workspace_root: Path, operation_id: str, re
     if not record:
         raise KeyError(f"operation implementation not found: {chosen}")
     implementation = record["document"]
-    if not points_to(implementation, "implements", operation_id):
+    if not points_to(implementation, "parents", operation_id):
         raise ValueError(f"implementation {chosen} does not implement {operation_id}")
     return {"operation": operation, "operationRecord": operation_record, "implementation": implementation, "implementationRecord": record}
 
@@ -136,7 +135,6 @@ def legacy_catalog_view(documents: Iterable[dict[str, Any]]) -> list[dict[str, A
         outputs = document.get("outputs") or {}
         left = " + ".join(inputs) or "∅"
         right = " + ".join(outputs) or "∅"
-        selection = document.get("implementationSelection") or {}
-        routes = str(selection.get("default") or document.get("implementation") or "")
+        routes = str(document.get("preferredChild") or document.get("implementation") or "")
         result.append({"id": document["id"], "label": document.get("label") or document["id"], "ports": f"{left} → {right}", "routes": routes, "definition": document, "source": "workbench/workspaces/shared/operations"})
     return sorted(result, key=lambda item: str(item["label"]).lower())

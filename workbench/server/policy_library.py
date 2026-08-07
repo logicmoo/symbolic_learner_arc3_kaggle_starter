@@ -35,7 +35,7 @@ def load_workspace_policy_records(workspace_root: Path, *, workspaces_root: Path
 def policy_hierarchy(records: list[dict[str, Any]]) -> dict[str, Any]:
     roots: list[dict[str, Any]] = []; variants: list[dict[str, Any]] = []; children: dict[str, list[dict[str, Any]]] = {}
     for record in records:
-        document = record.get("document") or {}; parents = relationship_ids(document.get("implements"))
+        document = record.get("document") or {}; parents = relationship_ids(document.get("parents"))
         if document.get("kind") == "model_policy_variant" and parents:
             variants.append(record)
             for parent in parents: children.setdefault(parent, []).append(record)

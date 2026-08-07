@@ -3,7 +3,7 @@
   "id": "hypothesis",
   "label": "Hypothesis",
   "description": "A revisable semantic explanation or candidate rule.",
-  "representations": [
+  "children": [
     "prolog_fact_set",
     "symbolic_fact_set"
   ]

@@ -19,7 +19,7 @@ def _write(root: Path, workspace: str, directory: str, name: str, document: str)
 
 def test_goal_resources_inherit_shared_and_allow_workspace_overrides(tmp_path: Path) -> None:
     _write(tmp_path, "shared", "goals", "learn.goal.json", '{"kind":"goal","id":"learn","label":"Shared"}')
-    _write(tmp_path, "shared", "goals", "safe.goal_variant.json", '{"kind":"goal_variant","id":"safe","implements":"learn"}')
+    _write(tmp_path, "shared", "goals", "safe.goal_variant.json", '{"kind":"goal_variant","id":"safe","parents":["learn"]}')
     _write(tmp_path, "project", "goals", "learn.goal.json", '{"kind":"goal","id":"learn","label":"Override"}')
     records = load_workspace_symbolic_records(tmp_path / "project", "goal", workspaces_root=tmp_path)
     by_id = {record["document"]["id"]: record for record in records}
@@ -33,8 +33,8 @@ def test_goal_resources_inherit_shared_and_allow_workspace_overrides(tmp_path: P
 def test_plan_variant_requires_parent_and_canonical_suffix(tmp_path: Path) -> None:
     _write(tmp_path, "shared", "plans", "broken.plan_variant.json", '{"kind":"plan_variant","id":"broken"}')
     records = load_workspace_symbolic_records(tmp_path / "shared", "plan", workspaces_root=tmp_path)
-    assert "Variant requires implements" in records[0]["error"]
-    path = canonical_resource_path(Path("plans/draft.json"), {"kind": "plan_variant", "id": "route.fast", "implements": "route"})
+    assert "Variant requires parents" in records[0]["error"]
+    path = canonical_resource_path(Path("plans/draft.json"), {"kind": "plan_variant", "id": "route.fast", "parents": ["route"]})
     assert path.as_posix() == "plans/route.fast.plan_variant.json"
 
 
@@ -48,7 +48,7 @@ def test_shared_workspace_contains_goal_and_plan_examples() -> None:
 
 def test_goal_plan_editor_preserves_rich_hierarchy_features() -> None:
     source = (ROOT / "workbench" / "frontend" / "src" / "components" / "GoalPlanLibraryEditor.tsx").read_text(encoding="utf-8")
-    for token in ("HierarchyResourceEditor", "PREFERRED VARIANT", "Split view", "+ Alternative", "+ Abstract", "raw-json-editor", "variantSelection"):
+    for token in ("HierarchyResourceEditor", "PREFERRED VARIANT", "Split view", "+ Alternative", "+ Abstract", "raw-json-editor", "preferredChild"):
         assert token in source
 
 

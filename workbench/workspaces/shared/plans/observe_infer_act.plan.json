@@ -6,15 +6,9 @@
   "goals": [
     "solve_arc3_game"
   ],
-  "variantSelection": {
-    "default": "observe_infer_act.conservative_loop",
-    "variants": [
-      "observe_infer_act.conservative_loop",
-      "observe_infer_act.fast_probe"
-    ]
-  },
-  "variants": [
+  "children": [
     "observe_infer_act.conservative_loop",
     "observe_infer_act.fast_probe"
-  ]
+  ],
+  "preferredChild": "observe_infer_act.conservative_loop"
 }

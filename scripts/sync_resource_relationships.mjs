@@ -3,12 +3,12 @@ import path from "node:path";
 
 const workspaceRoot = path.resolve("workbench", "workspaces");
 const families = {
-  goal_variant: { parentKind: "goal", childField: "implements", parentField: "variants", selection: "variantSelection" },
-  plan_variant: { parentKind: "plan", childField: "implements", parentField: "variants", selection: "variantSelection" },
-  operation_implementation: { parentKind: "operation", childField: "implements", parentField: "implementations", selection: "implementationSelection" },
-  prompt_implementation: { parentKind: "prompt", childField: "implements", parentField: "implementations", selection: "implementationSelection" },
-  datatype_representation: { parentKind: "datatype", childField: "represents", legacyChildField: "implements", parentField: "representations", selection: "representationSelection" },
-  model_policy_variant: { parentKind: "model_policy", childField: "implements", parentField: "variants", selection: "variantSelection" },
+  goal_variant: { parentKind: "goal" },
+  plan_variant: { parentKind: "plan" },
+  operation_implementation: { parentKind: "operation" },
+  prompt_implementation: { parentKind: "prompt" },
+  datatype_representation: { parentKind: "datatype" },
+  model_policy_variant: { parentKind: "model_policy" },
 };
 
 function filesBelow(directory, result = []) {
@@ -38,30 +38,22 @@ for (const file of filesBelow(workspaceRoot)) {
 
 const byWorkspaceAndId = new Map();
 for (const record of records) {
-  const relative = path.relative(workspaceRoot, record.file);
-  const workspace = relative.split(path.sep)[0];
-  record.workspace = workspace;
-  byWorkspaceAndId.set(`${workspace}:${record.document.id}`, record);
+  record.workspace = path.relative(workspaceRoot, record.file).split(path.sep)[0];
+  byWorkspaceAndId.set(`${record.workspace}:${record.document.id}`, record);
 }
 
 for (const child of records) {
   const family = families[child.document.kind];
   if (!family) continue;
-  const parentIds = ids(child.document[family.childField] ?? child.document[family.legacyChildField]);
-  child.document[family.childField] = parentIds;
-  if (family.legacyChildField) delete child.document[family.legacyChildField];
+  child.document.parents = ids(child.document.parents);
 
-  for (const parentId of parentIds) {
-    const parent = byWorkspaceAndId.get(`${child.workspace}:${parentId}`)
-      ?? byWorkspaceAndId.get(`shared:${parentId}`);
+  for (const parentId of child.document.parents) {
+    const parent = byWorkspaceAndId.get(`${child.workspace}:${parentId}`) ?? byWorkspaceAndId.get(`shared:${parentId}`);
     if (!parent || parent.document.kind !== family.parentKind) {
       throw new Error(`${child.document.kind}:${child.document.id} points to missing ${family.parentKind}:${parentId}`);
     }
-    const backlinks = ids(parent.document[family.parentField]);
-    if (!backlinks.includes(child.document.id)) backlinks.push(child.document.id);
-    parent.document[family.parentField] = backlinks;
-    const selection = parent.document[family.selection];
-    if (selection && typeof selection === "object") selection.variants = backlinks;
+    parent.document.children = ids(parent.document.children);
+    if (!parent.document.children.includes(child.document.id)) parent.document.children.push(child.document.id);
   }
 }
 
@@ -71,4 +63,4 @@ for (const record of records) {
   fs.writeFileSync(record.file, `${JSON.stringify(record.document, null, 2)}\n`, "utf8");
   changed += 1;
 }
-console.log(`Synchronized bidirectional relationships in ${changed} resource files.`);
+console.log(`Synchronized flat parent/child relationships in ${changed} resource files.`);

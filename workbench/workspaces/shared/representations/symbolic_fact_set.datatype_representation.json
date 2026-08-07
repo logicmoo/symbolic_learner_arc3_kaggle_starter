@@ -3,7 +3,7 @@
   "id": "symbolic_fact_set",
   "label": "Symbolic Fact Set",
   "description": "Language-neutral symbolic facts representing grounded properties, relations, and world knowledge.",
-  "represents": [
+  "parents": [
     "information",
     "entity_collection",
     "relationship",

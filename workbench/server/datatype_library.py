@@ -23,7 +23,7 @@ REPRESENTATION_KIND = "datatype_representation"
 
 
 def _implemented_datatypes(document: dict[str, Any]) -> list[str]:
-    return relationship_ids(document.get("represents", document.get("implements")))
+    return relationship_ids(document.get("parents"))
 
 
 def _read_resource(path: Path, expected_kind: str) -> dict[str, Any]:
@@ -40,7 +40,7 @@ def _read_resource(path: Path, expected_kind: str) -> dict[str, Any]:
     if not str(value.get("id") or "").strip():
         raise ValueError(f"{expected_kind} definition requires id: {path}")
     if expected_kind == REPRESENTATION_KIND and not _implemented_datatypes(value):
-        raise ValueError(f"Datatype representation requires implements: {path}")
+        raise ValueError(f"Datatype representation requires parents: {path}")
     return value
 
 
@@ -93,9 +93,8 @@ def resolve_datatype_representation(workspace_root: Path, datatype_id: str, requ
     if not datatype_record:
         raise KeyError(f"datatype not found: {datatype_id}")
     datatype = datatype_record["document"]
-    selection = datatype.get("representationSelection") or {}
-    variants = relationship_ids(datatype.get("representations")) or relationship_ids(selection.get("variants"))
-    chosen = requested or selection.get("default") or (variants[0] if variants else None)
+    variants = relationship_ids(datatype.get("children"))
+    chosen = requested or datatype.get("preferredChild") or (variants[0] if variants else None)
     if not chosen:
         raise ValueError(f"datatype has no representation variant: {datatype_id}")
     if variants and chosen not in variants:
@@ -104,7 +103,7 @@ def resolve_datatype_representation(workspace_root: Path, datatype_id: str, requ
     if not representation_record:
         raise KeyError(f"datatype representation not found: {chosen}")
     representation = representation_record["document"]
-    if not (points_to(representation, "represents", datatype_id) or points_to(representation, "implements", datatype_id)):
+    if not points_to(representation, "parents", datatype_id):
         raise ValueError(f"representation {chosen} does not implement {datatype_id}")
     return {
         "datatype": datatype,

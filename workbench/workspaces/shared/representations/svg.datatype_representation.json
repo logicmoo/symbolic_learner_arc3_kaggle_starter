@@ -14,7 +14,7 @@
       ]
     }
   ],
-  "represents": [
+  "parents": [
     "image"
   ]
 }

@@ -3,23 +3,13 @@
   "id": "information",
   "label": "Information",
   "description": "Root semantic type for information carried through the workbench.",
-  "representationSelection": {
-    "default": "json_object",
-    "variants": [
-      "executable_view",
-      "json_object",
-      "plain_text",
-      "prolog_fact_set",
-      "python_object",
-      "symbolic_fact_set"
-    ]
-  },
-  "representations": [
+  "children": [
     "executable_view",
     "json_object",
     "plain_text",
     "prolog_fact_set",
     "python_object",
     "symbolic_fact_set"
-  ]
+  ],
+  "preferredChild": "json_object"
 }

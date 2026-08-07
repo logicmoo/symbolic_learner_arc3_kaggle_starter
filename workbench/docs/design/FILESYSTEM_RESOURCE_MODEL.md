@@ -20,9 +20,9 @@ Planned families include `goal` / `goal_interpretation` or `goal_variant`, `plan
 
 ## Bidirectional many-to-many relationships
 
-Specification/alternative relationships are explicit arrays in both files. A parent lists its `variants`, `implementations`, or `representations`; every child lists all parents through `implements` or, for datatypes, `represents`. For example, an operation contains `"implementations": ["python_echo"]` and that implementation contains `"implements": ["echo"]`. Datatype representations use the same graph rule: `image` lists `"representations": ["bitmap"]`, while `bitmap` lists `"represents": ["image"]`.
+Every specification/alternative family uses the same three flat fields: `parents`, `children`, and `preferredChild`. Both sides store explicit arrays, so an operation may contain `"children": ["python_echo"]` while that implementation contains `"parents": ["echo"]`. The resource kinds give these generic links their domain meaning—implementation, representation, variant, or another relationship shown by the editor.
 
-Arrays are required even when there is only one relationship. This permits one alternative to satisfy multiple specifications. Preferred/default selection stays on each parent because the same child can have a different priority under different specifications. Run `node scripts/sync_resource_relationships.mjs` after bulk resource edits to normalize pointers and add missing backlinks.
+Arrays are required even when there is only one relationship. This permits one alternative to satisfy multiple specifications. `preferredChild` stays on each parent because the same child can have a different priority under different specifications. Run `node scripts/sync_resource_relationships.mjs` after bulk resource edits to normalize pointers and add missing backlinks.
 
 Canonical filenames carry the kind, for example `shared.echo.operation.json`, `echo_into_titlecased_python.operation_implementation.json`, and `bitmap.datatype_representation.json`. Resources live beneath a workspace in family directories such as `operations/`, `datatypes/`, `representations/`, `prompts/`, `models/`, and `workflows/`.
 

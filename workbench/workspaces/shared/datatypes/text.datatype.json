@@ -3,15 +3,9 @@
   "id": "text",
   "label": "Text",
   "description": "Textual information independent of language, markup, file encoding, or model-oriented prompt representation.",
-  "representationSelection": {
-    "default": "plain_text",
-    "variants": [
-      "natural_language",
-      "plain_text"
-    ]
-  },
-  "representations": [
+  "children": [
     "natural_language",
     "plain_text"
-  ]
+  ],
+  "preferredChild": "plain_text"
 }

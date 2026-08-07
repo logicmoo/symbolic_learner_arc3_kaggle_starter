@@ -2,9 +2,6 @@
   "kind": "prompt_implementation",
   "id": "titlecase_received_text.gpt5",
   "label": "Titlecase Received Text — GPT-5",
-  "implements": [
-    "titlecase_received_text"
-  ],
   "version": 1,
   "targets": [
     "openai",
@@ -16,5 +13,8 @@
     "Do not rewrite, summarize, explain, or add content.",
     "Preserve punctuation and spacing except where capitalization requires a change.",
     "Output only the transformed text."
+  ],
+  "parents": [
+    "titlecase_received_text"
   ]
 }

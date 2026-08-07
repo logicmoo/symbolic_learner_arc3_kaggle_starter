@@ -20,14 +20,14 @@ def test_image_is_abstract_datatype_with_multiple_representations() -> None:
     datatypes = {record["document"]["id"]: record["document"] for record in load_workspace_datatype_records(SHARED) if record.get("document")}
     image = datatypes["image"]
     assert image["kind"] == "datatype"
-    assert image["representationSelection"]["default"] == "bitmap"
-    assert {"bitmap", "logo_program", "scene_graph", "natural_language"}.issubset(image["representationSelection"]["variants"])
+    assert image["preferredChild"] == "bitmap"
+    assert {"bitmap", "logo_program", "scene_graph", "natural_language"}.issubset(image["children"])
 
 
 def test_bitmap_encodings_are_not_separate_semantic_datatypes() -> None:
     representations = {record["document"]["id"]: record["document"] for record in load_workspace_representation_records(SHARED) if record.get("document")}
     bitmap = representations["bitmap"]
-    assert bitmap["represents"] == ["image"]
+    assert bitmap["parents"] == ["image"]
     encoding_ids = {encoding["id"] for encoding in bitmap["encodings"]}
     assert encoding_ids == {"png", "jpeg", "bmp"}
 

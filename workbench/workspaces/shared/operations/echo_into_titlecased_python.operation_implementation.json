@@ -1,9 +1,6 @@
 {
   "kind": "operation_implementation",
   "id": "echo_into_titlecased_python",
-  "implements": [
-    "echo_into_titlecased"
-  ],
   "label": "Echo Into Titlecased / Python",
   "description": "Take received text, call an imported Python function, and return the title-cased text.",
   "implementation": "python.callable",
@@ -28,5 +25,8 @@
   "parameters": {
     "inputBinding": "text",
     "outputBinding": "text"
-  }
+  },
+  "parents": [
+    "echo_into_titlecased"
+  ]
 }

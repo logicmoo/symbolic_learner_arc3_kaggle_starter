@@ -8,9 +8,9 @@ Goals describe desired outcomes independently of the strategy used to pursue the
 
 - Specifications: `goals/<id>.goal.json`
 - Alternatives: `goals/<id>.<name>.goal_variant.json`
-- Every alternative declares `implements: <goal-id>`.
-- `variantSelection.default` identifies the preferred alternative.
-- `variantSelection.variants` records the allowed alternatives.
+- Every alternative declares `"parents": ["<goal-id>"]`.
+- Every specification lists its alternatives in `children`.
+- `preferredChild` identifies the preferred alternative.
 
 Shared goals are inherited by project workspaces. Saving an inherited goal from a project creates a workspace-local override instead of modifying Shared.
 

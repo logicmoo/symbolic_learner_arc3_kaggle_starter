@@ -8,9 +8,9 @@ Plans describe reusable strategies for pursuing one or more goals. A `plan` spec
 
 - Specifications: `plans/<id>.plan.json`
 - Alternatives: `plans/<id>.<name>.plan_variant.json`
-- Every alternative declares `implements: <plan-id>`.
+- Every alternative declares `"parents": ["<plan-id>"]`; the plan lists it in `children`.
 - A variant may reference an existing filesystem workflow by ID.
-- `variantSelection.default` identifies the preferred strategy.
+- `preferredChild` identifies the preferred strategy.
 
 Shared plans and variants are inherited by every project workspace. Workspace resources with the same semantic ID override Shared records.
 

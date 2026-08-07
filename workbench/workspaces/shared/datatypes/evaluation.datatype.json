@@ -3,7 +3,7 @@
   "id": "evaluation",
   "label": "Evaluation",
   "description": "A semantic assessment, score, validation result, or comparison.",
-  "representations": [
+  "children": [
     "prolog_fact_set"
   ]
 }

@@ -9,19 +9,11 @@
   "outputs": {
     "text": "text"
   },
-  "implementationSelection": {
-    "default": "titlecase_received_text.default",
-    "variants": [
-      "titlecase_received_text.default",
-      "titlecase_received_text.gpt5",
-      "titlecase_received_text.multi_modal.claude",
-      "titlecase_received_text.text_only.claude"
-    ]
-  },
-  "implementations": [
+  "children": [
     "titlecase_received_text.default",
     "titlecase_received_text.gpt5",
     "titlecase_received_text.multi_modal.claude",
     "titlecase_received_text.text_only.claude"
-  ]
+  ],
+  "preferredChild": "titlecase_received_text.default"
 }

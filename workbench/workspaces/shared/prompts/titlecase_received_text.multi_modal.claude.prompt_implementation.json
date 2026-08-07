@@ -3,9 +3,6 @@
   "id": "titlecase_received_text.multi_modal.claude",
   "label": "Titlecase Received Text — Claude / Multi-Modal",
   "description": "Claude-specific multi-modal implementation of the Titlecase Received Text prompt contract for contexts where the text may be accompanied by visual input.",
-  "implements": [
-    "titlecase_received_text"
-  ],
   "version": 1,
   "targets": [
     "anthropic",
@@ -25,5 +22,8 @@
     "Keep the wording and punctuation unchanged except where capitalization requires a change.",
     "Do not explain the transformation.",
     "Return only the converted text."
+  ],
+  "parents": [
+    "titlecase_received_text"
   ]
 }

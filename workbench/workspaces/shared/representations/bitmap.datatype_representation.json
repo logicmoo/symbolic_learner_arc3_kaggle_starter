@@ -32,7 +32,7 @@
       ]
     }
   ],
-  "represents": [
+  "parents": [
     "image"
   ]
 }

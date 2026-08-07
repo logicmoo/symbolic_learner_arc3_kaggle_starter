@@ -32,8 +32,8 @@ def read_prompt_file(path: Path) -> dict[str, Any]:
         raise ValueError(f"Prompt definition requires id: {path}")
 
     if raw_kind == PROMPT_IMPLEMENTATION_KIND:
-        if not relationship_ids(value.get("implements")):
-            raise ValueError(f"Prompt implementation requires implements: {path}")
+        if not relationship_ids(value.get("parents")):
+            raise ValueError(f"Prompt implementation requires parents: {path}")
         text = value.get("text")
         if not isinstance(text, (str, list)):
             raise ValueError(f"Prompt implementation requires text as a string or list of strings: {path}")
@@ -181,9 +181,8 @@ def resolve_prompt_implementation(
         raise KeyError(f"prompt not found: {prompt_id}")
 
     prompt = prompt_record["document"]
-    selection = prompt.get("implementationSelection") or {}
-    variants = relationship_ids(prompt.get("implementations")) or relationship_ids(selection.get("variants"))
-    chosen = requested or selection.get("default") or (variants[0] if variants else None)
+    variants = relationship_ids(prompt.get("children"))
+    chosen = requested or prompt.get("preferredChild") or (variants[0] if variants else None)
 
     if not chosen:
         if prompt.get("text") is not None:
@@ -203,7 +202,7 @@ def resolve_prompt_implementation(
     if not implementation_record:
         raise KeyError(f"prompt implementation not found: {chosen}")
     implementation = implementation_record["document"]
-    if not points_to(implementation, "implements", prompt_id):
+    if not points_to(implementation, "parents", prompt_id):
         raise ValueError(f"prompt implementation {chosen} does not implement {prompt_id}")
 
     return {
@@ -227,7 +226,7 @@ def prompt_hierarchy(
     by_prompt: dict[str, list[dict[str, Any]]] = {}
     for record in implementations:
         document = record.get("document") or {}
-        for parent in relationship_ids(document.get("implements")):
+        for parent in relationship_ids(document.get("parents")):
             by_prompt.setdefault(parent, []).append(record)
     for values in by_prompt.values():
         values.sort(key=lambda item: str((item.get("document") or {}).get("label") or item["path"]).lower())
