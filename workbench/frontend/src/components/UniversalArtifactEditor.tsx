@@ -146,7 +146,7 @@ export function UniversalArtifactEditor({
         <div className="artifact-navigator-toolbar">
           <span>HIERARCHY</span>
           <div className="artifact-navigator-actions">
-            <button type="button" aria-label={variantsCollapsed?"Show variants":"Collapse variants to top level"} aria-pressed={variantsCollapsed} onClick={()=>setVariantsCollapsed(value=>!value)}><b>{variantsCollapsed?"Show variants":"Top level"}</b></button>
+            <button type="button" aria-label={variantsCollapsed?"Show all variants":"Show only top-level artifacts"} aria-pressed={variantsCollapsed} onClick={()=>setVariantsCollapsed(value=>!value)}><b>{variantsCollapsed?"Show all variants":"Only top level"}</b></button>
             <button type="button" aria-label={navigatorCollapsed?"Expand hierarchy":"Collapse hierarchy"} aria-expanded={!navigatorCollapsed} onClick={()=>setNavigatorCollapsed(value=>!value)}>{navigatorCollapsed?"›":"‹"}<b>{navigatorCollapsed?"":"Pane"}</b></button>
           </div>
         </div>
