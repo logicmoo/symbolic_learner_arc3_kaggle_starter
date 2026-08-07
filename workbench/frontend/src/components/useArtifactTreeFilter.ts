@@ -18,11 +18,12 @@ export function useArtifactTreeFilter() {
     leaves.forEach(leaf => { leaf.hidden = false; });
     if (!query) return;
 
-    leaves.forEach(leaf => { leaf.hidden = !String(leaf.textContent || "").toLocaleLowerCase().includes(query); });
+    const searchableText = (element?: HTMLElement | null) => `${element?.dataset.treeSearch || ""} ${element?.textContent || ""}`.toLocaleLowerCase();
+    leaves.forEach(leaf => { leaf.hidden = !searchableText(leaf).includes(query); });
     [...branches].reverse().forEach((branch, index) => {
       const head = heads[branches.length - index - 1];
       const summary = head?.querySelector<HTMLElement>(".artifact-tree-branch-summary") || head;
-      const ownMatch = String(summary?.textContent || "").toLocaleLowerCase().includes(query);
+      const ownMatch = `${String(branch.dataset.treeSearch || "").toLocaleLowerCase()} ${searchableText(summary)}`.includes(query);
       const childBranchMatch = Array.from(branch.querySelectorAll<HTMLElement>(":scope > .operation-tree-children > .operation-tree-group,:scope > .inheritance-children > .inheritance-node")).some(child => !child.hidden);
       const childLeafMatch = Array.from(branch.querySelectorAll<HTMLElement>(":scope > .operation-tree-children > .operation-child")).some(child => !child.hidden);
       branch.hidden = !(ownMatch || childBranchMatch || childLeafMatch);

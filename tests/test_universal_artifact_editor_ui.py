@@ -136,3 +136,7 @@ def test_all_artifact_trees_share_filter_and_parent_path_controls() -> None:
         assert "useArtifactTreeFilter" in source
     assert "childBranchMatch" in filtering
     assert "head.hidden = !ownMatch && !showParents" in filtering
+    assert "dataset.treeSearch" in filtering
+    assert "searchValue" in _text("ArtifactTreeBranch.tsx")
+    for component in ("OperationLibraryEditor.tsx", "DataCatalogPanel.tsx", "PromptLibraryEditor.tsx", "GoalPlanLibraryEditor.tsx", "LlmModelsEditor.tsx"):
+        assert "tree-search" in _text(component) or "searchValue" in _text(component)
