@@ -8,6 +8,8 @@ from operation_library import DEFAULT_WORKSPACES_ROOT, SHARED_WORKSPACE_ID
 from resource_relationships import relationship_ids
 
 POLICY_KINDS = {"model_policy", "model_policy_variant", "vendor_policy", "model_policy_entry", "model_health_observation", "model_ping_job", "model_ping_event", "benchmark_policy", "benchmark_result"}
+POLICY_STATES = {"on", "auto", "off"}
+UNHEALTHY_STATUSES = {"offline", "error", "ratelimited", "rate_limited", "unknown"}
 
 def _records(root: Path, source: str, workspace_id: str) -> list[dict[str, Any]]:
     directory = root / "policies"
@@ -41,3 +43,56 @@ def policy_hierarchy(records: list[dict[str, Any]]) -> dict[str, Any]:
             for parent in parents: children.setdefault(parent, []).append(record)
         else: roots.append(record)
     return {"roots": roots, "variants": variants, "variantsByParent": children}
+
+def _documents(records: list[dict[str, Any]], kind: str) -> list[dict[str, Any]]:
+    return [record["document"] for record in records if (record.get("document") or {}).get("kind") == kind]
+
+def _state(document: dict[str, Any] | None, name: str, default: str = "auto") -> str:
+    value = str(((document or {}).get("policy") or {}).get(name, default)).lower()
+    return value if value in POLICY_STATES else default
+
+def _latest_health(records: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    result: dict[str, dict[str, Any]] = {}
+    for observation in _documents(records, "model_health_observation"):
+        target = str(observation.get("modelPolicyEntryId") or observation.get("vendorId") or "")
+        if target and str(observation.get("observedAt") or "") >= str(result.get(target, {}).get("observedAt") or ""):
+            result[target] = observation
+    return result
+
+def effective_model_registry(records: list[dict[str, Any]]) -> dict[str, Any]:
+    """Resolve persisted intent and latest health without mutating either source."""
+    policies = _documents(records, "model_policy")
+    active_policy = next((item for item in policies if item.get("enabled", True)), policies[0] if policies else {})
+    rules = active_policy.get("rules") if isinstance(active_policy.get("rules"), dict) else {}
+    vendors = {str(item.get("vendorId")): item for item in _documents(records, "vendor_policy") if item.get("vendorId")}
+    health = _latest_health(records)
+    models: list[dict[str, Any]] = []
+    for model in _documents(records, "model_policy_entry"):
+        vendor = vendors.get(str(model.get("vendorId")))
+        observation = health.get(str(model.get("id"))) or {}
+        status = str(observation.get("status") or "unknown").lower()
+        latency = observation.get("latencyMs")
+        failure_rate = observation.get("failureRate")
+        reasons: list[str] = []
+        wanted = model.get("enabled", True) and (vendor is None or vendor.get("enabled", True)) and _state(model, "wanted") != "off" and _state(vendor, "wanted") != "off"
+        if not wanted: reasons.append("disabled by wanted policy")
+        unhealthy = status in UNHEALTHY_STATUSES
+        if rules.get("excludeSlowFromRuntime", True) and (status == "slow" or isinstance(latency, (int, float)) and latency > rules.get("slowLatencyMs", 5000)):
+            unhealthy = True; reasons.append("latency threshold exceeded")
+        if isinstance(failure_rate, (int, float)) and failure_rate > rules.get("maxFailureRate", 0.2):
+            unhealthy = True; reasons.append("failure rate threshold exceeded")
+        if status in UNHEALTHY_STATUSES: reasons.append(f"health is {status}")
+        runtime_requested = wanted and _state(model, "runtime") != "off" and _state(vendor, "runtime") != "off"
+        benchmark_requested = wanted and _state(model, "benchmark") != "off" and _state(vendor, "benchmark") != "off"
+        runtime = runtime_requested and (not rules.get("requireHealthyModel", True) or not unhealthy)
+        benchmark = benchmark_requested and (not rules.get("requireHealthyModel", True) or not unhealthy)
+        effective_state = lambda requested, enabled: "enabled" if enabled else "temporarily_disabled" if requested else "disabled"
+        models.append({**model, "health": observation or {"status": "unknown"}, "effective": {
+            "runtime": runtime, "benchmark": benchmark,
+            "runtimeState": effective_state(runtime_requested, runtime),
+            "benchmarkState": effective_state(benchmark_requested, benchmark),
+            "reasons": list(dict.fromkeys(reasons)),
+        }})
+    return {"policy": active_policy or None, "vendors": list(vendors.values()), "models": models,
+            "benchmarkPolicies": _documents(records, "benchmark_policy"), "pingJobs": _documents(records, "model_ping_job"),
+            "pingEvents": _documents(records, "model_ping_event"), "healthObservations": _documents(records, "model_health_observation")}

@@ -15,6 +15,7 @@ from store import DATATYPE_MANIFEST, WorkbenchStore
 from operation_api import router as operation_router
 from operation_library import legacy_catalog_view, load_shared_operation_documents
 from model_policy_todo_api import router as model_policy_todo_router
+from policy_api import router as policy_router
 from workflow_engine_api import router as workflow_engine_router
 from workspace_api import router as workspace_router
 
@@ -43,6 +44,7 @@ app.include_router(datatype_router, prefix="/api")
 app.include_router(prompt_router, prefix="/api")
 app.include_router(operation_router, prefix="/api")
 app.include_router(model_policy_todo_router, prefix="/api")
+app.include_router(policy_router, prefix="/api")
 
 
 @app.get("/api/health")
