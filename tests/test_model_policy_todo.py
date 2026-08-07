@@ -39,13 +39,13 @@ def test_shared_policy_examples_form_a_resolvable_reference_graph() -> None:
         shared / "policies" / "default_model_runtime.model_policy.json",
         shared / "policies" / "balanced_model_runtime.model_policy_variant.json",
         shared / "policies" / "economy_model_runtime.model_policy_variant.json",
-        shared / "vendors" / "openai.vendor_policy.json",
-        shared / "model_registry" / "openai_gpt_5_6.model_policy_entry.json",
-        shared / "health" / "openai_gpt_5_6.model_health_observation.json",
-        shared / "pings" / "example_vendor_ping.model_ping_job.json",
-        shared / "pings" / "example_openai_gpt_5_6.model_ping_event.json",
-        shared / "benchmarks" / "reasoning_quality.benchmark_policy.json",
-        shared / "benchmarks" / "example_reasoning_quality.benchmark_result.json",
+        shared / "policies" / "openai.vendor_policy.json",
+        shared / "policies" / "openai_gpt_5_6.model_policy_entry.json",
+        shared / "policies" / "openai_gpt_5_6.model_health_observation.json",
+        shared / "policies" / "example_vendor_ping.model_ping_job.json",
+        shared / "policies" / "example_openai_gpt_5_6.model_ping_event.json",
+        shared / "policies" / "reasoning_quality.benchmark_policy.json",
+        shared / "policies" / "example_reasoning_quality.benchmark_result.json",
     ]
     documents = [json.loads(path.read_text(encoding="utf-8")) for path in paths]
     by_id = {document["id"]: document for document in documents}

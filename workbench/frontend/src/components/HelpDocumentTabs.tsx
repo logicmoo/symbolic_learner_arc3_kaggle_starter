@@ -12,6 +12,7 @@ const docTabs:HelpTab[]=[
  {id:"data",label:"Data",path:"docs/data.md"},
  {id:"llms",label:"LLMs",path:"docs/llm_catalog.md"},
  {id:"operations",label:"Operations",path:"docs/operations.md"},
+ {id:"policies",label:"Policies",path:"docs/policies.md"},
  {id:"prompts",label:"Prompts",path:"docs/prompts.md"},
  {id:"migration",label:"Migration",path:"docs/legacy_llm_migration.md"},
 ];

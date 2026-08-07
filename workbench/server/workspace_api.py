@@ -17,6 +17,7 @@ from datatype_library import (
 )
 from model_library import load_model_library_records, resolve_model_records
 from prompt_library import load_prompt_library_records, load_workspace_prompt_records
+from policy_library import load_workspace_policy_records, policy_hierarchy
 from resource_convention import canonical_resource_path, infer_resource_kind
 from operation_library import DEFAULT_WORKSPACES_ROOT, load_workspace_operation_implementation_records, load_workspace_operation_records
 
@@ -316,6 +317,16 @@ def workspace_goals(workspace_id: str) -> dict[str, Any]:
         raise HTTPException(status_code=404, detail=str(error)) from error
 
 
+@router.get("/{workspace_id}/policies")
+def workspace_policies(workspace_id: str) -> dict[str, Any]:
+    try:
+        workspace = _resolve_workspace(workspace_id)
+        records = load_workspace_policy_records(Path(workspace["root"]))
+        return {"workspace": workspace, "resources": records, "hierarchy": policy_hierarchy(records)}
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+
+
 @router.get("/{workspace_id}/plans")
 def workspace_plans(workspace_id: str) -> dict[str, Any]:
     try:
@@ -356,6 +367,7 @@ def workspace_snapshot(workspace_id: str) -> dict[str, Any]:
         "promptLibrary": _load_prompt_library(workspace),
         "goals": _load_symbolic_family(workspace, "goal"),
         "plans": _load_symbolic_family(workspace, "plan"),
+        "policies": load_workspace_policy_records(root),
         "files": files,
     }
 
