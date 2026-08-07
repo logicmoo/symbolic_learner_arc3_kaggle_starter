@@ -3,28 +3,51 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from prompt_library import load_workspace_prompt_records
+from prompt_library import resolve_prompt_implementation
 from task_library import DEFAULT_WORKSPACES_ROOT, SHARED_WORKSPACE_ID, resolve_task_implementation
 
 
-def _prompt_prefix(workspace_root: Path, prompt_ids: list[str], separator: str) -> str:
+def _prompt_prefix(
+    workspace_root: Path,
+    prompt_ids: list[str],
+    separator: str,
+    prompt_variants: dict[str, str] | None = None,
+) -> tuple[str, list[dict[str, Any]]]:
+    """Resolve abstract prompt IDs to concrete prompt implementations.
+
+    Task implementations bind semantic prompt IDs.  At execution time each
+    prompt resolves through its own implementationSelection, optionally
+    overridden by the caller (for example by the Task Playground).  This keeps
+    tasks independent of GPT/Claude/text-only/multimodal prompt variants.
+    """
     if not prompt_ids:
-        return ""
-    prompts = {
-        str((record.get("document") or {}).get("id")): record.get("document") or {}
-        for record in load_workspace_prompt_records(workspace_root)
-    }
+        return "", []
+
+    overrides = prompt_variants or {}
     parts: list[str] = []
+    resolved_prompts: list[dict[str, Any]] = []
     for prompt_id in prompt_ids:
-        prompt = prompts.get(prompt_id)
-        if not prompt:
-            raise KeyError(f"prompt not found: {prompt_id}")
-        text = prompt.get("text", "")
+        resolved = resolve_prompt_implementation(
+            workspace_root,
+            prompt_id,
+            overrides.get(prompt_id),
+        )
+        implementation = resolved["implementation"]
+        text = implementation.get("text", "")
         if isinstance(text, list):
             parts.append("\n".join(str(item) for item in text))
         else:
             parts.append(str(text))
-    return separator.join(parts)
+        resolved_prompts.append(
+            {
+                "promptId": prompt_id,
+                "implementationId": str(implementation.get("id") or prompt_id),
+                "inline": bool(resolved.get("inline", False)),
+                "targets": list(implementation.get("targets") or []),
+                "version": implementation.get("version"),
+            }
+        )
+    return separator.join(parts), resolved_prompts
 
 
 def _implementation_parameters(implementation: dict[str, Any], step: dict[str, Any]) -> dict[str, Any]:
@@ -63,10 +86,23 @@ def materialize_workflow_step(workflow: dict[str, Any], step: dict[str, Any]) ->
     bindings = implementation.get("bindings") or {}
     parameters = _implementation_parameters(implementation, step)
     prompt_ids = [str(item) for item in bindings.get("prompts") or []]
+    resolved_prompts: list[dict[str, Any]] = []
     if prompt_ids:
         separator = str(bindings.get("separator") or "\n\n")
-        parameters["promptPrefix"] = _prompt_prefix(workspace_root, prompt_ids, separator)
+        prompt_variants = {
+            str(key): str(value)
+            for key, value in dict(step.get("promptVariants") or {}).items()
+            if value
+        }
+        prompt_prefix, resolved_prompts = _prompt_prefix(
+            workspace_root,
+            prompt_ids,
+            separator,
+            prompt_variants,
+        )
+        parameters["promptPrefix"] = prompt_prefix
         parameters["promptIds"] = prompt_ids
+        parameters["resolvedPrompts"] = resolved_prompts
 
     executable_inputs = dict(step.get("inputs") or {})
     if implementation.get("implementation") == "llm.complete" and "prompt" not in executable_inputs:
@@ -84,6 +120,7 @@ def materialize_workflow_step(workflow: dict[str, Any], step: dict[str, Any]) ->
         "implementationVariant": implementation["id"],
         "taskBindings": bindings,
         "modelSelection": implementation.get("modelSelection") or {},
+        "resolvedPrompts": resolved_prompts,
     }
 
 
