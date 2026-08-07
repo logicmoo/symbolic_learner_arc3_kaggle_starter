@@ -1,3 +1,5 @@
+[← Back to top-level README](../../../../README.md)
+
 # JSON Resource Kind Convention
 
 Every JSON resource in a workbench workspace is self-describing in two places:

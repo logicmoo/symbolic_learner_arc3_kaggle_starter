@@ -1,3 +1,5 @@
+[← Back to top-level README](../../../../README.md)
+
 # Legacy LLM Configuration Migration
 
 The workbench no longer treats the old root-level LLM catalogs as its authoritative configuration.

@@ -1,3 +1,5 @@
+[← Back to top-level README](../../../README.md)
+
 # ARC3 Workspace
 
 This workspace is loaded directly from the filesystem by the MeTTa Symbolic Learner Workbench.

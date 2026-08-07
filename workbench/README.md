@@ -1,3 +1,5 @@
+[← Back to top-level README](../README.md)
+
 # MeTTaSymbolicLearnerWorkbench local web workbench
 
 This directory contains the complete locally runnable workbench: a React/Vite
@@ -80,7 +82,7 @@ launches reuse `workbench\.venv` and `workbench\frontend\node_modules`.
 - Topology and chronology views
 - Workflow library, structured editor, and raw JSON editor
 - Shared and workspace-specific operation definitions
-- First-class abstract datatypes and concrete datatype representations
+- First-class semantic, representation, and concrete datatypes
 - Representation-conversion operations and cost-based conversion path planning
 - Shared and workspace-specific backend/model definitions
 - Nested-workflow validation and cycle detection
@@ -93,16 +95,16 @@ persists workflows, operations, runs, artifacts, and history.
 
 ## Datatypes and representations
 
-The workbench treats the semantic datatype and its concrete representation as
-separate first-class resources. For example, `image` is an abstract datatype,
-while bitmap, SVG, LOGO/Turtle, scene graph, object list, natural-language
-description, and latent embedding are representations of that same meaning.
+The workbench separates semantic meaning, representations, and concrete
+encodings. For example, `image` is semantic, `bitmap` is a representation, and
+PNG/JPEG/BMP are concrete datatypes.
 
 Shared resources are stored as one JSON file per definition:
 
 ```text
 workbench/workspaces/shared/datatypes/
 workbench/workspaces/shared/representations/
+workbench/workspaces/shared/concrete_datatypes/
 ```
 
 A normal workspace inherits these definitions and can override a shared
@@ -116,8 +118,8 @@ bitmap -> object_list -> logo_program
 natural_language -> scene_graph
 ```
 
-PNG, JPEG, and BMP are modeled as encodings of the bitmap representation rather
-than as different semantic datatypes.
+PNG, JPEG, and BMP are concrete children of the bitmap representation rather
+than different semantic datatypes.
 
 The design and resource schemas are described in
 `workbench/docs/DATA_REPRESENTATIONS.md`.

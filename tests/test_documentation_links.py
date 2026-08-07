@@ -37,6 +37,7 @@ def _maintained_markdown() -> tuple[Path, ...]:
         "vendor",
         "action_trees",
         "reference",
+        "node_modules",
     }
     return tuple(
         path
@@ -139,8 +140,8 @@ def test_file_tree_links_all_connected_architecture_files() -> None:
         "python/worldworkbench/core.py",
         "python/worldworkbench/adapters/__init__.py",
         "python/worldworkbench/adapters/arc3.py",
-        "config/world_workbench_datatypes.json",
-        "config/world_workbench_operations.json",
+        "workbench/docs/DATA_REPRESENTATIONS.md",
+        "workbench/workspaces/shared/config/world_workbench_operations.config.json",
         "config/llm_workflows.json",
         "python/object_memory/models.py",
         "python/object_memory/providers.py",

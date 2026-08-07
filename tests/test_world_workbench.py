@@ -154,16 +154,20 @@ def test_human_demonstration_mode_observes_without_selecting_actions() -> None:
 
 def test_domain_neutral_manifests_keep_arc3_at_the_adapter_boundary() -> None:
     shared_config = ROOT / "workbench" / "workspaces" / "shared" / "config"
-    datatypes = json.loads(
-        (shared_config / "world_workbench_datatypes.json").read_text(encoding="utf-8")
-    )
-    by_id = {item["id"]: item for item in datatypes["types"]}
-    assert by_id["arc3_state"]["kind"] == "adapter"
-    assert "observation" in by_id["arc3_state"]["extends"]
+    semantic_dir = shared_config.parent / "datatypes"
+    semantic = [json.loads(path.read_text(encoding="utf-8")) for path in semantic_dir.glob("*.semantic_datatype.json")]
+    by_id = {item["id"]: item for item in semantic}
     assert {"world_model", "goal_set", "simulation_result"}.issubset(by_id)
+    assert not {item_id for item_id in by_id if item_id.startswith("arc3_")}
+
+    legacy = json.loads((shared_config / "world_workbench_datatypes.legacy.config.json").read_text(encoding="utf-8"))
+    legacy_by_id = {item["id"]: item for item in legacy["types"]}
+    assert legacy["legacy"] is True
+    assert legacy_by_id["arc3_state"]["kind"] == "adapter"
+    assert "observation" in legacy_by_id["arc3_state"]["extends"]
 
     operations = json.loads(
-        (shared_config / "world_workbench_operations.json").read_text(encoding="utf-8")
+        (shared_config / "world_workbench_operations.config.json").read_text(encoding="utf-8")
     )
     operation_ids = {item["id"] for item in operations["operations"]}
     assert {

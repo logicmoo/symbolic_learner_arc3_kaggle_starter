@@ -156,9 +156,9 @@ they do not.
 
 The machine-readable contracts are maintained in:
 
-- [`config/world_workbench_datatypes.json`](config/world_workbench_datatypes.json)
-  for domain-neutral datatypes.
-- [`config/world_workbench_operations.json`](config/world_workbench_operations.json) for
+- [`workbench/docs/DATA_REPRESENTATIONS.md`](workbench/docs/DATA_REPRESENTATIONS.md)
+  for the filesystem-backed semantic, representation, and concrete datatype model.
+- [`workbench/workspaces/shared/config/world_workbench_operations.config.json`](workbench/workspaces/shared/config/world_workbench_operations.config.json) for
   operation input/output contracts.
 - [`config/llm_workflows.json`](config/llm_workflows.json) for runnable workflows
   and nested subworkflows.

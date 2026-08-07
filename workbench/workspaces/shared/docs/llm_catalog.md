@@ -1,3 +1,5 @@
+[← Back to top-level README](../../../../README.md)
+
 # LLM Catalog
 
 The LLM catalog is a single inheritance tree stored under `models/`.

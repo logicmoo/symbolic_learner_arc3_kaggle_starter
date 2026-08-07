@@ -1,3 +1,5 @@
+[← Back to top-level README](../../../../README.md)
+
 # Models, Profiles, Operations, and Prompts
 
 The workbench keeps four concepts separate because they answer different questions.

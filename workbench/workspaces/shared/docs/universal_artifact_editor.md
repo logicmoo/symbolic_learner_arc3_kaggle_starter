@@ -1,3 +1,5 @@
+[← Back to top-level README](../../../../README.md)
+
 # Universal Artifact Editor
 
 The workbench is an Artifact Editor rather than a collection of unrelated IDEs.

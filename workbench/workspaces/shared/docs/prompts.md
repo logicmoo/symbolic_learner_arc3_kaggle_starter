@@ -1,3 +1,5 @@
+[← Back to top-level README](../../../../README.md)
+
 # Prompts
 
 Prompts are reusable instruction fragments stored under `prompts/`.

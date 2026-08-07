@@ -1,3 +1,5 @@
+[← Back to top-level README](../../../../README.md)
+
 # Data contracts
 
 The Data page edits three first-class resource kinds:

@@ -29,8 +29,8 @@ The planning documents have deliberately separate scopes and cross-link one anot
 - [`python/worldworkbench/__init__.py`](python/worldworkbench/__init__.py) — public domain-neutral workbench API.
 - [`python/worldworkbench/adapters/arc3.py`](python/worldworkbench/adapters/arc3.py) — ARC3 observation, intervention, human-choice, and artifact translation boundary.
 - [`python/worldworkbench/adapters/__init__.py`](python/worldworkbench/adapters/__init__.py) — public ARC3 adapter exports.
-- [`config/world_workbench_datatypes.json`](config/world_workbench_datatypes.json) — domain-neutral semantic and representation datatype manifest.
-- [`config/world_workbench_operations.json`](config/world_workbench_operations.json) — reusable processing-resource contracts, including object extraction and Turtle representation operations.
+- [`workbench/docs/DATA_REPRESENTATIONS.md`](workbench/docs/DATA_REPRESENTATIONS.md) — filesystem-backed semantic, representation, and concrete datatype model.
+- [`workbench/workspaces/shared/config/world_workbench_operations.config.json`](workbench/workspaces/shared/config/world_workbench_operations.config.json) — reusable processing-resource contracts, including object extraction and Turtle representation operations.
 - [`config/llm_workflows.json`](config/llm_workflows.json) — runnable workflow-desktop catalog, including the seven-step `ls20` human-observation workflow and its nested subworkflows.
 - [`python/workflow_operation_editor.py`](python/workflow_operation_editor.py) — MeTTaSymbolicLearnerWorkbench desktop for composing, validating, inspecting, saving, and running typed operations and nested subworkflows.
 

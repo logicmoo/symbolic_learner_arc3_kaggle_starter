@@ -1,3 +1,5 @@
+[← Back to top-level README](../../../README.md)
+
 # Workflow Engine Tour
 
 A richer filesystem workspace demonstrating dependency scheduling, fan-out, fan-in, conditions, retries, artifacts, and event inspection.
