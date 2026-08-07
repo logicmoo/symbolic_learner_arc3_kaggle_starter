@@ -9,6 +9,12 @@ Every first-class resource has two identities:
 
 Examples include abstract tasks with Python, Prolog, MeTTa, and LLM implementations; abstract datatypes with Bitmap, Scene Graph, LOGO/Turtle, Object Facts, Natural Language, and embedding representations; and abstract prompts with model-, language-, or optimization-specific prompt implementations.
 
+## UI baseline: Tasks b42249b
+
+The user-designated `b42249b` Tasks editor is the feature baseline for the universal editor. The global editor may gain features from Data, Prompts, Models, workflow tooling, or later panels, but it must not become a lowest-common-denominator editor that removes the rich Tasks behavior.
+
+The showcase contract is `echo_into_titlecased` with Python, Prolog, and LLM implementations. That example makes variant selection and implementation-specific editing visible immediately.
+
 ## Shared editor contract
 
 All artifact families use the same interaction model:
@@ -24,7 +30,7 @@ All artifact families use the same interaction model:
 9. Documentation and contextual help in the far-right workbench inspector.
 10. Optional bottom docks for documentation, history, tests, benchmarks, diff, and logs.
 
-The shared React chrome lives in `HierarchyResourceEditor.tsx`. Artifact-family adapters provide the hierarchy data and the type-specific editor body; they should not reimplement tabbing, split view, navigation, or generic artifact inspection.
+The canonical React chrome lives in `UniversalArtifactEditor.tsx`. `HierarchyResourceEditor.tsx` is retained only as a compatibility alias so existing artifact-family adapters automatically use the same global editor. Artifact-family adapters provide hierarchy data and the rich type-specific editor body; they must not reimplement or remove the shared navigation, tabs, split comparison, generic inspection, or dock behavior.
 
 ## Resource families
 
@@ -34,17 +40,25 @@ The architecture is intended to cover Tasks, Datatypes, Prompts, Converters, Val
 
 Task implementations retain rich implementation-specific views. Python implementations expose module/file/class/callable information. Prolog implementations expose predicates and arity. MeTTa implementations expose MeTTa configuration. LLM implementations expose model/profile dispatch and ordered prompt bindings.
 
+The Tasks page is also the regression oracle for the shared chrome: if the universal editor cannot still present the full rich Tasks experience, the abstraction has removed too much.
+
 ### Datatype variants
 
-Datatype representations expose encoding/schema/parser/serializer/MIME information and may later provide live viewers such as Bitmap preview, Scene Graph viewer, Turtle/LOGO viewer, or natural-language preview.
+Datatype representations expose encoding/schema/parser/serializer/MIME information and may provide live viewers such as Bitmap preview, Scene Graph viewer, Turtle/LOGO viewer, or natural-language preview. The abstract datatype chooses a preferred representation without changing workflows.
 
 ### Prompt variants
 
-Prompt implementations expose editable prompt text, targets, versions, variables, expected inputs/outputs, model targeting, evaluation history, and comparison with other prompt variants.
+Prompt implementations expose editable prompt text, targets, versions, variables, expected inputs/outputs, model targeting, evaluation history, and comparison with other prompt variants. The abstract prompt chooses a preferred prompt alternative.
 
 ### Model variants
 
 Model/back-end/profile resources use the same editor shell while retaining inheritance/configuration controls and resolved runtime configuration.
+
+## No-feature-loss rule
+
+The effective global editor feature set is the union of useful capabilities found in the rich Tasks baseline and later artifact panels. New adapters add specialized behavior; they do not replace the baseline with a simpler generic form.
+
+A source-level regression test in `tests/test_universal_artifact_editor_ui.py` protects the major baseline features and verifies that Tasks, Data, Prompts, and Models still route through the universal editor.
 
 ## Workflow independence
 
