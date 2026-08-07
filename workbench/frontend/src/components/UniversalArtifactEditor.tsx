@@ -107,6 +107,7 @@ export function UniversalArtifactEditor({
     ? breadcrumb
     : [category || title, activeTab?.label || "Select artifact"];
   const [bottomPanelId, setBottomPanelId] = useState<string | null>(bottomPanels[0]?.id || null);
+  const [navigatorCollapsed, setNavigatorCollapsed] = useState(false);
   const activeBottomPanel = useMemo(
     () => bottomPanels.find(panel => panel.id === bottomPanelId) || bottomPanels[0] || null,
     [bottomPanels, bottomPanelId],
@@ -139,8 +140,11 @@ export function UniversalArtifactEditor({
       {inspector && <div className="artifact-inspector-extension">{inspector}</div>}
     </div>
 
-    <div className="task-hierarchy-layout artifact-editor-body">
-      <div className={`${treeClassName} artifact-navigator`.trim()}>{leftPane}</div>
+    <div className={`task-hierarchy-layout artifact-editor-body ${navigatorCollapsed?"navigator-collapsed":"navigator-expanded"}`}>
+      <div className={`${treeClassName} artifact-navigator`.trim()}>
+        <div className="artifact-navigator-toolbar"><span>HIERARCHY</span><button type="button" aria-label={navigatorCollapsed?"Expand hierarchy":"Collapse hierarchy"} aria-expanded={!navigatorCollapsed} onClick={()=>setNavigatorCollapsed(value=>!value)}>{navigatorCollapsed?"›":"‹"}<b>{navigatorCollapsed?"":"Collapse"}</b></button></div>
+        <div className="artifact-navigator-content">{leftPane}</div>
+      </div>
       <div className={workspaceClassName}>
         <div className={tabsClassName}>
           {tabs.map(tab => <div className={`task-document-tab ${tab.key===activeKey?"active":""}`} key={tab.key}>

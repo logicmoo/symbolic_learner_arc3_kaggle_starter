@@ -75,5 +75,20 @@ def test_universal_shell_keeps_tabs_compare_inspector_and_docks() -> None:
         "bottomPanels",
         "artifact-bottom-dock",
         "variantControls",
+        "navigatorCollapsed",
+        "Collapse hierarchy",
+        "Expand hierarchy",
+        "artifact-navigator-content",
     ):
         assert token in source
+
+
+def test_universal_tree_is_collapsible_and_independently_scrollable() -> None:
+    source = _text("UniversalArtifactEditor.tsx")
+    styles = (ROOT / "workbench" / "frontend" / "src" / "styles" / "task_editor.css").read_text(encoding="utf-8")
+    assert 'aria-expanded={!navigatorCollapsed}' in source
+    assert "navigator-collapsed" in source
+    assert ".artifact-navigator-content" in styles
+    assert "overflow-y:auto" in styles
+    assert "scrollbar-gutter:stable" in styles
+    assert ".task-hierarchy-layout.navigator-collapsed" in styles
