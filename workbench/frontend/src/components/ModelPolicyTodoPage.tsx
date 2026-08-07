@@ -1,19 +1,38 @@
-import { useEffect, useState } from "react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import "../styles/help_tabs.css";
+import { useEffect, useMemo, useState } from "react";
 import "../styles/model_policy_todo.css";
 
-type TodoPayload = { status: "pending"; specificationPath: string; mockupPath: string; mockupAvailable: boolean; markdown: string };
+type PolicyState="on"|"auto"|"off";
+type Effective={runtime:boolean;benchmark:boolean;runtimeState:string;benchmarkState:string;reasons:string[]};
+type Model={id:string;vendorId?:string;modelId?:string;name?:string;policy?:Record<string,PolicyState>;health?:Record<string,unknown>;effective:Effective;capabilities?:Record<string,boolean>;limits?:Record<string,number>;pricing?:Record<string,number|string>;properties?:Record<string,unknown>};
+type Vendor={id:string;vendorId?:string;label?:string;policy?:Record<string,PolicyState>;enabled?:boolean};
+type Resource={document?:Record<string,any>};
+type Registry={vendors:Vendor[];models:Model[];benchmarkPolicies:Record<string,any>[];pingJobs:Record<string,any>[];pingEvents:Record<string,any>[];healthObservations:Record<string,any>[]};
+type Payload={registry:Registry;resources:Resource[]};
 
-export function ModelPolicyTodoPage() {
-  const [payload, setPayload] = useState<TodoPayload | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  useEffect(() => { fetch("/api/model-policy/todo").then(async response => { const body = await response.json(); if (!response.ok) throw new Error(body.error || body.detail || response.statusText); setPayload(body); }).catch(reason => setError(String(reason))); }, []);
-  return <section className="resource-view model-policy-todo-page">
-    <div className="resource-heading"><div><span>SYSTEM · IMPLEMENTATION PENDING</span><h1>Model Runtime Usage and Benchmarking Policies</h1><p>The checked-in specification and visual reference are read directly from the repository. No policy records are fabricated on this page.</p></div></div>
-    {error && <div className="backend-error"><b>Model Policy specification unavailable</b><span>{error}</span></div>}
-    {!payload && !error && <div className="studio-empty">Loading filesystem policy specification…</div>}
-    {payload && <div className="model-policy-todo-layout"><article className="relationship-markdown markdown-body"><ReactMarkdown remarkPlugins={[remarkGfm]}>{payload.markdown}</ReactMarkdown></article><aside className="model-policy-reference"><span>VISUAL ACCEPTANCE REFERENCE</span><b>{payload.mockupPath}</b>{payload.mockupAvailable ? <img src="/api/model-policy/todo/mockup" alt="Model runtime policy design mockup" /> : <p>The checked-in mockup is missing.</p>}<small>{payload.specificationPath}</small></aside></div>}
-  </section>;
+const state=(value?:string)=>value||"auto";
+const healthClass=(value?:unknown)=>String(value||"unknown").toLowerCase().replace(/[^a-z]+/g,"-");
+
+export function ModelPolicyTodoPage({workspaceId}:{workspaceId:string}) {
+ const[payload,setPayload]=useState<Payload|null>(null),[error,setError]=useState<string|null>(null),[query,setQuery]=useState(""),[wanted,setWanted]=useState("all"),[health,setHealth]=useState("all"),[busy,setBusy]=useState(false);
+ const load=()=>fetch(`/api/workspaces/${encodeURIComponent(workspaceId)}/model-policy`).then(async response=>{const body=await response.json();if(!response.ok)throw new Error(body.error||body.detail||response.statusText);setPayload(body);setError(null)}).catch(reason=>setError(String(reason)));
+ useEffect(()=>{void load()},[workspaceId]);
+ const models=useMemo(()=>{const rows=payload?.registry.models||[];return rows.filter(model=>{const text=JSON.stringify(model).toLowerCase();return(!query||text.includes(query.toLowerCase()))&&(wanted==="all"||state(model.policy?.wanted)===wanted)&&(health==="all"||String(model.health?.status||"unknown").toLowerCase()===health)})},[payload,query,wanted,health]);
+ const documents=payload?.resources.map(row=>row.document).filter(Boolean)||[];
+ const results=documents.filter(row=>row?.kind==="benchmark_result");
+ const profiles=[...new Set((payload?.registry.benchmarkPolicies||[]).flatMap(item=>item.promptProfiles||[]))];
+ const ping=async(scope:string)=>{setBusy(true);try{const id=`ping_${scope}_${Date.now()}`;const targets=(payload?.registry.models||[]).filter(model=>scope==="all"||state(model.policy?.wanted)===scope).map(model=>model.id);const response=await fetch(`/api/workspaces/${encodeURIComponent(workspaceId)}/model-policy/observations`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({kind:"model_ping_job",id,label:`Ping ${scope}`,status:"queued",targets,concurrency:4,timeoutMs:15000,continueOnError:true,createdAt:new Date().toISOString()})});if(!response.ok)throw new Error((await response.json()).detail||response.statusText);await load()}catch(reason){setError(String(reason))}finally{setBusy(false)}};
+ return <section className="resource-view model-policy-page">
+  <div className="resource-heading policy-heading"><div><span>SYSTEM · LIVE FILESYSTEM POLICY</span><h1>Model Runtime Usage and Benchmarking Policies</h1><p>Policy intent, observed health, and effective eligibility remain separate and inspectable.</p></div><div className="policy-actions"><button disabled={busy} onClick={()=>ping("all")}>Ping All</button><button disabled={busy} onClick={()=>ping("on")}>Ping Wanted</button><button onClick={load}>Refresh Status</button></div></div>
+  {error&&<div className="backend-error"><b>Model policy unavailable</b><span>{error}</span></div>}
+  {!payload&&!error&&<div className="studio-empty">Loading model policy registry…</div>}
+  {payload&&<div className="policy-dashboard">
+   <section className="policy-card vendor-card"><h2>Vendors <small>{payload.registry.vendors.length}</small></h2><div className="policy-mini-head"><span>Vendor</span><span>Wanted</span><span>Runtime</span><span>Health</span></div>{payload.registry.vendors.map(vendor=><div className="policy-mini-row" key={vendor.id}><b>{vendor.label||vendor.vendorId}</b><em>{state(vendor.policy?.wanted)}</em><em>{state(vendor.policy?.runtime)}</em><span className="health online">● configured</span></div>)}</section>
+   <section className="policy-card models-card"><div className="policy-card-title"><h2>All Models <small>{models.length} / {payload.registry.models.length}</small></h2><div className="policy-filters"><select value={wanted} onChange={e=>setWanted(e.target.value)}><option value="all">All wanted states</option><option value="on">Wanted On</option><option value="auto">Wanted Auto</option><option value="off">Wanted Off</option></select><select value={health} onChange={e=>setHealth(e.target.value)}><option value="all">All health</option><option value="online">Online</option><option value="slow">Slow</option><option value="offline">Offline</option><option value="unknown">Unknown</option></select><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Filter any JSON property…"/></div></div><div className="policy-table-scroll"><table><thead><tr><th>Vendor</th><th>Model</th><th>Wanted</th><th>Runtime</th><th>Benchmark</th><th>Health</th><th>Effective Runtime</th><th>Effective Benchmark</th><th>Latency</th><th>Context</th><th>Input Cost</th><th>Properties</th></tr></thead><tbody>{models.map(model=><tr key={model.id}><td>{model.vendorId||"—"}</td><th>{model.name||model.modelId||model.id}</th><td>{state(model.policy?.wanted)}</td><td>{state(model.policy?.runtime)}</td><td>{state(model.policy?.benchmark)}</td><td><span className={`health ${healthClass(model.health?.status)}`}>● {String(model.health?.status||"unknown")}</span></td><td className={model.effective.runtime?"enabled":"disabled"}>{model.effective.runtimeState}</td><td className={model.effective.benchmark?"enabled":"disabled"}>{model.effective.benchmarkState}</td><td>{String(model.health?.latencyMs??"—")} ms</td><td>{model.limits?.contextWindow?.toLocaleString()||"—"}</td><td>{String(model.pricing?.input??"—")}</td><td title={JSON.stringify(model.properties)}>{Object.keys(model.properties||{}).join(", ")||"—"}</td></tr>)}</tbody></table></div></section>
+   <aside className="policy-card summary-card"><h2>Policy Summary</h2><b>{payload.registry.models.filter(m=>m.effective.runtime).length}</b><span>Runtime enabled</span><b>{payload.registry.models.filter(m=>m.effective.benchmark).length}</b><span>Benchmark enabled</span><b>{payload.registry.healthObservations.length}</b><span>Health observations</span><b>{payload.registry.pingJobs.length}</b><span>Ping jobs</span></aside>
+   <section className="policy-card profiles-card"><h2>Prompt Profiles</h2>{profiles.length?profiles.map(profile=><div key={profile}><b>{profile}</b><span>Filesystem benchmark profile</span></div>):<p>No prompt profiles referenced by benchmark policy.</p>}</section>
+   <section className="policy-card matrix-card"><h2>Benchmark Matrix</h2><div className="matrix"><span>Profile</span>{payload.registry.models.map(model=><b key={model.id}>{model.name||model.modelId}</b>)}{profiles.map(profile=><div className="matrix-row" key={profile}><b>{profile}</b>{payload.registry.models.map(model=>{const result=results.find(row=>row?.promptProfileId===profile&&row?.modelPolicyEntryId===model.id);return <span key={model.id} title={result?JSON.stringify(result.metrics):"No result"}>{result?"✓":model.effective.benchmark?"○":"—"}</span>})}</div>)}</div></section>
+   <section className="policy-card history-card"><h2>Performance History</h2>{results.length?results.map(result=><div className="result-bar" key={result?.id}><b>{result?.promptProfileId}</b><i style={{width:`${Math.max(4,Number(result?.metrics?.accuracy||0)*100)}%`}}/><span>{Math.round(Number(result?.metrics?.accuracy||0)*100)}%</span></div>):<p>No persisted benchmark results.</p>}</section>
+   <section className="policy-card rules-card"><h2>Testing Rules & Persistence</h2><p>Ping jobs are persisted to <code>policies/</code> and continue-on-error is recorded per job. Policy values are edited under DESIGN → Policy; this SYSTEM view computes eligibility from those files and the latest health observations.</p><div><span>Wanted</span><b>ON / AUTO / OFF</b><span>Health</span><b>Online / Slow / Offline / Unknown</b><span>Effective</span><b>Enabled / Disabled / Temporarily Disabled</b></div></section>
+  </div>}
+ </section>;
 }

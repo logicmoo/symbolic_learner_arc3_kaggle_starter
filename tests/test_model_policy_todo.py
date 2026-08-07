@@ -24,13 +24,14 @@ def test_model_policy_mockup_endpoint_returns_checked_in_png() -> None:
     assert Path(response.path).is_file()
 
 
-def test_active_model_policy_page_uses_filesystem_todo_api() -> None:
+def test_active_model_policy_page_uses_live_filesystem_policy_api() -> None:
     page = (ROOT / "workbench" / "frontend" / "src" / "components" / "ModelPolicyTodoPage.tsx").read_text(encoding="utf-8")
     shell = (ROOT / "workbench" / "frontend" / "src" / "pages" / "FilesystemWorkbenchPage.tsx").read_text(encoding="utf-8")
-    assert 'fetch("/api/model-policy/todo")' in page
-    assert "ReactMarkdown" in page
-    assert 'src="/api/model-policy/todo/mockup"' in page
-    assert 'view==="modelPolicy"&&<ModelPolicyTodoPage/>' in shell
+    assert "/model-policy`" in page
+    assert "/model-policy/observations`" in page
+    for token in ("All Models", "Benchmark Matrix", "Performance History", "Filter any JSON property"):
+        assert token in page
+    assert 'view==="modelPolicy"&&<ModelPolicyTodoPage workspaceId={workspace.id}/>' in shell
 
 
 def test_shared_policy_examples_form_a_resolvable_reference_graph() -> None:
