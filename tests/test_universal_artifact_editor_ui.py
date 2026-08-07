@@ -46,9 +46,9 @@ def test_operations_tree_supports_global_and_per_operation_folding() -> None:
     source = _text("TaskLibraryEditor.tsx")
     for token in (
         "collapsedTasks",
-        "Show only top-level operations",
-        "Show all operation variants",
-        'branchCollapsed?"Show variants":"Hide variants"',
+        "Only Toplevel",
+        "Show Tree",
+        'branchCollapsed?"Unhide Variants":"Hide Variants"',
         "tree-branch-toggle",
         "branch-collapsed",
     ):
@@ -92,8 +92,8 @@ def test_universal_shell_keeps_tabs_compare_inspector_and_docks() -> None:
         "variantsCollapsed",
         "Collapse hierarchy",
         "Expand hierarchy",
-        "Show only top-level artifacts",
-        "Show all variants",
+        "Only Toplevel",
+        "Show Tree",
         "artifact-navigator-content",
     ):
         assert token in source
