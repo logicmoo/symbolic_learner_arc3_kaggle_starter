@@ -1,5 +1,6 @@
 import {useMemo,useState} from "react";
 import "../styles/task_editor.css";
+import "../styles/task_playground.css";
 
 type TaskDef={id:string;label?:string;inputs?:Record<string,string>;outputs?:Record<string,string>;implementationSelection?:{default?:string;variants?:string[]}};
 type TaskImplementationDef={id:string;label?:string;implementation:string};
