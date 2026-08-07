@@ -1,0 +1,27 @@
+{
+  "kind": "model",
+  "id": "claude-sonnet",
+  "label": "Claude Sonnet",
+  "description": "Anthropic Sonnet model inheriting the shared Anthropic backend catalog item.",
+  "inherits": "anthropic",
+  "model": "claude-sonnet-4-20250514",
+  "enabled": true,
+  "capabilities": [
+    "text",
+    "vision",
+    "json"
+  ],
+  "defaults": {
+    "reasoningEffort": "medium",
+    "maxOutputTokens": 18000,
+    "temperature": 0.05,
+    "topP": 0.95,
+    "timeoutSeconds": 420,
+    "currentImageDetail": "high",
+    "parentImageDetail": "low"
+  },
+  "environment": {
+    "model": "WORKBENCH_ANTHROPIC_MODEL",
+    "legacyModel": "ARC3_CLAUDE_MODEL"
+  }
+}

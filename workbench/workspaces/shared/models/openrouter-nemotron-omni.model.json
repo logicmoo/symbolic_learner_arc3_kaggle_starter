@@ -1,0 +1,24 @@
+{
+  "kind": "model",
+  "id": "openrouter-nemotron-omni",
+  "label": "Nemotron 3 Nano Omni free",
+  "description": "Reasoning-capable Nemotron model inheriting the shared OpenRouter backend catalog item.",
+  "inherits": "openrouter",
+  "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+  "enabled": true,
+  "capabilities": [
+    "text",
+    "vision",
+    "reasoning",
+    "json"
+  ],
+  "defaults": {
+    "reasoningEffort": "medium",
+    "maxOutputTokens": 16000,
+    "temperature": 0.05,
+    "topP": 0.95,
+    "timeoutSeconds": 480,
+    "currentImageDetail": "high",
+    "parentImageDetail": "low"
+  }
+}

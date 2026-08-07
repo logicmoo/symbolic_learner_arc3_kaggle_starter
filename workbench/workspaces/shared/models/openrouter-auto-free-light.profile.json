@@ -1,0 +1,21 @@
+{
+  "kind": "profile",
+  "id": "openrouter-auto-free-light",
+  "label": "OpenRouter automatic free — light",
+  "description": "Prompt-free execution profile migrated from the legacy ARC3 configuration.",
+  "inherits": "openrouter-auto-free",
+  "enabled": true,
+  "defaults": {
+    "analysisLevel": 2,
+    "singleEnabled": true,
+    "batchEnabled": false,
+    "maxOutputTokens": 8000,
+    "temperature": 0.1,
+    "topP": 0.9,
+    "reasoningEffort": "low",
+    "currentImageDetail": "low",
+    "parentImageDetail": "low",
+    "timeoutSeconds": 180,
+    "seed": null
+  }
+}

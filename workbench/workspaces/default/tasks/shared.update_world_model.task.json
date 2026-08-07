@@ -1,0 +1,15 @@
+{
+  "id": "shared.update_world_model",
+  "label": "Update World Model",
+  "description": "Update a revisable world model from hypotheses and evidence. Generic learning task shared by ARC3 and other domains.",
+  "implementation": "symbolic.world_model",
+  "inputs": {
+    "hypotheses": "HypothesisSet",
+    "evidence": "EvidenceBundle"
+  },
+  "outputs": {
+    "world_model": "WorldModel"
+  },
+  "parameters": {},
+  "kind": "task"
+}

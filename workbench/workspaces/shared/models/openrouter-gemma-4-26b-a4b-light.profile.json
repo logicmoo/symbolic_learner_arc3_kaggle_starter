@@ -1,0 +1,24 @@
+{
+  "kind": "profile",
+  "id": "openrouter-gemma-4-26b-a4b-light",
+  "label": "Gemma 4 26B A4B free — light",
+  "description": "Prompt-free execution profile migrated from the legacy LLM workflow catalog.",
+  "inherits": "openrouter-gemma-4-26b-a4b",
+  "enabled": true,
+  "defaults": {
+    "analysisLevel": 2,
+    "singleEnabled": true,
+    "batchEnabled": false,
+    "maxOutputTokens": 8000,
+    "temperature": 0.1,
+    "topP": 0.9,
+    "reasoningEffort": "low",
+    "currentImageDetail": "low",
+    "parentImageDetail": "low",
+    "timeoutSeconds": 240,
+    "seed": null
+  },
+  "metadata": {
+    "legacyTransaction": "full_artifact_bundle"
+  }
+}
