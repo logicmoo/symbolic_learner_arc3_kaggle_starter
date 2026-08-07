@@ -76,8 +76,11 @@ def test_universal_shell_keeps_tabs_compare_inspector_and_docks() -> None:
         "artifact-bottom-dock",
         "variantControls",
         "navigatorCollapsed",
+        "variantsCollapsed",
         "Collapse hierarchy",
         "Expand hierarchy",
+        "Collapse variants to top level",
+        "Show variants",
         "artifact-navigator-content",
     ):
         assert token in source
@@ -92,3 +95,5 @@ def test_universal_tree_is_collapsible_and_independently_scrollable() -> None:
     assert "overflow-y:auto" in styles
     assert "scrollbar-gutter:stable" in styles
     assert ".task-hierarchy-layout.navigator-collapsed" in styles
+    assert ".variants-collapsed .task-tree-children" in styles
+    assert ".variants-collapsed .inheritance-children" in styles
