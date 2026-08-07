@@ -6,5 +6,8 @@
   "children": [
     "prolog_fact_set",
     "symbolic_fact_set"
+  ],
+  "parents": [
+    "information"
   ]
 }

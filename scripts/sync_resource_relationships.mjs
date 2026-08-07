@@ -43,6 +43,14 @@ for (const record of records) {
   byWorkspaceAndId.set(`${record.workspace}:${record.document.id}`, record);
 }
 
+for (const parent of records) {
+  if (!Array.isArray(parent.document.children)) continue;
+  parent.document.children = ids(parent.document.children).filter(childId => {
+    const child = byWorkspaceAndId.get(`${parent.workspace}:${childId}`) ?? byWorkspaceAndId.get(`shared:${childId}`);
+    return child && ids(child.document.parents).includes(parent.document.id);
+  });
+}
+
 for (const child of records) {
   const family = families[child.document.kind];
   if (!family && !child.document.parents) continue;

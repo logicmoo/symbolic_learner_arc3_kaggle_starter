@@ -9,6 +9,10 @@ const configDirectory = path.join(shared, "config");
 const concreteId = id => id === "plain_text" ? "text_plain" : id;
 const ids = value => [...new Set((Array.isArray(value) ? value : []).map(String).filter(Boolean))];
 const title = value => value.split("_").map(word => word ? word[0].toUpperCase() + word.slice(1) : word).join(" ");
+const semanticParentOverrides = {
+  human_intervention: ["intervention"],
+  objectified_observation: ["observation"],
+};
 
 fs.mkdirSync(concreteDirectory, { recursive: true });
 
@@ -21,6 +25,7 @@ for (const name of fs.readdirSync(semanticDirectory).filter(name => name.endsWit
       document.parents = ids([...(document.parents ?? []), ...ids(document.extends)]);
       delete document.extends;
     }
+    if (document.id !== "information") document.parents = semanticParentOverrides[document.id] ?? ["information"];
   const target = path.join(semanticDirectory, `${document.id}.semantic_datatype.json`);
   fs.writeFileSync(target, `${JSON.stringify(document, null, 2)}\n`);
   if (target !== source) fs.unlinkSync(source);

@@ -15,5 +15,8 @@
     "svg",
     "turtle_program"
   ],
-  "preferredChild": "bitmap"
+  "preferredChild": "bitmap",
+  "parents": [
+    "information"
+  ]
 }

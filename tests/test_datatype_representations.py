@@ -24,6 +24,16 @@ def test_image_is_abstract_datatype_with_multiple_representations() -> None:
     assert {"bitmap", "logo_program", "scene_graph", "natural_language"}.issubset(image["children"])
 
 
+def test_semantic_datatype_hierarchy_is_explicit_and_bidirectional() -> None:
+    datatypes = {record["document"]["id"]: record["document"] for record in load_workspace_datatype_records(SHARED) if record.get("document")}
+    assert datatypes["identity_map"]["parents"] == ["information"]
+    assert "identity_map" in datatypes["information"]["children"]
+    assert datatypes["human_intervention"]["parents"] == ["intervention"]
+    assert "human_intervention" in datatypes["intervention"]["children"]
+    assert datatypes["objectified_observation"]["parents"] == ["observation"]
+    assert "objectified_observation" in datatypes["observation"]["children"]
+
+
 def test_bitmap_encodings_are_independent_concrete_datatypes() -> None:
     representations = {record["document"]["id"]: record["document"] for record in load_workspace_representation_records(SHARED) if record.get("document")}
     bitmap = representations["bitmap"]

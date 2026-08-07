@@ -6,5 +6,8 @@
   "children": [
     "image_region",
     "object_properties"
+  ],
+  "parents": [
+    "information"
   ]
 }
