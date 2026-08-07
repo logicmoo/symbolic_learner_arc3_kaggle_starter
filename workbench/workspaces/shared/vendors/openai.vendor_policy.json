@@ -1,0 +1,12 @@
+{
+  "kind": "vendor_policy",
+  "id": "openai_policy",
+  "vendorId": "openai",
+  "label": "OpenAI Vendor Policy",
+  "enabled": true,
+  "example": true,
+  "policy": {"wanted": "on", "runtime": "on", "benchmark": "on"},
+  "ping": {"enabled": true, "timeoutMs": 15000, "concurrency": 4, "refreshModels": true},
+  "manualOverrides": {},
+  "properties": {"registryMode": "api", "official": true}
+}

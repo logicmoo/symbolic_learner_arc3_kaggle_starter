@@ -1,0 +1,12 @@
+{
+  "kind": "benchmark_result",
+  "id": "example_reasoning_quality_gpt_5_6",
+  "benchmarkPolicyId": "reasoning_quality",
+  "modelPolicyEntryId": "openai:gpt-5.6",
+  "promptProfileId": "gpt-5.6-light",
+  "recordedAt": "2026-08-08T00:00:00Z",
+  "status": "example",
+  "enabled": true,
+  "example": true,
+  "metrics": {"accuracy": 0.92, "latency_ms": 180, "input_tokens": 420, "output_tokens": 160, "estimated_cost": 0.002125}
+}

@@ -1,0 +1,12 @@
+{
+  "kind": "model_ping_event",
+  "id": "example_openai_gpt_5_6_ping",
+  "jobId": "example_vendor_ping",
+  "modelPolicyEntryId": "openai:gpt-5.6",
+  "status": "succeeded",
+  "latencyMs": 180,
+  "occurredAt": "2026-08-08T00:00:00Z",
+  "enabled": true,
+  "example": true,
+  "evidence": {"requestType": "minimal_completion", "responseReceived": true}
+}

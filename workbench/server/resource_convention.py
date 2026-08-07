@@ -15,6 +15,12 @@ KNOWN_RESOURCE_KINDS = {
     "datatype_representation",
     "manifest",
     "model",
+    "model_health_observation",
+    "model_ping_event",
+    "model_ping_job",
+    "model_policy",
+    "model_policy_entry",
+    "model_policy_variant",
     "goal",
     "goal_interpretation",
     "goal_variant",
@@ -24,11 +30,14 @@ KNOWN_RESOURCE_KINDS = {
     "prompt",
     "prompt_implementation",
     "schema",
+    "benchmark_policy",
+    "benchmark_result",
     "operation",
     "operation_implementation",
     "workflow",
     "workflow_step",
     "workspace",
+    "vendor_policy",
 }
 
 

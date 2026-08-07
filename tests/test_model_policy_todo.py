@@ -1,5 +1,6 @@
 from pathlib import Path
 import sys
+import json
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -30,3 +31,33 @@ def test_active_model_policy_page_uses_filesystem_todo_api() -> None:
     assert "ReactMarkdown" in page
     assert 'src="/api/model-policy/todo/mockup"' in page
     assert 'view==="modelPolicy"&&<ModelPolicyTodoPage/>' in shell
+
+
+def test_shared_policy_examples_form_a_resolvable_reference_graph() -> None:
+    shared = ROOT / "workbench" / "workspaces" / "shared"
+    paths = [
+        shared / "policies" / "default_model_runtime.model_policy.json",
+        shared / "policies" / "balanced_model_runtime.model_policy_variant.json",
+        shared / "policies" / "economy_model_runtime.model_policy_variant.json",
+        shared / "vendors" / "openai.vendor_policy.json",
+        shared / "model_registry" / "openai_gpt_5_6.model_policy_entry.json",
+        shared / "health" / "openai_gpt_5_6.model_health_observation.json",
+        shared / "pings" / "example_vendor_ping.model_ping_job.json",
+        shared / "pings" / "example_openai_gpt_5_6.model_ping_event.json",
+        shared / "benchmarks" / "reasoning_quality.benchmark_policy.json",
+        shared / "benchmarks" / "example_reasoning_quality.benchmark_result.json",
+    ]
+    documents = [json.loads(path.read_text(encoding="utf-8")) for path in paths]
+    by_id = {document["id"]: document for document in documents}
+    assert all(document.get("example") is True for document in documents)
+    assert {document["kind"] for document in documents} == {
+        "model_policy", "model_policy_variant", "vendor_policy", "model_policy_entry",
+        "model_health_observation", "model_ping_job", "model_ping_event",
+        "benchmark_policy", "benchmark_result",
+    }
+    assert by_id["default_model_runtime"]["variantSelection"]["default"] in by_id
+    assert by_id["balanced_model_runtime"]["implements"] == "default_model_runtime"
+    assert by_id["economy_model_runtime"]["enabled"] is False
+    assert by_id["openai:gpt-5.6"]["vendorId"] == "openai"
+    assert by_id["example_openai_gpt_5_6_ping"]["jobId"] == "example_vendor_ping"
+    assert by_id["example_reasoning_quality_gpt_5_6"]["benchmarkPolicyId"] == "reasoning_quality"
