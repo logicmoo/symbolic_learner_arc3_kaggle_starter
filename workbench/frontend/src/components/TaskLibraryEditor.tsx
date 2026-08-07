@@ -18,7 +18,7 @@ const recordKey=(record:RecordFile<TaskResource>)=>`${record.workspaceId||record
 async function request(path:string,init?:RequestInit){const r=await fetch(path,{headers:{"Content-Type":"application/json",...(init?.headers||{})},...init});const text=await r.text();let p:any;try{p=JSON.parse(text)}catch{throw new Error(text||r.statusText)}if(!r.ok)throw new Error(p.error||p.detail||r.statusText);return p;}
 
 export function TaskLibraryEditor({workspaceId}:{workspaceId:string}){
- const[snapshot,setSnapshot]=useState<Snapshot|null>(null),[openDocs,setOpenDocs]=useState<OpenDocument[]>([]),[activeKey,setActiveKey]=useState<string|null>(null),[compareKey,setCompareKey]=useState<string|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState<string|null>(null);
+ const[snapshot,setSnapshot]=useState<Snapshot|null>(null),[openDocs,setOpenDocs]=useState<OpenDocument[]>([]),[activeKey,setActiveKey]=useState<string|null>(null),[compareKey,setCompareKey]=useState<string|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState<string|null>(null),[navigatorCollapsed,setNavigatorCollapsed]=useState(false),[variantsCollapsed,setVariantsCollapsed]=useState(false),[collapsedTasks,setCollapsedTasks]=useState<Set<string>>(()=>new Set());
  const load=async()=>{const next=await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/snapshot`) as Snapshot;setSnapshot(next);return next};
  useEffect(()=>{setOpenDocs([]);setActiveKey(null);setCompareKey(null);void load().catch(r=>setError(String(r)))},[workspaceId]);
  const enabledModels=(snapshot?.models||[]).filter(row=>row.document&&(row.resolved?.enabled??row.document.enabled!==false));
@@ -55,15 +55,17 @@ export function TaskLibraryEditor({workspaceId}:{workspaceId:string}){
   </section>};
 
  if(!snapshot)return <section className="resource-view"><div className="studio-empty">Loading task library…</div></section>;
+ const toggleTask=(id:string)=>setCollapsedTasks(current=>{const next=new Set(current);if(next.has(id))next.delete(id);else next.add(id);return next});
  return <section className="resource-view task-hierarchy-page">
   <div className="resource-heading"><div><span>PROCESSING RESOURCES</span><h1>Tasks & implementations</h1><p>Abstract tasks are parents. Click any task or implementation to keep it open in an editor tab; use Split view to compare or copy between two resources.</p></div></div>
   {error&&<div className="demo-notice"><b>Task editor error</b><span>{error}</span></div>}
-  <div className="task-hierarchy-layout">
-   <div className="task-tree-pane">
-    {(snapshot.tasks||[]).map(task=>{const item=task.document;if(!item)return null;const variants=children.get(item.id)||[];const selectedTask=active?.record.document?.id===item.id;return <div className="task-tree-group" key={item.id}>
-      <button className={`task-tree-row task-parent ${selectedTask?"selected":""}`} onClick={()=>open(task as RecordFile<TaskResource>)}><span className="task-kind-badge">TASK</span><span><b>{item.label||item.id}</b><small>{item.description||item.id}</small></span><em>{variants.length} variants</em></button>
+  <div className={`task-hierarchy-layout ${navigatorCollapsed?"navigator-collapsed":"navigator-expanded"} ${variantsCollapsed?"variants-collapsed":"variants-expanded"}`}>
+   <div className="task-tree-pane artifact-navigator">
+    <div className="artifact-navigator-toolbar"><span>OPERATIONS</span><div className="artifact-navigator-actions"><button type="button" aria-label={variantsCollapsed?"Show operation variants":"Collapse operation variants to top level"} aria-pressed={variantsCollapsed} onClick={()=>setVariantsCollapsed(value=>!value)}><b>{variantsCollapsed?"Show variants":"Top level"}</b></button><button type="button" aria-label={navigatorCollapsed?"Expand operations hierarchy":"Collapse operations hierarchy"} aria-expanded={!navigatorCollapsed} onClick={()=>setNavigatorCollapsed(value=>!value)}>{navigatorCollapsed?"›":"‹"}<b>{navigatorCollapsed?"":"Pane"}</b></button></div></div>
+    <div className="artifact-navigator-content">{(snapshot.tasks||[]).map(task=>{const item=task.document;if(!item)return null;const variants=children.get(item.id)||[];const selectedTask=active?.record.document?.id===item.id;const branchCollapsed=collapsedTasks.has(item.id);return <div className={`task-tree-group ${branchCollapsed?"branch-collapsed":""}`} key={item.id}>
+      <div className="inheritance-row"><button className={`task-tree-row task-parent ${selectedTask?"selected":""}`} onClick={()=>open(task as RecordFile<TaskResource>)}><span className="task-kind-badge">TASK</span><span><b>{item.label||item.id}</b><small>{item.description||item.id}</small></span><em>{variants.length} variants</em></button>{variants.length>0&&<button type="button" className="tree-branch-toggle" aria-label={`${branchCollapsed?"Expand":"Collapse"} variants for ${item.label||item.id}`} aria-expanded={!branchCollapsed} onClick={()=>toggleTask(item.id)}>{branchCollapsed?"›":"⌄"}</button>}</div>
       <div className="task-tree-children">{variants.map(variant=>{const impl=variant.document!;const selectedImpl=active?.record.document?.id===impl.id;const language=impl.implementation.startsWith("python")?"PYTHON":impl.implementation.startsWith("prolog")?"PROLOG":impl.implementation.startsWith("metta")?"METTA":impl.implementation.startsWith("llm")?"LLM":"IMPL";return <button className={`task-tree-row task-child ${selectedImpl?"selected":""}`} key={impl.id} onClick={()=>open(variant as RecordFile<TaskResource>)}><span className={`task-kind-badge ${language.toLowerCase()}`}>{language}</span><span><b>{impl.label||impl.id}</b><small>{impl.implementation}</small></span><em>{item.implementationSelection?.default===impl.id?"default":""}</em></button>})}</div>
-    </div>})}
+    </div>})}</div>
    </div>
    <div className="task-editor-workspace">
     <div className="task-document-tabs">{openDocs.map(doc=><div className={`task-document-tab ${doc.key===activeKey?"active":""}`} key={doc.key}><button onClick={()=>setActiveKey(doc.key)}><span>{doc.record.document?.kind==="task"?"TASK":"IMPL"}</span><b>{doc.record.document?.label||doc.record.document?.id||doc.record.path}</b>{doc.dirty&&<i>●</i>}</button><button className="close" onClick={()=>close(doc.key)}>×</button></div>)}</div>

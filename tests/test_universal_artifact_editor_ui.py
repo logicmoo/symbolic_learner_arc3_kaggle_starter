@@ -42,6 +42,18 @@ def test_tasks_preserve_rich_baseline_features() -> None:
         assert token in source, f"rich Tasks baseline feature disappeared: {token}"
 
 
+def test_operations_tree_supports_global_and_per_operation_folding() -> None:
+    source = _text("TaskLibraryEditor.tsx")
+    for token in (
+        "collapsedTasks",
+        "Collapse operation variants to top level",
+        "Show operation variants",
+        "tree-branch-toggle",
+        "branch-collapsed",
+    ):
+        assert token in source
+
+
 def test_task_playground_exposes_typed_inputs_variant_switching_and_results() -> None:
     source = _text("TaskPlayground.tsx")
     for token in (
