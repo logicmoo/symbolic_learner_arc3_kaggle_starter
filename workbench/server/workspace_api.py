@@ -8,6 +8,7 @@ from typing import Any
 from fastapi import APIRouter, Body, HTTPException, Query
 
 from backend_library import MODEL_CATALOG_DIRECTORY, load_backend_library_records, load_workspace_backend_records
+from goal_plan_library import load_workspace_symbolic_records, symbolic_hierarchy
 from datatype_library import (
     DATATYPE_DIRECTORY,
     REPRESENTATION_DIRECTORY,
@@ -71,6 +72,8 @@ def _workspace_from_directory(root: Path) -> dict[str, Any]:
     datatype_dir = root / DATATYPE_DIRECTORY
     representation_dir = root / REPRESENTATION_DIRECTORY
     model_dir = root / MODEL_CATALOG_DIRECTORY
+    goal_dir = root / "goals"
+    plan_dir = root / "plans"
     backend_count = len(load_workspace_backend_records(root))
     model_count = len(resolve_model_records(root))
     prompt_count = len(load_workspace_prompt_records(root))
@@ -78,6 +81,8 @@ def _workspace_from_directory(root: Path) -> dict[str, Any]:
     task_implementation_count = len(load_workspace_task_implementation_records(root))
     datatype_count = len(load_workspace_datatype_records(root))
     representation_count = len(load_workspace_representation_records(root))
+    goal_count = len(load_workspace_symbolic_records(root, "goal"))
+    plan_count = len(load_workspace_symbolic_records(root, "plan"))
     return {
         "id": root.name,
         "label": str(metadata.get("label") or _humanize(root.name)),
@@ -101,6 +106,10 @@ def _workspace_from_directory(root: Path) -> dict[str, Any]:
         "backendDirectoryRelative": MODEL_CATALOG_DIRECTORY,
         "modelDirectory": str(model_dir.resolve()),
         "modelDirectoryRelative": MODEL_CATALOG_DIRECTORY,
+        "goalDirectory": str(goal_dir.resolve()),
+        "goalDirectoryRelative": "goals",
+        "planDirectory": str(plan_dir.resolve()),
+        "planDirectoryRelative": "plans",
         "metadata": metadata.get("metadata") or {},
         "workflowFileCount": len(list(workflow_dir.glob("*.json"))) if workflow_dir.exists() else 0,
         "taskFileCount": task_count,
@@ -110,6 +119,8 @@ def _workspace_from_directory(root: Path) -> dict[str, Any]:
         "backendFileCount": backend_count,
         "modelFileCount": model_count,
         "promptFileCount": prompt_count,
+        "goalFileCount": goal_count,
+        "planFileCount": plan_count,
         "catalogFileCount": len(list(model_dir.glob("*.json"))) if model_dir.exists() else 0,
     }
 
@@ -212,6 +223,10 @@ def _load_prompts(workspace: dict[str, Any]) -> list[dict[str, Any]]:
     return load_workspace_prompt_records(Path(workspace["root"]))
 
 
+def _load_symbolic_family(workspace: dict[str, Any], family: str) -> list[dict[str, Any]]:
+    return load_workspace_symbolic_records(Path(workspace["root"]), family)
+
+
 def _load_backend_library(workspace: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:
     return load_backend_library_records(Path(workspace["root"]))
 
@@ -291,6 +306,26 @@ def workspace_prompts(workspace_id: str) -> dict[str, Any]:
         raise HTTPException(status_code=404, detail=str(error)) from error
 
 
+@router.get("/{workspace_id}/goals")
+def workspace_goals(workspace_id: str) -> dict[str, Any]:
+    try:
+        workspace = _resolve_workspace(workspace_id)
+        records = _load_symbolic_family(workspace, "goal")
+        return {"workspace": workspace, "resources": records, "hierarchy": symbolic_hierarchy(records, "goal")}
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+
+
+@router.get("/{workspace_id}/plans")
+def workspace_plans(workspace_id: str) -> dict[str, Any]:
+    try:
+        workspace = _resolve_workspace(workspace_id)
+        records = _load_symbolic_family(workspace, "plan")
+        return {"workspace": workspace, "resources": records, "hierarchy": symbolic_hierarchy(records, "plan")}
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+
+
 @router.get("/{workspace_id}/snapshot")
 def workspace_snapshot(workspace_id: str) -> dict[str, Any]:
     try:
@@ -319,6 +354,8 @@ def workspace_snapshot(workspace_id: str) -> dict[str, Any]:
         "modelLibrary": _load_model_library(workspace),
         "prompts": _load_prompts(workspace),
         "promptLibrary": _load_prompt_library(workspace),
+        "goals": _load_symbolic_family(workspace, "goal"),
+        "plans": _load_symbolic_family(workspace, "plan"),
         "files": files,
     }
 

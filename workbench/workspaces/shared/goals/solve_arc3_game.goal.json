@@ -1,0 +1,21 @@
+{
+  "kind": "goal",
+  "id": "solve_arc3_game",
+  "label": "Solve an ARC-3 Game",
+  "description": "Learn enough of the current world's dynamics to pursue a successful terminal state.",
+  "successCriteria": [
+    "Reach a successful terminal state",
+    "Preserve evidence for every chosen action"
+  ],
+  "variantSelection": {
+    "default": "solve_arc3_game.maximize_score",
+    "variants": [
+      "solve_arc3_game.maximize_score",
+      "solve_arc3_game.explore_safely"
+    ]
+  },
+  "metadata": {
+    "domain": "arc3",
+    "shared": true
+  }
+}

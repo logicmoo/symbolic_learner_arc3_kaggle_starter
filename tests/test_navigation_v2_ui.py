@@ -41,6 +41,8 @@ def test_navigation_v2_has_required_groups_and_labels() -> None:
 def test_navigation_reuses_current_rich_editors() -> None:
     source = ACTIVE_PAGE.read_text(encoding="utf-8")
     expected = {
+        "Goals": ('view:"goals"', 'view==="goals"&&<GoalPlanLibraryEditor workspaceId={workspace.id} family="goal"'),
+        "Plans": ('view:"plans"', 'view==="plans"&&<GoalPlanLibraryEditor workspaceId={workspace.id} family="plan"'),
         "Operations": ('view:"tasks"', 'view==="tasks"&&<TaskLibraryEditor'),
         "Datatypes": ('view:"data"', 'view==="data"&&<DataCatalogPanel'),
         "Prompts": ('view:"prompts"', 'view==="prompts"&&<PromptLibraryEditor'),
@@ -57,8 +59,6 @@ def test_navigation_reuses_current_rich_editors() -> None:
 def test_pending_pages_are_derived_from_workspace_or_runtime_state() -> None:
     source = ACTIVE_PAGE.read_text(encoding="utf-8")
     assert "snapshot?.files" in source
-    assert "goalResourceCount" in source
     assert "benchmarkResourceCount" in source
     assert "run?.steps.length" in source
     assert "run?.logs.length" in source
-    assert "no sample goals are injected" in source.lower()

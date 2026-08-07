@@ -12,8 +12,8 @@ The backend is FastAPI, launched from `workbench/server/app.py`. The active page
 
 | Navigation V2 item | Current backing component/data | Status |
 | --- | --- | --- |
-| Goals | No goal resource loader/editor | New contract required |
-| Plans | No plan resource loader/editor | New contract required |
+| Goals | `GoalPlanLibraryEditor`, `/api/workspaces/{id}/goals`, shared goal variants | Real, reuse |
+| Plans | `GoalPlanLibraryEditor`, `/api/workspaces/{id}/plans`, shared plan variants | Real, reuse |
 | Workflows | Active canvas and raw workflow editor in `FilesystemWorkbenchPage` | Real, reuse |
 | Operations | `TaskLibraryEditor` and `TaskPlayground` | Real, relabel Tasks |
 | Datatypes | `DataCatalogPanel` | Real, relabel Data |
@@ -66,9 +66,9 @@ The app also exposes health, analysis, SQLite-backed legacy run/event/task APIs,
 
 ## Filesystem Resource Kinds
 
-Existing first-class loaders cover `workflow`, `task`, `task_implementation`, `datatype`, `datatype_representation`, `prompt`, `prompt_implementation`, `backend`, `model`, and `profile`. Workspaces also contain catalog/config/Markdown files that appear in the editable-file inventory but are not all first-class semantic loaders.
+Existing first-class loaders cover `workflow`, `goal`, `goal_interpretation`, `goal_variant`, `plan`, `plan_variant`, `task`, `task_implementation`, `datatype`, `datatype_representation`, `prompt`, `prompt_implementation`, `backend`, `model`, and `profile`. Workspaces also contain catalog/config/Markdown files that appear in the editable-file inventory but are not all first-class semantic loaders.
 
-Shared inheritance plus workspace override resolution exists for tasks and implementations, datatypes and representations, prompts and implementations, backends, models, and profiles. Goals, goal interpretations/variants, plans/variants, AtomSpaces, model policies, benchmark policies/results, contexts, goal runs, and dedicated state snapshots are not yet first-class resource kinds in the workspace snapshot.
+Shared inheritance plus workspace override resolution exists for goals and variants, plans and variants, tasks and implementations, datatypes and representations, prompts and implementations, backends, models, and profiles. AtomSpaces, model policies, benchmark policies/results, contexts, goal runs, and dedicated state snapshots are not yet first-class resource kinds in the workspace snapshot.
 
 ## Exact Navigation V2 Change Surface
 

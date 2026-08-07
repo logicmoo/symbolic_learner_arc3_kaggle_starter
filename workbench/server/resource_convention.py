@@ -15,6 +15,11 @@ KNOWN_RESOURCE_KINDS = {
     "datatype_representation",
     "manifest",
     "model",
+    "goal",
+    "goal_interpretation",
+    "goal_variant",
+    "plan",
+    "plan_variant",
     "profile",
     "prompt",
     "prompt_implementation",
@@ -67,6 +72,10 @@ def infer_resource_kind(path: Path, document: dict[str, Any]) -> str:
         return "prompt_implementation" if document.get("implements") else "prompt"
     if parent == "workflows":
         return "workflow"
+    if parent == "goals":
+        return "goal_variant" if document.get("implements") else "goal"
+    if parent == "plans":
+        return "plan_variant" if document.get("implements") else "plan"
     if parent == "datatypes":
         return "datatype"
     if parent == "representations":

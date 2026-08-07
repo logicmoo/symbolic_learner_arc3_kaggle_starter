@@ -1,0 +1,64 @@
+from __future__ import annotations
+
+import json
+from pathlib import Path
+from typing import Any
+
+from task_library import DEFAULT_WORKSPACES_ROOT, SHARED_WORKSPACE_ID
+
+
+FAMILIES = {
+    "goal": ("goals", {"goal", "goal_interpretation", "goal_variant"}),
+    "plan": ("plans", {"plan", "plan_variant"}),
+}
+
+
+def _read(path: Path, kinds: set[str]) -> dict[str, Any]:
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise ValueError(f"Invalid symbolic resource {path}: {error}") from error
+    if not isinstance(value, dict) or value.get("kind") not in kinds:
+        raise ValueError(f"Resource must declare one of {sorted(kinds)}: {path}")
+    if not str(value.get("id") or "").strip():
+        raise ValueError(f"Resource requires id: {path}")
+    if value["kind"] not in {"goal", "plan"} and not str(value.get("implements") or "").strip():
+        raise ValueError(f"Variant requires implements: {path}")
+    return value
+
+
+def _records(root: Path, directory: str, kinds: set[str], source: str, workspace_id: str) -> list[dict[str, Any]]:
+    resource_dir = root / directory
+    if not resource_dir.is_dir():
+        return []
+    records: list[dict[str, Any]] = []
+    for path in sorted(resource_dir.glob("*.json"), key=lambda item: item.name.lower()):
+        record: dict[str, Any] = {"path": path.relative_to(root).as_posix(), "source": source, "workspaceId": workspace_id}
+        try:
+            record["document"] = _read(path, kinds)
+        except ValueError as error:
+            record["error"] = str(error)
+        records.append(record)
+    return records
+
+
+def load_workspace_symbolic_records(workspace_root: Path, family: str, *, workspaces_root: Path = DEFAULT_WORKSPACES_ROOT) -> list[dict[str, Any]]:
+    directory, kinds = FAMILIES[family]
+    effective: dict[str, dict[str, Any]] = {}
+    for record in _records(workspaces_root / SHARED_WORKSPACE_ID, directory, kinds, "shared", SHARED_WORKSPACE_ID):
+        document = record.get("document") or {}
+        effective[str(document.get("id") or record["path"])] = record
+    if workspace_root.name != SHARED_WORKSPACE_ID:
+        for record in _records(workspace_root, directory, kinds, "workspace", workspace_root.name):
+            document = record.get("document") or {}
+            effective[str(document.get("id") or record["path"])] = record
+    return sorted(effective.values(), key=lambda record: str((record.get("document") or {}).get("label") or record["path"]).lower())
+
+
+def symbolic_hierarchy(records: list[dict[str, Any]], parent_kind: str) -> dict[str, Any]:
+    parents = [record for record in records if (record.get("document") or {}).get("kind") == parent_kind]
+    variants = [record for record in records if (record.get("document") or {}).get("kind") != parent_kind]
+    by_parent: dict[str, list[dict[str, Any]]] = {}
+    for record in variants:
+        by_parent.setdefault(str(record["document"]["implements"]), []).append(record)
+    return {"specifications": parents, "variants": variants, "variantsBySpecification": by_parent}

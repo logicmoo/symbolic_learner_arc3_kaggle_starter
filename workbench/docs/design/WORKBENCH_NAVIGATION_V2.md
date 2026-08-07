@@ -10,8 +10,8 @@ Navigation V2 organizes the active filesystem-backed workbench by lifecycle with
 
 | Group | Item | Backing surface |
 | --- | --- | --- |
-| Design | Goals | New hierarchical goal/interpretation editor |
-| Design | Plans | New hierarchical plan/variant editor |
+| Design | Goals | `GoalPlanLibraryEditor` with goal variants |
+| Design | Plans | `GoalPlanLibraryEditor` with plan variants |
 | Design | Workflows | Existing workflow canvas and source editor |
 | Design | Operations | Existing `TaskLibraryEditor` |
 | Design | Datatypes | Existing `DataCatalogPanel` |
