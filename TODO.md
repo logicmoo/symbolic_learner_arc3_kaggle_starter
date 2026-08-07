@@ -12,7 +12,7 @@ Related documents:
 - [SOW_DELIVERABLES.md](SOW_DELIVERABLES.md) — delivered, partial, and open SOW outcomes with evidence links.
 - [FILE_TREE.md](FILE_TREE.md) — repository ownership map.
 
-When a task here is completed, update the relevant checkbox in [SOW_DELIVERABLES.md](SOW_DELIVERABLES.md) and link the implementation or evidence.
+When a operation here is completed, update the relevant checkbox in [SOW_DELIVERABLES.md](SOW_DELIVERABLES.md) and link the implementation or evidence.
 
 ## Working rules
 
@@ -36,7 +36,7 @@ Architecture: [Phase 1 debugger architecture](SOW_PHASE_ARCHITECTURE.md#phase-1-
 
 Deliverables: [Completed Phase 1 checklist](SOW_DELIVERABLES.md#phase-1--arc3-debugger-and-extensible-inspection-foundation)
 
-These are maintenance and extension tasks, not missing Phase 1 SOW deliverables:
+These are maintenance and extension operations, not missing Phase 1 SOW deliverables:
 
 - [ ] Keep command registration pluggable so new Phase 2 and Phase 3 services can be added without changing the debugger UI loop.
 - [ ] Add explicit provider capability discovery and structured unsupported-command messages.
@@ -271,7 +271,7 @@ Architecture: [Environment progression](SOW_PHASE_ARCHITECTURE.md#environment-pr
 
 # Completion procedure
 
-For each finished task:
+For each finished operation:
 
 1. merge the implementation and tests;
 2. add or update demonstration evidence;

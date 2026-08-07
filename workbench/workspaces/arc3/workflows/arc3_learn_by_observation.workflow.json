@@ -16,7 +16,7 @@
       "id": "select_world",
       "label": "Select world",
       "description": "Bind the ARC3 scenario or environment adapter supplied to this run.",
-      "kind": "task",
+      "kind": "operation",
       "implementation": "core.echo",
       "inputs": {
         "value": "$world"
@@ -29,7 +29,7 @@
       "id": "capture_initial_state",
       "label": "Capture initial state",
       "description": "Preserve the initial observation as a versioned workflow artifact.",
-      "kind": "task",
+      "kind": "operation",
       "implementation": "core.echo",
       "dependsOn": [
         "select_world"
@@ -44,8 +44,8 @@
     {
       "id": "objectify_observation",
       "label": "Objectify observation",
-      "description": "Keep an explicit processing boundary where shared or ARC3-specific objectification tasks can be substituted without changing the top-level workflow.",
-      "kind": "task",
+      "description": "Keep an explicit processing boundary where shared or ARC3-specific objectification operations can be substituted without changing the top-level workflow.",
+      "kind": "operation",
       "implementation": "core.echo",
       "dependsOn": [
         "capture_initial_state"
@@ -78,7 +78,7 @@
       "id": "capture_result",
       "label": "Capture result",
       "description": "Preserve the observation resulting from the action.",
-      "kind": "task",
+      "kind": "operation",
       "implementation": "core.echo",
       "dependsOn": [
         "observe_action"
@@ -93,8 +93,8 @@
     {
       "id": "explain_transition",
       "label": "Explain transition",
-      "description": "Build a persisted before/after transition record that later symbolic or LLM explanation tasks can refine.",
-      "kind": "task",
+      "description": "Build a persisted before/after transition record that later symbolic or LLM explanation operations can refine.",
+      "kind": "operation",
       "implementation": "core.merge",
       "dependsOn": [
         "objectify_observation",

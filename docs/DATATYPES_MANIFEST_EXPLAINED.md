@@ -2,7 +2,7 @@
 
 # Symbolic Datatypes Manifest Explained
 
-The symbolic workflow system does not merely pass files or strings from one task to another. It passes **typed information silos** through a graph of workflow tasks.
+The symbolic workflow system does not merely pass files or strings from one operation to another. It passes **typed information silos** through a graph of workflow operations.
 
 Each silo contains information. That information may be represented as text, an image, a Turtle program, Prolog facts, JSON, a report, or another concrete form. The representation alone is not enough to explain the information. A text value may be a free-form description, a birthdate, a rule explanation, an object identity, or a validation result. Those values may share the same physical representation while having very different meanings.
 
@@ -11,12 +11,12 @@ The datatype manifest therefore separates:
 - **information meaning** from **information representation**;
 - **semantic types** from **physical or syntactic datatypes**;
 - **individual values** from **collections and aggregates**;
-- **task contracts** from the implementations that perform them;
+- **operation contracts** from the implementations that perform them;
 - and **workflow routing** from the data events that activate new branches.
 
 ![Symbolic Workflow Datatype Graph](../config/workflow_datatypes.svg)
 
-The machine-readable form of this graph is stored in [`workflow_datatypes.json`](../config/workflow_datatypes.json). Reusable task contracts and implementation routes are stored in [`workflow_tasks.json`](../config/workflow_tasks.json).
+The machine-readable form of this graph is stored in [`workflow_datatypes.json`](../config/workflow_datatypes.json). Reusable operation contracts and implementation routes are stored in [`workflow_operations.json`](../config/workflow_operations.json).
 
 ---
 
@@ -196,7 +196,7 @@ A silo is more than a variable name. It should describe:
 - its provenance;
 - its validation state;
 - its confidence;
-- and the task and implementation that produced it.
+- and the operation and implementation that produced it.
 
 ### Example silo record
 
@@ -212,7 +212,7 @@ A silo is more than a variable name. It should describe:
   "status": "validated",
   "confidence": 1.0,
   "produced_by": {
-    "task": "normalize_person_record",
+    "operation": "normalize_person_record",
     "implementation": "python:normalize_dates"
   },
   "derived_from": [
@@ -235,7 +235,7 @@ A description silo may use the same physical representation while carrying diffe
   "cardinality": "one",
   "status": "generated",
   "produced_by": {
-    "task": "describe_person",
+    "operation": "describe_person",
     "implementation": "llm:openai-gpt-5.6-light"
   }
 }
@@ -287,7 +287,7 @@ object_bundle:
     cardinality: semantic_bundle
 ```
 
-Cardinality is part of the contract. A task expecting one image should not silently receive an unordered dataset of images.
+Cardinality is part of the contract. A operation expecting one image should not silently receive an unordered dataset of images.
 
 ---
 
@@ -435,12 +435,12 @@ rule
 
 ---
 
-## 7. Workflow tasks consume and produce silos
+## 7. Workflow operations consume and produce silos
 
-A workflow task should not merely declare that it consumes a file or emits text. It should declare typed ports.
+A workflow operation should not merely declare that it consumes a file or emits text. It should declare typed ports.
 
 ```text
-Workflow Task
+Workflow Operation
     consumes one or more typed input silos
     performs one selected implementation
     produces one or more typed output silos
@@ -452,7 +452,7 @@ Workflow Task
 
 ```json
 {
-  "task_id": "turtlized_objects_to_images",
+  "operation_id": "turtlized_objects_to_images",
   "inputs": {
     "objects": {
       "semantic_type": "individual_object",
@@ -476,11 +476,11 @@ Workflow Task
 }
 ```
 
-The image display task can accept several compatible representations:
+The image display operation can accept several compatible representations:
 
 ```json
 {
-  "task_id": "images_displayer",
+  "operation_id": "images_displayer",
   "inputs": {
     "images": {
       "semantic_type": "visual_information",
@@ -502,9 +502,9 @@ The image display task can accept several compatible representations:
 
 ---
 
-## 8. Task types and implementation species
+## 8. Operation types and implementation species
 
-A **task type** is an abstract operation. An **implementation** is one concrete mechanism that performs that operation.
+A **operation type** is an abstract operation. An **implementation** is one concrete mechanism that performs that operation.
 
 The implementation species currently include:
 
@@ -515,7 +515,7 @@ prolog
 hybrid
 ```
 
-A task such as `extract_objects` may be performed by several implementations:
+A operation such as `extract_objects` may be performed by several implementations:
 
 ```text
 llm:openai-gpt-5.6-light
@@ -540,13 +540,13 @@ cropped images
 semantic object bundles
 ```
 
-A synchronization task may then align those representations.
+A synchronization operation may then align those representations.
 
 ---
 
-## 9. Example reusable workflow tasks
+## 9. Example reusable workflow operations
 
-The current task catalog includes reusable task types such as the following.
+The current operation catalog includes reusable operation types such as the following.
 
 ### `grab_image_source`
 
@@ -612,11 +612,11 @@ Uses a deterministic or LLM-based implementation to evaluate whether the generat
 
 ### `publish_workflow_report`
 
-Aggregates task results, slot bindings, provenance, validation, and artifact links into a final workflow report.
+Aggregates operation results, slot bindings, provenance, validation, and artifact links into a final workflow report.
 
 ---
 
-## 10. Workflow item, task, implementation, and slot binding
+## 10. Workflow item, operation, implementation, and slot binding
 
 The complete hierarchy is:
 
@@ -625,13 +625,13 @@ Workflow
     contains Workflow Items
 
 Workflow Item
-    instantiates a Task Type
+    instantiates a Operation Type
     chooses an Implementation
     binds Input Ports to existing Silos
     binds Output Ports to new Silos
     may define conditions and branch behavior
 
-Task Type
+Operation Type
     declares semantic input and output contracts
     lists compatible implementation routes
 
@@ -645,12 +645,12 @@ Silo
     emits lifecycle events
 ```
 
-Example task item:
+Example operation item:
 
 ```json
 {
   "id": "render_objects",
-  "task": "turtlized_objects_to_images",
+  "operation": "turtlized_objects_to_images",
   "implementation": "python:render_turtle_artifacts",
   "inputs": {
     "objects": "recognized_objects"
@@ -684,7 +684,7 @@ output port `rendered_images`
 
 ## 11. Silo lifecycle and workflow branching
 
-Tasks should not always hard-code one next task. Workflow branches can watch for silo events and conditions.
+Operations should not always hard-code one next operation. Workflow branches can watch for silo events and conditions.
 
 Useful events include:
 
@@ -752,9 +752,9 @@ This turns the workflow into an event-driven graph rather than only a fixed sequ
 
 Every generated silo should retain enough information to answer:
 
-- Which task produced it?
+- Which operation produced it?
 - Which implementation species and exact implementation were used?
-- Which model and profile were used for an LLM task?
+- Which model and profile were used for an LLM operation?
 - Which source silos were consumed?
 - Which workflow item initiated the operation?
 - When was it created?
@@ -769,7 +769,7 @@ Example provenance block:
   "produced_by": {
     "workflow": "typed_object_reasoning_example",
     "workflow_item": "extract_before_objects",
-    "task": "extract_objects",
+    "operation": "extract_objects",
     "implementation_species": "llm",
     "implementation": "openai-gpt-5.6-light",
     "transaction": "extract_scene_objects"
@@ -812,7 +812,7 @@ Persistence should not erase semantic meaning. A restored file should be re-asso
 - validation state;
 - and version.
 
-The workflow slot manifest records these bindings so downstream tasks do not need to guess what a path or string means.
+The workflow slot manifest records these bindings so downstream operations do not need to guess what a path or string means.
 
 ---
 
@@ -857,10 +857,10 @@ The full machine-readable relationships are in [`workflow_datatypes.json`](../co
 | **Representation datatype** | Concrete encoding, storage form, or software-level structure. |
 | **Semantic type** | Meaning of the information. |
 | **Silo** | Named, versioned container holding typed information. |
-| **Port** | A task's declared input or output. |
-| **Slot binding** | Connection between a task port and a silo. |
-| **Task type** | Abstract reusable operation. |
-| **Implementation** | LLM, Python, Prolog, or hybrid mechanism performing a task. |
+| **Port** | A operation's declared input or output. |
+| **Slot binding** | Connection between a operation port and a silo. |
+| **Operation type** | Abstract reusable operation. |
+| **Implementation** | LLM, Python, Prolog, or hybrid mechanism performing a operation. |
 | **Implementation species** | Broad execution family such as `llm`, `python`, or `prolog`. |
 | **Semantic subject** | Entity that the information describes. |
 | **Cardinality** | One, optional, list, set, sequence, map, graph, or semantic bundle. |
@@ -878,14 +878,14 @@ The workflow and datatype systems should follow these rules:
 1. **Every value depicts information.**
 2. **Every silo declares semantic meaning and concrete representation.**
 3. **Text is never semantically self-describing.** A description and a birthdate are not interchangeable simply because both are text.
-4. **Task ports declare semantic contracts.**
-5. **Implementations are replaceable when they satisfy the same task contract.**
+4. **Operation ports declare semantic contracts.**
+5. **Implementations are replaceable when they satisfy the same operation contract.**
 6. **Semantic identity survives changes in representation.**
 7. **Collections and aggregates declare their contained types and cardinality.**
 8. **Every generated silo retains provenance.**
 9. **Validation state and confidence belong to the information record.**
 10. **Workflow branches respond to silo events and conditions, not only hard-coded sequence positions.**
-11. **Legacy transaction-only steps may remain as shorthand, but typed task items are the preferred form for complex orchestration.**
+11. **Legacy transaction-only steps may remain as shorthand, but typed operation items are the preferred form for complex orchestration.**
 12. **The simple `g → 4` workflow remains valid; typed workflows are used when decomposition, routing, or verification adds value.**
 
 ---
@@ -897,13 +897,13 @@ Workflow
     contains Workflow Items
 
 Workflow Item
-    instantiates a Task Type
+    instantiates a Operation Type
     selects an Implementation
     binds Input Ports to existing Silos
     binds Output Ports to new Silos
     declares conditions, optionality, and branch behavior
 
-Task Type
+Operation Type
     declares typed input and output ports
     defines semantic expectations
     lists implementation routes
@@ -949,6 +949,6 @@ A single object may exist as:
 - an identity record;
 - and references to learned rules.
 
-Those artifacts belong to separate silos, but they may describe the same semantic subject. Workflow tasks consume typed silos, choose an LLM, Python, Prolog, or hybrid implementation, and produce new silos. The appearance or validation of those new silos can activate later branches in the workflow.
+Those artifacts belong to separate silos, but they may describe the same semantic subject. Workflow operations consume typed silos, choose an LLM, Python, Prolog, or hybrid implementation, and produce new silos. The appearance or validation of those new silos can activate later branches in the workflow.
 
 The system therefore reasons not only about bytes, files, or strings, but about **information with declared meaning, representation, provenance, cardinality, validation state, and workflow role**.

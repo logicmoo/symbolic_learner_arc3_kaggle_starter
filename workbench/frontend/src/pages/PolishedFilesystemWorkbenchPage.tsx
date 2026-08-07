@@ -6,10 +6,10 @@ type Workspace = {
   description: string;
   root: string;
   workflowDirectoryRelative: string;
-  taskDirectoryRelative: string;
+  operationDirectoryRelative: string;
   backendDirectoryRelative?: string;
   workflowFileCount: number;
-  taskFileCount: number;
+  operationFileCount: number;
   backendFileCount?: number;
 };
 
@@ -45,7 +45,7 @@ type RecordFile<T> = {
   error?: string;
 };
 
-type TaskDef = {
+type OperationDef = {
   id: string;
   label?: string;
   description?: string;
@@ -82,7 +82,7 @@ type WorkspaceFile = {
 type Snapshot = {
   workspace: Workspace;
   workflows: RecordFile<Workflow>[];
-  tasks: RecordFile<TaskDef>[];
+  operations: RecordFile<OperationDef>[];
   backends: RecordFile<BackendDef>[];
   files: WorkspaceFile[];
 };
@@ -102,7 +102,7 @@ type Run = {
 };
 
 type Capability = { status: string; detail: string };
-type View = "canvas" | "editor" | "artifacts" | "evidence" | "tasks" | "llms" | "checks" | "setup";
+type View = "canvas" | "editor" | "artifacts" | "evidence" | "operations" | "llms" | "checks" | "setup";
 
 type EngineImplementation = {
   name: string;
@@ -166,9 +166,9 @@ export function PolishedFilesystemWorkbenchPage() {
   const [selectedBackend, setSelectedBackend] = useState<RecordFile<BackendDef> | null>(null);
   const [backendSource, setBackendSource] = useState("");
   const [backendTarget, setBackendTarget] = useState<string | null>(null);
-  const [selectedTask, setSelectedTask] = useState<RecordFile<TaskDef> | null>(null);
-  const [taskSource, setTaskSource] = useState("");
-  const [taskTarget, setTaskTarget] = useState<string | null>(null);
+  const [selectedOperation, setSelectedOperation] = useState<RecordFile<OperationDef> | null>(null);
+  const [operationSource, setOperationSource] = useState("");
+  const [operationTarget, setOperationTarget] = useState<string | null>(null);
   const [humanValues, setHumanValues] = useState("{}");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -224,11 +224,11 @@ export function PolishedFilesystemWorkbenchPage() {
     setBackendTarget(record.source === "workspace" || workspace.id === "shared" ? record.path : null);
   };
 
-  const openTask = (record: RecordFile<TaskDef>) => {
+  const openOperation = (record: RecordFile<OperationDef>) => {
     if (!workspace) return;
-    setSelectedTask(record);
-    setTaskSource(record.document ? JSON.stringify(record.document, null, 2) : "");
-    setTaskTarget(record.source === "workspace" || workspace.id === "shared" ? record.path : null);
+    setSelectedOperation(record);
+    setOperationSource(record.document ? JSON.stringify(record.document, null, 2) : "");
+    setOperationTarget(record.source === "workspace" || workspace.id === "shared" ? record.path : null);
   };
 
   const loadWorkspace = (item: Workspace) => perform(async () => {
@@ -257,9 +257,9 @@ export function PolishedFilesystemWorkbenchPage() {
     const firstBackend = next.backends.find(isLlmBackend) || next.backends[0] || null;
     if (firstBackend) openBackendFor(next.workspace, firstBackend);
     else { setSelectedBackend(null); setBackendSource(""); setBackendTarget(null); }
-    const firstTask = next.tasks[0] || null;
-    if (firstTask) openTaskFor(next.workspace, firstTask);
-    else { setSelectedTask(null); setTaskSource(""); setTaskTarget(null); }
+    const firstOperation = next.operations[0] || null;
+    if (firstOperation) openOperationFor(next.workspace, firstOperation);
+    else { setSelectedOperation(null); setOperationSource(""); setOperationTarget(null); }
     setRun(null);
     setValidation(null);
     setSelectedArtifactId(null);
@@ -271,10 +271,10 @@ export function PolishedFilesystemWorkbenchPage() {
     setBackendTarget(record.source === "workspace" || current.id === "shared" ? record.path : null);
   };
 
-  const openTaskFor = (current: Workspace, record: RecordFile<TaskDef>) => {
-    setSelectedTask(record);
-    setTaskSource(record.document ? JSON.stringify(record.document, null, 2) : "");
-    setTaskTarget(record.source === "workspace" || current.id === "shared" ? record.path : null);
+  const openOperationFor = (current: Workspace, record: RecordFile<OperationDef>) => {
+    setSelectedOperation(record);
+    setOperationSource(record.document ? JSON.stringify(record.document, null, 2) : "");
+    setOperationTarget(record.source === "workspace" || current.id === "shared" ? record.path : null);
   };
 
   const openWorkflow = (path: string) => perform(async () => {
@@ -365,24 +365,24 @@ export function PolishedFilesystemWorkbenchPage() {
     setBackendTarget(`backends/${slug(document.id)}.json`);
   };
 
-  const saveTask = () => perform(async () => {
+  const saveOperation = () => perform(async () => {
     if (!workspace) throw new Error("Select a workspace");
-    const document = JSON.parse(taskSource) as TaskDef;
-    const path = taskTarget || `tasks/${slug(document.id)}.json`;
+    const document = JSON.parse(operationSource) as OperationDef;
+    const path = operationTarget || `operations/${slug(document.id)}.json`;
     await request(`/api/workspaces/${encodeURIComponent(workspace.id)}/file`, {
       method: "PUT",
       body: JSON.stringify({path, content: JSON.stringify(document, null, 2)}),
     });
     const next = await refreshSnapshot();
-    const saved = next?.tasks.find(row => row.path === path && (workspace.id === "shared" || row.source === "workspace"));
-    if (saved) openTask(saved);
+    const saved = next?.operations.find(row => row.path === path && (workspace.id === "shared" || row.source === "workspace"));
+    if (saved) openOperation(saved);
   });
 
-  const makeWorkspaceTask = () => {
-    if (!workspace || workspace.id === "shared" || !selectedTask?.document) return;
-    const document = {...selectedTask.document};
-    setTaskSource(JSON.stringify(document, null, 2));
-    setTaskTarget(`tasks/${slug(document.id)}.json`);
+  const makeWorkspaceOperation = () => {
+    if (!workspace || workspace.id === "shared" || !selectedOperation?.document) return;
+    const document = {...selectedOperation.document};
+    setOperationSource(JSON.stringify(document, null, 2));
+    setOperationTarget(`operations/${slug(document.id)}.json`);
   };
 
   if (!workspace) {
@@ -397,7 +397,7 @@ export function PolishedFilesystemWorkbenchPage() {
             <span className="workspace-kind">{item.id === "shared" ? "SHARED LIBRARY" : "FILESYSTEM WORKSPACE"}</span>
             <h2>{item.label}</h2>
             <p>{item.description || "Filesystem workspace"}</p>
-            <strong>{item.workflowFileCount} workflows · {item.taskFileCount || 0} tasks · {item.backendFileCount || 0} backends</strong>
+            <strong>{item.workflowFileCount} workflows · {item.operationFileCount || 0} operations · {item.backendFileCount || 0} backends</strong>
             <small>{item.root}</small>
           </button>)}
         </div>
@@ -411,7 +411,7 @@ export function PolishedFilesystemWorkbenchPage() {
     ["canvas", "⌘", "Flow"],
     ["editor", "▱", "Studio"],
     ["artifacts", "◇", "Data"],
-    ["tasks", "▦", "Tasks"],
+    ["operations", "▦", "Operations"],
     ["llms", "✦", "LLMs"],
     ["checks", "✓", "Checks"],
     ["setup", "⚙", "Setup"],
@@ -439,7 +439,7 @@ export function PolishedFilesystemWorkbenchPage() {
             const status = run?.steps.find(step => step.stepId === item.id)?.status || "defined";
             const active = selectedStepId === item.id;
             return <button key={item.id} className={`stage-button ${active ? "active" : ""} ${status === "completed" ? "done" : ""}`} onClick={() => {setSelectedStepId(item.id); setView("canvas");}}>
-              <span className="stage-number">{index + 1}</span><span className="stage-line"/><span className={`stage-icon ${item.kind === "human" ? "amber" : index % 3 === 1 ? "violet" : "cyan"}`}>{status === "completed" ? "✓" : index + 1}</span><div><small>{item.kind || "TASK"}</small><b>{item.label || item.id}</b></div>{item.kind === "subworkflow" && <span className="nested-badge">↳</span>}
+              <span className="stage-number">{index + 1}</span><span className="stage-line"/><span className={`stage-icon ${item.kind === "human" ? "amber" : index % 3 === 1 ? "violet" : "cyan"}`}>{status === "completed" ? "✓" : index + 1}</span><div><small>{item.kind || "OPERATION"}</small><b>{item.label || item.id}</b></div>{item.kind === "subworkflow" && <span className="nested-badge">↳</span>}
             </button>;
           })}
           {!workflow && <div className="studio-empty">No workflow file in this workspace.</div>}
@@ -452,7 +452,7 @@ export function PolishedFilesystemWorkbenchPage() {
 
         {view === "canvas" && <section className="canvas-view">
           <div className="canvas-heading"><div><span>STAGE {currentStepNumber} OF {workflow?.steps.length || 0}</span><h1>{selectedStep?.label || selectedStep?.id || "Select a workflow step"}</h1><p>{selectedStep?.description || selectedStep?.implementation || selectedStep?.operation || "This view is populated from the selected filesystem workflow."}</p></div><div className={`stage-state ${selectedRuntime?.status || "active"}`}>{(selectedRuntime?.status || "defined").toUpperCase()}</div></div>
-          {selectedStep ? <div className="stage-story"><div className="subworkflow-head"><span>{selectedStep.kind === "human" ? "HUMAN" : "STEP"}</span><b>{selectedStep.implementation || selectedStep.operation || selectedStep.kind || "task"}</b><small>{selectedStep.dependsOn?.length ? `depends on ${selectedStep.dependsOn.join(", ")}` : "no explicit dependencies"}</small></div><div className="detail-note"><b>Inputs</b><span><code>{JSON.stringify(selectedStep.inputs || {})}</code></span></div><div className="detail-note"><b>Outputs</b><span><code>{JSON.stringify(selectedStep.outputs || {})}</code></span></div>{selectedRuntime?.status === "waiting" && <div className="human-pause"><div className="pause-ring">Ⅱ</div><b>Waiting for human input</b><span>This is a real engine wait state. Submit the values required by the step form.</span><textarea className="raw-json-editor" style={{height:120}} value={humanValues} onChange={event => setHumanValues(event.target.value)}/><button className="run-button" onClick={submitHuman}>Submit input</button></div>}</div> : <div className="stage-story"><div className="studio-empty">Choose a workflow or use the LLMs, Tasks, Checks, and Setup pages.</div></div>}
+          {selectedStep ? <div className="stage-story"><div className="subworkflow-head"><span>{selectedStep.kind === "human" ? "HUMAN" : "STEP"}</span><b>{selectedStep.implementation || selectedStep.operation || selectedStep.kind || "operation"}</b><small>{selectedStep.dependsOn?.length ? `depends on ${selectedStep.dependsOn.join(", ")}` : "no explicit dependencies"}</small></div><div className="detail-note"><b>Inputs</b><span><code>{JSON.stringify(selectedStep.inputs || {})}</code></span></div><div className="detail-note"><b>Outputs</b><span><code>{JSON.stringify(selectedStep.outputs || {})}</code></span></div>{selectedRuntime?.status === "waiting" && <div className="human-pause"><div className="pause-ring">Ⅱ</div><b>Waiting for human input</b><span>This is a real engine wait state. Submit the values required by the step form.</span><textarea className="raw-json-editor" style={{height:120}} value={humanValues} onChange={event => setHumanValues(event.target.value)}/><button className="run-button" onClick={submitHuman}>Submit input</button></div>}</div> : <div className="stage-story"><div className="studio-empty">Choose a workflow or use the LLMs, Operations, Checks, and Setup pages.</div></div>}
           {run && <div className="event-console"><div><span>LIVE RUN EVENT</span><small>{run.status}</small></div>{run.events.slice(-4).reverse().map(event => <p key={event.id}><time>{event.createdAt.slice(11, 19)}</time><i/><span>{event.kind}{event.stepId ? ` · ${event.stepId}` : ""}</span></p>)}</div>}
         </section>}
 
@@ -462,7 +462,7 @@ export function PolishedFilesystemWorkbenchPage() {
 
         {view === "evidence" && <section className="evidence-view"><div className="evidence-summary"><span>RUN EVIDENCE</span><strong>{run?.events.length || 0}<small> events</small></strong><p>Every entry below comes from the persisted workflow-engine run rather than a UI sample.</p><div className="metric-row"><div><span>logs</span><b>{run?.logs.length || 0}</b></div><div><span>artifacts</span><b>{run?.artifacts.length || 0}</b></div></div></div><div className="lineage"><h2>Provenance timeline</h2>{run?.events.map((event, index) => <div className="lineage-node" key={event.id}><span>{index + 1}</span><b>{event.kind}</b><small>{event.stepId || "workflow"} · {event.createdAt}</small></div>) || <p>Run a workflow to generate evidence.</p>}{run?.logs.map(log => <pre className="mini-code" key={log.id}>{log.stream}: {log.message}</pre>)}</div></section>}
 
-        {view === "tasks" && <section className="resource-view"><div className="resource-heading"><div><span>PROCESSING RESOURCES</span><h1>Task library</h1><p>Workspace tasks plus inherited shared tasks, all loaded from disk.</p></div>{selectedTask?.source === "shared" && workspace.id !== "shared" ? <button onClick={makeWorkspaceTask}>Make workspace copy</button> : null}</div><div className="resource-table"><div className="resource-row resource-head"><span>Task</span><span>Implementation</span><span>Source</span><span>Ports</span><span>State</span></div>{snapshot?.tasks.map(row => <button className="resource-row" key={`${row.workspaceId}:${row.path}`} onClick={() => openTask(row)}><b>{row.document?.label || row.document?.id || row.path}</b><code>{row.document?.implementation || "—"}</code><span>{row.source}</span><span>{Object.keys(row.document?.inputs || {}).join(", ") || "∅"} → {Object.keys(row.document?.outputs || {}).join(", ") || "∅"}</span><em>{row.error ? "error" : "ready"}</em></button>)}</div>{selectedTask && <div className="prompt-preview"><div><span>TASK DEFINITION</span><b>{selectedTask.document?.id}</b><small>{selectedTask.path}</small><div className="studio-actions">{selectedTask.source === "shared" && workspace.id !== "shared" && <button onClick={makeWorkspaceTask}>Copy local</button>}<button className="primary" onClick={saveTask}>Save</button></div></div><textarea className="raw-json-editor" style={{height:260,margin:0,border:0}} value={taskSource} onChange={event => setTaskSource(event.target.value)}/></div>}</section>}
+        {view === "operations" && <section className="resource-view"><div className="resource-heading"><div><span>PROCESSING RESOURCES</span><h1>Operation library</h1><p>Workspace operations plus inherited shared operations, all loaded from disk.</p></div>{selectedOperation?.source === "shared" && workspace.id !== "shared" ? <button onClick={makeWorkspaceOperation}>Make workspace copy</button> : null}</div><div className="resource-table"><div className="resource-row resource-head"><span>Operation</span><span>Implementation</span><span>Source</span><span>Ports</span><span>State</span></div>{snapshot?.operations.map(row => <button className="resource-row" key={`${row.workspaceId}:${row.path}`} onClick={() => openOperation(row)}><b>{row.document?.label || row.document?.id || row.path}</b><code>{row.document?.implementation || "—"}</code><span>{row.source}</span><span>{Object.keys(row.document?.inputs || {}).join(", ") || "∅"} → {Object.keys(row.document?.outputs || {}).join(", ") || "∅"}</span><em>{row.error ? "error" : "ready"}</em></button>)}</div>{selectedOperation && <div className="prompt-preview"><div><span>OPERATION DEFINITION</span><b>{selectedOperation.document?.id}</b><small>{selectedOperation.path}</small><div className="studio-actions">{selectedOperation.source === "shared" && workspace.id !== "shared" && <button onClick={makeWorkspaceOperation}>Copy local</button>}<button className="primary" onClick={saveOperation}>Save</button></div></div><textarea className="raw-json-editor" style={{height:260,margin:0,border:0}} value={operationSource} onChange={event => setOperationSource(event.target.value)}/></div>}</section>}
 
         {view === "llms" && <section className="resource-view"><div className="resource-heading"><div><span>MODEL BACKENDS</span><h1>Language models</h1><p>Every workspace inherits the shared LLM backends and may override them locally.</p></div>{selectedBackend?.source === "shared" && workspace.id !== "shared" ? <button onClick={makeWorkspaceBackend}>Make workspace-specific</button> : null}</div><div className="model-grid">{llmBackends.map(row => {const item = row.document; const selected = selectedBackend?.path === row.path && selectedBackend?.workspaceId === row.workspaceId; return <button className={`model-card ${selected ? "selected" : ""}`} key={`${row.workspaceId}:${row.path}`} onClick={() => openBackend(row)}><span>{row.source === "shared" ? "SHARED BACKEND" : "WORKSPACE BACKEND"}</span><b>{item?.label || item?.id || row.path}</b><small>{item?.provider || "backend"}</small><p>{item?.description || "Filesystem backend definition"}</p><em>{backendModel(item)} · {item?.enabled === false ? "disabled" : "available"}</em></button>;})}</div>{selectedBackend?.document ? <div className="prompt-preview"><div><span>ACTIVE BACKEND</span><b>{selectedBackend.document.label || selectedBackend.document.id}</b><small>{selectedBackend.source} · {selectedBackend.path}</small><span>MODEL</span><b>{backendModel(selectedBackend.document)}</b><span>ENDPOINT / EXECUTABLE</span><small>{backendEndpoint(selectedBackend.document)}</small><span>CAPABILITIES</span><small>{(selectedBackend.document.capabilities || []).join(", ") || "not declared"}</small><div className="studio-actions">{selectedBackend.source === "shared" && workspace.id !== "shared" && <button onClick={makeWorkspaceBackend}>Copy local</button>}<button className="primary" onClick={saveBackend}>Save backend</button></div></div><textarea className="raw-json-editor" style={{height:330,margin:0,border:0}} value={backendSource} onChange={event => setBackendSource(event.target.value)}/></div> : <div className="demo-notice"><b>No LLM backend definitions found</b><span>Add a backend JSON file to shared/backends or this workspace's backends directory. The page itself is always available.</span></div>}</section>}
 
@@ -473,7 +473,7 @@ export function PolishedFilesystemWorkbenchPage() {
 
       <aside className="inspector">
         <div className="inspector-head"><span>LIVE INSPECTOR</span><div><span className="live-dot"/> real data</div></div>
-        {view === "llms" && selectedBackend?.document ? <><div className="inspect-section"><div className="section-title"><span>LLM BACKEND</span><b>{selectedBackend.document.provider}</b></div><pre className="mini-code">{JSON.stringify(selectedBackend.document.configuration || selectedBackend.document.settings || {}, null, 2)}</pre></div><div className="provenance-foot"><span>FILESYSTEM SOURCE</span><code>{selectedBackend.path}</code><span className="verified">✓ loaded from {selectedBackend.source}</span></div></> : selectedStep ? <><div className="inspect-section"><div className="section-title"><span>STEP</span><b>{selectedRuntime?.status || "defined"}</b></div><div className="object-list"><button className="selected"><i style={{background:"var(--cyan)"}}/><span><b>{selectedStep.label || selectedStep.id}</b><small>{selectedStep.implementation || selectedStep.kind || "task"}</small></span><em>{selectedRuntime?.attempt || 0}</em></button></div></div><div className="inspect-section"><div className="section-title"><span>INPUTS / OUTPUTS</span></div><pre className="mini-code">{JSON.stringify({inputs:selectedStep.inputs || {}, outputs:selectedStep.outputs || {}}, null, 2)}</pre></div><div className="provenance-foot"><span>WORKFLOW FILE</span><code>{workflowPath || "—"}</code><span className="verified">✓ filesystem backed</span></div></> : <div className="inspect-section"><div className="section-title"><span>WORKSPACE</span></div><pre className="mini-code">{JSON.stringify({id:workspace.id,root:workspace.root,files:snapshot?.files.length || 0}, null, 2)}</pre></div>}
+        {view === "llms" && selectedBackend?.document ? <><div className="inspect-section"><div className="section-title"><span>LLM BACKEND</span><b>{selectedBackend.document.provider}</b></div><pre className="mini-code">{JSON.stringify(selectedBackend.document.configuration || selectedBackend.document.settings || {}, null, 2)}</pre></div><div className="provenance-foot"><span>FILESYSTEM SOURCE</span><code>{selectedBackend.path}</code><span className="verified">✓ loaded from {selectedBackend.source}</span></div></> : selectedStep ? <><div className="inspect-section"><div className="section-title"><span>STEP</span><b>{selectedRuntime?.status || "defined"}</b></div><div className="object-list"><button className="selected"><i style={{background:"var(--cyan)"}}/><span><b>{selectedStep.label || selectedStep.id}</b><small>{selectedStep.implementation || selectedStep.kind || "operation"}</small></span><em>{selectedRuntime?.attempt || 0}</em></button></div></div><div className="inspect-section"><div className="section-title"><span>INPUTS / OUTPUTS</span></div><pre className="mini-code">{JSON.stringify({inputs:selectedStep.inputs || {}, outputs:selectedStep.outputs || {}}, null, 2)}</pre></div><div className="provenance-foot"><span>WORKFLOW FILE</span><code>{workflowPath || "—"}</code><span className="verified">✓ filesystem backed</span></div></> : <div className="inspect-section"><div className="section-title"><span>WORKSPACE</span></div><pre className="mini-code">{JSON.stringify({id:workspace.id,root:workspace.root,files:snapshot?.files.length || 0}, null, 2)}</pre></div>}
       </aside>
     </section>
 

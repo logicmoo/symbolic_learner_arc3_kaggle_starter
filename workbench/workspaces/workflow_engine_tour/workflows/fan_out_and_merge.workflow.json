@@ -10,7 +10,7 @@
   "steps": [
     {
       "id": "map_items",
-      "kind": "task",
+      "kind": "operation",
       "implementation": "core.echo",
       "inputs": {
         "value": "$item"
@@ -26,7 +26,7 @@
     },
     {
       "id": "collect_values",
-      "kind": "task",
+      "kind": "operation",
       "implementation": "core.collect",
       "dependsOn": [
         "map_items"

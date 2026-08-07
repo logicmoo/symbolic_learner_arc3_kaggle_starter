@@ -11,7 +11,7 @@ type Stage = {
   accent: string;
 };
 
-type View = "canvas" | "editor" | "artifacts" | "evidence" | "tasks" | "llms" | "checks" | "setup";
+type View = "canvas" | "editor" | "artifacts" | "evidence" | "operations" | "llms" | "checks" | "setup";
 
 type RunEvent = {
   id: number;
@@ -35,7 +35,7 @@ type RunArtifact = {
   createdAt: string;
 };
 
-type WorkbenchTaskEvent = {
+type WorkbenchOperationEvent = {
   id: number;
   step: number;
   kind: string;
@@ -44,16 +44,16 @@ type WorkbenchTaskEvent = {
   createdAt: string;
 };
 
-type WorkbenchTask = {
+type WorkbenchOperation = {
   id: string;
-  parentTaskId: string | null;
+  parentOperationId: string | null;
   kind: "workflow_design" | "workflow_execution";
   workflowId: string;
   status: "running" | "waiting" | "paused" | "completed" | "failed";
   currentStep: number;
   totalSteps: number;
   summary: string;
-  events: WorkbenchTaskEvent[];
+  events: WorkbenchOperationEvent[];
 };
 
 type RunSnapshot = {
@@ -69,12 +69,12 @@ type RunSnapshot = {
   artifacts: RunArtifact[];
   events: RunEvent[];
   cursor: number;
-  task: WorkbenchTask;
+  operation: WorkbenchOperation;
 };
 
 type WorkflowStep = {
   id: string;
-  kind: "task" | "subworkflow" | "transaction";
+  kind: "operation" | "subworkflow" | "transaction";
   operation: string;
   implementation: string;
   inputs: Record<string, string>;
@@ -95,7 +95,7 @@ type WorkflowDocument = {
 
 type Catalog = {
   workflows: WorkflowDocument[];
-  tasks: { id: string; ports: string; routes: string }[];
+  operations: { id: string; ports: string; routes: string }[];
   datatypes: { id: string; kind: string; meaning: string; relations: string }[];
 };
 
@@ -146,13 +146,13 @@ const gridCells = [
 
 const colors: Record<number, string> = { 0: "#101923", 1: "#334352", 3: "#f25588", 5: "#28d7c0", 7: "#f6c453", 8: "#8a72f8", 9: "#54a8ff" };
 
-const taskCatalog = [
-  { task: "capture_observation", implementation: "arc3.capture", runtime: "Python", ports: "world → observation", state: "ready" },
-  { task: "extract_entities", implementation: "vision.segment", runtime: "Python", ports: "observation → entity_set", state: "ready" },
-  { task: "assign_identities", implementation: "symbolic.identity", runtime: "Prolog", ports: "entity_set → identity_map", state: "ready" },
-  { task: "derive_properties", implementation: "prolog.properties", runtime: "SWI-Prolog", ports: "identities → fact_set", state: "ready" },
-  { task: "generate_turtle", implementation: "llm.turtle", runtime: "LLM", ports: "entities + facts → programs", state: "ready" },
-  { task: "compare_reconstruction", implementation: "vision.diff", runtime: "Python", ports: "source + render → evidence", state: "ready" },
+const operationCatalog = [
+  { operation: "capture_observation", implementation: "arc3.capture", runtime: "Python", ports: "world → observation", state: "ready" },
+  { operation: "extract_entities", implementation: "vision.segment", runtime: "Python", ports: "observation → entity_set", state: "ready" },
+  { operation: "assign_identities", implementation: "symbolic.identity", runtime: "Prolog", ports: "entity_set → identity_map", state: "ready" },
+  { operation: "derive_properties", implementation: "prolog.properties", runtime: "SWI-Prolog", ports: "identities → fact_set", state: "ready" },
+  { operation: "generate_turtle", implementation: "llm.turtle", runtime: "LLM", ports: "entities + facts → programs", state: "ready" },
+  { operation: "compare_reconstruction", implementation: "vision.diff", runtime: "Python", ports: "source + render → evidence", state: "ready" },
 ];
 
 const validationChecks = [
@@ -187,32 +187,32 @@ function StageInspector({ stage, chosenAction, onAction, onRepeat, onConclude }:
 
   return (
     <div className="subworkflow">
-      <div className="subworkflow-head"><span>SUBWORKFLOW</span><b>objectify_observation</b><small>7 tasks · typed ports · isolated slots</small></div>
+      <div className="subworkflow-head"><span>SUBWORKFLOW</span><b>objectify_observation</b><small>7 operations · typed ports · isolated slots</small></div>
       {substeps.map((s, i) => <Tooltip key={s[0]} text={`${s[2]} reads its declared input silo and appends a new versioned result. Clickable in the implementation workbench.`}><div className={`substep ${i < 5 ? "complete" : i === 5 ? "running" : "queued"}`}><span className="sub-index">{s[0]}</span><span className="sub-dot"/><div><b>{s[1]}</b><small>{s[2]}</small></div><em>{s[3]}</em></div></Tooltip>)}
     </div>
   );
 }
 
-function TaskSpline({ tasks }: { tasks: WorkbenchTask[] }) {
-  const [selected, setSelected] = useState<{ task: WorkbenchTask; event: WorkbenchTaskEvent; previous?: WorkbenchTaskEvent } | null>(null);
+function OperationSpline({ operations }: { operations: WorkbenchOperation[] }) {
+  const [selected, setSelected] = useState<{ operation: WorkbenchOperation; event: WorkbenchOperationEvent; previous?: WorkbenchOperationEvent } | null>(null);
   const [mode, setMode] = useState<"topology" | "chronology">("topology");
-  if (!tasks.length) return null;
-  return <section className="task-spline-panel" aria-label="Workbench task progress">
-    <div className="spline-heading"><div><span>WORKBENCH TASK SPLINE</span><b>{mode === "topology" ? "Semantic steps · arcs show circle-backs" : "Ordered events · left-to-right audit trail"}</b></div><div className="spline-mode" role="group" aria-label="Spline layout"><button className={mode === "topology" ? "active" : ""} onClick={() => setMode("topology")}>Topology</button><button className={mode === "chronology" ? "active" : ""} onClick={() => setMode("chronology")}>Chronology</button></div><small>{tasks.length > 1 ? "design → execution handoff" : tasks[0].kind.replace("_", " ")}</small></div>
-    {tasks.map((task, taskIndex) => {
-      const points = task.events.length ? task.events : [{ id: 0, step: 0, kind: "task.pending", message: task.summary, payload: {}, createdAt: "" }];
+  if (!operations.length) return null;
+  return <section className="operation-spline-panel" aria-label="Workbench operation progress">
+    <div className="spline-heading"><div><span>WORKBENCH OPERATION SPLINE</span><b>{mode === "topology" ? "Semantic steps · arcs show circle-backs" : "Ordered events · left-to-right audit trail"}</b></div><div className="spline-mode" role="group" aria-label="Spline layout"><button className={mode === "topology" ? "active" : ""} onClick={() => setMode("topology")}>Topology</button><button className={mode === "chronology" ? "active" : ""} onClick={() => setMode("chronology")}>Chronology</button></div><small>{operations.length > 1 ? "design → execution handoff" : operations[0].kind.replace("_", " ")}</small></div>
+    {operations.map((operation, operationIndex) => {
+      const points = operation.events.length ? operation.events : [{ id: 0, step: 0, kind: "operation.pending", message: operation.summary, payload: {}, createdAt: "" }];
       const positions = points.map((event, index) => ({
         x: mode === "topology"
-          ? 20 + Math.max(0, Math.min(task.totalSteps, event.step)) / task.totalSteps * 960 + ((index % 3) - 1) * 4
+          ? 20 + Math.max(0, Math.min(operation.totalSteps, event.step)) / operation.totalSteps * 960 + ((index % 3) - 1) * 4
           : 20 + (points.length === 1 ? .5 : index / (points.length - 1)) * 960,
         y: 46 + Math.sin(index * 1.37) * 20,
       }));
-      return <div className="spline-row" key={task.id}>
-        <div className="spline-label"><span>{taskIndex + 1}</span><div><b>{task.kind === "workflow_design" ? "Design workflow" : "Run workflow"}</b><small>{task.currentStep} / {task.totalSteps} · {task.status}</small></div></div>
+      return <div className="spline-row" key={operation.id}>
+        <div className="spline-label"><span>{operationIndex + 1}</span><div><b>{operation.kind === "workflow_design" ? "Design workflow" : "Run workflow"}</b><small>{operation.currentStep} / {operation.totalSteps} · {operation.status}</small></div></div>
         <div className="spline-track">
           <svg viewBox="0 0 1000 94" preserveAspectRatio="none">
             <path className="spline-base" d="M20 48 C210 18 330 74 500 46 S790 20 980 48"/>
-            <path className={`spline-progress ${task.status}`} style={{ strokeDasharray: `${Math.max(4, task.currentStep / task.totalSteps * 100)} 100` }} pathLength="100" d="M20 48 C210 18 330 74 500 46 S790 20 980 48"/>
+            <path className={`spline-progress ${operation.status}`} style={{ strokeDasharray: `${Math.max(4, operation.currentStep / operation.totalSteps * 100)} 100` }} pathLength="100" d="M20 48 C210 18 330 74 500 46 S790 20 980 48"/>
             {positions.slice(1).map((position, index) => {
               const previousPosition = positions[index];
               const from = points[index];
@@ -228,16 +228,16 @@ function TaskSpline({ tasks }: { tasks: WorkbenchTask[] }) {
             const left = positions[index].x / 10;
             const top = positions[index].y / .94;
             const last = index === points.length - 1;
-            const state = !last || task.status === "completed" ? "done" : task.status;
+            const state = !last || operation.status === "completed" ? "done" : operation.status;
             const previous = index ? points[index - 1] : undefined;
             const loopsBack = Boolean(mode === "topology" && previous && event.step < previous.step);
             const tip = `${loopsBack ? `↩ circle back from step ${previous?.step}: ` : ""}${event.kind} — ${event.message}`;
-            return <button key={event.id} className={`spline-node tip ${state} ${loopsBack ? "loop-target" : ""} ${selected?.event.id === event.id ? "selected" : ""}`} style={{ left: `${left}%`, top: `${top}%` }} onClick={() => setSelected({ task, event, previous })} aria-label={`Inspect ${event.kind}`}><i/><span className="node-step">{loopsBack ? "↩" : event.step}</span><span className="tip-copy">{tip}</span></button>;
+            return <button key={event.id} className={`spline-node tip ${state} ${loopsBack ? "loop-target" : ""} ${selected?.event.id === event.id ? "selected" : ""}`} style={{ left: `${left}%`, top: `${top}%` }} onClick={() => setSelected({ operation, event, previous })} aria-label={`Inspect ${event.kind}`}><i/><span className="node-step">{loopsBack ? "↩" : event.step}</span><span className="tip-copy">{tip}</span></button>;
           })}
         </div>
       </div>;
     })}
-    {selected && <div className="spline-inspection"><div><span>PINNED TASK EVENT</span><b>{selected.event.kind}</b></div><p>{selected.event.message}</p><dl><div><dt>View</dt><dd>{mode}</dd></div><div><dt>Task</dt><dd>{selected.task.kind.replace("_", " ")}</dd></div><div><dt>Step</dt><dd>{selected.previous && selected.event.step < selected.previous.step ? `${selected.previous.step} ↩ ${selected.event.step} circle-back` : selected.event.step}</dd></div><div><dt>Time</dt><dd>{selected.event.createdAt || "pending"}</dd></div><div><dt>Payload</dt><dd>{Object.keys(selected.event.payload).length ? JSON.stringify(selected.event.payload) : "—"}</dd></div></dl><button onClick={() => setSelected(null)}>×</button></div>}
+    {selected && <div className="spline-inspection"><div><span>PINNED OPERATION EVENT</span><b>{selected.event.kind}</b></div><p>{selected.event.message}</p><dl><div><dt>View</dt><dd>{mode}</dd></div><div><dt>Operation</dt><dd>{selected.operation.kind.replace("_", " ")}</dd></div><div><dt>Step</dt><dd>{selected.previous && selected.event.step < selected.previous.step ? `${selected.previous.step} ↩ ${selected.event.step} circle-back` : selected.event.step}</dd></div><div><dt>Time</dt><dd>{selected.event.createdAt || "pending"}</dd></div><div><dt>Payload</dt><dd>{Object.keys(selected.event.payload).length ? JSON.stringify(selected.event.payload) : "—"}</dd></div></dl><button onClick={() => setSelected(null)}>×</button></div>}
   </section>;
 }
 
@@ -268,15 +268,15 @@ function WorkflowStudio({
   selectedStep: number | null;
   rawMode: boolean;
   rawText: string;
-  tab: "workflows" | "tasks" | "datatypes";
-  onTab: (tab: "workflows" | "tasks" | "datatypes") => void;
+  tab: "workflows" | "operations" | "datatypes";
+  onTab: (tab: "workflows" | "operations" | "datatypes") => void;
   onSelectWorkflow: (workflow: WorkflowDocument) => void;
   onDraft: (workflow: WorkflowDocument) => void;
   onSelectStep: (index: number | null) => void;
   onUpdateStep: (index: number, patch: Partial<WorkflowStep>) => void;
   onMoveStep: (index: number, delta: number) => void;
   onDeleteStep: (index: number) => void;
-  onAddStep: (kind: "task" | "subworkflow") => void;
+  onAddStep: (kind: "operation" | "subworkflow") => void;
   onOperation: (operation: "new" | "example" | "delete") => void;
   onSave: (runAfter?: boolean) => void;
   onRawMode: (raw: boolean) => void;
@@ -299,7 +299,7 @@ function WorkflowStudio({
       <div><span>WORKFLOW DESKTOP</span><h1>Compose typed workflows</h1><p>Feature-equivalent to the Python Tk editor, backed by shared persistent workflow documents.</p></div>
       <div className="studio-tabs">
         <button className={tab === "workflows" ? "active" : ""} onClick={() => onTab("workflows")}>Workflows</button>
-        <button className={tab === "tasks" ? "active" : ""} onClick={() => onTab("tasks")}>Tasks / implementations</button>
+        <button className={tab === "operations" ? "active" : ""} onClick={() => onTab("operations")}>Operations / implementations</button>
         <button className={tab === "datatypes" ? "active" : ""} onClick={() => onTab("datatypes")}>Datatype manifest</button>
       </div>
     </div>
@@ -320,17 +320,17 @@ function WorkflowStudio({
           </div>
 
           {rawMode ? <textarea className="raw-json-editor" value={rawText} onChange={(event) => onRawText(event.target.value)} spellCheck={false}/> : <>
-            <div className="ordered-head"><span>ORDERED ITEMS</span><div><button onClick={() => onAddStep("task")}>＋ Add task</button><button onClick={() => onAddStep("subworkflow")}>＋ Add subworkflow</button></div></div>
+            <div className="ordered-head"><span>ORDERED ITEMS</span><div><button onClick={() => onAddStep("operation")}>＋ Add operation</button><button onClick={() => onAddStep("subworkflow")}>＋ Add subworkflow</button></div></div>
             <div className="step-table">
-              <div className="step-row step-head"><span>#</span><span>Item ID</span><span>Type</span><span>Task / subworkflow</span><span>Implementation</span><span>Input slots</span><span>Output slots</span><span>Optional</span></div>
+              <div className="step-row step-head"><span>#</span><span>Item ID</span><span>Type</span><span>Operation / subworkflow</span><span>Implementation</span><span>Input slots</span><span>Output slots</span><span>Optional</span></div>
               {draft.steps.map((item, index) => <button key={`${item.id}-${index}`} className={`step-row ${selectedStep === index ? "selected" : ""}`} onClick={() => onSelectStep(index)}><span>{index + 1}</span><b>{item.id}</b><span>{item.kind}</span><code>{item.operation}</code><span>{item.implementation}</span><small>{Object.keys(item.inputs).length} bound</small><small>{Object.keys(item.outputs).length} bound</small><em>{item.continueOnError ? "yes" : ""}</em></button>)}
             </div>
             <div className="step-actions"><button disabled={selectedStep === null} onClick={() => selectedStep !== null && onMoveStep(selectedStep, -1)}>↑ Move up</button><button disabled={selectedStep === null} onClick={() => selectedStep !== null && onMoveStep(selectedStep, 1)}>↓ Move down</button><button disabled={selectedStep === null} onClick={() => selectedStep !== null && onDeleteStep(selectedStep)}>Delete item</button></div>
 
             {step && selectedStep !== null && <div className="step-editor">
-              <div className="step-editor-title"><span>EDIT ITEM {selectedStep + 1}</span><b>{step.kind === "subworkflow" ? "Nested workflow bindings" : "Typed task route"}</b></div>
+              <div className="step-editor-title"><span>EDIT ITEM {selectedStep + 1}</span><b>{step.kind === "subworkflow" ? "Nested workflow bindings" : "Typed operation route"}</b></div>
               <label><span>Item ID</span><input value={step.id} onChange={(event) => onUpdateStep(selectedStep, { id: event.target.value })}/></label>
-              <label><span>{step.kind === "subworkflow" ? "Subworkflow" : "Task"}</span><select value={step.operation} onChange={(event) => onUpdateStep(selectedStep, { operation: event.target.value })}>{step.kind === "subworkflow" ? catalog?.workflows.filter((workflow) => workflow.id !== draft.id).map((workflow) => <option key={workflow.id}>{workflow.id}</option>) : catalog?.tasks.map((task) => <option key={task.id}>{task.id}</option>)}</select></label>
+              <label><span>{step.kind === "subworkflow" ? "Subworkflow" : "Operation"}</span><select value={step.operation} onChange={(event) => onUpdateStep(selectedStep, { operation: event.target.value })}>{step.kind === "subworkflow" ? catalog?.workflows.filter((workflow) => workflow.id !== draft.id).map((workflow) => <option key={workflow.id}>{workflow.id}</option>) : catalog?.operations.map((operation) => <option key={operation.id}>{operation.id}</option>)}</select></label>
               <label><span>Implementation</span><input value={step.implementation} onChange={(event) => onUpdateStep(selectedStep, { implementation: event.target.value })}/></label>
               <label><span>Profile</span><input value={step.profile ?? ""} placeholder="optional model route" onChange={(event) => onUpdateStep(selectedStep, { profile: event.target.value || undefined })}/></label>
               <label><span>Model</span><input value={step.model ?? ""} placeholder="$selected" onChange={(event) => onUpdateStep(selectedStep, { model: event.target.value || undefined })}/></label>
@@ -347,8 +347,8 @@ function WorkflowStudio({
       </section>
     </div>}
 
-    {tab === "tasks" && <div className="studio-catalog"><div className="catalog-row catalog-head"><span>Task</span><span>Typed ports</span><span>Implementation species / routes</span></div>{catalog?.tasks.map((task) => <div className="catalog-row" key={task.id}><b>{task.id}</b><span>{task.ports}</span><code>{task.routes}</code></div>)}</div>}
-    {tab === "datatypes" && <div className="studio-catalog"><div className="catalog-row datatype-row catalog-head"><span>Datatype</span><span>Kind</span><span>Meaning</span><span>Relations</span></div>{catalog?.datatypes.map((datatype) => <div className="catalog-row datatype-row" key={datatype.id}><b>{datatype.id}</b><em>{datatype.kind}</em><span>{datatype.meaning}</span><code>{datatype.relations}</code></div>)}<div className="manifest-actions"><button onClick={() => onTab("datatypes")}>Open datatype graph</button><button onClick={() => onRawText(JSON.stringify(catalog?.datatypes ?? [], null, 2))}>Open manifest</button><button onClick={() => onTab("tasks")}>Open task catalog</button></div></div>}
+    {tab === "operations" && <div className="studio-catalog"><div className="catalog-row catalog-head"><span>Operation</span><span>Typed ports</span><span>Implementation species / routes</span></div>{catalog?.operations.map((operation) => <div className="catalog-row" key={operation.id}><b>{operation.id}</b><span>{operation.ports}</span><code>{operation.routes}</code></div>)}</div>}
+    {tab === "datatypes" && <div className="studio-catalog"><div className="catalog-row datatype-row catalog-head"><span>Datatype</span><span>Kind</span><span>Meaning</span><span>Relations</span></div>{catalog?.datatypes.map((datatype) => <div className="catalog-row datatype-row" key={datatype.id}><b>{datatype.id}</b><em>{datatype.kind}</em><span>{datatype.meaning}</span><code>{datatype.relations}</code></div>)}<div className="manifest-actions"><button onClick={() => onTab("datatypes")}>Open datatype graph</button><button onClick={() => onRawText(JSON.stringify(catalog?.datatypes ?? [], null, 2))}>Open manifest</button><button onClick={() => onTab("operations")}>Open operation catalog</button></div></div>}
   </div>;
 }
 
@@ -361,9 +361,9 @@ export function WorkbenchPage() {
   const [eventCursor, setEventCursor] = useState(0);
   const [backendError, setBackendError] = useState<string | null>(null);
   const [commandPending, setCommandPending] = useState(false);
-  const [designTask, setDesignTask] = useState<WorkbenchTask | null>(null);
+  const [designOperation, setDesignOperation] = useState<WorkbenchOperation | null>(null);
   const [catalog, setCatalog] = useState<Catalog | null>(null);
-  const [studioTab, setStudioTab] = useState<"workflows" | "tasks" | "datatypes">("workflows");
+  const [studioTab, setStudioTab] = useState<"workflows" | "operations" | "datatypes">("workflows");
   const [selectedWorkflowId, setSelectedWorkflowId] = useState<string | null>(null);
   const [draft, setDraft] = useState<WorkflowDocument | null>(null);
   const [originalWorkflowId, setOriginalWorkflowId] = useState<string | null>(null);
@@ -400,13 +400,13 @@ export function WorkbenchPage() {
     setBackendError(null);
   }, []);
 
-  const createBackendRun = useCallback(async (workflowId = "arc3_human_observation", parentTaskId?: string) => {
+  const createBackendRun = useCallback(async (workflowId = "arc3_human_observation", parentOperationId?: string) => {
     setCommandPending(true);
     try {
       const response = await fetch("/api/runs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ workflowId, worldId: "ls20", parentTaskId }),
+        body: JSON.stringify({ workflowId, worldId: "ls20", parentOperationId }),
       });
       const payload = await response.json() as { run?: RunSnapshot; error?: string };
       if (!response.ok || !payload.run) throw new Error(payload.error || "Run creation failed");
@@ -474,7 +474,7 @@ export function WorkbenchPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ operation, id: operation === "delete" ? selectedWorkflowId : undefined }),
       });
-      const payload = await response.json() as { workflows?: WorkflowDocument[]; task?: WorkbenchTask; error?: string };
+      const payload = await response.json() as { workflows?: WorkflowDocument[]; operation?: WorkbenchOperation; error?: string };
       if (!response.ok || !payload.workflows) throw new Error(payload.error || "Workflow operation failed");
       const nextCatalog = { ...(catalog as Catalog), workflows: payload.workflows };
       setCatalog(nextCatalog);
@@ -494,23 +494,23 @@ export function WorkbenchPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ operation: "save", workflow: candidate, originalId: originalWorkflowId }),
       });
-      const payload = await response.json() as { workflows?: WorkflowDocument[]; task?: WorkbenchTask; error?: string };
+      const payload = await response.json() as { workflows?: WorkflowDocument[]; operation?: WorkbenchOperation; error?: string };
       if (!response.ok || !payload.workflows) throw new Error(payload.error || "Workflow save failed");
       setCatalog(current => current ? { ...current, workflows: payload.workflows! } : current);
       const saved = payload.workflows.find((workflow) => workflow.id === candidate.id) ?? candidate;
       selectWorkflow(saved);
-      if (payload.task) setDesignTask(payload.task);
-      if (runAfter) await createBackendRun(saved.id, payload.task?.id);
+      if (payload.operation) setDesignOperation(payload.operation);
+      if (runAfter) await createBackendRun(saved.id, payload.operation?.id);
       else await sendCommand("save_snapshot", { workflowId: saved.id });
     } catch (error) {
       setBackendError(error instanceof Error ? error.message : "Workflow save failed");
     }
   };
 
-  const addStep = (kind: "task" | "subworkflow") => {
+  const addStep = (kind: "operation" | "subworkflow") => {
     if (!draft) return;
-    const operation = kind === "task" ? (catalog?.tasks[0]?.id ?? "capture_observation") : (catalog?.workflows.find((workflow) => workflow.id !== draft.id)?.id ?? "objectify_observation");
-    const step: WorkflowStep = { id: `${kind}_${draft.steps.length + 1}`, kind, operation, implementation: kind === "task" ? "python.default" : "nested workflow", inputs: {}, outputs: {}, parameters: {} };
+    const operation = kind === "operation" ? (catalog?.operations[0]?.id ?? "capture_observation") : (catalog?.workflows.find((workflow) => workflow.id !== draft.id)?.id ?? "objectify_observation");
+    const step: WorkflowStep = { id: `${kind}_${draft.steps.length + 1}`, kind, operation, implementation: kind === "operation" ? "python.default" : "nested workflow", inputs: {}, outputs: {}, parameters: {} };
     setDraft({ ...draft, steps: [...draft.steps, step] });
     setSelectedStep(draft.steps.length);
   };
@@ -602,7 +602,7 @@ export function WorkbenchPage() {
             <Tooltip text="The runnable experiment: seven top-level stages, each able to invoke nested workflows."><button className={`rail-icon ${view === "canvas" ? "selected" : ""}`} onClick={() => setView("canvas")}>⌘<small>Flow</small></button></Tooltip>
             <Tooltip text="The full typed workflow editor from the Python Tk desktop, available in the browser."><button className={`rail-icon ${view === "editor" ? "selected" : ""}`} onClick={() => { setView("editor"); void loadCatalog(); }}>⌑<small>Studio</small></button></Tooltip>
             <Tooltip text="Browse typed observations, facts, programs, predictions, and evidence."><button className={`rail-icon ${view === "artifacts" || view === "evidence" ? "selected" : ""}`} onClick={() => setView("artifacts")}>◇<small>Data</small></button></Tooltip>
-            <Tooltip text="Inspect processing resources and choose alternate implementations."><button className={`rail-icon ${view === "tasks" ? "selected" : ""}`} onClick={() => setView("tasks")}>▦<small>Tasks</small></button></Tooltip>
+            <Tooltip text="Inspect processing resources and choose alternate implementations."><button className={`rail-icon ${view === "operations" ? "selected" : ""}`} onClick={() => setView("operations")}>▦<small>Operations</small></button></Tooltip>
             <Tooltip text="Compare prompts, models, reasoning budgets, and transcripts."><button className={`rail-icon ${view === "llms" ? "selected" : ""}`} onClick={() => setView("llms")}>✦<small>LLMs</small></button></Tooltip>
           </div>
           <div className="rail-bottom"><Tooltip text="Validate typed ports, missing resources, and workflow cycles."><button className={`rail-icon ${view === "checks" ? "selected" : ""}`} onClick={() => setView("checks")}>✓<small>Checks</small></button></Tooltip><Tooltip text="Workbench preferences and adapter configuration."><button className={`rail-icon ${view === "setup" ? "selected" : ""}`} onClick={() => setView("setup")}>⚙<small>Setup</small></button></Tooltip></div>
@@ -626,12 +626,12 @@ export function WorkbenchPage() {
             <div className="view-actions"><Tooltip text="Zoom the workflow canvas to fit all active nodes."><button>⌗</button></Tooltip><Tooltip text="Open this view as a full-screen inspector."><button>↗</button></Tooltip></div>
           </nav>
 
-          {view === "editor" && <div className="editor-surface">{designTask && <TaskSpline tasks={[designTask]}/>}<WorkflowStudio catalog={catalog} draft={draft} selectedWorkflowId={selectedWorkflowId} selectedStep={selectedStep} rawMode={rawMode} rawText={rawText} tab={studioTab} onTab={setStudioTab} onSelectWorkflow={selectWorkflow} onDraft={setDraft} onSelectStep={setSelectedStep} onUpdateStep={updateStep} onMoveStep={moveStep} onDeleteStep={deleteStep} onAddStep={addStep} onOperation={(operation) => void workflowOperation(operation)} onSave={(runAfter) => void saveDraft(runAfter)} onRawMode={setRawMode} onRawText={setRawText}/></div>}
+          {view === "editor" && <div className="editor-surface">{designOperation && <OperationSpline operations={[designOperation]}/>}<WorkflowStudio catalog={catalog} draft={draft} selectedWorkflowId={selectedWorkflowId} selectedStep={selectedStep} rawMode={rawMode} rawText={rawText} tab={studioTab} onTab={setStudioTab} onSelectWorkflow={selectWorkflow} onDraft={setDraft} onSelectStep={setSelectedStep} onUpdateStep={updateStep} onMoveStep={moveStep} onDeleteStep={deleteStep} onAddStep={addStep} onOperation={(operation) => void workflowOperation(operation)} onSave={(runAfter) => void saveDraft(runAfter)} onRawMode={setRawMode} onRawText={setRawText}/></div>}
 
           {view === "canvas" && <div className="canvas-view">
             <div className="canvas-heading"><div><span>STAGE {stage.id} OF 7</span><h1>{stage.title}</h1><p>{stage.description}</p></div><div className={`stage-state ${statusFor(stage.id)}`}>{concluded && stage.id === 7 ? "MODEL SAVED" : statusFor(stage.id) === "done" ? "COMPLETED" : stage.id === activeStage && running ? "RUNNING" : stage.id === 4 ? "HUMAN INPUT" : "READY"}</div></div>
-            {run?.task && (
-              <TaskSpline tasks={designTask && run.task.parentTaskId === designTask.id ? [designTask, run.task] : [run.task]}/>
+            {run?.operation && (
+              <OperationSpline operations={designOperation && run.operation.parentOperationId === designOperation.id ? [designOperation, run.operation] : [run.operation]}/>
             )}
             <StageInspector stage={stage} chosenAction={chosenAction} onAction={chooseAction} onRepeat={repeatFromAction} onConclude={concludeModel}/>
             <div className="event-console" aria-live="polite"><div><span>LIVE RUN EVENTS</span><small>{run ? `backend cursor ${eventCursor}` : "connecting"}</small></div>{events.slice(-4).map((event) => <p key={event.id} className={event.tone}><time>{event.createdAt.includes("T") ? new Date(event.createdAt).toLocaleTimeString([], { hour12: false }) : event.createdAt.slice(11, 19)}</time><i/><span><b>{event.kind}</b> · {event.message}</span></p>)}</div>
@@ -644,7 +644,7 @@ export function WorkbenchPage() {
 
           {view === "evidence" && <div className="evidence-view"><div className="evidence-summary"><span>OBJECTIFICATION QUALITY</span><strong>96.4<small>%</small></strong><p>Reconstruction agreement across shape, color, topology, and position.</p><div className="metric-row"><div><b>8 / 8</b><span>identities stable</span></div><div><b>41</b><span>facts grounded</span></div><div><b>1</b><span>pixel anomaly</span></div></div></div><div className="lineage"><h2>Artifact lineage</h2><p>Hover any node to see why the boundary is preserved.</p>{["source_observation", "entity_set", "symbolic_facts", "turtle_programs", "reconstruction", "evidence"].map((n,i) => <Tooltip key={n} text={i === 0 ? "Immutable input from the external world." : `Produced from ${i === 3 ? "entities + properties" : "the previous typed artifact"}; exact parents recorded in provenance.`}><div className={`lineage-node n${i}`}><span>{i+1}</span><b>{n}</b><small>{artifactRows.find(a => a.name === n)?.producer}</small></div></Tooltip>)}</div></div>}
 
-          {view === "tasks" && <div className="resource-view"><div className="resource-heading"><div><span>PROCESSING RESOURCES</span><h1>Task catalog</h1><p>Each task declares typed ports and may have several swappable implementations.</p></div><button onClick={() => void sendCommand("refresh_catalog")}>↻ Refresh catalog</button></div><div className="resource-table"><div className="resource-row resource-head"><span>TASK</span><span>IMPLEMENTATION</span><span>RUNTIME</span><span>TYPED PORTS</span><span>STATE</span></div>{taskCatalog.map(row => <Tooltip key={row.task} text={`${row.implementation} can be replaced without changing the workflow as long as its typed port contract remains compatible.`}><button className="resource-row" onClick={() => { setView("editor"); setStudioTab("tasks"); }}><b>{row.task}</b><code>{row.implementation}</code><span>{row.runtime}</span><span>{row.ports}</span><em>● {row.state}</em></button></Tooltip>)}</div></div>}
+          {view === "operations" && <div className="resource-view"><div className="resource-heading"><div><span>PROCESSING RESOURCES</span><h1>Operation catalog</h1><p>Each operation declares typed ports and may have several swappable implementations.</p></div><button onClick={() => void sendCommand("refresh_catalog")}>↻ Refresh catalog</button></div><div className="resource-table"><div className="resource-row resource-head"><span>OPERATION</span><span>IMPLEMENTATION</span><span>RUNTIME</span><span>TYPED PORTS</span><span>STATE</span></div>{operationCatalog.map(row => <Tooltip key={row.operation} text={`${row.implementation} can be replaced without changing the workflow as long as its typed port contract remains compatible.`}><button className="resource-row" onClick={() => { setView("editor"); setStudioTab("operations"); }}><b>{row.operation}</b><code>{row.implementation}</code><span>{row.runtime}</span><span>{row.ports}</span><em>● {row.state}</em></button></Tooltip>)}</div></div>}
 
           {view === "llms" && <div className="resource-view"><div className="resource-heading"><div><span>MODEL ROUTING</span><h1>LLM laboratory</h1><p>Compare providers, prompts, reasoning budgets, outputs, and independent critiques.</p></div><button onClick={() => void sendCommand("compare_models")}>▶ Compare selected</button></div><div className="model-grid">{[
             ["Primary generator", "GPT-5.6", "medium reasoning", "Produces Turtle programs and candidate explanations", "selected"],

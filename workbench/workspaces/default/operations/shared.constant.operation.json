@@ -1,0 +1,14 @@
+{
+  "id": "shared.constant",
+  "label": "Constant Value",
+  "description": "Produce a configured constant value.",
+  "implementation": "core.constant",
+  "inputs": {},
+  "outputs": {
+    "value": "Any"
+  },
+  "parameters": {
+    "value": null
+  },
+  "kind": "operation"
+}

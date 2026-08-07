@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from workflow_engine import TaskRegistry, TaskSpec, WorkflowEngine, default_registry
+from workflow_engine import OperationRegistry, OperationSpec, WorkflowEngine, default_registry
 
 
 def engine(tmp_path: Path) -> WorkflowEngine:
@@ -14,7 +14,7 @@ def test_versioned_workflow_and_artifacts(tmp_path: Path) -> None:
         'inputs': {'message': 'String'},
         'outputs': {'result': '$slots.echoed'},
         'steps': [{
-            'id': 'echo', 'kind': 'task', 'implementation': 'core.echo',
+            'id': 'echo', 'kind': 'operation', 'implementation': 'core.echo',
             'inputs': {'value': '$workflow.message'},
             'outputs': {'value': 'echoed'},
         }],
@@ -46,7 +46,7 @@ def test_human_step_waits_and_resumes(tmp_path: Path) -> None:
 
 def test_retry_policy(tmp_path: Path) -> None:
     attempts = {'count': 0}
-    registry = TaskRegistry()
+    registry = OperationRegistry()
 
     def flaky(inputs, params):
         attempts['count'] += 1
@@ -54,12 +54,12 @@ def test_retry_policy(tmp_path: Path) -> None:
             raise RuntimeError('temporary')
         return {'value': 7}
 
-    registry.register(TaskSpec('test.flaky', {}, {'value': 'Integer'}, flaky))
+    registry.register(OperationSpec('test.flaky', {}, {'value': 'Integer'}, flaky))
     e = WorkflowEngine(tmp_path / 'engine.db', registry)
     e.save_workflow({
         'id': 'retry', 'inputs': {}, 'outputs': {'value': '$slots.value'},
         'steps': [{
-            'id': 'flaky', 'kind': 'task', 'implementation': 'test.flaky',
+            'id': 'flaky', 'kind': 'operation', 'implementation': 'test.flaky',
             'inputs': {}, 'outputs': {'value': 'value'},
             'retry': {'maxAttempts': 2},
         }],

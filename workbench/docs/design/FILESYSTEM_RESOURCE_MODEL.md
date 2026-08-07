@@ -10,7 +10,7 @@ The filesystem is the source of truth for semantic artifacts. Abstract specifica
 
 Current conventions include:
 
-- `task` / `task_implementation`
+- `operation` / `operation_implementation`
 - `datatype` / `datatype_representation`
 - `prompt` / `prompt_implementation`
 - `backend` / `model` / `profile`
@@ -18,7 +18,7 @@ Current conventions include:
 
 Planned families include `goal` / `goal_interpretation` or `goal_variant`, `plan` / `plan_variant`, and `atomspace` / `atomspace_implementation`.
 
-Canonical filenames carry the kind, for example `shared.echo.task.json`, `echo_into_titlecased_python.task_implementation.json`, and `bitmap.datatype_representation.json`. Resources live beneath a workspace in family directories such as `tasks/`, `datatypes/`, `representations/`, `prompts/`, `models/`, and `workflows/`.
+Canonical filenames carry the kind, for example `shared.echo.operation.json`, `echo_into_titlecased_python.operation_implementation.json`, and `bitmap.datatype_representation.json`. Resources live beneath a workspace in family directories such as `operations/`, `datatypes/`, `representations/`, `prompts/`, `models/`, and `workflows/`.
 
 ## Inheritance and Overrides
 

@@ -12,7 +12,7 @@ The migration was based on the legacy `config/llm_providers.json` and `config/ll
 - Concrete model records -> `shared/models/*.json` with `kind: model`.
 - Light/deep/extreme and other execution presets -> `shared/models/*.json` with `kind: profile` and no prompt list.
 - Reusable instruction fragments -> `shared/prompts/*.json`.
-- Ordered `prompt_text` lists and old LLM transactions -> Task `promptSelection` in `shared/tasks/` or `arc3/tasks/`.
+- Ordered `prompt_text` lists and old LLM transactions -> Operation `promptSelection` in `shared/operations/` or `arc3/operations/`.
 
 ## Vision-first split
 

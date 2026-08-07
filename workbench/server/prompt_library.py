@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from task_library import DEFAULT_WORKSPACES_ROOT, SHARED_WORKSPACE_ID
+from operation_library import DEFAULT_WORKSPACES_ROOT, SHARED_WORKSPACE_ID
 
 PROMPT_DIRECTORY = "prompts"
 PROMPT_KIND = "prompt"

@@ -43,16 +43,16 @@ def load_artifact_specs() -> dict[str, tuple[str, str, str, float]]:
     return result
 
 
-def load_shared_tasks() -> list[dict[str, Any]]:
-    tasks: list[dict[str, Any]] = []
-    directory = SHARED_WORKSPACE / "tasks"
+def load_shared_operations() -> list[dict[str, Any]]:
+    operations: list[dict[str, Any]] = []
+    directory = SHARED_WORKSPACE / "operations"
     if not directory.is_dir():
-        return tasks
+        return operations
     for path in sorted(directory.glob("*.json")):
         value = _read_json(path, None)
         if isinstance(value, dict):
-            tasks.append(value)
-    return tasks
+            operations.append(value)
+    return operations
 
 
 def load_workspace_workflows() -> list[dict[str, Any]]:
@@ -70,23 +70,23 @@ def load_workspace_workflows() -> list[dict[str, Any]]:
     return list(workflows.values())
 
 
-def task_catalog_for_legacy_api() -> list[dict[str, Any]]:
+def operation_catalog_for_legacy_api() -> list[dict[str, Any]]:
     result: list[dict[str, Any]] = []
-    for task in load_shared_tasks():
-        inputs = task.get("inputs") or {}
-        outputs = task.get("outputs") or {}
+    for operation in load_shared_operations():
+        inputs = operation.get("inputs") or {}
+        outputs = operation.get("outputs") or {}
         result.append({
-            "id": task.get("id"),
-            "label": task.get("label"),
+            "id": operation.get("id"),
+            "label": operation.get("label"),
             "ports": f"{', '.join(inputs)} → {', '.join(outputs)}",
-            "routes": task.get("implementation"),
-            "source": "workbench/workspaces/shared/tasks",
+            "routes": operation.get("implementation"),
+            "source": "workbench/workspaces/shared/operations",
         })
     return result
 
 
 def apply_to_legacy_store(store_module: Any) -> None:
-    store_module.TASK_CATALOG = task_catalog_for_legacy_api()
+    store_module.OPERATION_CATALOG = operation_catalog_for_legacy_api()
     store_module.DATATYPE_MANIFEST = load_datatype_manifest()
     artifact_specs = load_artifact_specs()
     if artifact_specs:

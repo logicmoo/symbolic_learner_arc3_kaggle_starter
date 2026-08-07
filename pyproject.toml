@@ -110,8 +110,8 @@ py-modules = [
   "project_paths",
   "swipl_bridge",
   "unsloth_studio",
-  "workflow_task_editor",
-  "workflow_tasks",
+  "workflow_operation_editor",
+  "workflow_operations",
 ]
 include-package-data = true
 

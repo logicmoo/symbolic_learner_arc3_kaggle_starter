@@ -14,9 +14,9 @@ Kinds use `snake_case`. The canonical pattern is:
 Examples:
 
 ```text
-echo_into_titlecased.task.json
-echo_into_titlecased_python.task_implementation.json
-echo_into_titlecased_llm.task_implementation.json
+echo_into_titlecased.operation.json
+echo_into_titlecased_python.operation_implementation.json
+echo_into_titlecased_llm.operation_implementation.json
 titlecase_received_text.prompt.json
 openai.backend.json
 gpt-5.6.model.json
@@ -30,42 +30,42 @@ The matching JSON contains exactly the same semantic kind:
 
 ```json
 {
-  "kind": "task",
+  "kind": "operation",
   "id": "echo_into_titlecased"
 }
 ```
 
 ```json
 {
-  "kind": "task_implementation",
+  "kind": "operation_implementation",
   "id": "echo_into_titlecased_python",
   "implements": "echo_into_titlecased"
 }
 ```
 
-## Abstract tasks and implementations
+## Abstract operations and implementations
 
-A `task` is the stable semantic stage identity. It defines the contract and the set of allowed implementation variants. It does not itself name Python, Prolog, MeTTa, or an LLM provider.
+A `operation` is the stable semantic stage identity. It defines the contract and the set of allowed implementation variants. It does not itself name Python, Prolog, MeTTa, or an LLM provider.
 
-A `task_implementation` is one concrete way to perform that task. Several implementations may implement the same task.
+A `operation_implementation` is one concrete way to perform that operation. Several implementations may implement the same operation.
 
 ```text
-echo_into_titlecased.task.json
-  ├── echo_into_titlecased_python.task_implementation.json
-  └── echo_into_titlecased_llm.task_implementation.json
+echo_into_titlecased.operation.json
+  ├── echo_into_titlecased_python.operation_implementation.json
+  └── echo_into_titlecased_llm.operation_implementation.json
 ```
 
-A workflow step therefore points to the abstract task:
+A workflow step therefore points to the abstract operation:
 
 ```json
 {
   "kind": "workflow_step",
   "id": "step_titlecase",
-  "task": "echo_into_titlecased"
+  "operation": "echo_into_titlecased"
 }
 ```
 
-The runtime resolves the implementation according to the task's `implementationSelection`. A step may request an allowed variant explicitly with `implementationVariant`; otherwise the task's default variant is selected.
+The runtime resolves the implementation according to the operation's `implementationSelection`. A step may request an allowed variant explicitly with `implementationVariant`; otherwise the operation's default variant is selected.
 
 Directories remain useful organizational hints, but they are not the only way to identify a resource. A file can be understood from its name and contents even when copied elsewhere.
 

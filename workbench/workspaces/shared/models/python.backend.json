@@ -3,7 +3,7 @@
   "id": "python",
   "label": "Python Runtime",
   "provider": "python",
-  "description": "Executes trusted Python callables and Python-based task implementations.",
+  "description": "Executes trusted Python callables and Python-based operation implementations.",
   "enabled": true,
   "capabilities": [
     "python.callable",

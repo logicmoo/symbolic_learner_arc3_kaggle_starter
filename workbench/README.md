@@ -75,13 +75,13 @@ launches reuse `workbench\.venv` and `workbench\frontend\node_modules`.
 - Filesystem-enumerated workspaces and an editable shared library workspace
 - Seven-stage ARC3 apprenticeship workflow
 - Human-action pause with keyboard and on-screen controls
-- Durable workflow-design and workflow-execution tasks
+- Durable workflow-design and workflow-execution operations
 - Ordered backend events, versioned artifacts, and provenance
 - Topology and chronology views
 - Workflow library, structured editor, and raw JSON editor
-- Shared and workspace-specific task definitions
+- Shared and workspace-specific operation definitions
 - First-class abstract datatypes and concrete datatype representations
-- Representation-conversion tasks and cost-based conversion path planning
+- Representation-conversion operations and cost-based conversion path planning
 - Shared and workspace-specific backend/model definitions
 - Nested-workflow validation and cycle detection
 - Artifact, evidence, LLM, validation, and setup views
@@ -89,7 +89,7 @@ launches reuse `workbench\.venv` and `workbench\frontend\node_modules`.
 
 The Python, SWI-Prolog, LLM, Turtle, and ARC3 execution engines remain adapter
 boundaries. The local server implements the shared command/event contract and
-persists workflows, tasks, runs, artifacts, and history.
+persists workflows, operations, runs, artifacts, and history.
 
 ## Datatypes and representations
 
@@ -106,8 +106,8 @@ workbench/workspaces/shared/representations/
 ```
 
 A normal workspace inherits these definitions and can override a shared
-resource by defining the same resource ID locally. Conversion tasks are normal
-abstract tasks with a `conversion` contract, so the planner can find paths such
+resource by defining the same resource ID locally. Conversion operations are normal
+abstract operations with a `conversion` contract, so the planner can find paths such
 as:
 
 ```text
@@ -166,7 +166,7 @@ environment values.
 ```text
 GET  /api/health
 GET  /api/workspaces/{workspace_id}/snapshot
-GET  /api/workspaces/{workspace_id}/tasks
+GET  /api/workspaces/{workspace_id}/operations
 GET  /api/workspaces/{workspace_id}/datatypes
 GET  /api/workspaces/{workspace_id}/representations
 GET  /api/workspaces/{workspace_id}/representation-graph
@@ -176,7 +176,7 @@ POST /api/runs
 GET  /api/runs/{run_id}
 POST /api/runs/{run_id}/commands
 GET  /api/runs/{run_id}/events?after={cursor}
-GET  /api/tasks
+GET  /api/operations
 GET  /api/workflows
 POST /api/workflows
 ```

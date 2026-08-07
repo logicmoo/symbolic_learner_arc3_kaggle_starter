@@ -16,19 +16,19 @@ from llm_profile_editor import install_profile_editor_ui
 from llm_workflow_editor import install_workflow_editor_ui
 from llm_workflows import install_workflow_router
 from multillm_runner import install_interactive_runner
-from workflow_task_editor import install_workflow_task_editor_ui
-from workflow_tasks import install_task_workflows
+from workflow_operation_editor import install_workflow_operation_editor_ui
+from workflow_operations import install_operation_workflows
 
 install_profile_environment()
 install_catalog_runner()
 install_workflow_router()
-install_task_workflows()
+install_operation_workflows()
 install_interactive_runner(interactive_runner_ui)
 install_profile_editor_ui(interactive_runner_ui)
 # Install the typed editor first. It consumes uppercase W and returns Enter, so
 # the legacy workflow wrapper remains available for compatibility/help without
-# intercepting W before the typed task/slot editor.
-install_workflow_task_editor_ui(interactive_runner_ui)
+# intercepting W before the typed operation/slot editor.
+install_workflow_operation_editor_ui(interactive_runner_ui)
 install_workflow_editor_ui(interactive_runner_ui)
 install_llm_key_controls(interactive_runner_ui)
 

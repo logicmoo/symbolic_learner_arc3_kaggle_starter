@@ -23,8 +23,8 @@ def test_universal_editor_keeps_compatibility_chrome_for_adapted_panels() -> Non
         assert 'from "./HierarchyResourceEditor"' in source or 'from "./UniversalArtifactEditor"' in source
 
 
-def test_tasks_preserve_rich_baseline_features() -> None:
-    source = _text("TaskLibraryEditor.tsx")
+def test_operations_preserve_rich_baseline_features() -> None:
+    source = _text("OperationLibraryEditor.tsx")
     required = (
         "DEFAULT IMPLEMENTATION",
         "PYTHON SOURCE",
@@ -33,21 +33,21 @@ def test_tasks_preserve_rich_baseline_features() -> None:
         "MODEL / PROFILE DISPATCH",
         "PROMPT COMPOSITION",
         "Split view",
-        "task-document-tabs",
-        "task-tree-children",
+        "operation-document-tabs",
+        "operation-tree-children",
         "echo_into_titlecased",
-        "TaskPlayground",
+        "OperationPlayground",
     )
     for token in required:
-        assert token in source, f"rich Tasks baseline feature disappeared: {token}"
+        assert token in source, f"rich Operations baseline feature disappeared: {token}"
 
 
 def test_operations_tree_supports_global_and_per_operation_folding() -> None:
-    source = _text("TaskLibraryEditor.tsx")
+    source = _text("OperationLibraryEditor.tsx")
     for token in (
         "Operations & implementations",
         "OPERATION CONTRACT SYSTEM",
-        "collapsedTasks",
+        "collapsedOperations",
         "variantsHidden",
         "Only Toplevel",
         "Show Tree",
@@ -56,15 +56,15 @@ def test_operations_tree_supports_global_and_per_operation_folding() -> None:
         "tree-branch-toggle",
         "branch-collapsed",
         "toggleTopLevel",
-        "setCollapsedTasks(topLevel?new Set(taskIds):new Set())",
+        "setCollapsedOperations(topLevel?new Set(operationIds):new Set())",
     ):
         assert token in source
 
 
-def test_task_playground_exposes_typed_inputs_variant_switching_and_results() -> None:
-    source = _text("TaskPlayground.tsx")
+def test_operation_playground_exposes_typed_inputs_variant_switching_and_results() -> None:
+    source = _text("OperationPlayground.tsx")
     for token in (
-        "TASK PLAYGROUND",
+        "OPERATION PLAYGROUND",
         "RUN VARIANT",
         "OUTPUT CONTRACT",
         "implementationVariant",
@@ -90,8 +90,8 @@ def test_universal_shell_keeps_tabs_compare_inspector_and_docks() -> None:
     for token in (
         "artifact-breadcrumb",
         "artifact-common-inspector",
-        "task-document-tabs",
-        "task-editor-panes",
+        "operation-document-tabs",
+        "operation-editor-panes",
         "compareKey",
         "bottomPanels",
         "artifact-bottom-dock",
@@ -110,17 +110,17 @@ def test_universal_shell_keeps_tabs_compare_inspector_and_docks() -> None:
 
 def test_universal_tree_is_collapsible_and_independently_scrollable() -> None:
     source = _text("UniversalArtifactEditor.tsx")
-    styles = (ROOT / "workbench" / "frontend" / "src" / "styles" / "task_editor.css").read_text(encoding="utf-8")
+    styles = (ROOT / "workbench" / "frontend" / "src" / "styles" / "operation_editor.css").read_text(encoding="utf-8")
     assert 'aria-expanded={!navigatorCollapsed}' in source
     assert "navigator-collapsed" in source
     assert ".artifact-navigator-content" in styles
     assert "overflow-y:auto" in styles
     assert "scrollbar-gutter:stable" in styles
-    assert ".task-hierarchy-layout.navigator-collapsed" in styles
-    assert ".variants-collapsed .task-tree-children" in styles
+    assert ".operation-hierarchy-layout.navigator-collapsed" in styles
+    assert ".variants-collapsed .operation-tree-children" in styles
     assert ".variants-collapsed .inheritance-children" in styles
-    assert ".variants-hidden .task-tree-children" in styles
-    assert ".main-stage>.task-hierarchy-page" in styles
+    assert ".variants-hidden .operation-tree-children" in styles
+    assert ".main-stage>.operation-hierarchy-page" in styles
     assert "overflow-y:scroll" in styles
     workbench_styles = (ROOT / "workbench" / "frontend" / "src" / "styles" / "workbench.css").read_text(encoding="utf-8")
     assert ".main-stage{min-height:0;overflow:hidden}" in workbench_styles

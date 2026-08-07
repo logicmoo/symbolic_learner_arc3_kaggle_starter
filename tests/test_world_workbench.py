@@ -162,10 +162,10 @@ def test_domain_neutral_manifests_keep_arc3_at_the_adapter_boundary() -> None:
     assert "observation" in by_id["arc3_state"]["extends"]
     assert {"world_model", "goal_set", "simulation_result"}.issubset(by_id)
 
-    tasks = json.loads(
-        (shared_config / "world_workbench_tasks.json").read_text(encoding="utf-8")
+    operations = json.loads(
+        (shared_config / "world_workbench_operations.json").read_text(encoding="utf-8")
     )
-    task_ids = {item["id"] for item in tasks["tasks"]}
+    operation_ids = {item["id"] for item in operations["operations"]}
     assert {
         "select_world",
         "begin_episode",
@@ -178,7 +178,7 @@ def test_domain_neutral_manifests_keep_arc3_at_the_adapter_boundary() -> None:
         "select_simulations",
         "simulate_candidates",
         "record_outcome",
-    }.issubset(task_ids)
+    }.issubset(operation_ids)
 
     workflow_catalog = json.loads(
         (ROOT / "config" / "llm_workflows.json").read_text(encoding="utf-8")
@@ -196,13 +196,13 @@ def test_domain_neutral_manifests_keep_arc3_at_the_adapter_boundary() -> None:
         workflow_steps["objectify_observation"]["subworkflow"]
         == "arc3_objectify_observation"
     )
-    assert workflow_steps["human_chooses_action"]["task"] == "await_human_arc3_action"
+    assert workflow_steps["human_chooses_action"]["operation"] == "await_human_arc3_action"
     subworkflow = next(
         item
         for item in workflow_catalog["llm_workflows"]
         if item["id"] == "arc3_objectify_observation"
     )
-    objectify_tasks = {item["task"] for item in subworkflow["steps"]}
+    objectify_operations = {item["operation"] for item in subworkflow["steps"]}
     assert {"extract_individual_objects", "turtlized_objects_to_images"}.issubset(
-        objectify_tasks
+        objectify_operations
     )

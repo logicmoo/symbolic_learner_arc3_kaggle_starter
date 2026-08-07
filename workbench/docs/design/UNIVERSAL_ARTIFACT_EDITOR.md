@@ -20,7 +20,7 @@ Every hierarchical artifact family should provide, where meaningful:
 8. Tests, history, benchmarks, diffs, and logs when real data exists.
 9. A playground/run surface for executable artifacts.
 
-`UniversalArtifactEditor` supplies common hierarchy, tab, comparison, inspector, and dock chrome. `TaskLibraryEditor`, `DataCatalogPanel`, `PromptLibraryEditor`, and `LlmModelsEditor` retain ownership of their specialized panels and validation.
+`UniversalArtifactEditor` supplies common hierarchy, tab, comparison, inspector, and dock chrome. `OperationLibraryEditor`, `DataCatalogPanel`, `PromptLibraryEditor`, and `LlmModelsEditor` retain ownership of their specialized panels and validation.
 
 ## Data Integrity
 

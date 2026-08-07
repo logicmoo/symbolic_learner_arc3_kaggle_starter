@@ -6,7 +6,7 @@
   "text": [
     "Explain what changed using supplied object, reconstruction, and transition artifacts as primary evidence.",
     "Prefer exact symbolic evidence over visual speculation.",
-    "Return only the transition artifacts requested by the task."
+    "Return only the transition artifacts requested by the operation."
   ],
   "metadata": {
     "domain": "vision",

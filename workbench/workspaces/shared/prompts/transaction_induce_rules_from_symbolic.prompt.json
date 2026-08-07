@@ -6,7 +6,7 @@
   "text": [
     "Read the supplied symbolic artifacts and induce conservative executable or testable rules.",
     "Separate direct observations from hypotheses, cite supporting facts or predicates, and record contradictions.",
-    "Return only the rule artifacts requested by the task."
+    "Return only the rule artifacts requested by the operation."
   ],
   "metadata": {
     "domain": "shared",

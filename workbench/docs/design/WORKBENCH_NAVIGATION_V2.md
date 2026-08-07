@@ -13,13 +13,13 @@ Navigation V2 organizes the active filesystem-backed workbench by lifecycle with
 | Design | Goals | `GoalPlanLibraryEditor` with goal variants |
 | Design | Plans | `GoalPlanLibraryEditor` with plan variants |
 | Design | Workflows | Existing workflow canvas and source editor |
-| Design | Operations | Existing `TaskLibraryEditor` |
+| Design | Operations | Existing `OperationLibraryEditor` |
 | Design | Datatypes | Existing `DataCatalogPanel` |
 | Design | Prompts | Existing `PromptLibraryEditor` |
 | Design | Models | Existing `LlmModelsEditor` |
 | Runtime | Goal Runs | Future goal-pursuit history |
 | Runtime | Workflow Runs | Existing workflow-engine run state |
-| Runtime | Execs | Task invocations and playground executions |
+| Runtime | Execs | Operation invocations and playground executions |
 | Runtime | Events | Existing durable engine events/evidence |
 | Runtime | States | Persisted workflow/world-state snapshots |
 | Runtime | Logs | Existing workflow-engine logs |
@@ -30,7 +30,7 @@ Navigation V2 organizes the active filesystem-backed workbench by lifecycle with
 
 ## Implementation Constraints
 
-- Rename Tasks to Operations and Data to Datatypes without rewriting their editors.
+- Use Operations and Data to Datatypes without rewriting their editors.
 - Route only the active page launched by `App.tsx`; old pages are references, not entrypoints.
 - Unimplemented destinations must show real filesystem/backend status or documentation, never fabricated records.
 - Preserve workspace selection, the workflow stage rail, the right documentation/inspector pane, and all rich editor features.

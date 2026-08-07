@@ -132,7 +132,7 @@ Every hierarchical artifact editor must support:
 
 
 
-All displayed workspaces, tasks, implementations, models, prompts,
+All displayed workspaces, operations, implementations, models, prompts,
 
 datatypes, representations, goals, plans, runs, events, states, and logs
 
@@ -206,7 +206,7 @@ Reuse existing editors rather than duplicating them:
 
 
 
-\- Operations -> existing rich TaskLibraryEditor
+\- Operations -> existing rich OperationLibraryEditor
 
 \- Datatypes -> existing DataCatalogPanel / datatype-representation editor
 
@@ -234,7 +234,7 @@ Examples:
 
 
 
-\- task / task\_implementation
+\- operation / operation\_implementation
 
 \- datatype / datatype\_representation
 
@@ -308,7 +308,7 @@ React components, `camelCase` for TypeScript helpers and hooks, and uppercase
 
 names for constants. Prefer type hints, focused functions, `pathlib`, and
 
-platform-neutral behavior. Preserve resource suffixes such as `*.task.json`,
+platform-neutral behavior. Preserve resource suffixes such as `*.operation.json`,
 
 `*.prompt.json`, and `*.datatype.json`. No repository-wide formatter is
 
@@ -463,7 +463,7 @@ Save the latest model-policy mockup as:
 
 workbench/docs/todo/assets/model\_runtime\_policy\_mockup.png
 
-The model-policy screenshot becomes an explicit visual design reference rather than a temporary image trapped in chat history. The current active Tasks editor is the acceptance baseline; verify it directly in the running application.
+The model-policy screenshot becomes an explicit visual design reference rather than a temporary image trapped in chat history. The current active Operations editor is the acceptance baseline; verify it directly in the running application.
 
 ## 5. Map the new navigation to what already exists
 
@@ -479,7 +479,7 @@ The first Codex change should **not** implement every page. It should only estab
 
 | Workflows | Existing workflow canvas/editor |
 
-| Operations | Existing rich Tasks editor |
+| Operations | Existing rich Operations editor |
 
 | Datatypes | Existing Types/Data datatype-representation editor |
 
@@ -491,13 +491,13 @@ The first Codex change should **not** implement every page. It should only estab
 
 | Workflow Runs | Existing workflow run state |
 
-| Execs | Task/operation execution records and playground runs |
+| Execs | Operation execution records and playground runs |
 
 | Events | Existing durable events/evidence |
 
 | States | Persisted workflow/world state snapshots |
 
-| Logs | Existing workflow/task logs |
+| Logs | Existing workflow/operation logs |
 
 | Model Policy | New page from your TODO/mockup |
 
@@ -507,7 +507,7 @@ The first Codex change should **not** implement every page. It should only estab
 
 | Settings | Existing Setup page |
 
-This means **Tasks becomes Operations**, and **Types/Data becomes Datatypes**, while the underlying editors remain the same.
+This means **Operations is the canonical executable-artifact name**, and **Types/Data becomes Datatypes**, while the underlying editors remain the same.
 
 ## 6. Give Codex small, ordered tasks
 
@@ -530,7 +530,7 @@ Do not modify implementation code yet.
 
 Inspect the active React entrypoint, active workbench page, current navigation,
 
-TaskLibraryEditor, DataCatalogPanel, PromptLibraryEditor, LlmModelsEditor,
+OperationLibraryEditor, DataCatalogPanel, PromptLibraryEditor, LlmModelsEditor,
 
 workflow editor, runtime engine routes, workspace snapshot API, and filesystem
 
@@ -564,7 +564,7 @@ Document:
 
 7\. Exact files that must change for navigation V2
 
-8\. A regression checklist protecting the current active rich Tasks editor
+8\. A regression checklist protecting the current active rich Operations editor
 
 
 
@@ -641,7 +641,7 @@ Reuse existing editor components:
 
 
 
-Operations -> TaskLibraryEditor
+Operations -> OperationLibraryEditor
 
 Datatypes -> DataCatalogPanel
 
@@ -661,7 +661,7 @@ not hard-coded fake data.
 
 
 
-Do not change the internals of the rich Tasks editor during this task.
+Do not change the internals of the rich Operations editor during this Codex task.
 
 
 

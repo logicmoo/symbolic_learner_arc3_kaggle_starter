@@ -11,7 +11,7 @@
   "steps": [
     {
       "id": "capture_observation",
-      "kind": "task",
+      "kind": "operation",
       "implementation": "core.echo",
       "inputs": {
         "value": "$observation"
@@ -37,7 +37,7 @@
     },
     {
       "id": "build_observation_record",
-      "kind": "task",
+      "kind": "operation",
       "implementation": "core.merge",
       "dependsOn": [
         "capture_observation",

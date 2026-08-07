@@ -15,13 +15,13 @@ The backend is FastAPI, launched from `workbench/server/app.py`. The active page
 | Goals | `GoalPlanLibraryEditor`, `/api/workspaces/{id}/goals`, shared goal variants | Real, reuse |
 | Plans | `GoalPlanLibraryEditor`, `/api/workspaces/{id}/plans`, shared plan variants | Real, reuse |
 | Workflows | Active canvas and raw workflow editor in `FilesystemWorkbenchPage` | Real, reuse |
-| Operations | `TaskLibraryEditor` and `TaskPlayground` | Real, relabel Tasks |
+| Operations | `OperationLibraryEditor` and `OperationPlayground` | Real, relabel Operations |
 | Datatypes | `DataCatalogPanel` | Real, relabel Data |
 | Prompts | `PromptLibraryEditor` | Real, reuse |
 | Models | `LlmModelsEditor` | Real, reuse |
 | Goal Runs | No goal-run contract | New contract required |
 | Workflow Runs | Active engine `Run`, steps, artifacts, events, commands, and human input | Real, reorganize |
-| Execs | Task playground invocation API plus engine step execution | Partly present |
+| Execs | Operation playground invocation API plus engine step execution | Partly present |
 | Events | Active run evidence and `/api/engine/runs/{id}/events` | Real, reuse |
 | States | Run/artifact state exists, but no dedicated state-snapshot page/contract | Partial |
 | Logs | `/api/engine/runs/{id}/logs` exists; no active dedicated page | Backend real, UI needed |
@@ -32,9 +32,9 @@ The backend is FastAPI, launched from `workbench/server/app.py`. The active page
 
 ## Active Editors and Baseline Features
 
-`TaskLibraryEditor`, `DataCatalogPanel`, `PromptLibraryEditor`, and `LlmModelsEditor` use `HierarchyResourceEditor`, a compatibility export of `UniversalArtifactEditor`. The shared shell provides hierarchy chrome, persistent closeable tabs, dirty markers, split comparison, common inspector space, variant controls, and bottom docks.
+`OperationLibraryEditor`, `DataCatalogPanel`, `PromptLibraryEditor`, and `LlmModelsEditor` use `HierarchyResourceEditor`, a compatibility export of `UniversalArtifactEditor`. The shared shell provides hierarchy chrome, persistent closeable tabs, dirty markers, split comparison, common inspector space, variant controls, and bottom docks.
 
-The Tasks editor additionally has abstract task/implementation hierarchy, default implementation selection, Python, SWI-Prolog, MeTTa, and model/profile dispatch panels, prompt composition, raw JSON, filesystem save, and the typed `TaskPlayground`. Datatypes provides representation selection, conversions, and usage. Prompts provides preferred implementations. Models provides backend/model/profile inheritance, resolved settings, rich configuration, and raw JSON. The active right pane loads real shared Markdown through `HelpDocumentTabs` for these families.
+The Operations editor additionally has abstract operation/implementation hierarchy, default implementation selection, Python, SWI-Prolog, MeTTa, and model/profile dispatch panels, prompt composition, raw JSON, filesystem save, and the typed `OperationPlayground`. Datatypes provides representation selection, conversions, and usage. Prompts provides preferred implementations. Models provides backend/model/profile inheritance, resolved settings, rich configuration, and raw JSON. The active right pane loads real shared Markdown through `HelpDocumentTabs` for these families.
 
 ## Real, Obsolete, and Mock Pages
 
@@ -51,10 +51,10 @@ Workspace and file APIs:
 - `GET /api/workspaces`, `GET /api/workspaces/{id}`
 - `GET /api/workspaces/{id}/snapshot`
 - `GET|PUT /api/workspaces/{id}/file`
-- Workspace task, datatype, representation, backend, model, and prompt collection routes
+- Workspace operation, datatype, representation, backend, model, and prompt collection routes
 - Prompt hierarchy, implementation, and resolution routes
 - Datatype resolution, representation graph, inventory, and conversion-planning routes
-- `POST /api/workspaces/{id}/tasks/{task_id}/invoke`
+- `POST /api/workspaces/{id}/operations/{operation_id}/invoke`
 
 Workflow-engine APIs:
 
@@ -62,17 +62,17 @@ Workflow-engine APIs:
 - workflow list/create/get/validate
 - run create/get, commands, human step input, events, and logs
 
-The app also exposes health, analysis, SQLite-backed legacy run/event/task APIs, artifact lookup, and session workflow/reset routes. `/api/workflows` is explicitly deprecated for the retired mock client; Navigation V2 should use workspace snapshots and engine routes.
+The app also exposes health, analysis, SQLite-backed legacy run/event/operation APIs, artifact lookup, and session workflow/reset routes. `/api/workflows` is explicitly deprecated for the retired mock client; Navigation V2 should use workspace snapshots and engine routes.
 
 ## Filesystem Resource Kinds
 
-Existing first-class loaders cover `workflow`, `goal`, `goal_interpretation`, `goal_variant`, `plan`, `plan_variant`, `task`, `task_implementation`, `datatype`, `datatype_representation`, `prompt`, `prompt_implementation`, `backend`, `model`, and `profile`. Workspaces also contain catalog/config/Markdown files that appear in the editable-file inventory but are not all first-class semantic loaders.
+Existing first-class loaders cover `workflow`, `goal`, `goal_interpretation`, `goal_variant`, `plan`, `plan_variant`, `operation`, `operation_implementation`, `datatype`, `datatype_representation`, `prompt`, `prompt_implementation`, `backend`, `model`, and `profile`. Workspaces also contain catalog/config/Markdown files that appear in the editable-file inventory but are not all first-class semantic loaders.
 
-Shared inheritance plus workspace override resolution exists for goals and variants, plans and variants, tasks and implementations, datatypes and representations, prompts and implementations, backends, models, and profiles. AtomSpaces, model policies, benchmark policies/results, contexts, goal runs, and dedicated state snapshots are not yet first-class resource kinds in the workspace snapshot.
+Shared inheritance plus workspace override resolution exists for goals and variants, plans and variants, operations and implementations, datatypes and representations, prompts and implementations, backends, models, and profiles. AtomSpaces, model policies, benchmark policies/results, contexts, goal runs, and dedicated state snapshots are not yet first-class resource kinds in the workspace snapshot.
 
 ## Exact Navigation V2 Change Surface
 
-Task 2 should remain narrowly scoped to:
+Operation 2 should remain narrowly scoped to:
 
 1. `workbench/frontend/src/pages/FilesystemWorkbenchPage.tsx` — replace the flat `View`/`nav` contract with grouped Design, Runtime, and System navigation; map existing components without editing their internals; add real pending/resource views.
 2. `workbench/frontend/src/styles/workbench.css` and, only if required by the active shell, `workspace_backed.css` — style grouped navigation and overflow while preserving current editor CSS.
@@ -81,24 +81,24 @@ Task 2 should remain narrowly scoped to:
 
 `App.tsx` needs no change unless the active entrypoint itself changes; Navigation V2 should not change it. No backend file is required merely to establish the shell because the active snapshot and engine APIs can support real status/TODO views.
 
-## Current Rich Tasks Regression Checklist
+## Current Rich Operations Regression Checklist
 
 Before and after Navigation V2:
 
-- [ ] `App.tsx` still launches the page containing `TaskLibraryEditor`.
-- [ ] Operations opens the existing `TaskLibraryEditor`, not a replacement.
-- [ ] Abstract tasks remain parents and implementations remain children.
-- [ ] Default implementation selection edits the abstract task document.
+- [ ] `App.tsx` still launches the page containing `OperationLibraryEditor`.
+- [ ] Operations opens the existing `OperationLibraryEditor`, not a replacement.
+- [ ] Abstract operations remain parents and implementations remain children.
+- [ ] Default implementation selection edits the abstract operation document.
 - [ ] Python, SWI-Prolog, MeTTa, model/profile dispatch, and prompt-composition panels remain available.
 - [ ] Persistent tabs open, activate, show dirty state, close, and retain unsaved drafts.
 - [ ] Split comparison works and returns to single-pane mode.
 - [ ] Raw JSON edits and rich controls update the intended document.
 - [ ] Saving inherited resources creates/updates the correct workspace override; shared resources remain protected.
 - [ ] Save followed by snapshot reload preserves changes.
-- [ ] `TaskPlayground` resolves a real implementation, accepts typed input, switches variants, runs, and shows outputs/prompts/timing.
+- [ ] `OperationPlayground` resolves a real implementation, accepts typed input, switches variants, runs, and shows outputs/prompts/timing.
 - [ ] Right-side documentation remains visible and filesystem-backed.
 - [ ] Horizontal and vertical scrolling expose all editor content.
-- [ ] Existing universal-editor and task-playground tests pass, with no historical commit identifier used as the baseline.
+- [ ] Existing universal-editor and operation-playground tests pass, with no historical commit identifier used as the baseline.
 - [ ] Frontend build succeeds and the running application works after restart.
 
 ## Review Gate

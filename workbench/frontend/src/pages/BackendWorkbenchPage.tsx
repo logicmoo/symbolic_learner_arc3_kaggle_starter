@@ -37,12 +37,12 @@ type Run = {
   artifacts: Artifact[];
   events: Event[];
   cursor: number;
-  task: Json;
+  operation: Json;
 };
 
 type Catalog = {
   workflows: Json[];
-  tasks: Json[];
+  operations: Json[];
   datatypes: Json[];
 };
 
@@ -64,7 +64,7 @@ export function BackendWorkbenchPage() {
   const [selectedArtifact, setSelectedArtifact] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [tab, setTab] = useState<"run" | "artifacts" | "events" | "workflows" | "tasks" | "datatypes">("run");
+  const [tab, setTab] = useState<"run" | "artifacts" | "events" | "workflows" | "operations" | "datatypes">("run");
 
   const selected = useMemo(
     () => run?.artifacts.find((artifact) => artifact.id === selectedArtifact) ?? run?.artifacts[0] ?? null,
@@ -137,7 +137,7 @@ export function BackendWorkbenchPage() {
     <header style={{ display: "flex", justifyContent: "space-between", gap: 16, alignItems: "center", marginBottom: 18 }}>
       <div>
         <h1 style={{ margin: 0 }}>MeTTaSymbolicLearnerWorkbench</h1>
-        <div style={{ opacity: .75 }}>Backend-authoritative mode — no frontend artifact, event, workflow, task, or datatype mock data</div>
+        <div style={{ opacity: .75 }}>Backend-authoritative mode — no frontend artifact, event, workflow, operation, or datatype mock data</div>
       </div>
       <div style={{ textAlign: "right" }}>
         <div><b>API:</b> {health ? String(health.status) : "connecting"}</div>
@@ -172,7 +172,7 @@ export function BackendWorkbenchPage() {
 
       <section style={{ minWidth: 0 }}>
         <nav style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
-          {(["run","artifacts","events","workflows","tasks","datatypes"] as const).map(name =>
+          {(["run","artifacts","events","workflows","operations","datatypes"] as const).map(name =>
             <button key={name} onClick={() => setTab(name)} style={{ fontWeight: tab === name ? 700 : 400 }}>{name}</button>
           )}
         </nav>
@@ -189,7 +189,7 @@ export function BackendWorkbenchPage() {
 
           {tab === "events" && <JsonPanel value={run?.events ?? []} />}
           {tab === "workflows" && <JsonPanel value={catalog?.workflows ?? []} />}
-          {tab === "tasks" && <JsonPanel value={catalog?.tasks ?? []} />}
+          {tab === "operations" && <JsonPanel value={catalog?.operations ?? []} />}
           {tab === "datatypes" && <JsonPanel value={catalog?.datatypes ?? []} />}
         </div>
       </section>

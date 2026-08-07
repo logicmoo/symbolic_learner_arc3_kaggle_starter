@@ -14,7 +14,7 @@ TaskStatus = Literal["running", "waiting", "paused", "completed", "failed"]
 RunStatus = Literal["running", "paused", "waiting", "concluded"]
 
 
-TASK_CATALOG = [
+OPERATION_CATALOG = [
     {"id": "capture_observation", "ports": "world → observation", "routes": "arc3.capture [python]"},
     {"id": "extract_entities", "ports": "observation → entity_set", "routes": "vision.segment [python]"},
     {"id": "assign_identities", "ports": "entity_set → identity_map", "routes": "symbolic.identity [prolog]"},
@@ -74,13 +74,13 @@ STARTER_WORKFLOWS = [
         "label": "Learn a world by observation",
         "description": "Seven-stage apprenticeship workflow with a human-action boundary.",
         "steps": [
-            _step("select_world", "task", "capture_observation", "arc3.capture"),
-            _step("capture_initial", "task", "capture_observation", "arc3.capture"),
+            _step("select_world", "operation", "capture_observation", "arc3.capture"),
+            _step("capture_initial", "operation", "capture_observation", "arc3.capture"),
             _step("objectify_initial", "subworkflow", "objectify_observation", "nested workflow"),
-            _step("observe_action", "task", "human_action", "human.boundary"),
+            _step("observe_action", "operation", "human_action", "human.boundary"),
             _step("capture_result", "subworkflow", "objectify_observation", "nested workflow"),
-            _step("explain_transition", "task", "explain_transition", "symbolic.transition"),
-            _step("repeat_or_conclude", "task", "update_world_model", "symbolic.world_model"),
+            _step("explain_transition", "operation", "explain_transition", "symbolic.transition"),
+            _step("repeat_or_conclude", "operation", "update_world_model", "symbolic.world_model"),
         ],
     },
     {
@@ -88,12 +88,12 @@ STARTER_WORKFLOWS = [
         "label": "Objectify observation",
         "description": "Extract, identify, describe, render, compare, and preserve evidence.",
         "steps": [
-            _step("extract", "task", "extract_entities", "vision.segment"),
-            _step("identify", "task", "assign_identities", "symbolic.identity"),
-            _step("properties", "task", "derive_properties", "prolog.properties"),
-            _step("turtle", "task", "generate_turtle", "llm.turtle"),
-            _step("render", "task", "render_programs", "turtle.runtime"),
-            _step("compare", "task", "compare_reconstruction", "vision.diff"),
+            _step("extract", "operation", "extract_entities", "vision.segment"),
+            _step("identify", "operation", "assign_identities", "symbolic.identity"),
+            _step("properties", "operation", "derive_properties", "prolog.properties"),
+            _step("turtle", "operation", "generate_turtle", "llm.turtle"),
+            _step("render", "operation", "render_programs", "turtle.runtime"),
+            _step("compare", "operation", "compare_reconstruction", "vision.diff"),
         ],
     },
 ]
@@ -103,9 +103,9 @@ TYPED_EXAMPLE = {
     "label": "Typed artifact review",
     "description": "Example Python, Prolog, and LLM workflow with explicit slots.",
     "steps": [
-        {**_step("extract", "task", "extract_entities", "vision.segment"), "inputs": {"observation": "source_observation"}, "outputs": {"entities": "entity_set"}},
-        {**_step("facts", "task", "derive_properties", "prolog.properties"), "inputs": {"identities": "object_identities"}, "outputs": {"facts": "symbolic_facts"}},
-        {**_step("audit", "task", "compare_reconstruction", "vision.diff"), "inputs": {"source": "source_observation", "render": "reconstruction"}, "outputs": {"evidence": "evidence"}, "continueOnError": True},
+        {**_step("extract", "operation", "extract_entities", "vision.segment"), "inputs": {"observation": "source_observation"}, "outputs": {"entities": "entity_set"}},
+        {**_step("facts", "operation", "derive_properties", "prolog.properties"), "inputs": {"identities": "object_identities"}, "outputs": {"facts": "symbolic_facts"}},
+        {**_step("audit", "operation", "compare_reconstruction", "vision.diff"), "inputs": {"source": "source_observation", "render": "reconstruction"}, "outputs": {"evidence": "evidence"}, "continueOnError": True},
     ],
 }
 
@@ -451,7 +451,7 @@ class WorkbenchStore:
         else:
             messages = {
                 "save_snapshot": "Experiment snapshot saved with configuration and provenance.",
-                "refresh_catalog": "Task catalog refreshed; implementations available.",
+                "refresh_catalog": "Operation catalog refreshed; implementations available.",
                 "validate": "All workflow validations passed.",
                 "compare_models": "Comparison run queued for three model routes.",
                 "save_config": "Configuration snapshot saved for the next run.",
@@ -476,7 +476,7 @@ class WorkbenchStore:
         errors: list[str] = []
         ids = {item.get("id") for item in workflows}
         graph: dict[str, list[str]] = {}
-        task_ids = {item["id"] for item in TASK_CATALOG} | {"human_action"}
+        operation_ids = {item["id"] for item in OPERATION_CATALOG} | {"human_action"}
         for workflow in workflows:
             workflow_id = str(workflow.get("id", "")).strip()
             if not workflow_id:
@@ -497,8 +497,8 @@ class WorkbenchStore:
                     graph[workflow_id].append(operation)
                     if operation not in ids:
                         errors.append(f"{workflow_id}: unknown subworkflow {operation}")
-                elif step.get("kind") == "task" and step.get("operation") not in task_ids:
-                    errors.append(f"{workflow_id}: unknown task {step.get('operation')}")
+                elif step.get("kind") == "operation" and step.get("operation") not in operation_ids:
+                    errors.append(f"{workflow_id}: unknown operation {step.get('operation')}")
 
         visiting: set[str] = set()
         visited: set[str] = set()

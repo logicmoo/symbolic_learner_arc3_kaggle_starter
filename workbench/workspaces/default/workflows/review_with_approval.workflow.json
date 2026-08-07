@@ -11,7 +11,7 @@
   "steps": [
     {
       "id": "copy",
-      "kind": "task",
+      "kind": "operation",
       "implementation": "core.echo",
       "inputs": {
         "value": "$payload"

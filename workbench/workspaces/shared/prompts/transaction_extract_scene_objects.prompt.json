@@ -6,7 +6,7 @@
   "text": [
     "Extract stable semantic objects from the requested before/current images.",
     "Concentrate on object identity, geometry, topology, color, role, and motion-relevant substructure.",
-    "Return only the artifact fields requested by the task."
+    "Return only the artifact fields requested by the operation."
   ],
   "metadata": {
     "domain": "vision",

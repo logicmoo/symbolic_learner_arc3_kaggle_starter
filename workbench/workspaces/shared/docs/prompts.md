@@ -4,7 +4,7 @@ Prompts are reusable instruction fragments stored under `prompts/`.
 
 A Prompt has an ID, label, optional variables/metadata, and text. It does not choose a model and it does not decide when it runs.
 
-Tasks select and order Prompt IDs in `promptSelection` to build the instruction package for an LLM invocation. This makes prompt text independently editable and reusable across models, profiles, tasks, and workspaces.
+Operations select and order Prompt IDs in `promptSelection` to build the instruction package for an LLM invocation. This makes prompt text independently editable and reusable across models, profiles, operations, and workspaces.
 
 ## Shared vision prompts
 
@@ -36,8 +36,8 @@ arc3_file_separation
 arc3_root_state
 ```
 
-An ARC3 Task therefore composes shared visual prompts with a small ARC3-specific layer.
+An ARC3 Operation therefore composes shared visual prompts with a small ARC3-specific layer.
 
 ## Old `prompt_text`
 
-The legacy `llm_profiles[].prompt_text` arrays are no longer profile fields. Their ordering is represented on the Task as `promptSelection.prompts`. A profile can change temperature or reasoning effort without silently changing the job instructions.
+The legacy `llm_profiles[].prompt_text` arrays are no longer profile fields. Their ordering is represented on the Operation as `promptSelection.prompts`. A profile can change temperature or reasoning effort without silently changing the job instructions.

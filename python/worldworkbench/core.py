@@ -27,7 +27,7 @@ class SiloStatus(str, Enum):
 
 @dataclass(frozen=True)
 class ProducerRef:
-    task: str
+    operation: str
     implementation: str
     run_id: str | None = None
 

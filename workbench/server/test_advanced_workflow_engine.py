@@ -14,11 +14,11 @@ def test_dependency_graph_condition_and_fan_in(tmp_path: Path) -> None:
         'inputs': {'seed': 'Any'},
         'outputs': {'merged': '$merged'},
         'steps': [
-            {'id': 'left', 'kind': 'task', 'implementation': 'core.constant', 'parameters': {'value': {'a': 1}}, 'outputs': {'value': 'left'}},
-            {'id': 'right', 'kind': 'task', 'implementation': 'core.constant', 'parameters': {'value': {'b': 2}}, 'outputs': {'value': 'right'}},
-            {'id': 'merge', 'kind': 'task', 'implementation': 'core.merge', 'dependsOn': ['left', 'right'],
+            {'id': 'left', 'kind': 'operation', 'implementation': 'core.constant', 'parameters': {'value': {'a': 1}}, 'outputs': {'value': 'left'}},
+            {'id': 'right', 'kind': 'operation', 'implementation': 'core.constant', 'parameters': {'value': {'b': 2}}, 'outputs': {'value': 'right'}},
+            {'id': 'merge', 'kind': 'operation', 'implementation': 'core.merge', 'dependsOn': ['left', 'right'],
              'inputs': {'left': '$left', 'right': '$right'}, 'outputs': {'value': 'merged'}},
-            {'id': 'skip', 'kind': 'task', 'implementation': 'core.constant', 'when': False,
+            {'id': 'skip', 'kind': 'operation', 'implementation': 'core.constant', 'when': False,
              'parameters': {'value': 99}, 'outputs': {'value': 'never'}},
         ],
     })
@@ -35,7 +35,7 @@ def test_foreach_aggregates_outputs(tmp_path: Path) -> None:
         'inputs': {'items': 'Array'},
         'outputs': {'values': '$values'},
         'steps': [{
-            'id': 'map', 'kind': 'task', 'implementation': 'core.echo',
+            'id': 'map', 'kind': 'operation', 'implementation': 'core.echo',
             'inputs': {'value': None},
             'foreach': {'items': '$items', 'itemPort': 'value', 'maxItems': 10},
             'outputs': {'value': 'values'},
@@ -70,7 +70,7 @@ def test_retry_events_and_failure(tmp_path: Path) -> None:
     runtime.save_workflow({
         'id': 'failure', 'inputs': {}, 'outputs': {},
         'steps': [{
-            'id': 'fail', 'kind': 'task', 'implementation': 'core.fail',
+            'id': 'fail', 'kind': 'operation', 'implementation': 'core.fail',
             'parameters': {'message': 'boom'},
             'retry': {'maxAttempts': 2, 'delaySeconds': 0},
         }],
@@ -99,8 +99,8 @@ def test_cycle_validation(tmp_path: Path) -> None:
     errors = runtime.validate({
         'id': 'cycle', 'inputs': {}, 'outputs': {},
         'steps': [
-            {'id': 'a', 'kind': 'task', 'implementation': 'core.constant', 'dependsOn': ['b'], 'outputs': {'value': 'a'}},
-            {'id': 'b', 'kind': 'task', 'implementation': 'core.constant', 'dependsOn': ['a'], 'outputs': {'value': 'b'}},
+            {'id': 'a', 'kind': 'operation', 'implementation': 'core.constant', 'dependsOn': ['b'], 'outputs': {'value': 'a'}},
+            {'id': 'b', 'kind': 'operation', 'implementation': 'core.constant', 'dependsOn': ['a'], 'outputs': {'value': 'b'}},
         ],
     })
     assert any('cycle' in error for error in errors)

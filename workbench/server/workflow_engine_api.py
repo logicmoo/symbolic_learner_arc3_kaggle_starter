@@ -7,15 +7,15 @@ from typing import Any
 from fastapi import APIRouter, Body, HTTPException, Query
 
 from advanced_workflow_engine import AdvancedWorkflowEngine
-from task_resolution import materialize_workflow, materialize_workflow_step
+from operation_resolution import materialize_workflow, materialize_workflow_step
 from workflow_providers import probe_capabilities, register_real_providers
 
 
 class WorkspaceAwareWorkflowEngine(AdvancedWorkflowEngine):
-    """Advanced engine that resolves abstract task IDs only when validating/executing.
+    """Advanced engine that resolves abstract operation IDs only when validating/executing.
 
-    The persisted workflow keeps `kind: workflow_step` + `task: <abstract-id>`.
-    Resolution chooses the task's requested/default concrete implementation variant
+    The persisted workflow keeps `kind: workflow_step` + `operation: <abstract-id>`.
+    Resolution chooses the operation's requested/default concrete implementation variant
     at runtime, so workflows are not coupled to Python/LLM/Prolog routes.
     """
 

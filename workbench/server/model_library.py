@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any
 
 from backend_library import MODEL_CATALOG_DIRECTORY, load_workspace_backend_records
-from task_library import DEFAULT_WORKSPACES_ROOT
+from operation_library import DEFAULT_WORKSPACES_ROOT
 
 SHARED_WORKSPACE_ID = "shared"
 MODEL_KINDS = {"model", "profile"}
@@ -28,7 +28,7 @@ def read_model_file(path: Path) -> dict[str, Any]:
     if defaults is not None and not isinstance(defaults, dict):
         raise ValueError(f"Model/profile defaults must be a JSON object: {path}")
     if "prompt_text" in value or "prompts" in value:
-        raise ValueError(f"Prompt lists belong on tasks, not model/profile definitions: {path}")
+        raise ValueError(f"Prompt lists belong on operations, not model/profile definitions: {path}")
     return value
 
 
@@ -111,7 +111,7 @@ def resolve_model_records(
     Backends, models, and profiles share one catalog. A model can inherit a
     backend or model. A profile normally inherits a model/profile and changes
     only generation/runtime defaults. Prompt composition is deliberately not
-    part of this graph; prompt lists belong to task definitions.
+    part of this graph; prompt lists belong to operation definitions.
 
     Invalid catalog files are returned with an error and disabled resolution;
     they never abort workspace discovery.

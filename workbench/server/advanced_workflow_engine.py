@@ -8,21 +8,21 @@ from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeout
 from pathlib import Path
 from typing import Any
 
-from workflow_engine import TaskRegistry, TaskSpec, WorkflowEngine, now
+from workflow_engine import OperationRegistry, OperationSpec, WorkflowEngine, now
 
 
 class AdvancedWorkflowEngine(WorkflowEngine):
     """Feature-complete local workflow engine layered on the durable core.
 
     Adds dependency-graph scheduling, conditions, bounded foreach loops,
-    timeouts, delayed retries, compensation, task logs, child-run propagation,
-    recovery, replay, subprocess and HTTP task implementations.
+    timeouts, delayed retries, compensation, operation logs, child-run propagation,
+    recovery, replay, subprocess and HTTP operation implementations.
     """
 
-    def __init__(self, db_path: str | Path, registry: TaskRegistry | None = None) -> None:
+    def __init__(self, db_path: str | Path, registry: OperationRegistry | None = None) -> None:
         super().__init__(db_path, registry)
         self._init_advanced_db()
-        self._register_runtime_tasks()
+        self._register_runtime_operations()
         self.recover_interrupted_runs()
 
     def _init_advanced_db(self) -> None:
@@ -44,22 +44,22 @@ class AdvancedWorkflowEngine(WorkflowEngine):
               PRIMARY KEY(parent_run_id,parent_step_id,child_run_id));
             ''')
 
-    def _register_runtime_tasks(self) -> None:
+    def _register_runtime_operations(self) -> None:
         existing = {item['name'] for item in self.registry.describe()}
 
-        def register(spec: TaskSpec) -> None:
+        def register(spec: OperationSpec) -> None:
             if spec.name not in existing:
                 self.registry.register(spec)
                 existing.add(spec.name)
 
-        register(TaskSpec('process.run', {}, {'result': 'ProcessResult'}, self._task_process))
-        register(TaskSpec('http.request', {}, {'result': 'HttpResult'}, self._task_http))
-        register(TaskSpec('python.expression', {'context': 'Object'}, {'value': 'Any'}, self._task_expression))
-        register(TaskSpec('core.collect', {'items': 'Array'}, {'value': 'Array'}, lambda i, p: {'value': i['items']}))
-        register(TaskSpec('core.fail', {}, {}, lambda i, p: (_ for _ in ()).throw(RuntimeError(str(p.get('message', 'forced failure'))))))
+        register(OperationSpec('process.run', {}, {'result': 'ProcessResult'}, self._operation_process))
+        register(OperationSpec('http.request', {}, {'result': 'HttpResult'}, self._operation_http))
+        register(OperationSpec('python.expression', {'context': 'Object'}, {'value': 'Any'}, self._operation_expression))
+        register(OperationSpec('core.collect', {'items': 'Array'}, {'value': 'Array'}, lambda i, p: {'value': i['items']}))
+        register(OperationSpec('core.fail', {}, {}, lambda i, p: (_ for _ in ()).throw(RuntimeError(str(p.get('message', 'forced failure'))))))
 
     @staticmethod
-    def _task_process(_inputs: dict[str, Any], parameters: dict[str, Any]) -> dict[str, Any]:
+    def _operation_process(_inputs: dict[str, Any], parameters: dict[str, Any]) -> dict[str, Any]:
         command = parameters.get('command')
         if not command:
             raise ValueError('process.run requires parameters.command')
@@ -79,7 +79,7 @@ class AdvancedWorkflowEngine(WorkflowEngine):
         return {'result': result}
 
     @staticmethod
-    def _task_http(inputs: dict[str, Any], parameters: dict[str, Any]) -> dict[str, Any]:
+    def _operation_http(inputs: dict[str, Any], parameters: dict[str, Any]) -> dict[str, Any]:
         url = str(parameters.get('url') or inputs.get('url') or '')
         if not url:
             raise ValueError('http.request requires url')
@@ -99,7 +99,7 @@ class AdvancedWorkflowEngine(WorkflowEngine):
             return {'result': {'status': response.status, 'headers': dict(response.headers), 'body': parsed}}
 
     @staticmethod
-    def _task_expression(inputs: dict[str, Any], parameters: dict[str, Any]) -> dict[str, Any]:
+    def _operation_expression(inputs: dict[str, Any], parameters: dict[str, Any]) -> dict[str, Any]:
         expression = str(parameters.get('expression') or '')
         if not expression:
             raise ValueError('python.expression requires parameters.expression')
@@ -213,7 +213,7 @@ class AdvancedWorkflowEngine(WorkflowEngine):
 
     def _execute_advanced_step(self, run_id: str, step: dict[str, Any]) -> None:
         sid = step['id']
-        kind = step.get('kind', 'task')
+        kind = step.get('kind', 'operation')
         with self._db() as db:
             db.execute('UPDATE wf_steps SET status=?,attempt=attempt+1,started_at=?,error=NULL WHERE run_id=? AND step_id=?', ('running', now(), run_id, sid))
         self._event(run_id, sid, 'step.started', {'kind': kind})
@@ -259,7 +259,7 @@ class AdvancedWorkflowEngine(WorkflowEngine):
             else:
                 result = invoke()
             if not isinstance(result, dict):
-                raise TypeError('task handler must return an object')
+                raise TypeError('operation handler must return an object')
             if 'result' in result and isinstance(result['result'], dict):
                 proc = result['result']
                 if proc.get('stdout'):
@@ -268,7 +268,7 @@ class AdvancedWorkflowEngine(WorkflowEngine):
                     self._log(run_id, sid, 'stderr', str(proc['stderr']))
             for port, artifact_name in (step.get('outputs') or {}).items():
                 if port not in result:
-                    raise ValueError(f'missing task output: {port}')
+                    raise ValueError(f'missing operation output: {port}')
                 self._artifact(run_id, sid, artifact_name, spec.outputs.get(port, 'Any'), result[port], {'stepId': sid, 'attempt': self._attempt(run_id, sid)})
             with self._db() as db:
                 db.execute('UPDATE wf_steps SET status=?,finished_at=? WHERE run_id=? AND step_id=?', ('completed', now(), run_id, sid))

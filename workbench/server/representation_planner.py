@@ -4,12 +4,12 @@ import heapq
 from pathlib import Path
 from typing import Any
 
-from task_library import DEFAULT_WORKSPACES_ROOT, load_workspace_task_records
+from operation_library import DEFAULT_WORKSPACES_ROOT, load_workspace_operation_records
 
 
 def conversion_edges(workspace_root: Path, *, workspaces_root: Path = DEFAULT_WORKSPACES_ROOT) -> list[dict[str, Any]]:
     edges: list[dict[str, Any]] = []
-    for record in load_workspace_task_records(workspace_root, workspaces_root=workspaces_root):
+    for record in load_workspace_operation_records(workspace_root, workspaces_root=workspaces_root):
         document = record.get("document") or {}
         conversion = document.get("conversion")
         if not isinstance(conversion, dict):
@@ -22,7 +22,7 @@ def conversion_edges(workspace_root: Path, *, workspaces_root: Path = DEFAULT_WO
         planning = document.get("planning") if isinstance(document.get("planning"), dict) else {}
         cost = float((planning or {}).get("cost", 1.0))
         edges.append({
-            "taskId": str(document.get("id")),
+            "operationId": str(document.get("id")),
             "label": str(document.get("label") or document.get("id")),
             "datatype": datatype,
             "from": source,
@@ -33,7 +33,7 @@ def conversion_edges(workspace_root: Path, *, workspaces_root: Path = DEFAULT_WO
             "source": record.get("source"),
             "path": record.get("path"),
         })
-    return sorted(edges, key=lambda edge: (edge["datatype"], edge["from"], edge["to"], edge["taskId"]))
+    return sorted(edges, key=lambda edge: (edge["datatype"], edge["from"], edge["to"], edge["operationId"]))
 
 
 def plan_representation_conversion(

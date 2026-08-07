@@ -8,11 +8,11 @@ from prompt_library import (
     load_workspace_prompt_implementation_records,
     load_workspace_prompt_records,
 )
-from task_library import (
+from operation_library import (
     DEFAULT_WORKSPACES_ROOT,
     SHARED_WORKSPACE_ID,
-    load_workspace_task_implementation_records,
-    load_workspace_task_records,
+    load_workspace_operation_implementation_records,
+    load_workspace_operation_records,
 )
 
 DATATYPE_DIRECTORY = "datatypes"
@@ -169,19 +169,19 @@ def interface_type_inventory(
     """Inventory every datatype/representation referenced by executable interfaces.
 
     This deliberately scans both abstract resources and implementations. The Data
-    editor can therefore show types mentioned inside tasks, prompt contracts, and
+    editor can therefore show types mentioned inside operations, prompt contracts, and
     workflows even when someone forgot to add a first-class definition yet.
     """
     refs: list[dict[str, Any]] = []
 
-    task_records = [
-        *load_workspace_task_records(workspace_root, workspaces_root=workspaces_root),
-        *load_workspace_task_implementation_records(workspace_root, workspaces_root=workspaces_root),
+    operation_records = [
+        *load_workspace_operation_records(workspace_root, workspaces_root=workspaces_root),
+        *load_workspace_operation_implementation_records(workspace_root, workspaces_root=workspaces_root),
     ]
-    for record in task_records:
+    for record in operation_records:
         document = record.get("document") or {}
         owner_id = str(document.get("id") or record.get("path"))
-        owner_kind = str(document.get("kind") or "task")
+        owner_kind = str(document.get("kind") or "operation")
         _collect_contract(owner_kind, owner_id, document.get("inputs"), "input", refs)
         _collect_contract(owner_kind, owner_id, document.get("outputs"), "output", refs)
 

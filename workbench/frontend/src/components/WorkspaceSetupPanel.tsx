@@ -6,7 +6,7 @@ type Workspace = {
   description: string;
   root: string;
   workflowFileCount: number;
-  taskFileCount: number;
+  operationFileCount: number;
   datatypeFileCount?: number;
   representationFileCount?: number;
   modelFileCount?: number;
@@ -84,7 +84,7 @@ export function WorkspaceSetupPanel({
     <div className="settings-grid">
       <label><span>WORKSPACE TYPE</span><select value={workspace.id === "shared" ? "shared" : "project"} disabled><option value="shared">Shared library</option><option value="project">Project workspace</option></select><small>{editableFileCount} editable text files discovered from disk.</small></label>
       <label><span>ENGINE IMPLEMENTATIONS</span><select value={implementationCount} disabled><option value={implementationCount}>{implementationCount} registered implementations</option></select><small>Registered by the running workflow engine.</small></label>
-      <label><span>DATA CONTRACT REFERENCES</span><input value={referenceCount} readOnly/><small>Task, prompt, and workflow ports inventoried against first-class datatypes.</small></label>
+      <label><span>DATA CONTRACT REFERENCES</span><input value={referenceCount} readOnly/><small>Operation, prompt, and workflow ports inventoried against first-class datatypes.</small></label>
       <label><span>DISCOVERED WORKSPACE ROOTS</span><input value={workspaceRoots.length} readOnly/><small>{workspaceRoots.join(" · ") || "No workspace roots returned"}</small></label>
     </div>
 
@@ -96,14 +96,14 @@ export function WorkspaceSetupPanel({
       {workspaces.map(item => <button className="resource-row" key={item.root} onClick={() => onChooseWorkspace(item)}>
         <b>{item.label}</b>
         <code>{item.id === "shared" ? "shared library" : "project"}</code>
-        <span>{item.workflowFileCount || 0} wf · {item.taskFileCount || 0} tasks · {item.datatypeFileCount || 0} types · {item.representationFileCount || 0} reps · {item.modelFileCount || 0} models · {item.promptFileCount || 0} prompts</span>
+        <span>{item.workflowFileCount || 0} wf · {item.operationFileCount || 0} operations · {item.datatypeFileCount || 0} types · {item.representationFileCount || 0} reps · {item.modelFileCount || 0} models · {item.promptFileCount || 0} prompts</span>
         <span>{item.root}</span>
         <em>{item.id === workspace.id ? "current" : "open"}</em>
       </button>)}
     </div>
 
     <div className="resource-heading" style={{marginTop:16}}>
-      <div><span>FIRST-CLASS DATA COVERAGE</span><h2>Referenced interfaces still needing definitions</h2><p>The Data page owns these contracts. Setup keeps the gaps visible so an undeclared type cannot disappear inside a task or workflow.</p></div>
+      <div><span>FIRST-CLASS DATA COVERAGE</span><h2>Referenced interfaces still needing definitions</h2><p>The Data page owns these contracts. Setup keeps the gaps visible so an undeclared type cannot disappear inside a operation or workflow.</p></div>
     </div>
     {(missingTypes.length || missingRepresentations.length) ? <div className="demo-notice">
       <b>Interface references still need first-class definitions</b>

@@ -43,7 +43,7 @@ def test_navigation_reuses_current_rich_editors() -> None:
     expected = {
         "Goals": ('view:"goals"', 'view==="goals"&&<GoalPlanLibraryEditor workspaceId={workspace.id} family="goal"'),
         "Plans": ('view:"plans"', 'view==="plans"&&<GoalPlanLibraryEditor workspaceId={workspace.id} family="plan"'),
-        "Operations": ('view:"tasks"', 'view==="tasks"&&<TaskLibraryEditor'),
+        "Operations": ('view:"operations"', 'view==="operations"&&<OperationLibraryEditor'),
         "Datatypes": ('view:"data"', 'view==="data"&&<DataCatalogPanel'),
         "Prompts": ('view:"prompts"', 'view==="prompts"&&<PromptLibraryEditor'),
         "Models": ('view:"llms"', 'view==="llms"&&<LlmModelsEditor'),

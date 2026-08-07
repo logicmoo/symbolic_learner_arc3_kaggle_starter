@@ -6,12 +6,12 @@ import "../styles/help_tabs.css";
 type HelpTab={id:string;label:string;path?:string};
 
 const docTabs:HelpTab[]=[
- {id:"overview",label:"Overview",path:"docs/models_profiles_tasks_prompts.md"},
+ {id:"overview",label:"Overview",path:"docs/models_profiles_operations_prompts.md"},
  {id:"goals",label:"Goals",path:"docs/goals.md"},
  {id:"plans",label:"Plans",path:"docs/plans.md"},
  {id:"data",label:"Data",path:"docs/data.md"},
  {id:"llms",label:"LLMs",path:"docs/llm_catalog.md"},
- {id:"tasks",label:"Tasks",path:"docs/tasks.md"},
+ {id:"operations",label:"Operations",path:"docs/operations.md"},
  {id:"prompts",label:"Prompts",path:"docs/prompts.md"},
  {id:"migration",label:"Migration",path:"docs/legacy_llm_migration.md"},
 ];

@@ -51,7 +51,7 @@ components, and human interaction without hiding the boundaries among them.
 
 The desktop provides:
 
-- A catalog of workflows, subworkflows, tasks, and implementations.
+- A catalog of workflows, subworkflows, operations, and implementations.
 - Typed input and output ports with connection validation.
 - Reusable nested workflows with isolated internal slots and explicit port
   bindings.
@@ -66,7 +66,7 @@ The desktop provides:
 - Cycle detection and validation before nested workflows are run.
 
 MeTTa is an intended symbolic implementation route. The currently checked-in
-routes include Python, Prolog, LLM-backed tasks, and Turtle programs.
+routes include Python, Prolog, LLM-backed operations, and Turtle programs.
 
 ## Worlds, observations, and goals
 
@@ -103,7 +103,7 @@ the workbench observes a person interacting with a world:
 7. Repeat until the world's behavior and goals become intelligible.
 
 Those seven items are themselves a runnable workflow. Complex stages are not
-flattened into opaque tasks: they invoke reusable named subworkflows.
+flattened into opaque operations: they invoke reusable named subworkflows.
 
 For example, **Objectify observation** can expand into:
 
@@ -158,11 +158,11 @@ The machine-readable contracts are maintained in:
 
 - [`config/world_workbench_datatypes.json`](config/world_workbench_datatypes.json)
   for domain-neutral datatypes.
-- [`config/world_workbench_tasks.json`](config/world_workbench_tasks.json) for
-  task input/output contracts.
+- [`config/world_workbench_operations.json`](config/world_workbench_operations.json) for
+  operation input/output contracts.
 - [`config/llm_workflows.json`](config/llm_workflows.json) for runnable workflows
   and nested subworkflows.
-- [`config/workflow_tasks.json`](config/workflow_tasks.json) for task
+- [`config/workflow_operations.json`](config/workflow_operations.json) for operation
   implementations.
 - [`config/llm_providers.json`](config/llm_providers.json) for model providers
   and reusable prompt sections.
@@ -196,7 +196,7 @@ reload from your checkout. See the [local web demo guide](workbench/README.md).
 
 Inside a supported interactive host, press uppercase **`W`** to open the
 workflow desktop. Select a workflow and choose **Save and Run Selected**. The
-desktop validates typed task ports, expands nested subworkflows recursively,
+desktop validates typed operation ports, expands nested subworkflows recursively,
 rejects cycles and invalid bindings, and executes the experiment through the
 active workbench runner.
 
@@ -331,7 +331,7 @@ subworkflows declared in
 From the same desktop, the autonomous solver will reuse perception,
 objectification, stable identity, Turtle reconstruction, transition analysis,
 world learning, goal reasoning, simulation, action selection, and outcome
-evaluation as framework tasks and subworkflows. It replaces the human-action
+evaluation as framework operations and subworkflows. It replaces the human-action
 stage with goal-directed candidate simulation while preserving the same
 inspectors, ports, intermediate silos, transcripts, and evidence history.
 

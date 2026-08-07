@@ -1,6 +1,6 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { ArtifactTreeCommandContext, type ArtifactTreeCommand } from "./ArtifactTreeBranch";
-import "../styles/task_editor.css";
+import "../styles/operation_editor.css";
 
 export const UNIVERSAL_ARTIFACT_EDITOR_BASELINE = "current-rich-editor";
 
@@ -40,7 +40,7 @@ export type UniversalArtifactEditorProps = {
   onActivate: (key: string) => void;
   onClose: (key: string) => void;
 
-  /** Resource-specific editor body. Tasks may render Python/Prolog/MeTTa/LLM panels here. */
+  /** Resource-specific editor body. Operations may render Python/Prolog/MeTTa/LLM panels here. */
   renderEditor: (key: string, secondary: boolean) => ReactNode;
   emptyEditor?: ReactNode;
 
@@ -64,7 +64,7 @@ export type UniversalArtifactEditorProps = {
 /**
  * Universal Artifact Editor.
  *
- * The current active rich Tasks experience is the feature baseline:
+ * The current active rich Operations experience is the feature baseline:
  * - semantic specification -> concrete variants on the left
  * - persistent, closeable, dirty-aware editor tabs
  * - side-by-side comparison
@@ -97,10 +97,10 @@ export function UniversalArtifactEditor({
   bottomPanels = [],
   footer,
   className = "",
-  treeClassName = "task-tree-pane",
-  workspaceClassName = "task-editor-workspace",
-  tabsClassName = "task-document-tabs",
-  panesClassName = "task-editor-panes",
+  treeClassName = "operation-tree-pane",
+  workspaceClassName = "operation-editor-workspace",
+  tabsClassName = "operation-document-tabs",
+  panesClassName = "operation-editor-panes",
 }: UniversalArtifactEditorProps) {
   const activeTab = tabs.find(tab => tab.key === activeKey) || null;
   const compareTab = tabs.find(tab => tab.key === compareKey) || null;
@@ -119,7 +119,7 @@ export function UniversalArtifactEditor({
   );
 
   return <section
-    className={`resource-view task-hierarchy-page generic-hierarchy-editor universal-artifact-editor ${className}`.trim()}
+    className={`resource-view operation-hierarchy-page generic-hierarchy-editor universal-artifact-editor ${className}`.trim()}
     data-editor-baseline={UNIVERSAL_ARTIFACT_EDITOR_BASELINE}
   >
     <div className="artifact-breadcrumb" aria-label="Artifact breadcrumb">
@@ -145,7 +145,7 @@ export function UniversalArtifactEditor({
       {inspector && <div className="artifact-inspector-extension">{inspector}</div>}
     </div>
 
-    <div className={`task-hierarchy-layout artifact-editor-body ${navigatorCollapsed?"navigator-collapsed":"navigator-expanded"}`}>
+    <div className={`operation-hierarchy-layout artifact-editor-body ${navigatorCollapsed?"navigator-collapsed":"navigator-expanded"}`}>
       <div className={`${treeClassName} artifact-navigator`.trim()}>
         <div className="artifact-navigator-toolbar">
           <span>HIERARCHY</span>
@@ -159,7 +159,7 @@ export function UniversalArtifactEditor({
       </div>
       <div className={workspaceClassName}>
         <div className={tabsClassName}>
-          {tabs.map(tab => <div className={`task-document-tab ${tab.key===activeKey?"active":""}`} key={tab.key}>
+          {tabs.map(tab => <div className={`operation-document-tab ${tab.key===activeKey?"active":""}`} key={tab.key}>
             <button onClick={()=>onActivate(tab.key)} title={tab.subtitle || tab.label}>
               <span>{tab.kind}</span><b>{tab.label}</b>{tab.dirty&&<i>●</i>}
             </button>

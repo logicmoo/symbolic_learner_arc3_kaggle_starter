@@ -4,7 +4,7 @@
   "label": "Turtle Program",
   "implements": "image",
   "language": "logo",
-  "description": "Movement-based Turtle/LOGO program representation retained as a first-class alias used by existing tasks.",
+  "description": "Movement-based Turtle/LOGO program representation retained as a first-class alias used by existing operations.",
   "encodings": [
     {"id": "turtle_source", "mimeTypes": ["text/x-logo", "text/plain"], "extensions": [".logo", ".txt"]}
   ]

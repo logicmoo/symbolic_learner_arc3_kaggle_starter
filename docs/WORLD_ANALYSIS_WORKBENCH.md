@@ -48,8 +48,8 @@ the general form of the debugger evidence trees already used by ARC3.
 
 ## Processing-resource sequence
 
-The machine-readable task contracts are in
-[`world_workbench_tasks.json`](../config/world_workbench_tasks.json).
+The machine-readable operation contracts are in
+[`world_workbench_operations.json`](../config/world_workbench_operations.json).
 
 1. Observe a world.
 2. Analyze an observation into entities, properties, relationships, and events.
@@ -61,7 +61,7 @@ The machine-readable task contracts are in
 8. Choose an intervention or request more observation.
 9. Record the actual outcome as new evidence.
 
-These are contracts rather than fixed implementations. A task can be fulfilled
+These are contracts rather than fixed implementations. A operation can be fulfilled
 by Python, Prolog, an LLM, a human inspector, or an external process while
 preserving the same typed inputs and outputs.
 

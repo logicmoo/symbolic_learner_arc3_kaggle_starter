@@ -7,11 +7,11 @@ Every first-class resource has two identities:
 - semantic identity: what the artifact means or promises;
 - implementation identity: how a concrete variant realizes that contract.
 
-Examples include abstract tasks with Python, Prolog, MeTTa, and LLM implementations; abstract datatypes with Bitmap, Scene Graph, LOGO/Turtle, Object Facts, Natural Language, and embedding representations; and abstract prompts with model-, language-, or optimization-specific prompt implementations.
+Examples include abstract operations with Python, Prolog, MeTTa, and LLM implementations; abstract datatypes with Bitmap, Scene Graph, LOGO/Turtle, Object Facts, Natural Language, and embedding representations; and abstract prompts with model-, language-, or optimization-specific prompt implementations.
 
-## UI baseline: Tasks b42249b
+## UI baseline: Operations b42249b
 
-The user-designated `b42249b` Tasks editor is the feature baseline for the universal editor. The global editor may gain features from Data, Prompts, Models, workflow tooling, or later panels, but it must not become a lowest-common-denominator editor that removes the rich Tasks behavior.
+The user-designated `b42249b` Operations editor is the feature baseline for the universal editor. The global editor may gain features from Data, Prompts, Models, workflow tooling, or later panels, but it must not become a lowest-common-denominator editor that removes the rich Operations behavior.
 
 The showcase contract is `echo_into_titlecased` with Python, Prolog, and LLM implementations. That example makes variant selection and implementation-specific editing visible immediately.
 
@@ -34,13 +34,13 @@ The canonical React chrome lives in `UniversalArtifactEditor.tsx`. `HierarchyRes
 
 ## Resource families
 
-The architecture is intended to cover Tasks, Datatypes, Prompts, Converters, Validators, Scorers, Knowledge Bases, Workflows, Datasets, Resources, Models, and future artifact kinds.
+The architecture is intended to cover Operations, Datatypes, Prompts, Converters, Validators, Scorers, Knowledge Bases, Workflows, Datasets, Resources, Models, and future artifact kinds.
 
-### Task variants
+### Operation variants
 
-Task implementations retain rich implementation-specific views. Python implementations expose module/file/class/callable information. Prolog implementations expose predicates and arity. MeTTa implementations expose MeTTa configuration. LLM implementations expose model/profile dispatch and ordered prompt bindings.
+Operation implementations retain rich implementation-specific views. Python implementations expose module/file/class/callable information. Prolog implementations expose predicates and arity. MeTTa implementations expose MeTTa configuration. LLM implementations expose model/profile dispatch and ordered prompt bindings.
 
-The Tasks page is also the regression oracle for the shared chrome: if the universal editor cannot still present the full rich Tasks experience, the abstraction has removed too much.
+The Operations page is also the regression oracle for the shared chrome: if the universal editor cannot still present the full rich Operations experience, the abstraction has removed too much.
 
 ### Datatype variants
 
@@ -56,9 +56,9 @@ Model/back-end/profile resources use the same editor shell while retaining inher
 
 ## No-feature-loss rule
 
-The effective global editor feature set is the union of useful capabilities found in the rich Tasks baseline and later artifact panels. New adapters add specialized behavior; they do not replace the baseline with a simpler generic form.
+The effective global editor feature set is the union of useful capabilities found in the rich Operations baseline and later artifact panels. New adapters add specialized behavior; they do not replace the baseline with a simpler generic form.
 
-A source-level regression test in `tests/test_universal_artifact_editor_ui.py` protects the major baseline features and verifies that Tasks, Data, Prompts, and Models still route through the universal editor.
+A source-level regression test in `tests/test_universal_artifact_editor_ui.py` protects the major baseline features and verifies that Operations, Data, Prompts, and Models still route through the universal editor.
 
 ## Workflow independence
 

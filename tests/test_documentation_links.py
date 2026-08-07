@@ -140,7 +140,7 @@ def test_file_tree_links_all_connected_architecture_files() -> None:
         "python/worldworkbench/adapters/__init__.py",
         "python/worldworkbench/adapters/arc3.py",
         "config/world_workbench_datatypes.json",
-        "config/world_workbench_tasks.json",
+        "config/world_workbench_operations.json",
         "config/llm_workflows.json",
         "python/object_memory/models.py",
         "python/object_memory/providers.py",

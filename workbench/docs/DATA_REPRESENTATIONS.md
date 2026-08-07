@@ -2,10 +2,10 @@
 
 The workbench separates **what information means** from **how that information is encoded**.
 
-This is deliberately parallel to the task system:
+This is deliberately parallel to the operation system:
 
 ```text
-Abstract Task                 Abstract Data
+Abstract Operation                 Abstract Data
     │                             │
     ├── Prolog                    ├── Bitmap
     ├── Python                    ├── SVG
@@ -16,7 +16,7 @@ Abstract Task                 Abstract Data
                                   └── Embedding
 ```
 
-A workflow should normally ask for an abstract datatype such as `image`, not for a file format such as JPEG. Likewise it should ask for an abstract task such as object extraction, not hard-code GPT or Prolog unless a specific implementation is required.
+A workflow should normally ask for an abstract datatype such as `image`, not for a file format such as JPEG. Likewise it should ask for an abstract operation such as object extraction, not hard-code GPT or Prolog unless a specific implementation is required.
 
 ## Filesystem resources
 
@@ -26,13 +26,13 @@ Shared reusable definitions live in:
 workbench/workspaces/shared/
 ├── datatypes/
 ├── representations/
-├── tasks/
+├── operations/
 ├── models/
 ├── prompts/
 └── workflows/
 ```
 
-Ordinary workspaces inherit shared datatype and representation resources. A workspace may override a shared resource by declaring a local resource with the same `id`, just as it can override shared tasks and model configuration.
+Ordinary workspaces inherit shared datatype and representation resources. A workspace may override a shared resource by declaring a local resource with the same `id`, just as it can override shared operations and model configuration.
 
 ## Abstract datatype
 
@@ -83,13 +83,13 @@ A representation says how the same semantic value is encoded.
 
 PNG, JPEG, and BMP are treated as encodings of the `bitmap` representation rather than as separate semantic datatypes.
 
-## Conversion tasks
+## Conversion operations
 
-Representation conversion is not a special execution mechanism. A conversion is an ordinary abstract task with a typed representation contract.
+Representation conversion is not a special execution mechanism. A conversion is an ordinary abstract operation with a typed representation contract.
 
 ```json
 {
-  "kind": "task",
+  "kind": "operation",
   "id": "bitmap_to_scene_graph",
   "inputs": {
     "image": {
@@ -111,14 +111,14 @@ Representation conversion is not a special execution mechanism. A conversion is 
 }
 ```
 
-That task can later have Python, Prolog, LLM, or MeTTa implementations. The workbench therefore plans over two independent dimensions:
+That operation can later have Python, Prolog, LLM, or MeTTa implementations. The workbench therefore plans over two independent dimensions:
 
-1. which task implementation should satisfy an abstract operation;
+1. which operation implementation should satisfy an abstract operation;
 2. which representation-conversion path makes the available data compatible with that implementation.
 
 ## Representation planning graph
 
-The server builds a graph from tasks containing a `conversion` contract and can plan a path between representations.
+The server builds a graph from operations containing a `conversion` contract and can plan a path between representations.
 
 For example:
 
@@ -130,7 +130,7 @@ bitmap
 natural_language ──> text_to_scene_graph ──> scene_graph
 ```
 
-Conversion task definitions may provide planning metadata such as:
+Conversion operation definitions may provide planning metadata such as:
 
 ```json
 {
@@ -172,7 +172,7 @@ The canonical artifact contract is:
   "encoding": "json",
   "value": {},
   "provenance": {
-    "producerTask": "bitmap_to_scene_graph",
+    "producerOperation": "bitmap_to_scene_graph",
     "producerImplementation": "bitmap_to_scene_graph.gpt56"
   }
 }
@@ -186,7 +186,7 @@ A representation-independent workflow can declare only the semantic contract:
 
 ```json
 {
-  "task": "object_extraction",
+  "operation": "object_extraction",
   "inputs": {
     "source": {"datatype": "image"}
   },
@@ -196,4 +196,4 @@ A representation-independent workflow can declare only the semantic contract:
 }
 ```
 
-The long-term planner resolves both the task implementation and any conversion tasks needed to connect the available artifact representations to that implementation. This keeps workflows modular and allows implementations and data encodings to be swapped independently.
+The long-term planner resolves both the operation implementation and any conversion operations needed to connect the available artifact representations to that implementation. This keeps workflows modular and allows implementations and data encodings to be swapped independently.

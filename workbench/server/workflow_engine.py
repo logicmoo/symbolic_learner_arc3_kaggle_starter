@@ -20,29 +20,29 @@ def digest(value: Any) -> str:
 
 
 @dataclass(frozen=True)
-class TaskSpec:
+class OperationSpec:
     name: str
     inputs: dict[str, str]
     outputs: dict[str, str]
     handler: Callable[[dict[str, Any], dict[str, Any]], dict[str, Any]]
 
 
-class TaskRegistry:
+class OperationRegistry:
     def __init__(self) -> None:
-        self._tasks: dict[str, TaskSpec] = {}
+        self._operations: dict[str, OperationSpec] = {}
 
-    def register(self, spec: TaskSpec) -> None:
-        if spec.name in self._tasks:
-            raise ValueError(f'task already registered: {spec.name}')
-        self._tasks[spec.name] = spec
+    def register(self, spec: OperationSpec) -> None:
+        if spec.name in self._operations:
+            raise ValueError(f'operation already registered: {spec.name}')
+        self._operations[spec.name] = spec
 
-    def get(self, name: str) -> TaskSpec:
-        if name not in self._tasks:
-            raise KeyError(f'unknown task implementation: {name}')
-        return self._tasks[name]
+    def get(self, name: str) -> OperationSpec:
+        if name not in self._operations:
+            raise KeyError(f'unknown operation implementation: {name}')
+        return self._operations[name]
 
     def describe(self) -> list[dict[str, Any]]:
-        return [{'name': s.name, 'inputs': s.inputs, 'outputs': s.outputs} for s in self._tasks.values()]
+        return [{'name': s.name, 'inputs': s.inputs, 'outputs': s.outputs} for s in self._operations.values()]
 
 
 class WorkflowEngine:
@@ -50,7 +50,7 @@ class WorkflowEngine:
 
     TERMINAL = {'completed', 'failed', 'cancelled'}
 
-    def __init__(self, db_path: str | Path, registry: TaskRegistry | None = None) -> None:
+    def __init__(self, db_path: str | Path, registry: OperationRegistry | None = None) -> None:
         self.db_path = Path(db_path)
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self.registry = registry or default_registry()
@@ -129,8 +129,8 @@ class WorkflowEngine:
             if not sid: errors.append(f'step {i} requires id')
             if sid in ids: errors.append(f'duplicate step id: {sid}')
             ids.add(sid)
-            kind = step.get('kind', 'task')
-            if kind == 'task':
+            kind = step.get('kind', 'operation')
+            if kind == 'operation':
                 try: spec = self.registry.get(str(step.get('implementation') or step.get('operation') or ''))
                 except KeyError as e: errors.append(str(e)); continue
                 for port, dtype in spec.inputs.items():
@@ -206,7 +206,7 @@ class WorkflowEngine:
         self._event(run_id, None, 'workflow.completed', {'outputs': list(outputs)})
 
     def _execute_step(self, run_id: str, step: dict[str, Any]) -> None:
-        sid = step['id']; kind = step.get('kind', 'task')
+        sid = step['id']; kind = step.get('kind', 'operation')
         with self._db() as db:
             db.execute('UPDATE wf_steps SET status=?,attempt=attempt+1,started_at=? WHERE run_id=? AND step_id=?', ('running', now(), run_id, sid))
         self._event(run_id, sid, 'step.started', {'kind': kind})
@@ -232,12 +232,12 @@ class WorkflowEngine:
                 spec = self.registry.get(str(step.get('implementation') or step.get('operation')))
                 values = {k: self._resolve(run_id, v) for k, v in (step.get('inputs') or {}).items()}
                 result = spec.handler(values, step.get('parameters') or {})
-                if not isinstance(result, dict): raise TypeError('task handler must return an object')
+                if not isinstance(result, dict): raise TypeError('operation handler must return an object')
             output_bindings = step.get('outputs') or {}
-            if kind == 'task': output_types = self.registry.get(str(step.get('implementation') or step.get('operation'))).outputs
+            if kind == 'operation': output_types = self.registry.get(str(step.get('implementation') or step.get('operation'))).outputs
             else: output_types = {k: 'Any' for k in output_bindings}
             for port, artifact_name in output_bindings.items():
-                if port not in result: raise ValueError(f'missing task output: {port}')
+                if port not in result: raise ValueError(f'missing operation output: {port}')
                 self._artifact(run_id, sid, artifact_name, output_types.get(port, 'Any'), result[port], {'stepId': sid})
             with self._db() as db:
                 db.execute('UPDATE wf_steps SET status=?,finished_at=? WHERE run_id=? AND step_id=?', ('completed', now(), run_id, sid))
@@ -298,10 +298,10 @@ class WorkflowEngine:
                 'events': [{'id': e['id'], 'stepId': e['step_id'], 'kind': e['kind'], 'payload': json.loads(e['payload']), 'createdAt': e['created_at']} for e in events]}
 
 
-def default_registry() -> TaskRegistry:
-    registry = TaskRegistry()
-    registry.register(TaskSpec('core.echo', {'value': 'Any'}, {'value': 'Any'}, lambda i, p: {'value': i['value']}))
-    registry.register(TaskSpec('core.merge', {'left': 'Object', 'right': 'Object'}, {'value': 'Object'}, lambda i, p: {'value': {**i['left'], **i['right']}}))
-    registry.register(TaskSpec('core.select', {'value': 'Object'}, {'value': 'Any'}, lambda i, p: {'value': i['value'][p['key']]}))
-    registry.register(TaskSpec('core.constant', {}, {'value': 'Any'}, lambda i, p: {'value': p.get('value')}))
+def default_registry() -> OperationRegistry:
+    registry = OperationRegistry()
+    registry.register(OperationSpec('core.echo', {'value': 'Any'}, {'value': 'Any'}, lambda i, p: {'value': i['value']}))
+    registry.register(OperationSpec('core.merge', {'left': 'Object', 'right': 'Object'}, {'value': 'Object'}, lambda i, p: {'value': {**i['left'], **i['right']}}))
+    registry.register(OperationSpec('core.select', {'value': 'Object'}, {'value': 'Any'}, lambda i, p: {'value': i['value'][p['key']]}))
+    registry.register(OperationSpec('core.constant', {}, {'value': 'Any'}, lambda i, p: {'value': p.get('value')}))
     return registry

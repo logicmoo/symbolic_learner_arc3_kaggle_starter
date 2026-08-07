@@ -1,0 +1,43 @@
+{
+  "id": "arc3.symbolic_state_analysis",
+  "label": "ARC3 Symbolic State Analysis — extreme",
+  "description": "Legacy extreme ARC3 prompt composition expressed correctly as a Operation. ARC3-only file/identity contracts stay local while generic vision, symbolic scene, reconstruction, correspondence, and rule-learning prompts remain shared.",
+  "implementation": "llm.complete",
+  "inputs": {
+    "current_image": "Image",
+    "parent_image": "Image",
+    "object_registry": "FileReference"
+  },
+  "outputs": {
+    "analysis": "ArtifactBundle"
+  },
+  "promptSelection": {
+    "prompts": [
+      "structured_json_response",
+      "arc3_response_contract",
+      "logical_image_coordinates",
+      "arc3_identity_registry",
+      "object_extraction",
+      "symbolic_scene_fact_schema",
+      "turtle_reconstruction",
+      "turtle_motion_dsl",
+      "transition_observation",
+      "object_correspondence",
+      "rule_hypothesis",
+      "symbolic_rule_evidence_schema",
+      "arc3_file_separation",
+      "arc3_root_state",
+      "output_quality_control"
+    ],
+    "separator": "\n\n"
+  },
+  "modelSelection": {
+    "models": [],
+    "strategy": "single"
+  },
+  "parameters": {
+    "domain": "arc3",
+    "analysisTier": "extreme"
+  },
+  "kind": "operation"
+}

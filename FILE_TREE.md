@@ -30,9 +30,9 @@ The planning documents have deliberately separate scopes and cross-link one anot
 - [`python/worldworkbench/adapters/arc3.py`](python/worldworkbench/adapters/arc3.py) — ARC3 observation, intervention, human-choice, and artifact translation boundary.
 - [`python/worldworkbench/adapters/__init__.py`](python/worldworkbench/adapters/__init__.py) — public ARC3 adapter exports.
 - [`config/world_workbench_datatypes.json`](config/world_workbench_datatypes.json) — domain-neutral semantic and representation datatype manifest.
-- [`config/world_workbench_tasks.json`](config/world_workbench_tasks.json) — reusable processing-resource contracts, including object extraction and Turtle representation tasks.
+- [`config/world_workbench_operations.json`](config/world_workbench_operations.json) — reusable processing-resource contracts, including object extraction and Turtle representation operations.
 - [`config/llm_workflows.json`](config/llm_workflows.json) — runnable workflow-desktop catalog, including the seven-step `ls20` human-observation workflow and its nested subworkflows.
-- [`python/workflow_task_editor.py`](python/workflow_task_editor.py) — MeTTaSymbolicLearnerWorkbench desktop for composing, validating, inspecting, saving, and running typed tasks and nested subworkflows.
+- [`python/workflow_operation_editor.py`](python/workflow_operation_editor.py) — MeTTaSymbolicLearnerWorkbench desktop for composing, validating, inspecting, saving, and running typed operations and nested subworkflows.
 
 ## Repository configuration and protected Kaggle surface
 

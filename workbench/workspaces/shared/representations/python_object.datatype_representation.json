@@ -4,5 +4,5 @@
   "label": "Python Object",
   "implements": "information",
   "language": "python",
-  "description": "An in-memory Python object representation used by Python task implementations."
+  "description": "An in-memory Python object representation used by Python operation implementations."
 }

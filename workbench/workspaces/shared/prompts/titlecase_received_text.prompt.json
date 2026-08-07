@@ -2,7 +2,7 @@
   "kind": "prompt",
   "id": "titlecase_received_text",
   "label": "Titlecase Received Text",
-  "description": "Transform received text to title case without coupling the task to a specific model prompt.",
+  "description": "Transform received text to title case without coupling the operation to a specific model prompt.",
   "inputs": {
     "text": "text"
   },

@@ -94,13 +94,13 @@ def test_normalize_file_merges_existing_canonical_target_and_removes_legacy(tmp_
 
 def test_normalize_file_refuses_to_merge_different_ids(tmp_path: Path):
     workspace = tmp_path / "shared"
-    tasks = workspace / "tasks"
-    tasks.mkdir(parents=True)
+    operations = workspace / "operations"
+    operations.mkdir(parents=True)
 
-    legacy = tasks / "wrong_name.json"
-    canonical = tasks / "task_a.task.json"
-    legacy.write_text(json.dumps({"kind": "task", "id": "task_a"}), encoding="utf-8")
-    canonical.write_text(json.dumps({"kind": "task", "id": "task_b"}), encoding="utf-8")
+    legacy = operations / "wrong_name.json"
+    canonical = operations / "operation_a.operation.json"
+    legacy.write_text(json.dumps({"kind": "operation", "id": "operation_a"}), encoding="utf-8")
+    canonical.write_text(json.dumps({"kind": "operation", "id": "operation_b"}), encoding="utf-8")
 
     original_root = normalize_workspace_json.WORKSPACES
     normalize_workspace_json.WORKSPACES = tmp_path

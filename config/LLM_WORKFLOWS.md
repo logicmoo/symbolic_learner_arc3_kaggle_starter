@@ -98,8 +98,8 @@ The companion catalog was checked against OpenRouter's official free-model colle
 - `nvidia/nemotron-3-super-120b-a12b:free` — text reasoning;
 - `nvidia/nemotron-3-nano-30b-a3b:free` — efficient text reasoning;
 - `openai/gpt-oss-20b:free` — text reasoning and tools;
-- `cohere/north-mini-code:free` — code and agentic tasks;
-- `poolside/laguna-xs-2.1:free` — code and symbolic-change tasks;
+- `cohere/north-mini-code:free` — code and agentic operations;
+- `poolside/laguna-xs-2.1:free` — code and symbolic-change operations;
 - `inclusionai/ling-3.0-flash:free` — fast text inference.
 
 The earlier multimodal Nemotron Omni and Nemotron Nano VL entries remain in the base catalog.

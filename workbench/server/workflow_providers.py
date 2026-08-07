@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from workflow_engine import TaskRegistry, TaskSpec
+from workflow_engine import OperationRegistry, OperationSpec
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
@@ -35,7 +35,7 @@ def _binary_status(name: str) -> CapabilityStatus:
     return CapabilityStatus("unavailable", f"{name} is not on PATH")
 
 
-def probe_capabilities(registry: TaskRegistry) -> dict[str, dict[str, str]]:
+def probe_capabilities(registry: OperationRegistry) -> dict[str, dict[str, str]]:
     registered = {item["name"] for item in registry.describe()}
     statuses: dict[str, CapabilityStatus] = {
         "durableRuns": CapabilityStatus("implemented", "SQLite-backed run, step, event, artifact and log state"),
@@ -53,14 +53,14 @@ def probe_capabilities(registry: TaskRegistry) -> dict[str, dict[str, str]]:
         "humanInput": CapabilityStatus("implemented", "Runs suspend and resume through validated step input"),
         "nestedWorkflows": CapabilityStatus("implemented", "Child runs are persisted and linked to parent steps"),
         "pauseResumeCancel": CapabilityStatus("implemented", "Run commands mutate durable state"),
-        "subprocessTasks": CapabilityStatus("implemented", "process.run captures return code, stdout and stderr"),
-        "httpTasks": CapabilityStatus("implemented", "http.request performs real network requests"),
-        "taskLogs": CapabilityStatus("implemented", "Step logs are persisted and exposed"),
+        "subprocessOperations": CapabilityStatus("implemented", "process.run captures return code, stdout and stderr"),
+        "httpOperations": CapabilityStatus("implemented", "http.request performs real network requests"),
+        "operationLogs": CapabilityStatus("implemented", "Step logs are persisted and exposed"),
         "restartRecovery": CapabilityStatus("partial", "Interrupted local runs recover; distributed leases/exactly-once semantics are not implemented"),
         "replay": CapabilityStatus("implemented", "Replay creates a new run from persisted workflow version and inputs"),
         "parallelWorkers": CapabilityStatus("partial", "Ready DAG steps are discovered, but local execution is not a distributed worker pool"),
         "pythonCallable": CapabilityStatus("implemented" if "python.callable" in registered else "unavailable", "Imports trusted Python modules/files and calls functions or class methods"),
-        "prologSource": CapabilityStatus("implemented" if "prolog.source" in registered and shutil.which("swipl") else "unavailable", "Runs embedded task source with SWI-Prolog"),
+        "prologSource": CapabilityStatus("implemented" if "prolog.source" in registered and shutil.which("swipl") else "unavailable", "Runs embedded operation source with SWI-Prolog"),
         "artifactConversion": CapabilityStatus("implemented" if "artifact.convert" in registered else "unavailable", "JSON/text/bytes conversion provider"),
         "prolog": _binary_status("swipl"),
         "metta": _binary_status("metta"),
@@ -255,15 +255,15 @@ def _artifact_convert(inputs: dict[str, Any], parameters: dict[str, Any]) -> dic
     raise ValueError(f"unsupported artifact conversion target: {target}")
 
 
-def register_real_providers(registry: TaskRegistry) -> None:
+def register_real_providers(registry: OperationRegistry) -> None:
     existing = {item["name"] for item in registry.describe()}
     specs = [
-        TaskSpec("python.callable", {}, {"value": "Any", "text": "Text"}, _python_callable),
-        TaskSpec("prolog.query", {"program": "Text", "query": "Text"}, {"result": "PrologResult"}, _prolog_query),
-        TaskSpec("prolog.source", {}, {"text": "Text", "execution": "Object"}, _prolog_source),
-        TaskSpec("metta.evaluate", {"source": "Text"}, {"result": "MeTTaResult"}, _metta_evaluate),
-        TaskSpec("llm.complete", {}, {"text": "Text", "response": "Object"}, _llm_complete),
-        TaskSpec("artifact.convert", {"value": "Any"}, {"value": "Any"}, _artifact_convert),
+        OperationSpec("python.callable", {}, {"value": "Any", "text": "Text"}, _python_callable),
+        OperationSpec("prolog.query", {"program": "Text", "query": "Text"}, {"result": "PrologResult"}, _prolog_query),
+        OperationSpec("prolog.source", {}, {"text": "Text", "execution": "Object"}, _prolog_source),
+        OperationSpec("metta.evaluate", {"source": "Text"}, {"result": "MeTTaResult"}, _metta_evaluate),
+        OperationSpec("llm.complete", {}, {"text": "Text", "response": "Object"}, _llm_complete),
+        OperationSpec("artifact.convert", {"value": "Any"}, {"value": "Any"}, _artifact_convert),
     ]
     for spec in specs:
         if spec.name not in existing:

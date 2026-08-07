@@ -12,8 +12,8 @@ from routes.artifacts import router as artifacts_router
 from routes.workflow import router as workflow_router
 from runtime import analyze_grid
 from store import DATATYPE_MANIFEST, WorkbenchStore
-from task_api import router as task_router
-from task_library import legacy_catalog_view, load_shared_task_documents
+from operation_api import router as operation_router
+from operation_library import legacy_catalog_view, load_shared_operation_documents
 from workflow_engine_api import router as workflow_engine_router
 from workspace_api import router as workspace_router
 
@@ -40,7 +40,7 @@ app.include_router(workflow_engine_router, prefix="/api")
 app.include_router(workspace_router, prefix="/api")
 app.include_router(datatype_router, prefix="/api")
 app.include_router(prompt_router, prefix="/api")
-app.include_router(task_router, prefix="/api")
+app.include_router(operation_router, prefix="/api")
 
 
 @app.get("/api/health")
@@ -51,7 +51,7 @@ def health() -> dict[str, str]:
         "persistence": "sqlite",
         "workflowEngine": "durable-typed-runtime",
         "workspaces": "filesystem",
-        "taskCatalog": "filesystem-invokable",
+        "operationCatalog": "filesystem-invokable",
         "datatypeCatalog": "filesystem",
         "representationCatalog": "filesystem",
         "promptCatalog": "filesystem-hierarchical",
@@ -118,6 +118,7 @@ def get_events(run_id: str, after: int = Query(default=0, ge=0)) -> dict[str, An
 
 @app.get("/api/tasks")
 def list_tasks(limit: int = Query(default=20, ge=1, le=200)) -> dict[str, Any]:
+    """List thread/job tasks; executable artifacts use the operations API."""
     return {"tasks": store.list_tasks(limit)}
 
 
@@ -125,13 +126,13 @@ def list_tasks(limit: int = Query(default=20, ge=1, le=200)) -> dict[str, Any]:
 def list_workflows() -> dict[str, Any]:
     """Compatibility endpoint for the retired mock-workbench client.
 
-    Task metadata is derived from default/tasks on every request. The active
+    Operation metadata is derived from default/operations on every request. The active
     workspace desktop should use /api/workspaces/{id}/snapshot instead.
     """
-    shared_tasks = load_shared_task_documents()
+    shared_operations = load_shared_operation_documents()
     return {
         "workflows": store.list_workflows(),
-        "tasks": legacy_catalog_view(shared_tasks),
+        "operations": legacy_catalog_view(shared_operations),
         "datatypes": DATATYPE_MANIFEST,
         "deprecated": True,
         "replacement": "/api/workspaces/{workspace_id}/snapshot",
@@ -152,11 +153,11 @@ def mutate_workflow(body: dict[str, Any] = Body(default_factory=dict)) -> dict[s
             workflow = body.get("workflow")
             return {"validation": store.validate_workflows(workflow if isinstance(workflow, dict) else None)}
         if operation == "save" and isinstance(body.get("workflow"), dict):
-            workflows, task = store.save_workflow(
+            workflows, operation = store.save_workflow(
                 body["workflow"],
                 str(body["originalId"]) if body.get("originalId") else None,
             )
-            return {"workflows": workflows, "task": task}
+            return {"workflows": workflows, "operation": operation}
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
     raise HTTPException(status_code=400, detail="Invalid workflow operation")
