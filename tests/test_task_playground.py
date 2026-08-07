@@ -39,7 +39,7 @@ def test_task_materialization_resolves_requested_prompt_variant() -> None:
             "promptId": "titlecase_received_text",
             "implementationId": "titlecase_received_text.text_only.claude",
             "inline": False,
-            "targets": ["anthropic", "claude", "text-only"],
+            "targets": ["anthropic", "claude"],
             "version": 1,
         }
     ]
