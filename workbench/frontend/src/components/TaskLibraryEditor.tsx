@@ -60,7 +60,7 @@ export function TaskLibraryEditor({workspaceId}:{workspaceId:string}){
  const toggleAllVariants=()=>{const hide=!variantsHidden;setVariantsHidden(hide);setCollapsedTasks(hide?new Set(taskIds):new Set())};
  const toggleTopLevel=()=>{const topLevel=!variantsCollapsed;setVariantsCollapsed(topLevel);setCollapsedTasks(topLevel?new Set(taskIds):new Set())};
  return <section className="resource-view task-hierarchy-page">
-  <div className="resource-heading"><div><span>PROCESSING RESOURCES</span><h1>Tasks & implementations</h1><p>Abstract tasks are parents. Click any task or implementation to keep it open in an editor tab; use Split view to compare or copy between two resources.</p></div></div>
+  <div className="resource-heading"><div><span>OPERATION CONTRACT SYSTEM</span><h1>Operations & implementations</h1><p>Abstract operations are stored as <code>task</code> resources with concrete <code>task_implementation</code> variants. Open any operation or implementation in a persistent tab; use Split view to compare two resources.</p></div></div>
   {error&&<div className="demo-notice"><b>Task editor error</b><span>{error}</span></div>}
   <div className={`task-hierarchy-layout operation-hierarchy ${navigatorCollapsed?"navigator-collapsed":"navigator-expanded"}`}>
    <div className="task-tree-pane artifact-navigator">

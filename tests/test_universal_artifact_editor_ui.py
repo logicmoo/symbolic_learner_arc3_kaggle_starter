@@ -45,6 +45,8 @@ def test_tasks_preserve_rich_baseline_features() -> None:
 def test_operations_tree_supports_global_and_per_operation_folding() -> None:
     source = _text("TaskLibraryEditor.tsx")
     for token in (
+        "Operations & implementations",
+        "OPERATION CONTRACT SYSTEM",
         "collapsedTasks",
         "variantsHidden",
         "Only Toplevel",
