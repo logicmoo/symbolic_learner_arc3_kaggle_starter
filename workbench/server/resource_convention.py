@@ -10,9 +10,9 @@ KNOWN_RESOURCE_KINDS = {
     "backend",
     "config",
     "data",
-    "datatype",
-    "datatype_catalog",
-    "datatype_representation",
+    "semantic_datatype",
+    "representation_datatype",
+    "concrete_datatype",
     "manifest",
     "model",
     "model_health_observation",
@@ -86,9 +86,11 @@ def infer_resource_kind(path: Path, document: dict[str, Any]) -> str:
     if parent == "plans":
         return "plan_variant" if document.get("parents") else "plan"
     if parent == "datatypes":
-        return "datatype"
+        return "semantic_datatype"
     if parent == "representations":
-        return "datatype_representation"
+        return "representation_datatype"
+    if parent == "concrete_datatypes":
+        return "concrete_datatype"
     if parent == "models":
         if document.get("provider"):
             return "backend"
@@ -97,7 +99,7 @@ def infer_resource_kind(path: Path, document: dict[str, Any]) -> str:
         return "model"
     if parent == "config":
         if "datatype" in name:
-            return "datatype_catalog"
+            return "config"
         if "artifact" in name:
             return "artifact_catalog"
         if "schema" in name:

@@ -8,7 +8,7 @@ SERVER = ROOT / "workbench" / "server"
 if str(SERVER) not in sys.path:
     sys.path.insert(0, str(SERVER))
 
-from datatype_library import load_workspace_datatype_records, load_workspace_representation_records, resolve_datatype_representation
+from datatype_library import load_workspace_concrete_datatype_records, load_workspace_datatype_records, load_workspace_representation_records, resolve_datatype_representation
 from representation_planner import plan_representation_conversion
 
 
@@ -19,17 +19,20 @@ ARC3 = ROOT / "workbench" / "workspaces" / "arc3"
 def test_image_is_abstract_datatype_with_multiple_representations() -> None:
     datatypes = {record["document"]["id"]: record["document"] for record in load_workspace_datatype_records(SHARED) if record.get("document")}
     image = datatypes["image"]
-    assert image["kind"] == "datatype"
+    assert image["kind"] == "semantic_datatype"
     assert image["preferredChild"] == "bitmap"
     assert {"bitmap", "logo_program", "scene_graph", "natural_language"}.issubset(image["children"])
 
 
-def test_bitmap_encodings_are_not_separate_semantic_datatypes() -> None:
+def test_bitmap_encodings_are_independent_concrete_datatypes() -> None:
     representations = {record["document"]["id"]: record["document"] for record in load_workspace_representation_records(SHARED) if record.get("document")}
     bitmap = representations["bitmap"]
     assert bitmap["parents"] == ["image"]
-    encoding_ids = {encoding["id"] for encoding in bitmap["encodings"]}
-    assert encoding_ids == {"png", "jpeg", "bmp"}
+    assert set(bitmap["children"]) == {"png", "jpeg", "bmp"}
+    concrete = {record["document"]["id"]: record["document"] for record in load_workspace_concrete_datatype_records(SHARED) if record.get("document")}
+    assert concrete["png"]["kind"] == "concrete_datatype"
+    assert concrete["png"]["parents"] == ["bitmap"]
+    assert concrete["json"]["parents"] == ["json_object", "object_list", "scene_graph"]
 
 
 def test_workspace_inherits_shared_representations() -> None:

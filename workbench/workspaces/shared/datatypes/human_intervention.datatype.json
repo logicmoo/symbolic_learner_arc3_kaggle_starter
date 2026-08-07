@@ -1,7 +1,0 @@
-{
-  "kind": "datatype",
-  "id": "human_intervention",
-  "label": "Human Intervention",
-  "extends": ["intervention"],
-  "description": "An intervention chosen by a human demonstrator."
-}

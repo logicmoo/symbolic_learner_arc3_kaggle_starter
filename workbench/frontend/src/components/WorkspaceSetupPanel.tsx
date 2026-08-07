@@ -9,6 +9,7 @@ type Workspace = {
   operationFileCount: number;
   datatypeFileCount?: number;
   representationFileCount?: number;
+  concreteDatatypeFileCount?: number;
   modelFileCount?: number;
   promptFileCount?: number;
 };

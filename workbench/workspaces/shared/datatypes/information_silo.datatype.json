@@ -1,6 +1,0 @@
-{
-  "kind": "datatype",
-  "id": "information_silo",
-  "label": "Information Silo",
-  "description": "A named, versioned, typed information value with provenance."
-}

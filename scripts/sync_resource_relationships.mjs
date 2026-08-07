@@ -7,7 +7,8 @@ const families = {
   plan_variant: { parentKind: "plan" },
   operation_implementation: { parentKind: "operation" },
   prompt_implementation: { parentKind: "prompt" },
-  datatype_representation: { parentKind: "datatype" },
+  representation_datatype: { parentKind: "semantic_datatype" },
+  concrete_datatype: { parentKind: "representation_datatype" },
   model_policy_variant: { parentKind: "model_policy" },
 };
 
@@ -44,13 +45,16 @@ for (const record of records) {
 
 for (const child of records) {
   const family = families[child.document.kind];
-  if (!family) continue;
+  if (!family && !child.document.parents) continue;
   child.document.parents = ids(child.document.parents);
 
   for (const parentId of child.document.parents) {
     const parent = byWorkspaceAndId.get(`${child.workspace}:${parentId}`) ?? byWorkspaceAndId.get(`shared:${parentId}`);
-    if (!parent || parent.document.kind !== family.parentKind) {
-      throw new Error(`${child.document.kind}:${child.document.id} points to missing ${family.parentKind}:${parentId}`);
+    const allowedParentKinds = family
+      ? [family.parentKind, ...(child.document.kind === "semantic_datatype" ? ["semantic_datatype"] : [])]
+      : [child.document.kind];
+    if (!parent || !allowedParentKinds.includes(parent.document.kind)) {
+      throw new Error(`${child.document.kind}:${child.document.id} points to invalid parent:${parentId}`);
     }
     parent.document.children = ids(parent.document.children);
     if (!parent.document.children.includes(child.document.id)) parent.document.children.push(child.document.id);

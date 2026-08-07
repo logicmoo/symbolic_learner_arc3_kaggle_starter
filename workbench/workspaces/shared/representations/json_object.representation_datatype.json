@@ -1,0 +1,12 @@
+{
+  "kind": "representation_datatype",
+  "id": "json_object",
+  "label": "JSON Object",
+  "parents": [
+    "information"
+  ],
+  "children": [
+    "json"
+  ],
+  "preferredChild": "json"
+}

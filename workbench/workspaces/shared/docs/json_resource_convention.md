@@ -23,7 +23,9 @@ gpt-5.6.model.json
 gpt-5.6-deep.profile.json
 observe_choose_record.workflow.json
 shared.workspace.json
-datatypes.datatype_catalog.json
+image.semantic_datatype.json
+bitmap.representation_datatype.json
+png.concrete_datatype.json
 ```
 
 The matching JSON contains exactly the same semantic kind:

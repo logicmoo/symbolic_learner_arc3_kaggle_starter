@@ -208,7 +208,7 @@ Reuse existing editors rather than duplicating them:
 
 \- Operations -> existing rich OperationLibraryEditor
 
-\- Datatypes -> existing DataCatalogPanel / datatype-representation editor
+\- Datatypes -> existing three-level DataCatalogPanel editor
 
 \- Prompts -> existing hierarchical prompt editor
 
@@ -236,7 +236,7 @@ Examples:
 
 \- operation / operation\_implementation
 
-\- datatype / datatype\_representation
+\- semantic\_datatype / representation\_datatype / concrete\_datatype
 
 \- prompt / prompt\_implementation
 
@@ -310,7 +310,8 @@ names for constants. Prefer type hints, focused functions, `pathlib`, and
 
 platform-neutral behavior. Preserve resource suffixes such as `*.operation.json`,
 
-`*.prompt.json`, and `*.datatype.json`. No repository-wide formatter is
+`*.prompt.json`, `*.semantic_datatype.json`, `*.representation_datatype.json`,
+and `*.concrete_datatype.json`. No repository-wide formatter is
 
 configured; match nearby code and avoid unrelated reformatting.
 
@@ -481,7 +482,7 @@ The first Codex change should **not** implement every page. It should only estab
 
 | Operations | Existing rich Operations editor |
 
-| Datatypes | Existing Types/Data datatype-representation editor |
+| Datatypes | Existing three-level semantic/representation/concrete editor |
 
 | Prompts | Existing hierarchical Prompts editor |
 

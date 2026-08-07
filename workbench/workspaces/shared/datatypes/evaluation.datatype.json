@@ -1,9 +1,0 @@
-{
-  "kind": "datatype",
-  "id": "evaluation",
-  "label": "Evaluation",
-  "description": "A semantic assessment, score, validation result, or comparison.",
-  "children": [
-    "prolog_fact_set"
-  ]
-}

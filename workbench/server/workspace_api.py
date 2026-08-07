@@ -12,6 +12,8 @@ from goal_plan_library import load_workspace_symbolic_records, symbolic_hierarch
 from datatype_library import (
     DATATYPE_DIRECTORY,
     REPRESENTATION_DIRECTORY,
+    CONCRETE_DIRECTORY,
+    load_workspace_concrete_datatype_records,
     load_workspace_datatype_records,
     load_workspace_representation_records,
 )
@@ -72,6 +74,7 @@ def _workspace_from_directory(root: Path) -> dict[str, Any]:
     operation_dir = root / "operations"
     datatype_dir = root / DATATYPE_DIRECTORY
     representation_dir = root / REPRESENTATION_DIRECTORY
+    concrete_dir = root / CONCRETE_DIRECTORY
     model_dir = root / MODEL_CATALOG_DIRECTORY
     goal_dir = root / "goals"
     plan_dir = root / "plans"
@@ -82,6 +85,7 @@ def _workspace_from_directory(root: Path) -> dict[str, Any]:
     operation_implementation_count = len(load_workspace_operation_implementation_records(root))
     datatype_count = len(load_workspace_datatype_records(root))
     representation_count = len(load_workspace_representation_records(root))
+    concrete_count = len(load_workspace_concrete_datatype_records(root))
     goal_count = len(load_workspace_symbolic_records(root, "goal"))
     plan_count = len(load_workspace_symbolic_records(root, "plan"))
     return {
@@ -103,6 +107,8 @@ def _workspace_from_directory(root: Path) -> dict[str, Any]:
         "datatypeDirectoryRelative": DATATYPE_DIRECTORY,
         "representationDirectory": str(representation_dir.resolve()),
         "representationDirectoryRelative": REPRESENTATION_DIRECTORY,
+        "concreteDatatypeDirectory": str(concrete_dir.resolve()),
+        "concreteDatatypeDirectoryRelative": CONCRETE_DIRECTORY,
         "backendDirectory": str(model_dir.resolve()),
         "backendDirectoryRelative": MODEL_CATALOG_DIRECTORY,
         "modelDirectory": str(model_dir.resolve()),
@@ -117,6 +123,7 @@ def _workspace_from_directory(root: Path) -> dict[str, Any]:
         "operationImplementationFileCount": operation_implementation_count,
         "datatypeFileCount": datatype_count,
         "representationFileCount": representation_count,
+        "concreteDatatypeFileCount": concrete_count,
         "backendFileCount": backend_count,
         "modelFileCount": model_count,
         "promptFileCount": prompt_count,
@@ -210,6 +217,10 @@ def _load_datatypes(workspace: dict[str, Any]) -> list[dict[str, Any]]:
 
 def _load_representations(workspace: dict[str, Any]) -> list[dict[str, Any]]:
     return load_workspace_representation_records(Path(workspace["root"]))
+
+
+def _load_concrete_datatypes(workspace: dict[str, Any]) -> list[dict[str, Any]]:
+    return load_workspace_concrete_datatype_records(Path(workspace["root"]))
 
 
 def _load_backends(workspace: dict[str, Any]) -> list[dict[str, Any]]:
@@ -359,6 +370,7 @@ def workspace_snapshot(workspace_id: str) -> dict[str, Any]:
         "operationImplementations": _load_operation_implementations(workspace),
         "datatypes": _load_datatypes(workspace),
         "representations": _load_representations(workspace),
+        "concreteDatatypes": _load_concrete_datatypes(workspace),
         "backends": _load_backends(workspace),
         "backendLibrary": _load_backend_library(workspace),
         "models": _load_models(workspace),

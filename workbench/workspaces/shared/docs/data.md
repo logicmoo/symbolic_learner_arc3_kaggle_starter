@@ -1,17 +1,17 @@
 # Data contracts
 
-The Data page edits two first-class resource kinds:
+The Data page edits three first-class resource kinds:
 
-- `datatype`: the abstract semantic meaning of information.
-- `datatype_representation`: a concrete encoding or structural realization of that meaning.
+- `semantic_datatype`: the abstract semantic meaning of information.
+- `representation_datatype`: a general structural realization of semantic meaning.
+- `concrete_datatype`: an exact encoding, MIME type, file format, or runtime form.
 
 The intended relationship mirrors abstract operations and operation implementations:
 
 ```text
-Abstract datatype
-  ├─ preferred representation
-  ├─ alternative representation
-  └─ alternative representation
+semantic_datatype
+  ?? representation_datatype
+       ?? concrete_datatype
 ```
 
 For example, `image` is representation-independent while Bitmap, SVG, LOGO/Turtle, Scene Graph, Object List, Natural Language, and Embedding are interchangeable implementations of that semantic contract.

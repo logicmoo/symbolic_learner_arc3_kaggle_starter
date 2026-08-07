@@ -18,8 +18,10 @@ from resource_relationships import points_to, relationship_ids
 
 DATATYPE_DIRECTORY = "datatypes"
 REPRESENTATION_DIRECTORY = "representations"
-DATATYPE_KIND = "datatype"
-REPRESENTATION_KIND = "datatype_representation"
+CONCRETE_DIRECTORY = "concrete_datatypes"
+DATATYPE_KIND = "semantic_datatype"
+REPRESENTATION_KIND = "representation_datatype"
+CONCRETE_KIND = "concrete_datatype"
 
 
 def _implemented_datatypes(document: dict[str, Any]) -> list[str]:
@@ -86,6 +88,10 @@ def load_workspace_representation_records(workspace_root: Path, *, workspaces_ro
     return _effective(workspace_root, REPRESENTATION_DIRECTORY, REPRESENTATION_KIND, workspaces_root=workspaces_root)
 
 
+def load_workspace_concrete_datatype_records(workspace_root: Path, *, workspaces_root: Path = DEFAULT_WORKSPACES_ROOT) -> list[dict[str, Any]]:
+    return _effective(workspace_root, CONCRETE_DIRECTORY, CONCRETE_KIND, workspaces_root=workspaces_root)
+
+
 def resolve_datatype_representation(workspace_root: Path, datatype_id: str, requested: str | None = None, *, workspaces_root: Path = DEFAULT_WORKSPACES_ROOT) -> dict[str, Any]:
     datatypes = {str((record.get("document") or {}).get("id")): record for record in load_workspace_datatype_records(workspace_root, workspaces_root=workspaces_root)}
     representations = {str((record.get("document") or {}).get("id")): record for record in load_workspace_representation_records(workspace_root, workspaces_root=workspaces_root)}
@@ -116,6 +122,7 @@ def resolve_datatype_representation(workspace_root: Path, datatype_id: str, requ
 def representation_graph(workspace_root: Path, *, workspaces_root: Path = DEFAULT_WORKSPACES_ROOT) -> dict[str, Any]:
     datatypes = load_workspace_datatype_records(workspace_root, workspaces_root=workspaces_root)
     representations = load_workspace_representation_records(workspace_root, workspaces_root=workspaces_root)
+    concrete_datatypes = load_workspace_concrete_datatype_records(workspace_root, workspaces_root=workspaces_root)
     by_datatype: dict[str, list[str]] = {}
     for record in representations:
         document = record.get("document") or {}
@@ -124,7 +131,13 @@ def representation_graph(workspace_root: Path, *, workspaces_root: Path = DEFAUL
     return {
         "datatypes": datatypes,
         "representations": representations,
+        "concreteDatatypes": concrete_datatypes,
         "representationIdsByDatatype": {key: sorted(values) for key, values in sorted(by_datatype.items())},
+        "concreteIdsByRepresentation": {
+            str((record.get("document") or {}).get("id")): relationship_ids((record.get("document") or {}).get("children"))
+            for record in representations
+            if (record.get("document") or {}).get("id")
+        },
     }
 
 

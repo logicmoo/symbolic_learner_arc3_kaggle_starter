@@ -40,7 +40,7 @@ Example:
 
 ```json
 {
-  "kind": "datatype",
+  "kind": "semantic_datatype",
   "id": "image",
   "label": "Image",
   "description": "A visual scene independent of its concrete representation.",
@@ -51,27 +51,36 @@ Example:
 
 The datatype is semantic. It says what the value means.
 
-## Datatype representation
+## Representation datatype
 
 A representation says how the same semantic value is encoded.
 
 ```json
 {
-  "kind": "datatype_representation",
+  "kind": "representation_datatype",
   "id": "scene_graph",
   "label": "Scene Graph",
   "parents": ["image"],
-  "encodings": [
-    {
-      "id": "json",
-      "mimeTypes": ["application/json"],
-      "extensions": [".json"]
-    }
-  ]
+  "children": ["json"],
+  "preferredChild": "json"
 }
 ```
 
-PNG, JPEG, and BMP are treated as encodings of the `bitmap` representation rather than as separate semantic datatypes.
+## Concrete datatype
+
+Exact encodings are separate resources and may serve several representations:
+
+```json
+{
+  "kind": "concrete_datatype",
+  "id": "json",
+  "parents": ["json_object", "object_list", "scene_graph"],
+  "mimeTypes": ["application/json"],
+  "extensions": [".json"]
+}
+```
+
+PNG, JPEG, and BMP are concrete children of the `bitmap` representation rather than semantic datatypes.
 
 ## Conversion operations
 

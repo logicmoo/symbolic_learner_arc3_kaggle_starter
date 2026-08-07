@@ -7,6 +7,7 @@ from fastapi import APIRouter, HTTPException, Query
 
 from datatype_library import (
     interface_type_inventory,
+    load_workspace_concrete_datatype_records,
     load_workspace_datatype_records,
     load_workspace_representation_records,
     representation_graph,
@@ -36,6 +37,12 @@ def workspace_datatypes(workspace_id: str) -> dict[str, Any]:
 def workspace_representations(workspace_id: str) -> dict[str, Any]:
     workspace, root = _root(workspace_id)
     return {"workspace": workspace, "representations": load_workspace_representation_records(root)}
+
+
+@router.get("/{workspace_id}/concrete-datatypes")
+def workspace_concrete_datatypes(workspace_id: str) -> dict[str, Any]:
+    workspace, root = _root(workspace_id)
+    return {"workspace": workspace, "concreteDatatypes": load_workspace_concrete_datatype_records(root)}
 
 
 @router.get("/{workspace_id}/representation-graph")

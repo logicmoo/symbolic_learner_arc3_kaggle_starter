@@ -11,7 +11,7 @@ The filesystem is the source of truth for semantic artifacts. Abstract specifica
 Current conventions include:
 
 - `operation` / `operation_implementation`
-- `datatype` / `datatype_representation`
+- `semantic_datatype` / `representation_datatype` / `concrete_datatype`
 - `prompt` / `prompt_implementation`
 - `backend` / `model` / `profile`
 - `workflow`
@@ -24,7 +24,7 @@ Every specification/alternative family uses the same three flat fields: `parents
 
 Arrays are required even when there is only one relationship. This permits one alternative to satisfy multiple specifications. `preferredChild` stays on each parent because the same child can have a different priority under different specifications. Run `node scripts/sync_resource_relationships.mjs` after bulk resource edits to normalize pointers and add missing backlinks.
 
-Canonical filenames carry the kind, for example `shared.echo.operation.json`, `echo_into_titlecased_python.operation_implementation.json`, and `bitmap.datatype_representation.json`. Resources live beneath a workspace in family directories such as `operations/`, `datatypes/`, `representations/`, `prompts/`, `models/`, and `workflows/`.
+Canonical filenames carry the kind, for example `shared.echo.operation.json`, `image.semantic_datatype.json`, `bitmap.representation_datatype.json`, and `png.concrete_datatype.json`. Resources live beneath family directories such as `operations/`, `datatypes/`, `representations/`, `concrete_datatypes/`, `prompts/`, `models/`, and `workflows/`.
 
 ## Inheritance and Overrides
 

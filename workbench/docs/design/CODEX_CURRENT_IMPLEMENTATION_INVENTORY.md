@@ -66,7 +66,7 @@ The app also exposes health, analysis, SQLite-backed legacy run/event/operation 
 
 ## Filesystem Resource Kinds
 
-Existing first-class loaders cover `workflow`, `goal`, `goal_interpretation`, `goal_variant`, `plan`, `plan_variant`, `operation`, `operation_implementation`, `datatype`, `datatype_representation`, `prompt`, `prompt_implementation`, `backend`, `model`, and `profile`. Workspaces also contain catalog/config/Markdown files that appear in the editable-file inventory but are not all first-class semantic loaders.
+Existing first-class loaders cover `workflow`, `goal`, `goal_interpretation`, `goal_variant`, `plan`, `plan_variant`, `operation`, `operation_implementation`, `semantic_datatype`, `representation_datatype`, `concrete_datatype`, `prompt`, `prompt_implementation`, `backend`, `model`, and `profile`. Workspaces also contain catalog/config/Markdown files that appear in the editable-file inventory but are not all first-class semantic loaders.
 
 Shared inheritance plus workspace override resolution exists for goals and variants, plans and variants, operations and implementations, datatypes and representations, prompts and implementations, backends, models, and profiles. AtomSpaces, model policies, benchmark policies/results, contexts, goal runs, and dedicated state snapshots are not yet first-class resource kinds in the workspace snapshot.
 
