@@ -5,10 +5,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="edb8fea1-73c1-4416-9e9a-8ac50d562623" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/logicmoo-arc3.iml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.run/interactive_runner.run.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.run/interactive_runner.run.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/vendor/ARC-AGI-3-Agents/agents/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/vendor/ARC-AGI-3-Agents/agents/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/server/resource_convention.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/server/resource_convention.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/server/workspace_api.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/server/workspace_api.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -193,7 +193,7 @@
       <updated>1785303688140</updated>
       <workItem from="1785303689274" duration="1439000" />
       <workItem from="1785305363136" duration="5594000" />
-      <workItem from="1786132864974" duration="1358000" />
+      <workItem from="1786132864974" duration="2815000" />
     </task>
     <servers />
   </component>
