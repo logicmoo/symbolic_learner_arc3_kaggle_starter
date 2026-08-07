@@ -2,7 +2,6 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/arc-agi-3-agents.iml" filepath="$PROJECT_DIR$/.idea/arc-agi-3-agents.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/arc-agi-3-agents@1.iml" filepath="$PROJECT_DIR$/.idea/arc-agi-3-agents@1.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/logicmoo-world-workbench.iml" filepath="$PROJECT_DIR$/.idea/logicmoo-world-workbench.iml" />
     </modules>
