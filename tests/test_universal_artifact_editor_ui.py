@@ -53,6 +53,8 @@ def test_operations_tree_supports_global_and_per_operation_folding() -> None:
         '<b>{branchCollapsed?"Unhide Variants":"Hide Variants"}</b>',
         "tree-branch-toggle",
         "branch-collapsed",
+        "toggleTopLevel",
+        "setCollapsedTasks(topLevel?new Set(taskIds):new Set())",
     ):
         assert token in source
 
