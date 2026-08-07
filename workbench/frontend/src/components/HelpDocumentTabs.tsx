@@ -1,4 +1,6 @@
 import {useEffect,useState} from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import "../styles/help_tabs.css";
 
 type HelpTab={id:string;label:string;path?:string};
@@ -39,10 +41,10 @@ export function HelpDocumentTabs({preferred,context}:{preferred?:string;context?
  },[]);
  useEffect(()=>{if(preferred&&tabs.some(tab=>tab.id===preferred))setActive(preferred)},[preferred]);
  const tab=tabs.find(item=>item.id===active)!;
- const content=active==="context"?(context||"No contextual inspector data is available for this page."):errors[active]?`Documentation failed to load:\n${errors[active]}`:(docs[active]||"Loading shared documentation…");
+ const content=active==="context"?(context?`\`\`\`json\n${context}\n\`\`\``:"No contextual inspector data is available for this page."):errors[active]?`> **Documentation failed to load:** ${errors[active]}`:(docs[active]||"Loading shared documentation…");
  return <div className="help-doc-inspector">
   <div className="help-doc-tabs">{tabs.map(item=><button key={item.id} className={active===item.id?"active":""} onClick={()=>setActive(item.id)}>{item.label}</button>)}</div>
-  <div className="inspect-section relationship-guide"><pre className="mini-code relationship-markdown">{content}</pre></div>
+  <div className="inspect-section relationship-guide"><article className="relationship-markdown markdown-body"><ReactMarkdown remarkPlugins={[remarkGfm]} components={{a:({node:_node,...props})=><a {...props} target="_blank" rel="noreferrer"/>}}>{content}</ReactMarkdown></article></div>
   <div className="provenance-foot">{active==="context"?<><span>INSPECTOR SOURCE</span><code>current workspace state</code><span className="verified">✓ live data</span></>:<><span>DOCUMENTATION SOURCE</span><code>shared/{tab.path}</code><span className={errors[active]?"":"verified"}>{errors[active]?"load error":"✓ filesystem backed"}</span></>}</div>
  </div>;
 }

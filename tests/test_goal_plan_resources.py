@@ -58,6 +58,9 @@ def test_goal_and_plan_pages_load_their_shared_right_panel_docs() -> None:
     page_source = (ROOT / "workbench" / "frontend" / "src" / "pages" / "FilesystemWorkbenchPage.tsx").read_text(encoding="utf-8")
     assert '{id:"goals",label:"Goals",path:"docs/goals.md"}' in help_source
     assert '{id:"plans",label:"Plans",path:"docs/plans.md"}' in help_source
+    assert 'ReactMarkdown' in help_source
+    assert 'remarkGfm' in help_source
+    assert '<pre className="mini-code relationship-markdown">' not in help_source
     assert 'view==="goals"?"goals":view==="plans"?"plans"' in page_source
     assert 'view==="goals"||view==="plans"' in page_source
     assert (ROOT / "workbench" / "workspaces" / "shared" / "docs" / "goals.md").is_file()
