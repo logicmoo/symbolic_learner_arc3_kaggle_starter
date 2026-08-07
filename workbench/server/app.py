@@ -12,12 +12,13 @@ from routes.artifacts import router as artifacts_router
 from routes.workflow import router as workflow_router
 from runtime import analyze_grid
 from store import DATATYPE_MANIFEST, WorkbenchStore
+from task_api import router as task_router
 from task_library import legacy_catalog_view, load_shared_task_documents
 from workflow_engine_api import router as workflow_engine_router
 from workspace_api import router as workspace_router
 
 
-app = FastAPI(title="MeTTaSymbolicLearnerWorkbench API", version="0.6.1")
+app = FastAPI(title="MeTTaSymbolicLearnerWorkbench API", version="0.6.2")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
@@ -39,6 +40,7 @@ app.include_router(workflow_engine_router, prefix="/api")
 app.include_router(workspace_router, prefix="/api")
 app.include_router(datatype_router, prefix="/api")
 app.include_router(prompt_router, prefix="/api")
+app.include_router(task_router, prefix="/api")
 
 
 @app.get("/api/health")
@@ -49,7 +51,7 @@ def health() -> dict[str, str]:
         "persistence": "sqlite",
         "workflowEngine": "durable-typed-runtime",
         "workspaces": "filesystem",
-        "taskCatalog": "filesystem",
+        "taskCatalog": "filesystem-invokable",
         "datatypeCatalog": "filesystem",
         "representationCatalog": "filesystem",
         "promptCatalog": "filesystem-hierarchical",
