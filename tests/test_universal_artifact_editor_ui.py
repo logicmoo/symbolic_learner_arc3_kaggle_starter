@@ -1,0 +1,65 @@
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[1]
+COMPONENTS = ROOT / "workbench" / "frontend" / "src" / "components"
+
+
+def _text(name: str) -> str:
+    return (COMPONENTS / name).read_text(encoding="utf-8")
+
+
+def test_universal_editor_is_the_shared_hierarchy_chrome() -> None:
+    universal = _text("UniversalArtifactEditor.tsx")
+    compatibility = _text("HierarchyResourceEditor.tsx")
+    assert 'UNIVERSAL_ARTIFACT_EDITOR_BASELINE = "b42249b"' in universal
+    assert "UniversalArtifactEditor as HierarchyResourceEditor" in compatibility
+    for component in (
+        "TaskLibraryEditor.tsx",
+        "DataCatalogPanel.tsx",
+        "PromptLibraryEditor.tsx",
+        "LlmModelsEditor.tsx",
+    ):
+        source = _text(component)
+        assert 'from "./HierarchyResourceEditor"' in source or 'from "./UniversalArtifactEditor"' in source
+
+
+def test_tasks_preserve_rich_baseline_features() -> None:
+    source = _text("TaskLibraryEditor.tsx")
+    required = (
+        "PREFERRED IMPLEMENTATION",
+        "PYTHON SOURCE",
+        "SWI-PROLOG SOURCE",
+        "METTA SOURCE",
+        "MODEL / PROFILE DISPATCH",
+        "PROMPT COMPOSITION",
+        "Split view",
+        "task-document-tabs",
+        "task-tree-children",
+        "echo_into_titlecased",
+    )
+    for token in required:
+        assert token in source, f"rich Tasks baseline feature disappeared: {token}"
+
+
+def test_other_artifact_families_keep_their_variant_controls() -> None:
+    assert "PREFERRED REPRESENTATION" in _text("DataCatalogPanel.tsx")
+    assert "PREFERRED ALTERNATIVE" in _text("PromptLibraryEditor.tsx")
+    models = _text("LlmModelsEditor.tsx")
+    assert "INHERITS FROM" in models
+    assert "RESOLVED INHERITANCE" in models
+
+
+def test_universal_shell_keeps_tabs_compare_inspector_and_docks() -> None:
+    source = _text("UniversalArtifactEditor.tsx")
+    for token in (
+        "artifact-breadcrumb",
+        "artifact-common-inspector",
+        "task-document-tabs",
+        "task-editor-panes",
+        "compareKey",
+        "bottomPanels",
+        "artifact-bottom-dock",
+        "variantControls",
+    ):
+        assert token in source
