@@ -14,7 +14,8 @@
     "variants": [
       "titlecase_received_text.default",
       "titlecase_received_text.gpt5",
-      "titlecase_received_text.claude"
+      "titlecase_received_text.text_only.claude",
+      "titlecase_received_text.multi_modal.claude"
     ]
   }
 }
