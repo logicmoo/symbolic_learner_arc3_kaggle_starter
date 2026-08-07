@@ -108,6 +108,7 @@ export function UniversalArtifactEditor({
     : [category || title, activeTab?.label || "Select artifact"];
   const [bottomPanelId, setBottomPanelId] = useState<string | null>(bottomPanels[0]?.id || null);
   const [navigatorCollapsed, setNavigatorCollapsed] = useState(false);
+  const [variantsHidden, setVariantsHidden] = useState(false);
   const [variantsCollapsed, setVariantsCollapsed] = useState(false);
   const activeBottomPanel = useMemo(
     () => bottomPanels.find(panel => panel.id === bottomPanelId) || bottomPanels[0] || null,
@@ -141,11 +142,12 @@ export function UniversalArtifactEditor({
       {inspector && <div className="artifact-inspector-extension">{inspector}</div>}
     </div>
 
-    <div className={`task-hierarchy-layout artifact-editor-body ${navigatorCollapsed?"navigator-collapsed":"navigator-expanded"} ${variantsCollapsed?"variants-collapsed":"variants-expanded"}`}>
+    <div className={`task-hierarchy-layout artifact-editor-body ${navigatorCollapsed?"navigator-collapsed":"navigator-expanded"} ${variantsHidden?"variants-hidden":"variants-visible"} ${variantsCollapsed?"variants-collapsed":"variants-expanded"}`}>
       <div className={`${treeClassName} artifact-navigator`.trim()}>
         <div className="artifact-navigator-toolbar">
           <span>HIERARCHY</span>
           <div className="artifact-navigator-actions">
+            <button type="button" aria-label={variantsHidden?"Unhide Variants":"Hide Variants"} aria-pressed={variantsHidden} onClick={()=>setVariantsHidden(value=>!value)}><b>{variantsHidden?"Unhide Variants":"Hide Variants"}</b></button>
             <button type="button" aria-label={variantsCollapsed?"Show Tree":"Only Toplevel"} aria-pressed={variantsCollapsed} onClick={()=>setVariantsCollapsed(value=>!value)}><b>{variantsCollapsed?"Show Tree":"Only Toplevel"}</b></button>
             <button type="button" aria-label={navigatorCollapsed?"Expand hierarchy":"Collapse hierarchy"} aria-expanded={!navigatorCollapsed} onClick={()=>setNavigatorCollapsed(value=>!value)}>{navigatorCollapsed?"›":"‹"}<b>{navigatorCollapsed?"":"Pane"}</b></button>
           </div>

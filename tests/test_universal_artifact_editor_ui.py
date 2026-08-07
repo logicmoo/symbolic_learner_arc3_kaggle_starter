@@ -46,6 +46,7 @@ def test_operations_tree_supports_global_and_per_operation_folding() -> None:
     source = _text("TaskLibraryEditor.tsx")
     for token in (
         "collapsedTasks",
+        "variantsHidden",
         "Only Toplevel",
         "Show Tree",
         'branchCollapsed?"Unhide Variants":"Hide Variants"',
@@ -90,6 +91,7 @@ def test_universal_shell_keeps_tabs_compare_inspector_and_docks() -> None:
         "artifact-bottom-dock",
         "variantControls",
         "navigatorCollapsed",
+        "variantsHidden",
         "variantsCollapsed",
         "Collapse hierarchy",
         "Expand hierarchy",
@@ -111,6 +113,7 @@ def test_universal_tree_is_collapsible_and_independently_scrollable() -> None:
     assert ".task-hierarchy-layout.navigator-collapsed" in styles
     assert ".variants-collapsed .task-tree-children" in styles
     assert ".variants-collapsed .inheritance-children" in styles
+    assert ".variants-hidden .task-tree-children" in styles
     assert ".main-stage>.task-hierarchy-page" in styles
     assert "overflow-y:scroll" in styles
     workbench_styles = (ROOT / "workbench" / "frontend" / "src" / "styles" / "workbench.css").read_text(encoding="utf-8")
