@@ -1,7 +1,7 @@
 import { useMemo, useState, type ReactNode } from "react";
 import "../styles/task_editor.css";
 
-export const UNIVERSAL_ARTIFACT_EDITOR_BASELINE = "b42249b";
+export const UNIVERSAL_ARTIFACT_EDITOR_BASELINE = "current-rich-editor";
 
 export type UniversalArtifactTab = {
   key: string;
@@ -29,7 +29,7 @@ export type UniversalArtifactEditorProps = {
   error?: string | null;
   onDismissError?: () => void;
 
-  /** Rich b42249b-style specification/variant navigator on the left. */
+  /** Rich specification/variant navigator on the left. */
   leftPane: ReactNode;
 
   /** Persistent multi-document tabs. */
@@ -63,7 +63,7 @@ export type UniversalArtifactEditorProps = {
 /**
  * Universal Artifact Editor.
  *
- * The user-designated b42249b Tasks experience is the feature baseline:
+ * The current active rich Tasks experience is the feature baseline:
  * - semantic specification -> concrete variants on the left
  * - persistent, closeable, dirty-aware editor tabs
  * - side-by-side comparison

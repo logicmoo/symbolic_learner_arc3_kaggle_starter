@@ -33,6 +33,7 @@ def _maintained_markdown() -> tuple[Path, ...]:
         ".git",
         ".pytest_cache",
         ".venv",
+        ".llm_responses",
         "vendor",
         "action_trees",
         "reference",

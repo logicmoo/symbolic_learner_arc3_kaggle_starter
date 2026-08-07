@@ -1,4 +1,5 @@
 import React,{useEffect,useMemo,useState} from "react";
+import type { JSX } from "react";
 import {HierarchyResourceEditor} from "./HierarchyResourceEditor";
 import "../styles/models_editor.css";
 

@@ -12,7 +12,7 @@ def _text(name: str) -> str:
 def test_universal_editor_keeps_compatibility_chrome_for_adapted_panels() -> None:
     universal = _text("UniversalArtifactEditor.tsx")
     compatibility = _text("HierarchyResourceEditor.tsx")
-    assert 'UNIVERSAL_ARTIFACT_EDITOR_BASELINE = "b42249b"' in universal
+    assert 'UNIVERSAL_ARTIFACT_EDITOR_BASELINE = "current-rich-editor"' in universal
     assert "UniversalArtifactEditor as HierarchyResourceEditor" in compatibility
     for component in (
         "DataCatalogPanel.tsx",
