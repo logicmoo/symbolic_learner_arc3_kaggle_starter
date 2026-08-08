@@ -171,6 +171,8 @@ def test_example_executor_is_shared_by_models_and_prompts() -> None:
     models = (ROOT / "workbench" / "frontend" / "src" / "components" / "LlmModelsEditor.tsx").read_text(encoding="utf-8")
     prompts = (ROOT / "workbench" / "frontend" / "src" / "components" / "PromptLibraryEditor.tsx").read_text(encoding="utf-8")
     assert "EXAMPLE EXECUTE" in panel and "Run example" in panel
+    assert 'type="checkbox"' in panel and 'type="number"' in panel
+    assert 'kind==="choice"' in panel and "arg.options" in panel
     assert "exampleFor(document)" in models and "executeModelExample" in models
     assert "contractParent?.example_execute" in prompts and "renderPromptExample" in prompts
 
