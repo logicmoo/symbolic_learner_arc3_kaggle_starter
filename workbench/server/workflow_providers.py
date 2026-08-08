@@ -166,11 +166,12 @@ def _prolog_source(inputs: dict[str, Any], parameters: dict[str, Any]) -> dict[s
     output_binding = str(parameters.get("outputBinding") or "text")
     input_value = str(inputs.get(input_binding, ""))
     wrapper = (
-        "\n\n__workbench_main([Input|_]) :-\n"
+        "\n\nworkbench_main :-\n"
+        "    current_prolog_flag(argv, [Input|_]),\n"
         f"    {predicate}(Input, Output),\n"
         "    write(Output), nl.\n"
-        "__workbench_main([]) :- halt(2).\n"
-        ":- initialization(__workbench_main, main).\n"
+        "workbench_main :- halt(2).\n"
+        ":- initialization(workbench_main, main).\n"
     )
     with tempfile.NamedTemporaryFile("w", suffix=".pl", encoding="utf-8", delete=False) as handle:
         handle.write(source_code)

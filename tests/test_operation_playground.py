@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+import shutil
+
+import pytest
+
 from operation_api import invoke_operation
 from operation_resolution import materialize_workflow_step
 
@@ -16,6 +20,18 @@ def test_operation_playground_invokes_python_variant() -> None:
     assert result["implementation"]["id"] == "echo_into_titlecased_python"
     assert result["implementation"]["route"] == "python.callable"
     assert result["outputs"]["text"] == "Hello Symbolic World"
+    assert result["elapsedMs"] >= 0
+
+
+@pytest.mark.skipif(shutil.which("swipl") is None, reason="SWI-Prolog is not installed")
+def test_operation_playground_invokes_swi_prolog_variant() -> None:
+    result = invoke_operation("shared", "echo_into_titlecased", {
+        "implementationVariant": "echo_into_titlecased_prolog",
+        "inputs": {"text": "the quick brown fox"},
+    })
+    assert result["outputs"]["text"] == "The Quick Brown Fox"
+    assert result["outputs"]["execution"]["predicate"] == "titlecase_text"
+    assert result["implementation"]["route"] == "prolog.source"
     assert result["elapsedMs"] >= 0
 
 
