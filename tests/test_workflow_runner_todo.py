@@ -67,6 +67,9 @@ def test_goal_run_human_pause_uses_the_frozen_step_form_contract() -> None:
     assert 'type="file" accept="image/*"' in source
     assert "human-grid-preview" in source
     assert "reader.readAsDataURL(file)" in source
+    assert "hypothesisRecords" in source
+    assert "experimentRecords" in source
+    assert "Typed artifacts persisted by this run" in source
 
 
 def test_runner_panels_are_user_resizable() -> None:

@@ -29,6 +29,7 @@
     relationship
     simulation_request
     simulation_result
+    suggested_experiment
     text
     transition_evidence
     world_analysis_state

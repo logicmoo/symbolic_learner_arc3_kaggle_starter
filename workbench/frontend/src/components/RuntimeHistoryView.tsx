@@ -45,6 +45,14 @@ function ArtifactVisual({ artifact }: { artifact: RuntimeRun["artifacts"][number
   if (!visual) return null;
   return <figure className="run-artifact-visual"><figcaption><b>{artifact.name}</b><span>{artifact.datatype || "visual artifact"}</span></figcaption>{visual.image ? <img src={visual.image} alt={artifact.name} /> : <div className="run-artifact-grid" style={{ gridTemplateColumns: `repeat(${visual.grid?.[0]?.length || 1}, 1fr)` }}>{visual.grid?.flatMap((row, rowIndex) => row.map((cell, columnIndex) => <i key={`${rowIndex}:${columnIndex}`} style={{ background: artifactColors[Math.abs(cell) % artifactColors.length] }} title={`${columnIndex},${rowIndex}: ${cell}`} />))}</div>}</figure>;
 }
+function artifactRecords(artifact: RuntimeRun["artifacts"][number], collectionKeys: string[]): Record<string, unknown>[] {
+  const payload = artifact.payload;
+  if (Array.isArray(payload)) return payload.filter(item => item && typeof item === "object") as Record<string, unknown>[];
+  if (!payload || typeof payload !== "object") return [];
+  const record = payload as Record<string, unknown>;
+  for (const key of collectionKeys) if (Array.isArray(record[key])) return (record[key] as unknown[]).filter(item => item && typeof item === "object") as Record<string, unknown>[];
+  return [record];
+}
 
 function WorkflowRunProjection({ run, workflow, busy, onCommand }: { run: RuntimeRun; workflow: FrozenWorkflow | null; busy: boolean; onCommand: (command: "pause" | "resume" | "advance" | "replay" | "cancel") => void }) {
   const [view, setView] = useState<"topology" | "chronology">("topology");
@@ -65,6 +73,9 @@ function WorkflowRunProjection({ run, workflow, busy, onCommand }: { run: Runtim
   const visualArtifacts = run.artifacts.filter(item => visualArtifactPayload(item.payload));
   const sourceVisual = visualArtifacts.find(item => /source|input|before|observation/i.test(item.name)) || visualArtifacts[0];
   const renderedVisual = visualArtifacts.find(item => item.id !== sourceVisual?.id && /render|reconstruct|output|after|result/i.test(item.name)) || visualArtifacts.find(item => item.id !== sourceVisual?.id);
+  const hypothesisRecords = run.artifacts.filter(item => /hypothesis/i.test(`${item.datatype || ""} ${item.name}`)).flatMap(item => artifactRecords(item, ["hypotheses", "items"]));
+  const evidenceRecords = run.artifacts.filter(item => /evidence/i.test(`${item.datatype || ""} ${item.name}`)).flatMap(item => artifactRecords(item, ["evidence", "items"]));
+  const experimentRecords = run.artifacts.filter(item => /experiment/i.test(`${item.datatype || ""} ${item.name}`)).flatMap(item => artifactRecords(item, ["experiments", "suggestedExperiments", "items"]));
 
   return <section className="run-projection" aria-label="Selected workflow run projection">
     <div className="run-projection-heading">
@@ -82,6 +93,7 @@ function WorkflowRunProjection({ run, workflow, busy, onCommand }: { run: Runtim
       : <div className="run-chronology" aria-label="Durable event chronology">{run.events.map((event, index) => <button key={event.id} className={String(event.id) === selectedEventId ? "selected" : ""} onClick={() => selectEvent(event)}><span>{index + 1}</span><b>{event.kind}</b><small>{event.stepId || "workflow"}</small><time>{stamp(event.createdAt)}</time></button>)}{!run.events.length && <div className="studio-empty">This run has no durable events.</div>}</div>}
     {selectedStep && <div className="run-stage-narrative"><div><span>SELECTED STAGE</span><h3>{selectedStep.label || selectedStep.id}</h3><p>{selectedStep.implementation || selectedStep.operation || selectedStep.kind || "operation"}</p></div><div><span>RUNTIME OUTCOME</span><b>{stepRuntime?.status || "defined"}</b><small>{stepRuntime?.error || latestStepEvent?.kind || "No execution event yet"}</small></div><div><span>DURABLE EVIDENCE</span><b>{artifacts.length} artifacts · {stepEvents.length} events</b><small>{artifacts.map(item => item.name).join(", ") || "No produced artifacts"}</small></div></div>}
     {sourceVisual && <div className={`run-visual-comparison ${renderedVisual ? "paired" : "single"}`}><div className="run-visual-comparison-title"><span>{renderedVisual ? "SOURCE / RENDER COMPARISON" : "VISUAL ARTIFACT"}</span><small>Persisted run payloads · no generated preview data</small></div><ArtifactVisual artifact={sourceVisual} />{renderedVisual && <ArtifactVisual artifact={renderedVisual} />}</div>}
+    {(hypothesisRecords.length > 0 || evidenceRecords.length > 0 || experimentRecords.length > 0) && <div className="run-reasoning-evidence"><div className="run-visual-comparison-title"><span>REASONING EVIDENCE</span><small>Typed artifacts persisted by this run</small></div>{hypothesisRecords.map((record, index) => <article className="run-hypothesis" key={`hypothesis:${String(record.id || index)}`}><span>H{index + 1}</span><div><b>{String(record.statement || record.label || record.id || "Hypothesis")}</b><small>{String(record.status || "revisable")}</small></div>{typeof record.confidence === "number" && <strong>{record.confidence.toFixed(2)}</strong>}</article>)}{evidenceRecords.map((record, index) => <article className="run-evidence-record" key={`evidence:${String(record.id || index)}`}><span>E{index + 1}</span><div><b>{String(record.observation || record.statement || record.id || "Evidence")}</b><small>{Array.isArray(record.supports) ? `supports ${record.supports.join(", ")}` : "transition evidence"}</small></div></article>)}{experimentRecords.map((record, index) => <article className="run-experiment" key={`experiment:${String(record.id || index)}`}><span>TRY</span><div><b>{String(record.instruction || record.label || record.id || "Suggested experiment")}</b><small>{String(record.rationale || "Persisted experiment proposal")}</small></div>{typeof record.expectedInformationGain === "number" && <strong>{record.expectedInformationGain.toFixed(2)}</strong>}</article>)}</div>}
     <div className="run-projection-inspector">
       <div><span>{selectedEvent ? "EVENT" : "STEP"}</span><h3>{selectedEvent?.kind || selectedStep?.label || selectedStep?.id || "Select a node"}</h3><p>{selectedEvent?.stepId || selectedStep?.implementation || selectedStep?.operation || selectedStep?.kind || "workflow"}</p></div>
       <dl><div><dt>Status</dt><dd>{stepRuntime?.status || run.status}</dd></div><div><dt>Attempt</dt><dd>{stepRuntime?.attempt || 0}</dd></div><div><dt>Artifacts</dt><dd>{artifacts.length}</dd></div><div><dt>Logs</dt><dd>{logs.length}</dd></div></dl>
