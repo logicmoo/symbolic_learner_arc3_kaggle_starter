@@ -1,0 +1,45 @@
+{
+  "kind": "model",
+  "id": "openai-tts-1",
+  "label": "tts-1",
+  "description": "Discovered from OpenAI.",
+  "inherits": "openai",
+  "model": "tts-1",
+  "enabled": true,
+  "capabilities": {
+    "audio": true,
+    "code": false,
+    "functionCalling": false,
+    "json": false,
+    "jsonMode": false,
+    "local": false,
+    "multimodal": true,
+    "reasoning": false,
+    "text": true,
+    "tools": false,
+    "vision": false
+  },
+  "limits": {
+    "contextWindow": null,
+    "maxOutputTokens": null
+  },
+  "pricing": {},
+  "properties": {
+    "id": "tts-1",
+    "object": "model",
+    "created": 1681940951,
+    "owned_by": "openai-internal",
+    "ownedBy": "openai-internal"
+  },
+  "providerMetadata": {
+    "id": "tts-1",
+    "object": "model",
+    "created": 1681940951,
+    "owned_by": "openai-internal"
+  },
+  "discovery": {
+    "managed": true,
+    "backendId": "openai",
+    "remoteModelId": "tts-1"
+  }
+}

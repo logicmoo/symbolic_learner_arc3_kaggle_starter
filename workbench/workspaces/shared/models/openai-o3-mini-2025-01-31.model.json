@@ -1,0 +1,45 @@
+{
+  "kind": "model",
+  "id": "openai-o3-mini-2025-01-31",
+  "label": "o3-mini-2025-01-31",
+  "description": "Discovered from OpenAI.",
+  "inherits": "openai",
+  "model": "o3-mini-2025-01-31",
+  "enabled": true,
+  "capabilities": {
+    "audio": false,
+    "code": false,
+    "functionCalling": false,
+    "json": false,
+    "jsonMode": false,
+    "local": false,
+    "multimodal": false,
+    "reasoning": true,
+    "text": true,
+    "tools": false,
+    "vision": false
+  },
+  "limits": {
+    "contextWindow": null,
+    "maxOutputTokens": null
+  },
+  "pricing": {},
+  "properties": {
+    "id": "o3-mini-2025-01-31",
+    "object": "model",
+    "created": 1738010200,
+    "owned_by": "system",
+    "ownedBy": "system"
+  },
+  "providerMetadata": {
+    "id": "o3-mini-2025-01-31",
+    "object": "model",
+    "created": 1738010200,
+    "owned_by": "system"
+  },
+  "discovery": {
+    "managed": true,
+    "backendId": "openai",
+    "remoteModelId": "o3-mini-2025-01-31"
+  }
+}

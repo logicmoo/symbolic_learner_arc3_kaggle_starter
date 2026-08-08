@@ -1,0 +1,45 @@
+{
+  "kind": "model",
+  "id": "openai-babbage-002",
+  "label": "babbage-002",
+  "description": "Discovered from OpenAI.",
+  "inherits": "openai",
+  "model": "babbage-002",
+  "enabled": true,
+  "capabilities": {
+    "audio": false,
+    "code": false,
+    "functionCalling": false,
+    "json": false,
+    "jsonMode": false,
+    "local": false,
+    "multimodal": false,
+    "reasoning": false,
+    "text": true,
+    "tools": false,
+    "vision": false
+  },
+  "limits": {
+    "contextWindow": null,
+    "maxOutputTokens": null
+  },
+  "pricing": {},
+  "properties": {
+    "id": "babbage-002",
+    "object": "model",
+    "created": 1692634615,
+    "owned_by": "system",
+    "ownedBy": "system"
+  },
+  "providerMetadata": {
+    "id": "babbage-002",
+    "object": "model",
+    "created": 1692634615,
+    "owned_by": "system"
+  },
+  "discovery": {
+    "managed": true,
+    "backendId": "openai",
+    "remoteModelId": "babbage-002"
+  }
+}

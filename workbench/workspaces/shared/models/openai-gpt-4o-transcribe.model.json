@@ -1,0 +1,45 @@
+{
+  "kind": "model",
+  "id": "openai-gpt-4o-transcribe",
+  "label": "gpt-4o-transcribe",
+  "description": "Discovered from OpenAI.",
+  "inherits": "openai",
+  "model": "gpt-4o-transcribe",
+  "enabled": true,
+  "capabilities": {
+    "audio": true,
+    "code": false,
+    "functionCalling": false,
+    "json": false,
+    "jsonMode": false,
+    "local": false,
+    "multimodal": true,
+    "reasoning": false,
+    "text": true,
+    "tools": false,
+    "vision": false
+  },
+  "limits": {
+    "contextWindow": null,
+    "maxOutputTokens": null
+  },
+  "pricing": {},
+  "properties": {
+    "id": "gpt-4o-transcribe",
+    "object": "model",
+    "created": 1742068463,
+    "owned_by": "system",
+    "ownedBy": "system"
+  },
+  "providerMetadata": {
+    "id": "gpt-4o-transcribe",
+    "object": "model",
+    "created": 1742068463,
+    "owned_by": "system"
+  },
+  "discovery": {
+    "managed": true,
+    "backendId": "openai",
+    "remoteModelId": "gpt-4o-transcribe"
+  }
+}

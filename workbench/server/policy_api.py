@@ -14,7 +14,7 @@ from backend_library import load_workspace_backend_records
 from model_policy_ping import run_ping_job
 from model_benchmark import run_benchmark
 from model_library import resolve_model_records
-from model_discovery import discover_backend_models, import_discovered_models
+from model_discovery import discover_backend_models, import_discovered_models, reconcile_discovered_models, remove_missing_models
 from workspace_api import _resolve_workspace
 
 router = APIRouter(prefix="/workspaces", tags=["model-policy"])
@@ -53,7 +53,8 @@ def discover_models(workspace_id: str, backend_id: str) -> dict[str, Any]:
     if not backend: raise HTTPException(status_code=404, detail=f"backend not found: {backend_id}")
     try: models = discover_backend_models(backend)
     except Exception as error: raise HTTPException(status_code=502, detail=str(error)) from error
-    return {"workspace": workspace, "backend": backend, "models": models}
+    shared_workspace = _resolve_workspace("shared")
+    return {"workspace": workspace, "backend": backend, "models": reconcile_discovered_models(Path(shared_workspace["root"]), backend, models)}
 
 
 @router.post("/{workspace_id}/models/import/{backend_id}", status_code=201)
@@ -68,6 +69,19 @@ def import_models(workspace_id: str, backend_id: str, request: dict[str, Any] = 
     if request.get("overwrite", True) is not True: raise HTTPException(status_code=400, detail="model imports require overwrite=true")
     imported = import_discovered_models(Path(shared_workspace["root"]), backend, models)
     return {"workspace": workspace, "targetWorkspace": shared_workspace, "backendId": backend_id, "models": imported}
+
+
+@router.post("/{workspace_id}/models/remove-missing/{backend_id}")
+def remove_missing(workspace_id: str, backend_id: str, request: dict[str, Any] = Body(...)) -> dict[str, Any]:
+    try: workspace = _resolve_workspace(workspace_id); shared_workspace = _resolve_workspace("shared")
+    except KeyError as error: raise HTTPException(status_code=404, detail=str(error)) from error
+    backend = next((record.get("document") for record in load_workspace_backend_records(Path(shared_workspace["root"]))
+                    if (record.get("document") or {}).get("id") == backend_id), None)
+    if not backend: raise HTTPException(status_code=404, detail=f"shared backend not found: {backend_id}")
+    resource_ids = request.get("resourceIds")
+    if not isinstance(resource_ids, list): raise HTTPException(status_code=400, detail="resourceIds must be a list")
+    removed = remove_missing_models(Path(shared_workspace["root"]), backend, [str(value) for value in resource_ids])
+    return {"workspace": workspace, "targetWorkspace": shared_workspace, "backendId": backend_id, "removed": removed}
 
 @router.post("/{workspace_id}/model-policy/observations", status_code=201)
 def record_model_policy_observation(workspace_id: str, document: dict[str, Any] = Body(...)) -> dict[str, Any]:

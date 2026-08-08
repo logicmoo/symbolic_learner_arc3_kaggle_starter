@@ -9,7 +9,7 @@ SERVER = ROOT / "workbench" / "server"
 sys.path.insert(0, str(SERVER))
 
 import policy_api  # noqa: E402
-from model_discovery import discover_backend_models, import_discovered_models  # noqa: E402
+from model_discovery import discover_backend_models, import_discovered_models, reconcile_discovered_models, remove_missing_models  # noqa: E402
 from model_policy_ping import run_ping_job  # noqa: E402
 from model_benchmark import run_benchmark  # noqa: E402
 from policy_library import effective_model_registry, load_workspace_policy_records  # noqa: E402
@@ -86,12 +86,14 @@ def test_vendor_change_cascades_to_children_in_policy_editor() -> None:
 
 def test_model_discovery_has_bulk_selection_controls() -> None:
     source = (ROOT / "workbench" / "frontend" / "src" / "components" / "LlmModelsEditor.tsx").read_text(encoding="utf-8")
-    assert "Select all" in source
+    assert "Select new/changed" in source
+    assert "Select missing" in source
     assert "Clear selection" in source
     assert "discoverySelection.size} selected" in source
     assert 'body:JSON.stringify({models,overwrite:true})' in source
     assert "setSnapshot(null);setOpenDocs([]);setActiveKey(null);setCompareKey(null)" in source
     assert 'cache:"no-store"' in source
+    assert "Remove missing" in source
 
 
 def test_backend_model_discovery_supports_openai_and_ollama_shapes(tmp_path: Path) -> None:
@@ -121,6 +123,17 @@ def test_model_import_route_always_targets_shared_workspace(tmp_path: Path, monk
     assert result["targetWorkspace"]["id"] == "shared"
     assert not (project / "models").exists()
     assert (shared / "models" / "vendor-remote_model.model.json").is_file()
+
+
+def test_discovery_reconciles_and_only_removes_managed_missing_models(tmp_path: Path) -> None:
+    backend = {"id": "vendor", "label": "Vendor"}
+    imported = import_discovered_models(tmp_path, backend, [{"id": "old", "label": "Old"}, {"id": "keep", "label": "Keep"}])
+    manual = tmp_path / "models" / "manual.model.json"
+    manual.write_text(json.dumps({"kind": "model", "id": "manual", "inherits": "vendor", "model": "manual"}))
+    rows = reconcile_discovered_models(tmp_path, backend, [{"id": "keep", "label": "Keep"}, {"id": "new", "label": "New"}])
+    assert {row["id"]: row["status"] for row in rows} == {"keep": "unchanged", "new": "new", "old": "missing"}
+    assert remove_missing_models(tmp_path, backend, [imported[0]["id"], "manual"]) == [imported[0]["id"]]
+    assert manual.is_file()
 
 
 def test_observation_api_persists_a_real_resource(tmp_path: Path, monkeypatch) -> None:

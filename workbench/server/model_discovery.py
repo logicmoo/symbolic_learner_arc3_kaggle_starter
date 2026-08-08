@@ -84,24 +84,69 @@ def discover_backend_models(backend: dict[str, Any], *, timeout_seconds: float =
     return sorted(discovered.values(), key=lambda row: row["id"].lower())
 
 
+def discovered_model_document(backend: dict[str, Any], row: dict[str, Any]) -> dict[str, Any] | None:
+    remote_id = str(row.get("id") or "").strip()
+    if not remote_id:
+        return None
+    resource_id = re.sub(r"[^a-zA-Z0-9._-]+", "_", f"{backend['id']}-{remote_id}").strip("._").lower()
+    return {"kind": "model", "id": resource_id, "label": str(row.get("label") or remote_id),
+            "description": f"Discovered from {backend.get('label') or backend['id']}.",
+            "inherits": backend["id"], "model": remote_id, "enabled": True,
+            "capabilities": row.get("capabilities") or {}, "limits": row.get("limits") or {},
+            "pricing": row.get("pricing") or {}, "properties": row.get("properties") or {},
+            "providerMetadata": row.get("providerMetadata") or {},
+            "discovery": {"managed": True, "backendId": backend["id"], "remoteModelId": remote_id}}
+
+
+def reconcile_discovered_models(root: Path, backend: dict[str, Any], models: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    directory = root / "models"; existing_by_remote: dict[str, dict[str, Any]] = {}
+    if directory.is_dir():
+        for path in directory.glob("*.model.json"):
+            try: document = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError): continue
+            discovery = document.get("discovery") or {}; legacy = str(document.get("description") or "").startswith("Discovered from ")
+            if document.get("inherits") == backend.get("id") and (discovery.get("managed") is True or legacy):
+                existing_by_remote[str(document.get("model") or "")] = document
+    rows: list[dict[str, Any]] = []
+    discovered_ids: set[str] = set()
+    for row in models:
+        document = discovered_model_document(backend, row)
+        if not document: continue
+        remote_id = str(document["model"]); discovered_ids.add(remote_id); existing = existing_by_remote.get(remote_id)
+        status = "new" if existing is None else "unchanged" if existing == document else "changed"
+        rows.append({**row, "resourceId": document["id"], "status": status})
+    for remote_id, document in existing_by_remote.items():
+        if remote_id not in discovered_ids:
+            rows.append({"id": remote_id, "resourceId": document.get("id"), "label": document.get("label") or remote_id, "status": "missing"})
+    return sorted(rows, key=lambda row: (str(row.get("status")) == "missing", str(row.get("id")).lower()))
+
+
 def import_discovered_models(root: Path, backend: dict[str, Any], models: list[dict[str, Any]]) -> list[dict[str, Any]]:
     directory = root / "models"
     directory.mkdir(parents=True, exist_ok=True)
     imported: list[dict[str, Any]] = []
     for row in models:
-        remote_id = str(row.get("id") or "").strip()
-        if not remote_id:
+        document = discovered_model_document(backend, row)
+        if not document:
             continue
-        resource_id = re.sub(r"[^a-zA-Z0-9._-]+", "_", f"{backend['id']}-{remote_id}").strip("._").lower()
-        document = {"kind": "model", "id": resource_id, "label": str(row.get("label") or remote_id),
-                    "description": f"Discovered from {backend.get('label') or backend['id']}.",
-                    "inherits": backend["id"], "model": remote_id, "enabled": True,
-                    "capabilities": row.get("capabilities") or {}, "limits": row.get("limits") or {},
-                    "pricing": row.get("pricing") or {}, "properties": row.get("properties") or {},
-                    "providerMetadata": row.get("providerMetadata") or {}}
+        resource_id = str(document["id"])
         target = directory / f"{resource_id}.model.json"
         temporary = target.with_suffix(target.suffix + ".tmp")
         temporary.write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8")
         temporary.replace(target)
         imported.append(document)
     return imported
+
+
+def remove_missing_models(root: Path, backend: dict[str, Any], resource_ids: list[str]) -> list[str]:
+    directory = (root / "models").resolve(); removed: list[str] = []
+    for resource_id in resource_ids:
+        safe_id = re.sub(r"[^a-zA-Z0-9._-]+", "_", str(resource_id)).strip("._").lower()
+        target = (directory / f"{safe_id}.model.json").resolve()
+        if target.parent != directory or not target.is_file(): continue
+        try: document = json.loads(target.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError): continue
+        discovery = document.get("discovery") or {}; legacy = str(document.get("description") or "").startswith("Discovered from ")
+        if document.get("inherits") != backend.get("id") or not (discovery.get("managed") is True or legacy): continue
+        target.unlink(); removed.append(safe_id)
+    return removed

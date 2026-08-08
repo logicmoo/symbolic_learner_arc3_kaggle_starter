@@ -1,0 +1,45 @@
+{
+  "kind": "model",
+  "id": "openai-davinci-002",
+  "label": "davinci-002",
+  "description": "Discovered from OpenAI.",
+  "inherits": "openai",
+  "model": "davinci-002",
+  "enabled": true,
+  "capabilities": {
+    "audio": false,
+    "code": false,
+    "functionCalling": false,
+    "json": false,
+    "jsonMode": false,
+    "local": false,
+    "multimodal": false,
+    "reasoning": false,
+    "text": true,
+    "tools": false,
+    "vision": false
+  },
+  "limits": {
+    "contextWindow": null,
+    "maxOutputTokens": null
+  },
+  "pricing": {},
+  "properties": {
+    "id": "davinci-002",
+    "object": "model",
+    "created": 1692634301,
+    "owned_by": "system",
+    "ownedBy": "system"
+  },
+  "providerMetadata": {
+    "id": "davinci-002",
+    "object": "model",
+    "created": 1692634301,
+    "owned_by": "system"
+  },
+  "discovery": {
+    "managed": true,
+    "backendId": "openai",
+    "remoteModelId": "davinci-002"
+  }
+}

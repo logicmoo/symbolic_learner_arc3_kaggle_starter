@@ -1,0 +1,305 @@
+{
+  "kind": "model",
+  "id": "openrouter-qwen_qwen3.7-plus",
+  "label": "Qwen: Qwen3.7 Plus",
+  "description": "Discovered from OpenRouter.",
+  "inherits": "openrouter",
+  "model": "qwen/qwen3.7-plus",
+  "enabled": true,
+  "capabilities": {
+    "audio": false,
+    "code": false,
+    "functionCalling": true,
+    "json": true,
+    "jsonMode": true,
+    "local": false,
+    "multimodal": true,
+    "reasoning": true,
+    "text": true,
+    "tools": true,
+    "vision": true
+  },
+  "limits": {
+    "contextWindow": 1000000,
+    "maxOutputTokens": 131072
+  },
+  "pricing": {
+    "prompt": "0.00000032",
+    "completion": "0.00000128",
+    "input_cache_read": "0.000000064",
+    "input_cache_write": "0.0000004",
+    "overrides": [
+      {
+        "min_prompt_tokens": 256000,
+        "prompt": "0.00000096",
+        "completion": "0.00000384",
+        "input_cache_read": "0.000000192",
+        "input_cache_write": "0.0000012"
+      }
+    ]
+  },
+  "properties": {
+    "id": "qwen/qwen3.7-plus",
+    "canonical_slug": "qwen/qwen3.7-plus-20260602",
+    "hugging_face_id": null,
+    "name": "Qwen: Qwen3.7 Plus",
+    "created": 1780491783,
+    "description": "Qwen3.7-Plus is a cost-effective model in Alibaba's Qwen3.7 series. It supports text and image input with text output, building on the series' text capabilities with a comprehensive upgrade to its...",
+    "context_length": 1000000,
+    "architecture": {
+      "modality": "text+image->text",
+      "input_modalities": [
+        "text",
+        "image"
+      ],
+      "output_modalities": [
+        "text"
+      ],
+      "tokenizer": "Qwen",
+      "instruct_type": null
+    },
+    "pricing": {
+      "prompt": "0.00000032",
+      "completion": "0.00000128",
+      "input_cache_read": "0.000000064",
+      "input_cache_write": "0.0000004",
+      "overrides": [
+        {
+          "min_prompt_tokens": 256000,
+          "prompt": "0.00000096",
+          "completion": "0.00000384",
+          "input_cache_read": "0.000000192",
+          "input_cache_write": "0.0000012"
+        }
+      ]
+    },
+    "top_provider": {
+      "context_length": 1000000,
+      "max_completion_tokens": 131072,
+      "is_moderated": false
+    },
+    "per_request_limits": null,
+    "supported_parameters": [
+      "frequency_penalty",
+      "include_reasoning",
+      "logprobs",
+      "max_tokens",
+      "presence_penalty",
+      "reasoning",
+      "response_format",
+      "seed",
+      "stop",
+      "structured_outputs",
+      "temperature",
+      "tool_choice",
+      "tools",
+      "top_k",
+      "top_logprobs",
+      "top_p"
+    ],
+    "default_parameters": {},
+    "supported_voices": null,
+    "knowledge_cutoff": null,
+    "expiration_date": null,
+    "links": {
+      "details": "/api/v1/models/qwen/qwen3.7-plus-20260602/endpoints"
+    },
+    "benchmarks": {
+      "design_arena": [
+        {
+          "arena": "models",
+          "category": "3d",
+          "elo": 1291,
+          "win_rate": 48.4,
+          "rank": 21
+        },
+        {
+          "arena": "models",
+          "category": "asciiart",
+          "elo": 1180,
+          "win_rate": 43.9,
+          "rank": 33
+        },
+        {
+          "arena": "models",
+          "category": "codecategories",
+          "elo": 1288,
+          "win_rate": 50.4,
+          "rank": 19
+        },
+        {
+          "arena": "models",
+          "category": "dataviz",
+          "elo": 1293,
+          "win_rate": 54.2,
+          "rank": 14
+        },
+        {
+          "arena": "models",
+          "category": "gamedev",
+          "elo": 1297,
+          "win_rate": 52.2,
+          "rank": 16
+        },
+        {
+          "arena": "models",
+          "category": "uicomponent",
+          "elo": 1277,
+          "win_rate": 48.5,
+          "rank": 24
+        },
+        {
+          "arena": "models",
+          "category": "website",
+          "elo": 1292,
+          "win_rate": 52.1,
+          "rank": 19
+        }
+      ],
+      "artificial_analysis": {
+        "intelligence_index": 39.4,
+        "coding_index": 55.9,
+        "agentic_index": 20.7
+      }
+    },
+    "reasoning": {
+      "mandatory": false,
+      "default_enabled": true
+    },
+    "ownedBy": null
+  },
+  "providerMetadata": {
+    "id": "qwen/qwen3.7-plus",
+    "canonical_slug": "qwen/qwen3.7-plus-20260602",
+    "hugging_face_id": null,
+    "name": "Qwen: Qwen3.7 Plus",
+    "created": 1780491783,
+    "description": "Qwen3.7-Plus is a cost-effective model in Alibaba's Qwen3.7 series. It supports text and image input with text output, building on the series' text capabilities with a comprehensive upgrade to its...",
+    "context_length": 1000000,
+    "architecture": {
+      "modality": "text+image->text",
+      "input_modalities": [
+        "text",
+        "image"
+      ],
+      "output_modalities": [
+        "text"
+      ],
+      "tokenizer": "Qwen",
+      "instruct_type": null
+    },
+    "pricing": {
+      "prompt": "0.00000032",
+      "completion": "0.00000128",
+      "input_cache_read": "0.000000064",
+      "input_cache_write": "0.0000004",
+      "overrides": [
+        {
+          "min_prompt_tokens": 256000,
+          "prompt": "0.00000096",
+          "completion": "0.00000384",
+          "input_cache_read": "0.000000192",
+          "input_cache_write": "0.0000012"
+        }
+      ]
+    },
+    "top_provider": {
+      "context_length": 1000000,
+      "max_completion_tokens": 131072,
+      "is_moderated": false
+    },
+    "per_request_limits": null,
+    "supported_parameters": [
+      "frequency_penalty",
+      "include_reasoning",
+      "logprobs",
+      "max_tokens",
+      "presence_penalty",
+      "reasoning",
+      "response_format",
+      "seed",
+      "stop",
+      "structured_outputs",
+      "temperature",
+      "tool_choice",
+      "tools",
+      "top_k",
+      "top_logprobs",
+      "top_p"
+    ],
+    "default_parameters": {},
+    "supported_voices": null,
+    "knowledge_cutoff": null,
+    "expiration_date": null,
+    "links": {
+      "details": "/api/v1/models/qwen/qwen3.7-plus-20260602/endpoints"
+    },
+    "benchmarks": {
+      "design_arena": [
+        {
+          "arena": "models",
+          "category": "3d",
+          "elo": 1291,
+          "win_rate": 48.4,
+          "rank": 21
+        },
+        {
+          "arena": "models",
+          "category": "asciiart",
+          "elo": 1180,
+          "win_rate": 43.9,
+          "rank": 33
+        },
+        {
+          "arena": "models",
+          "category": "codecategories",
+          "elo": 1288,
+          "win_rate": 50.4,
+          "rank": 19
+        },
+        {
+          "arena": "models",
+          "category": "dataviz",
+          "elo": 1293,
+          "win_rate": 54.2,
+          "rank": 14
+        },
+        {
+          "arena": "models",
+          "category": "gamedev",
+          "elo": 1297,
+          "win_rate": 52.2,
+          "rank": 16
+        },
+        {
+          "arena": "models",
+          "category": "uicomponent",
+          "elo": 1277,
+          "win_rate": 48.5,
+          "rank": 24
+        },
+        {
+          "arena": "models",
+          "category": "website",
+          "elo": 1292,
+          "win_rate": 52.1,
+          "rank": 19
+        }
+      ],
+      "artificial_analysis": {
+        "intelligence_index": 39.4,
+        "coding_index": 55.9,
+        "agentic_index": 20.7
+      }
+    },
+    "reasoning": {
+      "mandatory": false,
+      "default_enabled": true
+    }
+  },
+  "discovery": {
+    "managed": true,
+    "backendId": "openrouter",
+    "remoteModelId": "qwen/qwen3.7-plus"
+  }
+}
