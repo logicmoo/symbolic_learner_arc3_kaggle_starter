@@ -15,9 +15,13 @@ BACKEND_DIRECTORIES = ("design/backends", "backends", "models")
 
 def read_backend_file(path: Path) -> dict[str, Any]:
     try:
-        value = get_filesystem_provider().read_json(path)
-    except (OSError, json.JSONDecodeError) as error:
+        value = get_filesystem_provider().read_json_documents(path)[0]
+    except (OSError, json.JSONDecodeError, ValueError) as error:
         raise ValueError(f"Invalid backend definition {path}: {error}") from error
+    return _validate_backend(value, path)
+
+
+def _validate_backend(value: Any, path: Path) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise ValueError(f"Backend definition must be a JSON object: {path}")
     if value.get("kind") != "backend":
@@ -36,21 +40,18 @@ def _backend_records(workspace_root: Path, source: str, workspace_id: str) -> li
     paths = resources.glob(workspace_root, BACKEND_DIRECTORIES)
     for path in sorted(paths, key=lambda item: item.name.lower()):
         try:
-            raw = resources.read_json(path)
-        except (OSError, json.JSONDecodeError):
+            documents = resources.read_json_documents(path)
+        except (OSError, json.JSONDecodeError, ValueError):
             continue
-        if not isinstance(raw, dict) or raw.get("kind") != "backend":
-            continue
-        record: dict[str, Any] = {
-            "path": path.relative_to(workspace_root).as_posix(),
-            "source": source,
-            "workspaceId": workspace_id,
-        }
-        try:
-            record["document"] = read_backend_file(path)
-        except ValueError as error:
-            record["error"] = str(error)
-        records.append(record)
+        for resource_index, raw in enumerate(documents):
+            if not isinstance(raw, dict) or raw.get("kind") != "backend":
+                continue
+            record: dict[str, Any] = {"path": path.relative_to(workspace_root).as_posix(), "source": source, "workspaceId": workspace_id, "resourceIndex": resource_index}
+            try:
+                record["document"] = _validate_backend(raw, path)
+            except ValueError as error:
+                record["error"] = str(error)
+            records.append(record)
     return records
 
 

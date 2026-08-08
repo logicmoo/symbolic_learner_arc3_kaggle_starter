@@ -649,56 +649,49 @@ Normalize common fields but retain arbitrary vendor metadata.
 
 For example:
 
-```json
-{
-  "id": "openai:gpt-5.6-deep",
-  "vendorId": "openai",
-  "modelId": "gpt-5.6-deep",
-  "name": "GPT-5.6 Deep",
-
-  "policy": {
-    "wanted": "on",
-    "runtime": "on",
-    "benchmark": "on"
-  },
-
-  "health": {
-    "status": "online",
-    "latencyMs": 180,
-    "lastPing": "...",
-    "lastSuccess": "...",
-    "failureRate": 0.01
-  },
-
-  "effective": {
-    "runtime": true,
-    "benchmark": true,
-    "reason": null
-  },
-
-  "capabilities": {
-    "vision": true,
-    "audio": true,
-    "multimodal": true,
-    "tools": true,
-    "functionCalling": true,
-    "jsonMode": true
-  },
-
-  "limits": {
-    "contextWindow": 1000000,
-    "maxOutput": 32000
-  },
-
-  "pricing": {
-    "input": 0.12,
-    "output": 0.48
-  },
-
-  "properties": {
-    "... arbitrary vendor properties ...": "..."
-  }
-}
+```metta
+(
+  (id openai:gpt-5.6-deep)
+  (vendorId openai)
+  (modelId gpt-5.6-deep)
+  (name "GPT-5.6 Deep")
+  (policy (
+    (wanted on)
+    (runtime on)
+    (benchmark on)
+  ))
+  (health (
+    (status online)
+    (latencyMs 180)
+    (lastPing ...)
+    (lastSuccess ...)
+    (failureRate 0.01)
+  ))
+  (effective (
+    (runtime true)
+    (benchmark true)
+    (reason null)
+  ))
+  (capabilities (
+    (vision true)
+    (audio true)
+    (multimodal true)
+    (tools true)
+    (functionCalling true)
+    (jsonMode true)
+  ))
+  (limits (
+    (contextWindow 1000000)
+    (maxOutput 32000)
+  ))
+  (pricing (
+    (input 0.12)
+    (output 0.48)
+  ))
+  (properties (
+    ("... arbitrary vendor properties ..." ...)
+  ))
+)
 ```
 
 The `properties` dictionary is important because the All Models grid needs to grow beyond the normalized schema.

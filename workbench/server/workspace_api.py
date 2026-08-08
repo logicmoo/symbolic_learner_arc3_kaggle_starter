@@ -239,19 +239,22 @@ def _load_documents(root: Path, directory: Path, source: str, expected_kind: str
         return result
     relative_directory = directory.relative_to(root).as_posix()
     for path in resources.glob(root, (relative_directory,)):
-        record: dict[str, Any] = {"path": path.relative_to(root).as_posix(), "source": source, "workspaceId": root.name}
         try:
-            document = _read_json(path)
+            documents = resources.read_json_documents(path)
+        except ValueError as error:
+            result.append({"path": path.relative_to(root).as_posix(), "source": source, "workspaceId": root.name, "error": str(error)})
+            continue
+        for resource_index, document in enumerate(documents):
+            if not isinstance(document, dict):
+                continue
+            if expected_kind and document.get("kind") not in (None, expected_kind):
+                continue
+            record: dict[str, Any] = {"path": path.relative_to(root).as_posix(), "source": source, "workspaceId": root.name, "resourceIndex": resource_index}
             if expected_kind:
-                declared = document.get("kind")
-                if declared not in (None, expected_kind):
-                    raise ValueError(f"Expected kind={expected_kind!r}, found {declared!r}: {path}")
                 document.setdefault("kind", expected_kind)
                 record["convention"] = "canonical" if path.name.endswith(f".{expected_kind}.json") else "legacy-filename"
             record["document"] = document
-        except ValueError as error:
-            record["error"] = str(error)
-        result.append(record)
+            result.append(record)
     return result
 
 

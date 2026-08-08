@@ -1,4 +1,4 @@
-[← Back to top-level README](../../../../README.md)
+﻿[â† Back to top-level README](../../../../README.md)
 
 # Operations
 
@@ -7,33 +7,33 @@ A Operation is the abstract semantic operation in the workbench. A `operation_im
 The workflow should normally point to the abstract Operation ID. The Operation lists allowed implementation variants and a default. The runtime resolves that abstract stage to a concrete implementation when the workflow is validated/executed.
 
 ```text
-echo_into_titlecased.operation.json
-    ├── echo_into_titlecased_python.operation_implementation.json
-    ├── echo_into_titlecased_prolog.operation_implementation.json
-    └── echo_into_titlecased_llm.operation_implementation.json
+echo_into_titlecased.operation.metta
+    ├── echo_into_titlecased_python.operation_implementation.metta
+    ├── echo_into_titlecased_prolog.operation_implementation.metta
+    └── echo_into_titlecased_llm.operation_implementation.metta
 ```
 
 ## Python implementations
 
 Python callables need enough metadata to locate and invoke the code without hard-coding that knowledge into the workflow engine. A Python implementation can describe:
 
-```json
-{
-  "kind": "operation_implementation",
-  "implementation": "python.callable",
-  "python": {
-    "importMode": "module",
-    "module": "shared_operation_callables",
-    "file": "workbench/server/shared_operation_callables.py",
-    "className": null,
-    "callable": "to_titlecase",
-    "constructorArgs": [],
-    "constructorKwargs": {},
-    "callArgs": [],
-    "callKwargs": {},
-    "reload": false
-  }
-}
+```metta
+(
+  (kind operation_implementation)
+  (implementation python.callable)
+  (python (
+    (importMode module)
+    (module shared_operation_callables)
+    (file workbench/server/shared_operation_callables.py)
+    (className null)
+    (callable to_titlecase)
+    (constructorArgs ([]))
+    (constructorKwargs ())
+    (callArgs ([]))
+    (callKwargs ())
+    (reload false)
+  ))
+)
 ```
 
 `importMode` may be `module` or `file`. `className` is optional; when supplied, the runtime constructs the class and invokes the named method. Without a class, the callable is resolved directly from the module. Inputs are added to the call keyword arguments after any configured static arguments.
@@ -42,20 +42,20 @@ Python callables need enough metadata to locate and invoke the code without hard
 
 A Prolog implementation can carry the exact source that SWI-Prolog should run. This is useful because a operation definition becomes a complete, inspectable implementation artifact rather than merely naming an external predicate whose source is hidden elsewhere.
 
-```json
-{
-  "kind": "operation_implementation",
-  "implementation": "prolog.source",
-  "prolog": {
-    "engine": "swipl",
-    "predicate": "titlecase_text",
-    "arity": 2,
-    "source_code": [
-      "titlecase_text(Input, Output) :-",
+```metta
+(
+  (kind operation_implementation)
+  (implementation prolog.source)
+  (prolog (
+    (engine swipl)
+    (predicate titlecase_text)
+    (arity 2)
+    (source_code ([]
+      "titlecase_text(Input, Output) :-"
       "    ..."
-    ]
-  }
-}
+    ))
+  ))
+)
 ```
 
 The runtime materializes `source_code`, invokes SWI-Prolog, passes the selected operation input to the configured predicate, and captures the configured output plus execution diagnostics.

@@ -6,8 +6,8 @@ Goals describe desired outcomes independently of the strategy used to pursue the
 
 ## Filesystem convention
 
-- Specifications: `goals/<id>.goal.json`
-- Alternatives: `goals/<id>.<name>.goal_variant.json`
+- Specifications and alternatives may share `goals/<id>.goal.metta`, with each resource as a separate top-level form.
+- Separate alternatives may also use `goal_variants/<id>.<name>.goal_variant.metta`.
 - Every alternative declares `"parents": ["<goal-id>"]`.
 - Every specification lists its alternatives in `children`.
 - `preferredChild` identifies the preferred alternative.

@@ -16,20 +16,26 @@ Every query category requires:
 
 Example:
 
-```json
-{
-  "kind": "artifact_category",
-  "id": "filtered.prolog",
-  "path": "filtered/prolog",
-  "trees": ["operations"],
-  "query": {
-    "kinds": ["operation_implementation"],
-    "where": {
-      "implementation": {"startsWith": "prolog"}
-    }
-  },
-  "parentMode": "show"
-}
+```metta
+(
+  (kind artifact_category)
+  (id filtered.prolog)
+  (path filtered/prolog)
+  (trees ([]
+    operations
+  ))
+  (query (
+    (kinds ([]
+      operation_implementation
+    ))
+    (where (
+      (implementation (
+        (startsWith prolog)
+      ))
+    ))
+  ))
+  (parentMode show)
+)
 ```
 
 Supported predicates currently include direct equality plus `equals`, `startsWith`, `contains`, `gte`, and `lte`. Dot-separated fields inspect nested values; `_resolved` accesses non-persisted inheritance data such as `_resolved.backendId`.

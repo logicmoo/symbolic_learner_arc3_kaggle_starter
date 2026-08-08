@@ -49,15 +49,23 @@ def load_workspace_artifact_categories(workspace_root: Path) -> list[dict[str, A
         if not resources.is_dir(directory):
             continue
         for path in resources.glob(layer, ("design/categories",)):
-            record: dict[str, Any] = {"path": path.relative_to(layer).as_posix(), "source": layer_source(layer, workspace_root), "workspaceId": layer.name}
             try:
-                document = resources.read_json(path)
-                validate_artifact_category(document)
-                record["document"] = document
-                combined[str(document["id"])] = record
+                documents = resources.read_json_documents(path)
             except (OSError, json.JSONDecodeError, ValueError) as error:
-                record["error"] = str(error)
+                record = {"path": path.relative_to(layer).as_posix(), "source": layer_source(layer, workspace_root), "workspaceId": layer.name, "error": str(error)}
                 combined[record["path"]] = record
+                continue
+            for resource_index, document in enumerate(documents):
+                if not isinstance(document, dict) or document.get("kind") != "artifact_category":
+                    continue
+                record = {"path": path.relative_to(layer).as_posix(), "source": layer_source(layer, workspace_root), "workspaceId": layer.name, "resourceIndex": resource_index}
+                try:
+                    validate_artifact_category(document)
+                    record["document"] = document
+                    combined[str(document["id"])] = record
+                except ValueError as error:
+                    record["error"] = str(error)
+                    combined[f'{record["path"]}#{resource_index}'] = record
     return sorted(combined.values(), key=lambda record: str((record.get("document") or {}).get("path") or record["path"]).lower())
 
 

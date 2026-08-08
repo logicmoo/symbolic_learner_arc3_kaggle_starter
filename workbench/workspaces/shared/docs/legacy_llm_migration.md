@@ -10,10 +10,10 @@ The migration was based on the legacy `config/llm_providers.json` and `config/ll
 
 ## Where the old concepts went
 
-- Provider/backend records -> `shared/models/*.json` with `kind: backend`.
-- Concrete model records -> `shared/models/*.json` with `kind: model`.
-- Light/deep/extreme and other execution presets -> `shared/models/*.json` with `kind: profile` and no prompt list.
-- Reusable instruction fragments -> `shared/prompts/*.json`.
+- Provider/backend records -> workspace `*.metta` resources with `kind: backend`.
+- Concrete model records -> workspace `*.metta` resources with `kind: model`.
+- Light/deep/extreme and other execution presets -> workspace `*.metta` resources with `kind: profile` and no prompt list.
+- Reusable instruction fragments -> workspace prompt `*.metta` resources.
 - Ordered `prompt_text` lists and old LLM transactions -> Operation `promptSelection` in `shared/operations/` or `arc3/operations/`.
 
 ## Vision-first split

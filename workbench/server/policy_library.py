@@ -19,13 +19,18 @@ def _records(root: Path, source: str, workspace_id: str) -> list[dict[str, Any]]
     if not resources.is_dir(directory): return []
     result: list[dict[str, Any]] = []
     for path in resources.glob(root, ("policies",)):
-        record: dict[str, Any] = {"path": path.relative_to(root).as_posix(), "source": source, "workspaceId": workspace_id}
         try:
-            document = resources.read_json(path)
-            if not isinstance(document, dict) or document.get("kind") not in POLICY_KINDS or not document.get("id"): raise ValueError("Policy resource requires an id and supported kind")
-            record["document"] = document
-        except (OSError, json.JSONDecodeError, ValueError) as error: record["error"] = str(error)
-        result.append(record)
+            documents = resources.read_json_documents(path)
+        except (OSError, json.JSONDecodeError, ValueError) as error:
+            result.append({"path": path.relative_to(root).as_posix(), "source": source, "workspaceId": workspace_id, "error": str(error)})
+            continue
+        for resource_index, document in enumerate(documents):
+            if not isinstance(document, dict) or document.get("kind") not in POLICY_KINDS:
+                continue
+            record: dict[str, Any] = {"path": path.relative_to(root).as_posix(), "source": source, "workspaceId": workspace_id, "resourceIndex": resource_index}
+            if not document.get("id"): record["error"] = "Policy resource requires an id and supported kind"
+            else: record["document"] = document
+            result.append(record)
     return result
 
 def load_workspace_policy_records(workspace_root: Path, *, workspaces_root: Path = DEFAULT_WORKSPACES_ROOT) -> list[dict[str, Any]]:

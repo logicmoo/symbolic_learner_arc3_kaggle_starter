@@ -7,7 +7,7 @@ from pathlib import Path, PurePosixPath
 from threading import RLock
 from typing import Any, Iterable
 
-from metta_resource_codec import json_document_to_metta, metta_document_to_json
+from metta_resource_codec import json_document_to_metta, metta_documents_to_json, split_metta_document_spans
 
 
 class FilesystemProvider:
@@ -103,7 +103,9 @@ class FilesystemProvider:
         physical = self._physical_path(path)
         content = physical.read_text(encoding=encoding)
         if path.suffix.lower() == ".json" and physical.suffix.lower() == ".metta":
-            return json.dumps(metta_document_to_json(content), indent=2, ensure_ascii=False) + "\n"
+            documents = metta_documents_to_json(content)
+            value: Any = documents[0] if len(documents) == 1 else documents
+            return json.dumps(value, indent=2, ensure_ascii=False) + "\n"
         return content
 
     def write_text(self, path: Path, content: str, *, encoding: str = "utf-8") -> None:
@@ -111,7 +113,12 @@ class FilesystemProvider:
         physical = self._physical_path(path, writing=True)
         physical.parent.mkdir(parents=True, exist_ok=True)
         if path.suffix.lower() == ".json" and physical.suffix.lower() == ".metta":
-            content = json_document_to_metta(json.loads(content))
+            value = json.loads(content)
+            if isinstance(value, dict) and physical.exists():
+                self.write_json_resource(path, value)
+                return
+            documents = value if isinstance(value, list) else [value]
+            content = "\n".join(json_document_to_metta(item).rstrip() for item in documents) + "\n"
         physical.write_text(content, encoding=encoding)
 
     def read_bytes(self, path: Path) -> bytes:
@@ -119,20 +126,61 @@ class FilesystemProvider:
         return path.read_bytes()
 
     def read_json(self, path: Path) -> Any:
+        documents = self.read_json_documents(path)
+        return documents[0] if len(documents) == 1 else documents
+
+    def read_json_documents(self, path: Path) -> list[Any]:
         physical = self._physical_path(path)
         if physical.suffix.lower() == ".metta":
             self._record("read", path)
-            return metta_document_to_json(physical.read_text(encoding="utf-8"))
-        return json.loads(self.read_text(path))
+            return metta_documents_to_json(physical.read_text(encoding="utf-8"))
+        source = self.read_text(path)
+        decoder = json.JSONDecoder()
+        values: list[Any] = []
+        index = 0
+        while index < len(source):
+            while index < len(source) and source[index].isspace():
+                index += 1
+            if index >= len(source):
+                break
+            value, consumed = decoder.raw_decode(source, index)
+            index = consumed
+            values.extend(value if isinstance(value, list) else [value])
+        if not values:
+            raise ValueError(f"resource file is empty: {path}")
+        return values
 
     def write_json(self, path: Path, document: Any) -> None:
         if path.suffix.lower() == ".json":
             physical = self._physical_path(path, writing=True)
+            if isinstance(document, dict) and physical.exists():
+                self.write_json_resource(path, document)
+                return
             self._record("write", path)
             physical.parent.mkdir(parents=True, exist_ok=True)
             physical.write_text(json_document_to_metta(document), encoding="utf-8")
             return
         self.write_text(path, json.dumps(document, indent=2, ensure_ascii=False) + "\n")
+
+    def write_json_resource(self, path: Path, document: dict[str, Any]) -> None:
+        physical = self._physical_path(path, writing=True)
+        replacement = json_document_to_metta(document).rstrip("\n")
+        if physical.exists():
+            source = physical.read_text(encoding="utf-8")
+            resource_id = document.get("id")
+            for start, end, resource_source in split_metta_document_spans(source):
+                existing = metta_documents_to_json(resource_source)[0]
+                if resource_id and existing.get("id") == resource_id:
+                    source = source[:start] + replacement + source[end:]
+                    break
+            else:
+                separator = "" if not source else ("" if source.endswith("\n\n") else "\n" if source.endswith("\n") else "\n\n")
+                source += separator + replacement + "\n"
+        else:
+            source = replacement + "\n"
+        self._record("write", path)
+        physical.parent.mkdir(parents=True, exist_ok=True)
+        physical.write_text(source, encoding="utf-8")
 
     def delete(self, path: Path) -> None:
         self._record("delete", path)
@@ -142,6 +190,10 @@ class FilesystemProvider:
         self._record("replace", target)
         if target.suffix.lower() == ".json":
             document = json.loads(source.read_text(encoding="utf-8"))
+            if isinstance(document, dict) and self._physical_path(target).exists():
+                self.write_json_resource(target, document)
+                source.unlink(missing_ok=True)
+                return
             physical = self._physical_path(target, writing=True)
             physical.parent.mkdir(parents=True, exist_ok=True)
             physical.write_text(json_document_to_metta(document), encoding="utf-8")

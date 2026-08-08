@@ -29,7 +29,7 @@ Every specification/alternative family uses the same three flat fields: `parents
 
 Arrays are required even when there is only one relationship. This permits one alternative to satisfy multiple specifications. `preferredChild` stays on each parent because the same child can have a different priority under different specifications. Run `node scripts/sync_resource_relationships.mjs` after bulk resource edits to normalize pointers and add missing backlinks.
 
-Canonical filenames carry the kind, for example `shared.echo.operation.json`, `image.semantic_datatype.json`, `bitmap.representation_datatype.json`, and `png.concrete_datatype.json`.
+Canonical filenames carry the kind, for example `shared.echo.operation.metta`, `image.semantic_datatype.metta`, `bitmap.representation_datatype.metta`, and `png.concrete_datatype.metta`. A file may contain multiple top-level resources; the provider identifies and updates each resource independently by `id`.
 
 Workspace paths are lifecycle-first and then kind-specific:
 

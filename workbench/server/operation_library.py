@@ -16,11 +16,7 @@ OPERATION_KINDS = {"operation", "operation_implementation"}
 OPERATION_DIRECTORIES = ("design/operations", "design/operation_implementations", "operations", "operation_implementations")
 
 
-def read_operation_file(path: Path) -> dict[str, Any]:
-    try:
-        value = get_filesystem_provider().read_json(path)
-    except (OSError, json.JSONDecodeError) as error:
-        raise ValueError(f"Invalid operation definition {path}: {error}") from error
+def _validate_operation(value: Any, path: Path) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise ValueError(f"Operation definition must be a JSON object: {path}")
     raw_kind = str(value.get("kind") or "operation")
@@ -38,23 +34,32 @@ def read_operation_file(path: Path) -> dict[str, Any]:
     return value
 
 
+def read_operation_file(path: Path) -> dict[str, Any]:
+    try:
+        return _validate_operation(get_filesystem_provider().read_json_documents(path)[0], path)
+    except (OSError, json.JSONDecodeError) as error:
+        raise ValueError(f"Invalid operation definition {path}: {error}") from error
+
+
 def _operation_records(workspace_root: Path, source: str, workspace_id: str) -> list[dict[str, Any]]:
     records: list[dict[str, Any]] = []
     paths = get_filesystem_provider().glob(workspace_root, OPERATION_DIRECTORIES)
     for path in sorted(paths, key=lambda item: item.name.lower()):
-        record: dict[str, Any] = {
-            "path": path.relative_to(workspace_root).as_posix(),
-            "source": source,
-            "workspaceId": workspace_id,
-        }
         try:
-            document = read_operation_file(path)
-            record["document"] = document
-            expected = f".{document['kind']}.json"
-            record["convention"] = "canonical" if path.name.endswith(expected) else "legacy-filename"
-        except ValueError as error:
-            record["error"] = str(error)
-        records.append(record)
+            documents = get_filesystem_provider().read_json_documents(path)
+        except (OSError, json.JSONDecodeError, ValueError) as error:
+            records.append({"path": path.relative_to(workspace_root).as_posix(), "source": source, "workspaceId": workspace_id, "error": str(error)})
+            continue
+        for resource_index, value in enumerate(documents):
+            record: dict[str, Any] = {"path": path.relative_to(workspace_root).as_posix(), "source": source, "workspaceId": workspace_id, "resourceIndex": resource_index}
+            try:
+                document = _validate_operation(value, path)
+                record["document"] = document
+                expected = f".{document['kind']}.json"
+                record["convention"] = "canonical" if path.name.endswith(expected) else "multi-resource" if len(documents) > 1 else "legacy-filename"
+            except ValueError as error:
+                record["error"] = str(error)
+            records.append(record)
     return records
 
 

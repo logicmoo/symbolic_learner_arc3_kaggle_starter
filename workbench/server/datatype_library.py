@@ -32,9 +32,13 @@ def _implemented_datatypes(document: dict[str, Any]) -> list[str]:
 
 def _read_resource(path: Path, expected_kind: str) -> dict[str, Any]:
     try:
-        value = get_filesystem_provider().read_json(path)
-    except (OSError, json.JSONDecodeError) as error:
+        value = get_filesystem_provider().read_json_documents(path)[0]
+    except (OSError, json.JSONDecodeError, ValueError) as error:
         raise ValueError(f"Invalid {expected_kind} definition {path}: {error}") from error
+    return _validate_resource(value, path, expected_kind)
+
+
+def _validate_resource(value: Any, path: Path, expected_kind: str) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise ValueError(f"{expected_kind} definition must be a JSON object: {path}")
     kind = str(value.get("kind") or expected_kind).replace("-", "_")
@@ -52,18 +56,21 @@ def _records(workspace_root: Path, directories: tuple[str, ...], kind: str, sour
     records: list[dict[str, Any]] = []
     paths = get_filesystem_provider().glob(workspace_root, directories)
     for path in sorted(paths, key=lambda item: item.name.lower()):
-        record: dict[str, Any] = {
-            "path": path.relative_to(workspace_root).as_posix(),
-            "source": source,
-            "workspaceId": workspace_id,
-        }
         try:
-            document = _read_resource(path, kind)
-            record["document"] = document
-            record["convention"] = "canonical" if path.name.endswith(f".{kind}.json") else "legacy-filename"
+            documents = get_filesystem_provider().read_json_documents(path)
         except ValueError as error:
-            record["error"] = str(error)
-        records.append(record)
+            records.append({"path": path.relative_to(workspace_root).as_posix(), "source": source, "workspaceId": workspace_id, "error": str(error)})
+            continue
+        for resource_index, raw in enumerate(documents):
+            if not isinstance(raw, dict) or str(raw.get("kind") or kind).replace("-", "_") != kind:
+                continue
+            record: dict[str, Any] = {"path": path.relative_to(workspace_root).as_posix(), "source": source, "workspaceId": workspace_id, "resourceIndex": resource_index}
+            try:
+                record["document"] = _validate_resource(raw, path, kind)
+                record["convention"] = "canonical" if path.name.endswith(f".{kind}.json") else "legacy-filename"
+            except ValueError as error:
+                record["error"] = str(error)
+            records.append(record)
     return records
 
 
@@ -205,25 +212,24 @@ def interface_type_inventory(
     if resources.is_dir(workflow_dir):
         for path in resources.glob(workspace_root, ("workflows",)):
             try:
-                document = resources.read_json(path)
-            except (OSError, json.JSONDecodeError):
+                documents = resources.read_json_documents(path)
+            except (OSError, json.JSONDecodeError, ValueError):
                 continue
-            if not isinstance(document, dict):
-                continue
-            owner_id = str(document.get("id") or path.stem)
-            _collect_contract("workflow", owner_id, document.get("inputs"), "input", refs)
-            _collect_contract("workflow", owner_id, document.get("outputs"), "output", refs)
-            steps = document.get("steps") or []
-            if isinstance(steps, list):
-                for step in steps:
-                    if not isinstance(step, dict):
-                        continue
-                    step_id = f"{owner_id}/{step.get('id') or 'step'}"
-                    # Step outputs are often artifact bindings rather than type declarations,
-                    # but new-style typed contracts are still harvested when present.
-                    for direction in ("inputs", "outputs"):
-                        contracts = step.get(f"{direction}Contract") or step.get(f"{direction}Types")
-                        _collect_contract("workflow_step", step_id, contracts, direction[:-1], refs)
+            for document in documents:
+                if not isinstance(document, dict):
+                    continue
+                owner_id = str(document.get("id") or path.stem)
+                _collect_contract("workflow", owner_id, document.get("inputs"), "input", refs)
+                _collect_contract("workflow", owner_id, document.get("outputs"), "output", refs)
+                steps = document.get("steps") or []
+                if isinstance(steps, list):
+                    for step in steps:
+                        if not isinstance(step, dict):
+                            continue
+                        step_id = f"{owner_id}/{step.get('id') or 'step'}"
+                        for direction in ("inputs", "outputs"):
+                            contracts = step.get(f"{direction}Contract") or step.get(f"{direction}Types")
+                            _collect_contract("workflow_step", step_id, contracts, direction[:-1], refs)
 
     declared_datatypes = {
         str((record.get("document") or {}).get("id"))

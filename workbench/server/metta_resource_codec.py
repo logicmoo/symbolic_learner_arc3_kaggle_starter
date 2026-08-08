@@ -163,3 +163,56 @@ def metta_document_to_json(source: str, *, legacy: bool = False) -> Any:
     if not isinstance(result, dict):
         raise ValueError("a resource document must be a map")
     return result
+
+
+def split_metta_document_spans(source: str) -> list[tuple[int, int, str]]:
+    documents: list[tuple[int, int, str]] = []
+    start: int | None = None
+    depth = 0
+    quoted = False
+    escaped = False
+    comment = False
+    for index, character in enumerate(source):
+        if comment:
+            if character == "\n":
+                comment = False
+            continue
+        if quoted:
+            if escaped:
+                escaped = False
+            elif character == "\\":
+                escaped = True
+            elif character == '"':
+                quoted = False
+            continue
+        if character == ";":
+            comment = True
+        elif character == '"':
+            quoted = True
+        elif character == "(":
+            if depth == 0:
+                start = index
+            depth += 1
+        elif character == ")":
+            depth -= 1
+            if depth < 0:
+                raise ValueError("unexpected closing parenthesis")
+            if depth == 0 and start is not None:
+                documents.append((start, index + 1, source[start:index + 1]))
+                start = None
+        elif depth == 0 and not character.isspace():
+            raise ValueError("top-level resource must be a map")
+    if quoted or depth or start is not None:
+        raise ValueError("unclosed top-level resource")
+    return documents
+
+
+def split_metta_documents(source: str) -> list[str]:
+    return [document for _, _, document in split_metta_document_spans(source)]
+
+
+def metta_documents_to_json(source: str) -> list[dict[str, Any]]:
+    documents = [metta_document_to_json(item) for item in split_metta_documents(source)]
+    if not documents:
+        raise ValueError("resource file is empty")
+    return documents

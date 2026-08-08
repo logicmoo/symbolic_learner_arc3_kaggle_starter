@@ -17,11 +17,7 @@ FAMILIES = {
 }
 
 
-def _read(path: Path, kinds: set[str]) -> dict[str, Any]:
-    try:
-        value = get_filesystem_provider().read_json(path)
-    except (OSError, json.JSONDecodeError) as error:
-        raise ValueError(f"Invalid symbolic resource {path}: {error}") from error
+def _validate(value: Any, path: Path, kinds: set[str]) -> dict[str, Any]:
     if not isinstance(value, dict) or value.get("kind") not in kinds:
         raise ValueError(f"Resource must declare one of {sorted(kinds)}: {path}")
     if not str(value.get("id") or "").strip():
@@ -35,12 +31,18 @@ def _records(root: Path, directories: tuple[str, ...], kinds: set[str], source: 
     records: list[dict[str, Any]] = []
     paths = get_filesystem_provider().glob(root, directories)
     for path in sorted(paths, key=lambda item: item.name.lower()):
-        record: dict[str, Any] = {"path": path.relative_to(root).as_posix(), "source": source, "workspaceId": workspace_id}
         try:
-            record["document"] = _read(path, kinds)
-        except ValueError as error:
-            record["error"] = str(error)
-        records.append(record)
+            documents = get_filesystem_provider().read_json_documents(path)
+        except (OSError, json.JSONDecodeError, ValueError) as error:
+            records.append({"path": path.relative_to(root).as_posix(), "source": source, "workspaceId": workspace_id, "error": str(error)})
+            continue
+        for resource_index, value in enumerate(documents):
+            record: dict[str, Any] = {"path": path.relative_to(root).as_posix(), "source": source, "workspaceId": workspace_id, "resourceIndex": resource_index}
+            try:
+                record["document"] = _validate(value, path, kinds)
+            except ValueError as error:
+                record["error"] = str(error)
+            records.append(record)
     return records
 
 

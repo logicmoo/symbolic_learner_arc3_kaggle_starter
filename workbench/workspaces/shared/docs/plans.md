@@ -6,8 +6,8 @@ Plans describe reusable strategies for pursuing one or more goals. A `plan` spec
 
 ## Filesystem convention
 
-- Specifications: `plans/<id>.plan.json`
-- Alternatives: `plans/<id>.<name>.plan_variant.json`
+- Specifications and alternatives may share `plans/<id>.plan.metta`, with each resource as a separate top-level form.
+- Separate alternatives may also use `plan_variants/<id>.<name>.plan_variant.metta`.
 - Every alternative declares `"parents": ["<plan-id>"]`; the plan lists it in `children`.
 - A variant may reference an existing filesystem workflow by ID.
 - `preferredChild` identifies the preferred strategy.

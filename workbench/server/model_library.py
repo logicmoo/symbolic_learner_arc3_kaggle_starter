@@ -16,9 +16,13 @@ MODEL_DIRECTORIES = ("design/models", "design/profiles", "models", "profiles")
 
 def read_model_file(path: Path) -> dict[str, Any]:
     try:
-        value = get_filesystem_provider().read_json(path)
-    except (OSError, json.JSONDecodeError) as error:
+        value = get_filesystem_provider().read_json_documents(path)[0]
+    except (OSError, json.JSONDecodeError, ValueError) as error:
         raise ValueError(f"Invalid model/profile definition {path}: {error}") from error
+    return _validate_model(value, path)
+
+
+def _validate_model(value: Any, path: Path) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise ValueError(f"Model/profile definition must be a JSON object: {path}")
     if value.get("kind") not in MODEL_KINDS:
@@ -41,24 +45,19 @@ def _model_records(workspace_root: Path, source: str, workspace_id: str) -> list
     paths = resources.glob(workspace_root, MODEL_DIRECTORIES)
     for path in sorted(paths, key=lambda item: item.name.lower()):
         try:
-            raw = resources.read_json(path)
-        except (OSError, json.JSONDecodeError):
+            documents = resources.read_json_documents(path)
+        except (OSError, json.JSONDecodeError, ValueError):
             continue
-        if not isinstance(raw, dict) or raw.get("kind") not in MODEL_KINDS:
-            continue
-        record: dict[str, Any] = {
-            "path": path.relative_to(workspace_root).as_posix(),
-            "source": source,
-            "workspaceId": workspace_id,
-        }
-        try:
-            record["document"] = read_model_file(path)
-        except ValueError as error:
-            # Keep invalid catalog entries visible to the UI, but never let one
-            # malformed file make workspace enumeration fail.
-            record["error"] = str(error)
-            record["raw"] = raw
-        records.append(record)
+        for resource_index, raw in enumerate(documents):
+            if not isinstance(raw, dict) or raw.get("kind") not in MODEL_KINDS:
+                continue
+            record: dict[str, Any] = {"path": path.relative_to(workspace_root).as_posix(), "source": source, "workspaceId": workspace_id, "resourceIndex": resource_index}
+            try:
+                record["document"] = _validate_model(raw, path)
+            except ValueError as error:
+                record["error"] = str(error)
+                record["raw"] = raw
+            records.append(record)
     return records
 
 

@@ -104,11 +104,13 @@ def reconcile_discovered_models(root: Path, backend: dict[str, Any], models: lis
     resources = get_filesystem_provider()
     if resources.is_dir(directory):
         for path in resources.glob(root, ("design/models",), "*.model.json"):
-            try: document = resources.read_json(path)
-            except (OSError, json.JSONDecodeError): continue
-            discovery = document.get("discovery") or {}; legacy = str(document.get("description") or "").startswith("Discovered from ")
-            if document.get("inherits") == backend.get("id") and (discovery.get("managed") is True or legacy):
-                existing_by_remote[str(document.get("model") or "")] = document
+            try: documents = resources.read_json_documents(path)
+            except (OSError, json.JSONDecodeError, ValueError): continue
+            for document in documents:
+                if not isinstance(document, dict): continue
+                discovery = document.get("discovery") or {}; legacy = str(document.get("description") or "").startswith("Discovered from ")
+                if document.get("inherits") == backend.get("id") and (discovery.get("managed") is True or legacy):
+                    existing_by_remote[str(document.get("model") or "")] = document
     rows: list[dict[str, Any]] = []
     discovered_ids: set[str] = set()
     for row in models:

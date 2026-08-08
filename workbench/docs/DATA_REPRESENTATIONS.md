@@ -40,15 +40,23 @@ Ordinary workspaces inherit shared datatype and representation resources. A work
 
 Example:
 
-```json
-{
-  "kind": "semantic_datatype",
-  "id": "image",
-  "label": "Image",
-  "description": "A visual scene independent of its concrete representation.",
-  "children": ["bitmap", "svg", "logo_program", "scene_graph", "object_list", "natural_language", "latent_embedding"],
-  "preferredChild": "bitmap"
-}
+```metta
+(
+  (kind semantic_datatype)
+  (id image)
+  (label Image)
+  (description "A visual scene independent of its concrete representation.")
+  (children ([]
+    bitmap
+    svg
+    logo_program
+    scene_graph
+    object_list
+    natural_language
+    latent_embedding
+  ))
+  (preferredChild bitmap)
+)
 ```
 
 The datatype is semantic. It says what the value means.
@@ -57,29 +65,41 @@ The datatype is semantic. It says what the value means.
 
 A representation says how the same semantic value is encoded.
 
-```json
-{
-  "kind": "representation_datatype",
-  "id": "scene_graph",
-  "label": "Scene Graph",
-  "parents": ["image"],
-  "children": ["json"],
-  "preferredChild": "json"
-}
+```metta
+(
+  (kind representation_datatype)
+  (id scene_graph)
+  (label "Scene Graph")
+  (parents ([]
+    image
+  ))
+  (children ([]
+    json
+  ))
+  (preferredChild json)
+)
 ```
 
 ## Concrete datatype
 
 Exact encodings are separate resources and may serve several representations:
 
-```json
-{
-  "kind": "concrete_datatype",
-  "id": "json",
-  "parents": ["json_object", "object_list", "scene_graph"],
-  "mimeTypes": ["application/json"],
-  "extensions": [".json"]
-}
+```metta
+(
+  (kind concrete_datatype)
+  (id json)
+  (parents ([]
+    json_object
+    object_list
+    scene_graph
+  ))
+  (mimeTypes ([]
+    application/json
+  ))
+  (extensions ([]
+    .json
+  ))
+)
 ```
 
 PNG, JPEG, and BMP are concrete children of the `bitmap` representation rather than semantic datatypes.
@@ -88,28 +108,28 @@ PNG, JPEG, and BMP are concrete children of the `bitmap` representation rather t
 
 Representation conversion is not a special execution mechanism. A conversion is an ordinary abstract operation with a typed representation contract.
 
-```json
-{
-  "kind": "operation",
-  "id": "bitmap_to_scene_graph",
-  "inputs": {
-    "image": {
-      "datatype": "image",
-      "representation": "bitmap"
-    }
-  },
-  "outputs": {
-    "image": {
-      "datatype": "image",
-      "representation": "scene_graph"
-    }
-  },
-  "conversion": {
-    "datatype": "image",
-    "from": "bitmap",
-    "to": "scene_graph"
-  }
-}
+```metta
+(
+  (kind operation)
+  (id bitmap_to_scene_graph)
+  (inputs (
+    (image (
+      (datatype image)
+      (representation bitmap)
+    ))
+  ))
+  (outputs (
+    (image (
+      (datatype image)
+      (representation scene_graph)
+    ))
+  ))
+  (conversion (
+    (datatype image)
+    (from bitmap)
+    (to scene_graph)
+  ))
+)
 ```
 
 That operation can later have Python, Prolog, LLM, or MeTTa implementations. The workbench therefore plans over two independent dimensions:
@@ -133,15 +153,15 @@ natural_language ──> text_to_scene_graph ──> scene_graph
 
 Conversion operation definitions may provide planning metadata such as:
 
-```json
-{
-  "planning": {
-    "cost": 0.15,
-    "expectedAccuracy": 0.96,
-    "latencyClass": "medium",
-    "lossy": true
-  }
-}
+```metta
+(
+  (planning (
+    (cost 0.15)
+    (expectedAccuracy 0.96)
+    (latencyClass medium)
+    (lossy true)
+  ))
+)
 ```
 
 The current planner uses cost when choosing the shortest available conversion path. Accuracy, latency, and lossiness are retained as first-class metadata for richer planning policies.
@@ -165,18 +185,18 @@ The representation graph response includes effective shared/workspace datatype r
 
 The canonical artifact contract is:
 
-```json
-{
-  "artifactId": "art_1947",
-  "datatype": "image",
-  "representation": "scene_graph",
-  "encoding": "json",
-  "value": {},
-  "provenance": {
-    "producerOperation": "bitmap_to_scene_graph",
-    "producerImplementation": "bitmap_to_scene_graph.gpt56"
-  }
-}
+```metta
+(
+  (artifactId art_1947)
+  (datatype image)
+  (representation scene_graph)
+  (encoding json)
+  (value ())
+  (provenance (
+    (producerOperation bitmap_to_scene_graph)
+    (producerImplementation bitmap_to_scene_graph.gpt56)
+  ))
+)
 ```
 
 `datatype` identifies meaning, `representation` identifies the concrete form, and `encoding` identifies serialization/file-level encoding. Older artifacts that only carry `datatype` remain readable during migration.
@@ -185,16 +205,20 @@ The canonical artifact contract is:
 
 A representation-independent workflow can declare only the semantic contract:
 
-```json
-{
-  "operation": "object_extraction",
-  "inputs": {
-    "source": {"datatype": "image"}
-  },
-  "outputs": {
-    "objects": {"datatype": "object_collection"}
-  }
-}
+```metta
+(
+  (operation object_extraction)
+  (inputs (
+    (source (
+      (datatype image)
+    ))
+  ))
+  (outputs (
+    (objects (
+      (datatype object_collection)
+    ))
+  ))
+)
 ```
 
 The long-term planner resolves both the operation implementation and any conversion operations needed to connect the available artifact representations to that implementation. This keeps workflows modular and allows implementations and data encodings to be swapped independently.

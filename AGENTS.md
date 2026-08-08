@@ -324,10 +324,10 @@ React components, `camelCase` for TypeScript helpers and hooks, and uppercase
 
 names for constants. Prefer type hints, focused functions, `pathlib`, and
 
-platform-neutral behavior. Preserve resource suffixes such as `*.operation.json`,
+platform-neutral behavior. Preserve resource suffixes such as `*.operation.metta`,
 
-`*.prompt.json`, `*.semantic_datatype.json`, `*.representation_datatype.json`,
-and `*.concrete_datatype.json`. No repository-wide formatter is
+`*.prompt.metta`, `*.semantic_datatype.metta`, `*.representation_datatype.metta`,
+and `*.concrete_datatype.metta`. No repository-wide formatter is
 
 configured; match nearby code and avoid unrelated reformatting.
 

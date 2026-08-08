@@ -17,3 +17,33 @@
   ))
   (preferredChild understand_visual_world.explain_dynamics)
 )
+
+(
+  (kind goal_variant)
+  (id understand_visual_world.explain_dynamics)
+  (label "Explain Visual Dynamics")
+  (description "Prefer observations and actions that produce a compact, evidence-backed model of change.")
+  (priority 100)
+  (evaluation (
+    (primaryMetric explained_transition_coverage)
+    (riskTolerance medium)
+  ))
+  (parents ([]
+    understand_visual_world
+  ))
+)
+
+(
+  (kind goal_variant)
+  (id understand_visual_world.explore_safely)
+  (label "Explore Safely")
+  (description "Prioritize information gain while avoiding irreversible low-confidence actions.")
+  (priority 80)
+  (evaluation (
+    (primaryMetric information_gain)
+    (riskTolerance low)
+  ))
+  (parents ([]
+    understand_visual_world
+  ))
+)

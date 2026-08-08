@@ -36,6 +36,36 @@ def test_provider_transparently_reads_existing_metta_through_json_path(tmp_path:
     assert provider.read_json(logical) == {"kind": "resource", "values": [1, "two words", {}]}
 
 
+def test_provider_reads_multiple_resources_and_surgically_updates_one(tmp_path: Path) -> None:
+    provider = FilesystemProvider()
+    logical = tmp_path / "combined.goal.json"
+    physical = logical.with_suffix(".metta")
+    first = "((kind goal) (id parent) (label Original))"
+    sibling = "((kind goal_variant) (id child) (label \"Leave me exactly so\"))"
+    physical.write_text(f"; header\n{first}\n\n; sibling formatting\n{sibling}\n", encoding="utf-8")
+
+    assert [item["id"] for item in provider.read_json_documents(logical)] == ["parent", "child"]
+
+    provider.write_text(logical, '{"kind":"goal","id":"parent","label":"Changed"}\n')
+
+    updated = physical.read_text(encoding="utf-8")
+    assert first not in updated
+    assert "; header\n" in updated
+    assert f"\n\n; sibling formatting\n{sibling}\n" in updated
+    assert provider.read_json_documents(logical)[0]["label"] == "Changed"
+
+
+def test_provider_accepts_json_arrays_and_consecutive_json_resources(tmp_path: Path) -> None:
+    provider = FilesystemProvider()
+    array_path = tmp_path / "array.data"
+    consecutive_path = tmp_path / "consecutive.data"
+    array_path.write_text('[{"id":"one"},{"id":"two"}]', encoding="utf-8")
+    consecutive_path.write_text('{"id":"one"}\n{"id":"two"}', encoding="utf-8")
+
+    assert provider.read_json_documents(array_path) == [{"id": "one"}, {"id": "two"}]
+    assert provider.read_json_documents(consecutive_path) == [{"id": "one"}, {"id": "two"}]
+
+
 def test_provider_atomic_json_replacement_writes_metta(tmp_path: Path) -> None:
     provider = FilesystemProvider()
     temporary = tmp_path / "model.json.tmp"

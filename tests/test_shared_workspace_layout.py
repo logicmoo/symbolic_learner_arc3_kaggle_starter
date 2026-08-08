@@ -34,6 +34,16 @@ KIND_DIRECTORIES = {
 }
 
 
+def assert_resource_file_layout(path: Path, root: Path) -> None:
+    documents = get_filesystem_provider().read_json_documents(path.with_suffix(".json"))
+    assert documents
+    for document in documents:
+        assert document.get("kind") in KIND_DIRECTORIES, path.relative_to(root).as_posix()
+    # A combined file is physically organized by its first (owning) resource;
+    # sibling variants may follow it as additional top-level forms.
+    assert path.parent.name == KIND_DIRECTORIES[documents[0]["kind"]], path.relative_to(root).as_posix()
+
+
 def test_shared_uses_lifecycle_first_top_level_directories() -> None:
     assert {path.name for path in SHARED.iterdir() if path.is_dir()} == {"design", "runtime", "policies", "docs"}
 
@@ -43,10 +53,7 @@ def test_shared_design_metta_directories_match_declared_kinds() -> None:
     paths = list((SHARED / "design").rglob("*.metta"))
     assert paths
     for path in paths:
-        document = resources.read_json(path.with_suffix(".json"))
-        kind = document.get("kind")
-        assert kind in KIND_DIRECTORIES, path.relative_to(SHARED).as_posix()
-        assert path.parent.name == KIND_DIRECTORIES[kind], path.relative_to(SHARED).as_posix()
+        assert_resource_file_layout(path, SHARED)
 
 
 def test_shared_runtime_contains_no_design_documents() -> None:
@@ -60,7 +67,4 @@ def test_every_workspace_uses_lifecycle_first_resource_directories() -> None:
             continue
         assert {path.name for path in workspace.iterdir() if path.is_dir()} <= allowed, workspace.name
         for path in (workspace / "design").rglob("*.metta") if (workspace / "design").is_dir() else []:
-            document = get_filesystem_provider().read_json(path.with_suffix(".json"))
-            kind = document.get("kind")
-            assert kind in KIND_DIRECTORIES, path.relative_to(WORKSPACES).as_posix()
-            assert path.parent.name == KIND_DIRECTORIES[kind], path.relative_to(WORKSPACES).as_posix()
+            assert_resource_file_layout(path, WORKSPACES)
