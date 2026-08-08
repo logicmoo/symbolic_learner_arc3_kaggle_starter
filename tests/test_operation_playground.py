@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import json
 import shutil
+from pathlib import Path
 
 import pytest
 
 from operation_api import invoke_operation
+from operation_library import resolve_operation_implementation
 from operation_resolution import materialize_workflow_step
 
 
@@ -90,3 +93,25 @@ def test_user_request_materializes_as_human_input() -> None:
     assert preview["outputs"]["status"] == "waiting_for_input"
     assert preview["outputs"]["form"]["value"]["type"] == "Number"
     assert preview["outputs"]["form"]["value"]["prompt"] == "How many objects are visible?"
+
+
+def test_implementation_parent_link_is_sufficient_for_resolution(tmp_path: Path) -> None:
+    directory = tmp_path / "shared" / "design" / "operations"
+    directory.mkdir(parents=True)
+    (directory / "echo.operation.json").write_text(json.dumps({
+        "kind": "operation", "id": "shared.echo", "inputs": {"value": "Any"}, "outputs": {"value": "Any"},
+    }), encoding="utf-8")
+    implementations = tmp_path / "shared" / "design" / "operation_implementations"
+    implementations.mkdir(parents=True)
+    (implementations / "echo_prolog.operation_implementation.json").write_text(json.dumps({
+        "kind": "operation_implementation",
+        "id": "shared.echo.prolog",
+        "parents": ["shared.echo"],
+        "implementation": "prolog.source",
+    }), encoding="utf-8")
+
+    resolved = resolve_operation_implementation(
+        tmp_path / "shared", "shared.echo", "shared.echo.prolog", workspaces_root=tmp_path,
+    )
+
+    assert resolved["implementation"]["id"] == "shared.echo.prolog"

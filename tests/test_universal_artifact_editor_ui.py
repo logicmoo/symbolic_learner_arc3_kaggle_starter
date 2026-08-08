@@ -173,3 +173,13 @@ def test_design_trees_share_virtual_categories() -> None:
     assert "operationBelongsHere" in operations
     assert "visibleVariants=categoryPath&&!operationBelongsHere" in operations
     assert "visibleVariants.map" in operations
+
+
+def test_operation_implementations_inherit_parent_playground() -> None:
+    operations = _text("OperationLibraryEditor.tsx")
+    playground = _text("OperationPlayground.tsx")
+    assert "parentOperation=selectedImplementation" in operations
+    assert "relationshipIds(selectedImplementation.parents)" in operations
+    assert "selectedImplementation&&parentOperation&&<OperationPlayground" in operations
+    assert "variants={[selectedImplementation]}" in operations
+    assert "variants.some(item=>item.id===operation.preferredChild)" in playground

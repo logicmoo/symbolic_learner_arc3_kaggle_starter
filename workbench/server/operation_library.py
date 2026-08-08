@@ -99,11 +99,17 @@ def resolve_operation_implementation(workspace_root: Path, operation_id: str, re
     if not operation_record:
         raise KeyError(f"operation not found: {operation_id}")
     operation = operation_record["document"]
-    variants = relationship_ids(operation.get("children"))
+    declared_variants = relationship_ids(operation.get("children"))
+    reverse_variants = [
+        implementation_id
+        for implementation_id, record in implementations.items()
+        if points_to(record.get("document") or {}, "parents", operation_id)
+    ]
+    variants = list(dict.fromkeys([*declared_variants, *reverse_variants]))
     chosen = requested or operation.get("preferredChild") or (variants[0] if variants else None)
     if not chosen:
         raise ValueError(f"operation has no implementation variant: {operation_id}")
-    if variants and chosen not in variants:
+    if chosen not in variants:
         raise ValueError(f"implementation {chosen} is not allowed by operation {operation_id}")
     record = implementations.get(str(chosen))
     if not record:

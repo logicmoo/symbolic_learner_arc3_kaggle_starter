@@ -18,7 +18,7 @@ function parseInput(datatype:string,raw:string):unknown{
 }
 
 export function OperationPlayground({workspaceId,operation,variants}:{workspaceId:string;operation:OperationDef;variants:OperationImplementationDef[]}){
- const preferred=operation.preferredChild||variants[0]?.id||"";
+ const preferred=variants.some(item=>item.id===operation.preferredChild)?operation.preferredChild!:variants[0]?.id||"";
  const defaults=(values:Record<string,ExampleArgument>)=>Object.fromEntries(Object.entries(values).map(([name,arg])=>[name,typeof arg.default==="string"?arg.default:JSON.stringify(arg.default??"")]));
  const[variant,setVariant]=useState(preferred),[rawInputs,setRawInputs]=useState<Record<string,string>>(()=>defaults(operation.example_execute?.arguments||{})),[rawParameters,setRawParameters]=useState<Record<string,string>>(()=>defaults(operation.example_execute?.parameters||{})),[result,setResult]=useState<InvocationResult|null>(null),[error,setError]=useState<string|null>(null),[running,setRunning]=useState(false);
  const inputs=useMemo(()=>Object.entries(operation.inputs||{}),[operation.id,operation.inputs]);
