@@ -71,6 +71,4 @@ A workflow step therefore points to the abstract operation:
 
 The parent operation lists implementations in `children` and selects its default with `preferredChild`. A step may request an allowed child explicitly with `implementationVariant`; otherwise the preferred child is selected.
 
-Directories remain useful organizational hints, but they are not the only way to identify a resource. A file can be understood from its name and contents even when copied elsewhere.
-
-The normalizer at `workbench/scripts/normalize_workspace_json.py` enforces this convention across `workbench/workspaces/**.json` and is safe to run repeatedly.
+Directories and declared kinds are both part of the resource contract. Validate a changed resource through its loader and tests; do not run broad rewriting or normalization over hand-authored workspace JSON.

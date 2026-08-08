@@ -110,10 +110,10 @@ The other files under `workbench/frontend/src/pages/` and older shell-oriented c
 - `workbench/workspaces/shared/design/atomspaces` and `design/atomspace_variants` — AtomSpace declarations and concrete alternatives.
 - `workbench/workspaces/shared/runtime/` — generated goal runs, workflow runs, execs, events, states, resolved contexts, and logs; normally empty in Shared.
 - `workbench/workspaces/shared/policies/*.json` — model runtime policies, vendor policy, eligibility entries, health observations, ping jobs/events, benchmark policies, and benchmark results.
-- [`workbench/workspaces/arc3/README.md`](workbench/workspaces/arc3/README.md) — ARC3 workspace purpose; its `workflows/`, `operations/`, and `prompts/` override or extend shared resources.
+- [`workbench/workspaces/arc3/docs/README.md`](workbench/workspaces/arc3/docs/README.md) — ARC3 workspace purpose; its `design/workflows/`, `design/operations/`, and `design/prompts/` override or extend Shared resources.
 - [`workbench/workspaces/default/default.workspace.json`](workbench/workspaces/default/default.workspace.json) — minimal editable starter template; it declares Shared as its initial inclusion and intentionally contains no local resources.
 - [`workbench/workspaces/shared/design/workflows/titlecase_demo.workflow.json`](workbench/workspaces/shared/design/workflows/titlecase_demo.workflow.json) and [`review_with_approval.workflow.json`](workbench/workspaces/shared/design/workflows/review_with_approval.workflow.json) — reusable executable engine examples inherited by Default and other workspaces that include Shared.
-- [`workbench/workspaces/tic_tac_toe_learner/README.md`](workbench/workspaces/tic_tac_toe_learner/README.md) and [`workbench/workspaces/workflow_engine_tour/README.md`](workbench/workspaces/workflow_engine_tour/README.md) — focused example-workspace entry documents.
+- [`workbench/workspaces/tic_tac_toe_learner/docs/README.md`](workbench/workspaces/tic_tac_toe_learner/docs/README.md) and [`workbench/workspaces/workflow_engine_tour/docs/README.md`](workbench/workspaces/workflow_engine_tour/docs/README.md) — focused example-workspace entry documents.
 - [`workbench.workspace.json`](workbench.workspace.json) — repository-level workspace selection/configuration.
 
 ## Workbench launchers, maintenance, and validation
@@ -121,12 +121,10 @@ The other files under `workbench/frontend/src/pages/` and older shell-oriented c
 - [`run_workbench.bat`](run_workbench.bat) — top-level Windows launcher for the API and Vite servers.
 - [`workbench/run_demo.bat`](workbench/run_demo.bat) and [`run_demo.sh`](workbench/run_demo.sh) — platform-specific demo launchers.
 - [`workbench/scripts/run_api_server.bat`](workbench/scripts/run_api_server.bat) and [`run_vite_server.bat`](workbench/scripts/run_vite_server.bat) — individual backend/frontend launchers.
-- [`workbench/scripts/normalize_workspace_json.py`](workbench/scripts/normalize_workspace_json.py) — deterministic workspace JSON formatter/validator.
 - [`scripts/migrate_datatype_kinds.mjs`](scripts/migrate_datatype_kinds.mjs) — one-time semantic/representation/concrete datatype migration helper.
 - [`scripts/sync_resource_relationships.mjs`](scripts/sync_resource_relationships.mjs) — synchronizes inverse parent/child and specification/variant pointers.
 - [`scripts/normalize_markdown_encoding.py`](scripts/normalize_markdown_encoding.py) — detects and repairs UTF-8 Markdown accidentally decoded as Windows-1252.
 - [`.github/workflows/python-tests.yml`](.github/workflows/python-tests.yml) — CI Python test workflow.
-- [`.github/workflows/normalize-workspace-json.yml`](.github/workflows/normalize-workspace-json.yml) — CI check for canonical workspace JSON.
 - `tests/test_workbench_server.py`, `tests/test_navigation_v2_ui.py`, `tests/test_universal_artifact_editor_ui.py`, and the other `tests/test_*` files — backend contracts, navigation/editor regressions, resource schemas, relationships, playground behavior, policy behavior, and documentation links.
 - `workbench/server/test_*.py` — workflow-engine, provider, runtime, and operation-library unit tests colocated with the backend.
 
