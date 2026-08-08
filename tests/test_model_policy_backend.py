@@ -282,6 +282,8 @@ def test_model_policy_ui_exposes_explicit_benchmark_run() -> None:
     assert "historyMaximum" in source
     assert "item?.kind===\"benchmark_job\"" in source
     assert "setTimeout(resolve,1000)" in source
+    assert "latestBenchmarkResultCount" in source
+    assert "Benchmark running…" in source
 
 
 def test_benchmark_api_queues_durable_background_job(tmp_path: Path, monkeypatch) -> None:
