@@ -329,6 +329,9 @@ def test_model_policy_ui_exposes_explicit_benchmark_run() -> None:
     assert "historyMaximum" in source
     assert "historyResults" in source
     assert "recordedAt" in source
+    assert "saveRules" in source
+    assert "Save Policy" in source
+    assert "policy-rule-grid" in source
     assert "item?.kind===\"benchmark_job\"" in source
     assert "setTimeout(resolve,1000)" in source
     assert "latestBenchmarkResultCount" in source
