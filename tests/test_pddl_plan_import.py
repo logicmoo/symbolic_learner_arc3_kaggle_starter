@@ -37,3 +37,12 @@ def test_grounded_pddl_plan_becomes_sequential_operation_steps() -> None:
 def test_pddl_import_rejects_non_action_text() -> None:
     with pytest.raises(ValueError, match="invalid grounded plan line 1"):
         grounded_plan_to_workflow({"sourcePlan": "this is not a grounded action"})
+
+
+def test_active_workflow_editor_exposes_unsaved_pddl_conversion() -> None:
+    page = (ROOT / "workbench" / "frontend" / "src" / "pages" / "FilesystemWorkbenchPage.tsx").read_text(encoding="utf-8")
+    panel = (ROOT / "workbench" / "frontend" / "src" / "components" / "PddlPlanImportPanel.tsx").read_text(encoding="utf-8")
+    assert 'workflow?.planProvenance?.origin==="pddl"&&<PddlPlanImportPanel' in page
+    assert "/api/engine/workflows/import-pddl-plan" in panel
+    assert "ACTION MAP · JSON" in panel
+    assert "does not save or run" in panel
