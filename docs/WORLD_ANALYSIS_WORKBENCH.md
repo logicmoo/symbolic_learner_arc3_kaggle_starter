@@ -33,18 +33,19 @@ simulations or real interventions should be considered.
 | Concept | Responsibility |
 |---|---|
 | Observation | Evidence received from outside the internal model |
-| Information silo | Named, typed, versioned value with provenance and confidence |
-| Analysis resource | Python, Prolog, LLM, human, or external processor that enriches silos |
+| AtomSpace | Knowledge location containing typed Atoms, rules, evidence, and derived results |
+| Atom | Named or linked typed knowledge unit with provenance and confidence |
+| Analysis resource | Python, Prolog, Atomese, LLM, human, or external processor that queries and enriches AtomSpaces |
 | World model | Current executable hypothesis about state, entities, and dynamics |
 | Goal | Supplied or inferred success criteria with priority |
 | Simulation request | Goal-linked intervention to test against a world-model revision |
 | Simulation result | Predicted state, goal scores, evidence, and confidence |
 | Adapter | Boundary that translates a particular environment into observations and interventions |
 
-`WorldAnalysisState` is append-only. A processor writes a new silo version
-instead of silently replacing earlier evidence. Every result can cite exact
-source versions such as `world/model:v3` or `observation/frame-17:v1`. This is
-the general form of the debugger evidence trees already used by ARC3.
+`WorldAnalysisState` currently provides a compatibility facade over the
+AtomSpace model. A processor writes new Atoms and derivation relations instead of
+silently replacing earlier evidence. Every result can cite exact antecedent
+Atoms such as `world/model:v3` or `observation/frame-17:v1`.
 
 ## Processing-resource sequence
 
@@ -104,7 +105,7 @@ maps existing concepts without forcing them into the core:
 | Rendered frame/state | Observation |
 | Level | Episode or scenario |
 | Action | Intervention |
-| Object files and Turtle programs | Analysis silos and synchronized representations |
+| Object files and Turtle programs | Atoms and synchronized representations in an AtomSpace |
 | Differences and similarities | Transition evidence |
 | Candidate rule | World-dynamics hypothesis |
 | Win state | Goal satisfaction evidence |

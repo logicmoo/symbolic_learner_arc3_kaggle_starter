@@ -2,6 +2,12 @@
 
 # Data contracts
 
+Repository documentation:
+
+- [Browse Data documents](?docs=data)
+- [Browse datatype documents](?docs=datatype)
+- [Open Symbolic Datatypes in AtomSpace Explained](../../../../docs/DATATYPES_MANIFEST_EXPLAINED.md)
+
 The Data page edits three first-class resource kinds:
 
 - `semantic_datatype`: the abstract semantic meaning of information.

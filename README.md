@@ -28,8 +28,8 @@ flowchart TD
 
 The domain-neutral Python API lives in
 [`python/worldworkbench`](python/worldworkbench). Its central shared resource
-is `WorldAnalysisState`: an append-only collection of named, typed, versioned
-information silos.
+is `WorldAnalysisState`: a compatibility facade over named, typed, versioned
+Atoms in logical AtomSpaces.
 
 ## The workflow desktop
 
@@ -61,7 +61,7 @@ The desktop provides:
 - Stepwise execution, pausing for human input, and repeat-from-stage control.
 - Inspectors for observations, objects, facts, programs, rendered output,
   hypotheses, rules, comparisons, and evidence.
-- Versioned information silos with producer, confidence, and provenance.
+- Versioned Atoms in AtomSpaces with producer, confidence, and provenance.
 - Saved histories that support replay, comparison, restoration, and audit.
 - Cycle detection and validation before nested workflows are run.
 
@@ -125,9 +125,9 @@ entity itself.
 
 ## Typed analysis state
 
-Processors communicate through `WorldAnalysisState`, not by silently passing
-unstructured blobs. Each processor reads declared silos and appends new silo
-versions with provenance. Typical views include:
+Processors communicate through AtomSpaces, with `WorldAnalysisState` retained
+as the current compatibility API. Each processor queries declared antecedent
+Atoms and writes new output Atoms with provenance. Typical views include:
 
 ```text
 source_observation
@@ -169,8 +169,8 @@ The machine-readable contracts are maintained in:
 
 ## Inspection and provenance
 
-Execution retains intermediate values as named silos with type, producer,
-version, confidence, and provenance. Depending on the workflow, an experiment
+Execution retains intermediate knowledge as named Atoms in identified
+AtomSpaces, with type, producer, version, confidence, and provenance. Depending on the workflow, an experiment
 may save:
 
 - Source and derived observations.
@@ -305,7 +305,7 @@ swipl -q -s prolog/test_object_memory.pl -g run_tests,halt
 General framework references:
 
 - [World Analysis Workbench architecture](docs/WORLD_ANALYSIS_WORKBENCH.md) —
-  observations, information silos, world models, goals, simulations,
+  AtomSpaces, observations, world models, goals, simulations,
   processing resources, and adapter boundaries.
 - [LLM providers, prompt composition, and comparison transcripts](config/README.md)
   — provider selection, reusable prompt blocks, run comparison, and artifact
@@ -333,7 +333,7 @@ objectification, stable identity, Turtle reconstruction, transition analysis,
 world learning, goal reasoning, simulation, action selection, and outcome
 evaluation as framework operations and subworkflows. It replaces the human-action
 stage with goal-directed candidate simulation while preserving the same
-inspectors, ports, intermediate silos, transcripts, and evidence history.
+inspectors, AtomSpace bindings, intermediate Atoms, transcripts, and evidence history.
 
 ### Start the interactive application
 

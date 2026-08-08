@@ -1,10 +1,10 @@
-[← Back to top-level README](../README.md) · [LLM and workflow configuration](../config/README.md)
+[â† Back to top-level README](../README.md) Â· [LLM and workflow configuration](../config/README.md)
 
-# Symbolic Datatypes Manifest Explained
+# Symbolic Datatypes in AtomSpace Explained
 
-The symbolic workflow system does not merely pass files or strings from one operation to another. It passes **typed information silos** through a graph of workflow operations.
+The symbolic workflow system does not merely pass files or strings from one operation to another. Workflow operations query and update **typed OpenCog AtomSpaces**.
 
-Each silo contains information. That information may be represented as text, an image, a Turtle program, Prolog facts, JSON, a report, or another concrete form. The representation alone is not enough to explain the information. A text value may be a free-form description, a birthdate, a rule explanation, an object identity, or a validation result. Those values may share the same physical representation while having very different meanings.
+Each AtomSpace contains Atoms. Those Atoms may denote text, an image, a Turtle program, Prolog facts, JSON, a report, or another concrete form. An Atom cannot exist outside an AtomSpace. The representation alone is not enough to explain the information. A text-denoting Atom may describe free-form text, a birthdate, a rule explanation, an object identity, or a validation result. Those Atoms may share the same concrete representation while having very different meanings.
 
 The datatype manifest therefore separates:
 
@@ -28,19 +28,19 @@ A useful root hierarchy is:
 
 ```text
 Information
-├── Visual Information
-├── Textual Information
-├── Temporal Information
-├── Spatial Information
-├── Identity Information
-├── Descriptive Information
-├── Symbolic Information
-├── Program Information
-├── Evidence
-├── Rule Information
-├── Validation Information
-├── Provenance Information
-└── Aggregate Information
+â”œâ”€â”€ Visual Information
+â”œâ”€â”€ Textual Information
+â”œâ”€â”€ Temporal Information
+â”œâ”€â”€ Spatial Information
+â”œâ”€â”€ Identity Information
+â”œâ”€â”€ Descriptive Information
+â”œâ”€â”€ Symbolic Information
+â”œâ”€â”€ Program Information
+â”œâ”€â”€ Evidence
+â”œâ”€â”€ Rule Information
+â”œâ”€â”€ Validation Information
+â”œâ”€â”€ Provenance Information
+â””â”€â”€ Aggregate Information
 ```
 
 A value may belong to several information categories simultaneously.
@@ -159,11 +159,11 @@ The semantic meaning remains `birthdate`; only its encoding becomes more precise
 
 ---
 
-## 3. The silo is the central workflow unit
+## 3. The AtomSpace is the central workflow unit
 
-A **silo** is a named, versioned container of typed information.
+An **AtomSpace** is a named knowledge location containing Atoms. This is the canonical replacement for the older workflow term â€œsilo.â€ The AtomSpace may be persisted or versioned as a whole, while its Atoms carry the facts, relations, rules, values, truth state, and provenance.
 
-A silo may contain:
+An AtomSpace may contain Atoms denoting:
 
 - one scalar value;
 - one file;
@@ -174,7 +174,7 @@ A silo may contain:
 - reports;
 - or a semantic bundle composed of several synchronized representations.
 
-Typical symbolic silos include:
+Typical symbolic Atoms would be stored in AtomSpaces and denote:
 
 ```text
 current_scene_images
@@ -187,7 +187,7 @@ validation_results
 artifact_bundle
 ```
 
-A silo is more than a variable name. It should describe:
+An AtomSpace binding is more than a variable name. It should describe:
 
 - its semantic type;
 - its representation datatype;
@@ -198,11 +198,12 @@ A silo is more than a variable name. It should describe:
 - its confidence;
 - and the operation and implementation that produced it.
 
-### Example silo record
+### Example AtomSpace binding and contained Atom
 
 ```json
 {
-  "silo_id": "person_birthdate",
+  "atomspace_id": "people",
+  "atom_id": "person_birthdate",
   "version": 3,
   "representation_type": "iso_date",
   "semantic_type": "birthdate",
@@ -222,11 +223,11 @@ A silo is more than a variable name. It should describe:
 }
 ```
 
-A description silo may use the same physical representation while carrying different information:
+A description AtomSpace may use the same physical representation while carrying different information:
 
 ```json
 {
-  "silo_id": "person_description",
+  "atomspace_id": "person_description",
   "version": 1,
   "representation_type": "markdown",
   "semantic_type": "biographical_description",
@@ -258,7 +259,7 @@ graph<individual_object, relationship>
 semantic_bundle<individual_object>
 ```
 
-Useful silo cardinalities include:
+Useful AtomSpace cardinalities include:
 
 ```text
 one
@@ -299,16 +300,16 @@ An important semantic type in symbolic analysis is:
 individual_object
 ```
 
-An individual object is not identical to one image crop or one Prolog term. It is a semantic entity that may be represented by several information silos:
+An individual object is not identical to one image crop or one Prolog term. It is a semantic entity that may be represented by several AtomSpaces:
 
 ```text
 individual_object:object_17
-├── object_17_image_region
-├── object_17_turtle_program
-├── object_17_prolog_properties
-├── object_17_feature_vector
-├── object_17_identity_record
-└── object_17_rule_references
+â”œâ”€â”€ object_17_image_region
+â”œâ”€â”€ object_17_turtle_program
+â”œâ”€â”€ object_17_prolog_properties
+â”œâ”€â”€ object_17_feature_vector
+â”œâ”€â”€ object_17_identity_record
+â””â”€â”€ object_17_rule_references
 ```
 
 These representations should share a semantic subject:
@@ -319,7 +320,7 @@ These representations should share a semantic subject:
 }
 ```
 
-That lets the system understand that the silos are not unrelated artifacts. They are different realizations of the same semantic individual.
+That lets the system understand that the AtomSpaces are not unrelated artifacts. They are different realizations of the same semantic individual.
 
 ### Semantic equivalence
 
@@ -327,9 +328,9 @@ An image region and a Turtle program may be semantically equivalent when both de
 
 ```text
 image_region(object_17)
-        ≈
+        â‰ˆ
 turtle_program(object_17)
-        ≈
+        â‰ˆ
 prolog_object_properties(object_17)
 ```
 
@@ -341,12 +342,12 @@ An object is therefore best understood as a bundle:
 
 ```text
 Individual Object
-├── Appearance                  → image or image region
-├── Geometry                    → Turtle program
-├── Logical properties          → Prolog facts
-├── Derived measurements        → feature vector
-├── Identity                    → identity record
-└── Participation in knowledge  → rule references
+â”œâ”€â”€ Appearance                  â†’ image or image region
+â”œâ”€â”€ Geometry                    â†’ Turtle program
+â”œâ”€â”€ Logical properties          â†’ Prolog facts
+â”œâ”€â”€ Derived measurements        â†’ feature vector
+â”œâ”€â”€ Identity                    â†’ identity record
+â””â”€â”€ Participation in knowledge  â†’ rule references
 ```
 
 This is one of the central design ideas behind the symbolic learner framework:
@@ -357,7 +358,7 @@ This is one of the central design ideas behind the symbolic learner framework:
 
 ## 6. Aggregates and larger semantic structures
 
-Larger semantic structures aggregate smaller silos.
+Larger semantic structures aggregate smaller AtomSpaces.
 
 ### Scene
 
@@ -365,11 +366,11 @@ A scene may aggregate:
 
 ```text
 scene
-├── scene image
-├── object collection
-├── object manifest
-├── spatial relations
-└── scene metadata
+â”œâ”€â”€ scene image
+â”œâ”€â”€ object collection
+â”œâ”€â”€ object manifest
+â”œâ”€â”€ spatial relations
+â””â”€â”€ scene metadata
 ```
 
 ### Scene pair
@@ -378,11 +379,11 @@ A before/after or parent/current pair may aggregate:
 
 ```text
 scene_pair
-├── before scene
-├── after scene
-├── action metadata
-├── correspondence evidence
-└── transition evidence
+â”œâ”€â”€ before scene
+â”œâ”€â”€ after scene
+â”œâ”€â”€ action metadata
+â”œâ”€â”€ correspondence evidence
+â””â”€â”€ transition evidence
 ```
 
 ### Dataset or bundle
@@ -391,14 +392,14 @@ A dataset or bundle may aggregate:
 
 ```text
 dataset_bundle
-├── examples
-├── individual objects
-├── images
-├── Turtle programs
-├── Prolog files
-├── results
-├── comparisons
-└── provenance
+â”œâ”€â”€ examples
+â”œâ”€â”€ individual objects
+â”œâ”€â”€ images
+â”œâ”€â”€ Turtle programs
+â”œâ”€â”€ Prolog files
+â”œâ”€â”€ results
+â”œâ”€â”€ comparisons
+â””â”€â”€ provenance
 ```
 
 ### Artifact bundle
@@ -407,46 +408,64 @@ A symbolic artifact bundle may aggregate:
 
 ```text
 artifact_bundle
-├── object manifests
-├── Prolog files
-├── Turtle programs
-├── image manifests
-├── transition evidence
-├── candidate rules
-├── validation reports
-├── audit reports
-└── workflow report
+â”œâ”€â”€ object manifests
+â”œâ”€â”€ Prolog files
+â”œâ”€â”€ Turtle programs
+â”œâ”€â”€ image manifests
+â”œâ”€â”€ transition evidence
+â”œâ”€â”€ candidate rules
+â”œâ”€â”€ validation reports
+â”œâ”€â”€ audit reports
+â””â”€â”€ workflow report
 ```
 
 ### Rule
 
-A rule is semantic knowledge that may be represented by:
+A rule is an Atom stored in an AtomSpace. Rules are retrieved from an AtomSpace, matched against antecedent Atoms in one or more AtomSpaces, and write their consequent/output Atoms into designated AtomSpaces.
+
+The new Atomese writes facts and rules directly without classic typed wrappers:
+
+```atomese
+(birthdate person:douglas "1970-04-12")
+
+(=>
+  (and
+    (at $entity $x $y)
+    (moves-right $entity))
+  (predicted-at $entity (+ $x 1) $y))
+```
+
+â€œConsume antecedentsâ€ normally means query and match. It does not delete antecedent Atoms unless the rule explicitly retracts or tombstones them. A rule may be represented by:
 
 ```text
 rule
-├── Prolog rule
-├── induced logic
-├── LLM-derived rule
-├── assumptions
-├── confidence
-├── supporting examples
-└── provenance
+â”œâ”€â”€ Prolog rule
+â”œâ”€â”€ induced logic
+â”œâ”€â”€ LLM-derived rule
+â”œâ”€â”€ assumptions
+â”œâ”€â”€ confidence
+â”œâ”€â”€ supporting examples
+â””â”€â”€ provenance
 ```
 
 ---
 
-## 7. Workflow operations consume and produce silos
+## 7. Workflow operations query and update AtomSpaces
 
 A workflow operation should not merely declare that it consumes a file or emits text. It should declare typed ports.
 
 ```text
 Workflow Operation
-    consumes one or more typed input silos
+    binds input ports to source AtomSpaces
+    queries or consumes antecedent Atoms
+    retrieves applicable Rule Atoms
     performs one selected implementation
-    produces one or more typed output silos
-    emits creation, update, completion, or validation events
+    writes output Atoms into destination AtomSpaces
+    emits events because those AtomSpaces changed
     enables the next eligible branches in the workflow graph
 ```
+
+An operation does not consume an AtomSpace as though the AtomSpace were a value. It queries Atoms from source AtomSpaces and writes new or revised Atoms to destination AtomSpaces. Input and output ports therefore identify both an AtomSpace and a semantic Atom contract.
 
 ### Typed port contract
 
@@ -550,7 +569,7 @@ The current operation catalog includes reusable operation types such as the foll
 
 ### `grab_image_source`
 
-Purpose: route one of several possible visual sources into a normalized image silo.
+Purpose: route one of several possible visual sources into a normalized image AtomSpace.
 
 Possible implementations include:
 
@@ -596,7 +615,7 @@ Consumes image files, collections, sequences, or manifests and produces a displa
 
 ### `explain_object_changes`
 
-Consumes before/after object silos and Turtle/Prolog evidence and produces transition descriptions and correspondence evidence.
+Consumes before/after object AtomSpaces and Turtle/Prolog evidence and produces transition descriptions and correspondence evidence.
 
 ### `induce_rules_from_prolog`
 
@@ -627,8 +646,8 @@ Workflow
 Workflow Item
     instantiates a Operation Type
     chooses an Implementation
-    binds Input Ports to existing Silos
-    binds Output Ports to new Silos
+    binds Input Ports to existing AtomSpaces
+    binds Output Ports to new AtomSpaces
     may define conditions and branch behavior
 
 Operation Type
@@ -639,7 +658,7 @@ Implementation
     has a species: LLM, Python, Prolog, or hybrid
     performs the concrete operation
 
-Silo
+AtomSpace
     contains typed information
     has semantic meaning and concrete representation
     emits lifecycle events
@@ -670,41 +689,43 @@ The input binding means:
 
 ```text
 input port `objects`
-    consumes silo `recognized_objects`
+    consumes AtomSpace `recognized_objects`
 ```
 
 The output binding means:
 
 ```text
 output port `rendered_images`
-    produces silo `object_render_images`
+    produces AtomSpace `object_render_images`
 ```
 
 ---
 
-## 11. Silo lifecycle and workflow branching
+## 11. AtomSpace changes, events, and workflow branching
 
-Operations should not always hard-code one next operation. Workflow branches can watch for silo events and conditions.
+An **event occurs when an AtomSpace changes** or when a watched query changes satisfaction state. Operations should not always hard-code one next operation. Workflow branches subscribe to AtomSpace events and query the changed AtomSpace for details.
 
 Useful events include:
 
 ```text
-silo_created
-silo_updated
-silo_completed
-silo_validated
-silo_rejected
-silo_expired
-silo_missing
-silo_conflict_detected
+atom_added
+atom_revised
+atom_retracted
+atom_tombstoned
+truth_value_changed
+attention_value_changed
+validation_atom_added
+conflict_atom_added
+watched_pattern_satisfied
+watched_pattern_unsatisfied
 ```
 
 ### Branch on successful object validation
 
 ```text
 When:
-    silo semantic_type = object_collection
-    and event = silo_validated
+    changed AtomSpace contains an Atom with semantic_type = object_collection
+    and event = validation_atom_added
 
 Then:
     enable turtlize_objects
@@ -736,7 +757,8 @@ A machine-readable branch rule might be:
 ```json
 {
   "when": {
-    "event": "silo_validated",
+    "event": "validation_atom_added",
+    "atomspace": "object_analysis",
     "semantic_type": "object_collection",
     "minimum_confidence": 0.8
   },
@@ -750,12 +772,12 @@ This turns the workflow into an event-driven graph rather than only a fixed sequ
 
 ## 12. Provenance, validation, and confidence
 
-Every generated silo should retain enough information to answer:
+Every generated AtomSpace should retain enough information to answer:
 
 - Which operation produced it?
 - Which implementation species and exact implementation were used?
 - Which model and profile were used for an LLM operation?
-- Which source silos were consumed?
+- Which source AtomSpaces were consumed?
 - Which workflow item initiated the operation?
 - When was it created?
 - Has it been validated?
@@ -788,7 +810,7 @@ Provenance is itself information and therefore has a semantic type and represent
 
 ## 13. Serialization and persistence
 
-Silos and their contained artifacts may be serialized to disk and later restored into a workflow.
+AtomSpaces and their contained artifacts may be serialized to disk and later restored into a workflow.
 
 Typical formats include:
 
@@ -804,7 +826,7 @@ SVG
 
 Persistence should not erase semantic meaning. A restored file should be re-associated with:
 
-- its silo ID;
+- its AtomSpace ID;
 - semantic type;
 - representation datatype;
 - semantic subject;
@@ -820,13 +842,13 @@ The workflow slot manifest records these bindings so downstream operations do no
 
 The generated SVG groups declared datatypes by kind:
 
-- **Root and structural types** — `any`, `scalar`;
-- **Physical types** — text, boolean, integer, JSON, paths, URLs;
-- **Media types** — image, image file, image region, video;
-- **Collection types** — image collection, image sequence, object collection;
-- **Syntactic types** — Prolog, Turtle, image manifests, object manifests;
-- **Semantic types** — individual object, scene, transition evidence, rule set, reports;
-- **Aggregate types** — artifact bundles and other bundles.
+- **Root and structural types** â€” `any`, `scalar`;
+- **Physical types** â€” text, boolean, integer, JSON, paths, URLs;
+- **Media types** â€” image, image file, image region, video;
+- **Collection types** â€” image collection, image sequence, object collection;
+- **Syntactic types** â€” Prolog, Turtle, image manifests, object manifests;
+- **Semantic types** â€” individual object, scene, transition evidence, rule set, reports;
+- **Aggregate types** â€” artifact bundles and other bundles.
 
 Highlighted graph relationships represent:
 
@@ -856,17 +878,19 @@ The full machine-readable relationships are in [`workflow_datatypes.json`](../co
 | **Information** | The root concept represented or conveyed by all values and artifacts. |
 | **Representation datatype** | Concrete encoding, storage form, or software-level structure. |
 | **Semantic type** | Meaning of the information. |
-| **Silo** | Named, versioned container holding typed information. |
+| **AtomSpace** | OpenCog knowledge location containing Atoms; canonical replacement for the older term â€œsilo.â€ |
+| **Atom** | A symbolic unit that exists only inside an AtomSpace and denotes a fact, value, relation, rule, or other expression. |
+| **Rule Atom** | Rule stored in an AtomSpace, retrieved and matched against antecedent Atoms. |
 | **Port** | A operation's declared input or output. |
-| **Slot binding** | Connection between a operation port and a silo. |
+| **Slot binding** | Connection between an operation port and a source/destination AtomSpace plus an Atom contract or query. |
 | **Operation type** | Abstract reusable operation. |
 | **Implementation** | LLM, Python, Prolog, or hybrid mechanism performing a operation. |
 | **Implementation species** | Broad execution family such as `llm`, `python`, or `prolog`. |
 | **Semantic subject** | Entity that the information describes. |
 | **Cardinality** | One, optional, list, set, sequence, map, graph, or semantic bundle. |
-| **Event** | Lifecycle change emitted by a silo. |
+| **Event** | Notification that an AtomSpace changed or a watched query changed satisfaction state. |
 | **Branch rule** | Condition that enables another workflow item. |
-| **Aggregate** | Silo containing or organizing other information silos. |
+| **Aggregate** | A set of related Atoms organized within an AtomSpace. |
 | **Provenance** | Information describing origin, derivation, implementation, and history. |
 
 ---
@@ -876,17 +900,20 @@ The full machine-readable relationships are in [`workflow_datatypes.json`](../co
 The workflow and datatype systems should follow these rules:
 
 1. **Every value depicts information.**
-2. **Every silo declares semantic meaning and concrete representation.**
-3. **Text is never semantically self-describing.** A description and a birthdate are not interchangeable simply because both are text.
-4. **Operation ports declare semantic contracts.**
-5. **Implementations are replaceable when they satisfy the same operation contract.**
-6. **Semantic identity survives changes in representation.**
-7. **Collections and aggregates declare their contained types and cardinality.**
-8. **Every generated silo retains provenance.**
-9. **Validation state and confidence belong to the information record.**
-10. **Workflow branches respond to silo events and conditions, not only hard-coded sequence positions.**
-11. **Legacy transaction-only steps may remain as shorthand, but typed operation items are the preferred form for complex orchestration.**
-12. **The simple `g → 4` workflow remains valid; typed workflows are used when decomposition, routing, or verification adds value.**
+2. **Every Atom exists in an identified AtomSpace.**
+3. **Every value-denoting Atom declares semantic meaning and concrete representation.**
+4. **Text is never semantically self-describing.** A description and a birthdate are not interchangeable simply because both are text.
+5. **Operation ports declare semantic contracts.**
+6. **Implementations are replaceable when they satisfy the same operation contract.**
+7. **Semantic identity survives changes in representation.**
+8. **Collections and aggregates declare their contained types and cardinality.**
+9. **Every generated Atom retains provenance within an AtomSpace.**
+10. **Validation state and confidence belong to the information record.**
+11. **Rules are Atoms stored in and retrieved from AtomSpaces.**
+12. **Rule execution consumes or matches antecedent Atoms and writes output Atoms into destination AtomSpaces.**
+13. **Workflow branches respond to AtomSpace-change events and conditions, not only hard-coded sequence positions.**
+14. **Legacy transaction-only steps may remain as shorthand, but typed operation items are the preferred form for complex orchestration.**
+15. **The simple `g â†’ 4` workflow remains valid; typed workflows are used when decomposition, routing, or verification adds value.**
 
 ---
 
@@ -899,8 +926,8 @@ Workflow
 Workflow Item
     instantiates a Operation Type
     selects an Implementation
-    binds Input Ports to existing Silos
-    binds Output Ports to new Silos
+    binds Input Ports to queries in source AtomSpaces
+    binds Output Ports to destination AtomSpaces
     declares conditions, optionality, and branch behavior
 
 Operation Type
@@ -914,23 +941,23 @@ Implementation
         Python
         Prolog
         Hybrid
-    consumes bound silo values
-    produces contract-compatible outputs
+    retrieves Rule Atoms
+    matches or consumes antecedent Atoms
+    writes contract-compatible output Atoms
 
-Silo
-    contains Information
-    has Representation Datatype
+AtomSpace
+    contains Atoms
+    stores Facts, Relations, Rules, Evidence, and Outputs
+    emits Events whenever its contained Atoms change
+
+Atom
+    exists only in an AtomSpace
     has Semantic Information Type
-    has Cardinality
-    has Semantic Subject
-    has Provenance
-    has Validation State
-    has Confidence
-    has Version
-    emits Events
+    may have Representation Datatype, Subject, Provenance,
+        Validation State, Confidence, and Version
 
 Branch Rule
-    watches Silo Events and Conditions
+    watches AtomSpace-change Events and Query Conditions
     activates additional Workflow Items
 ```
 
@@ -949,6 +976,6 @@ A single object may exist as:
 - an identity record;
 - and references to learned rules.
 
-Those artifacts belong to separate silos, but they may describe the same semantic subject. Workflow operations consume typed silos, choose an LLM, Python, Prolog, or hybrid implementation, and produce new silos. The appearance or validation of those new silos can activate later branches in the workflow.
+Those artifacts are denoted by Atoms that may be organized in separate AtomSpaces while describing the same semantic subject. Workflow operations query antecedent Atoms, choose an Atomese, LLM, Python, Prolog, or hybrid implementation, retrieve applicable Rule Atoms, and write output Atoms into destination AtomSpaces. Those AtomSpace changes emit events that can activate later branches in the workflow.
 
 The system therefore reasons not only about bytes, files, or strings, but about **information with declared meaning, representation, provenance, cardinality, validation state, and workflow role**.

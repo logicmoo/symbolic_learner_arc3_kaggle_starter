@@ -15,7 +15,7 @@ This is the clickable source map for the maintained repository. Every listed pat
 - [`TODO.md`](TODO.md) — post-delivery debugger maintenance plus concrete Phase 2 and Phase 3 implementation work.
 - [`SOW_DELIVERABLES.md`](SOW_DELIVERABLES.md) — completed Phase 1 debugger checklist and partial/open Phase 2 and Phase 3 outcomes with evidence links.
 - [`FILE_TREE.md`](FILE_TREE.md) — this clickable source map.
-- [`docs/WORLD_ANALYSIS_WORKBENCH.md`](docs/WORLD_ANALYSIS_WORKBENCH.md) — domain-neutral observations, information silos, world models, goals, simulations, and ARC3 human-demonstration workflow.
+- [`docs/WORLD_ANALYSIS_WORKBENCH.md`](docs/WORLD_ANALYSIS_WORKBENCH.md) — domain-neutral AtomSpaces, observations, world models, goals, simulations, and ARC3 human-demonstration workflow.
 
 The planning documents have deliberately separate scopes and cross-link one another:
 
@@ -25,7 +25,7 @@ The planning documents have deliberately separate scopes and cross-link one anot
 
 ## World Analysis Workbench core
 
-- [`python/worldworkbench/core.py`](python/worldworkbench/core.py) — versioned information silos, observations, interventions, human demonstrations, world models, goals, simulations, and orchestration contracts.
+- [`python/worldworkbench/core.py`](python/worldworkbench/core.py) — compatibility state facade, versioned Atoms, observations, interventions, world models, goals, simulations, and orchestration contracts.
 - [`python/worldworkbench/__init__.py`](python/worldworkbench/__init__.py) — public domain-neutral workbench API.
 - [`python/worldworkbench/adapters/arc3.py`](python/worldworkbench/adapters/arc3.py) — ARC3 observation, intervention, human-choice, and artifact translation boundary.
 - [`python/worldworkbench/adapters/__init__.py`](python/worldworkbench/adapters/__init__.py) — public ARC3 adapter exports.
@@ -33,6 +33,100 @@ The planning documents have deliberately separate scopes and cross-link one anot
 - [`workbench/workspaces/shared/config/world_workbench_operations.config.json`](workbench/workspaces/shared/config/world_workbench_operations.config.json) — reusable processing-resource contracts, including object extraction and Turtle representation operations.
 - [`config/llm_workflows.json`](config/llm_workflows.json) — runnable workflow-desktop catalog, including the seven-step `ls20` human-observation workflow and its nested subworkflows.
 - [`python/workflow_operation_editor.py`](python/workflow_operation_editor.py) — MeTTaSymbolicLearnerWorkbench desktop for composing, validating, inspecting, saving, and running typed operations and nested subworkflows.
+
+## Workbench architecture and contributor guidance
+
+- [`AGENTS.md`](AGENTS.md) — contributor and Codex operating contract, active entrypoints, UI baseline, validation requirements, and ordered implementation tasks.
+- [`workbench/README.md`](workbench/README.md) — workbench-specific setup, API, frontend, workspace, and workflow-engine orientation.
+- [`workbench/docs/design/CODEX_CURRENT_IMPLEMENTATION_INVENTORY.md`](workbench/docs/design/CODEX_CURRENT_IMPLEMENTATION_INVENTORY.md) — inventory of active, obsolete, real, and mock workbench surfaces.
+- [`workbench/docs/design/WORKBENCH_NAVIGATION_V2.md`](workbench/docs/design/WORKBENCH_NAVIGATION_V2.md) — DESIGN, RUNTIME, and SYSTEM navigation contract.
+- [`workbench/docs/design/UNIVERSAL_ARTIFACT_EDITOR.md`](workbench/docs/design/UNIVERSAL_ARTIFACT_EDITOR.md) — required hierarchy, tabs, comparison, JSON, documentation, and execution capabilities shared by rich editors.
+- [`workbench/docs/design/GOALS_AND_PLANS_ARCHITECTURE.md`](workbench/docs/design/GOALS_AND_PLANS_ARCHITECTURE.md) — semantic Goal and Plan resources, variants, inheritance, and runtime relationships.
+- [`workbench/docs/design/FILESYSTEM_RESOURCE_MODEL.md`](workbench/docs/design/FILESYSTEM_RESOURCE_MODEL.md) — shared-library inheritance, workspace overrides, resource kinds, and file naming.
+- [`workbench/docs/todo/MODEL_RUNTIME_USAGE_AND_BENCHMARKING_POLICIES.md`](workbench/docs/todo/MODEL_RUNTIME_USAGE_AND_BENCHMARKING_POLICIES.md) — model-policy specification, backend contract, filters, health, pings, and benchmarks.
+- [`workbench/docs/todo/assets/model_runtime_policy_mockup.png`](workbench/docs/todo/assets/model_runtime_policy_mockup.png) — visual acceptance reference for the model-policy UI.
+- [`docs/DATATYPES_MANIFEST_EXPLAINED.md`](docs/DATATYPES_MANIFEST_EXPLAINED.md) — detailed AtomSpace, Atom, datatype, representation, operation-port, rule, and event model.
+
+## Active workbench frontend
+
+- [`workbench/frontend/package.json`](workbench/frontend/package.json) and [`workbench/frontend/package-lock.json`](workbench/frontend/package-lock.json) — React/Vite dependencies and reproducible npm resolution.
+- [`workbench/frontend/index.html`](workbench/frontend/index.html) — Vite browser entry document.
+- [`workbench/frontend/src/main.tsx`](workbench/frontend/src/main.tsx) — React root bootstrap.
+- [`workbench/frontend/src/App.tsx`](workbench/frontend/src/App.tsx) — authoritative active-page selection.
+- [`workbench/frontend/src/pages/FilesystemWorkbenchPage.tsx`](workbench/frontend/src/pages/FilesystemWorkbenchPage.tsx) — active filesystem workbench shell, navigation, runtime views, inspector, and editor routing.
+- [`workbench/frontend/src/components/UniversalArtifactEditor.tsx`](workbench/frontend/src/components/UniversalArtifactEditor.tsx) — reusable rich editor frame with hierarchy, persistent tabs, split comparison, and docked panels.
+- [`workbench/frontend/src/components/HierarchyResourceEditor.tsx`](workbench/frontend/src/components/HierarchyResourceEditor.tsx) — common hierarchy/editor composition used by filesystem resource libraries.
+- [`workbench/frontend/src/components/ArtifactTreeBranch.tsx`](workbench/frontend/src/components/ArtifactTreeBranch.tsx) — recursive collapsible tree branch with variant visibility controls.
+- [`workbench/frontend/src/components/useArtifactTreeFilter.ts`](workbench/frontend/src/components/useArtifactTreeFilter.ts) — shared multi-property tree filtering and optional parent-chain expansion.
+- [`workbench/frontend/src/components/resourceRelationships.ts`](workbench/frontend/src/components/resourceRelationships.ts) — normalizes bidirectional parent/child and specification/variant relationships.
+- [`workbench/frontend/src/components/DataCatalogPanel.tsx`](workbench/frontend/src/components/DataCatalogPanel.tsx) — semantic, representation, and concrete datatype editor.
+- [`workbench/frontend/src/components/GoalPlanLibraryEditor.tsx`](workbench/frontend/src/components/GoalPlanLibraryEditor.tsx) — Goal/interpretation and Plan/variant editor.
+- [`workbench/frontend/src/components/OperationLibraryEditor.tsx`](workbench/frontend/src/components/OperationLibraryEditor.tsx) — Operations route over the rich operation library editor.
+- [`workbench/frontend/src/components/OperationPlayground.tsx`](workbench/frontend/src/components/OperationPlayground.tsx) — executable operation test surface and result display.
+- [`workbench/frontend/src/components/PromptLibraryEditor.tsx`](workbench/frontend/src/components/PromptLibraryEditor.tsx) and [`PromptHierarchyPanel.tsx`](workbench/frontend/src/components/PromptHierarchyPanel.tsx) — prompt specification/implementation hierarchy and editing.
+- [`workbench/frontend/src/components/LlmModelsEditor.tsx`](workbench/frontend/src/components/LlmModelsEditor.tsx) — backend, model, and profile hierarchy editor.
+- [`workbench/frontend/src/components/PolicyLibraryEditor.tsx`](workbench/frontend/src/components/PolicyLibraryEditor.tsx) — editable policy specifications and variants.
+- [`workbench/frontend/src/components/ModelPolicyTodoPage.tsx`](workbench/frontend/src/components/ModelPolicyTodoPage.tsx) — filesystem-backed policy specification/mockup page pending the full API UI.
+- [`workbench/frontend/src/components/HelpDocumentTabs.tsx`](workbench/frontend/src/components/HelpDocumentTabs.tsx) — contextual filesystem Markdown tabs and repository-link navigation.
+- [`workbench/frontend/src/components/RepositoryDocsPage.tsx`](workbench/frontend/src/components/RepositoryDocsPage.tsx) — repository Markdown index, filtering, refresh, rendered documents, and linked source viewer.
+- [`workbench/frontend/src/styles/workbench.css`](workbench/frontend/src/styles/workbench.css) — active shell, navigation, runtime views, responsive layout, and focused Docs layout.
+- [`workbench/frontend/src/styles/help_tabs.css`](workbench/frontend/src/styles/help_tabs.css), [`repository_docs.css`](workbench/frontend/src/styles/repository_docs.css), [`operation_editor.css`](workbench/frontend/src/styles/operation_editor.css), [`operation_playground.css`](workbench/frontend/src/styles/operation_playground.css), and [`models_editor.css`](workbench/frontend/src/styles/models_editor.css) — focused component styling.
+- [`workbench/frontend/tsconfig.json`](workbench/frontend/tsconfig.json), [`tsconfig.app.json`](workbench/frontend/tsconfig.app.json), [`tsconfig.node.json`](workbench/frontend/tsconfig.node.json), and [`vite.config.ts`](workbench/frontend/vite.config.ts) — TypeScript project boundaries and Vite build configuration.
+
+The other files under `workbench/frontend/src/pages/` and older shell-oriented components are retained reference or compatibility surfaces — they are not active unless [`App.tsx`](workbench/frontend/src/App.tsx) imports them; do not mistake their polish or mock data for the running application.
+
+## Workbench backend and persistence
+
+- [`workbench/server/app.py`](workbench/server/app.py) — FastAPI entrypoint and router registration.
+- [`workbench/server/workspace_api.py`](workbench/server/workspace_api.py) and [`workspace_config.py`](workbench/server/workspace_config.py) — workspace discovery, snapshots, safe file access, and workspace metadata.
+- [`workbench/server/repository_docs_api.py`](workbench/server/repository_docs_api.py) — safe repository Markdown index and linked source-file reader used by SYSTEM → Docs.
+- [`workbench/server/resource_convention.py`](workbench/server/resource_convention.py) and [`resource_relationships.py`](workbench/server/resource_relationships.py) — filename/kind rules and bidirectional relationship normalization.
+- [`workbench/server/datatype_api.py`](workbench/server/datatype_api.py), [`operation_api.py`](workbench/server/operation_api.py), [`prompt_api.py`](workbench/server/prompt_api.py), and [`policy_api.py`](workbench/server/policy_api.py) — filesystem CRUD and resolution routes for each resource family.
+- [`workbench/server/datatype_library.py`](workbench/server/datatype_library.py), [`operation_library.py`](workbench/server/operation_library.py), [`prompt_library.py`](workbench/server/prompt_library.py), [`policy_library.py`](workbench/server/policy_library.py), [`model_library.py`](workbench/server/model_library.py), and [`goal_plan_library.py`](workbench/server/goal_plan_library.py) — shared/workspace loaders, validation, inheritance, and save behavior.
+- [`workbench/server/operation_resolution.py`](workbench/server/operation_resolution.py) — resolves abstract operations to compatible concrete implementations.
+- [`workbench/server/representation_planner.py`](workbench/server/representation_planner.py) — selects datatype representations and conversion paths.
+- [`workbench/server/model_policy_todo_api.py`](workbench/server/model_policy_todo_api.py) — exposes the policy TODO and acceptance image from disk.
+- [`workbench/server/workflow_engine.py`](workbench/server/workflow_engine.py), [`advanced_workflow_engine.py`](workbench/server/advanced_workflow_engine.py), and [`workflow_engine_api.py`](workbench/server/workflow_engine_api.py) — workflow validation, execution, commands, events, artifacts, and logs.
+- [`workbench/server/workflow_providers.py`](workbench/server/workflow_providers.py) and [`shared_operation_callables.py`](workbench/server/shared_operation_callables.py) — runtime provider adapters and built-in executable operations.
+- [`workbench/server/runtime.py`](workbench/server/runtime.py), [`store.py`](workbench/server/store.py), and [`models.py`](workbench/server/models.py) — runtime coordination, persistence primitives, and API data models.
+- [`workbench/server/routes/artifacts.py`](workbench/server/routes/artifacts.py) and [`routes/workflow.py`](workbench/server/routes/workflow.py) — compatibility artifact/workflow routes.
+- [`workbench/server/requirements.txt`](workbench/server/requirements.txt) — backend Python dependencies.
+
+## Filesystem workspaces and resource families
+
+- [`workbench/workspaces/shared/shared.workspace.json`](workbench/workspaces/shared/shared.workspace.json) — shared-library identity and inheritance root.
+- [`workbench/workspaces/shared/docs/data.md`](workbench/workspaces/shared/docs/data.md), [`goals.md`](workbench/workspaces/shared/docs/goals.md), [`plans.md`](workbench/workspaces/shared/docs/plans.md), [`operations.md`](workbench/workspaces/shared/docs/operations.md), [`prompts.md`](workbench/workspaces/shared/docs/prompts.md), [`policies.md`](workbench/workspaces/shared/docs/policies.md), and [`llm_catalog.md`](workbench/workspaces/shared/docs/llm_catalog.md) — contextual Help documents displayed beside rich editors.
+- `workbench/workspaces/shared/datatypes/*.semantic_datatype.json` — abstract meanings such as Image, Entity, Observation, AtomSpace, Goal, Event, and World Model.
+- `workbench/workspaces/shared/representations/*.representation_datatype.json` — interchangeable structures such as bitmap, scene graph, object list, symbolic facts, Turtle program, and natural language.
+- `workbench/workspaces/shared/concrete_datatypes/*.concrete_datatype.json` — exact encodings such as PNG, JPEG, JSON, UTF-8 text, Prolog, NumPy, and SVG.
+- `workbench/workspaces/shared/operations/*.operation.json` and `*.operation_implementation.json` — abstract executable contracts and replaceable Python, Prolog, or LLM implementations.
+- `workbench/workspaces/shared/prompts/*.prompt.json` and `*.prompt_implementation.json` — semantic prompt contracts and model/modal variants.
+- `workbench/workspaces/shared/models/*.backend.json`, `*.model.json`, and `*.profile.json` — provider transport, model identity, and reasoning/runtime profile layers.
+- `workbench/workspaces/shared/goals/*.goal.json` and `*.goal_variant.json` — desired-outcome specifications and interpretations.
+- `workbench/workspaces/shared/plans/*.plan.json` and `*.plan_variant.json` — reusable plan specifications and strategies.
+- `workbench/workspaces/shared/policies/*.json` — model runtime policies, vendor policy, eligibility entries, health observations, ping jobs/events, benchmark policies, and benchmark results.
+- [`workbench/workspaces/arc3/README.md`](workbench/workspaces/arc3/README.md) — ARC3 workspace purpose; its `workflows/`, `operations/`, and `prompts/` override or extend shared resources.
+- [`workbench/workspaces/default/workflows/titlecase_demo.workflow.json`](workbench/workspaces/default/workflows/titlecase_demo.workflow.json) and [`review_with_approval.workflow.json`](workbench/workspaces/default/workflows/review_with_approval.workflow.json) — small executable engine examples.
+- [`workbench/workspaces/tic_tac_toe_learner/README.md`](workbench/workspaces/tic_tac_toe_learner/README.md) and [`workbench/workspaces/workflow_engine_tour/README.md`](workbench/workspaces/workflow_engine_tour/README.md) — focused example-workspace entry documents.
+- [`workbench.workspace.json`](workbench.workspace.json) — repository-level workspace selection/configuration.
+
+## Workbench launchers, maintenance, and validation
+
+- [`run_workbench.bat`](run_workbench.bat) — top-level Windows launcher for the API and Vite servers.
+- [`workbench/run_demo.bat`](workbench/run_demo.bat) and [`run_demo.sh`](workbench/run_demo.sh) — platform-specific demo launchers.
+- [`workbench/scripts/run_api_server.bat`](workbench/scripts/run_api_server.bat) and [`run_vite_server.bat`](workbench/scripts/run_vite_server.bat) — individual backend/frontend launchers.
+- [`workbench/scripts/normalize_workspace_json.py`](workbench/scripts/normalize_workspace_json.py) — deterministic workspace JSON formatter/validator.
+- [`scripts/migrate_datatype_kinds.mjs`](scripts/migrate_datatype_kinds.mjs) — one-time semantic/representation/concrete datatype migration helper.
+- [`scripts/sync_resource_relationships.mjs`](scripts/sync_resource_relationships.mjs) — synchronizes inverse parent/child and specification/variant pointers.
+- [`.github/workflows/python-tests.yml`](.github/workflows/python-tests.yml) — CI Python test workflow.
+- [`.github/workflows/normalize-workspace-json.yml`](.github/workflows/normalize-workspace-json.yml) — CI check for canonical workspace JSON.
+- `tests/test_workbench_server.py`, `tests/test_navigation_v2_ui.py`, `tests/test_universal_artifact_editor_ui.py`, and the other `tests/test_*` files — backend contracts, navigation/editor regressions, resource schemas, relationships, playground behavior, policy behavior, and documentation links.
+- `workbench/server/test_*.py` — workflow-engine, provider, runtime, and operation-library unit tests colocated with the backend.
+
+## IDE and generated records
+
+- `.idea/` and [`.run/interactive_runner.run.xml`](.run/interactive_runner.run.xml) — intentionally versioned PyCharm project and run configuration.
+- `.llm_responses/*.md` — immutable generated model request/response evidence; the Docs index may display these, but they are not maintained design documents.
 
 ## Repository configuration and protected Kaggle surface
 
@@ -126,13 +220,15 @@ The planning documents have deliberately separate scopes and cross-link one anot
 - [`tests/test_object_memory_contracts.py`](tests/test_object_memory_contracts.py) — provider normalization, residual admission, `SingleWriter`, rules, connected Phase 3 flow, prediction ordering, Kaggle-path, and runner-placement tests.
 - [`tests/test_documentation_links.py`](tests/test_documentation_links.py) — root-document coverage, cross-links, valid file-tree links, and descriptions.
 - [`tests/test_runtime_home.py`](tests/test_runtime_home.py) — code-root precedence and script bootstrap coverage.
-- [`tests/test_world_workbench.py`](tests/test_world_workbench.py) — versioned silos, goal-directed simulation, human-demonstration observation, ARC3 adapter isolation, and seven-step workflow tests.
+- [`tests/test_world_workbench.py`](tests/test_world_workbench.py) — versioned Atom compatibility records, goal-directed simulation, human-demonstration observation, ARC3 adapter isolation, and seven-step workflow tests.
 - [`prolog/test_object_memory.pl`](prolog/test_object_memory.pl) — Prolog tests for residuals, commitments, rules, connected Phase 3 flow, and prediction grading.
 - [`prolog/test_turtle_dsl.pl`](prolog/test_turtle_dsl.pl) — Turtle movement, pen state, pen width, and thick/thin equivalence tests.
 
 ## Runtime-generated action-tree files
 
-These files are created beneath `action_trees/<game>/level_<n>/`:
+`action_trees/` is intentionally documented last because it contains generated runtime evidence rather than maintained application source. The inventory stops after the immediate `action_trees/<game>/` game roots; it does not enumerate deeper level or action-path directories.
+
+Each `action_trees/<game>/` root contains generated `level_<n>/` trees. Files found deeper in those trees follow these roles:
 
 - `README.md` — state navigation, active transcript, historical run links, embedded latest provider artifacts, readable identities, Turtle mocks, candidate rules, critiques, and confidence outputs.
 - `image.png` — authoritative captured rendered frame.
