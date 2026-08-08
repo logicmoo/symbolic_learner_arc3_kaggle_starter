@@ -516,7 +516,7 @@ def workspace_contexts(workspace_id: str) -> dict[str, Any]:
 
 
 @router.get("/{workspace_id}/snapshot")
-def workspace_snapshot(workspace_id: str) -> dict[str, Any]:
+def workspace_snapshot(workspace_id: str, scope: str = Query(default="full", pattern="^(full|shell)$")) -> dict[str, Any]:
     try:
         workspace = _resolve_workspace(workspace_id)
     except KeyError as error:
@@ -531,9 +531,18 @@ def workspace_snapshot(workspace_id: str) -> dict[str, Any]:
             files.append(_file_record(root, path))
         if len(files) >= 2000:
             break
-    return {
+    shell = {
         "workspace": workspace,
         "workflows": _load_workflows(workspace),
+        "goals": _load_symbolic_family(workspace, "goal"),
+        "plans": _load_symbolic_family(workspace, "plan"),
+        "contexts": _load_symbolic_family(workspace, "context"),
+        "files": files,
+    }
+    if scope == "shell":
+        return shell
+    return {
+        **shell,
         "operations": _load_operations(workspace),
         "operationImplementations": _load_operation_implementations(workspace),
         "datatypes": _load_datatypes(workspace),
@@ -545,12 +554,8 @@ def workspace_snapshot(workspace_id: str) -> dict[str, Any]:
         "modelLibrary": _load_model_library(workspace),
         "prompts": _load_prompts(workspace),
         "promptLibrary": _load_prompt_library(workspace),
-        "goals": _load_symbolic_family(workspace, "goal"),
-        "plans": _load_symbolic_family(workspace, "plan"),
-        "contexts": _load_symbolic_family(workspace, "context"),
         "policies": load_workspace_policy_records(root),
         "artifactCategories": _load_artifact_categories(workspace),
-        "files": files,
     }
 
 
