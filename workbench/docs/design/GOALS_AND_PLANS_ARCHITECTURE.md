@@ -32,7 +32,7 @@ Operations serve as action schemas; Workflow steps serve as grounded action occu
 
 Workflow Studio records a `planProvenance` map without changing the executable kind. Its `origin` distinguishes `human`, `pddl`, `llm`, `rules`, and generic `imported` generation. For PDDL output, `planner`, `domain`, `problem`, and the original grounded `sourcePlan` remain beside the normalized Workflow steps. This lets a PDDL tool round-trip its source vocabulary while the engine continues to execute the common Workflow representation.
 
-`POST /api/engine/workflows/import-pddl-plan` converts conventional grounded planner output such as `0: (move robot room-a room-b) [1]` into an unsaved Workflow. Each grounded action becomes a sequential `workflow_step` whose `operation` is the normalized PDDL action name, or the corresponding value supplied in `actionMap`. Positional objects remain in `parameters.pddlArguments`; the mapped Operation is responsible for binding those objects to its named input ports. The endpoint never silently saves or runs the result.
+`POST /api/engine/workflows/import-pddl-plan` converts conventional grounded planner output such as `0: (move robot room-a room-b) [1]` into an unsaved Workflow. Untimed actions become sequential `workflow_step` resources. In temporal output, actions with the same start time become parallel siblings and depend on the preceding start-time group. Each step's `operation` is the normalized PDDL action name, or the corresponding value supplied in `actionMap`. Positional objects remain in `parameters.pddlArguments`; the mapped Operation is responsible for binding those objects to its named input ports. The endpoint never silently saves or runs the result.
 
 ## Editor and runtime boundary
 

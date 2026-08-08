@@ -50,17 +50,33 @@ def grounded_plan_to_workflow(request: dict[str, Any]) -> dict[str, Any]:
     if not parsed:
         raise ValueError("sourcePlan must contain at least one grounded PDDL action")
     steps = []
+    temporal = all("pddlStartTime" in item["parameters"] for item in parsed)
+    previous_start: float | None = None
+    previous_group: list[str] = []
+    current_group: list[str] = []
     for index, item in enumerate(parsed):
         step_id = f"{item['action']}_{index + 1}"
+        if temporal:
+            start = float(item["parameters"]["pddlStartTime"])
+            if previous_start is not None and start < previous_start:
+                raise ValueError("temporal grounded plan actions must be ordered by start time")
+            if previous_start is None or start != previous_start:
+                previous_group = current_group
+                current_group = []
+                previous_start = start
+            dependencies = list(previous_group)
+        else:
+            dependencies = [steps[-1]["id"]] if steps else []
         step = {
             "id": step_id,
             "label": " ".join([item["parameters"]["pddlAction"], *item["parameters"]["pddlArguments"]]),
             "kind": "workflow_step",
             "operation": item["operation"],
             "parameters": item["parameters"],
-            "dependsOn": [steps[-1]["id"]] if steps else [],
+            "dependsOn": dependencies,
         }
         steps.append(step)
+        current_group.append(step_id)
     workflow_id = _identifier(str(request.get("id") or "pddl_plan"))
     return {
         "kind": "workflow",

@@ -39,6 +39,21 @@ def test_pddl_import_rejects_non_action_text() -> None:
         grounded_plan_to_workflow({"sourcePlan": "this is not a grounded action"})
 
 
+def test_temporal_pddl_actions_with_equal_start_times_remain_parallel() -> None:
+    workflow = grounded_plan_to_workflow({
+        "sourcePlan": "0: (load truck box-a) [1]\n0: (load truck box-b) [1]\n1: (drive truck depot) [2]",
+    })
+    first, second, third = workflow["steps"]
+    assert first["dependsOn"] == []
+    assert second["dependsOn"] == []
+    assert third["dependsOn"] == [first["id"], second["id"]]
+
+
+def test_temporal_pddl_plan_rejects_out_of_order_start_times() -> None:
+    with pytest.raises(ValueError, match="ordered by start time"):
+        grounded_plan_to_workflow({"sourcePlan": "2: (finish) [1]\n1: (start) [1]"})
+
+
 def test_active_workflow_editor_exposes_unsaved_pddl_conversion() -> None:
     page = (ROOT / "workbench" / "frontend" / "src" / "pages" / "FilesystemWorkbenchPage.tsx").read_text(encoding="utf-8")
     panel = (ROOT / "workbench" / "frontend" / "src" / "components" / "PddlPlanImportPanel.tsx").read_text(encoding="utf-8")
@@ -46,3 +61,4 @@ def test_active_workflow_editor_exposes_unsaved_pddl_conversion() -> None:
     assert "/api/engine/workflows/import-pddl-plan" in panel
     assert "ACTION MAP · JSON" in panel
     assert "does not save or run" in panel
+    assert "Equal temporal start times remain parallel" in panel
