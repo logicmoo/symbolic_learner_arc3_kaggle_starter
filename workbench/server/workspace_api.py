@@ -22,6 +22,14 @@ from prompt_library import load_prompt_library_records, load_workspace_prompt_re
 from policy_library import load_workspace_policy_records, policy_hierarchy
 from resource_convention import canonical_resource_path, infer_resource_kind
 from operation_library import DEFAULT_WORKSPACES_ROOT, load_workspace_operation_implementation_records, load_workspace_operation_records
+from workspace_inheritance import (
+    SHARED_WORKSPACE_ID,
+    declared_include_specs,
+    effective_workspace_layers,
+    layer_source,
+    read_workspace_metadata,
+    workspace_metadata_path,
+)
 
 router = APIRouter(prefix="/workspaces", tags=["workspaces"])
 
@@ -49,17 +57,10 @@ def _read_json(path: Path) -> dict[str, Any]:
 
 
 def _optional_metadata(root: Path) -> dict[str, Any]:
-    candidates = [root / f"{root.name}.workspace.json", root / "workspace.json"]
-    for path in candidates:
-        if not path.is_file():
-            continue
-        try:
-            value = _read_json(path)
-            value.setdefault("kind", "workspace")
-            return value
-        except ValueError:
-            continue
-    return {}
+    value = read_workspace_metadata(root)
+    if value:
+        value.setdefault("kind", "workspace")
+    return value
 
 
 def _humanize(name: str) -> str:
@@ -90,6 +91,8 @@ def _workspace_from_directory(root: Path) -> dict[str, Any]:
     goal_count = len(load_workspace_symbolic_records(root, "goal"))
     plan_count = len(load_workspace_symbolic_records(root, "plan"))
     context_count = len(load_workspace_symbolic_records(root, "context"))
+    layers = effective_workspace_layers(root, root.parent)
+    include_specs = declared_include_specs(root)
     return {
         "id": root.name,
         "label": str(metadata.get("label") or _humanize(root.name)),
@@ -120,6 +123,8 @@ def _workspace_from_directory(root: Path) -> dict[str, Any]:
         "planDirectory": str(plan_dir.resolve()),
         "planDirectoryRelative": "plans",
         "metadata": metadata.get("metadata") or {},
+        "includes": include_specs,
+        "effectiveIncludes": [layer.name for layer in layers if layer.resolve() != root.resolve()],
         "workflowFileCount": len(list(workflow_dir.glob("*.json"))) if workflow_dir.exists() else 0,
         "operationFileCount": operation_count,
         "operationImplementationFileCount": operation_implementation_count,
@@ -160,6 +165,45 @@ def _resolve_workspace(workspace_id: str) -> dict[str, Any]:
     raise KeyError("workspace not found")
 
 
+def _normalize_include_specs(workspace: dict[str, Any], raw: Any) -> list[dict[str, Any]]:
+    if workspace["id"] == SHARED_WORKSPACE_ID:
+        return []
+    if not isinstance(raw, list):
+        raise ValueError("includes must be an ordered array")
+    available = {item["id"]: Path(item["root"]) for item in discover_workspaces()}
+    result: list[dict[str, Any]] = []
+    for value in raw:
+        if not isinstance(value, dict):
+            raise ValueError("Each include must contain workspaceId and includeInherited")
+        included_id = str(value.get("workspaceId") or "").strip()
+        if not included_id or included_id in {SHARED_WORKSPACE_ID, workspace["id"]}:
+            raise ValueError("Shared is automatic and a workspace cannot include itself")
+        if included_id not in available:
+            raise ValueError(f"Included workspace does not exist: {included_id}")
+        if any(item["workspaceId"] == included_id for item in result):
+            raise ValueError(f"Workspace is included more than once: {included_id}")
+        result.append({"workspaceId": included_id, "includeInherited": value.get("includeInherited", True) is not False})
+
+    proposed = {workspace["id"]: result}
+    visiting: list[str] = []
+
+    def validate(workspace_id: str, include_inherited: bool = True) -> None:
+        if workspace_id in visiting:
+            raise ValueError(f"Workspace inclusion cycle: {' -> '.join((*visiting, workspace_id))}")
+        visiting.append(workspace_id)
+        specs = proposed.get(workspace_id, declared_include_specs(available[workspace_id]))
+        if include_inherited:
+            for spec in specs:
+                child_id = spec["workspaceId"]
+                if child_id not in available:
+                    raise ValueError(f"Included workspace does not exist: {child_id}")
+                validate(child_id, spec["includeInherited"])
+        visiting.pop()
+
+    validate(workspace["id"])
+    return result
+
+
 def _safe_child(root: Path, relative: str) -> Path:
     resolved_root = root.resolve()
     resolved = (resolved_root / relative).resolve()
@@ -185,7 +229,7 @@ def _load_documents(root: Path, directory: Path, source: str, expected_kind: str
     if not directory.exists():
         return result
     for path in sorted(directory.glob("*.json"), key=lambda item: item.name.lower()):
-        record: dict[str, Any] = {"path": path.relative_to(root).as_posix(), "source": source}
+        record: dict[str, Any] = {"path": path.relative_to(root).as_posix(), "source": source, "workspaceId": root.name}
         try:
             document = _read_json(path)
             if expected_kind:
@@ -203,7 +247,12 @@ def _load_documents(root: Path, directory: Path, source: str, expected_kind: str
 
 def _load_workflows(workspace: dict[str, Any]) -> list[dict[str, Any]]:
     root = Path(workspace["root"])
-    return _load_documents(root, Path(workspace["workflowDirectory"]), "workspace", "workflow")
+    combined: dict[str, dict[str, Any]] = {}
+    for layer in effective_workspace_layers(root, root.parent):
+        for record in _load_documents(layer, layer / "workflows", layer_source(layer, root), "workflow"):
+            document = record.get("document") or {}
+            combined[str(document.get("id") or record["path"])] = record
+    return sorted(combined.values(), key=lambda record: str((record.get("document") or {}).get("label") or record["path"]).lower())
 
 
 def _load_operations(workspace: dict[str, Any]) -> list[dict[str, Any]]:
@@ -265,6 +314,29 @@ def get_workspace(workspace_id: str) -> dict[str, Any]:
         return {"workspace": _resolve_workspace(workspace_id)}
     except KeyError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error
+
+
+@router.put("/{workspace_id}/settings")
+def update_workspace_settings(workspace_id: str, body: dict[str, Any] = Body(...)) -> dict[str, Any]:
+    try:
+        workspace = _resolve_workspace(workspace_id)
+        includes = _normalize_include_specs(workspace, body.get("includes"))
+        root = Path(workspace["root"])
+        path = workspace_metadata_path(root)
+        metadata = read_workspace_metadata(root)
+        metadata.update({
+            "kind": "workspace",
+            "id": workspace["id"],
+            "label": metadata.get("label") or workspace["label"],
+            "description": metadata.get("description") or workspace["description"],
+            "includes": includes,
+        })
+        path.write_text(json.dumps(metadata, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        return {"workspace": _workspace_from_directory(root)}
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+    except (OSError, ValueError) as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
 
 
 @router.get("/{workspace_id}/operations")

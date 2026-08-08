@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 
 from operation_library import DEFAULT_WORKSPACES_ROOT, SHARED_WORKSPACE_ID
+from workspace_inheritance import effective_workspace_layers, layer_source
 from resource_relationships import points_to, relationship_ids
 
 PROMPT_DIRECTORY = "prompts"
@@ -95,14 +96,11 @@ def _effective_prompt_resources(
     # Kind participates in the key so a prompt and one of its implementations
     # can never shadow each other accidentally.
     combined: dict[str, dict[str, Any]] = {}
-    for record in load_shared_prompt_resource_records(workspaces_root):
-        document = record.get("document") or {}
-        key = f"{document.get('kind')}:{document.get('id') or record['path']}"
-        combined[key] = record
-    for record in load_workspace_local_prompt_resource_records(workspace_root):
-        document = record.get("document") or {}
-        key = f"{document.get('kind')}:{document.get('id') or record['path']}"
-        combined[key] = record
+    for layer in effective_workspace_layers(workspace_root, workspaces_root):
+        for record in _prompt_records(layer, layer_source(layer, workspace_root), layer.name):
+            document = record.get("document") or {}
+            key = f"{document.get('kind')}:{document.get('id') or record['path']}"
+            combined[key] = record
     return sorted(
         combined.values(),
         key=lambda item: str((item.get("document") or {}).get("label") or item["path"]).lower(),

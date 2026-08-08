@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 
 from operation_library import DEFAULT_WORKSPACES_ROOT
+from workspace_inheritance import effective_workspace_layers, layer_source
 
 SHARED_WORKSPACE_ID = "shared"
 MODEL_CATALOG_DIRECTORY = "models"
@@ -69,12 +70,10 @@ def load_workspace_backend_records(
     workspaces_root: Path = DEFAULT_WORKSPACES_ROOT,
 ) -> list[dict[str, Any]]:
     combined: dict[str, dict[str, Any]] = {}
-    for record in load_shared_backend_records(workspaces_root):
-        document = record.get("document") or {}
-        combined[str(document.get("id") or record["path"])] = record
-    for record in load_workspace_local_backend_records(workspace_root):
-        document = record.get("document") or {}
-        combined[str(document.get("id") or record["path"])] = record
+    for layer in effective_workspace_layers(workspace_root, workspaces_root):
+        for record in _backend_records(layer, layer_source(layer, workspace_root), layer.name):
+            document = record.get("document") or {}
+            combined[str(document.get("id") or record["path"])] = record
     return sorted(
         combined.values(),
         key=lambda item: str((item.get("document") or {}).get("label") or item["path"]).lower(),

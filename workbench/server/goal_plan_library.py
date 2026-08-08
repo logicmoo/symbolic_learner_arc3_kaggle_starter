@@ -6,6 +6,7 @@ from typing import Any
 
 from operation_library import DEFAULT_WORKSPACES_ROOT, SHARED_WORKSPACE_ID
 from resource_relationships import relationship_ids
+from workspace_inheritance import effective_workspace_layers, layer_source
 
 
 FAMILIES = {
@@ -47,11 +48,8 @@ def _records(root: Path, directory: str, kinds: set[str], source: str, workspace
 def load_workspace_symbolic_records(workspace_root: Path, family: str, *, workspaces_root: Path = DEFAULT_WORKSPACES_ROOT) -> list[dict[str, Any]]:
     directory, kinds = FAMILIES[family]
     effective: dict[str, dict[str, Any]] = {}
-    for record in _records(workspaces_root / SHARED_WORKSPACE_ID, directory, kinds, "shared", SHARED_WORKSPACE_ID):
-        document = record.get("document") or {}
-        effective[str(document.get("id") or record["path"])] = record
-    if workspace_root.name != SHARED_WORKSPACE_ID:
-        for record in _records(workspace_root, directory, kinds, "workspace", workspace_root.name):
+    for layer in effective_workspace_layers(workspace_root, workspaces_root):
+        for record in _records(layer, directory, kinds, layer_source(layer, workspace_root), layer.name):
             document = record.get("document") or {}
             effective[str(document.get("id") or record["path"])] = record
     return sorted(effective.values(), key=lambda record: str((record.get("document") or {}).get("label") or record["path"]).lower())

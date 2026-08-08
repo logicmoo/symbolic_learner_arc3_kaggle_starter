@@ -56,7 +56,7 @@ def test_navigation_reuses_current_rich_editors() -> None:
         "Prompts": ('view:"prompts"', 'view==="prompts"&&<PromptLibraryEditor'),
         "Models": ('view:"llms"', 'view==="llms"&&<LlmModelsEditor'),
         "Workflows": ('view:"canvas"', 'view==="editor"&&<section className="editor-surface"'),
-        "Settings": ('view:"setup"', 'view==="setup"&&<section className="resource-view"'),
+        "Settings": ('view:"setup"', 'view==="setup"&&<WorkspaceSettingsPanel'),
     }
     for label, tokens in expected.items():
         assert f'label:"{label}"' in source

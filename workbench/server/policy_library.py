@@ -6,6 +6,7 @@ from typing import Any
 
 from operation_library import DEFAULT_WORKSPACES_ROOT, SHARED_WORKSPACE_ID
 from resource_relationships import relationship_ids
+from workspace_inheritance import effective_workspace_layers, layer_source
 
 POLICY_KINDS = {"model_policy", "model_policy_variant", "vendor_policy", "model_policy_entry", "model_health_observation", "model_ping_job", "model_ping_event", "benchmark_policy", "benchmark_job", "benchmark_result"}
 POLICY_STATES = {"on", "auto", "off"}
@@ -27,10 +28,8 @@ def _records(root: Path, source: str, workspace_id: str) -> list[dict[str, Any]]
 
 def load_workspace_policy_records(workspace_root: Path, *, workspaces_root: Path = DEFAULT_WORKSPACES_ROOT) -> list[dict[str, Any]]:
     combined: dict[str, dict[str, Any]] = {}
-    for record in _records(workspaces_root / SHARED_WORKSPACE_ID, "shared", SHARED_WORKSPACE_ID):
-        document = record.get("document") or {}; combined[str(document.get("id") or record["path"])] = record
-    if workspace_root.name != SHARED_WORKSPACE_ID:
-        for record in _records(workspace_root, "workspace", workspace_root.name):
+    for layer in effective_workspace_layers(workspace_root, workspaces_root):
+        for record in _records(layer, layer_source(layer, workspace_root), layer.name):
             document = record.get("document") or {}; combined[str(document.get("id") or record["path"])] = record
     return sorted(combined.values(), key=lambda record: str((record.get("document") or {}).get("label") or record["path"]).lower())
 

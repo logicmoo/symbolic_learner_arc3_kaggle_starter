@@ -15,6 +15,7 @@ from operation_library import (
     load_workspace_operation_records,
 )
 from resource_relationships import points_to, relationship_ids
+from workspace_inheritance import effective_workspace_layers, layer_source
 
 DATATYPE_DIRECTORY = "datatypes"
 REPRESENTATION_DIRECTORY = "representations"
@@ -69,12 +70,8 @@ def _records(workspace_root: Path, directory: str, kind: str, source: str, works
 
 def _effective(workspace_root: Path, directory: str, kind: str, *, workspaces_root: Path = DEFAULT_WORKSPACES_ROOT) -> list[dict[str, Any]]:
     combined: dict[str, dict[str, Any]] = {}
-    shared_root = workspaces_root / SHARED_WORKSPACE_ID
-    for record in _records(shared_root, directory, kind, "shared", SHARED_WORKSPACE_ID):
-        document = record.get("document") or {}
-        combined[str(document.get("id") or record["path"])] = record
-    if workspace_root.name != SHARED_WORKSPACE_ID:
-        for record in _records(workspace_root, directory, kind, "workspace", workspace_root.name):
+    for layer in effective_workspace_layers(workspace_root, workspaces_root):
+        for record in _records(layer, directory, kind, layer_source(layer, workspace_root), layer.name):
             document = record.get("document") or {}
             combined[str(document.get("id") or record["path"])] = record
     return sorted(combined.values(), key=lambda item: str((item.get("document") or {}).get("label") or item["path"]).lower())

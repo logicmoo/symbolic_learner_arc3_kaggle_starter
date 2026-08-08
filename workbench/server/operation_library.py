@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any, Iterable
 
 from resource_relationships import points_to, relationship_ids
+from workspace_inheritance import effective_workspace_layers, layer_source
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
@@ -69,12 +70,10 @@ def load_workspace_local_operation_resource_records(workspace_root: Path) -> lis
 
 def _effective_resources(workspace_root: Path, *, workspaces_root: Path = DEFAULT_WORKSPACES_ROOT) -> list[dict[str, Any]]:
     combined: dict[str, dict[str, Any]] = {}
-    for record in load_shared_operation_resource_records(workspaces_root):
-        document = record.get("document") or {}
-        combined[str(document.get("id") or record["path"])] = record
-    for record in load_workspace_local_operation_resource_records(workspace_root):
-        document = record.get("document") or {}
-        combined[str(document.get("id") or record["path"])] = record
+    for layer in effective_workspace_layers(workspace_root, workspaces_root):
+        for record in _operation_records(layer, layer_source(layer, workspace_root), layer.name):
+            document = record.get("document") or {}
+            combined[str(document.get("id") or record["path"])] = record
     return sorted(combined.values(), key=lambda item: str((item.get("document") or {}).get("label") or item["path"]).lower())
 
 

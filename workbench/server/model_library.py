@@ -6,6 +6,7 @@ from typing import Any
 
 from backend_library import MODEL_CATALOG_DIRECTORY, load_workspace_backend_records
 from operation_library import DEFAULT_WORKSPACES_ROOT
+from workspace_inheritance import effective_workspace_layers, layer_source
 
 SHARED_WORKSPACE_ID = "shared"
 MODEL_KINDS = {"model", "profile"}
@@ -93,10 +94,9 @@ def load_workspace_model_records(
     workspaces_root: Path = DEFAULT_WORKSPACES_ROOT,
 ) -> list[dict[str, Any]]:
     combined: dict[str, dict[str, Any]] = {}
-    for record in load_shared_model_records(workspaces_root):
-        combined[_record_key(record)] = record
-    for record in load_workspace_local_model_records(workspace_root):
-        combined[_record_key(record)] = record
+    for layer in effective_workspace_layers(workspace_root, workspaces_root):
+        for record in _model_records(layer, layer_source(layer, workspace_root), layer.name):
+            combined[_record_key(record)] = record
     return _sort_records(list(combined.values()))
 
 
