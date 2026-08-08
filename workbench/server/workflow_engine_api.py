@@ -8,6 +8,7 @@ from fastapi import APIRouter, Body, HTTPException, Query
 
 from advanced_workflow_engine import AdvancedWorkflowEngine
 from operation_resolution import materialize_workflow, materialize_workflow_step
+from pddl_plan import grounded_plan_to_workflow
 from workflow_providers import probe_capabilities, register_real_providers
 
 
@@ -73,6 +74,14 @@ def save_workflow(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
 def validate_workflow(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
     errors = engine.validate(body)
     return {'valid': not errors, 'errors': errors}
+
+
+@router.post('/workflows/import-pddl-plan')
+def import_pddl_plan(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
+    try:
+        return {'workflow': grounded_plan_to_workflow(body)}
+    except ValueError as error:
+        raise _http(error) from error
 
 
 @router.get('/workflows/{workflow_id}')
