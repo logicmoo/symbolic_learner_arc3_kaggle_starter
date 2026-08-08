@@ -37,7 +37,7 @@ export function RuntimeHistoryView({ mode, workspaceId, goals = [], plans = [], 
   const planDocs = useMemo(() => plans.map(row => row.document).filter(Boolean) as Record<string, any>[], [plans]);
   const contextDocs = useMemo(() => contexts.map(row => row.document).filter(Boolean) as Record<string, any>[], [contexts]);
   const workflowIds = useMemo(() => new Set(workflows.map(row => row.document?.id).filter(Boolean)), [workflows]);
-  const goalSpecs = goalDocs.filter(doc => doc.kind === "goal"), planSpecs = planDocs.filter(doc => doc.kind === "plan");
+  const goalSpecs = goalDocs.filter(doc => doc.kind === "goal"), planSpecs = planDocs.filter(doc => doc.kind === "planning_strategy" || doc.kind === "plan");
   const contextSpecs = contextDocs.filter(doc => doc.kind === "context");
   const availablePlanSpecs = planSpecs.filter(plan => (plan.children || []).some((childId: string) => workflowIds.has(planDocs.find(doc => doc.id === childId)?.workflow)));
   const [goalId, setGoalId] = useState(""), [goalVariantId, setGoalVariantId] = useState("");
@@ -45,7 +45,7 @@ export function RuntimeHistoryView({ mode, workspaceId, goals = [], plans = [], 
   const [contextId, setContextId] = useState(""), [contextVariantId, setContextVariantId] = useState("");
   const [inputs, setInputs] = useState("{}"), [humanValues, setHumanValues] = useState("{}");
   const goalVariants = goalDocs.filter(doc => doc.kind === "goal_variant" && (doc.parents || []).includes(goalId));
-  const planVariants = planDocs.filter(doc => doc.kind === "plan_variant" && (doc.parents || []).includes(planId) && workflowIds.has(doc.workflow));
+  const planVariants = planDocs.filter(doc => (doc.kind === "planning_strategy_variant" || doc.kind === "plan_variant") && (doc.parents || []).includes(planId) && workflowIds.has(doc.workflow));
   const contextVariants = contextDocs.filter(doc => doc.kind === "context_variant" && (doc.parents || []).includes(contextId));
 
   const refresh = async () => {

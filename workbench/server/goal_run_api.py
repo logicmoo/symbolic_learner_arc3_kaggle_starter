@@ -76,7 +76,7 @@ def start_goal_run(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
         goal_variant = _select_variant(goals, goal_id, body.get("goalVariantId"))
         plan = plans.get(plan_id)
         if not plan or goal_id not in (plan.get("goals") or []):
-            raise ValueError(f"plan {plan_id} does not pursue goal {goal_id}")
+            raise ValueError(f"planning strategy {plan_id} does not pursue goal {goal_id}")
         plan_variant = _select_variant(plans, plan_id, body.get("planVariantId"))
         context_id = str(body.get("contextId") or "") or None
         context_variant = None
@@ -87,7 +87,7 @@ def start_goal_run(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
             context_variant = _select_variant(contexts, context_id, body.get("contextVariantId"))
         workflow_id = str(plan_variant.get("workflow") or "")
         if not workflow_id:
-            raise ValueError(f"plan variant has no workflow: {plan_variant['id']}")
+            raise ValueError(f"planning strategy variant has no workflow/plan: {plan_variant['id']}")
         try:
             workflow = engine.get_workflow(workflow_id)
         except KeyError:

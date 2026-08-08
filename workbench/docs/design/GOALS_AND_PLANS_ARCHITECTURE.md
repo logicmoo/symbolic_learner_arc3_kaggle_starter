@@ -18,10 +18,11 @@ Goal + AtomSpaces + Planning Strategy
                 Workflow Run
 ```
 
-Current compatibility relationships are:
+Resource relationships are:
 
 - `goal` → `goal_interpretation` or `goal_variant`
-- `plan` → `plan_variant` (displayed as Planning Strategy and Strategy Variant)
+- `planning_strategy` → `planning_strategy_variant`
+- legacy `plan` → `plan_variant` resources are accepted as read-compatible aliases
 - a strategy variant may select or generate a `workflow`
 - Goal Runs reference the selected Goal variant, Strategy variant, Context, Workflow, and Workflow Run
 

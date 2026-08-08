@@ -24,6 +24,8 @@ KIND_DIRECTORIES = {
     "operation_implementation": "operation_implementations",
     "plan": "plans",
     "plan_variant": "plan_variants",
+    "planning_strategy": "planning_strategies",
+    "planning_strategy_variant": "planning_strategy_variants",
     "profile": "profiles",
     "prompt": "prompts",
     "prompt_implementation": "prompt_implementations",

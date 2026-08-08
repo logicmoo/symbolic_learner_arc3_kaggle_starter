@@ -11,6 +11,7 @@ WORKSPACES = ROOT / "workbench" / "workspaces"
 FAMILIES = {
     "goal_variant": "goal",
     "plan_variant": "plan",
+    "planning_strategy_variant": "planning_strategy",
     "context_variant": "context",
     "operation_implementation": "operation",
     "prompt_implementation": "prompt",

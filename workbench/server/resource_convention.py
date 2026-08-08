@@ -27,6 +27,8 @@ KNOWN_RESOURCE_KINDS = {
     "goal_variant",
     "plan",
     "plan_variant",
+    "planning_strategy",
+    "planning_strategy_variant",
     "context",
     "context_variant",
     "profile",
@@ -86,6 +88,8 @@ def infer_resource_kind(path: Path, document: dict[str, Any]) -> str:
         return "workflow"
     if parent in {"goals", "goal_interpretations", "goal_variants"}:
         return "goal_variant" if document.get("parents") else "goal"
+    if parent in {"planning_strategies", "planning_strategy_variants"}:
+        return "planning_strategy_variant" if document.get("parents") else "planning_strategy"
     if parent in {"plans", "plan_variants"}:
         return "plan_variant" if document.get("parents") else "plan"
     if parent in {"contexts", "context_variants", "atomspaces", "atomspace_variants"}:

@@ -7,8 +7,8 @@ import "../styles/operation_editor.css";
 
 type Family = "goal" | "plan" | "context";
 type Source = "shared" | "workspace";
-type Specification = { kind: Family; id: string; label?: string; description?: string; children?: string[]; preferredChild?: string; goals?: string[]; successCriteria?: string[]; bindings?: string[]; [key: string]: unknown };
-type Variant = { kind: "goal_interpretation" | "goal_variant" | "plan_variant" | "context_variant"; id: string; parents: string[]; label?: string; description?: string; workflow?: string; [key: string]: unknown };
+type Specification = { kind: Family | "planning_strategy"; id: string; label?: string; description?: string; children?: string[]; preferredChild?: string; goals?: string[]; successCriteria?: string[]; bindings?: string[]; [key: string]: unknown };
+type Variant = { kind: "goal_interpretation" | "goal_variant" | "planning_strategy_variant" | "plan_variant" | "context_variant"; id: string; parents: string[]; label?: string; description?: string; workflow?: string; [key: string]: unknown };
 type Resource = Specification | Variant;
 type RecordFile<T> = { path: string; source?: Source; workspaceId?: string; document?: T; error?: string };
 type Hierarchy = { specifications: RecordFile<Specification>[]; variants: RecordFile<Variant>[]; variantsBySpecification: Record<string, RecordFile<Variant>[]> };
@@ -26,10 +26,11 @@ async function request(path: string, init?: RequestInit) {
 }
 
 export function GoalPlanLibraryEditor({ workspaceId, family }: { workspaceId: string; family: Family }) {
-  const directory = family === "goal" ? "goals" : family === "plan" ? "plans" : "contexts";
+  const directory = family === "goal" ? "goals" : family === "plan" ? "planning_strategies" : "contexts";
   const specificationDirectory = family === "context" ? "design/atomspaces" : `design/${directory}`;
-  const variantDirectory = family === "goal" ? "design/goal_variants" : family === "plan" ? "design/plan_variants" : "design/atomspace_variants";
-  const variantKind = family === "goal" ? "goal_variant" : family === "plan" ? "plan_variant" : "context_variant";
+  const variantDirectory = family === "goal" ? "design/goal_variants" : family === "plan" ? "design/planning_strategy_variants" : "design/atomspace_variants";
+  const variantKind = family === "goal" ? "goal_variant" : family === "plan" ? "planning_strategy_variant" : "context_variant";
+  const parentKind = family === "plan" ? "planning_strategy" : family;
   const familyLabel = family === "goal" ? "Goal" : family === "plan" ? "Planning Strategy" : "AtomSpace";
   const [payload, setPayload] = useState<Payload | null>(null);
   const [openDocs, setOpenDocs] = useState<OpenDocument[]>([]);
@@ -59,7 +60,7 @@ export function GoalPlanLibraryEditor({ workspaceId, family }: { workspaceId: st
 
   const newSpecification = () => {
     const id = `new_${family}`;
-    const document: Specification = { kind: family, id, label: `New ${familyLabel}`, description: family === "plan" ? "Strategy for selecting, generating, or adapting an executable workflow (a PDDL plan in PDDL terminology)." : `Abstract ${family} specification.`, children: [], ...(family === "goal" ? { successCriteria: [] } : family === "plan" ? { goals: [] } : { bindings: [] }) };
+    const document: Specification = { kind: parentKind, id, label: `New ${familyLabel}`, description: family === "plan" ? "Strategy for selecting, generating, or adapting an executable workflow (a PDDL plan in PDDL terminology)." : `Abstract ${family} specification.`, children: [], ...(family === "goal" ? { successCriteria: [] } : family === "plan" ? { goals: [] } : { bindings: [] }) };
     open({ path: `${specificationDirectory}/${id}.${family}.json`, source: workspaceId === "shared" ? "shared" : "workspace", workspaceId, document });
   };
   const newVariant = (parent: Specification) => {
@@ -70,7 +71,7 @@ export function GoalPlanLibraryEditor({ workspaceId, family }: { workspaceId: st
   const saveDoc = (doc: OpenDocument) => perform(async () => {
     let document: Resource;
     try { document = JSON.parse(doc.source) as Resource; } catch { throw new Error(`${familyLabel} resource source is invalid`); }
-    const kinds = family === "goal" ? ["goal", "goal_interpretation", "goal_variant"] : family === "plan" ? ["plan", "plan_variant"] : ["context", "context_variant"];
+    const kinds = family === "goal" ? ["goal", "goal_interpretation", "goal_variant"] : family === "plan" ? ["planning_strategy", "planning_strategy_variant", "plan", "plan_variant"] : ["context", "context_variant"];
     if (!document.id || !kinds.includes(document.kind)) throw new Error(`${familyLabel} resource requires id and a valid kind`);
     if (document.kind !== family && !relationshipIds((document as Variant).parents).length) throw new Error(`${familyLabel} variant requires parents`);
     const targetDirectory = document.kind === family ? specificationDirectory : variantDirectory;
@@ -84,8 +85,9 @@ export function GoalPlanLibraryEditor({ workspaceId, family }: { workspaceId: st
   const renderEditor = (doc: OpenDocument, secondary = false) => {
     let document: Resource | null = null;
     try { document = doc.source ? JSON.parse(doc.source) as Resource : null; } catch { document = null; }
-    const parent = document?.kind === family ? document as Specification : null;
-    const variant = document && document.kind !== family ? document as Variant : null;
+    const isParent = document?.kind === family || (family === "plan" && document?.kind === "planning_strategy");
+    const parent = isParent ? document as Specification : null;
+    const variant = document && !isParent ? document as Variant : null;
     const alternatives = parent ? children[parent.id] || [] : [];
     const patchParent = (patch: Partial<Specification>) => parent && updateSource(doc.key, JSON.stringify({ ...parent, ...patch }, null, 2));
     const setPreferred = (id: string) => { if (!parent) return; const children = alternatives.map(row => row.document?.id).filter(Boolean) as string[]; patchParent({ preferredChild: id || undefined, children }); };
@@ -94,6 +96,6 @@ export function GoalPlanLibraryEditor({ workspaceId, family }: { workspaceId: st
 
   if (!payload) return <section className="resource-view"><div className="studio-empty">Loading {directory}…</div></section>;
   const leftPane = <>{ordered.map(record => { const item = record.document; if (!item) return null; const alternatives = children[item.id] || []; return <ArtifactTreeBranch key={item.id} label={item.label || item.id} searchValue={item} header={<div className="inheritance-row"><button className={`operation-tree-row operation-parent ${active?.record.document?.id === item.id ? "selected" : ""}`} onClick={() => open(record as RecordFile<Resource>)}><span className="operation-kind-badge">{familyLabel.toUpperCase()}</span><span><b>{item.label || item.id}</b><small>{item.description || item.id}</small></span><em>{alternatives.length} alternatives</em></button><button className="hier-mini" onClick={() => newVariant(item)}>+ alt</button></div>}>{alternatives.length ? alternatives.map(row => { const child = row.document!; const preferred = item.preferredChild === child.id; return <button className={`operation-tree-row operation-child ${active?.record.document?.id === child.id ? "selected" : ""}`} key={child.id} data-tree-search={JSON.stringify(child)} onClick={() => open(row as RecordFile<Resource>)}><span className="operation-kind-badge llm">ALT</span><span><b>{child.label || child.id}</b><small>{child.description || child.id}</small></span><em>{preferred ? "preferred" : ""}</em></button>; }) : undefined}</ArtifactTreeBranch>; })}</>;
-  const tabs = openDocs.map(doc => ({ key: doc.key, kind: doc.record.document?.kind === family ? familyLabel.toUpperCase() : "ALT", label: doc.record.document?.label || doc.record.document?.id || doc.record.path, dirty: doc.dirty }));
+  const tabs = openDocs.map(doc => ({ key: doc.key, kind: doc.record.document?.kind === family || (family === "plan" && doc.record.document?.kind === "planning_strategy") ? familyLabel.toUpperCase() : "ALT", label: doc.record.document?.label || doc.record.document?.id || doc.record.path, dirty: doc.dirty }));
   return <HierarchyResourceEditor eyebrow={`${familyLabel.toUpperCase()} CONTRACT SYSTEM`} title={`${familyLabel}s & alternatives`} description={family === "plan" ? "Strategies guide planners; the concrete human- or machine-produced plan is stored and executed as a Workflow." : `Abstract ${directory} and concrete variants are separate inherited filesystem resources.`} headerActions={<button onClick={newSpecification}>+ Abstract {familyLabel.toLowerCase()}</button>} error={error} onDismissError={() => setError(null)} leftPane={leftPane} tabs={tabs} activeKey={activeKey} compareKey={compareKey} onActivate={setActiveKey} onClose={close} renderEditor={(key, secondary) => { const doc = openDocs.find(item => item.key === key); return doc ? renderEditor(doc, secondary) : null; }} emptyEditor={<div className="studio-empty">Select or create a {familyLabel.toLowerCase()}.</div>} footer={<div className="demo-notice"><b>Filesystem hierarchy</b><span>{specifications.length} specification(s) · {variants.length} variants · shared inheritance with workspace overrides.</span></div>} />;
 }

@@ -10,6 +10,7 @@ if str(SERVER) not in sys.path:
 
 from goal_plan_library import load_workspace_symbolic_records, symbolic_hierarchy
 from resource_convention import canonical_resource_path
+from resource_store import get_filesystem_provider
 
 
 def _write(root: Path, workspace: str, directory: str, name: str, document: str) -> None:
@@ -32,11 +33,11 @@ def test_goal_resources_inherit_shared_and_allow_workspace_overrides(tmp_path: P
 
 
 def test_plan_variant_requires_parent_and_canonical_suffix(tmp_path: Path) -> None:
-    _write(tmp_path, "shared", "plans", "broken.plan_variant.json", '{"kind":"plan_variant","id":"broken"}')
+    _write(tmp_path, "shared", "planning_strategy_variants", "broken.planning_strategy_variant.json", '{"kind":"planning_strategy_variant","id":"broken"}')
     records = load_workspace_symbolic_records(tmp_path / "shared", "plan", workspaces_root=tmp_path)
     assert "Variant requires parents" in records[0]["error"]
-    path = canonical_resource_path(Path("plans/draft.json"), {"kind": "plan_variant", "id": "route.fast", "parents": ["route"]})
-    assert path.as_posix() == "plans/route.fast.plan_variant.json"
+    path = canonical_resource_path(Path("planning_strategy_variants/draft.json"), {"kind": "planning_strategy_variant", "id": "route.fast", "parents": ["route"]})
+    assert path.as_posix() == "planning_strategy_variants/route.fast.planning_strategy_variant.json"
 
 
 def test_shared_workspace_contains_goal_and_plan_examples() -> None:
@@ -44,16 +45,17 @@ def test_shared_workspace_contains_goal_and_plan_examples() -> None:
     goals = load_workspace_symbolic_records(shared, "goal")
     plans = load_workspace_symbolic_records(shared, "plan")
     assert {record["document"]["kind"] for record in goals} == {"goal", "goal_variant"}
-    assert {record["document"]["kind"] for record in plans} == {"plan", "plan_variant"}
+    assert {record["document"]["kind"] for record in plans} == {"planning_strategy", "planning_strategy_variant"}
 
 
 def test_shared_design_examples_are_domain_neutral_and_runnable() -> None:
     shared = ROOT / "workbench" / "workspaces" / "shared"
-    design_dirs = [shared / name for name in ("goals", "plans", "contexts", "workflows")]
-    documents = [json.loads(path.read_text(encoding="utf-8")) for directory in design_dirs for path in directory.glob("*.json")]
+    resources = get_filesystem_provider()
+    design_dirs = [shared / "design" / name for name in ("goals", "planning_strategies", "planning_strategy_variants", "workflows")]
+    documents = [document for directory in design_dirs for path in directory.glob("*.metta") for document in resources.read_json_documents(path.with_suffix(".json"))]
     assert not any("arc3" in json.dumps(document).lower() for document in documents)
     workflow_ids = {document["id"] for document in documents if document.get("kind") == "workflow"}
-    referenced = {document["workflow"] for document in documents if document.get("kind") == "plan_variant"}
+    referenced = {document["workflow"] for document in documents if document.get("kind") == "planning_strategy_variant"}
     assert referenced <= workflow_ids
 
 

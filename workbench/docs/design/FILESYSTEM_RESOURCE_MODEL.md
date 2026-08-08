@@ -16,7 +16,7 @@ Current conventions include:
 - `backend` / `model` / `profile`
 - `workflow`
 - `goal` / `goal_variant`
-- `plan` / `plan_variant`
+- `planning_strategy` / `planning_strategy_variant` (`plan` / `plan_variant` remain readable legacy aliases)
 - `context` / `context_variant`
 - `model_policy` / `model_policy_variant`
 - `benchmark_policy` / `benchmark_result`
