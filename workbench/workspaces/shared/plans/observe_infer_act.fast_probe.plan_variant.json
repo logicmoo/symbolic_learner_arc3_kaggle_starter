@@ -3,7 +3,7 @@
   "id": "observe_infer_act.fast_probe",
   "label": "Fast Probe",
   "description": "Use short exploratory sequences to identify mechanics quickly.",
-  "workflow": "arc3_learn_by_observation",
+  "workflow": "vision_learn_by_observation",
   "strategy": {
     "maxUnverifiedActions": 3,
     "requireExplanation": false,

@@ -25,15 +25,23 @@ def make_layers(tmp_path: Path, *, transitive: bool) -> tuple[Path, Path]:
     for workspace_id in ("shared", "base", "middle", "current"):
         (tmp_path / workspace_id).mkdir()
     write_json(tmp_path / "middle" / "workspace.json", {"kind": "workspace", "includes": [{"workspaceId": "base", "includeInherited": True}]})
-    write_json(tmp_path / "current" / "workspace.json", {"kind": "workspace", "includes": [{"workspaceId": "middle", "includeInherited": transitive}]})
+    write_json(tmp_path / "current" / "workspace.json", {"kind": "workspace", "includes": [{"workspaceId": "shared", "includeInherited": True}, {"workspaceId": "middle", "includeInherited": transitive}]})
     return tmp_path / "current", tmp_path
 
 
 def test_transitive_inheritance_is_explicit_and_ordered(tmp_path: Path) -> None:
     current, root = make_layers(tmp_path, transitive=False)
     assert [item.name for item in effective_workspace_layers(current, root)] == ["shared", "middle", "current"]
-    write_json(current / "workspace.json", {"kind": "workspace", "includes": [{"workspaceId": "middle", "includeInherited": True}]})
+    write_json(current / "workspace.json", {"kind": "workspace", "includes": [{"workspaceId": "shared", "includeInherited": True}, {"workspaceId": "middle", "includeInherited": True}]})
     assert [item.name for item in effective_workspace_layers(current, root)] == ["shared", "base", "middle", "current"]
+
+
+def test_shared_is_default_but_can_be_removed(tmp_path: Path) -> None:
+    shared = tmp_path / "shared"; current = tmp_path / "current"
+    shared.mkdir(); current.mkdir()
+    assert [item.name for item in effective_workspace_layers(current, tmp_path)] == ["shared", "current"]
+    write_json(current / "workspace.json", {"kind": "workspace", "includes": []})
+    assert [item.name for item in effective_workspace_layers(current, tmp_path)] == ["current"]
 
 
 def test_every_resource_family_uses_the_same_included_layers(tmp_path: Path) -> None:

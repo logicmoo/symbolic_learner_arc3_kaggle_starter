@@ -168,6 +168,8 @@ DESIGN
 
 \- Datatypes
 
+\- AtomSpaces
+
 \- Prompts
 
 \- Models
@@ -186,6 +188,8 @@ RUNTIME
 
 \- States
 
+\- Contexts
+
 \- Logs
 
 
@@ -195,8 +199,6 @@ SYSTEM
 \- Model Policy
 
 \- Benchmarks
-
-\- Contexts
 
 \- Settings
 

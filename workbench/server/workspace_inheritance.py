@@ -24,7 +24,11 @@ def read_workspace_metadata(root: Path) -> dict[str, Any]:
 
 
 def declared_include_specs(root: Path) -> list[dict[str, Any]]:
-    raw = read_workspace_metadata(root).get("includes") or []
+    if root.name == SHARED_WORKSPACE_ID:
+        return []
+    metadata = read_workspace_metadata(root)
+    default_includes = [{"workspaceId": SHARED_WORKSPACE_ID, "includeInherited": True}] if (root.parent / SHARED_WORKSPACE_ID).is_dir() else []
+    raw = metadata.get("includes") if "includes" in metadata else default_includes
     if not isinstance(raw, list):
         return []
     result: list[dict[str, Any]] = []
@@ -35,7 +39,7 @@ def declared_include_specs(root: Path) -> list[dict[str, Any]]:
         else:
             workspace_id = str(value).strip()
             include_inherited = True
-        if workspace_id and workspace_id != SHARED_WORKSPACE_ID and not any(item["workspaceId"] == workspace_id for item in result):
+        if workspace_id and not any(item["workspaceId"] == workspace_id for item in result):
             result.append({"workspaceId": workspace_id, "includeInherited": include_inherited})
     return result
 
@@ -45,7 +49,7 @@ def declared_includes(root: Path) -> list[str]:
 
 
 def effective_workspace_layers(workspace_root: Path, workspaces_root: Path) -> list[Path]:
-    """Return lowest-to-highest precedence roots, with Shared always first."""
+    """Return lowest-to-highest precedence roots from declared/default inclusions."""
     workspace_root = workspace_root.resolve()
     workspaces_root = workspaces_root.resolve()
     if workspace_root.name == SHARED_WORKSPACE_ID:
@@ -71,9 +75,6 @@ def effective_workspace_layers(workspace_root: Path, workspaces_root: Path) -> l
         visiting.pop()
         result.append(root)
 
-    shared_root = workspaces_root / SHARED_WORKSPACE_ID
-    if shared_root.is_dir():
-        visit(shared_root)
     for spec in declared_include_specs(workspace_root):
         visit(workspaces_root / spec["workspaceId"], spec["includeInherited"])
     visit(workspace_root)

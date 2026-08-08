@@ -27,7 +27,7 @@ async function request(path: string, init?: RequestInit) {
 export function GoalPlanLibraryEditor({ workspaceId, family }: { workspaceId: string; family: Family }) {
   const directory = family === "goal" ? "goals" : family === "plan" ? "plans" : "contexts";
   const variantKind = family === "goal" ? "goal_variant" : family === "plan" ? "plan_variant" : "context_variant";
-  const familyLabel = family === "goal" ? "Goal" : family === "plan" ? "Plan" : "Context";
+  const familyLabel = family === "goal" ? "Goal" : family === "plan" ? "Plan" : "AtomSpace";
   const [payload, setPayload] = useState<Payload | null>(null);
   const [openDocs, setOpenDocs] = useState<OpenDocument[]>([]);
   const [activeKey, setActiveKey] = useState<string | null>(null);

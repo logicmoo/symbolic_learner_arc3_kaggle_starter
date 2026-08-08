@@ -1,4 +1,5 @@
 from pathlib import Path
+import json
 import sys
 
 
@@ -46,13 +47,23 @@ def test_shared_workspace_contains_goal_and_plan_examples() -> None:
     assert {record["document"]["kind"] for record in plans} == {"plan", "plan_variant"}
 
 
+def test_shared_design_examples_are_domain_neutral_and_runnable() -> None:
+    shared = ROOT / "workbench" / "workspaces" / "shared"
+    design_dirs = [shared / name for name in ("goals", "plans", "contexts", "workflows")]
+    documents = [json.loads(path.read_text(encoding="utf-8")) for directory in design_dirs for path in directory.glob("*.json")]
+    assert not any("arc3" in json.dumps(document).lower() for document in documents)
+    workflow_ids = {document["id"] for document in documents if document.get("kind") == "workflow"}
+    referenced = {document["workflow"] for document in documents if document.get("kind") == "plan_variant"}
+    assert referenced <= workflow_ids
+
+
 def test_shared_workspace_contains_bidirectional_context_examples() -> None:
     shared = ROOT / "workbench" / "workspaces" / "shared"
     contexts = load_workspace_symbolic_records(shared, "context")
     by_id = {record["document"]["id"]: record["document"] for record in contexts}
     assert {document["kind"] for document in by_id.values()} == {"context", "context_variant"}
-    assert by_id["arc3_analysis"]["children"] == ["arc3_analysis.default"]
-    assert by_id["arc3_analysis.default"]["parents"] == ["arc3_analysis"]
+    assert by_id["vision_analysis"]["children"] == ["vision_analysis.default"]
+    assert by_id["vision_analysis.default"]["parents"] == ["vision_analysis"]
 
 
 def test_goal_plan_editor_preserves_rich_hierarchy_features() -> None:
@@ -67,7 +78,7 @@ def test_goal_plan_and_context_pages_load_their_shared_right_panel_docs() -> Non
     page_source = (ROOT / "workbench" / "frontend" / "src" / "pages" / "FilesystemWorkbenchPage.tsx").read_text(encoding="utf-8")
     assert '{id:"goals",label:"Goals",path:"docs/goals.md"}' in help_source
     assert '{id:"plans",label:"Plans",path:"docs/plans.md"}' in help_source
-    assert '{id:"contexts",label:"Contexts",path:"docs/contexts.md"}' in help_source
+    assert '{id:"contexts",label:"AtomSpaces",path:"docs/contexts.md"}' in help_source
     assert 'ReactMarkdown' in help_source
     assert 'remarkGfm' in help_source
     assert '<pre className="mini-code relationship-markdown">' not in help_source

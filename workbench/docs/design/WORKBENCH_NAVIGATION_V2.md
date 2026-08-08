@@ -15,6 +15,7 @@ Navigation V2 organizes the active filesystem-backed workbench by lifecycle with
 | Design | Workflows | Existing workflow canvas and source editor |
 | Design | Operations | Existing `OperationLibraryEditor` |
 | Design | Datatypes | Existing `DataCatalogPanel` |
+| Design | AtomSpaces | Hierarchical filesystem AtomSpace declarations and alternatives |
 | Design | Prompts | Existing `PromptLibraryEditor` |
 | Design | Models | Existing `LlmModelsEditor` |
 | Runtime | Goal Runs | Durable Goal/Plan/Context-to-workflow pursuit records |
@@ -22,11 +23,15 @@ Navigation V2 organizes the active filesystem-backed workbench by lifecycle with
 | Runtime | Execs | Step attempts across persistent runs |
 | Runtime | Events | Durable engine event history |
 | Runtime | States | Persisted workflow artifacts/state values |
+| Runtime | Contexts | Resolved AtomSpace bindings captured for Goal and Workflow Runs |
 | Runtime | Logs | Persistent operation logs |
 | System | Model Policy | Filesystem registry, policy, health, and eligibility UI |
 | System | Benchmarks | Executable filesystem benchmark definitions/results |
-| System | Contexts | Hierarchical context and binding editor |
 | System | Settings | Existing workspace setup surface |
+
+## Workspace Composition
+
+`Default` is the editable minimal starter template copied by **Create A New Workspace**. `Shared` is an editable reusable library selected by default for new workspaces, but it is removable. A workspace may include any ordered combination of other workspace libraries and can choose whether each inclusion also brings its inherited layers.
 
 ## Implementation Constraints
 

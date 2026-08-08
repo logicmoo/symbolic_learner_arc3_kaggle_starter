@@ -4,7 +4,7 @@
   "label": "Observe, Infer, Act",
   "description": "Convert observations into symbolic hypotheses, choose an action, and record the transition.",
   "goals": [
-    "solve_arc3_game"
+    "understand_visual_world"
   ],
   "children": [
     "observe_infer_act.conservative_loop",

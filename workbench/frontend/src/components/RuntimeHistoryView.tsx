@@ -15,7 +15,7 @@ type GoalRun = {
   id: string; goalId: string; goalVariantId?: string; planId: string; planVariantId: string;
   contextId?: string; contextVariantId?: string; workflowRunId: string; status: string; createdAt?: string; workflowRun: RuntimeRun;
 };
-type Mode = "goalRuns" | "workflowRuns" | "execs" | "events" | "states" | "logs";
+type Mode = "goalRuns" | "workflowRuns" | "execs" | "events" | "states" | "runtimeContexts" | "logs";
 
 async function api(path: string, init?: RequestInit) {
   const response = await fetch(path, { headers: { "Content-Type": "application/json" }, ...init });
@@ -107,7 +107,7 @@ export function RuntimeHistoryView({ mode, workspaceId, goals = [], plans = [], 
       onSelectRun?.(payload.run); await refresh();
     } catch (reason) { setError(String(reason)); } finally { setBusy(false); }
   };
-  const title = { goalRuns: "Goal Runs", workflowRuns: "Workflow Runs", execs: "Execs", events: "Events", states: "States", logs: "Logs" }[mode];
+  const title = { goalRuns: "Goal Runs", workflowRuns: "Workflow Runs", execs: "Execs", events: "Events", states: "States", runtimeContexts: "Contexts", logs: "Logs" }[mode];
 
   if (mode === "goalRuns") return <section className="resource-view runtime-history-view">
     <div className="resource-heading"><div><span>DURABLE RUNTIME</span><h1>Goal Runs</h1><p>Goals, selected variants, plans, contexts, and workflow execution are linked in persistent records.</p></div><button onClick={refresh}>Refresh</button></div>
@@ -131,6 +131,7 @@ export function RuntimeHistoryView({ mode, workspaceId, goals = [], plans = [], 
     : mode === "execs" ? runs.flatMap(run => run.steps.map(step => ({ key: `${run.id}:${step.stepId}`, a: step.stepId, b: step.status, c: `attempt ${step.attempt || 0}`, d: run.id.slice(0, 8), e: step.error || "—", run })))
     : mode === "events" ? runs.flatMap(run => run.events.map(event => ({ key: `${run.id}:${event.id}`, a: event.kind, b: event.stepId || "workflow", c: stamp(event.createdAt), d: run.id.slice(0, 8), e: JSON.stringify(event.payload || {}), run })))
     : mode === "states" ? runs.flatMap(run => run.artifacts.map(item => ({ key: item.id, a: item.name, b: item.datatype || "Any", c: item.stepId || "input", d: run.id.slice(0, 8), e: JSON.stringify(item.payload), run })))
+    : mode === "runtimeContexts" ? goalRuns.filter(item => item.contextId).map(item => ({ key: `context:${item.id}`, a: item.contextVariantId || item.contextId || "context", b: item.status, c: stamp(item.createdAt), d: item.workflowRunId.slice(0, 8), e: item.contextId || "—", run: item.workflowRun }))
     : runs.flatMap(run => run.logs.map(log => ({ key: `${run.id}:${log.id}`, a: log.stream, b: log.stepId || "workflow", c: stamp(log.createdAt), d: run.id.slice(0, 8), e: log.message, run })));
   return <section className="resource-view runtime-history-view">
     <div className="resource-heading"><div><span>PERSISTENT ENGINE HISTORY</span><h1>{title}</h1><p>Records are loaded from the durable workflow-engine database across application sessions.</p></div><button onClick={refresh}>Refresh</button></div>

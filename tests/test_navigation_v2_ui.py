@@ -32,6 +32,7 @@ def test_navigation_v2_has_required_groups_and_labels() -> None:
         "Logs",
         "Model Policy",
         "Benchmarks",
+        "AtomSpaces",
         "Contexts",
         "Settings",
     ):
@@ -50,7 +51,7 @@ def test_navigation_reuses_current_rich_editors() -> None:
     expected = {
         "Goals": ('view:"goals"', 'view==="goals"&&<GoalPlanLibraryEditor workspaceId={workspace.id} family="goal"'),
         "Plans": ('view:"plans"', 'view==="plans"&&<GoalPlanLibraryEditor workspaceId={workspace.id} family="plan"'),
-        "Contexts": ('view:"contexts"', 'view==="contexts"&&<GoalPlanLibraryEditor workspaceId={workspace.id} family="context"'),
+        "AtomSpaces": ('view:"contexts"', 'view==="contexts"&&<GoalPlanLibraryEditor workspaceId={workspace.id} family="context"'),
         "Operations": ('view:"operations"', 'view==="operations"&&<OperationLibraryEditor'),
         "Datatypes": ('view:"data"', 'view==="data"&&<DataCatalogPanel'),
         "Prompts": ('view:"prompts"', 'view==="prompts"&&<PromptLibraryEditor'),
@@ -72,6 +73,7 @@ def test_pending_pages_are_derived_from_workspace_or_runtime_state() -> None:
     assert '<RuntimeHistoryView mode="execs"' in source
     assert '<RuntimeHistoryView mode="events"' in source
     assert '<RuntimeHistoryView mode="states"' in source
+    assert '<RuntimeHistoryView mode="runtimeContexts"' in source
     assert '<RuntimeHistoryView mode="logs"' in source
 
 

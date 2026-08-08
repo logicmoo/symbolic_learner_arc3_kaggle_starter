@@ -103,14 +103,14 @@ def test_durable_run_history_and_goal_run_linkage(tmp_path: Path) -> None:
     workflow_run = e.start('goal_flow', {})
     goal_run = e.create_goal_run(
         'default', 'solve', 'solve.safe', 'observe', 'observe.default',
-        'arc3_analysis', 'arc3_analysis.default', workflow_run['id'],
+        'vision_analysis', 'vision_analysis.default', workflow_run['id'],
     )
     assert goal_run['status'] == 'completed'
     assert goal_run['workflowRunId'] == workflow_run['id']
     assert e.list_runs()[0]['id'] == workflow_run['id']
     assert e.list_goal_runs('default')[0]['goalVariantId'] == 'solve.safe'
-    assert e.get_goal_run(goal_run['id'])['contextId'] == 'arc3_analysis'
-    assert e.get_goal_run(goal_run['id'])['contextVariantId'] == 'arc3_analysis.default'
+    assert e.get_goal_run(goal_run['id'])['contextId'] == 'vision_analysis'
+    assert e.get_goal_run(goal_run['id'])['contextVariantId'] == 'vision_analysis.default'
 
     reopened = WorkflowEngine(tmp_path / 'engine.db', default_registry())
-    assert reopened.list_goal_runs('default')[0]['contextVariantId'] == 'arc3_analysis.default'
+    assert reopened.list_goal_runs('default')[0]['contextVariantId'] == 'vision_analysis.default'

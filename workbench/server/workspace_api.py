@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 import os
+import re
+import shutil
 from pathlib import Path
 from typing import Any
 
@@ -176,8 +178,8 @@ def _normalize_include_specs(workspace: dict[str, Any], raw: Any) -> list[dict[s
         if not isinstance(value, dict):
             raise ValueError("Each include must contain workspaceId and includeInherited")
         included_id = str(value.get("workspaceId") or "").strip()
-        if not included_id or included_id in {SHARED_WORKSPACE_ID, workspace["id"]}:
-            raise ValueError("Shared is automatic and a workspace cannot include itself")
+        if not included_id or included_id == workspace["id"]:
+            raise ValueError("A workspace cannot include itself")
         if included_id not in available:
             raise ValueError(f"Included workspace does not exist: {included_id}")
         if any(item["workspaceId"] == included_id for item in result):
@@ -306,6 +308,44 @@ def _load_prompt_library(workspace: dict[str, Any]) -> dict[str, list[dict[str, 
 @router.get("")
 def list_workspaces() -> dict[str, Any]:
     return {"workspaceRoots": [str(path) for path in _workspace_roots()], "workspaces": discover_workspaces()}
+
+
+@router.post("", status_code=201)
+def create_workspace(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
+    label = str(body.get("label") or "").strip()
+    requested_id = str(body.get("id") or label).strip().lower()
+    workspace_id = re.sub(r"[^a-z0-9]+", "_", requested_id).strip("_")
+    if not label or not workspace_id:
+        raise HTTPException(status_code=400, detail="A workspace label is required")
+    if workspace_id in {"shared", "default"}:
+        raise HTTPException(status_code=400, detail="That workspace id is reserved")
+    template_id = str(body.get("templateWorkspaceId") or "default").strip()
+    try:
+        template_workspace = _resolve_workspace(template_id)
+    except KeyError as error:
+        raise HTTPException(status_code=400, detail=f"Template workspace not found: {template_id}") from error
+    container = _workspace_roots()[0]
+    template = Path(template_workspace["root"])
+    target = container / workspace_id
+    if target.exists():
+        raise HTTPException(status_code=409, detail=f"Workspace already exists: {workspace_id}")
+    if not template.is_dir():
+        raise HTTPException(status_code=500, detail="Workspace template is missing")
+    try:
+        shutil.copytree(template, target, ignore=shutil.ignore_patterns(*IGNORED_DIRECTORIES))
+        metadata = {
+            "kind": "workspace",
+            "id": workspace_id,
+            "label": label,
+            "description": str(body.get("description") or f"Workspace created from {template_workspace['label']}."),
+            "includes": declared_include_specs(template),
+        }
+        (target / "workspace.json").write_text(json.dumps(metadata, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        return {"workspace": _workspace_from_directory(target), "templateWorkspaceId": template_workspace["id"]}
+    except OSError as error:
+        if target.exists():
+            shutil.rmtree(target, ignore_errors=True)
+        raise HTTPException(status_code=500, detail=str(error)) from error
 
 
 @router.get("/{workspace_id}")

@@ -102,6 +102,64 @@
   border-color: var(--violet);
 }
 
+.workspace-card.default-workspace-card {
+  border-color: #386171;
+}
+
+.create-workspace-card {
+  cursor: default;
+  border-style: dashed;
+}
+
+.create-workspace-card:hover {
+  transform: none;
+}
+
+.create-workspace-card input {
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0 0 9px;
+  padding: 9px 10px;
+  border: 1px solid #2d4b58;
+  border-radius: 5px;
+  color: #d9e7ec;
+  background: #08151c;
+}
+
+.create-workspace-card label {
+  width: 100%;
+  margin-bottom: 9px;
+  color: #718793;
+  font: 700 8px ui-monospace, SFMono-Regular, Consolas, monospace;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.create-workspace-card select {
+  box-sizing: border-box;
+  width: 100%;
+  margin-top: 5px;
+  padding: 8px 9px;
+  border: 1px solid #2d4b58;
+  border-radius: 5px;
+  color: #d9e7ec;
+  background: #08151c;
+}
+
+.create-workspace-card button {
+  padding: 8px 12px;
+  border: 1px solid #277d74;
+  border-radius: 5px;
+  color: #a8f0e2;
+  background: #103a37;
+  cursor: pointer;
+}
+
+.create-workspace-card button:disabled {
+  opacity: .45;
+  cursor: default;
+}
+
 .workspace-kind {
   display: inline-flex;
   margin-bottom: 12px;
