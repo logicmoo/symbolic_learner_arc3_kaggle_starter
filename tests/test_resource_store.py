@@ -1,10 +1,14 @@
 from __future__ import annotations
 
 from pathlib import Path
+import re
 
 import pytest
 
 from resource_store import FilesystemProvider, get_filesystem_provider
+
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_singleton_provider_delegates_json_files_to_disk(tmp_path: Path) -> None:
@@ -134,3 +138,25 @@ def test_provider_handles_text_binary_discovery_and_atomic_replacement(tmp_path:
     assert provider.is_file(markdown)
     assert provider.is_dir(docs)
     assert provider.stat(markdown).st_size >= len("# Guide\n")
+
+
+def test_running_server_resource_io_stays_behind_filesystem_provider() -> None:
+    """Prevent application resource code from quietly bypassing the provider boundary."""
+    forbidden = re.compile(
+        r"\.(?:read_text|write_text|read_bytes|write_bytes|glob|rglob|iterdir|mkdir|unlink)\("
+    )
+    offenders: list[str] = []
+    server = ROOT / "workbench" / "server"
+
+    for path in sorted(server.glob("*.py")):
+        if path.name == "resource_store.py" or path.name.startswith("test_"):
+            continue
+        for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+            if (
+                forbidden.search(line)
+                and "resources." not in line
+                and "get_filesystem_provider()." not in line
+            ):
+                offenders.append(f"{path.relative_to(ROOT)}:{line_number}: {line.strip()}")
+
+    assert offenders == [], "Direct resource filesystem access found:\n" + "\n".join(offenders)
