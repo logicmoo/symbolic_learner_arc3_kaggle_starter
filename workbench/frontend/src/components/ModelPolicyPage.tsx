@@ -17,7 +17,7 @@ const policyOf=(value?:Partial<Policy>):Policy=>({wanted:state(value?.wanted),ru
 const healthClass=(value?:unknown)=>String(value||"unknown").toLowerCase().replace(/[^a-z]+/g,"-");
 const slug=(value:string)=>value.toLowerCase().replace(/[^a-z0-9]+/g,"_").replace(/^_+|_+$/g,"")||"policy";
 const dynamicValue=(model:Model,key:string)=>key.startsWith("capabilities.")?model.capabilities?.[key.slice(13)]:key.startsWith("limits.")?model.limits?.[key.slice(7)]:key.startsWith("pricing.")?model.pricing?.[key.slice(8)]:model.properties?.[key.slice(11)];
-async function jsonRequest(path:string,init?:RequestInit){const response=await fetch(path,{headers:{"Content-Type":"application/json"},...init});const payload=await response.json();if(!response.ok)throw new Error(payload.error||payload.detail||response.statusText);return payload}
+async function jsonRequest(path:string,init?:RequestInit){const response=await fetch(path,{cache:"no-store",headers:{"Content-Type":"application/json"},...init});const payload=await response.json();if(!response.ok)throw new Error(payload.error||payload.detail||response.statusText);return payload}
 
 function PolicySelect({value,onChange,label}:{value:PolicyState;onChange:(value:PolicyState)=>void;label:string}){
  return <select aria-label={label} value={value} onChange={event=>onChange(event.target.value as PolicyState)}>{states.map(item=><option key={item} value={item}>{item.toUpperCase()}</option>)}</select>;

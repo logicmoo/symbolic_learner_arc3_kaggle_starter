@@ -65,6 +65,7 @@ def import_models(workspace_id: str, backend_id: str, request: dict[str, Any] = 
     if not backend: raise HTTPException(status_code=404, detail=f"shared backend not found: {backend_id}")
     models = request.get("models")
     if not isinstance(models, list): raise HTTPException(status_code=400, detail="models must be a list")
+    if request.get("overwrite", True) is not True: raise HTTPException(status_code=400, detail="model imports require overwrite=true")
     imported = import_discovered_models(Path(shared_workspace["root"]), backend, models)
     return {"workspace": workspace, "targetWorkspace": shared_workspace, "backendId": backend_id, "models": imported}
 

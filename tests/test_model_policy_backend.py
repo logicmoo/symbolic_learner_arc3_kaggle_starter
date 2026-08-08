@@ -89,6 +89,9 @@ def test_model_discovery_has_bulk_selection_controls() -> None:
     assert "Select all" in source
     assert "Clear selection" in source
     assert "discoverySelection.size} selected" in source
+    assert 'body:JSON.stringify({models,overwrite:true})' in source
+    assert "setSnapshot(null);setOpenDocs([]);setActiveKey(null);setCompareKey(null)" in source
+    assert 'cache:"no-store"' in source
 
 
 def test_backend_model_discovery_supports_openai_and_ollama_shapes(tmp_path: Path) -> None:
