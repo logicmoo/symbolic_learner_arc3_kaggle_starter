@@ -37,8 +37,8 @@ export function CategorizedArtifactTree({ items, showCategories = true, category
   if (!showCategories) return <div className="categorized-artifact-tree category-flat-all">{items.map(item => item.render(`flat:${item.id}`))}</div>;
   const uncategorized = items.filter(item => categoryPaths(item.categories).length === 0);
   return <div className="categorized-artifact-tree">
-    <ArtifactTreeBranch label="All" searchValue={{ category: "all" }} header={<CategoryHeader label="All" itemCount={items.length} special="all" />}>{items.map(item => item.render(`all:${item.id}`))}</ArtifactTreeBranch>
-    <ArtifactTreeBranch label="Uncategorized" searchValue={{ category: "uncategorized" }} header={<CategoryHeader label="Uncategorized" itemCount={uncategorized.length} special="uncategorized" />}>{uncategorized.map(item => item.render(`uncategorized:${item.id}`))}</ArtifactTreeBranch>
+    <ArtifactTreeBranch label="All" branchCommand={null} searchValue={{ category: "all" }} header={<CategoryHeader label="All" itemCount={items.length} special="all" />}>{items.map(item => item.render(`all:${item.id}`))}</ArtifactTreeBranch>
+    <ArtifactTreeBranch label="Uncategorized" branchCommand={null} searchValue={{ category: "uncategorized" }} header={<CategoryHeader label="Uncategorized" itemCount={uncategorized.length} special="uncategorized" />}>{uncategorized.map(item => item.render(`uncategorized:${item.id}`))}</ArtifactTreeBranch>
     {[...roots.values()].sort((a, b) => a.name.localeCompare(b.name)).map(node => renderCategory(node, categoryCommand))}
   </div>;
 }
