@@ -129,18 +129,26 @@ def effective_model_registry(
             "limits": {key: value for key, value in (resolved.get("defaults") or {}).items() if key in {"maxOutputTokens", "timeoutSeconds"}},
             "properties": {"catalogKind": document.get("kind"), "inheritance": resolved.get("inheritance") or []},
         }
-        merged = {**generated, **(override or {}), "policy": {**generated["policy"], **((override or {}).get("policy") or {})}}
+        merged = {**generated, **(override or {}), "policy": {**generated["policy"], **((override or {}).get("policy") or {})},
+                  "_policyOverrideFields": list(((override or {}).get("policy") or {}).keys())}
         model_documents.append(merged); catalog_policy_ids.add(policy_id)
-    model_documents.extend(item for item in persisted_models if str(item.get("id")) not in catalog_policy_ids)
+    model_documents.extend({**item, "_policyOverrideFields": list((item.get("policy") or {}).keys())}
+                           for item in persisted_models if str(item.get("id")) not in catalog_policy_ids)
     models: list[dict[str, Any]] = []
     for model in model_documents:
         vendor = vendors.get(str(model.get("vendorId")))
+        override_fields = set(model.pop("_policyOverrideFields", ()))
         observation = health.get(str(model.get("id"))) or {}
         status = str(observation.get("status") or "unknown").lower()
         latency = observation.get("latencyMs")
         failure_rate = observation.get("failureRate")
         reasons: list[str] = []
-        wanted = model.get("enabled", True) and (vendor is None or vendor.get("enabled", True)) and _state(model, "wanted") != "off" and _state(vendor, "wanted") != "off"
+        def requested(name: str) -> bool:
+            model_state = _state(model, name)
+            if name in override_fields and model_state != "auto":
+                return model_state == "on"
+            return model_state != "off" and _state(vendor, name) != "off"
+        wanted = model.get("enabled", True) and (vendor is None or vendor.get("enabled", True)) and requested("wanted")
         if not wanted: reasons.append("disabled by wanted policy")
         unhealthy = status in UNHEALTHY_STATUSES
         if rules.get("excludeSlowFromRuntime", True) and (status == "slow" or isinstance(latency, (int, float)) and latency > rules.get("slowLatencyMs", 5000)):
@@ -148,8 +156,8 @@ def effective_model_registry(
         if isinstance(failure_rate, (int, float)) and failure_rate > rules.get("maxFailureRate", 0.2):
             unhealthy = True; reasons.append("failure rate threshold exceeded")
         if status in UNHEALTHY_STATUSES: reasons.append(f"health is {status}")
-        runtime_requested = wanted and _state(model, "runtime") != "off" and _state(vendor, "runtime") != "off"
-        benchmark_requested = wanted and _state(model, "benchmark") != "off" and _state(vendor, "benchmark") != "off"
+        runtime_requested = wanted and requested("runtime")
+        benchmark_requested = wanted and requested("benchmark")
         runtime = runtime_requested and (not rules.get("requireHealthyModel", True) or not unhealthy)
         benchmark = benchmark_requested and (not rules.get("requireHealthyModel", True) or not unhealthy)
         effective_state = lambda requested, enabled: "enabled" if enabled else "temporarily_disabled" if requested else "disabled"

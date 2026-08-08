@@ -9,6 +9,7 @@ SERVER = ROOT / "workbench" / "server"
 sys.path.insert(0, str(SERVER))
 
 import policy_api  # noqa: E402
+from model_discovery import discover_backend_models, import_discovered_models  # noqa: E402
 from model_policy_ping import run_ping_job  # noqa: E402
 from model_benchmark import run_benchmark  # noqa: E402
 from policy_library import effective_model_registry, load_workspace_policy_records  # noqa: E402
@@ -62,6 +63,48 @@ def test_catalog_backends_models_and_profiles_load_until_policy_disables_them() 
     model = next(item for item in overridden["models"] if item["modelResourceId"] == "model")
     assert model["policy"]["wanted"] == "off"
     assert model["effective"]["runtimeState"] == "disabled"
+
+
+def test_explicit_model_override_can_reenable_vendor_child() -> None:
+    records = _records(
+        {"kind": "vendor_policy", "id": "vendor_policy", "vendorId": "vendor", "policy": {"wanted": "off"}},
+        {"kind": "model_policy_entry", "id": "vendor:model", "vendorId": "vendor", "policy": {"wanted": "on", "runtime": "on"}},
+        {"kind": "model_health_observation", "id": "health", "modelPolicyEntryId": "vendor:model", "observedAt": "2026-01-01T00:00:00Z", "status": "online"},
+    )
+    model = effective_model_registry(records)["models"][0]
+    assert model["effective"]["runtimeState"] == "enabled"
+
+
+def test_vendor_change_cascades_to_children_in_policy_editor() -> None:
+    source = (ROOT / "workbench" / "frontend" / "src" / "components" / "ModelPolicyPage.tsx").read_text(encoding="utf-8")
+    assert "filter(model=>model.vendorId===vendor.vendorId)" in source
+    assert "next[model.id]" in source
+
+
+def test_backend_model_discovery_supports_openai_and_ollama_shapes(tmp_path: Path) -> None:
+    class Response:
+        def __enter__(self): return self
+        def __exit__(self, *_args): return None
+        def read(self): return json.dumps({"models": [{"name": "local/a"}, {"model": "local/b"}]}).encode()
+    backend = {"id": "local", "configuration": {"baseUrl": "http://localhost:11434/v1"}}
+    discovered = discover_backend_models(backend, opener=lambda *_args, **_kwargs: Response())
+    assert [row["id"] for row in discovered] == ["local/a", "local/b"]
+    imported = import_discovered_models(tmp_path, backend, discovered[:1])
+    assert imported[0]["inherits"] == "local"
+    assert imported[0]["model"] == "local/a"
+    assert (tmp_path / "models" / "local-local_a.model.json").is_file()
+
+
+def test_model_import_route_always_targets_shared_workspace(tmp_path: Path, monkeypatch) -> None:
+    project = tmp_path / "project"; shared = tmp_path / "shared"
+    (shared / "models").mkdir(parents=True); project.mkdir()
+    (shared / "models" / "vendor.backend.json").write_text(json.dumps({"kind": "backend", "id": "vendor", "provider": "openai", "configuration": {"baseUrl": "https://example.invalid/v1"}}))
+    monkeypatch.setattr(policy_api, "_resolve_workspace", lambda workspace_id: {"id": workspace_id, "root": str(shared if workspace_id == "shared" else project)})
+    monkeypatch.setattr(policy_api, "load_workspace_backend_records", lambda _root: [{"document": {"kind": "backend", "id": "vendor", "provider": "openai"}}])
+    result = policy_api.import_models("project", "vendor", {"models": [{"id": "remote/model", "label": "Remote"}]})
+    assert result["targetWorkspace"]["id"] == "shared"
+    assert not (project / "models").exists()
+    assert (shared / "models" / "vendor-remote_model.model.json").is_file()
 
 
 def test_observation_api_persists_a_real_resource(tmp_path: Path, monkeypatch) -> None:
@@ -118,6 +161,8 @@ def test_model_policy_ui_edits_and_filters_dynamic_registry() -> None:
     assert 'scope==="selected"?[...selected]' in source
     assert "registryDocument" in source
     assert ".policy-table-scroll th:nth-child(-n+7)" in styles
+    assert ".matrix-row{display:grid;grid-auto-flow:column;grid-auto-columns:145px" in styles
+    assert ".matrix-row>b{position:sticky;left:0" in styles
 
 
 def test_benchmark_job_executes_declared_cases_and_persists_measurements(tmp_path: Path) -> None:

@@ -14,6 +14,7 @@ from backend_library import load_workspace_backend_records
 from model_policy_ping import run_ping_job
 from model_benchmark import run_benchmark
 from model_library import resolve_model_records
+from model_discovery import discover_backend_models, import_discovered_models
 from workspace_api import _resolve_workspace
 
 router = APIRouter(prefix="/workspaces", tags=["model-policy"])
@@ -41,6 +42,31 @@ def model_policy_registry(workspace_id: str) -> dict[str, Any]:
     records = load_workspace_policy_records(Path(workspace["root"]))
     root = Path(workspace["root"])
     return {"workspace": workspace, "resources": records, "registry": _effective_registry(root, records)}
+
+
+@router.get("/{workspace_id}/models/discover/{backend_id}")
+def discover_models(workspace_id: str, backend_id: str) -> dict[str, Any]:
+    try: workspace = _resolve_workspace(workspace_id)
+    except KeyError as error: raise HTTPException(status_code=404, detail=str(error)) from error
+    backend = next((record.get("document") for record in load_workspace_backend_records(Path(workspace["root"]))
+                    if (record.get("document") or {}).get("id") == backend_id), None)
+    if not backend: raise HTTPException(status_code=404, detail=f"backend not found: {backend_id}")
+    try: models = discover_backend_models(backend)
+    except Exception as error: raise HTTPException(status_code=502, detail=str(error)) from error
+    return {"workspace": workspace, "backend": backend, "models": models}
+
+
+@router.post("/{workspace_id}/models/import/{backend_id}", status_code=201)
+def import_models(workspace_id: str, backend_id: str, request: dict[str, Any] = Body(...)) -> dict[str, Any]:
+    try: workspace = _resolve_workspace(workspace_id); shared_workspace = _resolve_workspace("shared")
+    except KeyError as error: raise HTTPException(status_code=404, detail=str(error)) from error
+    backend = next((record.get("document") for record in load_workspace_backend_records(Path(shared_workspace["root"]))
+                    if (record.get("document") or {}).get("id") == backend_id), None)
+    if not backend: raise HTTPException(status_code=404, detail=f"shared backend not found: {backend_id}")
+    models = request.get("models")
+    if not isinstance(models, list): raise HTTPException(status_code=400, detail="models must be a list")
+    imported = import_discovered_models(Path(shared_workspace["root"]), backend, models)
+    return {"workspace": workspace, "targetWorkspace": shared_workspace, "backendId": backend_id, "models": imported}
 
 @router.post("/{workspace_id}/model-policy/observations", status_code=201)
 def record_model_policy_observation(workspace_id: str, document: dict[str, Any] = Body(...)) -> dict[str, Any]:
