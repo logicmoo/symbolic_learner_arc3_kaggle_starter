@@ -179,6 +179,9 @@ def test_model_policy_ui_edits_and_filters_dynamic_registry() -> None:
     assert ".policy-table-scroll th:nth-child(-n+7)" in styles
     assert ".matrix-row{display:grid;grid-auto-flow:column;grid-auto-columns:145px" in styles
     assert ".matrix-row>b{position:sticky;left:0" in styles
+    assert "const flattenFields=" in source
+    assert "dynamicEntries(model).map(([key])=>key)" in source
+    assert "displayValue(dynamicValue(model,key))" in source
 
 
 def test_benchmark_job_executes_declared_cases_and_persists_measurements(tmp_path: Path) -> None:
