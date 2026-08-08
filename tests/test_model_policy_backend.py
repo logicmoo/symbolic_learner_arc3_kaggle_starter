@@ -132,10 +132,13 @@ def test_model_import_route_always_targets_shared_workspace(tmp_path: Path, monk
     (shared / "models" / "vendor.backend.json").write_text(json.dumps({"kind": "backend", "id": "vendor", "provider": "openai", "configuration": {"baseUrl": "https://example.invalid/v1"}}))
     monkeypatch.setattr(policy_api, "_resolve_workspace", lambda workspace_id: {"id": workspace_id, "root": str(shared if workspace_id == "shared" else project)})
     monkeypatch.setattr(policy_api, "load_workspace_backend_records", lambda _root: [{"document": {"kind": "backend", "id": "vendor", "provider": "openai"}}])
+    invalidations: list[bool] = []
+    monkeypatch.setattr(policy_api, "invalidate_workspace_discovery", lambda: invalidations.append(True))
     result = policy_api.import_models("project", "vendor", {"models": [{"id": "remote/model", "label": "Remote"}]})
     assert result["targetWorkspace"]["id"] == "shared"
     assert not (project / "models").exists()
     assert (shared / "design" / "models" / "vendor-remote_model.model.metta").is_file()
+    assert invalidations == [True]
 
 
 def test_model_example_invokes_resolved_model(monkeypatch, tmp_path: Path) -> None:

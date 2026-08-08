@@ -16,7 +16,7 @@ from model_benchmark import run_benchmark
 from model_library import resolve_model_records
 from model_discovery import discover_backend_models, import_discovered_models, reconcile_discovered_models, remove_missing_models
 from model_benchmark import call_model
-from workspace_api import _resolve_workspace
+from workspace_api import _resolve_workspace, invalidate_workspace_discovery
 from resource_store import get_filesystem_provider
 
 router = APIRouter(prefix="/workspaces", tags=["model-policy"])
@@ -117,6 +117,7 @@ def import_models(workspace_id: str, backend_id: str, request: dict[str, Any] = 
     if not isinstance(models, list): raise HTTPException(status_code=400, detail="models must be a list")
     if request.get("overwrite", True) is not True: raise HTTPException(status_code=400, detail="model imports require overwrite=true")
     imported = import_discovered_models(Path(shared_workspace["root"]), backend, models)
+    invalidate_workspace_discovery()
     return {"workspace": workspace, "targetWorkspace": shared_workspace, "backendId": backend_id, "models": imported}
 
 
@@ -130,6 +131,7 @@ def remove_missing(workspace_id: str, backend_id: str, request: dict[str, Any] =
     resource_ids = request.get("resourceIds")
     if not isinstance(resource_ids, list): raise HTTPException(status_code=400, detail="resourceIds must be a list")
     removed = remove_missing_models(Path(shared_workspace["root"]), backend, [str(value) for value in resource_ids])
+    invalidate_workspace_discovery()
     return {"workspace": workspace, "targetWorkspace": shared_workspace, "backendId": backend_id, "removed": removed}
 
 @router.post("/{workspace_id}/model-policy/observations", status_code=201)
