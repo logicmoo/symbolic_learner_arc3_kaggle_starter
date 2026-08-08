@@ -39,6 +39,9 @@ def test_workflow_runs_page_displays_reference_without_replacing_history() -> No
     assert "item.contentHash" in source
     assert "item.provenance" in source
     assert "logs: run.logs || []" in source
+    assert "run-stage-narrative" in source
+    assert "latestStepEvent" in source
+    assert "DURABLE EVIDENCE" in source
     assert "Records are loaded from the durable workflow-engine database" in source
 
 

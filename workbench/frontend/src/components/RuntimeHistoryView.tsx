@@ -43,6 +43,8 @@ function WorkflowRunProjection({ run, workflow, busy, onCommand }: { run: Runtim
   const stepRuntime = selectedStep ? run.steps.find(item => item.stepId === selectedStep.id) : undefined;
   const artifacts = run.artifacts.filter(item => !selectedStep || item.stepId === selectedStep.id);
   const logs = run.logs.filter(item => !selectedStep || item.stepId === selectedStep.id);
+  const stepEvents = run.events.filter(event => !selectedStep || event.stepId === selectedStep.id);
+  const latestStepEvent = stepEvents.at(-1);
 
   return <section className="run-projection" aria-label="Selected workflow run projection">
     <div className="run-projection-heading">
@@ -58,6 +60,7 @@ function WorkflowRunProjection({ run, workflow, busy, onCommand }: { run: Runtim
       </svg>
     </div> : <div className="studio-empty">The persisted workflow definition is unavailable.</div>
       : <div className="run-chronology" aria-label="Durable event chronology">{run.events.map((event, index) => <button key={event.id} className={String(event.id) === selectedEventId ? "selected" : ""} onClick={() => selectEvent(event)}><span>{index + 1}</span><b>{event.kind}</b><small>{event.stepId || "workflow"}</small><time>{stamp(event.createdAt)}</time></button>)}{!run.events.length && <div className="studio-empty">This run has no durable events.</div>}</div>}
+    {selectedStep && <div className="run-stage-narrative"><div><span>SELECTED STAGE</span><h3>{selectedStep.label || selectedStep.id}</h3><p>{selectedStep.implementation || selectedStep.operation || selectedStep.kind || "operation"}</p></div><div><span>RUNTIME OUTCOME</span><b>{stepRuntime?.status || "defined"}</b><small>{stepRuntime?.error || latestStepEvent?.kind || "No execution event yet"}</small></div><div><span>DURABLE EVIDENCE</span><b>{artifacts.length} artifacts · {stepEvents.length} events</b><small>{artifacts.map(item => item.name).join(", ") || "No produced artifacts"}</small></div></div>}
     <div className="run-projection-inspector">
       <div><span>{selectedEvent ? "EVENT" : "STEP"}</span><h3>{selectedEvent?.kind || selectedStep?.label || selectedStep?.id || "Select a node"}</h3><p>{selectedEvent?.stepId || selectedStep?.implementation || selectedStep?.operation || selectedStep?.kind || "workflow"}</p></div>
       <dl><div><dt>Status</dt><dd>{stepRuntime?.status || run.status}</dd></div><div><dt>Attempt</dt><dd>{stepRuntime?.attempt || 0}</dd></div><div><dt>Artifacts</dt><dd>{artifacts.length}</dd></div><div><dt>Logs</dt><dd>{logs.length}</dd></div></dl>
