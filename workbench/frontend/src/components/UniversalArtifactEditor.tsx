@@ -114,8 +114,7 @@ export function UniversalArtifactEditor({
   const [variantsHidden, setVariantsHidden] = useState(false);
   const [variantsCollapsed, setVariantsCollapsed] = useState(false);
   const [treeCommand, setTreeCommand] = useState<ArtifactTreeCommand>(null);
-  const [showCategories, setShowCategories] = useState(true);
-  const [categoriesExpanded, setCategoriesExpanded] = useState(true);
+  const [onlyCategories, setOnlyCategories] = useState(false);
   const [categoryCommand, setCategoryCommand] = useState<ArtifactTreeCommand>(null);
   const { treeRef, treeFilter, setTreeFilter, showParents, setShowParents } = useArtifactTreeFilter();
   const commandTree = (action: "collapse" | "expand") => setTreeCommand(current => ({ action, revision: (current?.revision || 0) + 1 }));
@@ -159,14 +158,13 @@ export function UniversalArtifactEditor({
           <div className="artifact-navigator-actions">
             <label className="artifact-tree-filter"><span>Filter tree</span><input type="search" value={treeFilter} onChange={event=>setTreeFilter(event.target.value)} placeholder="Filter tree…" /></label>
             <button type="button" aria-label={showParents?"Hide Parents":"Show Parents"} aria-pressed={showParents} disabled={!treeFilter.trim()} onClick={()=>setShowParents(value=>!value)}><b>{showParents?"Hide Parents":"Show Parents"}</b></button>
-            <button type="button" aria-label={showCategories?"No Categories (All)":"Show Categories"} aria-pressed={showCategories} onClick={()=>setShowCategories(value=>!value)}><b>{showCategories?"No Categories (All)":"Show Categories"}</b></button>
-            <button type="button" aria-label={categoriesExpanded?"Only Categories":"Expand Categories"} aria-pressed={!categoriesExpanded} disabled={!showCategories} onClick={()=>{const expanded=!categoriesExpanded;setCategoriesExpanded(expanded);commandCategories(expanded?"expand":"collapse")}}><b>{categoriesExpanded?"Only Categories":"Expand Categories"}</b></button>
+            <button type="button" aria-label="Only Categories" aria-pressed={onlyCategories} onClick={()=>{setOnlyCategories(value=>!value);commandCategories("expand")}}><b>Only Categories</b></button>
             <button type="button" aria-label={variantsHidden?"Unhide Variants":"Hide Variants"} aria-pressed={variantsHidden} onClick={()=>{const hidden=!variantsHidden;setVariantsHidden(hidden);commandTree(hidden?"collapse":"expand")}}><b>{variantsHidden?"Unhide Variants":"Hide Variants"}</b></button>
             <button type="button" aria-label={variantsCollapsed?"Show Tree":"Only Toplevel"} aria-pressed={variantsCollapsed} onClick={()=>{const collapsed=!variantsCollapsed;setVariantsCollapsed(collapsed);commandTree(collapsed?"collapse":"expand")}}><b>{variantsCollapsed?"Show Tree":"Only Toplevel"}</b></button>
             <button type="button" aria-label={navigatorCollapsed?"Expand hierarchy":"Collapse hierarchy"} aria-expanded={!navigatorCollapsed} onClick={()=>setNavigatorCollapsed(value=>!value)}>{navigatorCollapsed?"›":"‹"}<b>{navigatorCollapsed?"":"Pane"}</b></button>
           </div>
         </div>
-        <ArtifactTreeCommandContext.Provider value={treeCommand}><div className="artifact-navigator-content" ref={treeRef}><CategorizedArtifactNodes showCategories={showCategories} categoryCommand={categoryCommand}>{leftPane}</CategorizedArtifactNodes></div></ArtifactTreeCommandContext.Provider>
+        <ArtifactTreeCommandContext.Provider value={treeCommand}><div className="artifact-navigator-content" ref={treeRef}><CategorizedArtifactNodes onlyCategories={onlyCategories} categoryCommand={categoryCommand}>{leftPane}</CategorizedArtifactNodes></div></ArtifactTreeCommandContext.Provider>
       </div>
       <div className={workspaceClassName}>
         <div className={tabsClassName}>

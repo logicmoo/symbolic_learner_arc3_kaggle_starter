@@ -11,15 +11,15 @@ export function categoryPaths(value: unknown): string[] {
 function title(value: string) { return value.replace(/[-_]+/g, " ").replace(/\b\w/g, letter => letter.toUpperCase()); }
 function count(node: CategoryNode): number { return node.items.length + [...node.children.values()].reduce((total, child) => total + count(child), 0); }
 function CategoryHeader({ label, itemCount, special }: { label: string; itemCount: number; special?: "all" | "uncategorized" }) { return <div className={`operation-tree-row operation-category-row ${special ? `category-${special}` : ""}`}><span className="operation-kind-badge">CATEGORY</span><span><b>{label}</b><small>Virtual category</small></span><em>{itemCount} items</em></div>; }
-function renderCategory(node: CategoryNode, categoryCommand?: ArtifactTreeCommand): ReactNode {
+function renderCategory(node: CategoryNode, categoryCommand?: ArtifactTreeCommand, onlyCategories = false): ReactNode {
   const children = [...node.children.values()].sort((a, b) => a.name.localeCompare(b.name));
   return <ArtifactTreeBranch key={`category:${node.path}`} branchCommand={categoryCommand} className="operation-tree-group artifact-category-branch" label={title(node.name)} searchValue={{ category: node.path }} header={<CategoryHeader label={title(node.name)} itemCount={count(node)} />}>
-    {node.items.map(item => item.render(`category:${node.path}:${item.id}`))}{children.map(child => renderCategory(child, categoryCommand))}
+    {!onlyCategories&&node.items.map(item => item.render(`category:${node.path}:${item.id}`))}{children.map(child => renderCategory(child, categoryCommand, onlyCategories))}
   </ArtifactTreeBranch>;
 }
 
 /** Builds virtual category folders without changing filesystem ownership or resource identity. */
-export function CategorizedArtifactTree({ items, showCategories = true, categoryCommand }: { items: CategorizedArtifactTreeItem[]; showCategories?: boolean; categoryCommand?: ArtifactTreeCommand }) {
+export function CategorizedArtifactTree({ items, onlyCategories = false, categoryCommand }: { items: CategorizedArtifactTreeItem[]; onlyCategories?: boolean; categoryCommand?: ArtifactTreeCommand }) {
   const roots = useMemo(() => {
     const result = new Map<string, CategoryNode>();
     for (const item of items) for (const path of categoryPaths(item.categories)) {
@@ -34,12 +34,11 @@ export function CategorizedArtifactTree({ items, showCategories = true, category
     }
     return result;
   }, [items]);
-  if (!showCategories) return <div className="categorized-artifact-tree category-flat-all">{items.map(item => item.render(`flat:${item.id}`))}</div>;
   const uncategorized = items.filter(item => categoryPaths(item.categories).length === 0);
   return <div className="categorized-artifact-tree">
-    <ArtifactTreeBranch label="All" branchCommand={null} searchValue={{ category: "all" }} header={<CategoryHeader label="All" itemCount={items.length} special="all" />}>{items.map(item => item.render(`all:${item.id}`))}</ArtifactTreeBranch>
-    <ArtifactTreeBranch label="Uncategorized" branchCommand={null} searchValue={{ category: "uncategorized" }} header={<CategoryHeader label="Uncategorized" itemCount={uncategorized.length} special="uncategorized" />}>{uncategorized.map(item => item.render(`uncategorized:${item.id}`))}</ArtifactTreeBranch>
-    {[...roots.values()].sort((a, b) => a.name.localeCompare(b.name)).map(node => renderCategory(node, categoryCommand))}
+    <ArtifactTreeBranch label="All" branchCommand={null} searchValue={{ category: "all" }} header={<CategoryHeader label="All" itemCount={items.length} special="all" />}>{!onlyCategories&&items.map(item => item.render(`all:${item.id}`))}</ArtifactTreeBranch>
+    <ArtifactTreeBranch label="Uncategorized" branchCommand={null} searchValue={{ category: "uncategorized" }} header={<CategoryHeader label="Uncategorized" itemCount={uncategorized.length} special="uncategorized" />}>{!onlyCategories&&uncategorized.map(item => item.render(`uncategorized:${item.id}`))}</ArtifactTreeBranch>
+    {[...roots.values()].sort((a, b) => a.name.localeCompare(b.name)).map(node => renderCategory(node, categoryCommand, onlyCategories))}
   </div>;
 }
 
@@ -63,7 +62,7 @@ function topLevelNodes(node: ReactNode): ReactElement[] {
 }
 
 /** Adapts existing rich tree branches to the shared virtual-category contract. */
-export function CategorizedArtifactNodes({ children, showCategories = true, categoryCommand }: { children: ReactNode; showCategories?: boolean; categoryCommand?: ArtifactTreeCommand }) {
+export function CategorizedArtifactNodes({ children, onlyCategories = false, categoryCommand }: { children: ReactNode; onlyCategories?: boolean; categoryCommand?: ArtifactTreeCommand }) {
   const nodes = topLevelNodes(children);
   const items = nodes.map((node, index) => ({
     id: String(node.key ?? index),
@@ -71,5 +70,5 @@ export function CategorizedArtifactNodes({ children, showCategories = true, cate
     searchValue: (node.props as { searchValue?: unknown }).searchValue,
     render: (appearanceKey: string) => <Fragment key={appearanceKey}>{node}</Fragment>,
   }));
-  return <CategorizedArtifactTree items={items} showCategories={showCategories} categoryCommand={categoryCommand} />;
+  return <CategorizedArtifactTree items={items} onlyCategories={onlyCategories} categoryCommand={categoryCommand} />;
 }
