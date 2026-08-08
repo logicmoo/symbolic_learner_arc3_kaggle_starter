@@ -10,7 +10,7 @@ The active page is backed by real workspace resources and the model-policy API. 
 
 Remaining work is intentionally narrower:
 
-- expose vendor creation and backend model discovery/import directly from this page (the Models editor already provides discovery and overwrite import);
+- optionally embed vendor creation and backend discovery instead of using the current direct link to the Models editor's backend creation, discovery, selection, and overwrite import tools;
 - add optional multi-column sorting;
 - add prompt-profile creation/editing from the policy dashboard;
 - add richer time-series history beyond the current persisted-result metric selector.

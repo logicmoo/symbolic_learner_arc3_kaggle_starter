@@ -147,9 +147,9 @@ export function FilesystemWorkbenchPage(){
  {view==="states"&&<RuntimeHistoryView mode="states" workspaceId={workspace.id} onSelectRun={selectRuntimeRun}/>}
  {view==="runtimeContexts"&&<RuntimeHistoryView mode="runtimeContexts" workspaceId={workspace.id} onSelectRun={selectRuntimeRun}/>}
  {view==="logs"&&<RuntimeHistoryView mode="logs" workspaceId={workspace.id} onSelectRun={selectRuntimeRun}/>}
- {view==="modelPolicy"&&<ModelPolicyPage workspaceId={workspace.id}/>}
+ {view==="modelPolicy"&&<ModelPolicyPage workspaceId={workspace.id} onOpenModels={()=>setView("llms")}/>}
  {view==="docs"&&<RepositoryDocsPage initialFilter={docsFilter}/>}
- {view==="benchmarks"&&<ModelPolicyPage workspaceId={workspace.id}/>}
+ {view==="benchmarks"&&<ModelPolicyPage workspaceId={workspace.id} onOpenModels={()=>setView("llms")}/>}
  {view==="contexts"&&<GoalPlanLibraryEditor workspaceId={workspace.id} family="context"/>}
  {view==="operations"&&<OperationLibraryEditor workspaceId={workspace.id}/>} {view==="policies"&&<PolicyLibraryEditor workspaceId={workspace.id}/>} {view==="llms"&&<LlmModelsEditor workspaceId={workspace.id}/>} {view==="prompts"&&<PromptLibraryEditor workspaceId={workspace.id}/>}
  {view==="checks"&&<section className="resource-view"><div className="resource-heading"><div><span>VALIDATION</span><h1>Checks & diagnostics</h1><p>Workflow validation and runtime capability probes are computed by the backend.</p></div><button onClick={validateWorkflow} disabled={!workflow}>Run validation</button></div><div className="checks-summary"><div className="check-score">{validation===null?"—":validation.length?"!":"✓"}<small>{validation===null?"idle":validation.length?"issues":"pass"}</small><span>WORKFLOW CHECK</span></div><div className="check-list">{Object.entries(capabilities).map(([name,value])=><div key={name}><span>{value.status==="implemented"?"✓":value.status==="partial"?"◐":"·"}</span><b>{name}</b><small>{value.detail}</small><em>{value.status}</em></div>)}</div></div></section>}

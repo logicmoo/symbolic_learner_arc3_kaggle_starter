@@ -95,6 +95,8 @@ def test_model_discovery_has_bulk_selection_controls() -> None:
     assert "setSnapshot(null);setOpenDocs([]);setActiveKey(null);setCompareKey(null)" in source
     assert 'cache:"no-store"' in source
     assert "Remove missing" in source
+    assert "+ Backend" in source
+    assert "Select all discovered" in source
 
 
 def test_backend_model_discovery_supports_openai_and_ollama_shapes(tmp_path: Path) -> None:
@@ -242,7 +244,7 @@ def test_ping_api_queues_durable_background_job(tmp_path: Path, monkeypatch) -> 
 def test_model_policy_ui_edits_and_filters_dynamic_registry() -> None:
     source = (ROOT / "workbench" / "frontend" / "src" / "components" / "ModelPolicyPage.tsx").read_text(encoding="utf-8")
     styles = (ROOT / "workbench" / "frontend" / "src" / "styles" / "model_policy_todo.css").read_text(encoding="utf-8")
-    for token in ("Filesystem Load", "Filesystem Save", "Ping Selected", "Select Visible", "Clear Selection", "All capabilities", "All runtime", "All benchmark", "dynamicColumns", "toggleSort"):
+    for token in ("Filesystem Load", "Filesystem Save", "Ping Selected", "Manage Backends &amp; Import Models", "Select Visible", "Clear Selection", "All capabilities", "All runtime", "All benchmark", "dynamicColumns", "toggleSort"):
         assert token in source
     assert 'scope==="selected"?[...selected]' in source
     assert "registryDocument" in source
