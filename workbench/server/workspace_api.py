@@ -71,17 +71,17 @@ def _humanize(name: str) -> str:
 
 def _workspace_from_directory(root: Path) -> dict[str, Any]:
     metadata = _optional_metadata(root)
-    workflow_dir = root / "workflows"
-    prompt_dir = root / "prompts"
+    workflow_dir = root / "design" / "workflows"
+    prompt_dir = root / "design" / "prompts"
     config_dir = root / "config"
-    operation_dir = root / "operations"
+    operation_dir = root / "design" / "operations"
     datatype_dir = root / DATATYPE_DIRECTORY
     representation_dir = root / REPRESENTATION_DIRECTORY
     concrete_dir = root / CONCRETE_DIRECTORY
-    model_dir = root / MODEL_CATALOG_DIRECTORY
-    goal_dir = root / "goals"
-    plan_dir = root / "plans"
-    context_dir = root / "contexts"
+    model_dir = root / "design" / MODEL_CATALOG_DIRECTORY
+    goal_dir = root / "design" / "goals"
+    plan_dir = root / "design" / "plans"
+    context_dir = root / "design" / "atomspaces"
     backend_count = len(load_workspace_backend_records(root))
     model_count = len(resolve_model_records(root))
     prompt_count = len(load_workspace_prompt_records(root))
@@ -103,13 +103,13 @@ def _workspace_from_directory(root: Path) -> dict[str, Any]:
         "manifest": None,
         "discovery": "directory-enumeration",
         "workflowDirectory": str(workflow_dir.resolve()),
-        "workflowDirectoryRelative": "workflows",
+        "workflowDirectoryRelative": "design/workflows",
         "promptDirectory": str(prompt_dir.resolve()),
-        "promptDirectoryRelative": "prompts",
+        "promptDirectoryRelative": "design/prompts",
         "configDirectory": str(config_dir.resolve()),
         "configDirectoryRelative": "config",
         "operationDirectory": str(operation_dir.resolve()),
-        "operationDirectoryRelative": "operations",
+        "operationDirectoryRelative": "design/operations",
         "datatypeDirectory": str(datatype_dir.resolve()),
         "datatypeDirectoryRelative": DATATYPE_DIRECTORY,
         "representationDirectory": str(representation_dir.resolve()),
@@ -117,13 +117,13 @@ def _workspace_from_directory(root: Path) -> dict[str, Any]:
         "concreteDatatypeDirectory": str(concrete_dir.resolve()),
         "concreteDatatypeDirectoryRelative": CONCRETE_DIRECTORY,
         "backendDirectory": str(model_dir.resolve()),
-        "backendDirectoryRelative": MODEL_CATALOG_DIRECTORY,
+        "backendDirectoryRelative": "design/backends",
         "modelDirectory": str(model_dir.resolve()),
-        "modelDirectoryRelative": MODEL_CATALOG_DIRECTORY,
+        "modelDirectoryRelative": "design/models",
         "goalDirectory": str(goal_dir.resolve()),
-        "goalDirectoryRelative": "goals",
+        "goalDirectoryRelative": "design/goals",
         "planDirectory": str(plan_dir.resolve()),
-        "planDirectoryRelative": "plans",
+        "planDirectoryRelative": "design/plans",
         "metadata": metadata.get("metadata") or {},
         "includes": include_specs,
         "effectiveIncludes": [layer.name for layer in layers if layer.resolve() != root.resolve()],
@@ -251,9 +251,11 @@ def _load_workflows(workspace: dict[str, Any]) -> list[dict[str, Any]]:
     root = Path(workspace["root"])
     combined: dict[str, dict[str, Any]] = {}
     for layer in effective_workspace_layers(root, root.parent):
-        for record in _load_documents(layer, layer / "workflows", layer_source(layer, root), "workflow"):
-            document = record.get("document") or {}
-            combined[str(document.get("id") or record["path"])] = record
+        directories = (layer / "design" / "workflows", layer / "workflows")
+        for directory in directories:
+            for record in _load_documents(layer, directory, layer_source(layer, root), "workflow"):
+                document = record.get("document") or {}
+                combined[str(document.get("id") or record["path"])] = record
     return sorted(combined.values(), key=lambda record: str((record.get("document") or {}).get("label") or record["path"]).lower())
 
 

@@ -80,7 +80,7 @@ def operation_catalog_for_legacy_api() -> list[dict[str, Any]]:
             "label": operation.get("label"),
             "ports": f"{', '.join(inputs)} → {', '.join(outputs)}",
             "routes": operation.get("implementation"),
-            "source": "workbench/workspaces/shared/operations",
+            "source": "workbench/workspaces/shared/design/operations",
         })
     return result
 

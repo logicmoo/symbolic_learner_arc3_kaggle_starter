@@ -11,7 +11,9 @@
     "text": "Text"
   },
   "modelSelection": {
-    "models": [],
+    "models": [
+      "openrouter-ai21_jamba-large-1.7"
+    ],
     "strategy": "single"
   },
   "bindings": {

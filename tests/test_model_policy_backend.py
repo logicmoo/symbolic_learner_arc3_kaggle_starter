@@ -110,7 +110,7 @@ def test_backend_model_discovery_supports_openai_and_ollama_shapes(tmp_path: Pat
     assert set(imported[0]["capabilities"]) >= {"multimodal", "vision", "audio", "tools", "reasoning"}
     assert imported[0]["providerMetadata"]["name"] == "local/a"
     assert imported[0]["properties"]["name"] == "local/a"
-    assert (tmp_path / "models" / "local-local_a.model.json").is_file()
+    assert (tmp_path / "design" / "models" / "local-local_a.model.json").is_file()
 
 
 def test_model_import_route_always_targets_shared_workspace(tmp_path: Path, monkeypatch) -> None:
@@ -122,7 +122,7 @@ def test_model_import_route_always_targets_shared_workspace(tmp_path: Path, monk
     result = policy_api.import_models("project", "vendor", {"models": [{"id": "remote/model", "label": "Remote"}]})
     assert result["targetWorkspace"]["id"] == "shared"
     assert not (project / "models").exists()
-    assert (shared / "models" / "vendor-remote_model.model.json").is_file()
+    assert (shared / "design" / "models" / "vendor-remote_model.model.json").is_file()
 
 
 def test_model_example_invokes_resolved_model(monkeypatch, tmp_path: Path) -> None:
@@ -145,7 +145,7 @@ def test_example_executor_is_shared_by_models_and_prompts() -> None:
 def test_discovery_reconciles_and_only_removes_managed_missing_models(tmp_path: Path) -> None:
     backend = {"id": "vendor", "label": "Vendor"}
     imported = import_discovered_models(tmp_path, backend, [{"id": "old", "label": "Old"}, {"id": "keep", "label": "Keep"}])
-    manual = tmp_path / "models" / "manual.model.json"
+    manual = tmp_path / "design" / "models" / "manual.model.json"
     manual.write_text(json.dumps({"kind": "model", "id": "manual", "inherits": "vendor", "model": "manual"}))
     rows = reconcile_discovered_models(tmp_path, backend, [{"id": "keep", "label": "Keep"}, {"id": "new", "label": "New"}])
     assert {row["id"]: row["status"] for row in rows} == {"keep": "unchanged", "new": "new", "old": "missing"}

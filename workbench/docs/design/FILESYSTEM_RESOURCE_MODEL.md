@@ -29,7 +29,18 @@ Every specification/alternative family uses the same three flat fields: `parents
 
 Arrays are required even when there is only one relationship. This permits one alternative to satisfy multiple specifications. `preferredChild` stays on each parent because the same child can have a different priority under different specifications. Run `node scripts/sync_resource_relationships.mjs` after bulk resource edits to normalize pointers and add missing backlinks.
 
-Canonical filenames carry the kind, for example `shared.echo.operation.json`, `image.semantic_datatype.json`, `bitmap.representation_datatype.json`, and `png.concrete_datatype.json`. Resources live beneath family directories such as `operations/`, `datatypes/`, `representations/`, `concrete_datatypes/`, `prompts/`, `models/`, and `workflows/`.
+Canonical filenames carry the kind, for example `shared.echo.operation.json`, `image.semantic_datatype.json`, `bitmap.representation_datatype.json`, and `png.concrete_datatype.json`.
+
+Workspace paths are lifecycle-first and then kind-specific:
+
+- `design/operations/` and `design/operation_implementations/`
+- `design/semantic_datatypes/`, `design/representation_datatypes/`, and `design/concrete_datatypes/`
+- `design/goals/` and `design/goal_variants/`
+- `design/atomspaces/` and `design/atomspace_variants/`
+- `design/backends/`, `design/models/`, and `design/profiles/`
+- `runtime/goal_runs/`, `runtime/workflow_runs/`, `runtime/execs/`, `runtime/events/`, `runtime/states/`, `runtime/contexts/`, and `runtime/logs/`
+
+The reader accepts legacy root-level family directories for existing workspaces. New resources are saved under `design/<plural-kind>/`. Shared normally has no runtime records. `policies/` remains a deliberately mixed family, while `docs/` is outside the JSON resource hierarchy.
 
 ## Inheritance and Overrides
 

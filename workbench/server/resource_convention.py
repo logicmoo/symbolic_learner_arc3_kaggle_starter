@@ -77,25 +77,25 @@ def infer_resource_kind(path: Path, document: dict[str, Any]) -> str:
 
     parent = path.parent.name.lower()
     name = path.stem.lower()
-    if parent == "operations":
+    if parent in {"operations", "operation_implementations"}:
         return "operation_implementation" if document.get("parents") else "operation"
-    if parent == "prompts":
+    if parent in {"prompts", "prompt_implementations"}:
         return "prompt_implementation" if document.get("parents") else "prompt"
     if parent == "workflows":
         return "workflow"
-    if parent == "goals":
+    if parent in {"goals", "goal_interpretations", "goal_variants"}:
         return "goal_variant" if document.get("parents") else "goal"
-    if parent == "plans":
+    if parent in {"plans", "plan_variants"}:
         return "plan_variant" if document.get("parents") else "plan"
-    if parent == "contexts":
+    if parent in {"contexts", "context_variants", "atomspaces", "atomspace_variants"}:
         return "context_variant" if document.get("parents") else "context"
-    if parent == "datatypes":
+    if parent in {"datatypes", "semantic_datatypes"}:
         return "semantic_datatype"
-    if parent == "representations":
+    if parent in {"representations", "representation_datatypes"}:
         return "representation_datatype"
     if parent == "concrete_datatypes":
         return "concrete_datatype"
-    if parent == "models":
+    if parent in {"backends", "models", "profiles"}:
         if document.get("provider"):
             return "backend"
         if document.get("inherits"):

@@ -254,6 +254,20 @@ Examples:
 
 Do not put all variants back into a monolithic catalog file.
 
+Workspace resources use a lifecycle-first layout:
+
+\- `design/<plural-kind>/` for editable specifications and alternatives
+
+\- `runtime/<plural-kind>/` for generated runs, execs, events, states, resolved contexts, and logs
+
+\- `policies/` may remain a mixed policy, observation, job, event, and benchmark family
+
+\- `docs/` contains Markdown and is not a resource-kind directory
+
+Shared normally has no runtime records. Maintain compatibility with legacy
+root-level family directories when reading older workspaces, but all new saves
+must use the lifecycle-first layout.
+
 
 
 \## Repository Structure and Working Conventions

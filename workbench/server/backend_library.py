@@ -9,6 +9,7 @@ from workspace_inheritance import effective_workspace_layers, layer_source
 
 SHARED_WORKSPACE_ID = "shared"
 MODEL_CATALOG_DIRECTORY = "models"
+BACKEND_DIRECTORIES = ("design/backends", "backends", "models")
 
 
 def read_backend_file(path: Path) -> dict[str, Any]:
@@ -28,12 +29,10 @@ def read_backend_file(path: Path) -> dict[str, Any]:
 
 
 def _backend_records(workspace_root: Path, source: str, workspace_id: str) -> list[dict[str, Any]]:
-    """Read kind=backend files from the unified models/ catalog."""
-    directory = workspace_root / MODEL_CATALOG_DIRECTORY
-    if not directory.is_dir():
-        return []
+    """Read kind=backend files from kind-specific or legacy catalogs."""
     records: list[dict[str, Any]] = []
-    for path in sorted(directory.glob("*.json"), key=lambda item: item.name.lower()):
+    paths = [path for name in BACKEND_DIRECTORIES for path in (workspace_root / name).glob("*.json")]
+    for path in sorted(paths, key=lambda item: item.name.lower()):
         try:
             raw = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):

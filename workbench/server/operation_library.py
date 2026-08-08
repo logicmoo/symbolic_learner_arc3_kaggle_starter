@@ -12,6 +12,7 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_WORKSPACES_ROOT = REPOSITORY_ROOT / "workbench" / "workspaces"
 SHARED_WORKSPACE_ID = "shared"
 OPERATION_KINDS = {"operation", "operation_implementation"}
+OPERATION_DIRECTORIES = ("design/operations", "design/operation_implementations", "operations", "operation_implementations")
 
 
 def read_operation_file(path: Path) -> dict[str, Any]:
@@ -37,11 +38,9 @@ def read_operation_file(path: Path) -> dict[str, Any]:
 
 
 def _operation_records(workspace_root: Path, source: str, workspace_id: str) -> list[dict[str, Any]]:
-    operation_dir = workspace_root / "operations"
-    if not operation_dir.is_dir():
-        return []
     records: list[dict[str, Any]] = []
-    for path in sorted(operation_dir.glob("*.json"), key=lambda item: item.name.lower()):
+    paths = [path for name in OPERATION_DIRECTORIES for path in (workspace_root / name).glob("*.json")]
+    for path in sorted(paths, key=lambda item: item.name.lower()):
         record: dict[str, Any] = {
             "path": path.relative_to(workspace_root).as_posix(),
             "source": source,
@@ -135,5 +134,5 @@ def legacy_catalog_view(documents: Iterable[dict[str, Any]]) -> list[dict[str, A
         left = " + ".join(inputs) or "∅"
         right = " + ".join(outputs) or "∅"
         routes = str(document.get("preferredChild") or document.get("implementation") or "")
-        result.append({"id": document["id"], "label": document.get("label") or document["id"], "ports": f"{left} → {right}", "routes": routes, "definition": document, "source": "workbench/workspaces/shared/operations"})
+        result.append({"id": document["id"], "label": document.get("label") or document["id"], "ports": f"{left} → {right}", "routes": routes, "definition": document, "source": "workbench/workspaces/shared/design/operations"})
     return sorted(result, key=lambda item: str(item["label"]).lower())

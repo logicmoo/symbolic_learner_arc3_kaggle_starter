@@ -158,7 +158,7 @@ The machine-readable contracts are maintained in:
 
 - [`workbench/docs/DATA_REPRESENTATIONS.md`](workbench/docs/DATA_REPRESENTATIONS.md)
   for the filesystem-backed semantic, representation, and concrete datatype model.
-- [`workbench/workspaces/shared/config/world_workbench_operations.config.json`](workbench/workspaces/shared/config/world_workbench_operations.config.json) for
+- [`workbench/workspaces/shared/design/configs/world_workbench_operations.config.json`](workbench/workspaces/shared/design/configs/world_workbench_operations.config.json) for
   operation input/output contracts.
 - [`config/llm_workflows.json`](config/llm_workflows.json) for runnable workflows
   and nested subworkflows.

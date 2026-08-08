@@ -8,7 +8,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_active_atomspace_datatype_replaces_information_silo() -> None:
-    directory = ROOT / "workbench" / "workspaces" / "shared" / "datatypes"
+    directory = ROOT / "workbench" / "workspaces" / "shared" / "design" / "semantic_datatypes"
     atomspace = json.loads((directory / "atomspace.semantic_datatype.json").read_text(encoding="utf-8"))
     information = json.loads((directory / "information.semantic_datatype.json").read_text(encoding="utf-8"))
     assert atomspace["id"] == "atomspace"

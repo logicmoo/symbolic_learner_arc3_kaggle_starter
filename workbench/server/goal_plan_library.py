@@ -10,9 +10,9 @@ from workspace_inheritance import effective_workspace_layers, layer_source
 
 
 FAMILIES = {
-    "goal": ("goals", {"goal", "goal_interpretation", "goal_variant"}),
-    "plan": ("plans", {"plan", "plan_variant"}),
-    "context": ("contexts", {"context", "context_variant"}),
+    "goal": (("design/goals", "design/goal_interpretations", "design/goal_variants", "goals", "goal_interpretations", "goal_variants"), {"goal", "goal_interpretation", "goal_variant"}),
+    "plan": (("design/plans", "design/plan_variants", "plans", "plan_variants"), {"plan", "plan_variant"}),
+    "context": (("design/atomspaces", "design/atomspace_variants", "contexts", "context_variants"), {"context", "context_variant"}),
 }
 
 
@@ -30,12 +30,10 @@ def _read(path: Path, kinds: set[str]) -> dict[str, Any]:
     return value
 
 
-def _records(root: Path, directory: str, kinds: set[str], source: str, workspace_id: str) -> list[dict[str, Any]]:
-    resource_dir = root / directory
-    if not resource_dir.is_dir():
-        return []
+def _records(root: Path, directories: tuple[str, ...], kinds: set[str], source: str, workspace_id: str) -> list[dict[str, Any]]:
     records: list[dict[str, Any]] = []
-    for path in sorted(resource_dir.glob("*.json"), key=lambda item: item.name.lower()):
+    paths = [path for directory in directories for path in (root / directory).glob("*.json")]
+    for path in sorted(paths, key=lambda item: item.name.lower()):
         record: dict[str, Any] = {"path": path.relative_to(root).as_posix(), "source": source, "workspaceId": workspace_id}
         try:
             record["document"] = _read(path, kinds)
@@ -46,10 +44,10 @@ def _records(root: Path, directory: str, kinds: set[str], source: str, workspace
 
 
 def load_workspace_symbolic_records(workspace_root: Path, family: str, *, workspaces_root: Path = DEFAULT_WORKSPACES_ROOT) -> list[dict[str, Any]]:
-    directory, kinds = FAMILIES[family]
+    directories, kinds = FAMILIES[family]
     effective: dict[str, dict[str, Any]] = {}
     for layer in effective_workspace_layers(workspace_root, workspaces_root):
-        for record in _records(layer, directory, kinds, layer_source(layer, workspace_root), layer.name):
+        for record in _records(layer, directories, kinds, layer_source(layer, workspace_root), layer.name):
             document = record.get("document") or {}
             effective[str(document.get("id") or record["path"])] = record
     return sorted(effective.values(), key=lambda record: str((record.get("document") or {}).get("label") or record["path"]).lower())

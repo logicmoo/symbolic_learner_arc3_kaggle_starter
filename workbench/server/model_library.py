@@ -10,6 +10,7 @@ from workspace_inheritance import effective_workspace_layers, layer_source
 
 SHARED_WORKSPACE_ID = "shared"
 MODEL_KINDS = {"model", "profile"}
+MODEL_DIRECTORIES = ("design/models", "design/profiles", "models", "profiles")
 
 
 def read_model_file(path: Path) -> dict[str, Any]:
@@ -34,11 +35,9 @@ def read_model_file(path: Path) -> dict[str, Any]:
 
 
 def _model_records(workspace_root: Path, source: str, workspace_id: str) -> list[dict[str, Any]]:
-    directory = workspace_root / MODEL_CATALOG_DIRECTORY
-    if not directory.is_dir():
-        return []
     records: list[dict[str, Any]] = []
-    for path in sorted(directory.glob("*.json"), key=lambda item: item.name.lower()):
+    paths = [path for name in MODEL_DIRECTORIES for path in (workspace_root / name).glob("*.json")]
+    for path in sorted(paths, key=lambda item: item.name.lower()):
         try:
             raw = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):

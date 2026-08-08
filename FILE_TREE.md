@@ -30,7 +30,7 @@ The planning documents have deliberately separate scopes and cross-link one anot
 - [`python/worldworkbench/adapters/arc3.py`](python/worldworkbench/adapters/arc3.py) — ARC3 observation, intervention, human-choice, and artifact translation boundary.
 - [`python/worldworkbench/adapters/__init__.py`](python/worldworkbench/adapters/__init__.py) — public ARC3 adapter exports.
 - [`workbench/docs/DATA_REPRESENTATIONS.md`](workbench/docs/DATA_REPRESENTATIONS.md) — filesystem-backed semantic, representation, and concrete datatype model.
-- [`workbench/workspaces/shared/config/world_workbench_operations.config.json`](workbench/workspaces/shared/config/world_workbench_operations.config.json) — reusable processing-resource contracts, including object extraction and Turtle representation operations.
+- [`workbench/workspaces/shared/design/configs/world_workbench_operations.config.json`](workbench/workspaces/shared/design/configs/world_workbench_operations.config.json) — reusable processing-resource contracts, including object extraction and Turtle representation operations.
 - [`config/llm_workflows.json`](config/llm_workflows.json) — runnable workflow-desktop catalog, including the seven-step `ls20` human-observation workflow and its nested subworkflows.
 - [`python/workflow_operation_editor.py`](python/workflow_operation_editor.py) — MeTTaSymbolicLearnerWorkbench desktop for composing, validating, inspecting, saving, and running typed operations and nested subworkflows.
 
@@ -99,19 +99,20 @@ The other files under `workbench/frontend/src/pages/` and older shell-oriented c
 
 - [`workbench/workspaces/shared/shared.workspace.json`](workbench/workspaces/shared/shared.workspace.json) — shared-library identity and inheritance root.
 - [`workbench/workspaces/shared/docs/data.md`](workbench/workspaces/shared/docs/data.md), [`goals.md`](workbench/workspaces/shared/docs/goals.md), [`plans.md`](workbench/workspaces/shared/docs/plans.md), [`operations.md`](workbench/workspaces/shared/docs/operations.md), [`prompts.md`](workbench/workspaces/shared/docs/prompts.md), [`policies.md`](workbench/workspaces/shared/docs/policies.md), and [`llm_catalog.md`](workbench/workspaces/shared/docs/llm_catalog.md) — contextual Help documents displayed beside rich editors.
-- `workbench/workspaces/shared/datatypes/*.semantic_datatype.json` — abstract meanings such as Image, Entity, Observation, AtomSpace, Goal, Event, and World Model.
-- `workbench/workspaces/shared/representations/*.representation_datatype.json` — interchangeable structures such as bitmap, scene graph, object list, symbolic facts, Turtle program, and natural language.
-- `workbench/workspaces/shared/concrete_datatypes/*.concrete_datatype.json` — exact encodings such as PNG, JPEG, JSON, UTF-8 text, Prolog, NumPy, and SVG.
-- `workbench/workspaces/shared/operations/*.operation.json` and `*.operation_implementation.json` — abstract executable contracts and replaceable Python, Prolog, or LLM implementations.
-- `workbench/workspaces/shared/prompts/*.prompt.json` and `*.prompt_implementation.json` — semantic prompt contracts and model/modal variants.
-- `workbench/workspaces/shared/models/*.backend.json`, `*.model.json`, and `*.profile.json` — provider transport, model identity, and reasoning/runtime profile layers.
-- `workbench/workspaces/shared/goals/*.goal.json` and `*.goal_variant.json` — desired-outcome specifications and interpretations.
-- `workbench/workspaces/shared/plans/*.plan.json` and `*.plan_variant.json` — reusable plan specifications and strategies.
-- `workbench/workspaces/shared/contexts/*.context.json` and `*.context_variant.json` — AtomSpace binding specifications and concrete context alternatives.
+- `workbench/workspaces/shared/design/semantic_datatypes/*.semantic_datatype.json` — abstract meanings such as Image, Entity, Observation, AtomSpace, Goal, Event, and World Model.
+- `workbench/workspaces/shared/design/representation_datatypes/*.representation_datatype.json` — interchangeable structures such as bitmap, scene graph, object list, symbolic facts, Turtle program, and natural language.
+- `workbench/workspaces/shared/design/concrete_datatypes/*.concrete_datatype.json` — exact encodings such as PNG, JPEG, JSON, UTF-8 text, Prolog, NumPy, and SVG.
+- `workbench/workspaces/shared/design/operations/*.operation.json` and `design/operation_implementations/*.operation_implementation.json` — abstract executable contracts and replaceable implementations.
+- `workbench/workspaces/shared/design/prompts/*.prompt.json` and `design/prompt_implementations/*.prompt_implementation.json` — semantic prompt contracts and model/modal variants.
+- `workbench/workspaces/shared/design/backends`, `design/models`, and `design/profiles` — provider transport, model identity, and reasoning/runtime profile layers.
+- `workbench/workspaces/shared/design/goals` and `design/goal_variants` — desired-outcome specifications and interpretations.
+- `workbench/workspaces/shared/design/plans` and `design/plan_variants` — reusable plan specifications and strategies.
+- `workbench/workspaces/shared/design/atomspaces` and `design/atomspace_variants` — AtomSpace declarations and concrete alternatives.
+- `workbench/workspaces/shared/runtime/` — generated goal runs, workflow runs, execs, events, states, resolved contexts, and logs; normally empty in Shared.
 - `workbench/workspaces/shared/policies/*.json` — model runtime policies, vendor policy, eligibility entries, health observations, ping jobs/events, benchmark policies, and benchmark results.
 - [`workbench/workspaces/arc3/README.md`](workbench/workspaces/arc3/README.md) — ARC3 workspace purpose; its `workflows/`, `operations/`, and `prompts/` override or extend shared resources.
 - [`workbench/workspaces/default/default.workspace.json`](workbench/workspaces/default/default.workspace.json) — minimal editable starter template; it declares Shared as its initial inclusion and intentionally contains no local resources.
-- [`workbench/workspaces/shared/workflows/titlecase_demo.workflow.json`](workbench/workspaces/shared/workflows/titlecase_demo.workflow.json) and [`review_with_approval.workflow.json`](workbench/workspaces/shared/workflows/review_with_approval.workflow.json) — reusable executable engine examples inherited by Default and other workspaces that include Shared.
+- [`workbench/workspaces/shared/design/workflows/titlecase_demo.workflow.json`](workbench/workspaces/shared/design/workflows/titlecase_demo.workflow.json) and [`review_with_approval.workflow.json`](workbench/workspaces/shared/design/workflows/review_with_approval.workflow.json) — reusable executable engine examples inherited by Default and other workspaces that include Shared.
 - [`workbench/workspaces/tic_tac_toe_learner/README.md`](workbench/workspaces/tic_tac_toe_learner/README.md) and [`workbench/workspaces/workflow_engine_tour/README.md`](workbench/workspaces/workflow_engine_tour/README.md) — focused example-workspace entry documents.
 - [`workbench.workspace.json`](workbench.workspace.json) — repository-level workspace selection/configuration.
 

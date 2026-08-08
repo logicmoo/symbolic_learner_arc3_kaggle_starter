@@ -99,7 +99,7 @@ def discovered_model_document(backend: dict[str, Any], row: dict[str, Any]) -> d
 
 
 def reconcile_discovered_models(root: Path, backend: dict[str, Any], models: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    directory = root / "models"; existing_by_remote: dict[str, dict[str, Any]] = {}
+    directory = root / "design" / "models"; existing_by_remote: dict[str, dict[str, Any]] = {}
     if directory.is_dir():
         for path in directory.glob("*.model.json"):
             try: document = json.loads(path.read_text(encoding="utf-8"))
@@ -122,7 +122,7 @@ def reconcile_discovered_models(root: Path, backend: dict[str, Any], models: lis
 
 
 def import_discovered_models(root: Path, backend: dict[str, Any], models: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    directory = root / "models"
+    directory = root / "design" / "models"
     directory.mkdir(parents=True, exist_ok=True)
     imported: list[dict[str, Any]] = []
     for row in models:
@@ -139,7 +139,7 @@ def import_discovered_models(root: Path, backend: dict[str, Any], models: list[d
 
 
 def remove_missing_models(root: Path, backend: dict[str, Any], resource_ids: list[str]) -> list[str]:
-    directory = (root / "models").resolve(); removed: list[str] = []
+    directory = (root / "design" / "models").resolve(); removed: list[str] = []
     for resource_id in resource_ids:
         safe_id = re.sub(r"[^a-zA-Z0-9._-]+", "_", str(resource_id)).strip("._").lower()
         target = (directory / f"{safe_id}.model.json").resolve()

@@ -12,6 +12,7 @@ PROMPT_DIRECTORY = "prompts"
 PROMPT_KIND = "prompt"
 PROMPT_IMPLEMENTATION_KIND = "prompt_implementation"
 PROMPT_KINDS = {PROMPT_KIND, PROMPT_IMPLEMENTATION_KIND}
+PROMPT_DIRECTORIES = ("design/prompts", "design/prompt_implementations", "prompts", "prompt_implementations")
 
 
 def read_prompt_file(path: Path) -> dict[str, Any]:
@@ -52,11 +53,9 @@ def read_prompt_file(path: Path) -> dict[str, Any]:
 
 
 def _prompt_records(workspace_root: Path, source: str, workspace_id: str) -> list[dict[str, Any]]:
-    directory = workspace_root / PROMPT_DIRECTORY
-    if not directory.is_dir():
-        return []
     records: list[dict[str, Any]] = []
-    for path in sorted(directory.glob("*.json"), key=lambda item: item.name.lower()):
+    paths = [path for name in PROMPT_DIRECTORIES for path in (workspace_root / name).glob("*.json")]
+    for path in sorted(paths, key=lambda item: item.name.lower()):
         record: dict[str, Any] = {
             "path": path.relative_to(workspace_root).as_posix(),
             "source": source,

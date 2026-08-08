@@ -26,6 +26,8 @@ async function request(path: string, init?: RequestInit) {
 
 export function GoalPlanLibraryEditor({ workspaceId, family }: { workspaceId: string; family: Family }) {
   const directory = family === "goal" ? "goals" : family === "plan" ? "plans" : "contexts";
+  const specificationDirectory = family === "context" ? "design/atomspaces" : `design/${directory}`;
+  const variantDirectory = family === "goal" ? "design/goal_variants" : family === "plan" ? "design/plan_variants" : "design/atomspace_variants";
   const variantKind = family === "goal" ? "goal_variant" : family === "plan" ? "plan_variant" : "context_variant";
   const familyLabel = family === "goal" ? "Goal" : family === "plan" ? "Plan" : "AtomSpace";
   const [payload, setPayload] = useState<Payload | null>(null);
@@ -57,12 +59,12 @@ export function GoalPlanLibraryEditor({ workspaceId, family }: { workspaceId: st
   const newSpecification = () => {
     const id = `new_${family}`;
     const document: Specification = { kind: family, id, label: `New ${familyLabel}`, description: `Abstract ${family} specification.`, children: [], ...(family === "goal" ? { successCriteria: [] } : family === "plan" ? { goals: [] } : { bindings: [] }) };
-    open({ path: `${directory}/${id}.${family}.json`, source: workspaceId === "shared" ? "shared" : "workspace", workspaceId, document });
+    open({ path: `${specificationDirectory}/${id}.${family}.json`, source: workspaceId === "shared" ? "shared" : "workspace", workspaceId, document });
   };
   const newVariant = (parent: Specification) => {
     const id = `${parent.id}.alternative`;
     const document: Variant = { kind: variantKind, id, parents: [parent.id], label: `${parent.label || parent.id} — Alternative`, description: `Concrete ${family} alternative.` };
-    open({ path: `${directory}/${slug(id)}.${variantKind}.json`, source: workspaceId === "shared" ? "shared" : "workspace", workspaceId, document });
+    open({ path: `${variantDirectory}/${slug(id)}.${variantKind}.json`, source: workspaceId === "shared" ? "shared" : "workspace", workspaceId, document });
   };
   const saveDoc = (doc: OpenDocument) => perform(async () => {
     let document: Resource;
@@ -70,7 +72,8 @@ export function GoalPlanLibraryEditor({ workspaceId, family }: { workspaceId: st
     const kinds = family === "goal" ? ["goal", "goal_interpretation", "goal_variant"] : family === "plan" ? ["plan", "plan_variant"] : ["context", "context_variant"];
     if (!document.id || !kinds.includes(document.kind)) throw new Error(`${familyLabel} resource requires id and a valid kind`);
     if (document.kind !== family && !relationshipIds((document as Variant).parents).length) throw new Error(`${familyLabel} variant requires parents`);
-    const path = workspaceId === "shared" || doc.record.source === "workspace" ? doc.record.path : `${directory}/${slug(document.id)}.${document.kind}.json`;
+    const targetDirectory = document.kind === family ? specificationDirectory : variantDirectory;
+    const path = workspaceId === "shared" || doc.record.source === "workspace" ? doc.record.path : `${targetDirectory}/${slug(document.id)}.${document.kind}.json`;
     await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/file`, { method: "PUT", body: JSON.stringify({ path, content: JSON.stringify(document, null, 2) }) });
     const next = await load();
     const saved = next.resources.find(row => row.document?.id === document.id);

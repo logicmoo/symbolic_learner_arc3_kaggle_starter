@@ -102,9 +102,9 @@ PNG/JPEG/BMP are concrete datatypes.
 Shared resources are stored as one JSON file per definition:
 
 ```text
-workbench/workspaces/shared/datatypes/
-workbench/workspaces/shared/representations/
-workbench/workspaces/shared/concrete_datatypes/
+workbench/workspaces/shared/design/semantic_datatypes/
+workbench/workspaces/shared/design/representation_datatypes/
+workbench/workspaces/shared/design/concrete_datatypes/
 ```
 
 A normal workspace inherits these definitions and can override a shared

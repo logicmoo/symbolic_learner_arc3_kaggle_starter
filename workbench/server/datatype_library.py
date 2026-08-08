@@ -17,9 +17,9 @@ from operation_library import (
 from resource_relationships import points_to, relationship_ids
 from workspace_inheritance import effective_workspace_layers, layer_source
 
-DATATYPE_DIRECTORY = "datatypes"
-REPRESENTATION_DIRECTORY = "representations"
-CONCRETE_DIRECTORY = "concrete_datatypes"
+DATATYPE_DIRECTORY = "design/semantic_datatypes"
+REPRESENTATION_DIRECTORY = "design/representation_datatypes"
+CONCRETE_DIRECTORY = "design/concrete_datatypes"
 DATATYPE_KIND = "semantic_datatype"
 REPRESENTATION_KIND = "representation_datatype"
 CONCRETE_KIND = "concrete_datatype"
@@ -47,12 +47,10 @@ def _read_resource(path: Path, expected_kind: str) -> dict[str, Any]:
     return value
 
 
-def _records(workspace_root: Path, directory: str, kind: str, source: str, workspace_id: str) -> list[dict[str, Any]]:
-    resource_dir = workspace_root / directory
-    if not resource_dir.is_dir():
-        return []
+def _records(workspace_root: Path, directories: tuple[str, ...], kind: str, source: str, workspace_id: str) -> list[dict[str, Any]]:
     records: list[dict[str, Any]] = []
-    for path in sorted(resource_dir.glob("*.json"), key=lambda item: item.name.lower()):
+    paths = [path for directory in directories for path in (workspace_root / directory).glob("*.json")]
+    for path in sorted(paths, key=lambda item: item.name.lower()):
         record: dict[str, Any] = {
             "path": path.relative_to(workspace_root).as_posix(),
             "source": source,
@@ -68,25 +66,25 @@ def _records(workspace_root: Path, directory: str, kind: str, source: str, works
     return records
 
 
-def _effective(workspace_root: Path, directory: str, kind: str, *, workspaces_root: Path = DEFAULT_WORKSPACES_ROOT) -> list[dict[str, Any]]:
+def _effective(workspace_root: Path, directories: tuple[str, ...], kind: str, *, workspaces_root: Path = DEFAULT_WORKSPACES_ROOT) -> list[dict[str, Any]]:
     combined: dict[str, dict[str, Any]] = {}
     for layer in effective_workspace_layers(workspace_root, workspaces_root):
-        for record in _records(layer, directory, kind, layer_source(layer, workspace_root), layer.name):
+        for record in _records(layer, directories, kind, layer_source(layer, workspace_root), layer.name):
             document = record.get("document") or {}
             combined[str(document.get("id") or record["path"])] = record
     return sorted(combined.values(), key=lambda item: str((item.get("document") or {}).get("label") or item["path"]).lower())
 
 
 def load_workspace_datatype_records(workspace_root: Path, *, workspaces_root: Path = DEFAULT_WORKSPACES_ROOT) -> list[dict[str, Any]]:
-    return _effective(workspace_root, DATATYPE_DIRECTORY, DATATYPE_KIND, workspaces_root=workspaces_root)
+    return _effective(workspace_root, (DATATYPE_DIRECTORY, "semantic_datatypes", "datatypes"), DATATYPE_KIND, workspaces_root=workspaces_root)
 
 
 def load_workspace_representation_records(workspace_root: Path, *, workspaces_root: Path = DEFAULT_WORKSPACES_ROOT) -> list[dict[str, Any]]:
-    return _effective(workspace_root, REPRESENTATION_DIRECTORY, REPRESENTATION_KIND, workspaces_root=workspaces_root)
+    return _effective(workspace_root, (REPRESENTATION_DIRECTORY, "representation_datatypes", "representations"), REPRESENTATION_KIND, workspaces_root=workspaces_root)
 
 
 def load_workspace_concrete_datatype_records(workspace_root: Path, *, workspaces_root: Path = DEFAULT_WORKSPACES_ROOT) -> list[dict[str, Any]]:
-    return _effective(workspace_root, CONCRETE_DIRECTORY, CONCRETE_KIND, workspaces_root=workspaces_root)
+    return _effective(workspace_root, (CONCRETE_DIRECTORY, "concrete_datatypes"), CONCRETE_KIND, workspaces_root=workspaces_root)
 
 
 def resolve_datatype_representation(workspace_root: Path, datatype_id: str, requested: str | None = None, *, workspaces_root: Path = DEFAULT_WORKSPACES_ROOT) -> dict[str, Any]:
