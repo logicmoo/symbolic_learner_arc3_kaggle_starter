@@ -35,5 +35,5 @@ def test_design_policy_navigation_uses_rich_editor() -> None:
     editor = (ROOT / "workbench" / "frontend" / "src" / "components" / "PolicyLibraryEditor.tsx").read_text(encoding="utf-8")
     assert 'label:"Policy",view:"policies"' in page
     assert 'view==="policies"&&<PolicyLibraryEditor' in page
-    for token in ("HierarchyResourceEditor", "Split view", "raw-json-editor", "ENABLED", "/policies"):
+    for token in ("HierarchyResourceEditor", "Split view", "ResourceSourceEditor", "ENABLED", "/policies"):
         assert token in editor

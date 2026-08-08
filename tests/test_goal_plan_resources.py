@@ -68,7 +68,7 @@ def test_shared_workspace_contains_bidirectional_context_examples() -> None:
 
 def test_goal_plan_editor_preserves_rich_hierarchy_features() -> None:
     source = (ROOT / "workbench" / "frontend" / "src" / "components" / "GoalPlanLibraryEditor.tsx").read_text(encoding="utf-8")
-    for token in ("HierarchyResourceEditor", "PREFERRED VARIANT", "Split view", "+ Alternative", "+ Abstract", "raw-json-editor", "preferredChild"):
+    for token in ("HierarchyResourceEditor", "PREFERRED VARIANT", "Split view", "+ Alternative", "+ Abstract", "ResourceSourceEditor", "preferredChild"):
         assert token in source
 
 

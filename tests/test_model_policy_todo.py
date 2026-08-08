@@ -29,7 +29,7 @@ def test_active_model_policy_page_uses_live_filesystem_policy_api() -> None:
     shell = (ROOT / "workbench" / "frontend" / "src" / "pages" / "FilesystemWorkbenchPage.tsx").read_text(encoding="utf-8")
     assert "/model-policy`" in page
     assert "/model-policy/ping`" in page
-    for token in ("All Models", "Benchmark Matrix", "Performance History", "Filter any JSON property"):
+    for token in ("All Models", "Benchmark Matrix", "Performance History", "Filter any resource property"):
         assert token in page
     assert 'view==="modelPolicy"&&<ModelPolicyPage workspaceId={workspace.id}/>' in shell
 
