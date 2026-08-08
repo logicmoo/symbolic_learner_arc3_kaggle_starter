@@ -2,12 +2,16 @@ from __future__ import annotations
 
 import json
 import re
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from uuid import uuid4
 
 from fastapi import APIRouter, Body, HTTPException
 
 from policy_library import POLICY_KINDS, effective_model_registry, load_workspace_policy_records
+from backend_library import load_workspace_backend_records
+from model_policy_ping import run_ping_job
 from workspace_api import _resolve_workspace
 
 router = APIRouter(prefix="/workspaces", tags=["model-policy"])
@@ -46,3 +50,19 @@ def record_model_policy_observation(workspace_id: str, document: dict[str, Any] 
     temporary.write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8")
     temporary.replace(target)
     return {"workspace": workspace, "path": target.relative_to(Path(workspace["root"])).as_posix(), "document": document}
+
+
+@router.post("/{workspace_id}/model-policy/ping", status_code=201)
+def execute_model_policy_ping(workspace_id: str, request: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
+    try: workspace = _resolve_workspace(workspace_id)
+    except KeyError as error: raise HTTPException(status_code=404, detail=str(error)) from error
+    root = Path(workspace["root"]); records = load_workspace_policy_records(root); registry = effective_model_registry(records)
+    scope = str(request.get("scope") or "all").lower()
+    if scope not in {"all", "on", "auto", "off"}: raise HTTPException(status_code=400, detail="scope must be all, on, auto, or off")
+    models = registry["models"]
+    if scope != "all": models = [model for model in models if str((model.get("policy") or {}).get("wanted") or "auto").lower() == scope]
+    job_id = f"ping_{scope}_{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S')}_{uuid4().hex[:8]}"
+    job = {"kind": "model_ping_job", "id": job_id, "label": f"Ping {scope}", "scope": scope, "targets": [model.get("id") for model in models], "concurrency": request.get("concurrency", 4), "timeoutMs": request.get("timeoutMs", 15000), "continueOnError": True, "createdAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")}
+    rules = (registry.get("policy") or {}).get("rules") or {}; backend_records = load_workspace_backend_records(root); backends = [record["document"] for record in backend_records if record.get("document")]
+    result = run_ping_job(root, job, models, backends, slow_latency_ms=float(rules.get("slowLatencyMs", 5000)))
+    return {"workspace": workspace, **result}

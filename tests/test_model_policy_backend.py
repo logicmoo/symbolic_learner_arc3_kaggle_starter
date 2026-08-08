@@ -9,6 +9,7 @@ SERVER = ROOT / "workbench" / "server"
 sys.path.insert(0, str(SERVER))
 
 import policy_api  # noqa: E402
+from model_policy_ping import run_ping_job  # noqa: E402
 from policy_library import effective_model_registry, load_workspace_policy_records  # noqa: E402
 
 
@@ -55,3 +56,33 @@ def test_active_app_registers_model_policy_backend_router() -> None:
     source = (SERVER / "app.py").read_text(encoding="utf-8")
     assert "from policy_api import router as policy_router" in source
     assert "app.include_router(policy_router, prefix=\"/api\")" in source
+
+
+def test_ping_job_persists_independent_health_and_events(tmp_path: Path) -> None:
+    models = [
+        {"id": "vendor:fast", "vendorId": "vendor"},
+        {"id": "vendor:broken", "vendorId": "vendor"},
+    ]
+    def probe(model: dict, _backend: dict | None, _timeout: int) -> dict:
+        if model["id"].endswith("broken"):
+            raise RuntimeError("probe failed")
+        return {"status": "online", "latencyMs": 12}
+    result = run_ping_job(
+        tmp_path,
+        {"id": "job", "targets": [item["id"] for item in models], "concurrency": 2, "timeoutMs": 1000},
+        models,
+        [{"id": "vendor", "configuration": {"baseUrl": "http://example.test"}}],
+        probe=probe,
+    )
+    assert result["job"]["status"] == "completed_with_errors"
+    assert result["job"]["failureCount"] == 1
+    assert {item["health"]["status"] for item in result["results"]} == {"online", "error"}
+    persisted = list((tmp_path / "policies").glob("*.json"))
+    assert len(persisted) == 5  # one job, two events, and two health observations
+
+
+def test_model_policy_ui_calls_real_ping_executor() -> None:
+    source = (ROOT / "workbench" / "frontend" / "src" / "components" / "ModelPolicyTodoPage.tsx").read_text(encoding="utf-8")
+    assert "/model-policy/ping" in source
+    for label in ("Ping All", "Ping Wanted", "Ping Auto", "Ping Unwanted"):
+        assert label in source
