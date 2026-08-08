@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-meta_muse-spark-1.2)
   (label "Meta: Muse Spark 1.2")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model meta/muse-spark-1.2)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio true)
     (code false)
     (functionCalling true)
@@ -19,17 +19,17 @@
     (tools true)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 1048576)
     (maxOutputTokens null)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.00000125")
     (completion "0.00000425")
     (web_search "0.0025")
     (input_cache_read "0.00000015")
   ))
-  (properties ({}
+  (properties (
     (id meta/muse-spark-1.2)
     (canonical_slug meta/muse-spark-1.2-20260805)
     (hugging_face_id null)
@@ -37,34 +37,34 @@
     (created 1785959287)
     (description "Muse Spark 1.2 is a reasoning model from Meta, designed for complex agentic tasks. It accepts text, images, video, audio, and PDF documents, returns text, and offers a 1M-token context...")
     (context_length 1048576)
-    (architecture ({}
+    (architecture (
       (modality text+image+file+audio+video->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
         video
         file
         audio
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000125")
       (completion "0.00000425")
       (web_search "0.0025")
       (input_cache_read "0.00000015")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 1048576)
       (max_completion_tokens null)
       (is_moderated true)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_tokens
       reasoning
@@ -78,30 +78,30 @@
       top_k
       top_p
     ))
-    (default_parameters ({}))
+    (default_parameters ())
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/meta/muse-spark-1.2-20260805/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category 3d)
           (elo 1343)
           (win_rate 62.6)
           (rank 5)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 1347)
           (win_rate 60.1)
           (rank 3)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 1333)
@@ -110,9 +110,9 @@
         )
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory true)
-      (supported_efforts (
+      (supported_efforts ([]
         xhigh
         high
         medium
@@ -123,7 +123,7 @@
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id meta/muse-spark-1.2)
     (canonical_slug meta/muse-spark-1.2-20260805)
     (hugging_face_id null)
@@ -131,34 +131,34 @@
     (created 1785959287)
     (description "Muse Spark 1.2 is a reasoning model from Meta, designed for complex agentic tasks. It accepts text, images, video, audio, and PDF documents, returns text, and offers a 1M-token context...")
     (context_length 1048576)
-    (architecture ({}
+    (architecture (
       (modality text+image+file+audio+video->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
         video
         file
         audio
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000125")
       (completion "0.00000425")
       (web_search "0.0025")
       (input_cache_read "0.00000015")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 1048576)
       (max_completion_tokens null)
       (is_moderated true)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_tokens
       reasoning
@@ -172,30 +172,30 @@
       top_k
       top_p
     ))
-    (default_parameters ({}))
+    (default_parameters ())
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/meta/muse-spark-1.2-20260805/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category 3d)
           (elo 1343)
           (win_rate 62.6)
           (rank 5)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 1347)
           (win_rate 60.1)
           (rank 3)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 1333)
@@ -204,9 +204,9 @@
         )
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory true)
-      (supported_efforts (
+      (supported_efforts ([]
         xhigh
         high
         medium
@@ -216,7 +216,7 @@
       (default_effort medium)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId meta/muse-spark-1.2)

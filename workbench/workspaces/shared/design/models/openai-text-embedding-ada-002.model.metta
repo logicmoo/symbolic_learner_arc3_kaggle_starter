@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openai-text-embedding-ada-002)
   (label text-embedding-ada-002)
@@ -6,7 +6,7 @@
   (inherits openai)
   (model text-embedding-ada-002)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling false)
@@ -19,25 +19,25 @@
     (tools false)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow null)
     (maxOutputTokens null)
   ))
-  (pricing ({}))
-  (properties ({}
+  (pricing ())
+  (properties (
     (id text-embedding-ada-002)
     (object model)
     (created 1671217299)
     (owned_by openai-internal)
     (ownedBy openai-internal)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id text-embedding-ada-002)
     (object model)
     (created 1671217299)
     (owned_by openai-internal)
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openai)
     (remoteModelId text-embedding-ada-002)

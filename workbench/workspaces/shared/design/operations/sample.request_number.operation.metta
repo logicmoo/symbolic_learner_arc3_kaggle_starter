@@ -1,48 +1,48 @@
-({}
+(
   (kind operation)
   (id sample.request_number)
   (label "Request a Number")
   (description "Pause a workflow and ask its user to enter a number in the Workbench UI.")
-  (categories (
+  (categories ([]
     sample/input
     core/human
   ))
-  (inputs ({}))
-  (outputs ({}
+  (inputs ())
+  (outputs (
     (value Number)
   ))
-  (parameters ({}
+  (parameters (
     (prompt "How many objects are visible?")
     (label "Object count")
     (datatype Number)
     (required true)
   ))
-  (example_execute ({}
+  (example_execute (
     (action operation.invoke)
-    (parameters ({}
-      (prompt ({}
+    (parameters (
+      (prompt (
         (datatype Text)
         (label Question)
         (default "How many objects are visible?")
       ))
-      (label ({}
+      (label (
         (datatype Text)
         (label "Field label")
         (default "Object count")
       ))
-      (datatype ({}
+      (datatype (
         (datatype Text)
         (label "Expected datatype")
         (default Number)
       ))
-      (required ({}
+      (required (
         (datatype Boolean)
         (label Required)
         (default true)
       ))
     ))
   ))
-  (children (
+  (children ([]
     sample.request_number.workbench
   ))
   (preferredChild sample.request_number.workbench)

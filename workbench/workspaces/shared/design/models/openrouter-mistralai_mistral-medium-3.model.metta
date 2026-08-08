@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-mistralai_mistral-medium-3)
   (label "Mistral: Mistral Medium 3")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model mistralai/mistral-medium-3)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,16 +19,16 @@
     (tools true)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 131072)
     (maxOutputTokens null)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.0000004")
     (completion "0.000002")
     (input_cache_read "0.00000004")
   ))
-  (properties ({}
+  (properties (
     (id mistralai/mistral-medium-3)
     (canonical_slug mistralai/mistral-medium-3)
     (hugging_face_id "")
@@ -36,31 +36,31 @@
     (created 1746627341)
     (description "Mistral Medium 3 is a high-performance enterprise-grade language model designed to deliver frontier-level capabilities at significantly reduced operational cost. It balances state-of-the-art reasoning and multimodal performance with 8× lower cost...")
     (context_length 131072)
-    (architecture ({}
+    (architecture (
       (modality text+image+file->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
         file
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Mistral)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000004")
       (completion "0.000002")
       (input_cache_read "0.00000004")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 131072)
       (max_completion_tokens null)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       max_tokens
       presence_penalty
@@ -73,53 +73,53 @@
       tools
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature 0.3)
     ))
     (supported_voices null)
     (knowledge_cutoff 2025-03-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/mistralai/mistral-medium-3/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category 3d)
           (elo 1137)
           (win_rate 54.7)
           (rank 69)
         )
-        ({}
+        (
           (arena models)
           (category codecategories)
           (elo 1097)
           (win_rate 48.1)
           (rank 88)
         )
-        ({}
+        (
           (arena models)
           (category dataviz)
           (elo 1059)
           (win_rate 45.7)
           (rank 92)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 1059)
           (win_rate 45.3)
           (rank 92)
         )
-        ({}
+        (
           (arena models)
           (category uicomponent)
           (elo 1059)
           (win_rate 49.9)
           (rank 86)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 1101)
@@ -130,7 +130,7 @@
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id mistralai/mistral-medium-3)
     (canonical_slug mistralai/mistral-medium-3)
     (hugging_face_id "")
@@ -138,31 +138,31 @@
     (created 1746627341)
     (description "Mistral Medium 3 is a high-performance enterprise-grade language model designed to deliver frontier-level capabilities at significantly reduced operational cost. It balances state-of-the-art reasoning and multimodal performance with 8× lower cost...")
     (context_length 131072)
-    (architecture ({}
+    (architecture (
       (modality text+image+file->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
         file
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Mistral)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000004")
       (completion "0.000002")
       (input_cache_read "0.00000004")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 131072)
       (max_completion_tokens null)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       max_tokens
       presence_penalty
@@ -175,53 +175,53 @@
       tools
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature 0.3)
     ))
     (supported_voices null)
     (knowledge_cutoff 2025-03-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/mistralai/mistral-medium-3/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category 3d)
           (elo 1137)
           (win_rate 54.7)
           (rank 69)
         )
-        ({}
+        (
           (arena models)
           (category codecategories)
           (elo 1097)
           (win_rate 48.1)
           (rank 88)
         )
-        ({}
+        (
           (arena models)
           (category dataviz)
           (elo 1059)
           (win_rate 45.7)
           (rank 92)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 1059)
           (win_rate 45.3)
           (rank 92)
         )
-        ({}
+        (
           (arena models)
           (category uicomponent)
           (elo 1059)
           (win_rate 49.9)
           (rank 86)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 1101)
@@ -231,7 +231,7 @@
       ))
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId mistralai/mistral-medium-3)

@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-deepseek_deepseek-v3.2-exp)
   (label "DeepSeek: DeepSeek V3.2 Exp")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model deepseek/deepseek-v3.2-exp)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,15 +19,15 @@
     (tools true)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 163840)
     (maxOutputTokens 65536)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.00000027")
     (completion "0.00000041")
   ))
-  (properties ({}
+  (properties (
     (id deepseek/deepseek-v3.2-exp)
     (canonical_slug deepseek/deepseek-v3.2-exp)
     (hugging_face_id deepseek-ai/DeepSeek-V3.2-Exp)
@@ -35,28 +35,28 @@
     (created 1759150481)
     (description "DeepSeek-V3.2-Exp is an experimental large language model released by DeepSeek as an intermediate step between V3.1 and future architectures. It introduces DeepSeek Sparse Attention (DSA), a fine-grained sparse attention mechanism...")
     (context_length 163840)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer DeepSeek)
       (instruct_type deepseek-v3.1)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000027")
       (completion "0.00000041")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 163840)
       (max_completion_tokens 65536)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       logit_bias
@@ -77,7 +77,7 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature 0.6)
       (top_p 0.95)
       (frequency_penalty null)
@@ -85,54 +85,54 @@
     (supported_voices null)
     (knowledge_cutoff 2025-07-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/deepseek/deepseek-v3.2-exp/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category 3d)
           (elo 1202)
           (win_rate 56.4)
           (rank 46)
         )
-        ({}
+        (
           (arena models)
           (category codecategories)
           (elo 1199)
           (win_rate 54.2)
           (rank 52)
         )
-        ({}
+        (
           (arena models)
           (category dataviz)
           (elo 1180)
           (win_rate 50.6)
           (rank 59)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 1185)
           (win_rate 53)
           (rank 54)
         )
-        ({}
+        (
           (arena models)
           (category svg)
           (elo 1079)
           (win_rate 42)
           (rank 60)
         )
-        ({}
+        (
           (arena models)
           (category uicomponent)
           (elo 1200)
           (win_rate 53.3)
           (rank 49)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 1201)
@@ -141,12 +141,12 @@
         )
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id deepseek/deepseek-v3.2-exp)
     (canonical_slug deepseek/deepseek-v3.2-exp)
     (hugging_face_id deepseek-ai/DeepSeek-V3.2-Exp)
@@ -154,28 +154,28 @@
     (created 1759150481)
     (description "DeepSeek-V3.2-Exp is an experimental large language model released by DeepSeek as an intermediate step between V3.1 and future architectures. It introduces DeepSeek Sparse Attention (DSA), a fine-grained sparse attention mechanism...")
     (context_length 163840)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer DeepSeek)
       (instruct_type deepseek-v3.1)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000027")
       (completion "0.00000041")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 163840)
       (max_completion_tokens 65536)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       logit_bias
@@ -196,7 +196,7 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature 0.6)
       (top_p 0.95)
       (frequency_penalty null)
@@ -204,54 +204,54 @@
     (supported_voices null)
     (knowledge_cutoff 2025-07-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/deepseek/deepseek-v3.2-exp/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category 3d)
           (elo 1202)
           (win_rate 56.4)
           (rank 46)
         )
-        ({}
+        (
           (arena models)
           (category codecategories)
           (elo 1199)
           (win_rate 54.2)
           (rank 52)
         )
-        ({}
+        (
           (arena models)
           (category dataviz)
           (elo 1180)
           (win_rate 50.6)
           (rank 59)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 1185)
           (win_rate 53)
           (rank 54)
         )
-        ({}
+        (
           (arena models)
           (category svg)
           (elo 1079)
           (win_rate 42)
           (rank 60)
         )
-        ({}
+        (
           (arena models)
           (category uicomponent)
           (elo 1200)
           (win_rate 53.3)
           (rank 49)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 1201)
@@ -260,11 +260,11 @@
         )
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId deepseek/deepseek-v3.2-exp)

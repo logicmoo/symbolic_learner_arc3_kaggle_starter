@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-auto-free)
   (label "OpenRouter automatic free")
@@ -6,13 +6,13 @@
   (inherits openrouter)
   (model openrouter/free)
   (enabled true)
-  (capabilities (
+  (capabilities ([]
     text
     vision
     reasoning
     json
   ))
-  (defaults ({}
+  (defaults (
     (reasoningEffort medium)
     (maxOutputTokens 12000)
     (temperature 0.1)

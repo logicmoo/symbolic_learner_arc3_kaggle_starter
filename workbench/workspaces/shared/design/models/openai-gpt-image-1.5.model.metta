@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openai-gpt-image-1.5)
   (label gpt-image-1.5)
@@ -6,7 +6,7 @@
   (inherits openai)
   (model gpt-image-1.5)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling false)
@@ -19,25 +19,25 @@
     (tools false)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow null)
     (maxOutputTokens null)
   ))
-  (pricing ({}))
-  (properties ({}
+  (pricing ())
+  (properties (
     (id gpt-image-1.5)
     (object model)
     (created 1764030620)
     (owned_by system)
     (ownedBy system)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id gpt-image-1.5)
     (object model)
     (created 1764030620)
     (owned_by system)
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openai)
     (remoteModelId gpt-image-1.5)

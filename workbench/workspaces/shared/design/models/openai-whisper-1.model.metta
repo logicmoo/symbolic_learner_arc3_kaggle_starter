@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openai-whisper-1)
   (label whisper-1)
@@ -6,7 +6,7 @@
   (inherits openai)
   (model whisper-1)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio true)
     (code false)
     (functionCalling false)
@@ -19,25 +19,25 @@
     (tools false)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow null)
     (maxOutputTokens null)
   ))
-  (pricing ({}))
-  (properties ({}
+  (pricing ())
+  (properties (
     (id whisper-1)
     (object model)
     (created 1677532384)
     (owned_by openai-internal)
     (ownedBy openai-internal)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id whisper-1)
     (object model)
     (created 1677532384)
     (owned_by openai-internal)
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openai)
     (remoteModelId whisper-1)

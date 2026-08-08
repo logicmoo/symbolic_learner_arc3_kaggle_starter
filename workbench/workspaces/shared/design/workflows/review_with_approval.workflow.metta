@@ -1,37 +1,37 @@
-({}
+(
   (id review_with_approval)
   (label "Review with approval")
   (description "Copies a payload, pauses for a real human approval, then emits the approved result.")
-  (inputs ({}
+  (inputs (
     (payload Any)
   ))
-  (outputs ({}
+  (outputs (
     (result $approved)
   ))
-  (steps (
-    ({}
+  (steps ([]
+    (
       (id copy)
       (kind operation)
       (implementation core.echo)
-      (inputs ({}
+      (inputs (
         (value $payload)
       ))
-      (outputs ({}
+      (outputs (
         (value copied)
       ))
     )
-    ({}
+    (
       (id approve)
       (kind human)
-      (dependsOn (
+      (dependsOn ([]
         copy
       ))
-      (form ({}
-        (approved ({}
+      (form (
+        (approved (
           (type Boolean)
         ))
       ))
-      (outputs ({}
+      (outputs (
         (approved approved)
       ))
     )

@@ -1,4 +1,4 @@
-({}
+(
   (kind backend)
   (id groq)
   (label "Groq Cloud")
@@ -6,11 +6,11 @@
   (official true)
   (description "Shared Groq OpenAI-compatible transport inherited by every workspace. Model files inherit this endpoint and add model-specific generation settings.")
   (enabled true)
-  (capabilities (
+  (capabilities ([]
     llm.complete
     llm.vision
   ))
-  (configuration ({}
+  (configuration (
     (adapter openai_responses)
     (baseUrl https://api.groq.com/openai/v1)
     (apiKeyEnvironmentVariable GROQ_API_KEY)

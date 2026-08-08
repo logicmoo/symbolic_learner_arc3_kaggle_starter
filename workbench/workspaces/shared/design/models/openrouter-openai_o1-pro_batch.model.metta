@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-openai_o1-pro_batch)
   (label "OpenAI: o1-pro (batch)")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model openai/o1-pro:batch)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling false)
@@ -19,16 +19,16 @@
     (tools false)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 200000)
     (maxOutputTokens 100000)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.000075")
     (completion "0.0003")
     (web_search "0.01")
   ))
-  (properties ({}
+  (properties (
     (id openai/o1-pro:batch)
     (canonical_slug openai/o1-pro)
     (hugging_face_id "")
@@ -36,31 +36,31 @@
     (created 1742423211)
     (description "The o1 series of models are trained with reinforcement learning to think before they answer and perform complex reasoning. The o1-pro model uses more compute to think harder and provide...")
     (context_length 200000)
-    (architecture ({}
+    (architecture (
       (modality text+image+file->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
         file
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer GPT)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.000075")
       (completion "0.0003")
       (web_search "0.01")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 200000)
       (max_completion_tokens 100000)
       (is_moderated true)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_tokens
       reasoning
@@ -68,19 +68,19 @@
       seed
       structured_outputs
     ))
-    (default_parameters ({}))
+    (default_parameters ())
     (supported_voices null)
     (knowledge_cutoff 2023-10-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/openai/o1-pro/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id openai/o1-pro:batch)
     (canonical_slug openai/o1-pro)
     (hugging_face_id "")
@@ -88,31 +88,31 @@
     (created 1742423211)
     (description "The o1 series of models are trained with reinforcement learning to think before they answer and perform complex reasoning. The o1-pro model uses more compute to think harder and provide...")
     (context_length 200000)
-    (architecture ({}
+    (architecture (
       (modality text+image+file->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
         file
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer GPT)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.000075")
       (completion "0.0003")
       (web_search "0.01")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 200000)
       (max_completion_tokens 100000)
       (is_moderated true)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_tokens
       reasoning
@@ -120,18 +120,18 @@
       seed
       structured_outputs
     ))
-    (default_parameters ({}))
+    (default_parameters ())
     (supported_voices null)
     (knowledge_cutoff 2023-10-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/openai/o1-pro/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId openai/o1-pro:batch)

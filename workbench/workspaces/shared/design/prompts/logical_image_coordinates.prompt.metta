@@ -1,14 +1,14 @@
-({}
+(
   (kind prompt)
   (id logical_image_coordinates)
   (label "Logical Image Coordinates")
   (description "Reusable vision prompt for reasoning in source-image or logical-grid coordinates rather than display-scaled pixels.")
-  (text (
+  (text ([]
     "Reason in the coordinates of the source image or logical grid, not enlarged display pixels."
     "Use zero-based coordinates unless the operation explicitly defines another convention. x increases to the right and y increases downward."
     "Describe exact cells or pixels, compact runs, bounding boxes, connected components, and topology using the source coordinate system."
   ))
-  (metadata ({}
+  (metadata (
     (domain vision)
     (category coordinates)
   ))

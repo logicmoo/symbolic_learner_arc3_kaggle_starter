@@ -1,14 +1,14 @@
-({}
+(
   (kind concrete_datatype)
   (id vector_json)
   (label "Vector Json")
-  (parents (
+  (parents ([]
     latent_embedding
   ))
-  (mimeTypes (
+  (mimeTypes ([]
     application/json
   ))
-  (extensions (
+  (extensions ([]
     .json
   ))
 )

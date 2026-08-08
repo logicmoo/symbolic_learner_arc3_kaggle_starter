@@ -1,4 +1,4 @@
-({}
+(
   (kind model_policy_entry)
   (id openai:gpt-5.6)
   (vendorId openai)
@@ -8,12 +8,12 @@
   (description "Declares the workspace policy and selection metadata for the OpenAI GPT-5.6 model. Capability, context, output, lifecycle, and pricing fields support filtering and ranking, while the three policy switches express intent; effective runtime and benchmark eligibility must also satisfy vendor policy and current health requirements.")
   (enabled true)
   (example true)
-  (policy ({}
+  (policy (
     (wanted on)
     (runtime on)
     (benchmark on)
   ))
-  (capabilities ({}
+  (capabilities (
     (vision true)
     (audio false)
     (multimodal true)
@@ -21,17 +21,17 @@
     (functionCalling true)
     (jsonMode true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 1000000)
     (maxOutput 32000)
   ))
-  (pricing ({}
+  (pricing (
     (currency USD)
     (unit million_tokens)
     (input 1.25)
     (output 10.0)
   ))
-  (properties ({}
+  (properties (
     (reasoning true)
     (providerLifecycle active)
   ))

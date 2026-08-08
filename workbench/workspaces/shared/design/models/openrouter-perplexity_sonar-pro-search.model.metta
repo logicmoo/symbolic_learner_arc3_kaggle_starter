@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-perplexity_sonar-pro-search)
   (label "Perplexity: Sonar Pro Search")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model perplexity/sonar-pro-search)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling false)
@@ -19,16 +19,16 @@
     (tools false)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 200000)
     (maxOutputTokens 8000)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.000003")
     (completion "0.000015")
     (web_search "0.018")
   ))
-  (properties ({}
+  (properties (
     (id perplexity/sonar-pro-search)
     (canonical_slug perplexity/sonar-pro-search)
     (hugging_face_id "")
@@ -36,30 +36,30 @@
     (created 1761854366)
     (description "Exclusively available on the OpenRouter API, Sonar Pro's new Pro Search mode is Perplexity's most advanced agentic search system. It is designed for deeper reasoning and analysis. Pricing is based...")
     (context_length 200000)
-    (architecture ({}
+    (architecture (
       (modality text+image->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.000003")
       (completion "0.000015")
       (web_search "0.018")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 200000)
       (max_completion_tokens 8000)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       max_tokens
@@ -71,7 +71,7 @@
       top_p
       web_search_options
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (frequency_penalty null)
@@ -79,15 +79,15 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/perplexity/sonar-pro-search/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory true)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id perplexity/sonar-pro-search)
     (canonical_slug perplexity/sonar-pro-search)
     (hugging_face_id "")
@@ -95,30 +95,30 @@
     (created 1761854366)
     (description "Exclusively available on the OpenRouter API, Sonar Pro's new Pro Search mode is Perplexity's most advanced agentic search system. It is designed for deeper reasoning and analysis. Pricing is based...")
     (context_length 200000)
-    (architecture ({}
+    (architecture (
       (modality text+image->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.000003")
       (completion "0.000015")
       (web_search "0.018")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 200000)
       (max_completion_tokens 8000)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       max_tokens
@@ -130,7 +130,7 @@
       top_p
       web_search_options
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (frequency_penalty null)
@@ -138,14 +138,14 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/perplexity/sonar-pro-search/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory true)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId perplexity/sonar-pro-search)

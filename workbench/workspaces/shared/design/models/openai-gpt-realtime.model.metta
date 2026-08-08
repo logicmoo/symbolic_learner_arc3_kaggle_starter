@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openai-gpt-realtime)
   (label gpt-realtime)
@@ -6,7 +6,7 @@
   (inherits openai)
   (model gpt-realtime)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio true)
     (code false)
     (functionCalling false)
@@ -19,25 +19,25 @@
     (tools false)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow null)
     (maxOutputTokens null)
   ))
-  (pricing ({}))
-  (properties ({}
+  (pricing ())
+  (properties (
     (id gpt-realtime)
     (object model)
     (created 1756271701)
     (owned_by system)
     (ownedBy system)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id gpt-realtime)
     (object model)
     (created 1756271701)
     (owned_by system)
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openai)
     (remoteModelId gpt-realtime)

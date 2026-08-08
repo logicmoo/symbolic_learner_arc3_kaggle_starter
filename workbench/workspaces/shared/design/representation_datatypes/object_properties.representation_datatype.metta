@@ -1,12 +1,12 @@
-({}
+(
   (kind representation_datatype)
   (id object_properties)
   (label "Object Properties")
   (description "Structured symbolic properties and relationships describing objects independently of the underlying implementation language.")
-  (parents (
+  (parents ([]
     entity
     entity_collection
     world_state
   ))
-  (children ())
+  (children ([]))
 )

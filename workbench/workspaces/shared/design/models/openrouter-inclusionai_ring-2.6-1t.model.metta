@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-inclusionai_ring-2.6-1t)
   (label "inclusionAI: Ring-2.6-1T")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model inclusionai/ring-2.6-1t)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,16 +19,16 @@
     (tools true)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 262144)
     (maxOutputTokens 65536)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.000000075")
     (completion "0.000000625")
     (input_cache_read "0.000000015")
   ))
-  (properties ({}
+  (properties (
     (id inclusionai/ring-2.6-1t)
     (canonical_slug inclusionai/ring-2.6-1t-20260508)
     (hugging_face_id null)
@@ -36,29 +36,29 @@
     (created 1778247440)
     (description "Ring-2.6-1T is a 1T-parameter-scale thinking model with 63B active parameters, built for real-world agent workflows that require both strong capability and operational efficiency. It is optimized for coding agents, tool...")
     (context_length 262144)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.000000075")
       (completion "0.000000625")
       (input_cache_read "0.000000015")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 262144)
       (max_completion_tokens 65536)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       max_tokens
@@ -75,7 +75,7 @@
       top_k
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -86,20 +86,20 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/inclusionai/ring-2.6-1t-20260508/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena ())
-      (artificial_analysis ({}
+    (benchmarks (
+      (design_arena ([]))
+      (artificial_analysis (
         (intelligence_index 31.1)
         (coding_index 42.8)
         (agentic_index 18.9)
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory true)
-      (supported_efforts (
+      (supported_efforts ([]
         xhigh
         high
       ))
@@ -107,7 +107,7 @@
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id inclusionai/ring-2.6-1t)
     (canonical_slug inclusionai/ring-2.6-1t-20260508)
     (hugging_face_id null)
@@ -115,29 +115,29 @@
     (created 1778247440)
     (description "Ring-2.6-1T is a 1T-parameter-scale thinking model with 63B active parameters, built for real-world agent workflows that require both strong capability and operational efficiency. It is optimized for coding agents, tool...")
     (context_length 262144)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.000000075")
       (completion "0.000000625")
       (input_cache_read "0.000000015")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 262144)
       (max_completion_tokens 65536)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       max_tokens
@@ -154,7 +154,7 @@
       top_k
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -165,27 +165,27 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/inclusionai/ring-2.6-1t-20260508/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena ())
-      (artificial_analysis ({}
+    (benchmarks (
+      (design_arena ([]))
+      (artificial_analysis (
         (intelligence_index 31.1)
         (coding_index 42.8)
         (agentic_index 18.9)
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory true)
-      (supported_efforts (
+      (supported_efforts ([]
         xhigh
         high
       ))
       (default_effort high)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId inclusionai/ring-2.6-1t)

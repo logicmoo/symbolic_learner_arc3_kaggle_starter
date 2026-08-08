@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-moonshotai_kimi-k2-0905)
   (label "MoonshotAI: Kimi K2 0905")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model moonshotai/kimi-k2-0905)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,15 +19,15 @@
     (tools true)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 262144)
     (maxOutputTokens 100352)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.0000006")
     (completion "0.0000025")
   ))
-  (properties ({}
+  (properties (
     (id moonshotai/kimi-k2-0905)
     (canonical_slug moonshotai/kimi-k2-0905)
     (hugging_face_id moonshotai/Kimi-K2-Instruct-0905)
@@ -35,28 +35,28 @@
     (created 1757021147)
     (description "Kimi K2 0905 is the September update of [Kimi K2 0711](moonshotai/kimi-k2). It is a large-scale Mixture-of-Experts (MoE) language model developed by Moonshot AI, featuring 1 trillion total parameters with 32...")
     (context_length 262144)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000006")
       (completion "0.0000025")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 262144)
       (max_completion_tokens 100352)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       max_tokens
       presence_penalty
@@ -71,23 +71,23 @@
       top_k
       top_p
     ))
-    (default_parameters ({}))
+    (default_parameters ())
     (supported_voices null)
     (knowledge_cutoff 2024-12-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/moonshotai/kimi-k2-0905/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category codecategories)
           (elo 1126)
           (win_rate 48.5)
           (rank 82)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 1129)
@@ -98,7 +98,7 @@
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id moonshotai/kimi-k2-0905)
     (canonical_slug moonshotai/kimi-k2-0905)
     (hugging_face_id moonshotai/Kimi-K2-Instruct-0905)
@@ -106,28 +106,28 @@
     (created 1757021147)
     (description "Kimi K2 0905 is the September update of [Kimi K2 0711](moonshotai/kimi-k2). It is a large-scale Mixture-of-Experts (MoE) language model developed by Moonshot AI, featuring 1 trillion total parameters with 32...")
     (context_length 262144)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000006")
       (completion "0.0000025")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 262144)
       (max_completion_tokens 100352)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       max_tokens
       presence_penalty
@@ -142,23 +142,23 @@
       top_k
       top_p
     ))
-    (default_parameters ({}))
+    (default_parameters ())
     (supported_voices null)
     (knowledge_cutoff 2024-12-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/moonshotai/kimi-k2-0905/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category codecategories)
           (elo 1126)
           (win_rate 48.5)
           (rank 82)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 1129)
@@ -168,7 +168,7 @@
       ))
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId moonshotai/kimi-k2-0905)

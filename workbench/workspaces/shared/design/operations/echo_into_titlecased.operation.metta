@@ -1,30 +1,30 @@
-({}
+(
   (kind operation)
   (id echo_into_titlecased)
   (label "Echo Into Titlecased")
   (description "Take received text and return the title-cased text.")
-  (categories (
+  (categories ([]
     text/transformation
     sample/text
   ))
   (role abstract_stage)
-  (inputs ({}
+  (inputs (
     (text Text)
   ))
-  (outputs ({}
+  (outputs (
     (text Text)
   ))
-  (example_execute ({}
+  (example_execute (
     (action operation.invoke)
-    (arguments ({}
-      (text ({}
+    (arguments (
+      (text (
         (datatype Text)
         (label "Text to title-case")
         (default "the quick brown fox")
       ))
     ))
   ))
-  (children (
+  (children ([]
     echo_into_titlecased_llm
     echo_into_titlecased_prolog
     echo_into_titlecased_python

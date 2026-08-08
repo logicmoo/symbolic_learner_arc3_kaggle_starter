@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-mistralai_mistral-saba)
   (label "Mistral: Saba")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model mistralai/mistral-saba)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,16 +19,16 @@
     (tools true)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 32768)
     (maxOutputTokens null)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.0000002")
     (completion "0.0000006")
     (input_cache_read "0.00000002")
   ))
-  (properties ({}
+  (properties (
     (id mistralai/mistral-saba)
     (canonical_slug mistralai/mistral-saba-2502)
     (hugging_face_id "")
@@ -36,30 +36,30 @@
     (created 1739803239)
     (description "Mistral Saba is a 24B-parameter language model specifically designed for the Middle East and South Asia, delivering accurate and contextually relevant responses while maintaining efficient performance. Trained on curated regional...")
     (context_length 32768)
-    (architecture ({}
+    (architecture (
       (modality text+file->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         file
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Mistral)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000002")
       (completion "0.0000006")
       (input_cache_read "0.00000002")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 32768)
       (max_completion_tokens null)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       max_tokens
       presence_penalty
@@ -72,18 +72,18 @@
       tools
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature 0.3)
     ))
     (supported_voices null)
     (knowledge_cutoff 2024-09-30)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/mistralai/mistral-saba-2502/endpoints)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id mistralai/mistral-saba)
     (canonical_slug mistralai/mistral-saba-2502)
     (hugging_face_id "")
@@ -91,30 +91,30 @@
     (created 1739803239)
     (description "Mistral Saba is a 24B-parameter language model specifically designed for the Middle East and South Asia, delivering accurate and contextually relevant responses while maintaining efficient performance. Trained on curated regional...")
     (context_length 32768)
-    (architecture ({}
+    (architecture (
       (modality text+file->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         file
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Mistral)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000002")
       (completion "0.0000006")
       (input_cache_read "0.00000002")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 32768)
       (max_completion_tokens null)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       max_tokens
       presence_penalty
@@ -127,17 +127,17 @@
       tools
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature 0.3)
     ))
     (supported_voices null)
     (knowledge_cutoff 2024-09-30)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/mistralai/mistral-saba-2502/endpoints)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId mistralai/mistral-saba)

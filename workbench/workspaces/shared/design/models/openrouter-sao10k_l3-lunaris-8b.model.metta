@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-sao10k_l3-lunaris-8b)
   (label "Sao10K: Llama 3 8B Lunaris")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model sao10k/l3-lunaris-8b)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling false)
@@ -19,15 +19,15 @@
     (tools false)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 8192)
     (maxOutputTokens 16384)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.00000004")
     (completion "0.00000005")
   ))
-  (properties ({}
+  (properties (
     (id sao10k/l3-lunaris-8b)
     (canonical_slug sao10k/l3-lunaris-8b)
     (hugging_face_id Sao10K/L3-8B-Lunaris-v1)
@@ -35,28 +35,28 @@
     (created 1723507200)
     (description "Lunaris 8B is a versatile generalist and roleplaying model based on Llama 3. It's a strategic merge of multiple models, designed to balance creativity with improved logic and general knowledge....")
     (context_length 8192)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Llama3)
       (instruct_type llama3)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000004")
       (completion "0.00000005")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 8192)
       (max_completion_tokens 16384)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       logit_bias
       logprobs
@@ -73,16 +73,16 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}))
+    (default_parameters ())
     (supported_voices null)
     (knowledge_cutoff 2023-12-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/sao10k/l3-lunaris-8b/endpoints)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id sao10k/l3-lunaris-8b)
     (canonical_slug sao10k/l3-lunaris-8b)
     (hugging_face_id Sao10K/L3-8B-Lunaris-v1)
@@ -90,28 +90,28 @@
     (created 1723507200)
     (description "Lunaris 8B is a versatile generalist and roleplaying model based on Llama 3. It's a strategic merge of multiple models, designed to balance creativity with improved logic and general knowledge....")
     (context_length 8192)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Llama3)
       (instruct_type llama3)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000004")
       (completion "0.00000005")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 8192)
       (max_completion_tokens 16384)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       logit_bias
       logprobs
@@ -128,15 +128,15 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}))
+    (default_parameters ())
     (supported_voices null)
     (knowledge_cutoff 2023-12-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/sao10k/l3-lunaris-8b/endpoints)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId sao10k/l3-lunaris-8b)

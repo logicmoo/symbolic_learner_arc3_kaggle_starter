@@ -1,11 +1,11 @@
-({}
+(
   (kind representation_datatype)
   (id json_object)
   (label "JSON Object")
-  (parents (
+  (parents ([]
     information
   ))
-  (children (
+  (children ([]
     json
   ))
   (preferredChild json)

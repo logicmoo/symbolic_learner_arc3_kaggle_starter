@@ -1,23 +1,23 @@
-({}
+(
   (id arc3.symbolic_state_analysis.light)
   (label "ARC3 Symbolic State Analysis — light")
   (description "Legacy light ARC3 prompt composition expressed correctly as a Operation; model/profile settings remain separate.")
-  (categories (
+  (categories ([]
     arc3/analysis
     vision/recognition
     sample/arc3
   ))
   (implementation llm.complete)
-  (inputs ({}
+  (inputs (
     (current_image Image)
     (parent_image Image)
     (object_registry FileReference)
   ))
-  (outputs ({}
+  (outputs (
     (analysis ArtifactBundle)
   ))
-  (promptSelection ({}
-    (prompts (
+  (promptSelection (
+    (prompts ([]
       structured_json_response
       arc3_response_contract
       logical_image_coordinates
@@ -31,11 +31,11 @@
     ))
     (separator "\n\n")
   ))
-  (modelSelection ({}
-    (models ())
+  (modelSelection (
+    (models ([]))
     (strategy single)
   ))
-  (parameters ({}
+  (parameters (
     (domain arc3)
     (analysisTier light)
   ))

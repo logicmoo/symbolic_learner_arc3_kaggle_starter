@@ -1,11 +1,11 @@
-({}
+(
   (kind profile)
   (id gpt-5.6-light)
   (label "GPT-5.6 — light")
   (description "Low-cost GPT-5.6 execution profile. Prompt composition is selected by the Operation, not by this profile.")
   (inherits gpt-5.6)
   (enabled true)
-  (defaults ({}
+  (defaults (
     (analysisLevel 2)
     (maxOutputTokens 12000)
     (temperature 0.1)

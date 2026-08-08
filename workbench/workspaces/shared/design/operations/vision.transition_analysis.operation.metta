@@ -1,23 +1,23 @@
-({}
+(
   (id vision.transition_analysis)
   (label "Vision Transition Analysis")
   (description "Compare before/after visual states, track objects, and describe observed changes without prematurely turning them into rules.")
-  (categories (
+  (categories ([]
     vision/transition
     vision/tracking
     world-modeling/transitions
   ))
   (implementation llm.complete)
-  (inputs ({}
+  (inputs (
     (before Image)
     (after Image)
   ))
-  (outputs ({}
+  (outputs (
     (changes ChangeDescription)
     (correspondences Object)
   ))
-  (promptSelection ({}
-    (prompts (
+  (promptSelection (
+    (prompts ([]
       structured_json_response
       logical_image_coordinates
       object_extraction
@@ -27,10 +27,10 @@
     ))
     (separator "\n\n")
   ))
-  (modelSelection ({}
-    (models ())
+  (modelSelection (
+    (models ([]))
     (strategy single)
   ))
-  (parameters ({}))
+  (parameters ())
   (kind operation)
 )

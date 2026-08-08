@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openai-chat-latest)
   (label chat-latest)
@@ -6,7 +6,7 @@
   (inherits openai)
   (model chat-latest)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling false)
@@ -19,25 +19,25 @@
     (tools false)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow null)
     (maxOutputTokens null)
   ))
-  (pricing ({}))
-  (properties ({}
+  (pricing ())
+  (properties (
     (id chat-latest)
     (object model)
     (created 1777704602)
     (owned_by system)
     (ownedBy system)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id chat-latest)
     (object model)
     (created 1777704602)
     (owned_by system)
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openai)
     (remoteModelId chat-latest)

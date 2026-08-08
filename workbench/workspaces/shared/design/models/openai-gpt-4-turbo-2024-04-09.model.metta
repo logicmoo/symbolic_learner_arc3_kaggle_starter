@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openai-gpt-4-turbo-2024-04-09)
   (label gpt-4-turbo-2024-04-09)
@@ -6,7 +6,7 @@
   (inherits openai)
   (model gpt-4-turbo-2024-04-09)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling false)
@@ -19,25 +19,25 @@
     (tools false)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow null)
     (maxOutputTokens null)
   ))
-  (pricing ({}))
-  (properties ({}
+  (pricing ())
+  (properties (
     (id gpt-4-turbo-2024-04-09)
     (object model)
     (created 1712601677)
     (owned_by system)
     (ownedBy system)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id gpt-4-turbo-2024-04-09)
     (object model)
     (created 1712601677)
     (owned_by system)
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openai)
     (remoteModelId gpt-4-turbo-2024-04-09)

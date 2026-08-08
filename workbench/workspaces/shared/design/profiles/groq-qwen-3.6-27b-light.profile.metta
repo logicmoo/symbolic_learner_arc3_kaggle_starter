@@ -1,11 +1,11 @@
-({}
+(
   (kind profile)
   (id groq-qwen-3.6-27b-light)
   (label "Qwen 3.6 27B on Groq — light")
   (description "Prompt-free execution profile migrated from the legacy ARC3 configuration.")
   (inherits qwen-3.6-27b-groq)
   (enabled true)
-  (defaults ({}
+  (defaults (
     (analysisLevel 2)
     (singleEnabled true)
     (batchEnabled false)

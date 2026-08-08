@@ -1,15 +1,15 @@
-({}
+(
   (kind concrete_datatype)
   (id markdown)
   (label Markdown)
-  (parents (
+  (parents ([]
     natural_language
     plain_text
   ))
-  (mimeTypes (
+  (mimeTypes ([]
     text/markdown
   ))
-  (extensions (
+  (extensions ([]
     .md
   ))
 )

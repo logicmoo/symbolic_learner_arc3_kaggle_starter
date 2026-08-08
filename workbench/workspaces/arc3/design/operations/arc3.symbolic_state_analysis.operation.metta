@@ -1,24 +1,24 @@
-({}
+(
   (id arc3.symbolic_state_analysis)
   (label "ARC3 Symbolic State Analysis — extreme")
   (description "Legacy extreme ARC3 prompt composition expressed correctly as a Operation. ARC3-only file/identity contracts stay local while generic vision, symbolic scene, reconstruction, correspondence, and rule-learning prompts remain shared.")
-  (categories (
+  (categories ([]
     arc3/analysis
     vision/transition
     symbolic/rule-learning
     sample/arc3
   ))
   (implementation llm.complete)
-  (inputs ({}
+  (inputs (
     (current_image Image)
     (parent_image Image)
     (object_registry FileReference)
   ))
-  (outputs ({}
+  (outputs (
     (analysis ArtifactBundle)
   ))
-  (promptSelection ({}
-    (prompts (
+  (promptSelection (
+    (prompts ([]
       structured_json_response
       arc3_response_contract
       logical_image_coordinates
@@ -37,11 +37,11 @@
     ))
     (separator "\n\n")
   ))
-  (modelSelection ({}
-    (models ())
+  (modelSelection (
+    (models ([]))
     (strategy single)
   ))
-  (parameters ({}
+  (parameters (
     (domain arc3)
     (analysisTier extreme)
   ))

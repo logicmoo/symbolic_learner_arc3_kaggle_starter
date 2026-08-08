@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-qwen_qwen3-coder-next)
   (label "Qwen: Qwen3 Coder Next")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model qwen/qwen3-coder-next)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code true)
     (functionCalling true)
@@ -19,16 +19,16 @@
     (tools true)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 262144)
     (maxOutputTokens 262144)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.00000012")
     (completion "0.0000008")
     (input_cache_read "0.00000007")
   ))
-  (properties ({}
+  (properties (
     (id qwen/qwen3-coder-next)
     (canonical_slug qwen/qwen3-coder-next-2025-02-03)
     (hugging_face_id Qwen/Qwen3-Coder-Next)
@@ -36,29 +36,29 @@
     (created 1770164101)
     (description "Qwen3-Coder-Next is an open-weight causal language model optimized for coding agents and local development workflows. It uses a sparse MoE design with 80B total parameters and only 3B activated per...")
     (context_length 262144)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Qwen)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000012")
       (completion "0.0000008")
       (input_cache_read "0.00000007")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 262144)
       (max_completion_tokens 262144)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       logit_bias
       logprobs
@@ -76,7 +76,7 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature 1)
       (top_p 0.95)
       (frequency_penalty null)
@@ -84,12 +84,12 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/qwen/qwen3-coder-next-2025-02-03/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena ())
-      (artificial_analysis ({}
+    (benchmarks (
+      (design_arena ([]))
+      (artificial_analysis (
         (intelligence_index 21.3)
         (coding_index 36.2)
         (agentic_index 8.9)
@@ -97,7 +97,7 @@
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id qwen/qwen3-coder-next)
     (canonical_slug qwen/qwen3-coder-next-2025-02-03)
     (hugging_face_id Qwen/Qwen3-Coder-Next)
@@ -105,29 +105,29 @@
     (created 1770164101)
     (description "Qwen3-Coder-Next is an open-weight causal language model optimized for coding agents and local development workflows. It uses a sparse MoE design with 80B total parameters and only 3B activated per...")
     (context_length 262144)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Qwen)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000012")
       (completion "0.0000008")
       (input_cache_read "0.00000007")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 262144)
       (max_completion_tokens 262144)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       logit_bias
       logprobs
@@ -145,7 +145,7 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature 1)
       (top_p 0.95)
       (frequency_penalty null)
@@ -153,19 +153,19 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/qwen/qwen3-coder-next-2025-02-03/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena ())
-      (artificial_analysis ({}
+    (benchmarks (
+      (design_arena ([]))
+      (artificial_analysis (
         (intelligence_index 21.3)
         (coding_index 36.2)
         (agentic_index 8.9)
       ))
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId qwen/qwen3-coder-next)

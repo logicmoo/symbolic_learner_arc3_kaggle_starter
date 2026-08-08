@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-anthropic_claude-sonnet-4.5)
   (label "Anthropic: Claude Sonnet 4.5")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model anthropic/claude-sonnet-4.5)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,19 +19,19 @@
     (tools true)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 1000000)
     (maxOutputTokens 64000)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.000003")
     (completion "0.000015")
     (web_search "0.01")
     (input_cache_read "0.0000003")
     (input_cache_write "0.00000375")
     (input_cache_write_1h "0.000006")
-    (overrides (
-      ({}
+    (overrides ([]
+      (
         (min_prompt_tokens 200000)
         (prompt "0.000006")
         (completion "0.0000225")
@@ -41,7 +41,7 @@
       )
     ))
   ))
-  (properties ({}
+  (properties (
     (id anthropic/claude-sonnet-4.5)
     (canonical_slug anthropic/claude-4.5-sonnet-20250929)
     (hugging_face_id "")
@@ -49,28 +49,28 @@
     (created 1759161676)
     (description "Claude Sonnet 4.5 is Anthropic’s most advanced Sonnet model to date, optimized for real-world agents and coding workflows. It delivers state-of-the-art performance on coding benchmarks such as SWE-bench Verified, with...")
     (context_length 1000000)
-    (architecture ({}
+    (architecture (
       (modality text+image+file->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
         file
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Claude)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.000003")
       (completion "0.000015")
       (web_search "0.01")
       (input_cache_read "0.0000003")
       (input_cache_write "0.00000375")
       (input_cache_write_1h "0.000006")
-      (overrides (
-        ({}
+      (overrides ([]
+        (
           (min_prompt_tokens 200000)
           (prompt "0.000006")
           (completion "0.0000225")
@@ -80,13 +80,13 @@
         )
       ))
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 1000000)
       (max_completion_tokens 64000)
       (is_moderated true)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_completion_tokens
       max_tokens
@@ -100,7 +100,7 @@
       top_k
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature 1)
       (top_p 1)
       (top_k null)
@@ -111,82 +111,82 @@
     (supported_voices null)
     (knowledge_cutoff 2025-01-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/anthropic/claude-4.5-sonnet-20250929/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category 3d)
           (elo 1212)
           (win_rate 51.1)
           (rank 44)
         )
-        ({}
+        (
           (arena models)
           (category asciiart)
           (elo 1241)
           (win_rate 56.1)
           (rank 15)
         )
-        ({}
+        (
           (arena models)
           (category codecategories)
           (elo 1211)
           (win_rate 51.6)
           (rank 44)
         )
-        ({}
+        (
           (arena models)
           (category dataviz)
           (elo 1193)
           (win_rate 47.2)
           (rank 52)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 1207)
           (win_rate 51.2)
           (rank 45)
         )
-        ({}
+        (
           (arena models)
           (category svg)
           (elo 1162)
           (win_rate 52.2)
           (rank 42)
         )
-        ({}
+        (
           (arena models)
           (category uicomponent)
           (elo 1206)
           (win_rate 49.5)
           (rank 45)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 1212)
           (win_rate 51.9)
           (rank 48)
         )
-        ({}
+        (
           (arena agents)
           (category fullstack)
           (elo 1095)
           (win_rate 43.5)
           (rank 23)
         )
-        ({}
+        (
           (arena agents)
           (category mobileapps)
           (elo 1194)
           (win_rate 52.3)
           (rank 18)
         )
-        ({}
+        (
           (arena agents)
           (category webapps)
           (elo 1112)
@@ -194,18 +194,18 @@
           (rank 27)
         )
       ))
-      (artificial_analysis ({}
+      (artificial_analysis (
         (intelligence_index 37.4)
         (coding_index 52.1)
         (agentic_index 26.4)
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id anthropic/claude-sonnet-4.5)
     (canonical_slug anthropic/claude-4.5-sonnet-20250929)
     (hugging_face_id "")
@@ -213,28 +213,28 @@
     (created 1759161676)
     (description "Claude Sonnet 4.5 is Anthropic’s most advanced Sonnet model to date, optimized for real-world agents and coding workflows. It delivers state-of-the-art performance on coding benchmarks such as SWE-bench Verified, with...")
     (context_length 1000000)
-    (architecture ({}
+    (architecture (
       (modality text+image+file->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
         file
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Claude)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.000003")
       (completion "0.000015")
       (web_search "0.01")
       (input_cache_read "0.0000003")
       (input_cache_write "0.00000375")
       (input_cache_write_1h "0.000006")
-      (overrides (
-        ({}
+      (overrides ([]
+        (
           (min_prompt_tokens 200000)
           (prompt "0.000006")
           (completion "0.0000225")
@@ -244,13 +244,13 @@
         )
       ))
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 1000000)
       (max_completion_tokens 64000)
       (is_moderated true)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_completion_tokens
       max_tokens
@@ -264,7 +264,7 @@
       top_k
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature 1)
       (top_p 1)
       (top_k null)
@@ -275,82 +275,82 @@
     (supported_voices null)
     (knowledge_cutoff 2025-01-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/anthropic/claude-4.5-sonnet-20250929/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category 3d)
           (elo 1212)
           (win_rate 51.1)
           (rank 44)
         )
-        ({}
+        (
           (arena models)
           (category asciiart)
           (elo 1241)
           (win_rate 56.1)
           (rank 15)
         )
-        ({}
+        (
           (arena models)
           (category codecategories)
           (elo 1211)
           (win_rate 51.6)
           (rank 44)
         )
-        ({}
+        (
           (arena models)
           (category dataviz)
           (elo 1193)
           (win_rate 47.2)
           (rank 52)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 1207)
           (win_rate 51.2)
           (rank 45)
         )
-        ({}
+        (
           (arena models)
           (category svg)
           (elo 1162)
           (win_rate 52.2)
           (rank 42)
         )
-        ({}
+        (
           (arena models)
           (category uicomponent)
           (elo 1206)
           (win_rate 49.5)
           (rank 45)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 1212)
           (win_rate 51.9)
           (rank 48)
         )
-        ({}
+        (
           (arena agents)
           (category fullstack)
           (elo 1095)
           (win_rate 43.5)
           (rank 23)
         )
-        ({}
+        (
           (arena agents)
           (category mobileapps)
           (elo 1194)
           (win_rate 52.3)
           (rank 18)
         )
-        ({}
+        (
           (arena agents)
           (category webapps)
           (elo 1112)
@@ -358,17 +358,17 @@
           (rank 27)
         )
       ))
-      (artificial_analysis ({}
+      (artificial_analysis (
         (intelligence_index 37.4)
         (coding_index 52.1)
         (agentic_index 26.4)
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId anthropic/claude-sonnet-4.5)

@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-mistralai_mistral-large-2512)
   (label "Mistral: Mistral Large 3 2512")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model mistralai/mistral-large-2512)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,16 +19,16 @@
     (tools true)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 262144)
     (maxOutputTokens null)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.0000005")
     (completion "0.0000015")
     (input_cache_read "0.00000005")
   ))
-  (properties ({}
+  (properties (
     (id mistralai/mistral-large-2512)
     (canonical_slug mistralai/mistral-large-2512)
     (hugging_face_id "")
@@ -36,31 +36,31 @@
     (created 1764624472)
     (description "Mistral Large 3 2512 is Mistral’s most capable model to date, featuring a sparse mixture-of-experts architecture with 41B active parameters (675B total), and released under the Apache 2.0 license.")
     (context_length 262144)
-    (architecture ({}
+    (architecture (
       (modality text+image+file->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
         file
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Mistral)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000005")
       (completion "0.0000015")
       (input_cache_read "0.00000005")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 262144)
       (max_completion_tokens null)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       max_tokens
       presence_penalty
@@ -73,7 +73,7 @@
       tools
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature 0.0645)
       (top_p null)
       (frequency_penalty null)
@@ -81,61 +81,61 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/mistralai/mistral-large-2512/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category 3d)
           (elo 1153)
           (win_rate 46.9)
           (rank 64)
         )
-        ({}
+        (
           (arena models)
           (category asciiart)
           (elo 1106)
           (win_rate 40.3)
           (rank 52)
         )
-        ({}
+        (
           (arena models)
           (category codecategories)
           (elo 1170)
           (win_rate 47.6)
           (rank 65)
         )
-        ({}
+        (
           (arena models)
           (category dataviz)
           (elo 1164)
           (win_rate 45.7)
           (rank 65)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 1121)
           (win_rate 41.5)
           (rank 78)
         )
-        ({}
+        (
           (arena models)
           (category svg)
           (elo 1039)
           (win_rate 38)
           (rank 69)
         )
-        ({}
+        (
           (arena models)
           (category uicomponent)
           (elo 1135)
           (win_rate 43)
           (rank 69)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 1184)
@@ -143,7 +143,7 @@
           (rank 64)
         )
       ))
-      (artificial_analysis ({}
+      (artificial_analysis (
         (intelligence_index 15.9)
         (coding_index 20.1)
         (agentic_index 5.5)
@@ -151,7 +151,7 @@
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id mistralai/mistral-large-2512)
     (canonical_slug mistralai/mistral-large-2512)
     (hugging_face_id "")
@@ -159,31 +159,31 @@
     (created 1764624472)
     (description "Mistral Large 3 2512 is Mistral’s most capable model to date, featuring a sparse mixture-of-experts architecture with 41B active parameters (675B total), and released under the Apache 2.0 license.")
     (context_length 262144)
-    (architecture ({}
+    (architecture (
       (modality text+image+file->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
         file
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Mistral)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000005")
       (completion "0.0000015")
       (input_cache_read "0.00000005")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 262144)
       (max_completion_tokens null)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       max_tokens
       presence_penalty
@@ -196,7 +196,7 @@
       tools
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature 0.0645)
       (top_p null)
       (frequency_penalty null)
@@ -204,61 +204,61 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/mistralai/mistral-large-2512/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category 3d)
           (elo 1153)
           (win_rate 46.9)
           (rank 64)
         )
-        ({}
+        (
           (arena models)
           (category asciiart)
           (elo 1106)
           (win_rate 40.3)
           (rank 52)
         )
-        ({}
+        (
           (arena models)
           (category codecategories)
           (elo 1170)
           (win_rate 47.6)
           (rank 65)
         )
-        ({}
+        (
           (arena models)
           (category dataviz)
           (elo 1164)
           (win_rate 45.7)
           (rank 65)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 1121)
           (win_rate 41.5)
           (rank 78)
         )
-        ({}
+        (
           (arena models)
           (category svg)
           (elo 1039)
           (win_rate 38)
           (rank 69)
         )
-        ({}
+        (
           (arena models)
           (category uicomponent)
           (elo 1135)
           (win_rate 43)
           (rank 69)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 1184)
@@ -266,14 +266,14 @@
           (rank 64)
         )
       ))
-      (artificial_analysis ({}
+      (artificial_analysis (
         (intelligence_index 15.9)
         (coding_index 20.1)
         (agentic_index 5.5)
       ))
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId mistralai/mistral-large-2512)

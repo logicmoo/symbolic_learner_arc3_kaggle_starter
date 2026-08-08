@@ -1,12 +1,12 @@
-({}
+(
   (kind semantic_datatype)
   (id evaluation)
   (label Evaluation)
   (description "A semantic assessment, score, validation result, or comparison.")
-  (children (
+  (children ([]
     prolog_fact_set
   ))
-  (parents (
+  (parents ([]
     information
   ))
 )

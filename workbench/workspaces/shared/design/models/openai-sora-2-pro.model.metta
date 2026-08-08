@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openai-sora-2-pro)
   (label sora-2-pro)
@@ -6,7 +6,7 @@
   (inherits openai)
   (model sora-2-pro)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling false)
@@ -19,25 +19,25 @@
     (tools false)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow null)
     (maxOutputTokens null)
   ))
-  (pricing ({}))
-  (properties ({}
+  (pricing ())
+  (properties (
     (id sora-2-pro)
     (object model)
     (created 1759708663)
     (owned_by system)
     (ownedBy system)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id sora-2-pro)
     (object model)
     (created 1759708663)
     (owned_by system)
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openai)
     (remoteModelId sora-2-pro)

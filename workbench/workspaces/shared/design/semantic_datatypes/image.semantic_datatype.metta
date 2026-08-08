@@ -1,9 +1,9 @@
-({}
+(
   (kind semantic_datatype)
   (id image)
   (label Image)
   (description "A visual scene independent of its concrete representation.")
-  (children (
+  (children ([]
     bitmap
     executable_view
     image_region
@@ -16,7 +16,7 @@
     turtle_program
   ))
   (preferredChild bitmap)
-  (parents (
+  (parents ([]
     information
   ))
 )

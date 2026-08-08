@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-nex-agi_nex-n2-pro)
   (label "Nex AGI: Nex-N2-Pro")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model nex-agi/nex-n2-pro)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,16 +19,16 @@
     (tools true)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 262144)
     (maxOutputTokens 262144)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.00000025")
     (completion "0.000001")
     (input_cache_read "0.000000025")
   ))
-  (properties ({}
+  (properties (
     (id nex-agi/nex-n2-pro)
     (canonical_slug nex-agi/nex-n2-pro)
     (hugging_face_id nex-agi/Nex-N2-Pro)
@@ -36,30 +36,30 @@
     (created 1780937140)
     (description "Nex-N2-Pro is an agentic mixture-of-experts model from Nex AGI, with 17B active parameters out of 397B total. Built on the Qwen3.5 architecture, it accepts text and image input and produces...")
     (context_length 262144)
-    (architecture ({}
+    (architecture (
       (modality text+image->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Qwen3)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000025")
       (completion "0.000001")
       (input_cache_read "0.000000025")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 262144)
       (max_completion_tokens 262144)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       logprobs
@@ -72,7 +72,7 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature 0.7)
       (top_p 0.95)
       (top_k 40)
@@ -83,61 +83,61 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/nex-agi/nex-n2-pro/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category 3d)
           (elo 1304)
           (win_rate 53.7)
           (rank 16)
         )
-        ({}
+        (
           (arena models)
           (category asciiart)
           (elo 1129)
           (win_rate 36.8)
           (rank 49)
         )
-        ({}
+        (
           (arena models)
           (category codecategories)
           (elo 1264)
           (win_rate 49.8)
           (rank 29)
         )
-        ({}
+        (
           (arena models)
           (category dataviz)
           (elo 1268)
           (win_rate 51.5)
           (rank 21)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 1261)
           (win_rate 50.3)
           (rank 27)
         )
-        ({}
+        (
           (arena models)
           (category svg)
           (elo 1247)
           (win_rate 52.2)
           (rank 13)
         )
-        ({}
+        (
           (arena models)
           (category uicomponent)
           (elo 1256)
           (win_rate 48.7)
           (rank 32)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 1246)
@@ -145,18 +145,18 @@
           (rank 36)
         )
       ))
-      (artificial_analysis ({}
+      (artificial_analysis (
         (intelligence_index 41.7)
         (coding_index 59.1)
         (agentic_index 31)
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id nex-agi/nex-n2-pro)
     (canonical_slug nex-agi/nex-n2-pro)
     (hugging_face_id nex-agi/Nex-N2-Pro)
@@ -164,30 +164,30 @@
     (created 1780937140)
     (description "Nex-N2-Pro is an agentic mixture-of-experts model from Nex AGI, with 17B active parameters out of 397B total. Built on the Qwen3.5 architecture, it accepts text and image input and produces...")
     (context_length 262144)
-    (architecture ({}
+    (architecture (
       (modality text+image->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Qwen3)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000025")
       (completion "0.000001")
       (input_cache_read "0.000000025")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 262144)
       (max_completion_tokens 262144)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       logprobs
@@ -200,7 +200,7 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature 0.7)
       (top_p 0.95)
       (top_k 40)
@@ -211,61 +211,61 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/nex-agi/nex-n2-pro/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category 3d)
           (elo 1304)
           (win_rate 53.7)
           (rank 16)
         )
-        ({}
+        (
           (arena models)
           (category asciiart)
           (elo 1129)
           (win_rate 36.8)
           (rank 49)
         )
-        ({}
+        (
           (arena models)
           (category codecategories)
           (elo 1264)
           (win_rate 49.8)
           (rank 29)
         )
-        ({}
+        (
           (arena models)
           (category dataviz)
           (elo 1268)
           (win_rate 51.5)
           (rank 21)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 1261)
           (win_rate 50.3)
           (rank 27)
         )
-        ({}
+        (
           (arena models)
           (category svg)
           (elo 1247)
           (win_rate 52.2)
           (rank 13)
         )
-        ({}
+        (
           (arena models)
           (category uicomponent)
           (elo 1256)
           (win_rate 48.7)
           (rank 32)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 1246)
@@ -273,17 +273,17 @@
           (rank 36)
         )
       ))
-      (artificial_analysis ({}
+      (artificial_analysis (
         (intelligence_index 41.7)
         (coding_index 59.1)
         (agentic_index 31)
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId nex-agi/nex-n2-pro)

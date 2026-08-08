@@ -1,20 +1,20 @@
-({}
+(
   (id shared.update_world_model)
   (label "Update World Model")
   (description "Update a revisable world model from hypotheses and evidence. Generic learning operation reusable across domains.")
-  (categories (
+  (categories ([]
     world-modeling/update
     learning/hypotheses
     symbolic/reasoning
   ))
   (implementation symbolic.world_model)
-  (inputs ({}
+  (inputs (
     (hypotheses HypothesisSet)
     (evidence EvidenceBundle)
   ))
-  (outputs ({}
+  (outputs (
     (world_model WorldModel)
   ))
-  (parameters ({}))
+  (parameters ())
   (kind operation)
 )

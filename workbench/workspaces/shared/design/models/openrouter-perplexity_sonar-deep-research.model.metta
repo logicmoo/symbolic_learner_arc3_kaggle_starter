@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-perplexity_sonar-deep-research)
   (label "Perplexity: Sonar Deep Research")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model perplexity/sonar-deep-research)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling false)
@@ -19,17 +19,17 @@
     (tools false)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 128000)
     (maxOutputTokens null)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.000002")
     (completion "0.000008")
     (web_search "0.005")
     (internal_reasoning "0.000003")
   ))
-  (properties ({}
+  (properties (
     (id perplexity/sonar-deep-research)
     (canonical_slug perplexity/sonar-deep-research)
     (hugging_face_id "")
@@ -37,30 +37,30 @@
     (created 1741311246)
     (description "Sonar Deep Research is a research-focused model designed for multi-step retrieval, synthesis, and reasoning across complex topics. It autonomously searches, reads, and evaluates sources, refining its approach as it gathers...")
     (context_length 128000)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type deepseek-r1)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.000002")
       (completion "0.000008")
       (web_search "0.005")
       (internal_reasoning "0.000003")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 128000)
       (max_completion_tokens null)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       max_tokens
@@ -71,19 +71,19 @@
       top_p
       web_search_options
     ))
-    (default_parameters ({}))
+    (default_parameters ())
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/perplexity/sonar-deep-research/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id perplexity/sonar-deep-research)
     (canonical_slug perplexity/sonar-deep-research)
     (hugging_face_id "")
@@ -91,30 +91,30 @@
     (created 1741311246)
     (description "Sonar Deep Research is a research-focused model designed for multi-step retrieval, synthesis, and reasoning across complex topics. It autonomously searches, reads, and evaluates sources, refining its approach as it gathers...")
     (context_length 128000)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type deepseek-r1)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.000002")
       (completion "0.000008")
       (web_search "0.005")
       (internal_reasoning "0.000003")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 128000)
       (max_completion_tokens null)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       max_tokens
@@ -125,18 +125,18 @@
       top_p
       web_search_options
     ))
-    (default_parameters ({}))
+    (default_parameters ())
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/perplexity/sonar-deep-research/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId perplexity/sonar-deep-research)

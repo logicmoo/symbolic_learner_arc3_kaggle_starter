@@ -1,4 +1,4 @@
-({}
+(
   (kind backend)
   (id unsloth)
   (label "Unsloth Studio local")
@@ -6,12 +6,12 @@
   (official true)
   (description "Shared local Unsloth Studio OpenAI-compatible transport inherited by every workspace. Local model choices live in model files.")
   (enabled true)
-  (capabilities (
+  (capabilities ([]
     llm.complete
     llm.vision
     llm.local
   ))
-  (configuration ({}
+  (configuration (
     (adapter openai_responses)
     (baseUrl http://127.0.0.1:8888/v1)
     (apiKeyEnvironmentVariable WORKBENCH_UNSLOTH_API_KEY)

@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-cohere_north-mini-code_free)
   (label "Cohere: North Mini Code (free)")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model cohere/north-mini-code:free)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code true)
     (functionCalling true)
@@ -19,15 +19,15 @@
     (tools true)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 256000)
     (maxOutputTokens 64000)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0")
     (completion "0")
   ))
-  (properties ({}
+  (properties (
     (id cohere/north-mini-code:free)
     (canonical_slug cohere/north-mini-code-20260617)
     (hugging_face_id CohereLabs/North-Mini-Code-1.0)
@@ -35,28 +35,28 @@
     (created 1781723748)
     (description "North Mini Code is Cohere's first agentic coding model and the debut of its North family. A sparse mixture-of-experts model with 30B total parameters and 3B active, it is optimized...")
     (context_length 256000)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Cohere)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0")
       (completion "0")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 256000)
       (max_completion_tokens 64000)
       (is_moderated true)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       max_tokens
@@ -70,7 +70,7 @@
       top_k
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -81,23 +81,23 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/cohere/north-mini-code-20260617/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena ())
-      (artificial_analysis ({}
+    (benchmarks (
+      (design_arena ([]))
+      (artificial_analysis (
         (intelligence_index 20.2)
         (coding_index 36.5)
         (agentic_index 3.1)
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id cohere/north-mini-code:free)
     (canonical_slug cohere/north-mini-code-20260617)
     (hugging_face_id CohereLabs/North-Mini-Code-1.0)
@@ -105,28 +105,28 @@
     (created 1781723748)
     (description "North Mini Code is Cohere's first agentic coding model and the debut of its North family. A sparse mixture-of-experts model with 30B total parameters and 3B active, it is optimized...")
     (context_length 256000)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Cohere)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0")
       (completion "0")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 256000)
       (max_completion_tokens 64000)
       (is_moderated true)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       max_tokens
@@ -140,7 +140,7 @@
       top_k
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -151,22 +151,22 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/cohere/north-mini-code-20260617/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena ())
-      (artificial_analysis ({}
+    (benchmarks (
+      (design_arena ([]))
+      (artificial_analysis (
         (intelligence_index 20.2)
         (coding_index 36.5)
         (agentic_index 3.1)
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId cohere/north-mini-code:free)

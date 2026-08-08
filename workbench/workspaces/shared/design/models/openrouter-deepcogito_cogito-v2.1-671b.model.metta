@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-deepcogito_cogito-v2.1-671b)
   (label "Deep Cogito: Cogito v2.1 671B")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model deepcogito/cogito-v2.1-671b)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling false)
@@ -19,15 +19,15 @@
     (tools false)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 128000)
     (maxOutputTokens null)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.00000125")
     (completion "0.00000125")
   ))
-  (properties ({}
+  (properties (
     (id deepcogito/cogito-v2.1-671b)
     (canonical_slug deepcogito/cogito-v2.1-671b-20251118)
     (hugging_face_id "")
@@ -35,28 +35,28 @@
     (created 1763071233)
     (description "Cogito v2.1 671B MoE represents one of the strongest open models globally, matching performance of frontier closed and open models. This model is trained using self play with reinforcement learning...")
     (context_length 128000)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000125")
       (completion "0.00000125")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 128000)
       (max_completion_tokens null)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       logit_bias
@@ -72,7 +72,7 @@
       top_k
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (frequency_penalty null)
@@ -80,15 +80,15 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/deepcogito/cogito-v2.1-671b-20251118/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id deepcogito/cogito-v2.1-671b)
     (canonical_slug deepcogito/cogito-v2.1-671b-20251118)
     (hugging_face_id "")
@@ -96,28 +96,28 @@
     (created 1763071233)
     (description "Cogito v2.1 671B MoE represents one of the strongest open models globally, matching performance of frontier closed and open models. This model is trained using self play with reinforcement learning...")
     (context_length 128000)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000125")
       (completion "0.00000125")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 128000)
       (max_completion_tokens null)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       logit_bias
@@ -133,7 +133,7 @@
       top_k
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (frequency_penalty null)
@@ -141,14 +141,14 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/deepcogito/cogito-v2.1-671b-20251118/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId deepcogito/cogito-v2.1-671b)

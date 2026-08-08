@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openai-o3-deep-research-2025-06-26)
   (label o3-deep-research-2025-06-26)
@@ -6,7 +6,7 @@
   (inherits openai)
   (model o3-deep-research-2025-06-26)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling false)
@@ -19,25 +19,25 @@
     (tools false)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow null)
     (maxOutputTokens null)
   ))
-  (pricing ({}))
-  (properties ({}
+  (pricing ())
+  (properties (
     (id o3-deep-research-2025-06-26)
     (object model)
     (created 1750865219)
     (owned_by system)
     (ownedBy system)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id o3-deep-research-2025-06-26)
     (object model)
     (created 1750865219)
     (owned_by system)
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openai)
     (remoteModelId o3-deep-research-2025-06-26)

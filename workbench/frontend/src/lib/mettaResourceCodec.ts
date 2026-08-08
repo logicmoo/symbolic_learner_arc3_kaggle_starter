@@ -14,15 +14,15 @@ export function jsonValueToMetta(value: unknown, depth = 0): string {
   if (typeof value === "boolean" || typeof value === "number") return String(value);
   if (typeof value === "string") return quote(value);
   if (Array.isArray(value)) {
-    if (!value.length) return "()";
+    if (!value.length) return "([])";
     const items = value.map(item => `${childIndent}${jsonValueToMetta(item, depth + 1)}`);
-    return `(\n${items.join("\n")}\n${indent})`;
+    return `([]\n${items.join("\n")}\n${indent})`;
   }
   if (typeof value === "object") {
     const entries = Object.entries(value as Record<string, unknown>);
-    if (!entries.length) return "({})";
+    if (!entries.length) return "()";
     const items = entries.map(([key, item]) => `${childIndent}(${quote(key)} ${jsonValueToMetta(item, depth + 1)})`);
-    return `({}\n${items.join("\n")}\n${indent})`;
+    return `(\n${items.join("\n")}\n${indent})`;
   }
   throw new Error(`Unsupported resource value: ${typeof value}`);
 }
@@ -73,21 +73,29 @@ export function mettaToJsonValue(source: string): unknown {
     const token = tokens[index++];
     if (!token) throw new Error("Unexpected end of MeTTa resource");
     if (token.value !== "(") return atom(token);
-    const map = tokens[index]?.value === "{}";
-    if (map) index += 1;
+    const list = tokens[index]?.value === "[]";
+    if (list) index += 1;
+    if (!list) {
+      const result: Record<string, unknown> = {};
+      while (tokens[index]?.value !== ")") {
+        if (tokens[index++]?.value !== "(") throw new Error("Map entries must be (name value) pairs");
+        const key = tokens[index++];
+        if (!key || key.value === "(" || key.value === ")") throw new Error("Map entry name must be an atom");
+        const name = atom(key);
+        if (typeof name !== "string") throw new Error("Map entry name must be a string");
+        result[name] = parse();
+        if (tokens[index++]?.value !== ")") throw new Error("Map entries must contain exactly one value");
+      }
+      index += 1;
+      return result;
+    }
     const values: unknown[] = [];
     while (tokens[index]?.value !== ")") {
       if (index >= tokens.length) throw new Error("Unclosed list");
       values.push(parse());
     }
     index += 1;
-    if (!map) return values;
-    const result: Record<string, unknown> = {};
-    for (const entry of values) {
-      if (!Array.isArray(entry) || entry.length !== 2 || typeof entry[0] !== "string") throw new Error("Map entries must be (name value) pairs");
-      result[entry[0]] = entry[1];
-    }
-    return result;
+    return values;
   };
   const result = parse();
   if (index !== tokens.length) throw new Error("Unexpected tokens after resource");

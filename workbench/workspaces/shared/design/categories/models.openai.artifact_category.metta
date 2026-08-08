@@ -1,18 +1,18 @@
-({}
+(
   (kind artifact_category)
   (id models.openai)
   (label "OpenAI Backend")
   (description "The OpenAI backend and its inherited model/profile hierarchy.")
   (path filtered/models/providers/openai)
-  (trees (
+  (trees ([]
     models
   ))
-  (query ({}
-    (kinds (
+  (query (
+    (kinds ([]
       backend
     ))
-    (where ({}
-      (provider ({}
+    (where (
+      (provider (
         (equals openai)
       ))
     ))

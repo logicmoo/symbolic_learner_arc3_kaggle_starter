@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-nvidia_nemotron-3-ultra-550b-a55b_batch)
   (label "NVIDIA: Nemotron 3 Ultra (batch)")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model nvidia/nemotron-3-ultra-550b-a55b:batch)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,16 +19,16 @@
     (tools true)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 512288)
     (maxOutputTokens null)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.0000003")
     (completion "0.0000018")
     (input_cache_read "0.0000001")
   ))
-  (properties ({}
+  (properties (
     (id nvidia/nemotron-3-ultra-550b-a55b:batch)
     (canonical_slug nvidia/nemotron-3-ultra-550b-a55b-20260604)
     (hugging_face_id nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-BF16)
@@ -36,29 +36,29 @@
     (created 1780551208)
     (description "NVIDIA Nemotron 3 Ultra is an open frontier-reasoning and orchestration model from NVIDIA, with 55B active parameters out of 550B total (MoE). Built on a hybrid Transformer-Mamba mixture-of-experts architecture, it...")
     (context_length 512288)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000003")
       (completion "0.0000018")
       (input_cache_read "0.0000001")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 512288)
       (max_completion_tokens null)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       logit_bias
@@ -77,7 +77,7 @@
       top_k
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature 1)
       (top_p 0.95)
       (top_k null)
@@ -88,61 +88,61 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/nvidia/nemotron-3-ultra-550b-a55b-20260604/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category 3d)
           (elo 1186)
           (win_rate 41.2)
           (rank 52)
         )
-        ({}
+        (
           (arena models)
           (category asciiart)
           (elo 1118)
           (win_rate 37.7)
           (rank 51)
         )
-        ({}
+        (
           (arena models)
           (category codecategories)
           (elo 1155)
           (win_rate 36.1)
           (rank 71)
         )
-        ({}
+        (
           (arena models)
           (category dataviz)
           (elo 1153)
           (win_rate 37.5)
           (rank 71)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 1169)
           (win_rate 38.7)
           (rank 64)
         )
-        ({}
+        (
           (arena models)
           (category svg)
           (elo 1126)
           (win_rate 37.5)
           (rank 50)
         )
-        ({}
+        (
           (arena models)
           (category uicomponent)
           (elo 1177)
           (win_rate 39.2)
           (rank 60)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 1133)
@@ -150,17 +150,17 @@
           (rank 84)
         )
       ))
-      (artificial_analysis ({}
+      (artificial_analysis (
         (intelligence_index 38.3)
         (coding_index 49.3)
         (agentic_index 27.5)
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
       (default_enabled true)
       (supports_max_tokens true)
-      (supported_efforts (
+      (supported_efforts ([]
         high
         medium
       ))
@@ -168,7 +168,7 @@
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id nvidia/nemotron-3-ultra-550b-a55b:batch)
     (canonical_slug nvidia/nemotron-3-ultra-550b-a55b-20260604)
     (hugging_face_id nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-BF16)
@@ -176,29 +176,29 @@
     (created 1780551208)
     (description "NVIDIA Nemotron 3 Ultra is an open frontier-reasoning and orchestration model from NVIDIA, with 55B active parameters out of 550B total (MoE). Built on a hybrid Transformer-Mamba mixture-of-experts architecture, it...")
     (context_length 512288)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000003")
       (completion "0.0000018")
       (input_cache_read "0.0000001")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 512288)
       (max_completion_tokens null)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       logit_bias
@@ -217,7 +217,7 @@
       top_k
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature 1)
       (top_p 0.95)
       (top_k null)
@@ -228,61 +228,61 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/nvidia/nemotron-3-ultra-550b-a55b-20260604/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category 3d)
           (elo 1186)
           (win_rate 41.2)
           (rank 52)
         )
-        ({}
+        (
           (arena models)
           (category asciiart)
           (elo 1118)
           (win_rate 37.7)
           (rank 51)
         )
-        ({}
+        (
           (arena models)
           (category codecategories)
           (elo 1155)
           (win_rate 36.1)
           (rank 71)
         )
-        ({}
+        (
           (arena models)
           (category dataviz)
           (elo 1153)
           (win_rate 37.5)
           (rank 71)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 1169)
           (win_rate 38.7)
           (rank 64)
         )
-        ({}
+        (
           (arena models)
           (category svg)
           (elo 1126)
           (win_rate 37.5)
           (rank 50)
         )
-        ({}
+        (
           (arena models)
           (category uicomponent)
           (elo 1177)
           (win_rate 39.2)
           (rank 60)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 1133)
@@ -290,24 +290,24 @@
           (rank 84)
         )
       ))
-      (artificial_analysis ({}
+      (artificial_analysis (
         (intelligence_index 38.3)
         (coding_index 49.3)
         (agentic_index 27.5)
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
       (default_enabled true)
       (supports_max_tokens true)
-      (supported_efforts (
+      (supported_efforts ([]
         high
         medium
       ))
       (default_effort high)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId nvidia/nemotron-3-ultra-550b-a55b:batch)

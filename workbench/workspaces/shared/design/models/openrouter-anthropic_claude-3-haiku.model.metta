@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-anthropic_claude-3-haiku)
   (label "Anthropic: Claude 3 Haiku")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model anthropic/claude-3-haiku)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,11 +19,11 @@
     (tools true)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 200000)
     (maxOutputTokens 4096)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.00000025")
     (completion "0.00000125")
     (web_search "0.01")
@@ -31,7 +31,7 @@
     (input_cache_write "0.0000003")
     (input_cache_write_1h "0.0000005")
   ))
-  (properties ({}
+  (properties (
     (id anthropic/claude-3-haiku)
     (canonical_slug anthropic/claude-3-haiku)
     (hugging_face_id null)
@@ -39,19 +39,19 @@
     (created 1710288000)
     (description "Claude 3 Haiku is Anthropic's fastest and most compact model for\nnear-instant responsiveness. Quick and accurate targeted performance.\n\nSee the launch announcement and benchmark results [here](https://www.anthropic.com/news/claude-3-haiku)\n\n#multimodal")
     (context_length 200000)
-    (architecture ({}
+    (architecture (
       (modality text+image->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Claude)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000025")
       (completion "0.00000125")
       (web_search "0.01")
@@ -59,13 +59,13 @@
       (input_cache_write "0.0000003")
       (input_cache_write_1h "0.0000005")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 200000)
       (max_completion_tokens 4096)
       (is_moderated true)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       max_tokens
       stop
       temperature
@@ -74,16 +74,16 @@
       top_k
       top_p
     ))
-    (default_parameters ({}))
+    (default_parameters ())
     (supported_voices null)
     (knowledge_cutoff 2023-08-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/anthropic/claude-3-haiku/endpoints)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id anthropic/claude-3-haiku)
     (canonical_slug anthropic/claude-3-haiku)
     (hugging_face_id null)
@@ -91,19 +91,19 @@
     (created 1710288000)
     (description "Claude 3 Haiku is Anthropic's fastest and most compact model for\nnear-instant responsiveness. Quick and accurate targeted performance.\n\nSee the launch announcement and benchmark results [here](https://www.anthropic.com/news/claude-3-haiku)\n\n#multimodal")
     (context_length 200000)
-    (architecture ({}
+    (architecture (
       (modality text+image->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Claude)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000025")
       (completion "0.00000125")
       (web_search "0.01")
@@ -111,13 +111,13 @@
       (input_cache_write "0.0000003")
       (input_cache_write_1h "0.0000005")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 200000)
       (max_completion_tokens 4096)
       (is_moderated true)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       max_tokens
       stop
       temperature
@@ -126,15 +126,15 @@
       top_k
       top_p
     ))
-    (default_parameters ({}))
+    (default_parameters ())
     (supported_voices null)
     (knowledge_cutoff 2023-08-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/anthropic/claude-3-haiku/endpoints)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId anthropic/claude-3-haiku)

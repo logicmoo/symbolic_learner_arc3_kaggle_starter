@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-openrouter_free)
   (label "Free Models Router")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model openrouter/free)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,15 +19,15 @@
     (tools true)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 200000)
     (maxOutputTokens null)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0")
     (completion "0")
   ))
-  (properties ({}
+  (properties (
     (id openrouter/free)
     (canonical_slug openrouter/free)
     (hugging_face_id "")
@@ -35,29 +35,29 @@
     (created 1769917427)
     (description "The simplest way to get free inference. openrouter/free is a router that selects free models at random from the models available on OpenRouter. The router smartly filters for models that...")
     (context_length 200000)
-    (architecture ({}
+    (architecture (
       (modality text+image->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Router)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0")
       (completion "0")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length null)
       (max_completion_tokens null)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       logprobs
@@ -77,7 +77,7 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (frequency_penalty null)
@@ -85,12 +85,12 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/openrouter/free/endpoints)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id openrouter/free)
     (canonical_slug openrouter/free)
     (hugging_face_id "")
@@ -98,29 +98,29 @@
     (created 1769917427)
     (description "The simplest way to get free inference. openrouter/free is a router that selects free models at random from the models available on OpenRouter. The router smartly filters for models that...")
     (context_length 200000)
-    (architecture ({}
+    (architecture (
       (modality text+image->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Router)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0")
       (completion "0")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length null)
       (max_completion_tokens null)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       logprobs
@@ -140,7 +140,7 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (frequency_penalty null)
@@ -148,11 +148,11 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/openrouter/free/endpoints)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId openrouter/free)

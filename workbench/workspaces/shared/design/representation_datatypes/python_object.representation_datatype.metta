@@ -1,11 +1,11 @@
-({}
+(
   (kind representation_datatype)
   (id python_object)
   (label "Python Object")
   (language python)
   (description "An in-memory Python object representation used by Python operation implementations.")
-  (parents (
+  (parents ([]
     information
   ))
-  (children ())
+  (children ([]))
 )

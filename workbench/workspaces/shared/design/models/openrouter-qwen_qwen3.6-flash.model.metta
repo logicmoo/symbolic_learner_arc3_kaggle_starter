@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-qwen_qwen3.6-flash)
   (label "Qwen: Qwen3.6 Flash")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model qwen/qwen3.6-flash)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,16 +19,16 @@
     (tools true)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 1000000)
     (maxOutputTokens 65536)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.0000001875")
     (completion "0.000001125")
     (input_cache_write "0.000000234375")
-    (overrides (
-      ({}
+    (overrides ([]
+      (
         (min_prompt_tokens 256000)
         (prompt "0.00000075")
         (completion "0.000003")
@@ -36,7 +36,7 @@
       )
     ))
   ))
-  (properties ({}
+  (properties (
     (id qwen/qwen3.6-flash)
     (canonical_slug qwen/qwen3.6-flash)
     (hugging_face_id null)
@@ -44,25 +44,25 @@
     (created 1777261362)
     (description "Qwen3.6 Flash is a fast, efficient language model from Alibaba's Qwen 3.6 series. It supports text, image, and video input with a 1M token context window. Tiered pricing kicks in...")
     (context_length 1000000)
-    (architecture ({}
+    (architecture (
       (modality text+image+video->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
         video
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Qwen3)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000001875")
       (completion "0.000001125")
       (input_cache_write "0.000000234375")
-      (overrides (
-        ({}
+      (overrides ([]
+        (
           (min_prompt_tokens 256000)
           (prompt "0.00000075")
           (completion "0.000003")
@@ -70,13 +70,13 @@
         )
       ))
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 1000000)
       (max_completion_tokens 65536)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       logprobs
@@ -94,19 +94,19 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}))
+    (default_parameters ())
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/qwen/qwen3.6-flash/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id qwen/qwen3.6-flash)
     (canonical_slug qwen/qwen3.6-flash)
     (hugging_face_id null)
@@ -114,25 +114,25 @@
     (created 1777261362)
     (description "Qwen3.6 Flash is a fast, efficient language model from Alibaba's Qwen 3.6 series. It supports text, image, and video input with a 1M token context window. Tiered pricing kicks in...")
     (context_length 1000000)
-    (architecture ({}
+    (architecture (
       (modality text+image+video->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
         video
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Qwen3)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000001875")
       (completion "0.000001125")
       (input_cache_write "0.000000234375")
-      (overrides (
-        ({}
+      (overrides ([]
+        (
           (min_prompt_tokens 256000)
           (prompt "0.00000075")
           (completion "0.000003")
@@ -140,13 +140,13 @@
         )
       ))
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 1000000)
       (max_completion_tokens 65536)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       logprobs
@@ -164,18 +164,18 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}))
+    (default_parameters ())
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/qwen/qwen3.6-flash/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId qwen/qwen3.6-flash)

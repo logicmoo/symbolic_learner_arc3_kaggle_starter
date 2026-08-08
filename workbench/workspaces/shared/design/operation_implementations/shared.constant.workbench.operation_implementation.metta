@@ -1,17 +1,17 @@
-({}
+(
   (kind operation_implementation)
   (id shared.constant.workbench)
   (label "Constant Value / Workbench")
   (description "Return a value configured on the workflow step.")
-  (parents (
+  (parents ([]
     shared.constant
   ))
   (implementation system.workbench)
-  (parameters ({}
+  (parameters (
     (capability value.constant)
     (outputBinding value)
   ))
-  (outputs ({}
+  (outputs (
     (value Any)
   ))
 )

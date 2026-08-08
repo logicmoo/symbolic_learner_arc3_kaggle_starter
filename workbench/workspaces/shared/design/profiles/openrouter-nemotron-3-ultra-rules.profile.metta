@@ -1,11 +1,11 @@
-({}
+(
   (kind profile)
   (id openrouter-nemotron-3-ultra-rules)
   (label "Nemotron 3 Ultra — high reasoning")
   (description "Prompt-free execution profile migrated from the legacy rules transaction.")
   (inherits openrouter-nemotron-3-ultra)
   (enabled true)
-  (defaults ({}
+  (defaults (
     (analysisLevel 4)
     (singleEnabled false)
     (batchEnabled false)
@@ -18,7 +18,7 @@
     (timeoutSeconds 900)
     (seed null)
   ))
-  (metadata ({}
+  (metadata (
     (legacyTransaction induce_rules_from_prolog)
   ))
 )

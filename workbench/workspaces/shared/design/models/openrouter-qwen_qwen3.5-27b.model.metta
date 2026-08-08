@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-qwen_qwen3.5-27b)
   (label "Qwen: Qwen3.5-27B")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model qwen/qwen3.5-27b)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,15 +19,15 @@
     (tools true)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 262144)
     (maxOutputTokens 65536)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.000000195")
     (completion "0.00000156")
   ))
-  (properties ({}
+  (properties (
     (id qwen/qwen3.5-27b)
     (canonical_slug qwen/qwen3.5-27b-20260224)
     (hugging_face_id Qwen/Qwen3.5-27B)
@@ -35,30 +35,30 @@
     (created 1772053810)
     (description "The Qwen3.5 27B native vision-language Dense model incorporates a linear attention mechanism, delivering fast response times while balancing inference speed and performance. Its overall capabilities are comparable to those of...")
     (context_length 262144)
-    (architecture ({}
+    (architecture (
       (modality text+image+video->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
         video
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Qwen3)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.000000195")
       (completion "0.00000156")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 262144)
       (max_completion_tokens 65536)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       logit_bias
@@ -79,7 +79,7 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature 0.6)
       (top_p 0.95)
       (top_k 20)
@@ -90,15 +90,15 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/qwen/qwen3.5-27b-20260224/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id qwen/qwen3.5-27b)
     (canonical_slug qwen/qwen3.5-27b-20260224)
     (hugging_face_id Qwen/Qwen3.5-27B)
@@ -106,30 +106,30 @@
     (created 1772053810)
     (description "The Qwen3.5 27B native vision-language Dense model incorporates a linear attention mechanism, delivering fast response times while balancing inference speed and performance. Its overall capabilities are comparable to those of...")
     (context_length 262144)
-    (architecture ({}
+    (architecture (
       (modality text+image+video->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
         video
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Qwen3)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.000000195")
       (completion "0.00000156")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 262144)
       (max_completion_tokens 65536)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       logit_bias
@@ -150,7 +150,7 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature 0.6)
       (top_p 0.95)
       (top_k 20)
@@ -161,14 +161,14 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/qwen/qwen3.5-27b-20260224/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId qwen/qwen3.5-27b)

@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-google_gemini-2.5-flash-image)
   (label "Google: Nano Banana (Gemini 2.5 Flash Image)")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model google/gemini-2.5-flash-image)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling false)
@@ -19,11 +19,11 @@
     (tools false)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 32768)
     (maxOutputTokens 8192)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.0000003")
     (completion "0.0000025")
     (image "0.0000003")
@@ -35,7 +35,7 @@
     (input_cache_read "0.00000003")
     (input_cache_write "0.0000000833333333333333")
   ))
-  (properties ({}
+  (properties (
     (id google/gemini-2.5-flash-image)
     (canonical_slug google/gemini-2.5-flash-image)
     (hugging_face_id "")
@@ -43,20 +43,20 @@
     (created 1759870431)
     (description "Gemini 2.5 Flash Image, a.k.a. \"Nano Banana,\" is now generally available. It is a state of the art image generation model with contextual understanding. It is capable of image generation,...")
     (context_length 32768)
-    (architecture ({}
+    (architecture (
       (modality text+image->text+image)
-      (input_modalities (
+      (input_modalities ([]
         image
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         image
         text
       ))
       (tokenizer Gemini)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000003")
       (completion "0.0000025")
       (image "0.0000003")
@@ -68,13 +68,13 @@
       (input_cache_read "0.00000003")
       (input_cache_write "0.0000000833333333333333")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 32768)
       (max_completion_tokens 8192)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       max_tokens
       response_format
       seed
@@ -83,7 +83,7 @@
       temperature
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (frequency_penalty null)
@@ -91,26 +91,26 @@
     (supported_voices null)
     (knowledge_cutoff 2025-01-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/google/gemini-2.5-flash-image/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category graphicdesign)
           (elo 1195)
           (win_rate 56.9)
           (rank 8)
         )
-        ({}
+        (
           (arena models)
           (category image)
           (elo 1208)
           (win_rate 55.6)
           (rank 8)
         )
-        ({}
+        (
           (arena models)
           (category logo)
           (elo 1183)
@@ -121,7 +121,7 @@
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id google/gemini-2.5-flash-image)
     (canonical_slug google/gemini-2.5-flash-image)
     (hugging_face_id "")
@@ -129,20 +129,20 @@
     (created 1759870431)
     (description "Gemini 2.5 Flash Image, a.k.a. \"Nano Banana,\" is now generally available. It is a state of the art image generation model with contextual understanding. It is capable of image generation,...")
     (context_length 32768)
-    (architecture ({}
+    (architecture (
       (modality text+image->text+image)
-      (input_modalities (
+      (input_modalities ([]
         image
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         image
         text
       ))
       (tokenizer Gemini)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000003")
       (completion "0.0000025")
       (image "0.0000003")
@@ -154,13 +154,13 @@
       (input_cache_read "0.00000003")
       (input_cache_write "0.0000000833333333333333")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 32768)
       (max_completion_tokens 8192)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       max_tokens
       response_format
       seed
@@ -169,7 +169,7 @@
       temperature
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (frequency_penalty null)
@@ -177,26 +177,26 @@
     (supported_voices null)
     (knowledge_cutoff 2025-01-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/google/gemini-2.5-flash-image/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category graphicdesign)
           (elo 1195)
           (win_rate 56.9)
           (rank 8)
         )
-        ({}
+        (
           (arena models)
           (category image)
           (elo 1208)
           (win_rate 55.6)
           (rank 8)
         )
-        ({}
+        (
           (arena models)
           (category logo)
           (elo 1183)
@@ -206,7 +206,7 @@
       ))
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId google/gemini-2.5-flash-image)

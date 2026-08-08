@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-nvidia_nemotron-3.5-content-safety_free)
   (label "NVIDIA: Nemotron 3.5 Content Safety (free)")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model nvidia/nemotron-3.5-content-safety:free)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling false)
@@ -19,15 +19,15 @@
     (tools false)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 128000)
     (maxOutputTokens 8192)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0")
     (completion "0")
   ))
-  (properties ({}
+  (properties (
     (id nvidia/nemotron-3.5-content-safety:free)
     (canonical_slug nvidia/nemotron-3.5-content-safety-20260604)
     (hugging_face_id nvidia/Nemotron-3.5-Content-Safety)
@@ -35,29 +35,29 @@
     (created 1780581864)
     (description "NVIDIA Nemotron 3.5 Content Safety is a compact 4B-parameter multimodal guardrail model from NVIDIA, fine-tuned from Google Gemma-3-4B. It moderates both inputs to and responses from LLMs and VLMs, accepting...")
     (context_length 128000)
-    (architecture ({}
+    (architecture (
       (modality text+image->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0")
       (completion "0")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 128000)
       (max_completion_tokens 8192)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_tokens
       reasoning
@@ -65,7 +65,7 @@
       temperature
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -76,16 +76,16 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/nvidia/nemotron-3.5-content-safety-20260604/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
       (default_enabled true)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id nvidia/nemotron-3.5-content-safety:free)
     (canonical_slug nvidia/nemotron-3.5-content-safety-20260604)
     (hugging_face_id nvidia/Nemotron-3.5-Content-Safety)
@@ -93,29 +93,29 @@
     (created 1780581864)
     (description "NVIDIA Nemotron 3.5 Content Safety is a compact 4B-parameter multimodal guardrail model from NVIDIA, fine-tuned from Google Gemma-3-4B. It moderates both inputs to and responses from LLMs and VLMs, accepting...")
     (context_length 128000)
-    (architecture ({}
+    (architecture (
       (modality text+image->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0")
       (completion "0")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 128000)
       (max_completion_tokens 8192)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_tokens
       reasoning
@@ -123,7 +123,7 @@
       temperature
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -134,15 +134,15 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/nvidia/nemotron-3.5-content-safety-20260604/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
       (default_enabled true)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId nvidia/nemotron-3.5-content-safety:free)

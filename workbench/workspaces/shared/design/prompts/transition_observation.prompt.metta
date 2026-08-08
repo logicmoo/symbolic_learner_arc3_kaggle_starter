@@ -1,15 +1,15 @@
-({}
+(
   (kind prompt)
   (id transition_observation)
   (label "Transition Observation")
   (description "Generic visual-change prompt that separates observed changes from inferred rules.")
-  (text (
+  (text ([]
     "Describe direct before-to-after observations only."
     "Represent applicable changes such as unchanged, moved, appeared, disappeared, recolored, resized, reshaped, split, merged, opened, closed, consumed, created, destroyed, overwritten, or status changes."
     "Every claimed transition should cite concrete coordinate, color, geometry, or region evidence."
     "Do not infer a general rule in the direct-observation section."
   ))
-  (metadata ({}
+  (metadata (
     (domain vision)
     (category temporal-difference)
   ))

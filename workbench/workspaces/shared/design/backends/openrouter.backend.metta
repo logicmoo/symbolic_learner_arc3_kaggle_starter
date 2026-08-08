@@ -1,4 +1,4 @@
-({}
+(
   (kind backend)
   (id openrouter)
   (label OpenRouter)
@@ -6,12 +6,12 @@
   (official true)
   (description "Shared OpenRouter OpenAI-compatible transport inherited by every workspace. Individual OpenRouter models and presets live in model files.")
   (enabled true)
-  (capabilities (
+  (capabilities ([]
     llm.complete
     llm.reasoning
     llm.vision
   ))
-  (configuration ({}
+  (configuration (
     (adapter openai_responses)
     (baseUrl https://openrouter.ai/api/v1)
     (apiKeyEnvironmentVariable OPENROUTER_API_KEY)

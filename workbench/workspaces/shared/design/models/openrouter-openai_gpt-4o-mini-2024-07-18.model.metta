@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-openai_gpt-4o-mini-2024-07-18)
   (label "OpenAI: GPT-4o-mini (2024-07-18)")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model openai/gpt-4o-mini-2024-07-18)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,16 +19,16 @@
     (tools true)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 128000)
     (maxOutputTokens 16384)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.00000015")
     (completion "0.0000006")
     (input_cache_read "0.000000075")
   ))
-  (properties ({}
+  (properties (
     (id openai/gpt-4o-mini-2024-07-18)
     (canonical_slug openai/gpt-4o-mini-2024-07-18)
     (hugging_face_id null)
@@ -36,31 +36,31 @@
     (created 1721260800)
     (description "GPT-4o mini is OpenAI's newest model after [GPT-4 Omni](/models/openai/gpt-4o), supporting both text and image inputs with text outputs. As their most advanced small model, it is many multiples more affordable...")
     (context_length 128000)
-    (architecture ({}
+    (architecture (
       (modality text+image+file->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
         file
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer GPT)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000015")
       (completion "0.0000006")
       (input_cache_read "0.000000075")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 128000)
       (max_completion_tokens 16384)
       (is_moderated true)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       logit_bias
       logprobs
@@ -78,16 +78,16 @@
       top_p
       web_search_options
     ))
-    (default_parameters ({}))
+    (default_parameters ())
     (supported_voices null)
     (knowledge_cutoff 2023-10-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/openai/gpt-4o-mini-2024-07-18/endpoints)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id openai/gpt-4o-mini-2024-07-18)
     (canonical_slug openai/gpt-4o-mini-2024-07-18)
     (hugging_face_id null)
@@ -95,31 +95,31 @@
     (created 1721260800)
     (description "GPT-4o mini is OpenAI's newest model after [GPT-4 Omni](/models/openai/gpt-4o), supporting both text and image inputs with text outputs. As their most advanced small model, it is many multiples more affordable...")
     (context_length 128000)
-    (architecture ({}
+    (architecture (
       (modality text+image+file->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
         file
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer GPT)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000015")
       (completion "0.0000006")
       (input_cache_read "0.000000075")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 128000)
       (max_completion_tokens 16384)
       (is_moderated true)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       logit_bias
       logprobs
@@ -137,15 +137,15 @@
       top_p
       web_search_options
     ))
-    (default_parameters ({}))
+    (default_parameters ())
     (supported_voices null)
     (knowledge_cutoff 2023-10-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/openai/gpt-4o-mini-2024-07-18/endpoints)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId openai/gpt-4o-mini-2024-07-18)

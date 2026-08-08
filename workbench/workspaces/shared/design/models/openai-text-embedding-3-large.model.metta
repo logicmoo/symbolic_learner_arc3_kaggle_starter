@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openai-text-embedding-3-large)
   (label text-embedding-3-large)
@@ -6,7 +6,7 @@
   (inherits openai)
   (model text-embedding-3-large)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling false)
@@ -19,25 +19,25 @@
     (tools false)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow null)
     (maxOutputTokens null)
   ))
-  (pricing ({}))
-  (properties ({}
+  (pricing ())
+  (properties (
     (id text-embedding-3-large)
     (object model)
     (created 1705953180)
     (owned_by system)
     (ownedBy system)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id text-embedding-3-large)
     (object model)
     (created 1705953180)
     (owned_by system)
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openai)
     (remoteModelId text-embedding-3-large)

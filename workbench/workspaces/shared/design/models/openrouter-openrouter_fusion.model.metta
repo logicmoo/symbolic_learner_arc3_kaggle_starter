@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-openrouter_fusion)
   (label "OpenRouter: Fusion")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model openrouter/fusion)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling false)
@@ -19,15 +19,15 @@
     (tools false)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 1000000)
     (maxOutputTokens null)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "-1")
     (completion "-1")
   ))
-  (properties ({}
+  (properties (
     (id openrouter/fusion)
     (canonical_slug openrouter/fusion)
     (hugging_face_id null)
@@ -35,29 +35,29 @@
     (created 1781371647)
     (description "Fusion turns your prompt into a small multi-model deliberation. A panel of expert models (see below) analyzes your prompt in parallel with web search and web fetch enabled, then a...")
     (context_length 1000000)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Router)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "-1")
       (completion "-1")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length null)
       (max_completion_tokens null)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters ())
-    (default_parameters ({}
+    (supported_parameters ([]))
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -68,12 +68,12 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/openrouter/fusion/endpoints)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id openrouter/fusion)
     (canonical_slug openrouter/fusion)
     (hugging_face_id null)
@@ -81,29 +81,29 @@
     (created 1781371647)
     (description "Fusion turns your prompt into a small multi-model deliberation. A panel of expert models (see below) analyzes your prompt in parallel with web search and web fetch enabled, then a...")
     (context_length 1000000)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Router)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "-1")
       (completion "-1")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length null)
       (max_completion_tokens null)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters ())
-    (default_parameters ({}
+    (supported_parameters ([]))
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -114,11 +114,11 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/openrouter/fusion/endpoints)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId openrouter/fusion)

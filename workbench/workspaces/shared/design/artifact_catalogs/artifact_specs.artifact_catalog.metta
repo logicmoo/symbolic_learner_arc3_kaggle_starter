@@ -1,60 +1,60 @@
-({}
-  (artifacts ({}
-    (source_observation ({}
+(
+  (artifacts (
+    (source_observation (
       (type VisualObservation)
       (producer arc3.capture)
       (display "64×64 · rgba")
       (confidence 1.0)
     ))
-    (entity_set ({}
+    (entity_set (
       (type EntitySet)
       (producer vision.segment)
       (display entities)
       (confidence 0.94)
     ))
-    (object_identities ({}
+    (object_identities (
       (type IdentityMap)
       (producer symbolic.identity)
       (display "identity mappings")
       (confidence 0.91)
     ))
-    (symbolic_facts ({}
+    (symbolic_facts (
       (type PrologFactSet)
       (producer prolog.properties)
       (display clauses)
       (confidence 0.89)
     ))
-    (turtle_programs ({}
+    (turtle_programs (
       (type ExecutableView)
       (producer llm.turtle)
       (display programs)
       (confidence 0.87)
     ))
-    (reconstruction ({}
+    (reconstruction (
       (type VisualObservation)
       (producer turtle.runtime)
       (display "rendered observation")
       (confidence 0.964)
     ))
-    (evidence ({}
+    (evidence (
       (type EvidenceBundle)
       (producer vision.diff)
       (display findings)
       (confidence 0.964)
     ))
-    (result_observation ({}
+    (result_observation (
       (type VisualObservation)
       (producer arc3.capture)
       (display "result observation")
       (confidence 1.0)
     ))
-    (transition_evidence ({}
+    (transition_evidence (
       (type TransitionEvidence)
       (producer symbolic.transition)
       (display hypotheses)
       (confidence 0.72)
     ))
-    (world_model ({}
+    (world_model (
       (type WorldModel)
       (producer symbolic.world_model)
       (display "world model")

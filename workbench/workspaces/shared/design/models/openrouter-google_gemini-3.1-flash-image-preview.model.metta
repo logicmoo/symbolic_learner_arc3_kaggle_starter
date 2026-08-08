@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-google_gemini-3.1-flash-image-preview)
   (label "Google: Nano Banana 2 (Gemini 3.1 Flash Image Preview)")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model google/gemini-3.1-flash-image-preview)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling false)
@@ -19,17 +19,17 @@
     (tools false)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 65536)
     (maxOutputTokens 65536)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.0000005")
     (completion "0.000003")
     (image_output "0.00006")
     (web_search "0.014")
   ))
-  (properties ({}
+  (properties (
     (id google/gemini-3.1-flash-image-preview)
     (canonical_slug google/gemini-3.1-flash-image-preview-20260226)
     (hugging_face_id "")
@@ -37,32 +37,32 @@
     (created 1772119558)
     (description "Gemini 3.1 Flash Image Preview, a.k.a. \"Nano Banana 2,\" is Google’s latest state of the art image generation and editing model, delivering Pro-level visual quality at Flash speed. It combines...")
     (context_length 65536)
-    (architecture ({}
+    (architecture (
       (modality text+image->text+image)
-      (input_modalities (
+      (input_modalities ([]
         image
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         image
         text
       ))
       (tokenizer Gemini)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000005")
       (completion "0.000003")
       (image_output "0.00006")
       (web_search "0.014")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 65536)
       (max_completion_tokens 65536)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_tokens
       reasoning
@@ -73,7 +73,7 @@
       temperature
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -84,26 +84,26 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/google/gemini-3.1-flash-image-preview-20260226/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category graphicdesign)
           (elo 1289)
           (win_rate 66.3)
           (rank 2)
         )
-        ({}
+        (
           (arena models)
           (category image)
           (elo 1298)
           (win_rate 65.1)
           (rank 2)
         )
-        ({}
+        (
           (arena models)
           (category logo)
           (elo 1277)
@@ -112,10 +112,10 @@
         )
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
       (default_enabled true)
-      (supported_efforts (
+      (supported_efforts ([]
         high
         minimal
       ))
@@ -123,7 +123,7 @@
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id google/gemini-3.1-flash-image-preview)
     (canonical_slug google/gemini-3.1-flash-image-preview-20260226)
     (hugging_face_id "")
@@ -131,32 +131,32 @@
     (created 1772119558)
     (description "Gemini 3.1 Flash Image Preview, a.k.a. \"Nano Banana 2,\" is Google’s latest state of the art image generation and editing model, delivering Pro-level visual quality at Flash speed. It combines...")
     (context_length 65536)
-    (architecture ({}
+    (architecture (
       (modality text+image->text+image)
-      (input_modalities (
+      (input_modalities ([]
         image
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         image
         text
       ))
       (tokenizer Gemini)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000005")
       (completion "0.000003")
       (image_output "0.00006")
       (web_search "0.014")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 65536)
       (max_completion_tokens 65536)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_tokens
       reasoning
@@ -167,7 +167,7 @@
       temperature
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -178,26 +178,26 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/google/gemini-3.1-flash-image-preview-20260226/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category graphicdesign)
           (elo 1289)
           (win_rate 66.3)
           (rank 2)
         )
-        ({}
+        (
           (arena models)
           (category image)
           (elo 1298)
           (win_rate 65.1)
           (rank 2)
         )
-        ({}
+        (
           (arena models)
           (category logo)
           (elo 1277)
@@ -206,17 +206,17 @@
         )
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
       (default_enabled true)
-      (supported_efforts (
+      (supported_efforts ([]
         high
         minimal
       ))
       (default_effort minimal)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId google/gemini-3.1-flash-image-preview)

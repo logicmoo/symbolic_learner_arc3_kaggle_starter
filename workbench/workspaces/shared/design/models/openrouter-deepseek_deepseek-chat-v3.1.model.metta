@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-deepseek_deepseek-chat-v3.1)
   (label "DeepSeek: DeepSeek V3.1")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model deepseek/deepseek-chat-v3.1)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,16 +19,16 @@
     (tools true)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 163840)
     (maxOutputTokens 32768)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.00000025")
     (completion "0.00000095")
     (input_cache_read "0.00000013")
   ))
-  (properties ({}
+  (properties (
     (id deepseek/deepseek-chat-v3.1)
     (canonical_slug deepseek/deepseek-chat-v3.1)
     (hugging_face_id deepseek-ai/DeepSeek-V3.1)
@@ -36,29 +36,29 @@
     (created 1755779628)
     (description "DeepSeek-V3.1 is a large hybrid reasoning model (671B parameters, 37B active) that supports both thinking and non-thinking modes via prompt templates. It extends the DeepSeek-V3 base with a two-phase long-context...")
     (context_length 163840)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer DeepSeek)
       (instruct_type deepseek-v3.1)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000025")
       (completion "0.00000095")
       (input_cache_read "0.00000013")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 163840)
       (max_completion_tokens 32768)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       logit_bias
@@ -79,58 +79,58 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}))
+    (default_parameters ())
     (supported_voices null)
     (knowledge_cutoff 2025-03-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/deepseek/deepseek-chat-v3.1/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category 3d)
           (elo 1131)
           (win_rate 48)
           (rank 75)
         )
-        ({}
+        (
           (arena models)
           (category codecategories)
           (elo 1140)
           (win_rate 47.9)
           (rank 78)
         )
-        ({}
+        (
           (arena models)
           (category dataviz)
           (elo 1126)
           (win_rate 46.8)
           (rank 78)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 1125)
           (win_rate 47.1)
           (rank 77)
         )
-        ({}
+        (
           (arena models)
           (category svg)
           (elo 1014)
           (win_rate 38.2)
           (rank 75)
         )
-        ({}
+        (
           (arena models)
           (category uicomponent)
           (elo 1118)
           (win_rate 47.6)
           (rank 76)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 1145)
@@ -139,12 +139,12 @@
         )
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id deepseek/deepseek-chat-v3.1)
     (canonical_slug deepseek/deepseek-chat-v3.1)
     (hugging_face_id deepseek-ai/DeepSeek-V3.1)
@@ -152,29 +152,29 @@
     (created 1755779628)
     (description "DeepSeek-V3.1 is a large hybrid reasoning model (671B parameters, 37B active) that supports both thinking and non-thinking modes via prompt templates. It extends the DeepSeek-V3 base with a two-phase long-context...")
     (context_length 163840)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer DeepSeek)
       (instruct_type deepseek-v3.1)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000025")
       (completion "0.00000095")
       (input_cache_read "0.00000013")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 163840)
       (max_completion_tokens 32768)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       logit_bias
@@ -195,58 +195,58 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}))
+    (default_parameters ())
     (supported_voices null)
     (knowledge_cutoff 2025-03-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/deepseek/deepseek-chat-v3.1/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category 3d)
           (elo 1131)
           (win_rate 48)
           (rank 75)
         )
-        ({}
+        (
           (arena models)
           (category codecategories)
           (elo 1140)
           (win_rate 47.9)
           (rank 78)
         )
-        ({}
+        (
           (arena models)
           (category dataviz)
           (elo 1126)
           (win_rate 46.8)
           (rank 78)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 1125)
           (win_rate 47.1)
           (rank 77)
         )
-        ({}
+        (
           (arena models)
           (category svg)
           (elo 1014)
           (win_rate 38.2)
           (rank 75)
         )
-        ({}
+        (
           (arena models)
           (category uicomponent)
           (elo 1118)
           (win_rate 47.6)
           (rank 76)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 1145)
@@ -255,11 +255,11 @@
         )
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId deepseek/deepseek-chat-v3.1)

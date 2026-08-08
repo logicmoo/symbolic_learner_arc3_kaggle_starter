@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-openai_gpt-3.5-turbo_batch)
   (label "OpenAI: GPT-3.5 Turbo (batch)")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model openai/gpt-3.5-turbo:batch)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,16 +19,16 @@
     (tools true)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 16385)
     (maxOutputTokens 4096)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.00000025")
     (completion "0.00000075")
     (web_search "0.01")
   ))
-  (properties ({}
+  (properties (
     (id openai/gpt-3.5-turbo:batch)
     (canonical_slug openai/gpt-3.5-turbo)
     (hugging_face_id null)
@@ -36,29 +36,29 @@
     (created 1685232000)
     (description "GPT-3.5 Turbo is OpenAI's fastest model. It can understand and generate natural language or code, and is optimized for chat and traditional completion tasks.\n\nTraining data up to Sep 2021.")
     (context_length 16385)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer GPT)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000025")
       (completion "0.00000075")
       (web_search "0.01")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 16385)
       (max_completion_tokens 4096)
       (is_moderated true)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       logit_bias
       logprobs
@@ -74,16 +74,16 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}))
+    (default_parameters ())
     (supported_voices null)
     (knowledge_cutoff 2021-09-30)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/openai/gpt-3.5-turbo/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena ())
-      (artificial_analysis ({}
+    (benchmarks (
+      (design_arena ([]))
+      (artificial_analysis (
         (intelligence_index null)
         (coding_index 10.7)
         (agentic_index null)
@@ -91,7 +91,7 @@
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id openai/gpt-3.5-turbo:batch)
     (canonical_slug openai/gpt-3.5-turbo)
     (hugging_face_id null)
@@ -99,29 +99,29 @@
     (created 1685232000)
     (description "GPT-3.5 Turbo is OpenAI's fastest model. It can understand and generate natural language or code, and is optimized for chat and traditional completion tasks.\n\nTraining data up to Sep 2021.")
     (context_length 16385)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer GPT)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000025")
       (completion "0.00000075")
       (web_search "0.01")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 16385)
       (max_completion_tokens 4096)
       (is_moderated true)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       logit_bias
       logprobs
@@ -137,23 +137,23 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}))
+    (default_parameters ())
     (supported_voices null)
     (knowledge_cutoff 2021-09-30)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/openai/gpt-3.5-turbo/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena ())
-      (artificial_analysis ({}
+    (benchmarks (
+      (design_arena ([]))
+      (artificial_analysis (
         (intelligence_index null)
         (coding_index 10.7)
         (agentic_index null)
       ))
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId openai/gpt-3.5-turbo:batch)

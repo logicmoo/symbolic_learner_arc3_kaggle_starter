@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-google_gemma-3-27b-it)
   (label "Google: Gemma 3 27B")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model google/gemma-3-27b-it)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,16 +19,16 @@
     (tools true)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 262144)
     (maxOutputTokens 131072)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.00000008")
     (completion "0.00000045")
     (input_cache_read "0.00000004")
   ))
-  (properties ({}
+  (properties (
     (id google/gemma-3-27b-it)
     (canonical_slug google/gemma-3-27b-it)
     (hugging_face_id google/gemma-3-27b-it)
@@ -36,30 +36,30 @@
     (created 1741756359)
     (description "Gemma 3 introduces multimodality, supporting vision-language input and text outputs. It handles context windows up to 128k tokens, understands over 140 languages, and offers improved math, reasoning, and chat capabilities,...")
     (context_length 262144)
-    (architecture ({}
+    (architecture (
       (modality text+image->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Gemini)
       (instruct_type gemma)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000008")
       (completion "0.00000045")
       (input_cache_read "0.00000004")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 131072)
       (max_completion_tokens 131072)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       logit_bias
       logprobs
@@ -78,7 +78,7 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (frequency_penalty null)
@@ -86,12 +86,12 @@
     (supported_voices null)
     (knowledge_cutoff 2024-08-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/google/gemma-3-27b-it/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena ())
-      (artificial_analysis ({}
+    (benchmarks (
+      (design_arena ([]))
+      (artificial_analysis (
         (intelligence_index 7.4)
         (coding_index 10.1)
         (agentic_index 0.3)
@@ -99,7 +99,7 @@
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id google/gemma-3-27b-it)
     (canonical_slug google/gemma-3-27b-it)
     (hugging_face_id google/gemma-3-27b-it)
@@ -107,30 +107,30 @@
     (created 1741756359)
     (description "Gemma 3 introduces multimodality, supporting vision-language input and text outputs. It handles context windows up to 128k tokens, understands over 140 languages, and offers improved math, reasoning, and chat capabilities,...")
     (context_length 262144)
-    (architecture ({}
+    (architecture (
       (modality text+image->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Gemini)
       (instruct_type gemma)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000008")
       (completion "0.00000045")
       (input_cache_read "0.00000004")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 131072)
       (max_completion_tokens 131072)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       logit_bias
       logprobs
@@ -149,7 +149,7 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (frequency_penalty null)
@@ -157,19 +157,19 @@
     (supported_voices null)
     (knowledge_cutoff 2024-08-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/google/gemma-3-27b-it/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena ())
-      (artificial_analysis ({}
+    (benchmarks (
+      (design_arena ([]))
+      (artificial_analysis (
         (intelligence_index 7.4)
         (coding_index 10.1)
         (agentic_index 0.3)
       ))
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId google/gemma-3-27b-it)

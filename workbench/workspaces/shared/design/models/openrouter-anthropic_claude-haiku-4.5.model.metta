@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-anthropic_claude-haiku-4.5)
   (label "Anthropic: Claude Haiku 4.5")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model anthropic/claude-haiku-4.5)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,11 +19,11 @@
     (tools true)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 200000)
     (maxOutputTokens 64000)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.000001")
     (completion "0.000005")
     (web_search "0.01")
@@ -31,7 +31,7 @@
     (input_cache_write "0.00000125")
     (input_cache_write_1h "0.000002")
   ))
-  (properties ({}
+  (properties (
     (id anthropic/claude-haiku-4.5)
     (canonical_slug anthropic/claude-4.5-haiku-20251001)
     (hugging_face_id "")
@@ -39,20 +39,20 @@
     (created 1760547638)
     (description "Claude Haiku 4.5 is Anthropic’s fastest and most efficient model, delivering near-frontier intelligence at a fraction of the cost and latency of larger Claude models. Matching Claude Sonnet 4’s performance...")
     (context_length 200000)
-    (architecture ({}
+    (architecture (
       (modality text+image+file->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
         file
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Claude)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.000001")
       (completion "0.000005")
       (web_search "0.01")
@@ -60,13 +60,13 @@
       (input_cache_write "0.00000125")
       (input_cache_write_1h "0.000002")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 200000)
       (max_completion_tokens 64000)
       (is_moderated true)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_completion_tokens
       max_tokens
@@ -80,7 +80,7 @@
       top_k
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -91,61 +91,61 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/anthropic/claude-4.5-haiku-20251001/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category 3d)
           (elo 1126)
           (win_rate 41.1)
           (rank 79)
         )
-        ({}
+        (
           (arena models)
           (category asciiart)
           (elo 1177)
           (win_rate 49.3)
           (rank 36)
         )
-        ({}
+        (
           (arena models)
           (category codecategories)
           (elo 1143)
           (win_rate 44.9)
           (rank 75)
         )
-        ({}
+        (
           (arena models)
           (category dataviz)
           (elo 1152)
           (win_rate 45.6)
           (rank 72)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 1137)
           (win_rate 44.6)
           (rank 71)
         )
-        ({}
+        (
           (arena models)
           (category svg)
           (elo 1072)
           (win_rate 39.1)
           (rank 62)
         )
-        ({}
+        (
           (arena models)
           (category uicomponent)
           (elo 1133)
           (win_rate 42.7)
           (rank 70)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 1145)
@@ -153,18 +153,18 @@
           (rank 77)
         )
       ))
-      (artificial_analysis ({}
+      (artificial_analysis (
         (intelligence_index 29.9)
         (coding_index 43.9)
         (agentic_index 16.5)
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id anthropic/claude-haiku-4.5)
     (canonical_slug anthropic/claude-4.5-haiku-20251001)
     (hugging_face_id "")
@@ -172,20 +172,20 @@
     (created 1760547638)
     (description "Claude Haiku 4.5 is Anthropic’s fastest and most efficient model, delivering near-frontier intelligence at a fraction of the cost and latency of larger Claude models. Matching Claude Sonnet 4’s performance...")
     (context_length 200000)
-    (architecture ({}
+    (architecture (
       (modality text+image+file->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
         file
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Claude)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.000001")
       (completion "0.000005")
       (web_search "0.01")
@@ -193,13 +193,13 @@
       (input_cache_write "0.00000125")
       (input_cache_write_1h "0.000002")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 200000)
       (max_completion_tokens 64000)
       (is_moderated true)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_completion_tokens
       max_tokens
@@ -213,7 +213,7 @@
       top_k
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -224,61 +224,61 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/anthropic/claude-4.5-haiku-20251001/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category 3d)
           (elo 1126)
           (win_rate 41.1)
           (rank 79)
         )
-        ({}
+        (
           (arena models)
           (category asciiart)
           (elo 1177)
           (win_rate 49.3)
           (rank 36)
         )
-        ({}
+        (
           (arena models)
           (category codecategories)
           (elo 1143)
           (win_rate 44.9)
           (rank 75)
         )
-        ({}
+        (
           (arena models)
           (category dataviz)
           (elo 1152)
           (win_rate 45.6)
           (rank 72)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 1137)
           (win_rate 44.6)
           (rank 71)
         )
-        ({}
+        (
           (arena models)
           (category svg)
           (elo 1072)
           (win_rate 39.1)
           (rank 62)
         )
-        ({}
+        (
           (arena models)
           (category uicomponent)
           (elo 1133)
           (win_rate 42.7)
           (rank 70)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 1145)
@@ -286,17 +286,17 @@
           (rank 77)
         )
       ))
-      (artificial_analysis ({}
+      (artificial_analysis (
         (intelligence_index 29.9)
         (coding_index 43.9)
         (agentic_index 16.5)
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId anthropic/claude-haiku-4.5)

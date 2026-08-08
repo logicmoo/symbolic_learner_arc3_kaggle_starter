@@ -1,11 +1,11 @@
-({}
+(
   (kind profile)
   (id openrouter-gemma-4-26b-a4b-extreme)
   (label "Gemma 4 26B A4B free — extreme")
   (description "Prompt-free execution profile migrated from the legacy LLM workflow catalog.")
   (inherits openrouter-gemma-4-26b-a4b)
   (enabled true)
-  (defaults ({}
+  (defaults (
     (analysisLevel 4)
     (singleEnabled true)
     (batchEnabled false)
@@ -18,7 +18,7 @@
     (timeoutSeconds 900)
     (seed null)
   ))
-  (metadata ({}
+  (metadata (
     (legacyTransaction full_artifact_bundle)
   ))
 )

@@ -1,21 +1,21 @@
-({}
+(
   (id arc3.induce_rules_from_symbolic)
   (label "ARC3 Induce Rules from Symbolic Evidence")
   (description "ARC3 wrapper around shared rule induction, adding ARC3 identity and rules.pl output contracts.")
-  (categories (
+  (categories ([]
     arc3/learning
     symbolic/rule-learning
   ))
   (implementation llm.complete)
-  (inputs ({}
+  (inputs (
     (object_registry FileReference)
     (artifacts ArtifactBundle)
   ))
-  (outputs ({}
+  (outputs (
     (rules_pl PrologProgram)
   ))
-  (promptSelection ({}
-    (prompts (
+  (promptSelection (
+    (prompts ([]
       structured_json_response
       arc3_response_contract
       arc3_identity_registry
@@ -27,11 +27,11 @@
     ))
     (separator "\n\n")
   ))
-  (modelSelection ({}
-    (models ())
+  (modelSelection (
+    (models ([]))
     (strategy single)
   ))
-  (parameters ({}
+  (parameters (
     (domain arc3)
     (legacyTransaction induce_rules_from_prolog)
   ))

@@ -1,17 +1,17 @@
-({}
+(
   (kind prompt_implementation)
   (id titlecase_received_text.default)
   (label "Titlecase Received Text — Default")
   (version 1)
-  (targets (
+  (targets ([]
     generic-chat
   ))
-  (text (
+  (text ([]
     "Convert the received text to title case."
     "Preserve punctuation."
     "Return only the transformed text."
   ))
-  (parents (
+  (parents ([]
     titlecase_received_text
   ))
 )

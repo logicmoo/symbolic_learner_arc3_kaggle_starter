@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-nvidia_nemotron-nano-12b-v2-vl_free)
   (label "NVIDIA: Nemotron Nano 12B 2 VL (free)")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model nvidia/nemotron-nano-12b-v2-vl:free)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,15 +19,15 @@
     (tools true)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 128000)
     (maxOutputTokens 128000)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0")
     (completion "0")
   ))
-  (properties ({}
+  (properties (
     (id nvidia/nemotron-nano-12b-v2-vl:free)
     (canonical_slug nvidia/nemotron-nano-12b-v2-vl)
     (hugging_face_id nvidia/NVIDIA-Nemotron-Nano-12B-v2-VL-BF16)
@@ -35,30 +35,30 @@
     (created 1761675565)
     (description "NVIDIA Nemotron Nano 2 VL is a 12-billion-parameter open multimodal reasoning model designed for video understanding and document intelligence. It introduces a hybrid Transformer-Mamba architecture, combining transformer-level accuracy with Mamba’s...")
     (context_length 128000)
-    (architecture ({}
+    (architecture (
       (modality text+image+video->text)
-      (input_modalities (
+      (input_modalities ([]
         image
         text
         video
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0")
       (completion "0")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 128000)
       (max_completion_tokens 128000)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_tokens
       reasoning
@@ -68,7 +68,7 @@
       tools
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (frequency_penalty null)
@@ -76,15 +76,15 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/nvidia/nemotron-nano-12b-v2-vl/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id nvidia/nemotron-nano-12b-v2-vl:free)
     (canonical_slug nvidia/nemotron-nano-12b-v2-vl)
     (hugging_face_id nvidia/NVIDIA-Nemotron-Nano-12B-v2-VL-BF16)
@@ -92,30 +92,30 @@
     (created 1761675565)
     (description "NVIDIA Nemotron Nano 2 VL is a 12-billion-parameter open multimodal reasoning model designed for video understanding and document intelligence. It introduces a hybrid Transformer-Mamba architecture, combining transformer-level accuracy with Mamba’s...")
     (context_length 128000)
-    (architecture ({}
+    (architecture (
       (modality text+image+video->text)
-      (input_modalities (
+      (input_modalities ([]
         image
         text
         video
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0")
       (completion "0")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 128000)
       (max_completion_tokens 128000)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_tokens
       reasoning
@@ -125,7 +125,7 @@
       tools
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (frequency_penalty null)
@@ -133,14 +133,14 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/nvidia/nemotron-nano-12b-v2-vl/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId nvidia/nemotron-nano-12b-v2-vl:free)

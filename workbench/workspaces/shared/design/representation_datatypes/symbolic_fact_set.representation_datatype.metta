@@ -1,9 +1,9 @@
-({}
+(
   (kind representation_datatype)
   (id symbolic_fact_set)
   (label "Symbolic Fact Set")
   (description "Language-neutral symbolic facts representing grounded properties, relations, and world knowledge.")
-  (parents (
+  (parents ([]
     information
     entity_collection
     relationship
@@ -12,5 +12,5 @@
     transition_evidence
     hypothesis
   ))
-  (children ())
+  (children ([]))
 )

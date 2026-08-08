@@ -1,19 +1,19 @@
-({}
+(
   (id shared.render_programs)
   (label "Render Executable Programs")
   (description "Execute symbolic drawing programs and produce a reconstructed observation. Generic rendering operation.")
-  (categories (
+  (categories ([]
     graphics/rendering
     graphics/reconstruction
     symbolic/programming
   ))
   (implementation turtle.runtime)
-  (inputs ({}
+  (inputs (
     (programs TurtleProgramSet)
   ))
-  (outputs ({}
+  (outputs (
     (reconstruction Observation)
   ))
-  (parameters ({}))
+  (parameters ())
   (kind operation)
 )

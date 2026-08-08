@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-mistralai_mistral-nemo)
   (label "Mistral: Mistral Nemo")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model mistralai/mistral-nemo)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,15 +19,15 @@
     (tools true)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 131072)
     (maxOutputTokens 16384)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.000000019")
     (completion "0.00000003")
   ))
-  (properties ({}
+  (properties (
     (id mistralai/mistral-nemo)
     (canonical_slug mistralai/mistral-nemo)
     (hugging_face_id mistralai/Mistral-Nemo-Instruct-2407)
@@ -35,28 +35,28 @@
     (created 1721347200)
     (description "A 12B parameter model with a 128k token context length built by Mistral in collaboration with NVIDIA. The model is multilingual, supporting English, French, German, Spanish, Italian, Portuguese, Chinese, Japanese,...")
     (context_length 131072)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Mistral)
       (instruct_type mistral)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.000000019")
       (completion "0.00000003")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 131072)
       (max_completion_tokens 16384)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       logit_bias
       logprobs
@@ -75,18 +75,18 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature 0.3)
     ))
     (supported_voices null)
     (knowledge_cutoff 2024-04-30)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/mistralai/mistral-nemo/endpoints)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id mistralai/mistral-nemo)
     (canonical_slug mistralai/mistral-nemo)
     (hugging_face_id mistralai/Mistral-Nemo-Instruct-2407)
@@ -94,28 +94,28 @@
     (created 1721347200)
     (description "A 12B parameter model with a 128k token context length built by Mistral in collaboration with NVIDIA. The model is multilingual, supporting English, French, German, Spanish, Italian, Portuguese, Chinese, Japanese,...")
     (context_length 131072)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Mistral)
       (instruct_type mistral)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.000000019")
       (completion "0.00000003")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 131072)
       (max_completion_tokens 16384)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       logit_bias
       logprobs
@@ -134,17 +134,17 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature 0.3)
     ))
     (supported_voices null)
     (knowledge_cutoff 2024-04-30)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/mistralai/mistral-nemo/endpoints)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId mistralai/mistral-nemo)

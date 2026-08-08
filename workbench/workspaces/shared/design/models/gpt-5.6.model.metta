@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id gpt-5.6)
   (label GPT-5.6)
@@ -6,23 +6,23 @@
   (inherits openai)
   (model gpt-5.6)
   (enabled true)
-  (example_execute ({}
+  (example_execute (
     (action model.invoke)
-    (arguments ({}
-      (prompt ({}
+    (arguments (
+      (prompt (
         (datatype Text)
         (label Prompt)
         (default "Reply with the title-case form of: the quick brown fox")
       ))
     ))
   ))
-  (capabilities (
+  (capabilities ([]
     text
     vision
     reasoning
     json
   ))
-  (defaults ({}
+  (defaults (
     (reasoningEffort medium)
     (maxOutputTokens 16000)
     (temperature 0)
@@ -32,7 +32,7 @@
     (parentImageDetail high)
     (analysisLevel 1)
   ))
-  (environment ({}
+  (environment (
     (model WORKBENCH_OPENAI_MODEL)
     (legacyModel ARC3_OPENAI_MODEL)
   ))

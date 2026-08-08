@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-anthropic_claude-opus-4)
   (label "Anthropic: Claude Opus 4")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model anthropic/claude-opus-4)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,11 +19,11 @@
     (tools true)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 200000)
     (maxOutputTokens 32000)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.000015")
     (completion "0.000075")
     (web_search "0.01")
@@ -31,7 +31,7 @@
     (input_cache_write "0.00001875")
     (input_cache_write_1h "0.00003")
   ))
-  (properties ({}
+  (properties (
     (id anthropic/claude-opus-4)
     (canonical_slug anthropic/claude-4-opus-20250522)
     (hugging_face_id "")
@@ -39,20 +39,20 @@
     (created 1747931245)
     (description "Claude Opus 4 is benchmarked as the world’s best coding model, at time of release, bringing sustained performance on complex, long-running tasks and agent workflows. It sets new benchmarks in...")
     (context_length 200000)
-    (architecture ({}
+    (architecture (
       (modality text+image+file->text)
-      (input_modalities (
+      (input_modalities ([]
         image
         text
         file
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Claude)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.000015")
       (completion "0.000075")
       (web_search "0.01")
@@ -60,13 +60,13 @@
       (input_cache_write "0.00001875")
       (input_cache_write_1h "0.00003")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 200000)
       (max_completion_tokens 32000)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_tokens
       reasoning
@@ -76,7 +76,7 @@
       tools
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -87,54 +87,54 @@
     (supported_voices null)
     (knowledge_cutoff 2025-01-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/anthropic/claude-4-opus-20250522/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category 3d)
           (elo 1193)
           (win_rate 57.7)
           (rank 48)
         )
-        ({}
+        (
           (arena models)
           (category codecategories)
           (elo 1189)
           (win_rate 55.6)
           (rank 60)
         )
-        ({}
+        (
           (arena models)
           (category dataviz)
           (elo 1173)
           (win_rate 57.9)
           (rank 62)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 1211)
           (win_rate 59.9)
           (rank 44)
         )
-        ({}
+        (
           (arena models)
           (category svg)
           (elo 1174)
           (win_rate 57.7)
           (rank 41)
         )
-        ({}
+        (
           (arena models)
           (category uicomponent)
           (elo 1186)
           (win_rate 59.2)
           (rank 57)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 1187)
@@ -143,12 +143,12 @@
         )
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id anthropic/claude-opus-4)
     (canonical_slug anthropic/claude-4-opus-20250522)
     (hugging_face_id "")
@@ -156,20 +156,20 @@
     (created 1747931245)
     (description "Claude Opus 4 is benchmarked as the world’s best coding model, at time of release, bringing sustained performance on complex, long-running tasks and agent workflows. It sets new benchmarks in...")
     (context_length 200000)
-    (architecture ({}
+    (architecture (
       (modality text+image+file->text)
-      (input_modalities (
+      (input_modalities ([]
         image
         text
         file
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Claude)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.000015")
       (completion "0.000075")
       (web_search "0.01")
@@ -177,13 +177,13 @@
       (input_cache_write "0.00001875")
       (input_cache_write_1h "0.00003")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 200000)
       (max_completion_tokens 32000)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_tokens
       reasoning
@@ -193,7 +193,7 @@
       tools
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -204,54 +204,54 @@
     (supported_voices null)
     (knowledge_cutoff 2025-01-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/anthropic/claude-4-opus-20250522/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category 3d)
           (elo 1193)
           (win_rate 57.7)
           (rank 48)
         )
-        ({}
+        (
           (arena models)
           (category codecategories)
           (elo 1189)
           (win_rate 55.6)
           (rank 60)
         )
-        ({}
+        (
           (arena models)
           (category dataviz)
           (elo 1173)
           (win_rate 57.9)
           (rank 62)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 1211)
           (win_rate 59.9)
           (rank 44)
         )
-        ({}
+        (
           (arena models)
           (category svg)
           (elo 1174)
           (win_rate 57.7)
           (rank 41)
         )
-        ({}
+        (
           (arena models)
           (category uicomponent)
           (elo 1186)
           (win_rate 59.2)
           (rank 57)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 1187)
@@ -260,11 +260,11 @@
         )
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId anthropic/claude-opus-4)

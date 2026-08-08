@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-qwen_qwen-2.5-7b-instruct)
   (label "Qwen: Qwen2.5 7B Instruct")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model qwen/qwen-2.5-7b-instruct)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,15 +19,15 @@
     (tools true)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 32768)
     (maxOutputTokens 32768)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.0000001")
     (completion "0.0000002")
   ))
-  (properties ({}
+  (properties (
     (id qwen/qwen-2.5-7b-instruct)
     (canonical_slug qwen/qwen-2.5-7b-instruct)
     (hugging_face_id Qwen/Qwen2.5-7B-Instruct)
@@ -35,28 +35,28 @@
     (created 1729036800)
     (description "Qwen2.5 7B is the latest series of Qwen large language models. Qwen2.5 brings the following improvements upon Qwen2: - Significantly more knowledge and has greatly improved capabilities in coding and...")
     (context_length 32768)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Qwen)
       (instruct_type chatml)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000001")
       (completion "0.0000002")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 32768)
       (max_completion_tokens 32768)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       logit_bias
       max_tokens
@@ -73,7 +73,7 @@
       top_k
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (frequency_penalty null)
@@ -81,12 +81,12 @@
     (supported_voices null)
     (knowledge_cutoff 2024-06-30)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/qwen/qwen-2.5-7b-instruct/endpoints)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id qwen/qwen-2.5-7b-instruct)
     (canonical_slug qwen/qwen-2.5-7b-instruct)
     (hugging_face_id Qwen/Qwen2.5-7B-Instruct)
@@ -94,28 +94,28 @@
     (created 1729036800)
     (description "Qwen2.5 7B is the latest series of Qwen large language models. Qwen2.5 brings the following improvements upon Qwen2: - Significantly more knowledge and has greatly improved capabilities in coding and...")
     (context_length 32768)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Qwen)
       (instruct_type chatml)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000001")
       (completion "0.0000002")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 32768)
       (max_completion_tokens 32768)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       logit_bias
       max_tokens
@@ -132,7 +132,7 @@
       top_k
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (frequency_penalty null)
@@ -140,11 +140,11 @@
     (supported_voices null)
     (knowledge_cutoff 2024-06-30)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/qwen/qwen-2.5-7b-instruct/endpoints)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId qwen/qwen-2.5-7b-instruct)

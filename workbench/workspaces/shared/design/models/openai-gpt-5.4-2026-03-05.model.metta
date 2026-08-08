@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openai-gpt-5.4-2026-03-05)
   (label gpt-5.4-2026-03-05)
@@ -6,7 +6,7 @@
   (inherits openai)
   (model gpt-5.4-2026-03-05)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling false)
@@ -19,25 +19,25 @@
     (tools false)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow null)
     (maxOutputTokens null)
   ))
-  (pricing ({}))
-  (properties ({}
+  (pricing ())
+  (properties (
     (id gpt-5.4-2026-03-05)
     (object model)
     (created 1772654062)
     (owned_by system)
     (ownedBy system)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id gpt-5.4-2026-03-05)
     (object model)
     (created 1772654062)
     (owned_by system)
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openai)
     (remoteModelId gpt-5.4-2026-03-05)

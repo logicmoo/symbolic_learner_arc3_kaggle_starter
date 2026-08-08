@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-inception_mercury-2)
   (label "Inception: Mercury 2")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model inception/mercury-2)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,16 +19,16 @@
     (tools true)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 128000)
     (maxOutputTokens 50000)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.00000025")
     (completion "0.00000075")
     (input_cache_read "0.000000025")
   ))
-  (properties ({}
+  (properties (
     (id inception/mercury-2)
     (canonical_slug inception/mercury-2-20260304)
     (hugging_face_id null)
@@ -36,29 +36,29 @@
     (created 1772636275)
     (description "Mercury 2 is an extremely fast reasoning LLM, and the first reasoning diffusion LLM (dLLM). Instead of generating tokens sequentially, Mercury 2 produces and refines multiple tokens in parallel, achieving...")
     (context_length 128000)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000025")
       (completion "0.00000075")
       (input_cache_read "0.000000025")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 128000)
       (max_completion_tokens 50000)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_tokens
       reasoning
@@ -70,7 +70,7 @@
       tool_choice
       tools
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature 0.75)
       (top_p null)
       (top_k null)
@@ -81,61 +81,61 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/inception/mercury-2-20260304/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category 3d)
           (elo 1038)
           (win_rate 23.8)
           (rank 95)
         )
-        ({}
+        (
           (arena models)
           (category asciiart)
           (elo 1042)
           (win_rate 27.3)
           (rank 55)
         )
-        ({}
+        (
           (arena models)
           (category codecategories)
           (elo 1023)
           (win_rate 20.7)
           (rank 103)
         )
-        ({}
+        (
           (arena models)
           (category dataviz)
           (elo 1015)
           (win_rate 21.8)
           (rank 98)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 1017)
           (win_rate 20.7)
           (rank 99)
         )
-        ({}
+        (
           (arena models)
           (category svg)
           (elo 1015)
           (win_rate 24)
           (rank 74)
         )
-        ({}
+        (
           (arena models)
           (category uicomponent)
           (elo 993)
           (win_rate 18.2)
           (rank 97)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 1016)
@@ -143,16 +143,16 @@
           (rank 107)
         )
       ))
-      (artificial_analysis ({}
+      (artificial_analysis (
         (intelligence_index 21.9)
         (coding_index 31.1)
         (agentic_index 9.5)
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
       (default_enabled true)
-      (supported_efforts (
+      (supported_efforts ([]
         high
         medium
         low
@@ -162,7 +162,7 @@
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id inception/mercury-2)
     (canonical_slug inception/mercury-2-20260304)
     (hugging_face_id null)
@@ -170,29 +170,29 @@
     (created 1772636275)
     (description "Mercury 2 is an extremely fast reasoning LLM, and the first reasoning diffusion LLM (dLLM). Instead of generating tokens sequentially, Mercury 2 produces and refines multiple tokens in parallel, achieving...")
     (context_length 128000)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000025")
       (completion "0.00000075")
       (input_cache_read "0.000000025")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 128000)
       (max_completion_tokens 50000)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_tokens
       reasoning
@@ -204,7 +204,7 @@
       tool_choice
       tools
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature 0.75)
       (top_p null)
       (top_k null)
@@ -215,61 +215,61 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/inception/mercury-2-20260304/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category 3d)
           (elo 1038)
           (win_rate 23.8)
           (rank 95)
         )
-        ({}
+        (
           (arena models)
           (category asciiart)
           (elo 1042)
           (win_rate 27.3)
           (rank 55)
         )
-        ({}
+        (
           (arena models)
           (category codecategories)
           (elo 1023)
           (win_rate 20.7)
           (rank 103)
         )
-        ({}
+        (
           (arena models)
           (category dataviz)
           (elo 1015)
           (win_rate 21.8)
           (rank 98)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 1017)
           (win_rate 20.7)
           (rank 99)
         )
-        ({}
+        (
           (arena models)
           (category svg)
           (elo 1015)
           (win_rate 24)
           (rank 74)
         )
-        ({}
+        (
           (arena models)
           (category uicomponent)
           (elo 993)
           (win_rate 18.2)
           (rank 97)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 1016)
@@ -277,16 +277,16 @@
           (rank 107)
         )
       ))
-      (artificial_analysis ({}
+      (artificial_analysis (
         (intelligence_index 21.9)
         (coding_index 31.1)
         (agentic_index 9.5)
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
       (default_enabled true)
-      (supported_efforts (
+      (supported_efforts ([]
         high
         medium
         low
@@ -295,7 +295,7 @@
       (default_effort medium)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId inception/mercury-2)

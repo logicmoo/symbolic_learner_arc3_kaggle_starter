@@ -1,11 +1,11 @@
-({}
+(
   (kind representation_datatype)
   (id latent_embedding)
   (label "Latent Embedding")
-  (parents (
+  (parents ([]
     image
   ))
-  (children (
+  (children ([]
     vector_json
     numpy
   ))

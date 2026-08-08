@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-openai_gpt-4-turbo)
   (label "OpenAI: GPT-4 Turbo")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model openai/gpt-4-turbo)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,15 +19,15 @@
     (tools true)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 128000)
     (maxOutputTokens 4096)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.00001")
     (completion "0.00003")
   ))
-  (properties ({}
+  (properties (
     (id openai/gpt-4-turbo)
     (canonical_slug openai/gpt-4-turbo)
     (hugging_face_id null)
@@ -35,29 +35,29 @@
     (created 1712620800)
     (description "The latest GPT-4 Turbo model with vision capabilities. Vision requests can now use JSON mode and function calling.\n\nTraining data: up to December 2023.")
     (context_length 128000)
-    (architecture ({}
+    (architecture (
       (modality text+image->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer GPT)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00001")
       (completion "0.00003")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 128000)
       (max_completion_tokens 4096)
       (is_moderated true)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       logit_bias
       logprobs
@@ -73,16 +73,16 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}))
+    (default_parameters ())
     (supported_voices null)
     (knowledge_cutoff 2023-12-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/openai/gpt-4-turbo/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena ())
-      (artificial_analysis ({}
+    (benchmarks (
+      (design_arena ([]))
+      (artificial_analysis (
         (intelligence_index null)
         (coding_index 21.5)
         (agentic_index null)
@@ -90,7 +90,7 @@
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id openai/gpt-4-turbo)
     (canonical_slug openai/gpt-4-turbo)
     (hugging_face_id null)
@@ -98,29 +98,29 @@
     (created 1712620800)
     (description "The latest GPT-4 Turbo model with vision capabilities. Vision requests can now use JSON mode and function calling.\n\nTraining data: up to December 2023.")
     (context_length 128000)
-    (architecture ({}
+    (architecture (
       (modality text+image->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer GPT)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00001")
       (completion "0.00003")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 128000)
       (max_completion_tokens 4096)
       (is_moderated true)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       logit_bias
       logprobs
@@ -136,23 +136,23 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}))
+    (default_parameters ())
     (supported_voices null)
     (knowledge_cutoff 2023-12-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/openai/gpt-4-turbo/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena ())
-      (artificial_analysis ({}
+    (benchmarks (
+      (design_arena ([]))
+      (artificial_analysis (
         (intelligence_index null)
         (coding_index 21.5)
         (agentic_index null)
       ))
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId openai/gpt-4-turbo)

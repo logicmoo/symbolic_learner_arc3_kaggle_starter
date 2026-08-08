@@ -1,14 +1,14 @@
-({}
+(
   (kind semantic_datatype)
   (id text)
   (label Text)
   (description "Textual information independent of language, markup, file encoding, or model-oriented prompt representation.")
-  (children (
+  (children ([]
     natural_language
     plain_text
   ))
   (preferredChild plain_text)
-  (parents (
+  (parents ([]
     information
   ))
 )

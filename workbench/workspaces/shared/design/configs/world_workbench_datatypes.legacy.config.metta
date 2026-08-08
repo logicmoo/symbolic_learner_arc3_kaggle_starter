@@ -1,160 +1,160 @@
-({}
+(
   (schema_version 1)
   (title "World Analysis Workbench Datatype Manifest")
   (description "Domain-neutral semantic and representation types used to learn internal world models from observations and direct simulation with goals.")
-  (types (
-    ({}
+  (types ([]
+    (
       (id information)
       (kind root)
       (description "Anything carried, inferred, tested, or produced by the workbench.")
     )
-    ({}
+    (
       (id json_object)
       (kind representation)
-      (extends (
+      (extends ([]
         information
       ))
     )
-    ({}
+    (
       (id text)
       (kind representation)
-      (extends (
+      (extends ([]
         information
       ))
     )
-    ({}
+    (
       (id python_object)
       (kind representation)
-      (extends (
+      (extends ([]
         information
       ))
     )
-    ({}
+    (
       (id image)
       (kind representation)
-      (extends (
+      (extends ([]
         information
       ))
     )
-    ({}
+    (
       (id prolog_fact_set)
       (kind representation)
-      (extends (
+      (extends ([]
         text
       ))
     )
-    ({}
+    (
       (id turtle_program)
       (kind representation)
-      (extends (
+      (extends ([]
         text
       ))
     )
-    ({}
+    (
       (id observation)
       (kind semantic)
-      (extends (
+      (extends ([]
         information
       ))
       (description "Evidence received from outside the internal world model.")
     )
-    ({}
+    (
       (id observation_collection)
       (kind collection)
-      (extends (
+      (extends ([]
         information
       ))
       (items observation)
     )
-    ({}
+    (
       (id entity)
       (kind semantic)
-      (extends (
+      (extends ([]
         information
       ))
     )
-    ({}
+    (
       (id entity_collection)
       (kind collection)
-      (extends (
+      (extends ([]
         information
       ))
       (items entity)
     )
-    ({}
+    (
       (id object_representation_bundle)
       (kind aggregate)
-      (extends (
+      (extends ([]
         information
       ))
-      (aggregates (
+      (aggregates ([]
         image
         prolog_fact_set
         turtle_program
       ))
       (description "Synchronized visual, symbolic, and executable drawing representations of an entity.")
     )
-    ({}
+    (
       (id objectified_observation)
       (kind aggregate)
-      (extends (
+      (extends ([]
         observation
       ))
-      (aggregates (
+      (aggregates ([]
         entity_collection
         object_representation_bundle
       ))
       (description "An observation enriched with stable objects and their representations.")
     )
-    ({}
+    (
       (id relationship)
       (kind semantic)
-      (extends (
+      (extends ([]
         information
       ))
     )
-    ({}
+    (
       (id event)
       (kind semantic)
-      (extends (
+      (extends ([]
         information
       ))
     )
-    ({}
+    (
       (id transition_evidence)
       (kind semantic)
-      (extends (
+      (extends ([]
         information
       ))
     )
-    ({}
+    (
       (id hypothesis)
       (kind semantic)
-      (extends (
+      (extends ([]
         information
       ))
     )
-    ({}
+    (
       (id world_state)
       (kind semantic)
-      (extends (
+      (extends ([]
         information
       ))
     )
-    ({}
+    (
       (id world_dynamics)
       (kind semantic)
-      (extends (
+      (extends ([]
         information
       ))
     )
-    ({}
+    (
       (id world_model)
       (kind aggregate)
-      (extends (
+      (extends ([]
         information
       ))
-      (aggregates (
+      (aggregates ([]
         world_state
         entity_collection
         relationship
@@ -163,124 +163,124 @@
         transition_evidence
       ))
     )
-    ({}
+    (
       (id goal)
       (kind semantic)
-      (extends (
+      (extends ([]
         information
       ))
     )
-    ({}
+    (
       (id goal_set)
       (kind collection)
-      (extends (
+      (extends ([]
         information
       ))
       (items goal)
     )
-    ({}
+    (
       (id intervention)
       (kind semantic)
-      (extends (
+      (extends ([]
         information
       ))
     )
-    ({}
+    (
       (id human_intervention)
       (kind semantic)
-      (extends (
+      (extends ([]
         intervention
       ))
       (description "An intervention chosen by a human demonstrator while the system observes.")
     )
-    ({}
+    (
       (id demonstration_step)
       (kind aggregate)
-      (extends (
+      (extends ([]
         information
       ))
-      (aggregates (
+      (aggregates ([]
         objectified_observation
         human_intervention
         objectified_observation
       ))
       (description "A before/action/after learning example.")
     )
-    ({}
+    (
       (id simulation_request)
       (kind semantic)
-      (extends (
+      (extends ([]
         information
       ))
-      (aggregates (
+      (aggregates ([]
         world_model
         goal_set
         intervention
       ))
     )
-    ({}
+    (
       (id simulation_result)
       (kind semantic)
-      (extends (
+      (extends ([]
         information
       ))
-      (aggregates (
+      (aggregates ([]
         world_state
         goal_set
         transition_evidence
       ))
     )
-    ({}
+    (
       (id evaluation)
       (kind semantic)
-      (extends (
+      (extends ([]
         information
       ))
     )
-    ({}
+    (
       (id provenance_record)
       (kind semantic)
-      (extends (
+      (extends ([]
         information
       ))
     )
-    ({}
+    (
       (id information_silo)
       (kind aggregate)
-      (extends (
+      (extends ([]
         information
       ))
-      (aggregates (
+      (aggregates ([]
         provenance_record
       ))
       (description "A named, versioned, typed information value.")
     )
-    ({}
+    (
       (id world_analysis_state)
       (kind aggregate)
-      (extends (
+      (extends ([]
         information
       ))
-      (aggregates (
+      (aggregates ([]
         information_silo
         world_model
         goal_set
         simulation_result
       ))
     )
-    ({}
+    (
       (id arc3_state)
       (kind adapter)
-      (extends (
+      (extends ([]
         observation
         json_object
       ))
       (description "ARC3-specific observation representation.")
     )
-    ({}
+    (
       (id arc3_action)
       (kind adapter)
-      (extends (
+      (extends ([]
         intervention
       ))
       (description "ARC3-specific environment intervention.")

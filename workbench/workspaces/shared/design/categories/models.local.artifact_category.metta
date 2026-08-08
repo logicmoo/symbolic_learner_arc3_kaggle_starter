@@ -1,19 +1,19 @@
-({}
+(
   (kind artifact_category)
   (id models.local)
   (label "Local Models")
   (description "Models resolved through the local Unsloth Studio backend.")
   (path filtered/models/local)
-  (trees (
+  (trees ([]
     models
   ))
-  (query ({}
-    (kinds (
+  (query (
+    (kinds ([]
       model
       profile
     ))
-    (where ({}
-      (_resolved.backendId ({}
+    (where (
+      (_resolved.backendId (
         (equals unsloth)
       ))
     ))

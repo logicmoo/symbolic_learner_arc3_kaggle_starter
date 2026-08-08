@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-_openai_gpt-mini-latest)
   (label "OpenAI GPT Mini Latest")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model ~openai/gpt-mini-latest)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,20 +19,20 @@
     (tools true)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 400000)
     (maxOutputTokens 128000)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.00000075")
     (completion "0.0000045")
     (web_search "0.01")
     (input_cache_read "0.000000075")
   ))
-  (properties ({}
+  (properties (
     (id ~openai/gpt-mini-latest)
     (canonical_slug ~openai/gpt-mini-latest)
-    (alias_target ({}
+    (alias_target (
       (name "OpenAI: GPT-5.4 Mini")
       (slug openai/gpt-5.4-mini)
     ))
@@ -41,32 +41,32 @@
     (created 1777318471)
     (description "This model always redirects to the latest model in the OpenAI GPT Mini family.")
     (context_length 400000)
-    (architecture ({}
+    (architecture (
       (modality text+image+file->text)
-      (input_modalities (
+      (input_modalities ([]
         file
         image
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Router)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000075")
       (completion "0.0000045")
       (web_search "0.01")
       (input_cache_read "0.000000075")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 400000)
       (max_completion_tokens 128000)
       (is_moderated true)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_completion_tokens
       max_tokens
@@ -78,7 +78,7 @@
       tool_choice
       tools
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -89,13 +89,13 @@
     (supported_voices null)
     (knowledge_cutoff 2025-08-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/~openai/gpt-mini-latest/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
       (default_enabled false)
-      (supported_efforts (
+      (supported_efforts ([]
         xhigh
         high
         medium
@@ -106,10 +106,10 @@
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id ~openai/gpt-mini-latest)
     (canonical_slug ~openai/gpt-mini-latest)
-    (alias_target ({}
+    (alias_target (
       (name "OpenAI: GPT-5.4 Mini")
       (slug openai/gpt-5.4-mini)
     ))
@@ -118,32 +118,32 @@
     (created 1777318471)
     (description "This model always redirects to the latest model in the OpenAI GPT Mini family.")
     (context_length 400000)
-    (architecture ({}
+    (architecture (
       (modality text+image+file->text)
-      (input_modalities (
+      (input_modalities ([]
         file
         image
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Router)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000075")
       (completion "0.0000045")
       (web_search "0.01")
       (input_cache_read "0.000000075")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 400000)
       (max_completion_tokens 128000)
       (is_moderated true)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_completion_tokens
       max_tokens
@@ -155,7 +155,7 @@
       tool_choice
       tools
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -166,13 +166,13 @@
     (supported_voices null)
     (knowledge_cutoff 2025-08-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/~openai/gpt-mini-latest/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
       (default_enabled false)
-      (supported_efforts (
+      (supported_efforts ([]
         xhigh
         high
         medium
@@ -182,7 +182,7 @@
       (default_effort medium)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId ~openai/gpt-mini-latest)

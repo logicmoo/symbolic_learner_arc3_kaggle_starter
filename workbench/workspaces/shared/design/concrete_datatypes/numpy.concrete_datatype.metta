@@ -1,14 +1,14 @@
-({}
+(
   (kind concrete_datatype)
   (id numpy)
   (label Numpy)
-  (parents (
+  (parents ([]
     latent_embedding
   ))
-  (mimeTypes (
+  (mimeTypes ([]
     application/x-npy
   ))
-  (extensions (
+  (extensions ([]
     .npy
   ))
 )

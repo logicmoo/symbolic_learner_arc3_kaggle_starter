@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-ling-3.0-flash)
   (label "Ling 3.0 Flash free")
@@ -6,12 +6,12 @@
   (inherits openrouter)
   (model inclusionai/ling-3.0-flash:free)
   (enabled true)
-  (capabilities (
+  (capabilities ([]
     text
     reasoning
     json
   ))
-  (metadata ({}
+  (metadata (
     (verifiedAvailable true)
     (verifiedAt 2026-08-04)
     (source "legacy config/llm_workflows.json")

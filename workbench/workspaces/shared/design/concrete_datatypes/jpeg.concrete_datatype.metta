@@ -1,14 +1,14 @@
-({}
+(
   (kind concrete_datatype)
   (id jpeg)
   (label Jpeg)
-  (parents (
+  (parents ([]
     bitmap
   ))
-  (mimeTypes (
+  (mimeTypes ([]
     image/jpeg
   ))
-  (extensions (
+  (extensions ([]
     .jpg
     .jpeg
   ))

@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-mistralai_codestral-2508)
   (label "Mistral: Codestral 2508")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model mistralai/codestral-2508)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code true)
     (functionCalling true)
@@ -19,16 +19,16 @@
     (tools true)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 256000)
     (maxOutputTokens null)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.0000003")
     (completion "0.0000009")
     (input_cache_read "0.00000003")
   ))
-  (properties ({}
+  (properties (
     (id mistralai/codestral-2508)
     (canonical_slug mistralai/codestral-2508)
     (hugging_face_id "")
@@ -36,30 +36,30 @@
     (created 1754079630)
     (description "Mistral's cutting-edge language model for coding released end of July 2025. Codestral specializes in low-latency, high-frequency tasks such as fill-in-the-middle (FIM), code correction and test generation.\n\n[Blog Post](https://mistral.ai/news/codestral-25-08)")
     (context_length 256000)
-    (architecture ({}
+    (architecture (
       (modality text+file->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         file
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Mistral)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000003")
       (completion "0.0000009")
       (input_cache_read "0.00000003")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 256000)
       (max_completion_tokens null)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       max_tokens
       prediction
@@ -73,53 +73,53 @@
       tools
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature 0.3)
     ))
     (supported_voices null)
     (knowledge_cutoff 2025-03-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/mistralai/codestral-2508/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category codecategories)
           (elo 1035)
           (win_rate 38.6)
           (rank 100)
         )
-        ({}
+        (
           (arena models)
           (category dataviz)
           (elo 1048)
           (win_rate 42)
           (rank 93)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 1008)
           (win_rate 36.3)
           (rank 103)
         )
-        ({}
+        (
           (arena models)
           (category uicomponent)
           (elo 1050)
           (win_rate 46.7)
           (rank 88)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 1035)
           (win_rate 37.8)
           (rank 104)
         )
-        ({}
+        (
           (arena models)
           (category 3d)
           (elo 1074)
@@ -130,7 +130,7 @@
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id mistralai/codestral-2508)
     (canonical_slug mistralai/codestral-2508)
     (hugging_face_id "")
@@ -138,30 +138,30 @@
     (created 1754079630)
     (description "Mistral's cutting-edge language model for coding released end of July 2025. Codestral specializes in low-latency, high-frequency tasks such as fill-in-the-middle (FIM), code correction and test generation.\n\n[Blog Post](https://mistral.ai/news/codestral-25-08)")
     (context_length 256000)
-    (architecture ({}
+    (architecture (
       (modality text+file->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         file
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Mistral)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000003")
       (completion "0.0000009")
       (input_cache_read "0.00000003")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 256000)
       (max_completion_tokens null)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       max_tokens
       prediction
@@ -175,53 +175,53 @@
       tools
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature 0.3)
     ))
     (supported_voices null)
     (knowledge_cutoff 2025-03-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/mistralai/codestral-2508/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category codecategories)
           (elo 1035)
           (win_rate 38.6)
           (rank 100)
         )
-        ({}
+        (
           (arena models)
           (category dataviz)
           (elo 1048)
           (win_rate 42)
           (rank 93)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 1008)
           (win_rate 36.3)
           (rank 103)
         )
-        ({}
+        (
           (arena models)
           (category uicomponent)
           (elo 1050)
           (win_rate 46.7)
           (rank 88)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 1035)
           (win_rate 37.8)
           (rank 104)
         )
-        ({}
+        (
           (arena models)
           (category 3d)
           (elo 1074)
@@ -231,7 +231,7 @@
       ))
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId mistralai/codestral-2508)

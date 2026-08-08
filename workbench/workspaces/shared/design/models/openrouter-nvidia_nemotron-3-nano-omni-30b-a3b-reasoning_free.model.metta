@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-nvidia_nemotron-3-nano-omni-30b-a3b-reasoning_free)
   (label "NVIDIA: Nemotron 3 Nano Omni (free)")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio true)
     (code false)
     (functionCalling true)
@@ -19,15 +19,15 @@
     (tools true)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 256000)
     (maxOutputTokens 65536)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0")
     (completion "0")
   ))
-  (properties ({}
+  (properties (
     (id nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free)
     (canonical_slug nvidia/nemotron-3-nano-omni-30b-a3b-reasoning-20260428)
     (hugging_face_id nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-BF16)
@@ -35,31 +35,31 @@
     (created 1777393095)
     (description "NVIDIA Nemotron™ 3 Nano Omni is a 30B-A3B open multimodal model designed to function as a perception and context sub-agent in enterprise agent systems. It accepts text, image, video, and...")
     (context_length 256000)
-    (architecture ({}
+    (architecture (
       (modality text+image+audio+video->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         audio
         image
         video
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0")
       (completion "0")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 256000)
       (max_completion_tokens 65536)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_tokens
       reasoning
@@ -69,7 +69,7 @@
       tools
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature 0.6)
       (top_p 0.95)
       (top_k null)
@@ -80,25 +80,25 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/nvidia/nemotron-3-nano-omni-30b-a3b-reasoning-20260428/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena ())
-      (artificial_analysis ({}
+    (benchmarks (
+      (design_arena ([]))
+      (artificial_analysis (
         (intelligence_index null)
         (coding_index 13.8)
         (agentic_index null)
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
       (default_enabled true)
       (supports_max_tokens true)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free)
     (canonical_slug nvidia/nemotron-3-nano-omni-30b-a3b-reasoning-20260428)
     (hugging_face_id nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-BF16)
@@ -106,31 +106,31 @@
     (created 1777393095)
     (description "NVIDIA Nemotron™ 3 Nano Omni is a 30B-A3B open multimodal model designed to function as a perception and context sub-agent in enterprise agent systems. It accepts text, image, video, and...")
     (context_length 256000)
-    (architecture ({}
+    (architecture (
       (modality text+image+audio+video->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         audio
         image
         video
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0")
       (completion "0")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 256000)
       (max_completion_tokens 65536)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_tokens
       reasoning
@@ -140,7 +140,7 @@
       tools
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature 0.6)
       (top_p 0.95)
       (top_k null)
@@ -151,24 +151,24 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/nvidia/nemotron-3-nano-omni-30b-a3b-reasoning-20260428/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena ())
-      (artificial_analysis ({}
+    (benchmarks (
+      (design_arena ([]))
+      (artificial_analysis (
         (intelligence_index null)
         (coding_index 13.8)
         (agentic_index null)
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
       (default_enabled true)
       (supports_max_tokens true)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free)

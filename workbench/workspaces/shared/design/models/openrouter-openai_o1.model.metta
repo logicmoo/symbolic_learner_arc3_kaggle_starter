@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-openai_o1)
   (label "OpenAI: o1")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model openai/o1)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,17 +19,17 @@
     (tools true)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 200000)
     (maxOutputTokens 100000)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.000015")
     (completion "0.00006")
     (web_search "0.01")
     (input_cache_read "0.0000075")
   ))
-  (properties ({}
+  (properties (
     (id openai/o1)
     (canonical_slug openai/o1-2024-12-17)
     (hugging_face_id "")
@@ -37,32 +37,32 @@
     (created 1734459999)
     (description "The latest and strongest model family from OpenAI, o1 is designed to spend more time thinking before responding. The o1 model series is trained with large-scale reinforcement learning to reason...")
     (context_length 200000)
-    (architecture ({}
+    (architecture (
       (modality text+image+file->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
         file
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer GPT)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.000015")
       (completion "0.00006")
       (web_search "0.01")
       (input_cache_read "0.0000075")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 200000)
       (max_completion_tokens 100000)
       (is_moderated true)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_tokens
       reasoning
@@ -72,7 +72,7 @@
       tool_choice
       tools
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -83,23 +83,23 @@
     (supported_voices null)
     (knowledge_cutoff 2023-10-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/openai/o1-2024-12-17/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena ())
-      (artificial_analysis ({}
+    (benchmarks (
+      (design_arena ([]))
+      (artificial_analysis (
         (intelligence_index null)
         (coding_index 39.7)
         (agentic_index null)
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id openai/o1)
     (canonical_slug openai/o1-2024-12-17)
     (hugging_face_id "")
@@ -107,32 +107,32 @@
     (created 1734459999)
     (description "The latest and strongest model family from OpenAI, o1 is designed to spend more time thinking before responding. The o1 model series is trained with large-scale reinforcement learning to reason...")
     (context_length 200000)
-    (architecture ({}
+    (architecture (
       (modality text+image+file->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
         file
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer GPT)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.000015")
       (completion "0.00006")
       (web_search "0.01")
       (input_cache_read "0.0000075")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 200000)
       (max_completion_tokens 100000)
       (is_moderated true)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_tokens
       reasoning
@@ -142,7 +142,7 @@
       tool_choice
       tools
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -153,22 +153,22 @@
     (supported_voices null)
     (knowledge_cutoff 2023-10-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/openai/o1-2024-12-17/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena ())
-      (artificial_analysis ({}
+    (benchmarks (
+      (design_arena ([]))
+      (artificial_analysis (
         (intelligence_index null)
         (coding_index 39.7)
         (agentic_index null)
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId openai/o1)

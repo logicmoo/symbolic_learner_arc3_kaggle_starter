@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openai-o3-mini-2025-01-31)
   (label o3-mini-2025-01-31)
@@ -6,7 +6,7 @@
   (inherits openai)
   (model o3-mini-2025-01-31)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling false)
@@ -19,25 +19,25 @@
     (tools false)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow null)
     (maxOutputTokens null)
   ))
-  (pricing ({}))
-  (properties ({}
+  (pricing ())
+  (properties (
     (id o3-mini-2025-01-31)
     (object model)
     (created 1738010200)
     (owned_by system)
     (ownedBy system)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id o3-mini-2025-01-31)
     (object model)
     (created 1738010200)
     (owned_by system)
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openai)
     (remoteModelId o3-mini-2025-01-31)

@@ -1,23 +1,23 @@
-({}
+(
   (kind workflow)
   (id titlecase_demo)
   (label "Titlecase Demo")
   (description "Minimal workflow demonstrating an abstract operation resolved to a concrete implementation at runtime.")
-  (inputs ({}
+  (inputs (
     (text Text)
   ))
-  (outputs ({}
+  (outputs (
     (text $titlecased_text)
   ))
-  (steps (
-    ({}
+  (steps ([]
+    (
       (kind workflow_step)
       (id step_titlecase)
       (operation echo_into_titlecased)
-      (inputs ({}
+      (inputs (
         (text $text)
       ))
-      (outputs ({}
+      (outputs (
         (text titlecased_text)
       ))
     )

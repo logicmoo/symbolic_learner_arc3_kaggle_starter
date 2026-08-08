@@ -1,13 +1,13 @@
-({}
+(
   (kind representation_datatype)
   (id turtle_program)
   (label "Turtle Program")
   (language logo)
   (description "Movement-based Turtle/LOGO program representation retained as a first-class alias used by existing operations.")
-  (parents (
+  (parents ([]
     image
   ))
-  (children (
+  (children ([]
     turtle_source
   ))
   (preferredChild turtle_source)

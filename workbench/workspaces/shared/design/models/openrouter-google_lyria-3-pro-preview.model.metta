@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-google_lyria-3-pro-preview)
   (label "Google: Lyria 3 Pro Preview")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model google/lyria-3-pro-preview)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio true)
     (code false)
     (functionCalling false)
@@ -19,15 +19,15 @@
     (tools false)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 1048576)
     (maxOutputTokens 65536)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0")
     (completion "0")
   ))
-  (properties ({}
+  (properties (
     (id google/lyria-3-pro-preview)
     (canonical_slug google/lyria-3-pro-preview-20260330)
     (hugging_face_id null)
@@ -35,37 +35,37 @@
     (created 1774907286)
     (description "Full-length songs are priced at $0.08 per song. Lyria 3 is Google's family of music generation models, available through the Gemini API. With Lyria 3, you can generate high-quality, 48kHz...")
     (context_length 1048576)
-    (architecture ({}
+    (architecture (
       (modality text+image->text+audio)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
         audio
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0")
       (completion "0")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 1048576)
       (max_completion_tokens 65536)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       max_tokens
       response_format
       seed
       temperature
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -76,12 +76,12 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/google/lyria-3-pro-preview-20260330/endpoints)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id google/lyria-3-pro-preview)
     (canonical_slug google/lyria-3-pro-preview-20260330)
     (hugging_face_id null)
@@ -89,37 +89,37 @@
     (created 1774907286)
     (description "Full-length songs are priced at $0.08 per song. Lyria 3 is Google's family of music generation models, available through the Gemini API. With Lyria 3, you can generate high-quality, 48kHz...")
     (context_length 1048576)
-    (architecture ({}
+    (architecture (
       (modality text+image->text+audio)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
         audio
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0")
       (completion "0")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 1048576)
       (max_completion_tokens 65536)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       max_tokens
       response_format
       seed
       temperature
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -130,11 +130,11 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/google/lyria-3-pro-preview-20260330/endpoints)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId google/lyria-3-pro-preview)

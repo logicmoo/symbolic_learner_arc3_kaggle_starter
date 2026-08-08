@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-gpt-oss-20b)
   (label "gpt-oss-20b free")
@@ -6,12 +6,12 @@
   (inherits openrouter)
   (model openai/gpt-oss-20b:free)
   (enabled true)
-  (capabilities (
+  (capabilities ([]
     text
     reasoning
     json
   ))
-  (metadata ({}
+  (metadata (
     (verifiedAvailable true)
     (verifiedAt 2026-08-04)
     (source "legacy config/llm_workflows.json")

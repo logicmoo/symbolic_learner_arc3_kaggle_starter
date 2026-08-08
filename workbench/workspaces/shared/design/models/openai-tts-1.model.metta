@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openai-tts-1)
   (label tts-1)
@@ -6,7 +6,7 @@
   (inherits openai)
   (model tts-1)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio true)
     (code false)
     (functionCalling false)
@@ -19,25 +19,25 @@
     (tools false)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow null)
     (maxOutputTokens null)
   ))
-  (pricing ({}))
-  (properties ({}
+  (pricing ())
+  (properties (
     (id tts-1)
     (object model)
     (created 1681940951)
     (owned_by openai-internal)
     (ownedBy openai-internal)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id tts-1)
     (object model)
     (created 1681940951)
     (owned_by openai-internal)
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openai)
     (remoteModelId tts-1)

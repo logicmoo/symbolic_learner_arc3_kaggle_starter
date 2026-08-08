@@ -1,26 +1,26 @@
-({}
+(
   (id arc3.explain_object_changes)
   (label "ARC3 Explain Object Changes")
   (description "ARC3 wrapper around shared symbolic transition analysis, adding ARC3 identity and artifact-file contracts.")
-  (categories (
+  (categories ([]
     arc3/analysis
     vision/transition
     symbolic/explanation
   ))
   (implementation llm.complete)
-  (inputs ({}
+  (inputs (
     (object_registry FileReference)
     (objects ArtifactBundle)
     (before ArtifactBundle)
     (after ArtifactBundle)
   ))
-  (outputs ({}
+  (outputs (
     (differences_pl PrologProgram)
     (similarities_pl PrologProgram)
     (turtle_from_diff_pl PrologProgram)
   ))
-  (promptSelection ({}
-    (prompts (
+  (promptSelection (
+    (prompts ([]
       structured_json_response
       arc3_response_contract
       arc3_identity_registry
@@ -32,11 +32,11 @@
     ))
     (separator "\n\n")
   ))
-  (modelSelection ({}
-    (models ())
+  (modelSelection (
+    (models ([]))
     (strategy single)
   ))
-  (parameters ({}
+  (parameters (
     (domain arc3)
     (legacyTransaction explain_object_changes)
   ))

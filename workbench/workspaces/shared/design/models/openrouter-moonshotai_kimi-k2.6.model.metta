@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-moonshotai_kimi-k2.6)
   (label "MoonshotAI: Kimi K2.6")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model moonshotai/kimi-k2.6)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,16 +19,16 @@
     (tools true)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 262144)
     (maxOutputTokens 262144)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.0000005795")
     (completion "0.00000244")
     (input_cache_read "0.0000000976")
   ))
-  (properties ({}
+  (properties (
     (id moonshotai/kimi-k2.6)
     (canonical_slug moonshotai/kimi-k2.6-20260420)
     (hugging_face_id moonshotai/Kimi-K2.6)
@@ -36,30 +36,30 @@
     (created 1776699402)
     (description "Kimi K2.6 is Moonshot AI's next-generation multimodal model, designed for long-horizon coding, coding-driven UI/UX generation, and multi-agent orchestration. It handles complex end-to-end coding tasks across Python, Rust, and Go, and...")
     (context_length 262144)
-    (architecture ({}
+    (architecture (
       (modality text+image->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000005795")
       (completion "0.00000244")
       (input_cache_read "0.0000000976")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 262144)
       (max_completion_tokens 262144)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       logit_bias
@@ -81,7 +81,7 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -92,152 +92,152 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/moonshotai/kimi-k2.6-20260420/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena agents)
           (category agenticgamedev)
           (elo 1151)
           (win_rate 47.9)
           (rank 15)
         )
-        ({}
+        (
           (arena agents)
           (category agentichtmlslides)
           (elo 1248)
           (win_rate 59)
           (rank 2)
         )
-        ({}
+        (
           (arena agents)
           (category agenticslides)
           (elo 1187)
           (win_rate 45.8)
           (rank 5)
         )
-        ({}
+        (
           (arena agents)
           (category "agenticslides(html)")
           (elo 1252)
           (win_rate 59.2)
           (rank 2)
         )
-        ({}
+        (
           (arena agents)
           (category "agenticslides(python-pptx)")
           (elo 1186)
           (win_rate 45.5)
           (rank 5)
         )
-        ({}
+        (
           (arena agents)
           (category androidnative)
           (elo 1195)
           (win_rate 51.6)
           (rank 15)
         )
-        ({}
+        (
           (arena agents)
           (category fullstack)
           (elo 1199)
           (win_rate 54.8)
           (rank 15)
         )
-        ({}
+        (
           (arena agents)
           (category godotgamedev)
           (elo 1161)
           (win_rate 47.1)
           (rank 15)
         )
-        ({}
+        (
           (arena agents)
           (category htmlslides)
           (elo 1226)
           (win_rate 54.7)
           (rank 7)
         )
-        ({}
+        (
           (arena agents)
           (category mobileapps)
           (elo 1220)
           (win_rate 54.8)
           (rank 9)
         )
-        ({}
+        (
           (arena agents)
           (category pptxslides)
           (elo 1181)
           (win_rate 44.3)
           (rank 5)
         )
-        ({}
+        (
           (arena agents)
           (category python-pptxslides)
           (elo 1180)
           (win_rate 42.1)
           (rank 11)
         )
-        ({}
+        (
           (arena agents)
           (category webapps)
           (elo 1268)
           (win_rate 59.3)
           (rank 8)
         )
-        ({}
+        (
           (arena models)
           (category 3d)
           (elo 1328)
           (win_rate 60.2)
           (rank 9)
         )
-        ({}
+        (
           (arena models)
           (category asciiart)
           (elo 1190)
           (win_rate 46.6)
           (rank 26)
         )
-        ({}
+        (
           (arena models)
           (category codecategories)
           (elo 1305)
           (win_rate 56.7)
           (rank 11)
         )
-        ({}
+        (
           (arena models)
           (category dataviz)
           (elo 1287)
           (win_rate 56.2)
           (rank 16)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 1289)
           (win_rate 56)
           (rank 19)
         )
-        ({}
+        (
           (arena models)
           (category svg)
           (elo 1225)
           (win_rate 51.5)
           (rank 20)
         )
-        ({}
+        (
           (arena models)
           (category uicomponent)
           (elo 1298)
           (win_rate 56)
           (rank 16)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 1297)
@@ -245,19 +245,19 @@
           (rank 13)
         )
       ))
-      (artificial_analysis ({}
+      (artificial_analysis (
         (intelligence_index 45.1)
         (coding_index 61.8)
         (agentic_index 31.2)
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
       (default_enabled true)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id moonshotai/kimi-k2.6)
     (canonical_slug moonshotai/kimi-k2.6-20260420)
     (hugging_face_id moonshotai/Kimi-K2.6)
@@ -265,30 +265,30 @@
     (created 1776699402)
     (description "Kimi K2.6 is Moonshot AI's next-generation multimodal model, designed for long-horizon coding, coding-driven UI/UX generation, and multi-agent orchestration. It handles complex end-to-end coding tasks across Python, Rust, and Go, and...")
     (context_length 262144)
-    (architecture ({}
+    (architecture (
       (modality text+image->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000005795")
       (completion "0.00000244")
       (input_cache_read "0.0000000976")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 262144)
       (max_completion_tokens 262144)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       logit_bias
@@ -310,7 +310,7 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -321,152 +321,152 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/moonshotai/kimi-k2.6-20260420/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena agents)
           (category agenticgamedev)
           (elo 1151)
           (win_rate 47.9)
           (rank 15)
         )
-        ({}
+        (
           (arena agents)
           (category agentichtmlslides)
           (elo 1248)
           (win_rate 59)
           (rank 2)
         )
-        ({}
+        (
           (arena agents)
           (category agenticslides)
           (elo 1187)
           (win_rate 45.8)
           (rank 5)
         )
-        ({}
+        (
           (arena agents)
           (category "agenticslides(html)")
           (elo 1252)
           (win_rate 59.2)
           (rank 2)
         )
-        ({}
+        (
           (arena agents)
           (category "agenticslides(python-pptx)")
           (elo 1186)
           (win_rate 45.5)
           (rank 5)
         )
-        ({}
+        (
           (arena agents)
           (category androidnative)
           (elo 1195)
           (win_rate 51.6)
           (rank 15)
         )
-        ({}
+        (
           (arena agents)
           (category fullstack)
           (elo 1199)
           (win_rate 54.8)
           (rank 15)
         )
-        ({}
+        (
           (arena agents)
           (category godotgamedev)
           (elo 1161)
           (win_rate 47.1)
           (rank 15)
         )
-        ({}
+        (
           (arena agents)
           (category htmlslides)
           (elo 1226)
           (win_rate 54.7)
           (rank 7)
         )
-        ({}
+        (
           (arena agents)
           (category mobileapps)
           (elo 1220)
           (win_rate 54.8)
           (rank 9)
         )
-        ({}
+        (
           (arena agents)
           (category pptxslides)
           (elo 1181)
           (win_rate 44.3)
           (rank 5)
         )
-        ({}
+        (
           (arena agents)
           (category python-pptxslides)
           (elo 1180)
           (win_rate 42.1)
           (rank 11)
         )
-        ({}
+        (
           (arena agents)
           (category webapps)
           (elo 1268)
           (win_rate 59.3)
           (rank 8)
         )
-        ({}
+        (
           (arena models)
           (category 3d)
           (elo 1328)
           (win_rate 60.2)
           (rank 9)
         )
-        ({}
+        (
           (arena models)
           (category asciiart)
           (elo 1190)
           (win_rate 46.6)
           (rank 26)
         )
-        ({}
+        (
           (arena models)
           (category codecategories)
           (elo 1305)
           (win_rate 56.7)
           (rank 11)
         )
-        ({}
+        (
           (arena models)
           (category dataviz)
           (elo 1287)
           (win_rate 56.2)
           (rank 16)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 1289)
           (win_rate 56)
           (rank 19)
         )
-        ({}
+        (
           (arena models)
           (category svg)
           (elo 1225)
           (win_rate 51.5)
           (rank 20)
         )
-        ({}
+        (
           (arena models)
           (category uicomponent)
           (elo 1298)
           (win_rate 56)
           (rank 16)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 1297)
@@ -474,18 +474,18 @@
           (rank 13)
         )
       ))
-      (artificial_analysis ({}
+      (artificial_analysis (
         (intelligence_index 45.1)
         (coding_index 61.8)
         (agentic_index 31.2)
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
       (default_enabled true)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId moonshotai/kimi-k2.6)

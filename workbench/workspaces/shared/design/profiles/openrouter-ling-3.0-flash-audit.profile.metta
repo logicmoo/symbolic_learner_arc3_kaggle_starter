@@ -1,11 +1,11 @@
-({}
+(
   (kind profile)
   (id openrouter-ling-3.0-flash-audit)
   (label "Ling 3.0 Flash — light deterministic")
   (description "Prompt-free execution profile migrated from the legacy quick artifact-audit transaction.")
   (inherits openrouter-ling-3.0-flash)
   (enabled true)
-  (defaults ({}
+  (defaults (
     (analysisLevel 2)
     (singleEnabled false)
     (batchEnabled false)
@@ -18,7 +18,7 @@
     (timeoutSeconds 240)
     (seed null)
   ))
-  (metadata ({}
+  (metadata (
     (legacyTransaction audit_artifact_bundle)
   ))
 )

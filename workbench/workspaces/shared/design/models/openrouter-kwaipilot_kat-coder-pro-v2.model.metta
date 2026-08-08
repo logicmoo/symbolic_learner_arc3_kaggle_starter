@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-kwaipilot_kat-coder-pro-v2)
   (label "Kwaipilot: KAT-Coder-Pro V2")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model kwaipilot/kat-coder-pro-v2)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code true)
     (functionCalling true)
@@ -19,16 +19,16 @@
     (tools true)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 262144)
     (maxOutputTokens 80000)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.0000003")
     (completion "0.0000012")
     (input_cache_read "0.00000006")
   ))
-  (properties ({}
+  (properties (
     (id kwaipilot/kat-coder-pro-v2)
     (canonical_slug kwaipilot/kat-coder-pro-v2-20260327)
     (hugging_face_id "")
@@ -36,29 +36,29 @@
     (created 1774649310)
     (description "KAT-Coder-Pro V2 is the latest high-performance model in KwaiKAT’s KAT-Coder series, designed for complex enterprise-grade software engineering and SaaS integration. It builds on the agentic coding strengths of earlier versions,...")
     (context_length 262144)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000003")
       (completion "0.0000012")
       (input_cache_read "0.00000006")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 256000)
       (max_completion_tokens 80000)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       logit_bias
       logprobs
@@ -77,7 +77,7 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -88,12 +88,12 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/kwaipilot/kat-coder-pro-v2-20260327/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena ())
-      (artificial_analysis ({}
+    (benchmarks (
+      (design_arena ([]))
+      (artificial_analysis (
         (intelligence_index 33.9)
         (coding_index 59.5)
         (agentic_index 15.5)
@@ -101,7 +101,7 @@
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id kwaipilot/kat-coder-pro-v2)
     (canonical_slug kwaipilot/kat-coder-pro-v2-20260327)
     (hugging_face_id "")
@@ -109,29 +109,29 @@
     (created 1774649310)
     (description "KAT-Coder-Pro V2 is the latest high-performance model in KwaiKAT’s KAT-Coder series, designed for complex enterprise-grade software engineering and SaaS integration. It builds on the agentic coding strengths of earlier versions,...")
     (context_length 262144)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000003")
       (completion "0.0000012")
       (input_cache_read "0.00000006")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 256000)
       (max_completion_tokens 80000)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       logit_bias
       logprobs
@@ -150,7 +150,7 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -161,19 +161,19 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/kwaipilot/kat-coder-pro-v2-20260327/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena ())
-      (artificial_analysis ({}
+    (benchmarks (
+      (design_arena ([]))
+      (artificial_analysis (
         (intelligence_index 33.9)
         (coding_index 59.5)
         (agentic_index 15.5)
       ))
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId kwaipilot/kat-coder-pro-v2)

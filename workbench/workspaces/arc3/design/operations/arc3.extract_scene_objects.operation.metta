@@ -1,24 +1,24 @@
-({}
+(
   (id arc3.extract_scene_objects)
   (label "ARC3 Extract Scene Objects")
   (description "ARC3 wrapper around the shared visual object-extraction capability, adding only ARC3 identity/output/file contracts.")
-  (categories (
+  (categories ([]
     arc3/perception
     vision/extraction
     vision/recognition
   ))
   (implementation llm.complete)
-  (inputs ({}
+  (inputs (
     (current_image Image)
     (parent_image Image)
     (object_registry FileReference)
   ))
-  (outputs ({}
+  (outputs (
     (objects_pl PrologProgram)
     (turtle_from_image_pl PrologProgram)
   ))
-  (promptSelection ({}
-    (prompts (
+  (promptSelection (
+    (prompts ([]
       structured_json_response
       arc3_response_contract
       logical_image_coordinates
@@ -34,11 +34,11 @@
     ))
     (separator "\n\n")
   ))
-  (modelSelection ({}
-    (models ())
+  (modelSelection (
+    (models ([]))
     (strategy single)
   ))
-  (parameters ({}
+  (parameters (
     (domain arc3)
     (legacyTransaction extract_scene_objects)
   ))

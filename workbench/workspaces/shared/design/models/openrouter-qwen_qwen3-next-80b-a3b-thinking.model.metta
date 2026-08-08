@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-qwen_qwen3-next-80b-a3b-thinking)
   (label "Qwen: Qwen3 Next 80B A3B Thinking")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model qwen/qwen3-next-80b-a3b-thinking)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,15 +19,15 @@
     (tools true)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 262144)
     (maxOutputTokens 262144)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.00000015")
     (completion "0.0000012")
   ))
-  (properties ({}
+  (properties (
     (id qwen/qwen3-next-80b-a3b-thinking)
     (canonical_slug qwen/qwen3-next-80b-a3b-thinking-2509)
     (hugging_face_id Qwen/Qwen3-Next-80B-A3B-Thinking)
@@ -35,28 +35,28 @@
     (created 1757612284)
     (description "Qwen3-Next-80B-A3B-Thinking is a reasoning-first chat model in the Qwen3-Next line that outputs structured “thinking” traces by default. It’s designed for hard multi-step problems; math proofs, code synthesis/debugging, logic, and agentic...")
     (context_length 262144)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Qwen3)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000015")
       (completion "0.0000012")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 262144)
       (max_completion_tokens 262144)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       logit_bias
@@ -76,7 +76,7 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (frequency_penalty null)
@@ -84,23 +84,23 @@
     (supported_voices null)
     (knowledge_cutoff 2025-09-30)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/qwen/qwen3-next-80b-a3b-thinking-2509/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena ())
-      (artificial_analysis ({}
+    (benchmarks (
+      (design_arena ([]))
+      (artificial_analysis (
         (intelligence_index 16.9)
         (coding_index 17.4)
         (agentic_index 2.1)
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory true)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id qwen/qwen3-next-80b-a3b-thinking)
     (canonical_slug qwen/qwen3-next-80b-a3b-thinking-2509)
     (hugging_face_id Qwen/Qwen3-Next-80B-A3B-Thinking)
@@ -108,28 +108,28 @@
     (created 1757612284)
     (description "Qwen3-Next-80B-A3B-Thinking is a reasoning-first chat model in the Qwen3-Next line that outputs structured “thinking” traces by default. It’s designed for hard multi-step problems; math proofs, code synthesis/debugging, logic, and agentic...")
     (context_length 262144)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Qwen3)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000015")
       (completion "0.0000012")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 262144)
       (max_completion_tokens 262144)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       logit_bias
@@ -149,7 +149,7 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (frequency_penalty null)
@@ -157,22 +157,22 @@
     (supported_voices null)
     (knowledge_cutoff 2025-09-30)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/qwen/qwen3-next-80b-a3b-thinking-2509/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena ())
-      (artificial_analysis ({}
+    (benchmarks (
+      (design_arena ([]))
+      (artificial_analysis (
         (intelligence_index 16.9)
         (coding_index 17.4)
         (agentic_index 2.1)
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory true)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId qwen/qwen3-next-80b-a3b-thinking)

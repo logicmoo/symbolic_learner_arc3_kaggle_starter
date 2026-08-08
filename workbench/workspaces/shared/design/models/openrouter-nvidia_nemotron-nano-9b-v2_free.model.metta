@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-nvidia_nemotron-nano-9b-v2_free)
   (label "NVIDIA: Nemotron Nano 9B V2 (free)")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model nvidia/nemotron-nano-9b-v2:free)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,15 +19,15 @@
     (tools true)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 128000)
     (maxOutputTokens null)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0")
     (completion "0")
   ))
-  (properties ({}
+  (properties (
     (id nvidia/nemotron-nano-9b-v2:free)
     (canonical_slug nvidia/nemotron-nano-9b-v2)
     (hugging_face_id nvidia/NVIDIA-Nemotron-Nano-9B-v2)
@@ -35,28 +35,28 @@
     (created 1757106807)
     (description "NVIDIA-Nemotron-Nano-9B-v2 is a large language model (LLM) trained from scratch by NVIDIA, and designed as a unified model for both reasoning and non-reasoning tasks. It responds to user queries and...")
     (context_length 128000)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0")
       (completion "0")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 128000)
       (max_completion_tokens null)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_tokens
       reasoning
@@ -68,7 +68,7 @@
       tools
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (frequency_penalty null)
@@ -76,15 +76,15 @@
     (supported_voices null)
     (knowledge_cutoff 2025-03-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/nvidia/nemotron-nano-9b-v2/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id nvidia/nemotron-nano-9b-v2:free)
     (canonical_slug nvidia/nemotron-nano-9b-v2)
     (hugging_face_id nvidia/NVIDIA-Nemotron-Nano-9B-v2)
@@ -92,28 +92,28 @@
     (created 1757106807)
     (description "NVIDIA-Nemotron-Nano-9B-v2 is a large language model (LLM) trained from scratch by NVIDIA, and designed as a unified model for both reasoning and non-reasoning tasks. It responds to user queries and...")
     (context_length 128000)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0")
       (completion "0")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 128000)
       (max_completion_tokens null)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_tokens
       reasoning
@@ -125,7 +125,7 @@
       tools
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (frequency_penalty null)
@@ -133,14 +133,14 @@
     (supported_voices null)
     (knowledge_cutoff 2025-03-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/nvidia/nemotron-nano-9b-v2/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId nvidia/nemotron-nano-9b-v2:free)

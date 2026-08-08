@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-qwen_qwen3-vl-235b-a22b-thinking)
   (label "Qwen: Qwen3 VL 235B A22B Thinking")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model qwen/qwen3-vl-235b-a22b-thinking)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,15 +19,15 @@
     (tools true)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 131072)
     (maxOutputTokens 32768)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.0000004")
     (completion "0.000004")
   ))
-  (properties ({}
+  (properties (
     (id qwen/qwen3-vl-235b-a22b-thinking)
     (canonical_slug qwen/qwen3-vl-235b-a22b-thinking)
     (hugging_face_id Qwen/Qwen3-VL-235B-A22B-Thinking)
@@ -35,29 +35,29 @@
     (created 1758668690)
     (description "Qwen3-VL-235B-A22B Thinking is a multimodal model that unifies strong text generation with visual understanding across images and video. The Thinking model is optimized for multimodal reasoning in STEM and math....")
     (context_length 131072)
-    (architecture ({}
+    (architecture (
       (modality text+image->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Qwen3)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000004")
       (completion "0.000004")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 131072)
       (max_completion_tokens 32768)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       logprobs
@@ -76,7 +76,7 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature 0.8)
       (top_p 0.95)
       (top_k 20)
@@ -87,15 +87,15 @@
     (supported_voices null)
     (knowledge_cutoff 2025-03-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/qwen/qwen3-vl-235b-a22b-thinking/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory true)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id qwen/qwen3-vl-235b-a22b-thinking)
     (canonical_slug qwen/qwen3-vl-235b-a22b-thinking)
     (hugging_face_id Qwen/Qwen3-VL-235B-A22B-Thinking)
@@ -103,29 +103,29 @@
     (created 1758668690)
     (description "Qwen3-VL-235B-A22B Thinking is a multimodal model that unifies strong text generation with visual understanding across images and video. The Thinking model is optimized for multimodal reasoning in STEM and math....")
     (context_length 131072)
-    (architecture ({}
+    (architecture (
       (modality text+image->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Qwen3)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000004")
       (completion "0.000004")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 131072)
       (max_completion_tokens 32768)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       logprobs
@@ -144,7 +144,7 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature 0.8)
       (top_p 0.95)
       (top_k 20)
@@ -155,14 +155,14 @@
     (supported_voices null)
     (knowledge_cutoff 2025-03-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/qwen/qwen3-vl-235b-a22b-thinking/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory true)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId qwen/qwen3-vl-235b-a22b-thinking)

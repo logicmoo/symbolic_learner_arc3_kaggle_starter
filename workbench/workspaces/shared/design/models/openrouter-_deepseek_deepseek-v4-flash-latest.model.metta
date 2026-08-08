@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-_deepseek_deepseek-v4-flash-latest)
   (label "DeepSeek V4 Flash Latest")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model ~deepseek/deepseek-v4-flash-latest)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,19 +19,19 @@
     (tools true)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 1048576)
     (maxOutputTokens 384000)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.00000009")
     (completion "0.00000018")
     (input_cache_read "0.000000018")
   ))
-  (properties ({}
+  (properties (
     (id ~deepseek/deepseek-v4-flash-latest)
     (canonical_slug ~deepseek/deepseek-v4-flash-latest)
-    (alias_target ({}
+    (alias_target (
       (name "DeepSeek: DeepSeek V4 Flash 0731")
       (slug deepseek/deepseek-v4-flash-0731)
     ))
@@ -40,29 +40,29 @@
     (created 1785606009)
     (description "This model always redirects to the latest model in the DeepSeek V4 Flash family.")
     (context_length 1048576)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Router)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000009")
       (completion "0.00000018")
       (input_cache_read "0.000000018")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 1048576)
       (max_completion_tokens 384000)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       logit_bias
@@ -85,17 +85,17 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}))
-    (supported_voices ())
+    (default_parameters ())
+    (supported_voices ([]))
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/~deepseek/deepseek-v4-flash-latest/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
       (default_enabled true)
-      (supported_efforts (
+      (supported_efforts ([]
         max
         high
         low
@@ -104,10 +104,10 @@
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id ~deepseek/deepseek-v4-flash-latest)
     (canonical_slug ~deepseek/deepseek-v4-flash-latest)
-    (alias_target ({}
+    (alias_target (
       (name "DeepSeek: DeepSeek V4 Flash 0731")
       (slug deepseek/deepseek-v4-flash-0731)
     ))
@@ -116,29 +116,29 @@
     (created 1785606009)
     (description "This model always redirects to the latest model in the DeepSeek V4 Flash family.")
     (context_length 1048576)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Router)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000009")
       (completion "0.00000018")
       (input_cache_read "0.000000018")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 1048576)
       (max_completion_tokens 384000)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       logit_bias
@@ -161,17 +161,17 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}))
-    (supported_voices ())
+    (default_parameters ())
+    (supported_voices ([]))
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/~deepseek/deepseek-v4-flash-latest/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
       (default_enabled true)
-      (supported_efforts (
+      (supported_efforts ([]
         max
         high
         low
@@ -179,7 +179,7 @@
       (default_effort high)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId ~deepseek/deepseek-v4-flash-latest)

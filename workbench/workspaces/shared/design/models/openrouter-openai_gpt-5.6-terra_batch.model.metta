@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-openai_gpt-5.6-terra_batch)
   (label "OpenAI: GPT-5.6 Terra (batch)")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model openai/gpt-5.6-terra:batch)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,17 +19,17 @@
     (tools true)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 1050000)
     (maxOutputTokens 128000)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.000001")
     (completion "0.000006")
     (web_search "0.01")
     (input_cache_read "0.0000001")
-    (overrides (
-      ({}
+    (overrides ([]
+      (
         (min_prompt_tokens 272000)
         (prompt "0.000002")
         (completion "0.000009")
@@ -37,7 +37,7 @@
       )
     ))
   ))
-  (properties ({}
+  (properties (
     (id openai/gpt-5.6-terra:batch)
     (canonical_slug openai/gpt-5.6-terra-20260709)
     (hugging_face_id null)
@@ -45,26 +45,26 @@
     (created 1783590857)
     (description "GPT-5.6 Terra is a balanced model in OpenAI's GPT-5.6 series, positioned between the flagship Sol tier and the cost-efficient Luna tier. It is suited for everyday coding, reasoning, and agentic...")
     (context_length 1050000)
-    (architecture ({}
+    (architecture (
       (modality text+image+file->text)
-      (input_modalities (
+      (input_modalities ([]
         file
         image
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer GPT)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.000001")
       (completion "0.000006")
       (web_search "0.01")
       (input_cache_read "0.0000001")
-      (overrides (
-        ({}
+      (overrides ([]
+        (
           (min_prompt_tokens 272000)
           (prompt "0.000002")
           (completion "0.000009")
@@ -72,13 +72,13 @@
         )
       ))
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 1050000)
       (max_completion_tokens 128000)
       (is_moderated true)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_tokens
       reasoning
@@ -89,7 +89,7 @@
       tool_choice
       tools
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -100,21 +100,21 @@
     (supported_voices null)
     (knowledge_cutoff 2026-02-16)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/openai/gpt-5.6-terra-20260709/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena ())
-      (artificial_analysis ({}
+    (benchmarks (
+      (design_arena ([]))
+      (artificial_analysis (
         (intelligence_index 56.6)
         (coding_index 76.7)
         (agentic_index 50.2)
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
       (default_enabled true)
-      (supported_efforts (
+      (supported_efforts ([]
         max
         xhigh
         high
@@ -126,7 +126,7 @@
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id openai/gpt-5.6-terra:batch)
     (canonical_slug openai/gpt-5.6-terra-20260709)
     (hugging_face_id null)
@@ -134,26 +134,26 @@
     (created 1783590857)
     (description "GPT-5.6 Terra is a balanced model in OpenAI's GPT-5.6 series, positioned between the flagship Sol tier and the cost-efficient Luna tier. It is suited for everyday coding, reasoning, and agentic...")
     (context_length 1050000)
-    (architecture ({}
+    (architecture (
       (modality text+image+file->text)
-      (input_modalities (
+      (input_modalities ([]
         file
         image
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer GPT)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.000001")
       (completion "0.000006")
       (web_search "0.01")
       (input_cache_read "0.0000001")
-      (overrides (
-        ({}
+      (overrides ([]
+        (
           (min_prompt_tokens 272000)
           (prompt "0.000002")
           (completion "0.000009")
@@ -161,13 +161,13 @@
         )
       ))
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 1050000)
       (max_completion_tokens 128000)
       (is_moderated true)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_tokens
       reasoning
@@ -178,7 +178,7 @@
       tool_choice
       tools
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -189,21 +189,21 @@
     (supported_voices null)
     (knowledge_cutoff 2026-02-16)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/openai/gpt-5.6-terra-20260709/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena ())
-      (artificial_analysis ({}
+    (benchmarks (
+      (design_arena ([]))
+      (artificial_analysis (
         (intelligence_index 56.6)
         (coding_index 76.7)
         (agentic_index 50.2)
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
       (default_enabled true)
-      (supported_efforts (
+      (supported_efforts ([]
         max
         xhigh
         high
@@ -214,7 +214,7 @@
       (default_effort medium)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId openai/gpt-5.6-terra:batch)

@@ -1,245 +1,245 @@
-({}
+(
   (schema_version 1)
   (title "World Analysis Workbench Operation Catalog")
   (datatypes_manifest world_workbench_datatypes.json)
-  (operations (
-    ({}
+  (operations ([]
+    (
       (id select_world)
       (description "Select an external world or environment adapter instance.")
-      (inputs ({}
+      (inputs (
         (request json_object)
       ))
-      (outputs ({}
+      (outputs (
         (world json_object)
       ))
     )
-    ({}
+    (
       (id begin_episode)
       (description "Start or reset one episode or scenario in the selected world.")
-      (inputs ({}
+      (inputs (
         (world json_object)
       ))
-      (outputs ({}
+      (outputs (
         (episode json_object)
       ))
     )
-    ({}
+    (
       (id observe_world)
       (description "Acquire evidence from an external world through an adapter.")
-      (inputs ({}
+      (inputs (
         (request json_object)
       ))
-      (outputs ({}
+      (outputs (
         (observation observation)
       ))
     )
-    ({}
+    (
       (id analyze_observation)
       (description "Extract entities, properties, relationships, events, and evidence.")
-      (inputs ({}
+      (inputs (
         (observation observation)
       ))
-      (outputs ({}
+      (outputs (
         (entities entity_collection)
         (evidence transition_evidence)
       ))
     )
-    ({}
+    (
       (id objectify_observation)
       (description "Create persistent entities and synchronized image, property, Prolog, and Turtle representations.")
-      (inputs ({}
+      (inputs (
         (observation observation)
       ))
-      (outputs ({}
+      (outputs (
         (objectified objectified_observation)
         (entities entity_collection)
         (representations object_representation_bundle)
       ))
     )
-    ({}
+    (
       (id extract_image_objects)
       (description "Find candidate entities and spatial regions in a visual observation.")
-      (inputs ({}
+      (inputs (
         (observation observation)
       ))
-      (outputs ({}
+      (outputs (
         (entities entity_collection)
       ))
     )
-    ({}
+    (
       (id assign_persistent_identities)
       (description "Associate observed entities with stable identities across observations.")
-      (inputs ({}
+      (inputs (
         (entities entity_collection)
         (previous entity_collection)
       ))
-      (outputs ({}
+      (outputs (
         (entities entity_collection)
         (identity_memory json_object)
       ))
     )
-    ({}
+    (
       (id describe_object_properties)
       (description "Record symbolic properties and relationships for identified entities.")
-      (inputs ({}
+      (inputs (
         (entities entity_collection)
         (observation observation)
       ))
-      (outputs ({}
+      (outputs (
         (properties prolog_fact_set)
       ))
     )
-    ({}
+    (
       (id generate_turtle_programs)
       (description "Generate one movement-based Turtle program for each identified object.")
-      (inputs ({}
+      (inputs (
         (entities entity_collection)
         (observation observation)
       ))
-      (outputs ({}
+      (outputs (
         (programs turtle_program)
       ))
     )
-    ({}
+    (
       (id render_turtle_programs)
       (description "Execute Turtle programs to recover inspectable object images.")
-      (inputs ({}
+      (inputs (
         (programs turtle_program)
       ))
-      (outputs ({}
+      (outputs (
         (renders image)
       ))
     )
-    ({}
+    (
       (id compare_turtle_renders)
       (description "Compare source objects with Turtle renders and record representation fidelity.")
-      (inputs ({}
+      (inputs (
         (observation observation)
         (renders image)
       ))
-      (outputs ({}
+      (outputs (
         (evaluation evaluation)
       ))
     )
-    ({}
+    (
       (id observe_human_intervention)
       (description "Pause for and record an intervention chosen by a human demonstrator.")
-      (inputs ({}
+      (inputs (
         (observation objectified_observation)
       ))
-      (outputs ({}
+      (outputs (
         (intervention human_intervention)
       ))
     )
-    ({}
+    (
       (id apply_intervention)
       (description "Apply the recorded intervention through the selected world adapter.")
-      (inputs ({}
+      (inputs (
         (world json_object)
         (intervention intervention)
       ))
-      (outputs ({}
+      (outputs (
         (result json_object)
       ))
     )
-    ({}
+    (
       (id analyze_demonstration_step)
       (description "Analyze one human-observed before/action/after example.")
-      (inputs ({}
+      (inputs (
         (before objectified_observation)
         (intervention human_intervention)
         (after objectified_observation)
       ))
-      (outputs ({}
+      (outputs (
         (demonstration demonstration_step)
         (evidence transition_evidence)
       ))
     )
-    ({}
+    (
       (id update_world_model)
       (description "Revise the internal simulation using new observations and evidence.")
-      (inputs ({}
+      (inputs (
         (observation observation)
         (evidence transition_evidence)
         (previous world_model)
       ))
-      (outputs ({}
+      (outputs (
         (model world_model)
       ))
     )
-    ({}
+    (
       (id identify_goals)
       (description "Accept supplied goals or infer candidate success conditions.")
-      (inputs ({}
+      (inputs (
         (model world_model)
         (observation observation)
       ))
-      (outputs ({}
+      (outputs (
         (goals goal_set)
       ))
     )
-    ({}
+    (
       (id select_simulations)
       (description "Choose simulations relevant to goals, uncertainty, or information gain.")
-      (inputs ({}
+      (inputs (
         (model world_model)
         (goals goal_set)
       ))
-      (outputs ({}
+      (outputs (
         (requests simulation_request)
       ))
     )
-    ({}
+    (
       (id simulate_candidates)
       (description "Predict candidate intervention outcomes inside the current world model.")
-      (inputs ({}
+      (inputs (
         (model world_model)
         (request simulation_request)
       ))
-      (outputs ({}
+      (outputs (
         (result simulation_result)
       ))
     )
-    ({}
+    (
       (id evaluate_outcomes)
       (description "Score predictions against active goals and evidence requirements.")
-      (inputs ({}
+      (inputs (
         (result simulation_result)
         (goals goal_set)
       ))
-      (outputs ({}
+      (outputs (
         (evaluation evaluation)
       ))
     )
-    ({}
+    (
       (id choose_intervention)
       (description "Select an external intervention or request another observation.")
-      (inputs ({}
+      (inputs (
         (evaluation evaluation)
         (model world_model)
       ))
-      (outputs ({}
+      (outputs (
         (intervention intervention)
       ))
     )
-    ({}
+    (
       (id record_outcome)
       (description "Store the observed outcome and its provenance as new learning evidence.")
-      (inputs ({}
+      (inputs (
         (intervention intervention)
         (observation observation)
       ))
-      (outputs ({}
+      (outputs (
         (state world_analysis_state)
       ))
     )
-    ({}
+    (
       (id advance_loop)
       (description "Promote the latest observation to become the next transition's before state.")
-      (inputs ({}
+      (inputs (
         (next objectified_observation)
       ))
-      (outputs ({}
+      (outputs (
         (current objectified_observation)
       ))
     )

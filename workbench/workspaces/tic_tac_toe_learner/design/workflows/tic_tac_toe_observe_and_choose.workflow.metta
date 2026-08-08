@@ -1,38 +1,38 @@
-({}
+(
   (id tic_tac_toe_observe_and_choose)
   (label "Observe board and choose a move")
-  (inputs ({}
+  (inputs (
     (board Array)
   ))
-  (outputs ({}
+  (outputs (
     (observedBoard $observed_board)
     (move $selected_move)
   ))
-  (steps (
-    ({}
+  (steps ([]
+    (
       (id observe_board)
       (kind operation)
       (implementation core.echo)
-      (inputs ({}
+      (inputs (
         (value $board)
       ))
-      (outputs ({}
+      (outputs (
         (value observed_board)
       ))
     )
-    ({}
+    (
       (id choose_move)
       (kind human)
-      (dependsOn (
+      (dependsOn ([]
         observe_board
       ))
-      (form ({}
-        (move ({}
+      (form (
+        (move (
           (type String)
           (description "Choose an empty cell such as center, top_left, or bottom_right")
         ))
       ))
-      (outputs ({}
+      (outputs (
         (move selected_move)
       ))
     )

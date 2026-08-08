@@ -1,9 +1,9 @@
-({}
+(
   (kind semantic_datatype)
   (id objectified_observation)
   (label "Objectified Observation")
   (description "An observation enriched with stable entities and synchronized representations.")
-  (parents (
+  (parents ([]
     observation
   ))
 )

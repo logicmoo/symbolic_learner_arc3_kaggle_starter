@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-relace_relace-apply-3)
   (label "Relace: Relace Apply 3")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model relace/relace-apply-3)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling false)
@@ -19,15 +19,15 @@
     (tools false)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 256000)
     (maxOutputTokens 128000)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.00000085")
     (completion "0.00000125")
   ))
-  (properties ({}
+  (properties (
     (id relace/relace-apply-3)
     (canonical_slug relace/relace-apply-3)
     (hugging_face_id "")
@@ -35,33 +35,33 @@
     (created 1758891572)
     (description "Relace Apply 3 is a specialized code-patching LLM that merges AI-suggested edits straight into your source files. It can apply updates from GPT-4o, Claude, and others into your files at...")
     (context_length 256000)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000085")
       (completion "0.00000125")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 256000)
       (max_completion_tokens 128000)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       max_tokens
       seed
       stop
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (frequency_penalty null)
@@ -69,12 +69,12 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/relace/relace-apply-3/endpoints)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id relace/relace-apply-3)
     (canonical_slug relace/relace-apply-3)
     (hugging_face_id "")
@@ -82,33 +82,33 @@
     (created 1758891572)
     (description "Relace Apply 3 is a specialized code-patching LLM that merges AI-suggested edits straight into your source files. It can apply updates from GPT-4o, Claude, and others into your files at...")
     (context_length 256000)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000085")
       (completion "0.00000125")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 256000)
       (max_completion_tokens 128000)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       max_tokens
       seed
       stop
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (frequency_penalty null)
@@ -116,11 +116,11 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/relace/relace-apply-3/endpoints)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId relace/relace-apply-3)

@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openai-gpt-4o-mini-search-preview)
   (label gpt-4o-mini-search-preview)
@@ -6,7 +6,7 @@
   (inherits openai)
   (model gpt-4o-mini-search-preview)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling false)
@@ -19,25 +19,25 @@
     (tools false)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow null)
     (maxOutputTokens null)
   ))
-  (pricing ({}))
-  (properties ({}
+  (pricing ())
+  (properties (
     (id gpt-4o-mini-search-preview)
     (object model)
     (created 1741391161)
     (owned_by system)
     (ownedBy system)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id gpt-4o-mini-search-preview)
     (object model)
     (created 1741391161)
     (owned_by system)
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openai)
     (remoteModelId gpt-4o-mini-search-preview)

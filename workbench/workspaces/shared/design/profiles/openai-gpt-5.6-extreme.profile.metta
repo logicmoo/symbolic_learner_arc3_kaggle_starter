@@ -1,11 +1,11 @@
-({}
+(
   (kind profile)
   (id openai-gpt-5.6-extreme)
   (label "GPT-5.6 — extreme")
   (description "Prompt-free execution profile migrated from the legacy ARC3 configuration.")
   (inherits gpt-5.6)
   (enabled true)
-  (defaults ({}
+  (defaults (
     (analysisLevel 4)
     (singleEnabled true)
     (batchEnabled false)

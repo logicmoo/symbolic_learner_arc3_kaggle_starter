@@ -1,9 +1,9 @@
-({}
+(
   (kind representation_datatype)
   (id prolog_fact_set)
   (label "Prolog Fact Set")
   (language prolog)
-  (parents (
+  (parents ([]
     information
     entity_collection
     relationship
@@ -13,7 +13,7 @@
     hypothesis
     evaluation
   ))
-  (children (
+  (children ([]
     prolog_source
   ))
   (preferredChild prolog_source)

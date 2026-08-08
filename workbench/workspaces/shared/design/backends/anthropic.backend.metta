@@ -1,4 +1,4 @@
-({}
+(
   (kind backend)
   (id anthropic)
   (label "Anthropic API")
@@ -6,11 +6,11 @@
   (official true)
   (description "Shared Anthropic Messages API transport inherited by every workspace. Model files inherit this connection and add model-specific generation settings.")
   (enabled true)
-  (capabilities (
+  (capabilities ([]
     llm.complete
     llm.vision
   ))
-  (configuration ({}
+  (configuration (
     (adapter anthropic_messages)
     (baseUrl https://api.anthropic.com/v1)
     (apiKeyEnvironmentVariable ANTHROPIC_API_KEY)

@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-rekaai_reka-flash-3)
   (label "Reka Flash 3")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model rekaai/reka-flash-3)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling false)
@@ -19,15 +19,15 @@
     (tools false)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 65536)
     (maxOutputTokens 65536)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.0000001")
     (completion "0.0000002")
   ))
-  (properties ({}
+  (properties (
     (id rekaai/reka-flash-3)
     (canonical_slug rekaai/reka-flash-3)
     (hugging_face_id RekaAI/reka-flash-3)
@@ -35,28 +35,28 @@
     (created 1741812813)
     (description "Reka Flash 3 is a general-purpose, instruction-tuned large language model with 21 billion parameters, developed by Reka. It excels at general chat, coding tasks, instruction-following, and function calling. Featuring a...")
     (context_length 65536)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000001")
       (completion "0.0000002")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 65536)
       (max_completion_tokens 65536)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       logprobs
@@ -71,7 +71,7 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -82,15 +82,15 @@
     (supported_voices null)
     (knowledge_cutoff 2025-01-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/rekaai/reka-flash-3/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory true)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id rekaai/reka-flash-3)
     (canonical_slug rekaai/reka-flash-3)
     (hugging_face_id RekaAI/reka-flash-3)
@@ -98,28 +98,28 @@
     (created 1741812813)
     (description "Reka Flash 3 is a general-purpose, instruction-tuned large language model with 21 billion parameters, developed by Reka. It excels at general chat, coding tasks, instruction-following, and function calling. Featuring a...")
     (context_length 65536)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000001")
       (completion "0.0000002")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 65536)
       (max_completion_tokens 65536)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       logprobs
@@ -134,7 +134,7 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -145,14 +145,14 @@
     (supported_voices null)
     (knowledge_cutoff 2025-01-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/rekaai/reka-flash-3/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory true)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId rekaai/reka-flash-3)

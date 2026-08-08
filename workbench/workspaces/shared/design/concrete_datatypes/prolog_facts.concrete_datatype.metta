@@ -1,15 +1,15 @@
-({}
+(
   (kind concrete_datatype)
   (id prolog_facts)
   (label "Prolog Facts")
-  (parents (
+  (parents ([]
     object_list
   ))
-  (mimeTypes (
+  (mimeTypes ([]
     text/x-prolog
     text/plain
   ))
-  (extensions (
+  (extensions ([]
     .pl
   ))
 )

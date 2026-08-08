@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-thedrummer_unslopnemo-12b)
   (label "TheDrummer: UnslopNemo 12B")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model thedrummer/unslopnemo-12b)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,15 +19,15 @@
     (tools true)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 1024000)
     (maxOutputTokens 1024000)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.0000004")
     (completion "0.0000004")
   ))
-  (properties ({}
+  (properties (
     (id thedrummer/unslopnemo-12b)
     (canonical_slug thedrummer/unslopnemo-12b)
     (hugging_face_id TheDrummer/UnslopNemo-12B-v4.1)
@@ -35,28 +35,28 @@
     (created 1731103448)
     (description "UnslopNemo v4.1 is the latest addition from the creator of Rocinante, designed for adventure writing and role-play scenarios.")
     (context_length 1024000)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Mistral)
       (instruct_type mistral)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000004")
       (completion "0.0000004")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 1024000)
       (max_completion_tokens 1024000)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       logit_bias
       logprobs
@@ -74,16 +74,16 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}))
+    (default_parameters ())
     (supported_voices null)
     (knowledge_cutoff 2024-04-30)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/thedrummer/unslopnemo-12b/endpoints)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id thedrummer/unslopnemo-12b)
     (canonical_slug thedrummer/unslopnemo-12b)
     (hugging_face_id TheDrummer/UnslopNemo-12B-v4.1)
@@ -91,28 +91,28 @@
     (created 1731103448)
     (description "UnslopNemo v4.1 is the latest addition from the creator of Rocinante, designed for adventure writing and role-play scenarios.")
     (context_length 1024000)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Mistral)
       (instruct_type mistral)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000004")
       (completion "0.0000004")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 1024000)
       (max_completion_tokens 1024000)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       logit_bias
       logprobs
@@ -130,15 +130,15 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}))
+    (default_parameters ())
     (supported_voices null)
     (knowledge_cutoff 2024-04-30)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/thedrummer/unslopnemo-12b/endpoints)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId thedrummer/unslopnemo-12b)

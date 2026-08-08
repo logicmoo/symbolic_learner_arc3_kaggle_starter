@@ -1,17 +1,17 @@
-({}
+(
   (kind operation_implementation)
   (id sample.request_number.workbench)
   (label "Request a Number / Workbench")
   (description "Materialize the request as a durable human-input workflow step.")
-  (parents (
+  (parents ([]
     sample.request_number
   ))
   (implementation system.workbench)
-  (parameters ({}
+  (parameters (
     (capability input.request)
     (outputBinding value)
   ))
-  (outputs ({}
+  (outputs (
     (value Number)
   ))
 )

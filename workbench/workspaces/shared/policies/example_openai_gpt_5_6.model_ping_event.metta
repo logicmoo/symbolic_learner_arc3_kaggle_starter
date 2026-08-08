@@ -1,4 +1,4 @@
-({}
+(
   (kind model_ping_event)
   (id example_openai_gpt_5_6_ping)
   (jobId example_vendor_ping)
@@ -9,7 +9,7 @@
   (occurredAt 2026-08-08T00:00:00Z)
   (enabled true)
   (example true)
-  (evidence ({}
+  (evidence (
     (requestType minimal_completion)
     (responseReceived true)
   ))

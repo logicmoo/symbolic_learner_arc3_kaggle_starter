@@ -1,24 +1,24 @@
-({}
+(
   (id symbolic.explain_object_changes)
   (label "Explain Object Changes")
   (description "Reusable symbolic transition operation migrated from the legacy ARC3 explain_object_changes transaction.")
-  (categories (
+  (categories ([]
     symbolic/explanation
     world-modeling/transitions
     vision/transition
   ))
   (implementation llm.complete)
-  (inputs ({}
+  (inputs (
     (objects ObjectAnnotation)
     (before ArtifactBundle)
     (after ArtifactBundle)
   ))
-  (outputs ({}
+  (outputs (
     (changes ChangeDescription)
     (correspondences Object)
   ))
-  (promptSelection ({}
-    (prompts (
+  (promptSelection (
+    (prompts ([]
       structured_json_response
       transition_observation
       object_correspondence
@@ -27,11 +27,11 @@
     ))
     (separator "\n\n")
   ))
-  (modelSelection ({}
-    (models ())
+  (modelSelection (
+    (models ([]))
     (strategy single)
   ))
-  (parameters ({}
+  (parameters (
     (requiresVision false)
   ))
   (kind operation)

@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-google_gemini-3.1-pro-preview-customtools)
   (label "Google: Gemini 3.1 Pro Preview Custom Tools")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model google/gemini-3.1-pro-preview-customtools)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio true)
     (code false)
     (functionCalling true)
@@ -19,11 +19,11 @@
     (tools true)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 1048576)
     (maxOutputTokens 65536)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.000002")
     (completion "0.000012")
     (image "0.000002")
@@ -33,8 +33,8 @@
     (internal_reasoning "0.000012")
     (input_cache_read "0.0000002")
     (input_cache_write "0.000000375")
-    (overrides (
-      ({}
+    (overrides ([]
+      (
         (min_prompt_tokens 200000)
         (prompt "0.000004")
         (completion "0.000018")
@@ -44,7 +44,7 @@
       )
     ))
   ))
-  (properties ({}
+  (properties (
     (id google/gemini-3.1-pro-preview-customtools)
     (canonical_slug google/gemini-3.1-pro-preview-customtools-20260219)
     (hugging_face_id null)
@@ -52,22 +52,22 @@
     (created 1772045923)
     (description "Gemini 3.1 Pro Preview Custom Tools is a variant of Gemini 3.1 Pro that improves tool selection behavior by preventing overuse of a general bash tool when more efficient third-party...")
     (context_length 1048576)
-    (architecture ({}
+    (architecture (
       (modality text+image+file+audio+video->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         audio
         image
         video
         file
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Gemini)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.000002")
       (completion "0.000012")
       (image "0.000002")
@@ -77,8 +77,8 @@
       (internal_reasoning "0.000012")
       (input_cache_read "0.0000002")
       (input_cache_write "0.000000375")
-      (overrides (
-        ({}
+      (overrides ([]
+        (
           (min_prompt_tokens 200000)
           (prompt "0.000004")
           (completion "0.000018")
@@ -88,13 +88,13 @@
         )
       ))
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 1048576)
       (max_completion_tokens 65536)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_tokens
       reasoning
@@ -107,7 +107,7 @@
       tools
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (frequency_penalty null)
@@ -115,12 +115,12 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/google/gemini-3.1-pro-preview-customtools-20260219/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory true)
-      (supported_efforts (
+      (supported_efforts ([]
         high
         medium
         low
@@ -129,7 +129,7 @@
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id google/gemini-3.1-pro-preview-customtools)
     (canonical_slug google/gemini-3.1-pro-preview-customtools-20260219)
     (hugging_face_id null)
@@ -137,22 +137,22 @@
     (created 1772045923)
     (description "Gemini 3.1 Pro Preview Custom Tools is a variant of Gemini 3.1 Pro that improves tool selection behavior by preventing overuse of a general bash tool when more efficient third-party...")
     (context_length 1048576)
-    (architecture ({}
+    (architecture (
       (modality text+image+file+audio+video->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         audio
         image
         video
         file
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Gemini)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.000002")
       (completion "0.000012")
       (image "0.000002")
@@ -162,8 +162,8 @@
       (internal_reasoning "0.000012")
       (input_cache_read "0.0000002")
       (input_cache_write "0.000000375")
-      (overrides (
-        ({}
+      (overrides ([]
+        (
           (min_prompt_tokens 200000)
           (prompt "0.000004")
           (completion "0.000018")
@@ -173,13 +173,13 @@
         )
       ))
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 1048576)
       (max_completion_tokens 65536)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_tokens
       reasoning
@@ -192,7 +192,7 @@
       tools
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (frequency_penalty null)
@@ -200,12 +200,12 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/google/gemini-3.1-pro-preview-customtools-20260219/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory true)
-      (supported_efforts (
+      (supported_efforts ([]
         high
         medium
         low
@@ -213,7 +213,7 @@
       (default_effort medium)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId google/gemini-3.1-pro-preview-customtools)

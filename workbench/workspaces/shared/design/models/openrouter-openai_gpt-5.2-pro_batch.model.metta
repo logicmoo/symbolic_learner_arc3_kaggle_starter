@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-openai_gpt-5.2-pro_batch)
   (label "OpenAI: GPT-5.2 Pro (batch)")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model openai/gpt-5.2-pro:batch)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,16 +19,16 @@
     (tools true)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 400000)
     (maxOutputTokens 128000)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.0000105")
     (completion "0.000084")
     (web_search "0.01")
   ))
-  (properties ({}
+  (properties (
     (id openai/gpt-5.2-pro:batch)
     (canonical_slug openai/gpt-5.2-pro-20251211)
     (hugging_face_id "")
@@ -36,31 +36,31 @@
     (created 1765389780)
     (description "GPT-5.2 Pro is OpenAI’s most advanced model, offering major improvements in agentic coding and long context performance over GPT-5 Pro. It is optimized for complex tasks that require step-by-step reasoning,...")
     (context_length 400000)
-    (architecture ({}
+    (architecture (
       (modality text+image+file->text)
-      (input_modalities (
+      (input_modalities ([]
         image
         text
         file
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer GPT)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000105")
       (completion "0.000084")
       (web_search "0.01")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 400000)
       (max_completion_tokens 128000)
       (is_moderated true)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_tokens
       reasoning
@@ -71,7 +71,7 @@
       tool_choice
       tools
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (frequency_penalty null)
@@ -79,12 +79,12 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/openai/gpt-5.2-pro-20251211/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory true)
-      (supported_efforts (
+      (supported_efforts ([]
         xhigh
         high
         medium
@@ -93,7 +93,7 @@
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id openai/gpt-5.2-pro:batch)
     (canonical_slug openai/gpt-5.2-pro-20251211)
     (hugging_face_id "")
@@ -101,31 +101,31 @@
     (created 1765389780)
     (description "GPT-5.2 Pro is OpenAI’s most advanced model, offering major improvements in agentic coding and long context performance over GPT-5 Pro. It is optimized for complex tasks that require step-by-step reasoning,...")
     (context_length 400000)
-    (architecture ({}
+    (architecture (
       (modality text+image+file->text)
-      (input_modalities (
+      (input_modalities ([]
         image
         text
         file
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer GPT)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000105")
       (completion "0.000084")
       (web_search "0.01")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 400000)
       (max_completion_tokens 128000)
       (is_moderated true)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_tokens
       reasoning
@@ -136,7 +136,7 @@
       tool_choice
       tools
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (frequency_penalty null)
@@ -144,12 +144,12 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/openai/gpt-5.2-pro-20251211/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory true)
-      (supported_efforts (
+      (supported_efforts ([]
         xhigh
         high
         medium
@@ -157,7 +157,7 @@
       (default_effort medium)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId openai/gpt-5.2-pro:batch)

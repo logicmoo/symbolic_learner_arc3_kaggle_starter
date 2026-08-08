@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-amazon_nova-lite-v1)
   (label "Amazon: Nova Lite 1.0")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model amazon/nova-lite-v1)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,15 +19,15 @@
     (tools true)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 300000)
     (maxOutputTokens 5120)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.00000006")
     (completion "0.00000024")
   ))
-  (properties ({}
+  (properties (
     (id amazon/nova-lite-v1)
     (canonical_slug amazon/nova-lite-v1)
     (hugging_face_id "")
@@ -35,29 +35,29 @@
     (created 1733437363)
     (description "Amazon Nova Lite 1.0 is a very low-cost multimodal model from Amazon that focused on fast processing of image, video, and text inputs to generate text output. Amazon Nova Lite...")
     (context_length 300000)
-    (architecture ({}
+    (architecture (
       (modality text+image->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Nova)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000006")
       (completion "0.00000024")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 300000)
       (max_completion_tokens 5120)
       (is_moderated true)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       max_tokens
       stop
       temperature
@@ -65,16 +65,16 @@
       top_k
       top_p
     ))
-    (default_parameters ({}))
+    (default_parameters ())
     (supported_voices null)
     (knowledge_cutoff 2024-10-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/amazon/nova-lite-v1/endpoints)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id amazon/nova-lite-v1)
     (canonical_slug amazon/nova-lite-v1)
     (hugging_face_id "")
@@ -82,29 +82,29 @@
     (created 1733437363)
     (description "Amazon Nova Lite 1.0 is a very low-cost multimodal model from Amazon that focused on fast processing of image, video, and text inputs to generate text output. Amazon Nova Lite...")
     (context_length 300000)
-    (architecture ({}
+    (architecture (
       (modality text+image->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Nova)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000006")
       (completion "0.00000024")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 300000)
       (max_completion_tokens 5120)
       (is_moderated true)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       max_tokens
       stop
       temperature
@@ -112,15 +112,15 @@
       top_k
       top_p
     ))
-    (default_parameters ({}))
+    (default_parameters ())
     (supported_voices null)
     (knowledge_cutoff 2024-10-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/amazon/nova-lite-v1/endpoints)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId amazon/nova-lite-v1)

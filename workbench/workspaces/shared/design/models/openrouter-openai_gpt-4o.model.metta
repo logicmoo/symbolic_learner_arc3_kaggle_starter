@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-openai_gpt-4o)
   (label "OpenAI: GPT-4o")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model openai/gpt-4o)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,16 +19,16 @@
     (tools true)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 128000)
     (maxOutputTokens 16384)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.0000025")
     (completion "0.00001")
     (input_cache_read "0.00000125")
   ))
-  (properties ({}
+  (properties (
     (id openai/gpt-4o)
     (canonical_slug openai/gpt-4o)
     (hugging_face_id null)
@@ -36,31 +36,31 @@
     (created 1715558400)
     (description "GPT-4o (\"o\" for \"omni\") is OpenAI's latest AI model, supporting both text and image inputs with text outputs. It maintains the intelligence level of [GPT-4 Turbo](/models/openai/gpt-4-turbo) while being twice as...")
     (context_length 128000)
-    (architecture ({}
+    (architecture (
       (modality text+image+file->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
         file
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer GPT)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000025")
       (completion "0.00001")
       (input_cache_read "0.00000125")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 128000)
       (max_completion_tokens 16384)
       (is_moderated true)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       logit_bias
       logprobs
@@ -79,51 +79,51 @@
       top_p
       web_search_options
     ))
-    (default_parameters ({}))
+    (default_parameters ())
     (supported_voices null)
     (knowledge_cutoff 2023-10-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/openai/gpt-4o/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category 3d)
           (elo 923)
           (win_rate 39.2)
           (rank 103)
         )
-        ({}
+        (
           (arena models)
           (category codecategories)
           (elo 889)
           (win_rate 34.8)
           (rank 114)
         )
-        ({}
+        (
           (arena models)
           (category dataviz)
           (elo 884)
           (win_rate 36)
           (rank 111)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 947)
           (win_rate 42.3)
           (rank 109)
         )
-        ({}
+        (
           (arena models)
           (category uicomponent)
           (elo 919)
           (win_rate 38.1)
           (rank 106)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 853)
@@ -134,7 +134,7 @@
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id openai/gpt-4o)
     (canonical_slug openai/gpt-4o)
     (hugging_face_id null)
@@ -142,31 +142,31 @@
     (created 1715558400)
     (description "GPT-4o (\"o\" for \"omni\") is OpenAI's latest AI model, supporting both text and image inputs with text outputs. It maintains the intelligence level of [GPT-4 Turbo](/models/openai/gpt-4-turbo) while being twice as...")
     (context_length 128000)
-    (architecture ({}
+    (architecture (
       (modality text+image+file->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
         file
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer GPT)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000025")
       (completion "0.00001")
       (input_cache_read "0.00000125")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 128000)
       (max_completion_tokens 16384)
       (is_moderated true)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       logit_bias
       logprobs
@@ -185,51 +185,51 @@
       top_p
       web_search_options
     ))
-    (default_parameters ({}))
+    (default_parameters ())
     (supported_voices null)
     (knowledge_cutoff 2023-10-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/openai/gpt-4o/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category 3d)
           (elo 923)
           (win_rate 39.2)
           (rank 103)
         )
-        ({}
+        (
           (arena models)
           (category codecategories)
           (elo 889)
           (win_rate 34.8)
           (rank 114)
         )
-        ({}
+        (
           (arena models)
           (category dataviz)
           (elo 884)
           (win_rate 36)
           (rank 111)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 947)
           (win_rate 42.3)
           (rank 109)
         )
-        ({}
+        (
           (arena models)
           (category uicomponent)
           (elo 919)
           (win_rate 38.1)
           (rank 106)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 853)
@@ -239,7 +239,7 @@
       ))
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId openai/gpt-4o)

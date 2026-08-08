@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-openai_gpt-5.3-codex)
   (label "OpenAI: GPT-5.3-Codex")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model openai/gpt-5.3-codex)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code true)
     (functionCalling true)
@@ -19,17 +19,17 @@
     (tools true)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 400000)
     (maxOutputTokens 128000)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.00000175")
     (completion "0.000014")
     (web_search "0.01")
     (input_cache_read "0.000000175")
   ))
-  (properties ({}
+  (properties (
     (id openai/gpt-5.3-codex)
     (canonical_slug openai/gpt-5.3-codex-20260224)
     (hugging_face_id "")
@@ -37,32 +37,32 @@
     (created 1771959164)
     (description "GPT-5.3-Codex is OpenAI’s most advanced agentic coding model, combining the frontier software engineering performance of GPT-5.2-Codex with the broader reasoning and professional knowledge capabilities of GPT-5.2. It achieves state-of-the-art results...")
     (context_length 400000)
-    (architecture ({}
+    (architecture (
       (modality text+image+file->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
         file
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer GPT)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000175")
       (completion "0.000014")
       (web_search "0.01")
       (input_cache_read "0.000000175")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 400000)
       (max_completion_tokens 128000)
       (is_moderated true)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_completion_tokens
       max_tokens
@@ -74,7 +74,7 @@
       tool_choice
       tools
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -85,96 +85,96 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/openai/gpt-5.3-codex-20260224/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena agents)
           (category androidnative)
           (elo 1084)
           (win_rate 35.2)
           (rank 26)
         )
-        ({}
+        (
           (arena agents)
           (category fullstack)
           (elo 1025)
           (win_rate 36.4)
           (rank 33)
         )
-        ({}
+        (
           (arena agents)
           (category godotgamedev)
           (elo 1124)
           (win_rate 45.1)
           (rank 24)
         )
-        ({}
+        (
           (arena agents)
           (category mobileapps)
           (elo 1113)
           (win_rate 41.4)
           (rank 30)
         )
-        ({}
+        (
           (arena agents)
           (category webapps)
           (elo 1083)
           (win_rate 36.9)
           (rank 30)
         )
-        ({}
+        (
           (arena models)
           (category 3d)
           (elo 1062)
           (win_rate 35.3)
           (rank 89)
         )
-        ({}
+        (
           (arena models)
           (category asciiart)
           (elo 1189)
           (win_rate 51.2)
           (rank 29)
         )
-        ({}
+        (
           (arena models)
           (category codecategories)
           (elo 1172)
           (win_rate 47.2)
           (rank 63)
         )
-        ({}
+        (
           (arena models)
           (category dataviz)
           (elo 1191)
           (win_rate 50.5)
           (rank 53)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 1202)
           (win_rate 51.3)
           (rank 48)
         )
-        ({}
+        (
           (arena models)
           (category svg)
           (elo 1176)
           (win_rate 54)
           (rank 40)
         )
-        ({}
+        (
           (arena models)
           (category uicomponent)
           (elo 1171)
           (win_rate 47.3)
           (rank 62)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 1185)
@@ -183,9 +183,9 @@
         )
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
-      (supported_efforts (
+      (supported_efforts ([]
         xhigh
         high
         medium
@@ -196,7 +196,7 @@
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id openai/gpt-5.3-codex)
     (canonical_slug openai/gpt-5.3-codex-20260224)
     (hugging_face_id "")
@@ -204,32 +204,32 @@
     (created 1771959164)
     (description "GPT-5.3-Codex is OpenAI’s most advanced agentic coding model, combining the frontier software engineering performance of GPT-5.2-Codex with the broader reasoning and professional knowledge capabilities of GPT-5.2. It achieves state-of-the-art results...")
     (context_length 400000)
-    (architecture ({}
+    (architecture (
       (modality text+image+file->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
         file
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer GPT)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000175")
       (completion "0.000014")
       (web_search "0.01")
       (input_cache_read "0.000000175")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 400000)
       (max_completion_tokens 128000)
       (is_moderated true)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_completion_tokens
       max_tokens
@@ -241,7 +241,7 @@
       tool_choice
       tools
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -252,96 +252,96 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/openai/gpt-5.3-codex-20260224/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena agents)
           (category androidnative)
           (elo 1084)
           (win_rate 35.2)
           (rank 26)
         )
-        ({}
+        (
           (arena agents)
           (category fullstack)
           (elo 1025)
           (win_rate 36.4)
           (rank 33)
         )
-        ({}
+        (
           (arena agents)
           (category godotgamedev)
           (elo 1124)
           (win_rate 45.1)
           (rank 24)
         )
-        ({}
+        (
           (arena agents)
           (category mobileapps)
           (elo 1113)
           (win_rate 41.4)
           (rank 30)
         )
-        ({}
+        (
           (arena agents)
           (category webapps)
           (elo 1083)
           (win_rate 36.9)
           (rank 30)
         )
-        ({}
+        (
           (arena models)
           (category 3d)
           (elo 1062)
           (win_rate 35.3)
           (rank 89)
         )
-        ({}
+        (
           (arena models)
           (category asciiart)
           (elo 1189)
           (win_rate 51.2)
           (rank 29)
         )
-        ({}
+        (
           (arena models)
           (category codecategories)
           (elo 1172)
           (win_rate 47.2)
           (rank 63)
         )
-        ({}
+        (
           (arena models)
           (category dataviz)
           (elo 1191)
           (win_rate 50.5)
           (rank 53)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 1202)
           (win_rate 51.3)
           (rank 48)
         )
-        ({}
+        (
           (arena models)
           (category svg)
           (elo 1176)
           (win_rate 54)
           (rank 40)
         )
-        ({}
+        (
           (arena models)
           (category uicomponent)
           (elo 1171)
           (win_rate 47.3)
           (rank 62)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 1185)
@@ -350,9 +350,9 @@
         )
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
-      (supported_efforts (
+      (supported_efforts ([]
         xhigh
         high
         medium
@@ -362,7 +362,7 @@
       (default_effort medium)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId openai/gpt-5.3-codex)

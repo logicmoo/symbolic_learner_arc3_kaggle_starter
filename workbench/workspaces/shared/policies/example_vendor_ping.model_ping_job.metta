@@ -1,4 +1,4 @@
-({}
+(
   (kind model_ping_job)
   (id example_vendor_ping)
   (label "Example Concurrent Vendor Ping")
@@ -6,7 +6,7 @@
   (enabled false)
   (example true)
   (status completed)
-  (targets (
+  (targets ([]
     openai:gpt-5.6
   ))
   (concurrency 4)

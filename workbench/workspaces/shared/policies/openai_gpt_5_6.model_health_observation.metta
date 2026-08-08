@@ -1,4 +1,4 @@
-({}
+(
   (kind model_health_observation)
   (id example_openai_gpt_5_6_health)
   (modelPolicyEntryId openai:gpt-5.6)

@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-perplexity_sonar)
   (label "Perplexity: Sonar")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model perplexity/sonar)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling false)
@@ -19,16 +19,16 @@
     (tools false)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 127072)
     (maxOutputTokens null)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.000001")
     (completion "0.000001")
     (web_search "0.005")
   ))
-  (properties ({}
+  (properties (
     (id perplexity/sonar)
     (canonical_slug perplexity/sonar)
     (hugging_face_id "")
@@ -36,30 +36,30 @@
     (created 1738013808)
     (description "Sonar is lightweight, affordable, fast, and simple to use — now featuring citations and the ability to customize sources. It is designed for companies seeking to integrate lightweight question-and-answer features...")
     (context_length 127072)
-    (architecture ({}
+    (architecture (
       (modality text+image->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.000001")
       (completion "0.000001")
       (web_search "0.005")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 127072)
       (max_completion_tokens null)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       max_tokens
       presence_penalty
@@ -68,16 +68,16 @@
       top_p
       web_search_options
     ))
-    (default_parameters ({}))
+    (default_parameters ())
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/perplexity/sonar/endpoints)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id perplexity/sonar)
     (canonical_slug perplexity/sonar)
     (hugging_face_id "")
@@ -85,30 +85,30 @@
     (created 1738013808)
     (description "Sonar is lightweight, affordable, fast, and simple to use — now featuring citations and the ability to customize sources. It is designed for companies seeking to integrate lightweight question-and-answer features...")
     (context_length 127072)
-    (architecture ({}
+    (architecture (
       (modality text+image->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.000001")
       (completion "0.000001")
       (web_search "0.005")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 127072)
       (max_completion_tokens null)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       max_tokens
       presence_penalty
@@ -117,15 +117,15 @@
       top_p
       web_search_options
     ))
-    (default_parameters ({}))
+    (default_parameters ())
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/perplexity/sonar/endpoints)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId perplexity/sonar)

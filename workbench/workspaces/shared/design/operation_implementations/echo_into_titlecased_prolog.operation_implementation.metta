@@ -1,20 +1,20 @@
-({}
+(
   (kind operation_implementation)
   (id echo_into_titlecased_prolog)
   (label "Echo Into Titlecased / SWI-Prolog")
   (description "Take received text, execute the embedded Prolog source with SWI-Prolog, and return the title-cased text.")
   (implementation prolog.source)
-  (inputs ({}
+  (inputs (
     (text Text)
   ))
-  (outputs ({}
+  (outputs (
     (text Text)
   ))
-  (prolog ({}
+  (prolog (
     (engine swipl)
     (predicate titlecase_text)
     (arity 2)
-    (source_code (
+    (source_code ([]
       "titlecase_text(Input, Output) :-"
       "    split_string(Input, \" \", \"\", Words),"
       "    maplist(titlecase_word, Words, Titled),"
@@ -29,12 +29,12 @@
       "    string_concat(UpperFirst, LowerTail, Title)."
     ))
   ))
-  (parameters ({}
+  (parameters (
     (inputBinding text)
     (outputBinding text)
     (timeoutSeconds 30)
   ))
-  (parents (
+  (parents ([]
     echo_into_titlecased
   ))
 )

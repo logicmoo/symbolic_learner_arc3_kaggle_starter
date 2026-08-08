@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-baidu_ernie-4.5-vl-424b-a47b)
   (label "Baidu: ERNIE 4.5 VL 424B A47B ")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model baidu/ernie-4.5-vl-424b-a47b)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling false)
@@ -19,15 +19,15 @@
     (tools false)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 123000)
     (maxOutputTokens 16000)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.00000042")
     (completion "0.00000125")
   ))
-  (properties ({}
+  (properties (
     (id baidu/ernie-4.5-vl-424b-a47b)
     (canonical_slug baidu/ernie-4.5-vl-424b-a47b)
     (hugging_face_id baidu/ERNIE-4.5-VL-424B-A47B-PT)
@@ -35,29 +35,29 @@
     (created 1751300903)
     (description "ERNIE-4.5-VL-424B-A47B is a multimodal Mixture-of-Experts (MoE) model from Baidu’s ERNIE 4.5 series, featuring 424B total parameters with 47B active per token. It is trained jointly on text and image data...")
     (context_length 123000)
-    (architecture ({}
+    (architecture (
       (modality text+image->text)
-      (input_modalities (
+      (input_modalities ([]
         image
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000042")
       (completion "0.00000125")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 123000)
       (max_completion_tokens 16000)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       max_tokens
@@ -70,19 +70,19 @@
       top_k
       top_p
     ))
-    (default_parameters ({}))
+    (default_parameters ())
     (supported_voices null)
     (knowledge_cutoff 2025-03-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/baidu/ernie-4.5-vl-424b-a47b/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id baidu/ernie-4.5-vl-424b-a47b)
     (canonical_slug baidu/ernie-4.5-vl-424b-a47b)
     (hugging_face_id baidu/ERNIE-4.5-VL-424B-A47B-PT)
@@ -90,29 +90,29 @@
     (created 1751300903)
     (description "ERNIE-4.5-VL-424B-A47B is a multimodal Mixture-of-Experts (MoE) model from Baidu’s ERNIE 4.5 series, featuring 424B total parameters with 47B active per token. It is trained jointly on text and image data...")
     (context_length 123000)
-    (architecture ({}
+    (architecture (
       (modality text+image->text)
-      (input_modalities (
+      (input_modalities ([]
         image
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000042")
       (completion "0.00000125")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 123000)
       (max_completion_tokens 16000)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       max_tokens
@@ -125,18 +125,18 @@
       top_k
       top_p
     ))
-    (default_parameters ({}))
+    (default_parameters ())
     (supported_voices null)
     (knowledge_cutoff 2025-03-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/baidu/ernie-4.5-vl-424b-a47b/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId baidu/ernie-4.5-vl-424b-a47b)

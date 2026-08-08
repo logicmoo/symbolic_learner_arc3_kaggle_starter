@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-rekaai_reka-edge)
   (label "Reka Edge")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model rekaai/reka-edge)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,15 +19,15 @@
     (tools true)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 16384)
     (maxOutputTokens 16384)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.0000001")
     (completion "0.0000001")
   ))
-  (properties ({}
+  (properties (
     (id rekaai/reka-edge)
     (canonical_slug rekaai/reka-edge-2603)
     (hugging_face_id RekaAI/reka-edge-2603)
@@ -35,30 +35,30 @@
     (created 1774026965)
     (description "Reka Edge is an extremely efficient 7B multimodal vision-language model that accepts image/video+text inputs and generates text outputs. This model is optimized specifically to deliver industry-leading performance in image understanding,...")
     (context_length 16384)
-    (architecture ({}
+    (architecture (
       (modality text+image+video->text)
-      (input_modalities (
+      (input_modalities ([]
         image
         text
         video
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000001")
       (completion "0.0000001")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 16384)
       (max_completion_tokens 16384)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       logprobs
       max_tokens
@@ -73,7 +73,7 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -84,15 +84,15 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/rekaai/reka-edge-2603/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id rekaai/reka-edge)
     (canonical_slug rekaai/reka-edge-2603)
     (hugging_face_id RekaAI/reka-edge-2603)
@@ -100,30 +100,30 @@
     (created 1774026965)
     (description "Reka Edge is an extremely efficient 7B multimodal vision-language model that accepts image/video+text inputs and generates text outputs. This model is optimized specifically to deliver industry-leading performance in image understanding,...")
     (context_length 16384)
-    (architecture ({}
+    (architecture (
       (modality text+image+video->text)
-      (input_modalities (
+      (input_modalities ([]
         image
         text
         video
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000001")
       (completion "0.0000001")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 16384)
       (max_completion_tokens 16384)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       logprobs
       max_tokens
@@ -138,7 +138,7 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -149,14 +149,14 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/rekaai/reka-edge-2603/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId rekaai/reka-edge)

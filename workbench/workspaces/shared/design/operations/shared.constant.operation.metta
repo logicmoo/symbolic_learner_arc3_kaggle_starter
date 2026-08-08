@@ -1,29 +1,29 @@
-({}
+(
   (id shared.constant)
   (label "Constant Value")
   (description "Produce a configured constant value.")
-  (categories (
+  (categories ([]
     core/values
     sample/core
   ))
-  (inputs ({}))
-  (outputs ({}
+  (inputs ())
+  (outputs (
     (value Any)
   ))
-  (parameters ({}
+  (parameters (
     (value null)
   ))
-  (example_execute ({}
+  (example_execute (
     (action operation.invoke)
-    (parameters ({}
-      (value ({}
+    (parameters (
+      (value (
         (datatype Any)
         (label "Constant value")
         (default 42)
       ))
     ))
   ))
-  (children (
+  (children ([]
     shared.constant.workbench
   ))
   (preferredChild shared.constant.workbench)

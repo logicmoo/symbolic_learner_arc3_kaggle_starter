@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openai-gpt-5.1-codex-mini)
   (label gpt-5.1-codex-mini)
@@ -6,7 +6,7 @@
   (inherits openai)
   (model gpt-5.1-codex-mini)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code true)
     (functionCalling false)
@@ -19,25 +19,25 @@
     (tools false)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow null)
     (maxOutputTokens null)
   ))
-  (pricing ({}))
-  (properties ({}
+  (pricing ())
+  (properties (
     (id gpt-5.1-codex-mini)
     (object model)
     (created 1763007109)
     (owned_by system)
     (ownedBy system)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id gpt-5.1-codex-mini)
     (object model)
     (created 1763007109)
     (owned_by system)
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openai)
     (remoteModelId gpt-5.1-codex-mini)

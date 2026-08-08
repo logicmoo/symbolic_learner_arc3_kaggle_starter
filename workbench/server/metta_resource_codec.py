@@ -30,14 +30,14 @@ def json_value_to_metta(value: Any, depth: int = 0) -> str:
         return _quote(value)
     if isinstance(value, list):
         if not value:
-            return "()"
+            return "([])"
         items = [f"{child_indent}{json_value_to_metta(item, depth + 1)}" for item in value]
-        return f"(\n{'\n'.join(items)}\n{indent})"
+        return f"([]\n{'\n'.join(items)}\n{indent})"
     if isinstance(value, dict):
         if not value:
-            return "({})"
+            return "()"
         items = [f"{child_indent}({_quote(str(key))} {json_value_to_metta(item, depth + 1)})" for key, item in value.items()]
-        return f"({{}}\n{'\n'.join(items)}\n{indent})"
+        return f"(\n{'\n'.join(items)}\n{indent})"
     raise TypeError(f"unsupported resource value: {type(value).__name__}")
 
 
@@ -102,7 +102,7 @@ def _atom(token: Token) -> Any:
     return token.value
 
 
-def metta_to_json_value(source: str) -> Any:
+def metta_to_json_value(source: str, *, legacy: bool = False) -> Any:
     tokens = _tokenize(source)
     index = 0
 
@@ -114,16 +114,36 @@ def metta_to_json_value(source: str) -> Any:
         index += 1
         if token.value != "(":
             return _atom(token)
-        is_map = index < len(tokens) and tokens[index].value == "{}"
-        if is_map:
+        marker = tokens[index].value if index < len(tokens) and tokens[index].value in {"{}", "[]"} else None
+        if marker:
             index += 1
+        if marker is None and not legacy:
+            result: dict[str, Any] = {}
+            while index < len(tokens) and tokens[index].value != ")":
+                if tokens[index].value != "(":
+                    raise ValueError("map entries must be (name value) pairs")
+                index += 1
+                if index >= len(tokens) or tokens[index].value in {"(", ")"}:
+                    raise ValueError("map entry name must be an atom")
+                key = _atom(tokens[index])
+                index += 1
+                if not isinstance(key, str):
+                    raise ValueError("map entry name must be a string")
+                result[key] = parse()
+                if index >= len(tokens) or tokens[index].value != ")":
+                    raise ValueError("map entries must contain exactly one value")
+                index += 1
+            if index >= len(tokens):
+                raise ValueError("unclosed map")
+            index += 1
+            return result
         values: list[Any] = []
         while index >= len(tokens) or tokens[index].value != ")":
             if index >= len(tokens):
                 raise ValueError("unclosed list")
             values.append(parse())
         index += 1
-        if not is_map:
+        if marker == "[]" or (legacy and marker != "{}"):
             return values
         result: dict[str, Any] = {}
         for entry in values:
@@ -138,8 +158,8 @@ def metta_to_json_value(source: str) -> Any:
     return result
 
 
-def metta_document_to_json(source: str) -> Any:
-    result = metta_to_json_value(source)
+def metta_document_to_json(source: str, *, legacy: bool = False) -> Any:
+    result = metta_to_json_value(source, legacy=legacy)
     if not isinstance(result, dict):
         raise ValueError("a resource document must be a map")
     return result

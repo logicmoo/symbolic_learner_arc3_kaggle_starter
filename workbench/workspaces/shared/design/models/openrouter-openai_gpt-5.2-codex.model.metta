@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-openai_gpt-5.2-codex)
   (label "OpenAI: GPT-5.2-Codex")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model openai/gpt-5.2-codex)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code true)
     (functionCalling true)
@@ -19,17 +19,17 @@
     (tools true)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 400000)
     (maxOutputTokens 128000)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.00000175")
     (completion "0.000014")
     (web_search "0.01")
     (input_cache_read "0.000000175")
   ))
-  (properties ({}
+  (properties (
     (id openai/gpt-5.2-codex)
     (canonical_slug openai/gpt-5.2-codex-20260114)
     (hugging_face_id "")
@@ -37,31 +37,31 @@
     (created 1768409315)
     (description "GPT-5.2-Codex is an upgraded version of GPT-5.1-Codex optimized for software engineering and coding workflows. It is designed for both interactive development sessions and long, independent execution of complex engineering tasks....")
     (context_length 400000)
-    (architecture ({}
+    (architecture (
       (modality text+image->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer GPT)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000175")
       (completion "0.000014")
       (web_search "0.01")
       (input_cache_read "0.000000175")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 400000)
       (max_completion_tokens 128000)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_completion_tokens
       reasoning
@@ -72,7 +72,7 @@
       tool_choice
       tools
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (frequency_penalty null)
@@ -80,40 +80,40 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/openai/gpt-5.2-codex-20260114/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena agents)
           (category androidnative)
           (elo 1176)
           (win_rate 47.5)
           (rank 19)
         )
-        ({}
+        (
           (arena agents)
           (category fullstack)
           (elo 1034)
           (win_rate 37)
           (rank 32)
         )
-        ({}
+        (
           (arena agents)
           (category godotgamedev)
           (elo 1142)
           (win_rate 47.8)
           (rank 19)
         )
-        ({}
+        (
           (arena agents)
           (category mobileapps)
           (elo 1149)
           (win_rate 46.4)
           (rank 26)
         )
-        ({}
+        (
           (arena agents)
           (category webapps)
           (elo 1100)
@@ -122,9 +122,9 @@
         )
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory true)
-      (supported_efforts (
+      (supported_efforts ([]
         xhigh
         high
         medium
@@ -134,7 +134,7 @@
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id openai/gpt-5.2-codex)
     (canonical_slug openai/gpt-5.2-codex-20260114)
     (hugging_face_id "")
@@ -142,31 +142,31 @@
     (created 1768409315)
     (description "GPT-5.2-Codex is an upgraded version of GPT-5.1-Codex optimized for software engineering and coding workflows. It is designed for both interactive development sessions and long, independent execution of complex engineering tasks....")
     (context_length 400000)
-    (architecture ({}
+    (architecture (
       (modality text+image->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer GPT)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000175")
       (completion "0.000014")
       (web_search "0.01")
       (input_cache_read "0.000000175")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 400000)
       (max_completion_tokens 128000)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_completion_tokens
       reasoning
@@ -177,7 +177,7 @@
       tool_choice
       tools
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (frequency_penalty null)
@@ -185,40 +185,40 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/openai/gpt-5.2-codex-20260114/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena agents)
           (category androidnative)
           (elo 1176)
           (win_rate 47.5)
           (rank 19)
         )
-        ({}
+        (
           (arena agents)
           (category fullstack)
           (elo 1034)
           (win_rate 37)
           (rank 32)
         )
-        ({}
+        (
           (arena agents)
           (category godotgamedev)
           (elo 1142)
           (win_rate 47.8)
           (rank 19)
         )
-        ({}
+        (
           (arena agents)
           (category mobileapps)
           (elo 1149)
           (win_rate 46.4)
           (rank 26)
         )
-        ({}
+        (
           (arena agents)
           (category webapps)
           (elo 1100)
@@ -227,9 +227,9 @@
         )
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory true)
-      (supported_efforts (
+      (supported_efforts ([]
         xhigh
         high
         medium
@@ -238,7 +238,7 @@
       (default_effort medium)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId openai/gpt-5.2-codex)

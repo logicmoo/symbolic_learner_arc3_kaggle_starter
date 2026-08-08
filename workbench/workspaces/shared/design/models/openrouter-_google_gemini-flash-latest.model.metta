@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-_google_gemini-flash-latest)
   (label "Google Gemini Flash Latest")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model ~google/gemini-flash-latest)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio true)
     (code false)
     (functionCalling true)
@@ -19,11 +19,11 @@
     (tools true)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 1048576)
     (maxOutputTokens 65536)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.0000015")
     (completion "0.0000075")
     (image "0.0000015")
@@ -34,10 +34,10 @@
     (input_cache_read "0.00000015")
     (input_cache_write "0.0000000833333333333333")
   ))
-  (properties ({}
+  (properties (
     (id ~google/gemini-flash-latest)
     (canonical_slug ~google/gemini-flash-latest)
-    (alias_target ({}
+    (alias_target (
       (name "Google: Gemini 3.6 Flash")
       (slug google/gemini-3.6-flash)
     ))
@@ -46,22 +46,22 @@
     (created 1777318398)
     (description "This model always redirects to the latest model in the Google Gemini Flash family.")
     (context_length 1048576)
-    (architecture ({}
+    (architecture (
       (modality text+image+file+audio+video->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
         video
         file
         audio
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Router)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000015")
       (completion "0.0000075")
       (image "0.0000015")
@@ -72,13 +72,13 @@
       (input_cache_read "0.00000015")
       (input_cache_write "0.0000000833333333333333")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 1048576)
       (max_completion_tokens 65536)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_tokens
       reasoning
@@ -92,7 +92,7 @@
       tools
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -103,13 +103,13 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/~google/gemini-flash-latest/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory true)
       (default_enabled true)
-      (supported_efforts (
+      (supported_efforts ([]
         high
         medium
         low
@@ -119,10 +119,10 @@
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id ~google/gemini-flash-latest)
     (canonical_slug ~google/gemini-flash-latest)
-    (alias_target ({}
+    (alias_target (
       (name "Google: Gemini 3.6 Flash")
       (slug google/gemini-3.6-flash)
     ))
@@ -131,22 +131,22 @@
     (created 1777318398)
     (description "This model always redirects to the latest model in the Google Gemini Flash family.")
     (context_length 1048576)
-    (architecture ({}
+    (architecture (
       (modality text+image+file+audio+video->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
         video
         file
         audio
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Router)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000015")
       (completion "0.0000075")
       (image "0.0000015")
@@ -157,13 +157,13 @@
       (input_cache_read "0.00000015")
       (input_cache_write "0.0000000833333333333333")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 1048576)
       (max_completion_tokens 65536)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_tokens
       reasoning
@@ -177,7 +177,7 @@
       tools
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -188,13 +188,13 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/~google/gemini-flash-latest/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory true)
       (default_enabled true)
-      (supported_efforts (
+      (supported_efforts ([]
         high
         medium
         low
@@ -203,7 +203,7 @@
       (default_effort medium)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId ~google/gemini-flash-latest)

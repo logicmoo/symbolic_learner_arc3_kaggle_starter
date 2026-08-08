@@ -1,31 +1,31 @@
-({}
+(
   (id artifact.audit_bundle)
   (label "Audit Artifact Bundle")
   (description "Reusable consistency-audit operation migrated from the legacy ARC3 audit_artifact_bundle transaction.")
-  (categories (
+  (categories ([]
     artifacts/validation
     symbolic/validation
   ))
   (implementation llm.complete)
-  (inputs ({}
+  (inputs (
     (artifacts ArtifactBundle)
   ))
-  (outputs ({}
+  (outputs (
     (audit Evidence)
   ))
-  (promptSelection ({}
-    (prompts (
+  (promptSelection (
+    (prompts ([]
       structured_json_response
       transaction_audit_artifact_bundle
       output_quality_control
     ))
     (separator "\n\n")
   ))
-  (modelSelection ({}
-    (models ())
+  (modelSelection (
+    (models ([]))
     (strategy single)
   ))
-  (parameters ({}
+  (parameters (
     (requiresVision false)
   ))
   (kind operation)

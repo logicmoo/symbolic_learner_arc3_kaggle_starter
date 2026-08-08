@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-aion-labs_aion-rp-llama-3.1-8b)
   (label "AionLabs: Aion-RP 1.0 (8B)")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model aion-labs/aion-rp-llama-3.1-8b)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling false)
@@ -19,15 +19,15 @@
     (tools false)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 32768)
     (maxOutputTokens 32768)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.0000008")
     (completion "0.0000016")
   ))
-  (properties ({}
+  (properties (
     (id aion-labs/aion-rp-llama-3.1-8b)
     (canonical_slug aion-labs/aion-rp-llama-3.1-8b)
     (hugging_face_id "")
@@ -35,42 +35,42 @@
     (created 1738696718)
     (description "Aion-RP-Llama-3.1-8B ranks the highest in the character evaluation portion of the RPBench-Auto benchmark, a roleplaying-specific variant of Arena-Hard-Auto, where LLMs evaluate each other’s responses. It is a fine-tuned base model...")
     (context_length 32768)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000008")
       (completion "0.0000016")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 32768)
       (max_completion_tokens 32768)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       max_tokens
       temperature
       top_p
     ))
-    (default_parameters ({}))
+    (default_parameters ())
     (supported_voices null)
     (knowledge_cutoff 2023-12-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/aion-labs/aion-rp-llama-3.1-8b/endpoints)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id aion-labs/aion-rp-llama-3.1-8b)
     (canonical_slug aion-labs/aion-rp-llama-3.1-8b)
     (hugging_face_id "")
@@ -78,41 +78,41 @@
     (created 1738696718)
     (description "Aion-RP-Llama-3.1-8B ranks the highest in the character evaluation portion of the RPBench-Auto benchmark, a roleplaying-specific variant of Arena-Hard-Auto, where LLMs evaluate each other’s responses. It is a fine-tuned base model...")
     (context_length 32768)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000008")
       (completion "0.0000016")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 32768)
       (max_completion_tokens 32768)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       max_tokens
       temperature
       top_p
     ))
-    (default_parameters ({}))
+    (default_parameters ())
     (supported_voices null)
     (knowledge_cutoff 2023-12-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/aion-labs/aion-rp-llama-3.1-8b/endpoints)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId aion-labs/aion-rp-llama-3.1-8b)

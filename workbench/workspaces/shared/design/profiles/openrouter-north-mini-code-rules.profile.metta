@@ -1,11 +1,11 @@
-({}
+(
   (kind profile)
   (id openrouter-north-mini-code-rules)
   (label "North Mini Code — medium deterministic")
   (description "Prompt-free execution profile migrated from the legacy Prolog-rule inspection transaction.")
   (inherits openrouter-north-mini-code)
   (enabled true)
-  (defaults ({}
+  (defaults (
     (analysisLevel 3)
     (singleEnabled false)
     (batchEnabled false)
@@ -18,7 +18,7 @@
     (timeoutSeconds 480)
     (seed null)
   ))
-  (metadata ({}
+  (metadata (
     (legacyTransaction induce_rules_from_prolog)
   ))
 )

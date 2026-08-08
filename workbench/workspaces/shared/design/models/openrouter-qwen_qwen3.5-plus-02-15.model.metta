@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-qwen_qwen3.5-plus-02-15)
   (label "Qwen: Qwen3.5 Plus 2026-02-15")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model qwen/qwen3.5-plus-02-15)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,22 +19,22 @@
     (tools true)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 1000000)
     (maxOutputTokens 65536)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.00000026")
     (completion "0.00000156")
-    (overrides (
-      ({}
+    (overrides ([]
+      (
         (min_prompt_tokens 256000)
         (prompt "0.000000325")
         (completion "0.00000195")
       )
     ))
   ))
-  (properties ({}
+  (properties (
     (id qwen/qwen3.5-plus-02-15)
     (canonical_slug qwen/qwen3.5-plus-20260216)
     (hugging_face_id "")
@@ -42,37 +42,37 @@
     (created 1771229416)
     (description "The Qwen3.5 native vision-language series Plus models are built on a hybrid architecture that integrates linear attention mechanisms with sparse mixture-of-experts models, achieving higher inference efficiency. In a variety of...")
     (context_length 1000000)
-    (architecture ({}
+    (architecture (
       (modality text+image+video->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
         video
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Qwen3)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000026")
       (completion "0.00000156")
-      (overrides (
-        ({}
+      (overrides ([]
+        (
           (min_prompt_tokens 256000)
           (prompt "0.000000325")
           (completion "0.00000195")
         )
       ))
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 1000000)
       (max_completion_tokens 65536)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       logprobs
@@ -90,7 +90,7 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (frequency_penalty null)
@@ -98,61 +98,61 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/qwen/qwen3.5-plus-20260216/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category 3d)
           (elo 1173)
           (win_rate 47.7)
           (rank 59)
         )
-        ({}
+        (
           (arena models)
           (category asciiart)
           (elo 1131)
           (win_rate 43.2)
           (rank 48)
         )
-        ({}
+        (
           (arena models)
           (category codecategories)
           (elo 1195)
           (win_rate 48.5)
           (rank 56)
         )
-        ({}
+        (
           (arena models)
           (category dataviz)
           (elo 1163)
           (win_rate 44.9)
           (rank 66)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 1146)
           (win_rate 42.7)
           (rank 67)
         )
-        ({}
+        (
           (arena models)
           (category svg)
           (elo 1154)
           (win_rate 48.9)
           (rank 44)
         )
-        ({}
+        (
           (arena models)
           (category uicomponent)
           (elo 1211)
           (win_rate 52.2)
           (rank 43)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 1210)
@@ -161,12 +161,12 @@
         )
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id qwen/qwen3.5-plus-02-15)
     (canonical_slug qwen/qwen3.5-plus-20260216)
     (hugging_face_id "")
@@ -174,37 +174,37 @@
     (created 1771229416)
     (description "The Qwen3.5 native vision-language series Plus models are built on a hybrid architecture that integrates linear attention mechanisms with sparse mixture-of-experts models, achieving higher inference efficiency. In a variety of...")
     (context_length 1000000)
-    (architecture ({}
+    (architecture (
       (modality text+image+video->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
         video
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Qwen3)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000026")
       (completion "0.00000156")
-      (overrides (
-        ({}
+      (overrides ([]
+        (
           (min_prompt_tokens 256000)
           (prompt "0.000000325")
           (completion "0.00000195")
         )
       ))
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 1000000)
       (max_completion_tokens 65536)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       logprobs
@@ -222,7 +222,7 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (frequency_penalty null)
@@ -230,61 +230,61 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/qwen/qwen3.5-plus-20260216/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category 3d)
           (elo 1173)
           (win_rate 47.7)
           (rank 59)
         )
-        ({}
+        (
           (arena models)
           (category asciiart)
           (elo 1131)
           (win_rate 43.2)
           (rank 48)
         )
-        ({}
+        (
           (arena models)
           (category codecategories)
           (elo 1195)
           (win_rate 48.5)
           (rank 56)
         )
-        ({}
+        (
           (arena models)
           (category dataviz)
           (elo 1163)
           (win_rate 44.9)
           (rank 66)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 1146)
           (win_rate 42.7)
           (rank 67)
         )
-        ({}
+        (
           (arena models)
           (category svg)
           (elo 1154)
           (win_rate 48.9)
           (rank 44)
         )
-        ({}
+        (
           (arena models)
           (category uicomponent)
           (elo 1211)
           (win_rate 52.2)
           (rank 43)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 1210)
@@ -293,11 +293,11 @@
         )
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId qwen/qwen3.5-plus-02-15)

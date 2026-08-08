@@ -1,20 +1,20 @@
-({}
+(
   (id shared.compare_reconstruction)
   (label "Compare Reconstruction")
   (description "Compare a source observation with a reconstructed observation and emit evidence. Generic validation operation.")
-  (categories (
+  (categories ([]
     vision/validation
     graphics/reconstruction
     world-modeling/evidence
   ))
   (implementation vision.diff)
-  (inputs ({}
+  (inputs (
     (source Observation)
     (reconstruction Observation)
   ))
-  (outputs ({}
+  (outputs (
     (evidence EvidenceBundle)
   ))
-  (parameters ({}))
+  (parameters ())
   (kind operation)
 )

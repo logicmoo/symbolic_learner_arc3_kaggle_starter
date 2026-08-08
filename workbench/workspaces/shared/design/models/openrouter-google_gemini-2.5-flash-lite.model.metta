@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-google_gemini-2.5-flash-lite)
   (label "Google: Gemini 2.5 Flash Lite")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model google/gemini-2.5-flash-lite)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio true)
     (code false)
     (functionCalling true)
@@ -19,11 +19,11 @@
     (tools true)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 1048576)
     (maxOutputTokens 65535)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.0000001")
     (completion "0.0000004")
     (image "0.0000001")
@@ -34,7 +34,7 @@
     (input_cache_read "0.00000001")
     (input_cache_write "0.0000000833333333333333")
   ))
-  (properties ({}
+  (properties (
     (id google/gemini-2.5-flash-lite)
     (canonical_slug google/gemini-2.5-flash-lite)
     (hugging_face_id "")
@@ -42,22 +42,22 @@
     (created 1753200276)
     (description "Gemini 2.5 Flash-Lite is a lightweight reasoning model in the Gemini 2.5 family, optimized for ultra-low latency and cost efficiency. It offers improved throughput, faster token generation, and better performance...")
     (context_length 1048576)
-    (architecture ({}
+    (architecture (
       (modality text+image+file+audio+video->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
         file
         audio
         video
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Gemini)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000001")
       (completion "0.0000004")
       (image "0.0000001")
@@ -68,13 +68,13 @@
       (input_cache_read "0.00000001")
       (input_cache_write "0.0000000833333333333333")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 1048576)
       (max_completion_tokens 65535)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_tokens
       reasoning
@@ -87,7 +87,7 @@
       tools
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (frequency_penalty null)
@@ -95,15 +95,15 @@
     (supported_voices null)
     (knowledge_cutoff 2025-01-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/google/gemini-2.5-flash-lite/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id google/gemini-2.5-flash-lite)
     (canonical_slug google/gemini-2.5-flash-lite)
     (hugging_face_id "")
@@ -111,22 +111,22 @@
     (created 1753200276)
     (description "Gemini 2.5 Flash-Lite is a lightweight reasoning model in the Gemini 2.5 family, optimized for ultra-low latency and cost efficiency. It offers improved throughput, faster token generation, and better performance...")
     (context_length 1048576)
-    (architecture ({}
+    (architecture (
       (modality text+image+file+audio+video->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
         file
         audio
         video
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Gemini)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000001")
       (completion "0.0000004")
       (image "0.0000001")
@@ -137,13 +137,13 @@
       (input_cache_read "0.00000001")
       (input_cache_write "0.0000000833333333333333")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 1048576)
       (max_completion_tokens 65535)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_tokens
       reasoning
@@ -156,7 +156,7 @@
       tools
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (frequency_penalty null)
@@ -164,14 +164,14 @@
     (supported_voices null)
     (knowledge_cutoff 2025-01-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/google/gemini-2.5-flash-lite/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId google/gemini-2.5-flash-lite)

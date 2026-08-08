@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-openai_gpt-5.4-mini)
   (label "OpenAI: GPT-5.4 Mini")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model openai/gpt-5.4-mini)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,17 +19,17 @@
     (tools true)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 400000)
     (maxOutputTokens 128000)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.00000075")
     (completion "0.0000045")
     (web_search "0.01")
     (input_cache_read "0.000000075")
   ))
-  (properties ({}
+  (properties (
     (id openai/gpt-5.4-mini)
     (canonical_slug openai/gpt-5.4-mini-20260317)
     (hugging_face_id "")
@@ -37,32 +37,32 @@
     (created 1773748178)
     (description "GPT-5.4 mini brings the core capabilities of GPT-5.4 to a faster, more efficient model optimized for high-throughput workloads. It supports text and image inputs with strong performance across reasoning, coding,...")
     (context_length 400000)
-    (architecture ({}
+    (architecture (
       (modality text+image+file->text)
-      (input_modalities (
+      (input_modalities ([]
         file
         image
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer GPT)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000075")
       (completion "0.0000045")
       (web_search "0.01")
       (input_cache_read "0.000000075")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 400000)
       (max_completion_tokens 128000)
       (is_moderated true)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_completion_tokens
       max_tokens
@@ -74,7 +74,7 @@
       tool_choice
       tools
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -85,21 +85,21 @@
     (supported_voices null)
     (knowledge_cutoff 2025-08-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/openai/gpt-5.4-mini-20260317/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena ())
-      (artificial_analysis ({}
+    (benchmarks (
+      (design_arena ([]))
+      (artificial_analysis (
         (intelligence_index 40.9)
         (coding_index 56.1)
         (agentic_index 31.5)
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
       (default_enabled false)
-      (supported_efforts (
+      (supported_efforts ([]
         xhigh
         high
         medium
@@ -110,7 +110,7 @@
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id openai/gpt-5.4-mini)
     (canonical_slug openai/gpt-5.4-mini-20260317)
     (hugging_face_id "")
@@ -118,32 +118,32 @@
     (created 1773748178)
     (description "GPT-5.4 mini brings the core capabilities of GPT-5.4 to a faster, more efficient model optimized for high-throughput workloads. It supports text and image inputs with strong performance across reasoning, coding,...")
     (context_length 400000)
-    (architecture ({}
+    (architecture (
       (modality text+image+file->text)
-      (input_modalities (
+      (input_modalities ([]
         file
         image
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer GPT)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000075")
       (completion "0.0000045")
       (web_search "0.01")
       (input_cache_read "0.000000075")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 400000)
       (max_completion_tokens 128000)
       (is_moderated true)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_completion_tokens
       max_tokens
@@ -155,7 +155,7 @@
       tool_choice
       tools
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -166,21 +166,21 @@
     (supported_voices null)
     (knowledge_cutoff 2025-08-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/openai/gpt-5.4-mini-20260317/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena ())
-      (artificial_analysis ({}
+    (benchmarks (
+      (design_arena ([]))
+      (artificial_analysis (
         (intelligence_index 40.9)
         (coding_index 56.1)
         (agentic_index 31.5)
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
       (default_enabled false)
-      (supported_efforts (
+      (supported_efforts ([]
         xhigh
         high
         medium
@@ -190,7 +190,7 @@
       (default_effort medium)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId openai/gpt-5.4-mini)

@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-north-mini-code)
   (label "North Mini Code free")
@@ -6,13 +6,13 @@
   (inherits openrouter)
   (model cohere/north-mini-code:free)
   (enabled true)
-  (capabilities (
+  (capabilities ([]
     text
     reasoning
     code
     json
   ))
-  (metadata ({}
+  (metadata (
     (verifiedAvailable true)
     (verifiedAt 2026-08-04)
     (source "legacy config/llm_workflows.json")

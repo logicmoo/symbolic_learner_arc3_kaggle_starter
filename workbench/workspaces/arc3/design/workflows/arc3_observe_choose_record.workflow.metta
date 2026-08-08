@@ -1,53 +1,53 @@
-({}
+(
   (id arc3_observe_choose_record)
   (label "ARC3 Observe, Choose, and Record")
   (description "A real engine workflow for carrying an observation through a human action choice into a persisted action record.")
-  (inputs ({}
+  (inputs (
     (observation Object)
   ))
-  (outputs ({}
+  (outputs (
     (record $action_record)
   ))
-  (steps (
-    ({}
+  (steps ([]
+    (
       (id capture_observation)
       (kind operation)
       (implementation core.echo)
-      (inputs ({}
+      (inputs (
         (value $observation)
       ))
-      (outputs ({}
+      (outputs (
         (value captured_observation)
       ))
     )
-    ({}
+    (
       (id choose_action)
       (kind human)
-      (dependsOn (
+      (dependsOn ([]
         capture_observation
       ))
-      (form ({}
-        (action ({}
+      (form (
+        (action (
           (type Object)
         ))
       ))
-      (outputs ({}
+      (outputs (
         (action chosen_action)
       ))
     )
-    ({}
+    (
       (id build_observation_record)
       (kind operation)
       (implementation core.merge)
-      (dependsOn (
+      (dependsOn ([]
         capture_observation
         choose_action
       ))
-      (inputs ({}
+      (inputs (
         (left $captured_observation)
         (right $chosen_action)
       ))
-      (outputs ({}
+      (outputs (
         (value action_record)
       ))
     )

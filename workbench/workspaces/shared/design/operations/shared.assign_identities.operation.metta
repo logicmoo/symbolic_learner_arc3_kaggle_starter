@@ -1,19 +1,19 @@
-({}
+(
   (id shared.assign_identities)
   (label "Assign Stable Identities")
   (description "Assign stable symbolic identities to entities across views, states, or time. Generic symbolic perception operation.")
-  (categories (
+  (categories ([]
     vision/tracking
     symbolic/identity
     world-modeling/entities
   ))
   (implementation symbolic.identity)
-  (inputs ({}
+  (inputs (
     (entities EntitySet)
   ))
-  (outputs ({}
+  (outputs (
     (identities IdentityMap)
   ))
-  (parameters ({}))
+  (parameters ())
   (kind operation)
 )

@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openai-davinci-002)
   (label davinci-002)
@@ -6,7 +6,7 @@
   (inherits openai)
   (model davinci-002)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling false)
@@ -19,25 +19,25 @@
     (tools false)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow null)
     (maxOutputTokens null)
   ))
-  (pricing ({}))
-  (properties ({}
+  (pricing ())
+  (properties (
     (id davinci-002)
     (object model)
     (created 1692634301)
     (owned_by system)
     (ownedBy system)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id davinci-002)
     (object model)
     (created 1692634301)
     (owned_by system)
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openai)
     (remoteModelId davinci-002)

@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-qwen_qwen3.6-max-preview)
   (label "Qwen: Qwen3.6 Max Preview")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model qwen/qwen3.6-max-preview)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,16 +19,16 @@
     (tools true)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 262144)
     (maxOutputTokens 65536)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.000001027")
     (completion "0.000006162")
     (input_cache_write "0.00000128375")
-    (overrides (
-      ({}
+    (overrides ([]
+      (
         (min_prompt_tokens 128000)
         (prompt "0.00000158")
         (completion "0.00000948")
@@ -36,7 +36,7 @@
       )
     ))
   ))
-  (properties ({}
+  (properties (
     (id qwen/qwen3.6-max-preview)
     (canonical_slug qwen/qwen3.6-max-preview-20260420)
     (hugging_face_id null)
@@ -44,23 +44,23 @@
     (created 1777260242)
     (description "Qwen3.6-Max-Preview is a proprietary frontier model from Alibaba Cloud built on a sparse mixture-of-experts architecture with approximately 1 trillion total parameters. It is optimized for agentic coding, tool use, and...")
     (context_length 262144)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Qwen)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.000001027")
       (completion "0.000006162")
       (input_cache_write "0.00000128375")
-      (overrides (
-        ({}
+      (overrides ([]
+        (
           (min_prompt_tokens 128000)
           (prompt "0.00000158")
           (completion "0.00000948")
@@ -68,13 +68,13 @@
         )
       ))
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 262144)
       (max_completion_tokens 65536)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       logprobs
@@ -92,20 +92,20 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}))
+    (default_parameters ())
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/qwen/qwen3.6-max-preview-20260420/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
       (default_enabled true)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id qwen/qwen3.6-max-preview)
     (canonical_slug qwen/qwen3.6-max-preview-20260420)
     (hugging_face_id null)
@@ -113,23 +113,23 @@
     (created 1777260242)
     (description "Qwen3.6-Max-Preview is a proprietary frontier model from Alibaba Cloud built on a sparse mixture-of-experts architecture with approximately 1 trillion total parameters. It is optimized for agentic coding, tool use, and...")
     (context_length 262144)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Qwen)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.000001027")
       (completion "0.000006162")
       (input_cache_write "0.00000128375")
-      (overrides (
-        ({}
+      (overrides ([]
+        (
           (min_prompt_tokens 128000)
           (prompt "0.00000158")
           (completion "0.00000948")
@@ -137,13 +137,13 @@
         )
       ))
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 262144)
       (max_completion_tokens 65536)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       logprobs
@@ -161,19 +161,19 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}))
+    (default_parameters ())
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/qwen/qwen3.6-max-preview-20260420/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
       (default_enabled true)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId qwen/qwen3.6-max-preview)

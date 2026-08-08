@@ -1,26 +1,26 @@
-({}
+(
   (kind operation)
   (id objects_to_logo)
   (label "Objects to LOGO")
   (description "Convert an image from object-list representation to LOGO/Turtle representation.")
-  (categories (
+  (categories ([]
     vision/conversion
     graphics/turtle
     datatypes/representation
   ))
-  (inputs ({}
-    (image ({}
+  (inputs (
+    (image (
       (datatype image)
       (representation object_list)
     ))
   ))
-  (outputs ({}
-    (image ({}
+  (outputs (
+    (image (
       (datatype image)
       (representation logo_program)
     ))
   ))
-  (conversion ({}
+  (conversion (
     (datatype image)
     (from object_list)
     (to logo_program)

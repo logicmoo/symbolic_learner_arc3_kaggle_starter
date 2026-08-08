@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-anthropic_claude-fable-5_batch)
   (label "Anthropic: Claude Fable 5 (batch)")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model anthropic/claude-fable-5:batch)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,11 +19,11 @@
     (tools true)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 1000000)
     (maxOutputTokens 128000)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.000005")
     (completion "0.000025")
     (web_search "0.01")
@@ -31,7 +31,7 @@
     (input_cache_write "0.00000625")
     (input_cache_write_1h "0.00001")
   ))
-  (properties ({}
+  (properties (
     (id anthropic/claude-fable-5:batch)
     (canonical_slug anthropic/claude-5-fable-20260609)
     (hugging_face_id null)
@@ -39,20 +39,20 @@
     (created 1781007515)
     (description "Claude Fable 5 is a Mythos-class model from Anthropic, built for autonomous knowledge work and coding. It supports text, image, and file inputs with text output, with reasoning support and...")
     (context_length 1000000)
-    (architecture ({}
+    (architecture (
       (modality text+image+file->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
         file
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Claude)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.000005")
       (completion "0.000025")
       (web_search "0.01")
@@ -60,13 +60,13 @@
       (input_cache_write "0.00000625")
       (input_cache_write_1h "0.00001")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 1000000)
       (max_completion_tokens 128000)
       (is_moderated true)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_tokens
       reasoning
@@ -78,7 +78,7 @@
       tools
       verbosity
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -89,131 +89,131 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/anthropic/claude-5-fable-20260609/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena agents)
           (category agenticgamedev)
           (elo 1302)
           (win_rate 65.2)
           (rank 1)
         )
-        ({}
+        (
           (arena agents)
           (category agentichtmlslides)
           (elo 1254)
           (win_rate 59.4)
           (rank 1)
         )
-        ({}
+        (
           (arena agents)
           (category "agenticslides(html)")
           (elo 1252)
           (win_rate 59.5)
           (rank 1)
         )
-        ({}
+        (
           (arena agents)
           (category androidnative)
           (elo 1315)
           (win_rate 66.6)
           (rank 1)
         )
-        ({}
+        (
           (arena agents)
           (category fullstack)
           (elo 1297)
           (win_rate 63.8)
           (rank 2)
         )
-        ({}
+        (
           (arena agents)
           (category godotgamedev)
           (elo 1344)
           (win_rate 70.2)
           (rank 1)
         )
-        ({}
+        (
           (arena agents)
           (category htmlslides)
           (elo 1260)
           (win_rate 59)
           (rank 1)
         )
-        ({}
+        (
           (arena agents)
           (category mobileapps)
           (elo 1246)
           (win_rate 56.4)
           (rank 6)
         )
-        ({}
+        (
           (arena agents)
           (category python-pptxslides)
           (elo 1304)
           (win_rate 63.7)
           (rank 3)
         )
-        ({}
+        (
           (arena agents)
           (category webapps)
           (elo 1304)
           (win_rate 59.6)
           (rank 2)
         )
-        ({}
+        (
           (arena models)
           (category 3d)
           (elo 1374)
           (win_rate 62.8)
           (rank 3)
         )
-        ({}
+        (
           (arena models)
           (category asciiart)
           (elo 1360)
           (win_rate 69.4)
           (rank 1)
         )
-        ({}
+        (
           (arena models)
           (category codecategories)
           (elo 1344)
           (win_rate 60.2)
           (rank 3)
         )
-        ({}
+        (
           (arena models)
           (category dataviz)
           (elo 1343)
           (win_rate 59.2)
           (rank 5)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 1394)
           (win_rate 65.2)
           (rank 2)
         )
-        ({}
+        (
           (arena models)
           (category svg)
           (elo 1353)
           (win_rate 66.2)
           (rank 1)
         )
-        ({}
+        (
           (arena models)
           (category uicomponent)
           (elo 1354)
           (win_rate 59.1)
           (rank 3)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 1327)
@@ -221,15 +221,15 @@
           (rank 5)
         )
       ))
-      (artificial_analysis ({}
+      (artificial_analysis (
         (intelligence_index 62.1)
         (coding_index 76.5)
         (agentic_index 56.6)
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory true)
-      (supported_efforts (
+      (supported_efforts ([]
         max
         xhigh
         high
@@ -240,7 +240,7 @@
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id anthropic/claude-fable-5:batch)
     (canonical_slug anthropic/claude-5-fable-20260609)
     (hugging_face_id null)
@@ -248,20 +248,20 @@
     (created 1781007515)
     (description "Claude Fable 5 is a Mythos-class model from Anthropic, built for autonomous knowledge work and coding. It supports text, image, and file inputs with text output, with reasoning support and...")
     (context_length 1000000)
-    (architecture ({}
+    (architecture (
       (modality text+image+file->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
         file
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Claude)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.000005")
       (completion "0.000025")
       (web_search "0.01")
@@ -269,13 +269,13 @@
       (input_cache_write "0.00000625")
       (input_cache_write_1h "0.00001")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 1000000)
       (max_completion_tokens 128000)
       (is_moderated true)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_tokens
       reasoning
@@ -287,7 +287,7 @@
       tools
       verbosity
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -298,131 +298,131 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/anthropic/claude-5-fable-20260609/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena agents)
           (category agenticgamedev)
           (elo 1302)
           (win_rate 65.2)
           (rank 1)
         )
-        ({}
+        (
           (arena agents)
           (category agentichtmlslides)
           (elo 1254)
           (win_rate 59.4)
           (rank 1)
         )
-        ({}
+        (
           (arena agents)
           (category "agenticslides(html)")
           (elo 1252)
           (win_rate 59.5)
           (rank 1)
         )
-        ({}
+        (
           (arena agents)
           (category androidnative)
           (elo 1315)
           (win_rate 66.6)
           (rank 1)
         )
-        ({}
+        (
           (arena agents)
           (category fullstack)
           (elo 1297)
           (win_rate 63.8)
           (rank 2)
         )
-        ({}
+        (
           (arena agents)
           (category godotgamedev)
           (elo 1344)
           (win_rate 70.2)
           (rank 1)
         )
-        ({}
+        (
           (arena agents)
           (category htmlslides)
           (elo 1260)
           (win_rate 59)
           (rank 1)
         )
-        ({}
+        (
           (arena agents)
           (category mobileapps)
           (elo 1246)
           (win_rate 56.4)
           (rank 6)
         )
-        ({}
+        (
           (arena agents)
           (category python-pptxslides)
           (elo 1304)
           (win_rate 63.7)
           (rank 3)
         )
-        ({}
+        (
           (arena agents)
           (category webapps)
           (elo 1304)
           (win_rate 59.6)
           (rank 2)
         )
-        ({}
+        (
           (arena models)
           (category 3d)
           (elo 1374)
           (win_rate 62.8)
           (rank 3)
         )
-        ({}
+        (
           (arena models)
           (category asciiart)
           (elo 1360)
           (win_rate 69.4)
           (rank 1)
         )
-        ({}
+        (
           (arena models)
           (category codecategories)
           (elo 1344)
           (win_rate 60.2)
           (rank 3)
         )
-        ({}
+        (
           (arena models)
           (category dataviz)
           (elo 1343)
           (win_rate 59.2)
           (rank 5)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 1394)
           (win_rate 65.2)
           (rank 2)
         )
-        ({}
+        (
           (arena models)
           (category svg)
           (elo 1353)
           (win_rate 66.2)
           (rank 1)
         )
-        ({}
+        (
           (arena models)
           (category uicomponent)
           (elo 1354)
           (win_rate 59.1)
           (rank 3)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 1327)
@@ -430,15 +430,15 @@
           (rank 5)
         )
       ))
-      (artificial_analysis ({}
+      (artificial_analysis (
         (intelligence_index 62.1)
         (coding_index 76.5)
         (agentic_index 56.6)
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory true)
-      (supported_efforts (
+      (supported_efforts ([]
         max
         xhigh
         high
@@ -448,7 +448,7 @@
       (default_effort high)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId anthropic/claude-fable-5:batch)

@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-qwen_qwen-2.5-coder-32b-instruct)
   (label "Qwen2.5 Coder 32B Instruct")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model qwen/qwen-2.5-coder-32b-instruct)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code true)
     (functionCalling false)
@@ -19,15 +19,15 @@
     (tools false)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 32768)
     (maxOutputTokens 32768)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.00000066")
     (completion "0.000001")
   ))
-  (properties ({}
+  (properties (
     (id qwen/qwen-2.5-coder-32b-instruct)
     (canonical_slug qwen/qwen-2.5-coder-32b-instruct)
     (hugging_face_id Qwen/Qwen2.5-Coder-32B-Instruct)
@@ -35,28 +35,28 @@
     (created 1731368400)
     (description "Qwen2.5-Coder is the latest series of Code-Specific Qwen large language models (formerly known as CodeQwen). Qwen2.5-Coder brings the following improvements upon CodeQwen1.5: - Significantly improvements in **code generation**, **code reasoning**...")
     (context_length 32768)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Qwen)
       (instruct_type chatml)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000066")
       (completion "0.000001")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 32768)
       (max_completion_tokens 32768)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       logit_bias
       max_tokens
@@ -69,16 +69,16 @@
       top_k
       top_p
     ))
-    (default_parameters ({}))
+    (default_parameters ())
     (supported_voices null)
     (knowledge_cutoff 2024-06-30)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/qwen/qwen-2.5-coder-32b-instruct/endpoints)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id qwen/qwen-2.5-coder-32b-instruct)
     (canonical_slug qwen/qwen-2.5-coder-32b-instruct)
     (hugging_face_id Qwen/Qwen2.5-Coder-32B-Instruct)
@@ -86,28 +86,28 @@
     (created 1731368400)
     (description "Qwen2.5-Coder is the latest series of Code-Specific Qwen large language models (formerly known as CodeQwen). Qwen2.5-Coder brings the following improvements upon CodeQwen1.5: - Significantly improvements in **code generation**, **code reasoning**...")
     (context_length 32768)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Qwen)
       (instruct_type chatml)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000066")
       (completion "0.000001")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 32768)
       (max_completion_tokens 32768)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       logit_bias
       max_tokens
@@ -120,15 +120,15 @@
       top_k
       top_p
     ))
-    (default_parameters ({}))
+    (default_parameters ())
     (supported_voices null)
     (knowledge_cutoff 2024-06-30)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/qwen/qwen-2.5-coder-32b-instruct/endpoints)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId qwen/qwen-2.5-coder-32b-instruct)

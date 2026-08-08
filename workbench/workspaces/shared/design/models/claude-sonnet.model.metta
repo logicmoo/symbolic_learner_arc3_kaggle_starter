@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id claude-sonnet)
   (label "Claude Sonnet")
@@ -6,12 +6,12 @@
   (inherits anthropic)
   (model claude-sonnet-4-20250514)
   (enabled true)
-  (capabilities (
+  (capabilities ([]
     text
     vision
     json
   ))
-  (defaults ({}
+  (defaults (
     (reasoningEffort medium)
     (maxOutputTokens 18000)
     (temperature 0.05)
@@ -20,7 +20,7 @@
     (currentImageDetail high)
     (parentImageDetail low)
   ))
-  (environment ({}
+  (environment (
     (model WORKBENCH_ANTHROPIC_MODEL)
     (legacyModel ARC3_CLAUDE_MODEL)
   ))

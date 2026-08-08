@@ -1,11 +1,11 @@
-({}
+(
   (kind profile)
   (id unsloth-gemma-4-e2b-deep)
   (label "Gemma 4 E2B local — deep")
   (description "Prompt-free execution profile migrated from the legacy ARC3 configuration.")
   (inherits unsloth-gemma-4-e2b)
   (enabled true)
-  (defaults ({}
+  (defaults (
     (analysisLevel 3)
     (singleEnabled true)
     (batchEnabled true)

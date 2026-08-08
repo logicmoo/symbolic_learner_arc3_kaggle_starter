@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-mancer_weaver)
   (label "Mancer: Weaver (alpha)")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model mancer/weaver)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling false)
@@ -19,15 +19,15 @@
     (tools false)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 8000)
     (maxOutputTokens 6000)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.0000005")
     (completion "0.00000075")
   ))
-  (properties ({}
+  (properties (
     (id mancer/weaver)
     (canonical_slug mancer/weaver)
     (hugging_face_id null)
@@ -35,28 +35,28 @@
     (created 1690934400)
     (description "An attempt to recreate Claude-style verbosity, but don't expect the same level of coherence or memory. Meant for use in roleplay/narrative situations.")
     (context_length 8000)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Llama2)
       (instruct_type alpaca)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000005")
       (completion "0.00000075")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 8000)
       (max_completion_tokens 6000)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       logit_bias
       logprobs
@@ -74,16 +74,16 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}))
+    (default_parameters ())
     (supported_voices null)
     (knowledge_cutoff 2023-06-30)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/mancer/weaver/endpoints)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id mancer/weaver)
     (canonical_slug mancer/weaver)
     (hugging_face_id null)
@@ -91,28 +91,28 @@
     (created 1690934400)
     (description "An attempt to recreate Claude-style verbosity, but don't expect the same level of coherence or memory. Meant for use in roleplay/narrative situations.")
     (context_length 8000)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Llama2)
       (instruct_type alpaca)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000005")
       (completion "0.00000075")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 8000)
       (max_completion_tokens 6000)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       logit_bias
       logprobs
@@ -130,15 +130,15 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}))
+    (default_parameters ())
     (supported_voices null)
     (knowledge_cutoff 2023-06-30)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/mancer/weaver/endpoints)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId mancer/weaver)

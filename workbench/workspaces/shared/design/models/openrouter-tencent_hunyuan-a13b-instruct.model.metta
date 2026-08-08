@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-tencent_hunyuan-a13b-instruct)
   (label "Tencent: Hunyuan A13B Instruct")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model tencent/hunyuan-a13b-instruct)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling false)
@@ -19,15 +19,15 @@
     (tools false)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 131072)
     (maxOutputTokens 131072)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.00000014")
     (completion "0.00000057")
   ))
-  (properties ({}
+  (properties (
     (id tencent/hunyuan-a13b-instruct)
     (canonical_slug tencent/hunyuan-a13b-instruct)
     (hugging_face_id tencent/Hunyuan-A13B-Instruct)
@@ -35,28 +35,28 @@
     (created 1751987664)
     (description "Hunyuan-A13B is a 13B active parameter Mixture-of-Experts (MoE) language model developed by Tencent, with a total parameter count of 80B and support for reasoning via Chain-of-Thought. It offers competitive benchmark...")
     (context_length 131072)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000014")
       (completion "0.00000057")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 131072)
       (max_completion_tokens 131072)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       max_tokens
@@ -67,19 +67,19 @@
       top_k
       top_p
     ))
-    (default_parameters ({}))
+    (default_parameters ())
     (supported_voices null)
     (knowledge_cutoff 2025-03-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/tencent/hunyuan-a13b-instruct/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id tencent/hunyuan-a13b-instruct)
     (canonical_slug tencent/hunyuan-a13b-instruct)
     (hugging_face_id tencent/Hunyuan-A13B-Instruct)
@@ -87,28 +87,28 @@
     (created 1751987664)
     (description "Hunyuan-A13B is a 13B active parameter Mixture-of-Experts (MoE) language model developed by Tencent, with a total parameter count of 80B and support for reasoning via Chain-of-Thought. It offers competitive benchmark...")
     (context_length 131072)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000014")
       (completion "0.00000057")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 131072)
       (max_completion_tokens 131072)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       max_tokens
@@ -119,18 +119,18 @@
       top_k
       top_p
     ))
-    (default_parameters ({}))
+    (default_parameters ())
     (supported_voices null)
     (knowledge_cutoff 2025-03-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/tencent/hunyuan-a13b-instruct/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId tencent/hunyuan-a13b-instruct)

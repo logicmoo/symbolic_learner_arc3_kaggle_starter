@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-tencent_hy3)
   (label "Tencent: Hy3")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model tencent/hy3)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,16 +19,16 @@
     (tools true)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 262144)
     (maxOutputTokens 128000)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.000000132")
     (completion "0.000000528")
     (input_cache_read "0.000000033")
   ))
-  (properties ({}
+  (properties (
     (id tencent/hy3)
     (canonical_slug tencent/hy3-20260706)
     (hugging_face_id tencent/Hy3)
@@ -36,29 +36,29 @@
     (created 1783344048)
     (description "Hy3 is a 295B-parameter Mixture-of-Experts model from Tencent (21B active, 192 experts with top-8 routing) built for reasoning, agentic workflows, and real-world production use. It supports a configurable reasoning effort:...")
     (context_length 262144)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.000000132")
       (completion "0.000000528")
       (input_cache_read "0.000000033")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 262144)
       (max_completion_tokens 128000)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       logit_bias
@@ -79,7 +79,7 @@
       top_k
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature 0.9)
       (top_p 1)
       (top_k null)
@@ -90,47 +90,47 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/tencent/hy3-20260706/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category 3d)
           (elo 1230)
           (win_rate 43.8)
           (rank 39)
         )
-        ({}
+        (
           (arena models)
           (category codecategories)
           (elo 1205)
           (win_rate 41.2)
           (rank 47)
         )
-        ({}
+        (
           (arena models)
           (category dataviz)
           (elo 1155)
           (win_rate 36.1)
           (rank 68)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 1178)
           (win_rate 38.6)
           (rank 58)
         )
-        ({}
+        (
           (arena models)
           (category uicomponent)
           (elo 1196)
           (win_rate 40.2)
           (rank 53)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 1205)
@@ -139,10 +139,10 @@
         )
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
       (default_enabled true)
-      (supported_efforts (
+      (supported_efforts ([]
         high
         low
         none
@@ -151,7 +151,7 @@
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id tencent/hy3)
     (canonical_slug tencent/hy3-20260706)
     (hugging_face_id tencent/Hy3)
@@ -159,29 +159,29 @@
     (created 1783344048)
     (description "Hy3 is a 295B-parameter Mixture-of-Experts model from Tencent (21B active, 192 experts with top-8 routing) built for reasoning, agentic workflows, and real-world production use. It supports a configurable reasoning effort:...")
     (context_length 262144)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.000000132")
       (completion "0.000000528")
       (input_cache_read "0.000000033")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 262144)
       (max_completion_tokens 128000)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       logit_bias
@@ -202,7 +202,7 @@
       top_k
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature 0.9)
       (top_p 1)
       (top_k null)
@@ -213,47 +213,47 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/tencent/hy3-20260706/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category 3d)
           (elo 1230)
           (win_rate 43.8)
           (rank 39)
         )
-        ({}
+        (
           (arena models)
           (category codecategories)
           (elo 1205)
           (win_rate 41.2)
           (rank 47)
         )
-        ({}
+        (
           (arena models)
           (category dataviz)
           (elo 1155)
           (win_rate 36.1)
           (rank 68)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 1178)
           (win_rate 38.6)
           (rank 58)
         )
-        ({}
+        (
           (arena models)
           (category uicomponent)
           (elo 1196)
           (win_rate 40.2)
           (rank 53)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 1205)
@@ -262,10 +262,10 @@
         )
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
       (default_enabled true)
-      (supported_efforts (
+      (supported_efforts ([]
         high
         low
         none
@@ -273,7 +273,7 @@
       (default_effort high)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId tencent/hy3)

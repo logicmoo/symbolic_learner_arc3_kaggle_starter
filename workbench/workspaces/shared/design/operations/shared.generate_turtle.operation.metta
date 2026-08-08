@@ -1,20 +1,20 @@
-({}
+(
   (id shared.generate_turtle)
   (label "Generate Turtle Program")
   (description "Generate an executable Turtle representation from entities and symbolic facts. Reusable for any grid or drawing domain.")
-  (categories (
+  (categories ([]
     graphics/generation
     graphics/turtle
     symbolic/programming
   ))
   (implementation llm.turtle)
-  (inputs ({}
+  (inputs (
     (entities EntitySet)
     (facts SymbolicFactSet)
   ))
-  (outputs ({}
+  (outputs (
     (programs TurtleProgramSet)
   ))
-  (parameters ({}))
+  (parameters ())
   (kind operation)
 )

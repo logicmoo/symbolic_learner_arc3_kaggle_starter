@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-openai_gpt-4.1_batch)
   (label "OpenAI: GPT-4.1 (batch)")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model openai/gpt-4.1:batch)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,17 +19,17 @@
     (tools true)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 1047576)
     (maxOutputTokens 32768)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.000001")
     (completion "0.000004")
     (web_search "0.01")
     (input_cache_read "0.00000025")
   ))
-  (properties ({}
+  (properties (
     (id openai/gpt-4.1:batch)
     (canonical_slug openai/gpt-4.1-2025-04-14)
     (hugging_face_id "")
@@ -37,32 +37,32 @@
     (created 1744651385)
     (description "GPT-4.1 is a flagship large language model optimized for advanced instruction following, real-world software engineering, and long-context reasoning. It supports a 1 million token context window and outperforms GPT-4o and...")
     (context_length 1047576)
-    (architecture ({}
+    (architecture (
       (modality text+image+file->text)
-      (input_modalities (
+      (input_modalities ([]
         image
         text
         file
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer GPT)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.000001")
       (completion "0.000004")
       (web_search "0.01")
       (input_cache_read "0.00000025")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 1047576)
       (max_completion_tokens 32768)
       (is_moderated true)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       max_tokens
       response_format
       seed
@@ -72,51 +72,51 @@
       tools
       top_p
     ))
-    (default_parameters ({}))
+    (default_parameters ())
     (supported_voices null)
     (knowledge_cutoff 2024-06-30)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/openai/gpt-4.1-2025-04-14/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category 3d)
           (elo 904)
           (win_rate 30.9)
           (rank 106)
         )
-        ({}
+        (
           (arena models)
           (category codecategories)
           (elo 1054)
           (win_rate 50.9)
           (rank 96)
         )
-        ({}
+        (
           (arena models)
           (category dataviz)
           (elo 1131)
           (win_rate 59.5)
           (rank 75)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 1120)
           (win_rate 59.1)
           (rank 79)
         )
-        ({}
+        (
           (arena models)
           (category uicomponent)
           (elo 1034)
           (win_rate 49.7)
           (rank 92)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 1061)
@@ -127,7 +127,7 @@
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id openai/gpt-4.1:batch)
     (canonical_slug openai/gpt-4.1-2025-04-14)
     (hugging_face_id "")
@@ -135,32 +135,32 @@
     (created 1744651385)
     (description "GPT-4.1 is a flagship large language model optimized for advanced instruction following, real-world software engineering, and long-context reasoning. It supports a 1 million token context window and outperforms GPT-4o and...")
     (context_length 1047576)
-    (architecture ({}
+    (architecture (
       (modality text+image+file->text)
-      (input_modalities (
+      (input_modalities ([]
         image
         text
         file
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer GPT)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.000001")
       (completion "0.000004")
       (web_search "0.01")
       (input_cache_read "0.00000025")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 1047576)
       (max_completion_tokens 32768)
       (is_moderated true)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       max_tokens
       response_format
       seed
@@ -170,51 +170,51 @@
       tools
       top_p
     ))
-    (default_parameters ({}))
+    (default_parameters ())
     (supported_voices null)
     (knowledge_cutoff 2024-06-30)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/openai/gpt-4.1-2025-04-14/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category 3d)
           (elo 904)
           (win_rate 30.9)
           (rank 106)
         )
-        ({}
+        (
           (arena models)
           (category codecategories)
           (elo 1054)
           (win_rate 50.9)
           (rank 96)
         )
-        ({}
+        (
           (arena models)
           (category dataviz)
           (elo 1131)
           (win_rate 59.5)
           (rank 75)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 1120)
           (win_rate 59.1)
           (rank 79)
         )
-        ({}
+        (
           (arena models)
           (category uicomponent)
           (elo 1034)
           (win_rate 49.7)
           (rank 92)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 1061)
@@ -224,7 +224,7 @@
       ))
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId openai/gpt-4.1:batch)

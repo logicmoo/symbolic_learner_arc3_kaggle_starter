@@ -1,26 +1,26 @@
-({}
+(
   (kind operation)
   (id bitmap_to_scene_graph)
   (label "Bitmap to Scene Graph")
   (description "Convert an image from bitmap representation to scene-graph representation without changing its abstract datatype.")
-  (categories (
+  (categories ([]
     vision/conversion
     vision/grouping
     datatypes/representation
   ))
-  (inputs ({}
-    (image ({}
+  (inputs (
+    (image (
       (datatype image)
       (representation bitmap)
     ))
   ))
-  (outputs ({}
-    (image ({}
+  (outputs (
+    (image (
       (datatype image)
       (representation scene_graph)
     ))
   ))
-  (conversion ({}
+  (conversion (
     (datatype image)
     (from bitmap)
     (to scene_graph)

@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-thedrummer_skyfall-36b-v2)
   (label "TheDrummer: Skyfall 36B V2")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model thedrummer/skyfall-36b-v2)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling false)
@@ -19,16 +19,16 @@
     (tools false)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 32768)
     (maxOutputTokens 32768)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.00000055")
     (completion "0.0000008")
     (input_cache_read "0.00000025")
   ))
-  (properties ({}
+  (properties (
     (id thedrummer/skyfall-36b-v2)
     (canonical_slug thedrummer/skyfall-36b-v2)
     (hugging_face_id TheDrummer/Skyfall-36B-v2)
@@ -36,29 +36,29 @@
     (created 1741636566)
     (description "Skyfall 36B v2 is an enhanced iteration of Mistral Small 2501, specifically fine-tuned for improved creativity, nuanced writing, role-playing, and coherent storytelling.")
     (context_length 32768)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000055")
       (completion "0.0000008")
       (input_cache_read "0.00000025")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 32768)
       (max_completion_tokens 32768)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       logit_bias
       logprobs
@@ -74,16 +74,16 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}))
+    (default_parameters ())
     (supported_voices null)
     (knowledge_cutoff 2024-06-30)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/thedrummer/skyfall-36b-v2/endpoints)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id thedrummer/skyfall-36b-v2)
     (canonical_slug thedrummer/skyfall-36b-v2)
     (hugging_face_id TheDrummer/Skyfall-36B-v2)
@@ -91,29 +91,29 @@
     (created 1741636566)
     (description "Skyfall 36B v2 is an enhanced iteration of Mistral Small 2501, specifically fine-tuned for improved creativity, nuanced writing, role-playing, and coherent storytelling.")
     (context_length 32768)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000055")
       (completion "0.0000008")
       (input_cache_read "0.00000025")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 32768)
       (max_completion_tokens 32768)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       logit_bias
       logprobs
@@ -129,15 +129,15 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}))
+    (default_parameters ())
     (supported_voices null)
     (knowledge_cutoff 2024-06-30)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/thedrummer/skyfall-36b-v2/endpoints)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId thedrummer/skyfall-36b-v2)

@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-undi95_remm-slerp-l2-13b)
   (label "ReMM SLERP 13B")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model undi95/remm-slerp-l2-13b)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling false)
@@ -19,15 +19,15 @@
     (tools false)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 6144)
     (maxOutputTokens 6144)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.00000045")
     (completion "0.00000065")
   ))
-  (properties ({}
+  (properties (
     (id undi95/remm-slerp-l2-13b)
     (canonical_slug undi95/remm-slerp-l2-13b)
     (hugging_face_id Undi95/ReMM-SLERP-L2-13B)
@@ -35,28 +35,28 @@
     (created 1689984000)
     (description "A recreation trial of the original MythoMax-L2-B13 but with updated models. #merge")
     (context_length 6144)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Llama2)
       (instruct_type alpaca)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000045")
       (completion "0.00000065")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 6144)
       (max_completion_tokens 6144)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       logit_bias
       logprobs
@@ -74,16 +74,16 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}))
+    (default_parameters ())
     (supported_voices null)
     (knowledge_cutoff 2023-06-30)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/undi95/remm-slerp-l2-13b/endpoints)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id undi95/remm-slerp-l2-13b)
     (canonical_slug undi95/remm-slerp-l2-13b)
     (hugging_face_id Undi95/ReMM-SLERP-L2-13B)
@@ -91,28 +91,28 @@
     (created 1689984000)
     (description "A recreation trial of the original MythoMax-L2-B13 but with updated models. #merge")
     (context_length 6144)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Llama2)
       (instruct_type alpaca)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000045")
       (completion "0.00000065")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 6144)
       (max_completion_tokens 6144)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       logit_bias
       logprobs
@@ -130,15 +130,15 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}))
+    (default_parameters ())
     (supported_voices null)
     (knowledge_cutoff 2023-06-30)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/undi95/remm-slerp-l2-13b/endpoints)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId undi95/remm-slerp-l2-13b)

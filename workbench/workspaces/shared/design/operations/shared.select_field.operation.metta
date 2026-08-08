@@ -1,19 +1,19 @@
-({}
+(
   (id shared.select_field)
   (label "Select Record Field")
   (description "Select one field from an object artifact using the configured key.")
-  (categories (
+  (categories ([]
     core/records
     data/selection
   ))
   (implementation core.select)
-  (inputs ({}
+  (inputs (
     (value Object)
   ))
-  (outputs ({}
+  (outputs (
     (value Any)
   ))
-  (parameters ({}
+  (parameters (
     (key field_name)
   ))
   (kind operation)

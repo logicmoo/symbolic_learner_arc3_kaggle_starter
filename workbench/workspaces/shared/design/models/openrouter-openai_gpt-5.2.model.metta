@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-openai_gpt-5.2)
   (label "OpenAI: GPT-5.2")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model openai/gpt-5.2)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,17 +19,17 @@
     (tools true)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 400000)
     (maxOutputTokens 128000)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.00000175")
     (completion "0.000014")
     (web_search "0.01")
     (input_cache_read "0.000000175")
   ))
-  (properties ({}
+  (properties (
     (id openai/gpt-5.2)
     (canonical_slug openai/gpt-5.2-20251211)
     (hugging_face_id "")
@@ -37,32 +37,32 @@
     (created 1765389775)
     (description "GPT-5.2 is the latest frontier-grade model in the GPT-5 series, offering stronger agentic and long context perfomance compared to GPT-5.1. It uses adaptive reasoning to allocate computation dynamically, responding quickly...")
     (context_length 400000)
-    (architecture ({}
+    (architecture (
       (modality text+image+file->text)
-      (input_modalities (
+      (input_modalities ([]
         file
         image
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer GPT)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000175")
       (completion "0.000014")
       (web_search "0.01")
       (input_cache_read "0.000000175")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 400000)
       (max_completion_tokens 128000)
       (is_moderated true)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_completion_tokens
       max_tokens
@@ -74,7 +74,7 @@
       tool_choice
       tools
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -85,96 +85,96 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/openai/gpt-5.2-20251211/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category website)
           (elo 1216)
           (win_rate 54.4)
           (rank 44)
         )
-        ({}
+        (
           (arena agents)
           (category androidnative)
           (elo 1089)
           (win_rate 49.2)
           (rank 25)
         )
-        ({}
+        (
           (arena agents)
           (category fullstack)
           (elo 1084)
           (win_rate 44.1)
           (rank 27)
         )
-        ({}
+        (
           (arena agents)
           (category godotgamedev)
           (elo 1142)
           (win_rate 48.1)
           (rank 18)
         )
-        ({}
+        (
           (arena agents)
           (category mobileapps)
           (elo 1152)
           (win_rate 46.6)
           (rank 23)
         )
-        ({}
+        (
           (arena agents)
           (category webapps)
           (elo 1135)
           (win_rate 45.3)
           (rank 26)
         )
-        ({}
+        (
           (arena models)
           (category 3d)
           (elo 1133)
           (win_rate 41.5)
           (rank 74)
         )
-        ({}
+        (
           (arena models)
           (category codecategories)
           (elo 1198)
           (win_rate 49.6)
           (rank 54)
         )
-        ({}
+        (
           (arena models)
           (category dataviz)
           (elo 1229)
           (win_rate 56.1)
           (rank 38)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 1236)
           (win_rate 56)
           (rank 37)
         )
-        ({}
+        (
           (arena models)
           (category uicomponent)
           (elo 1223)
           (win_rate 51.3)
           (rank 40)
         )
-        ({}
+        (
           (arena models)
           (category asciiart)
           (elo 1190)
           (win_rate 50.7)
           (rank 27)
         )
-        ({}
+        (
           (arena models)
           (category svg)
           (elo 1186)
@@ -183,9 +183,9 @@
         )
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
-      (supported_efforts (
+      (supported_efforts ([]
         xhigh
         high
         medium
@@ -196,7 +196,7 @@
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id openai/gpt-5.2)
     (canonical_slug openai/gpt-5.2-20251211)
     (hugging_face_id "")
@@ -204,32 +204,32 @@
     (created 1765389775)
     (description "GPT-5.2 is the latest frontier-grade model in the GPT-5 series, offering stronger agentic and long context perfomance compared to GPT-5.1. It uses adaptive reasoning to allocate computation dynamically, responding quickly...")
     (context_length 400000)
-    (architecture ({}
+    (architecture (
       (modality text+image+file->text)
-      (input_modalities (
+      (input_modalities ([]
         file
         image
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer GPT)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000175")
       (completion "0.000014")
       (web_search "0.01")
       (input_cache_read "0.000000175")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 400000)
       (max_completion_tokens 128000)
       (is_moderated true)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_completion_tokens
       max_tokens
@@ -241,7 +241,7 @@
       tool_choice
       tools
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -252,96 +252,96 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/openai/gpt-5.2-20251211/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category website)
           (elo 1216)
           (win_rate 54.4)
           (rank 44)
         )
-        ({}
+        (
           (arena agents)
           (category androidnative)
           (elo 1089)
           (win_rate 49.2)
           (rank 25)
         )
-        ({}
+        (
           (arena agents)
           (category fullstack)
           (elo 1084)
           (win_rate 44.1)
           (rank 27)
         )
-        ({}
+        (
           (arena agents)
           (category godotgamedev)
           (elo 1142)
           (win_rate 48.1)
           (rank 18)
         )
-        ({}
+        (
           (arena agents)
           (category mobileapps)
           (elo 1152)
           (win_rate 46.6)
           (rank 23)
         )
-        ({}
+        (
           (arena agents)
           (category webapps)
           (elo 1135)
           (win_rate 45.3)
           (rank 26)
         )
-        ({}
+        (
           (arena models)
           (category 3d)
           (elo 1133)
           (win_rate 41.5)
           (rank 74)
         )
-        ({}
+        (
           (arena models)
           (category codecategories)
           (elo 1198)
           (win_rate 49.6)
           (rank 54)
         )
-        ({}
+        (
           (arena models)
           (category dataviz)
           (elo 1229)
           (win_rate 56.1)
           (rank 38)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 1236)
           (win_rate 56)
           (rank 37)
         )
-        ({}
+        (
           (arena models)
           (category uicomponent)
           (elo 1223)
           (win_rate 51.3)
           (rank 40)
         )
-        ({}
+        (
           (arena models)
           (category asciiart)
           (elo 1190)
           (win_rate 50.7)
           (rank 27)
         )
-        ({}
+        (
           (arena models)
           (category svg)
           (elo 1186)
@@ -350,9 +350,9 @@
         )
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
-      (supported_efforts (
+      (supported_efforts ([]
         xhigh
         high
         medium
@@ -362,7 +362,7 @@
       (default_effort medium)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId openai/gpt-5.2)

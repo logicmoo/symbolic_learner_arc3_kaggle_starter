@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-openai_gpt-4.1-nano)
   (label "OpenAI: GPT-4.1 Nano")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model openai/gpt-4.1-nano)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,17 +19,17 @@
     (tools true)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 1047576)
     (maxOutputTokens 32768)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.0000001")
     (completion "0.0000004")
     (web_search "0.01")
     (input_cache_read "0.000000025")
   ))
-  (properties ({}
+  (properties (
     (id openai/gpt-4.1-nano)
     (canonical_slug openai/gpt-4.1-nano-2025-04-14)
     (hugging_face_id "")
@@ -37,32 +37,32 @@
     (created 1744651369)
     (description "For tasks that demand low latency, GPT‑4.1 nano is the fastest and cheapest model in the GPT-4.1 series. It delivers exceptional performance at a small size with its 1 million...")
     (context_length 1047576)
-    (architecture ({}
+    (architecture (
       (modality text+image+file->text)
-      (input_modalities (
+      (input_modalities ([]
         image
         text
         file
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer GPT)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000001")
       (completion "0.0000004")
       (web_search "0.01")
       (input_cache_read "0.000000025")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 1047576)
       (max_completion_tokens 32768)
       (is_moderated true)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       max_completion_tokens
       max_tokens
       response_format
@@ -73,51 +73,51 @@
       tools
       top_p
     ))
-    (default_parameters ({}))
+    (default_parameters ())
     (supported_voices null)
     (knowledge_cutoff 2024-06-30)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/openai/gpt-4.1-nano-2025-04-14/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category 3d)
           (elo 979)
           (win_rate 46)
           (rank 100)
         )
-        ({}
+        (
           (arena models)
           (category codecategories)
           (elo 991)
           (win_rate 47.3)
           (rank 106)
         )
-        ({}
+        (
           (arena models)
           (category dataviz)
           (elo 919)
           (win_rate 41.1)
           (rank 109)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 1011)
           (win_rate 49.6)
           (rank 102)
         )
-        ({}
+        (
           (arena models)
           (category uicomponent)
           (elo 949)
           (win_rate 43.9)
           (rank 102)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 995)
@@ -125,7 +125,7 @@
           (rank 109)
         )
       ))
-      (artificial_analysis ({}
+      (artificial_analysis (
         (intelligence_index 9.6)
         (coding_index 11.1)
         (agentic_index 1.2)
@@ -133,7 +133,7 @@
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id openai/gpt-4.1-nano)
     (canonical_slug openai/gpt-4.1-nano-2025-04-14)
     (hugging_face_id "")
@@ -141,32 +141,32 @@
     (created 1744651369)
     (description "For tasks that demand low latency, GPT‑4.1 nano is the fastest and cheapest model in the GPT-4.1 series. It delivers exceptional performance at a small size with its 1 million...")
     (context_length 1047576)
-    (architecture ({}
+    (architecture (
       (modality text+image+file->text)
-      (input_modalities (
+      (input_modalities ([]
         image
         text
         file
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer GPT)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000001")
       (completion "0.0000004")
       (web_search "0.01")
       (input_cache_read "0.000000025")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 1047576)
       (max_completion_tokens 32768)
       (is_moderated true)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       max_completion_tokens
       max_tokens
       response_format
@@ -177,51 +177,51 @@
       tools
       top_p
     ))
-    (default_parameters ({}))
+    (default_parameters ())
     (supported_voices null)
     (knowledge_cutoff 2024-06-30)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/openai/gpt-4.1-nano-2025-04-14/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category 3d)
           (elo 979)
           (win_rate 46)
           (rank 100)
         )
-        ({}
+        (
           (arena models)
           (category codecategories)
           (elo 991)
           (win_rate 47.3)
           (rank 106)
         )
-        ({}
+        (
           (arena models)
           (category dataviz)
           (elo 919)
           (win_rate 41.1)
           (rank 109)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 1011)
           (win_rate 49.6)
           (rank 102)
         )
-        ({}
+        (
           (arena models)
           (category uicomponent)
           (elo 949)
           (win_rate 43.9)
           (rank 102)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 995)
@@ -229,14 +229,14 @@
           (rank 109)
         )
       ))
-      (artificial_analysis ({}
+      (artificial_analysis (
         (intelligence_index 9.6)
         (coding_index 11.1)
         (agentic_index 1.2)
       ))
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId openai/gpt-4.1-nano)

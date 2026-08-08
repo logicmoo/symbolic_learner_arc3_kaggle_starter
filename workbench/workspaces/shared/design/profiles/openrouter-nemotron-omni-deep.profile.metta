@@ -1,11 +1,11 @@
-({}
+(
   (kind profile)
   (id openrouter-nemotron-omni-deep)
   (label "Nemotron 3 Nano Omni free — deep")
   (description "Prompt-free execution profile migrated from the legacy ARC3 configuration.")
   (inherits openrouter-nemotron-omni)
   (enabled true)
-  (defaults ({}
+  (defaults (
     (analysisLevel 3)
     (singleEnabled true)
     (batchEnabled true)

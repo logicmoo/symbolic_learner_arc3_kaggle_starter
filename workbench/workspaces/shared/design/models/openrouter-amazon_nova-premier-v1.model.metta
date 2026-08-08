@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-amazon_nova-premier-v1)
   (label "Amazon: Nova Premier 1.0")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model amazon/nova-premier-v1)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,16 +19,16 @@
     (tools true)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 1000000)
     (maxOutputTokens 32000)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.0000025")
     (completion "0.0000125")
     (input_cache_read "0.000000625")
   ))
-  (properties ({}
+  (properties (
     (id amazon/nova-premier-v1)
     (canonical_slug amazon/nova-premier-v1)
     (hugging_face_id "")
@@ -36,30 +36,30 @@
     (created 1761950332)
     (description "Amazon Nova Premier is the most capable of Amazon’s multimodal models for complex reasoning tasks and for use as the best teacher for distilling custom models.")
     (context_length 1000000)
-    (architecture ({}
+    (architecture (
       (modality text+image->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Nova)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000025")
       (completion "0.0000125")
       (input_cache_read "0.000000625")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 1000000)
       (max_completion_tokens 32000)
       (is_moderated true)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       max_tokens
       stop
       temperature
@@ -67,7 +67,7 @@
       top_k
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (frequency_penalty null)
@@ -75,12 +75,12 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/amazon/nova-premier-v1/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category website)
           (elo 857)
@@ -91,7 +91,7 @@
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id amazon/nova-premier-v1)
     (canonical_slug amazon/nova-premier-v1)
     (hugging_face_id "")
@@ -99,30 +99,30 @@
     (created 1761950332)
     (description "Amazon Nova Premier is the most capable of Amazon’s multimodal models for complex reasoning tasks and for use as the best teacher for distilling custom models.")
     (context_length 1000000)
-    (architecture ({}
+    (architecture (
       (modality text+image->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Nova)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000025")
       (completion "0.0000125")
       (input_cache_read "0.000000625")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 1000000)
       (max_completion_tokens 32000)
       (is_moderated true)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       max_tokens
       stop
       temperature
@@ -130,7 +130,7 @@
       top_k
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (frequency_penalty null)
@@ -138,12 +138,12 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/amazon/nova-premier-v1/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category website)
           (elo 857)
@@ -153,7 +153,7 @@
       ))
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId amazon/nova-premier-v1)

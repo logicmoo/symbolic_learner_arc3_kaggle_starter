@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-aion-labs_aion-2.0)
   (label "AionLabs: Aion-2.0")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model aion-labs/aion-2.0)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,16 +19,16 @@
     (tools true)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 131072)
     (maxOutputTokens 32768)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.0000008")
     (completion "0.0000016")
     (input_cache_read "0.0000002")
   ))
-  (properties ({}
+  (properties (
     (id aion-labs/aion-2.0)
     (canonical_slug aion-labs/aion-2.0-20260223)
     (hugging_face_id null)
@@ -36,29 +36,29 @@
     (created 1771881306)
     (description "Aion-2.0 is a variant of DeepSeek V3.2 optimized for immersive roleplaying and storytelling. It is particularly strong at introducing tension, crises, and conflict into stories, making narratives feel more engaging....")
     (context_length 131072)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000008")
       (completion "0.0000016")
       (input_cache_read "0.0000002")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 131072)
       (max_completion_tokens 32768)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_tokens
       reasoning
@@ -68,7 +68,7 @@
       tools
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (frequency_penalty null)
@@ -76,15 +76,15 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/aion-labs/aion-2.0-20260223/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory true)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id aion-labs/aion-2.0)
     (canonical_slug aion-labs/aion-2.0-20260223)
     (hugging_face_id null)
@@ -92,29 +92,29 @@
     (created 1771881306)
     (description "Aion-2.0 is a variant of DeepSeek V3.2 optimized for immersive roleplaying and storytelling. It is particularly strong at introducing tension, crises, and conflict into stories, making narratives feel more engaging....")
     (context_length 131072)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000008")
       (completion "0.0000016")
       (input_cache_read "0.0000002")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 131072)
       (max_completion_tokens 32768)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_tokens
       reasoning
@@ -124,7 +124,7 @@
       tools
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (frequency_penalty null)
@@ -132,14 +132,14 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/aion-labs/aion-2.0-20260223/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory true)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId aion-labs/aion-2.0)

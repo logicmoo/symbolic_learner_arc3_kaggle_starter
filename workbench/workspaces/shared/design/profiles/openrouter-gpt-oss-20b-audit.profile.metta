@@ -1,11 +1,11 @@
-({}
+(
   (kind profile)
   (id openrouter-gpt-oss-20b-audit)
   (label "gpt-oss-20b — medium deterministic")
   (description "Prompt-free execution profile migrated from the legacy artifact-audit transaction.")
   (inherits openrouter-gpt-oss-20b)
   (enabled true)
-  (defaults ({}
+  (defaults (
     (analysisLevel 3)
     (singleEnabled false)
     (batchEnabled false)
@@ -18,7 +18,7 @@
     (timeoutSeconds 360)
     (seed null)
   ))
-  (metadata ({}
+  (metadata (
     (legacyTransaction audit_artifact_bundle)
   ))
 )

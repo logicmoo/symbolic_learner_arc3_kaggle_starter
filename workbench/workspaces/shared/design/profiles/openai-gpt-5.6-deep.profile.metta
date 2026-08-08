@@ -1,11 +1,11 @@
-({}
+(
   (kind profile)
   (id openai-gpt-5.6-deep)
   (label "GPT-5.6 — deep")
   (description "Prompt-free execution profile migrated from the legacy ARC3 configuration.")
   (inherits gpt-5.6)
   (enabled true)
-  (defaults ({}
+  (defaults (
     (analysisLevel 3)
     (singleEnabled true)
     (batchEnabled false)

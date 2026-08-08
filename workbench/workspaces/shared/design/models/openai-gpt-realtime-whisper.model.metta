@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openai-gpt-realtime-whisper)
   (label gpt-realtime-whisper)
@@ -6,7 +6,7 @@
   (inherits openai)
   (model gpt-realtime-whisper)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio true)
     (code false)
     (functionCalling false)
@@ -19,25 +19,25 @@
     (tools false)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow null)
     (maxOutputTokens null)
   ))
-  (pricing ({}))
-  (properties ({}
+  (pricing ())
+  (properties (
     (id gpt-realtime-whisper)
     (object model)
     (created 1778012060)
     (owned_by system)
     (ownedBy system)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id gpt-realtime-whisper)
     (object model)
     (created 1778012060)
     (owned_by system)
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openai)
     (remoteModelId gpt-realtime-whisper)

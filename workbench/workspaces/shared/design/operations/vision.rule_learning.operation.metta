@@ -1,22 +1,22 @@
-({}
+(
   (id vision.rule_learning)
   (label "Vision Rule Learning")
   (description "Infer candidate world rules from visual transitions while preserving evidence, alternatives, and contradictions.")
-  (categories (
+  (categories ([]
     vision/learning
     symbolic/rule-learning
     learning/induction
   ))
   (implementation llm.complete)
-  (inputs ({}
+  (inputs (
     (transitions ChangeDescription)
     (evidence Evidence)
   ))
-  (outputs ({}
+  (outputs (
     (rules RuleSet)
   ))
-  (promptSelection ({}
-    (prompts (
+  (promptSelection (
+    (prompts ([]
       structured_json_response
       transition_observation
       object_correspondence
@@ -26,10 +26,10 @@
     ))
     (separator "\n\n")
   ))
-  (modelSelection ({}
-    (models ())
+  (modelSelection (
+    (models ([]))
     (strategy single)
   ))
-  (parameters ({}))
+  (parameters ())
   (kind operation)
 )

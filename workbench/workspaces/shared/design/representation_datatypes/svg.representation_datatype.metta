@@ -1,12 +1,12 @@
-({}
+(
   (kind representation_datatype)
   (id svg)
   (label SVG)
   (language image/svg+xml)
-  (parents (
+  (parents ([]
     image
   ))
-  (children (
+  (children ([]
     svg_xml
   ))
   (preferredChild svg_xml)

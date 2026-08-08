@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-bytedance-seed_seed-1.6)
   (label "ByteDance Seed: Seed 1.6")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model bytedance-seed/seed-1.6)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,22 +19,22 @@
     (tools true)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 262144)
     (maxOutputTokens 32768)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.00000025")
     (completion "0.000002")
-    (overrides (
-      ({}
+    (overrides ([]
+      (
         (min_prompt_tokens 128000)
         (prompt "0.0000005")
         (completion "0.000004")
       )
     ))
   ))
-  (properties ({}
+  (properties (
     (id bytedance-seed/seed-1.6)
     (canonical_slug bytedance-seed/seed-1.6-20250625)
     (hugging_face_id "")
@@ -42,37 +42,37 @@
     (created 1766504997)
     (description "Seed 1.6 is a general-purpose model released by the ByteDance Seed team. It incorporates multimodal capabilities and adaptive deep thinking with a 256K context window.")
     (context_length 262144)
-    (architecture ({}
+    (architecture (
       (modality text+image+video->text)
-      (input_modalities (
+      (input_modalities ([]
         image
         text
         video
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000025")
       (completion "0.000002")
-      (overrides (
-        ({}
+      (overrides ([]
+        (
           (min_prompt_tokens 128000)
           (prompt "0.0000005")
           (completion "0.000004")
         )
       ))
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 262144)
       (max_completion_tokens 32768)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       max_tokens
@@ -85,7 +85,7 @@
       tools
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (frequency_penalty null)
@@ -93,15 +93,15 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/bytedance-seed/seed-1.6-20250625/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id bytedance-seed/seed-1.6)
     (canonical_slug bytedance-seed/seed-1.6-20250625)
     (hugging_face_id "")
@@ -109,37 +109,37 @@
     (created 1766504997)
     (description "Seed 1.6 is a general-purpose model released by the ByteDance Seed team. It incorporates multimodal capabilities and adaptive deep thinking with a 256K context window.")
     (context_length 262144)
-    (architecture ({}
+    (architecture (
       (modality text+image+video->text)
-      (input_modalities (
+      (input_modalities ([]
         image
         text
         video
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000025")
       (completion "0.000002")
-      (overrides (
-        ({}
+      (overrides ([]
+        (
           (min_prompt_tokens 128000)
           (prompt "0.0000005")
           (completion "0.000004")
         )
       ))
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 262144)
       (max_completion_tokens 32768)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       max_tokens
@@ -152,7 +152,7 @@
       tools
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (frequency_penalty null)
@@ -160,14 +160,14 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/bytedance-seed/seed-1.6-20250625/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId bytedance-seed/seed-1.6)

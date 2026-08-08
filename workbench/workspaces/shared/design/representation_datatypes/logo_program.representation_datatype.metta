@@ -1,18 +1,18 @@
-({}
+(
   (kind representation_datatype)
   (id logo_program)
   (label "LOGO/Turtle Program")
   (language logo)
-  (mediaTypes (
+  (mediaTypes ([]
     text/x-logo
     text/plain
   ))
-  (extensions (
+  (extensions ([]
     .logo
     .txt
   ))
-  (parents (
+  (parents ([]
     image
   ))
-  (children ())
+  (children ([]))
 )

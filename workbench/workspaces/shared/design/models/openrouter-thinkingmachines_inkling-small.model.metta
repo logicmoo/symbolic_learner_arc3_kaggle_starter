@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-thinkingmachines_inkling-small)
   (label "Thinking Machines: Inkling Small")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model thinkingmachines/inkling-small)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio true)
     (code false)
     (functionCalling true)
@@ -19,16 +19,16 @@
     (tools true)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 524288)
     (maxOutputTokens 262144)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.00000045")
     (completion "0.0000012")
     (input_cache_read "0.0000001")
   ))
-  (properties ({}
+  (properties (
     (id thinkingmachines/inkling-small)
     (canonical_slug thinkingmachines/inkling-small-20260730)
     (hugging_face_id thinkingmachines/Inkling-Small)
@@ -36,31 +36,31 @@
     (created 1785443117)
     (description "Inkling Small is an open-weight multimodal mixture-of-experts model from Thinking Machines Lab, with 12B active parameters out of 276B total. It is positioned as the smaller, more efficient member of...")
     (context_length 524288)
-    (architecture ({}
+    (architecture (
       (modality text+image+audio->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
         audio
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000045")
       (completion "0.0000012")
       (input_cache_read "0.0000001")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 524288)
       (max_completion_tokens 262144)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       logit_bias
@@ -80,7 +80,7 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -91,21 +91,21 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/thinkingmachines/inkling-small-20260730/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena ())
-      (artificial_analysis ({}
+    (benchmarks (
+      (design_arena ([]))
+      (artificial_analysis (
         (intelligence_index 41.2)
         (coding_index 52.9)
         (agentic_index 31.9)
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
       (default_enabled true)
-      (supported_efforts (
+      (supported_efforts ([]
         max
         high
         medium
@@ -117,7 +117,7 @@
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id thinkingmachines/inkling-small)
     (canonical_slug thinkingmachines/inkling-small-20260730)
     (hugging_face_id thinkingmachines/Inkling-Small)
@@ -125,31 +125,31 @@
     (created 1785443117)
     (description "Inkling Small is an open-weight multimodal mixture-of-experts model from Thinking Machines Lab, with 12B active parameters out of 276B total. It is positioned as the smaller, more efficient member of...")
     (context_length 524288)
-    (architecture ({}
+    (architecture (
       (modality text+image+audio->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
         audio
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000045")
       (completion "0.0000012")
       (input_cache_read "0.0000001")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 524288)
       (max_completion_tokens 262144)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       logit_bias
@@ -169,7 +169,7 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -180,21 +180,21 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/thinkingmachines/inkling-small-20260730/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena ())
-      (artificial_analysis ({}
+    (benchmarks (
+      (design_arena ([]))
+      (artificial_analysis (
         (intelligence_index 41.2)
         (coding_index 52.9)
         (agentic_index 31.9)
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
       (default_enabled true)
-      (supported_efforts (
+      (supported_efforts ([]
         max
         high
         medium
@@ -205,7 +205,7 @@
       (default_effort high)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId thinkingmachines/inkling-small)

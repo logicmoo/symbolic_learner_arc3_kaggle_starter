@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-openai_o3-mini_batch)
   (label "OpenAI: o3 Mini (batch)")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model openai/o3-mini:batch)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,17 +19,17 @@
     (tools true)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 200000)
     (maxOutputTokens 100000)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.00000055")
     (completion "0.0000022")
     (web_search "0.01")
     (input_cache_read "0.000000275")
   ))
-  (properties ({}
+  (properties (
     (id openai/o3-mini:batch)
     (canonical_slug openai/o3-mini-2025-01-31)
     (hugging_face_id "")
@@ -37,31 +37,31 @@
     (created 1738351721)
     (description "OpenAI o3-mini is a cost-efficient language model optimized for STEM reasoning tasks, particularly excelling in science, mathematics, and coding. This model supports the `reasoning_effort` parameter, which can be set to...")
     (context_length 200000)
-    (architecture ({}
+    (architecture (
       (modality text+file->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         file
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer GPT)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000055")
       (completion "0.0000022")
       (web_search "0.01")
       (input_cache_read "0.000000275")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 200000)
       (max_completion_tokens 100000)
       (is_moderated true)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_tokens
       reasoning
@@ -71,7 +71,7 @@
       tool_choice
       tools
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -82,15 +82,15 @@
     (supported_voices null)
     (knowledge_cutoff 2023-10-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/openai/o3-mini-2025-01-31/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id openai/o3-mini:batch)
     (canonical_slug openai/o3-mini-2025-01-31)
     (hugging_face_id "")
@@ -98,31 +98,31 @@
     (created 1738351721)
     (description "OpenAI o3-mini is a cost-efficient language model optimized for STEM reasoning tasks, particularly excelling in science, mathematics, and coding. This model supports the `reasoning_effort` parameter, which can be set to...")
     (context_length 200000)
-    (architecture ({}
+    (architecture (
       (modality text+file->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         file
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer GPT)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000055")
       (completion "0.0000022")
       (web_search "0.01")
       (input_cache_read "0.000000275")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 200000)
       (max_completion_tokens 100000)
       (is_moderated true)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_tokens
       reasoning
@@ -132,7 +132,7 @@
       tool_choice
       tools
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -143,14 +143,14 @@
     (supported_voices null)
     (knowledge_cutoff 2023-10-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/openai/o3-mini-2025-01-31/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId openai/o3-mini:batch)

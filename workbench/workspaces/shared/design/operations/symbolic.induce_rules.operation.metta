@@ -1,21 +1,21 @@
-({}
+(
   (id symbolic.induce_rules)
   (label "Induce Rules from Symbolic Evidence")
   (description "Reusable rule-induction operation migrated from the legacy ARC3 induce_rules_from_prolog transaction.")
-  (categories (
+  (categories ([]
     symbolic/rule-learning
     learning/induction
   ))
   (implementation llm.complete)
-  (inputs ({}
+  (inputs (
     (facts ArtifactBundle)
     (transitions ChangeDescription)
   ))
-  (outputs ({}
+  (outputs (
     (rules RuleSet)
   ))
-  (promptSelection ({}
-    (prompts (
+  (promptSelection (
+    (prompts ([]
       structured_json_response
       rule_hypothesis
       symbolic_rule_evidence_schema
@@ -24,11 +24,11 @@
     ))
     (separator "\n\n")
   ))
-  (modelSelection ({}
-    (models ())
+  (modelSelection (
+    (models ([]))
     (strategy single)
   ))
-  (parameters ({}
+  (parameters (
     (requiresVision false)
   ))
   (kind operation)

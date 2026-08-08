@@ -1,11 +1,11 @@
-({}
+(
   (kind profile)
   (id gpt-5.6-deep)
   (label "GPT-5.6 / Deep")
   (description "Higher-reasoning GPT-5.6 profile for difficult symbolic analysis steps.")
   (inherits gpt-5.6)
   (enabled true)
-  (defaults ({}
+  (defaults (
     (reasoningEffort high)
     (analysisLevel 3)
     (maxOutputTokens 24000)

@@ -1,4 +1,4 @@
-({}
+(
   (kind backend)
   (id openai)
   (label OpenAI)
@@ -6,7 +6,7 @@
   (official true)
   (description "Shared OpenAI-compatible backend used as the root of the visible model/profile inheritance example.")
   (enabled true)
-  (capabilities (
+  (capabilities ([]
     llm.complete
     llm.reasoning
     llm.vision
@@ -14,7 +14,7 @@
     vision
     reasoning
   ))
-  (configuration ({}
+  (configuration (
     (adapter openai_responses)
     (baseUrl https://api.openai.com/v1)
     (apiKeyEnvironmentVariable OPENAI_API_KEY)
@@ -25,7 +25,7 @@
     (timeoutSeconds 900)
     (apiKeyEnvironment OPENAI_API_KEY)
   ))
-  (modelDefaults ({}
+  (modelDefaults (
     (temperature 0)
     (topP 1)
     (maxOutputTokens 12000)

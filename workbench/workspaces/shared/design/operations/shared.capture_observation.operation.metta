@@ -1,18 +1,18 @@
-({}
+(
   (id shared.capture_observation)
   (label "Capture Observation")
   (description "Persist an observation unchanged so downstream steps can reference a stable artifact. Reusable by visual, board-game, robotics, and other worlds.")
-  (categories (
+  (categories ([]
     observation/capture
     world-modeling/evidence
   ))
   (implementation core.echo)
-  (inputs ({}
+  (inputs (
     (value Any)
   ))
-  (outputs ({}
+  (outputs (
     (value Any)
   ))
-  (parameters ({}))
+  (parameters ())
   (kind operation)
 )

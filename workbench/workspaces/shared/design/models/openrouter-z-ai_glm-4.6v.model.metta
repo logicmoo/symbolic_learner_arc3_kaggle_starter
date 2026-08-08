@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-z-ai_glm-4.6v)
   (label "Z.ai: GLM 4.6V")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model z-ai/glm-4.6v)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,16 +19,16 @@
     (tools true)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 131072)
     (maxOutputTokens 32768)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.0000003")
     (completion "0.0000009")
     (input_cache_read "0.000000055")
   ))
-  (properties ({}
+  (properties (
     (id z-ai/glm-4.6v)
     (canonical_slug z-ai/glm-4.6-20251208)
     (hugging_face_id zai-org/GLM-4.6V)
@@ -36,31 +36,31 @@
     (created 1765207462)
     (description "GLM-4.6V is a large multimodal model designed for high-fidelity visual understanding and long-context reasoning across images, documents, and mixed media. It supports up to 128K tokens, processes complex page layouts...")
     (context_length 131072)
-    (architecture ({}
+    (architecture (
       (modality text+image+video->text)
-      (input_modalities (
+      (input_modalities ([]
         image
         text
         video
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000003")
       (completion "0.0000009")
       (input_cache_read "0.000000055")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 131072)
       (max_completion_tokens 32768)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       max_tokens
@@ -76,7 +76,7 @@
       top_k
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature 0.8)
       (top_p 0.6)
       (frequency_penalty null)
@@ -84,15 +84,15 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/z-ai/glm-4.6-20251208/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id z-ai/glm-4.6v)
     (canonical_slug z-ai/glm-4.6-20251208)
     (hugging_face_id zai-org/GLM-4.6V)
@@ -100,31 +100,31 @@
     (created 1765207462)
     (description "GLM-4.6V is a large multimodal model designed for high-fidelity visual understanding and long-context reasoning across images, documents, and mixed media. It supports up to 128K tokens, processes complex page layouts...")
     (context_length 131072)
-    (architecture ({}
+    (architecture (
       (modality text+image+video->text)
-      (input_modalities (
+      (input_modalities ([]
         image
         text
         video
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000003")
       (completion "0.0000009")
       (input_cache_read "0.000000055")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 131072)
       (max_completion_tokens 32768)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       max_tokens
@@ -140,7 +140,7 @@
       top_k
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature 0.8)
       (top_p 0.6)
       (frequency_penalty null)
@@ -148,14 +148,14 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/z-ai/glm-4.6-20251208/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId z-ai/glm-4.6v)

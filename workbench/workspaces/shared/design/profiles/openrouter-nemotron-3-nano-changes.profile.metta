@@ -1,11 +1,11 @@
-({}
+(
   (kind profile)
   (id openrouter-nemotron-3-nano-changes)
   (label "Nemotron 3 Nano — medium reasoning")
   (description "Prompt-free execution profile migrated from the legacy object-change transaction.")
   (inherits openrouter-nemotron-3-nano)
   (enabled true)
-  (defaults ({}
+  (defaults (
     (analysisLevel 3)
     (singleEnabled false)
     (batchEnabled false)
@@ -18,7 +18,7 @@
     (timeoutSeconds 420)
     (seed null)
   ))
-  (metadata ({}
+  (metadata (
     (legacyTransaction explain_object_changes)
   ))
 )

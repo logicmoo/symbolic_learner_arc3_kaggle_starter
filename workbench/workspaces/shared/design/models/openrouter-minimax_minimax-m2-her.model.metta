@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-minimax_minimax-m2-her)
   (label "MiniMax: MiniMax M2-her")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model minimax/minimax-m2-her)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling false)
@@ -19,16 +19,16 @@
     (tools false)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 65536)
     (maxOutputTokens 2048)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.0000003")
     (completion "0.0000012")
     (input_cache_read "0.00000003")
   ))
-  (properties ({}
+  (properties (
     (id minimax/minimax-m2-her)
     (canonical_slug minimax/minimax-m2-her-20260123)
     (hugging_face_id "")
@@ -36,34 +36,34 @@
     (created 1769177239)
     (description "MiniMax M2-her is a dialogue-first large language model built for immersive roleplay, character-driven chat, and expressive multi-turn conversations. Designed to stay consistent in tone and personality, it supports rich message...")
     (context_length 65536)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000003")
       (completion "0.0000012")
       (input_cache_read "0.00000003")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 65536)
       (max_completion_tokens 2048)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       max_tokens
       temperature
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature 1)
       (top_p 0.95)
       (frequency_penalty null)
@@ -71,12 +71,12 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/minimax/minimax-m2-her-20260123/endpoints)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id minimax/minimax-m2-her)
     (canonical_slug minimax/minimax-m2-her-20260123)
     (hugging_face_id "")
@@ -84,34 +84,34 @@
     (created 1769177239)
     (description "MiniMax M2-her is a dialogue-first large language model built for immersive roleplay, character-driven chat, and expressive multi-turn conversations. Designed to stay consistent in tone and personality, it supports rich message...")
     (context_length 65536)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000003")
       (completion "0.0000012")
       (input_cache_read "0.00000003")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 65536)
       (max_completion_tokens 2048)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       max_tokens
       temperature
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature 1)
       (top_p 0.95)
       (frequency_penalty null)
@@ -119,11 +119,11 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/minimax/minimax-m2-her-20260123/endpoints)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId minimax/minimax-m2-her)

@@ -1,13 +1,13 @@
-({}
+(
   (kind context)
   (id vision_analysis)
   (label "Vision Analysis AtomSpaces")
   (description "Declares the AtomSpaces and runtime bindings available while observing, explaining, and acting in a visual world.")
-  (children (
+  (children ([]
     vision_analysis.default
   ))
   (preferredChild vision_analysis.default)
-  (bindings (
+  (bindings ([]
     current_scene
     world_model
     candidate_rules

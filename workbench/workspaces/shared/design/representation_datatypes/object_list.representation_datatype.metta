@@ -1,11 +1,11 @@
-({}
+(
   (kind representation_datatype)
   (id object_list)
   (label "Object List")
-  (parents (
+  (parents ([]
     image
   ))
-  (children (
+  (children ([]
     json
     prolog_facts
   ))

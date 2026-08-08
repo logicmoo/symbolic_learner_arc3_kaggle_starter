@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-openai_o3)
   (label "OpenAI: o3")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model openai/o3)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,17 +19,17 @@
     (tools true)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 200000)
     (maxOutputTokens 100000)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.000002")
     (completion "0.000008")
     (web_search "0.01")
     (input_cache_read "0.0000005")
   ))
-  (properties ({}
+  (properties (
     (id openai/o3)
     (canonical_slug openai/o3-2025-04-16)
     (hugging_face_id "")
@@ -37,32 +37,32 @@
     (created 1744823457)
     (description "o3 is a well-rounded and powerful model across domains. It sets a new standard for math, science, coding, and visual reasoning tasks. It also excels at technical writing and instruction-following....")
     (context_length 200000)
-    (architecture ({}
+    (architecture (
       (modality text+image+file->text)
-      (input_modalities (
+      (input_modalities ([]
         image
         text
         file
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer GPT)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.000002")
       (completion "0.000008")
       (web_search "0.01")
       (input_cache_read "0.0000005")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 200000)
       (max_completion_tokens 100000)
       (is_moderated true)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_tokens
       reasoning
@@ -72,44 +72,44 @@
       tool_choice
       tools
     ))
-    (default_parameters ({}))
+    (default_parameters ())
     (supported_voices null)
     (knowledge_cutoff 2024-06-30)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/openai/o3-2025-04-16/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category codecategories)
           (elo 1048)
           (win_rate 51.9)
           (rank 97)
         )
-        ({}
+        (
           (arena models)
           (category dataviz)
           (elo 1200)
           (win_rate 48.1)
           (rank 47)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 1075)
           (win_rate 56.9)
           (rank 89)
         )
-        ({}
+        (
           (arena models)
           (category uicomponent)
           (elo 1050)
           (win_rate 53.3)
           (rank 89)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 1058)
@@ -118,12 +118,12 @@
         )
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id openai/o3)
     (canonical_slug openai/o3-2025-04-16)
     (hugging_face_id "")
@@ -131,32 +131,32 @@
     (created 1744823457)
     (description "o3 is a well-rounded and powerful model across domains. It sets a new standard for math, science, coding, and visual reasoning tasks. It also excels at technical writing and instruction-following....")
     (context_length 200000)
-    (architecture ({}
+    (architecture (
       (modality text+image+file->text)
-      (input_modalities (
+      (input_modalities ([]
         image
         text
         file
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer GPT)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.000002")
       (completion "0.000008")
       (web_search "0.01")
       (input_cache_read "0.0000005")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 200000)
       (max_completion_tokens 100000)
       (is_moderated true)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_tokens
       reasoning
@@ -166,44 +166,44 @@
       tool_choice
       tools
     ))
-    (default_parameters ({}))
+    (default_parameters ())
     (supported_voices null)
     (knowledge_cutoff 2024-06-30)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/openai/o3-2025-04-16/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category codecategories)
           (elo 1048)
           (win_rate 51.9)
           (rank 97)
         )
-        ({}
+        (
           (arena models)
           (category dataviz)
           (elo 1200)
           (win_rate 48.1)
           (rank 47)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 1075)
           (win_rate 56.9)
           (rank 89)
         )
-        ({}
+        (
           (arena models)
           (category uicomponent)
           (elo 1050)
           (win_rate 53.3)
           (rank 89)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 1058)
@@ -212,11 +212,11 @@
         )
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId openai/o3)

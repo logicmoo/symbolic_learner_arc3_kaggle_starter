@@ -1,16 +1,16 @@
-({}
+(
   (kind backend)
   (id prolog)
   (label "SWI-Prolog Runtime")
   (provider prolog)
   (description "Executes Prolog programs and queries through SWI-Prolog.")
   (enabled true)
-  (capabilities (
+  (capabilities ([]
     prolog.query
   ))
-  (configuration ({}
+  (configuration (
     (executable swipl)
-    (arguments (
+    (arguments ([]
       -q
     ))
     (timeoutSeconds 300)

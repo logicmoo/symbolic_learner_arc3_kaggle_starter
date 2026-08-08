@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-z-ai_glm-5)
   (label "Z.ai: GLM 5")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model z-ai/glm-5)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,16 +19,16 @@
     (tools true)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 204800)
     (maxOutputTokens 131072)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.00000095")
     (completion "0.00000255")
     (input_cache_read "0.0000002")
   ))
-  (properties ({}
+  (properties (
     (id z-ai/glm-5)
     (canonical_slug z-ai/glm-5-20260211)
     (hugging_face_id zai-org/GLM-5)
@@ -36,29 +36,29 @@
     (created 1770829182)
     (description "GLM-5 is Z.ai’s flagship open-source foundation model engineered for complex systems design and long-horizon agent workflows. Built for expert developers, it delivers production-grade performance on large-scale programming tasks, rivaling leading...")
     (context_length 204800)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000095")
       (completion "0.00000255")
       (input_cache_read "0.0000002")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 204800)
       (max_completion_tokens 131072)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       logit_bias
@@ -79,7 +79,7 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature 1)
       (top_p 0.95)
       (frequency_penalty null)
@@ -87,96 +87,96 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/z-ai/glm-5-20260211/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena agents)
           (category androidnative)
           (elo 1178)
           (win_rate 55.3)
           (rank 18)
         )
-        ({}
+        (
           (arena agents)
           (category fullstack)
           (elo 1163)
           (win_rate 51.7)
           (rank 18)
         )
-        ({}
+        (
           (arena agents)
           (category godotgamedev)
           (elo 1144)
           (win_rate 46.7)
           (rank 16)
         )
-        ({}
+        (
           (arena agents)
           (category htmlslides)
           (elo 1171)
           (win_rate 45.5)
           (rank 17)
         )
-        ({}
+        (
           (arena agents)
           (category mobileapps)
           (elo 1195)
           (win_rate 51.7)
           (rank 17)
         )
-        ({}
+        (
           (arena models)
           (category 3d)
           (elo 1283)
           (win_rate 56.3)
           (rank 24)
         )
-        ({}
+        (
           (arena models)
           (category asciiart)
           (elo 1186)
           (win_rate 48)
           (rank 32)
         )
-        ({}
+        (
           (arena models)
           (category codecategories)
           (elo 1275)
           (win_rate 55.5)
           (rank 23)
         )
-        ({}
+        (
           (arena models)
           (category dataviz)
           (elo 1257)
           (win_rate 53)
           (rank 29)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 1275)
           (win_rate 57.4)
           (rank 23)
         )
-        ({}
+        (
           (arena models)
           (category svg)
           (elo 1215)
           (win_rate 54.4)
           (rank 25)
         )
-        ({}
+        (
           (arena models)
           (category uicomponent)
           (elo 1264)
           (win_rate 53.6)
           (rank 30)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 1271)
@@ -185,13 +185,13 @@
         )
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
       (default_enabled true)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id z-ai/glm-5)
     (canonical_slug z-ai/glm-5-20260211)
     (hugging_face_id zai-org/GLM-5)
@@ -199,29 +199,29 @@
     (created 1770829182)
     (description "GLM-5 is Z.ai’s flagship open-source foundation model engineered for complex systems design and long-horizon agent workflows. Built for expert developers, it delivers production-grade performance on large-scale programming tasks, rivaling leading...")
     (context_length 204800)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000095")
       (completion "0.00000255")
       (input_cache_read "0.0000002")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 204800)
       (max_completion_tokens 131072)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       logit_bias
@@ -242,7 +242,7 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature 1)
       (top_p 0.95)
       (frequency_penalty null)
@@ -250,96 +250,96 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/z-ai/glm-5-20260211/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena agents)
           (category androidnative)
           (elo 1178)
           (win_rate 55.3)
           (rank 18)
         )
-        ({}
+        (
           (arena agents)
           (category fullstack)
           (elo 1163)
           (win_rate 51.7)
           (rank 18)
         )
-        ({}
+        (
           (arena agents)
           (category godotgamedev)
           (elo 1144)
           (win_rate 46.7)
           (rank 16)
         )
-        ({}
+        (
           (arena agents)
           (category htmlslides)
           (elo 1171)
           (win_rate 45.5)
           (rank 17)
         )
-        ({}
+        (
           (arena agents)
           (category mobileapps)
           (elo 1195)
           (win_rate 51.7)
           (rank 17)
         )
-        ({}
+        (
           (arena models)
           (category 3d)
           (elo 1283)
           (win_rate 56.3)
           (rank 24)
         )
-        ({}
+        (
           (arena models)
           (category asciiart)
           (elo 1186)
           (win_rate 48)
           (rank 32)
         )
-        ({}
+        (
           (arena models)
           (category codecategories)
           (elo 1275)
           (win_rate 55.5)
           (rank 23)
         )
-        ({}
+        (
           (arena models)
           (category dataviz)
           (elo 1257)
           (win_rate 53)
           (rank 29)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 1275)
           (win_rate 57.4)
           (rank 23)
         )
-        ({}
+        (
           (arena models)
           (category svg)
           (elo 1215)
           (win_rate 54.4)
           (rank 25)
         )
-        ({}
+        (
           (arena models)
           (category uicomponent)
           (elo 1264)
           (win_rate 53.6)
           (rank 30)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 1271)
@@ -348,12 +348,12 @@
         )
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
       (default_enabled true)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId z-ai/glm-5)

@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-stepfun_step-3.7-flash)
   (label "StepFun: Step 3.7 Flash")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model stepfun/step-3.7-flash)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,16 +19,16 @@
     (tools true)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 262144)
     (maxOutputTokens 256000)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.0000002")
     (completion "0.00000115")
     (input_cache_read "0.00000004")
   ))
-  (properties ({}
+  (properties (
     (id stepfun/step-3.7-flash)
     (canonical_slug stepfun/step-3.7-flash-20260528)
     (hugging_face_id stepfun-ai/Step-3.7-Flash)
@@ -36,31 +36,31 @@
     (created 1779985069)
     (description "Step 3.7 Flash is StepFun's latest high-efficiency multimodal Mixture-of-Experts model. It pairs a 196B-parameter language backbone with a vision encoder for native image and video understanding, activating roughly 11B parameters...")
     (context_length 262144)
-    (architecture ({}
+    (architecture (
       (modality text+image+video->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
         video
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000002")
       (completion "0.00000115")
       (input_cache_read "0.00000004")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 256000)
       (max_completion_tokens 256000)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       logit_bias
@@ -82,7 +82,7 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -93,61 +93,61 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/stepfun/step-3.7-flash-20260528/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category 3d)
           (elo 1176)
           (win_rate 41.8)
           (rank 57)
         )
-        ({}
+        (
           (arena models)
           (category asciiart)
           (elo 1192)
           (win_rate 46.4)
           (rank 24)
         )
-        ({}
+        (
           (arena models)
           (category codecategories)
           (elo 1202)
           (win_rate 44.5)
           (rank 50)
         )
-        ({}
+        (
           (arena models)
           (category dataviz)
           (elo 1199)
           (win_rate 45.2)
           (rank 49)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 1192)
           (win_rate 41.9)
           (rank 51)
         )
-        ({}
+        (
           (arena models)
           (category svg)
           (elo 1115)
           (win_rate 38.6)
           (rank 53)
         )
-        ({}
+        (
           (arena models)
           (category uicomponent)
           (elo 1203)
           (win_rate 43.7)
           (rank 48)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 1211)
@@ -155,15 +155,15 @@
           (rank 49)
         )
       ))
-      (artificial_analysis ({}
+      (artificial_analysis (
         (intelligence_index 30.9)
         (coding_index 39.6)
         (agentic_index 21.7)
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory true)
-      (supported_efforts (
+      (supported_efforts ([]
         high
         medium
         low
@@ -172,7 +172,7 @@
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id stepfun/step-3.7-flash)
     (canonical_slug stepfun/step-3.7-flash-20260528)
     (hugging_face_id stepfun-ai/Step-3.7-Flash)
@@ -180,31 +180,31 @@
     (created 1779985069)
     (description "Step 3.7 Flash is StepFun's latest high-efficiency multimodal Mixture-of-Experts model. It pairs a 196B-parameter language backbone with a vision encoder for native image and video understanding, activating roughly 11B parameters...")
     (context_length 262144)
-    (architecture ({}
+    (architecture (
       (modality text+image+video->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
         video
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000002")
       (completion "0.00000115")
       (input_cache_read "0.00000004")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 256000)
       (max_completion_tokens 256000)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       logit_bias
@@ -226,7 +226,7 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -237,61 +237,61 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/stepfun/step-3.7-flash-20260528/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category 3d)
           (elo 1176)
           (win_rate 41.8)
           (rank 57)
         )
-        ({}
+        (
           (arena models)
           (category asciiart)
           (elo 1192)
           (win_rate 46.4)
           (rank 24)
         )
-        ({}
+        (
           (arena models)
           (category codecategories)
           (elo 1202)
           (win_rate 44.5)
           (rank 50)
         )
-        ({}
+        (
           (arena models)
           (category dataviz)
           (elo 1199)
           (win_rate 45.2)
           (rank 49)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 1192)
           (win_rate 41.9)
           (rank 51)
         )
-        ({}
+        (
           (arena models)
           (category svg)
           (elo 1115)
           (win_rate 38.6)
           (rank 53)
         )
-        ({}
+        (
           (arena models)
           (category uicomponent)
           (elo 1203)
           (win_rate 43.7)
           (rank 48)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 1211)
@@ -299,15 +299,15 @@
           (rank 49)
         )
       ))
-      (artificial_analysis ({}
+      (artificial_analysis (
         (intelligence_index 30.9)
         (coding_index 39.6)
         (agentic_index 21.7)
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory true)
-      (supported_efforts (
+      (supported_efforts ([]
         high
         medium
         low
@@ -315,7 +315,7 @@
       (default_effort medium)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId stepfun/step-3.7-flash)

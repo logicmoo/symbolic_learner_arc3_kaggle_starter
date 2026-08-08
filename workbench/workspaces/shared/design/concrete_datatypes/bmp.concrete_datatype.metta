@@ -1,14 +1,14 @@
-({}
+(
   (kind concrete_datatype)
   (id bmp)
   (label Bmp)
-  (parents (
+  (parents ([]
     bitmap
   ))
-  (mimeTypes (
+  (mimeTypes ([]
     image/bmp
   ))
-  (extensions (
+  (extensions ([]
     .bmp
   ))
 )

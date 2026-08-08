@@ -16,6 +16,9 @@ def test_metta_codec_round_trips_nested_resource_values() -> None:
 
     source = json_document_to_metta(document)
 
-    assert source.startswith("({}\n")
+    assert source.startswith("(\n")
+    assert "(categories ([]" in source
+    assert "(emptyList ([]))" in source
+    assert "(emptyMap ())" in source
     assert '(typedString "true")' in source
     assert metta_document_to_json(source) == document

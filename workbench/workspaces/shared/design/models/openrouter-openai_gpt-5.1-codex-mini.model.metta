@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-openai_gpt-5.1-codex-mini)
   (label "OpenAI: GPT-5.1-Codex-Mini")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model openai/gpt-5.1-codex-mini)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code true)
     (functionCalling true)
@@ -19,17 +19,17 @@
     (tools true)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 400000)
     (maxOutputTokens 128000)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.00000025")
     (completion "0.000002")
     (web_search "0.01")
     (input_cache_read "0.00000003")
   ))
-  (properties ({}
+  (properties (
     (id openai/gpt-5.1-codex-mini)
     (canonical_slug openai/gpt-5.1-codex-mini-20251113)
     (hugging_face_id "")
@@ -37,31 +37,31 @@
     (created 1763057820)
     (description "GPT-5.1-Codex-Mini is a smaller and faster version of GPT-5.1-Codex")
     (context_length 400000)
-    (architecture ({}
+    (architecture (
       (modality text+image->text)
-      (input_modalities (
+      (input_modalities ([]
         image
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer GPT)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000025")
       (completion "0.000002")
       (web_search "0.01")
       (input_cache_read "0.00000003")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 400000)
       (max_completion_tokens 128000)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_completion_tokens
       reasoning
@@ -72,7 +72,7 @@
       tool_choice
       tools
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -83,61 +83,61 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/openai/gpt-5.1-codex-mini-20251113/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category 3d)
           (elo 1042)
           (win_rate 32.8)
           (rank 94)
         )
-        ({}
+        (
           (arena models)
           (category asciiart)
           (elo 1142)
           (win_rate 43)
           (rank 46)
         )
-        ({}
+        (
           (arena models)
           (category codecategories)
           (elo 1122)
           (win_rate 41.5)
           (rank 83)
         )
-        ({}
+        (
           (arena models)
           (category dataviz)
           (elo 1125)
           (win_rate 40.7)
           (rank 80)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 1133)
           (win_rate 43.4)
           (rank 74)
         )
-        ({}
+        (
           (arena models)
           (category svg)
           (elo 1025)
           (win_rate 35.3)
           (rank 72)
         )
-        ({}
+        (
           (arena models)
           (category uicomponent)
           (elo 1114)
           (win_rate 41)
           (rank 77)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 1133)
@@ -146,9 +146,9 @@
         )
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
-      (supported_efforts (
+      (supported_efforts ([]
         high
         medium
         low
@@ -157,7 +157,7 @@
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id openai/gpt-5.1-codex-mini)
     (canonical_slug openai/gpt-5.1-codex-mini-20251113)
     (hugging_face_id "")
@@ -165,31 +165,31 @@
     (created 1763057820)
     (description "GPT-5.1-Codex-Mini is a smaller and faster version of GPT-5.1-Codex")
     (context_length 400000)
-    (architecture ({}
+    (architecture (
       (modality text+image->text)
-      (input_modalities (
+      (input_modalities ([]
         image
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer GPT)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000025")
       (completion "0.000002")
       (web_search "0.01")
       (input_cache_read "0.00000003")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 400000)
       (max_completion_tokens 128000)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_completion_tokens
       reasoning
@@ -200,7 +200,7 @@
       tool_choice
       tools
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -211,61 +211,61 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/openai/gpt-5.1-codex-mini-20251113/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category 3d)
           (elo 1042)
           (win_rate 32.8)
           (rank 94)
         )
-        ({}
+        (
           (arena models)
           (category asciiart)
           (elo 1142)
           (win_rate 43)
           (rank 46)
         )
-        ({}
+        (
           (arena models)
           (category codecategories)
           (elo 1122)
           (win_rate 41.5)
           (rank 83)
         )
-        ({}
+        (
           (arena models)
           (category dataviz)
           (elo 1125)
           (win_rate 40.7)
           (rank 80)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 1133)
           (win_rate 43.4)
           (rank 74)
         )
-        ({}
+        (
           (arena models)
           (category svg)
           (elo 1025)
           (win_rate 35.3)
           (rank 72)
         )
-        ({}
+        (
           (arena models)
           (category uicomponent)
           (elo 1114)
           (win_rate 41)
           (rank 77)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 1133)
@@ -274,9 +274,9 @@
         )
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
-      (supported_efforts (
+      (supported_efforts ([]
         high
         medium
         low
@@ -284,7 +284,7 @@
       (default_effort medium)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId openai/gpt-5.1-codex-mini)

@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-openai_gpt-5-image)
   (label "OpenAI: GPT-5 Image")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model openai/gpt-5-image)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling false)
@@ -19,18 +19,18 @@
     (tools false)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 400000)
     (maxOutputTokens 128000)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.00001")
     (completion "0.00001")
     (image_output "0.00004")
     (web_search "0.01")
     (input_cache_read "0.00000125")
   ))
-  (properties ({}
+  (properties (
     (id openai/gpt-5-image)
     (canonical_slug openai/gpt-5-image)
     (hugging_face_id "")
@@ -38,34 +38,34 @@
     (created 1760447986)
     (description "[GPT-5](https://openrouter.ai/openai/gpt-5) Image combines OpenAI's GPT-5 model with state-of-the-art image generation capabilities. It offers major improvements in reasoning, code quality, and user experience while incorporating GPT Image 1's superior instruction following,...")
     (context_length 400000)
-    (architecture ({}
+    (architecture (
       (modality text+image+file->text+image)
-      (input_modalities (
+      (input_modalities ([]
         image
         text
         file
       ))
-      (output_modalities (
+      (output_modalities ([]
         image
         text
       ))
       (tokenizer GPT)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00001")
       (completion "0.00001")
       (image_output "0.00004")
       (web_search "0.01")
       (input_cache_read "0.00000125")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 400000)
       (max_completion_tokens 128000)
       (is_moderated true)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       logit_bias
@@ -81,7 +81,7 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (frequency_penalty null)
@@ -89,26 +89,26 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/openai/gpt-5-image/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category graphicdesign)
           (elo 1200)
           (win_rate 48.9)
           (rank 7)
         )
-        ({}
+        (
           (arena models)
           (category image)
           (elo 1213)
           (win_rate 53.9)
           (rank 7)
         )
-        ({}
+        (
           (arena models)
           (category logo)
           (elo 1216)
@@ -117,12 +117,12 @@
         )
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory true)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id openai/gpt-5-image)
     (canonical_slug openai/gpt-5-image)
     (hugging_face_id "")
@@ -130,34 +130,34 @@
     (created 1760447986)
     (description "[GPT-5](https://openrouter.ai/openai/gpt-5) Image combines OpenAI's GPT-5 model with state-of-the-art image generation capabilities. It offers major improvements in reasoning, code quality, and user experience while incorporating GPT Image 1's superior instruction following,...")
     (context_length 400000)
-    (architecture ({}
+    (architecture (
       (modality text+image+file->text+image)
-      (input_modalities (
+      (input_modalities ([]
         image
         text
         file
       ))
-      (output_modalities (
+      (output_modalities ([]
         image
         text
       ))
       (tokenizer GPT)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00001")
       (completion "0.00001")
       (image_output "0.00004")
       (web_search "0.01")
       (input_cache_read "0.00000125")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 400000)
       (max_completion_tokens 128000)
       (is_moderated true)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       logit_bias
@@ -173,7 +173,7 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (frequency_penalty null)
@@ -181,26 +181,26 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/openai/gpt-5-image/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category graphicdesign)
           (elo 1200)
           (win_rate 48.9)
           (rank 7)
         )
-        ({}
+        (
           (arena models)
           (category image)
           (elo 1213)
           (win_rate 53.9)
           (rank 7)
         )
-        ({}
+        (
           (arena models)
           (category logo)
           (elo 1216)
@@ -209,11 +209,11 @@
         )
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory true)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId openai/gpt-5-image)

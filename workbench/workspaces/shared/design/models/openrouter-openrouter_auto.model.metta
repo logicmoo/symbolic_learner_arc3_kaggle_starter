@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-openrouter_auto)
   (label "Auto Router")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model openrouter/auto)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio true)
     (code false)
     (functionCalling true)
@@ -19,15 +19,15 @@
     (tools true)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 2000000)
     (maxOutputTokens null)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "-1")
     (completion "-1")
   ))
-  (properties ({}
+  (properties (
     (id openrouter/auto)
     (canonical_slug openrouter/auto)
     (hugging_face_id null)
@@ -35,33 +35,33 @@
     (created 1699401600)
     (description "Your prompt will be processed by a meta-model and routed to one of dozens of models (see below), optimizing for the best possible output. To see which model was used,...")
     (context_length 2000000)
-    (architecture ({}
+    (architecture (
       (modality text+image+file+audio+video->text+image)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
         audio
         file
         video
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
         image
       ))
       (tokenizer Router)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "-1")
       (completion "-1")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length null)
       (max_completion_tokens null)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       logit_bias
@@ -86,7 +86,7 @@
       top_p
       web_search_options
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -97,12 +97,12 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/openrouter/auto/endpoints)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id openrouter/auto)
     (canonical_slug openrouter/auto)
     (hugging_face_id null)
@@ -110,33 +110,33 @@
     (created 1699401600)
     (description "Your prompt will be processed by a meta-model and routed to one of dozens of models (see below), optimizing for the best possible output. To see which model was used,...")
     (context_length 2000000)
-    (architecture ({}
+    (architecture (
       (modality text+image+file+audio+video->text+image)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
         audio
         file
         video
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
         image
       ))
       (tokenizer Router)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "-1")
       (completion "-1")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length null)
       (max_completion_tokens null)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       logit_bias
@@ -161,7 +161,7 @@
       top_p
       web_search_options
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -172,11 +172,11 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/openrouter/auto/endpoints)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId openrouter/auto)

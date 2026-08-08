@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-minimax_minimax-m2.7)
   (label "MiniMax: MiniMax M2.7")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model minimax/minimax-m2.7)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,16 +19,16 @@
     (tools true)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 204800)
     (maxOutputTokens 131072)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.00000027")
     (completion "0.00000108")
     (input_cache_read "0.000000054")
   ))
-  (properties ({}
+  (properties (
     (id minimax/minimax-m2.7)
     (canonical_slug minimax/minimax-m2.7-20260318)
     (hugging_face_id MiniMaxAI/MiniMax-M2.7)
@@ -36,29 +36,29 @@
     (created 1773836697)
     (description "MiniMax-M2.7 is a next-generation large language model designed for autonomous, real-world productivity and continuous improvement. Built to actively participate in its own evolution, M2.7 integrates advanced agentic capabilities through multi-agent...")
     (context_length 204800)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000027")
       (completion "0.00000108")
       (input_cache_read "0.000000054")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 204800)
       (max_completion_tokens 131072)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       logit_bias
@@ -79,7 +79,7 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature 1)
       (top_p 0.95)
       (top_k null)
@@ -90,61 +90,61 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/minimax/minimax-m2.7-20260318/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category 3d)
           (elo 1246)
           (win_rate 50.8)
           (rank 34)
         )
-        ({}
+        (
           (arena models)
           (category asciiart)
           (elo 1177)
           (win_rate 47.7)
           (rank 37)
         )
-        ({}
+        (
           (arena models)
           (category codecategories)
           (elo 1262)
           (win_rate 52.8)
           (rank 30)
         )
-        ({}
+        (
           (arena models)
           (category dataviz)
           (elo 1259)
           (win_rate 53.1)
           (rank 28)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 1247)
           (win_rate 52.8)
           (rank 30)
         )
-        ({}
+        (
           (arena models)
           (category svg)
           (elo 1185)
           (win_rate 50)
           (rank 37)
         )
-        ({}
+        (
           (arena models)
           (category uicomponent)
           (elo 1244)
           (win_rate 50)
           (rank 35)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 1268)
@@ -152,18 +152,18 @@
           (rank 29)
         )
       ))
-      (artificial_analysis ({}
+      (artificial_analysis (
         (intelligence_index 38.9)
         (coding_index 52.6)
         (agentic_index 25.9)
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory true)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id minimax/minimax-m2.7)
     (canonical_slug minimax/minimax-m2.7-20260318)
     (hugging_face_id MiniMaxAI/MiniMax-M2.7)
@@ -171,29 +171,29 @@
     (created 1773836697)
     (description "MiniMax-M2.7 is a next-generation large language model designed for autonomous, real-world productivity and continuous improvement. Built to actively participate in its own evolution, M2.7 integrates advanced agentic capabilities through multi-agent...")
     (context_length 204800)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000027")
       (completion "0.00000108")
       (input_cache_read "0.000000054")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 204800)
       (max_completion_tokens 131072)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       logit_bias
@@ -214,7 +214,7 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature 1)
       (top_p 0.95)
       (top_k null)
@@ -225,61 +225,61 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/minimax/minimax-m2.7-20260318/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category 3d)
           (elo 1246)
           (win_rate 50.8)
           (rank 34)
         )
-        ({}
+        (
           (arena models)
           (category asciiart)
           (elo 1177)
           (win_rate 47.7)
           (rank 37)
         )
-        ({}
+        (
           (arena models)
           (category codecategories)
           (elo 1262)
           (win_rate 52.8)
           (rank 30)
         )
-        ({}
+        (
           (arena models)
           (category dataviz)
           (elo 1259)
           (win_rate 53.1)
           (rank 28)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 1247)
           (win_rate 52.8)
           (rank 30)
         )
-        ({}
+        (
           (arena models)
           (category svg)
           (elo 1185)
           (win_rate 50)
           (rank 37)
         )
-        ({}
+        (
           (arena models)
           (category uicomponent)
           (elo 1244)
           (win_rate 50)
           (rank 35)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 1268)
@@ -287,17 +287,17 @@
           (rank 29)
         )
       ))
-      (artificial_analysis ({}
+      (artificial_analysis (
         (intelligence_index 38.9)
         (coding_index 52.6)
         (agentic_index 25.9)
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory true)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId minimax/minimax-m2.7)

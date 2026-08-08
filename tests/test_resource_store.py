@@ -28,7 +28,7 @@ def test_provider_transparently_reads_existing_metta_through_json_path(tmp_path:
     provider = FilesystemProvider()
     logical = tmp_path / "nested.resource.json"
     physical = logical.with_suffix(".metta")
-    physical.write_text('({}\n  (kind resource)\n  (values (\n    1\n    "two words"\n    ({})\n  ))\n)\n', encoding="utf-8")
+    physical.write_text('(\n  (kind resource)\n  (values ([]\n    1\n    "two words"\n    ()\n  ))\n)\n', encoding="utf-8")
 
     assert provider.exists(logical)
     assert provider.is_file(logical)

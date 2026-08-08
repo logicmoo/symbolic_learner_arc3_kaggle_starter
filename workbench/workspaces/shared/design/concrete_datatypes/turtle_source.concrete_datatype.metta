@@ -1,15 +1,15 @@
-({}
+(
   (kind concrete_datatype)
   (id turtle_source)
   (label "Turtle Source")
-  (parents (
+  (parents ([]
     turtle_program
   ))
-  (mimeTypes (
+  (mimeTypes ([]
     text/x-logo
     text/plain
   ))
-  (extensions (
+  (extensions ([]
     .logo
     .txt
   ))

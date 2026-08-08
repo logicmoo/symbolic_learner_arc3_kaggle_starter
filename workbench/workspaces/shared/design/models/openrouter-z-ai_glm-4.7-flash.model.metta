@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-z-ai_glm-4.7-flash)
   (label "Z.ai: GLM 4.7 Flash")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model z-ai/glm-4.7-flash)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,16 +19,16 @@
     (tools true)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 202752)
     (maxOutputTokens 16384)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.00000006")
     (completion "0.0000004")
     (input_cache_read "0.00000001")
   ))
-  (properties ({}
+  (properties (
     (id z-ai/glm-4.7-flash)
     (canonical_slug z-ai/glm-4.7-flash-20260119)
     (hugging_face_id zai-org/GLM-4.7-Flash)
@@ -36,29 +36,29 @@
     (created 1768833913)
     (description "As a 30B-class SOTA model, GLM-4.7-Flash offers a new option that balances performance and efficiency. It is further optimized for agentic coding use cases, strengthening coding capabilities, long-horizon task planning,...")
     (context_length 202752)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000006")
       (completion "0.0000004")
       (input_cache_read "0.00000001")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 202752)
       (max_completion_tokens 16384)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       logit_bias
@@ -79,7 +79,7 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature 1)
       (top_p 0.95)
       (frequency_penalty null)
@@ -87,54 +87,54 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/z-ai/glm-4.7-flash-20260119/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category 3d)
           (elo 1174)
           (win_rate 51.2)
           (rank 58)
         )
-        ({}
+        (
           (arena models)
           (category codecategories)
           (elo 1205)
           (win_rate 53.1)
           (rank 46)
         )
-        ({}
+        (
           (arena models)
           (category dataviz)
           (elo 1151)
           (win_rate 45.3)
           (rank 73)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 1175)
           (win_rate 49.7)
           (rank 59)
         )
-        ({}
+        (
           (arena models)
           (category svg)
           (elo 1085)
           (win_rate 44.2)
           (rank 57)
         )
-        ({}
+        (
           (arena models)
           (category uicomponent)
           (elo 1241)
           (win_rate 57.6)
           (rank 36)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 1216)
@@ -143,13 +143,13 @@
         )
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
       (default_enabled true)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id z-ai/glm-4.7-flash)
     (canonical_slug z-ai/glm-4.7-flash-20260119)
     (hugging_face_id zai-org/GLM-4.7-Flash)
@@ -157,29 +157,29 @@
     (created 1768833913)
     (description "As a 30B-class SOTA model, GLM-4.7-Flash offers a new option that balances performance and efficiency. It is further optimized for agentic coding use cases, strengthening coding capabilities, long-horizon task planning,...")
     (context_length 202752)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000006")
       (completion "0.0000004")
       (input_cache_read "0.00000001")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 202752)
       (max_completion_tokens 16384)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       logit_bias
@@ -200,7 +200,7 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature 1)
       (top_p 0.95)
       (frequency_penalty null)
@@ -208,54 +208,54 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/z-ai/glm-4.7-flash-20260119/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category 3d)
           (elo 1174)
           (win_rate 51.2)
           (rank 58)
         )
-        ({}
+        (
           (arena models)
           (category codecategories)
           (elo 1205)
           (win_rate 53.1)
           (rank 46)
         )
-        ({}
+        (
           (arena models)
           (category dataviz)
           (elo 1151)
           (win_rate 45.3)
           (rank 73)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 1175)
           (win_rate 49.7)
           (rank 59)
         )
-        ({}
+        (
           (arena models)
           (category svg)
           (elo 1085)
           (win_rate 44.2)
           (rank 57)
         )
-        ({}
+        (
           (arena models)
           (category uicomponent)
           (elo 1241)
           (win_rate 57.6)
           (rank 36)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 1216)
@@ -264,12 +264,12 @@
         )
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
       (default_enabled true)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId z-ai/glm-4.7-flash)

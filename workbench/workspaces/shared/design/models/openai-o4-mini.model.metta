@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openai-o4-mini)
   (label o4-mini)
@@ -6,7 +6,7 @@
   (inherits openai)
   (model o4-mini)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling false)
@@ -19,25 +19,25 @@
     (tools false)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow null)
     (maxOutputTokens null)
   ))
-  (pricing ({}))
-  (properties ({}
+  (pricing ())
+  (properties (
     (id o4-mini)
     (object model)
     (created 1744225351)
     (owned_by system)
     (ownedBy system)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id o4-mini)
     (object model)
     (created 1744225351)
     (owned_by system)
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openai)
     (remoteModelId o4-mini)

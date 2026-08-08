@@ -1,11 +1,11 @@
-({}
+(
   (kind representation_datatype)
   (id bitmap)
   (label "Bitmap Image")
-  (parents (
+  (parents ([]
     image
   ))
-  (children (
+  (children ([]
     png
     jpeg
     bmp

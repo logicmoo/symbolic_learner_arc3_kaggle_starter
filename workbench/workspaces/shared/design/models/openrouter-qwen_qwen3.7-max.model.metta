@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-qwen_qwen3.7-max)
   (label "Qwen: Qwen3.7 Max")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model qwen/qwen3.7-max)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,17 +19,17 @@
     (tools true)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 1000000)
     (maxOutputTokens 131072)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.000001475")
     (completion "0.000004425")
     (input_cache_read "0.000000295")
     (input_cache_write "0.00000184375")
   ))
-  (properties ({}
+  (properties (
     (id qwen/qwen3.7-max)
     (canonical_slug qwen/qwen3.7-max-20260520)
     (hugging_face_id null)
@@ -37,30 +37,30 @@
     (created 1779376861)
     (description "Qwen3.7-Max is the flagship model in Alibaba's Qwen3.7 series. It supports text input and output and is designed for agent-centric workloads, with particular strengths in coding, office and productivity tasks,...")
     (context_length 1000000)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Qwen)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.000001475")
       (completion "0.000004425")
       (input_cache_read "0.000000295")
       (input_cache_write "0.00000184375")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 1000000)
       (max_completion_tokens 131072)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       logprobs
@@ -78,7 +78,7 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -89,117 +89,117 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/qwen/qwen3.7-max-20260520/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena agents)
           (category agenticgamedev)
           (elo 1180)
           (win_rate 48.4)
           (rank 13)
         )
-        ({}
+        (
           (arena agents)
           (category androidnative)
           (elo 1185)
           (win_rate 49.7)
           (rank 17)
         )
-        ({}
+        (
           (arena agents)
           (category fullstack)
           (elo 1241)
           (win_rate 55.3)
           (rank 9)
         )
-        ({}
+        (
           (arena agents)
           (category godotgamedev)
           (elo 1224)
           (win_rate 55.4)
           (rank 8)
         )
-        ({}
+        (
           (arena agents)
           (category htmlslides)
           (elo 1191)
           (win_rate 46.7)
           (rank 14)
         )
-        ({}
+        (
           (arena agents)
           (category mobileapps)
           (elo 1208)
           (win_rate 50.6)
           (rank 14)
         )
-        ({}
+        (
           (arena agents)
           (category python-pptxslides)
           (elo 1226)
           (win_rate 52.7)
           (rank 9)
         )
-        ({}
+        (
           (arena agents)
           (category webapps)
           (elo 1259)
           (win_rate 51.5)
           (rank 10)
         )
-        ({}
+        (
           (arena models)
           (category 3d)
           (elo 1321)
           (win_rate 56.9)
           (rank 10)
         )
-        ({}
+        (
           (arena models)
           (category asciiart)
           (elo 1251)
           (win_rate 53.6)
           (rank 12)
         )
-        ({}
+        (
           (arena models)
           (category codecategories)
           (elo 1305)
           (win_rate 56.7)
           (rank 12)
         )
-        ({}
+        (
           (arena models)
           (category dataviz)
           (elo 1319)
           (win_rate 58.3)
           (rank 8)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 1309)
           (win_rate 57.5)
           (rank 13)
         )
-        ({}
+        (
           (arena models)
           (category svg)
           (elo 1265)
           (win_rate 59.4)
           (rank 10)
         )
-        ({}
+        (
           (arena models)
           (category uicomponent)
           (elo 1307)
           (win_rate 55.5)
           (rank 12)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 1296)
@@ -207,19 +207,19 @@
           (rank 15)
         )
       ))
-      (artificial_analysis ({}
+      (artificial_analysis (
         (intelligence_index 46.7)
         (coding_index 66)
         (agentic_index 30.9)
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
       (default_enabled true)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id qwen/qwen3.7-max)
     (canonical_slug qwen/qwen3.7-max-20260520)
     (hugging_face_id null)
@@ -227,30 +227,30 @@
     (created 1779376861)
     (description "Qwen3.7-Max is the flagship model in Alibaba's Qwen3.7 series. It supports text input and output and is designed for agent-centric workloads, with particular strengths in coding, office and productivity tasks,...")
     (context_length 1000000)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Qwen)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.000001475")
       (completion "0.000004425")
       (input_cache_read "0.000000295")
       (input_cache_write "0.00000184375")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 1000000)
       (max_completion_tokens 131072)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       logprobs
@@ -268,7 +268,7 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -279,117 +279,117 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/qwen/qwen3.7-max-20260520/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena agents)
           (category agenticgamedev)
           (elo 1180)
           (win_rate 48.4)
           (rank 13)
         )
-        ({}
+        (
           (arena agents)
           (category androidnative)
           (elo 1185)
           (win_rate 49.7)
           (rank 17)
         )
-        ({}
+        (
           (arena agents)
           (category fullstack)
           (elo 1241)
           (win_rate 55.3)
           (rank 9)
         )
-        ({}
+        (
           (arena agents)
           (category godotgamedev)
           (elo 1224)
           (win_rate 55.4)
           (rank 8)
         )
-        ({}
+        (
           (arena agents)
           (category htmlslides)
           (elo 1191)
           (win_rate 46.7)
           (rank 14)
         )
-        ({}
+        (
           (arena agents)
           (category mobileapps)
           (elo 1208)
           (win_rate 50.6)
           (rank 14)
         )
-        ({}
+        (
           (arena agents)
           (category python-pptxslides)
           (elo 1226)
           (win_rate 52.7)
           (rank 9)
         )
-        ({}
+        (
           (arena agents)
           (category webapps)
           (elo 1259)
           (win_rate 51.5)
           (rank 10)
         )
-        ({}
+        (
           (arena models)
           (category 3d)
           (elo 1321)
           (win_rate 56.9)
           (rank 10)
         )
-        ({}
+        (
           (arena models)
           (category asciiart)
           (elo 1251)
           (win_rate 53.6)
           (rank 12)
         )
-        ({}
+        (
           (arena models)
           (category codecategories)
           (elo 1305)
           (win_rate 56.7)
           (rank 12)
         )
-        ({}
+        (
           (arena models)
           (category dataviz)
           (elo 1319)
           (win_rate 58.3)
           (rank 8)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 1309)
           (win_rate 57.5)
           (rank 13)
         )
-        ({}
+        (
           (arena models)
           (category svg)
           (elo 1265)
           (win_rate 59.4)
           (rank 10)
         )
-        ({}
+        (
           (arena models)
           (category uicomponent)
           (elo 1307)
           (win_rate 55.5)
           (rank 12)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 1296)
@@ -397,18 +397,18 @@
           (rank 15)
         )
       ))
-      (artificial_analysis ({}
+      (artificial_analysis (
         (intelligence_index 46.7)
         (coding_index 66)
         (agentic_index 30.9)
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
       (default_enabled true)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId qwen/qwen3.7-max)

@@ -1,12 +1,12 @@
-({}
+(
   (kind semantic_datatype)
   (id intervention)
   (label Intervention)
   (description "A semantic action applied to an external or simulated world.")
-  (children (
+  (children ([]
     human_intervention
   ))
-  (parents (
+  (parents ([]
     information
   ))
 )

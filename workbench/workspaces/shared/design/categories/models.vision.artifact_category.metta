@@ -1,19 +1,19 @@
-({}
+(
   (kind artifact_category)
   (id models.vision)
   (label "Vision Models")
   (description "Models and profiles declaring visual-input capability.")
   (path filtered/models/vision)
-  (trees (
+  (trees ([]
     models
   ))
-  (query ({}
-    (kinds (
+  (query (
+    (kinds ([]
       model
       profile
     ))
-    (where ({}
-      (capabilities ({}
+    (where (
+      (capabilities (
         (contains vision)
       ))
     ))

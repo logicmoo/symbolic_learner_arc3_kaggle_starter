@@ -1,11 +1,11 @@
-({}
+(
   (kind profile)
   (id openrouter-auto-free-deep)
   (label "OpenRouter automatic free — deep")
   (description "Prompt-free execution profile migrated from the legacy ARC3 configuration.")
   (inherits openrouter-auto-free)
   (enabled true)
-  (defaults ({}
+  (defaults (
     (analysisLevel 3)
     (singleEnabled true)
     (batchEnabled true)

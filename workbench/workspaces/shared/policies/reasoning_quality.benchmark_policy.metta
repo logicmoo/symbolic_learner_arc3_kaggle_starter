@@ -1,4 +1,4 @@
-({}
+(
   (kind benchmark_policy)
   (id reasoning_quality)
   (label "Reasoning Quality Matrix")
@@ -6,23 +6,23 @@
   (enabled true)
   (example true)
   (modelPolicyId default_model_runtime)
-  (modelSelection ({}
+  (modelSelection (
     (policyState on)
     (requireEffectiveBenchmark true)
   ))
-  (promptProfiles (
+  (promptProfiles ([]
     gpt-5.6-light
     gpt-5.6-deep
   ))
-  (metrics (
+  (metrics ([]
     accuracy
     latency_ms
     input_tokens
     output_tokens
     estimated_cost
   ))
-  (cases (
-    ({}
+  (cases ([]
+    (
       (id exact_token)
       (prompt "Return exactly the token ARC3_OK and no other text.")
       (expected ARC3_OK)

@@ -1,13 +1,13 @@
-({}
+(
   (kind semantic_datatype)
   (id entity)
   (label Entity)
   (description "A stable thing or candidate object represented independently of any concrete encoding.")
-  (children (
+  (children ([]
     image_region
     object_properties
   ))
-  (parents (
+  (parents ([]
     information
   ))
 )

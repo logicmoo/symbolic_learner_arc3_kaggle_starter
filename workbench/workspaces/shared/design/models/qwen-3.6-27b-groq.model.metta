@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id qwen-3.6-27b-groq)
   (label "Qwen 3.6 27B on Groq")
@@ -6,12 +6,12 @@
   (inherits groq)
   (model qwen/qwen3.6-27b)
   (enabled true)
-  (capabilities (
+  (capabilities ([]
     text
     vision
     json
   ))
-  (defaults ({}
+  (defaults (
     (reasoningEffort medium)
     (maxOutputTokens 12000)
     (temperature 0.05)
@@ -20,7 +20,7 @@
     (currentImageDetail high)
     (parentImageDetail low)
   ))
-  (environment ({}
+  (environment (
     (model WORKBENCH_GROQ_MODEL)
     (legacyModel ARC3_GROQ_MODEL)
   ))

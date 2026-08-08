@@ -1,12 +1,12 @@
-({}
+(
   (kind representation_datatype)
   (id plain_text)
   (label "Plain Text")
-  (parents (
+  (parents ([]
     information
     text
   ))
-  (children (
+  (children ([]
     utf8_text
     markdown
   ))

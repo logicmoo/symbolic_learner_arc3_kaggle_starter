@@ -1,14 +1,14 @@
-({}
+(
   (kind concrete_datatype)
   (id utf8_text)
   (label "Utf8 Text")
-  (parents (
+  (parents ([]
     plain_text
   ))
-  (mimeTypes (
+  (mimeTypes ([]
     text/plain
   ))
-  (extensions (
+  (extensions ([]
     .txt
   ))
 )

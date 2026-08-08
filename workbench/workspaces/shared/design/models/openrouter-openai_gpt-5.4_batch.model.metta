@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-openai_gpt-5.4_batch)
   (label "OpenAI: GPT-5.4 (batch)")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model openai/gpt-5.4:batch)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,17 +19,17 @@
     (tools true)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 1050000)
     (maxOutputTokens 128000)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.00000125")
     (completion "0.0000075")
     (web_search "0.01")
     (input_cache_read "0.000000125")
-    (overrides (
-      ({}
+    (overrides ([]
+      (
         (min_prompt_tokens 272000)
         (prompt "0.0000025")
         (completion "0.00001125")
@@ -37,7 +37,7 @@
       )
     ))
   ))
-  (properties ({}
+  (properties (
     (id openai/gpt-5.4:batch)
     (canonical_slug openai/gpt-5.4-20260305)
     (hugging_face_id "")
@@ -45,26 +45,26 @@
     (created 1772734352)
     (description "GPT-5.4 is OpenAI’s latest frontier model, unifying the Codex and GPT lines into a single system. It features a 1M+ token context window (922K input, 128K output) with support for...")
     (context_length 1050000)
-    (architecture ({}
+    (architecture (
       (modality text+image+file->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
         file
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer GPT)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000125")
       (completion "0.0000075")
       (web_search "0.01")
       (input_cache_read "0.000000125")
-      (overrides (
-        ({}
+      (overrides ([]
+        (
           (min_prompt_tokens 272000)
           (prompt "0.0000025")
           (completion "0.00001125")
@@ -72,13 +72,13 @@
         )
       ))
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 1050000)
       (max_completion_tokens 128000)
       (is_moderated true)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_tokens
       reasoning
@@ -89,7 +89,7 @@
       tool_choice
       tools
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -100,96 +100,96 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/openai/gpt-5.4-20260305/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category 3d)
           (elo 1156)
           (win_rate 42.4)
           (rank 63)
         )
-        ({}
+        (
           (arena models)
           (category asciiart)
           (elo 1237)
           (win_rate 55.5)
           (rank 16)
         )
-        ({}
+        (
           (arena models)
           (category codecategories)
           (elo 1240)
           (win_rate 52.5)
           (rank 36)
         )
-        ({}
+        (
           (arena models)
           (category dataviz)
           (elo 1262)
           (win_rate 56.6)
           (rank 26)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 1279)
           (win_rate 57.6)
           (rank 21)
         )
-        ({}
+        (
           (arena models)
           (category svg)
           (elo 1241)
           (win_rate 57.8)
           (rank 15)
         )
-        ({}
+        (
           (arena models)
           (category uicomponent)
           (elo 1273)
           (win_rate 57.4)
           (rank 25)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 1242)
           (win_rate 52.5)
           (rank 38)
         )
-        ({}
+        (
           (arena agents)
           (category androidnative)
           (elo 1062)
           (win_rate 47.4)
           (rank 30)
         )
-        ({}
+        (
           (arena agents)
           (category fullstack)
           (elo 1059)
           (win_rate 40.8)
           (rank 30)
         )
-        ({}
+        (
           (arena agents)
           (category godotgamedev)
           (elo 1135)
           (win_rate 46.9)
           (rank 22)
         )
-        ({}
+        (
           (arena agents)
           (category mobileapps)
           (elo 1147)
           (win_rate 45.9)
           (rank 28)
         )
-        ({}
+        (
           (arena agents)
           (category webapps)
           (elo 1107)
@@ -197,16 +197,16 @@
           (rank 28)
         )
       ))
-      (artificial_analysis ({}
+      (artificial_analysis (
         (intelligence_index 53.1)
         (coding_index 71.1)
         (agentic_index 44.2)
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
       (default_enabled false)
-      (supported_efforts (
+      (supported_efforts ([]
         xhigh
         high
         medium
@@ -217,7 +217,7 @@
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id openai/gpt-5.4:batch)
     (canonical_slug openai/gpt-5.4-20260305)
     (hugging_face_id "")
@@ -225,26 +225,26 @@
     (created 1772734352)
     (description "GPT-5.4 is OpenAI’s latest frontier model, unifying the Codex and GPT lines into a single system. It features a 1M+ token context window (922K input, 128K output) with support for...")
     (context_length 1050000)
-    (architecture ({}
+    (architecture (
       (modality text+image+file->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
         file
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer GPT)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000125")
       (completion "0.0000075")
       (web_search "0.01")
       (input_cache_read "0.000000125")
-      (overrides (
-        ({}
+      (overrides ([]
+        (
           (min_prompt_tokens 272000)
           (prompt "0.0000025")
           (completion "0.00001125")
@@ -252,13 +252,13 @@
         )
       ))
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 1050000)
       (max_completion_tokens 128000)
       (is_moderated true)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_tokens
       reasoning
@@ -269,7 +269,7 @@
       tool_choice
       tools
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -280,96 +280,96 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/openai/gpt-5.4-20260305/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category 3d)
           (elo 1156)
           (win_rate 42.4)
           (rank 63)
         )
-        ({}
+        (
           (arena models)
           (category asciiart)
           (elo 1237)
           (win_rate 55.5)
           (rank 16)
         )
-        ({}
+        (
           (arena models)
           (category codecategories)
           (elo 1240)
           (win_rate 52.5)
           (rank 36)
         )
-        ({}
+        (
           (arena models)
           (category dataviz)
           (elo 1262)
           (win_rate 56.6)
           (rank 26)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 1279)
           (win_rate 57.6)
           (rank 21)
         )
-        ({}
+        (
           (arena models)
           (category svg)
           (elo 1241)
           (win_rate 57.8)
           (rank 15)
         )
-        ({}
+        (
           (arena models)
           (category uicomponent)
           (elo 1273)
           (win_rate 57.4)
           (rank 25)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 1242)
           (win_rate 52.5)
           (rank 38)
         )
-        ({}
+        (
           (arena agents)
           (category androidnative)
           (elo 1062)
           (win_rate 47.4)
           (rank 30)
         )
-        ({}
+        (
           (arena agents)
           (category fullstack)
           (elo 1059)
           (win_rate 40.8)
           (rank 30)
         )
-        ({}
+        (
           (arena agents)
           (category godotgamedev)
           (elo 1135)
           (win_rate 46.9)
           (rank 22)
         )
-        ({}
+        (
           (arena agents)
           (category mobileapps)
           (elo 1147)
           (win_rate 45.9)
           (rank 28)
         )
-        ({}
+        (
           (arena agents)
           (category webapps)
           (elo 1107)
@@ -377,16 +377,16 @@
           (rank 28)
         )
       ))
-      (artificial_analysis ({}
+      (artificial_analysis (
         (intelligence_index 53.1)
         (coding_index 71.1)
         (agentic_index 44.2)
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
       (default_enabled false)
-      (supported_efforts (
+      (supported_efforts ([]
         xhigh
         high
         medium
@@ -396,7 +396,7 @@
       (default_effort medium)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId openai/gpt-5.4:batch)

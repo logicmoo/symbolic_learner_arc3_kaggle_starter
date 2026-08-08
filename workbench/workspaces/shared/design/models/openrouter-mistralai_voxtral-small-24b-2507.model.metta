@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-mistralai_voxtral-small-24b-2507)
   (label "Mistral: Voxtral Small 24B 2507")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model mistralai/voxtral-small-24b-2507)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio true)
     (code false)
     (functionCalling true)
@@ -19,17 +19,17 @@
     (tools true)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 32000)
     (maxOutputTokens null)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.0000001")
     (completion "0.0000003")
     (audio "0.0001")
     (input_cache_read "0.00000001")
   ))
-  (properties ({}
+  (properties (
     (id mistralai/voxtral-small-24b-2507)
     (canonical_slug mistralai/voxtral-small-24b-2507)
     (hugging_face_id mistralai/Voxtral-Small-24B-2507)
@@ -37,32 +37,32 @@
     (created 1761835144)
     (description "Voxtral Small is an enhancement of Mistral Small 3, incorporating state-of-the-art audio input capabilities while retaining best-in-class text performance. It excels at speech transcription, translation and audio understanding. Input audio...")
     (context_length 32000)
-    (architecture ({}
+    (architecture (
       (modality text+file+audio->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         audio
         file
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Mistral)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000001")
       (completion "0.0000003")
       (audio "0.0001")
       (input_cache_read "0.00000001")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 32000)
       (max_completion_tokens null)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       max_tokens
       presence_penalty
@@ -75,7 +75,7 @@
       tools
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature 0.2)
       (top_p 0.95)
       (frequency_penalty null)
@@ -83,12 +83,12 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/mistralai/voxtral-small-24b-2507/endpoints)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id mistralai/voxtral-small-24b-2507)
     (canonical_slug mistralai/voxtral-small-24b-2507)
     (hugging_face_id mistralai/Voxtral-Small-24B-2507)
@@ -96,32 +96,32 @@
     (created 1761835144)
     (description "Voxtral Small is an enhancement of Mistral Small 3, incorporating state-of-the-art audio input capabilities while retaining best-in-class text performance. It excels at speech transcription, translation and audio understanding. Input audio...")
     (context_length 32000)
-    (architecture ({}
+    (architecture (
       (modality text+file+audio->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         audio
         file
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Mistral)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000001")
       (completion "0.0000003")
       (audio "0.0001")
       (input_cache_read "0.00000001")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 32000)
       (max_completion_tokens null)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       max_tokens
       presence_penalty
@@ -134,7 +134,7 @@
       tools
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature 0.2)
       (top_p 0.95)
       (frequency_penalty null)
@@ -142,11 +142,11 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/mistralai/voxtral-small-24b-2507/endpoints)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId mistralai/voxtral-small-24b-2507)

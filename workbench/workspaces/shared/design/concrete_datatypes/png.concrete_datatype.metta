@@ -1,14 +1,14 @@
-({}
+(
   (kind concrete_datatype)
   (id png)
   (label Png)
-  (parents (
+  (parents ([]
     bitmap
   ))
-  (mimeTypes (
+  (mimeTypes ([]
     image/png
   ))
-  (extensions (
+  (extensions ([]
     .png
   ))
 )

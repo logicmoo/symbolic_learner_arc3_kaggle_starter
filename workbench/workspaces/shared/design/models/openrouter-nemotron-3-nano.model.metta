@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-nemotron-3-nano)
   (label "Nemotron 3 Nano 30B A3B free")
@@ -6,12 +6,12 @@
   (inherits openrouter)
   (model nvidia/nemotron-3-nano-30b-a3b:free)
   (enabled true)
-  (capabilities (
+  (capabilities ([]
     text
     reasoning
     json
   ))
-  (metadata ({}
+  (metadata (
     (verifiedAvailable true)
     (verifiedAt 2026-08-04)
     (source "legacy config/llm_workflows.json")

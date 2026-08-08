@@ -1,11 +1,11 @@
-({}
+(
   (kind profile)
   (id openrouter-nemotron-12b-vl-light)
   (label "Nemotron Nano 12B 2 VL free — light")
   (description "Prompt-free execution profile migrated from the legacy ARC3 configuration.")
   (inherits openrouter-nemotron-12b-vl)
   (enabled true)
-  (defaults ({}
+  (defaults (
     (analysisLevel 2)
     (singleEnabled true)
     (batchEnabled false)

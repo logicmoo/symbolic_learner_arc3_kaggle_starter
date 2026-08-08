@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-z-ai_glm-4.5)
   (label "Z.ai: GLM 4.5")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model z-ai/glm-4.5)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,16 +19,16 @@
     (tools true)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 131072)
     (maxOutputTokens 98304)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.0000006")
     (completion "0.0000022")
     (input_cache_read "0.00000011")
   ))
-  (properties ({}
+  (properties (
     (id z-ai/glm-4.5)
     (canonical_slug z-ai/glm-4.5)
     (hugging_face_id zai-org/GLM-4.5)
@@ -36,29 +36,29 @@
     (created 1753471347)
     (description "GLM-4.5 is our latest flagship foundation model, purpose-built for agent-based applications. It leverages a Mixture-of-Experts (MoE) architecture and supports a context length of up to 128k tokens. GLM-4.5 delivers significantly...")
     (context_length 131072)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000006")
       (completion "0.0000022")
       (input_cache_read "0.00000011")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 131072)
       (max_completion_tokens 98304)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_tokens
       reasoning
@@ -69,7 +69,7 @@
       top_k
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature 0.75)
       (top_p null)
       (frequency_penalty null)
@@ -77,54 +77,54 @@
     (supported_voices null)
     (knowledge_cutoff 2024-12-31)
     (expiration_date 2026-12-31)
-    (links ({}
+    (links (
       (details /api/v1/models/z-ai/glm-4.5/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category 3d)
           (elo 1224)
           (win_rate 59.7)
           (rank 41)
         )
-        ({}
+        (
           (arena models)
           (category codecategories)
           (elo 1193)
           (win_rate 54.4)
           (rank 58)
         )
-        ({}
+        (
           (arena models)
           (category dataviz)
           (elo 1187)
           (win_rate 53.3)
           (rank 57)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 1186)
           (win_rate 54.4)
           (rank 53)
         )
-        ({}
+        (
           (arena models)
           (category svg)
           (elo 1143)
           (win_rate 50.8)
           (rank 47)
         )
-        ({}
+        (
           (arena models)
           (category uicomponent)
           (elo 1177)
           (win_rate 55)
           (rank 59)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 1192)
@@ -133,12 +133,12 @@
         )
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id z-ai/glm-4.5)
     (canonical_slug z-ai/glm-4.5)
     (hugging_face_id zai-org/GLM-4.5)
@@ -146,29 +146,29 @@
     (created 1753471347)
     (description "GLM-4.5 is our latest flagship foundation model, purpose-built for agent-based applications. It leverages a Mixture-of-Experts (MoE) architecture and supports a context length of up to 128k tokens. GLM-4.5 delivers significantly...")
     (context_length 131072)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000006")
       (completion "0.0000022")
       (input_cache_read "0.00000011")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 131072)
       (max_completion_tokens 98304)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_tokens
       reasoning
@@ -179,7 +179,7 @@
       top_k
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature 0.75)
       (top_p null)
       (frequency_penalty null)
@@ -187,54 +187,54 @@
     (supported_voices null)
     (knowledge_cutoff 2024-12-31)
     (expiration_date 2026-12-31)
-    (links ({}
+    (links (
       (details /api/v1/models/z-ai/glm-4.5/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category 3d)
           (elo 1224)
           (win_rate 59.7)
           (rank 41)
         )
-        ({}
+        (
           (arena models)
           (category codecategories)
           (elo 1193)
           (win_rate 54.4)
           (rank 58)
         )
-        ({}
+        (
           (arena models)
           (category dataviz)
           (elo 1187)
           (win_rate 53.3)
           (rank 57)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 1186)
           (win_rate 54.4)
           (rank 53)
         )
-        ({}
+        (
           (arena models)
           (category svg)
           (elo 1143)
           (win_rate 50.8)
           (rank 47)
         )
-        ({}
+        (
           (arena models)
           (category uicomponent)
           (elo 1177)
           (win_rate 55)
           (rank 59)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 1192)
@@ -243,11 +243,11 @@
         )
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId z-ai/glm-4.5)

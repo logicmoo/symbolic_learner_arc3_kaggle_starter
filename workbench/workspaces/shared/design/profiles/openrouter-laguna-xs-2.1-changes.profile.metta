@@ -1,11 +1,11 @@
-({}
+(
   (kind profile)
   (id openrouter-laguna-xs-2.1-changes)
   (label "Laguna XS 2.1 — medium reasoning")
   (description "Prompt-free execution profile migrated from the legacy symbolic-change transaction.")
   (inherits openrouter-laguna-xs-2.1)
   (enabled true)
-  (defaults ({}
+  (defaults (
     (analysisLevel 3)
     (singleEnabled false)
     (batchEnabled false)
@@ -18,7 +18,7 @@
     (timeoutSeconds 420)
     (seed null)
   ))
-  (metadata ({}
+  (metadata (
     (legacyTransaction explain_object_changes)
   ))
 )

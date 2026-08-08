@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-z-ai_glm-4.5v)
   (label "Z.ai: GLM 4.5V")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model z-ai/glm-4.5v)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,16 +19,16 @@
     (tools true)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 65536)
     (maxOutputTokens 16384)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.0000006")
     (completion "0.0000018")
     (input_cache_read "0.00000011")
   ))
-  (properties ({}
+  (properties (
     (id z-ai/glm-4.5v)
     (canonical_slug z-ai/glm-4.5v)
     (hugging_face_id zai-org/GLM-4.5V)
@@ -36,30 +36,30 @@
     (created 1754922288)
     (description "GLM-4.5V is a vision-language foundation model for multimodal agent applications. Built on a Mixture-of-Experts (MoE) architecture with 106B parameters and 12B activated parameters, it achieves state-of-the-art results in video understanding,...")
     (context_length 65536)
-    (architecture ({}
+    (architecture (
       (modality text+image->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000006")
       (completion "0.0000018")
       (input_cache_read "0.00000011")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 65536)
       (max_completion_tokens 16384)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       max_tokens
@@ -75,7 +75,7 @@
       top_k
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature 0.75)
       (top_p null)
       (frequency_penalty null)
@@ -83,15 +83,15 @@
     (supported_voices null)
     (knowledge_cutoff 2024-12-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/z-ai/glm-4.5v/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id z-ai/glm-4.5v)
     (canonical_slug z-ai/glm-4.5v)
     (hugging_face_id zai-org/GLM-4.5V)
@@ -99,30 +99,30 @@
     (created 1754922288)
     (description "GLM-4.5V is a vision-language foundation model for multimodal agent applications. Built on a Mixture-of-Experts (MoE) architecture with 106B parameters and 12B activated parameters, it achieves state-of-the-art results in video understanding,...")
     (context_length 65536)
-    (architecture ({}
+    (architecture (
       (modality text+image->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000006")
       (completion "0.0000018")
       (input_cache_read "0.00000011")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 65536)
       (max_completion_tokens 16384)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       max_tokens
@@ -138,7 +138,7 @@
       top_k
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature 0.75)
       (top_p null)
       (frequency_penalty null)
@@ -146,14 +146,14 @@
     (supported_voices null)
     (knowledge_cutoff 2024-12-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/z-ai/glm-4.5v/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId z-ai/glm-4.5v)

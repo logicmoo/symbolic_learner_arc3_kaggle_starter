@@ -1,26 +1,26 @@
-({}
+(
   (kind model_policy_variant)
   (id economy_model_runtime)
   (label "Economy Runtime")
   (description "Cost-focused alternative to the balanced runtime policy. When enabled and selected as the default variant, it gives cost the largest ranking weight, normally excludes models from benchmark runs, and retains more capable premium models as fallbacks when economical models are unhealthy or unsuitable.")
   (enabled false)
   (example true)
-  (selection ({}
+  (selection (
     (strategy weighted)
     (fallback true)
-    (weights ({}
+    (weights (
       (quality 0.2)
       (latency 0.2)
       (cost 0.5)
       (reliability 0.1)
     ))
   ))
-  (defaults ({}
+  (defaults (
     (wanted auto)
     (runtime auto)
     (benchmark off)
   ))
-  (parents (
+  (parents ([]
     default_model_runtime
   ))
 )

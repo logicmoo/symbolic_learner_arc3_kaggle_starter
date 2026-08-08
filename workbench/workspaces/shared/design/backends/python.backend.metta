@@ -1,15 +1,15 @@
-({}
+(
   (kind backend)
   (id python)
   (label "Python Runtime")
   (provider python)
   (description "Executes trusted Python callables and Python-based operation implementations.")
   (enabled true)
-  (capabilities (
+  (capabilities ([]
     python.callable
     python.expression
   ))
-  (configuration ({}
+  (configuration (
     (executable python)
     (isolation process)
     (timeoutSeconds 300)

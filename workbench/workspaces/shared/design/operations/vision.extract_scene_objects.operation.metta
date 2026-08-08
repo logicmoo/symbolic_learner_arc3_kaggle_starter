@@ -1,23 +1,23 @@
-({}
+(
   (id vision.extract_scene_objects)
   (label "Extract Scene Objects")
   (description "Reusable vision operation migrated from the legacy ARC3 extract_scene_objects transaction.")
-  (categories (
+  (categories ([]
     vision/extraction
     vision/recognition
     vision/grouping
   ))
   (implementation llm.complete)
-  (inputs ({}
+  (inputs (
     (current_image Image)
     (previous_image Image)
   ))
-  (outputs ({}
+  (outputs (
     (objects ObjectAnnotation)
     (reconstruction Program)
   ))
-  (promptSelection ({}
-    (prompts (
+  (promptSelection (
+    (prompts ([]
       structured_json_response
       logical_image_coordinates
       object_extraction
@@ -29,11 +29,11 @@
     ))
     (separator "\n\n")
   ))
-  (modelSelection ({}
-    (models ())
+  (modelSelection (
+    (models ([]))
     (strategy single)
   ))
-  (parameters ({}
+  (parameters (
     (requiresVision true)
   ))
   (kind operation)

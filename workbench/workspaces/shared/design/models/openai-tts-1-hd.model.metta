@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openai-tts-1-hd)
   (label tts-1-hd)
@@ -6,7 +6,7 @@
   (inherits openai)
   (model tts-1-hd)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio true)
     (code false)
     (functionCalling false)
@@ -19,25 +19,25 @@
     (tools false)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow null)
     (maxOutputTokens null)
   ))
-  (pricing ({}))
-  (properties ({}
+  (pricing ())
+  (properties (
     (id tts-1-hd)
     (object model)
     (created 1699046015)
     (owned_by system)
     (ownedBy system)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id tts-1-hd)
     (object model)
     (created 1699046015)
     (owned_by system)
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openai)
     (remoteModelId tts-1-hd)

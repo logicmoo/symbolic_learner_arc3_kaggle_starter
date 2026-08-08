@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-_anthropic_claude-opus-latest)
   (label "Anthropic: Claude Opus Latest")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model ~anthropic/claude-opus-latest)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,11 +19,11 @@
     (tools true)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 1000000)
     (maxOutputTokens 128000)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.000005")
     (completion "0.000025")
     (web_search "0.01")
@@ -31,10 +31,10 @@
     (input_cache_write "0.00000625")
     (input_cache_write_1h "0.00001")
   ))
-  (properties ({}
+  (properties (
     (id ~anthropic/claude-opus-latest)
     (canonical_slug ~anthropic/claude-opus-latest)
-    (alias_target ({}
+    (alias_target (
       (name "Claude Opus 5")
       (slug anthropic/claude-opus-5)
     ))
@@ -43,20 +43,20 @@
     (created 1776795361)
     (description "This model always redirects to the latest model in the Claude Opus family.")
     (context_length 1000000)
-    (architecture ({}
+    (architecture (
       (modality text+image+file->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
         file
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Router)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.000005")
       (completion "0.000025")
       (web_search "0.01")
@@ -64,13 +64,13 @@
       (input_cache_write "0.00000625")
       (input_cache_write_1h "0.00001")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 1000000)
       (max_completion_tokens 128000)
       (is_moderated true)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_completion_tokens
       max_tokens
@@ -84,7 +84,7 @@
       tools
       verbosity
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -95,13 +95,13 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/~anthropic/claude-opus-latest/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
       (default_enabled true)
-      (supported_efforts (
+      (supported_efforts ([]
         max
         xhigh
         high
@@ -112,10 +112,10 @@
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id ~anthropic/claude-opus-latest)
     (canonical_slug ~anthropic/claude-opus-latest)
-    (alias_target ({}
+    (alias_target (
       (name "Claude Opus 5")
       (slug anthropic/claude-opus-5)
     ))
@@ -124,20 +124,20 @@
     (created 1776795361)
     (description "This model always redirects to the latest model in the Claude Opus family.")
     (context_length 1000000)
-    (architecture ({}
+    (architecture (
       (modality text+image+file->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
         file
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Router)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.000005")
       (completion "0.000025")
       (web_search "0.01")
@@ -145,13 +145,13 @@
       (input_cache_write "0.00000625")
       (input_cache_write_1h "0.00001")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 1000000)
       (max_completion_tokens 128000)
       (is_moderated true)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_completion_tokens
       max_tokens
@@ -165,7 +165,7 @@
       tools
       verbosity
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -176,13 +176,13 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/~anthropic/claude-opus-latest/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
       (default_enabled true)
-      (supported_efforts (
+      (supported_efforts ([]
         max
         xhigh
         high
@@ -192,7 +192,7 @@
       (default_effort high)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId ~anthropic/claude-opus-latest)

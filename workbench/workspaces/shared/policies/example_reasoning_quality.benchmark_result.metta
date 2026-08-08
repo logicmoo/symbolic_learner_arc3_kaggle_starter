@@ -1,4 +1,4 @@
-({}
+(
   (kind benchmark_result)
   (id example_reasoning_quality_gpt_5_6)
   (benchmarkPolicyId reasoning_quality)
@@ -9,7 +9,7 @@
   (status example)
   (enabled true)
   (example true)
-  (metrics ({}
+  (metrics (
     (accuracy 0.92)
     (latency_ms 180)
     (input_tokens 420)

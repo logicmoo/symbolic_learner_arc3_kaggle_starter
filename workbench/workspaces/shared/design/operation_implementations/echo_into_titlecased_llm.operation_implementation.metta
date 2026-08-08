@@ -1,35 +1,35 @@
-({}
+(
   (kind operation_implementation)
   (id echo_into_titlecased_llm)
   (label "Echo Into Titlecased / LLM")
   (description "Take received text, send it through an LLM with the shared titlecase prompt, and return the title-cased text.")
-  (categories (
+  (categories ([]
     sample/llm
   ))
   (implementation llm.complete)
-  (inputs ({}
+  (inputs (
     (text Text)
   ))
-  (outputs ({}
+  (outputs (
     (text Text)
   ))
-  (modelSelection ({}
-    (models (
+  (modelSelection (
+    (models ([]
       openrouter-ai21_jamba-large-1.7
     ))
     (strategy single)
   ))
-  (bindings ({}
-    (prompts (
+  (bindings (
+    (prompts ([]
       titlecase_received_text
     ))
     (separator "\n\n")
   ))
-  (parameters ({}
+  (parameters (
     (inputBinding text)
     (outputBinding text)
   ))
-  (parents (
+  (parents ([]
     echo_into_titlecased
   ))
 )

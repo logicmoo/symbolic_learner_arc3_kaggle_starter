@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-mistralai_mistral-medium-3.1)
   (label "Mistral: Mistral Medium 3.1")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model mistralai/mistral-medium-3.1)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,16 +19,16 @@
     (tools true)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 131072)
     (maxOutputTokens null)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.0000004")
     (completion "0.000002")
     (input_cache_read "0.00000004")
   ))
-  (properties ({}
+  (properties (
     (id mistralai/mistral-medium-3.1)
     (canonical_slug mistralai/mistral-medium-3.1)
     (hugging_face_id "")
@@ -36,31 +36,31 @@
     (created 1755095639)
     (description "Mistral Medium 3.1 is an updated version of Mistral Medium 3, which is a high-performance enterprise-grade language model designed to deliver frontier-level capabilities at significantly reduced operational cost. It balances...")
     (context_length 131072)
-    (architecture ({}
+    (architecture (
       (modality text+image+file->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
         file
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Mistral)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000004")
       (completion "0.000002")
       (input_cache_read "0.00000004")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 131072)
       (max_completion_tokens null)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       max_tokens
       presence_penalty
@@ -73,67 +73,67 @@
       tools
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature 0.3)
     ))
     (supported_voices null)
     (knowledge_cutoff 2025-06-30)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/mistralai/mistral-medium-3.1/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category 3d)
           (elo 1136)
           (win_rate 44.7)
           (rank 71)
         )
-        ({}
+        (
           (arena models)
           (category asciiart)
           (elo 1035)
           (win_rate 30.8)
           (rank 56)
         )
-        ({}
+        (
           (arena models)
           (category codecategories)
           (elo 1148)
           (win_rate 45.1)
           (rank 73)
         )
-        ({}
+        (
           (arena models)
           (category dataviz)
           (elo 1173)
           (win_rate 47.3)
           (rank 63)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 1114)
           (win_rate 40.7)
           (rank 81)
         )
-        ({}
+        (
           (arena models)
           (category svg)
           (elo 1039)
           (win_rate 38.2)
           (rank 70)
         )
-        ({}
+        (
           (arena models)
           (category uicomponent)
           (elo 1131)
           (win_rate 43.4)
           (rank 71)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 1155)
@@ -141,7 +141,7 @@
           (rank 74)
         )
       ))
-      (artificial_analysis ({}
+      (artificial_analysis (
         (intelligence_index 14.7)
         (coding_index 20.5)
         (agentic_index 6.1)
@@ -149,7 +149,7 @@
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id mistralai/mistral-medium-3.1)
     (canonical_slug mistralai/mistral-medium-3.1)
     (hugging_face_id "")
@@ -157,31 +157,31 @@
     (created 1755095639)
     (description "Mistral Medium 3.1 is an updated version of Mistral Medium 3, which is a high-performance enterprise-grade language model designed to deliver frontier-level capabilities at significantly reduced operational cost. It balances...")
     (context_length 131072)
-    (architecture ({}
+    (architecture (
       (modality text+image+file->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
         file
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Mistral)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000004")
       (completion "0.000002")
       (input_cache_read "0.00000004")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 131072)
       (max_completion_tokens null)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       max_tokens
       presence_penalty
@@ -194,67 +194,67 @@
       tools
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature 0.3)
     ))
     (supported_voices null)
     (knowledge_cutoff 2025-06-30)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/mistralai/mistral-medium-3.1/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category 3d)
           (elo 1136)
           (win_rate 44.7)
           (rank 71)
         )
-        ({}
+        (
           (arena models)
           (category asciiart)
           (elo 1035)
           (win_rate 30.8)
           (rank 56)
         )
-        ({}
+        (
           (arena models)
           (category codecategories)
           (elo 1148)
           (win_rate 45.1)
           (rank 73)
         )
-        ({}
+        (
           (arena models)
           (category dataviz)
           (elo 1173)
           (win_rate 47.3)
           (rank 63)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 1114)
           (win_rate 40.7)
           (rank 81)
         )
-        ({}
+        (
           (arena models)
           (category svg)
           (elo 1039)
           (win_rate 38.2)
           (rank 70)
         )
-        ({}
+        (
           (arena models)
           (category uicomponent)
           (elo 1131)
           (win_rate 43.4)
           (rank 71)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 1155)
@@ -262,14 +262,14 @@
           (rank 74)
         )
       ))
-      (artificial_analysis ({}
+      (artificial_analysis (
         (intelligence_index 14.7)
         (coding_index 20.5)
         (agentic_index 6.1)
       ))
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId mistralai/mistral-medium-3.1)

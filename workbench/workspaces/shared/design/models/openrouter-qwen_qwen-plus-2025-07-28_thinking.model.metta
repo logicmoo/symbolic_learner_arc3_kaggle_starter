@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-qwen_qwen-plus-2025-07-28_thinking)
   (label "Qwen: Qwen Plus 0728 (thinking)")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model qwen/qwen-plus-2025-07-28:thinking)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,16 +19,16 @@
     (tools true)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 1000000)
     (maxOutputTokens 32768)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.0000004")
     (completion "0.0000012")
     (input_cache_write "0.0000005")
-    (overrides (
-      ({}
+    (overrides ([]
+      (
         (min_prompt_tokens 256000)
         (prompt "0.0000012")
         (completion "0.0000036")
@@ -36,7 +36,7 @@
       )
     ))
   ))
-  (properties ({}
+  (properties (
     (id qwen/qwen-plus-2025-07-28:thinking)
     (canonical_slug qwen/qwen-plus-2025-07-28)
     (hugging_face_id "")
@@ -44,23 +44,23 @@
     (created 1757347599)
     (description "Qwen Plus 0728, based on the Qwen3 foundation model, is a 1 million context hybrid reasoning model with a balanced performance, speed, and cost combination.")
     (context_length 1000000)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Qwen3)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000004")
       (completion "0.0000012")
       (input_cache_write "0.0000005")
-      (overrides (
-        ({}
+      (overrides ([]
+        (
           (min_prompt_tokens 256000)
           (prompt "0.0000012")
           (completion "0.0000036")
@@ -68,13 +68,13 @@
         )
       ))
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 1000000)
       (max_completion_tokens 32768)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       logprobs
@@ -92,7 +92,7 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (frequency_penalty null)
@@ -100,15 +100,15 @@
     (supported_voices null)
     (knowledge_cutoff 2025-03-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/qwen/qwen-plus-2025-07-28/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id qwen/qwen-plus-2025-07-28:thinking)
     (canonical_slug qwen/qwen-plus-2025-07-28)
     (hugging_face_id "")
@@ -116,23 +116,23 @@
     (created 1757347599)
     (description "Qwen Plus 0728, based on the Qwen3 foundation model, is a 1 million context hybrid reasoning model with a balanced performance, speed, and cost combination.")
     (context_length 1000000)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Qwen3)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000004")
       (completion "0.0000012")
       (input_cache_write "0.0000005")
-      (overrides (
-        ({}
+      (overrides ([]
+        (
           (min_prompt_tokens 256000)
           (prompt "0.0000012")
           (completion "0.0000036")
@@ -140,13 +140,13 @@
         )
       ))
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 1000000)
       (max_completion_tokens 32768)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       logprobs
@@ -164,7 +164,7 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (frequency_penalty null)
@@ -172,14 +172,14 @@
     (supported_voices null)
     (knowledge_cutoff 2025-03-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/qwen/qwen-plus-2025-07-28/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId qwen/qwen-plus-2025-07-28:thinking)

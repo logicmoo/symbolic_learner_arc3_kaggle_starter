@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openai-computer-use-preview-2025-03-11)
   (label computer-use-preview-2025-03-11)
@@ -6,7 +6,7 @@
   (inherits openai)
   (model computer-use-preview-2025-03-11)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling false)
@@ -19,25 +19,25 @@
     (tools false)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow null)
     (maxOutputTokens null)
   ))
-  (pricing ({}))
-  (properties ({}
+  (pricing ())
+  (properties (
     (id computer-use-preview-2025-03-11)
     (object model)
     (created 1741377021)
     (owned_by system)
     (ownedBy system)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id computer-use-preview-2025-03-11)
     (object model)
     (created 1741377021)
     (owned_by system)
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openai)
     (remoteModelId computer-use-preview-2025-03-11)

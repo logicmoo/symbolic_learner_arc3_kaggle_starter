@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openai-o1-2024-12-17)
   (label o1-2024-12-17)
@@ -6,7 +6,7 @@
   (inherits openai)
   (model o1-2024-12-17)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling false)
@@ -19,25 +19,25 @@
     (tools false)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow null)
     (maxOutputTokens null)
   ))
-  (pricing ({}))
-  (properties ({}
+  (pricing ())
+  (properties (
     (id o1-2024-12-17)
     (object model)
     (created 1734326976)
     (owned_by system)
     (ownedBy system)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id o1-2024-12-17)
     (object model)
     (created 1734326976)
     (owned_by system)
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openai)
     (remoteModelId o1-2024-12-17)

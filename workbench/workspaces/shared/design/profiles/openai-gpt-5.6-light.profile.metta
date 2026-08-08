@@ -1,11 +1,11 @@
-({}
+(
   (kind profile)
   (id openai-gpt-5.6-light)
   (label "GPT-5.6 — light")
   (description "Prompt-free execution profile migrated from the legacy ARC3 configuration.")
   (inherits gpt-5.6)
   (enabled true)
-  (defaults ({}
+  (defaults (
     (analysisLevel 2)
     (singleEnabled true)
     (batchEnabled false)

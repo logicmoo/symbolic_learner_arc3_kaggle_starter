@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-kwaipilot_kat-coder-pro-v2.5)
   (label "Kwaipilot: KAT-Coder-Pro V2.5")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model kwaipilot/kat-coder-pro-v2.5)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code true)
     (functionCalling true)
@@ -19,16 +19,16 @@
     (tools true)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 256000)
     (maxOutputTokens 80000)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.00000074")
     (completion "0.00000296")
     (input_cache_read "0.00000015")
   ))
-  (properties ({}
+  (properties (
     (id kwaipilot/kat-coder-pro-v2.5)
     (canonical_slug kwaipilot/kat-coder-pro-v2.5-20260710)
     (hugging_face_id null)
@@ -36,29 +36,29 @@
     (created 1783714589)
     (description "KAT-Coder-Pro V2.5 is a flagship-level Agentic Coding model that can directly hand over an entire issue or an entire business workflow to it, allowing it to autonomously locate and make...")
     (context_length 256000)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000074")
       (completion "0.00000296")
       (input_cache_read "0.00000015")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 256000)
       (max_completion_tokens 80000)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       logprobs
       max_tokens
@@ -72,7 +72,7 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -83,12 +83,12 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/kwaipilot/kat-coder-pro-v2.5-20260710/endpoints)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id kwaipilot/kat-coder-pro-v2.5)
     (canonical_slug kwaipilot/kat-coder-pro-v2.5-20260710)
     (hugging_face_id null)
@@ -96,29 +96,29 @@
     (created 1783714589)
     (description "KAT-Coder-Pro V2.5 is a flagship-level Agentic Coding model that can directly hand over an entire issue or an entire business workflow to it, allowing it to autonomously locate and make...")
     (context_length 256000)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000074")
       (completion "0.00000296")
       (input_cache_read "0.00000015")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 256000)
       (max_completion_tokens 80000)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       logprobs
       max_tokens
@@ -132,7 +132,7 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -143,11 +143,11 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/kwaipilot/kat-coder-pro-v2.5-20260710/endpoints)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId kwaipilot/kat-coder-pro-v2.5)

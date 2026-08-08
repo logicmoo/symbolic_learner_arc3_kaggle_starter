@@ -1,11 +1,11 @@
-({}
+(
   (kind representation_datatype)
   (id scene_graph)
   (label "Scene Graph")
-  (parents (
+  (parents ([]
     image
   ))
-  (children (
+  (children ([]
     json
   ))
   (preferredChild json)

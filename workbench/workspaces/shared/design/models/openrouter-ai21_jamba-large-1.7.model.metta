@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-ai21_jamba-large-1.7)
   (label "AI21: Jamba Large 1.7")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model ai21/jamba-large-1.7)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,15 +19,15 @@
     (tools true)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 256000)
     (maxOutputTokens 4096)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.000002")
     (completion "0.000008")
   ))
-  (properties ({}
+  (properties (
     (id ai21/jamba-large-1.7)
     (canonical_slug ai21/jamba-large-1.7)
     (hugging_face_id ai21labs/AI21-Jamba-Large-1.7)
@@ -35,28 +35,28 @@
     (created 1754669020)
     (description "Jamba Large 1.7 is the latest model in the Jamba open family, offering improvements in grounding, instruction-following, and overall efficiency. Built on a hybrid SSM-Transformer architecture with a 256K context...")
     (context_length 256000)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.000002")
       (completion "0.000008")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 256000)
       (max_completion_tokens 4096)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       max_tokens
       response_format
       stop
@@ -65,16 +65,16 @@
       tools
       top_p
     ))
-    (default_parameters ({}))
+    (default_parameters ())
     (supported_voices null)
     (knowledge_cutoff 2024-08-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/ai21/jamba-large-1.7/endpoints)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id ai21/jamba-large-1.7)
     (canonical_slug ai21/jamba-large-1.7)
     (hugging_face_id ai21labs/AI21-Jamba-Large-1.7)
@@ -82,28 +82,28 @@
     (created 1754669020)
     (description "Jamba Large 1.7 is the latest model in the Jamba open family, offering improvements in grounding, instruction-following, and overall efficiency. Built on a hybrid SSM-Transformer architecture with a 256K context...")
     (context_length 256000)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.000002")
       (completion "0.000008")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 256000)
       (max_completion_tokens 4096)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       max_tokens
       response_format
       stop
@@ -112,15 +112,15 @@
       tools
       top_p
     ))
-    (default_parameters ({}))
+    (default_parameters ())
     (supported_voices null)
     (knowledge_cutoff 2024-08-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/ai21/jamba-large-1.7/endpoints)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId ai21/jamba-large-1.7)

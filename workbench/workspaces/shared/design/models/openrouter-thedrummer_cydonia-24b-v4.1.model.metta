@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-thedrummer_cydonia-24b-v4.1)
   (label "TheDrummer: Cydonia 24B V4.1")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model thedrummer/cydonia-24b-v4.1)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling false)
@@ -19,16 +19,16 @@
     (tools false)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 131072)
     (maxOutputTokens 131072)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.0000003")
     (completion "0.0000005")
     (input_cache_read "0.00000015")
   ))
-  (properties ({}
+  (properties (
     (id thedrummer/cydonia-24b-v4.1)
     (canonical_slug thedrummer/cydonia-24b-v4.1)
     (hugging_face_id thedrummer/cydonia-24b-v4.1)
@@ -36,29 +36,29 @@
     (created 1758931878)
     (description "Uncensored and creative writing model based on Mistral Small 3.2 24B with good recall, prompt adherence, and intelligence.")
     (context_length 131072)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000003")
       (completion "0.0000005")
       (input_cache_read "0.00000015")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 131072)
       (max_completion_tokens 131072)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       logit_bias
       logprobs
@@ -74,7 +74,7 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (frequency_penalty null)
@@ -82,12 +82,12 @@
     (supported_voices null)
     (knowledge_cutoff 2024-04-30)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/thedrummer/cydonia-24b-v4.1/endpoints)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id thedrummer/cydonia-24b-v4.1)
     (canonical_slug thedrummer/cydonia-24b-v4.1)
     (hugging_face_id thedrummer/cydonia-24b-v4.1)
@@ -95,29 +95,29 @@
     (created 1758931878)
     (description "Uncensored and creative writing model based on Mistral Small 3.2 24B with good recall, prompt adherence, and intelligence.")
     (context_length 131072)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000003")
       (completion "0.0000005")
       (input_cache_read "0.00000015")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 131072)
       (max_completion_tokens 131072)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       logit_bias
       logprobs
@@ -133,7 +133,7 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (frequency_penalty null)
@@ -141,11 +141,11 @@
     (supported_voices null)
     (knowledge_cutoff 2024-04-30)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/thedrummer/cydonia-24b-v4.1/endpoints)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId thedrummer/cydonia-24b-v4.1)

@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-deepseek_deepseek-r1)
   (label "DeepSeek: R1")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model deepseek/deepseek-r1)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,15 +19,15 @@
     (tools true)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 163840)
     (maxOutputTokens 16000)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.0000007")
     (completion "0.0000025")
   ))
-  (properties ({}
+  (properties (
     (id deepseek/deepseek-r1)
     (canonical_slug deepseek/deepseek-r1)
     (hugging_face_id deepseek-ai/DeepSeek-R1)
@@ -35,28 +35,28 @@
     (created 1737381095)
     (description "DeepSeek R1 is here: Performance on par with [OpenAI o1](/openai/o1), but open-sourced and with fully open reasoning tokens. It's 671B parameters in size, with 37B active in an inference pass....")
     (context_length 163840)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer DeepSeek)
       (instruct_type deepseek-r1)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000007")
       (completion "0.0000025")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 64000)
       (max_completion_tokens 16000)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       max_completion_tokens
@@ -74,7 +74,7 @@
       top_k
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -85,23 +85,23 @@
     (supported_voices null)
     (knowledge_cutoff 2024-07-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/deepseek/deepseek-r1/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena ())
-      (artificial_analysis ({}
+    (benchmarks (
+      (design_arena ([]))
+      (artificial_analysis (
         (intelligence_index 18.6)
         (coding_index 24.6)
         (agentic_index 3.1)
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory true)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id deepseek/deepseek-r1)
     (canonical_slug deepseek/deepseek-r1)
     (hugging_face_id deepseek-ai/DeepSeek-R1)
@@ -109,28 +109,28 @@
     (created 1737381095)
     (description "DeepSeek R1 is here: Performance on par with [OpenAI o1](/openai/o1), but open-sourced and with fully open reasoning tokens. It's 671B parameters in size, with 37B active in an inference pass....")
     (context_length 163840)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer DeepSeek)
       (instruct_type deepseek-r1)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000007")
       (completion "0.0000025")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 64000)
       (max_completion_tokens 16000)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       max_completion_tokens
@@ -148,7 +148,7 @@
       top_k
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -159,22 +159,22 @@
     (supported_voices null)
     (knowledge_cutoff 2024-07-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/deepseek/deepseek-r1/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena ())
-      (artificial_analysis ({}
+    (benchmarks (
+      (design_arena ([]))
+      (artificial_analysis (
         (intelligence_index 18.6)
         (coding_index 24.6)
         (agentic_index 3.1)
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory true)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId deepseek/deepseek-r1)

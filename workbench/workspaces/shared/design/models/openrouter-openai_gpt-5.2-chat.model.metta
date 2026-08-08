@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-openai_gpt-5.2-chat)
   (label "OpenAI: GPT-5.2 Chat")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model openai/gpt-5.2-chat)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,17 +19,17 @@
     (tools true)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 128000)
     (maxOutputTokens 16384)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.00000175")
     (completion "0.000014")
     (web_search "0.01")
     (input_cache_read "0.000000175")
   ))
-  (properties ({}
+  (properties (
     (id openai/gpt-5.2-chat)
     (canonical_slug openai/gpt-5.2-chat-20251211)
     (hugging_face_id "")
@@ -37,32 +37,32 @@
     (created 1765389783)
     (description "GPT-5.2 Chat (AKA Instant) is the fast, lightweight member of the 5.2 family, optimized for low-latency chat while retaining strong general intelligence. It uses adaptive reasoning to selectively “think” on...")
     (context_length 128000)
-    (architecture ({}
+    (architecture (
       (modality text+image+file->text)
-      (input_modalities (
+      (input_modalities ([]
         file
         image
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer GPT)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000175")
       (completion "0.000014")
       (web_search "0.01")
       (input_cache_read "0.000000175")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 128000)
       (max_completion_tokens 16384)
       (is_moderated true)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       max_completion_tokens
       max_tokens
       response_format
@@ -71,7 +71,7 @@
       tool_choice
       tools
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (frequency_penalty null)
@@ -79,12 +79,12 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date 2026-08-10)
-    (links ({}
+    (links (
       (details /api/v1/models/openai/gpt-5.2-chat-20251211/endpoints)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id openai/gpt-5.2-chat)
     (canonical_slug openai/gpt-5.2-chat-20251211)
     (hugging_face_id "")
@@ -92,32 +92,32 @@
     (created 1765389783)
     (description "GPT-5.2 Chat (AKA Instant) is the fast, lightweight member of the 5.2 family, optimized for low-latency chat while retaining strong general intelligence. It uses adaptive reasoning to selectively “think” on...")
     (context_length 128000)
-    (architecture ({}
+    (architecture (
       (modality text+image+file->text)
-      (input_modalities (
+      (input_modalities ([]
         file
         image
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer GPT)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000175")
       (completion "0.000014")
       (web_search "0.01")
       (input_cache_read "0.000000175")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 128000)
       (max_completion_tokens 16384)
       (is_moderated true)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       max_completion_tokens
       max_tokens
       response_format
@@ -126,7 +126,7 @@
       tool_choice
       tools
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (frequency_penalty null)
@@ -134,11 +134,11 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date 2026-08-10)
-    (links ({}
+    (links (
       (details /api/v1/models/openai/gpt-5.2-chat-20251211/endpoints)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId openai/gpt-5.2-chat)

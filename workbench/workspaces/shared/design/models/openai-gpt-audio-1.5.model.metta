@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openai-gpt-audio-1.5)
   (label gpt-audio-1.5)
@@ -6,7 +6,7 @@
   (inherits openai)
   (model gpt-audio-1.5)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio true)
     (code false)
     (functionCalling false)
@@ -19,25 +19,25 @@
     (tools false)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow null)
     (maxOutputTokens null)
   ))
-  (pricing ({}))
-  (properties ({}
+  (pricing ())
+  (properties (
     (id gpt-audio-1.5)
     (object model)
     (created 1771550885)
     (owned_by system)
     (ownedBy system)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id gpt-audio-1.5)
     (object model)
     (created 1771550885)
     (owned_by system)
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openai)
     (remoteModelId gpt-audio-1.5)

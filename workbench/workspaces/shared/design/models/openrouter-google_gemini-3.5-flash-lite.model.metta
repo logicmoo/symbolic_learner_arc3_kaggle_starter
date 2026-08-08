@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-google_gemini-3.5-flash-lite)
   (label "Google: Gemini 3.5 Flash Lite")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model google/gemini-3.5-flash-lite)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio true)
     (code false)
     (functionCalling true)
@@ -19,11 +19,11 @@
     (tools true)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 1048576)
     (maxOutputTokens 65536)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.0000003")
     (completion "0.0000025")
     (image "0.0000003")
@@ -34,7 +34,7 @@
     (input_cache_read "0.00000003")
     (input_cache_write "0.0000000833333333333333")
   ))
-  (properties ({}
+  (properties (
     (id google/gemini-3.5-flash-lite)
     (canonical_slug google/gemini-3.5-flash-lite-20260721)
     (hugging_face_id null)
@@ -42,22 +42,22 @@
     (created 1784646726)
     (description "Gemini 3.5 Flash Lite is a high-efficiency model from Google with upgraded agentic capabilities. It is suited for subagents that execute focused tasks within complex, multi-agent workflows.")
     (context_length 1048576)
-    (architecture ({}
+    (architecture (
       (modality text+image+file+audio+video->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
         video
         file
         audio
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Gemini)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000003")
       (completion "0.0000025")
       (image "0.0000003")
@@ -68,13 +68,13 @@
       (input_cache_read "0.00000003")
       (input_cache_write "0.0000000833333333333333")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 1048576)
       (max_completion_tokens 65536)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_tokens
       reasoning
@@ -88,7 +88,7 @@
       tools
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -99,21 +99,21 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/google/gemini-3.5-flash-lite-20260721/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena ())
-      (artificial_analysis ({}
+    (benchmarks (
+      (design_arena ([]))
+      (artificial_analysis (
         (intelligence_index 37.4)
         (coding_index 49.3)
         (agentic_index 27.2)
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory true)
       (default_enabled true)
-      (supported_efforts (
+      (supported_efforts ([]
         high
         medium
         low
@@ -123,7 +123,7 @@
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id google/gemini-3.5-flash-lite)
     (canonical_slug google/gemini-3.5-flash-lite-20260721)
     (hugging_face_id null)
@@ -131,22 +131,22 @@
     (created 1784646726)
     (description "Gemini 3.5 Flash Lite is a high-efficiency model from Google with upgraded agentic capabilities. It is suited for subagents that execute focused tasks within complex, multi-agent workflows.")
     (context_length 1048576)
-    (architecture ({}
+    (architecture (
       (modality text+image+file+audio+video->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
         video
         file
         audio
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Gemini)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000003")
       (completion "0.0000025")
       (image "0.0000003")
@@ -157,13 +157,13 @@
       (input_cache_read "0.00000003")
       (input_cache_write "0.0000000833333333333333")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 1048576)
       (max_completion_tokens 65536)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_tokens
       reasoning
@@ -177,7 +177,7 @@
       tools
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -188,21 +188,21 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/google/gemini-3.5-flash-lite-20260721/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena ())
-      (artificial_analysis ({}
+    (benchmarks (
+      (design_arena ([]))
+      (artificial_analysis (
         (intelligence_index 37.4)
         (coding_index 49.3)
         (agentic_index 27.2)
       ))
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory true)
       (default_enabled true)
-      (supported_efforts (
+      (supported_efforts ([]
         high
         medium
         low
@@ -211,7 +211,7 @@
       (default_effort minimal)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId google/gemini-3.5-flash-lite)

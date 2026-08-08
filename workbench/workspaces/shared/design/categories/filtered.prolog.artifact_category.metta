@@ -1,18 +1,18 @@
-({}
+(
   (kind artifact_category)
   (id filtered.prolog)
   (label "Prolog Implementations")
   (description "Operations implemented through SWI-Prolog or another Prolog source route.")
   (path filtered/prolog)
-  (trees (
+  (trees ([]
     operations
   ))
-  (query ({}
-    (kinds (
+  (query (
+    (kinds ([]
       operation_implementation
     ))
-    (where ({}
-      (implementation ({}
+    (where (
+      (implementation (
         (startsWith prolog)
       ))
     ))

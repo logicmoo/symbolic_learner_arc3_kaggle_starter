@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-qwen_qwen-plus)
   (label "Qwen: Qwen-Plus")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model qwen/qwen-plus)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,17 +19,17 @@
     (tools true)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 1000000)
     (maxOutputTokens 32768)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.00000026")
     (completion "0.00000078")
     (input_cache_read "0.000000052")
     (input_cache_write "0.000000325")
-    (overrides (
-      ({}
+    (overrides ([]
+      (
         (min_prompt_tokens 256000)
         (prompt "0.00000078")
         (completion "0.00000234")
@@ -38,7 +38,7 @@
       )
     ))
   ))
-  (properties ({}
+  (properties (
     (id qwen/qwen-plus)
     (canonical_slug qwen/qwen-plus-2025-01-25)
     (hugging_face_id "")
@@ -46,24 +46,24 @@
     (created 1738409840)
     (description "Qwen-Plus, based on the Qwen2.5 foundation model, is a 131K context model with a balanced performance, speed, and cost combination.")
     (context_length 1000000)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Qwen)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000026")
       (completion "0.00000078")
       (input_cache_read "0.000000052")
       (input_cache_write "0.000000325")
-      (overrides (
-        ({}
+      (overrides ([]
+        (
           (min_prompt_tokens 256000)
           (prompt "0.00000078")
           (completion "0.00000234")
@@ -72,13 +72,13 @@
         )
       ))
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 1000000)
       (max_completion_tokens 32768)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       logprobs
       max_tokens
@@ -94,16 +94,16 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}))
+    (default_parameters ())
     (supported_voices null)
     (knowledge_cutoff 2025-03-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/qwen/qwen-plus-2025-01-25/endpoints)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id qwen/qwen-plus)
     (canonical_slug qwen/qwen-plus-2025-01-25)
     (hugging_face_id "")
@@ -111,24 +111,24 @@
     (created 1738409840)
     (description "Qwen-Plus, based on the Qwen2.5 foundation model, is a 131K context model with a balanced performance, speed, and cost combination.")
     (context_length 1000000)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Qwen)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000026")
       (completion "0.00000078")
       (input_cache_read "0.000000052")
       (input_cache_write "0.000000325")
-      (overrides (
-        ({}
+      (overrides ([]
+        (
           (min_prompt_tokens 256000)
           (prompt "0.00000078")
           (completion "0.00000234")
@@ -137,13 +137,13 @@
         )
       ))
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 1000000)
       (max_completion_tokens 32768)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       logprobs
       max_tokens
@@ -159,15 +159,15 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}))
+    (default_parameters ())
     (supported_voices null)
     (knowledge_cutoff 2025-03-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/qwen/qwen-plus-2025-01-25/endpoints)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId qwen/qwen-plus)

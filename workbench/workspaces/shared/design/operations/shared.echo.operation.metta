@@ -1,18 +1,18 @@
-({}
+(
   (id shared.echo)
   (label "Echo Value")
   (description "Pass a value through unchanged.")
-  (categories (
+  (categories ([]
     core/values
     sample/core
   ))
   (implementation core.echo)
-  (inputs ({}
+  (inputs (
     (value Any)
   ))
-  (outputs ({}
+  (outputs (
     (value Any)
   ))
-  (parameters ({}))
+  (parameters ())
   (kind operation)
 )

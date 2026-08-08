@@ -1,21 +1,21 @@
-({}
+(
   (id shared.explain_transition)
   (label "Explain State Transition")
   (description "Explain a before/action/after transition as hypotheses and evidence. Generic world-learning operation.")
-  (categories (
+  (categories ([]
     symbolic/explanation
     world-modeling/transitions
     learning/hypotheses
   ))
   (implementation symbolic.transition)
-  (inputs ({}
+  (inputs (
     (before Observation)
     (action Action)
     (after Observation)
   ))
-  (outputs ({}
+  (outputs (
     (hypotheses HypothesisSet)
   ))
-  (parameters ({}))
+  (parameters ())
   (kind operation)
 )

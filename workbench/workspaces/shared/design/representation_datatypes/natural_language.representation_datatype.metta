@@ -1,13 +1,13 @@
-({}
+(
   (kind representation_datatype)
   (id natural_language)
   (label "Natural-Language Description")
   (language natural_language)
-  (parents (
+  (parents ([]
     image
     text
   ))
-  (children (
+  (children ([]
     markdown
     text_plain
   ))

@@ -1,9 +1,9 @@
-({}
+(
   (kind semantic_datatype)
   (id identity_map)
   (label "Identity Map")
   (description "Cross-view and cross-time identity assignments between entity observations.")
-  (parents (
+  (parents ([]
     information
   ))
 )

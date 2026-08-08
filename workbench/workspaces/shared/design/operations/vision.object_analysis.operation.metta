@@ -1,22 +1,22 @@
-({}
+(
   (id vision.object_analysis)
   (label "Vision Object Analysis")
   (description "Analyze one visual state into structured objects and an executable reconstruction. This is the reusable vision core extracted from the older ARC3 prompt package.")
-  (categories (
+  (categories ([]
     vision/recognition
     vision/grouping
     graphics/reconstruction
   ))
   (implementation llm.complete)
-  (inputs ({}
+  (inputs (
     (image Image)
   ))
-  (outputs ({}
+  (outputs (
     (analysis Object)
     (reconstruction Program)
   ))
-  (promptSelection ({}
-    (prompts (
+  (promptSelection (
+    (prompts ([]
       structured_json_response
       logical_image_coordinates
       object_extraction
@@ -27,10 +27,10 @@
     ))
     (separator "\n\n")
   ))
-  (modelSelection ({}
-    (models ())
+  (modelSelection (
+    (models ([]))
     (strategy single)
   ))
-  (parameters ({}))
+  (parameters ())
   (kind operation)
 )

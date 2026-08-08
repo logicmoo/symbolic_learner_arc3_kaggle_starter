@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-qwen_qwen3-vl-32b-instruct)
   (label "Qwen: Qwen3 VL 32B Instruct")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model qwen/qwen3-vl-32b-instruct)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,15 +19,15 @@
     (tools true)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 131072)
     (maxOutputTokens 32768)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.000000104")
     (completion "0.000000416")
   ))
-  (properties ({}
+  (properties (
     (id qwen/qwen3-vl-32b-instruct)
     (canonical_slug qwen/qwen3-vl-32b-instruct)
     (hugging_face_id Qwen/Qwen3-VL-32B-Instruct)
@@ -35,29 +35,29 @@
     (created 1761231332)
     (description "Qwen3-VL-32B-Instruct is a large-scale multimodal vision-language model designed for high-precision understanding and reasoning across text, images, and video. With 32 billion parameters, it combines deep visual perception with advanced text...")
     (context_length 131072)
-    (architecture ({}
+    (architecture (
       (modality text+image->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Qwen)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.000000104")
       (completion "0.000000416")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 131072)
       (max_completion_tokens 32768)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       logprobs
       max_tokens
@@ -73,7 +73,7 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature 0.7)
       (top_p 0.8)
       (top_k 20)
@@ -84,12 +84,12 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/qwen/qwen3-vl-32b-instruct/endpoints)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id qwen/qwen3-vl-32b-instruct)
     (canonical_slug qwen/qwen3-vl-32b-instruct)
     (hugging_face_id Qwen/Qwen3-VL-32B-Instruct)
@@ -97,29 +97,29 @@
     (created 1761231332)
     (description "Qwen3-VL-32B-Instruct is a large-scale multimodal vision-language model designed for high-precision understanding and reasoning across text, images, and video. With 32 billion parameters, it combines deep visual perception with advanced text...")
     (context_length 131072)
-    (architecture ({}
+    (architecture (
       (modality text+image->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Qwen)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.000000104")
       (completion "0.000000416")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 131072)
       (max_completion_tokens 32768)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       logprobs
       max_tokens
@@ -135,7 +135,7 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature 0.7)
       (top_p 0.8)
       (top_k 20)
@@ -146,11 +146,11 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/qwen/qwen3-vl-32b-instruct/endpoints)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId qwen/qwen3-vl-32b-instruct)

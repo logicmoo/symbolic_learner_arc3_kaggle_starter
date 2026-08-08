@@ -1,9 +1,9 @@
-({}
+(
   (kind semantic_datatype)
   (id information)
   (label Information)
   (description "Root semantic type for information carried through the workbench.")
-  (children (
+  (children ([]
     executable_view
     json_object
     plain_text

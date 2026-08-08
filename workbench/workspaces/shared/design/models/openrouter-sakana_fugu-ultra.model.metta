@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-sakana_fugu-ultra)
   (label "Sakana: Fugu Ultra")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model sakana/fugu-ultra)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,17 +19,17 @@
     (tools true)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 1000000)
     (maxOutputTokens 128000)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.000005")
     (completion "0.00003")
     (web_search "0.01")
     (input_cache_read "0.0000005")
-    (overrides (
-      ({}
+    (overrides ([]
+      (
         (min_prompt_tokens 272000)
         (prompt "0.00001")
         (completion "0.000045")
@@ -37,7 +37,7 @@
       )
     ))
   ))
-  (properties ({}
+  (properties (
     (id sakana/fugu-ultra)
     (canonical_slug sakana/fugu-ultra-20260615)
     (hugging_face_id null)
@@ -45,25 +45,25 @@
     (created 1782276303)
     (description "Fugu Ultra is the higher-performance model in Sakana AI's Fugu family. Rather than a single monolithic model, Fugu is a learned multi-agent orchestration system: a language model trained to route...")
     (context_length 1000000)
-    (architecture ({}
+    (architecture (
       (modality text+image->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.000005")
       (completion "0.00003")
       (web_search "0.01")
       (input_cache_read "0.0000005")
-      (overrides (
-        ({}
+      (overrides ([]
+        (
           (min_prompt_tokens 272000)
           (prompt "0.00001")
           (completion "0.000045")
@@ -71,13 +71,13 @@
         )
       ))
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 1000000)
       (max_completion_tokens 128000)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       reasoning
       reasoning_effort
@@ -86,7 +86,7 @@
       tools
       web_search_options
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -97,13 +97,13 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/sakana/fugu-ultra-20260615/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory true)
       (default_enabled true)
-      (supported_efforts (
+      (supported_efforts ([]
         max
         xhigh
         high
@@ -112,7 +112,7 @@
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id sakana/fugu-ultra)
     (canonical_slug sakana/fugu-ultra-20260615)
     (hugging_face_id null)
@@ -120,25 +120,25 @@
     (created 1782276303)
     (description "Fugu Ultra is the higher-performance model in Sakana AI's Fugu family. Rather than a single monolithic model, Fugu is a learned multi-agent orchestration system: a language model trained to route...")
     (context_length 1000000)
-    (architecture ({}
+    (architecture (
       (modality text+image->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.000005")
       (completion "0.00003")
       (web_search "0.01")
       (input_cache_read "0.0000005")
-      (overrides (
-        ({}
+      (overrides ([]
+        (
           (min_prompt_tokens 272000)
           (prompt "0.00001")
           (completion "0.000045")
@@ -146,13 +146,13 @@
         )
       ))
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 1000000)
       (max_completion_tokens 128000)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       reasoning
       reasoning_effort
@@ -161,7 +161,7 @@
       tools
       web_search_options
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -172,13 +172,13 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/sakana/fugu-ultra-20260615/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory true)
       (default_enabled true)
-      (supported_efforts (
+      (supported_efforts ([]
         max
         xhigh
         high
@@ -186,7 +186,7 @@
       (default_effort xhigh)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId sakana/fugu-ultra)

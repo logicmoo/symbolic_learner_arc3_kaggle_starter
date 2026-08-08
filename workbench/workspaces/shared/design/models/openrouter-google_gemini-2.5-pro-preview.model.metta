@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-google_gemini-2.5-pro-preview)
   (label "Google: Gemini 2.5 Pro Preview 06-05")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model google/gemini-2.5-pro-preview)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio true)
     (code false)
     (functionCalling true)
@@ -19,11 +19,11 @@
     (tools true)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 1048576)
     (maxOutputTokens 65536)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.00000125")
     (completion "0.00001")
     (image "0.00000125")
@@ -33,8 +33,8 @@
     (internal_reasoning "0.00001")
     (input_cache_read "0.000000125")
     (input_cache_write "0.000000375")
-    (overrides (
-      ({}
+    (overrides ([]
+      (
         (min_prompt_tokens 200000)
         (prompt "0.0000025")
         (completion "0.000015")
@@ -44,7 +44,7 @@
       )
     ))
   ))
-  (properties ({}
+  (properties (
     (id google/gemini-2.5-pro-preview)
     (canonical_slug google/gemini-2.5-pro-preview-06-05)
     (hugging_face_id "")
@@ -52,21 +52,21 @@
     (created 1749137257)
     (description "Gemini 2.5 Pro is Google’s state-of-the-art AI model designed for advanced reasoning, coding, mathematics, and scientific tasks. It employs “thinking” capabilities, enabling it to reason through responses with enhanced accuracy...")
     (context_length 1048576)
-    (architecture ({}
+    (architecture (
       (modality text+image+file+audio->text)
-      (input_modalities (
+      (input_modalities ([]
         file
         image
         text
         audio
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Gemini)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000125")
       (completion "0.00001")
       (image "0.00000125")
@@ -76,8 +76,8 @@
       (internal_reasoning "0.00001")
       (input_cache_read "0.000000125")
       (input_cache_write "0.000000375")
-      (overrides (
-        ({}
+      (overrides ([]
+        (
           (min_prompt_tokens 200000)
           (prompt "0.0000025")
           (completion "0.000015")
@@ -87,13 +87,13 @@
         )
       ))
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 1048576)
       (max_completion_tokens 65536)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_tokens
       reasoning
@@ -106,19 +106,19 @@
       tools
       top_p
     ))
-    (default_parameters ({}))
+    (default_parameters ())
     (supported_voices null)
     (knowledge_cutoff 2025-01-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/google/gemini-2.5-pro-preview-06-05/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory true)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id google/gemini-2.5-pro-preview)
     (canonical_slug google/gemini-2.5-pro-preview-06-05)
     (hugging_face_id "")
@@ -126,21 +126,21 @@
     (created 1749137257)
     (description "Gemini 2.5 Pro is Google’s state-of-the-art AI model designed for advanced reasoning, coding, mathematics, and scientific tasks. It employs “thinking” capabilities, enabling it to reason through responses with enhanced accuracy...")
     (context_length 1048576)
-    (architecture ({}
+    (architecture (
       (modality text+image+file+audio->text)
-      (input_modalities (
+      (input_modalities ([]
         file
         image
         text
         audio
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Gemini)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000125")
       (completion "0.00001")
       (image "0.00000125")
@@ -150,8 +150,8 @@
       (internal_reasoning "0.00001")
       (input_cache_read "0.000000125")
       (input_cache_write "0.000000375")
-      (overrides (
-        ({}
+      (overrides ([]
+        (
           (min_prompt_tokens 200000)
           (prompt "0.0000025")
           (completion "0.000015")
@@ -161,13 +161,13 @@
         )
       ))
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 1048576)
       (max_completion_tokens 65536)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_tokens
       reasoning
@@ -180,18 +180,18 @@
       tools
       top_p
     ))
-    (default_parameters ({}))
+    (default_parameters ())
     (supported_voices null)
     (knowledge_cutoff 2025-01-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/google/gemini-2.5-pro-preview-06-05/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory true)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId google/gemini-2.5-pro-preview)

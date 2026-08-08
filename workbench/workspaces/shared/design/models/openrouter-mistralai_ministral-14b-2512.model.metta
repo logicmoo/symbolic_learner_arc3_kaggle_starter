@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-mistralai_ministral-14b-2512)
   (label "Mistral: Ministral 3 14B 2512")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model mistralai/ministral-14b-2512)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,16 +19,16 @@
     (tools true)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 262144)
     (maxOutputTokens null)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.0000002")
     (completion "0.0000002")
     (input_cache_read "0.00000002")
   ))
-  (properties ({}
+  (properties (
     (id mistralai/ministral-14b-2512)
     (canonical_slug mistralai/ministral-14b-2512)
     (hugging_face_id mistralai/Ministral-3-14B-Instruct-2512)
@@ -36,30 +36,30 @@
     (created 1764681735)
     (description "The largest model in the Ministral 3 family, Ministral 3 14B offers frontier capabilities and performance comparable to its larger Mistral Small 3.2 24B counterpart. A powerful and efficient language...")
     (context_length 262144)
-    (architecture ({}
+    (architecture (
       (modality text+image->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Mistral)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000002")
       (completion "0.0000002")
       (input_cache_read "0.00000002")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 262144)
       (max_completion_tokens null)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       max_tokens
       presence_penalty
@@ -72,7 +72,7 @@
       tools
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature 0.3)
       (top_p null)
       (frequency_penalty null)
@@ -80,33 +80,33 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/mistralai/ministral-14b-2512/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category 3d)
           (elo 1044)
           (win_rate 39.6)
           (rank 93)
         )
-        ({}
+        (
           (arena models)
           (category codecategories)
           (elo 1093)
           (win_rate 44)
           (rank 89)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 1079)
           (win_rate 43.6)
           (rank 88)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 1103)
@@ -114,7 +114,7 @@
           (rank 90)
         )
       ))
-      (artificial_analysis ({}
+      (artificial_analysis (
         (intelligence_index 11.2)
         (coding_index 14.4)
         (agentic_index 2.2)
@@ -122,7 +122,7 @@
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id mistralai/ministral-14b-2512)
     (canonical_slug mistralai/ministral-14b-2512)
     (hugging_face_id mistralai/Ministral-3-14B-Instruct-2512)
@@ -130,30 +130,30 @@
     (created 1764681735)
     (description "The largest model in the Ministral 3 family, Ministral 3 14B offers frontier capabilities and performance comparable to its larger Mistral Small 3.2 24B counterpart. A powerful and efficient language...")
     (context_length 262144)
-    (architecture ({}
+    (architecture (
       (modality text+image->text)
-      (input_modalities (
+      (input_modalities ([]
         text
         image
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Mistral)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000002")
       (completion "0.0000002")
       (input_cache_read "0.00000002")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 262144)
       (max_completion_tokens null)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       max_tokens
       presence_penalty
@@ -166,7 +166,7 @@
       tools
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature 0.3)
       (top_p null)
       (frequency_penalty null)
@@ -174,33 +174,33 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/mistralai/ministral-14b-2512/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category 3d)
           (elo 1044)
           (win_rate 39.6)
           (rank 93)
         )
-        ({}
+        (
           (arena models)
           (category codecategories)
           (elo 1093)
           (win_rate 44)
           (rank 89)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 1079)
           (win_rate 43.6)
           (rank 88)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 1103)
@@ -208,14 +208,14 @@
           (rank 90)
         )
       ))
-      (artificial_analysis ({}
+      (artificial_analysis (
         (intelligence_index 11.2)
         (coding_index 14.4)
         (agentic_index 2.2)
       ))
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId mistralai/ministral-14b-2512)

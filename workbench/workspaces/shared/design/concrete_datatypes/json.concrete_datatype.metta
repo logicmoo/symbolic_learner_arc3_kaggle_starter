@@ -1,16 +1,16 @@
-({}
+(
   (kind concrete_datatype)
   (id json)
   (label Json)
-  (parents (
+  (parents ([]
     json_object
     object_list
     scene_graph
   ))
-  (mimeTypes (
+  (mimeTypes ([]
     application/json
   ))
-  (extensions (
+  (extensions ([]
     .json
   ))
 )

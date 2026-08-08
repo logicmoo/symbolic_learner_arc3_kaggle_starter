@@ -1,26 +1,26 @@
-({}
+(
   (kind operation)
   (id bitmap_to_objects)
   (label "Bitmap to Objects")
   (description "Convert an image from bitmap representation to an object-list representation.")
-  (categories (
+  (categories ([]
     vision/conversion
     vision/extraction
     datatypes/representation
   ))
-  (inputs ({}
-    (image ({}
+  (inputs (
+    (image (
       (datatype image)
       (representation bitmap)
     ))
   ))
-  (outputs ({}
-    (image ({}
+  (outputs (
+    (image (
       (datatype image)
       (representation object_list)
     ))
   ))
-  (conversion ({}
+  (conversion (
     (datatype image)
     (from bitmap)
     (to object_list)

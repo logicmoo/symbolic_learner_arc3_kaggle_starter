@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-mistralai_mistral-small-3.2-24b-instruct)
   (label "Mistral: Mistral Small 3.2 24B")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model mistralai/mistral-small-3.2-24b-instruct)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,15 +19,15 @@
     (tools true)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 256000)
     (maxOutputTokens 16384)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.00000009375")
     (completion "0.00000025")
   ))
-  (properties ({}
+  (properties (
     (id mistralai/mistral-small-3.2-24b-instruct)
     (canonical_slug mistralai/mistral-small-3.2-24b-instruct-2506)
     (hugging_face_id mistralai/Mistral-Small-3.2-24B-Instruct-2506)
@@ -35,29 +35,29 @@
     (created 1750443016)
     (description "Mistral-Small-3.2-24B-Instruct-2506 is an updated 24B parameter model from Mistral optimized for instruction following, repetition reduction, and improved function calling. Compared to the 3.1 release, version 3.2 significantly improves accuracy on...")
     (context_length 256000)
-    (architecture ({}
+    (architecture (
       (modality text+image->text)
-      (input_modalities (
+      (input_modalities ([]
         image
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Mistral)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000009375")
       (completion "0.00000025")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 256000)
       (max_completion_tokens 16384)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       logit_bias
       logprobs
@@ -76,46 +76,46 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature 0.3)
     ))
     (supported_voices null)
     (knowledge_cutoff 2023-10-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/mistralai/mistral-small-3.2-24b-instruct-2506/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category codecategories)
           (elo 935)
           (win_rate 39.8)
           (rank 111)
         )
-        ({}
+        (
           (arena models)
           (category dataviz)
           (elo 955)
           (win_rate 43.3)
           (rank 103)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 929)
           (win_rate 39.4)
           (rank 112)
         )
-        ({}
+        (
           (arena models)
           (category uicomponent)
           (elo 940)
           (win_rate 40.5)
           (rank 104)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 918)
@@ -126,7 +126,7 @@
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id mistralai/mistral-small-3.2-24b-instruct)
     (canonical_slug mistralai/mistral-small-3.2-24b-instruct-2506)
     (hugging_face_id mistralai/Mistral-Small-3.2-24B-Instruct-2506)
@@ -134,29 +134,29 @@
     (created 1750443016)
     (description "Mistral-Small-3.2-24B-Instruct-2506 is an updated 24B parameter model from Mistral optimized for instruction following, repetition reduction, and improved function calling. Compared to the 3.1 release, version 3.2 significantly improves accuracy on...")
     (context_length 256000)
-    (architecture ({}
+    (architecture (
       (modality text+image->text)
-      (input_modalities (
+      (input_modalities ([]
         image
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Mistral)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00000009375")
       (completion "0.00000025")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 256000)
       (max_completion_tokens 16384)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       logit_bias
       logprobs
@@ -175,46 +175,46 @@
       top_logprobs
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature 0.3)
     ))
     (supported_voices null)
     (knowledge_cutoff 2023-10-31)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/mistralai/mistral-small-3.2-24b-instruct-2506/endpoints)
     ))
-    (benchmarks ({}
-      (design_arena (
-        ({}
+    (benchmarks (
+      (design_arena ([]
+        (
           (arena models)
           (category codecategories)
           (elo 935)
           (win_rate 39.8)
           (rank 111)
         )
-        ({}
+        (
           (arena models)
           (category dataviz)
           (elo 955)
           (win_rate 43.3)
           (rank 103)
         )
-        ({}
+        (
           (arena models)
           (category gamedev)
           (elo 929)
           (win_rate 39.4)
           (rank 112)
         )
-        ({}
+        (
           (arena models)
           (category uicomponent)
           (elo 940)
           (win_rate 40.5)
           (rank 104)
         )
-        ({}
+        (
           (arena models)
           (category website)
           (elo 918)
@@ -224,7 +224,7 @@
       ))
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId mistralai/mistral-small-3.2-24b-instruct)

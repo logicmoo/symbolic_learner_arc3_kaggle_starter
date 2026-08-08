@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-_google_gemini-pro-latest)
   (label "Google Gemini Pro Latest")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model ~google/gemini-pro-latest)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio true)
     (code false)
     (functionCalling true)
@@ -19,11 +19,11 @@
     (tools true)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 1048576)
     (maxOutputTokens 65536)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.000002")
     (completion "0.000012")
     (image "0.000002")
@@ -33,8 +33,8 @@
     (internal_reasoning "0.000012")
     (input_cache_read "0.0000002")
     (input_cache_write "0.000000375")
-    (overrides (
-      ({}
+    (overrides ([]
+      (
         (min_prompt_tokens 200000)
         (prompt "0.000004")
         (completion "0.000018")
@@ -44,10 +44,10 @@
       )
     ))
   ))
-  (properties ({}
+  (properties (
     (id ~google/gemini-pro-latest)
     (canonical_slug ~google/gemini-pro-latest)
-    (alias_target ({}
+    (alias_target (
       (name "Google: Gemini 3.1 Pro Preview")
       (slug google/gemini-3.1-pro-preview)
     ))
@@ -56,22 +56,22 @@
     (created 1777318451)
     (description "This model always redirects to the latest model in the Google Gemini Pro family.")
     (context_length 1048576)
-    (architecture ({}
+    (architecture (
       (modality text+image+file+audio+video->text)
-      (input_modalities (
+      (input_modalities ([]
         audio
         file
         image
         text
         video
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Router)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.000002")
       (completion "0.000012")
       (image "0.000002")
@@ -81,8 +81,8 @@
       (internal_reasoning "0.000012")
       (input_cache_read "0.0000002")
       (input_cache_write "0.000000375")
-      (overrides (
-        ({}
+      (overrides ([]
+        (
           (min_prompt_tokens 200000)
           (prompt "0.000004")
           (completion "0.000018")
@@ -92,13 +92,13 @@
         )
       ))
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 1048576)
       (max_completion_tokens 65536)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_tokens
       reasoning
@@ -112,7 +112,7 @@
       tools
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -123,12 +123,12 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/~google/gemini-pro-latest/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory true)
-      (supported_efforts (
+      (supported_efforts ([]
         high
         medium
         low
@@ -137,10 +137,10 @@
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id ~google/gemini-pro-latest)
     (canonical_slug ~google/gemini-pro-latest)
-    (alias_target ({}
+    (alias_target (
       (name "Google: Gemini 3.1 Pro Preview")
       (slug google/gemini-3.1-pro-preview)
     ))
@@ -149,22 +149,22 @@
     (created 1777318451)
     (description "This model always redirects to the latest model in the Google Gemini Pro family.")
     (context_length 1048576)
-    (architecture ({}
+    (architecture (
       (modality text+image+file+audio+video->text)
-      (input_modalities (
+      (input_modalities ([]
         audio
         file
         image
         text
         video
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Router)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.000002")
       (completion "0.000012")
       (image "0.000002")
@@ -174,8 +174,8 @@
       (internal_reasoning "0.000012")
       (input_cache_read "0.0000002")
       (input_cache_write "0.000000375")
-      (overrides (
-        ({}
+      (overrides ([]
+        (
           (min_prompt_tokens 200000)
           (prompt "0.000004")
           (completion "0.000018")
@@ -185,13 +185,13 @@
         )
       ))
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 1048576)
       (max_completion_tokens 65536)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_tokens
       reasoning
@@ -205,7 +205,7 @@
       tools
       top_p
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -216,12 +216,12 @@
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/~google/gemini-pro-latest/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory true)
-      (supported_efforts (
+      (supported_efforts ([]
         high
         medium
         low
@@ -229,7 +229,7 @@
       (default_effort medium)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId ~google/gemini-pro-latest)

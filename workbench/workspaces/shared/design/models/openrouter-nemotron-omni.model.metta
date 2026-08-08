@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-nemotron-omni)
   (label "Nemotron 3 Nano Omni free")
@@ -6,13 +6,13 @@
   (inherits openrouter)
   (model nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free)
   (enabled true)
-  (capabilities (
+  (capabilities ([]
     text
     vision
     reasoning
     json
   ))
-  (defaults ({}
+  (defaults (
     (reasoningEffort medium)
     (maxOutputTokens 16000)
     (temperature 0.05)

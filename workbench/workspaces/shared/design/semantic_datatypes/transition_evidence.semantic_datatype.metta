@@ -1,13 +1,13 @@
-({}
+(
   (kind semantic_datatype)
   (id transition_evidence)
   (label "Transition Evidence")
   (description "Evidence about how a world changed between observations.")
-  (children (
+  (children ([]
     prolog_fact_set
     symbolic_fact_set
   ))
-  (parents (
+  (parents ([]
     information
   ))
 )

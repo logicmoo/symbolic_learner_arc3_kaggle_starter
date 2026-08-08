@@ -1,11 +1,11 @@
-({}
+(
   (kind profile)
   (id anthropic-claude-sonnet-deep)
   (label "Claude Sonnet — deep")
   (description "Prompt-free execution profile migrated from the legacy ARC3 configuration.")
   (inherits claude-sonnet)
   (enabled true)
-  (defaults ({}
+  (defaults (
     (analysisLevel 3)
     (singleEnabled true)
     (batchEnabled false)

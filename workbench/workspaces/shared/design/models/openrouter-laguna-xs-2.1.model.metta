@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-laguna-xs-2.1)
   (label "Laguna XS 2.1 free")
@@ -6,12 +6,12 @@
   (inherits openrouter)
   (model poolside/laguna-xs-2.1:free)
   (enabled true)
-  (capabilities (
+  (capabilities ([]
     text
     reasoning
     json
   ))
-  (metadata ({}
+  (metadata (
     (verifiedAvailable true)
     (verifiedAt 2026-08-04)
     (source "legacy config/llm_workflows.json")

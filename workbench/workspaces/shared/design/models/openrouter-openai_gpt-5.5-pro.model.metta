@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-openai_gpt-5.5-pro)
   (label "OpenAI: GPT-5.5 Pro")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model openai/gpt-5.5-pro)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,23 +19,23 @@
     (tools true)
     (vision true)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 1050000)
     (maxOutputTokens 128000)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.00003")
     (completion "0.00018")
     (web_search "0.01")
-    (overrides (
-      ({}
+    (overrides ([]
+      (
         (min_prompt_tokens 272000)
         (prompt "0.00006")
         (completion "0.00027")
       )
     ))
   ))
-  (properties ({}
+  (properties (
     (id openai/gpt-5.5-pro)
     (canonical_slug openai/gpt-5.5-pro-20260423)
     (hugging_face_id "")
@@ -43,38 +43,38 @@
     (created 1777051896)
     (description "GPT-5.5 Pro is OpenAI’s high-capability model optimized for deep reasoning and accuracy on complex, high-stakes workloads. It features a 1M+ token context window (922K input, 128K output) with support for...")
     (context_length 1050000)
-    (architecture ({}
+    (architecture (
       (modality text+image+file->text)
-      (input_modalities (
+      (input_modalities ([]
         file
         image
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer GPT)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00003")
       (completion "0.00018")
       (web_search "0.01")
-      (overrides (
-        ({}
+      (overrides ([]
+        (
           (min_prompt_tokens 272000)
           (prompt "0.00006")
           (completion "0.00027")
         )
       ))
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 1050000)
       (max_completion_tokens 128000)
       (is_moderated true)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_tokens
       reasoning
@@ -85,7 +85,7 @@
       tool_choice
       tools
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -96,12 +96,12 @@
     (supported_voices null)
     (knowledge_cutoff 2025-12-01)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/openai/gpt-5.5-pro-20260423/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory true)
-      (supported_efforts (
+      (supported_efforts ([]
         xhigh
         high
         medium
@@ -110,7 +110,7 @@
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id openai/gpt-5.5-pro)
     (canonical_slug openai/gpt-5.5-pro-20260423)
     (hugging_face_id "")
@@ -118,38 +118,38 @@
     (created 1777051896)
     (description "GPT-5.5 Pro is OpenAI’s high-capability model optimized for deep reasoning and accuracy on complex, high-stakes workloads. It features a 1M+ token context window (922K input, 128K output) with support for...")
     (context_length 1050000)
-    (architecture ({}
+    (architecture (
       (modality text+image+file->text)
-      (input_modalities (
+      (input_modalities ([]
         file
         image
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer GPT)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.00003")
       (completion "0.00018")
       (web_search "0.01")
-      (overrides (
-        ({}
+      (overrides ([]
+        (
           (min_prompt_tokens 272000)
           (prompt "0.00006")
           (completion "0.00027")
         )
       ))
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 1050000)
       (max_completion_tokens 128000)
       (is_moderated true)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       include_reasoning
       max_tokens
       reasoning
@@ -160,7 +160,7 @@
       tool_choice
       tools
     ))
-    (default_parameters ({}
+    (default_parameters (
       (temperature null)
       (top_p null)
       (top_k null)
@@ -171,12 +171,12 @@
     (supported_voices null)
     (knowledge_cutoff 2025-12-01)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/openai/gpt-5.5-pro-20260423/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory true)
-      (supported_efforts (
+      (supported_efforts ([]
         xhigh
         high
         medium
@@ -184,7 +184,7 @@
       (default_effort medium)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId openai/gpt-5.5-pro)

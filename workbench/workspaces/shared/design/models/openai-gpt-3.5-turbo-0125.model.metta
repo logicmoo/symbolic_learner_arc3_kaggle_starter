@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openai-gpt-3.5-turbo-0125)
   (label gpt-3.5-turbo-0125)
@@ -6,7 +6,7 @@
   (inherits openai)
   (model gpt-3.5-turbo-0125)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling false)
@@ -19,25 +19,25 @@
     (tools false)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow null)
     (maxOutputTokens null)
   ))
-  (pricing ({}))
-  (properties ({}
+  (pricing ())
+  (properties (
     (id gpt-3.5-turbo-0125)
     (object model)
     (created 1706048358)
     (owned_by system)
     (ownedBy system)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id gpt-3.5-turbo-0125)
     (object model)
     (created 1706048358)
     (owned_by system)
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openai)
     (remoteModelId gpt-3.5-turbo-0125)

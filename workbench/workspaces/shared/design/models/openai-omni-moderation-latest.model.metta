@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openai-omni-moderation-latest)
   (label omni-moderation-latest)
@@ -6,7 +6,7 @@
   (inherits openai)
   (model omni-moderation-latest)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling false)
@@ -19,25 +19,25 @@
     (tools false)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow null)
     (maxOutputTokens null)
   ))
-  (pricing ({}))
-  (properties ({}
+  (pricing ())
+  (properties (
     (id omni-moderation-latest)
     (object model)
     (created 1731689265)
     (owned_by system)
     (ownedBy system)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id omni-moderation-latest)
     (object model)
     (created 1731689265)
     (owned_by system)
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openai)
     (remoteModelId omni-moderation-latest)

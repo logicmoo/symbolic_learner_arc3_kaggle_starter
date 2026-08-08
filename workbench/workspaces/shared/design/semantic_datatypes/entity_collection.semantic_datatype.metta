@@ -1,14 +1,14 @@
-({}
+(
   (kind semantic_datatype)
   (id entity_collection)
   (label "Entity Collection")
   (description "A collection of semantic entities independent of the representation used to encode them.")
-  (children (
+  (children ([]
     object_properties
     prolog_fact_set
     symbolic_fact_set
   ))
-  (parents (
+  (parents ([]
     information
   ))
 )

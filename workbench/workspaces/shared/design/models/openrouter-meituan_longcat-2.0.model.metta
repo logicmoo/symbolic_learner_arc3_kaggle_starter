@@ -1,4 +1,4 @@
-({}
+(
   (kind model)
   (id openrouter-meituan_longcat-2.0)
   (label "Meituan: LongCat 2.0")
@@ -6,7 +6,7 @@
   (inherits openrouter)
   (model meituan/longcat-2.0)
   (enabled true)
-  (capabilities ({}
+  (capabilities (
     (audio false)
     (code false)
     (functionCalling true)
@@ -19,16 +19,16 @@
     (tools true)
     (vision false)
   ))
-  (limits ({}
+  (limits (
     (contextWindow 1048756)
     (maxOutputTokens 262144)
   ))
-  (pricing ({}
+  (pricing (
     (prompt "0.0000003")
     (completion "0.0000012")
     (input_cache_read "0.000000006")
   ))
-  (properties ({}
+  (properties (
     (id meituan/longcat-2.0)
     (canonical_slug meituan/longcat-2.0-20260720)
     (hugging_face_id meituan-longcat/LongCat-2.0)
@@ -36,29 +36,29 @@
     (created 1784554658)
     (description "LongCat 2.0 is a sparse mixture-of-experts language model from Meituan, with 48B active parameters out of 1.6T total. It is suited for coding, repository-level changes, long-horizon problem solving, and agentic...")
     (context_length 1048756)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000003")
       (completion "0.0000012")
       (input_cache_read "0.000000006")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 1048756)
       (max_completion_tokens 262144)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       logit_bias
@@ -75,21 +75,21 @@
       top_k
       top_p
     ))
-    (default_parameters ({}))
+    (default_parameters ())
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/meituan/longcat-2.0-20260720/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
       (default_enabled true)
       (supports_max_tokens true)
     ))
     (ownedBy null)
   ))
-  (providerMetadata ({}
+  (providerMetadata (
     (id meituan/longcat-2.0)
     (canonical_slug meituan/longcat-2.0-20260720)
     (hugging_face_id meituan-longcat/LongCat-2.0)
@@ -97,29 +97,29 @@
     (created 1784554658)
     (description "LongCat 2.0 is a sparse mixture-of-experts language model from Meituan, with 48B active parameters out of 1.6T total. It is suited for coding, repository-level changes, long-horizon problem solving, and agentic...")
     (context_length 1048756)
-    (architecture ({}
+    (architecture (
       (modality text->text)
-      (input_modalities (
+      (input_modalities ([]
         text
       ))
-      (output_modalities (
+      (output_modalities ([]
         text
       ))
       (tokenizer Other)
       (instruct_type null)
     ))
-    (pricing ({}
+    (pricing (
       (prompt "0.0000003")
       (completion "0.0000012")
       (input_cache_read "0.000000006")
     ))
-    (top_provider ({}
+    (top_provider (
       (context_length 1048756)
       (max_completion_tokens 262144)
       (is_moderated false)
     ))
     (per_request_limits null)
-    (supported_parameters (
+    (supported_parameters ([]
       frequency_penalty
       include_reasoning
       logit_bias
@@ -136,20 +136,20 @@
       top_k
       top_p
     ))
-    (default_parameters ({}))
+    (default_parameters ())
     (supported_voices null)
     (knowledge_cutoff null)
     (expiration_date null)
-    (links ({}
+    (links (
       (details /api/v1/models/meituan/longcat-2.0-20260720/endpoints)
     ))
-    (reasoning ({}
+    (reasoning (
       (mandatory false)
       (default_enabled true)
       (supports_max_tokens true)
     ))
   ))
-  (discovery ({}
+  (discovery (
     (managed true)
     (backendId openrouter)
     (remoteModelId meituan/longcat-2.0)
