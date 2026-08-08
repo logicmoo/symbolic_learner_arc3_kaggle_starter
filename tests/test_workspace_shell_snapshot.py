@@ -51,7 +51,7 @@ def test_workspace_discovery_reuses_summary_until_refresh(tmp_path: Path, monkey
     root.mkdir()
     calls: list[Path] = []
     monkeypatch.setattr(workspace_api, "_workspace_roots", lambda: [tmp_path])
-    monkeypatch.setattr(workspace_api, "_workspace_from_directory", lambda path: calls.append(path) or {"id": path.name, "label": path.name, "root": str(path)})
+    monkeypatch.setattr(workspace_api, "_workspace_from_directory", lambda path, **_kwargs: calls.append(path) or {"id": path.name, "label": path.name, "root": str(path)})
     workspace_api.invalidate_workspace_discovery()
 
     assert workspace_api.discover_workspaces()[0]["id"] == "demo"
@@ -59,3 +59,22 @@ def test_workspace_discovery_reuses_summary_until_refresh(tmp_path: Path, monkey
     assert len(calls) == 1
     workspace_api.discover_workspaces(force=True)
     assert len(calls) == 2
+
+
+def test_lightweight_workspace_chooser_skips_catalog_resolution(tmp_path: Path, monkeypatch) -> None:
+    (tmp_path / "workspace.json").write_text('{"label":"Demo"}', encoding="utf-8")
+
+    def unexpected(*_args, **_kwargs):
+        raise AssertionError("workspace chooser resolved a resource catalog")
+
+    for name in (
+        "load_workspace_backend_records", "resolve_model_records", "load_workspace_prompt_records",
+        "load_workspace_operation_records", "load_workspace_operation_implementation_records",
+        "load_workspace_datatype_records", "load_workspace_representation_records",
+        "load_workspace_concrete_datatype_records", "load_workspace_symbolic_records",
+    ):
+        monkeypatch.setattr(workspace_api, name, unexpected)
+
+    summary = workspace_api._workspace_from_directory(tmp_path, include_counts=False)
+    assert summary["label"] == "Demo"
+    assert summary["countsAvailable"] is False

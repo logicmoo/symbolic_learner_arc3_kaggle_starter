@@ -77,7 +77,7 @@ def _humanize(name: str) -> str:
     return name.replace("-", " ").replace("_", " ").strip().title()
 
 
-def _workspace_from_directory(root: Path) -> dict[str, Any]:
+def _workspace_from_directory(root: Path, *, include_counts: bool = True) -> dict[str, Any]:
     resources = get_filesystem_provider()
     metadata = _optional_metadata(root)
     workflow_dir = root / "design" / "workflows"
@@ -91,17 +91,17 @@ def _workspace_from_directory(root: Path) -> dict[str, Any]:
     goal_dir = root / "design" / "goals"
     plan_dir = root / "design" / "plans"
     context_dir = root / "design" / "atomspaces"
-    backend_count = len(load_workspace_backend_records(root))
-    model_count = len(resolve_model_records(root))
-    prompt_count = len(load_workspace_prompt_records(root))
-    operation_count = len(load_workspace_operation_records(root))
-    operation_implementation_count = len(load_workspace_operation_implementation_records(root))
-    datatype_count = len(load_workspace_datatype_records(root))
-    representation_count = len(load_workspace_representation_records(root))
-    concrete_count = len(load_workspace_concrete_datatype_records(root))
-    goal_count = len(load_workspace_symbolic_records(root, "goal"))
-    plan_count = len(load_workspace_symbolic_records(root, "plan"))
-    context_count = len(load_workspace_symbolic_records(root, "context"))
+    backend_count = len(load_workspace_backend_records(root)) if include_counts else 0
+    model_count = len(resolve_model_records(root)) if include_counts else 0
+    prompt_count = len(load_workspace_prompt_records(root)) if include_counts else 0
+    operation_count = len(load_workspace_operation_records(root)) if include_counts else 0
+    operation_implementation_count = len(load_workspace_operation_implementation_records(root)) if include_counts else 0
+    datatype_count = len(load_workspace_datatype_records(root)) if include_counts else 0
+    representation_count = len(load_workspace_representation_records(root)) if include_counts else 0
+    concrete_count = len(load_workspace_concrete_datatype_records(root)) if include_counts else 0
+    goal_count = len(load_workspace_symbolic_records(root, "goal")) if include_counts else 0
+    plan_count = len(load_workspace_symbolic_records(root, "plan")) if include_counts else 0
+    context_count = len(load_workspace_symbolic_records(root, "context")) if include_counts else 0
     layers = effective_workspace_layers(root, root.parent)
     include_specs = declared_include_specs(root)
     return {
@@ -136,7 +136,8 @@ def _workspace_from_directory(root: Path) -> dict[str, Any]:
         "metadata": metadata.get("metadata") or {},
         "includes": include_specs,
         "effectiveIncludes": [layer.name for layer in layers if layer.resolve() != root.resolve()],
-        "workflowFileCount": len(resources.glob(root, ("design/workflows",))) if resources.is_dir(workflow_dir) else 0,
+        "countsAvailable": include_counts,
+        "workflowFileCount": len(resources.glob(root, ("design/workflows",))) if include_counts and resources.is_dir(workflow_dir) else 0,
         "operationFileCount": operation_count,
         "operationImplementationFileCount": operation_implementation_count,
         "datatypeFileCount": datatype_count,
@@ -148,7 +149,7 @@ def _workspace_from_directory(root: Path) -> dict[str, Any]:
         "goalFileCount": goal_count,
         "planFileCount": plan_count,
         "contextFileCount": context_count,
-        "catalogFileCount": len(resources.glob(root, ("design/models",))) if resources.is_dir(model_dir) else 0,
+        "catalogFileCount": len(resources.glob(root, ("design/models",))) if include_counts and resources.is_dir(model_dir) else 0,
     }
 
 
@@ -158,11 +159,11 @@ def invalidate_workspace_discovery() -> None:
         _workspace_cache = None
 
 
-def discover_workspaces(*, force: bool = False) -> list[dict[str, Any]]:
+def discover_workspaces(*, force: bool = False, include_counts: bool = True) -> list[dict[str, Any]]:
     global _workspace_cache
     resources = get_filesystem_provider()
     roots = _workspace_roots()
-    cache_key = tuple(str(root) for root in roots)
+    cache_key = (f"counts={include_counts}", *(str(root) for root in roots))
     with _workspace_cache_lock:
         if not force and _workspace_cache and _workspace_cache[0] == cache_key and time.monotonic() - _workspace_cache[1] < WORKSPACE_DISCOVERY_CACHE_SECONDS:
             return [dict(item) for item in _workspace_cache[2]]
@@ -177,7 +178,7 @@ def discover_workspaces(*, force: bool = False) -> list[dict[str, Any]]:
             for child in children:
                 if not resources.is_dir(child) or child.name.startswith(".") or child.name in IGNORED_DIRECTORIES:
                     continue
-                workspace = _workspace_from_directory(child)
+                workspace = _workspace_from_directory(child, include_counts=include_counts)
                 found[workspace["root"]] = workspace
         discovered = sorted(found.values(), key=lambda item: (item["label"].lower(), item["root"].lower()))
         _workspace_cache = (cache_key, time.monotonic(), discovered)
@@ -185,6 +186,17 @@ def discover_workspaces(*, force: bool = False) -> list[dict[str, Any]]:
 
 
 def _resolve_workspace(workspace_id: str) -> dict[str, Any]:
+    with _workspace_cache_lock:
+        if _workspace_cache and _workspace_cache[0][0] == "counts=True" and time.monotonic() - _workspace_cache[1] < WORKSPACE_DISCOVERY_CACHE_SECONDS:
+            cached = next((item for item in _workspace_cache[2] if item["id"] == workspace_id or item["root"] == workspace_id), None)
+            if cached:
+                return dict(cached)
+    if re.fullmatch(r"[A-Za-z0-9_.-]+", workspace_id):
+        resources = get_filesystem_provider()
+        for container in _workspace_roots():
+            candidate = container / workspace_id
+            if resources.is_dir(candidate):
+                return _workspace_from_directory(candidate)
     for workspace in discover_workspaces():
         if workspace["id"] == workspace_id or workspace["root"] == workspace_id:
             return workspace
@@ -357,8 +369,8 @@ def _load_prompt_library(workspace: dict[str, Any]) -> dict[str, list[dict[str, 
 
 
 @router.get("")
-def list_workspaces(refresh: bool = Query(default=False)) -> dict[str, Any]:
-    return {"workspaceRoots": [str(path) for path in _workspace_roots()], "workspaces": discover_workspaces(force=refresh)}
+def list_workspaces(refresh: bool = Query(default=False), detailed: bool = Query(default=False)) -> dict[str, Any]:
+    return {"workspaceRoots": [str(path) for path in _workspace_roots()], "workspaces": discover_workspaces(force=refresh, include_counts=detailed)}
 
 
 @router.post("", status_code=201)
