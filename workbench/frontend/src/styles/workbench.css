@@ -43,3 +43,4 @@ body.docs-focused .workspace{grid-template-columns:174px minmax(0,1fr)}body.docs
 .goal-run-controls{display:flex;align-items:center;gap:10px;margin-top:12px;padding:12px;border:1px solid var(--line);border-radius:8px;background:var(--panel)}
 .goal-run-controls>div{display:flex;flex:1;min-width:0;flex-direction:column;gap:4px}.goal-run-controls span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);font-size:12px}
 .goal-run-human{margin-top:12px}.goal-run-human textarea{min-height:100px}
+.server-restart-button{border:1px solid #425967;background:#101b24;color:#9eb2bc;border-radius:4px;padding:7px 10px;font:600 9px ui-monospace,monospace;cursor:pointer}.server-restart-button:hover{border-color:#6a8795;background:#172832;color:#d3e2e8}.server-restart-button:disabled{opacity:.55;cursor:wait}
