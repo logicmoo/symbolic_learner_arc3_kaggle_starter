@@ -81,6 +81,17 @@ def test_operation_playground_exposes_typed_inputs_variant_switching_and_results
         assert token in source
 
 
+def test_operation_playground_formats_structured_datatype_contracts() -> None:
+    source = _text("OperationPlayground.tsx")
+    assert "type DatatypeContract=string|Record<string,unknown>" in source
+    assert "function datatypeLabel(contract:DatatypeContract)" in source
+    assert "contract.representation" in source
+    assert "datatypeLabel(datatype)" in source
+    assert source.index("if(isTextDatatype(datatype))return <textarea") < source.index(
+        'if(/image|bitmap|png|jpe?g/i.test(datatype))return <div className="operation-image-input"'
+    )
+
+
 def test_other_artifact_families_keep_their_variant_controls() -> None:
     assert "PREFERRED REPRESENTATION" in _text("DataCatalogPanel.tsx")
     assert "PREFERRED ALTERNATIVE" in _text("PromptLibraryEditor.tsx")
