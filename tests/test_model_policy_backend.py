@@ -251,6 +251,16 @@ def test_ping_api_queues_durable_background_job(tmp_path: Path, monkeypatch) -> 
     assert len(persisted) == 1
 
 
+def test_ping_background_failure_becomes_terminal_job(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr(policy_api, "run_ping_job", lambda *_args, **_kwargs: (_ for _ in ()).throw(RuntimeError("worker broke")))
+    policy_api._run_ping_job_safely(tmp_path, {"id": "ping-failure"}, [{"id": "model"}], [], 5000)
+
+    record = get_filesystem_provider().read_json(tmp_path / "policies" / "ping-failure.model_ping_job.json")
+    assert record["status"] == "failed"
+    assert record["failureCount"] == 1
+    assert record["error"] == "worker broke"
+
+
 def test_model_policy_ui_edits_and_filters_dynamic_registry() -> None:
     source = (ROOT / "workbench" / "frontend" / "src" / "components" / "ModelPolicyPage.tsx").read_text(encoding="utf-8")
     styles = (ROOT / "workbench" / "frontend" / "src" / "styles" / "model_policy_todo.css").read_text(encoding="utf-8")
@@ -311,3 +321,19 @@ def test_benchmark_api_queues_durable_background_job(tmp_path: Path, monkeypatch
     assert len(tasks.tasks) == 1
     persisted = list((tmp_path / "policies").glob("*.benchmark_job.metta"))
     assert len(persisted) == 1
+
+
+def test_benchmark_background_failure_becomes_terminal_job(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr(policy_api, "run_benchmark", lambda *_args, **_kwargs: (_ for _ in ()).throw(RuntimeError("benchmark broke")))
+    policy_api._run_benchmark_safely(
+        tmp_path,
+        {"id": "quality", "cases": [{"id": "case"}]},
+        [{"id": "model"}],
+        [{"document": {"id": "profile"}}],
+        "benchmark-failure",
+    )
+
+    record = get_filesystem_provider().read_json(tmp_path / "policies" / "benchmark-failure.benchmark_job.json")
+    assert record["status"] == "failed"
+    assert record["modelCount"] == 1
+    assert record["error"] == "benchmark broke"

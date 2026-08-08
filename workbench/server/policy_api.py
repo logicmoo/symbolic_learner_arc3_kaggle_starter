@@ -35,6 +35,38 @@ def _safe_id(value: object) -> str:
     if not result: raise ValueError("resource id is required")
     return result
 
+
+def _run_ping_job_safely(root: Path, job: dict[str, Any], models: list[dict[str, Any]], backends: list[dict[str, Any]], slow_latency_ms: float) -> None:
+    try:
+        run_ping_job(root, job, models, backends, slow_latency_ms=slow_latency_ms)
+    except Exception as error:
+        write_policy_resource(root, {
+            **job,
+            "kind": "model_ping_job",
+            "status": "failed",
+            "completedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+            "targetCount": len(models),
+            "failureCount": len(models),
+            "error": str(error),
+        })
+
+
+def _run_benchmark_safely(root: Path, policy: dict[str, Any], models: list[dict[str, Any]], profiles: list[dict[str, Any]], job_id: str) -> None:
+    try:
+        run_benchmark(root, policy, models, profiles, job_id=job_id)
+    except Exception as error:
+        write_policy_resource(root, {
+            "kind": "benchmark_job",
+            "id": job_id,
+            "benchmarkPolicyId": policy.get("id"),
+            "status": "failed",
+            "completedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+            "modelCount": len(models),
+            "profileCount": len(profiles),
+            "caseCount": len(policy.get("cases") or []),
+            "error": str(error),
+        })
+
 @router.get("/{workspace_id}/model-policy")
 def model_policy_registry(workspace_id: str) -> dict[str, Any]:
     try:
@@ -137,7 +169,7 @@ def execute_model_policy_ping(workspace_id: str, background_tasks: BackgroundTas
     rules = (registry.get("policy") or {}).get("rules") or {}; backend_records = load_workspace_backend_records(root); backends = [record["document"] for record in backend_records if record.get("document")]
     queued = {**job, "status": "queued", "targetCount": len(models)}
     write_policy_resource(root, queued)
-    background_tasks.add_task(run_ping_job, root, job, models, backends, slow_latency_ms=float(rules.get("slowLatencyMs", 5000)))
+    background_tasks.add_task(_run_ping_job_safely, root, job, models, backends, float(rules.get("slowLatencyMs", 5000)))
     return {"workspace": workspace, "job": queued, "results": []}
 
 
@@ -152,5 +184,5 @@ def execute_model_benchmark(workspace_id: str, policy_id: str, background_tasks:
     if not isinstance(cases, list) or not cases: raise HTTPException(status_code=400,detail="benchmark policy requires at least one declared case")
     job_id=f"benchmark_{policy['id']}_{uuid4().hex[:10]}";queued={"kind":"benchmark_job","id":job_id,"benchmarkPolicyId":policy["id"],"status":"queued","createdAt":datetime.now(timezone.utc).isoformat().replace("+00:00","Z"),"modelCount":len(models),"profileCount":len(profiles),"caseCount":len(cases)}
     write_policy_resource(root,queued)
-    background_tasks.add_task(run_benchmark,root,policy,models,profiles,job_id=job_id)
+    background_tasks.add_task(_run_benchmark_safely, root, policy, models, profiles, job_id)
     return {"workspace":workspace,"job":queued,"results":[]}
