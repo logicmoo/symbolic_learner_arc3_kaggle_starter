@@ -136,10 +136,17 @@ def test_all_artifact_trees_share_filter_and_parent_path_controls() -> None:
         assert "useArtifactTreeFilter" in source
     assert "childBranchMatch" in filtering
     assert "head.hidden = !ownMatch && !showParents" in filtering
+    assert "MutationObserver(applyFilter)" in filtering
+    assert 'branch.dataset.filterOwnMatch = ownMatch ? "true" : "false"' in filtering
+    assert "children: _children" in filtering
+    assert "preferredChild: _preferredChild" in filtering
+    assert "searchableData(branch)" in filtering
     assert "dataset.treeSearch" in filtering
     assert "searchValue" in _text("ArtifactTreeBranch.tsx")
     for component in ("OperationLibraryEditor.tsx", "DataCatalogPanel.tsx", "PromptLibraryEditor.tsx", "GoalPlanLibraryEditor.tsx", "LlmModelsEditor.tsx"):
         assert "tree-search" in _text(component) or "searchValue" in _text(component)
+    styles = (ROOT / "workbench" / "frontend" / "src" / "styles" / "operation_editor.css").read_text(encoding="utf-8")
+    assert '[data-filter-own-match="false"]>.inheritance-row' in styles
 
 
 def test_design_trees_share_virtual_categories() -> None:
