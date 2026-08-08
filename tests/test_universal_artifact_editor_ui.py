@@ -151,3 +151,11 @@ def test_design_trees_share_virtual_categories() -> None:
     assert "CategorizedArtifactNodes" in universal
     assert "CategorizedArtifactTree items={categorizedOperations}" in operations
     assert "variant.document?.categories" in operations
+    for source in (universal, operations):
+        assert "No Categories (All)" in source
+        assert "Show Categories" in source
+        assert "Only Categories" in source
+        assert "Expand Categories" in source
+    assert "showCategories" in category_tree
+    assert "category-flat-all" in category_tree
+    assert "branchCommand={categoryCommand}" in category_tree

@@ -4,8 +4,9 @@ export type ArtifactTreeCommand = { action: "collapse" | "expand"; revision: num
 
 export const ArtifactTreeCommandContext = createContext<ArtifactTreeCommand>(null);
 
-export function ArtifactTreeBranch({ label, header, children, className = "operation-tree-group", childrenClassName = "operation-tree-children", style, searchValue }: { label: string; header: ReactNode; children?: ReactNode; className?: string; childrenClassName?: string; style?: CSSProperties; searchValue?: unknown }) {
-  const command = useContext(ArtifactTreeCommandContext);
+export function ArtifactTreeBranch({ label, header, children, className = "operation-tree-group", childrenClassName = "operation-tree-children", style, searchValue, branchCommand }: { label: string; header: ReactNode; children?: ReactNode; className?: string; childrenClassName?: string; style?: CSSProperties; searchValue?: unknown; branchCommand?: ArtifactTreeCommand }) {
+  const contextCommand = useContext(ArtifactTreeCommandContext);
+  const command = branchCommand === undefined ? contextCommand : branchCommand;
   const [collapsed, setCollapsed] = useState(false);
   useEffect(() => { if (command) setCollapsed(command.action === "collapse"); }, [command]);
   const hasChildren = children !== undefined && children !== null;

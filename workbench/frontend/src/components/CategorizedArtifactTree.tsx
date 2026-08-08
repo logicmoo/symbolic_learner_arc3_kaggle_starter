@@ -1,5 +1,5 @@
 import { Children, Fragment, isValidElement, useMemo, type ReactElement, type ReactNode } from "react";
-import { ArtifactTreeBranch } from "./ArtifactTreeBranch";
+import { ArtifactTreeBranch, type ArtifactTreeCommand } from "./ArtifactTreeBranch";
 
 export type CategorizedArtifactTreeItem = { id: string; categories?: unknown; searchValue?: unknown; render: (appearanceKey: string) => ReactNode };
 type CategoryNode = { name: string; path: string; items: CategorizedArtifactTreeItem[]; children: Map<string, CategoryNode> };
@@ -11,15 +11,15 @@ export function categoryPaths(value: unknown): string[] {
 function title(value: string) { return value.replace(/[-_]+/g, " ").replace(/\b\w/g, letter => letter.toUpperCase()); }
 function count(node: CategoryNode): number { return node.items.length + [...node.children.values()].reduce((total, child) => total + count(child), 0); }
 function CategoryHeader({ label, itemCount }: { label: string; itemCount: number }) { return <div className="operation-tree-row operation-category-row"><span className="operation-kind-badge">CATEGORY</span><span><b>{label}</b><small>Virtual category</small></span><em>{itemCount} items</em></div>; }
-function renderCategory(node: CategoryNode): ReactNode {
+function renderCategory(node: CategoryNode, categoryCommand?: ArtifactTreeCommand): ReactNode {
   const children = [...node.children.values()].sort((a, b) => a.name.localeCompare(b.name));
-  return <ArtifactTreeBranch key={`category:${node.path}`} className="operation-tree-group artifact-category-branch" label={title(node.name)} searchValue={{ category: node.path }} header={<CategoryHeader label={title(node.name)} itemCount={count(node)} />}>
-    {node.items.map(item => item.render(`category:${node.path}:${item.id}`))}{children.map(renderCategory)}
+  return <ArtifactTreeBranch key={`category:${node.path}`} branchCommand={categoryCommand} className="operation-tree-group artifact-category-branch" label={title(node.name)} searchValue={{ category: node.path }} header={<CategoryHeader label={title(node.name)} itemCount={count(node)} />}>
+    {node.items.map(item => item.render(`category:${node.path}:${item.id}`))}{children.map(child => renderCategory(child, categoryCommand))}
   </ArtifactTreeBranch>;
 }
 
 /** Builds virtual category folders without changing filesystem ownership or resource identity. */
-export function CategorizedArtifactTree({ items }: { items: CategorizedArtifactTreeItem[] }) {
+export function CategorizedArtifactTree({ items, showCategories = true, categoryCommand }: { items: CategorizedArtifactTreeItem[]; showCategories?: boolean; categoryCommand?: ArtifactTreeCommand }) {
   const roots = useMemo(() => {
     const result = new Map<string, CategoryNode>();
     for (const item of items) for (const path of categoryPaths(item.categories)) {
@@ -34,11 +34,12 @@ export function CategorizedArtifactTree({ items }: { items: CategorizedArtifactT
     }
     return result;
   }, [items]);
+  if (!showCategories) return <div className="categorized-artifact-tree category-flat-all">{items.map(item => item.render(`flat:${item.id}`))}</div>;
   const uncategorized = items.filter(item => categoryPaths(item.categories).length === 0);
   return <div className="categorized-artifact-tree">
     <ArtifactTreeBranch label="All" searchValue={{ category: "all" }} header={<CategoryHeader label="All" itemCount={items.length} />}>{items.map(item => item.render(`all:${item.id}`))}</ArtifactTreeBranch>
     <ArtifactTreeBranch label="Uncategorized" searchValue={{ category: "uncategorized" }} header={<CategoryHeader label="Uncategorized" itemCount={uncategorized.length} />}>{uncategorized.map(item => item.render(`uncategorized:${item.id}`))}</ArtifactTreeBranch>
-    {[...roots.values()].sort((a, b) => a.name.localeCompare(b.name)).map(renderCategory)}
+    {[...roots.values()].sort((a, b) => a.name.localeCompare(b.name)).map(node => renderCategory(node, categoryCommand))}
   </div>;
 }
 
@@ -62,7 +63,7 @@ function topLevelNodes(node: ReactNode): ReactElement[] {
 }
 
 /** Adapts existing rich tree branches to the shared virtual-category contract. */
-export function CategorizedArtifactNodes({ children }: { children: ReactNode }) {
+export function CategorizedArtifactNodes({ children, showCategories = true, categoryCommand }: { children: ReactNode; showCategories?: boolean; categoryCommand?: ArtifactTreeCommand }) {
   const nodes = topLevelNodes(children);
   const items = nodes.map((node, index) => ({
     id: String(node.key ?? index),
@@ -70,5 +71,5 @@ export function CategorizedArtifactNodes({ children }: { children: ReactNode }) 
     searchValue: (node.props as { searchValue?: unknown }).searchValue,
     render: (appearanceKey: string) => <Fragment key={appearanceKey}>{node}</Fragment>,
   }));
-  return <CategorizedArtifactTree items={items} />;
+  return <CategorizedArtifactTree items={items} showCategories={showCategories} categoryCommand={categoryCommand} />;
 }
