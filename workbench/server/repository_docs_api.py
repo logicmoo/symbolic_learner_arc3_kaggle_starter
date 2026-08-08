@@ -32,22 +32,28 @@ def repair_display_text(content: str) -> str:
     return content
 
 
+def _file_revision(stat: object) -> str:
+    """Cheap change token for indexes; content is hashed only when opened."""
+    size = int(getattr(stat, "st_size"))
+    modified_ns = int(getattr(stat, "st_mtime_ns", round(float(getattr(stat, "st_mtime")) * 1_000_000_000)))
+    return hashlib.sha256(f"{size}:{modified_ns}".encode("ascii")).hexdigest()
+
+
 @router.get("/markdown-index")
 def list_repository_markdown() -> dict[str, object]:
     resources = get_filesystem_provider()
     documents: list[dict[str, object]] = []
-    for target in resources.rglob(REPOSITORY_ROOT, "*.md"):
+    for target in resources.rglob(REPOSITORY_ROOT, "*.md", ignored_names=IGNORED_DIRECTORIES):
         relative = target.relative_to(REPOSITORY_ROOT)
         if any(part in IGNORED_DIRECTORIES for part in relative.parts):
             continue
         stat = resources.stat(target)
-        display_content = repair_display_text(resources.read_text(target))
         documents.append({
             "path": relative.as_posix(),
             "name": target.name,
             "size": stat.st_size,
             "modified": stat.st_mtime,
-            "checksum": hashlib.sha256(display_content.encode("utf-8")).hexdigest(),
+            "checksum": _file_revision(stat),
         })
     documents.sort(key=lambda item: str(item["path"]).lower())
     return {"root": str(REPOSITORY_ROOT), "documents": documents}
@@ -88,10 +94,12 @@ def read_repository_file(path: str = Query(..., min_length=1)) -> dict[str, str]
         raise HTTPException(status_code=404, detail=f"Repository file not found: {path}")
     if resources.stat(target).st_size > 5_000_000:
         raise HTTPException(status_code=413, detail="Repository file is too large to display")
+    stat = resources.stat(target)
     display_content = repair_display_text(resources.read_text(target))
     return {
         "path": target.relative_to(REPOSITORY_ROOT).as_posix(),
         "content": display_content,
         "format": "markdown" if target.suffix.lower() == ".md" else "source",
-        "checksum": hashlib.sha256(display_content.encode("utf-8")).hexdigest(),
+        "checksum": _file_revision(stat),
+        "contentChecksum": hashlib.sha256(display_content.encode("utf-8")).hexdigest(),
     }

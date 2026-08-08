@@ -126,6 +126,10 @@ def test_provider_handles_text_binary_discovery_and_atomic_replacement(tmp_path:
     assert provider.read_text(markdown) == "# Guide\n"
     assert provider.read_bytes(image).startswith(b"\x89PNG")
     assert provider.rglob(tmp_path, "*.md") == [markdown]
+    ignored = tmp_path / "node_modules"
+    provider.make_directory(ignored)
+    provider.write_text(ignored / "dependency.md", "ignored")
+    assert provider.rglob(tmp_path, "*.md", ignored_names={"node_modules"}) == [markdown]
     assert provider.iterdir(docs) == [markdown, image]
     assert provider.is_file(markdown)
     assert provider.is_dir(docs)

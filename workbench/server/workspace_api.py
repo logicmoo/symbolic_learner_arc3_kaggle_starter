@@ -524,7 +524,7 @@ def workspace_snapshot(workspace_id: str, scope: str = Query(default="full", pat
     root = Path(workspace["root"])
     files: list[dict[str, Any]] = []
     resources = get_filesystem_provider()
-    for path in resources.rglob(root, "*"):
+    for path in resources.rglob(root, "*", ignored_names=IGNORED_DIRECTORIES):
         if any(part in IGNORED_DIRECTORIES for part in path.parts):
             continue
         if resources.is_file(path) and path.suffix.lower() in TEXT_SUFFIXES:

@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
 from collections import Counter
 from copy import deepcopy
 from pathlib import Path, PurePosixPath
+from fnmatch import fnmatch
 from threading import RLock
 from typing import Any, Iterable
 
@@ -78,8 +80,15 @@ class FilesystemProvider:
         ]
         return sorted(set(paths), key=lambda path: (path.name.lower(), path.as_posix().lower()))
 
-    def rglob(self, root: Path, pattern: str) -> list[Path]:
+    def rglob(self, root: Path, pattern: str, *, ignored_names: Iterable[str] = ()) -> list[Path]:
         self._record("scan")
+        ignored = set(ignored_names)
+        if ignored:
+            matches: list[Path] = []
+            for directory, names, files in os.walk(root, topdown=True):
+                names[:] = [name for name in names if name not in ignored]
+                matches.extend(Path(directory) / name for name in files if fnmatch(name, pattern))
+            return sorted(matches, key=lambda path: path.as_posix().lower())
         return sorted(root.rglob(pattern), key=lambda path: path.as_posix().lower())
 
     def iterdir(self, path: Path) -> list[Path]:
