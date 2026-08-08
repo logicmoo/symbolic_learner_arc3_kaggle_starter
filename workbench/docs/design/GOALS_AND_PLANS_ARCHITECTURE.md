@@ -30,6 +30,8 @@ Resource relationships are:
 
 Operations serve as action schemas; Workflow steps serve as grounded action occurrences; Workflows serve as plans; and Workflow Runs serve as execution traces. PDDL importers and planners should emit Workflows rather than a second `planned_workflow` artifact kind.
 
+Workflow Studio records a `planProvenance` map without changing the executable kind. Its `origin` distinguishes `human`, `pddl`, `llm`, `rules`, and generic `imported` generation. For PDDL output, `planner`, `domain`, `problem`, and the original grounded `sourcePlan` remain beside the normalized Workflow steps. This lets a PDDL tool round-trip its source vocabulary while the engine continues to execute the common Workflow representation.
+
 ## Editor and runtime boundary
 
 Goals and Planning Strategies retain hierarchical specifications, alternatives, preferred selection, tabs, comparison, raw source editing, filesystem save, and workspace inheritance. Runtime records preserve resolved IDs and frozen Workflow versions. Events, States, Execs, and Logs remain append-oriented execution evidence.

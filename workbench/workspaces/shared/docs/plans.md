@@ -30,3 +30,5 @@ Shared strategies are inherited by project workspaces. Workspace resources with 
 ## Execution boundary
 
 A Goal Run resolves a Goal, Planning Strategy, optional AtomSpace bindings, and a Workflow. The Workflow is the common executable representation whether its provenance says `human`, `pddl`, `llm`, or another planner. Runtime records preserve the resolved strategy and Workflow without rewriting either design resource.
+
+Workflow Studio stores that distinction in `planProvenance` on the same Workflow. PDDL workflows may retain the planner, domain, problem, and original grounded plan text while their normalized steps remain directly executable by the workbench.
