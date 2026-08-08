@@ -1,5 +1,6 @@
-import json
 from pathlib import Path
+
+from resource_store import get_filesystem_provider
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -37,18 +38,19 @@ def test_shared_uses_lifecycle_first_top_level_directories() -> None:
     assert {path.name for path in SHARED.iterdir() if path.is_dir()} == {"design", "runtime", "policies", "docs"}
 
 
-def test_shared_design_json_directories_match_declared_kinds() -> None:
-    paths = list((SHARED / "design").rglob("*.json"))
+def test_shared_design_metta_directories_match_declared_kinds() -> None:
+    resources = get_filesystem_provider()
+    paths = list((SHARED / "design").rglob("*.metta"))
     assert paths
     for path in paths:
-        document = json.loads(path.read_text(encoding="utf-8"))
+        document = resources.read_json(path.with_suffix(".json"))
         kind = document.get("kind")
         assert kind in KIND_DIRECTORIES, path.relative_to(SHARED).as_posix()
         assert path.parent.name == KIND_DIRECTORIES[kind], path.relative_to(SHARED).as_posix()
 
 
 def test_shared_runtime_contains_no_design_documents() -> None:
-    assert not list((SHARED / "runtime").rglob("*.json"))
+    assert not list((SHARED / "runtime").rglob("*.metta"))
 
 
 def test_every_workspace_uses_lifecycle_first_resource_directories() -> None:
@@ -57,8 +59,8 @@ def test_every_workspace_uses_lifecycle_first_resource_directories() -> None:
         if not workspace.is_dir():
             continue
         assert {path.name for path in workspace.iterdir() if path.is_dir()} <= allowed, workspace.name
-        for path in (workspace / "design").rglob("*.json") if (workspace / "design").is_dir() else []:
-            document = json.loads(path.read_text(encoding="utf-8"))
+        for path in (workspace / "design").rglob("*.metta") if (workspace / "design").is_dir() else []:
+            document = get_filesystem_provider().read_json(path.with_suffix(".json"))
             kind = document.get("kind")
             assert kind in KIND_DIRECTORIES, path.relative_to(WORKSPACES).as_posix()
             assert path.parent.name == KIND_DIRECTORIES[kind], path.relative_to(WORKSPACES).as_posix()

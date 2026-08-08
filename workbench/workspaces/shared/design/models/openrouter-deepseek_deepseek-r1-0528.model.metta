@@ -1,0 +1,275 @@
+({}
+  (kind model)
+  (id openrouter-deepseek_deepseek-r1-0528)
+  (label "DeepSeek: R1 0528")
+  (description "Discovered from OpenRouter.")
+  (inherits openrouter)
+  (model deepseek/deepseek-r1-0528)
+  (enabled true)
+  (capabilities ({}
+    (audio false)
+    (code false)
+    (functionCalling true)
+    (json true)
+    (jsonMode true)
+    (local false)
+    (multimodal false)
+    (reasoning true)
+    (text true)
+    (tools true)
+    (vision false)
+  ))
+  (limits ({}
+    (contextWindow 163840)
+    (maxOutputTokens 32768)
+  ))
+  (pricing ({}
+    (prompt "0.0000005")
+    (completion "0.00000215")
+    (input_cache_read "0.00000035")
+  ))
+  (properties ({}
+    (id deepseek/deepseek-r1-0528)
+    (canonical_slug deepseek/deepseek-r1-0528)
+    (hugging_face_id deepseek-ai/DeepSeek-R1-0528)
+    (name "DeepSeek: R1 0528")
+    (created 1748455170)
+    (description "May 28th update to the [original DeepSeek R1](/deepseek/deepseek-r1) Performance on par with [OpenAI o1](/openai/o1), but open-sourced and with fully open reasoning tokens. It's 671B parameters in size, with 37B active...")
+    (context_length 163840)
+    (architecture ({}
+      (modality text->text)
+      (input_modalities (
+        text
+      ))
+      (output_modalities (
+        text
+      ))
+      (tokenizer DeepSeek)
+      (instruct_type deepseek-r1)
+    ))
+    (pricing ({}
+      (prompt "0.0000005")
+      (completion "0.00000215")
+      (input_cache_read "0.00000035")
+    ))
+    (top_provider ({}
+      (context_length 163840)
+      (max_completion_tokens 32768)
+      (is_moderated false)
+    ))
+    (per_request_limits null)
+    (supported_parameters (
+      frequency_penalty
+      include_reasoning
+      logit_bias
+      logprobs
+      max_tokens
+      min_p
+      presence_penalty
+      reasoning
+      repetition_penalty
+      response_format
+      seed
+      stop
+      structured_outputs
+      temperature
+      tool_choice
+      tools
+      top_k
+      top_logprobs
+      top_p
+    ))
+    (default_parameters ({}
+      (temperature null)
+      (top_p null)
+      (frequency_penalty null)
+    ))
+    (supported_voices null)
+    (knowledge_cutoff 2025-03-31)
+    (expiration_date null)
+    (links ({}
+      (details /api/v1/models/deepseek/deepseek-r1-0528/endpoints)
+    ))
+    (benchmarks ({}
+      (design_arena (
+        ({}
+          (arena models)
+          (category 3d)
+          (elo 1165)
+          (win_rate 53.4)
+          (rank 61)
+        )
+        ({}
+          (arena models)
+          (category codecategories)
+          (elo 1166)
+          (win_rate 52.6)
+          (rank 67)
+        )
+        ({}
+          (arena models)
+          (category dataviz)
+          (elo 1206)
+          (win_rate 60.7)
+          (rank 44)
+        )
+        ({}
+          (arena models)
+          (category gamedev)
+          (elo 1139)
+          (win_rate 49.5)
+          (rank 70)
+        )
+        ({}
+          (arena models)
+          (category svg)
+          (elo 1085)
+          (win_rate 48.7)
+          (rank 56)
+        )
+        ({}
+          (arena models)
+          (category uicomponent)
+          (elo 1136)
+          (win_rate 54.9)
+          (rank 68)
+        )
+        ({}
+          (arena models)
+          (category website)
+          (elo 1171)
+          (win_rate 52.7)
+          (rank 67)
+        )
+      ))
+    ))
+    (reasoning ({}
+      (mandatory true)
+    ))
+    (ownedBy null)
+  ))
+  (providerMetadata ({}
+    (id deepseek/deepseek-r1-0528)
+    (canonical_slug deepseek/deepseek-r1-0528)
+    (hugging_face_id deepseek-ai/DeepSeek-R1-0528)
+    (name "DeepSeek: R1 0528")
+    (created 1748455170)
+    (description "May 28th update to the [original DeepSeek R1](/deepseek/deepseek-r1) Performance on par with [OpenAI o1](/openai/o1), but open-sourced and with fully open reasoning tokens. It's 671B parameters in size, with 37B active...")
+    (context_length 163840)
+    (architecture ({}
+      (modality text->text)
+      (input_modalities (
+        text
+      ))
+      (output_modalities (
+        text
+      ))
+      (tokenizer DeepSeek)
+      (instruct_type deepseek-r1)
+    ))
+    (pricing ({}
+      (prompt "0.0000005")
+      (completion "0.00000215")
+      (input_cache_read "0.00000035")
+    ))
+    (top_provider ({}
+      (context_length 163840)
+      (max_completion_tokens 32768)
+      (is_moderated false)
+    ))
+    (per_request_limits null)
+    (supported_parameters (
+      frequency_penalty
+      include_reasoning
+      logit_bias
+      logprobs
+      max_tokens
+      min_p
+      presence_penalty
+      reasoning
+      repetition_penalty
+      response_format
+      seed
+      stop
+      structured_outputs
+      temperature
+      tool_choice
+      tools
+      top_k
+      top_logprobs
+      top_p
+    ))
+    (default_parameters ({}
+      (temperature null)
+      (top_p null)
+      (frequency_penalty null)
+    ))
+    (supported_voices null)
+    (knowledge_cutoff 2025-03-31)
+    (expiration_date null)
+    (links ({}
+      (details /api/v1/models/deepseek/deepseek-r1-0528/endpoints)
+    ))
+    (benchmarks ({}
+      (design_arena (
+        ({}
+          (arena models)
+          (category 3d)
+          (elo 1165)
+          (win_rate 53.4)
+          (rank 61)
+        )
+        ({}
+          (arena models)
+          (category codecategories)
+          (elo 1166)
+          (win_rate 52.6)
+          (rank 67)
+        )
+        ({}
+          (arena models)
+          (category dataviz)
+          (elo 1206)
+          (win_rate 60.7)
+          (rank 44)
+        )
+        ({}
+          (arena models)
+          (category gamedev)
+          (elo 1139)
+          (win_rate 49.5)
+          (rank 70)
+        )
+        ({}
+          (arena models)
+          (category svg)
+          (elo 1085)
+          (win_rate 48.7)
+          (rank 56)
+        )
+        ({}
+          (arena models)
+          (category uicomponent)
+          (elo 1136)
+          (win_rate 54.9)
+          (rank 68)
+        )
+        ({}
+          (arena models)
+          (category website)
+          (elo 1171)
+          (win_rate 52.7)
+          (rank 67)
+        )
+      ))
+    ))
+    (reasoning ({}
+      (mandatory true)
+    ))
+  ))
+  (discovery ({}
+    (managed true)
+    (backendId openrouter)
+    (remoteModelId deepseek/deepseek-r1-0528)
+  ))
+)

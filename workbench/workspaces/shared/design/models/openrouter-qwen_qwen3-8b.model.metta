@@ -1,0 +1,178 @@
+({}
+  (kind model)
+  (id openrouter-qwen_qwen3-8b)
+  (label "Qwen: Qwen3 8B")
+  (description "Discovered from OpenRouter.")
+  (inherits openrouter)
+  (model qwen/qwen3-8b)
+  (enabled true)
+  (capabilities ({}
+    (audio false)
+    (code false)
+    (functionCalling true)
+    (json true)
+    (jsonMode true)
+    (local false)
+    (multimodal false)
+    (reasoning true)
+    (text true)
+    (tools true)
+    (vision false)
+  ))
+  (limits ({}
+    (contextWindow 131072)
+    (maxOutputTokens 8192)
+  ))
+  (pricing ({}
+    (prompt "0.000000117")
+    (completion "0.000000455")
+  ))
+  (properties ({}
+    (id qwen/qwen3-8b)
+    (canonical_slug qwen/qwen3-8b-04-28)
+    (hugging_face_id Qwen/Qwen3-8B)
+    (name "Qwen: Qwen3 8B")
+    (created 1745876632)
+    (description "Qwen3-8B is a dense 8.2B parameter causal language model from the Qwen3 series, designed for both reasoning-heavy tasks and efficient dialogue. It supports seamless switching between \"thinking\" mode for math,...")
+    (context_length 131072)
+    (architecture ({}
+      (modality text->text)
+      (input_modalities (
+        text
+      ))
+      (output_modalities (
+        text
+      ))
+      (tokenizer Qwen3)
+      (instruct_type qwen3)
+    ))
+    (pricing ({}
+      (prompt "0.000000117")
+      (completion "0.000000455")
+    ))
+    (top_provider ({}
+      (context_length 131072)
+      (max_completion_tokens 8192)
+      (is_moderated false)
+    ))
+    (per_request_limits null)
+    (supported_parameters (
+      frequency_penalty
+      include_reasoning
+      max_tokens
+      presence_penalty
+      reasoning
+      response_format
+      seed
+      stop
+      temperature
+      tool_choice
+      tools
+      top_k
+      top_p
+    ))
+    (default_parameters ({}
+      (temperature 0.6)
+      (top_p 0.95)
+      (top_k 20)
+      (frequency_penalty null)
+      (presence_penalty null)
+      (repetition_penalty null)
+    ))
+    (supported_voices null)
+    (knowledge_cutoff 2025-03-31)
+    (expiration_date null)
+    (links ({}
+      (details /api/v1/models/qwen/qwen3-8b-04-28/endpoints)
+    ))
+    (benchmarks ({}
+      (design_arena ())
+      (artificial_analysis ({}
+        (intelligence_index 8.3)
+        (coding_index 9)
+        (agentic_index 1.6)
+      ))
+    ))
+    (reasoning ({}
+      (mandatory false)
+      (default_enabled true)
+    ))
+    (ownedBy null)
+  ))
+  (providerMetadata ({}
+    (id qwen/qwen3-8b)
+    (canonical_slug qwen/qwen3-8b-04-28)
+    (hugging_face_id Qwen/Qwen3-8B)
+    (name "Qwen: Qwen3 8B")
+    (created 1745876632)
+    (description "Qwen3-8B is a dense 8.2B parameter causal language model from the Qwen3 series, designed for both reasoning-heavy tasks and efficient dialogue. It supports seamless switching between \"thinking\" mode for math,...")
+    (context_length 131072)
+    (architecture ({}
+      (modality text->text)
+      (input_modalities (
+        text
+      ))
+      (output_modalities (
+        text
+      ))
+      (tokenizer Qwen3)
+      (instruct_type qwen3)
+    ))
+    (pricing ({}
+      (prompt "0.000000117")
+      (completion "0.000000455")
+    ))
+    (top_provider ({}
+      (context_length 131072)
+      (max_completion_tokens 8192)
+      (is_moderated false)
+    ))
+    (per_request_limits null)
+    (supported_parameters (
+      frequency_penalty
+      include_reasoning
+      max_tokens
+      presence_penalty
+      reasoning
+      response_format
+      seed
+      stop
+      temperature
+      tool_choice
+      tools
+      top_k
+      top_p
+    ))
+    (default_parameters ({}
+      (temperature 0.6)
+      (top_p 0.95)
+      (top_k 20)
+      (frequency_penalty null)
+      (presence_penalty null)
+      (repetition_penalty null)
+    ))
+    (supported_voices null)
+    (knowledge_cutoff 2025-03-31)
+    (expiration_date null)
+    (links ({}
+      (details /api/v1/models/qwen/qwen3-8b-04-28/endpoints)
+    ))
+    (benchmarks ({}
+      (design_arena ())
+      (artificial_analysis ({}
+        (intelligence_index 8.3)
+        (coding_index 9)
+        (agentic_index 1.6)
+      ))
+    ))
+    (reasoning ({}
+      (mandatory false)
+      (default_enabled true)
+    ))
+  ))
+  (discovery ({}
+    (managed true)
+    (backendId openrouter)
+    (remoteModelId qwen/qwen3-8b)
+  ))
+)

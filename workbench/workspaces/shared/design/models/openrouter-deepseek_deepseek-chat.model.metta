@@ -1,0 +1,250 @@
+({}
+  (kind model)
+  (id openrouter-deepseek_deepseek-chat)
+  (label "DeepSeek: DeepSeek V3")
+  (description "Discovered from OpenRouter.")
+  (inherits openrouter)
+  (model deepseek/deepseek-chat)
+  (enabled true)
+  (capabilities ({}
+    (audio false)
+    (code false)
+    (functionCalling true)
+    (json true)
+    (jsonMode true)
+    (local false)
+    (multimodal false)
+    (reasoning false)
+    (text true)
+    (tools true)
+    (vision false)
+  ))
+  (limits ({}
+    (contextWindow 163840)
+    (maxOutputTokens 16000)
+  ))
+  (pricing ({}
+    (prompt "0.0000002574")
+    (completion "0.0000010287")
+  ))
+  (properties ({}
+    (id deepseek/deepseek-chat)
+    (canonical_slug deepseek/deepseek-chat-v3)
+    (hugging_face_id deepseek-ai/DeepSeek-V3)
+    (name "DeepSeek: DeepSeek V3")
+    (created 1735241320)
+    (description "DeepSeek-V3 is the latest model from the DeepSeek team, building upon the instruction following and coding abilities of the previous versions. Pre-trained on nearly 15 trillion tokens, the reported evaluations...")
+    (context_length 163840)
+    (architecture ({}
+      (modality text->text)
+      (input_modalities (
+        text
+      ))
+      (output_modalities (
+        text
+      ))
+      (tokenizer DeepSeek)
+      (instruct_type null)
+    ))
+    (pricing ({}
+      (prompt "0.0000002574")
+      (completion "0.0000010287")
+    ))
+    (top_provider ({}
+      (context_length 128000)
+      (max_completion_tokens 16000)
+      (is_moderated false)
+    ))
+    (per_request_limits null)
+    (supported_parameters (
+      frequency_penalty
+      logit_bias
+      max_tokens
+      min_p
+      presence_penalty
+      repetition_penalty
+      response_format
+      seed
+      stop
+      structured_outputs
+      temperature
+      tool_choice
+      tools
+      top_k
+      top_p
+    ))
+    (default_parameters ({}))
+    (supported_voices null)
+    (knowledge_cutoff 2024-07-31)
+    (expiration_date null)
+    (links ({}
+      (details /api/v1/models/deepseek/deepseek-chat-v3/endpoints)
+    ))
+    (benchmarks ({}
+      (design_arena (
+        ({}
+          (arena models)
+          (category 3d)
+          (elo 1141)
+          (win_rate 50.6)
+          (rank 67)
+        )
+        ({}
+          (arena models)
+          (category codecategories)
+          (elo 1136)
+          (win_rate 48.5)
+          (rank 80)
+        )
+        ({}
+          (arena models)
+          (category dataviz)
+          (elo 1124)
+          (win_rate 51.2)
+          (rank 81)
+        )
+        ({}
+          (arena models)
+          (category gamedev)
+          (elo 1094)
+          (win_rate 43.9)
+          (rank 84)
+        )
+        ({}
+          (arena models)
+          (category svg)
+          (elo 1023)
+          (win_rate 38.8)
+          (rank 73)
+        )
+        ({}
+          (arena models)
+          (category uicomponent)
+          (elo 1127)
+          (win_rate 52.8)
+          (rank 73)
+        )
+        ({}
+          (arena models)
+          (category website)
+          (elo 1142)
+          (win_rate 48.5)
+          (rank 79)
+        )
+      ))
+    ))
+    (ownedBy null)
+  ))
+  (providerMetadata ({}
+    (id deepseek/deepseek-chat)
+    (canonical_slug deepseek/deepseek-chat-v3)
+    (hugging_face_id deepseek-ai/DeepSeek-V3)
+    (name "DeepSeek: DeepSeek V3")
+    (created 1735241320)
+    (description "DeepSeek-V3 is the latest model from the DeepSeek team, building upon the instruction following and coding abilities of the previous versions. Pre-trained on nearly 15 trillion tokens, the reported evaluations...")
+    (context_length 163840)
+    (architecture ({}
+      (modality text->text)
+      (input_modalities (
+        text
+      ))
+      (output_modalities (
+        text
+      ))
+      (tokenizer DeepSeek)
+      (instruct_type null)
+    ))
+    (pricing ({}
+      (prompt "0.0000002574")
+      (completion "0.0000010287")
+    ))
+    (top_provider ({}
+      (context_length 128000)
+      (max_completion_tokens 16000)
+      (is_moderated false)
+    ))
+    (per_request_limits null)
+    (supported_parameters (
+      frequency_penalty
+      logit_bias
+      max_tokens
+      min_p
+      presence_penalty
+      repetition_penalty
+      response_format
+      seed
+      stop
+      structured_outputs
+      temperature
+      tool_choice
+      tools
+      top_k
+      top_p
+    ))
+    (default_parameters ({}))
+    (supported_voices null)
+    (knowledge_cutoff 2024-07-31)
+    (expiration_date null)
+    (links ({}
+      (details /api/v1/models/deepseek/deepseek-chat-v3/endpoints)
+    ))
+    (benchmarks ({}
+      (design_arena (
+        ({}
+          (arena models)
+          (category 3d)
+          (elo 1141)
+          (win_rate 50.6)
+          (rank 67)
+        )
+        ({}
+          (arena models)
+          (category codecategories)
+          (elo 1136)
+          (win_rate 48.5)
+          (rank 80)
+        )
+        ({}
+          (arena models)
+          (category dataviz)
+          (elo 1124)
+          (win_rate 51.2)
+          (rank 81)
+        )
+        ({}
+          (arena models)
+          (category gamedev)
+          (elo 1094)
+          (win_rate 43.9)
+          (rank 84)
+        )
+        ({}
+          (arena models)
+          (category svg)
+          (elo 1023)
+          (win_rate 38.8)
+          (rank 73)
+        )
+        ({}
+          (arena models)
+          (category uicomponent)
+          (elo 1127)
+          (win_rate 52.8)
+          (rank 73)
+        )
+        ({}
+          (arena models)
+          (category website)
+          (elo 1142)
+          (win_rate 48.5)
+          (rank 79)
+        )
+      ))
+    ))
+  ))
+  (discovery ({}
+    (managed true)
+    (backendId openrouter)
+    (remoteModelId deepseek/deepseek-chat)
+  ))
+)

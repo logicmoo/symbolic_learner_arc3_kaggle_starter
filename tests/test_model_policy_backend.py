@@ -13,6 +13,7 @@ from model_discovery import discover_backend_models, import_discovered_models, r
 from model_policy_ping import run_ping_job  # noqa: E402
 from model_benchmark import run_benchmark  # noqa: E402
 from policy_library import effective_model_registry, load_workspace_policy_records  # noqa: E402
+from resource_store import get_filesystem_provider  # noqa: E402
 
 
 def _records(*documents: dict) -> list[dict]:
@@ -110,7 +111,7 @@ def test_backend_model_discovery_supports_openai_and_ollama_shapes(tmp_path: Pat
     assert set(imported[0]["capabilities"]) >= {"multimodal", "vision", "audio", "tools", "reasoning"}
     assert imported[0]["providerMetadata"]["name"] == "local/a"
     assert imported[0]["properties"]["name"] == "local/a"
-    assert (tmp_path / "design" / "models" / "local-local_a.model.json").is_file()
+    assert (tmp_path / "design" / "models" / "local-local_a.model.metta").is_file()
 
 
 def test_model_import_route_always_targets_shared_workspace(tmp_path: Path, monkeypatch) -> None:
@@ -122,7 +123,7 @@ def test_model_import_route_always_targets_shared_workspace(tmp_path: Path, monk
     result = policy_api.import_models("project", "vendor", {"models": [{"id": "remote/model", "label": "Remote"}]})
     assert result["targetWorkspace"]["id"] == "shared"
     assert not (project / "models").exists()
-    assert (shared / "design" / "models" / "vendor-remote_model.model.json").is_file()
+    assert (shared / "design" / "models" / "vendor-remote_model.model.metta").is_file()
 
 
 def test_model_example_invokes_resolved_model(monkeypatch, tmp_path: Path) -> None:
@@ -158,7 +159,7 @@ def test_observation_api_persists_a_real_resource(tmp_path: Path, monkeypatch) -
     document = {"kind": "model_ping_event", "id": "ping:one", "jobId": "job", "status": "succeeded"}
     result = policy_api.record_model_policy_observation("demo", document)
     assert result["path"] == "policies/ping_one.model_ping_event.json"
-    assert json.loads((tmp_path / result["path"]).read_text(encoding="utf-8")) == document
+    assert get_filesystem_provider().read_json(tmp_path / result["path"]) == document
     loaded = load_workspace_policy_records(tmp_path, workspaces_root=tmp_path.parent)
     assert loaded[0]["document"]["id"] == "ping:one"
 
@@ -188,7 +189,7 @@ def test_ping_job_persists_independent_health_and_events(tmp_path: Path) -> None
     assert result["job"]["status"] == "completed_with_errors"
     assert result["job"]["failureCount"] == 1
     assert {item["health"]["status"] for item in result["results"]} == {"online", "error"}
-    persisted = list((tmp_path / "policies").glob("*.json"))
+    persisted = list((tmp_path / "policies").glob("*.metta"))
     assert len(persisted) == 5  # one job, two events, and two health observations
 
 
@@ -227,8 +228,8 @@ def test_benchmark_job_executes_declared_cases_and_persists_measurements(tmp_pat
     result = run_benchmark(tmp_path,policy,models,profiles,invoke=invoke)
     assert result["job"]["status"] == "completed"
     assert result["results"][0]["metrics"] == {"accuracy":1.0,"latency_ms":10.0,"input_tokens":4,"output_tokens":2,"success_rate":1.0}
-    assert list((tmp_path/"policies").glob("*.benchmark_job.json"))
-    assert list((tmp_path/"policies").glob("*.benchmark_result.json"))
+    assert list((tmp_path/"policies").glob("*.benchmark_job.metta"))
+    assert list((tmp_path/"policies").glob("*.benchmark_result.metta"))
 
 
 def test_model_policy_ui_exposes_explicit_benchmark_run() -> None:

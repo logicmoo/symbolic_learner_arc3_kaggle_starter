@@ -1,0 +1,19 @@
+({}
+  (id shared.merge_records)
+  (label "Merge Records")
+  (description "Merge two object records into one derived record. Useful for combining observations, actions, metadata, evidence, and results.")
+  (categories (
+    core/records
+    data/transformation
+  ))
+  (implementation core.merge)
+  (inputs ({}
+    (left Object)
+    (right Object)
+  ))
+  (outputs ({}
+    (value Object)
+  ))
+  (parameters ({}))
+  (kind operation)
+)

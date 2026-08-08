@@ -1,0 +1,238 @@
+({}
+  (kind model)
+  (id openrouter-qwen_qwen3-235b-a22b)
+  (label "Qwen: Qwen3 235B A22B")
+  (description "Discovered from OpenRouter.")
+  (inherits openrouter)
+  (model qwen/qwen3-235b-a22b)
+  (enabled true)
+  (capabilities ({}
+    (audio false)
+    (code false)
+    (functionCalling true)
+    (json true)
+    (jsonMode true)
+    (local false)
+    (multimodal false)
+    (reasoning true)
+    (text true)
+    (tools true)
+    (vision false)
+  ))
+  (limits ({}
+    (contextWindow 131072)
+    (maxOutputTokens 8192)
+  ))
+  (pricing ({}
+    (prompt "0.000000455")
+    (completion "0.00000182")
+  ))
+  (properties ({}
+    (id qwen/qwen3-235b-a22b)
+    (canonical_slug qwen/qwen3-235b-a22b-04-28)
+    (hugging_face_id Qwen/Qwen3-235B-A22B)
+    (name "Qwen: Qwen3 235B A22B")
+    (created 1745875757)
+    (description "Qwen3-235B-A22B is a 235B parameter mixture-of-experts (MoE) model developed by Qwen, activating 22B parameters per forward pass. It supports seamless switching between a \"thinking\" mode for complex reasoning, math, and...")
+    (context_length 131072)
+    (architecture ({}
+      (modality text->text)
+      (input_modalities (
+        text
+      ))
+      (output_modalities (
+        text
+      ))
+      (tokenizer Qwen3)
+      (instruct_type qwen3)
+    ))
+    (pricing ({}
+      (prompt "0.000000455")
+      (completion "0.00000182")
+    ))
+    (top_provider ({}
+      (context_length 131072)
+      (max_completion_tokens 8192)
+      (is_moderated false)
+    ))
+    (per_request_limits null)
+    (supported_parameters (
+      frequency_penalty
+      include_reasoning
+      max_tokens
+      presence_penalty
+      reasoning
+      response_format
+      seed
+      stop
+      temperature
+      tool_choice
+      tools
+      top_k
+      top_p
+    ))
+    (default_parameters ({}))
+    (supported_voices null)
+    (knowledge_cutoff 2025-03-31)
+    (expiration_date null)
+    (links ({}
+      (details /api/v1/models/qwen/qwen3-235b-a22b-04-28/endpoints)
+    ))
+    (benchmarks ({}
+      (design_arena (
+        ({}
+          (arena models)
+          (category 3d)
+          (elo 913)
+          (win_rate 24.5)
+          (rank 104)
+        )
+        ({}
+          (arena models)
+          (category codecategories)
+          (elo 1030)
+          (win_rate 38.3)
+          (rank 101)
+        )
+        ({}
+          (arena models)
+          (category dataviz)
+          (elo 1028)
+          (win_rate 41)
+          (rank 95)
+        )
+        ({}
+          (arena models)
+          (category gamedev)
+          (elo 969)
+          (win_rate 33.1)
+          (rank 107)
+        )
+        ({}
+          (arena models)
+          (category uicomponent)
+          (elo 993)
+          (win_rate 38.9)
+          (rank 98)
+        )
+        ({}
+          (arena models)
+          (category website)
+          (elo 1053)
+          (win_rate 40.5)
+          (rank 101)
+        )
+      ))
+    ))
+    (reasoning ({}
+      (mandatory false)
+    ))
+    (ownedBy null)
+  ))
+  (providerMetadata ({}
+    (id qwen/qwen3-235b-a22b)
+    (canonical_slug qwen/qwen3-235b-a22b-04-28)
+    (hugging_face_id Qwen/Qwen3-235B-A22B)
+    (name "Qwen: Qwen3 235B A22B")
+    (created 1745875757)
+    (description "Qwen3-235B-A22B is a 235B parameter mixture-of-experts (MoE) model developed by Qwen, activating 22B parameters per forward pass. It supports seamless switching between a \"thinking\" mode for complex reasoning, math, and...")
+    (context_length 131072)
+    (architecture ({}
+      (modality text->text)
+      (input_modalities (
+        text
+      ))
+      (output_modalities (
+        text
+      ))
+      (tokenizer Qwen3)
+      (instruct_type qwen3)
+    ))
+    (pricing ({}
+      (prompt "0.000000455")
+      (completion "0.00000182")
+    ))
+    (top_provider ({}
+      (context_length 131072)
+      (max_completion_tokens 8192)
+      (is_moderated false)
+    ))
+    (per_request_limits null)
+    (supported_parameters (
+      frequency_penalty
+      include_reasoning
+      max_tokens
+      presence_penalty
+      reasoning
+      response_format
+      seed
+      stop
+      temperature
+      tool_choice
+      tools
+      top_k
+      top_p
+    ))
+    (default_parameters ({}))
+    (supported_voices null)
+    (knowledge_cutoff 2025-03-31)
+    (expiration_date null)
+    (links ({}
+      (details /api/v1/models/qwen/qwen3-235b-a22b-04-28/endpoints)
+    ))
+    (benchmarks ({}
+      (design_arena (
+        ({}
+          (arena models)
+          (category 3d)
+          (elo 913)
+          (win_rate 24.5)
+          (rank 104)
+        )
+        ({}
+          (arena models)
+          (category codecategories)
+          (elo 1030)
+          (win_rate 38.3)
+          (rank 101)
+        )
+        ({}
+          (arena models)
+          (category dataviz)
+          (elo 1028)
+          (win_rate 41)
+          (rank 95)
+        )
+        ({}
+          (arena models)
+          (category gamedev)
+          (elo 969)
+          (win_rate 33.1)
+          (rank 107)
+        )
+        ({}
+          (arena models)
+          (category uicomponent)
+          (elo 993)
+          (win_rate 38.9)
+          (rank 98)
+        )
+        ({}
+          (arena models)
+          (category website)
+          (elo 1053)
+          (win_rate 40.5)
+          (rank 101)
+        )
+      ))
+    ))
+    (reasoning ({}
+      (mandatory false)
+    ))
+  ))
+  (discovery ({}
+    (managed true)
+    (backendId openrouter)
+    (remoteModelId qwen/qwen3-235b-a22b)
+  ))
+)

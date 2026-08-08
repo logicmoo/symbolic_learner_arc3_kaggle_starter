@@ -1,0 +1,13 @@
+({}
+  (kind representation_datatype)
+  (id object_list)
+  (label "Object List")
+  (parents (
+    image
+  ))
+  (children (
+    json
+    prolog_facts
+  ))
+  (preferredChild json)
+)

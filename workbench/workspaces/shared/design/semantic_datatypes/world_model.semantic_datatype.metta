@@ -1,0 +1,13 @@
+({}
+  (kind semantic_datatype)
+  (id world_model)
+  (label "World Model")
+  (description "A revisable semantic model of entities, state, dynamics, constraints, evidence, and uncertainty.")
+  (children (
+    prolog_fact_set
+    symbolic_fact_set
+  ))
+  (parents (
+    information
+  ))
+)

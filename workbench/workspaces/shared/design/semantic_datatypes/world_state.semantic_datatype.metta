@@ -1,0 +1,14 @@
+({}
+  (kind semantic_datatype)
+  (id world_state)
+  (label "World State")
+  (description "The semantic state of a world at a point in time.")
+  (children (
+    object_properties
+    prolog_fact_set
+    symbolic_fact_set
+  ))
+  (parents (
+    information
+  ))
+)

@@ -1,0 +1,191 @@
+({}
+  (kind model)
+  (id openrouter-bytedance-seed_seed-2.0-mini)
+  (label "ByteDance Seed: Seed-2.0-Mini")
+  (description "Discovered from OpenRouter.")
+  (inherits openrouter)
+  (model bytedance-seed/seed-2.0-mini)
+  (enabled true)
+  (capabilities ({}
+    (audio false)
+    (code false)
+    (functionCalling true)
+    (json true)
+    (jsonMode true)
+    (local false)
+    (multimodal true)
+    (reasoning true)
+    (text true)
+    (tools true)
+    (vision true)
+  ))
+  (limits ({}
+    (contextWindow 262144)
+    (maxOutputTokens 131072)
+  ))
+  (pricing ({}
+    (prompt "0.0000001")
+    (completion "0.0000004")
+    (overrides (
+      ({}
+        (min_prompt_tokens 128000)
+        (prompt "0.0000002")
+        (completion "0.0000008")
+      )
+    ))
+  ))
+  (properties ({}
+    (id bytedance-seed/seed-2.0-mini)
+    (canonical_slug bytedance-seed/seed-2.0-mini-20260224)
+    (hugging_face_id "")
+    (name "ByteDance Seed: Seed-2.0-Mini")
+    (created 1772131107)
+    (description "Seed-2.0-mini targets latency-sensitive, high-concurrency, and cost-sensitive scenarios, emphasizing fast response and flexible inference deployment. It delivers performance comparable to ByteDance-Seed-1.6, supports 256k context, four reasoning effort modes (minimal/low/medium/high), multimodal understanding,...")
+    (context_length 262144)
+    (architecture ({}
+      (modality text+image+video->text)
+      (input_modalities (
+        text
+        image
+        video
+      ))
+      (output_modalities (
+        text
+      ))
+      (tokenizer Other)
+      (instruct_type null)
+    ))
+    (pricing ({}
+      (prompt "0.0000001")
+      (completion "0.0000004")
+      (overrides (
+        ({}
+          (min_prompt_tokens 128000)
+          (prompt "0.0000002")
+          (completion "0.0000008")
+        )
+      ))
+    ))
+    (top_provider ({}
+      (context_length 262144)
+      (max_completion_tokens 131072)
+      (is_moderated false)
+    ))
+    (per_request_limits null)
+    (supported_parameters (
+      frequency_penalty
+      include_reasoning
+      max_tokens
+      reasoning
+      reasoning_effort
+      response_format
+      stop
+      structured_outputs
+      temperature
+      tool_choice
+      tools
+      top_p
+    ))
+    (default_parameters ({}
+      (temperature null)
+      (top_p null)
+      (frequency_penalty null)
+    ))
+    (supported_voices null)
+    (knowledge_cutoff null)
+    (expiration_date null)
+    (links ({}
+      (details /api/v1/models/bytedance-seed/seed-2.0-mini-20260224/endpoints)
+    ))
+    (reasoning ({}
+      (mandatory false)
+      (supported_efforts (
+        high
+        medium
+        low
+        minimal
+      ))
+      (default_effort medium)
+    ))
+    (ownedBy null)
+  ))
+  (providerMetadata ({}
+    (id bytedance-seed/seed-2.0-mini)
+    (canonical_slug bytedance-seed/seed-2.0-mini-20260224)
+    (hugging_face_id "")
+    (name "ByteDance Seed: Seed-2.0-Mini")
+    (created 1772131107)
+    (description "Seed-2.0-mini targets latency-sensitive, high-concurrency, and cost-sensitive scenarios, emphasizing fast response and flexible inference deployment. It delivers performance comparable to ByteDance-Seed-1.6, supports 256k context, four reasoning effort modes (minimal/low/medium/high), multimodal understanding,...")
+    (context_length 262144)
+    (architecture ({}
+      (modality text+image+video->text)
+      (input_modalities (
+        text
+        image
+        video
+      ))
+      (output_modalities (
+        text
+      ))
+      (tokenizer Other)
+      (instruct_type null)
+    ))
+    (pricing ({}
+      (prompt "0.0000001")
+      (completion "0.0000004")
+      (overrides (
+        ({}
+          (min_prompt_tokens 128000)
+          (prompt "0.0000002")
+          (completion "0.0000008")
+        )
+      ))
+    ))
+    (top_provider ({}
+      (context_length 262144)
+      (max_completion_tokens 131072)
+      (is_moderated false)
+    ))
+    (per_request_limits null)
+    (supported_parameters (
+      frequency_penalty
+      include_reasoning
+      max_tokens
+      reasoning
+      reasoning_effort
+      response_format
+      stop
+      structured_outputs
+      temperature
+      tool_choice
+      tools
+      top_p
+    ))
+    (default_parameters ({}
+      (temperature null)
+      (top_p null)
+      (frequency_penalty null)
+    ))
+    (supported_voices null)
+    (knowledge_cutoff null)
+    (expiration_date null)
+    (links ({}
+      (details /api/v1/models/bytedance-seed/seed-2.0-mini-20260224/endpoints)
+    ))
+    (reasoning ({}
+      (mandatory false)
+      (supported_efforts (
+        high
+        medium
+        low
+        minimal
+      ))
+      (default_effort medium)
+    ))
+  ))
+  (discovery ({}
+    (managed true)
+    (backendId openrouter)
+    (remoteModelId bytedance-seed/seed-2.0-mini)
+  ))
+)

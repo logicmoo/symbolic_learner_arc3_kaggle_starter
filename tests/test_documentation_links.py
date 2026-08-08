@@ -141,7 +141,7 @@ def test_file_tree_links_all_connected_architecture_files() -> None:
         "python/worldworkbench/adapters/__init__.py",
         "python/worldworkbench/adapters/arc3.py",
         "workbench/docs/DATA_REPRESENTATIONS.md",
-        "workbench/workspaces/shared/design/configs/world_workbench_operations.config.json",
+        "workbench/workspaces/shared/design/configs/world_workbench_operations.config.metta",
         "config/llm_workflows.json",
         "python/object_memory/models.py",
         "python/object_memory/providers.py",

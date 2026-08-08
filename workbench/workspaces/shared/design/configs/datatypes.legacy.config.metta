@@ -1,0 +1,54 @@
+({}
+  (datatypes (
+    ({}
+      (id observation)
+      (kind semantic)
+      (meaning "Evidence received from an external world")
+      (relations "represented by visual_observation, state_record")
+    )
+    ({}
+      (id entity_set)
+      (kind semantic)
+      (meaning "Stable candidates extracted from an observation")
+      (relations "aggregates entity")
+    )
+    ({}
+      (id identity_map)
+      (kind relation)
+      (meaning "Cross-view and cross-time identity assignments")
+      (relations "links entity versions")
+    )
+    ({}
+      (id symbolic_fact_set)
+      (kind representation)
+      (meaning "Executable grounded properties and relations")
+      (relations "represents world facts")
+    )
+    ({}
+      (id executable_view)
+      (kind representation)
+      (meaning "Program that reconstructs or transforms an observation")
+      (relations "includes Turtle DSL")
+    )
+    ({}
+      (id evidence_bundle)
+      (kind semantic)
+      (meaning "Validation results with exact provenance")
+      (relations "supports or contradicts hypotheses")
+    )
+    ({}
+      (id world_model)
+      (kind semantic)
+      (meaning "Revisable entities, dynamics, constraints, and uncertainty")
+      (relations "derived from observations and evidence")
+    )
+    ({}
+      (id goal_set)
+      (kind semantic)
+      (meaning "Supplied or inferred outcomes that guide simulation")
+      (relations "scores simulation candidates")
+    )
+  ))
+  (kind config)
+  (legacy true)
+)

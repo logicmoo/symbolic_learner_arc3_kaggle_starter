@@ -6,6 +6,9 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "python"))
+sys.path.insert(0, str(ROOT / "workbench" / "server"))
+
+from resource_store import get_filesystem_provider  # noqa: E402
 
 from worldworkbench import (  # noqa: E402
     Goal,
@@ -155,20 +158,19 @@ def test_human_demonstration_mode_observes_without_selecting_actions() -> None:
 def test_domain_neutral_manifests_keep_arc3_at_the_adapter_boundary() -> None:
     shared_config = ROOT / "workbench" / "workspaces" / "shared" / "design" / "configs"
     semantic_dir = shared_config.parent / "semantic_datatypes"
-    semantic = [json.loads(path.read_text(encoding="utf-8")) for path in semantic_dir.glob("*.semantic_datatype.json")]
+    resources = get_filesystem_provider()
+    semantic = [resources.read_json(path.with_suffix(".json")) for path in semantic_dir.glob("*.semantic_datatype.metta")]
     by_id = {item["id"]: item for item in semantic}
     assert {"world_model", "goal_set", "simulation_result"}.issubset(by_id)
     assert not {item_id for item_id in by_id if item_id.startswith("arc3_")}
 
-    legacy = json.loads((shared_config / "world_workbench_datatypes.legacy.config.json").read_text(encoding="utf-8"))
+    legacy = resources.read_json(shared_config / "world_workbench_datatypes.legacy.config.json")
     legacy_by_id = {item["id"]: item for item in legacy["types"]}
     assert legacy["legacy"] is True
     assert legacy_by_id["arc3_state"]["kind"] == "adapter"
     assert "observation" in legacy_by_id["arc3_state"]["extends"]
 
-    operations = json.loads(
-        (shared_config / "world_workbench_operations.config.json").read_text(encoding="utf-8")
-    )
+    operations = resources.read_json(shared_config / "world_workbench_operations.config.json")
     operation_ids = {item["id"] for item in operations["operations"]}
     assert {
         "select_world",

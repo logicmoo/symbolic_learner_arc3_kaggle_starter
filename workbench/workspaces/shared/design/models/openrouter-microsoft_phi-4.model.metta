@@ -1,0 +1,140 @@
+({}
+  (kind model)
+  (id openrouter-microsoft_phi-4)
+  (label "Microsoft: Phi 4")
+  (description "Discovered from OpenRouter.")
+  (inherits openrouter)
+  (model microsoft/phi-4)
+  (enabled true)
+  (capabilities ({}
+    (audio false)
+    (code false)
+    (functionCalling false)
+    (json true)
+    (jsonMode true)
+    (local false)
+    (multimodal false)
+    (reasoning false)
+    (text true)
+    (tools false)
+    (vision false)
+  ))
+  (limits ({}
+    (contextWindow 16384)
+    (maxOutputTokens 16384)
+  ))
+  (pricing ({}
+    (prompt "0.00000007")
+    (completion "0.00000014")
+  ))
+  (properties ({}
+    (id microsoft/phi-4)
+    (canonical_slug microsoft/phi-4)
+    (hugging_face_id microsoft/phi-4)
+    (name "Microsoft: Phi 4")
+    (created 1736489872)
+    (description "[Microsoft Research](/microsoft) Phi-4 is designed to perform well in complex reasoning tasks and can operate efficiently in situations with limited memory or where quick responses are needed. At 14 billion...")
+    (context_length 16384)
+    (architecture ({}
+      (modality text->text)
+      (input_modalities (
+        text
+      ))
+      (output_modalities (
+        text
+      ))
+      (tokenizer Other)
+      (instruct_type null)
+    ))
+    (pricing ({}
+      (prompt "0.00000007")
+      (completion "0.00000014")
+    ))
+    (top_provider ({}
+      (context_length 16384)
+      (max_completion_tokens 16384)
+      (is_moderated false)
+    ))
+    (per_request_limits null)
+    (supported_parameters (
+      frequency_penalty
+      logit_bias
+      max_tokens
+      min_p
+      presence_penalty
+      repetition_penalty
+      response_format
+      seed
+      stop
+      structured_outputs
+      temperature
+      top_k
+      top_p
+    ))
+    (default_parameters ({}))
+    (supported_voices null)
+    (knowledge_cutoff 2024-06-30)
+    (expiration_date null)
+    (links ({}
+      (details /api/v1/models/microsoft/phi-4/endpoints)
+    ))
+    (ownedBy null)
+  ))
+  (providerMetadata ({}
+    (id microsoft/phi-4)
+    (canonical_slug microsoft/phi-4)
+    (hugging_face_id microsoft/phi-4)
+    (name "Microsoft: Phi 4")
+    (created 1736489872)
+    (description "[Microsoft Research](/microsoft) Phi-4 is designed to perform well in complex reasoning tasks and can operate efficiently in situations with limited memory or where quick responses are needed. At 14 billion...")
+    (context_length 16384)
+    (architecture ({}
+      (modality text->text)
+      (input_modalities (
+        text
+      ))
+      (output_modalities (
+        text
+      ))
+      (tokenizer Other)
+      (instruct_type null)
+    ))
+    (pricing ({}
+      (prompt "0.00000007")
+      (completion "0.00000014")
+    ))
+    (top_provider ({}
+      (context_length 16384)
+      (max_completion_tokens 16384)
+      (is_moderated false)
+    ))
+    (per_request_limits null)
+    (supported_parameters (
+      frequency_penalty
+      logit_bias
+      max_tokens
+      min_p
+      presence_penalty
+      repetition_penalty
+      response_format
+      seed
+      stop
+      structured_outputs
+      temperature
+      top_k
+      top_p
+    ))
+    (default_parameters ({}))
+    (supported_voices null)
+    (knowledge_cutoff 2024-06-30)
+    (expiration_date null)
+    (links ({}
+      (details /api/v1/models/microsoft/phi-4/endpoints)
+    ))
+  ))
+  (discovery ({}
+    (managed true)
+    (backendId openrouter)
+    (remoteModelId microsoft/phi-4)
+  ))
+)

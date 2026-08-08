@@ -1,0 +1,192 @@
+({}
+  (kind model)
+  (id openrouter-qwen_qwen3.5-35b-a3b)
+  (label "Qwen: Qwen3.5-35B-A3B")
+  (description "Discovered from OpenRouter.")
+  (inherits openrouter)
+  (model qwen/qwen3.5-35b-a3b)
+  (enabled true)
+  (capabilities ({}
+    (audio false)
+    (code false)
+    (functionCalling true)
+    (json true)
+    (jsonMode true)
+    (local false)
+    (multimodal true)
+    (reasoning true)
+    (text true)
+    (tools true)
+    (vision true)
+  ))
+  (limits ({}
+    (contextWindow 262144)
+    (maxOutputTokens 262144)
+  ))
+  (pricing ({}
+    (prompt "0.00000014")
+    (completion "0.000001")
+  ))
+  (properties ({}
+    (id qwen/qwen3.5-35b-a3b)
+    (canonical_slug qwen/qwen3.5-35b-a3b-20260224)
+    (hugging_face_id Qwen/Qwen3.5-35B-A3B)
+    (name "Qwen: Qwen3.5-35B-A3B")
+    (created 1772053822)
+    (description "The Qwen3.5 Series 35B-A3B is a native vision-language model designed with a hybrid architecture that integrates linear attention mechanisms and a sparse mixture-of-experts model, achieving higher inference efficiency. Its overall...")
+    (context_length 262144)
+    (architecture ({}
+      (modality text+image+video->text)
+      (input_modalities (
+        text
+        image
+        video
+      ))
+      (output_modalities (
+        text
+      ))
+      (tokenizer Qwen3)
+      (instruct_type null)
+    ))
+    (pricing ({}
+      (prompt "0.00000014")
+      (completion "0.000001")
+    ))
+    (top_provider ({}
+      (context_length 262144)
+      (max_completion_tokens 262144)
+      (is_moderated false)
+    ))
+    (per_request_limits null)
+    (supported_parameters (
+      frequency_penalty
+      include_reasoning
+      logit_bias
+      logprobs
+      max_tokens
+      min_p
+      presence_penalty
+      reasoning
+      repetition_penalty
+      response_format
+      seed
+      stop
+      structured_outputs
+      temperature
+      tool_choice
+      tools
+      top_k
+      top_logprobs
+      top_p
+    ))
+    (default_parameters ({}
+      (temperature 1)
+      (top_p 0.95)
+      (top_k 20)
+      (frequency_penalty null)
+      (presence_penalty null)
+      (repetition_penalty null)
+    ))
+    (supported_voices null)
+    (knowledge_cutoff null)
+    (expiration_date null)
+    (links ({}
+      (details /api/v1/models/qwen/qwen3.5-35b-a3b-20260224/endpoints)
+    ))
+    (benchmarks ({}
+      (design_arena ())
+      (artificial_analysis ({}
+        (intelligence_index 24.3)
+        (coding_index 37)
+        (agentic_index 11.8)
+      ))
+    ))
+    (reasoning ({}
+      (mandatory false)
+    ))
+    (ownedBy null)
+  ))
+  (providerMetadata ({}
+    (id qwen/qwen3.5-35b-a3b)
+    (canonical_slug qwen/qwen3.5-35b-a3b-20260224)
+    (hugging_face_id Qwen/Qwen3.5-35B-A3B)
+    (name "Qwen: Qwen3.5-35B-A3B")
+    (created 1772053822)
+    (description "The Qwen3.5 Series 35B-A3B is a native vision-language model designed with a hybrid architecture that integrates linear attention mechanisms and a sparse mixture-of-experts model, achieving higher inference efficiency. Its overall...")
+    (context_length 262144)
+    (architecture ({}
+      (modality text+image+video->text)
+      (input_modalities (
+        text
+        image
+        video
+      ))
+      (output_modalities (
+        text
+      ))
+      (tokenizer Qwen3)
+      (instruct_type null)
+    ))
+    (pricing ({}
+      (prompt "0.00000014")
+      (completion "0.000001")
+    ))
+    (top_provider ({}
+      (context_length 262144)
+      (max_completion_tokens 262144)
+      (is_moderated false)
+    ))
+    (per_request_limits null)
+    (supported_parameters (
+      frequency_penalty
+      include_reasoning
+      logit_bias
+      logprobs
+      max_tokens
+      min_p
+      presence_penalty
+      reasoning
+      repetition_penalty
+      response_format
+      seed
+      stop
+      structured_outputs
+      temperature
+      tool_choice
+      tools
+      top_k
+      top_logprobs
+      top_p
+    ))
+    (default_parameters ({}
+      (temperature 1)
+      (top_p 0.95)
+      (top_k 20)
+      (frequency_penalty null)
+      (presence_penalty null)
+      (repetition_penalty null)
+    ))
+    (supported_voices null)
+    (knowledge_cutoff null)
+    (expiration_date null)
+    (links ({}
+      (details /api/v1/models/qwen/qwen3.5-35b-a3b-20260224/endpoints)
+    ))
+    (benchmarks ({}
+      (design_arena ())
+      (artificial_analysis ({}
+        (intelligence_index 24.3)
+        (coding_index 37)
+        (agentic_index 11.8)
+      ))
+    ))
+    (reasoning ({}
+      (mandatory false)
+    ))
+  ))
+  (discovery ({}
+    (managed true)
+    (backendId openrouter)
+    (remoteModelId qwen/qwen3.5-35b-a3b)
+  ))
+)

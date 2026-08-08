@@ -1,0 +1,19 @@
+({}
+  (kind model)
+  (id openrouter-ling-3.0-flash)
+  (label "Ling 3.0 Flash free")
+  (description "Shared reasoning model migrated from the legacy LLM workflow catalog.")
+  (inherits openrouter)
+  (model inclusionai/ling-3.0-flash:free)
+  (enabled true)
+  (capabilities (
+    text
+    reasoning
+    json
+  ))
+  (metadata ({}
+    (verifiedAvailable true)
+    (verifiedAt 2026-08-04)
+    (source "legacy config/llm_workflows.json")
+  ))
+)

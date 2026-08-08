@@ -1,0 +1,9 @@
+({}
+  (kind semantic_datatype)
+  (id simulation_result)
+  (label "Simulation Result")
+  (description "A predicted semantic outcome produced by simulation.")
+  (parents (
+    information
+  ))
+)

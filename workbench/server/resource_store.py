@@ -7,6 +7,8 @@ from pathlib import Path, PurePosixPath
 from threading import RLock
 from typing import Any, Iterable
 
+from metta_resource_codec import json_document_to_metta, metta_document_to_json
+
 
 class FilesystemProvider:
     """The single compatibility boundary for workspace filesystem access.
@@ -39,9 +41,33 @@ class FilesystemProvider:
             raise ValueError(f"resource path escapes provider root: {logical_path}")
         return path
 
+    @staticmethod
+    def _metta_path(path: Path) -> Path:
+        return path.with_suffix(".metta") if path.suffix.lower() == ".json" else path
+
+    def _physical_path(self, path: Path, *, writing: bool = False) -> Path:
+        if path.suffix.lower() != ".json":
+            return path
+        metta_path = self._metta_path(path)
+        if writing or metta_path.exists():
+            return metta_path
+        return path
+
+    @staticmethod
+    def _logical_json_path(path: Path) -> Path:
+        return path.with_suffix(".json") if path.suffix.lower() == ".metta" else path
+
     def glob(self, root: Path, directories: Iterable[str], pattern: str = "*.json") -> list[Path]:
         self._record("scan")
-        paths = [path for directory in directories for path in self.resolve(root, directory).glob(pattern)]
+        patterns = [pattern]
+        if pattern.lower().endswith(".json"):
+            patterns.append(pattern[:-5] + ".metta")
+        paths = [
+            self._logical_json_path(path)
+            for directory in directories
+            for candidate_pattern in patterns
+            for path in self.resolve(root, directory).glob(candidate_pattern)
+        ]
         return sorted(set(paths), key=lambda path: (path.name.lower(), path.as_posix().lower()))
 
     def rglob(self, root: Path, pattern: str) -> list[Path]:
@@ -54,11 +80,11 @@ class FilesystemProvider:
 
     def exists(self, path: Path) -> bool:
         self._record("metadata", path)
-        return path.exists()
+        return self._physical_path(path).exists()
 
     def is_file(self, path: Path) -> bool:
         self._record("metadata", path)
-        return path.is_file()
+        return self._physical_path(path).is_file()
 
     def is_dir(self, path: Path) -> bool:
         self._record("metadata", path)
@@ -66,7 +92,7 @@ class FilesystemProvider:
 
     def stat(self, path: Path):
         self._record("metadata", path)
-        return path.stat()
+        return self._physical_path(path).stat()
 
     def make_directory(self, path: Path, *, parents: bool = True, exist_ok: bool = True) -> None:
         self._record("mkdir", path)
@@ -74,29 +100,53 @@ class FilesystemProvider:
 
     def read_text(self, path: Path, *, encoding: str = "utf-8") -> str:
         self._record("read", path)
-        return path.read_text(encoding=encoding)
+        physical = self._physical_path(path)
+        content = physical.read_text(encoding=encoding)
+        if path.suffix.lower() == ".json" and physical.suffix.lower() == ".metta":
+            return json.dumps(metta_document_to_json(content), indent=2, ensure_ascii=False) + "\n"
+        return content
 
     def write_text(self, path: Path, content: str, *, encoding: str = "utf-8") -> None:
         self._record("write", path)
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(content, encoding=encoding)
+        physical = self._physical_path(path, writing=True)
+        physical.parent.mkdir(parents=True, exist_ok=True)
+        if path.suffix.lower() == ".json" and physical.suffix.lower() == ".metta":
+            content = json_document_to_metta(json.loads(content))
+        physical.write_text(content, encoding=encoding)
 
     def read_bytes(self, path: Path) -> bytes:
         self._record("read", path)
         return path.read_bytes()
 
     def read_json(self, path: Path) -> Any:
+        physical = self._physical_path(path)
+        if physical.suffix.lower() == ".metta":
+            self._record("read", path)
+            return metta_document_to_json(physical.read_text(encoding="utf-8"))
         return json.loads(self.read_text(path))
 
     def write_json(self, path: Path, document: Any) -> None:
+        if path.suffix.lower() == ".json":
+            physical = self._physical_path(path, writing=True)
+            self._record("write", path)
+            physical.parent.mkdir(parents=True, exist_ok=True)
+            physical.write_text(json_document_to_metta(document), encoding="utf-8")
+            return
         self.write_text(path, json.dumps(document, indent=2, ensure_ascii=False) + "\n")
 
     def delete(self, path: Path) -> None:
         self._record("delete", path)
-        path.unlink(missing_ok=True)
+        self._physical_path(path).unlink(missing_ok=True)
 
     def replace(self, source: Path, target: Path) -> None:
         self._record("replace", target)
+        if target.suffix.lower() == ".json":
+            document = json.loads(source.read_text(encoding="utf-8"))
+            physical = self._physical_path(target, writing=True)
+            physical.parent.mkdir(parents=True, exist_ok=True)
+            physical.write_text(json_document_to_metta(document), encoding="utf-8")
+            source.unlink(missing_ok=True)
+            return
         source.replace(target)
 
     def copy_tree(self, source: Path, target: Path, *, ignored_names: Iterable[str] = ()) -> None:

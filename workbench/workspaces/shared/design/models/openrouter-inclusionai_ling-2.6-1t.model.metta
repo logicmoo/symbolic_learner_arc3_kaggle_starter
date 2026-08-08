@@ -1,0 +1,161 @@
+({}
+  (kind model)
+  (id openrouter-inclusionai_ling-2.6-1t)
+  (label "inclusionAI: Ling-2.6-1T")
+  (description "Discovered from OpenRouter.")
+  (inherits openrouter)
+  (model inclusionai/ling-2.6-1t)
+  (enabled true)
+  (capabilities ({}
+    (audio false)
+    (code false)
+    (functionCalling true)
+    (json true)
+    (jsonMode true)
+    (local false)
+    (multimodal false)
+    (reasoning false)
+    (text true)
+    (tools true)
+    (vision false)
+  ))
+  (limits ({}
+    (contextWindow 262144)
+    (maxOutputTokens 32768)
+  ))
+  (pricing ({}
+    (prompt "0.000000075")
+    (completion "0.000000625")
+    (input_cache_read "0.000000015")
+  ))
+  (properties ({}
+    (id inclusionai/ling-2.6-1t)
+    (canonical_slug inclusionai/ling-2.6-1t-20260423)
+    (hugging_face_id null)
+    (name "inclusionAI: Ling-2.6-1T")
+    (created 1776948238)
+    (description "Ling-2.6-1T is an instant (instruct) model from inclusionAI and the company’s trillion-parameter flagship, designed for real-world agents that require fast execution and high efficiency at scale. It uses a “fast...")
+    (context_length 262144)
+    (architecture ({}
+      (modality text->text)
+      (input_modalities (
+        text
+      ))
+      (output_modalities (
+        text
+      ))
+      (tokenizer Other)
+      (instruct_type null)
+    ))
+    (pricing ({}
+      (prompt "0.000000075")
+      (completion "0.000000625")
+      (input_cache_read "0.000000015")
+    ))
+    (top_provider ({}
+      (context_length 262144)
+      (max_completion_tokens 32768)
+      (is_moderated false)
+    ))
+    (per_request_limits null)
+    (supported_parameters (
+      frequency_penalty
+      logprobs
+      max_tokens
+      presence_penalty
+      repetition_penalty
+      response_format
+      seed
+      stop
+      structured_outputs
+      temperature
+      tool_choice
+      tools
+      top_k
+      top_logprobs
+      top_p
+    ))
+    (default_parameters ({}
+      (temperature null)
+      (top_p null)
+      (top_k null)
+      (frequency_penalty null)
+      (presence_penalty null)
+      (repetition_penalty null)
+    ))
+    (supported_voices null)
+    (knowledge_cutoff null)
+    (expiration_date null)
+    (links ({}
+      (details /api/v1/models/inclusionai/ling-2.6-1t-20260423/endpoints)
+    ))
+    (ownedBy null)
+  ))
+  (providerMetadata ({}
+    (id inclusionai/ling-2.6-1t)
+    (canonical_slug inclusionai/ling-2.6-1t-20260423)
+    (hugging_face_id null)
+    (name "inclusionAI: Ling-2.6-1T")
+    (created 1776948238)
+    (description "Ling-2.6-1T is an instant (instruct) model from inclusionAI and the company’s trillion-parameter flagship, designed for real-world agents that require fast execution and high efficiency at scale. It uses a “fast...")
+    (context_length 262144)
+    (architecture ({}
+      (modality text->text)
+      (input_modalities (
+        text
+      ))
+      (output_modalities (
+        text
+      ))
+      (tokenizer Other)
+      (instruct_type null)
+    ))
+    (pricing ({}
+      (prompt "0.000000075")
+      (completion "0.000000625")
+      (input_cache_read "0.000000015")
+    ))
+    (top_provider ({}
+      (context_length 262144)
+      (max_completion_tokens 32768)
+      (is_moderated false)
+    ))
+    (per_request_limits null)
+    (supported_parameters (
+      frequency_penalty
+      logprobs
+      max_tokens
+      presence_penalty
+      repetition_penalty
+      response_format
+      seed
+      stop
+      structured_outputs
+      temperature
+      tool_choice
+      tools
+      top_k
+      top_logprobs
+      top_p
+    ))
+    (default_parameters ({}
+      (temperature null)
+      (top_p null)
+      (top_k null)
+      (frequency_penalty null)
+      (presence_penalty null)
+      (repetition_penalty null)
+    ))
+    (supported_voices null)
+    (knowledge_cutoff null)
+    (expiration_date null)
+    (links ({}
+      (details /api/v1/models/inclusionai/ling-2.6-1t-20260423/endpoints)
+    ))
+  ))
+  (discovery ({}
+    (managed true)
+    (backendId openrouter)
+    (remoteModelId inclusionai/ling-2.6-1t)
+  ))
+)

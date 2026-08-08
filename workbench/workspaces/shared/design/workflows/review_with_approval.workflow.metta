@@ -1,0 +1,40 @@
+({}
+  (id review_with_approval)
+  (label "Review with approval")
+  (description "Copies a payload, pauses for a real human approval, then emits the approved result.")
+  (inputs ({}
+    (payload Any)
+  ))
+  (outputs ({}
+    (result $approved)
+  ))
+  (steps (
+    ({}
+      (id copy)
+      (kind operation)
+      (implementation core.echo)
+      (inputs ({}
+        (value $payload)
+      ))
+      (outputs ({}
+        (value copied)
+      ))
+    )
+    ({}
+      (id approve)
+      (kind human)
+      (dependsOn (
+        copy
+      ))
+      (form ({}
+        (approved ({}
+          (type Boolean)
+        ))
+      ))
+      (outputs ({}
+        (approved approved)
+      ))
+    )
+  ))
+  (kind workflow)
+)

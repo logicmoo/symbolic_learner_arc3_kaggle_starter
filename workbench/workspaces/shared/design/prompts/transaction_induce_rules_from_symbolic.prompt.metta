@@ -1,0 +1,16 @@
+({}
+  (kind prompt)
+  (id transaction_induce_rules_from_symbolic)
+  (label "Induce Rules from Symbolic Evidence")
+  (description "Reusable symbolic rule-induction transaction migrated from the legacy ARC3 Prolog workflow.")
+  (text (
+    "Read the supplied symbolic artifacts and induce conservative executable or testable rules."
+    "Separate direct observations from hypotheses, cite supporting facts or predicates, and record contradictions."
+    "Return only the rule artifacts requested by the operation."
+  ))
+  (metadata ({}
+    (domain shared)
+    (category symbolic-rule-induction)
+    (legacyId transaction_induce_rules_from_prolog)
+  ))
+)

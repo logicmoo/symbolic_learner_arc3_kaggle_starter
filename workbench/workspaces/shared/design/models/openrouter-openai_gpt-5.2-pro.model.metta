@@ -1,0 +1,165 @@
+({}
+  (kind model)
+  (id openrouter-openai_gpt-5.2-pro)
+  (label "OpenAI: GPT-5.2 Pro")
+  (description "Discovered from OpenRouter.")
+  (inherits openrouter)
+  (model openai/gpt-5.2-pro)
+  (enabled true)
+  (capabilities ({}
+    (audio false)
+    (code false)
+    (functionCalling true)
+    (json true)
+    (jsonMode true)
+    (local false)
+    (multimodal true)
+    (reasoning true)
+    (text true)
+    (tools true)
+    (vision true)
+  ))
+  (limits ({}
+    (contextWindow 400000)
+    (maxOutputTokens 128000)
+  ))
+  (pricing ({}
+    (prompt "0.000021")
+    (completion "0.000168")
+    (web_search "0.01")
+  ))
+  (properties ({}
+    (id openai/gpt-5.2-pro)
+    (canonical_slug openai/gpt-5.2-pro-20251211)
+    (hugging_face_id "")
+    (name "OpenAI: GPT-5.2 Pro")
+    (created 1765389780)
+    (description "GPT-5.2 Pro is OpenAI’s most advanced model, offering major improvements in agentic coding and long context performance over GPT-5 Pro. It is optimized for complex tasks that require step-by-step reasoning,...")
+    (context_length 400000)
+    (architecture ({}
+      (modality text+image+file->text)
+      (input_modalities (
+        image
+        text
+        file
+      ))
+      (output_modalities (
+        text
+      ))
+      (tokenizer GPT)
+      (instruct_type null)
+    ))
+    (pricing ({}
+      (prompt "0.000021")
+      (completion "0.000168")
+      (web_search "0.01")
+    ))
+    (top_provider ({}
+      (context_length 400000)
+      (max_completion_tokens 128000)
+      (is_moderated true)
+    ))
+    (per_request_limits null)
+    (supported_parameters (
+      include_reasoning
+      max_tokens
+      reasoning
+      reasoning_effort
+      response_format
+      seed
+      structured_outputs
+      tool_choice
+      tools
+    ))
+    (default_parameters ({}
+      (temperature null)
+      (top_p null)
+      (frequency_penalty null)
+    ))
+    (supported_voices null)
+    (knowledge_cutoff null)
+    (expiration_date null)
+    (links ({}
+      (details /api/v1/models/openai/gpt-5.2-pro-20251211/endpoints)
+    ))
+    (reasoning ({}
+      (mandatory true)
+      (supported_efforts (
+        xhigh
+        high
+        medium
+      ))
+      (default_effort medium)
+    ))
+    (ownedBy null)
+  ))
+  (providerMetadata ({}
+    (id openai/gpt-5.2-pro)
+    (canonical_slug openai/gpt-5.2-pro-20251211)
+    (hugging_face_id "")
+    (name "OpenAI: GPT-5.2 Pro")
+    (created 1765389780)
+    (description "GPT-5.2 Pro is OpenAI’s most advanced model, offering major improvements in agentic coding and long context performance over GPT-5 Pro. It is optimized for complex tasks that require step-by-step reasoning,...")
+    (context_length 400000)
+    (architecture ({}
+      (modality text+image+file->text)
+      (input_modalities (
+        image
+        text
+        file
+      ))
+      (output_modalities (
+        text
+      ))
+      (tokenizer GPT)
+      (instruct_type null)
+    ))
+    (pricing ({}
+      (prompt "0.000021")
+      (completion "0.000168")
+      (web_search "0.01")
+    ))
+    (top_provider ({}
+      (context_length 400000)
+      (max_completion_tokens 128000)
+      (is_moderated true)
+    ))
+    (per_request_limits null)
+    (supported_parameters (
+      include_reasoning
+      max_tokens
+      reasoning
+      reasoning_effort
+      response_format
+      seed
+      structured_outputs
+      tool_choice
+      tools
+    ))
+    (default_parameters ({}
+      (temperature null)
+      (top_p null)
+      (frequency_penalty null)
+    ))
+    (supported_voices null)
+    (knowledge_cutoff null)
+    (expiration_date null)
+    (links ({}
+      (details /api/v1/models/openai/gpt-5.2-pro-20251211/endpoints)
+    ))
+    (reasoning ({}
+      (mandatory true)
+      (supported_efforts (
+        xhigh
+        high
+        medium
+      ))
+      (default_effort medium)
+    ))
+  ))
+  (discovery ({}
+    (managed true)
+    (backendId openrouter)
+    (remoteModelId openai/gpt-5.2-pro)
+  ))
+)

@@ -1,0 +1,15 @@
+({}
+  (kind representation_datatype)
+  (id natural_language)
+  (label "Natural-Language Description")
+  (language natural_language)
+  (parents (
+    image
+    text
+  ))
+  (children (
+    markdown
+    text_plain
+  ))
+  (preferredChild markdown)
+)

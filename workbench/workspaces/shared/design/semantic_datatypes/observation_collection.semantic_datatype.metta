@@ -1,0 +1,9 @@
+({}
+  (kind semantic_datatype)
+  (id observation_collection)
+  (label "Observation Collection")
+  (description "A collection of semantic observations.")
+  (parents (
+    information
+  ))
+)

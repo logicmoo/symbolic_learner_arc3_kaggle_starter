@@ -1,0 +1,56 @@
+({}
+  (kind workflow)
+  (id vision_observe_choose_record)
+  (label "Observe, Choose, and Record")
+  (description "Carry a visual observation through a human action choice into a persisted action record.")
+  (inputs ({}
+    (observation Object)
+  ))
+  (outputs ({}
+    (record $action_record)
+  ))
+  (steps (
+    ({}
+      (id capture_observation)
+      (kind operation)
+      (implementation core.echo)
+      (inputs ({}
+        (value $observation)
+      ))
+      (outputs ({}
+        (value captured_observation)
+      ))
+    )
+    ({}
+      (id choose_action)
+      (kind human)
+      (dependsOn (
+        capture_observation
+      ))
+      (form ({}
+        (action ({}
+          (type Object)
+        ))
+      ))
+      (outputs ({}
+        (action chosen_action)
+      ))
+    )
+    ({}
+      (id build_observation_record)
+      (kind operation)
+      (implementation core.merge)
+      (dependsOn (
+        capture_observation
+        choose_action
+      ))
+      (inputs ({}
+        (left $captured_observation)
+        (right $chosen_action)
+      ))
+      (outputs ({}
+        (value action_record)
+      ))
+    )
+  ))
+)

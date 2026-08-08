@@ -1,0 +1,222 @@
+({}
+  (kind model)
+  (id openrouter-_openai_gpt-latest)
+  (label "OpenAI GPT Latest")
+  (description "Discovered from OpenRouter.")
+  (inherits openrouter)
+  (model ~openai/gpt-latest)
+  (enabled true)
+  (capabilities ({}
+    (audio false)
+    (code false)
+    (functionCalling true)
+    (json true)
+    (jsonMode true)
+    (local false)
+    (multimodal true)
+    (reasoning true)
+    (text true)
+    (tools true)
+    (vision true)
+  ))
+  (limits ({}
+    (contextWindow 1050000)
+    (maxOutputTokens 128000)
+  ))
+  (pricing ({}
+    (prompt "0.000005")
+    (completion "0.00003")
+    (web_search "0.01")
+    (input_cache_read "0.0000005")
+    (input_cache_write "0.00000625")
+    (overrides (
+      ({}
+        (min_prompt_tokens 272000)
+        (prompt "0.00001")
+        (completion "0.000045")
+        (input_cache_read "0.000001")
+        (input_cache_write "0.0000125")
+      )
+    ))
+  ))
+  (properties ({}
+    (id ~openai/gpt-latest)
+    (canonical_slug ~openai/gpt-latest)
+    (alias_target ({}
+      (name "OpenAI: GPT-5.6 Sol")
+      (slug openai/gpt-5.6-sol)
+    ))
+    (hugging_face_id null)
+    (name "OpenAI GPT Latest")
+    (created 1777318334)
+    (description "This model always redirects to the latest model in the OpenAI GPT family.")
+    (context_length 1050000)
+    (architecture ({}
+      (modality text+image+file->text)
+      (input_modalities (
+        file
+        image
+        text
+      ))
+      (output_modalities (
+        text
+      ))
+      (tokenizer Router)
+      (instruct_type null)
+    ))
+    (pricing ({}
+      (prompt "0.000005")
+      (completion "0.00003")
+      (web_search "0.01")
+      (input_cache_read "0.0000005")
+      (input_cache_write "0.00000625")
+      (overrides (
+        ({}
+          (min_prompt_tokens 272000)
+          (prompt "0.00001")
+          (completion "0.000045")
+          (input_cache_read "0.000001")
+          (input_cache_write "0.0000125")
+        )
+      ))
+    ))
+    (top_provider ({}
+      (context_length 1050000)
+      (max_completion_tokens 128000)
+      (is_moderated true)
+    ))
+    (per_request_limits null)
+    (supported_parameters (
+      include_reasoning
+      max_completion_tokens
+      max_tokens
+      reasoning
+      reasoning_effort
+      response_format
+      seed
+      structured_outputs
+      tool_choice
+      tools
+    ))
+    (default_parameters ({}
+      (temperature null)
+      (top_p null)
+      (top_k null)
+      (frequency_penalty null)
+      (presence_penalty null)
+      (repetition_penalty null)
+    ))
+    (supported_voices null)
+    (knowledge_cutoff 2026-02-16)
+    (expiration_date null)
+    (links ({}
+      (details /api/v1/models/~openai/gpt-latest/endpoints)
+    ))
+    (reasoning ({}
+      (mandatory false)
+      (default_enabled true)
+      (supported_efforts (
+        max
+        xhigh
+        high
+        medium
+        low
+        none
+      ))
+      (default_effort medium)
+    ))
+    (ownedBy null)
+  ))
+  (providerMetadata ({}
+    (id ~openai/gpt-latest)
+    (canonical_slug ~openai/gpt-latest)
+    (alias_target ({}
+      (name "OpenAI: GPT-5.6 Sol")
+      (slug openai/gpt-5.6-sol)
+    ))
+    (hugging_face_id null)
+    (name "OpenAI GPT Latest")
+    (created 1777318334)
+    (description "This model always redirects to the latest model in the OpenAI GPT family.")
+    (context_length 1050000)
+    (architecture ({}
+      (modality text+image+file->text)
+      (input_modalities (
+        file
+        image
+        text
+      ))
+      (output_modalities (
+        text
+      ))
+      (tokenizer Router)
+      (instruct_type null)
+    ))
+    (pricing ({}
+      (prompt "0.000005")
+      (completion "0.00003")
+      (web_search "0.01")
+      (input_cache_read "0.0000005")
+      (input_cache_write "0.00000625")
+      (overrides (
+        ({}
+          (min_prompt_tokens 272000)
+          (prompt "0.00001")
+          (completion "0.000045")
+          (input_cache_read "0.000001")
+          (input_cache_write "0.0000125")
+        )
+      ))
+    ))
+    (top_provider ({}
+      (context_length 1050000)
+      (max_completion_tokens 128000)
+      (is_moderated true)
+    ))
+    (per_request_limits null)
+    (supported_parameters (
+      include_reasoning
+      max_completion_tokens
+      max_tokens
+      reasoning
+      reasoning_effort
+      response_format
+      seed
+      structured_outputs
+      tool_choice
+      tools
+    ))
+    (default_parameters ({}
+      (temperature null)
+      (top_p null)
+      (top_k null)
+      (frequency_penalty null)
+      (presence_penalty null)
+      (repetition_penalty null)
+    ))
+    (supported_voices null)
+    (knowledge_cutoff 2026-02-16)
+    (expiration_date null)
+    (links ({}
+      (details /api/v1/models/~openai/gpt-latest/endpoints)
+    ))
+    (reasoning ({}
+      (mandatory false)
+      (default_enabled true)
+      (supported_efforts (
+        max
+        xhigh
+        high
+        medium
+        low
+        none
+      ))
+      (default_effort medium)
+    ))
+  ))
+  (discovery ({}
+    (managed true)
+    (backendId openrouter)
+    (remoteModelId ~openai/gpt-latest)
+  ))
+)

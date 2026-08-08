@@ -8,6 +8,7 @@ SERVER = ROOT / "workbench" / "server"
 sys.path.insert(0, str(SERVER))
 
 from model_policy_todo_api import get_model_policy_mockup, get_model_policy_todo  # noqa: E402
+from resource_store import get_filesystem_provider  # noqa: E402
 
 
 def test_model_policy_todo_is_read_from_checked_in_files() -> None:
@@ -48,7 +49,7 @@ def test_shared_policy_examples_form_a_resolvable_reference_graph() -> None:
         shared / "policies" / "reasoning_quality.benchmark_policy.json",
         shared / "policies" / "example_reasoning_quality.benchmark_result.json",
     ]
-    documents = [json.loads(path.read_text(encoding="utf-8")) for path in paths]
+    documents = [get_filesystem_provider().read_json(path) for path in paths]
     by_id = {document["id"]: document for document in documents}
     assert all(document.get("example") is True for document in documents)
     assert {document["kind"] for document in documents} == {

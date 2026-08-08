@@ -1,0 +1,16 @@
+({}
+  (kind model_ping_event)
+  (id example_openai_gpt_5_6_ping)
+  (jobId example_vendor_ping)
+  (modelPolicyEntryId openai:gpt-5.6)
+  (description "Individual successful ping result produced by the referenced job for GPT-5.6. The event captures when contact occurred, how long it took, and minimal response evidence so health observations can be derived or audited without changing the model's configured policy switches.")
+  (status succeeded)
+  (latencyMs 180)
+  (occurredAt 2026-08-08T00:00:00Z)
+  (enabled true)
+  (example true)
+  (evidence ({}
+    (requestType minimal_completion)
+    (responseReceived true)
+  ))
+)

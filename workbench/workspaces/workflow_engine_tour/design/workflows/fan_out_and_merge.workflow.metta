@@ -1,0 +1,43 @@
+({}
+  (id fan_out_and_merge)
+  (label "Fan out and merge")
+  (inputs ({}
+    (items Array)
+  ))
+  (outputs ({}
+    (values $values)
+  ))
+  (steps (
+    ({}
+      (id map_items)
+      (kind operation)
+      (implementation core.echo)
+      (inputs ({}
+        (value $item)
+      ))
+      (foreach ({}
+        (items $items)
+        (itemPort value)
+        (maxItems 20)
+      ))
+      (outputs ({}
+        (value values)
+      ))
+    )
+    ({}
+      (id collect_values)
+      (kind operation)
+      (implementation core.collect)
+      (dependsOn (
+        map_items
+      ))
+      (inputs ({}
+        (items $values)
+      ))
+      (outputs ({}
+        (value values)
+      ))
+    )
+  ))
+  (kind workflow)
+)

@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-import json
 from pathlib import Path
+
+from resource_store import get_filesystem_provider
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -21,10 +22,11 @@ FAMILIES = {
 
 def test_all_variant_relationships_are_plural_and_bidirectional() -> None:
     documents: list[dict] = []
-    for path in WORKSPACES.rglob("*.json"):
+    resources = get_filesystem_provider()
+    for path in resources.rglob(WORKSPACES, "*.metta"):
         try:
-            document = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
+            document = resources.read_json(path.with_suffix(".json"))
+        except (OSError, ValueError):
             continue
         if isinstance(document, dict) and document.get("kind") and document.get("id"):
             documents.append(document)

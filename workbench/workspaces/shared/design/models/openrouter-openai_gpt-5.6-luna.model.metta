@@ -1,0 +1,230 @@
+({}
+  (kind model)
+  (id openrouter-openai_gpt-5.6-luna)
+  (label "OpenAI: GPT-5.6 Luna")
+  (description "Discovered from OpenRouter.")
+  (inherits openrouter)
+  (model openai/gpt-5.6-luna)
+  (enabled true)
+  (capabilities ({}
+    (audio false)
+    (code false)
+    (functionCalling true)
+    (json true)
+    (jsonMode true)
+    (local false)
+    (multimodal true)
+    (reasoning true)
+    (text true)
+    (tools true)
+    (vision true)
+  ))
+  (limits ({}
+    (contextWindow 1050000)
+    (maxOutputTokens 128000)
+  ))
+  (pricing ({}
+    (prompt "0.0000001")
+    (completion "0.0000006")
+    (web_search "0.005")
+    (input_cache_read "0.00000001")
+    (input_cache_write "0.000000125")
+    (overrides (
+      ({}
+        (min_prompt_tokens 272000)
+        (prompt "0.0000002")
+        (completion "0.0000009")
+        (input_cache_read "0.00000002")
+        (input_cache_write "0.00000025")
+      )
+    ))
+  ))
+  (properties ({}
+    (id openai/gpt-5.6-luna)
+    (canonical_slug openai/gpt-5.6-luna-20260709)
+    (hugging_face_id null)
+    (name "OpenAI: GPT-5.6 Luna")
+    (created 1783590864)
+    (description "GPT-5.6 Luna is a fast, cost-efficient model in OpenAI's GPT-5.6 series. It is suited for high-volume, latency-sensitive tasks such as chat, classification, and lightweight agentic workflows, providing capable reasoning for...")
+    (context_length 1050000)
+    (architecture ({}
+      (modality text+image+file->text)
+      (input_modalities (
+        file
+        image
+        text
+      ))
+      (output_modalities (
+        text
+      ))
+      (tokenizer GPT)
+      (instruct_type null)
+    ))
+    (pricing ({}
+      (prompt "0.0000001")
+      (completion "0.0000006")
+      (web_search "0.005")
+      (input_cache_read "0.00000001")
+      (input_cache_write "0.000000125")
+      (overrides (
+        ({}
+          (min_prompt_tokens 272000)
+          (prompt "0.0000002")
+          (completion "0.0000009")
+          (input_cache_read "0.00000002")
+          (input_cache_write "0.00000025")
+        )
+      ))
+    ))
+    (top_provider ({}
+      (context_length 1050000)
+      (max_completion_tokens 128000)
+      (is_moderated true)
+    ))
+    (per_request_limits null)
+    (supported_parameters (
+      include_reasoning
+      max_completion_tokens
+      max_tokens
+      reasoning
+      reasoning_effort
+      response_format
+      seed
+      structured_outputs
+      tool_choice
+      tools
+    ))
+    (default_parameters ({}
+      (temperature null)
+      (top_p null)
+      (top_k null)
+      (frequency_penalty null)
+      (presence_penalty null)
+      (repetition_penalty null)
+    ))
+    (supported_voices null)
+    (knowledge_cutoff 2026-02-16)
+    (expiration_date null)
+    (links ({}
+      (details /api/v1/models/openai/gpt-5.6-luna-20260709/endpoints)
+    ))
+    (benchmarks ({}
+      (design_arena ())
+      (artificial_analysis ({}
+        (intelligence_index 52.3)
+        (coding_index 71.4)
+        (agentic_index 46.9)
+      ))
+    ))
+    (reasoning ({}
+      (mandatory false)
+      (default_enabled true)
+      (supported_efforts (
+        max
+        xhigh
+        high
+        medium
+        low
+        none
+      ))
+      (default_effort medium)
+    ))
+    (ownedBy null)
+  ))
+  (providerMetadata ({}
+    (id openai/gpt-5.6-luna)
+    (canonical_slug openai/gpt-5.6-luna-20260709)
+    (hugging_face_id null)
+    (name "OpenAI: GPT-5.6 Luna")
+    (created 1783590864)
+    (description "GPT-5.6 Luna is a fast, cost-efficient model in OpenAI's GPT-5.6 series. It is suited for high-volume, latency-sensitive tasks such as chat, classification, and lightweight agentic workflows, providing capable reasoning for...")
+    (context_length 1050000)
+    (architecture ({}
+      (modality text+image+file->text)
+      (input_modalities (
+        file
+        image
+        text
+      ))
+      (output_modalities (
+        text
+      ))
+      (tokenizer GPT)
+      (instruct_type null)
+    ))
+    (pricing ({}
+      (prompt "0.0000001")
+      (completion "0.0000006")
+      (web_search "0.005")
+      (input_cache_read "0.00000001")
+      (input_cache_write "0.000000125")
+      (overrides (
+        ({}
+          (min_prompt_tokens 272000)
+          (prompt "0.0000002")
+          (completion "0.0000009")
+          (input_cache_read "0.00000002")
+          (input_cache_write "0.00000025")
+        )
+      ))
+    ))
+    (top_provider ({}
+      (context_length 1050000)
+      (max_completion_tokens 128000)
+      (is_moderated true)
+    ))
+    (per_request_limits null)
+    (supported_parameters (
+      include_reasoning
+      max_completion_tokens
+      max_tokens
+      reasoning
+      reasoning_effort
+      response_format
+      seed
+      structured_outputs
+      tool_choice
+      tools
+    ))
+    (default_parameters ({}
+      (temperature null)
+      (top_p null)
+      (top_k null)
+      (frequency_penalty null)
+      (presence_penalty null)
+      (repetition_penalty null)
+    ))
+    (supported_voices null)
+    (knowledge_cutoff 2026-02-16)
+    (expiration_date null)
+    (links ({}
+      (details /api/v1/models/openai/gpt-5.6-luna-20260709/endpoints)
+    ))
+    (benchmarks ({}
+      (design_arena ())
+      (artificial_analysis ({}
+        (intelligence_index 52.3)
+        (coding_index 71.4)
+        (agentic_index 46.9)
+      ))
+    ))
+    (reasoning ({}
+      (mandatory false)
+      (default_enabled true)
+      (supported_efforts (
+        max
+        xhigh
+        high
+        medium
+        low
+        none
+      ))
+      (default_effort medium)
+    ))
+  ))
+  (discovery ({}
+    (managed true)
+    (backendId openrouter)
+    (remoteModelId openai/gpt-5.6-luna)
+  ))
+)

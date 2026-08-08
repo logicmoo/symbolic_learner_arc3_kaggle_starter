@@ -1,0 +1,293 @@
+({}
+  (kind model)
+  (id openrouter-thinkingmachines_inkling_batch)
+  (label "Thinking Machines: Inkling (batch)")
+  (description "Discovered from OpenRouter.")
+  (inherits openrouter)
+  (model thinkingmachines/inkling:batch)
+  (enabled true)
+  (capabilities ({}
+    (audio true)
+    (code false)
+    (functionCalling true)
+    (json false)
+    (jsonMode false)
+    (local false)
+    (multimodal true)
+    (reasoning true)
+    (text true)
+    (tools true)
+    (vision true)
+  ))
+  (limits ({}
+    (contextWindow 524288)
+    (maxOutputTokens null)
+  ))
+  (pricing ({}
+    (prompt "0.0000005")
+    (completion "0.000002025")
+    (input_cache_read "0.000000085")
+  ))
+  (properties ({}
+    (id thinkingmachines/inkling:batch)
+    (canonical_slug thinkingmachines/inkling-20260715)
+    (hugging_face_id thinkingmachines/Inkling)
+    (name "Thinking Machines: Inkling (batch)")
+    (created 1784325956)
+    (description "Inkling is an open-weight multimodal mixture-of-experts model from Thinking Machines Lab, with 41B active parameters out of 975B total. It is designed for general-purpose reasoning, coding, agentic and tool-use systems,...")
+    (context_length 524288)
+    (architecture ({}
+      (modality text+image+audio->text)
+      (input_modalities (
+        text
+        image
+        audio
+      ))
+      (output_modalities (
+        text
+      ))
+      (tokenizer Other)
+      (instruct_type null)
+    ))
+    (pricing ({}
+      (prompt "0.0000005")
+      (completion "0.000002025")
+      (input_cache_read "0.000000085")
+    ))
+    (top_provider ({}
+      (context_length 524288)
+      (max_completion_tokens null)
+      (is_moderated false)
+    ))
+    (per_request_limits null)
+    (supported_parameters (
+      frequency_penalty
+      include_reasoning
+      logit_bias
+      max_tokens
+      min_p
+      presence_penalty
+      reasoning
+      reasoning_effort
+      repetition_penalty
+      stop
+      temperature
+      tool_choice
+      tools
+      top_k
+      top_p
+    ))
+    (default_parameters ({}
+      (temperature null)
+      (top_p null)
+      (top_k null)
+      (frequency_penalty null)
+      (presence_penalty null)
+      (repetition_penalty null)
+    ))
+    (supported_voices null)
+    (knowledge_cutoff null)
+    (expiration_date null)
+    (links ({}
+      (details /api/v1/models/thinkingmachines/inkling-20260715/endpoints)
+    ))
+    (benchmarks ({}
+      (design_arena (
+        ({}
+          (arena models)
+          (category 3d)
+          (elo 1185)
+          (win_rate 39.9)
+          (rank 53)
+        )
+        ({}
+          (arena models)
+          (category codecategories)
+          (elo 1223)
+          (win_rate 43.4)
+          (rank 40)
+        )
+        ({}
+          (arena models)
+          (category dataviz)
+          (elo 1191)
+          (win_rate 42.3)
+          (rank 54)
+        )
+        ({}
+          (arena models)
+          (category gamedev)
+          (elo 1192)
+          (win_rate 39.4)
+          (rank 50)
+        )
+        ({}
+          (arena models)
+          (category uicomponent)
+          (elo 1206)
+          (win_rate 40.7)
+          (rank 47)
+        )
+        ({}
+          (arena models)
+          (category website)
+          (elo 1235)
+          (win_rate 44.9)
+          (rank 40)
+        )
+      ))
+      (artificial_analysis ({}
+        (intelligence_index 42.3)
+        (coding_index 52.1)
+        (agentic_index 34.1)
+      ))
+    ))
+    (reasoning ({}
+      (mandatory false)
+      (default_enabled true)
+      (supported_efforts (
+        max
+        high
+        medium
+        low
+        minimal
+        none
+      ))
+      (default_effort high)
+    ))
+    (ownedBy null)
+  ))
+  (providerMetadata ({}
+    (id thinkingmachines/inkling:batch)
+    (canonical_slug thinkingmachines/inkling-20260715)
+    (hugging_face_id thinkingmachines/Inkling)
+    (name "Thinking Machines: Inkling (batch)")
+    (created 1784325956)
+    (description "Inkling is an open-weight multimodal mixture-of-experts model from Thinking Machines Lab, with 41B active parameters out of 975B total. It is designed for general-purpose reasoning, coding, agentic and tool-use systems,...")
+    (context_length 524288)
+    (architecture ({}
+      (modality text+image+audio->text)
+      (input_modalities (
+        text
+        image
+        audio
+      ))
+      (output_modalities (
+        text
+      ))
+      (tokenizer Other)
+      (instruct_type null)
+    ))
+    (pricing ({}
+      (prompt "0.0000005")
+      (completion "0.000002025")
+      (input_cache_read "0.000000085")
+    ))
+    (top_provider ({}
+      (context_length 524288)
+      (max_completion_tokens null)
+      (is_moderated false)
+    ))
+    (per_request_limits null)
+    (supported_parameters (
+      frequency_penalty
+      include_reasoning
+      logit_bias
+      max_tokens
+      min_p
+      presence_penalty
+      reasoning
+      reasoning_effort
+      repetition_penalty
+      stop
+      temperature
+      tool_choice
+      tools
+      top_k
+      top_p
+    ))
+    (default_parameters ({}
+      (temperature null)
+      (top_p null)
+      (top_k null)
+      (frequency_penalty null)
+      (presence_penalty null)
+      (repetition_penalty null)
+    ))
+    (supported_voices null)
+    (knowledge_cutoff null)
+    (expiration_date null)
+    (links ({}
+      (details /api/v1/models/thinkingmachines/inkling-20260715/endpoints)
+    ))
+    (benchmarks ({}
+      (design_arena (
+        ({}
+          (arena models)
+          (category 3d)
+          (elo 1185)
+          (win_rate 39.9)
+          (rank 53)
+        )
+        ({}
+          (arena models)
+          (category codecategories)
+          (elo 1223)
+          (win_rate 43.4)
+          (rank 40)
+        )
+        ({}
+          (arena models)
+          (category dataviz)
+          (elo 1191)
+          (win_rate 42.3)
+          (rank 54)
+        )
+        ({}
+          (arena models)
+          (category gamedev)
+          (elo 1192)
+          (win_rate 39.4)
+          (rank 50)
+        )
+        ({}
+          (arena models)
+          (category uicomponent)
+          (elo 1206)
+          (win_rate 40.7)
+          (rank 47)
+        )
+        ({}
+          (arena models)
+          (category website)
+          (elo 1235)
+          (win_rate 44.9)
+          (rank 40)
+        )
+      ))
+      (artificial_analysis ({}
+        (intelligence_index 42.3)
+        (coding_index 52.1)
+        (agentic_index 34.1)
+      ))
+    ))
+    (reasoning ({}
+      (mandatory false)
+      (default_enabled true)
+      (supported_efforts (
+        max
+        high
+        medium
+        low
+        minimal
+        none
+      ))
+      (default_effort high)
+    ))
+  ))
+  (discovery ({}
+    (managed true)
+    (backendId openrouter)
+    (remoteModelId thinkingmachines/inkling:batch)
+  ))
+)

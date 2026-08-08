@@ -1,0 +1,22 @@
+({}
+  (kind semantic_datatype)
+  (id image)
+  (label Image)
+  (description "A visual scene independent of its concrete representation.")
+  (children (
+    bitmap
+    executable_view
+    image_region
+    latent_embedding
+    logo_program
+    natural_language
+    object_list
+    scene_graph
+    svg
+    turtle_program
+  ))
+  (preferredChild bitmap)
+  (parents (
+    information
+  ))
+)

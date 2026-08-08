@@ -1,0 +1,13 @@
+({}
+  (kind semantic_datatype)
+  (id relationship)
+  (label Relationship)
+  (description "A semantic relationship between entities or other information objects.")
+  (children (
+    prolog_fact_set
+    symbolic_fact_set
+  ))
+  (parents (
+    information
+  ))
+)
