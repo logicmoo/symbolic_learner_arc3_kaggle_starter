@@ -13,7 +13,7 @@ Remaining work is intentionally narrower:
 - expose vendor creation and backend model discovery/import directly from this page (the Models editor already provides discovery and overwrite import);
 - add optional multi-column sorting;
 - add prompt-profile creation/editing from the policy dashboard;
-- add benchmark metric selection and richer time-series history.
+- add richer time-series history beyond the current persisted-result metric selector.
 
 The requirements below remain the acceptance specification. Existing completed behavior must not be replaced with mock data.
 
