@@ -70,6 +70,7 @@ def test_rich_editors_are_loaded_by_route_instead_of_blocking_initial_shell() ->
     assert 'lazy(()=>import("../components/OperationLibraryEditor")' in source
     assert 'lazy(()=>import("../components/LlmModelsEditor")' in source
     assert 'lazy(()=>import("../components/RepositoryDocsPage")' in source
+    assert 'lazy(()=>import("../components/HelpDocumentTabs")' in source
     assert '<Suspense fallback={<div className="studio-empty">Loading editor…</div>}>' in source
 
 

@@ -28,7 +28,8 @@ def test_workflow_runner_reference_is_read_from_checked_in_files() -> None:
 
 def test_workflow_runs_page_displays_reference_without_replacing_history() -> None:
     source = (ROOT / "workbench" / "frontend" / "src" / "components" / "RuntimeHistoryView.tsx").read_text(encoding="utf-8")
-    assert 'mode === "workflowRuns" && <WorkflowRunnerTodoReference />' in source
+    assert 'mode === "workflowRuns" && <Suspense' in source
+    assert '<WorkflowRunnerTodoReference /></Suspense>' in source
     assert '<WorkflowRunProjection run={selectedRun} workflow={frozenWorkflow}' in source
     assert '"topology" | "chronology"' in source
     assert "/api/engine/workflows/" in source

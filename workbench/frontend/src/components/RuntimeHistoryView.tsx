@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
-import { WorkflowRunnerTodoReference } from "./WorkflowRunnerTodoReference";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { jsonValueToMetta } from "../lib/mettaResourceCodec";
+
+const WorkflowRunnerTodoReference = lazy(() => import("./WorkflowRunnerTodoReference").then(module => ({ default: module.WorkflowRunnerTodoReference })));
 
 type DocumentRecord = { document?: Record<string, any> };
 type RuntimeRun = {
@@ -275,7 +276,7 @@ export function RuntimeHistoryView({ mode, workspaceId, goals = [], plans = [], 
     {error && <div className="backend-error"><b>Error</b><span>{error}</span></div>}
     <div className="resource-table"><div className="resource-row resource-head"><span>Record</span><span>Status / type</span><span>Step / time</span><span>Run</span><span>Detail</span></div>{rows.map(row => <button className="resource-row" key={row.key} onClick={() => chooseRun(row.run)}><b>{row.a}</b><code>{row.b}</code><span>{row.c}</span><span>{row.d}</span><em title={row.e}>{row.e}</em></button>)}{!rows.length && <div className="studio-empty">No persisted {title.toLowerCase()} yet.</div>}</div>
     {mode === "workflowRuns" && selectedRun && <WorkflowRunProjection run={selectedRun} workflow={frozenWorkflow} busy={busy} onCommand={command => void commandWorkflowRun(command)} />}
-    {mode === "workflowRuns" && <WorkflowRunnerTodoReference />}
+    {mode === "workflowRuns" && <Suspense fallback={<div className="studio-empty">Loading workflow runner reference…</div>}><WorkflowRunnerTodoReference /></Suspense>}
     {mode !== "workflowRuns" && selectedRun && <div className="demo-notice"><b>SELECTED RUN {selectedRun.id.slice(0, 8)}</b><span>{selectedRun.workflowId} · {selectedRun.status} · {selectedRun.events.length} events · {selectedRun.artifacts.length} states</span></div>}
   </section>;
 }
