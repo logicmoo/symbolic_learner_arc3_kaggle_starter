@@ -117,3 +117,10 @@ def test_topbar_offers_persistent_workbench_themes() -> None:
     assert 'data-workbench-theme="arctic"' in styles
     assert 'data-workbench-theme="paper-light"' in styles
     assert 'data-workbench-theme="msdn-light"' in styles
+
+
+def test_theme_selector_runs_from_darkest_to_lightest() -> None:
+    page = ACTIVE_PAGE.read_text(encoding="utf-8")
+    ordered = ["Retro Green", "Midnight Teal", "Nord Night", "Solarized Light", "Paper White", "High Visibility"]
+    positions = [page.index(f'label:"{label}"') for label in ordered]
+    assert positions == sorted(positions)
