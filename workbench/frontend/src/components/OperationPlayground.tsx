@@ -1,6 +1,7 @@
 import {useEffect,useMemo,useState} from "react";
 import "../styles/operation_editor.css";
 import "../styles/operation_playground.css";
+import {jsonValueToMetta} from "../lib/mettaResourceCodec";
 
 type ExampleArgument={datatype?:string;label?:string;default?:unknown};
 type OperationDef={id:string;label?:string;inputs?:Record<string,string>;outputs?:Record<string,string>;parameters?:Record<string,unknown>;children?:string[];preferredChild?:string;example_execute?:{action?:string;arguments?:Record<string,ExampleArgument>;parameters?:Record<string,ExampleArgument>}};
@@ -47,6 +48,6 @@ export function OperationPlayground({workspaceId,operation,variants}:{workspaceI
   </div>
   <div className="operation-playground-contract"><span>OUTPUT CONTRACT</span>{outputs.map(([name,datatype])=><code key={name}>{name}: {datatype}</code>)}</div>
   {error&&<div className="demo-notice"><b>Invocation failed</b><span>{error}</span></div>}
-  {result&&<div className="operation-playground-result"><div><span>RESULT</span><b>{result.implementation.label}</b><small>{result.implementation.route} · {result.elapsedMs} ms</small></div><pre>{JSON.stringify(result.outputs,null,2)}</pre>{result.resolvedPrompts&&result.resolvedPrompts.length>0&&<div className="operation-playground-prompts"><span>RESOLVED PROMPTS</span>{result.resolvedPrompts.map(item=><code key={`${item.promptId}:${item.implementationId}`}>{item.promptId} → {item.implementationId}</code>)}</div>}</div>}
+  {result&&<div className="operation-playground-result"><div><span>RESULT</span><b>{result.implementation.label}</b><small>{result.implementation.route} · {result.elapsedMs} ms</small></div><pre>{jsonValueToMetta(result.outputs)}</pre>{result.resolvedPrompts&&result.resolvedPrompts.length>0&&<div className="operation-playground-prompts"><span>RESOLVED PROMPTS</span>{result.resolvedPrompts.map(item=><code key={`${item.promptId}:${item.implementationId}`}>{item.promptId} → {item.implementationId}</code>)}</div>}</div>}
  </section>;
 }

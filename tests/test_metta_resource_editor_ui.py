@@ -26,3 +26,16 @@ def test_resource_source_editor_defaults_to_metta_and_keeps_json_available() -> 
     assert '>JSON</button>' in source
     assert "mettaDocumentToJson" in source
     assert "jsonDocumentToMetta" in source
+
+
+def test_runtime_object_previews_render_as_metta() -> None:
+    expected = {
+        "pages/FilesystemWorkbenchPage.tsx": ("selectedStep.inputs", "selectedArtifact"),
+        "components/OperationPlayground.tsx": ("result.outputs",),
+        "components/RuntimeHistoryView.tsx": ("event.payload", "item.payload"),
+    }
+    for relative, values in expected.items():
+        source = (FRONTEND / relative).read_text(encoding="utf-8")
+        assert "jsonValueToMetta" in source, relative
+        for value in values:
+            assert f"jsonValueToMetta({value}" in source, (relative, value)
