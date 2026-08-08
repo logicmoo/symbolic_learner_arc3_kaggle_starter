@@ -79,8 +79,12 @@ def start_goal_run(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
             raise ValueError(f"plan {plan_id} does not pursue goal {goal_id}")
         plan_variant = _select_variant(plans, plan_id, body.get("planVariantId"))
         context_id = str(body.get("contextId") or "") or None
-        if context_id and context_id not in contexts:
-            raise ValueError(f"context not found: {context_id}")
+        context_variant = None
+        if context_id:
+            context = contexts.get(context_id)
+            if not context or context.get("kind") != "context":
+                raise ValueError(f"context not found: {context_id}")
+            context_variant = _select_variant(contexts, context_id, body.get("contextVariantId"))
         workflow_id = str(plan_variant.get("workflow") or "")
         if not workflow_id:
             raise ValueError(f"plan variant has no workflow: {plan_variant['id']}")
@@ -96,6 +100,7 @@ def start_goal_run(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
             plan_id,
             str(plan_variant["id"]),
             context_id,
+            str(context_variant["id"]) if context_variant else None,
             str(workflow_run["id"]),
         )
         return {"goalRun": goal_run}

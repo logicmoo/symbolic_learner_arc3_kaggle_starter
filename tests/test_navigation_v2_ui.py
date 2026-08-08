@@ -81,4 +81,7 @@ def test_goal_runs_use_durable_goal_plan_context_contract() -> None:
     assert '<RuntimeHistoryView mode="goalRuns"' in page
     assert "/api/goal-runs" in component
     assert "goalId" in component and "planId" in component and "contextId" in component
+    assert "goalVariantId" in component and "planVariantId" in component and "contextVariantId" in component
     assert "Pursue goal" in component
+    assert "Submit human input" in component
+    assert "selectRuntimeRun" in page

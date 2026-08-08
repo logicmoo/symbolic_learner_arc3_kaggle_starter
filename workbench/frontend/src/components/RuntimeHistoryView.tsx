@@ -12,7 +12,7 @@ type RuntimeRun = {
 };
 type GoalRun = {
   id: string; goalId: string; goalVariantId?: string; planId: string; planVariantId: string;
-  contextId?: string; workflowRunId: string; status: string; createdAt?: string; workflowRun: RuntimeRun;
+  contextId?: string; contextVariantId?: string; workflowRunId: string; status: string; createdAt?: string; workflowRun: RuntimeRun;
 };
 type Mode = "goalRuns" | "workflowRuns" | "execs" | "events" | "states" | "logs";
 
@@ -36,8 +36,15 @@ export function RuntimeHistoryView({ mode, workspaceId, goals = [], plans = [], 
   const contextDocs = useMemo(() => contexts.map(row => row.document).filter(Boolean) as Record<string, any>[], [contexts]);
   const workflowIds = useMemo(() => new Set(workflows.map(row => row.document?.id).filter(Boolean)), [workflows]);
   const goalSpecs = goalDocs.filter(doc => doc.kind === "goal"), planSpecs = planDocs.filter(doc => doc.kind === "plan");
+  const contextSpecs = contextDocs.filter(doc => doc.kind === "context");
   const availablePlanSpecs = planSpecs.filter(plan => (plan.children || []).some((childId: string) => workflowIds.has(planDocs.find(doc => doc.id === childId)?.workflow)));
-  const [goalId, setGoalId] = useState(""), [planId, setPlanId] = useState(""), [contextId, setContextId] = useState(""), [inputs, setInputs] = useState("{}");
+  const [goalId, setGoalId] = useState(""), [goalVariantId, setGoalVariantId] = useState("");
+  const [planId, setPlanId] = useState(""), [planVariantId, setPlanVariantId] = useState("");
+  const [contextId, setContextId] = useState(""), [contextVariantId, setContextVariantId] = useState("");
+  const [inputs, setInputs] = useState("{}"), [humanValues, setHumanValues] = useState("{}");
+  const goalVariants = goalDocs.filter(doc => doc.kind === "goal_variant" && (doc.parents || []).includes(goalId));
+  const planVariants = planDocs.filter(doc => doc.kind === "plan_variant" && (doc.parents || []).includes(planId) && workflowIds.has(doc.workflow));
+  const contextVariants = contextDocs.filter(doc => doc.kind === "context_variant" && (doc.parents || []).includes(contextId));
 
   const refresh = async () => {
     setError("");
@@ -55,16 +62,50 @@ export function RuntimeHistoryView({ mode, workspaceId, goals = [], plans = [], 
     if ((!planId || !availablePlanSpecs.some(doc => doc.id === planId)) && availablePlanSpecs[0]) setPlanId(String(availablePlanSpecs[0].id));
     if (!availablePlanSpecs.length) setPlanId("");
   }, [goalDocs.length, planDocs.length, workflows.length]);
+  useEffect(() => {
+    const parent = goalSpecs.find(doc => doc.id === goalId);
+    const preferred = goalVariants.find(doc => doc.id === parent?.preferredChild);
+    if (!goalVariants.some(doc => doc.id === goalVariantId)) setGoalVariantId(String(preferred?.id || goalVariants[0]?.id || ""));
+  }, [goalId, goalDocs.length]);
+  useEffect(() => {
+    const parent = planSpecs.find(doc => doc.id === planId);
+    const preferred = planVariants.find(doc => doc.id === parent?.preferredChild);
+    if (!planVariants.some(doc => doc.id === planVariantId)) setPlanVariantId(String(preferred?.id || planVariants[0]?.id || ""));
+  }, [planId, planDocs.length, workflows.length]);
+  useEffect(() => {
+    const parent = contextSpecs.find(doc => doc.id === contextId);
+    const preferred = contextVariants.find(doc => doc.id === parent?.preferredChild);
+    if (!contextId) setContextVariantId("");
+    else if (!contextVariants.some(doc => doc.id === contextVariantId)) setContextVariantId(String(preferred?.id || contextVariants[0]?.id || ""));
+  }, [contextId, contextDocs.length]);
 
   const startGoalRun = async () => {
     setBusy(true); setError("");
     try {
-      const payload = await api("/api/goal-runs", { method: "POST", body: JSON.stringify({ workspaceId, goalId, planId, contextId: contextId || undefined, inputs: JSON.parse(inputs) }) });
+      const payload = await api("/api/goal-runs", { method: "POST", body: JSON.stringify({ workspaceId, goalId, goalVariantId, planId, planVariantId, contextId: contextId || undefined, contextVariantId: contextVariantId || undefined, inputs: JSON.parse(inputs) }) });
       onSelectRun?.(payload.goalRun.workflowRun); await refresh(); setSelectedId(payload.goalRun.id);
     } catch (reason) { setError(String(reason)); } finally { setBusy(false); }
   };
   const chooseRun = (run: RuntimeRun) => { setSelectedId(run.id); onSelectRun?.(run); };
   const selectedRun = runs.find(row => row.id === selectedId) || runs[0];
+  const selectedGoalRun = goalRuns.find(row => row.id === selectedId);
+  const waitingStep = selectedGoalRun?.workflowRun.steps.find(step => step.status === "waiting");
+  const submitHumanInput = async () => {
+    if (!selectedGoalRun || !waitingStep) return;
+    setBusy(true); setError("");
+    try {
+      const payload = await api(`/api/engine/runs/${encodeURIComponent(selectedGoalRun.workflowRunId)}/steps/${encodeURIComponent(waitingStep.stepId)}/input`, { method: "POST", body: JSON.stringify(JSON.parse(humanValues)) });
+      onSelectRun?.(payload.run); await refresh();
+    } catch (reason) { setError(String(reason)); } finally { setBusy(false); }
+  };
+  const commandGoalRun = async (command: "resume" | "cancel") => {
+    if (!selectedGoalRun) return;
+    setBusy(true); setError("");
+    try {
+      const payload = await api(`/api/engine/runs/${encodeURIComponent(selectedGoalRun.workflowRunId)}/commands`, { method: "POST", body: JSON.stringify({ command }) });
+      onSelectRun?.(payload.run); await refresh();
+    } catch (reason) { setError(String(reason)); } finally { setBusy(false); }
+  };
   const title = { goalRuns: "Goal Runs", workflowRuns: "Workflow Runs", execs: "Execs", events: "Events", states: "States", logs: "Logs" }[mode];
 
   if (mode === "goalRuns") return <section className="resource-view runtime-history-view">
@@ -72,12 +113,17 @@ export function RuntimeHistoryView({ mode, workspaceId, goals = [], plans = [], 
     {error && <div className="backend-error"><b>Error</b><span>{error}</span></div>}
     <div className="settings-grid goal-run-form">
       <label><span>GOAL</span><select value={goalId} onChange={event => setGoalId(event.target.value)}>{goalSpecs.map(doc => <option key={doc.id} value={doc.id}>{doc.label || doc.id}</option>)}</select></label>
+      <label><span>GOAL VARIANT</span><select value={goalVariantId} onChange={event => setGoalVariantId(event.target.value)}>{goalVariants.map(doc => <option key={doc.id} value={doc.id}>{doc.label || doc.id}</option>)}</select></label>
       <label><span>PLAN</span><select value={planId} onChange={event => setPlanId(event.target.value)}>{availablePlanSpecs.filter(doc => !goalId || (doc.goals || []).includes(goalId)).map(doc => <option key={doc.id} value={doc.id}>{doc.label || doc.id}</option>)}</select><small>{availablePlanSpecs.length ? "Only plans with a workflow in this workspace are runnable." : "No plan variant names a workflow available in this workspace."}</small></label>
+      <label><span>PLAN VARIANT</span><select value={planVariantId} onChange={event => setPlanVariantId(event.target.value)}>{planVariants.map(doc => <option key={doc.id} value={doc.id}>{doc.label || doc.id}</option>)}</select></label>
       <label><span>CONTEXT</span><select value={contextId} onChange={event => setContextId(event.target.value)}><option value="">none</option>{contextDocs.filter(doc => doc.kind === "context").map(doc => <option key={doc.id} value={doc.id}>{doc.label || doc.id}</option>)}</select></label>
+      <label><span>CONTEXT VARIANT</span><select value={contextVariantId} disabled={!contextId} onChange={event => setContextVariantId(event.target.value)}><option value="">none</option>{contextVariants.map(doc => <option key={doc.id} value={doc.id}>{doc.label || doc.id}</option>)}</select></label>
       <label><span>WORKFLOW INPUTS (JSON)</span><textarea value={inputs} onChange={event => setInputs(event.target.value)} /></label>
     </div>
     <button className="run-button" disabled={busy || !goalId || !planId} onClick={startGoalRun}>▶ Pursue goal</button>
     <div className="resource-table"><div className="resource-row resource-head"><span>Goal</span><span>Plan variant</span><span>Status</span><span>Workflow run</span><span>Created</span></div>{goalRuns.map(row => <button className="resource-row" key={row.id} onClick={() => { setSelectedId(row.id); onSelectRun?.(row.workflowRun); }}><b>{row.goalVariantId || row.goalId}</b><code>{row.planVariantId}</code><span>{row.status}</span><span>{row.workflowRunId.slice(0, 8)}</span><em>{stamp(row.createdAt)}</em></button>)}</div>
+    {selectedGoalRun && <div className="goal-run-controls"><div><b>Selected pursuit</b><span>{selectedGoalRun.goalVariantId} · {selectedGoalRun.planVariantId} · {selectedGoalRun.contextVariantId || "no context"}</span></div><button disabled={busy || selectedGoalRun.status !== "paused"} onClick={() => void commandGoalRun("resume")}>Resume</button><button disabled={busy || ["completed", "failed", "cancelled"].includes(selectedGoalRun.status)} onClick={() => void commandGoalRun("cancel")}>Cancel</button></div>}
+    {waitingStep && <div className="human-pause goal-run-human"><div className="pause-ring">Ⅱ</div><b>Waiting for {waitingStep.stepId}</b><textarea className="raw-json-editor" value={humanValues} onChange={event => setHumanValues(event.target.value)} /><button className="run-button" disabled={busy} onClick={() => void submitHumanInput()}>Submit human input</button></div>}
   </section>;
 
   const rows = mode === "workflowRuns" ? runs.map(run => ({ key: run.id, a: run.workflowId, b: run.status, c: `${run.steps.length} steps`, d: run.id.slice(0, 8), e: stamp(run.createdAt), run }))

@@ -17,6 +17,8 @@ A Goal Run resolves:
 
 The engine stores a Goal Run that references the resulting workflow-run ID. The design resources remain unchanged. Retrieval joins the Goal Run with current durable workflow status.
 
+The Goal Runs UI exposes explicit Goal, Plan, and Context variant selectors. Selecting a historical pursuit loads its frozen workflow version into the pipeline, highlights the waiting/running/failed step, and permits human-step input or cancellation without leaving the history view.
+
 ## Workflow Evidence
 
 Each workflow run persists inputs, outputs, status, timestamps, step attempts, artifacts, events, operation logs, and nested-run relationships. The Runtime navigation reads complete history from `GET /api/engine/runs`, not only React session state:

@@ -92,9 +92,13 @@ class WorkflowEngine:
               plan_id TEXT NOT NULL, plan_variant_id TEXT NOT NULL,
               context_id TEXT, workflow_run_id TEXT NOT NULL,
               created_at TEXT NOT NULL, updated_at TEXT NOT NULL,
+              context_variant_id TEXT,
               FOREIGN KEY(workflow_run_id) REFERENCES wf_runs(id));
             CREATE INDEX IF NOT EXISTS goal_runs_created_idx ON goal_runs(created_at DESC);
             ''')
+            columns = {row['name'] for row in db.execute('PRAGMA table_info(goal_runs)').fetchall()}
+            if 'context_variant_id' not in columns:
+                db.execute('ALTER TABLE goal_runs ADD COLUMN context_variant_id TEXT')
 
     def save_workflow(self, document: dict[str, Any]) -> dict[str, Any]:
         errors = self.validate(document)
@@ -132,15 +136,18 @@ class WorkflowEngine:
 
     def create_goal_run(self, workspace_id: str, goal_id: str, goal_variant_id: str | None,
                         plan_id: str, plan_variant_id: str, context_id: str | None,
-                        workflow_run_id: str) -> dict[str, Any]:
+                        context_variant_id: str | None, workflow_run_id: str) -> dict[str, Any]:
         self.get_run(workflow_run_id)
         goal_run_id = str(uuid.uuid4())
         stamp = now()
         with self._db() as db:
             db.execute(
-                'INSERT INTO goal_runs VALUES(?,?,?,?,?,?,?,?,?,?)',
+                '''INSERT INTO goal_runs(
+                   id,workspace_id,goal_id,goal_variant_id,plan_id,plan_variant_id,
+                   context_id,workflow_run_id,created_at,updated_at,context_variant_id)
+                   VALUES(?,?,?,?,?,?,?,?,?,?,?)''',
                 (goal_run_id, workspace_id, goal_id, goal_variant_id, plan_id,
-                 plan_variant_id, context_id, workflow_run_id, stamp, stamp),
+                 plan_variant_id, context_id, workflow_run_id, stamp, stamp, context_variant_id),
             )
         return self.get_goal_run(goal_run_id)
 
@@ -154,6 +161,7 @@ class WorkflowEngine:
             'id': row['id'], 'workspaceId': row['workspace_id'], 'goalId': row['goal_id'],
             'goalVariantId': row['goal_variant_id'], 'planId': row['plan_id'],
             'planVariantId': row['plan_variant_id'], 'contextId': row['context_id'],
+            'contextVariantId': row['context_variant_id'],
             'workflowRunId': row['workflow_run_id'], 'status': workflow_run['status'],
             'createdAt': row['created_at'], 'updatedAt': workflow_run.get('updatedAt') or row['updated_at'],
             'workflowRun': workflow_run,
