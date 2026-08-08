@@ -3,14 +3,8 @@
   "label": "Select Record Field",
   "description": "Select one field from an object artifact using the configured key.",
   "implementation": "core.select",
-  "inputs": {
-    "value": "Object"
-  },
-  "outputs": {
-    "value": "Any"
-  },
-  "parameters": {
-    "key": "field_name"
-  },
+  "inputs": {"value": "Object"},
+  "outputs": {"value": "Any"},
+  "parameters": {"key": "field_name"},
   "kind": "operation"
 }

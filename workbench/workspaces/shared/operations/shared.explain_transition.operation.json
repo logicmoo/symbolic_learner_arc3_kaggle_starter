@@ -3,14 +3,8 @@
   "label": "Explain State Transition",
   "description": "Explain a before/action/after transition as hypotheses and evidence. Generic world-learning operation.",
   "implementation": "symbolic.transition",
-  "inputs": {
-    "before": "Observation",
-    "action": "Action",
-    "after": "Observation"
-  },
-  "outputs": {
-    "hypotheses": "HypothesisSet"
-  },
+  "inputs": {"before": "Observation", "action": "Action", "after": "Observation"},
+  "outputs": {"hypotheses": "HypothesisSet"},
   "parameters": {},
   "kind": "operation"
 }

@@ -3,12 +3,8 @@
   "label": "Derive Symbolic Properties",
   "description": "Derive grounded properties and relations for identified entities. Generic symbolic-analysis operation.",
   "implementation": "prolog.properties",
-  "inputs": {
-    "identities": "IdentityMap"
-  },
-  "outputs": {
-    "facts": "SymbolicFactSet"
-  },
+  "inputs": {"identities": "IdentityMap"},
+  "outputs": {"facts": "SymbolicFactSet"},
   "parameters": {},
   "kind": "operation"
 }

@@ -110,7 +110,8 @@ The other files under `workbench/frontend/src/pages/` and older shell-oriented c
 - `workbench/workspaces/shared/contexts/*.context.json` and `*.context_variant.json` — AtomSpace binding specifications and concrete context alternatives.
 - `workbench/workspaces/shared/policies/*.json` — model runtime policies, vendor policy, eligibility entries, health observations, ping jobs/events, benchmark policies, and benchmark results.
 - [`workbench/workspaces/arc3/README.md`](workbench/workspaces/arc3/README.md) — ARC3 workspace purpose; its `workflows/`, `operations/`, and `prompts/` override or extend shared resources.
-- [`workbench/workspaces/default/workflows/titlecase_demo.workflow.json`](workbench/workspaces/default/workflows/titlecase_demo.workflow.json) and [`review_with_approval.workflow.json`](workbench/workspaces/default/workflows/review_with_approval.workflow.json) — small executable engine examples.
+- [`workbench/workspaces/default/default.workspace.json`](workbench/workspaces/default/default.workspace.json) — minimal editable starter template; it declares Shared as its initial inclusion and intentionally contains no local resources.
+- [`workbench/workspaces/shared/workflows/titlecase_demo.workflow.json`](workbench/workspaces/shared/workflows/titlecase_demo.workflow.json) and [`review_with_approval.workflow.json`](workbench/workspaces/shared/workflows/review_with_approval.workflow.json) — reusable executable engine examples inherited by Default and other workspaces that include Shared.
 - [`workbench/workspaces/tic_tac_toe_learner/README.md`](workbench/workspaces/tic_tac_toe_learner/README.md) and [`workbench/workspaces/workflow_engine_tour/README.md`](workbench/workspaces/workflow_engine_tour/README.md) — focused example-workspace entry documents.
 - [`workbench.workspace.json`](workbench.workspace.json) — repository-level workspace selection/configuration.
 
