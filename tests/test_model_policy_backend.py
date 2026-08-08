@@ -319,6 +319,9 @@ def test_model_policy_ui_exposes_explicit_benchmark_run() -> None:
     source = (ROOT / "workbench" / "frontend" / "src" / "components" / "ModelPolicyPage.tsx").read_text(encoding="utf-8")
     assert "/model-policy/benchmarks/" in source
     assert "Run Benchmark" in source
+    assert 'aria-label="Benchmark policy"' in source
+    assert "activeBenchmarkPolicy.id" in source
+    assert "latestResultByCell" in source
     assert 'aria-label="Performance history metric"' in source
     assert 'aria-label="Performance history model"' in source
     assert 'aria-label="Performance history profile"' in source
