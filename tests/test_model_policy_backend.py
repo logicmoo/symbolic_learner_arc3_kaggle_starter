@@ -12,6 +12,7 @@ import policy_api  # noqa: E402
 from model_discovery import discover_backend_models, import_discovered_models, reconcile_discovered_models, remove_missing_models  # noqa: E402
 from model_policy_ping import run_ping_job  # noqa: E402
 from model_benchmark import run_benchmark  # noqa: E402
+from model_library import resolve_model_records  # noqa: E402
 from policy_library import effective_model_registry, load_workspace_policy_records  # noqa: E402
 from resource_store import get_filesystem_provider  # noqa: E402
 
@@ -67,6 +68,22 @@ def test_catalog_backends_models_and_profiles_load_until_policy_disables_them() 
     model = next(item for item in overridden["models"] if item["modelResourceId"] == "model")
     assert model["policy"]["wanted"] == "off"
     assert model["effective"]["runtimeState"] == "disabled"
+
+
+def test_resolved_model_cache_tracks_catalog_revisions_without_sharing_mutations(tmp_path: Path) -> None:
+    shared = tmp_path / "shared"
+    resources = get_filesystem_provider()
+    backend = shared / "design" / "backends" / "vendor.backend.json"
+    model = shared / "design" / "models" / "model.model.json"
+    resources.write_json(backend, {"kind": "backend", "id": "vendor", "provider": "openai", "configuration": {"defaultModel": "remote"}})
+    resources.write_json(model, {"kind": "model", "id": "model", "inherits": "vendor", "defaults": {"temperature": 0}})
+
+    first = resolve_model_records(shared, workspaces_root=tmp_path)
+    first[0]["resolved"]["defaults"]["temperature"] = 99
+    assert resolve_model_records(shared, workspaces_root=tmp_path)[0]["resolved"]["defaults"]["temperature"] == 0
+
+    resources.write_json(model, {"kind": "model", "id": "model", "inherits": "vendor", "defaults": {"temperature": 0.75}})
+    assert resolve_model_records(shared, workspaces_root=tmp_path)[0]["resolved"]["defaults"]["temperature"] == 0.75
 
 
 def test_explicit_model_override_can_reenable_vendor_child() -> None:

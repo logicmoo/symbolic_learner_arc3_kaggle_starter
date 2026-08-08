@@ -25,6 +25,7 @@ class FilesystemProvider:
         self._metrics_lock = RLock()
         self._json_cache: dict[Path, tuple[int, int, list[Any]]] = {}
         self._cache_lock = RLock()
+        self._revision = 0
 
     def _record(self, operation: str, path: Path | None = None) -> None:
         with self._metrics_lock:
@@ -35,6 +36,11 @@ class FilesystemProvider:
     def metrics(self) -> dict[str, int]:
         with self._metrics_lock:
             return dict(self._metrics)
+
+    def revision(self) -> int:
+        """Return a process-local generation that advances before provider writes."""
+        with self._cache_lock:
+            return self._revision
 
     def resolve(self, root: Path, logical_path: str = ".") -> Path:
         resolved_root = root.resolve()
@@ -61,6 +67,7 @@ class FilesystemProvider:
     def _invalidate(self, path: Path) -> None:
         physical = self._physical_path(path, writing=True)
         with self._cache_lock:
+            self._revision += 1
             self._json_cache.pop(physical.resolve(), None)
 
     @staticmethod

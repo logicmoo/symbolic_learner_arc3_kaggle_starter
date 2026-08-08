@@ -89,7 +89,9 @@ def test_provider_invalidates_cache_on_write_and_external_file_change(tmp_path: 
     provider.write_json(logical, {"id": "changing", "value": 1})
     assert provider.read_json(logical)["value"] == 1
 
+    revision = provider.revision()
     provider.write_json(logical, {"id": "changing", "value": 22})
+    assert provider.revision() > revision
     assert provider.read_json(logical)["value"] == 22
 
     logical.with_suffix(".metta").write_text("((id changing) (value 333))\n", encoding="utf-8")

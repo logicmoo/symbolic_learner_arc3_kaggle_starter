@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 import json
+from copy import deepcopy
 from pathlib import Path
+from threading import RLock
+import time
 from typing import Any
 
-from backend_library import MODEL_CATALOG_DIRECTORY, load_workspace_backend_records
+from backend_library import BACKEND_DIRECTORIES, MODEL_CATALOG_DIRECTORY, load_workspace_backend_records
 from operation_library import DEFAULT_WORKSPACES_ROOT
 from workspace_inheritance import effective_workspace_layers, layer_source
 from resource_store import get_filesystem_provider
@@ -12,6 +15,22 @@ from resource_store import get_filesystem_provider
 SHARED_WORKSPACE_ID = "shared"
 MODEL_KINDS = {"model", "profile"}
 MODEL_DIRECTORIES = ("design/models", "design/profiles", "models", "profiles")
+_resolved_cache_lock = RLock()
+_resolved_cache: dict[tuple[str, str], tuple[int, float, tuple[tuple[str, int, int], ...], list[dict[str, Any]]]] = {}
+MODEL_REVISION_CHECK_SECONDS = 1.0
+
+
+def _catalog_revision(workspace_root: Path, workspaces_root: Path) -> tuple[tuple[str, int, int], ...]:
+    resources = get_filesystem_provider()
+    entries: list[tuple[str, int, int]] = []
+    for layer in effective_workspace_layers(workspace_root, workspaces_root):
+        for path in resources.glob(layer, (*BACKEND_DIRECTORIES, *MODEL_DIRECTORIES)):
+            try:
+                metadata = resources.stat(path)
+            except OSError:
+                continue
+            entries.append((str(path), metadata.st_mtime_ns, metadata.st_size))
+    return tuple(sorted(set(entries)))
 
 
 def read_model_file(path: Path) -> dict[str, Any]:
@@ -116,9 +135,21 @@ def resolve_model_records(
     Invalid catalog files are returned with an error and disabled resolution;
     they never abort workspace discovery.
     """
-    records = model_records or load_workspace_model_records(
-        workspace_root, workspaces_root=workspaces_root
-    )
+    cache_key = (str(workspace_root.resolve()), str(workspaces_root.resolve()))
+    revision: tuple[tuple[str, int, int], ...] | None = None
+    if model_records is None:
+        provider_revision = get_filesystem_provider().revision()
+        with _resolved_cache_lock:
+            cached = _resolved_cache.get(cache_key)
+            if cached and cached[0] == provider_revision and time.monotonic() - cached[1] < MODEL_REVISION_CHECK_SECONDS:
+                return deepcopy(cached[3])
+        revision = _catalog_revision(workspace_root, workspaces_root)
+        with _resolved_cache_lock:
+            cached = _resolved_cache.get(cache_key)
+            if cached and cached[2] == revision:
+                _resolved_cache[cache_key] = (provider_revision, time.monotonic(), cached[2], cached[3])
+                return deepcopy(cached[3])
+    records = model_records or load_workspace_model_records(workspace_root, workspaces_root=workspaces_root)
     backend_records = load_workspace_backend_records(
         workspace_root, workspaces_root=workspaces_root
     )
@@ -210,7 +241,11 @@ def resolve_model_records(
             if not record.get("error"):
                 record["error"] = str(error)
         resolved.append(record)
-    return _sort_records(resolved)
+    result = _sort_records(resolved)
+    if revision is not None:
+        with _resolved_cache_lock:
+            _resolved_cache[cache_key] = (get_filesystem_provider().revision(), time.monotonic(), revision, deepcopy(result))
+    return result
 
 
 def load_model_library_records(
