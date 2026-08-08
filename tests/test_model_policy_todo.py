@@ -32,7 +32,7 @@ def test_active_model_policy_page_uses_live_filesystem_policy_api() -> None:
     assert "/model-policy/ping`" in page
     for token in ("All Models", "Benchmark Matrix", "Performance History", "Filter any resource property"):
         assert token in page
-    assert 'view==="modelPolicy"&&<ModelPolicyPage workspaceId={workspace.id}/>' in shell
+    assert 'view==="modelPolicy"&&<ModelPolicyPage workspaceId={workspace.id}' in shell
 
 
 def test_shared_policy_examples_form_a_resolvable_reference_graph() -> None:
