@@ -2,6 +2,7 @@
   "id": "symbolic.explain_object_changes",
   "label": "Explain Object Changes",
   "description": "Reusable symbolic transition operation migrated from the legacy ARC3 explain_object_changes transaction.",
+  "categories": ["symbolic/explanation", "world-modeling/transitions", "vision/transition"],
   "implementation": "llm.complete",
   "inputs": {
     "objects": "ObjectAnnotation",

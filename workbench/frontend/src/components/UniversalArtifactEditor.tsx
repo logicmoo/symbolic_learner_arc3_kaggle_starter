@@ -1,6 +1,7 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { ArtifactTreeCommandContext, type ArtifactTreeCommand } from "./ArtifactTreeBranch";
 import { useArtifactTreeFilter } from "./useArtifactTreeFilter";
+import { CategorizedArtifactNodes } from "./CategorizedArtifactTree";
 import "../styles/operation_editor.css";
 
 export const UNIVERSAL_ARTIFACT_EDITOR_BASELINE = "current-rich-editor";
@@ -159,7 +160,7 @@ export function UniversalArtifactEditor({
             <button type="button" aria-label={navigatorCollapsed?"Expand hierarchy":"Collapse hierarchy"} aria-expanded={!navigatorCollapsed} onClick={()=>setNavigatorCollapsed(value=>!value)}>{navigatorCollapsed?"›":"‹"}<b>{navigatorCollapsed?"":"Pane"}</b></button>
           </div>
         </div>
-        <ArtifactTreeCommandContext.Provider value={treeCommand}><div className="artifact-navigator-content" ref={treeRef}>{leftPane}</div></ArtifactTreeCommandContext.Provider>
+        <ArtifactTreeCommandContext.Provider value={treeCommand}><div className="artifact-navigator-content" ref={treeRef}><CategorizedArtifactNodes>{leftPane}</CategorizedArtifactNodes></div></ArtifactTreeCommandContext.Provider>
       </div>
       <div className={workspaceClassName}>
         <div className={tabsClassName}>

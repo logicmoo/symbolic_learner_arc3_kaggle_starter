@@ -2,6 +2,7 @@
   "id": "shared.constant",
   "label": "Constant Value",
   "description": "Produce a configured constant value.",
+  "categories": ["core/values", "sample/core"],
   "implementation": "core.constant",
   "inputs": {},
   "outputs": {"value": "Any"},

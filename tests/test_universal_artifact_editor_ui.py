@@ -140,3 +140,14 @@ def test_all_artifact_trees_share_filter_and_parent_path_controls() -> None:
     assert "searchValue" in _text("ArtifactTreeBranch.tsx")
     for component in ("OperationLibraryEditor.tsx", "DataCatalogPanel.tsx", "PromptLibraryEditor.tsx", "GoalPlanLibraryEditor.tsx", "LlmModelsEditor.tsx"):
         assert "tree-search" in _text(component) or "searchValue" in _text(component)
+
+
+def test_design_trees_share_virtual_categories() -> None:
+    category_tree = _text("CategorizedArtifactTree.tsx")
+    universal = _text("UniversalArtifactEditor.tsx")
+    operations = _text("OperationLibraryEditor.tsx")
+    for token in ('label="All"', 'label="Uncategorized"', 'split("/")', "categoryPaths", "CategorizedArtifactTree"):
+        assert token in category_tree or token in operations
+    assert "CategorizedArtifactNodes" in universal
+    assert "CategorizedArtifactTree items={categorizedOperations}" in operations
+    assert "variant.document?.categories" in operations

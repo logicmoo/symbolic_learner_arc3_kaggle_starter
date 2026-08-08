@@ -2,6 +2,7 @@
   "id": "vision.extract_scene_objects",
   "label": "Extract Scene Objects",
   "description": "Reusable vision operation migrated from the legacy ARC3 extract_scene_objects transaction.",
+  "categories": ["vision/extraction", "vision/recognition", "vision/grouping"],
   "implementation": "llm.complete",
   "inputs": {
     "current_image": "Image",

@@ -2,6 +2,7 @@
   "id": "arc3.audit_artifact_bundle",
   "label": "ARC3 Audit Artifact Bundle",
   "description": "ARC3 wrapper around the shared artifact-audit operation, scoped to ARC3 object/Turtle/transition/rule artifacts.",
+  "categories": ["arc3/artifacts", "arc3/validation", "symbolic/validation"],
   "implementation": "llm.complete",
   "inputs": {
     "bundle": "ArtifactBundle"

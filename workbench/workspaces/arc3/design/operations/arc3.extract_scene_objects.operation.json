@@ -2,6 +2,7 @@
   "id": "arc3.extract_scene_objects",
   "label": "ARC3 Extract Scene Objects",
   "description": "ARC3 wrapper around the shared visual object-extraction capability, adding only ARC3 identity/output/file contracts.",
+  "categories": ["arc3/perception", "vision/extraction", "vision/recognition"],
   "implementation": "llm.complete",
   "inputs": {
     "current_image": "Image",
