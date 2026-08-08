@@ -87,3 +87,27 @@ def test_goal_runs_use_durable_goal_plan_context_contract() -> None:
     assert "Pursue goal" in component
     assert "Submit human input" in component
     assert "selectRuntimeRun" in page
+
+
+def test_topbar_offers_persistent_workbench_themes() -> None:
+    page = ACTIVE_PAGE.read_text(encoding="utf-8")
+    styles = (ROOT / "workbench" / "frontend" / "src" / "styles" / "workbench.css").read_text(encoding="utf-8")
+    assert 'aria-label="Workbench theme"' in page
+    assert 'localStorage.getItem("workbench.theme")' in page
+    assert 'localStorage.setItem("workbench.theme",theme)' in page
+    assert "Midnight Teal" in page
+    assert "Ultraviolet" in page
+    assert "Copper Terminal" in page
+    assert "Arctic Blue" in page
+    assert "Paper White" in page
+    assert "MSDN Light" in page
+    assert "GitHub Light" in page
+    assert "Solarized Light" in page
+    assert "Dracula" in page
+    assert "Monokai" in page
+    assert "Retro Green" in page
+    assert 'data-workbench-theme="ultraviolet"' in styles
+    assert 'data-workbench-theme="copper"' in styles
+    assert 'data-workbench-theme="arctic"' in styles
+    assert 'data-workbench-theme="paper-light"' in styles
+    assert 'data-workbench-theme="msdn-light"' in styles

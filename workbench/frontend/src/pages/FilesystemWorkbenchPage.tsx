@@ -23,6 +23,36 @@ type Capability={status:string;detail:string};
 import { ResourceSourceEditor } from "../components/ResourceSourceEditor";
 type View="canvas"|"editor"|"data"|"artifacts"|"evidence"|"operations"|"llms"|"prompts"|"policies"|"checks"|"setup"|"goals"|"plans"|"goalRuns"|"workflowRuns"|"execs"|"events"|"states"|"logs"|"modelPolicy"|"benchmarks"|"contexts"|"runtimeContexts"|"docs";
 type EngineImplementation={name:string;[key:string]:unknown};
+const WORKBENCH_THEMES=[
+ {id:"midnight",label:"Midnight Teal"},
+ {id:"ultraviolet",label:"Ultraviolet"},
+ {id:"copper",label:"Copper Terminal"},
+ {id:"arctic",label:"Arctic Blue"},
+ {id:"paper-light",label:"Paper White"},
+ {id:"msdn-light",label:"MSDN Light"},
+ {id:"github-light",label:"GitHub Light"},
+ {id:"solarized-light",label:"Solarized Light"},
+ {id:"nord-snow-light",label:"Nord Snow"},
+ {id:"sepia-light",label:"Sepia Paper"},
+ {id:"mint-light",label:"Mint Paper"},
+ {id:"lavender-light",label:"Lavender Paper"},
+ {id:"rose-light",label:"Rose Quartz"},
+ {id:"contrast-light",label:"High Contrast Light"},
+ {id:"ocean-light",label:"Ocean Day"},
+ {id:"sand-light",label:"Sandstone"},
+ {id:"solarized-dark",label:"Solarized Dark"},
+ {id:"dracula",label:"Dracula"},
+ {id:"monokai",label:"Monokai"},
+ {id:"nord-night",label:"Nord Night"},
+ {id:"forest",label:"Forest"},
+ {id:"crimson",label:"Crimson"},
+ {id:"cobalt",label:"Cobalt"},
+ {id:"graphite",label:"Graphite"},
+ {id:"retro-amber",label:"Retro Amber"},
+ {id:"retro-green",label:"Retro Green"},
+] as const;
+type WorkbenchTheme=(typeof WORKBENCH_THEMES)[number]["id"];
+const isWorkbenchTheme=(value:string|null):value is WorkbenchTheme=>WORKBENCH_THEMES.some(theme=>theme.id===value);
 
 export const NAVIGATION_V2:Array<{group:"DESIGN"|"RUNTIME"|"SYSTEM";items:Array<{label:string;view:View;glyph:string}>}>=[
  {group:"DESIGN",items:[{label:"Goals",view:"goals",glyph:"◎"},{label:"Plans",view:"plans",glyph:"◇"},{label:"Workflows",view:"canvas",glyph:"⌘"},{label:"Operations",view:"operations",glyph:"▦"},{label:"Datatypes",view:"data",glyph:"◆"},{label:"AtomSpaces",view:"contexts",glyph:"⚛"},{label:"Prompts",view:"prompts",glyph:"¶"},{label:"Models",view:"llms",glyph:"✦"},{label:"Policy",view:"policies",glyph:"P"}]},
@@ -39,6 +69,7 @@ export function FilesystemWorkbenchPage(){
  const[workflowPath,setWorkflowPath]=useState(""),[workflowSource,setWorkflowSource]=useState(""),[runInputs,setRunInputs]=useState("{}"),[selectedStepId,setSelectedStepId]=useState<string|null>(null),[humanValues,setHumanValues]=useState("{}");
  const[run,setRun]=useState<Run|null>(null),[selectedArtifactId,setSelectedArtifactId]=useState<string|null>(null),[validation,setValidation]=useState<string[]|null>(null),[capabilities,setCapabilities]=useState<Record<string,Capability>>({}),[implementations,setImplementations]=useState<EngineImplementation[]>([]),[busy,setBusy]=useState(false),[error,setError]=useState<string|null>(null);
  const[restarting,setRestarting]=useState(false);
+ const[theme,setTheme]=useState<WorkbenchTheme>(()=>{const saved=localStorage.getItem("workbench.theme");return isWorkbenchTheme(saved)?saved:"midnight"});
  const[newWorkspaceLabel,setNewWorkspaceLabel]=useState("");
  const[newWorkspaceTemplateId,setNewWorkspaceTemplateId]=useState("default");
  const[inspectorWidth,setInspectorWidth]=useState(()=>Math.max(240,Number(localStorage.getItem("workbench.inspectorWidth"))||310));
@@ -63,6 +94,7 @@ export function FilesystemWorkbenchPage(){
  const selectRuntimeRun=(nextRun:Run)=>{void perform(async()=>{const payload=await engine(`/workflows/${encodeURIComponent(nextRun.workflowId)}?version=${nextRun.workflowVersion}`);const frozen=payload.workflow as Workflow;const record=snapshot?.workflows.find(row=>row.document?.id===nextRun.workflowId);const active=nextRun.steps.find(step=>["waiting","running","failed"].includes(step.status))||[...nextRun.steps].reverse().find(step=>step.status==="completed");setWorkflowPath(record?.path||"");setWorkflowSource(JSON.stringify(frozen,null,2));setRun(nextRun);setSelectedArtifactId(null);setSelectedStepId(active?.stepId||frozen.steps[0]?.id||null)})};
  const beginInspectorResize=(event:ReactPointerEvent<HTMLDivElement>)=>{event.preventDefault();const move=(pointer:PointerEvent)=>setInspectorWidth(Math.max(240,Math.min(window.innerWidth*.6,window.innerWidth-pointer.clientX)));const stop=()=>{window.removeEventListener("pointermove",move);window.removeEventListener("pointerup",stop);document.body.classList.remove("resizing-panel")};document.body.classList.add("resizing-panel");window.addEventListener("pointermove",move);window.addEventListener("pointerup",stop)};
  useEffect(()=>{localStorage.setItem("workbench.inspectorWidth",String(Math.round(inspectorWidth)))},[inspectorWidth]);
+ useEffect(()=>{document.documentElement.dataset.workbenchTheme=theme;localStorage.setItem("workbench.theme",theme)},[theme]);
  useEffect(()=>{const openDocs=(event:Event)=>{setDocsFilter(String((event as CustomEvent).detail||""));setView("docs")};window.addEventListener("workbench:open-docs",openDocs);return()=>window.removeEventListener("workbench:open-docs",openDocs)},[]);
  useEffect(()=>{document.body.classList.toggle("docs-focused",view==="docs");return()=>document.body.classList.remove("docs-focused")},[view]);
 
@@ -72,7 +104,7 @@ export function FilesystemWorkbenchPage(){
  const relationshipView=view==="goals"||view==="plans"||view==="data"||view==="llms"||view==="operations"||view==="prompts"||view==="policies"||view==="contexts";
  const navSelected=(target:View)=>target==="canvas"?(view==="canvas"||view==="editor"):target===view;
 
- return <main className="workbench"><header className="topbar"><div className="brand"><span className="brand-mark">M</span><div><strong>MeTTaSymbolicLearnerWorkbench</strong><small>NEUROSYMBOLIC EXPERIMENT DESKTOP</small></div></div><div className="run-context"><span className="pulse"/><b>{restarting?"restarting servers":run?run.status:"backend live"}</b><span>/</span><span>{workspace.label}</span><span>/</span><span>{run?`run ${run.id.slice(0,8)}`:"ready"}</span></div><div className="toolbar"><button className="server-restart-button" title="Restart UI and API servers" disabled={restarting} onClick={restartServers}>{restarting?"Restarting…":"↻ Restart"}</button><button className="icon-button" title="Pause" disabled={busy||run?.status!=="running"} onClick={()=>command("pause")}>Ⅱ</button><button className="icon-button" title="Stop" disabled={busy||!run||["completed","failed","cancelled"].includes(run.status)} onClick={()=>command("cancel")}>□</button><button className="run-button" disabled={busy||!workflow} onClick={startRun}><span>▶</span>Run workflow</button></div></header>{error&&<div className="backend-error"><b>Error</b><span>{error}</span><button onClick={()=>setError(null)}>×</button></div>}
+ return <main className="workbench"><header className="topbar"><div className="brand"><span className="brand-mark">M</span><div><strong>MeTTaSymbolicLearnerWorkbench</strong><small>NEUROSYMBOLIC EXPERIMENT DESKTOP</small></div></div><div className="run-context"><span className="pulse"/><b>{restarting?"restarting servers":run?run.status:"backend live"}</b><span>/</span><span>{workspace.label}</span><span>/</span><span>{run?`run ${run.id.slice(0,8)}`:"ready"}</span></div><div className="toolbar"><button className="server-restart-button" title="Restart UI and API servers" disabled={restarting} onClick={restartServers}>{restarting?"Restarting…":"↻ Restart"}</button><label className="theme-picker" title="Change workbench color scheme"><span>Theme</span><select aria-label="Workbench theme" value={theme} onChange={event=>setTheme(event.target.value as WorkbenchTheme)}>{WORKBENCH_THEMES.map(option=><option key={option.id} value={option.id}>{option.label}</option>)}</select></label><button className="icon-button" title="Pause" disabled={busy||run?.status!=="running"} onClick={()=>command("pause")}>Ⅱ</button><button className="icon-button" title="Stop" disabled={busy||!run||["completed","failed","cancelled"].includes(run.status)} onClick={()=>command("cancel")}>□</button><button className="run-button" disabled={busy||!workflow} onClick={startRun}><span>▶</span>Run workflow</button></div></header>{error&&<div className="backend-error"><b>Error</b><span>{error}</span><button onClick={()=>setError(null)}>×</button></div>}
  <section className={`workspace ${relationshipView?"artifact-focused":""} ${view==="modelPolicy"?"policy-focused":""}`} style={{"--inspector-width":`${inspectorWidth}px`} as CSSProperties}><aside className="rail navigation-v2">{NAVIGATION_V2.map(section=><div className="rail-section" key={section.group}><span>{section.group}</span>{section.items.map(item=><button key={item.label} data-navigation-label={item.label} className={`rail-icon ${navSelected(item.view)?"selected":""}`} onClick={()=>setView(item.view)}><span>{item.glyph}</span><small>{item.label}</small></button>)}</div>)}<div className="rail-bottom"><button className="rail-icon" onClick={()=>{setWorkspace(null);setSnapshot(null);setRun(null)}} title="Switch workspace"><span>↩</span><small>Switch Workspace</small></button></div></aside>
  <aside className="stages-panel"><div className="panel-label"><span>RUN PIPELINE</span><button onClick={()=>setView("editor")}>•••</button></div><div className="workflow-title"><b>{workflow?.label||workflow?.id||workspace.label}</b><small>{workflow?.description||`${workspace.label} filesystem workflow`}</small></div><div className="stage-list">{(workflow?.steps||[]).map((item,index)=>{const status=run?.steps.find(step=>step.stepId===item.id)?.status||"defined";const active=selectedStepId===item.id;return <button key={item.id} className={`stage-button ${active?"active":""} ${status==="completed"?"done":""}`} onClick={()=>{setSelectedStepId(item.id);setView("canvas")}}><span className="stage-number">{index+1}</span><span className="stage-line"/><span className={`stage-icon ${item.kind==="human"?"amber":index%3===1?"violet":"cyan"}`}>{status==="completed"?"✓":index+1}</span><div><small>{item.kind||"OPERATION"}</small><b>{item.label||item.id}</b></div>{item.kind==="workflow"&&<span className="nested-badge">↳</span>}</button>})}{!workflow&&<div className="studio-empty">No workflow file in this workspace.</div>}</div><div className="run-health"><div><span>RUN HEALTH</span><b>{run?.status||"ready"}</b></div><div className="health-bar"><i style={{width:workflow?.steps.length?`${Math.round(((run?.steps.filter(step=>step.status==="completed").length||0)/workflow.steps.length)*100)}%`:"0%"}}/></div><small>{run?`${run.steps.filter(step=>step.status==="completed").length} steps complete · ${run.events.length} durable events`:"No active run"}</small></div></aside>
  <section className="main-stage"><nav className="view-tabs"><button className={view==="canvas"?"active":""} onClick={()=>setView("canvas")}>Workflow canvas</button><button className={view==="editor"?"active":""} onClick={()=>setView("editor")}>Workflow editor</button><button className={view==="artifacts"?"active":""} onClick={()=>setView("artifacts")}>Artifact explorer <span>{run?.artifacts.length||0}</span></button><button className={view==="evidence"?"active":""} onClick={()=>setView("evidence")}>Evidence & provenance <span>{run?.events.length||0}</span></button><button className={view==="checks"?"active":""} onClick={()=>setView("checks")}>Checks</button></nav>
