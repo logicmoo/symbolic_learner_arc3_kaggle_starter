@@ -65,6 +65,26 @@ def invoke_operation(
             {"id": "operation_playground", "workspaceId": workspace_id},
             step,
         )
+        if executable.get("kind") == "human":
+            return {
+                "operation": {
+                    "id": operation["id"],
+                    "label": operation.get("label") or operation["id"],
+                    "inputs": operation.get("inputs") or {},
+                    "outputs": operation.get("outputs") or {},
+                },
+                "implementation": {
+                    "id": implementation["id"],
+                    "label": implementation.get("label") or implementation["id"],
+                    "route": implementation["implementation"],
+                },
+                "inputs": supplied_inputs,
+                "outputs": {
+                    "status": "waiting_for_input",
+                    "form": executable.get("form") or {},
+                },
+                "elapsedMs": 0,
+            }
         spec = engine.registry.get(str(executable["implementation"]))
 
         started = perf_counter()

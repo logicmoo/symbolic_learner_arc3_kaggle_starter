@@ -3,9 +3,16 @@
   "label": "Constant Value",
   "description": "Produce a configured constant value.",
   "categories": ["core/values", "sample/core"],
-  "implementation": "core.constant",
   "inputs": {},
   "outputs": {"value": "Any"},
   "parameters": {"value": null},
+  "example_execute": {
+    "action": "operation.invoke",
+    "parameters": {
+      "value": {"datatype": "Any", "label": "Constant value", "default": 42}
+    }
+  },
+  "children": ["shared.constant.workbench"],
+  "preferredChild": "shared.constant.workbench",
   "kind": "operation"
 }

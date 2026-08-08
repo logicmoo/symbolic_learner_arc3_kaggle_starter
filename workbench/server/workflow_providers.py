@@ -256,6 +256,20 @@ def _artifact_convert(inputs: dict[str, Any], parameters: dict[str, Any]) -> dic
     raise ValueError(f"unsupported artifact conversion target: {target}")
 
 
+def _system_workbench(_inputs: dict[str, Any], parameters: dict[str, Any]) -> dict[str, Any]:
+    """Execute immediate capabilities owned by the Workbench host.
+
+    Interactive capabilities are materialized as durable human workflow steps in
+    operation_resolution rather than being executed synchronously here.
+    """
+    capability = str(parameters.get("capability") or "")
+    if capability == "value.constant":
+        return {str(parameters.get("outputBinding") or "value"): parameters.get("value")}
+    if capability == "input.request":
+        raise ValueError("system.workbench input.request must execute as a human workflow step")
+    raise ValueError(f"unsupported system.workbench capability: {capability or '(missing)'}")
+
+
 def register_real_providers(registry: OperationRegistry) -> None:
     existing = {item["name"] for item in registry.describe()}
     specs = [
@@ -265,6 +279,7 @@ def register_real_providers(registry: OperationRegistry) -> None:
         OperationSpec("metta.evaluate", {"source": "Text"}, {"result": "MeTTaResult"}, _metta_evaluate),
         OperationSpec("llm.complete", {}, {"text": "Text", "response": "Object"}, _llm_complete),
         OperationSpec("artifact.convert", {"value": "Any"}, {"value": "Any"}, _artifact_convert),
+        OperationSpec("system.workbench", {}, {"value": "Any"}, _system_workbench),
     ]
     for spec in specs:
         if spec.name not in existing:

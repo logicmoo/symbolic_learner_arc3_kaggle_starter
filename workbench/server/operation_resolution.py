@@ -84,7 +84,10 @@ def materialize_workflow_step(workflow: dict[str, Any], step: dict[str, Any]) ->
     operation = resolved["operation"]
     implementation = resolved["implementation"]
     bindings = implementation.get("bindings") or {}
-    parameters = _implementation_parameters(implementation, step)
+    parameters = {
+        **dict(operation.get("parameters") or {}),
+        **_implementation_parameters(implementation, step),
+    }
     prompt_ids = [str(item) for item in bindings.get("prompts") or []]
     resolved_prompts: list[dict[str, Any]] = []
     if prompt_ids:
@@ -105,6 +108,29 @@ def materialize_workflow_step(workflow: dict[str, Any], step: dict[str, Any]) ->
         parameters["resolvedPrompts"] = resolved_prompts
 
     executable_inputs = dict(step.get("inputs") or {})
+    route = str(implementation.get("implementation") or "")
+    capability = str(parameters.get("capability") or bindings.get("capability") or "")
+    if route == "system.workbench" and capability == "input.request":
+        output_binding = str(parameters.get("outputBinding") or "value")
+        datatype = str(parameters.get("datatype") or (operation.get("outputs") or {}).get(output_binding) or "Any")
+        return {
+            **step,
+            "kind": "human",
+            "operation": operation["id"],
+            "implementation": route,
+            "implementationVariant": implementation["id"],
+            "parameters": parameters,
+            "form": {
+                output_binding: {
+                    "type": datatype,
+                    "label": str(parameters.get("label") or output_binding),
+                    "prompt": str(parameters.get("prompt") or "Enter a value"),
+                    "required": bool(parameters.get("required", True)),
+                }
+            },
+            "outputs": {output_binding: output_binding},
+            "resolvedPrompts": resolved_prompts,
+        }
     if implementation.get("implementation") == "llm.complete" and "prompt" not in executable_inputs:
         input_binding = str(parameters.get("inputBinding") or "text")
         if input_binding in executable_inputs:
