@@ -44,3 +44,18 @@ def test_shell_snapshot_skips_editor_specific_catalogs(tmp_path: Path, monkeypat
 def test_active_ui_requests_shell_snapshot() -> None:
     source = (ROOT / "workbench" / "frontend" / "src" / "pages" / "FilesystemWorkbenchPage.tsx").read_text(encoding="utf-8")
     assert source.count("/snapshot?scope=shell") == 2
+
+
+def test_workspace_discovery_reuses_summary_until_refresh(tmp_path: Path, monkeypatch) -> None:
+    root = tmp_path / "demo"
+    root.mkdir()
+    calls: list[Path] = []
+    monkeypatch.setattr(workspace_api, "_workspace_roots", lambda: [tmp_path])
+    monkeypatch.setattr(workspace_api, "_workspace_from_directory", lambda path: calls.append(path) or {"id": path.name, "label": path.name, "root": str(path)})
+    workspace_api.invalidate_workspace_discovery()
+
+    assert workspace_api.discover_workspaces()[0]["id"] == "demo"
+    assert workspace_api.discover_workspaces()[0]["id"] == "demo"
+    assert len(calls) == 1
+    workspace_api.discover_workspaces(force=True)
+    assert len(calls) == 2

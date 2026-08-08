@@ -4,6 +4,8 @@ import json
 import os
 import re
 import shutil
+import time
+from threading import RLock
 from pathlib import Path
 from typing import Any
 
@@ -40,6 +42,9 @@ router = APIRouter(prefix="/workspaces", tags=["workspaces"])
 
 TEXT_SUFFIXES = {".json", ".md", ".txt", ".py", ".pl", ".metta", ".yaml", ".yml", ".toml"}
 IGNORED_DIRECTORIES = {".git", ".venv", "node_modules", "__pycache__"}
+WORKSPACE_DISCOVERY_CACHE_SECONDS = 60.0
+_workspace_cache_lock = RLock()
+_workspace_cache: tuple[tuple[str, ...], float, list[dict[str, Any]]] | None = None
 
 
 def _workspace_roots() -> list[Path]:
@@ -147,22 +152,36 @@ def _workspace_from_directory(root: Path) -> dict[str, Any]:
     }
 
 
-def discover_workspaces() -> list[dict[str, Any]]:
+def invalidate_workspace_discovery() -> None:
+    global _workspace_cache
+    with _workspace_cache_lock:
+        _workspace_cache = None
+
+
+def discover_workspaces(*, force: bool = False) -> list[dict[str, Any]]:
+    global _workspace_cache
     resources = get_filesystem_provider()
-    found: dict[str, dict[str, Any]] = {}
-    for container in _workspace_roots():
-        if not resources.is_dir(container):
-            continue
-        try:
-            children = resources.iterdir(container)
-        except OSError:
-            continue
-        for child in children:
-            if not resources.is_dir(child) or child.name.startswith(".") or child.name in IGNORED_DIRECTORIES:
+    roots = _workspace_roots()
+    cache_key = tuple(str(root) for root in roots)
+    with _workspace_cache_lock:
+        if not force and _workspace_cache and _workspace_cache[0] == cache_key and time.monotonic() - _workspace_cache[1] < WORKSPACE_DISCOVERY_CACHE_SECONDS:
+            return [dict(item) for item in _workspace_cache[2]]
+        found: dict[str, dict[str, Any]] = {}
+        for container in roots:
+            if not resources.is_dir(container):
                 continue
-            workspace = _workspace_from_directory(child)
-            found[workspace["root"]] = workspace
-    return sorted(found.values(), key=lambda item: (item["label"].lower(), item["root"].lower()))
+            try:
+                children = resources.iterdir(container)
+            except OSError:
+                continue
+            for child in children:
+                if not resources.is_dir(child) or child.name.startswith(".") or child.name in IGNORED_DIRECTORIES:
+                    continue
+                workspace = _workspace_from_directory(child)
+                found[workspace["root"]] = workspace
+        discovered = sorted(found.values(), key=lambda item: (item["label"].lower(), item["root"].lower()))
+        _workspace_cache = (cache_key, time.monotonic(), discovered)
+        return [dict(item) for item in discovered]
 
 
 def _resolve_workspace(workspace_id: str) -> dict[str, Any]:
@@ -338,8 +357,8 @@ def _load_prompt_library(workspace: dict[str, Any]) -> dict[str, list[dict[str, 
 
 
 @router.get("")
-def list_workspaces() -> dict[str, Any]:
-    return {"workspaceRoots": [str(path) for path in _workspace_roots()], "workspaces": discover_workspaces()}
+def list_workspaces(refresh: bool = Query(default=False)) -> dict[str, Any]:
+    return {"workspaceRoots": [str(path) for path in _workspace_roots()], "workspaces": discover_workspaces(force=refresh)}
 
 
 @router.post("", status_code=201)
@@ -374,6 +393,7 @@ def create_workspace(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
             "includes": declared_include_specs(template),
         }
         resources.write_json(target / "workspace.json", metadata)
+        invalidate_workspace_discovery()
         return {"workspace": _workspace_from_directory(target), "templateWorkspaceId": template_workspace["id"]}
     except OSError as error:
         if resources.exists(target):
@@ -405,6 +425,7 @@ def update_workspace_settings(workspace_id: str, body: dict[str, Any] = Body(...
             "includes": includes,
         })
         get_filesystem_provider().write_json(path, metadata)
+        invalidate_workspace_discovery()
         return {"workspace": _workspace_from_directory(root)}
     except KeyError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error
@@ -605,6 +626,7 @@ def write_workspace_file(workspace_id: str, body: dict[str, Any] = Body(...)) ->
         resources.write_text(target, content)
         if target != requested and resources.is_file(requested):
             resources.delete(requested)
+        invalidate_workspace_discovery()
         return {"file": {**_file_record(root, target), "content": content}}
     except KeyError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error
