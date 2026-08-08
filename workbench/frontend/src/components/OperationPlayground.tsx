@@ -24,7 +24,8 @@ export function OperationPlayground({workspaceId,operation,variants}:{workspaceI
  const inputs=useMemo(()=>Object.entries(operation.inputs||{}),[operation.id,operation.inputs]);
  const parameters=useMemo(()=>Object.entries(operation.parameters||{}),[operation.id,operation.parameters]);
  const outputs=Object.entries(operation.outputs||{});
- const selected=variants.find(item=>item.id===variant)||null;
+ const invocationVariant=variants.length===1?variants[0].id:variant;
+ const selected=variants.find(item=>item.id===invocationVariant)||null;
  const run=async()=>{
   setRunning(true);setError(null);setResult(null);
   try{
@@ -32,15 +33,15 @@ export function OperationPlayground({workspaceId,operation,variants}:{workspaceI
    for(const[name,datatype]of inputs)values[name]=parseInput(String(datatype),rawInputs[name]??"");
    const parameterValues:Record<string,unknown>={};
    for(const[name,fallback]of parameters){const raw=rawParameters[name];if(raw===undefined||raw==="")parameterValues[name]=fallback;else try{parameterValues[name]=JSON.parse(raw)}catch{parameterValues[name]=raw}}
-   const payload=await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/operations/${encodeURIComponent(operation.id)}/invoke`,{method:"POST",body:JSON.stringify({implementationVariant:variant||undefined,inputs:values,parameters:parameterValues})});
+   const payload=await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/operations/${encodeURIComponent(operation.id)}/invoke`,{method:"POST",body:JSON.stringify({implementationVariant:invocationVariant||undefined,inputs:values,parameters:parameterValues})});
    setResult(payload as InvocationResult);
   }catch(reason){setError(reason instanceof Error?reason.message:String(reason))}finally{setRunning(false)}
  };
  useEffect(()=>{setVariant(preferred);setRawInputs(defaults(operation.example_execute?.arguments||{}));setRawParameters(defaults(operation.example_execute?.parameters||{}));setResult(null);setError(null)},[operation.id]);
  return <section className="operation-playground">
-  <div className="llm-subhead"><div><span>OPERATION PLAYGROUND</span><b>Invoke the abstract operation with a concrete variant</b></div><button className="primary" onClick={run} disabled={running||!variant}>{running?"Running…":"▶ Run"}</button></div>
+  <div className="llm-subhead"><div><span>OPERATION PLAYGROUND</span><b>Invoke the abstract operation with a concrete variant</b></div><button className="primary" onClick={run} disabled={running||!invocationVariant}>{running?"Running…":"▶ Run"}</button></div>
   <div className="operation-playground-grid">
-   <label className="operation-playground-field"><span>RUN VARIANT</span><select value={variant} onChange={event=>{setVariant(event.target.value);setResult(null);setError(null)}}>{variants.map(item=><option key={item.id} value={item.id}>{item.label||item.id} · {item.implementation}</option>)}</select><small>{selected?`Executes ${selected.implementation}`:"Select an implementation"}. This does not change the saved preferred implementation.</small></label>
+   <label className="operation-playground-field"><span>RUN VARIANT</span><select value={invocationVariant} disabled={variants.length===1} onChange={event=>{setVariant(event.target.value);setResult(null);setError(null)}}>{variants.map(item=><option key={item.id} value={item.id}>{item.label||item.id} · {item.implementation}</option>)}</select><small>{selected?`Executes ${selected.implementation}`:"Select an implementation"}. This does not change the saved preferred implementation.</small></label>
    {inputs.map(([name,datatype])=><label className="operation-playground-field" key={name}><span>INPUT · {name} <em>{datatype}</em></span><textarea value={rawInputs[name]??""} placeholder={isTextDatatype(String(datatype))?`Enter ${name}…`:`Enter ${datatype} as JSON…`} onChange={event=>setRawInputs(current=>({...current,[name]:event.target.value}))}/></label>)}
    {parameters.map(([name,fallback])=><label className="operation-playground-field" key={`parameter:${name}`}><span>PARAMETER · {name}</span><textarea value={rawParameters[name]??(typeof fallback==="string"?fallback:JSON.stringify(fallback??""))} placeholder={`Configure ${name}…`} onChange={event=>setRawParameters(current=>({...current,[name]:event.target.value}))}/></label>)}
   </div>

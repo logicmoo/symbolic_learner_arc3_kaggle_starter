@@ -5,6 +5,8 @@ import shutil
 from pathlib import Path
 
 import pytest
+from fastapi import HTTPException
+from urllib.error import HTTPError
 
 from operation_api import invoke_operation
 from operation_library import resolve_operation_implementation
@@ -115,3 +117,20 @@ def test_implementation_parent_link_is_sufficient_for_resolution(tmp_path: Path)
     )
 
     assert resolved["implementation"]["id"] == "shared.echo.prolog"
+
+
+def test_operation_playground_preserves_provider_rate_limit(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+
+    def rate_limited(*_args: object, **_kwargs: object) -> object:
+        raise HTTPError("https://provider.invalid", 429, "Too Many Requests", {}, None)
+
+    monkeypatch.setattr("workflow_providers.urllib.request.urlopen", rate_limited)
+    with pytest.raises(HTTPException) as caught:
+        invoke_operation("shared", "echo_into_titlecased", {
+            "implementationVariant": "echo_into_titlecased_llm",
+            "inputs": {"text": "hello"},
+        })
+
+    assert caught.value.status_code == 429
+    assert "provider request failed with HTTP 429" in str(caught.value.detail)

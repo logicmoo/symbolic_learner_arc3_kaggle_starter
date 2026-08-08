@@ -183,3 +183,6 @@ def test_operation_implementations_inherit_parent_playground() -> None:
     assert "selectedImplementation&&parentOperation&&<OperationPlayground" in operations
     assert "variants={[selectedImplementation]}" in operations
     assert "variants.some(item=>item.id===operation.preferredChild)" in playground
+    assert "invocationVariant=variants.length===1?variants[0].id:variant" in playground
+    assert "implementationVariant:invocationVariant" in playground
+    assert "disabled={variants.length===1}" in playground

@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from time import perf_counter
 from typing import Any
+from urllib.error import HTTPError
 
 from fastapi import APIRouter, Body, HTTPException
 
@@ -113,6 +114,13 @@ def invoke_operation(
             "outputs": result,
             "elapsedMs": elapsed_ms,
         }
+    except HTTPError as error:
+        try:
+            provider_detail = error.read().decode("utf-8", errors="replace").strip() if error.fp else ""
+        except OSError:
+            provider_detail = ""
+        detail = f"provider request failed with HTTP {error.code}: {provider_detail or error.reason}"
+        raise HTTPException(status_code=error.code, detail=detail) from error
     except KeyError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error
     except (ValueError, TypeError, RuntimeError, ImportError, AttributeError) as error:
