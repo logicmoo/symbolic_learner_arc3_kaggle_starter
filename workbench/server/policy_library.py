@@ -7,7 +7,7 @@ from typing import Any
 from operation_library import DEFAULT_WORKSPACES_ROOT, SHARED_WORKSPACE_ID
 from resource_relationships import relationship_ids
 
-POLICY_KINDS = {"model_policy", "model_policy_variant", "vendor_policy", "model_policy_entry", "model_health_observation", "model_ping_job", "model_ping_event", "benchmark_policy", "benchmark_result"}
+POLICY_KINDS = {"model_policy", "model_policy_variant", "vendor_policy", "model_policy_entry", "model_health_observation", "model_ping_job", "model_ping_event", "benchmark_policy", "benchmark_job", "benchmark_result"}
 POLICY_STATES = {"on", "auto", "off"}
 UNHEALTHY_STATUSES = {"offline", "error", "ratelimited", "rate_limited", "unknown"}
 

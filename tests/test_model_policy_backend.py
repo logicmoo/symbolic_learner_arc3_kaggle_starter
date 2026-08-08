@@ -10,6 +10,7 @@ sys.path.insert(0, str(SERVER))
 
 import policy_api  # noqa: E402
 from model_policy_ping import run_ping_job  # noqa: E402
+from model_benchmark import run_benchmark  # noqa: E402
 from policy_library import effective_model_registry, load_workspace_policy_records  # noqa: E402
 
 
@@ -95,3 +96,22 @@ def test_model_policy_ui_edits_and_filters_dynamic_registry() -> None:
         assert token in source
     assert 'scope==="selected"?[...selected]' in source
     assert ".policy-table-scroll th:nth-child(-n+7)" in styles
+
+
+def test_benchmark_job_executes_declared_cases_and_persists_measurements(tmp_path: Path) -> None:
+    policy = {"id":"quality","cases":[{"id":"token","prompt":"say OK","expected":"OK","evaluator":"exact_match"}],"repetitions":2,"concurrency":2}
+    models = [{"id":"vendor:model","vendorId":"vendor"}]
+    profiles = [{"document":{"id":"profile"},"resolved":{"enabled":True}}]
+    def invoke(_model:dict,_profile:dict,_prompt:str,_timeout:int)->dict:
+        return {"text":"OK","latencyMs":10,"inputTokens":2,"outputTokens":1}
+    result = run_benchmark(tmp_path,policy,models,profiles,invoke=invoke)
+    assert result["job"]["status"] == "completed"
+    assert result["results"][0]["metrics"] == {"accuracy":1.0,"latency_ms":10.0,"input_tokens":4,"output_tokens":2,"success_rate":1.0}
+    assert list((tmp_path/"policies").glob("*.benchmark_job.json"))
+    assert list((tmp_path/"policies").glob("*.benchmark_result.json"))
+
+
+def test_model_policy_ui_exposes_explicit_benchmark_run() -> None:
+    source = (ROOT / "workbench" / "frontend" / "src" / "components" / "ModelPolicyTodoPage.tsx").read_text(encoding="utf-8")
+    assert "/model-policy/benchmarks/" in source
+    assert "Run Benchmark" in source

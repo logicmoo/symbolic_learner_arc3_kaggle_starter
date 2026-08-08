@@ -9,6 +9,15 @@
   "modelSelection": {"policyState": "on", "requireEffectiveBenchmark": true},
   "promptProfiles": ["gpt-5.6-light", "gpt-5.6-deep"],
   "metrics": ["accuracy", "latency_ms", "input_tokens", "output_tokens", "estimated_cost"],
+  "cases": [
+    {
+      "id": "exact_token",
+      "prompt": "Return exactly the token ARC3_OK and no other text.",
+      "expected": "ARC3_OK",
+      "evaluator": "exact_match"
+    }
+  ],
   "repetitions": 3,
+  "concurrency": 4,
   "timeoutSeconds": 300
 }

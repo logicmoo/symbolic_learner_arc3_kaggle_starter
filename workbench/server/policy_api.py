@@ -12,6 +12,8 @@ from fastapi import APIRouter, Body, HTTPException
 from policy_library import POLICY_KINDS, effective_model_registry, load_workspace_policy_records
 from backend_library import load_workspace_backend_records
 from model_policy_ping import run_ping_job
+from model_benchmark import run_benchmark
+from model_library import resolve_model_records
 from workspace_api import _resolve_workspace
 
 router = APIRouter(prefix="/workspaces", tags=["model-policy"])
@@ -69,3 +71,15 @@ def execute_model_policy_ping(workspace_id: str, request: dict[str, Any] = Body(
     rules = (registry.get("policy") or {}).get("rules") or {}; backend_records = load_workspace_backend_records(root); backends = [record["document"] for record in backend_records if record.get("document")]
     result = run_ping_job(root, job, models, backends, slow_latency_ms=float(rules.get("slowLatencyMs", 5000)))
     return {"workspace": workspace, **result}
+
+
+@router.post("/{workspace_id}/model-policy/benchmarks/{policy_id}/run", status_code=201)
+def execute_model_benchmark(workspace_id: str, policy_id: str) -> dict[str, Any]:
+    try: workspace = _resolve_workspace(workspace_id)
+    except KeyError as error: raise HTTPException(status_code=404, detail=str(error)) from error
+    root=Path(workspace["root"]);records=load_workspace_policy_records(root);registry=effective_model_registry(records);policy=next((item for item in registry["benchmarkPolicies"] if item.get("id")==policy_id),None)
+    if not policy: raise HTTPException(status_code=404,detail=f"benchmark policy not found: {policy_id}")
+    models=[item for item in registry["models"] if item["effective"]["benchmark"]]; resolved=resolve_model_records(root); profile_ids=set(policy.get("promptProfiles") or []);profiles=[record for record in resolved if (record.get("document") or {}).get("id") in profile_ids and (record.get("resolved") or {}).get("enabled")]
+    try: result=run_benchmark(root,policy,models,profiles)
+    except ValueError as error: raise HTTPException(status_code=400,detail=str(error)) from error
+    return {"workspace":workspace,**result}
