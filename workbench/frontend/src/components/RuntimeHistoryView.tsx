@@ -29,7 +29,7 @@ async function api(path: string, init?: RequestInit) {
 
 const stamp = (value?: string) => value ? value.replace("T", " ").slice(0, 19) : "—";
 
-function WorkflowRunProjection({ run, workflow }: { run: RuntimeRun; workflow: FrozenWorkflow | null }) {
+function WorkflowRunProjection({ run, workflow, busy, onCommand }: { run: RuntimeRun; workflow: FrozenWorkflow | null; busy: boolean; onCommand: (command: "pause" | "resume" | "advance" | "replay" | "cancel") => void }) {
   const [view, setView] = useState<"topology" | "chronology">("topology");
   const [selectedStepId, setSelectedStepId] = useState("");
   const [selectedEventId, setSelectedEventId] = useState("");
@@ -49,6 +49,7 @@ function WorkflowRunProjection({ run, workflow }: { run: RuntimeRun; workflow: F
       <div><span>FROZEN WORKFLOW v{run.workflowVersion}</span><h2>{workflow?.label || run.workflowId}</h2><small>{run.id} · {run.status} · {run.events.length} durable events</small></div>
       <div className="run-projection-modes" role="group" aria-label="Workflow run view"><button className={view === "topology" ? "active" : ""} onClick={() => setView("topology")}>Topology</button><button className={view === "chronology" ? "active" : ""} onClick={() => setView("chronology")}>Chronology</button></div>
     </div>
+    <div className="run-command-controls"><span>RUN CONTROL</span><button disabled={busy || run.status !== "running"} onClick={() => onCommand("pause")}>Pause</button><button disabled={busy || run.status !== "paused"} onClick={() => onCommand("resume")}>Resume</button><button disabled={busy || ["waiting", "paused", "completed", "failed", "cancelled"].includes(run.status)} onClick={() => onCommand("advance")}>Advance</button><button disabled={busy} onClick={() => onCommand("replay")}>Replay as new run</button><button className="danger" disabled={busy || ["completed", "failed", "cancelled"].includes(run.status)} onClick={() => onCommand("cancel")}>Cancel</button></div>
     {view === "topology" ? workflow ? <div className="run-topology-scroll">
       <svg className="run-topology" viewBox={`0 0 ${width} 270`} style={{ minWidth: width }}>
         <defs><marker id={`run-arrow-${run.id}`} viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" /></marker></defs>
@@ -180,6 +181,16 @@ export function RuntimeHistoryView({ mode, workspaceId, goals = [], plans = [], 
       onSelectRun?.(payload.run); await refresh();
     } catch (reason) { setError(String(reason)); } finally { setBusy(false); }
   };
+  const commandWorkflowRun = async (command: "pause" | "resume" | "advance" | "replay" | "cancel") => {
+    if (!selectedRun) return;
+    setBusy(true); setError("");
+    try {
+      const payload = await api(`/api/engine/runs/${encodeURIComponent(selectedRun.id)}/commands`, { method: "POST", body: JSON.stringify({ command }) });
+      const updated = payload.run as RuntimeRun;
+      setRuns(current => command === "replay" ? [updated, ...current] : current.map(item => item.id === updated.id ? updated : item));
+      setSelectedId(updated.id); onSelectRun?.(updated);
+    } catch (reason) { setError(String(reason)); } finally { setBusy(false); }
+  };
   const title = { goalRuns: "Goal Runs", workflowRuns: "Workflow Runs", execs: "Execs", events: "Events", states: "States", runtimeContexts: "Contexts", logs: "Logs" }[mode];
 
   if (mode === "goalRuns") return <section className="resource-view runtime-history-view">
@@ -210,7 +221,7 @@ export function RuntimeHistoryView({ mode, workspaceId, goals = [], plans = [], 
     <div className="resource-heading"><div><span>PERSISTENT ENGINE HISTORY</span><h1>{title}</h1><p>Records are loaded from the durable workflow-engine database across application sessions.</p></div><button onClick={refresh}>Refresh</button></div>
     {error && <div className="backend-error"><b>Error</b><span>{error}</span></div>}
     <div className="resource-table"><div className="resource-row resource-head"><span>Record</span><span>Status / type</span><span>Step / time</span><span>Run</span><span>Detail</span></div>{rows.map(row => <button className="resource-row" key={row.key} onClick={() => chooseRun(row.run)}><b>{row.a}</b><code>{row.b}</code><span>{row.c}</span><span>{row.d}</span><em title={row.e}>{row.e}</em></button>)}{!rows.length && <div className="studio-empty">No persisted {title.toLowerCase()} yet.</div>}</div>
-    {mode === "workflowRuns" && selectedRun && <WorkflowRunProjection run={selectedRun} workflow={frozenWorkflow} />}
+    {mode === "workflowRuns" && selectedRun && <WorkflowRunProjection run={selectedRun} workflow={frozenWorkflow} busy={busy} onCommand={command => void commandWorkflowRun(command)} />}
     {mode === "workflowRuns" && <WorkflowRunnerTodoReference />}
     {mode !== "workflowRuns" && selectedRun && <div className="demo-notice"><b>SELECTED RUN {selectedRun.id.slice(0, 8)}</b><span>{selectedRun.workflowId} · {selectedRun.status} · {selectedRun.events.length} events · {selectedRun.artifacts.length} states</span></div>}
   </section>;
