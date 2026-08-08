@@ -7,6 +7,7 @@ SHARED = ROOT / "workbench" / "workspaces" / "shared"
 WORKSPACES = SHARED.parent
 
 KIND_DIRECTORIES = {
+    "artifact_category": "categories",
     "artifact_catalog": "artifact_catalogs",
     "backend": "backends",
     "config": "configs",

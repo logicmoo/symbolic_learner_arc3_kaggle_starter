@@ -9,6 +9,7 @@ from typing import Any
 
 from fastapi import APIRouter, Body, HTTPException, Query
 
+from artifact_category_library import apply_artifact_categories, load_workspace_artifact_categories
 from backend_library import MODEL_CATALOG_DIRECTORY, load_backend_library_records, load_workspace_backend_records
 from goal_plan_library import load_workspace_symbolic_records, symbolic_hierarchy
 from datatype_library import (
@@ -23,6 +24,7 @@ from model_library import load_model_library_records, resolve_model_records
 from prompt_library import load_prompt_library_records, load_workspace_prompt_records
 from policy_library import load_workspace_policy_records, policy_hierarchy
 from resource_convention import canonical_resource_path, infer_resource_kind
+from resource_relationships import relationship_ids
 from operation_library import DEFAULT_WORKSPACES_ROOT, load_workspace_operation_implementation_records, load_workspace_operation_records
 from workspace_inheritance import (
     SHARED_WORKSPACE_ID,
@@ -256,43 +258,53 @@ def _load_workflows(workspace: dict[str, Any]) -> list[dict[str, Any]]:
             for record in _load_documents(layer, directory, layer_source(layer, root), "workflow"):
                 document = record.get("document") or {}
                 combined[str(document.get("id") or record["path"])] = record
-    return sorted(combined.values(), key=lambda record: str((record.get("document") or {}).get("label") or record["path"]).lower())
+    records = sorted(combined.values(), key=lambda record: str((record.get("document") or {}).get("label") or record["path"]).lower())
+    return _with_artifact_categories(workspace, records, "workflows")
+
+
+def _load_artifact_categories(workspace: dict[str, Any]) -> list[dict[str, Any]]:
+    return load_workspace_artifact_categories(Path(workspace["root"]))
+
+
+def _with_artifact_categories(workspace: dict[str, Any], records: list[dict[str, Any]], tree: str) -> list[dict[str, Any]]:
+    return apply_artifact_categories(records, _load_artifact_categories(workspace), tree)
 
 
 def _load_operations(workspace: dict[str, Any]) -> list[dict[str, Any]]:
-    return load_workspace_operation_records(Path(workspace["root"]))
+    return _with_artifact_categories(workspace, load_workspace_operation_records(Path(workspace["root"])), "operations")
 
 
 def _load_operation_implementations(workspace: dict[str, Any]) -> list[dict[str, Any]]:
-    return load_workspace_operation_implementation_records(Path(workspace["root"]))
+    return _with_artifact_categories(workspace, load_workspace_operation_implementation_records(Path(workspace["root"])), "operations")
 
 
 def _load_datatypes(workspace: dict[str, Any]) -> list[dict[str, Any]]:
-    return load_workspace_datatype_records(Path(workspace["root"]))
+    return _with_artifact_categories(workspace, load_workspace_datatype_records(Path(workspace["root"])), "datatypes")
 
 
 def _load_representations(workspace: dict[str, Any]) -> list[dict[str, Any]]:
-    return load_workspace_representation_records(Path(workspace["root"]))
+    return _with_artifact_categories(workspace, load_workspace_representation_records(Path(workspace["root"])), "datatypes")
 
 
 def _load_concrete_datatypes(workspace: dict[str, Any]) -> list[dict[str, Any]]:
-    return load_workspace_concrete_datatype_records(Path(workspace["root"]))
+    return _with_artifact_categories(workspace, load_workspace_concrete_datatype_records(Path(workspace["root"])), "datatypes")
 
 
 def _load_backends(workspace: dict[str, Any]) -> list[dict[str, Any]]:
-    return load_workspace_backend_records(Path(workspace["root"]))
+    return _with_artifact_categories(workspace, load_workspace_backend_records(Path(workspace["root"])), "models")
 
 
 def _load_models(workspace: dict[str, Any]) -> list[dict[str, Any]]:
-    return resolve_model_records(Path(workspace["root"]))
+    return _with_artifact_categories(workspace, resolve_model_records(Path(workspace["root"])), "models")
 
 
 def _load_prompts(workspace: dict[str, Any]) -> list[dict[str, Any]]:
-    return load_workspace_prompt_records(Path(workspace["root"]))
+    return _with_artifact_categories(workspace, load_workspace_prompt_records(Path(workspace["root"])), "prompts")
 
 
 def _load_symbolic_family(workspace: dict[str, Any], family: str) -> list[dict[str, Any]]:
-    return load_workspace_symbolic_records(Path(workspace["root"]), family)
+    tree = {"goal": "goals", "plan": "plans", "context": "atomspaces"}[family]
+    return _with_artifact_categories(workspace, load_workspace_symbolic_records(Path(workspace["root"]), family), tree)
 
 
 def _load_backend_library(workspace: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:
@@ -304,7 +316,16 @@ def _load_model_library(workspace: dict[str, Any]) -> dict[str, list[dict[str, A
 
 
 def _load_prompt_library(workspace: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:
-    return load_prompt_library_records(Path(workspace["root"]))
+    library = load_prompt_library_records(Path(workspace["root"]))
+    hierarchy = library["hierarchy"]
+    prompts = _with_artifact_categories(workspace, hierarchy["prompts"], "prompts")
+    implementations = _with_artifact_categories(workspace, hierarchy["promptImplementations"], "prompts")
+    by_prompt: dict[str, list[dict[str, Any]]] = {}
+    for record in implementations:
+        for parent in relationship_ids((record.get("document") or {}).get("parents")):
+            by_prompt.setdefault(parent, []).append(record)
+    library["hierarchy"] = {"prompts": prompts, "promptImplementations": implementations, "implementationsByPrompt": by_prompt}
+    return library
 
 
 @router.get("")
@@ -386,6 +407,15 @@ def workspace_operations(workspace_id: str) -> dict[str, Any]:
     try:
         workspace = _resolve_workspace(workspace_id)
         return {"workspace": workspace, "operations": _load_operations(workspace), "operationImplementations": _load_operation_implementations(workspace)}
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+
+
+@router.get("/{workspace_id}/artifact-categories")
+def workspace_artifact_categories(workspace_id: str) -> dict[str, Any]:
+    try:
+        workspace = _resolve_workspace(workspace_id)
+        return {"workspace": workspace, "artifactCategories": _load_artifact_categories(workspace)}
     except KeyError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error
 
@@ -508,6 +538,7 @@ def workspace_snapshot(workspace_id: str) -> dict[str, Any]:
         "plans": _load_symbolic_family(workspace, "plan"),
         "contexts": _load_symbolic_family(workspace, "context"),
         "policies": load_workspace_policy_records(root),
+        "artifactCategories": _load_artifact_categories(workspace),
         "files": files,
     }
 

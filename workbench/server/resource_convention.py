@@ -6,6 +6,7 @@ from typing import Any
 
 KIND_PATTERN = re.compile(r"^[a-z][a-z0-9_]*$")
 KNOWN_RESOURCE_KINDS = {
+    "artifact_category",
     "artifact_catalog",
     "backend",
     "config",
