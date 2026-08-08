@@ -49,25 +49,33 @@ def probe_model(model: dict[str, Any], backend: dict[str, Any] | None, timeout_m
     except (urllib.error.URLError, TimeoutError, OSError) as error:
         return {"status": "offline", "latencyMs": round((time.perf_counter() - started) * 1000, 1), "error": str(error)}
 
-def run_ping_job(workspace_root: Path, job: dict[str, Any], models: list[dict[str, Any]], backends: list[dict[str, Any]], *, slow_latency_ms: float = 5000, probe: Probe = probe_model) -> dict[str, Any]:
+def run_ping_job(workspace_root: Path, job: dict[str, Any], models: list[dict[str, Any]], backends: list[dict[str, Any]], *, slow_latency_ms: float = 5000, probe: Probe = probe_model, deduplicate_vendor_probes: bool | None = None) -> dict[str, Any]:
     job = {**job, "kind": "model_ping_job", "status": "running", "startedAt": _now()}; write_policy_resource(workspace_root, job)
     backend_by_id = {str(item.get("id")): item for item in backends if item.get("id")}; timeout_ms = max(100, int(job.get("timeoutMs") or 15000)); concurrency = max(1, min(32, int(job.get("concurrency") or 4))); results: list[dict[str, Any]] = []
     def execute(model: dict[str, Any]) -> dict[str, Any]:
         observed = probe(model, backend_by_id.get(str(model.get("vendorId") or "")), timeout_ms); latency = observed.get("latencyMs")
         if observed.get("status") == "online" and isinstance(latency, (int, float)) and latency > slow_latency_ms: observed["status"] = "slow"
         return observed
+    if deduplicate_vendor_probes is None: deduplicate_vendor_probes = probe is probe_model
+    groups: list[list[dict[str, Any]]]
+    if deduplicate_vendor_probes:
+        grouped: dict[str, list[dict[str, Any]]] = {}
+        for model in models: grouped.setdefault(str(model.get("vendorId") or model.get("id")), []).append(model)
+        groups = list(grouped.values())
+    else: groups = [[model] for model in models]
     with ThreadPoolExecutor(max_workers=concurrency, thread_name_prefix="model-policy-ping") as executor:
-        futures = {executor.submit(execute, model): model for model in models}
+        futures = {executor.submit(execute, group[0]): group for group in groups}
         for future in as_completed(futures):
-            model = futures[future]
+            group = futures[future]
             try: observed = future.result()
             except Exception as error: observed = {"status": "error", "latencyMs": 0, "error": str(error)}
-            stamp = _now(); suffix = _safe_id(model.get("id"))
-            health = {"kind": "model_health_observation", "id": f"{job['id']}:health:{suffix}", "modelPolicyEntryId": model.get("id"), "vendorId": model.get("vendorId"), "status": observed.get("status", "error"), "latencyMs": observed.get("latencyMs", 0), "observedAt": stamp, "jobId": job["id"]}
-            if observed.get("error"): health["error"] = str(observed["error"])
-            event = {"kind": "model_ping_event", "id": f"{job['id']}:event:{suffix}", "jobId": job["id"], "modelPolicyEntryId": model.get("id"), "status": "succeeded" if health["status"] in {"online", "slow"} else "failed", "healthStatus": health["status"], "latencyMs": health["latencyMs"], "createdAt": stamp}
-            if health.get("error"): event["error"] = health["error"]
-            write_policy_resource(workspace_root, health); write_policy_resource(workspace_root, event); results.append({"event": event, "health": health})
+            for model in group:
+                stamp = _now(); suffix = _safe_id(model.get("id"))
+                health = {"kind": "model_health_observation", "id": f"{job['id']}:health:{suffix}", "modelPolicyEntryId": model.get("id"), "vendorId": model.get("vendorId"), "status": observed.get("status", "error"), "latencyMs": observed.get("latencyMs", 0), "observedAt": stamp, "jobId": job["id"]}
+                if observed.get("error"): health["error"] = str(observed["error"])
+                event = {"kind": "model_ping_event", "id": f"{job['id']}:event:{suffix}", "jobId": job["id"], "modelPolicyEntryId": model.get("id"), "status": "succeeded" if health["status"] in {"online", "slow"} else "failed", "healthStatus": health["status"], "latencyMs": health["latencyMs"], "createdAt": stamp}
+                if health.get("error"): event["error"] = health["error"]
+                write_policy_resource(workspace_root, health); write_policy_resource(workspace_root, event); results.append({"event": event, "health": health})
     failures = sum(item["event"]["status"] == "failed" for item in results)
     completed = {**job, "status": "completed_with_errors" if failures else "completed", "completedAt": _now(), "targetCount": len(models), "failureCount": failures}; write_policy_resource(workspace_root, completed)
     return {"job": completed, "results": results}

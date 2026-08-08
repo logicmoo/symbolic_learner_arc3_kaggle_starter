@@ -193,6 +193,27 @@ def test_ping_job_persists_independent_health_and_events(tmp_path: Path) -> None
     assert len(persisted) == 5  # one job, two events, and two health observations
 
 
+def test_vendor_probe_is_single_flight_but_persists_each_model(tmp_path: Path) -> None:
+    calls: list[str] = []
+    models = [{"id": f"vendor:model-{index}", "vendorId": "vendor"} for index in range(8)]
+
+    def probe(model: dict, _backend: dict | None, _timeout: int) -> dict:
+        calls.append(model["id"])
+        return {"status": "online", "latencyMs": 9}
+
+    result = run_ping_job(
+        tmp_path,
+        {"id": "single-flight", "concurrency": 4},
+        models,
+        [{"id": "vendor", "configuration": {"baseUrl": "http://example.test"}}],
+        probe=probe,
+        deduplicate_vendor_probes=True,
+    )
+    assert calls == ["vendor:model-0"]
+    assert len(result["results"]) == len(models)
+    assert {item["health"]["modelPolicyEntryId"] for item in result["results"]} == {item["id"] for item in models}
+
+
 def test_model_policy_ui_calls_real_ping_executor() -> None:
     source = (ROOT / "workbench" / "frontend" / "src" / "components" / "ModelPolicyPage.tsx").read_text(encoding="utf-8")
     assert "/model-policy/ping" in source
