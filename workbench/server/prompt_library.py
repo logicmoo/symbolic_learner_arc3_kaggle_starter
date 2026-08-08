@@ -7,6 +7,7 @@ from typing import Any
 from operation_library import DEFAULT_WORKSPACES_ROOT, SHARED_WORKSPACE_ID
 from workspace_inheritance import effective_workspace_layers, layer_source
 from resource_relationships import points_to, relationship_ids
+from resource_store import get_filesystem_provider
 
 PROMPT_DIRECTORY = "prompts"
 PROMPT_KIND = "prompt"
@@ -17,7 +18,7 @@ PROMPT_DIRECTORIES = ("design/prompts", "design/prompt_implementations", "prompt
 
 def read_prompt_file(path: Path) -> dict[str, Any]:
     try:
-        value = json.loads(path.read_text(encoding="utf-8"))
+        value = get_filesystem_provider().read_json(path)
     except (OSError, json.JSONDecodeError) as error:
         raise ValueError(f"Invalid prompt definition {path}: {error}") from error
     if not isinstance(value, dict):
@@ -54,7 +55,7 @@ def read_prompt_file(path: Path) -> dict[str, Any]:
 
 def _prompt_records(workspace_root: Path, source: str, workspace_id: str) -> list[dict[str, Any]]:
     records: list[dict[str, Any]] = []
-    paths = [path for name in PROMPT_DIRECTORIES for path in (workspace_root / name).glob("*.json")]
+    paths = get_filesystem_provider().glob(workspace_root, PROMPT_DIRECTORIES)
     for path in sorted(paths, key=lambda item: item.name.lower()):
         record: dict[str, Any] = {
             "path": path.relative_to(workspace_root).as_posix(),

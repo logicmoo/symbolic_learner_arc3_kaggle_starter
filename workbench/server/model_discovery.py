@@ -6,6 +6,7 @@ import re
 import urllib.request
 from pathlib import Path
 from typing import Any, Callable
+from resource_store import get_filesystem_provider
 
 
 def _headers(backend: dict[str, Any]) -> dict[str, str]:
@@ -100,9 +101,10 @@ def discovered_model_document(backend: dict[str, Any], row: dict[str, Any]) -> d
 
 def reconcile_discovered_models(root: Path, backend: dict[str, Any], models: list[dict[str, Any]]) -> list[dict[str, Any]]:
     directory = root / "design" / "models"; existing_by_remote: dict[str, dict[str, Any]] = {}
-    if directory.is_dir():
-        for path in directory.glob("*.model.json"):
-            try: document = json.loads(path.read_text(encoding="utf-8"))
+    resources = get_filesystem_provider()
+    if resources.is_dir(directory):
+        for path in resources.glob(root, ("design/models",), "*.model.json"):
+            try: document = resources.read_json(path)
             except (OSError, json.JSONDecodeError): continue
             discovery = document.get("discovery") or {}; legacy = str(document.get("description") or "").startswith("Discovered from ")
             if document.get("inherits") == backend.get("id") and (discovery.get("managed") is True or legacy):
@@ -123,7 +125,8 @@ def reconcile_discovered_models(root: Path, backend: dict[str, Any], models: lis
 
 def import_discovered_models(root: Path, backend: dict[str, Any], models: list[dict[str, Any]]) -> list[dict[str, Any]]:
     directory = root / "design" / "models"
-    directory.mkdir(parents=True, exist_ok=True)
+    resources = get_filesystem_provider()
+    resources.make_directory(directory)
     imported: list[dict[str, Any]] = []
     for row in models:
         document = discovered_model_document(backend, row)
@@ -132,8 +135,8 @@ def import_discovered_models(root: Path, backend: dict[str, Any], models: list[d
         resource_id = str(document["id"])
         target = directory / f"{resource_id}.model.json"
         temporary = target.with_suffix(target.suffix + ".tmp")
-        temporary.write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8")
-        temporary.replace(target)
+        resources.write_json(temporary, document)
+        resources.replace(temporary, target)
         imported.append(document)
     return imported
 
@@ -143,10 +146,11 @@ def remove_missing_models(root: Path, backend: dict[str, Any], resource_ids: lis
     for resource_id in resource_ids:
         safe_id = re.sub(r"[^a-zA-Z0-9._-]+", "_", str(resource_id)).strip("._").lower()
         target = (directory / f"{safe_id}.model.json").resolve()
-        if target.parent != directory or not target.is_file(): continue
-        try: document = json.loads(target.read_text(encoding="utf-8"))
+        resources = get_filesystem_provider()
+        if target.parent != directory or not resources.is_file(target): continue
+        try: document = resources.read_json(target)
         except (OSError, json.JSONDecodeError): continue
         discovery = document.get("discovery") or {}; legacy = str(document.get("description") or "").startswith("Discovered from ")
         if document.get("inherits") != backend.get("id") or not (discovery.get("managed") is True or legacy): continue
-        target.unlink(); removed.append(safe_id)
+        resources.delete(target); removed.append(safe_id)
     return removed

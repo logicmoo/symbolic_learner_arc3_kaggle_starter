@@ -8,6 +8,7 @@ import uuid
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Literal
+from resource_store import get_filesystem_provider
 
 
 TaskStatus = Literal["running", "waiting", "paused", "completed", "failed"]
@@ -128,7 +129,7 @@ class WorkbenchStore:
         configured = os.getenv("WORKBENCH_DB")
         default = Path(__file__).resolve().parents[1] / "data" / "workbench.db"
         self.database_path = Path(database_path or configured or default)
-        self.database_path.parent.mkdir(parents=True, exist_ok=True)
+        get_filesystem_provider().make_directory(self.database_path.parent)
         self._initialize()
 
     def _connect(self) -> sqlite3.Connection:

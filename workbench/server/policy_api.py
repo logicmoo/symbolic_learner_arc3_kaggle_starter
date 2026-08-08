@@ -17,6 +17,7 @@ from model_library import resolve_model_records
 from model_discovery import discover_backend_models, import_discovered_models, reconcile_discovered_models, remove_missing_models
 from model_benchmark import call_model
 from workspace_api import _resolve_workspace
+from resource_store import get_filesystem_provider
 
 router = APIRouter(prefix="/workspaces", tags=["model-policy"])
 WRITABLE_OBSERVATION_KINDS = {"model_health_observation", "model_ping_job", "model_ping_event", "benchmark_result"}
@@ -110,11 +111,12 @@ def record_model_policy_observation(workspace_id: str, document: dict[str, Any] 
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
     directory = Path(workspace["root"]) / "policies"
-    directory.mkdir(parents=True, exist_ok=True)
+    resources = get_filesystem_provider()
+    resources.make_directory(directory)
     target = directory / f"{resource_id}.{kind}.json"
     temporary = target.with_suffix(target.suffix + ".tmp")
-    temporary.write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8")
-    temporary.replace(target)
+    resources.write_json(temporary, document)
+    resources.replace(temporary, target)
     return {"workspace": workspace, "path": target.relative_to(Path(workspace["root"])).as_posix(), "document": document}
 
 

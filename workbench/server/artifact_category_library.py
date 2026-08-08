@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from workspace_inheritance import effective_workspace_layers, layer_source
+from resource_store import get_filesystem_provider
 
 
 TREE_KINDS = {
@@ -44,12 +45,13 @@ def load_workspace_artifact_categories(workspace_root: Path) -> list[dict[str, A
     combined: dict[str, dict[str, Any]] = {}
     for layer in effective_workspace_layers(workspace_root, workspace_root.parent):
         directory = layer / "design" / "categories"
-        if not directory.is_dir():
+        resources = get_filesystem_provider()
+        if not resources.is_dir(directory):
             continue
-        for path in sorted(directory.glob("*.json")):
+        for path in resources.glob(layer, ("design/categories",)):
             record: dict[str, Any] = {"path": path.relative_to(layer).as_posix(), "source": layer_source(layer, workspace_root), "workspaceId": layer.name}
             try:
-                document = json.loads(path.read_text(encoding="utf-8"))
+                document = resources.read_json(path)
                 validate_artifact_category(document)
                 record["document"] = document
                 combined[str(document["id"])] = record

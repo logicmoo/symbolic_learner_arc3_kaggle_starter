@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Callable
+from resource_store import get_filesystem_provider
 
 
 def now() -> str:
@@ -52,7 +53,7 @@ class WorkflowEngine:
 
     def __init__(self, db_path: str | Path, registry: OperationRegistry | None = None) -> None:
         self.db_path = Path(db_path)
-        self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        get_filesystem_provider().make_directory(self.db_path.parent)
         self.registry = registry or default_registry()
         self._init_db()
 

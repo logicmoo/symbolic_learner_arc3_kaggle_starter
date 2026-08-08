@@ -4,6 +4,7 @@ import hashlib
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Query
+from resource_store import get_filesystem_provider
 
 router = APIRouter(prefix="/repository", tags=["repository-docs"])
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
@@ -33,13 +34,14 @@ def repair_display_text(content: str) -> str:
 
 @router.get("/markdown-index")
 def list_repository_markdown() -> dict[str, object]:
+    resources = get_filesystem_provider()
     documents: list[dict[str, object]] = []
-    for target in REPOSITORY_ROOT.rglob("*.md"):
+    for target in resources.rglob(REPOSITORY_ROOT, "*.md"):
         relative = target.relative_to(REPOSITORY_ROOT)
         if any(part in IGNORED_DIRECTORIES for part in relative.parts):
             continue
-        stat = target.stat()
-        display_content = repair_display_text(target.read_text(encoding="utf-8"))
+        stat = resources.stat(target)
+        display_content = repair_display_text(resources.read_text(target))
         documents.append({
             "path": relative.as_posix(),
             "name": target.name,
@@ -53,32 +55,40 @@ def list_repository_markdown() -> dict[str, object]:
 
 @router.get("/markdown")
 def read_repository_markdown(path: str = Query(..., min_length=1)) -> dict[str, str]:
-    target = (REPOSITORY_ROOT / path).resolve()
+    resources = get_filesystem_provider()
+    try:
+        target = resources.resolve(REPOSITORY_ROOT, path)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail="Markdown path must stay inside the repository") from error
     try:
         target.relative_to(REPOSITORY_ROOT)
     except ValueError as error:
         raise HTTPException(status_code=400, detail="Markdown path must stay inside the repository") from error
     if target.suffix.lower() != ".md":
         raise HTTPException(status_code=400, detail="Only Markdown documents can be read")
-    if not target.is_file():
+    if not resources.is_file(target):
         raise HTTPException(status_code=404, detail=f"Markdown document not found: {path}")
-    return {"path": target.relative_to(REPOSITORY_ROOT).as_posix(), "content": repair_display_text(target.read_text(encoding="utf-8"))}
+    return {"path": target.relative_to(REPOSITORY_ROOT).as_posix(), "content": repair_display_text(resources.read_text(target))}
 
 
 @router.get("/file")
 def read_repository_file(path: str = Query(..., min_length=1)) -> dict[str, str]:
-    target = (REPOSITORY_ROOT / path).resolve()
+    resources = get_filesystem_provider()
+    try:
+        target = resources.resolve(REPOSITORY_ROOT, path)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail="File path must stay inside the repository") from error
     try:
         target.relative_to(REPOSITORY_ROOT)
     except ValueError as error:
         raise HTTPException(status_code=400, detail="File path must stay inside the repository") from error
     if target.suffix.lower() not in VIEWABLE_SUFFIXES and target.name not in VIEWABLE_NAMES:
         raise HTTPException(status_code=400, detail="This repository file type cannot be displayed")
-    if not target.is_file():
+    if not resources.is_file(target):
         raise HTTPException(status_code=404, detail=f"Repository file not found: {path}")
-    if target.stat().st_size > 5_000_000:
+    if resources.stat(target).st_size > 5_000_000:
         raise HTTPException(status_code=413, detail="Repository file is too large to display")
-    display_content = repair_display_text(target.read_text(encoding="utf-8"))
+    display_content = repair_display_text(resources.read_text(target))
     return {
         "path": target.relative_to(REPOSITORY_ROOT).as_posix(),
         "content": display_content,

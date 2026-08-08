@@ -4,6 +4,7 @@ import json
 import os
 from pathlib import Path
 from typing import Any
+from resource_store import get_filesystem_provider
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 WORKSPACES_ROOT = Path(os.getenv("WORKBENCH_WORKSPACES_ROOT", REPOSITORY_ROOT / "workbench" / "workspaces")).resolve()
@@ -11,10 +12,10 @@ SHARED_WORKSPACE = WORKSPACES_ROOT / "shared"
 
 
 def _read_json(path: Path, default: Any) -> Any:
-    if not path.is_file():
+    if not get_filesystem_provider().is_file(path):
         return default
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
+        return get_filesystem_provider().read_json(path)
     except (OSError, json.JSONDecodeError):
         return default
 
@@ -46,9 +47,10 @@ def load_artifact_specs() -> dict[str, tuple[str, str, str, float]]:
 def load_shared_operations() -> list[dict[str, Any]]:
     operations: list[dict[str, Any]] = []
     directory = SHARED_WORKSPACE / "operations"
-    if not directory.is_dir():
+    resources = get_filesystem_provider()
+    if not resources.is_dir(directory):
         return operations
-    for path in sorted(directory.glob("*.json")):
+    for path in resources.glob(SHARED_WORKSPACE, ("operations",)):
         value = _read_json(path, None)
         if isinstance(value, dict):
             operations.append(value)
@@ -57,13 +59,14 @@ def load_shared_operations() -> list[dict[str, Any]]:
 
 def load_workspace_workflows() -> list[dict[str, Any]]:
     workflows: dict[str, dict[str, Any]] = {}
-    if not WORKSPACES_ROOT.is_dir():
+    resources = get_filesystem_provider()
+    if not resources.is_dir(WORKSPACES_ROOT):
         return []
-    for workspace in sorted(WORKSPACES_ROOT.iterdir(), key=lambda item: item.name.lower()):
+    for workspace in resources.iterdir(WORKSPACES_ROOT):
         directory = workspace / "workflows"
-        if not directory.is_dir():
+        if not resources.is_dir(directory):
             continue
-        for path in sorted(directory.glob("*.json")):
+        for path in resources.glob(workspace, ("workflows",)):
             value = _read_json(path, None)
             if isinstance(value, dict) and value.get("id"):
                 workflows[str(value["id"])] = value

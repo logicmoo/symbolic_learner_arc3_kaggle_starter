@@ -6,6 +6,7 @@ from typing import Any
 
 from operation_library import DEFAULT_WORKSPACES_ROOT
 from workspace_inheritance import effective_workspace_layers, layer_source
+from resource_store import get_filesystem_provider
 
 SHARED_WORKSPACE_ID = "shared"
 MODEL_CATALOG_DIRECTORY = "models"
@@ -14,7 +15,7 @@ BACKEND_DIRECTORIES = ("design/backends", "backends", "models")
 
 def read_backend_file(path: Path) -> dict[str, Any]:
     try:
-        value = json.loads(path.read_text(encoding="utf-8"))
+        value = get_filesystem_provider().read_json(path)
     except (OSError, json.JSONDecodeError) as error:
         raise ValueError(f"Invalid backend definition {path}: {error}") from error
     if not isinstance(value, dict):
@@ -31,10 +32,11 @@ def read_backend_file(path: Path) -> dict[str, Any]:
 def _backend_records(workspace_root: Path, source: str, workspace_id: str) -> list[dict[str, Any]]:
     """Read kind=backend files from kind-specific or legacy catalogs."""
     records: list[dict[str, Any]] = []
-    paths = [path for name in BACKEND_DIRECTORIES for path in (workspace_root / name).glob("*.json")]
+    resources = get_filesystem_provider()
+    paths = resources.glob(workspace_root, BACKEND_DIRECTORIES)
     for path in sorted(paths, key=lambda item: item.name.lower()):
         try:
-            raw = json.loads(path.read_text(encoding="utf-8"))
+            raw = resources.read_json(path)
         except (OSError, json.JSONDecodeError):
             continue
         if not isinstance(raw, dict) or raw.get("kind") != "backend":

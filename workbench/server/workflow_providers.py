@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any
 
 from workflow_engine import OperationRegistry, OperationSpec
+from resource_store import get_filesystem_provider
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
@@ -87,7 +88,7 @@ def _load_python_module(source: dict[str, Any]):
         path = Path(file_name)
         if not path.is_absolute():
             path = (REPOSITORY_ROOT / path).resolve()
-        if not path.is_file():
+        if not get_filesystem_provider().is_file(path):
             raise ValueError(f"Python source file not found: {path}")
         dynamic_name = module_name or f"workbench_dynamic_{abs(hash(str(path)))}"
         spec = importlib.util.spec_from_file_location(dynamic_name, path)
@@ -187,7 +188,7 @@ def _prolog_source(inputs: dict[str, Any], parameters: dict[str, Any]) -> dict[s
         )
     finally:
         try:
-            os.unlink(script_path)
+            get_filesystem_provider().delete(Path(script_path))
         except OSError:
             pass
     if completed.returncode:

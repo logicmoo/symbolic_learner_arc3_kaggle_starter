@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 from collections import Counter
 from pathlib import Path, PurePosixPath
 from threading import RLock
@@ -43,6 +44,34 @@ class FilesystemProvider:
         paths = [path for directory in directories for path in self.resolve(root, directory).glob(pattern)]
         return sorted(set(paths), key=lambda path: (path.name.lower(), path.as_posix().lower()))
 
+    def rglob(self, root: Path, pattern: str) -> list[Path]:
+        self._record("scan")
+        return sorted(root.rglob(pattern), key=lambda path: path.as_posix().lower())
+
+    def iterdir(self, path: Path) -> list[Path]:
+        self._record("scan", path)
+        return sorted(path.iterdir(), key=lambda item: item.name.lower()) if path.is_dir() else []
+
+    def exists(self, path: Path) -> bool:
+        self._record("metadata", path)
+        return path.exists()
+
+    def is_file(self, path: Path) -> bool:
+        self._record("metadata", path)
+        return path.is_file()
+
+    def is_dir(self, path: Path) -> bool:
+        self._record("metadata", path)
+        return path.is_dir()
+
+    def stat(self, path: Path):
+        self._record("metadata", path)
+        return path.stat()
+
+    def make_directory(self, path: Path, *, parents: bool = True, exist_ok: bool = True) -> None:
+        self._record("mkdir", path)
+        path.mkdir(parents=parents, exist_ok=exist_ok)
+
     def read_text(self, path: Path, *, encoding: str = "utf-8") -> str:
         self._record("read", path)
         return path.read_text(encoding=encoding)
@@ -51,6 +80,10 @@ class FilesystemProvider:
         self._record("write", path)
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(content, encoding=encoding)
+
+    def read_bytes(self, path: Path) -> bytes:
+        self._record("read", path)
+        return path.read_bytes()
 
     def read_json(self, path: Path) -> Any:
         return json.loads(self.read_text(path))
@@ -61,6 +94,18 @@ class FilesystemProvider:
     def delete(self, path: Path) -> None:
         self._record("delete", path)
         path.unlink(missing_ok=True)
+
+    def replace(self, source: Path, target: Path) -> None:
+        self._record("replace", target)
+        source.replace(target)
+
+    def copy_tree(self, source: Path, target: Path, *, ignored_names: Iterable[str] = ()) -> None:
+        self._record("copy", target)
+        shutil.copytree(source, target, ignore=shutil.ignore_patterns(*ignored_names))
+
+    def delete_tree(self, path: Path) -> None:
+        self._record("delete-tree", path)
+        shutil.rmtree(path, ignore_errors=True)
 
 
 class FilesystemProviderSingleton:

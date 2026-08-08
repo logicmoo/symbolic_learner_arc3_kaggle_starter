@@ -16,6 +16,7 @@ from operation_library import (
 )
 from resource_relationships import points_to, relationship_ids
 from workspace_inheritance import effective_workspace_layers, layer_source
+from resource_store import get_filesystem_provider
 
 DATATYPE_DIRECTORY = "design/semantic_datatypes"
 REPRESENTATION_DIRECTORY = "design/representation_datatypes"
@@ -31,7 +32,7 @@ def _implemented_datatypes(document: dict[str, Any]) -> list[str]:
 
 def _read_resource(path: Path, expected_kind: str) -> dict[str, Any]:
     try:
-        value = json.loads(path.read_text(encoding="utf-8"))
+        value = get_filesystem_provider().read_json(path)
     except (OSError, json.JSONDecodeError) as error:
         raise ValueError(f"Invalid {expected_kind} definition {path}: {error}") from error
     if not isinstance(value, dict):
@@ -49,7 +50,7 @@ def _read_resource(path: Path, expected_kind: str) -> dict[str, Any]:
 
 def _records(workspace_root: Path, directories: tuple[str, ...], kind: str, source: str, workspace_id: str) -> list[dict[str, Any]]:
     records: list[dict[str, Any]] = []
-    paths = [path for directory in directories for path in (workspace_root / directory).glob("*.json")]
+    paths = get_filesystem_provider().glob(workspace_root, directories)
     for path in sorted(paths, key=lambda item: item.name.lower()):
         record: dict[str, Any] = {
             "path": path.relative_to(workspace_root).as_posix(),
@@ -200,10 +201,11 @@ def interface_type_inventory(
         _collect_contract(owner_kind, owner_id, document.get("outputs"), "output", refs)
 
     workflow_dir = workspace_root / "workflows"
-    if workflow_dir.is_dir():
-        for path in sorted(workflow_dir.glob("*.json")):
+    resources = get_filesystem_provider()
+    if resources.is_dir(workflow_dir):
+        for path in resources.glob(workspace_root, ("workflows",)):
             try:
-                document = json.loads(path.read_text(encoding="utf-8"))
+                document = resources.read_json(path)
             except (OSError, json.JSONDecodeError):
                 continue
             if not isinstance(document, dict):

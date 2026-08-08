@@ -10,6 +10,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
+from resource_store import get_filesystem_provider
 
 Probe = Callable[[dict[str, Any], dict[str, Any] | None, int], dict[str, Any]]
 
@@ -22,10 +23,11 @@ def _safe_id(value: object) -> str:
     return result
 
 def write_policy_resource(root: Path, document: dict[str, Any]) -> Path:
-    directory = root / "policies"; directory.mkdir(parents=True, exist_ok=True)
+    resources = get_filesystem_provider()
+    directory = root / "policies"; resources.make_directory(directory)
     target = directory / f"{_safe_id(document.get('id'))}.{document['kind']}.json"
     temporary = target.with_suffix(target.suffix + ".tmp")
-    temporary.write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8"); temporary.replace(target)
+    resources.write_json(temporary, document); resources.replace(temporary, target)
     return target
 
 def probe_model(model: dict[str, Any], backend: dict[str, Any] | None, timeout_ms: int) -> dict[str, Any]:

@@ -7,6 +7,7 @@ from typing import Any
 from backend_library import MODEL_CATALOG_DIRECTORY, load_workspace_backend_records
 from operation_library import DEFAULT_WORKSPACES_ROOT
 from workspace_inheritance import effective_workspace_layers, layer_source
+from resource_store import get_filesystem_provider
 
 SHARED_WORKSPACE_ID = "shared"
 MODEL_KINDS = {"model", "profile"}
@@ -15,7 +16,7 @@ MODEL_DIRECTORIES = ("design/models", "design/profiles", "models", "profiles")
 
 def read_model_file(path: Path) -> dict[str, Any]:
     try:
-        value = json.loads(path.read_text(encoding="utf-8"))
+        value = get_filesystem_provider().read_json(path)
     except (OSError, json.JSONDecodeError) as error:
         raise ValueError(f"Invalid model/profile definition {path}: {error}") from error
     if not isinstance(value, dict):
@@ -36,10 +37,11 @@ def read_model_file(path: Path) -> dict[str, Any]:
 
 def _model_records(workspace_root: Path, source: str, workspace_id: str) -> list[dict[str, Any]]:
     records: list[dict[str, Any]] = []
-    paths = [path for name in MODEL_DIRECTORIES for path in (workspace_root / name).glob("*.json")]
+    resources = get_filesystem_provider()
+    paths = resources.glob(workspace_root, MODEL_DIRECTORIES)
     for path in sorted(paths, key=lambda item: item.name.lower()):
         try:
-            raw = json.loads(path.read_text(encoding="utf-8"))
+            raw = resources.read_json(path)
         except (OSError, json.JSONDecodeError):
             continue
         if not isinstance(raw, dict) or raw.get("kind") not in MODEL_KINDS:

@@ -7,6 +7,7 @@ from typing import Any
 from operation_library import DEFAULT_WORKSPACES_ROOT, SHARED_WORKSPACE_ID
 from resource_relationships import relationship_ids
 from workspace_inheritance import effective_workspace_layers, layer_source
+from resource_store import get_filesystem_provider
 
 POLICY_KINDS = {"model_policy", "model_policy_variant", "vendor_policy", "model_policy_entry", "model_health_observation", "model_ping_job", "model_ping_event", "benchmark_policy", "benchmark_job", "benchmark_result"}
 POLICY_STATES = {"on", "auto", "off"}
@@ -14,12 +15,13 @@ UNHEALTHY_STATUSES = {"offline", "error", "ratelimited", "rate_limited", "unknow
 
 def _records(root: Path, source: str, workspace_id: str) -> list[dict[str, Any]]:
     directory = root / "policies"
-    if not directory.is_dir(): return []
+    resources = get_filesystem_provider()
+    if not resources.is_dir(directory): return []
     result: list[dict[str, Any]] = []
-    for path in sorted(directory.glob("*.json"), key=lambda value: value.name.lower()):
+    for path in resources.glob(root, ("policies",)):
         record: dict[str, Any] = {"path": path.relative_to(root).as_posix(), "source": source, "workspaceId": workspace_id}
         try:
-            document = json.loads(path.read_text(encoding="utf-8"))
+            document = resources.read_json(path)
             if not isinstance(document, dict) or document.get("kind") not in POLICY_KINDS or not document.get("id"): raise ValueError("Policy resource requires an id and supported kind")
             record["document"] = document
         except (OSError, json.JSONDecodeError, ValueError) as error: record["error"] = str(error)

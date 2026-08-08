@@ -34,6 +34,7 @@ from workspace_inheritance import (
     read_workspace_metadata,
     workspace_metadata_path,
 )
+from resource_store import get_filesystem_provider
 
 router = APIRouter(prefix="/workspaces", tags=["workspaces"])
 
@@ -52,7 +53,7 @@ def _workspace_roots() -> list[Path]:
 
 def _read_json(path: Path) -> dict[str, Any]:
     try:
-        value = json.loads(path.read_text(encoding="utf-8"))
+        value = get_filesystem_provider().read_json(path)
     except (OSError, json.JSONDecodeError) as error:
         raise ValueError(f"Invalid JSON file {path}: {error}") from error
     if not isinstance(value, dict):
@@ -72,6 +73,7 @@ def _humanize(name: str) -> str:
 
 
 def _workspace_from_directory(root: Path) -> dict[str, Any]:
+    resources = get_filesystem_provider()
     metadata = _optional_metadata(root)
     workflow_dir = root / "design" / "workflows"
     prompt_dir = root / "design" / "prompts"
@@ -129,7 +131,7 @@ def _workspace_from_directory(root: Path) -> dict[str, Any]:
         "metadata": metadata.get("metadata") or {},
         "includes": include_specs,
         "effectiveIncludes": [layer.name for layer in layers if layer.resolve() != root.resolve()],
-        "workflowFileCount": len(list(workflow_dir.glob("*.json"))) if workflow_dir.exists() else 0,
+        "workflowFileCount": len(resources.glob(root, ("design/workflows",))) if resources.is_dir(workflow_dir) else 0,
         "operationFileCount": operation_count,
         "operationImplementationFileCount": operation_implementation_count,
         "datatypeFileCount": datatype_count,
@@ -141,21 +143,22 @@ def _workspace_from_directory(root: Path) -> dict[str, Any]:
         "goalFileCount": goal_count,
         "planFileCount": plan_count,
         "contextFileCount": context_count,
-        "catalogFileCount": len(list(model_dir.glob("*.json"))) if model_dir.exists() else 0,
+        "catalogFileCount": len(resources.glob(root, ("design/models",))) if resources.is_dir(model_dir) else 0,
     }
 
 
 def discover_workspaces() -> list[dict[str, Any]]:
+    resources = get_filesystem_provider()
     found: dict[str, dict[str, Any]] = {}
     for container in _workspace_roots():
-        if not container.is_dir():
+        if not resources.is_dir(container):
             continue
         try:
-            children = sorted(container.iterdir(), key=lambda path: path.name.lower())
+            children = resources.iterdir(container)
         except OSError:
             continue
         for child in children:
-            if not child.is_dir() or child.name.startswith(".") or child.name in IGNORED_DIRECTORIES:
+            if not resources.is_dir(child) or child.name.startswith(".") or child.name in IGNORED_DIRECTORIES:
                 continue
             workspace = _workspace_from_directory(child)
             found[workspace["root"]] = workspace
@@ -217,22 +220,25 @@ def _safe_child(root: Path, relative: str) -> Path:
 
 
 def _file_record(root: Path, path: Path) -> dict[str, Any]:
-    stat = path.stat()
+    resources = get_filesystem_provider()
+    stat = resources.stat(path)
     return {
         "path": path.relative_to(root).as_posix(),
         "name": path.name,
         "suffix": path.suffix.lower(),
         "size": stat.st_size,
         "modified": stat.st_mtime,
-        "kind": "directory" if path.is_dir() else "file",
+        "kind": "directory" if resources.is_dir(path) else "file",
     }
 
 
 def _load_documents(root: Path, directory: Path, source: str, expected_kind: str | None = None) -> list[dict[str, Any]]:
     result: list[dict[str, Any]] = []
-    if not directory.exists():
+    resources = get_filesystem_provider()
+    if not resources.is_dir(directory):
         return result
-    for path in sorted(directory.glob("*.json"), key=lambda item: item.name.lower()):
+    relative_directory = directory.relative_to(root).as_posix()
+    for path in resources.glob(root, (relative_directory,)):
         record: dict[str, Any] = {"path": path.relative_to(root).as_posix(), "source": source, "workspaceId": root.name}
         try:
             document = _read_json(path)
@@ -335,6 +341,7 @@ def list_workspaces() -> dict[str, Any]:
 
 @router.post("", status_code=201)
 def create_workspace(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
+    resources = get_filesystem_provider()
     label = str(body.get("label") or "").strip()
     requested_id = str(body.get("id") or label).strip().lower()
     workspace_id = re.sub(r"[^a-z0-9]+", "_", requested_id).strip("_")
@@ -350,12 +357,12 @@ def create_workspace(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
     container = _workspace_roots()[0]
     template = Path(template_workspace["root"])
     target = container / workspace_id
-    if target.exists():
+    if resources.exists(target):
         raise HTTPException(status_code=409, detail=f"Workspace already exists: {workspace_id}")
-    if not template.is_dir():
+    if not resources.is_dir(template):
         raise HTTPException(status_code=500, detail="Workspace template is missing")
     try:
-        shutil.copytree(template, target, ignore=shutil.ignore_patterns(*IGNORED_DIRECTORIES))
+        resources.copy_tree(template, target, ignored_names=IGNORED_DIRECTORIES)
         metadata = {
             "kind": "workspace",
             "id": workspace_id,
@@ -363,11 +370,11 @@ def create_workspace(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
             "description": str(body.get("description") or f"Workspace created from {template_workspace['label']}."),
             "includes": declared_include_specs(template),
         }
-        (target / "workspace.json").write_text(json.dumps(metadata, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        resources.write_json(target / "workspace.json", metadata)
         return {"workspace": _workspace_from_directory(target), "templateWorkspaceId": template_workspace["id"]}
     except OSError as error:
-        if target.exists():
-            shutil.rmtree(target, ignore_errors=True)
+        if resources.exists(target):
+            resources.delete_tree(target)
         raise HTTPException(status_code=500, detail=str(error)) from error
 
 
@@ -394,7 +401,7 @@ def update_workspace_settings(workspace_id: str, body: dict[str, Any] = Body(...
             "description": metadata.get("description") or workspace["description"],
             "includes": includes,
         })
-        path.write_text(json.dumps(metadata, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        get_filesystem_provider().write_json(path, metadata)
         return {"workspace": _workspace_from_directory(root)}
     except KeyError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error
@@ -513,10 +520,11 @@ def workspace_snapshot(workspace_id: str) -> dict[str, Any]:
         raise HTTPException(status_code=404, detail=str(error)) from error
     root = Path(workspace["root"])
     files: list[dict[str, Any]] = []
-    for path in sorted(root.rglob("*")):
+    resources = get_filesystem_provider()
+    for path in resources.rglob(root, "*"):
         if any(part in IGNORED_DIRECTORIES for part in path.parts):
             continue
-        if path.is_file() and path.suffix.lower() in TEXT_SUFFIXES:
+        if resources.is_file(path) and path.suffix.lower() in TEXT_SUFFIXES:
             files.append(_file_record(root, path))
         if len(files) >= 2000:
             break
@@ -549,11 +557,12 @@ def read_workspace_file(workspace_id: str, path: str = Query(...)) -> dict[str, 
         workspace = _resolve_workspace(workspace_id)
         root = Path(workspace["root"])
         target = _safe_child(root, path)
-        if not target.is_file():
+        resources = get_filesystem_provider()
+        if not resources.is_file(target):
             raise ValueError("file not found")
         if target.suffix.lower() not in TEXT_SUFFIXES:
             raise ValueError("file type is not editable text")
-        return {"file": {**_file_record(root, target), "content": target.read_text(encoding="utf-8")}}
+        return {"file": {**_file_record(root, target), "content": resources.read_text(target)}}
     except KeyError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error
     except (OSError, ValueError) as error:
@@ -581,12 +590,13 @@ def write_workspace_file(workspace_id: str, body: dict[str, Any] = Body(...)) ->
             document["kind"] = kind
             target = canonical_resource_path(requested, document)
             content = json.dumps(document, indent=2, ensure_ascii=False) + "\n"
-        target.parent.mkdir(parents=True, exist_ok=True)
-        if target != requested and target.exists() and requested.exists():
+        resources = get_filesystem_provider()
+        resources.make_directory(target.parent)
+        if target != requested and resources.exists(target) and resources.exists(requested):
             raise ValueError(f"canonical target already exists: {target.relative_to(root).as_posix()}")
-        target.write_text(content, encoding="utf-8")
-        if target != requested and requested.is_file():
-            requested.unlink()
+        resources.write_text(target, content)
+        if target != requested and resources.is_file(requested):
+            resources.delete(requested)
         return {"file": {**_file_record(root, target), "content": content}}
     except KeyError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error

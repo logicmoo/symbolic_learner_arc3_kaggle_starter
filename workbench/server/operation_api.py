@@ -10,6 +10,7 @@ from fastapi import APIRouter, Body, HTTPException
 from operation_library import DEFAULT_WORKSPACES_ROOT, resolve_operation_implementation
 from operation_resolution import materialize_workflow_step
 from workflow_engine_api import engine
+from resource_store import get_filesystem_provider
 
 
 router = APIRouter(prefix="/workspaces", tags=["operations"])
@@ -17,7 +18,7 @@ router = APIRouter(prefix="/workspaces", tags=["operations"])
 
 def _workspace_root(workspace_id: str) -> Path:
     root = Path(DEFAULT_WORKSPACES_ROOT) / workspace_id
-    if not root.is_dir():
+    if not get_filesystem_provider().is_dir(root):
         raise KeyError(f"workspace not found: {workspace_id}")
     return root
 

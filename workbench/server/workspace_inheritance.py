@@ -3,21 +3,22 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from typing import Any
+from resource_store import get_filesystem_provider
 
 SHARED_WORKSPACE_ID = "shared"
 
 
 def workspace_metadata_path(root: Path) -> Path:
     named = root / f"{root.name}.workspace.json"
-    return named if named.is_file() else root / "workspace.json"
+    return named if get_filesystem_provider().is_file(named) else root / "workspace.json"
 
 
 def read_workspace_metadata(root: Path) -> dict[str, Any]:
     path = workspace_metadata_path(root)
-    if not path.is_file():
+    if not get_filesystem_provider().is_file(path):
         return {}
     try:
-        value = json.loads(path.read_text(encoding="utf-8"))
+        value = get_filesystem_provider().read_json(path)
     except (OSError, json.JSONDecodeError):
         return {}
     return value if isinstance(value, dict) else {}
@@ -27,7 +28,7 @@ def declared_include_specs(root: Path) -> list[dict[str, Any]]:
     if root.name == SHARED_WORKSPACE_ID:
         return []
     metadata = read_workspace_metadata(root)
-    default_includes = [{"workspaceId": SHARED_WORKSPACE_ID, "includeInherited": True}] if (root.parent / SHARED_WORKSPACE_ID).is_dir() else []
+    default_includes = [{"workspaceId": SHARED_WORKSPACE_ID, "includeInherited": True}] if get_filesystem_provider().is_dir(root.parent / SHARED_WORKSPACE_ID) else []
     raw = metadata.get("includes") if "includes" in metadata else default_includes
     if not isinstance(raw, list):
         return []
@@ -63,7 +64,7 @@ def effective_workspace_layers(workspace_root: Path, workspaces_root: Path) -> l
             raise ValueError(f"Workspace inclusion cycle: {' -> '.join((*visiting, workspace_id))}")
         if any(existing.name == workspace_id for existing in result):
             return
-        if not root.is_dir():
+        if not get_filesystem_provider().is_dir(root):
             raise ValueError(f"Included workspace does not exist: {workspace_id}")
         visiting.append(workspace_id)
         if include_inherited:
