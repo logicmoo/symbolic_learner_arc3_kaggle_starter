@@ -67,3 +67,8 @@ def test_goal_run_human_pause_uses_the_frozen_step_form_contract() -> None:
     assert 'type="file" accept="image/*"' in source
     assert "human-grid-preview" in source
     assert "reader.readAsDataURL(file)" in source
+
+
+def test_runner_panels_are_user_resizable() -> None:
+    styles = (ROOT / "workbench" / "frontend" / "src" / "styles" / "workbench.css").read_text(encoding="utf-8")
+    assert ".run-topology-scroll,.run-chronology,.run-visual-comparison,.run-projection-inspector{resize:vertical" in styles

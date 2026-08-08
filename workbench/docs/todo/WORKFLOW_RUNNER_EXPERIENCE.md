@@ -16,7 +16,7 @@ The active Workflow Runs page now keeps the durable history table and adds:
 - source/render comparison for persisted numeric grids and image data URLs; and
 - human-input forms derived from the frozen workflow step contract.
 
-Still outstanding: persisted in-progress form drafts, specialized image/file/grid input widgets, explicit hypothesis and suggested-experiment evidence schemas, user-resizable runner panels, and automated visual-regression screenshots.
+Still outstanding: explicit hypothesis and suggested-experiment evidence schemas and automated visual-regression screenshots. Persisted safe form drafts, image/grid input widgets, and independently resizable runner panels are now active.
 
 ## Preserve from the Reference
 
