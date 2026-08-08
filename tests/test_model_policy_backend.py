@@ -47,7 +47,7 @@ def test_off_policy_is_disabled_even_when_healthy() -> None:
 def test_catalog_backends_models_and_profiles_load_until_policy_disables_them() -> None:
     backends = [{"kind": "backend", "id": "vendor", "label": "Vendor", "enabled": True}]
     catalog = [
-        {"document": {"kind": "model", "id": "model", "label": "Model", "capabilities": ["text"]},
+        {"document": {"kind": "model", "id": "model", "label": "Model", "capabilities": ["text"], "pricing": {"prompt": "0.1"}, "properties": {"multimodal": True}},
          "resolved": {"backendId": "vendor", "model": "remote-model", "enabled": True, "defaults": {}, "inheritance": ["vendor", "model"]}},
         {"document": {"kind": "profile", "id": "model-fast", "label": "Fast", "inherits": "model"},
          "resolved": {"backendId": "vendor", "model": "remote-model", "enabled": True, "defaults": {}, "inheritance": ["vendor", "model", "model-fast"]}},
@@ -57,6 +57,9 @@ def test_catalog_backends_models_and_profiles_load_until_policy_disables_them() 
     assert {model["modelResourceId"] for model in registry["models"]} == {"model", "model-fast"}
     assert all(model["policy"]["wanted"] == "on" for model in registry["models"])
     assert registry["models"][1]["capabilities"]["text"] is True
+    model_row = next(item for item in registry["models"] if item["modelResourceId"] == "model")
+    assert model_row["pricing"]["prompt"] == "0.1"
+    assert model_row["properties"]["multimodal"] is True
 
     override = _records({"kind": "model_policy_entry", "id": "vendor:model", "vendorId": "vendor", "modelResourceId": "model", "policy": {"wanted": "off"}})
     overridden = effective_model_registry(override, backends, catalog)
@@ -99,6 +102,9 @@ def test_backend_model_discovery_supports_openai_and_ollama_shapes(tmp_path: Pat
     imported = import_discovered_models(tmp_path, backend, discovered[:1])
     assert imported[0]["inherits"] == "local"
     assert imported[0]["model"] == "local/a"
+    assert set(imported[0]["capabilities"]) >= {"multimodal", "vision", "audio", "tools", "reasoning"}
+    assert imported[0]["providerMetadata"]["name"] == "local/a"
+    assert imported[0]["properties"]["name"] == "local/a"
     assert (tmp_path / "models" / "local-local_a.model.json").is_file()
 
 

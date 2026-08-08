@@ -15,7 +15,7 @@ type Snapshot={backends:RecordFile<BackendDef>[];models:RecordFile<ModelDef>[]};
 type Layout="tiles"|"list";
 type CatalogItem={kind:NodeKind;id:string;label:string;record:RecordFile<BackendDef>|RecordFile<ModelDef>};
 type OpenDocument={key:string;record:RecordFile<ModelResource>;source:string;dirty:boolean};
-type DiscoveredModel={id:string;label:string};
+type DiscoveredModel={id:string;label:string;capabilities?:Record<string,boolean>;limits?:Record<string,unknown>;pricing?:Record<string,unknown>;properties?:Record<string,unknown>;providerMetadata?:Record<string,unknown>};
 
 const slug=(v:string)=>v.toLowerCase().replace(/[^a-z0-9]+/g,"_").replace(/^_+|_+$/g,"")||"item";
 const recordKey=(record:RecordFile<ModelResource>)=>`${record.workspaceId||record.source||"resource"}:${record.path}:${record.document?.id||"unknown"}`;

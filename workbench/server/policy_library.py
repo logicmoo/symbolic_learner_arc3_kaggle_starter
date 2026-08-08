@@ -126,8 +126,10 @@ def effective_model_registry(
             "description": document.get("description") or "", "enabled": resolved.get("enabled", document.get("enabled", True)),
             "policy": {"wanted": "on", "runtime": "auto", "benchmark": "auto"},
             "capabilities": _capability_map(document, catalog_documents),
-            "limits": {key: value for key, value in (resolved.get("defaults") or {}).items() if key in {"maxOutputTokens", "timeoutSeconds"}},
-            "properties": {"catalogKind": document.get("kind"), "inheritance": resolved.get("inheritance") or []},
+            "limits": {**(document.get("limits") or {}), **{key: value for key, value in (resolved.get("defaults") or {}).items() if key in {"maxOutputTokens", "timeoutSeconds"}}},
+            "pricing": document.get("pricing") or {},
+            "properties": {**(document.get("properties") or {}), "catalogKind": document.get("kind"), "inheritance": resolved.get("inheritance") or []},
+            "providerMetadata": document.get("providerMetadata") or {},
         }
         merged = {**generated, **(override or {}), "policy": {**generated["policy"], **((override or {}).get("policy") or {})},
                   "_policyOverrideFields": list(((override or {}).get("policy") or {}).keys())}
