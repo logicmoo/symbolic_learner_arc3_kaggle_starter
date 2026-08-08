@@ -61,3 +61,6 @@ def test_goal_run_human_pause_uses_the_frozen_step_form_contract() -> None:
     assert "step?.form" in source
     assert 'type="checkbox"' in source
     assert "JSON.stringify(values)" in source
+    assert "Draft autosave ready" in source
+    assert 'method: "PUT"' in source
+    assert 'type="password"' in source

@@ -56,6 +56,25 @@ def test_human_step_waits_and_resumes(tmp_path: Path) -> None:
     assert run['outputs']['choice'] == 'approved'
 
 
+def test_human_input_draft_survives_restart_and_omits_secrets(tmp_path: Path) -> None:
+    path = tmp_path / 'engine.db'
+    e = WorkflowEngine(path, default_registry())
+    e.save_workflow({
+        'id': 'drafted', 'inputs': {}, 'outputs': {},
+        'steps': [{'id': 'ask', 'kind': 'human', 'form': {
+            'choice': {'type': 'String'}, 'token': {'type': 'String', 'secret': True},
+        }, 'outputs': {'choice': 'choice', 'token': 'token'}}],
+    })
+    run = e.start('drafted', {})
+    draft = e.save_human_input_draft(run['id'], 'ask', {'choice': 'yes', 'token': 'do-not-store', 'extra': 4})
+    assert draft['values'] == {'choice': 'yes'}
+    assert set(draft['omittedFields']) == {'token', 'extra'}
+    reopened = WorkflowEngine(path, default_registry())
+    assert reopened.get_human_input_draft(run['id'], 'ask')['values'] == {'choice': 'yes'}
+    reopened.submit_human_input(run['id'], 'ask', {'choice': 'yes', 'token': 'used-once'})
+    assert reopened.get_human_input_draft(run['id'], 'ask')['values'] == {}
+
+
 def test_retry_policy(tmp_path: Path) -> None:
     attempts = {'count': 0}
     registry = OperationRegistry()

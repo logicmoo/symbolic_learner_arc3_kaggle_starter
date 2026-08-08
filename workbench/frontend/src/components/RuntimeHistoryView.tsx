@@ -12,7 +12,7 @@ type RuntimeRun = {
   artifacts: Array<{ id: string; stepId?: string; name: string; datatype?: string; payload?: unknown; contentHash?: string; provenance?: Record<string, unknown>; createdAt?: string }>;
   logs: Array<{ id: number | string; stepId?: string; stream: string; message: string; createdAt?: string }>;
 };
-type WorkflowStep = { id: string; label?: string; kind?: string; operation?: string; implementation?: string; dependsOn?: string[]; inputs?: unknown; outputs?: unknown; form?: Record<string, { type?: string; label?: string; description?: string; default?: unknown; options?: unknown[] }> };
+type WorkflowStep = { id: string; label?: string; kind?: string; operation?: string; implementation?: string; dependsOn?: string[]; inputs?: unknown; outputs?: unknown; form?: Record<string, { type?: string; label?: string; description?: string; default?: unknown; options?: unknown[]; secret?: boolean; sensitive?: boolean }> };
 type FrozenWorkflow = { id: string; version: number; label?: string; description?: string; steps: WorkflowStep[] };
 type GoalRun = {
   id: string; goalId: string; goalVariantId?: string; planId: string; planVariantId: string;
@@ -91,18 +91,20 @@ function WorkflowRunProjection({ run, workflow, busy, onCommand }: { run: Runtim
   </section>;
 }
 
-function HumanInputForm({ step, busy, onSubmit }: { step?: WorkflowStep; busy: boolean; onSubmit: (values: Record<string, unknown>) => void }) {
+function HumanInputForm({ step, busy, draft, onDraft, onSubmit }: { step?: WorkflowStep; busy: boolean; draft: Record<string, unknown>; onDraft: (values: Record<string, unknown>) => void; onSubmit: (values: Record<string, unknown>) => void }) {
   const fields = Object.entries(step?.form || {});
-  const initial = () => Object.fromEntries(fields.map(([name, spec]) => [name, spec.default ?? (/boolean/i.test(spec.type || "") ? false : "")]));
+  const initial = () => Object.fromEntries(fields.map(([name, spec]) => [name, draft[name] ?? spec.default ?? (/boolean/i.test(spec.type || "") ? false : "")]));
   const [values, setValues] = useState<Record<string, unknown>>(initial);
-  useEffect(() => setValues(initial()), [step?.id]);
+  useEffect(() => setValues(initial()), [step?.id, JSON.stringify(draft)]);
+  const update = (name: string, value: unknown) => setValues(current => { const next = { ...current, [name]: value }; onDraft(next); return next; });
   if (!fields.length) return <div className="human-input-contract"><p>This step has no form contract. Submit a JSON object in the advanced editor.</p><textarea className="raw-json-editor" defaultValue="{}" onChange={event => { try { setValues(JSON.parse(event.target.value)); } catch { /* keep the last valid value */ } }} /><button className="run-button" disabled={busy} onClick={() => onSubmit(values)}>Submit human input</button></div>;
   return <div className="human-input-contract">{fields.map(([name, spec]) => {
     const type = String(spec.type || "Text");
     const label = spec.label || name.replaceAll("_", " ");
-    if (/boolean/i.test(type)) return <label key={name} className="human-boolean"><input type="checkbox" checked={Boolean(values[name])} onChange={event => setValues(current => ({ ...current, [name]: event.target.checked }))} /><span><b>{label}</b><small>{spec.description || type}</small></span></label>;
-    if (spec.options?.length) return <label key={name}><span>{label} <em>{type}</em></span><select value={String(values[name] ?? "")} onChange={event => setValues(current => ({ ...current, [name]: event.target.value }))}>{spec.options.map(option => <option key={String(option)} value={String(option)}>{String(option)}</option>)}</select></label>;
-    return <label key={name}><span>{label} <em>{type}</em></span><textarea value={typeof values[name] === "string" ? String(values[name]) : JSON.stringify(values[name] ?? "")} onChange={event => { const raw = event.target.value; let value: unknown = raw; if (/number|integer|float/i.test(type)) value = raw === "" ? null : Number(raw); else if (/object|map|list|array|any/i.test(type)) { try { value = JSON.parse(raw); } catch { value = raw; } } setValues(current => ({ ...current, [name]: value })); }} /><small>{spec.description}</small></label>;
+    if (/boolean/i.test(type)) return <label key={name} className="human-boolean"><input type="checkbox" checked={Boolean(values[name])} onChange={event => update(name, event.target.checked)} /><span><b>{label}</b><small>{spec.description || type}</small></span></label>;
+    if (spec.options?.length) return <label key={name}><span>{label} <em>{type}</em></span><select value={String(values[name] ?? "")} onChange={event => update(name, event.target.value)}>{spec.options.map(option => <option key={String(option)} value={String(option)}>{String(option)}</option>)}</select></label>;
+    if (spec.secret || spec.sensitive) return <label key={name}><span>{label} <em>secret · not saved</em></span><input type="password" value={String(values[name] ?? "")} onChange={event => update(name, event.target.value)} /><small>{spec.description}</small></label>;
+    return <label key={name}><span>{label} <em>{type}</em></span><textarea value={typeof values[name] === "string" ? String(values[name]) : JSON.stringify(values[name] ?? "")} onChange={event => { const raw = event.target.value; let value: unknown = raw; if (/number|integer|float/i.test(type)) value = raw === "" ? null : Number(raw); else if (/object|map|list|array|any/i.test(type)) { try { value = JSON.parse(raw); } catch { value = raw; } } update(name, value); }} /><small>{spec.description}</small></label>;
   })}<button className="run-button" disabled={busy} onClick={() => onSubmit(values)}>Submit human input</button></div>;
 }
 
@@ -124,6 +126,7 @@ export function RuntimeHistoryView({ mode, workspaceId, goals = [], plans = [], 
   const [planId, setPlanId] = useState(""), [planVariantId, setPlanVariantId] = useState("");
   const [contextId, setContextId] = useState(""), [contextVariantId, setContextVariantId] = useState("");
   const [inputs, setInputs] = useState("{}");
+  const [humanDraft, setHumanDraft] = useState<Record<string, unknown>>({}), [draftLoaded, setDraftLoaded] = useState(false), [draftStatus, setDraftStatus] = useState("");
   const goalVariants = goalDocs.filter(doc => doc.kind === "goal_variant" && (doc.parents || []).includes(goalId));
   const planVariants = planDocs.filter(doc => (doc.kind === "planning_strategy_variant" || doc.kind === "plan_variant") && (doc.parents || []).includes(planId) && workflowIds.has(doc.workflow));
   const contextVariants = contextDocs.filter(doc => doc.kind === "context_variant" && (doc.parents || []).includes(contextId));
@@ -190,6 +193,17 @@ export function RuntimeHistoryView({ mode, workspaceId, goals = [], plans = [], 
   }, [selectedGoalRun?.id]);
   const waitingStep = selectedGoalRun?.workflowRun.steps.find(step => step.status === "waiting");
   const waitingStepDefinition = goalRunWorkflow?.steps.find(step => step.id === waitingStep?.stepId);
+  useEffect(() => {
+    if (!selectedGoalRun || !waitingStep) { setHumanDraft({}); setDraftLoaded(false); return; }
+    setDraftLoaded(false); setDraftStatus("Loading saved draft…");
+    void api(`/api/engine/runs/${encodeURIComponent(selectedGoalRun.workflowRunId)}/steps/${encodeURIComponent(waitingStep.stepId)}/draft`).then(payload => { setHumanDraft(payload.draft?.values || {}); setDraftLoaded(true); setDraftStatus(payload.draft?.updatedAt ? `Draft restored · ${stamp(payload.draft.updatedAt)}` : "Draft autosave ready"); }).catch(reason => { setDraftLoaded(true); setDraftStatus(`Draft unavailable · ${String(reason)}`); });
+  }, [selectedGoalRun?.id, waitingStep?.stepId]);
+  useEffect(() => {
+    if (!draftLoaded || !selectedGoalRun || !waitingStep) return;
+    setDraftStatus("Saving draft…");
+    const timer = window.setTimeout(() => { void api(`/api/engine/runs/${encodeURIComponent(selectedGoalRun.workflowRunId)}/steps/${encodeURIComponent(waitingStep.stepId)}/draft`, { method: "PUT", body: JSON.stringify(humanDraft) }).then(payload => setDraftStatus(`Draft saved · ${stamp(payload.draft?.updatedAt)}`)).catch(reason => setDraftStatus(`Draft save failed · ${String(reason)}`)); }, 500);
+    return () => window.clearTimeout(timer);
+  }, [humanDraft, draftLoaded, selectedGoalRun?.id, waitingStep?.stepId]);
   const submitHumanInput = async (values: Record<string, unknown>) => {
     if (!selectedGoalRun || !waitingStep) return;
     setBusy(true); setError("");
@@ -233,7 +247,7 @@ export function RuntimeHistoryView({ mode, workspaceId, goals = [], plans = [], 
     <button className="run-button" disabled={busy || !goalId || !planId} onClick={startGoalRun}>▶ Pursue goal</button>
     <div className="resource-table"><div className="resource-row resource-head"><span>Goal</span><span>Strategy variant</span><span>Status</span><span>Workflow/plan run</span><span>Created</span></div>{goalRuns.map(row => <button className="resource-row" key={row.id} onClick={() => { setSelectedId(row.id); onSelectRun?.(row.workflowRun); }}><b>{row.goalVariantId || row.goalId}</b><code>{row.planVariantId}</code><span>{row.status}</span><span>{row.workflowRunId.slice(0, 8)}</span><em>{stamp(row.createdAt)}</em></button>)}</div>
     {selectedGoalRun && <div className="goal-run-controls"><div><b>Selected pursuit</b><span>{selectedGoalRun.goalVariantId} · {selectedGoalRun.planVariantId} · {selectedGoalRun.contextVariantId || "no context"}</span></div><button disabled={busy || selectedGoalRun.status !== "paused"} onClick={() => void commandGoalRun("resume")}>Resume</button><button disabled={busy || ["completed", "failed", "cancelled"].includes(selectedGoalRun.status)} onClick={() => void commandGoalRun("cancel")}>Cancel</button></div>}
-    {waitingStep && <div className="human-pause goal-run-human"><div className="pause-ring">Ⅱ</div><b>Waiting for {waitingStep.stepId}</b><span>{waitingStepDefinition?.label || "Provide the values required by this workflow step."}</span><HumanInputForm step={waitingStepDefinition} busy={busy} onSubmit={values => void submitHumanInput(values)} /></div>}
+    {waitingStep && <div className="human-pause goal-run-human"><div className="pause-ring">Ⅱ</div><b>Waiting for {waitingStep.stepId}</b><span>{waitingStepDefinition?.label || "Provide the values required by this workflow step."}</span><small className="human-draft-status">{draftStatus}</small><HumanInputForm step={waitingStepDefinition} busy={busy} draft={humanDraft} onDraft={setHumanDraft} onSubmit={values => void submitHumanInput(values)} /></div>}
   </section>;
 
   const rows = mode === "workflowRuns" ? runs.map(run => ({ key: run.id, a: run.workflowId, b: run.status, c: `${run.steps.length} steps`, d: run.id.slice(0, 8), e: stamp(run.createdAt), run }))

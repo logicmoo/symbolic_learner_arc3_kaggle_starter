@@ -146,3 +146,19 @@ def submit_input(run_id: str, step_id: str, body: dict[str, Any] = Body(...)) ->
         return {'run': engine.submit_human_input(run_id, step_id, body)}
     except (ValueError, KeyError) as error:
         raise _http(error) from error
+
+
+@router.get('/runs/{run_id}/steps/{step_id}/draft')
+def get_input_draft(run_id: str, step_id: str) -> dict[str, Any]:
+    try:
+        return {'draft': engine.get_human_input_draft(run_id, step_id)}
+    except (ValueError, KeyError) as error:
+        raise _http(error) from error
+
+
+@router.put('/runs/{run_id}/steps/{step_id}/draft')
+def save_input_draft(run_id: str, step_id: str, body: dict[str, Any] = Body(...)) -> dict[str, Any]:
+    try:
+        return {'draft': engine.save_human_input_draft(run_id, step_id, body)}
+    except (ValueError, KeyError) as error:
+        raise _http(error) from error

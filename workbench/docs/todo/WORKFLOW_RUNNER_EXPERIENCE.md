@@ -4,6 +4,20 @@
 
 The supplied workflow-runner mockup is the visual acceptance reference for a future rich runtime surface. It is not executable data and must not replace the current durable Workflow Runs table until every panel is backed by real engine, workspace, or artifact resources.
 
+## Implementation Status
+
+The active Workflow Runs page now keeps the durable history table and adds:
+
+- topology over the frozen workflow version, with dependency edges and runtime status;
+- chronology over every persisted event, including repeated stages;
+- selection-linked stage narrative, artifacts, logs, hashes, and provenance;
+- persisted stdout/stderr logs for subprocess-backed operations;
+- real pause, resume, advance, replay, and cancel commands;
+- source/render comparison for persisted numeric grids and image data URLs; and
+- human-input forms derived from the frozen workflow step contract.
+
+Still outstanding: persisted in-progress form drafts, specialized image/file/grid input widgets, explicit hypothesis and suggested-experiment evidence schemas, user-resizable runner panels, and automated visual-regression screenshots.
+
 ## Preserve from the Reference
 
 - A persistent run pipeline showing completed, active, and pending stages.
@@ -32,7 +46,7 @@ Submitting input creates a durable `human_input.received` event linked to the ru
 
 The runner must load workflow definitions, run steps, events, logs, artifacts, states, and provenance from the existing filesystem and workflow-engine APIs. Image comparisons and detected objects need explicit artifact datatypes rather than UI-only structures. Hypotheses and confidence values must be stored as execution evidence. No values visible in the reference may be hard-coded into the active application.
 
-## Implementation Order
+## Original Implementation Order
 
 1. Define artifact and provenance records needed by the inspector.
 2. Add separate topology and chronology projections over workflow definitions and persisted run events.

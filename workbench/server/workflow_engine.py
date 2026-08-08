@@ -91,6 +91,9 @@ class WorkflowEngine:
               id INTEGER PRIMARY KEY AUTOINCREMENT, run_id TEXT NOT NULL,
               step_id TEXT, stream TEXT NOT NULL, message TEXT NOT NULL, created_at TEXT NOT NULL);
             CREATE INDEX IF NOT EXISTS wf_logs_run_idx ON wf_logs(run_id,id);
+            CREATE TABLE IF NOT EXISTS wf_human_drafts(
+              run_id TEXT NOT NULL, step_id TEXT NOT NULL, values_json TEXT NOT NULL,
+              updated_at TEXT NOT NULL, PRIMARY KEY(run_id,step_id));
             CREATE TABLE IF NOT EXISTS goal_runs(
               id TEXT PRIMARY KEY, workspace_id TEXT NOT NULL,
               goal_id TEXT NOT NULL, goal_variant_id TEXT,
@@ -354,9 +357,38 @@ class WorkflowEngine:
         with self._db() as db:
             db.execute('UPDATE wf_steps SET status=?,finished_at=? WHERE run_id=? AND step_id=?', ('completed', now(), run_id, step_id))
             db.execute('UPDATE wf_runs SET status=?,updated_at=? WHERE id=?', ('running', now(), run_id))
+            db.execute('DELETE FROM wf_human_drafts WHERE run_id=? AND step_id=?', (run_id, step_id))
         self._event(run_id, step_id, 'step.completed', {'source': 'human'})
         self.advance(run_id)
         return self.get_run(run_id)
+
+    def save_human_input_draft(self, run_id: str, step_id: str, values: dict[str, Any]) -> dict[str, Any]:
+        run = self.get_run(run_id)
+        state = next((item for item in run['steps'] if item['stepId'] == step_id), None)
+        if not state or state['status'] != 'waiting':
+            raise ValueError('human-input drafts require a waiting step')
+        workflow = self.get_workflow(run['workflowId'], run['workflowVersion'])
+        step = next((item for item in workflow.get('steps', []) if item.get('id') == step_id), None)
+        if not step or step.get('kind') != 'human':
+            raise ValueError('not a human step')
+        form = step.get('form') or {}
+        safe_values = {name: values[name] for name, spec in form.items()
+                       if name in values and not (spec or {}).get('secret') and not (spec or {}).get('sensitive')}
+        omitted = [name for name in values if name not in safe_values]
+        updated_at = now()
+        with self._db() as db:
+            db.execute('''INSERT INTO wf_human_drafts(run_id,step_id,values_json,updated_at) VALUES(?,?,?,?)
+                          ON CONFLICT(run_id,step_id) DO UPDATE SET values_json=excluded.values_json,updated_at=excluded.updated_at''',
+                       (run_id, step_id, json.dumps(safe_values), updated_at))
+        return {'values': safe_values, 'omittedFields': omitted, 'updatedAt': updated_at}
+
+    def get_human_input_draft(self, run_id: str, step_id: str) -> dict[str, Any]:
+        self.get_run(run_id)
+        with self._db() as db:
+            row = db.execute('SELECT values_json,updated_at FROM wf_human_drafts WHERE run_id=? AND step_id=?', (run_id, step_id)).fetchone()
+        if not row:
+            return {'values': {}, 'omittedFields': [], 'updatedAt': None}
+        return {'values': json.loads(row['values_json']), 'omittedFields': [], 'updatedAt': row['updated_at']}
 
     def command(self, run_id: str, command: str) -> dict[str, Any]:
         if command not in {'pause','resume','cancel'}: raise ValueError('invalid command')
