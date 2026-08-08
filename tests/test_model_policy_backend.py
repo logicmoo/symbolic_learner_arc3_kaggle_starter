@@ -264,7 +264,7 @@ def test_ping_background_failure_becomes_terminal_job(tmp_path: Path, monkeypatc
 def test_model_policy_ui_edits_and_filters_dynamic_registry() -> None:
     source = (ROOT / "workbench" / "frontend" / "src" / "components" / "ModelPolicyPage.tsx").read_text(encoding="utf-8")
     styles = (ROOT / "workbench" / "frontend" / "src" / "styles" / "model_policy_todo.css").read_text(encoding="utf-8")
-    for token in ("Filesystem Load", "Filesystem Save", "Ping Selected", "Manage Backends &amp; Import Models", "Select Visible", "Clear Selection", "All capabilities", "All runtime", "All benchmark", "dynamicColumns", "toggleSort"):
+    for token in ("Filesystem Load", "Filesystem Save", "Ping Selected", "Manage Backends &amp; Import Models", "Select Visible", "Clear Selection", "All capabilities", "All runtime", "All benchmark", "dynamicColumns", "toggleSort", "Shift+click adds a secondary sort", "setSorts"):
         assert token in source
     assert 'scope==="selected"?[...selected]' in source
     assert "registryDocument" in source

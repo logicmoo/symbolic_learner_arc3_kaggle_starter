@@ -11,7 +11,7 @@ The active page is backed by real workspace resources and the model-policy API. 
 Remaining work is intentionally narrower:
 
 - optionally embed vendor creation and backend discovery instead of using the current direct link to the Models editor's backend creation, discovery, selection, and overwrite import tools;
-- add optional multi-column sorting;
+- refine multi-column sorting if future catalog usage reveals additional ordering needs (Shift+click already composes sort keys);
 - add prompt-profile creation/editing from the policy dashboard;
 - add richer time-series history beyond the current persisted-result metric selector.
 
