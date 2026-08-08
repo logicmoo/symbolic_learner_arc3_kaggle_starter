@@ -28,6 +28,23 @@ async function api(path: string, init?: RequestInit) {
 }
 
 const stamp = (value?: string) => value ? value.replace("T", " ").slice(0, 19) : "—";
+const artifactColors = ["#101820", "#2d8cff", "#ff3b4f", "#28c76f", "#ffd43b", "#8b5cf6", "#ff9f43", "#19d3da", "#f8fafc", "#5b6573"];
+function visualArtifactPayload(payload: unknown): { image?: string; grid?: number[][] } | null {
+  if (Array.isArray(payload) && payload.length > 0 && payload.every(row => Array.isArray(row) && row.every(cell => typeof cell === "number"))) return { grid: payload as number[][] };
+  if (typeof payload === "string" && payload.startsWith("data:image/")) return { image: payload };
+  if (payload && typeof payload === "object") {
+    const value = payload as Record<string, unknown>;
+    const image = [value.dataUrl, value.data_url, value.image].find(item => typeof item === "string" && item.startsWith("data:image/"));
+    if (typeof image === "string") return { image };
+    if (Array.isArray(value.grid) && value.grid.length > 0 && value.grid.every(row => Array.isArray(row) && row.every(cell => typeof cell === "number"))) return { grid: value.grid as number[][] };
+  }
+  return null;
+}
+function ArtifactVisual({ artifact }: { artifact: RuntimeRun["artifacts"][number] }) {
+  const visual = visualArtifactPayload(artifact.payload);
+  if (!visual) return null;
+  return <figure className="run-artifact-visual"><figcaption><b>{artifact.name}</b><span>{artifact.datatype || "visual artifact"}</span></figcaption>{visual.image ? <img src={visual.image} alt={artifact.name} /> : <div className="run-artifact-grid" style={{ gridTemplateColumns: `repeat(${visual.grid?.[0]?.length || 1}, 1fr)` }}>{visual.grid?.flatMap((row, rowIndex) => row.map((cell, columnIndex) => <i key={`${rowIndex}:${columnIndex}`} style={{ background: artifactColors[Math.abs(cell) % artifactColors.length] }} title={`${columnIndex},${rowIndex}: ${cell}`} />))}</div>}</figure>;
+}
 
 function WorkflowRunProjection({ run, workflow, busy, onCommand }: { run: RuntimeRun; workflow: FrozenWorkflow | null; busy: boolean; onCommand: (command: "pause" | "resume" | "advance" | "replay" | "cancel") => void }) {
   const [view, setView] = useState<"topology" | "chronology">("topology");
@@ -45,6 +62,9 @@ function WorkflowRunProjection({ run, workflow, busy, onCommand }: { run: Runtim
   const logs = run.logs.filter(item => !selectedStep || item.stepId === selectedStep.id);
   const stepEvents = run.events.filter(event => !selectedStep || event.stepId === selectedStep.id);
   const latestStepEvent = stepEvents.at(-1);
+  const visualArtifacts = run.artifacts.filter(item => visualArtifactPayload(item.payload));
+  const sourceVisual = visualArtifacts.find(item => /source|input|before|observation/i.test(item.name)) || visualArtifacts[0];
+  const renderedVisual = visualArtifacts.find(item => item.id !== sourceVisual?.id && /render|reconstruct|output|after|result/i.test(item.name)) || visualArtifacts.find(item => item.id !== sourceVisual?.id);
 
   return <section className="run-projection" aria-label="Selected workflow run projection">
     <div className="run-projection-heading">
@@ -61,6 +81,7 @@ function WorkflowRunProjection({ run, workflow, busy, onCommand }: { run: Runtim
     </div> : <div className="studio-empty">The persisted workflow definition is unavailable.</div>
       : <div className="run-chronology" aria-label="Durable event chronology">{run.events.map((event, index) => <button key={event.id} className={String(event.id) === selectedEventId ? "selected" : ""} onClick={() => selectEvent(event)}><span>{index + 1}</span><b>{event.kind}</b><small>{event.stepId || "workflow"}</small><time>{stamp(event.createdAt)}</time></button>)}{!run.events.length && <div className="studio-empty">This run has no durable events.</div>}</div>}
     {selectedStep && <div className="run-stage-narrative"><div><span>SELECTED STAGE</span><h3>{selectedStep.label || selectedStep.id}</h3><p>{selectedStep.implementation || selectedStep.operation || selectedStep.kind || "operation"}</p></div><div><span>RUNTIME OUTCOME</span><b>{stepRuntime?.status || "defined"}</b><small>{stepRuntime?.error || latestStepEvent?.kind || "No execution event yet"}</small></div><div><span>DURABLE EVIDENCE</span><b>{artifacts.length} artifacts · {stepEvents.length} events</b><small>{artifacts.map(item => item.name).join(", ") || "No produced artifacts"}</small></div></div>}
+    {sourceVisual && <div className={`run-visual-comparison ${renderedVisual ? "paired" : "single"}`}><div className="run-visual-comparison-title"><span>{renderedVisual ? "SOURCE / RENDER COMPARISON" : "VISUAL ARTIFACT"}</span><small>Persisted run payloads · no generated preview data</small></div><ArtifactVisual artifact={sourceVisual} />{renderedVisual && <ArtifactVisual artifact={renderedVisual} />}</div>}
     <div className="run-projection-inspector">
       <div><span>{selectedEvent ? "EVENT" : "STEP"}</span><h3>{selectedEvent?.kind || selectedStep?.label || selectedStep?.id || "Select a node"}</h3><p>{selectedEvent?.stepId || selectedStep?.implementation || selectedStep?.operation || selectedStep?.kind || "workflow"}</p></div>
       <dl><div><dt>Status</dt><dd>{stepRuntime?.status || run.status}</dd></div><div><dt>Attempt</dt><dd>{stepRuntime?.attempt || 0}</dd></div><div><dt>Artifacts</dt><dd>{artifacts.length}</dd></div><div><dt>Logs</dt><dd>{logs.length}</dd></div></dl>

@@ -42,6 +42,9 @@ def test_workflow_runs_page_displays_reference_without_replacing_history() -> No
     assert "run-stage-narrative" in source
     assert "latestStepEvent" in source
     assert "DURABLE EVIDENCE" in source
+    assert "visualArtifactPayload" in source
+    assert "SOURCE / RENDER COMPARISON" in source
+    assert 'startsWith("data:image/")' in source
     assert "Records are loaded from the durable workflow-engine database" in source
 
 
