@@ -38,10 +38,10 @@ def call_model(model: dict[str, Any], profile: dict[str, Any], prompt: str, time
         usage = payload.get("usage") or {}
     return {"text": text, "latencyMs": round((time.perf_counter()-started)*1000, 2), "inputTokens": usage.get("input_tokens", 0), "outputTokens": usage.get("output_tokens", 0), "responseId": payload.get("id"), "backendId": backend.get("id")}
 
-def run_benchmark(workspace_root: Path, policy: dict[str, Any], models: list[dict[str, Any]], profiles: list[dict[str, Any]], *, invoke: ModelCall = call_model) -> dict[str, Any]:
+def run_benchmark(workspace_root: Path, policy: dict[str, Any], models: list[dict[str, Any]], profiles: list[dict[str, Any]], *, invoke: ModelCall = call_model, job_id: str | None = None) -> dict[str, Any]:
     cases = policy.get("cases") or []
     if not isinstance(cases, list) or not cases: raise ValueError("benchmark policy requires at least one declared case")
-    job_id = f"benchmark_{policy['id']}_{uuid4().hex[:10]}"; started_at = _now(); repetitions = max(1, int(policy.get("repetitions") or 1)); timeout = max(1, int(policy.get("timeoutSeconds") or 300)); concurrency = max(1, min(16, int(policy.get("concurrency") or 4)))
+    job_id = job_id or f"benchmark_{policy['id']}_{uuid4().hex[:10]}"; started_at = _now(); repetitions = max(1, int(policy.get("repetitions") or 1)); timeout = max(1, int(policy.get("timeoutSeconds") or 300)); concurrency = max(1, min(16, int(policy.get("concurrency") or 4)))
     job = {"kind":"benchmark_job","id":job_id,"benchmarkPolicyId":policy["id"],"status":"running","createdAt":started_at,"modelCount":len(models),"profileCount":len(profiles),"caseCount":len(cases)}; write_policy_resource(workspace_root,job)
     work=[(model,profile,case,index) for model in models for profile in profiles for case in cases for index in range(repetitions)]; observations: list[dict[str,Any]]=[]
     def execute(item:tuple[dict[str,Any],dict[str,Any],dict[str,Any],int])->dict[str,Any]:

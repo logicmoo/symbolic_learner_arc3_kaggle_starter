@@ -141,13 +141,16 @@ def execute_model_policy_ping(workspace_id: str, background_tasks: BackgroundTas
     return {"workspace": workspace, "job": queued, "results": []}
 
 
-@router.post("/{workspace_id}/model-policy/benchmarks/{policy_id}/run", status_code=201)
-def execute_model_benchmark(workspace_id: str, policy_id: str) -> dict[str, Any]:
+@router.post("/{workspace_id}/model-policy/benchmarks/{policy_id}/run", status_code=202)
+def execute_model_benchmark(workspace_id: str, policy_id: str, background_tasks: BackgroundTasks) -> dict[str, Any]:
     try: workspace = _resolve_workspace(workspace_id)
     except KeyError as error: raise HTTPException(status_code=404, detail=str(error)) from error
     root=Path(workspace["root"]);records=load_workspace_policy_records(root);registry=_effective_registry(root,records);policy=next((item for item in registry["benchmarkPolicies"] if item.get("id")==policy_id),None)
     if not policy: raise HTTPException(status_code=404,detail=f"benchmark policy not found: {policy_id}")
     models=[item for item in registry["models"] if item["effective"]["benchmark"]]; resolved=resolve_model_records(root); profile_ids=set(policy.get("promptProfiles") or []);profiles=[record for record in resolved if (record.get("document") or {}).get("id") in profile_ids and (record.get("resolved") or {}).get("enabled")]
-    try: result=run_benchmark(root,policy,models,profiles)
-    except ValueError as error: raise HTTPException(status_code=400,detail=str(error)) from error
-    return {"workspace":workspace,**result}
+    cases = policy.get("cases")
+    if not isinstance(cases, list) or not cases: raise HTTPException(status_code=400,detail="benchmark policy requires at least one declared case")
+    job_id=f"benchmark_{policy['id']}_{uuid4().hex[:10]}";queued={"kind":"benchmark_job","id":job_id,"benchmarkPolicyId":policy["id"],"status":"queued","createdAt":datetime.now(timezone.utc).isoformat().replace("+00:00","Z"),"modelCount":len(models),"profileCount":len(profiles),"caseCount":len(cases)}
+    write_policy_resource(root,queued)
+    background_tasks.add_task(run_benchmark,root,policy,models,profiles,job_id=job_id)
+    return {"workspace":workspace,"job":queued,"results":[]}

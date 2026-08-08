@@ -280,3 +280,22 @@ def test_model_policy_ui_exposes_explicit_benchmark_run() -> None:
     assert 'aria-label="Performance history metric"' in source
     assert "activeHistoryMetric" in source
     assert "historyMaximum" in source
+    assert "item?.kind===\"benchmark_job\"" in source
+    assert "setTimeout(resolve,1000)" in source
+
+
+def test_benchmark_api_queues_durable_background_job(tmp_path: Path, monkeypatch) -> None:
+    from fastapi import BackgroundTasks
+
+    policy = {"id": "quality", "cases": [{"id": "one", "prompt": "OK", "expected": "OK"}], "promptProfiles": []}
+    monkeypatch.setattr(policy_api, "_resolve_workspace", lambda workspace_id: {"id": workspace_id, "root": str(tmp_path)})
+    monkeypatch.setattr(policy_api, "load_workspace_policy_records", lambda _root: [])
+    monkeypatch.setattr(policy_api, "_effective_registry", lambda _root, _records: {"models": [], "benchmarkPolicies": [policy]})
+    monkeypatch.setattr(policy_api, "resolve_model_records", lambda _root: [])
+    tasks = BackgroundTasks()
+    result = policy_api.execute_model_benchmark("demo", "quality", tasks)
+    assert result["job"]["status"] == "queued"
+    assert result["job"]["caseCount"] == 1
+    assert len(tasks.tasks) == 1
+    persisted = list((tmp_path / "policies").glob("*.benchmark_job.metta"))
+    assert len(persisted) == 1
