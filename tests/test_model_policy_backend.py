@@ -81,6 +81,13 @@ def test_vendor_change_cascades_to_children_in_policy_editor() -> None:
     assert "next[model.id]" in source
 
 
+def test_model_discovery_has_bulk_selection_controls() -> None:
+    source = (ROOT / "workbench" / "frontend" / "src" / "components" / "LlmModelsEditor.tsx").read_text(encoding="utf-8")
+    assert "Select all" in source
+    assert "Clear selection" in source
+    assert "discoverySelection.size} selected" in source
+
+
 def test_backend_model_discovery_supports_openai_and_ollama_shapes(tmp_path: Path) -> None:
     class Response:
         def __enter__(self): return self
