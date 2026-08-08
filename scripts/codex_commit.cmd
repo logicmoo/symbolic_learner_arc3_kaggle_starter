@@ -1,5 +1,6 @@
 @echo off
 setlocal
+if exist "C:\snet\setkeys.bat" call "C:\snet\setkeys.bat"
 
 cd /d "%~dp0.."
 if errorlevel 1 exit /b %errorlevel%

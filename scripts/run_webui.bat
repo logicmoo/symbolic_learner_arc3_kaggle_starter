@@ -1,5 +1,6 @@
 @echo off
 setlocal
+if exist "C:\snet\setkeys.bat" call "C:\snet\setkeys.bat"
 
 rem Change to the repository root, regardless of where run.bat was launched.
 cd /d "%~dp0.."

@@ -2,6 +2,7 @@
 rem Intentionally do not SETLOCAL here.  These variables must remain in this
 rem child command window after Vite is stopped so `restart` uses the same
 rem host, port, and API target.
+if exist "C:\snet\setkeys.bat" call "C:\snet\setkeys.bat"
 set "ROOT=%~dp0.."
 set "BIND_IP=%~1"
 if not defined BIND_IP set "BIND_IP=127.0.0.1"

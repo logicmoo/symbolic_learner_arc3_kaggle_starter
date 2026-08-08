@@ -1,5 +1,6 @@
 @echo off
 setlocal EnableExtensions
+if exist "C:\snet\setkeys.bat" call "C:\snet\setkeys.bat"
 set "ROOT=%~dp0"
 
 rem Usage:

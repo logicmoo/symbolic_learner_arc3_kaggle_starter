@@ -1,5 +1,6 @@
 @echo off
 setlocal EnableExtensions
+if exist "C:\snet\setkeys.bat" call "C:\snet\setkeys.bat"
 
 rem Preserve the directory from which the user launched ARC3. Python uses this
 rem workspace first when resolving config\ and action_trees\ independently.

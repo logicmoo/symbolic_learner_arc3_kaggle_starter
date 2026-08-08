@@ -1,5 +1,6 @@
 @echo off
 setlocal EnableExtensions
+if exist "C:\snet\setkeys.bat" call "C:\snet\setkeys.bat"
 set "ROOT=%~dp0.."
 set "BIND_IP=%~1"
 if not defined BIND_IP set "BIND_IP=127.0.0.1"
