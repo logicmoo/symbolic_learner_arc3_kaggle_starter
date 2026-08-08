@@ -4,10 +4,10 @@ import { ArtifactTreeBranch } from "./ArtifactTreeBranch";
 import { relationshipIds } from "./resourceRelationships";
 import "../styles/operation_editor.css";
 
-type Family = "goal" | "plan";
+type Family = "goal" | "plan" | "context";
 type Source = "shared" | "workspace";
-type Specification = { kind: Family; id: string; label?: string; description?: string; children?: string[]; preferredChild?: string; goals?: string[]; successCriteria?: string[]; [key: string]: unknown };
-type Variant = { kind: "goal_interpretation" | "goal_variant" | "plan_variant"; id: string; parents: string[]; label?: string; description?: string; workflow?: string; [key: string]: unknown };
+type Specification = { kind: Family; id: string; label?: string; description?: string; children?: string[]; preferredChild?: string; goals?: string[]; successCriteria?: string[]; bindings?: string[]; [key: string]: unknown };
+type Variant = { kind: "goal_interpretation" | "goal_variant" | "plan_variant" | "context_variant"; id: string; parents: string[]; label?: string; description?: string; workflow?: string; [key: string]: unknown };
 type Resource = Specification | Variant;
 type RecordFile<T> = { path: string; source?: Source; workspaceId?: string; document?: T; error?: string };
 type Hierarchy = { specifications: RecordFile<Specification>[]; variants: RecordFile<Variant>[]; variantsBySpecification: Record<string, RecordFile<Variant>[]> };
@@ -25,9 +25,9 @@ async function request(path: string, init?: RequestInit) {
 }
 
 export function GoalPlanLibraryEditor({ workspaceId, family }: { workspaceId: string; family: Family }) {
-  const directory = family === "goal" ? "goals" : "plans";
-  const variantKind = family === "goal" ? "goal_variant" : "plan_variant";
-  const familyLabel = family === "goal" ? "Goal" : "Plan";
+  const directory = family === "goal" ? "goals" : family === "plan" ? "plans" : "contexts";
+  const variantKind = family === "goal" ? "goal_variant" : family === "plan" ? "plan_variant" : "context_variant";
+  const familyLabel = family === "goal" ? "Goal" : family === "plan" ? "Plan" : "Context";
   const [payload, setPayload] = useState<Payload | null>(null);
   const [openDocs, setOpenDocs] = useState<OpenDocument[]>([]);
   const [activeKey, setActiveKey] = useState<string | null>(null);
@@ -56,7 +56,7 @@ export function GoalPlanLibraryEditor({ workspaceId, family }: { workspaceId: st
 
   const newSpecification = () => {
     const id = `new_${family}`;
-    const document: Specification = { kind: family, id, label: `New ${familyLabel}`, description: `Abstract ${family} specification.`, children: [], ...(family === "goal" ? { successCriteria: [] } : { goals: [] }) };
+    const document: Specification = { kind: family, id, label: `New ${familyLabel}`, description: `Abstract ${family} specification.`, children: [], ...(family === "goal" ? { successCriteria: [] } : family === "plan" ? { goals: [] } : { bindings: [] }) };
     open({ path: `${directory}/${id}.${family}.json`, source: workspaceId === "shared" ? "shared" : "workspace", workspaceId, document });
   };
   const newVariant = (parent: Specification) => {
@@ -67,7 +67,7 @@ export function GoalPlanLibraryEditor({ workspaceId, family }: { workspaceId: st
   const saveDoc = (doc: OpenDocument) => perform(async () => {
     let document: Resource;
     try { document = JSON.parse(doc.source) as Resource; } catch { throw new Error(`${familyLabel} resource JSON is invalid`); }
-    const kinds = family === "goal" ? ["goal", "goal_interpretation", "goal_variant"] : ["plan", "plan_variant"];
+    const kinds = family === "goal" ? ["goal", "goal_interpretation", "goal_variant"] : family === "plan" ? ["plan", "plan_variant"] : ["context", "context_variant"];
     if (!document.id || !kinds.includes(document.kind)) throw new Error(`${familyLabel} resource requires id and a valid kind`);
     if (document.kind !== family && !relationshipIds((document as Variant).parents).length) throw new Error(`${familyLabel} variant requires parents`);
     const path = workspaceId === "shared" || doc.record.source === "workspace" ? doc.record.path : `${directory}/${slug(document.id)}.${document.kind}.json`;

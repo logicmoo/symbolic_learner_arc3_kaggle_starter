@@ -78,6 +78,7 @@ def _workspace_from_directory(root: Path) -> dict[str, Any]:
     model_dir = root / MODEL_CATALOG_DIRECTORY
     goal_dir = root / "goals"
     plan_dir = root / "plans"
+    context_dir = root / "contexts"
     backend_count = len(load_workspace_backend_records(root))
     model_count = len(resolve_model_records(root))
     prompt_count = len(load_workspace_prompt_records(root))
@@ -88,6 +89,7 @@ def _workspace_from_directory(root: Path) -> dict[str, Any]:
     concrete_count = len(load_workspace_concrete_datatype_records(root))
     goal_count = len(load_workspace_symbolic_records(root, "goal"))
     plan_count = len(load_workspace_symbolic_records(root, "plan"))
+    context_count = len(load_workspace_symbolic_records(root, "context"))
     return {
         "id": root.name,
         "label": str(metadata.get("label") or _humanize(root.name)),
@@ -129,6 +131,7 @@ def _workspace_from_directory(root: Path) -> dict[str, Any]:
         "promptFileCount": prompt_count,
         "goalFileCount": goal_count,
         "planFileCount": plan_count,
+        "contextFileCount": context_count,
         "catalogFileCount": len(list(model_dir.glob("*.json"))) if model_dir.exists() else 0,
     }
 
@@ -348,6 +351,16 @@ def workspace_plans(workspace_id: str) -> dict[str, Any]:
         raise HTTPException(status_code=404, detail=str(error)) from error
 
 
+@router.get("/{workspace_id}/contexts")
+def workspace_contexts(workspace_id: str) -> dict[str, Any]:
+    try:
+        workspace = _resolve_workspace(workspace_id)
+        records = _load_symbolic_family(workspace, "context")
+        return {"workspace": workspace, "resources": records, "hierarchy": symbolic_hierarchy(records, "context")}
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+
+
 @router.get("/{workspace_id}/snapshot")
 def workspace_snapshot(workspace_id: str) -> dict[str, Any]:
     try:
@@ -379,6 +392,7 @@ def workspace_snapshot(workspace_id: str) -> dict[str, Any]:
         "promptLibrary": _load_prompt_library(workspace),
         "goals": _load_symbolic_family(workspace, "goal"),
         "plans": _load_symbolic_family(workspace, "plan"),
+        "contexts": _load_symbolic_family(workspace, "context"),
         "policies": load_workspace_policy_records(root),
         "files": files,
     }

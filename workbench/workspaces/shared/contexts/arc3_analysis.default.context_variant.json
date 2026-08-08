@@ -1,0 +1,15 @@
+{
+  "kind": "context_variant",
+  "id": "arc3_analysis.default",
+  "label": "Default ARC3 Analysis Context",
+  "description": "Binds the standard observation, model, rule, and goal AtomSpaces for the default ARC3 analysis loop.",
+  "parents": ["arc3_analysis"],
+  "atomspaces": {
+    "current_scene": "atomspace:current_scene",
+    "world_model": "atomspace:world_model",
+    "candidate_rules": "atomspace:candidate_rules",
+    "goal_state": "atomspace:goal_state"
+  },
+  "environment": {},
+  "parameters": {}
+}

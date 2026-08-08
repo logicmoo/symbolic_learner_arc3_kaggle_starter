@@ -26,6 +26,8 @@ KNOWN_RESOURCE_KINDS = {
     "goal_variant",
     "plan",
     "plan_variant",
+    "context",
+    "context_variant",
     "profile",
     "prompt",
     "prompt_implementation",
@@ -85,6 +87,8 @@ def infer_resource_kind(path: Path, document: dict[str, Any]) -> str:
         return "goal_variant" if document.get("parents") else "goal"
     if parent == "plans":
         return "plan_variant" if document.get("parents") else "plan"
+    if parent == "contexts":
+        return "context_variant" if document.get("parents") else "context"
     if parent == "datatypes":
         return "semantic_datatype"
     if parent == "representations":

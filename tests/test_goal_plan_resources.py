@@ -46,18 +46,28 @@ def test_shared_workspace_contains_goal_and_plan_examples() -> None:
     assert {record["document"]["kind"] for record in plans} == {"plan", "plan_variant"}
 
 
+def test_shared_workspace_contains_bidirectional_context_examples() -> None:
+    shared = ROOT / "workbench" / "workspaces" / "shared"
+    contexts = load_workspace_symbolic_records(shared, "context")
+    by_id = {record["document"]["id"]: record["document"] for record in contexts}
+    assert {document["kind"] for document in by_id.values()} == {"context", "context_variant"}
+    assert by_id["arc3_analysis"]["children"] == ["arc3_analysis.default"]
+    assert by_id["arc3_analysis.default"]["parents"] == ["arc3_analysis"]
+
+
 def test_goal_plan_editor_preserves_rich_hierarchy_features() -> None:
     source = (ROOT / "workbench" / "frontend" / "src" / "components" / "GoalPlanLibraryEditor.tsx").read_text(encoding="utf-8")
     for token in ("HierarchyResourceEditor", "PREFERRED VARIANT", "Split view", "+ Alternative", "+ Abstract", "raw-json-editor", "preferredChild"):
         assert token in source
 
 
-def test_goal_and_plan_pages_load_their_shared_right_panel_docs() -> None:
+def test_goal_plan_and_context_pages_load_their_shared_right_panel_docs() -> None:
     components = ROOT / "workbench" / "frontend" / "src" / "components"
     help_source = (components / "HelpDocumentTabs.tsx").read_text(encoding="utf-8")
     page_source = (ROOT / "workbench" / "frontend" / "src" / "pages" / "FilesystemWorkbenchPage.tsx").read_text(encoding="utf-8")
     assert '{id:"goals",label:"Goals",path:"docs/goals.md"}' in help_source
     assert '{id:"plans",label:"Plans",path:"docs/plans.md"}' in help_source
+    assert '{id:"contexts",label:"Contexts",path:"docs/contexts.md"}' in help_source
     assert 'ReactMarkdown' in help_source
     assert 'remarkGfm' in help_source
     assert '<pre className="mini-code relationship-markdown">' not in help_source
@@ -65,3 +75,4 @@ def test_goal_and_plan_pages_load_their_shared_right_panel_docs() -> None:
     assert 'view==="goals"||view==="plans"' in page_source
     assert (ROOT / "workbench" / "workspaces" / "shared" / "docs" / "goals.md").is_file()
     assert (ROOT / "workbench" / "workspaces" / "shared" / "docs" / "plans.md").is_file()
+    assert (ROOT / "workbench" / "workspaces" / "shared" / "docs" / "contexts.md").is_file()

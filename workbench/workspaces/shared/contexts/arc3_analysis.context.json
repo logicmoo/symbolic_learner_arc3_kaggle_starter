@@ -1,0 +1,9 @@
+{
+  "kind": "context",
+  "id": "arc3_analysis",
+  "label": "ARC3 Analysis Context",
+  "description": "Declares the AtomSpaces and runtime bindings available while observing, explaining, and acting in an ARC3 world.",
+  "children": ["arc3_analysis.default"],
+  "preferredChild": "arc3_analysis.default",
+  "bindings": ["current_scene", "world_model", "candidate_rules", "goal_state"]
+}

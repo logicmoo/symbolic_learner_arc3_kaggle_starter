@@ -11,6 +11,7 @@ from resource_relationships import relationship_ids
 FAMILIES = {
     "goal": ("goals", {"goal", "goal_interpretation", "goal_variant"}),
     "plan": ("plans", {"plan", "plan_variant"}),
+    "context": ("contexts", {"context", "context_variant"}),
 }
 
 
@@ -23,7 +24,7 @@ def _read(path: Path, kinds: set[str]) -> dict[str, Any]:
         raise ValueError(f"Resource must declare one of {sorted(kinds)}: {path}")
     if not str(value.get("id") or "").strip():
         raise ValueError(f"Resource requires id: {path}")
-    if value["kind"] not in {"goal", "plan"} and not relationship_ids(value.get("parents")):
+    if value["kind"] not in {"goal", "plan", "context"} and not relationship_ids(value.get("parents")):
         raise ValueError(f"Variant requires parents: {path}")
     return value
 

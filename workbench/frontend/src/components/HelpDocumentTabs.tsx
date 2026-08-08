@@ -10,6 +10,7 @@ const docTabs:HelpTab[]=[
  {id:"overview",label:"Overview",path:"docs/models_profiles_operations_prompts.md"},
  {id:"goals",label:"Goals",path:"docs/goals.md"},
  {id:"plans",label:"Plans",path:"docs/plans.md"},
+ {id:"contexts",label:"Contexts",path:"docs/contexts.md"},
  {id:"data",label:"Data",path:"docs/data.md"},
  {id:"datatypeGuide",label:"Datatype Guide",repositoryPath:"docs/DATATYPES_MANIFEST_EXPLAINED.md"},
  {id:"llms",label:"LLMs",path:"docs/llm_catalog.md"},
