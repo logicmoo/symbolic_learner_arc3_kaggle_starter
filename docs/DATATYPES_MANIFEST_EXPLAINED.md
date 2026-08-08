@@ -1,4 +1,4 @@
-[â† Back to top-level README](../README.md) Â· [LLM and workflow configuration](../config/README.md)
+[← Back to top-level README](../README.md) · [LLM and workflow configuration](../config/README.md)
 
 # Symbolic Datatypes in AtomSpace Explained
 
@@ -28,19 +28,19 @@ A useful root hierarchy is:
 
 ```text
 Information
-â”œâ”€â”€ Visual Information
-â”œâ”€â”€ Textual Information
-â”œâ”€â”€ Temporal Information
-â”œâ”€â”€ Spatial Information
-â”œâ”€â”€ Identity Information
-â”œâ”€â”€ Descriptive Information
-â”œâ”€â”€ Symbolic Information
-â”œâ”€â”€ Program Information
-â”œâ”€â”€ Evidence
-â”œâ”€â”€ Rule Information
-â”œâ”€â”€ Validation Information
-â”œâ”€â”€ Provenance Information
-â””â”€â”€ Aggregate Information
+├── Visual Information
+├── Textual Information
+├── Temporal Information
+├── Spatial Information
+├── Identity Information
+├── Descriptive Information
+├── Symbolic Information
+├── Program Information
+├── Evidence
+├── Rule Information
+├── Validation Information
+├── Provenance Information
+└── Aggregate Information
 ```
 
 A value may belong to several information categories simultaneously.
@@ -161,7 +161,7 @@ The semantic meaning remains `birthdate`; only its encoding becomes more precise
 
 ## 3. The AtomSpace is the central workflow unit
 
-An **AtomSpace** is a named knowledge location containing Atoms. This is the canonical replacement for the older workflow term â€œsilo.â€ The AtomSpace may be persisted or versioned as a whole, while its Atoms carry the facts, relations, rules, values, truth state, and provenance.
+An **AtomSpace** is a named knowledge location containing Atoms. This is the canonical replacement for the older workflow term “silo.” The AtomSpace may be persisted or versioned as a whole, while its Atoms carry the facts, relations, rules, values, truth state, and provenance.
 
 An AtomSpace may contain Atoms denoting:
 
@@ -304,12 +304,12 @@ An individual object is not identical to one image crop or one Prolog term. It i
 
 ```text
 individual_object:object_17
-â”œâ”€â”€ object_17_image_region
-â”œâ”€â”€ object_17_turtle_program
-â”œâ”€â”€ object_17_prolog_properties
-â”œâ”€â”€ object_17_feature_vector
-â”œâ”€â”€ object_17_identity_record
-â””â”€â”€ object_17_rule_references
+├── object_17_image_region
+├── object_17_turtle_program
+├── object_17_prolog_properties
+├── object_17_feature_vector
+├── object_17_identity_record
+└── object_17_rule_references
 ```
 
 These representations should share a semantic subject:
@@ -328,9 +328,9 @@ An image region and a Turtle program may be semantically equivalent when both de
 
 ```text
 image_region(object_17)
-        â‰ˆ
+        ≈
 turtle_program(object_17)
-        â‰ˆ
+        ≈
 prolog_object_properties(object_17)
 ```
 
@@ -342,12 +342,12 @@ An object is therefore best understood as a bundle:
 
 ```text
 Individual Object
-â”œâ”€â”€ Appearance                  â†’ image or image region
-â”œâ”€â”€ Geometry                    â†’ Turtle program
-â”œâ”€â”€ Logical properties          â†’ Prolog facts
-â”œâ”€â”€ Derived measurements        â†’ feature vector
-â”œâ”€â”€ Identity                    â†’ identity record
-â””â”€â”€ Participation in knowledge  â†’ rule references
+├── Appearance                  → image or image region
+├── Geometry                    → Turtle program
+├── Logical properties          → Prolog facts
+├── Derived measurements        → feature vector
+├── Identity                    → identity record
+└── Participation in knowledge  → rule references
 ```
 
 This is one of the central design ideas behind the symbolic learner framework:
@@ -366,11 +366,11 @@ A scene may aggregate:
 
 ```text
 scene
-â”œâ”€â”€ scene image
-â”œâ”€â”€ object collection
-â”œâ”€â”€ object manifest
-â”œâ”€â”€ spatial relations
-â””â”€â”€ scene metadata
+├── scene image
+├── object collection
+├── object manifest
+├── spatial relations
+└── scene metadata
 ```
 
 ### Scene pair
@@ -379,11 +379,11 @@ A before/after or parent/current pair may aggregate:
 
 ```text
 scene_pair
-â”œâ”€â”€ before scene
-â”œâ”€â”€ after scene
-â”œâ”€â”€ action metadata
-â”œâ”€â”€ correspondence evidence
-â””â”€â”€ transition evidence
+├── before scene
+├── after scene
+├── action metadata
+├── correspondence evidence
+└── transition evidence
 ```
 
 ### Dataset or bundle
@@ -392,14 +392,14 @@ A dataset or bundle may aggregate:
 
 ```text
 dataset_bundle
-â”œâ”€â”€ examples
-â”œâ”€â”€ individual objects
-â”œâ”€â”€ images
-â”œâ”€â”€ Turtle programs
-â”œâ”€â”€ Prolog files
-â”œâ”€â”€ results
-â”œâ”€â”€ comparisons
-â””â”€â”€ provenance
+├── examples
+├── individual objects
+├── images
+├── Turtle programs
+├── Prolog files
+├── results
+├── comparisons
+└── provenance
 ```
 
 ### Artifact bundle
@@ -408,15 +408,15 @@ A symbolic artifact bundle may aggregate:
 
 ```text
 artifact_bundle
-â”œâ”€â”€ object manifests
-â”œâ”€â”€ Prolog files
-â”œâ”€â”€ Turtle programs
-â”œâ”€â”€ image manifests
-â”œâ”€â”€ transition evidence
-â”œâ”€â”€ candidate rules
-â”œâ”€â”€ validation reports
-â”œâ”€â”€ audit reports
-â””â”€â”€ workflow report
+├── object manifests
+├── Prolog files
+├── Turtle programs
+├── image manifests
+├── transition evidence
+├── candidate rules
+├── validation reports
+├── audit reports
+└── workflow report
 ```
 
 ### Rule
@@ -435,17 +435,17 @@ The new Atomese writes facts and rules directly without classic typed wrappers:
   (predicted-at $entity (+ $x 1) $y))
 ```
 
-â€œConsume antecedentsâ€ normally means query and match. It does not delete antecedent Atoms unless the rule explicitly retracts or tombstones them. A rule may be represented by:
+“Consume antecedents” normally means query and match. It does not delete antecedent Atoms unless the rule explicitly retracts or tombstones them. A rule may be represented by:
 
 ```text
 rule
-â”œâ”€â”€ Prolog rule
-â”œâ”€â”€ induced logic
-â”œâ”€â”€ LLM-derived rule
-â”œâ”€â”€ assumptions
-â”œâ”€â”€ confidence
-â”œâ”€â”€ supporting examples
-â””â”€â”€ provenance
+├── Prolog rule
+├── induced logic
+├── LLM-derived rule
+├── assumptions
+├── confidence
+├── supporting examples
+└── provenance
 ```
 
 ---
@@ -842,13 +842,13 @@ The workflow slot manifest records these bindings so downstream operations do no
 
 The generated SVG groups declared datatypes by kind:
 
-- **Root and structural types** â€” `any`, `scalar`;
-- **Physical types** â€” text, boolean, integer, JSON, paths, URLs;
-- **Media types** â€” image, image file, image region, video;
-- **Collection types** â€” image collection, image sequence, object collection;
-- **Syntactic types** â€” Prolog, Turtle, image manifests, object manifests;
-- **Semantic types** â€” individual object, scene, transition evidence, rule set, reports;
-- **Aggregate types** â€” artifact bundles and other bundles.
+- **Root and structural types** — `any`, `scalar`;
+- **Physical types** — text, boolean, integer, JSON, paths, URLs;
+- **Media types** — image, image file, image region, video;
+- **Collection types** — image collection, image sequence, object collection;
+- **Syntactic types** — Prolog, Turtle, image manifests, object manifests;
+- **Semantic types** — individual object, scene, transition evidence, rule set, reports;
+- **Aggregate types** — artifact bundles and other bundles.
 
 Highlighted graph relationships represent:
 
@@ -878,7 +878,7 @@ The full machine-readable relationships are in [`workflow_datatypes.json`](../co
 | **Information** | The root concept represented or conveyed by all values and artifacts. |
 | **Representation datatype** | Concrete encoding, storage form, or software-level structure. |
 | **Semantic type** | Meaning of the information. |
-| **AtomSpace** | OpenCog knowledge location containing Atoms; canonical replacement for the older term â€œsilo.â€ |
+| **AtomSpace** | OpenCog knowledge location containing Atoms; canonical replacement for the older term “silo.” |
 | **Atom** | A symbolic unit that exists only inside an AtomSpace and denotes a fact, value, relation, rule, or other expression. |
 | **Rule Atom** | Rule stored in an AtomSpace, retrieved and matched against antecedent Atoms. |
 | **Port** | A operation's declared input or output. |
@@ -913,7 +913,7 @@ The workflow and datatype systems should follow these rules:
 12. **Rule execution consumes or matches antecedent Atoms and writes output Atoms into destination AtomSpaces.**
 13. **Workflow branches respond to AtomSpace-change events and conditions, not only hard-coded sequence positions.**
 14. **Legacy transaction-only steps may remain as shorthand, but typed operation items are the preferred form for complex orchestration.**
-15. **The simple `g â†’ 4` workflow remains valid; typed workflows are used when decomposition, routing, or verification adds value.**
+15. **The simple `g → 4` workflow remains valid; typed workflows are used when decomposition, routing, or verification adds value.**
 
 ---
 

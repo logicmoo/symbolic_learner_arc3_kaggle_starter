@@ -20,6 +20,8 @@ Goals and Plans should use the universal hierarchical editor behavior: specifica
 
 Design-time goals and plans are immutable inputs to a particular run version. Runtime records should preserve the resolved goal, selected strategy, context bindings, decisions, workflow/operation executions, events, state snapshots, and logs. Goal Runs is therefore a runtime history view, not another editor for goal definitions.
 
-## Delivery Sequence
+## Durable Goal Runs
 
-Navigation may expose Goals, Plans, and Goal Runs before their full contracts exist, but interim views must report real filesystem coverage and pending implementation. Define resource schemas, loaders, override rules, APIs, and tests before building rich runtime UI.
+`POST /api/goal-runs` resolves the preferred (or requested) goal and plan variants, verifies that the plan pursues the goal, resolves an optional Context, and starts the plan variant's filesystem workflow. The resulting SQLite record links all selected design resources to the durable workflow run. `GET /api/goal-runs` reloads that history after restart; the Runtime views then expose its executions, events, state artifacts, and logs.
+
+Goal, Plan, and Context resources remain editable specifications. A Goal Run records the resolved IDs and execution version rather than copying runtime state back into those design files.

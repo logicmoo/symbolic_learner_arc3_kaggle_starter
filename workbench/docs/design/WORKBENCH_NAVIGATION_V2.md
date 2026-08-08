@@ -17,15 +17,15 @@ Navigation V2 organizes the active filesystem-backed workbench by lifecycle with
 | Design | Datatypes | Existing `DataCatalogPanel` |
 | Design | Prompts | Existing `PromptLibraryEditor` |
 | Design | Models | Existing `LlmModelsEditor` |
-| Runtime | Goal Runs | Future goal-pursuit history |
-| Runtime | Workflow Runs | Existing workflow-engine run state |
-| Runtime | Execs | Operation invocations and playground executions |
-| Runtime | Events | Existing durable engine events/evidence |
-| Runtime | States | Persisted workflow/world-state snapshots |
-| Runtime | Logs | Existing workflow-engine logs |
-| System | Model Policy | TODO-backed view until a real API exists |
-| System | Benchmarks | Filesystem benchmark definitions/results |
-| System | Contexts | Runtime context and knowledge bindings |
+| Runtime | Goal Runs | Durable Goal/Plan/Context-to-workflow pursuit records |
+| Runtime | Workflow Runs | Persistent workflow-engine history |
+| Runtime | Execs | Step attempts across persistent runs |
+| Runtime | Events | Durable engine event history |
+| Runtime | States | Persisted workflow artifacts/state values |
+| Runtime | Logs | Persistent operation logs |
+| System | Model Policy | Filesystem registry, policy, health, and eligibility UI |
+| System | Benchmarks | Executable filesystem benchmark definitions/results |
+| System | Contexts | Hierarchical context and binding editor |
 | System | Settings | Existing workspace setup surface |
 
 ## Implementation Constraints

@@ -91,6 +91,11 @@ def start_run(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
         raise _http(error) from error
 
 
+@router.get('/runs')
+def list_runs(limit: int = Query(default=100, ge=1, le=500)) -> dict[str, Any]:
+    return {'runs': engine.list_runs(limit)}
+
+
 @router.get('/runs/{run_id}')
 def get_run(run_id: str) -> dict[str, Any]:
     try:

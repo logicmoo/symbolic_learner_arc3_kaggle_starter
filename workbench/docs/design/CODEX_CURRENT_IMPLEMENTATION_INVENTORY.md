@@ -4,7 +4,7 @@
 
 ## Scope and Active Entrypoint
 
-This inventory records the repository before Navigation V2 implementation. `workbench/frontend/src/main.tsx` renders `App`; `workbench/frontend/src/App.tsx` imports and returns only `FilesystemWorkbenchPage`. Therefore `workbench/frontend/src/pages/FilesystemWorkbenchPage.tsx` is the active application. No other page under `src/pages/` is reachable through the current entrypoint.
+This living inventory records the active Navigation V2 implementation. `workbench/frontend/src/main.tsx` renders `App`; `workbench/frontend/src/App.tsx` imports and returns only `FilesystemWorkbenchPage`. Therefore `workbench/frontend/src/pages/FilesystemWorkbenchPage.tsx` is the active application. No other page under `src/pages/` is reachable through the current entrypoint.
 
 The backend is FastAPI, launched from `workbench/server/app.py`. The active page uses `/api/workspaces/{id}/snapshot` for filesystem state and `/api/engine/*` for workflow execution.
 
@@ -19,15 +19,15 @@ The backend is FastAPI, launched from `workbench/server/app.py`. The active page
 | Datatypes | `DataCatalogPanel` | Real, relabel Data |
 | Prompts | `PromptLibraryEditor` | Real, reuse |
 | Models | `LlmModelsEditor` | Real, reuse |
-| Goal Runs | No goal-run contract | New contract required |
-| Workflow Runs | Active engine `Run`, steps, artifacts, events, commands, and human input | Real, reorganize |
-| Execs | Operation playground invocation API plus engine step execution | Partly present |
-| Events | Active run evidence and `/api/engine/runs/{id}/events` | Real, reuse |
-| States | Run/artifact state exists, but no dedicated state-snapshot page/contract | Partial |
-| Logs | `/api/engine/runs/{id}/logs` exists; no active dedicated page | Backend real, UI needed |
-| Model Policy | Requirements document only | Pending; documentation view |
-| Benchmarks | No discovered benchmark resource/API | Pending; resource-status view |
-| Contexts | No first-class context resource/API | Pending; resource-status view |
+| Goal Runs | `/api/goal-runs` plus `RuntimeHistoryView` | Durable and real |
+| Workflow Runs | `/api/engine/runs` persistent history | Durable and real |
+| Execs | Persisted step attempts plus operation playground invocations | Real |
+| Events | Ordered events across durable engine runs | Real |
+| States | Persisted workflow artifacts and payloads | Real |
+| Logs | Persisted operation streams across runs | Real |
+| Model Policy | Filesystem policy/registry/health API and editor | Real |
+| Benchmarks | Executable policies, jobs, and persisted results | Real |
+| Contexts | `GoalPlanLibraryEditor`, context API, shared context variants | Real, reuse |
 | Settings | Active workspace Setup view in `FilesystemWorkbenchPage` | Real, reuse |
 
 ## Active Editors and Baseline Features
@@ -56,19 +56,20 @@ Workspace and file APIs:
 - Datatype resolution, representation graph, inventory, and conversion-planning routes
 - `POST /api/workspaces/{id}/operations/{operation_id}/invoke`
 
-Workflow-engine APIs:
+Workflow-engine and pursuit APIs:
 
 - capabilities and implementations
 - workflow list/create/get/validate
-- run create/get, commands, human step input, events, and logs
+- run create/list/get, commands, human step input, events, and logs
+- Goal Run create/list/get with resolved Goal, Plan, Context, and workflow linkage
 
 The app also exposes health, analysis, SQLite-backed legacy run/event/operation APIs, artifact lookup, and session workflow/reset routes. `/api/workflows` is explicitly deprecated for the retired mock client; Navigation V2 should use workspace snapshots and engine routes.
 
 ## Filesystem Resource Kinds
 
-Existing first-class loaders cover `workflow`, `goal`, `goal_interpretation`, `goal_variant`, `plan`, `plan_variant`, `operation`, `operation_implementation`, `semantic_datatype`, `representation_datatype`, `concrete_datatype`, `prompt`, `prompt_implementation`, `backend`, `model`, and `profile`. Workspaces also contain catalog/config/Markdown files that appear in the editable-file inventory but are not all first-class semantic loaders.
+Existing first-class loaders cover `workflow`, `goal`, `goal_variant`, `plan`, `plan_variant`, `context`, `context_variant`, `operation`, `operation_implementation`, `semantic_datatype`, `representation_datatype`, `concrete_datatype`, `prompt`, `prompt_implementation`, `backend`, `model`, `profile`, model-policy resources, and benchmark resources. Workspaces also contain catalog/config/Markdown files that appear in the editable-file inventory but are not all first-class semantic loaders.
 
-Shared inheritance plus workspace override resolution exists for goals and variants, plans and variants, operations and implementations, datatypes and representations, prompts and implementations, backends, models, and profiles. AtomSpaces, model policies, benchmark policies/results, contexts, goal runs, and dedicated state snapshots are not yet first-class resource kinds in the workspace snapshot.
+Shared inheritance plus workspace override resolution exists for Goals, Plans, Contexts, Operations, Datatypes, Prompts, backends, models, profiles, and policies. Goal Runs and workflow evidence are deliberately SQLite runtime records; artifact records serve as durable workflow state snapshots. AtomSpace semantics are represented by the datatype and Context resources rather than a separate mock catalog.
 
 ## Exact Navigation V2 Change Surface
 

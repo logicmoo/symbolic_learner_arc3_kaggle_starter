@@ -67,6 +67,18 @@ def test_navigation_reuses_current_rich_editors() -> None:
 def test_pending_pages_are_derived_from_workspace_or_runtime_state() -> None:
     source = ACTIVE_PAGE.read_text(encoding="utf-8")
     assert "snapshot?.files" in source
-    assert "benchmarkResourceCount" in source
-    assert "run?.steps.length" in source
-    assert "run?.logs.length" in source
+    assert 'view==="benchmarks"&&<ModelPolicyPage workspaceId={workspace.id}' in source
+    assert '<RuntimeHistoryView mode="workflowRuns"' in source
+    assert '<RuntimeHistoryView mode="execs"' in source
+    assert '<RuntimeHistoryView mode="events"' in source
+    assert '<RuntimeHistoryView mode="states"' in source
+    assert '<RuntimeHistoryView mode="logs"' in source
+
+
+def test_goal_runs_use_durable_goal_plan_context_contract() -> None:
+    page = ACTIVE_PAGE.read_text(encoding="utf-8")
+    component = (ROOT / "workbench" / "frontend" / "src" / "components" / "RuntimeHistoryView.tsx").read_text(encoding="utf-8")
+    assert '<RuntimeHistoryView mode="goalRuns"' in page
+    assert "/api/goal-runs" in component
+    assert "goalId" in component and "planId" in component and "contextId" in component
+    assert "Pursue goal" in component

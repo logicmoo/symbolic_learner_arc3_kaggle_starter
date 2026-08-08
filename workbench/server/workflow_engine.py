@@ -86,6 +86,14 @@ class WorkflowEngine:
               id INTEGER PRIMARY KEY AUTOINCREMENT, run_id TEXT NOT NULL,
               step_id TEXT, kind TEXT NOT NULL, payload TEXT NOT NULL, created_at TEXT NOT NULL);
             CREATE INDEX IF NOT EXISTS wf_events_run_idx ON wf_events(run_id,id);
+            CREATE TABLE IF NOT EXISTS goal_runs(
+              id TEXT PRIMARY KEY, workspace_id TEXT NOT NULL,
+              goal_id TEXT NOT NULL, goal_variant_id TEXT,
+              plan_id TEXT NOT NULL, plan_variant_id TEXT NOT NULL,
+              context_id TEXT, workflow_run_id TEXT NOT NULL,
+              created_at TEXT NOT NULL, updated_at TEXT NOT NULL,
+              FOREIGN KEY(workflow_run_id) REFERENCES wf_runs(id));
+            CREATE INDEX IF NOT EXISTS goal_runs_created_idx ON goal_runs(created_at DESC);
             ''')
 
     def save_workflow(self, document: dict[str, Any]) -> dict[str, Any]:
@@ -116,6 +124,51 @@ class WorkflowEngine:
               (SELECT id,MAX(version) version FROM wf_definitions GROUP BY id) x
               ON d.id=x.id AND d.version=x.version ORDER BY d.id''').fetchall()
         return [json.loads(r['document']) for r in rows]
+
+    def list_runs(self, limit: int = 100) -> list[dict[str, Any]]:
+        with self._db() as db:
+            rows = db.execute('SELECT id FROM wf_runs ORDER BY created_at DESC LIMIT ?', (limit,)).fetchall()
+        return [self.get_run(str(row['id'])) for row in rows]
+
+    def create_goal_run(self, workspace_id: str, goal_id: str, goal_variant_id: str | None,
+                        plan_id: str, plan_variant_id: str, context_id: str | None,
+                        workflow_run_id: str) -> dict[str, Any]:
+        self.get_run(workflow_run_id)
+        goal_run_id = str(uuid.uuid4())
+        stamp = now()
+        with self._db() as db:
+            db.execute(
+                'INSERT INTO goal_runs VALUES(?,?,?,?,?,?,?,?,?,?)',
+                (goal_run_id, workspace_id, goal_id, goal_variant_id, plan_id,
+                 plan_variant_id, context_id, workflow_run_id, stamp, stamp),
+            )
+        return self.get_goal_run(goal_run_id)
+
+    def get_goal_run(self, goal_run_id: str) -> dict[str, Any]:
+        with self._db() as db:
+            row = db.execute('SELECT * FROM goal_runs WHERE id=?', (goal_run_id,)).fetchone()
+        if not row:
+            raise KeyError('goal run not found')
+        workflow_run = self.get_run(str(row['workflow_run_id']))
+        return {
+            'id': row['id'], 'workspaceId': row['workspace_id'], 'goalId': row['goal_id'],
+            'goalVariantId': row['goal_variant_id'], 'planId': row['plan_id'],
+            'planVariantId': row['plan_variant_id'], 'contextId': row['context_id'],
+            'workflowRunId': row['workflow_run_id'], 'status': workflow_run['status'],
+            'createdAt': row['created_at'], 'updatedAt': workflow_run.get('updatedAt') or row['updated_at'],
+            'workflowRun': workflow_run,
+        }
+
+    def list_goal_runs(self, workspace_id: str | None = None, limit: int = 100) -> list[dict[str, Any]]:
+        with self._db() as db:
+            if workspace_id:
+                rows = db.execute(
+                    'SELECT id FROM goal_runs WHERE workspace_id=? ORDER BY created_at DESC LIMIT ?',
+                    (workspace_id, limit),
+                ).fetchall()
+            else:
+                rows = db.execute('SELECT id FROM goal_runs ORDER BY created_at DESC LIMIT ?', (limit,)).fetchall()
+        return [self.get_goal_run(str(row['id'])) for row in rows]
 
     def validate(self, document: dict[str, Any]) -> list[str]:
         errors: list[str] = []
@@ -152,7 +205,7 @@ class WorkflowEngine:
         run_id = str(uuid.uuid4())
         stamp = now()
         with self._db() as db:
-            db.execute('INSERT INTO wf_runs VALUES(?,?,?,?,?,?,?,?,?,?,?,?)',
+            db.execute('INSERT INTO wf_runs VALUES(?,?,?,?,?,?,?,?,?,?,?)',
                        (run_id, workflow_id, wf['version'], parent_run_id, parent_step_id, 'running', json.dumps(inputs), '{}', None, stamp, stamp))
             for step in wf.get('steps', []):
                 db.execute('INSERT INTO wf_steps(run_id,step_id,status) VALUES(?,?,?)', (run_id, step['id'], 'pending'))
@@ -180,7 +233,7 @@ class WorkflowEngine:
     def _resolve(self, run_id: str, binding: Any) -> Any:
         if not isinstance(binding, str) or not binding.startswith('$'):
             return binding
-        name = binding.split('.')[-1]
+        name = binding.lstrip('$').split('.')[-1]
         with self._db() as db:
             row = db.execute('SELECT payload FROM wf_artifacts WHERE run_id=? AND name=? ORDER BY created_at DESC LIMIT 1', (run_id, name)).fetchone()
         if not row: raise ValueError(f'unresolved binding: {binding}')
@@ -244,14 +297,18 @@ class WorkflowEngine:
             self._event(run_id, sid, 'step.completed', {'outputs': list(output_bindings.values())})
         except Exception as exc:
             retries = int((step.get('retry') or {}).get('maxAttempts', 1))
+            retry_attempt: int | None = None
             with self._db() as db:
                 row = db.execute('SELECT attempt FROM wf_steps WHERE run_id=? AND step_id=?', (run_id, sid)).fetchone()
                 if int(row['attempt']) < retries:
                     db.execute('UPDATE wf_steps SET status=?,error=? WHERE run_id=? AND step_id=?', ('pending', str(exc), run_id, sid))
-                    self._event(run_id, sid, 'step.retrying', {'error': str(exc), 'attempt': row['attempt']})
-                    return self.advance(run_id)
-                db.execute('UPDATE wf_steps SET status=?,error=?,finished_at=? WHERE run_id=? AND step_id=?', ('failed', str(exc), now(), run_id, sid))
-                db.execute('UPDATE wf_runs SET status=?,error=?,updated_at=? WHERE id=?', ('failed', str(exc), now(), run_id))
+                    retry_attempt = int(row['attempt'])
+                else:
+                    db.execute('UPDATE wf_steps SET status=?,error=?,finished_at=? WHERE run_id=? AND step_id=?', ('failed', str(exc), now(), run_id, sid))
+                    db.execute('UPDATE wf_runs SET status=?,error=?,updated_at=? WHERE id=?', ('failed', str(exc), now(), run_id))
+            if retry_attempt is not None:
+                self._event(run_id, sid, 'step.retrying', {'error': str(exc), 'attempt': retry_attempt})
+                return self.advance(run_id)
             self._event(run_id, sid, 'step.failed', {'error': str(exc)})
 
     def submit_human_input(self, run_id: str, step_id: str, values: dict[str, Any]) -> dict[str, Any]:
@@ -293,6 +350,7 @@ class WorkflowEngine:
         return {'id': run['id'], 'workflowId': run['workflow_id'], 'workflowVersion': run['workflow_version'],
                 'parentRunId': run['parent_run_id'], 'parentStepId': run['parent_step_id'], 'status': run['status'],
                 'inputs': json.loads(run['inputs']), 'outputs': json.loads(run['outputs']), 'error': run['error'],
+                'createdAt': run['created_at'], 'updatedAt': run['updated_at'],
                 'steps': [{'stepId': s['step_id'], 'status': s['status'], 'attempt': s['attempt'], 'childRunId': s['child_run_id'], 'error': s['error']} for s in steps],
                 'artifacts': [{'id': a['id'], 'stepId': a['step_id'], 'name': a['name'], 'datatype': a['datatype'], 'payload': json.loads(a['payload']), 'contentHash': a['content_hash'], 'provenance': json.loads(a['provenance'])} for a in artifacts],
                 'events': [{'id': e['id'], 'stepId': e['step_id'], 'kind': e['kind'], 'payload': json.loads(e['payload']), 'createdAt': e['created_at']} for e in events]}

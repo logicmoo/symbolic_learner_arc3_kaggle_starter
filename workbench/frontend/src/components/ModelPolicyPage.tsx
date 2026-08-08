@@ -23,7 +23,7 @@ function PolicySelect({value,onChange,label}:{value:PolicyState;onChange:(value:
  return <select aria-label={label} value={value} onChange={event=>onChange(event.target.value as PolicyState)}>{states.map(item=><option key={item} value={item}>{item.toUpperCase()}</option>)}</select>;
 }
 
-export function ModelPolicyTodoPage({workspaceId}:{workspaceId:string}){
+export function ModelPolicyPage({workspaceId}:{workspaceId:string}){
  const[payload,setPayload]=useState<Payload|null>(null),[error,setError]=useState<string|null>(null),[query,setQuery]=useState(""),[vendorFilter,setVendorFilter]=useState("all"),[wanted,setWanted]=useState("all"),[runtime,setRuntime]=useState("all"),[benchmark,setBenchmark]=useState("all"),[health,setHealth]=useState("all"),[capability,setCapability]=useState("all"),[busy,setBusy]=useState(false),[drafts,setDrafts]=useState<Record<string,Policy>>({}),[selected,setSelected]=useState<Set<string>>(new Set()),[sort,setSort]=useState<Sort>({key:"name",direction:1});
  const load=async()=>{try{const body=await jsonRequest(`/api/workspaces/${encodeURIComponent(workspaceId)}/model-policy`);setPayload(body);setError(null)}catch(reason){setError(String(reason))}};
  useEffect(()=>{void load()},[workspaceId]);

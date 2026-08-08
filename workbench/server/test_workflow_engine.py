@@ -27,6 +27,18 @@ def test_versioned_workflow_and_artifacts(tmp_path: Path) -> None:
     assert any(event['kind'] == 'workflow.completed' for event in run['events'])
 
 
+def test_direct_dollar_binding_resolves_workflow_input(tmp_path: Path) -> None:
+    e = engine(tmp_path)
+    e.save_workflow({
+        'id': 'direct_binding', 'inputs': {'payload': 'Object'}, 'outputs': {},
+        'steps': [{'id': 'echo', 'kind': 'operation', 'implementation': 'core.echo',
+                   'inputs': {'value': '$payload'}, 'outputs': {'value': 'copied'}}],
+    })
+    run = e.start('direct_binding', {'payload': {'value': 3}})
+    assert run['status'] == 'completed'
+    assert next(item for item in run['artifacts'] if item['name'] == 'copied')['payload'] == {'value': 3}
+
+
 def test_human_step_waits_and_resumes(tmp_path: Path) -> None:
     e = engine(tmp_path)
     e.save_workflow({
@@ -79,3 +91,22 @@ def test_pause_resume_cancel(tmp_path: Path) -> None:
     run = e.start('pause_flow', {})
     run = e.command(run['id'], 'cancel')
     assert run['status'] == 'cancelled'
+
+
+def test_durable_run_history_and_goal_run_linkage(tmp_path: Path) -> None:
+    e = engine(tmp_path)
+    e.save_workflow({
+        'id': 'goal_flow', 'inputs': {}, 'outputs': {},
+        'steps': [{'id': 'constant', 'kind': 'operation', 'implementation': 'core.constant',
+                   'parameters': {'value': 1}, 'outputs': {'value': 'value'}}],
+    })
+    workflow_run = e.start('goal_flow', {})
+    goal_run = e.create_goal_run(
+        'default', 'solve', 'solve.safe', 'observe', 'observe.default',
+        'arc3_analysis', workflow_run['id'],
+    )
+    assert goal_run['status'] == 'completed'
+    assert goal_run['workflowRunId'] == workflow_run['id']
+    assert e.list_runs()[0]['id'] == workflow_run['id']
+    assert e.list_goal_runs('default')[0]['goalVariantId'] == 'solve.safe'
+    assert e.get_goal_run(goal_run['id'])['contextId'] == 'arc3_analysis'

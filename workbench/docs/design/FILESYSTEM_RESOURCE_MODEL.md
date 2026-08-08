@@ -15,8 +15,13 @@ Current conventions include:
 - `prompt` / `prompt_implementation`
 - `backend` / `model` / `profile`
 - `workflow`
+- `goal` / `goal_variant`
+- `plan` / `plan_variant`
+- `context` / `context_variant`
+- `model_policy` / `model_policy_variant`
+- `benchmark_policy` / `benchmark_result`
 
-Planned families include `goal` / `goal_interpretation` or `goal_variant`, `plan` / `plan_variant`, and `atomspace` / `atomspace_implementation`.
+Runtime workflow and Goal Run records are durable SQLite data because they are append-oriented execution evidence. Their selected Goal, Plan, Context, workflow, policy, and benchmark definitions remain filesystem resources.
 
 ## Bidirectional many-to-many relationships
 

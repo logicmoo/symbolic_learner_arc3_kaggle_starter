@@ -83,14 +83,14 @@ def test_ping_job_persists_independent_health_and_events(tmp_path: Path) -> None
 
 
 def test_model_policy_ui_calls_real_ping_executor() -> None:
-    source = (ROOT / "workbench" / "frontend" / "src" / "components" / "ModelPolicyTodoPage.tsx").read_text(encoding="utf-8")
+    source = (ROOT / "workbench" / "frontend" / "src" / "components" / "ModelPolicyPage.tsx").read_text(encoding="utf-8")
     assert "/model-policy/ping" in source
     for label in ("Ping All", "Ping Wanted", "Ping Auto", "Ping Unwanted"):
         assert label in source
 
 
 def test_model_policy_ui_edits_and_filters_dynamic_registry() -> None:
-    source = (ROOT / "workbench" / "frontend" / "src" / "components" / "ModelPolicyTodoPage.tsx").read_text(encoding="utf-8")
+    source = (ROOT / "workbench" / "frontend" / "src" / "components" / "ModelPolicyPage.tsx").read_text(encoding="utf-8")
     styles = (ROOT / "workbench" / "frontend" / "src" / "styles" / "model_policy_todo.css").read_text(encoding="utf-8")
     for token in ("Filesystem Load", "Filesystem Save", "Ping Selected", "All capabilities", "All runtime", "All benchmark", "dynamicColumns", "toggleSort"):
         assert token in source
@@ -112,6 +112,6 @@ def test_benchmark_job_executes_declared_cases_and_persists_measurements(tmp_pat
 
 
 def test_model_policy_ui_exposes_explicit_benchmark_run() -> None:
-    source = (ROOT / "workbench" / "frontend" / "src" / "components" / "ModelPolicyTodoPage.tsx").read_text(encoding="utf-8")
+    source = (ROOT / "workbench" / "frontend" / "src" / "components" / "ModelPolicyPage.tsx").read_text(encoding="utf-8")
     assert "/model-policy/benchmarks/" in source
     assert "Run Benchmark" in source
