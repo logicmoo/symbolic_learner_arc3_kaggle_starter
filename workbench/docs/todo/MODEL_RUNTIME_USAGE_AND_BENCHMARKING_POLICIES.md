@@ -13,7 +13,7 @@ Remaining work is intentionally narrower:
 - optionally embed vendor creation and backend discovery instead of using the current direct link to the Models editor's backend creation, discovery, selection, and overwrite import tools;
 - refine multi-column sorting if future catalog usage reveals additional ordering needs (Shift+click already composes sort keys);
 - add prompt-profile creation/editing from the policy dashboard;
-- add richer time-series history beyond the current persisted-result metric selector.
+- extend time-series history with charting if needed beyond the current persisted-result metric, model, and profile selectors with chronological timestamps.
 
 The requirements below remain the acceptance specification. Existing completed behavior must not be replaced with mock data.
 

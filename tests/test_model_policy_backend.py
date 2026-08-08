@@ -298,8 +298,12 @@ def test_model_policy_ui_exposes_explicit_benchmark_run() -> None:
     assert "/model-policy/benchmarks/" in source
     assert "Run Benchmark" in source
     assert 'aria-label="Performance history metric"' in source
+    assert 'aria-label="Performance history model"' in source
+    assert 'aria-label="Performance history profile"' in source
     assert "activeHistoryMetric" in source
     assert "historyMaximum" in source
+    assert "historyResults" in source
+    assert "recordedAt" in source
     assert "item?.kind===\"benchmark_job\"" in source
     assert "setTimeout(resolve,1000)" in source
     assert "latestBenchmarkResultCount" in source
