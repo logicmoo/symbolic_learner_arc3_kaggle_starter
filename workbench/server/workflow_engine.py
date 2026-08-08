@@ -87,6 +87,10 @@ class WorkflowEngine:
               id INTEGER PRIMARY KEY AUTOINCREMENT, run_id TEXT NOT NULL,
               step_id TEXT, kind TEXT NOT NULL, payload TEXT NOT NULL, created_at TEXT NOT NULL);
             CREATE INDEX IF NOT EXISTS wf_events_run_idx ON wf_events(run_id,id);
+            CREATE TABLE IF NOT EXISTS wf_logs(
+              id INTEGER PRIMARY KEY AUTOINCREMENT, run_id TEXT NOT NULL,
+              step_id TEXT, stream TEXT NOT NULL, message TEXT NOT NULL, created_at TEXT NOT NULL);
+            CREATE INDEX IF NOT EXISTS wf_logs_run_idx ON wf_logs(run_id,id);
             CREATE TABLE IF NOT EXISTS goal_runs(
               id TEXT PRIMARY KEY, workspace_id TEXT NOT NULL,
               goal_id TEXT NOT NULL, goal_variant_id TEXT,
@@ -230,6 +234,21 @@ class WorkflowEngine:
             db.execute('INSERT INTO wf_events(run_id,step_id,kind,payload,created_at) VALUES(?,?,?,?,?)',
                        (run_id, step_id, kind, json.dumps(payload), now()))
 
+    def _log(self, run_id: str, step_id: str | None, stream: str, message: Any) -> None:
+        text = str(message or '')
+        if not text:
+            return
+        with self._db() as db:
+            db.execute('INSERT INTO wf_logs(run_id,step_id,stream,message,created_at) VALUES(?,?,?,?,?)',
+                       (run_id, step_id, stream, text, now()))
+
+    def _capture_result_logs(self, run_id: str, step_id: str, result: dict[str, Any]) -> None:
+        candidates = [result, *(value for value in result.values() if isinstance(value, dict))]
+        for candidate in candidates:
+            for stream in ('stdout', 'stderr'):
+                if candidate.get(stream):
+                    self._log(run_id, step_id, stream, candidate[stream])
+
     def _artifact(self, run_id: str, step_id: str | None, name: str, datatype: str,
                   payload: Any, provenance: dict[str, Any]) -> str:
         artifact_id = str(uuid.uuid4())
@@ -295,6 +314,7 @@ class WorkflowEngine:
                 values = {k: self._resolve(run_id, v) for k, v in (step.get('inputs') or {}).items()}
                 result = spec.handler(values, step.get('parameters') or {})
                 if not isinstance(result, dict): raise TypeError('operation handler must return an object')
+                self._capture_result_logs(run_id, sid, result)
             output_bindings = step.get('outputs') or {}
             if kind == 'operation': output_types = self.registry.get(str(step.get('implementation') or step.get('operation'))).outputs
             else: output_types = {k: 'Any' for k in output_bindings}
@@ -305,6 +325,7 @@ class WorkflowEngine:
                 db.execute('UPDATE wf_steps SET status=?,finished_at=? WHERE run_id=? AND step_id=?', ('completed', now(), run_id, sid))
             self._event(run_id, sid, 'step.completed', {'outputs': list(output_bindings.values())})
         except Exception as exc:
+            self._log(run_id, sid, 'stderr', exc)
             retries = int((step.get('retry') or {}).get('maxAttempts', 1))
             retry_attempt: int | None = None
             with self._db() as db:
@@ -356,13 +377,15 @@ class WorkflowEngine:
             steps = db.execute('SELECT * FROM wf_steps WHERE run_id=? ORDER BY rowid', (run_id,)).fetchall()
             artifacts = db.execute('SELECT * FROM wf_artifacts WHERE run_id=? ORDER BY created_at', (run_id,)).fetchall()
             events = db.execute('SELECT * FROM wf_events WHERE run_id=? ORDER BY id', (run_id,)).fetchall()
+            logs = db.execute('SELECT * FROM wf_logs WHERE run_id=? ORDER BY id', (run_id,)).fetchall()
         return {'id': run['id'], 'workflowId': run['workflow_id'], 'workflowVersion': run['workflow_version'],
                 'parentRunId': run['parent_run_id'], 'parentStepId': run['parent_step_id'], 'status': run['status'],
                 'inputs': json.loads(run['inputs']), 'outputs': json.loads(run['outputs']), 'error': run['error'],
                 'createdAt': run['created_at'], 'updatedAt': run['updated_at'],
                 'steps': [{'stepId': s['step_id'], 'status': s['status'], 'attempt': s['attempt'], 'childRunId': s['child_run_id'], 'error': s['error']} for s in steps],
                 'artifacts': [{'id': a['id'], 'stepId': a['step_id'], 'name': a['name'], 'datatype': a['datatype'], 'payload': json.loads(a['payload']), 'contentHash': a['content_hash'], 'provenance': json.loads(a['provenance'])} for a in artifacts],
-                'events': [{'id': e['id'], 'stepId': e['step_id'], 'kind': e['kind'], 'payload': json.loads(e['payload']), 'createdAt': e['created_at']} for e in events]}
+                'events': [{'id': e['id'], 'stepId': e['step_id'], 'kind': e['kind'], 'payload': json.loads(e['payload']), 'createdAt': e['created_at']} for e in events],
+                'logs': [{'id': entry['id'], 'stepId': entry['step_id'], 'stream': entry['stream'], 'message': entry['message'], 'createdAt': entry['created_at']} for entry in logs]}
 
 
 def default_registry() -> OperationRegistry:

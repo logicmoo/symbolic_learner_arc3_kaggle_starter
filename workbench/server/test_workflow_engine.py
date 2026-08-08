@@ -80,6 +80,23 @@ def test_retry_policy(tmp_path: Path) -> None:
     assert run['status'] == 'completed'
     assert attempts['count'] == 2
     assert any(event['kind'] == 'step.retrying' for event in run['events'])
+    assert any(log['stream'] == 'stderr' and log['message'] == 'temporary' for log in run['logs'])
+
+
+def test_subprocess_style_output_is_persisted_as_run_logs(tmp_path: Path) -> None:
+    registry = OperationRegistry()
+    registry.register(OperationSpec('test.process', {}, {'result': 'Object'}, lambda _inputs, _params: {
+        'result': {'stdout': 'answer\n', 'stderr': 'warning\n', 'returncode': 0},
+    }))
+    e = WorkflowEngine(tmp_path / 'engine.db', registry)
+    e.save_workflow({'id': 'logged', 'inputs': {}, 'outputs': {}, 'steps': [{
+        'id': 'process', 'kind': 'operation', 'implementation': 'test.process',
+        'inputs': {}, 'outputs': {'result': 'process_result'},
+    }]})
+    run = e.start('logged', {})
+    assert [(entry['stream'], entry['message']) for entry in run['logs']] == [
+        ('stdout', 'answer\n'), ('stderr', 'warning\n'),
+    ]
 
 
 def test_pause_resume_cancel(tmp_path: Path) -> None:

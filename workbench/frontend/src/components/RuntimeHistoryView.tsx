@@ -9,7 +9,7 @@ type RuntimeRun = {
   inputs: unknown; outputs: unknown;
   steps: Array<{ stepId: string; status: string; attempt?: number; error?: string }>;
   events: Array<{ id: number | string; stepId?: string; kind: string; payload?: unknown; createdAt: string }>;
-  artifacts: Array<{ id: string; stepId?: string; name: string; datatype?: string; payload?: unknown; createdAt?: string }>;
+  artifacts: Array<{ id: string; stepId?: string; name: string; datatype?: string; payload?: unknown; contentHash?: string; provenance?: Record<string, unknown>; createdAt?: string }>;
   logs: Array<{ id: number | string; stepId?: string; stream: string; message: string; createdAt?: string }>;
 };
 type WorkflowStep = { id: string; label?: string; kind?: string; operation?: string; implementation?: string; dependsOn?: string[]; inputs?: unknown; outputs?: unknown; form?: Record<string, { type?: string; label?: string; description?: string; default?: unknown; options?: unknown[] }> };
@@ -62,7 +62,7 @@ function WorkflowRunProjection({ run, workflow, busy, onCommand }: { run: Runtim
       <div><span>{selectedEvent ? "EVENT" : "STEP"}</span><h3>{selectedEvent?.kind || selectedStep?.label || selectedStep?.id || "Select a node"}</h3><p>{selectedEvent?.stepId || selectedStep?.implementation || selectedStep?.operation || selectedStep?.kind || "workflow"}</p></div>
       <dl><div><dt>Status</dt><dd>{stepRuntime?.status || run.status}</dd></div><div><dt>Attempt</dt><dd>{stepRuntime?.attempt || 0}</dd></div><div><dt>Artifacts</dt><dd>{artifacts.length}</dd></div><div><dt>Logs</dt><dd>{logs.length}</dd></div></dl>
       {selectedEvent && <pre>{jsonValueToMetta(selectedEvent.payload || {})}</pre>}
-      {!selectedEvent && selectedStep && <><details><summary>Step contract</summary><pre>{jsonValueToMetta({ inputs: selectedStep.inputs || {}, outputs: selectedStep.outputs || {} })}</pre></details>{artifacts.map(item => <details key={item.id}><summary>Artifact · {item.name}</summary><pre>{jsonValueToMetta(item.payload)}</pre></details>)}{logs.map(item => <details key={item.id}><summary>{item.stream} log</summary><pre>{item.message}</pre></details>)}</>}
+      {!selectedEvent && selectedStep && <><details><summary>Step contract</summary><pre>{jsonValueToMetta({ inputs: selectedStep.inputs || {}, outputs: selectedStep.outputs || {} })}</pre></details>{artifacts.map(item => <details key={item.id}><summary>Artifact · {item.name} · {item.datatype || "Any"}</summary><pre>{jsonValueToMetta(item.payload)}</pre><dl className="artifact-provenance"><div><dt>Content hash</dt><dd>{item.contentHash || "unavailable"}</dd></div><div><dt>Provenance</dt><dd>{jsonValueToMetta(item.provenance || {})}</dd></div></dl></details>)}{logs.map(item => <details key={item.id}><summary>{item.stream} log</summary><pre>{item.message}</pre></details>)}</>}
     </div>
   </section>;
 }
@@ -111,7 +111,8 @@ export function RuntimeHistoryView({ mode, workspaceId, goals = [], plans = [], 
         api("/api/engine/runs?limit=200"),
         api(`/api/goal-runs?workspace_id=${encodeURIComponent(workspaceId)}&limit=200`),
       ]);
-      setRuns(runPayload.runs || []); setGoalRuns(goalPayload.goalRuns || []);
+      setRuns((runPayload.runs || []).map((run: RuntimeRun) => ({ ...run, steps: run.steps || [], events: run.events || [], artifacts: run.artifacts || [], logs: run.logs || [] })));
+      setGoalRuns((goalPayload.goalRuns || []).map((goalRun: GoalRun) => ({ ...goalRun, workflowRun: { ...goalRun.workflowRun, steps: goalRun.workflowRun.steps || [], events: goalRun.workflowRun.events || [], artifacts: goalRun.workflowRun.artifacts || [], logs: goalRun.workflowRun.logs || [] } })));
     } catch (reason) { setError(String(reason)); }
   };
   useEffect(() => { void refresh(); }, [workspaceId]);
