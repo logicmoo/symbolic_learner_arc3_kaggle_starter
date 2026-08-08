@@ -18,8 +18,8 @@ export function WorkflowRunnerTodoReference() {
       .catch(reason => setError(String(reason)));
   }, []);
 
-  return <details className="workflow-runner-reference" open>
-    <summary><span>FUTURE RUNNER DESIGN</span><b>Legacy rich workflow-runner reference</b><em>TODO</em></summary>
+  return <details className="workflow-runner-reference">
+    <summary><span>RUNNER DESIGN REFERENCE</span><b>Mockups and remaining experience TODO</b><em>REFERENCE</em></summary>
     {error && <div className="demo-notice"><b>Reference unavailable</b><span>{error}</span></div>}
     {todo && <div className="workflow-runner-reference-body">
       <div className="workflow-runner-mockups">{(todo.mockups||[]).filter(item=>item.available).map(item=><figure key={item.view}><figcaption><b>{item.view}</b><span>{item.description}</span></figcaption><a className="workflow-runner-mockup" href={item.url} target="_blank" rel="noreferrer"><img src={item.url} alt={`${item.view} workflow runner design reference`} /></a></figure>)}</div>

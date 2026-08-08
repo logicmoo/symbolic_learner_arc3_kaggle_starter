@@ -12,6 +12,8 @@ type RuntimeRun = {
   artifacts: Array<{ id: string; stepId?: string; name: string; datatype?: string; payload?: unknown; createdAt?: string }>;
   logs: Array<{ id: number | string; stepId?: string; stream: string; message: string; createdAt?: string }>;
 };
+type WorkflowStep = { id: string; label?: string; kind?: string; operation?: string; implementation?: string; dependsOn?: string[]; inputs?: unknown; outputs?: unknown };
+type FrozenWorkflow = { id: string; version: number; label?: string; description?: string; steps: WorkflowStep[] };
 type GoalRun = {
   id: string; goalId: string; goalVariantId?: string; planId: string; planVariantId: string;
   contextId?: string; contextVariantId?: string; workflowRunId: string; status: string; createdAt?: string; workflowRun: RuntimeRun;
@@ -27,12 +29,50 @@ async function api(path: string, init?: RequestInit) {
 
 const stamp = (value?: string) => value ? value.replace("T", " ").slice(0, 19) : "—";
 
+function WorkflowRunProjection({ run, workflow }: { run: RuntimeRun; workflow: FrozenWorkflow | null }) {
+  const [view, setView] = useState<"topology" | "chronology">("topology");
+  const [selectedStepId, setSelectedStepId] = useState("");
+  const [selectedEventId, setSelectedEventId] = useState("");
+  const steps = workflow?.steps || [];
+  const selectedStep = steps.find(step => step.id === selectedStepId) || steps[0];
+  const selectedEvent = run.events.find(event => String(event.id) === selectedEventId);
+  const selectStep = (stepId: string) => { setSelectedStepId(stepId); setSelectedEventId(""); };
+  const selectEvent = (event: RuntimeRun["events"][number]) => { setSelectedEventId(String(event.id)); if (event.stepId) setSelectedStepId(event.stepId); };
+  const width = Math.max(760, steps.length * 180);
+  const positions = new Map(steps.map((step, index) => [step.id, { x: 95 + index * 170, y: 75 + (index % 2) * 105 }]));
+  const stepRuntime = selectedStep ? run.steps.find(item => item.stepId === selectedStep.id) : undefined;
+  const artifacts = run.artifacts.filter(item => !selectedStep || item.stepId === selectedStep.id);
+  const logs = run.logs.filter(item => !selectedStep || item.stepId === selectedStep.id);
+
+  return <section className="run-projection" aria-label="Selected workflow run projection">
+    <div className="run-projection-heading">
+      <div><span>FROZEN WORKFLOW v{run.workflowVersion}</span><h2>{workflow?.label || run.workflowId}</h2><small>{run.id} · {run.status} · {run.events.length} durable events</small></div>
+      <div className="run-projection-modes" role="group" aria-label="Workflow run view"><button className={view === "topology" ? "active" : ""} onClick={() => setView("topology")}>Topology</button><button className={view === "chronology" ? "active" : ""} onClick={() => setView("chronology")}>Chronology</button></div>
+    </div>
+    {view === "topology" ? workflow ? <div className="run-topology-scroll">
+      <svg className="run-topology" viewBox={`0 0 ${width} 270`} style={{ minWidth: width }}>
+        <defs><marker id={`run-arrow-${run.id}`} viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" /></marker></defs>
+        {steps.flatMap(step => (step.dependsOn || []).map(parentId => { const parent = positions.get(parentId), child = positions.get(step.id); if (!parent || !child) return null; const mid = (parent.x + child.x) / 2; return <path key={`${parentId}:${step.id}`} className="run-topology-edge" d={`M${parent.x + 57},${parent.y} C${mid},${parent.y} ${mid},${child.y} ${child.x - 57},${child.y}`} markerEnd={`url(#run-arrow-${run.id})`} />; }))}
+        {steps.map((step, index) => { const position = positions.get(step.id)!; const status = run.steps.find(item => item.stepId === step.id)?.status || "defined"; return <g key={step.id} transform={`translate(${position.x - 60},${position.y - 35})`} className={`run-topology-node ${status} ${selectedStep?.id === step.id ? "selected" : ""}`} role="button" tabIndex={0} onClick={() => selectStep(step.id)} onKeyDown={event => { if (event.key === "Enter" || event.key === " ") selectStep(step.id); }}><rect width="120" height="70" rx="8" /><text x="60" y="19" textAnchor="middle" className="node-index">{index + 1}</text><text x="60" y="38" textAnchor="middle" className="node-title">{step.label || step.id}</text><text x="60" y="57" textAnchor="middle" className="node-status">{status}</text></g>; })}
+      </svg>
+    </div> : <div className="studio-empty">The persisted workflow definition is unavailable.</div>
+      : <div className="run-chronology" aria-label="Durable event chronology">{run.events.map((event, index) => <button key={event.id} className={String(event.id) === selectedEventId ? "selected" : ""} onClick={() => selectEvent(event)}><span>{index + 1}</span><b>{event.kind}</b><small>{event.stepId || "workflow"}</small><time>{stamp(event.createdAt)}</time></button>)}{!run.events.length && <div className="studio-empty">This run has no durable events.</div>}</div>}
+    <div className="run-projection-inspector">
+      <div><span>{selectedEvent ? "EVENT" : "STEP"}</span><h3>{selectedEvent?.kind || selectedStep?.label || selectedStep?.id || "Select a node"}</h3><p>{selectedEvent?.stepId || selectedStep?.implementation || selectedStep?.operation || selectedStep?.kind || "workflow"}</p></div>
+      <dl><div><dt>Status</dt><dd>{stepRuntime?.status || run.status}</dd></div><div><dt>Attempt</dt><dd>{stepRuntime?.attempt || 0}</dd></div><div><dt>Artifacts</dt><dd>{artifacts.length}</dd></div><div><dt>Logs</dt><dd>{logs.length}</dd></div></dl>
+      {selectedEvent && <pre>{jsonValueToMetta(selectedEvent.payload || {})}</pre>}
+      {!selectedEvent && selectedStep && <><details><summary>Step contract</summary><pre>{jsonValueToMetta({ inputs: selectedStep.inputs || {}, outputs: selectedStep.outputs || {} })}</pre></details>{artifacts.map(item => <details key={item.id}><summary>Artifact · {item.name}</summary><pre>{jsonValueToMetta(item.payload)}</pre></details>)}{logs.map(item => <details key={item.id}><summary>{item.stream} log</summary><pre>{item.message}</pre></details>)}</>}
+    </div>
+  </section>;
+}
+
 export function RuntimeHistoryView({ mode, workspaceId, goals = [], plans = [], contexts = [], workflows = [], onSelectRun }:{
   mode: Mode; workspaceId: string; goals?: DocumentRecord[]; plans?: DocumentRecord[]; contexts?: DocumentRecord[]; workflows?: DocumentRecord[];
   onSelectRun?: (run: RuntimeRun) => void;
 }) {
   const [runs, setRuns] = useState<RuntimeRun[]>([]), [goalRuns, setGoalRuns] = useState<GoalRun[]>([]);
   const [selectedId, setSelectedId] = useState<string>(""), [error, setError] = useState<string>(""), [busy, setBusy] = useState(false);
+  const [frozenWorkflow, setFrozenWorkflow] = useState<FrozenWorkflow | null>(null);
   const goalDocs = useMemo(() => goals.map(row => row.document).filter(Boolean) as Record<string, any>[], [goals]);
   const planDocs = useMemo(() => plans.map(row => row.document).filter(Boolean) as Record<string, any>[], [plans]);
   const contextDocs = useMemo(() => contexts.map(row => row.document).filter(Boolean) as Record<string, any>[], [contexts]);
@@ -90,6 +130,14 @@ export function RuntimeHistoryView({ mode, workspaceId, goals = [], plans = [], 
   };
   const chooseRun = (run: RuntimeRun) => { setSelectedId(run.id); onSelectRun?.(run); };
   const selectedRun = runs.find(row => row.id === selectedId) || runs[0];
+  useEffect(() => {
+    if (mode !== "workflowRuns" || !selectedRun) { setFrozenWorkflow(null); return; }
+    let active = true;
+    void api(`/api/engine/workflows/${encodeURIComponent(selectedRun.workflowId)}?version=${selectedRun.workflowVersion}`)
+      .then(payload => { if (active) setFrozenWorkflow(payload.workflow as FrozenWorkflow); })
+      .catch(reason => { if (active) { setFrozenWorkflow(null); setError(String(reason)); } });
+    return () => { active = false; };
+  }, [mode, selectedRun?.id, selectedRun?.workflowId, selectedRun?.workflowVersion]);
   const selectedGoalRun = goalRuns.find(row => row.id === selectedId);
   const waitingStep = selectedGoalRun?.workflowRun.steps.find(step => step.status === "waiting");
   const submitHumanInput = async () => {
@@ -136,9 +184,10 @@ export function RuntimeHistoryView({ mode, workspaceId, goals = [], plans = [], 
     : runs.flatMap(run => run.logs.map(log => ({ key: `${run.id}:${log.id}`, a: log.stream, b: log.stepId || "workflow", c: stamp(log.createdAt), d: run.id.slice(0, 8), e: log.message, run })));
   return <section className="resource-view runtime-history-view">
     <div className="resource-heading"><div><span>PERSISTENT ENGINE HISTORY</span><h1>{title}</h1><p>Records are loaded from the durable workflow-engine database across application sessions.</p></div><button onClick={refresh}>Refresh</button></div>
-    {mode === "workflowRuns" && <WorkflowRunnerTodoReference />}
     {error && <div className="backend-error"><b>Error</b><span>{error}</span></div>}
     <div className="resource-table"><div className="resource-row resource-head"><span>Record</span><span>Status / type</span><span>Step / time</span><span>Run</span><span>Detail</span></div>{rows.map(row => <button className="resource-row" key={row.key} onClick={() => chooseRun(row.run)}><b>{row.a}</b><code>{row.b}</code><span>{row.c}</span><span>{row.d}</span><em title={row.e}>{row.e}</em></button>)}{!rows.length && <div className="studio-empty">No persisted {title.toLowerCase()} yet.</div>}</div>
-    {selectedRun && <div className="demo-notice"><b>SELECTED RUN {selectedRun.id.slice(0, 8)}</b><span>{selectedRun.workflowId} · {selectedRun.status} · {selectedRun.events.length} events · {selectedRun.artifacts.length} states</span></div>}
+    {mode === "workflowRuns" && selectedRun && <WorkflowRunProjection run={selectedRun} workflow={frozenWorkflow} />}
+    {mode === "workflowRuns" && <WorkflowRunnerTodoReference />}
+    {mode !== "workflowRuns" && selectedRun && <div className="demo-notice"><b>SELECTED RUN {selectedRun.id.slice(0, 8)}</b><span>{selectedRun.workflowId} · {selectedRun.status} · {selectedRun.events.length} events · {selectedRun.artifacts.length} states</span></div>}
   </section>;
 }
