@@ -64,3 +64,6 @@ def test_goal_run_human_pause_uses_the_frozen_step_form_contract() -> None:
     assert "Draft autosave ready" in source
     assert 'method: "PUT"' in source
     assert 'type="password"' in source
+    assert 'type="file" accept="image/*"' in source
+    assert "human-grid-preview" in source
+    assert "reader.readAsDataURL(file)" in source
