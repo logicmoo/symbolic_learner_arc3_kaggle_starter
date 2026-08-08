@@ -103,7 +103,7 @@ function WorkflowRunProjection({ run, workflow, busy, onCommand }: { run: Runtim
   </section>;
 }
 
-function HumanInputForm({ step, busy, draft, onDraft, onSubmit }: { step?: WorkflowStep; busy: boolean; draft: Record<string, unknown>; onDraft: (values: Record<string, unknown>) => void; onSubmit: (values: Record<string, unknown>) => void }) {
+export function HumanInputForm({ step, busy, draft, onDraft, onSubmit }: { step?: WorkflowStep; busy: boolean; draft: Record<string, unknown>; onDraft: (values: Record<string, unknown>) => void; onSubmit: (values: Record<string, unknown>) => void }) {
   const fields = Object.entries(step?.form || {});
   const initial = () => Object.fromEntries(fields.map(([name, spec]) => [name, draft[name] ?? spec.default ?? (/boolean/i.test(spec.type || "") ? false : "")]));
   const [values, setValues] = useState<Record<string, unknown>>(initial);
