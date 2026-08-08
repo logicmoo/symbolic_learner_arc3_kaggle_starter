@@ -65,6 +65,14 @@ def test_navigation_reuses_current_rich_editors() -> None:
             assert token in source
 
 
+def test_rich_editors_are_loaded_by_route_instead_of_blocking_initial_shell() -> None:
+    source = ACTIVE_PAGE.read_text(encoding="utf-8")
+    assert 'lazy(()=>import("../components/OperationLibraryEditor")' in source
+    assert 'lazy(()=>import("../components/LlmModelsEditor")' in source
+    assert 'lazy(()=>import("../components/RepositoryDocsPage")' in source
+    assert '<Suspense fallback={<div className="studio-empty">Loading editor…</div>}>' in source
+
+
 def test_pending_pages_are_derived_from_workspace_or_runtime_state() -> None:
     source = ACTIVE_PAGE.read_text(encoding="utf-8")
     assert "snapshot?.files" in source
