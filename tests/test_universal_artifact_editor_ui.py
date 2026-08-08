@@ -165,7 +165,10 @@ def test_design_trees_share_virtual_categories() -> None:
         assert "Show Categories" not in source
         assert "Expand Categories" not in source
     assert "onlyCategories" in category_tree
-    assert "!onlyCategories&&" in category_tree
+    assert "!onlyCategories&&" not in category_tree
+    assert 'data-category-collapse-mode={onlyCategories ? "resources" : "none"}' in category_tree
+    assert "setCollapsedOperations(next||variantsHidden||variantsCollapsed" in operations
+    assert 'commandTree(next||variantsHidden||variantsCollapsed?"collapse":"expand")' in universal
     assert "branchCommand={categoryCommand}" in category_tree
     assert 'label="All" branchCommand={null}' in category_tree
     assert 'label="Uncategorized" branchCommand={null}' in category_tree
