@@ -253,6 +253,7 @@ logs.log
 # Generated artefacts
 notebooks/submission.ipynb
 reference/
+.codex-commit-message.txt
 
 # OS / editors
 .DS_Store
