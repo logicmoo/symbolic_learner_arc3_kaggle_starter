@@ -25,14 +25,14 @@ def _validate_prompt(value: Any, path: Path) -> dict[str, Any]:
         raise ValueError(
             f"Prompt resource must declare kind='prompt' or kind='prompt_implementation': {path}"
         )
-    value["kind"] = raw_kind
+    value["kind"] = PROMPT_KIND
 
     if not str(value.get("id") or "").strip():
         raise ValueError(f"Prompt definition requires id: {path}")
 
-    if raw_kind == PROMPT_IMPLEMENTATION_KIND:
-        if not relationship_ids(value.get("parents")):
-            raise ValueError(f"Prompt implementation requires parents: {path}")
+    if raw_kind == PROMPT_IMPLEMENTATION_KIND and not relationship_ids(value.get("parents")):
+        raise ValueError(f"Legacy prompt implementation requires parents: {path}")
+    if relationship_ids(value.get("parents")):
         text = value.get("text")
         if not isinstance(text, (str, list)):
             raise ValueError(f"Prompt implementation requires text as a string or list of strings: {path}")
@@ -70,7 +70,7 @@ def _prompt_records(workspace_root: Path, source: str, workspace_id: str) -> lis
             try:
                 document = _validate_prompt(value, path)
                 record["document"] = document
-                record["convention"] = "canonical" if path.name.endswith(f".{document['kind']}.json") else "multi-resource" if len(documents) > 1 else "legacy-filename"
+                record["convention"] = "canonical" if path.name.endswith(".prompt.json") else "multi-resource" if len(documents) > 1 else "legacy-filename"
             except ValueError as error:
                 record["error"] = str(error)
             records.append(record)
@@ -100,7 +100,7 @@ def _effective_prompt_resources(
     for layer in effective_workspace_layers(workspace_root, workspaces_root):
         for record in _prompt_records(layer, layer_source(layer, workspace_root), layer.name):
             document = record.get("document") or {}
-            key = f"{document.get('kind')}:{document.get('id') or record['path']}"
+            key = str(document.get('id') or record['path'])
             combined[key] = record
     return sorted(
         combined.values(),
@@ -112,7 +112,7 @@ def load_shared_prompt_records(workspaces_root: Path = DEFAULT_WORKSPACES_ROOT) 
     return [
         record
         for record in load_shared_prompt_resource_records(workspaces_root)
-        if (record.get("document") or {}).get("kind") == PROMPT_KIND
+        if not relationship_ids((record.get("document") or {}).get("parents"))
     ]
 
 
@@ -122,7 +122,7 @@ def load_shared_prompt_implementation_records(
     return [
         record
         for record in load_shared_prompt_resource_records(workspaces_root)
-        if (record.get("document") or {}).get("kind") == PROMPT_IMPLEMENTATION_KIND
+        if relationship_ids((record.get("document") or {}).get("parents"))
     ]
 
 
@@ -130,7 +130,7 @@ def load_workspace_local_prompt_records(workspace_root: Path) -> list[dict[str, 
     return [
         record
         for record in load_workspace_local_prompt_resource_records(workspace_root)
-        if (record.get("document") or {}).get("kind") == PROMPT_KIND
+        if not relationship_ids((record.get("document") or {}).get("parents"))
     ]
 
 
@@ -142,7 +142,7 @@ def load_workspace_prompt_records(
     return [
         record
         for record in _effective_prompt_resources(workspace_root, workspaces_root=workspaces_root)
-        if (record.get("document") or {}).get("kind") == PROMPT_KIND
+        if not relationship_ids((record.get("document") or {}).get("parents"))
     ]
 
 
@@ -154,7 +154,7 @@ def load_workspace_prompt_implementation_records(
     return [
         record
         for record in _effective_prompt_resources(workspace_root, workspaces_root=workspaces_root)
-        if (record.get("document") or {}).get("kind") == PROMPT_IMPLEMENTATION_KIND
+        if relationship_ids((record.get("document") or {}).get("parents"))
     ]
 
 

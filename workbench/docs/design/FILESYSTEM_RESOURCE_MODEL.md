@@ -4,26 +4,28 @@
 
 ## Principle
 
-The filesystem is the source of truth for semantic artifacts. Abstract specifications and concrete alternatives are independent JSON documents rather than entries folded into one catalog.
+The filesystem provider is the source of truth for semantic artifacts. Abstract specifications and concrete alternatives may be separate documents or top-level forms in one MeTTa file.
 
 ## Resource Families
 
 Current conventions include:
 
-- `operation` / `operation_implementation`
+- `operation` (roots and implementation children)
 - `semantic_datatype` / `representation_datatype` / `concrete_datatype`
-- `prompt` / `prompt_implementation`
-- `backend` / `model` / `profile`
+- `prompt` (roots and wording children)
+- `backend` / `model` (model children also replace profiles)
 - `workflow`
-- `goal` / `goal_variant`
-- `planning_strategy` / `planning_strategy_variant` (`plan` / `plan_variant` remain readable legacy aliases)
-- `context` / `context_variant`
+- `goal`
+- `planning_strategy`
+- `atomspace`
 - `model_policy` / `model_policy_variant`
 - `benchmark_policy` / `benchmark_result`
 
 Runtime workflow and Goal Run records are durable SQLite data because they are append-oriented execution evidence. Their selected Goal, Plan, Context, workflow, policy, and benchmark definitions remain filesystem resources.
 
 ## Bidirectional many-to-many relationships
+
+Variant status is structural, not a separate kind. A resource is an implicit variant when `parents` points to another resource of the same kind. Cross-kind parents, such as `concrete_datatype` to `representation_datatype`, remain semantic hierarchy links rather than variants.
 
 Every specification/alternative family uses the same three flat fields: `parents`, `children`, and `preferredChild`. Both sides store explicit arrays, so an operation may contain `"children": ["python_echo"]` while that implementation contains `"parents": ["echo"]`. The resource kinds give these generic links their domain meaning—implementation, representation, variant, or another relationship shown by the editor.
 
@@ -33,11 +35,11 @@ Canonical filenames carry the kind, for example `shared.echo.operation.metta`, `
 
 Workspace paths are lifecycle-first and then kind-specific:
 
-- `design/operations/` and `design/operation_implementations/`
+- `design/operations/`
 - `design/semantic_datatypes/`, `design/representation_datatypes/`, and `design/concrete_datatypes/`
-- `design/goals/` and `design/goal_variants/`
-- `design/atomspaces/` and `design/atomspace_variants/`
-- `design/backends/`, `design/models/`, and `design/profiles/`
+- `design/goals/`, `design/planning_strategies/`, and `design/atomspaces/`
+- `design/prompts/`
+- `design/backends/` and `design/models/`
 - `runtime/goal_runs/`, `runtime/workflow_runs/`, `runtime/execs/`, `runtime/events/`, `runtime/states/`, `runtime/contexts/`, and `runtime/logs/`
 
 The reader accepts legacy root-level family directories for existing workspaces. New resources are saved under `design/<plural-kind>/`. Shared normally has no runtime records. `policies/` remains a deliberately mixed family, while `docs/` is outside the JSON resource hierarchy.

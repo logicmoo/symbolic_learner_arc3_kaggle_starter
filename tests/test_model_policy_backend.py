@@ -135,7 +135,7 @@ def test_backend_model_discovery_supports_openai_and_ollama_shapes(tmp_path: Pat
     discovered = discover_backend_models(backend, opener=lambda *_args, **_kwargs: Response())
     assert [row["id"] for row in discovered] == ["local/a", "local/b"]
     imported = import_discovered_models(tmp_path, backend, discovered[:1])
-    assert imported[0]["inherits"] == "local"
+    assert imported[0]["parents"] == ["local"]
     assert imported[0]["model"] == "local/a"
     assert set(imported[0]["capabilities"]) >= {"multimodal", "vision", "audio", "tools", "reasoning"}
     assert imported[0]["providerMetadata"]["name"] == "local/a"

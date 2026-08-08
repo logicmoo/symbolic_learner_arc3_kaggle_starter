@@ -228,7 +228,7 @@ Reuse existing editors rather than duplicating them:
 
 
 
-Semantic specifications and concrete variants are separate resources.
+Semantic specifications and concrete variants are separate resources, but use the same family kind and directory. A resource is an implicit variant when `parents` points to another resource of the same kind.
 
 
 
@@ -236,23 +236,23 @@ Examples:
 
 
 
-\- operation / operation\_implementation
+\- operation / child operation
 
 \- semantic\_datatype / representation\_datatype / concrete\_datatype
 
-\- prompt / prompt\_implementation
+\- prompt / child prompt
 
-\- goal / goal\_interpretation or goal\_variant
+\- goal / child goal
 
-\- plan / plan\_variant
+\- planning\_strategy / child planning\_strategy
 
-\- atomspace / atomspace\_implementation
+\- atomspace / child atomspace
 
-\- model / profile / backend
+\- model / child model / backend
 
 
 
-Do not put all variants back into a monolithic catalog file.
+Keep each family in its plural directory (for example `design/operations/` or `design/goals/`). Files may hold multiple top-level MeTTa resources, but editors must replace only the selected resource and preserve siblings.
 
 Workspace resources use a lifecycle-first layout:
 

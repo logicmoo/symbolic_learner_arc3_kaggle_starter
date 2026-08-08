@@ -1,5 +1,5 @@
 (
-  (kind planning_strategy_variant)
+  (kind planning_strategy)
   (id observe_infer_act.conservative_loop)
   (label "Conservative Learning Loop")
   (description "Require transition evidence before escalating to higher-risk actions.")

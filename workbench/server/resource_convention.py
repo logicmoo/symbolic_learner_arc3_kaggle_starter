@@ -39,6 +39,7 @@ KNOWN_RESOURCE_KINDS = {
     "benchmark_result",
     "operation",
     "operation_implementation",
+    "atomspace",
     "workflow",
     "workflow_step",
     "workspace",
@@ -81,19 +82,19 @@ def infer_resource_kind(path: Path, document: dict[str, Any]) -> str:
     parent = path.parent.name.lower()
     name = path.stem.lower()
     if parent in {"operations", "operation_implementations"}:
-        return "operation_implementation" if document.get("parents") else "operation"
+        return "operation"
     if parent in {"prompts", "prompt_implementations"}:
-        return "prompt_implementation" if document.get("parents") else "prompt"
+        return "prompt"
     if parent == "workflows":
         return "workflow"
     if parent in {"goals", "goal_interpretations", "goal_variants"}:
-        return "goal_variant" if document.get("parents") else "goal"
+        return "goal"
     if parent in {"planning_strategies", "planning_strategy_variants"}:
-        return "planning_strategy_variant" if document.get("parents") else "planning_strategy"
+        return "planning_strategy"
     if parent in {"plans", "plan_variants"}:
-        return "plan_variant" if document.get("parents") else "plan"
+        return "planning_strategy"
     if parent in {"contexts", "context_variants", "atomspaces", "atomspace_variants"}:
-        return "context_variant" if document.get("parents") else "context"
+        return "atomspace"
     if parent in {"datatypes", "semantic_datatypes"}:
         return "semantic_datatype"
     if parent in {"representations", "representation_datatypes"}:
@@ -103,8 +104,8 @@ def infer_resource_kind(path: Path, document: dict[str, Any]) -> str:
     if parent in {"backends", "models", "profiles"}:
         if document.get("provider"):
             return "backend"
-        if document.get("inherits"):
-            return "profile" if any(token in name for token in ("light", "deep", "extreme", "profile")) else "model"
+        if document.get("inherits") or document.get("parents"):
+            return "model"
         return "model"
     if parent == "config":
         if "datatype" in name:

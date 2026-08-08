@@ -9,12 +9,6 @@ ROOT = Path(__file__).resolve().parents[1]
 WORKSPACES = ROOT / "workbench" / "workspaces"
 
 FAMILIES = {
-    "goal_variant": "goal",
-    "plan_variant": "plan",
-    "planning_strategy_variant": "planning_strategy",
-    "context_variant": "context",
-    "operation_implementation": "operation",
-    "prompt_implementation": "prompt",
     "representation_datatype": "semantic_datatype",
     "concrete_datatype": "representation_datatype",
     "model_policy_variant": "model_policy",

@@ -12,6 +12,9 @@ from resource_store import get_filesystem_provider
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_WORKSPACES_ROOT = REPOSITORY_ROOT / "workbench" / "workspaces"
 SHARED_WORKSPACE_ID = "shared"
+# Concrete implementations are operations whose same-kind parent is another
+# operation.  Keep the legacy spelling readable during migration, but never
+# expose it beyond validation.
 OPERATION_KINDS = {"operation", "operation_implementation"}
 OPERATION_DIRECTORIES = ("design/operations", "design/operation_implementations", "operations", "operation_implementations")
 
@@ -23,12 +26,12 @@ def _validate_operation(value: Any, path: Path) -> dict[str, Any]:
     kind = raw_kind.replace("-", "_")
     if kind not in OPERATION_KINDS:
         raise ValueError(f"Operation definition must declare kind='operation' or kind='operation_implementation': {path}")
-    value["kind"] = kind
+    value["kind"] = "operation"
     if not str(value.get("id") or "").strip():
         raise ValueError(f"Operation definition requires id: {path}")
-    if kind == "operation_implementation":
-        if not relationship_ids(value.get("parents")):
-            raise ValueError(f"Operation implementation requires parents: {path}")
+    if kind == "operation_implementation" and not relationship_ids(value.get("parents")):
+        raise ValueError(f"Legacy operation implementation requires parents: {path}")
+    if relationship_ids(value.get("parents")):
         if not str(value.get("implementation") or "").strip():
             raise ValueError(f"Operation implementation requires implementation: {path}")
     return value
@@ -55,7 +58,7 @@ def _operation_records(workspace_root: Path, source: str, workspace_id: str) -> 
             try:
                 document = _validate_operation(value, path)
                 record["document"] = document
-                expected = f".{document['kind']}.json"
+                expected = ".operation.json"
                 record["convention"] = "canonical" if path.name.endswith(expected) else "multi-resource" if len(documents) > 1 else "legacy-filename"
             except ValueError as error:
                 record["error"] = str(error)
@@ -83,19 +86,19 @@ def _effective_resources(workspace_root: Path, *, workspaces_root: Path = DEFAUL
 
 
 def load_shared_operation_records(workspaces_root: Path = DEFAULT_WORKSPACES_ROOT) -> list[dict[str, Any]]:
-    return [r for r in load_shared_operation_resource_records(workspaces_root) if (r.get("document") or {}).get("kind") == "operation"]
+    return [r for r in load_shared_operation_resource_records(workspaces_root) if not relationship_ids((r.get("document") or {}).get("parents"))]
 
 
 def load_shared_operation_implementation_records(workspaces_root: Path = DEFAULT_WORKSPACES_ROOT) -> list[dict[str, Any]]:
-    return [r for r in load_shared_operation_resource_records(workspaces_root) if (r.get("document") or {}).get("kind") == "operation_implementation"]
+    return [r for r in load_shared_operation_resource_records(workspaces_root) if relationship_ids((r.get("document") or {}).get("parents"))]
 
 
 def load_workspace_operation_records(workspace_root: Path, *, workspaces_root: Path = DEFAULT_WORKSPACES_ROOT) -> list[dict[str, Any]]:
-    return [r for r in _effective_resources(workspace_root, workspaces_root=workspaces_root) if (r.get("document") or {}).get("kind") == "operation"]
+    return [r for r in _effective_resources(workspace_root, workspaces_root=workspaces_root) if not relationship_ids((r.get("document") or {}).get("parents"))]
 
 
 def load_workspace_operation_implementation_records(workspace_root: Path, *, workspaces_root: Path = DEFAULT_WORKSPACES_ROOT) -> list[dict[str, Any]]:
-    return [r for r in _effective_resources(workspace_root, workspaces_root=workspaces_root) if (r.get("document") or {}).get("kind") == "operation_implementation"]
+    return [r for r in _effective_resources(workspace_root, workspaces_root=workspaces_root) if relationship_ids((r.get("document") or {}).get("parents"))]
 
 
 def resolve_operation_implementation(workspace_root: Path, operation_id: str, requested: str | None = None, *, workspaces_root: Path = DEFAULT_WORKSPACES_ROOT) -> dict[str, Any]:

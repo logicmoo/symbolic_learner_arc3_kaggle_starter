@@ -1,5 +1,5 @@
 (
-  (kind prompt_implementation)
+  (kind prompt)
   (id titlecase_received_text.multi_modal.claude)
   (label "Titlecase Received Text — Claude / Multi-Modal")
   (description "Claude-specific multi-modal implementation of the Titlecase Received Text prompt contract for contexts where the text may be accompanied by visual input.")

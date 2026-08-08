@@ -10,13 +10,13 @@ from resource_store import get_filesystem_provider
 
 
 TREE_KINDS = {
-    "goals": {"goal", "goal_interpretation", "goal_variant"},
-    "plans": {"planning_strategy", "planning_strategy_variant", "plan", "plan_variant"},
-    "operations": {"operation", "operation_implementation"},
+    "goals": {"goal"},
+    "plans": {"planning_strategy"},
+    "operations": {"operation"},
     "datatypes": {"semantic_datatype", "representation_datatype", "concrete_datatype"},
-    "prompts": {"prompt", "prompt_implementation"},
-    "models": {"backend", "model", "profile"},
-    "atomspaces": {"context", "context_variant"},
+    "prompts": {"prompt"},
+    "models": {"backend", "model"},
+    "atomspaces": {"atomspace"},
     "workflows": {"workflow"},
 }
 

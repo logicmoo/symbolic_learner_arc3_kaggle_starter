@@ -1,5 +1,5 @@
 (
-  (kind prompt_implementation)
+  (kind prompt)
   (id titlecase_received_text.gpt5)
   (label "Titlecase Received Text — GPT-5")
   (version 1)

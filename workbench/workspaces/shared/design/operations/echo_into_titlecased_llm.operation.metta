@@ -1,5 +1,5 @@
 (
-  (kind operation_implementation)
+  (kind operation)
   (id echo_into_titlecased_llm)
   (label "Echo Into Titlecased / LLM")
   (description "Take received text, send it through an LLM with the shared titlecase prompt, and return the title-cased text.")

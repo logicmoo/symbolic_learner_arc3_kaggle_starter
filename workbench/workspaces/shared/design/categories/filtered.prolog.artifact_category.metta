@@ -9,7 +9,7 @@
   ))
   (query (
     (kinds ([]
-      operation_implementation
+      operation
     ))
     (where (
       (implementation (

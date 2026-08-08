@@ -10,8 +10,8 @@ Goals, Plans, Contexts, workflows, operations, policies, and benchmarks are vers
 
 A Goal Run resolves:
 
-1. a `goal` and preferred or requested `goal_variant`;
-2. a compatible `plan` and `plan_variant`;
+1. a root `goal` and preferred or requested child `goal`;
+2. a compatible `planning_strategy` and child strategy;
 3. an optional `context` containing AtomSpace bindings; and
 4. the workflow named by the plan variant.
 

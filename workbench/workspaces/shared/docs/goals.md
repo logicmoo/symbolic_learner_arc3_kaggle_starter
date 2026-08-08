@@ -2,12 +2,12 @@
 
 [Back to repository README](../../../../README.md)
 
-Goals describe desired outcomes independently of the strategy used to pursue them. A `goal` specification is the parent resource; `goal_variant` or `goal_interpretation` documents are concrete alternatives beneath it.
+Goals describe desired outcomes independently of the strategy used to pursue them. Every resource has `kind goal`; a goal with a same-kind parent is an implicit alternative beneath that parent.
 
 ## Filesystem convention
 
-- Specifications and alternatives may share `goals/<id>.goal.metta`, with each resource as a separate top-level form.
-- Separate alternatives may also use `goal_variants/<id>.<name>.goal_variant.metta`.
+- Specifications and alternatives live in `goals/` and may share a file, with each resource as a separate top-level form.
+- Separate files use `<id>.goal.metta` for both roots and alternatives.
 - Every alternative declares `"parents": ["<goal-id>"]`.
 - Every specification lists its alternatives in `children`.
 - `preferredChild` identifies the preferred alternative.

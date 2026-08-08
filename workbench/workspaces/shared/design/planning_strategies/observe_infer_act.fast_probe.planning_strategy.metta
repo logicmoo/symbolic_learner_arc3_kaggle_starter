@@ -1,5 +1,5 @@
 (
-  (kind planning_strategy_variant)
+  (kind planning_strategy)
   (id observe_infer_act.fast_probe)
   (label "Fast Probe")
   (description "Use short exploratory sequences to identify mechanics quickly.")

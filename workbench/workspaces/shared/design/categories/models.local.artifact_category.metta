@@ -10,7 +10,6 @@
   (query (
     (kinds ([]
       model
-      profile
     ))
     (where (
       (_resolved.backendId (

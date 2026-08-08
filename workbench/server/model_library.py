@@ -11,6 +11,7 @@ from backend_library import BACKEND_DIRECTORIES, MODEL_CATALOG_DIRECTORY, load_w
 from operation_library import DEFAULT_WORKSPACES_ROOT
 from workspace_inheritance import effective_workspace_layers, layer_source
 from resource_store import get_filesystem_provider
+from resource_relationships import relationship_ids
 
 SHARED_WORKSPACE_ID = "shared"
 MODEL_KINDS = {"model", "profile"}
@@ -48,8 +49,15 @@ def _validate_model(value: Any, path: Path) -> dict[str, Any]:
         raise ValueError(f"Model/profile definition must declare kind='model' or kind='profile': {path}")
     if not str(value.get("id") or "").strip():
         raise ValueError(f"Model/profile definition requires id: {path}")
-    if not str(value.get("inherits") or "").strip():
-        raise ValueError(f"Model/profile definition requires inherits: {path}")
+    parents = relationship_ids(value.get("parents"))
+    legacy_parent = str(value.get("inherits") or "").strip()
+    if not parents and legacy_parent:
+        value["parents"] = [legacy_parent]
+        parents = [legacy_parent]
+    if not parents:
+        raise ValueError(f"Model definition requires parents: {path}")
+    value.pop("inherits", None)
+    value["kind"] = "model"
     defaults = value.get("defaults")
     if defaults is not None and not isinstance(defaults, dict):
         raise ValueError(f"Model/profile defaults must be a JSON object: {path}")
@@ -173,7 +181,8 @@ def resolve_model_records(
             )
         record = nodes[node_id]
         node = record.get("document") or {}
-        parent_id = str(node.get("inherits") or "")
+        parent_ids = relationship_ids(node.get("parents"))
+        parent_id = parent_ids[0] if parent_ids else ""
         own_defaults = dict(node.get("defaults") or {})
         own_model = node.get("model")
 

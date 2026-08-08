@@ -1,5 +1,5 @@
 (
-  (kind context)
+  (kind atomspace)
   (id vision_analysis)
   (label "Vision Analysis AtomSpaces")
   (description "Declares the AtomSpaces and runtime bindings available while observing, explaining, and acting in a visual world.")

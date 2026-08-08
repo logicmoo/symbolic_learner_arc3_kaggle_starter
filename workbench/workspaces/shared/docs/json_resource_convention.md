@@ -17,8 +17,8 @@ Examples:
 
 ```text
 echo_into_titlecased.operation.metta
-echo_into_titlecased_python.operation_implementation.metta
-echo_into_titlecased_llm.operation_implementation.metta
+echo_into_titlecased_python.operation.metta
+echo_into_titlecased_llm.operation.metta
 titlecase_received_text.prompt.metta
 openai.backend.metta
 gpt-5.6.model.metta
@@ -41,7 +41,7 @@ The matching MeTTa map contains exactly the same semantic kind. Multiple maps ma
 
 ```metta
 (
-  (kind operation_implementation)
+  (kind operation)
   (id echo_into_titlecased_python)
   (parents ([]
     echo_into_titlecased
@@ -53,12 +53,12 @@ The matching MeTTa map contains exactly the same semantic kind. Multiple maps ma
 
 A `operation` is the stable semantic stage identity. It defines the contract and the set of allowed implementation variants. It does not itself name Python, Prolog, MeTTa, or an LLM provider.
 
-A `operation_implementation` is one concrete way to perform that operation. Several implementations may implement the same operation.
+An `operation` with a same-kind parent is one concrete way to perform that parent operation. Several child operations may implement the same abstract operation.
 
 ```text
 echo_into_titlecased.operation.metta
-  ├── echo_into_titlecased_python.operation_implementation.metta
-  └── echo_into_titlecased_llm.operation_implementation.metta
+  ├── echo_into_titlecased_python.operation.metta
+  └── echo_into_titlecased_llm.operation.metta
 ```
 
 A workflow step therefore points to the abstract operation:

@@ -10,7 +10,6 @@
   (query (
     (kinds ([]
       model
-      profile
     ))
     (where (
       (properties.context_length (

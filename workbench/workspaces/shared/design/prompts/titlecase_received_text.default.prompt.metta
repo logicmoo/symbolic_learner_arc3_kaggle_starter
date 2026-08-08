@@ -1,5 +1,5 @@
 (
-  (kind prompt_implementation)
+  (kind prompt)
   (id titlecase_received_text.default)
   (label "Titlecase Received Text — Default")
   (version 1)

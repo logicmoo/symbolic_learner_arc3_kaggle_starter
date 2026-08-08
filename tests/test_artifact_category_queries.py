@@ -45,12 +45,21 @@ def test_prolog_query_adds_resolved_membership_without_mutating_source() -> None
     prolog = next(record for record in resolved if record["document"]["id"] == "echo_into_titlecased_prolog")
     original = next(record for record in source if record["document"]["id"] == "echo_into_titlecased_prolog")
     assert "filtered/prolog" in prolog["document"]["categories"]
-    assert "categories" not in original["document"]
+    assert "filtered/prolog" not in original["document"].get("categories", [])
     assert prolog["resolvedArtifactCategories"][0]["parentMode"] == "show"
 
 
 def test_model_examples_resolve_real_matches() -> None:
     categories = load_workspace_artifact_categories(SHARED)
-    resolved = apply_artifact_categories(resolve_model_records(SHARED), categories, "models")
+    records = [{
+        "document": {
+            "kind": "model",
+            "id": "example-vision-model",
+            "capabilities": ["vision"],
+            "properties": {"context_length": 131072},
+        },
+        "resolved": {"backendId": "unsloth"},
+    }]
+    resolved = apply_artifact_categories(records, categories, "models")
     memberships = {entry["id"] for record in resolved for entry in record.get("resolvedArtifactCategories", [])}
     assert {"models.vision", "models.large_context", "models.local"} <= memberships

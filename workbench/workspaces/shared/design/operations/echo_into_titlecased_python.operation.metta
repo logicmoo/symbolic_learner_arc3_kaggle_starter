@@ -1,8 +1,9 @@
 (
-  (kind operation_implementation)
+  (kind operation)
   (id echo_into_titlecased_python)
   (label "Echo Into Titlecased / Python")
   (description "Take received text, call an imported Python function, and return the title-cased text.")
+  (categories ([] sample/python sample/text))
   (implementation python.callable)
   (inputs (
     (text Text)

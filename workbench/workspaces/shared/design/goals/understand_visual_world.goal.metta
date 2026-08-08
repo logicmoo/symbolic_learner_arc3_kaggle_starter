@@ -19,7 +19,7 @@
 )
 
 (
-  (kind goal_variant)
+  (kind goal)
   (id understand_visual_world.explain_dynamics)
   (label "Explain Visual Dynamics")
   (description "Prefer observations and actions that produce a compact, evidence-backed model of change.")
@@ -34,7 +34,7 @@
 )
 
 (
-  (kind goal_variant)
+  (kind goal)
   (id understand_visual_world.explore_safely)
   (label "Explore Safely")
   (description "Prioritize information gain while avoiding irreversible low-confidence actions.")

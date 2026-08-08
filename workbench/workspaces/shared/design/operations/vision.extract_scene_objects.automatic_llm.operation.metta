@@ -1,5 +1,5 @@
 (
-  (kind operation_implementation)
+  (kind operation)
   (id vision.extract_scene_objects.automatic_llm)
   (label "Extract Scene Objects / Automatic LLM")
   (description "Send uploaded current and previous bitmap images through the shared extraction prompts using an automatically eligible vision LLM.")

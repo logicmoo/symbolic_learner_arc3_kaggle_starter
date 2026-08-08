@@ -142,9 +142,9 @@ export function RuntimeHistoryView({ mode, workspaceId, goals = [], plans = [], 
   const [contextId, setContextId] = useState(""), [contextVariantId, setContextVariantId] = useState("");
   const [inputs, setInputs] = useState("{}");
   const [humanDraft, setHumanDraft] = useState<Record<string, unknown>>({}), [draftLoaded, setDraftLoaded] = useState(false), [draftStatus, setDraftStatus] = useState("");
-  const goalVariants = goalDocs.filter(doc => doc.kind === "goal_variant" && (doc.parents || []).includes(goalId));
-  const planVariants = planDocs.filter(doc => (doc.kind === "planning_strategy_variant" || doc.kind === "plan_variant") && (doc.parents || []).includes(planId) && workflowIds.has(doc.workflow));
-  const contextVariants = contextDocs.filter(doc => doc.kind === "context_variant" && (doc.parents || []).includes(contextId));
+  const goalVariants = goalDocs.filter(doc => (doc.parents || []).includes(goalId));
+  const planVariants = planDocs.filter(doc => (doc.parents || []).includes(planId) && workflowIds.has(doc.workflow));
+  const contextVariants = contextDocs.filter(doc => (doc.parents || []).includes(contextId));
 
   const refresh = async () => {
     setError("");

@@ -1,5 +1,5 @@
 (
-  (kind prompt_implementation)
+  (kind prompt)
   (id titlecase_received_text.text_only.claude)
   (label "Titlecase Received Text — Claude / Text Only")
   (description "Claude-specific text-only implementation of the Titlecase Received Text prompt contract.")

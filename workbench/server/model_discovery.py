@@ -7,6 +7,7 @@ import urllib.request
 from pathlib import Path
 from typing import Any, Callable
 from resource_store import get_filesystem_provider
+from resource_relationships import relationship_ids
 
 
 def _headers(backend: dict[str, Any]) -> dict[str, str]:
@@ -92,7 +93,7 @@ def discovered_model_document(backend: dict[str, Any], row: dict[str, Any]) -> d
     resource_id = re.sub(r"[^a-zA-Z0-9._-]+", "_", f"{backend['id']}-{remote_id}").strip("._").lower()
     return {"kind": "model", "id": resource_id, "label": str(row.get("label") or remote_id),
             "description": f"Discovered from {backend.get('label') or backend['id']}.",
-            "inherits": backend["id"], "model": remote_id, "enabled": True,
+            "parents": [backend["id"]], "model": remote_id, "enabled": True,
             "capabilities": row.get("capabilities") or {}, "limits": row.get("limits") or {},
             "pricing": row.get("pricing") or {}, "properties": row.get("properties") or {},
             "providerMetadata": row.get("providerMetadata") or {},
@@ -109,7 +110,7 @@ def reconcile_discovered_models(root: Path, backend: dict[str, Any], models: lis
             for document in documents:
                 if not isinstance(document, dict): continue
                 discovery = document.get("discovery") or {}; legacy = str(document.get("description") or "").startswith("Discovered from ")
-                if document.get("inherits") == backend.get("id") and (discovery.get("managed") is True or legacy):
+                if backend.get("id") in relationship_ids(document.get("parents") or document.get("inherits")) and (discovery.get("managed") is True or legacy):
                     existing_by_remote[str(document.get("model") or "")] = document
     rows: list[dict[str, Any]] = []
     discovered_ids: set[str] = set()
@@ -153,6 +154,6 @@ def remove_missing_models(root: Path, backend: dict[str, Any], resource_ids: lis
         try: document = resources.read_json(target)
         except (OSError, json.JSONDecodeError): continue
         discovery = document.get("discovery") or {}; legacy = str(document.get("description") or "").startswith("Discovered from ")
-        if document.get("inherits") != backend.get("id") or not (discovery.get("managed") is True or legacy): continue
+        if backend.get("id") not in relationship_ids(document.get("parents") or document.get("inherits")) or not (discovery.get("managed") is True or legacy): continue
         resources.delete(target); removed.append(safe_id)
     return removed

@@ -21,7 +21,7 @@ def _write(root: Path, workspace: str, directory: str, name: str, document: str)
 
 def test_goal_resources_inherit_shared_and_allow_workspace_overrides(tmp_path: Path) -> None:
     _write(tmp_path, "shared", "goals", "learn.goal.json", '{"kind":"goal","id":"learn","label":"Shared"}')
-    _write(tmp_path, "shared", "goals", "safe.goal_variant.json", '{"kind":"goal_variant","id":"safe","parents":["learn"]}')
+    _write(tmp_path, "shared", "goals", "safe.goal.json", '{"kind":"goal","id":"safe","parents":["learn"]}')
     _write(tmp_path, "project", "goals", "learn.goal.json", '{"kind":"goal","id":"learn","label":"Override"}')
     records = load_workspace_symbolic_records(tmp_path / "project", "goal", workspaces_root=tmp_path)
     by_id = {record["document"]["id"]: record for record in records}
@@ -32,30 +32,34 @@ def test_goal_resources_inherit_shared_and_allow_workspace_overrides(tmp_path: P
     assert hierarchy["variantsBySpecification"]["learn"][0]["document"]["id"] == "safe"
 
 
-def test_plan_variant_requires_parent_and_canonical_suffix(tmp_path: Path) -> None:
-    _write(tmp_path, "shared", "planning_strategy_variants", "broken.planning_strategy_variant.json", '{"kind":"planning_strategy_variant","id":"broken"}')
+def test_plan_variant_uses_parent_link_and_base_kind_suffix(tmp_path: Path) -> None:
+    _write(tmp_path, "shared", "planning_strategies", "route.planning_strategy.json", '{"kind":"planning_strategy","id":"route"}')
+    _write(tmp_path, "shared", "planning_strategies", "route.fast.planning_strategy.json", '{"kind":"planning_strategy","id":"route.fast","parents":["route"]}')
     records = load_workspace_symbolic_records(tmp_path / "shared", "plan", workspaces_root=tmp_path)
-    assert "Variant requires parents" in records[0]["error"]
-    path = canonical_resource_path(Path("planning_strategy_variants/draft.json"), {"kind": "planning_strategy_variant", "id": "route.fast", "parents": ["route"]})
-    assert path.as_posix() == "planning_strategy_variants/route.fast.planning_strategy_variant.json"
+    hierarchy = symbolic_hierarchy(records, "plan")
+    assert hierarchy["variantsBySpecification"]["route"][0]["document"]["kind"] == "planning_strategy"
+    path = canonical_resource_path(Path("planning_strategies/draft.json"), {"kind": "planning_strategy", "id": "route.fast", "parents": ["route"]})
+    assert path.as_posix() == "planning_strategies/route.fast.planning_strategy.json"
 
 
 def test_shared_workspace_contains_goal_and_plan_examples() -> None:
     shared = ROOT / "workbench" / "workspaces" / "shared"
     goals = load_workspace_symbolic_records(shared, "goal")
     plans = load_workspace_symbolic_records(shared, "plan")
-    assert {record["document"]["kind"] for record in goals} == {"goal", "goal_variant"}
-    assert {record["document"]["kind"] for record in plans} == {"planning_strategy", "planning_strategy_variant"}
+    assert {record["document"]["kind"] for record in goals} == {"goal"}
+    assert {record["document"]["kind"] for record in plans} == {"planning_strategy"}
+    assert symbolic_hierarchy(goals, "goal")["variants"]
+    assert symbolic_hierarchy(plans, "plan")["variants"]
 
 
 def test_shared_design_examples_are_domain_neutral_and_runnable() -> None:
     shared = ROOT / "workbench" / "workspaces" / "shared"
     resources = get_filesystem_provider()
-    design_dirs = [shared / "design" / name for name in ("goals", "planning_strategies", "planning_strategy_variants", "workflows")]
+    design_dirs = [shared / "design" / name for name in ("goals", "planning_strategies", "workflows")]
     documents = [document for directory in design_dirs for path in directory.glob("*.metta") for document in resources.read_json_documents(path.with_suffix(".json"))]
     assert not any("arc3" in json.dumps(document).lower() for document in documents)
     workflow_ids = {document["id"] for document in documents if document.get("kind") == "workflow"}
-    referenced = {document["workflow"] for document in documents if document.get("kind") == "planning_strategy_variant"}
+    referenced = {document["workflow"] for document in documents if document.get("kind") == "planning_strategy" and document.get("parents") and document.get("workflow")}
     assert referenced <= workflow_ids
 
 
@@ -63,7 +67,7 @@ def test_shared_workspace_contains_bidirectional_context_examples() -> None:
     shared = ROOT / "workbench" / "workspaces" / "shared"
     contexts = load_workspace_symbolic_records(shared, "context")
     by_id = {record["document"]["id"]: record["document"] for record in contexts}
-    assert {document["kind"] for document in by_id.values()} == {"context", "context_variant"}
+    assert {document["kind"] for document in by_id.values()} == {"atomspace"}
     assert by_id["vision_analysis"]["children"] == ["vision_analysis.default"]
     assert by_id["vision_analysis.default"]["parents"] == ["vision_analysis"]
 
@@ -72,6 +76,7 @@ def test_goal_plan_editor_preserves_rich_hierarchy_features() -> None:
     source = (ROOT / "workbench" / "frontend" / "src" / "components" / "GoalPlanLibraryEditor.tsx").read_text(encoding="utf-8")
     for token in ("HierarchyResourceEditor", "PREFERRED VARIANT", "Split view", "+ Alternative", "+ Abstract", "ResourceSourceEditor", "preferredChild"):
         assert token in source
+    assert 'const endpoint = family === "plan" ? "plans" : directory' in source
 
 
 def test_goal_plan_and_context_pages_load_their_shared_right_panel_docs() -> None:

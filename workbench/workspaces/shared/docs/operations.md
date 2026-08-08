@@ -2,15 +2,15 @@
 
 # Operations
 
-A Operation is the abstract semantic operation in the workbench. A `operation_implementation` is one concrete way to perform that operation.
+An Operation is a semantic operation in the workbench. A root `operation` is an abstract contract; an `operation` with a same-kind parent is one concrete implementation.
 
 The workflow should normally point to the abstract Operation ID. The Operation lists allowed implementation variants and a default. The runtime resolves that abstract stage to a concrete implementation when the workflow is validated/executed.
 
 ```text
 echo_into_titlecased.operation.metta
-    ├── echo_into_titlecased_python.operation_implementation.metta
-    ├── echo_into_titlecased_prolog.operation_implementation.metta
-    └── echo_into_titlecased_llm.operation_implementation.metta
+    ├── echo_into_titlecased_python.operation.metta
+    ├── echo_into_titlecased_prolog.operation.metta
+    └── echo_into_titlecased_llm.operation.metta
 ```
 
 ## Python implementations
@@ -19,7 +19,7 @@ Python callables need enough metadata to locate and invoke the code without hard
 
 ```metta
 (
-  (kind operation_implementation)
+  (kind operation)
   (implementation python.callable)
   (python (
     (importMode module)
@@ -44,7 +44,7 @@ A Prolog implementation can carry the exact source that SWI-Prolog should run. T
 
 ```metta
 (
-  (kind operation_implementation)
+  (kind operation)
   (implementation prolog.source)
   (prolog (
     (engine swipl)
@@ -117,7 +117,7 @@ The LLM child selects a concrete model, binds the abstract Prompt, and declares 
 
 ```metta
 (
-  (kind operation_implementation)
+  (kind operation)
   (id echo_into_titlecased_llm)
   (implementation llm.complete)
   (modelSelection (
@@ -154,7 +154,7 @@ The LLM child selects a concrete model, binds the abstract Prompt, and declares 
 )
 
 (
-  (kind prompt_implementation)
+  (kind prompt)
   (id titlecase_received_text.default)
   (targets ([] generic-chat))
   (text ([]

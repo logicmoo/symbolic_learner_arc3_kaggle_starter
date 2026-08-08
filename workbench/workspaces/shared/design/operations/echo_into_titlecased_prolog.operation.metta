@@ -1,8 +1,9 @@
 (
-  (kind operation_implementation)
+  (kind operation)
   (id echo_into_titlecased_prolog)
   (label "Echo Into Titlecased / SWI-Prolog")
   (description "Take received text, execute the embedded Prolog source with SWI-Prolog, and return the title-cased text.")
+  (categories ([] sample/prolog sample/text))
   (implementation prolog.source)
   (inputs (
     (text Text)
