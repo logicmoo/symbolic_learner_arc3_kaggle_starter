@@ -222,7 +222,19 @@ def _llm_complete(inputs: dict[str, Any], parameters: dict[str, Any]) -> dict[st
     api_key = os.getenv(str(parameters.get("apiKeyEnv") or "OPENAI_API_KEY"))
     if not api_key:
         raise RuntimeError("LLM API key is not configured")
-    endpoint = str(parameters.get("endpoint") or "https://api.openai.com/v1/chat/completions")
+    configured_base_url = str(parameters.get("baseUrl") or "").rstrip("/")
+    for environment_name in (
+        parameters.get("baseUrlEnvironmentVariable"),
+        parameters.get("legacyBaseUrlEnvironmentVariable"),
+    ):
+        if environment_name and os.getenv(str(environment_name)):
+            configured_base_url = str(os.getenv(str(environment_name))).rstrip("/")
+            break
+    endpoint = str(
+        parameters.get("endpoint")
+        or (f"{configured_base_url}/chat/completions" if configured_base_url else "")
+        or "https://api.openai.com/v1/chat/completions"
+    )
     received = str(inputs.get("prompt") or inputs.get(str(parameters.get("inputBinding") or "text")) or parameters.get("prompt") or "")
     prefix = str(parameters.get("promptPrefix") or "")
     prompt = f"{prefix}\n\n{received}" if prefix and received else prefix or received

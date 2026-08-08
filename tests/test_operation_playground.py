@@ -66,6 +66,40 @@ def test_operation_materialization_resolves_requested_prompt_variant() -> None:
         }
     ]
     assert "Convert" in executable["parameters"]["promptPrefix"]
+    assert executable["modelSelection"] == {"models": ["openrouter/free"], "strategy": "single"}
+    assert executable["parameters"]["model"] == "openrouter/free"
+    assert executable["parameters"]["backendId"] == "openrouter"
+    assert executable["parameters"]["apiKeyEnv"] == "OPENROUTER_API_KEY"
+    assert executable["parameters"]["baseUrl"] == "https://openrouter.ai/api/v1"
+
+
+def test_operation_playground_routes_selected_model_through_openrouter(monkeypatch: pytest.MonkeyPatch) -> None:
+    sent: dict[str, object] = {}
+
+    class Response:
+        def __enter__(self): return self
+        def __exit__(self, *_args: object) -> None: return None
+        def read(self) -> bytes:
+            return json.dumps({"choices": [{"message": {"content": "Hello World"}}]}).encode()
+
+    def urlopen(request: object, **_kwargs: object) -> Response:
+        sent["url"] = getattr(request, "full_url")
+        sent["authorization"] = getattr(request, "headers")["Authorization"]
+        sent["body"] = json.loads(getattr(request, "data").decode())
+        return Response()
+
+    monkeypatch.setenv("OPENROUTER_API_KEY", "openrouter-test-key")
+    monkeypatch.setattr("workflow_providers.urllib.request.urlopen", urlopen)
+
+    result = invoke_operation("shared", "echo_into_titlecased", {
+        "implementationVariant": "echo_into_titlecased_llm",
+        "inputs": {"text": "hello world"},
+    })
+
+    assert sent["url"] == "https://openrouter.ai/api/v1/chat/completions"
+    assert sent["authorization"] == "Bearer openrouter-test-key"
+    assert sent["body"]["model"] == "openrouter/free"  # type: ignore[index]
+    assert result["outputs"]["text"] == "Hello World"
 
 
 def test_constant_value_uses_workbench_provider() -> None:
@@ -121,7 +155,7 @@ def test_implementation_parent_link_is_sufficient_for_resolution(tmp_path: Path)
 
 
 def test_operation_playground_preserves_provider_rate_limit(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    monkeypatch.setenv("OPENROUTER_API_KEY", "test-key")
 
     def rate_limited(*_args: object, **_kwargs: object) -> object:
         raise HTTPError("https://provider.invalid", 429, "Too Many Requests", {}, None)

@@ -3,6 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+from backend_library import load_workspace_backend_records
+from model_library import resolve_model_records
 from prompt_library import resolve_prompt_implementation
 from operation_library import DEFAULT_WORKSPACES_ROOT, SHARED_WORKSPACE_ID, resolve_operation_implementation
 
@@ -69,6 +71,69 @@ def _implementation_parameters(implementation: dict[str, Any], step: dict[str, A
     return {**parameters, **(step.get("parameters") or {})}
 
 
+def _model_execution_parameters(
+    workspace_root: Path,
+    model_selection: dict[str, Any],
+) -> dict[str, Any]:
+    """Resolve an operation's selected model into provider call parameters.
+
+    A selection may name a model resource from the effective model library or
+    use a provider-qualified remote model name such as ``openrouter/free``.
+    The latter deliberately works without requiring a generated model catalog.
+    """
+    selected_models = model_selection.get("models") or []
+    if not isinstance(selected_models, list) or not selected_models:
+        return {}
+    selected_id = str(selected_models[0]).strip()
+    if not selected_id:
+        return {}
+
+    resolved_model: dict[str, Any] | None = None
+    for record in resolve_model_records(workspace_root):
+        document = record.get("document") or {}
+        if str(document.get("id") or "") == selected_id and not record.get("error"):
+            resolved_model = record.get("resolved") or {}
+            break
+
+    backend: dict[str, Any] | None = None
+    configuration: dict[str, Any] = {}
+    defaults: dict[str, Any] = {}
+    remote_model = selected_id
+    if resolved_model:
+        backend = resolved_model.get("backend") or {}
+        configuration = dict(resolved_model.get("configuration") or {})
+        defaults = dict(resolved_model.get("defaults") or {})
+        remote_model = str(resolved_model.get("model") or selected_id)
+    else:
+        provider_hint = selected_id.split("/", 1)[0]
+        for record in load_workspace_backend_records(workspace_root):
+            candidate = record.get("document") or {}
+            if provider_hint in {
+                str(candidate.get("id") or ""),
+                str(candidate.get("provider") or ""),
+            }:
+                backend = candidate
+                configuration = dict(candidate.get("configuration") or {})
+                defaults = dict(candidate.get("modelDefaults") or {})
+                break
+
+    if not backend:
+        return {"model": remote_model}
+
+    parameters = {
+        **defaults,
+        "model": remote_model,
+        "backendId": str(backend.get("id") or ""),
+        "baseUrl": configuration.get("baseUrl"),
+        "baseUrlEnvironmentVariable": configuration.get("baseUrlEnvironmentVariable"),
+        "legacyBaseUrlEnvironmentVariable": configuration.get("legacyBaseUrlEnvironmentVariable"),
+        "apiKeyEnv": configuration.get("apiKeyEnvironmentVariable")
+        or configuration.get("apiKeyEnvironment"),
+        "timeoutSeconds": configuration.get("timeoutSeconds"),
+    }
+    return {key: value for key, value in parameters.items() if value is not None}
+
+
 def materialize_workflow_step(workflow: dict[str, Any], step: dict[str, Any]) -> dict[str, Any]:
     """Resolve a workflow_step/operation reference into an executable engine operation step."""
     operation_id = step.get("operation")
@@ -84,7 +149,9 @@ def materialize_workflow_step(workflow: dict[str, Any], step: dict[str, Any]) ->
     operation = resolved["operation"]
     implementation = resolved["implementation"]
     bindings = implementation.get("bindings") or {}
+    model_selection = implementation.get("modelSelection") or {}
     parameters = {
+        **_model_execution_parameters(workspace_root, model_selection),
         **dict(operation.get("parameters") or {}),
         **_implementation_parameters(implementation, step),
     }
@@ -145,7 +212,7 @@ def materialize_workflow_step(workflow: dict[str, Any], step: dict[str, Any]) ->
         "operation": operation["id"],
         "implementationVariant": implementation["id"],
         "operationBindings": bindings,
-        "modelSelection": implementation.get("modelSelection") or {},
+        "modelSelection": model_selection,
         "resolvedPrompts": resolved_prompts,
     }
 

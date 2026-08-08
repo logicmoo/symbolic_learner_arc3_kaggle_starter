@@ -121,7 +121,7 @@ The LLM child selects a concrete model, binds the abstract Prompt, and declares 
   (id echo_into_titlecased_llm)
   (implementation llm.complete)
   (modelSelection (
-    (models ([] openrouter-ai21_jamba-large-1.7))
+    (models ([] openrouter/free))
     (strategy single)
   ))
   (bindings (
@@ -172,7 +172,7 @@ For the example input `the quick brown fox`, the runtime:
 
 1. Resolves `echo_into_titlecased` to the selected implementation. The Operation prefers `echo_into_titlecased_llm`, but the playground may explicitly select Python, Prolog, or LLM without changing that saved preference.
 2. Inherits the Operation's `example_execute` form, so the implementation tab gets the same `text` input control even though it does not duplicate that form.
-3. Resolves the model resource `openrouter-ai21_jamba-large-1.7` through its model/profile/backend inheritance chain and applies its runtime policy.
+3. Resolves `openrouter/free` directly through the inherited `openrouter` backend, without requiring a generated model catalog entry, and applies that backend's runtime policy.
 4. Resolves `titlecase_received_text` to `titlecase_received_text.default` and joins its three `text` entries using the configured separator.
 5. Reads the `text` argument because `inputBinding` is `text`. The effective request is the resolved instructions followed by the user value `the quick brown fox`.
 6. Calls the `llm.complete` provider and stores the returned content under `text` because `outputBinding` is `text`.

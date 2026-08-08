@@ -15,7 +15,7 @@
   ))
   (modelSelection (
     (models ([]
-      openrouter-ai21_jamba-large-1.7
+      openrouter/free
     ))
     (strategy single)
   ))
