@@ -125,6 +125,23 @@ def test_model_import_route_always_targets_shared_workspace(tmp_path: Path, monk
     assert (shared / "models" / "vendor-remote_model.model.json").is_file()
 
 
+def test_model_example_invokes_resolved_model(monkeypatch, tmp_path: Path) -> None:
+    monkeypatch.setattr(policy_api, "_resolve_workspace", lambda workspace_id: {"id": workspace_id, "root": str(tmp_path)})
+    monkeypatch.setattr(policy_api, "resolve_model_records", lambda _root: [{"document": {"id": "model"}, "resolved": {"enabled": True, "model": "remote", "configuration": {}, "defaults": {}}}])
+    monkeypatch.setattr(policy_api, "call_model", lambda model, profile, prompt, timeout: {"text": prompt.upper(), "latencyMs": 1})
+    result = policy_api.invoke_model_example("shared", "model", {"arguments": {"prompt": "hello"}})
+    assert result["text"] == "HELLO"
+
+
+def test_example_executor_is_shared_by_models_and_prompts() -> None:
+    panel = (ROOT / "workbench" / "frontend" / "src" / "components" / "ExampleExecutePanel.tsx").read_text(encoding="utf-8")
+    models = (ROOT / "workbench" / "frontend" / "src" / "components" / "LlmModelsEditor.tsx").read_text(encoding="utf-8")
+    prompts = (ROOT / "workbench" / "frontend" / "src" / "components" / "PromptLibraryEditor.tsx").read_text(encoding="utf-8")
+    assert "EXAMPLE EXECUTE" in panel and "Run example" in panel
+    assert "exampleFor(document)" in models and "executeModelExample" in models
+    assert "contractParent?.example_execute" in prompts and "renderPromptExample" in prompts
+
+
 def test_discovery_reconciles_and_only_removes_managed_missing_models(tmp_path: Path) -> None:
     backend = {"id": "vendor", "label": "Vendor"}
     imported = import_discovered_models(tmp_path, backend, [{"id": "old", "label": "Old"}, {"id": "keep", "label": "Keep"}])

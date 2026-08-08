@@ -2,7 +2,8 @@ import {useMemo,useState} from "react";
 import "../styles/operation_editor.css";
 import "../styles/operation_playground.css";
 
-type OperationDef={id:string;label?:string;inputs?:Record<string,string>;outputs?:Record<string,string>;children?:string[];preferredChild?:string};
+type ExampleArgument={datatype?:string;label?:string;default?:unknown};
+type OperationDef={id:string;label?:string;inputs?:Record<string,string>;outputs?:Record<string,string>;children?:string[];preferredChild?:string;example_execute?:{action?:string;arguments?:Record<string,ExampleArgument>}};
 type OperationImplementationDef={id:string;label?:string;implementation:string};
 type InvocationResult={operation:{id:string;label:string;inputs:Record<string,string>;outputs:Record<string,string>};implementation:{id:string;label:string;route:string};resolvedPrompts?:Array<{promptId:string;implementationId:string;targets?:string[];version?:number}>;inputs:Record<string,unknown>;outputs:Record<string,unknown>;elapsedMs:number};
 
@@ -18,7 +19,7 @@ function parseInput(datatype:string,raw:string):unknown{
 
 export function OperationPlayground({workspaceId,operation,variants}:{workspaceId:string;operation:OperationDef;variants:OperationImplementationDef[]}){
  const preferred=operation.preferredChild||variants[0]?.id||"";
- const[variant,setVariant]=useState(preferred),[rawInputs,setRawInputs]=useState<Record<string,string>>({}),[result,setResult]=useState<InvocationResult|null>(null),[error,setError]=useState<string|null>(null),[running,setRunning]=useState(false);
+ const[variant,setVariant]=useState(preferred),[rawInputs,setRawInputs]=useState<Record<string,string>>(()=>Object.fromEntries(Object.entries(operation.example_execute?.arguments||{}).map(([name,arg])=>[name,typeof arg.default==="string"?arg.default:JSON.stringify(arg.default??"")]))),[result,setResult]=useState<InvocationResult|null>(null),[error,setError]=useState<string|null>(null),[running,setRunning]=useState(false);
  const inputs=useMemo(()=>Object.entries(operation.inputs||{}),[operation.id,operation.inputs]);
  const outputs=Object.entries(operation.outputs||{});
  const selected=variants.find(item=>item.id===variant)||null;

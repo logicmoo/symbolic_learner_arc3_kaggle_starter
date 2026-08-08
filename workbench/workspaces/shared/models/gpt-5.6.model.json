@@ -6,6 +6,16 @@
   "inherits": "openai",
   "model": "gpt-5.6",
   "enabled": true,
+  "example_execute": {
+    "action": "model.invoke",
+    "arguments": {
+      "prompt": {
+        "datatype": "Text",
+        "label": "Prompt",
+        "default": "Reply with the title-case form of: the quick brown fox"
+      }
+    }
+  },
   "capabilities": [
     "text",
     "vision",

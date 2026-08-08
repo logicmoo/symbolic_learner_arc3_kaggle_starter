@@ -15,5 +15,15 @@
     "titlecase_received_text.multi_modal.claude",
     "titlecase_received_text.text_only.claude"
   ],
-  "preferredChild": "titlecase_received_text.default"
+  "preferredChild": "titlecase_received_text.default",
+  "example_execute": {
+    "action": "prompt.render",
+    "arguments": {
+      "text": {
+        "datatype": "Text",
+        "label": "Received text",
+        "default": "the quick brown fox"
+      }
+    }
+  }
 }

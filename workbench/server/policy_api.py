@@ -15,6 +15,7 @@ from model_policy_ping import run_ping_job
 from model_benchmark import run_benchmark
 from model_library import resolve_model_records
 from model_discovery import discover_backend_models, import_discovered_models, reconcile_discovered_models, remove_missing_models
+from model_benchmark import call_model
 from workspace_api import _resolve_workspace
 
 router = APIRouter(prefix="/workspaces", tags=["model-policy"])
@@ -42,6 +43,19 @@ def model_policy_registry(workspace_id: str) -> dict[str, Any]:
     records = load_workspace_policy_records(Path(workspace["root"]))
     root = Path(workspace["root"])
     return {"workspace": workspace, "resources": records, "registry": _effective_registry(root, records)}
+
+
+@router.post("/{workspace_id}/models/{model_id}/example-invoke")
+def invoke_model_example(workspace_id: str, model_id: str, request: dict[str, Any] = Body(...)) -> dict[str, Any]:
+    try: workspace = _resolve_workspace(workspace_id)
+    except KeyError as error: raise HTTPException(status_code=404, detail=str(error)) from error
+    record = next((item for item in resolve_model_records(Path(workspace["root"])) if (item.get("document") or {}).get("id") == model_id), None)
+    if not record or not (record.get("resolved") or {}).get("enabled"): raise HTTPException(status_code=404, detail=f"enabled model/profile not found: {model_id}")
+    prompt = str((request.get("arguments") or {}).get("prompt") or request.get("prompt") or "")
+    if not prompt: raise HTTPException(status_code=400, detail="example argument prompt is required")
+    try: result = call_model({"id": model_id, "modelId": (record.get("resolved") or {}).get("model")}, record, prompt, int(request.get("timeoutSeconds") or 120))
+    except Exception as error: raise HTTPException(status_code=400, detail=str(error)) from error
+    return {"modelId": model_id, **result}
 
 
 @router.get("/{workspace_id}/models/discover/{backend_id}")
