@@ -40,3 +40,12 @@ def test_workflow_runner_reference_is_collapsed_after_real_projection_exists() -
     source = (ROOT / "workbench" / "frontend" / "src" / "components" / "WorkflowRunnerTodoReference.tsx").read_text(encoding="utf-8")
     assert '<details className="workflow-runner-reference">' in source
     assert "Mockups and remaining experience TODO" in source
+
+
+def test_goal_run_human_pause_uses_the_frozen_step_form_contract() -> None:
+    source = (ROOT / "workbench" / "frontend" / "src" / "components" / "RuntimeHistoryView.tsx").read_text(encoding="utf-8")
+    assert "function HumanInputForm" in source
+    assert "waitingStepDefinition" in source
+    assert "step?.form" in source
+    assert 'type="checkbox"' in source
+    assert "JSON.stringify(values)" in source
