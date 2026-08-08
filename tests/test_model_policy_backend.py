@@ -196,8 +196,26 @@ def test_ping_job_persists_independent_health_and_events(tmp_path: Path) -> None
 def test_model_policy_ui_calls_real_ping_executor() -> None:
     source = (ROOT / "workbench" / "frontend" / "src" / "components" / "ModelPolicyPage.tsx").read_text(encoding="utf-8")
     assert "/model-policy/ping" in source
+    assert "setTimeout(resolve,500)" in source
+    assert '["queued","running"]' in source
     for label in ("Ping All", "Ping Wanted", "Ping Auto", "Ping Unwanted"):
         assert label in source
+
+
+def test_ping_api_queues_durable_background_job(tmp_path: Path, monkeypatch) -> None:
+    from fastapi import BackgroundTasks
+
+    monkeypatch.setattr(policy_api, "_resolve_workspace", lambda workspace_id: {"id": workspace_id, "root": str(tmp_path)})
+    monkeypatch.setattr(policy_api, "load_workspace_policy_records", lambda _root: [])
+    monkeypatch.setattr(policy_api, "_effective_registry", lambda _root, _records: {"models": [{"id": "vendor:model", "vendorId": "vendor", "policy": {"wanted": "on"}}], "policy": {"rules": {}}})
+    monkeypatch.setattr(policy_api, "load_workspace_backend_records", lambda _root: [])
+    tasks = BackgroundTasks()
+    result = policy_api.execute_model_policy_ping("demo", tasks, {"scope": "all"})
+    assert result["job"]["status"] == "queued"
+    assert result["job"]["targetCount"] == 1
+    assert len(tasks.tasks) == 1
+    persisted = list((tmp_path / "policies").glob("*.model_ping_job.metta"))
+    assert len(persisted) == 1
 
 
 def test_model_policy_ui_edits_and_filters_dynamic_registry() -> None:

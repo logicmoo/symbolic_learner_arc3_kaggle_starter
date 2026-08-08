@@ -1,8 +1,21 @@
-# TODO: Implement “Model Runtime Usage and Benchmarking Policies” Page
+# Model Runtime Usage and Benchmarking Policies
 
 [Back to repository README](../../../README.md)
 
 Build the **Model Runtime Usage and Benchmarking Policies** page in the **MeTTaSymbolicLearnerWorkbench**.
+
+## Implementation Status
+
+The active page is backed by real workspace resources and the model-policy API. It currently provides vendor/model intent editing, inherited vendor overrides, dynamic provider-property columns, composable filters, sortable columns, frozen identity/policy columns, horizontal and vertical scrolling, visible-row selection, concurrent model probes, health observations, effective runtime and benchmark eligibility, prompt-profile references, persisted benchmark execution/results, and filesystem load/save.
+
+Remaining work is intentionally narrower:
+
+- expose vendor creation and backend model discovery/import directly from this page (the Models editor already provides discovery and overwrite import);
+- add optional multi-column sorting;
+- add prompt-profile creation/editing from the policy dashboard;
+- add benchmark metric selection and richer time-series history.
+
+The requirements below remain the acceptance specification. Existing completed behavior must not be replaced with mock data.
 
 This page is the central place where the user controls which vendors and models are wanted, which are allowed at runtime, which are benchmarked, which are currently healthy, and how prompt profiles are compared across enabled models.
 

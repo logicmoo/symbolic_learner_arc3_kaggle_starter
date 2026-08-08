@@ -7,11 +7,11 @@ from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
-from fastapi import APIRouter, Body, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Body, HTTPException
 
 from policy_library import POLICY_KINDS, effective_model_registry, load_workspace_policy_records
 from backend_library import load_workspace_backend_records
-from model_policy_ping import run_ping_job
+from model_policy_ping import run_ping_job, write_policy_resource
 from model_benchmark import run_benchmark
 from model_library import resolve_model_records
 from model_discovery import discover_backend_models, import_discovered_models, reconcile_discovered_models, remove_missing_models
@@ -120,8 +120,8 @@ def record_model_policy_observation(workspace_id: str, document: dict[str, Any] 
     return {"workspace": workspace, "path": target.relative_to(Path(workspace["root"])).as_posix(), "document": document}
 
 
-@router.post("/{workspace_id}/model-policy/ping", status_code=201)
-def execute_model_policy_ping(workspace_id: str, request: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
+@router.post("/{workspace_id}/model-policy/ping", status_code=202)
+def execute_model_policy_ping(workspace_id: str, background_tasks: BackgroundTasks, request: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
     try: workspace = _resolve_workspace(workspace_id)
     except KeyError as error: raise HTTPException(status_code=404, detail=str(error)) from error
     root = Path(workspace["root"]); records = load_workspace_policy_records(root); registry = _effective_registry(root, records)
@@ -135,8 +135,10 @@ def execute_model_policy_ping(workspace_id: str, request: dict[str, Any] = Body(
     job_id = f"ping_{scope}_{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S')}_{uuid4().hex[:8]}"
     job = {"kind": "model_ping_job", "id": job_id, "label": f"Ping {scope}", "scope": scope, "targets": [model.get("id") for model in models], "concurrency": request.get("concurrency", 4), "timeoutMs": request.get("timeoutMs", 15000), "continueOnError": True, "createdAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")}
     rules = (registry.get("policy") or {}).get("rules") or {}; backend_records = load_workspace_backend_records(root); backends = [record["document"] for record in backend_records if record.get("document")]
-    result = run_ping_job(root, job, models, backends, slow_latency_ms=float(rules.get("slowLatencyMs", 5000)))
-    return {"workspace": workspace, **result}
+    queued = {**job, "status": "queued", "targetCount": len(models)}
+    write_policy_resource(root, queued)
+    background_tasks.add_task(run_ping_job, root, job, models, backends, slow_latency_ms=float(rules.get("slowLatencyMs", 5000)))
+    return {"workspace": workspace, "job": queued, "results": []}
 
 
 @router.post("/{workspace_id}/model-policy/benchmarks/{policy_id}/run", status_code=201)
