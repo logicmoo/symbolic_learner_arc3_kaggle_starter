@@ -58,9 +58,12 @@ def execute_model_policy_ping(workspace_id: str, request: dict[str, Any] = Body(
     except KeyError as error: raise HTTPException(status_code=404, detail=str(error)) from error
     root = Path(workspace["root"]); records = load_workspace_policy_records(root); registry = effective_model_registry(records)
     scope = str(request.get("scope") or "all").lower()
-    if scope not in {"all", "on", "auto", "off"}: raise HTTPException(status_code=400, detail="scope must be all, on, auto, or off")
+    if scope not in {"all", "on", "auto", "off", "selected"}: raise HTTPException(status_code=400, detail="scope must be all, on, auto, off, or selected")
     models = registry["models"]
-    if scope != "all": models = [model for model in models if str((model.get("policy") or {}).get("wanted") or "auto").lower() == scope]
+    if scope == "selected":
+        targets = {str(value) for value in request.get("targets", [])}
+        models = [model for model in models if str(model.get("id")) in targets]
+    elif scope != "all": models = [model for model in models if str((model.get("policy") or {}).get("wanted") or "auto").lower() == scope]
     job_id = f"ping_{scope}_{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S')}_{uuid4().hex[:8]}"
     job = {"kind": "model_ping_job", "id": job_id, "label": f"Ping {scope}", "scope": scope, "targets": [model.get("id") for model in models], "concurrency": request.get("concurrency", 4), "timeoutMs": request.get("timeoutMs", 15000), "continueOnError": True, "createdAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")}
     rules = (registry.get("policy") or {}).get("rules") or {}; backend_records = load_workspace_backend_records(root); backends = [record["document"] for record in backend_records if record.get("document")]

@@ -86,3 +86,12 @@ def test_model_policy_ui_calls_real_ping_executor() -> None:
     assert "/model-policy/ping" in source
     for label in ("Ping All", "Ping Wanted", "Ping Auto", "Ping Unwanted"):
         assert label in source
+
+
+def test_model_policy_ui_edits_and_filters_dynamic_registry() -> None:
+    source = (ROOT / "workbench" / "frontend" / "src" / "components" / "ModelPolicyTodoPage.tsx").read_text(encoding="utf-8")
+    styles = (ROOT / "workbench" / "frontend" / "src" / "styles" / "model_policy_todo.css").read_text(encoding="utf-8")
+    for token in ("Filesystem Load", "Filesystem Save", "Ping Selected", "All capabilities", "All runtime", "All benchmark", "dynamicColumns", "toggleSort"):
+        assert token in source
+    assert 'scope==="selected"?[...selected]' in source
+    assert ".policy-table-scroll th:nth-child(-n+7)" in styles
