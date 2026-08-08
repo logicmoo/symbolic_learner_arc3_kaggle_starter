@@ -55,12 +55,14 @@ def _run_benchmark_safely(root: Path, policy: dict[str, Any], models: list[dict[
     try:
         run_benchmark(root, policy, models, profiles, job_id=job_id)
     except Exception as error:
+        completed_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
         write_policy_resource(root, {
             "kind": "benchmark_job",
             "id": job_id,
             "benchmarkPolicyId": policy.get("id"),
             "status": "failed",
-            "completedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+            "createdAt": completed_at,
+            "completedAt": completed_at,
             "modelCount": len(models),
             "profileCount": len(profiles),
             "caseCount": len(policy.get("cases") or []),

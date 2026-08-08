@@ -303,6 +303,9 @@ def test_model_policy_ui_exposes_explicit_benchmark_run() -> None:
     assert "item?.kind===\"benchmark_job\"" in source
     assert "setTimeout(resolve,1000)" in source
     assert "latestBenchmarkResultCount" in source
+    assert "did not finish within 10 minutes" in source
+    assert 'terminal.status==="failed"' in source
+    assert "latestPingJob?.error" in source
     assert "Benchmark running…" in source
 
 
@@ -336,4 +339,5 @@ def test_benchmark_background_failure_becomes_terminal_job(tmp_path: Path, monke
     record = get_filesystem_provider().read_json(tmp_path / "policies" / "benchmark-failure.benchmark_job.json")
     assert record["status"] == "failed"
     assert record["modelCount"] == 1
+    assert record["createdAt"] == record["completedAt"]
     assert record["error"] == "benchmark broke"
