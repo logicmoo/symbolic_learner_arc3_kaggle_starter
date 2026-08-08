@@ -6,11 +6,18 @@ from pathlib import Path
 from uuid import uuid4
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Request
+from resource_store import get_filesystem_provider
 
 router = APIRouter()
 INSTANCE_ID = uuid4().hex
 SERVER_DIR = Path(__file__).resolve().parent
 VITE_CONFIG = SERVER_DIR.parent / "frontend" / "vite.config.ts"
+
+
+@router.get("/system/resource-provider")
+def resource_provider_status() -> dict[str, object]:
+    provider = get_filesystem_provider()
+    return {"provider": type(provider).__name__, "metrics": provider.metrics()}
 
 
 def trigger_development_restart(

@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import shutil
 from collections import Counter
+from copy import deepcopy
 from pathlib import Path, PurePosixPath
 from threading import RLock
 from typing import Any, Iterable
@@ -20,6 +21,8 @@ class FilesystemProvider:
     def __init__(self) -> None:
         self._metrics: Counter[str] = Counter()
         self._metrics_lock = RLock()
+        self._json_cache: dict[Path, tuple[int, int, list[Any]]] = {}
+        self._cache_lock = RLock()
 
     def _record(self, operation: str, path: Path | None = None) -> None:
         with self._metrics_lock:
@@ -52,6 +55,11 @@ class FilesystemProvider:
         if writing or metta_path.exists():
             return metta_path
         return path
+
+    def _invalidate(self, path: Path) -> None:
+        physical = self._physical_path(path, writing=True)
+        with self._cache_lock:
+            self._json_cache.pop(physical.resolve(), None)
 
     @staticmethod
     def _logical_json_path(path: Path) -> Path:
@@ -109,6 +117,7 @@ class FilesystemProvider:
         return content
 
     def write_text(self, path: Path, content: str, *, encoding: str = "utf-8") -> None:
+        self._invalidate(path)
         self._record("write", path)
         physical = self._physical_path(path, writing=True)
         physical.parent.mkdir(parents=True, exist_ok=True)
@@ -131,10 +140,22 @@ class FilesystemProvider:
 
     def read_json_documents(self, path: Path) -> list[Any]:
         physical = self._physical_path(path)
+        metadata = physical.stat()
+        cache_key = physical.resolve()
+        with self._cache_lock:
+            cached = self._json_cache.get(cache_key)
+            if cached and cached[0] == metadata.st_mtime_ns and cached[1] == metadata.st_size:
+                self._record("cache-hit", path)
+                return deepcopy(cached[2])
+        self._record("cache-miss", path)
         if physical.suffix.lower() == ".metta":
             self._record("read", path)
-            return metta_documents_to_json(physical.read_text(encoding="utf-8"))
-        source = self.read_text(path)
+            values = metta_documents_to_json(physical.read_text(encoding="utf-8"))
+            with self._cache_lock:
+                self._json_cache[cache_key] = (metadata.st_mtime_ns, metadata.st_size, deepcopy(values))
+            return values
+        self._record("read", path)
+        source = physical.read_text(encoding="utf-8")
         decoder = json.JSONDecoder()
         values: list[Any] = []
         index = 0
@@ -148,9 +169,12 @@ class FilesystemProvider:
             values.extend(value if isinstance(value, list) else [value])
         if not values:
             raise ValueError(f"resource file is empty: {path}")
+        with self._cache_lock:
+            self._json_cache[cache_key] = (metadata.st_mtime_ns, metadata.st_size, deepcopy(values))
         return values
 
     def write_json(self, path: Path, document: Any) -> None:
+        self._invalidate(path)
         if path.suffix.lower() == ".json":
             physical = self._physical_path(path, writing=True)
             if isinstance(document, dict) and physical.exists():
@@ -163,6 +187,7 @@ class FilesystemProvider:
         self.write_text(path, json.dumps(document, indent=2, ensure_ascii=False) + "\n")
 
     def write_json_resource(self, path: Path, document: dict[str, Any]) -> None:
+        self._invalidate(path)
         physical = self._physical_path(path, writing=True)
         replacement = json_document_to_metta(document).rstrip("\n")
         if physical.exists():
@@ -183,10 +208,12 @@ class FilesystemProvider:
         physical.write_text(source, encoding="utf-8")
 
     def delete(self, path: Path) -> None:
+        self._invalidate(path)
         self._record("delete", path)
         self._physical_path(path).unlink(missing_ok=True)
 
     def replace(self, source: Path, target: Path) -> None:
+        self._invalidate(target)
         self._record("replace", target)
         if target.suffix.lower() == ".json":
             document = json.loads(source.read_text(encoding="utf-8"))

@@ -66,6 +66,32 @@ def test_provider_accepts_json_arrays_and_consecutive_json_resources(tmp_path: P
     assert provider.read_json_documents(consecutive_path) == [{"id": "one"}, {"id": "two"}]
 
 
+def test_provider_caches_unchanged_resource_parses_without_sharing_mutations(tmp_path: Path) -> None:
+    provider = FilesystemProvider()
+    logical = tmp_path / "cached.resource.json"
+    provider.write_json(logical, {"id": "cached", "values": [1]})
+
+    first = provider.read_json_documents(logical)
+    first[0]["values"].append(2)
+    second = provider.read_json_documents(logical)
+
+    assert second == [{"id": "cached", "values": [1]}]
+    assert provider.metrics()["cache-hit"] == 1
+
+
+def test_provider_invalidates_cache_on_write_and_external_file_change(tmp_path: Path) -> None:
+    provider = FilesystemProvider()
+    logical = tmp_path / "changing.resource.json"
+    provider.write_json(logical, {"id": "changing", "value": 1})
+    assert provider.read_json(logical)["value"] == 1
+
+    provider.write_json(logical, {"id": "changing", "value": 22})
+    assert provider.read_json(logical)["value"] == 22
+
+    logical.with_suffix(".metta").write_text("((id changing) (value 333))\n", encoding="utf-8")
+    assert provider.read_json(logical)["value"] == 333
+
+
 def test_provider_atomic_json_replacement_writes_metta(tmp_path: Path) -> None:
     provider = FilesystemProvider()
     temporary = tmp_path / "model.json.tmp"

@@ -29,4 +29,11 @@ def test_restart_endpoint_is_registered_in_active_app() -> None:
         for method in (getattr(route, "methods", None) or [])
     }
     assert ("/system/restart", "POST") in routes
+    assert ("/system/resource-provider", "GET") in routes
     assert system_control_api.INSTANCE_ID
+
+
+def test_resource_provider_status_exposes_migration_metrics() -> None:
+    payload = system_control_api.resource_provider_status()
+    assert payload["provider"] == "FilesystemProvider"
+    assert isinstance(payload["metrics"], dict)
