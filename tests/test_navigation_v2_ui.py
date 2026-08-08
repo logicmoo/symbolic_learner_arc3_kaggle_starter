@@ -106,6 +106,12 @@ def test_topbar_offers_persistent_workbench_themes() -> None:
     assert "Dracula" in page
     assert "Monokai" in page
     assert "Retro Green" in page
+    assert "Windows Classic" in page
+    assert "Visual Studio Blue" in page
+    assert "Porcelain" in page
+    assert "Parchment" in page
+    assert "High Visibility" in page
+    assert page.count('-light",label:') >= 30
     assert 'data-workbench-theme="ultraviolet"' in styles
     assert 'data-workbench-theme="copper"' in styles
     assert 'data-workbench-theme="arctic"' in styles
