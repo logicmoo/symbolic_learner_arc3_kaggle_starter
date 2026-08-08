@@ -18,8 +18,8 @@ def test_navigation_v2_has_required_groups_and_labels() -> None:
         assert f'group:"{group}"' in source
     for label in (
         "Goals",
-        "Plans",
-        "Workflows",
+        "Planning Strategies",
+        "Workflows / Plans",
         "Operations",
         "Datatypes",
         "Prompts",
@@ -50,13 +50,13 @@ def test_navigation_reuses_current_rich_editors() -> None:
     source = ACTIVE_PAGE.read_text(encoding="utf-8")
     expected = {
         "Goals": ('view:"goals"', 'view==="goals"&&<GoalPlanLibraryEditor workspaceId={workspace.id} family="goal"'),
-        "Plans": ('view:"plans"', 'view==="plans"&&<GoalPlanLibraryEditor workspaceId={workspace.id} family="plan"'),
+        "Planning Strategies": ('view:"plans"', 'view==="plans"&&<GoalPlanLibraryEditor workspaceId={workspace.id} family="plan"'),
         "AtomSpaces": ('view:"contexts"', 'view==="contexts"&&<GoalPlanLibraryEditor workspaceId={workspace.id} family="context"'),
         "Operations": ('view:"operations"', 'view==="operations"&&<OperationLibraryEditor'),
         "Datatypes": ('view:"data"', 'view==="data"&&<DataCatalogPanel'),
         "Prompts": ('view:"prompts"', 'view==="prompts"&&<PromptLibraryEditor'),
         "Models": ('view:"llms"', 'view==="llms"&&<LlmModelsEditor'),
-        "Workflows": ('view:"canvas"', 'view==="editor"&&<section className="editor-surface"'),
+        "Workflows / Plans": ('view:"canvas"', 'view==="editor"&&<section className="editor-surface"'),
         "Settings": ('view:"setup"', 'view==="setup"&&<WorkspaceSettingsPanel'),
     }
     for label, tokens in expected.items():

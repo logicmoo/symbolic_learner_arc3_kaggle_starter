@@ -77,7 +77,7 @@ def test_goal_plan_and_context_pages_load_their_shared_right_panel_docs() -> Non
     help_source = (components / "HelpDocumentTabs.tsx").read_text(encoding="utf-8")
     page_source = (ROOT / "workbench" / "frontend" / "src" / "pages" / "FilesystemWorkbenchPage.tsx").read_text(encoding="utf-8")
     assert '{id:"goals",label:"Goals",path:"docs/goals.md"}' in help_source
-    assert '{id:"plans",label:"Plans",path:"docs/plans.md"}' in help_source
+    assert '{id:"plans",label:"Planning",path:"docs/plans.md"}' in help_source
     assert '{id:"contexts",label:"AtomSpaces",path:"docs/contexts.md"}' in help_source
     assert 'ReactMarkdown' in help_source
     assert 'remarkGfm' in help_source
@@ -87,3 +87,12 @@ def test_goal_plan_and_context_pages_load_their_shared_right_panel_docs() -> Non
     assert (ROOT / "workbench" / "workspaces" / "shared" / "docs" / "goals.md").is_file()
     assert (ROOT / "workbench" / "workspaces" / "shared" / "docs" / "plans.md").is_file()
     assert (ROOT / "workbench" / "workspaces" / "shared" / "docs" / "contexts.md").is_file()
+
+
+def test_pddl_vocabulary_maps_plans_to_workflows() -> None:
+    docs = (ROOT / "workbench" / "workspaces" / "shared" / "docs" / "plans.md").read_text(encoding="utf-8")
+    page = (ROOT / "workbench" / "frontend" / "src" / "pages" / "FilesystemWorkbenchPage.tsx").read_text(encoding="utf-8")
+    assert "| Plan | Workflow |" in docs
+    assert "| Ground action | Workflow step |" in docs
+    assert 'label:"Planning Strategies"' in page
+    assert 'label:"Workflows / Plans"' in page

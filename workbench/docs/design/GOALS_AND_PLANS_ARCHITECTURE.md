@@ -1,27 +1,34 @@
-# Goals and Plans Architecture
+# Goals, Planning Strategies, and Workflows
 
 [Back to repository README](../../../README.md)
 
-## Semantic Model
+## Semantic model
 
-A goal describes a desired outcome; an interpretation or variant expresses a concrete way to evaluate or pursue it. A plan describes an ordered or conditional strategy; plan variants provide interchangeable strategies for the same plan contract. Specifications and variants are separate filesystem resources.
+A Goal describes a desired outcome. A Planning Strategy describes heuristics, constraints, decomposition rules, or planner configuration used to obtain an executable plan. A Workflow is that executable plan: an aggregation of planned operation, human-interaction, or nested-workflow steps.
 
-Expected resource relationships:
+Human-authored plans and PDDL-generated plans use the same Workflow resource. Their provenance differs, but their execution contract does not.
+
+```text
+Goal + AtomSpaces + Planning Strategy
+                    |
+          human / PDDL / LLM / rules
+                    |
+                 Workflow
+                    |
+                Workflow Run
+```
+
+Current compatibility relationships are:
 
 - `goal` → `goal_interpretation` or `goal_variant`
-- `plan` → `plan_variant`
-- goal runs reference the selected goal interpretation, plan variant, context, and resulting workflow runs
+- `plan` → `plan_variant` (displayed as Planning Strategy and Strategy Variant)
+- a strategy variant may select or generate a `workflow`
+- Goal Runs reference the selected Goal variant, Strategy variant, Context, Workflow, and Workflow Run
 
-## Editor Contract
+## PDDL-facing contract
 
-Goals and Plans should use the universal hierarchical editor behavior: specification parents, child alternatives, preferred selection, persistent tabs, dirty state, comparison, rich forms, raw JSON, filesystem save, inheritance, and documentation. Their implementation must use real resource loaders and must not begin with hard-coded sample arrays.
+Operations serve as action schemas; Workflow steps serve as grounded action occurrences; Workflows serve as plans; and Workflow Runs serve as execution traces. PDDL importers and planners should emit Workflows rather than a second `planned_workflow` artifact kind.
 
-## Runtime Boundary
+## Editor and runtime boundary
 
-Design-time goals and plans are immutable inputs to a particular run version. Runtime records should preserve the resolved goal, selected strategy, context bindings, decisions, workflow/operation executions, events, state snapshots, and logs. Goal Runs is therefore a runtime history view, not another editor for goal definitions.
-
-## Durable Goal Runs
-
-`POST /api/goal-runs` resolves the preferred (or requested) goal and plan variants, verifies that the plan pursues the goal, resolves an optional Context, and starts the plan variant's filesystem workflow. The resulting SQLite record links all selected design resources to the durable workflow run. `GET /api/goal-runs` reloads that history after restart; the Runtime views then expose its executions, events, state artifacts, and logs.
-
-Goal, Plan, and Context resources remain editable specifications. A Goal Run records the resolved IDs and execution version rather than copying runtime state back into those design files.
+Goals and Planning Strategies retain hierarchical specifications, alternatives, preferred selection, tabs, comparison, raw source editing, filesystem save, and workspace inheritance. Runtime records preserve resolved IDs and frozen Workflow versions. Events, States, Execs, and Logs remain append-oriented execution evidence.

@@ -74,7 +74,7 @@ type WorkbenchTheme=(typeof WORKBENCH_THEMES)[number]["id"];
 const isWorkbenchTheme=(value:string|null):value is WorkbenchTheme=>WORKBENCH_THEMES.some(theme=>theme.id===value);
 
 export const NAVIGATION_V2:Array<{group:"DESIGN"|"RUNTIME"|"SYSTEM";items:Array<{label:string;view:View;glyph:string}>}>=[
- {group:"DESIGN",items:[{label:"Goals",view:"goals",glyph:"◎"},{label:"Plans",view:"plans",glyph:"◇"},{label:"Workflows",view:"canvas",glyph:"⌘"},{label:"Operations",view:"operations",glyph:"▦"},{label:"Datatypes",view:"data",glyph:"◆"},{label:"AtomSpaces",view:"contexts",glyph:"⚛"},{label:"Prompts",view:"prompts",glyph:"¶"},{label:"Models",view:"llms",glyph:"✦"},{label:"Policy",view:"policies",glyph:"P"}]},
+ {group:"DESIGN",items:[{label:"Goals",view:"goals",glyph:"◎"},{label:"Planning Strategies",view:"plans",glyph:"◇"},{label:"Workflows / Plans",view:"canvas",glyph:"⌘"},{label:"Operations",view:"operations",glyph:"▦"},{label:"Datatypes",view:"data",glyph:"◆"},{label:"AtomSpaces",view:"contexts",glyph:"⚛"},{label:"Prompts",view:"prompts",glyph:"¶"},{label:"Models",view:"llms",glyph:"✦"},{label:"Policy",view:"policies",glyph:"P"}]},
  {group:"RUNTIME",items:[{label:"Goal Runs",view:"goalRuns",glyph:"◉"},{label:"Workflow Runs",view:"workflowRuns",glyph:"↳"},{label:"Execs",view:"execs",glyph:"▶"},{label:"Events",view:"events",glyph:"△"},{label:"States",view:"states",glyph:"▣"},{label:"Contexts",view:"runtimeContexts",glyph:"⚙"},{label:"Logs",view:"logs",glyph:"▤"}]},
  {group:"SYSTEM",items:[{label:"Docs",view:"docs",glyph:"?"},{label:"Model Policy",view:"modelPolicy",glyph:"⚛"},{label:"Benchmarks",view:"benchmarks",glyph:"⌁"},{label:"Settings",view:"setup",glyph:"⚒"}]},
 ];
