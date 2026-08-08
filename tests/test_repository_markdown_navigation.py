@@ -86,3 +86,10 @@ def test_repository_markdown_index_and_ui_links(tmp_path: Path, monkeypatch) -> 
     assert "body.docs-focused .workspace>.stages-panel" in styles
     assert "body.docs-focused .workspace>.inspector-resizer" in styles
     assert "body.docs-focused .workspace .view-tabs" in styles
+
+
+def test_help_view_loads_only_the_active_document() -> None:
+    source = (ROOT / "workbench" / "frontend" / "src" / "components" / "HelpDocumentTabs.tsx").read_text(encoding="utf-8")
+    assert 'if(active==="context"||docs[active]||errors[active])return' in source
+    assert "tabs.find(tab=>tab.id===active)" in source
+    assert "for(const tab of docTabs)" not in source
