@@ -226,11 +226,19 @@ def _llm_complete(inputs: dict[str, Any], parameters: dict[str, Any]) -> dict[st
     received = str(inputs.get("prompt") or inputs.get(str(parameters.get("inputBinding") or "text")) or parameters.get("prompt") or "")
     prefix = str(parameters.get("promptPrefix") or "")
     prompt = f"{prefix}\n\n{received}" if prefix and received else prefix or received
+    image_inputs = [(str(name), value) for name, value in inputs.items() if isinstance(value, str) and value.startswith("data:image/")]
+    content: str | list[dict[str, Any]] = prompt
+    if image_inputs:
+        content = [{"type": "text", "text": prompt or "Analyze the supplied images and return the declared operation outputs."}]
+        for name, data_url in image_inputs:
+            content.extend(({"type": "text", "text": f"Image input: {name}"}, {"type": "image_url", "image_url": {"url": data_url}}))
     body = {
         "model": str(parameters.get("model") or "gpt-4.1-mini"),
-        "messages": parameters.get("messages") or [{"role": "user", "content": prompt}],
+        "messages": parameters.get("messages") or [{"role": "user", "content": content}],
         "temperature": float(parameters.get("temperature", 0)),
     }
+    if parameters.get("parseJson") or parameters.get("responseFormat") == "json_object":
+        body["response_format"] = {"type": "json_object"}
     request = urllib.request.Request(
         endpoint,
         data=json.dumps(body).encode("utf-8"),
@@ -240,6 +248,14 @@ def _llm_complete(inputs: dict[str, Any], parameters: dict[str, Any]) -> dict[st
     with urllib.request.urlopen(request, timeout=float(parameters.get("timeoutSeconds", 120))) as response:
         payload = json.loads(response.read().decode("utf-8"))
     text = payload["choices"][0]["message"]["content"]
+    if parameters.get("parseJson"):
+        cleaned = str(text).strip()
+        if cleaned.startswith("```"):
+            cleaned = cleaned.split("\n", 1)[-1].rsplit("```", 1)[0].strip()
+        parsed = json.loads(cleaned)
+        if not isinstance(parsed, dict):
+            raise RuntimeError("LLM operation returned JSON that is not an object")
+        return parsed
     output_binding = str(parameters.get("outputBinding") or "text")
     return {output_binding: text, "response": payload}
 

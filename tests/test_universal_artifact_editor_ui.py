@@ -71,6 +71,12 @@ def test_operation_playground_exposes_typed_inputs_variant_switching_and_results
         "/invoke",
         "elapsedMs",
         "resolvedPrompts",
+        'type="checkbox"',
+        'type="number"',
+        "example?.options",
+        'accept="image/*"',
+        "readAsDataURL",
+        "Operation input preview",
     ):
         assert token in source
 

@@ -9,8 +9,9 @@ from fastapi import HTTPException
 from urllib.error import HTTPError
 
 from operation_api import invoke_operation
-from operation_library import resolve_operation_implementation
+from operation_library import DEFAULT_WORKSPACES_ROOT, resolve_operation_implementation
 from operation_resolution import materialize_workflow_step
+from workflow_providers import _llm_complete
 
 
 def test_operation_playground_invokes_python_variant() -> None:
@@ -134,3 +135,30 @@ def test_operation_playground_preserves_provider_rate_limit(monkeypatch: pytest.
 
     assert caught.value.status_code == 429
     assert "provider request failed with HTTP 429" in str(caught.value.detail)
+
+
+def test_automatic_vision_variant_sends_bitmap_inputs_and_parses_json(monkeypatch: pytest.MonkeyPatch) -> None:
+    resolved = resolve_operation_implementation(DEFAULT_WORKSPACES_ROOT / "shared", "vision.extract_scene_objects")
+    assert resolved["implementation"]["id"] == "vision.extract_scene_objects.automatic_llm"
+    sent: dict[str, object] = {}
+
+    class Response:
+        def __enter__(self): return self
+        def __exit__(self, *_args: object) -> None: return None
+        def read(self) -> bytes:
+            return json.dumps({"choices": [{"message": {"content": '{"objects":[],"reconstruction":""}'}}]}).encode()
+
+    def urlopen(request: object, **_kwargs: object) -> Response:
+        sent.update(json.loads(getattr(request, "data").decode()))
+        return Response()
+
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    monkeypatch.setattr("workflow_providers.urllib.request.urlopen", urlopen)
+    output = _llm_complete(
+        {"current_image": "data:image/png;base64,AAAA", "previous_image": ""},
+        {"promptPrefix": "Extract objects", "parseJson": True, "responseFormat": "json_object"},
+    )
+    content = sent["messages"][0]["content"]  # type: ignore[index]
+    assert any(item.get("type") == "image_url" for item in content)
+    assert sent["response_format"] == {"type": "json_object"}
+    assert output == {"objects": [], "reconstruction": ""}

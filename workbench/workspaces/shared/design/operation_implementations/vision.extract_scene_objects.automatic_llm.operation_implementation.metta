@@ -1,16 +1,14 @@
 (
-  (id vision.extract_scene_objects)
-  (label "Extract Scene Objects")
-  (description "Reusable vision operation migrated from the legacy ARC extract_scene_objects transaction.")
+  (kind operation_implementation)
+  (id vision.extract_scene_objects.automatic_llm)
+  (label "Extract Scene Objects / Automatic LLM")
+  (description "Send uploaded current and previous bitmap images through the shared extraction prompts using an automatically eligible vision LLM.")
   (categories ([]
     vision/extraction
     vision/recognition
     vision/grouping
   ))
-  (children ([]
-    vision.extract_scene_objects.automatic_llm
-  ))
-  (preferredChild vision.extract_scene_objects.automatic_llm)
+  (implementation llm.complete)
   (inputs (
     (current_image Image)
     (previous_image Image)
@@ -19,7 +17,13 @@
     (objects ObjectAnnotation)
     (reconstruction Program)
   ))
-  (promptSelection (
+  (modelSelection (
+    (strategy automatic)
+    (requiredCapabilities ([]
+      vision
+    ))
+  ))
+  (bindings (
     (prompts ([]
       structured_json_response
       logical_image_coordinates
@@ -32,12 +36,12 @@
     ))
     (separator "\n\n")
   ))
-  (modelSelection (
-    (models ([]))
-    (strategy single)
-  ))
   (parameters (
     (requiresVision true)
+    (parseJson true)
+    (responseFormat json_object)
   ))
-  (kind operation)
+  (parents ([]
+    vision.extract_scene_objects
+  ))
 )
