@@ -19,6 +19,14 @@ from workspace_api import _resolve_workspace
 router = APIRouter(prefix="/workspaces", tags=["model-policy"])
 WRITABLE_OBSERVATION_KINDS = {"model_health_observation", "model_ping_job", "model_ping_event", "benchmark_result"}
 
+
+def _effective_registry(root: Path, records: list[dict[str, Any]]) -> dict[str, Any]:
+    backends = [
+        record["document"] for record in load_workspace_backend_records(root)
+        if isinstance(record.get("document"), dict)
+    ]
+    return effective_model_registry(records, backends, resolve_model_records(root))
+
 def _safe_id(value: object) -> str:
     result = re.sub(r"[^a-zA-Z0-9._-]+", "_", str(value or "")).strip("._")
     if not result: raise ValueError("resource id is required")
@@ -31,7 +39,8 @@ def model_policy_registry(workspace_id: str) -> dict[str, Any]:
     except KeyError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error
     records = load_workspace_policy_records(Path(workspace["root"]))
-    return {"workspace": workspace, "resources": records, "registry": effective_model_registry(records)}
+    root = Path(workspace["root"])
+    return {"workspace": workspace, "resources": records, "registry": _effective_registry(root, records)}
 
 @router.post("/{workspace_id}/model-policy/observations", status_code=201)
 def record_model_policy_observation(workspace_id: str, document: dict[str, Any] = Body(...)) -> dict[str, Any]:
@@ -58,7 +67,7 @@ def record_model_policy_observation(workspace_id: str, document: dict[str, Any] 
 def execute_model_policy_ping(workspace_id: str, request: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
     try: workspace = _resolve_workspace(workspace_id)
     except KeyError as error: raise HTTPException(status_code=404, detail=str(error)) from error
-    root = Path(workspace["root"]); records = load_workspace_policy_records(root); registry = effective_model_registry(records)
+    root = Path(workspace["root"]); records = load_workspace_policy_records(root); registry = _effective_registry(root, records)
     scope = str(request.get("scope") or "all").lower()
     if scope not in {"all", "on", "auto", "off", "selected"}: raise HTTPException(status_code=400, detail="scope must be all, on, auto, off, or selected")
     models = registry["models"]
@@ -77,7 +86,7 @@ def execute_model_policy_ping(workspace_id: str, request: dict[str, Any] = Body(
 def execute_model_benchmark(workspace_id: str, policy_id: str) -> dict[str, Any]:
     try: workspace = _resolve_workspace(workspace_id)
     except KeyError as error: raise HTTPException(status_code=404, detail=str(error)) from error
-    root=Path(workspace["root"]);records=load_workspace_policy_records(root);registry=effective_model_registry(records);policy=next((item for item in registry["benchmarkPolicies"] if item.get("id")==policy_id),None)
+    root=Path(workspace["root"]);records=load_workspace_policy_records(root);registry=_effective_registry(root,records);policy=next((item for item in registry["benchmarkPolicies"] if item.get("id")==policy_id),None)
     if not policy: raise HTTPException(status_code=404,detail=f"benchmark policy not found: {policy_id}")
     models=[item for item in registry["models"] if item["effective"]["benchmark"]]; resolved=resolve_model_records(root); profile_ids=set(policy.get("promptProfiles") or []);profiles=[record for record in resolved if (record.get("document") or {}).get("id") in profile_ids and (record.get("resolved") or {}).get("enabled")]
     try: result=run_benchmark(root,policy,models,profiles)

@@ -43,6 +43,27 @@ def test_off_policy_is_disabled_even_when_healthy() -> None:
     assert effective["benchmarkState"] == "disabled"
 
 
+def test_catalog_backends_models_and_profiles_load_until_policy_disables_them() -> None:
+    backends = [{"kind": "backend", "id": "vendor", "label": "Vendor", "enabled": True}]
+    catalog = [
+        {"document": {"kind": "model", "id": "model", "label": "Model", "capabilities": ["text"]},
+         "resolved": {"backendId": "vendor", "model": "remote-model", "enabled": True, "defaults": {}, "inheritance": ["vendor", "model"]}},
+        {"document": {"kind": "profile", "id": "model-fast", "label": "Fast", "inherits": "model"},
+         "resolved": {"backendId": "vendor", "model": "remote-model", "enabled": True, "defaults": {}, "inheritance": ["vendor", "model", "model-fast"]}},
+    ]
+    registry = effective_model_registry([], backends, catalog)
+    assert [vendor["vendorId"] for vendor in registry["vendors"]] == ["vendor"]
+    assert {model["modelResourceId"] for model in registry["models"]} == {"model", "model-fast"}
+    assert all(model["policy"]["wanted"] == "on" for model in registry["models"])
+    assert registry["models"][1]["capabilities"]["text"] is True
+
+    override = _records({"kind": "model_policy_entry", "id": "vendor:model", "vendorId": "vendor", "modelResourceId": "model", "policy": {"wanted": "off"}})
+    overridden = effective_model_registry(override, backends, catalog)
+    model = next(item for item in overridden["models"] if item["modelResourceId"] == "model")
+    assert model["policy"]["wanted"] == "off"
+    assert model["effective"]["runtimeState"] == "disabled"
+
+
 def test_observation_api_persists_a_real_resource(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setattr(policy_api, "_resolve_workspace", lambda workspace_id: {"id": workspace_id, "root": str(tmp_path)})
     document = {"kind": "model_ping_event", "id": "ping:one", "jobId": "job", "status": "succeeded"}
@@ -95,6 +116,7 @@ def test_model_policy_ui_edits_and_filters_dynamic_registry() -> None:
     for token in ("Filesystem Load", "Filesystem Save", "Ping Selected", "All capabilities", "All runtime", "All benchmark", "dynamicColumns", "toggleSort"):
         assert token in source
     assert 'scope==="selected"?[...selected]' in source
+    assert "registryDocument" in source
     assert ".policy-table-scroll th:nth-child(-n+7)" in styles
 
 

@@ -59,15 +59,81 @@ def _latest_health(records: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
             result[target] = observation
     return result
 
-def effective_model_registry(records: list[dict[str, Any]]) -> dict[str, Any]:
+def _capability_map(document: dict[str, Any], documents_by_id: dict[str, dict[str, Any]]) -> dict[str, bool]:
+    current = document
+    visited: set[str] = set()
+    while current and str(current.get("id") or "") not in visited:
+        visited.add(str(current.get("id") or ""))
+        values = current.get("capabilities")
+        if isinstance(values, list):
+            return {str(value): True for value in values}
+        if isinstance(values, dict):
+            return {str(key): bool(value) for key, value in values.items()}
+        current = documents_by_id.get(str(current.get("inherits") or ""), {})
+    return {}
+
+
+def effective_model_registry(
+    records: list[dict[str, Any]],
+    backend_catalog: list[dict[str, Any]] | None = None,
+    model_catalog: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
     """Resolve persisted intent and latest health without mutating either source."""
     policies = _documents(records, "model_policy")
     active_policy = next((item for item in policies if item.get("enabled", True)), policies[0] if policies else {})
     rules = active_policy.get("rules") if isinstance(active_policy.get("rules"), dict) else {}
-    vendors = {str(item.get("vendorId")): item for item in _documents(records, "vendor_policy") if item.get("vendorId")}
+    persisted_vendors = {str(item.get("vendorId")): item for item in _documents(records, "vendor_policy") if item.get("vendorId")}
+    vendors: dict[str, dict[str, Any]] = {}
+    for backend in backend_catalog or []:
+        vendor_id = str(backend.get("id") or backend.get("provider") or "")
+        if not vendor_id:
+            continue
+        generated = {
+            "kind": "vendor_policy", "id": f"{vendor_id}_policy", "vendorId": vendor_id,
+            "label": backend.get("label") or vendor_id, "description": backend.get("description") or "",
+            "enabled": backend.get("enabled", True), "catalogResourceId": backend.get("id"),
+            "policy": {"wanted": "on", "runtime": "auto", "benchmark": "auto"},
+            "properties": {"catalogKind": "backend", "provider": backend.get("provider")},
+        }
+        override = persisted_vendors.get(vendor_id) or {}
+        vendors[vendor_id] = {**generated, **override, "policy": {**generated["policy"], **(override.get("policy") or {})}}
+    for vendor_id, document in persisted_vendors.items():
+        vendors.setdefault(vendor_id, document)
     health = _latest_health(records)
+    persisted_models = _documents(records, "model_policy_entry")
+    persisted_by_resource = {str(item.get("modelResourceId")): item for item in persisted_models if item.get("modelResourceId")}
+    persisted_by_id = {str(item.get("id")): item for item in persisted_models if item.get("id")}
+    catalog_documents = {
+        str((record.get("document") or {}).get("id")): record.get("document") or {}
+        for record in model_catalog or [] if (record.get("document") or {}).get("id")
+    }
+    model_documents: list[dict[str, Any]] = []
+    catalog_policy_ids: set[str] = set()
+    for record in model_catalog or []:
+        document = record.get("document") or {}; resolved = record.get("resolved") or {}
+        resource_id = str(document.get("id") or ""); vendor_id = str(resolved.get("backendId") or "")
+        if not resource_id or not vendor_id:
+            continue
+        override = persisted_by_resource.get(resource_id)
+        generated_id = f"{vendor_id}:{resource_id}"
+        if not override:
+            override = persisted_by_id.get(generated_id)
+        policy_id = str((override or {}).get("id") or generated_id)
+        generated = {
+            "kind": "model_policy_entry", "id": policy_id, "vendorId": vendor_id,
+            "modelId": resolved.get("model") or document.get("model") or resource_id,
+            "modelResourceId": resource_id, "name": document.get("label") or resource_id,
+            "description": document.get("description") or "", "enabled": resolved.get("enabled", document.get("enabled", True)),
+            "policy": {"wanted": "on", "runtime": "auto", "benchmark": "auto"},
+            "capabilities": _capability_map(document, catalog_documents),
+            "limits": {key: value for key, value in (resolved.get("defaults") or {}).items() if key in {"maxOutputTokens", "timeoutSeconds"}},
+            "properties": {"catalogKind": document.get("kind"), "inheritance": resolved.get("inheritance") or []},
+        }
+        merged = {**generated, **(override or {}), "policy": {**generated["policy"], **((override or {}).get("policy") or {})}}
+        model_documents.append(merged); catalog_policy_ids.add(policy_id)
+    model_documents.extend(item for item in persisted_models if str(item.get("id")) not in catalog_policy_ids)
     models: list[dict[str, Any]] = []
-    for model in _documents(records, "model_policy_entry"):
+    for model in model_documents:
         vendor = vendors.get(str(model.get("vendorId")))
         observation = health.get(str(model.get("id"))) or {}
         status = str(observation.get("status") or "unknown").lower()
