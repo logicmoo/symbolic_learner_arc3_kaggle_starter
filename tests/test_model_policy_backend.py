@@ -97,6 +97,16 @@ def test_model_discovery_has_bulk_selection_controls() -> None:
     assert "Remove missing" in source
     assert "+ Backend" in source
     assert "Select all discovered" in source
+    assert "initialCollapsed={backend}" in source
+
+
+def test_collapsed_artifact_branches_do_not_mount_hidden_children() -> None:
+    source = (ROOT / "workbench" / "frontend" / "src" / "components" / "ArtifactTreeBranch.tsx").read_text(encoding="utf-8")
+    editor = (ROOT / "workbench" / "frontend" / "src" / "components" / "UniversalArtifactEditor.tsx").read_text(encoding="utf-8")
+    assert "initialCollapsed = false" in source
+    assert "useState(initialCollapsed)" in source
+    assert "hasChildren && !collapsed" in source
+    assert 'if(value.trim())commandTree("expand")' in editor
 
 
 def test_backend_model_discovery_supports_openai_and_ollama_shapes(tmp_path: Path) -> None:

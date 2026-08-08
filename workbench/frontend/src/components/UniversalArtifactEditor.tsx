@@ -156,7 +156,7 @@ export function UniversalArtifactEditor({
         <div className="artifact-navigator-toolbar">
           <span>HIERARCHY</span>
           <div className="artifact-navigator-actions">
-            <label className="artifact-tree-filter"><span>Filter tree</span><input type="search" value={treeFilter} onChange={event=>setTreeFilter(event.target.value)} placeholder="Filter tree…" /></label>
+            <label className="artifact-tree-filter"><span>Filter tree</span><input type="search" value={treeFilter} onChange={event=>{const value=event.target.value;setTreeFilter(value);if(value.trim())commandTree("expand")}} placeholder="Filter tree…" /></label>
             <button type="button" aria-label={showParents?"Hide Parents":"Show Parents"} aria-pressed={showParents} disabled={!treeFilter.trim()} onClick={()=>setShowParents(value=>!value)}><b>{showParents?"Hide Parents":"Show Parents"}</b></button>
             <button type="button" aria-label="Only Categories" aria-pressed={onlyCategories} onClick={()=>{const next=!onlyCategories;setOnlyCategories(next);commandCategories("expand");commandTree(next||variantsHidden||variantsCollapsed?"collapse":"expand")}}><b>Only Categories</b></button>
             <button type="button" aria-label={variantsHidden?"Unhide Variants":"Hide Variants"} aria-pressed={variantsHidden} onClick={()=>{const hidden=!variantsHidden;setVariantsHidden(hidden);commandTree(hidden?"collapse":"expand")}}><b>{variantsHidden?"Unhide Variants":"Hide Variants"}</b></button>
