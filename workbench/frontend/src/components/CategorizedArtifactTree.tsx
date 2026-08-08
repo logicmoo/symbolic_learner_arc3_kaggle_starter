@@ -10,7 +10,7 @@ export function categoryPaths(value: unknown): string[] {
 }
 function title(value: string) { return value.replace(/[-_]+/g, " ").replace(/\b\w/g, letter => letter.toUpperCase()); }
 function count(node: CategoryNode): number { return node.items.length + [...node.children.values()].reduce((total, child) => total + count(child), 0); }
-function CategoryHeader({ label, itemCount }: { label: string; itemCount: number }) { return <div className="operation-tree-row operation-category-row"><span className="operation-kind-badge">CATEGORY</span><span><b>{label}</b><small>Virtual category</small></span><em>{itemCount} items</em></div>; }
+function CategoryHeader({ label, itemCount, special }: { label: string; itemCount: number; special?: "all" | "uncategorized" }) { return <div className={`operation-tree-row operation-category-row ${special ? `category-${special}` : ""}`}><span className="operation-kind-badge">CATEGORY</span><span><b>{label}</b><small>Virtual category</small></span><em>{itemCount} items</em></div>; }
 function renderCategory(node: CategoryNode, categoryCommand?: ArtifactTreeCommand): ReactNode {
   const children = [...node.children.values()].sort((a, b) => a.name.localeCompare(b.name));
   return <ArtifactTreeBranch key={`category:${node.path}`} branchCommand={categoryCommand} className="operation-tree-group artifact-category-branch" label={title(node.name)} searchValue={{ category: node.path }} header={<CategoryHeader label={title(node.name)} itemCount={count(node)} />}>
@@ -37,8 +37,8 @@ export function CategorizedArtifactTree({ items, showCategories = true, category
   if (!showCategories) return <div className="categorized-artifact-tree category-flat-all">{items.map(item => item.render(`flat:${item.id}`))}</div>;
   const uncategorized = items.filter(item => categoryPaths(item.categories).length === 0);
   return <div className="categorized-artifact-tree">
-    <ArtifactTreeBranch label="All" searchValue={{ category: "all" }} header={<CategoryHeader label="All" itemCount={items.length} />}>{items.map(item => item.render(`all:${item.id}`))}</ArtifactTreeBranch>
-    <ArtifactTreeBranch label="Uncategorized" searchValue={{ category: "uncategorized" }} header={<CategoryHeader label="Uncategorized" itemCount={uncategorized.length} />}>{uncategorized.map(item => item.render(`uncategorized:${item.id}`))}</ArtifactTreeBranch>
+    <ArtifactTreeBranch label="All" searchValue={{ category: "all" }} header={<CategoryHeader label="All" itemCount={items.length} special="all" />}>{items.map(item => item.render(`all:${item.id}`))}</ArtifactTreeBranch>
+    <ArtifactTreeBranch label="Uncategorized" searchValue={{ category: "uncategorized" }} header={<CategoryHeader label="Uncategorized" itemCount={uncategorized.length} special="uncategorized" />}>{uncategorized.map(item => item.render(`uncategorized:${item.id}`))}</ArtifactTreeBranch>
     {[...roots.values()].sort((a, b) => a.name.localeCompare(b.name)).map(node => renderCategory(node, categoryCommand))}
   </div>;
 }
