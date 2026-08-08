@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { WorkflowRunnerTodoReference } from "./WorkflowRunnerTodoReference";
 
 type DocumentRecord = { document?: Record<string, any> };
 type RuntimeRun = {
@@ -133,6 +134,7 @@ export function RuntimeHistoryView({ mode, workspaceId, goals = [], plans = [], 
     : runs.flatMap(run => run.logs.map(log => ({ key: `${run.id}:${log.id}`, a: log.stream, b: log.stepId || "workflow", c: stamp(log.createdAt), d: run.id.slice(0, 8), e: log.message, run })));
   return <section className="resource-view runtime-history-view">
     <div className="resource-heading"><div><span>PERSISTENT ENGINE HISTORY</span><h1>{title}</h1><p>Records are loaded from the durable workflow-engine database across application sessions.</p></div><button onClick={refresh}>Refresh</button></div>
+    {mode === "workflowRuns" && <WorkflowRunnerTodoReference />}
     {error && <div className="backend-error"><b>Error</b><span>{error}</span></div>}
     <div className="resource-table"><div className="resource-row resource-head"><span>Record</span><span>Status / type</span><span>Step / time</span><span>Run</span><span>Detail</span></div>{rows.map(row => <button className="resource-row" key={row.key} onClick={() => chooseRun(row.run)}><b>{row.a}</b><code>{row.b}</code><span>{row.c}</span><span>{row.d}</span><em title={row.e}>{row.e}</em></button>)}{!rows.length && <div className="studio-empty">No persisted {title.toLowerCase()} yet.</div>}</div>
     {selectedRun && <div className="demo-notice"><b>SELECTED RUN {selectedRun.id.slice(0, 8)}</b><span>{selectedRun.workflowId} · {selectedRun.status} · {selectedRun.events.length} events · {selectedRun.artifacts.length} states</span></div>}

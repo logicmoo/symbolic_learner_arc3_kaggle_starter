@@ -20,6 +20,7 @@ from policy_api import router as policy_router
 from repository_docs_api import router as repository_docs_router
 from system_control_api import INSTANCE_ID, router as system_control_router
 from workflow_engine_api import router as workflow_engine_router
+from workflow_runner_todo_api import router as workflow_runner_todo_router
 from workspace_api import router as workspace_router
 
 
@@ -42,6 +43,7 @@ async def http_error(_request: Request, error: HTTPException) -> JSONResponse:
 app.include_router(workflow_router, prefix="/api")
 app.include_router(artifacts_router, prefix="/api")
 app.include_router(workflow_engine_router, prefix="/api")
+app.include_router(workflow_runner_todo_router, prefix="/api")
 app.include_router(workspace_router, prefix="/api")
 app.include_router(datatype_router, prefix="/api")
 app.include_router(goal_run_router, prefix="/api")

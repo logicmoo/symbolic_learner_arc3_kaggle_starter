@@ -1,0 +1,29 @@
+import { useEffect, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+
+type TodoPayload = { markdown: string; specificationPath: string; mockupAvailable: boolean; mockups?: Array<{view:string;description:string;available:boolean;url:string}> };
+
+export function WorkflowRunnerTodoReference() {
+  const [todo, setTodo] = useState<TodoPayload | null>(null);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    void fetch("/api/workflow-runner/todo")
+      .then(async response => {
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || payload.detail || response.statusText);
+        setTodo(payload as TodoPayload);
+      })
+      .catch(reason => setError(String(reason)));
+  }, []);
+
+  return <details className="workflow-runner-reference" open>
+    <summary><span>FUTURE RUNNER DESIGN</span><b>Legacy rich workflow-runner reference</b><em>TODO</em></summary>
+    {error && <div className="demo-notice"><b>Reference unavailable</b><span>{error}</span></div>}
+    {todo && <div className="workflow-runner-reference-body">
+      <div className="workflow-runner-mockups">{(todo.mockups||[]).filter(item=>item.available).map(item=><figure key={item.view}><figcaption><b>{item.view}</b><span>{item.description}</span></figcaption><a className="workflow-runner-mockup" href={item.url} target="_blank" rel="noreferrer"><img src={item.url} alt={`${item.view} workflow runner design reference`} /></a></figure>)}</div>
+      <article className="markdown-body"><ReactMarkdown remarkPlugins={[remarkGfm]}>{todo.markdown}</ReactMarkdown><small>{todo.specificationPath}</small></article>
+    </div>}
+  </details>;
+}
