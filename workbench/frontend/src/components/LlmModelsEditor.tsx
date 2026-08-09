@@ -250,7 +250,7 @@ export function LlmModelsEditor({workspaceId}:{workspaceId:string}){
 
      <div className="model-visible-editor">
       <div className="studio-section-label">RESOURCE SPECIFICATION (JSON)</div>
-      <ResourceSourceEditor value={doc.source} onChange={src => updateSource(doc.key, src)} />
+      <ResourceSourceEditor value={doc.source} onChange={src => updateSource(doc.key, src)} showEnablement={false} />
      </div>
 
      {!backend && document && (

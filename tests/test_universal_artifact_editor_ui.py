@@ -52,10 +52,23 @@ def test_operations_tree_supports_global_and_per_operation_folding() -> None:
         '<b>{branchCollapsed?"Unhide Variants":"Hide Variants"}</b>',
         "tree-branch-toggle",
         "branch-collapsed",
-        "toggleTopLevel",
-        "setCollapsedOperations(topLevel?new Set(operationIds):new Set())",
+        "commandOperations",
+        'commandBranches("collapse","all")',
     ):
         assert token in source
+    assert "TreeViewControls" in source
+    assert "RepeatSwitch" in source
+    assert 'commandBranches("expand","all")' in source
+    assert 'document.enabled===false?"Enable Resource":"Disable Resource"' in source
+
+
+def test_every_generic_resource_source_is_enableable() -> None:
+    source = _text("ResourceSourceEditor.tsx")
+    assert "showEnablement = true" in source
+    assert 'resource?.enabled !== false' in source
+    assert 'enabled }, null, 2' in source
+    assert '"Disable Resource":"Enable Resource"' in source
+    assert "showEnablement={false}" in _text("LlmModelsEditor.tsx")
 
 
 def test_operation_playground_exposes_typed_inputs_variant_switching_and_results() -> None:
@@ -209,7 +222,7 @@ def test_all_artifact_trees_share_filter_and_parent_path_controls() -> None:
         assert "Filter tree…" in source
         assert "useArtifactTreeFilter" in source
     assert "Parent" in _text("TreeViewControls.tsx")
-    assert "Show Parents" in operations
+    assert "TreeViewControls" in operations
     assert "descendantVisible" in filtering
     assert "info.head.hidden = !showParents" in filtering
     assert "MutationObserver(applyFilter)" in filtering
@@ -238,12 +251,10 @@ def test_design_trees_share_virtual_categories() -> None:
         assert "Show Categories" not in source
         assert "Expand Categories" not in source
     assert "Only Categories" not in universal
-    assert "Only Categories" in operations
-    assert 'aria-pressed={onlyCategories}' in operations
+    assert "Only Categories" not in operations
     assert "onlyCategories" in category_tree
     assert "!onlyCategories&&" not in category_tree
     assert 'data-category-collapse-mode={onlyCategories ? "resources" : "none"}' in category_tree
-    assert "setCollapsedOperations(next||variantsHidden||variantsCollapsed" in operations
     assert "branchCommand={categoryCommand}" in category_tree
     assert 'label="All" branchCommand={null}' in category_tree
     assert 'label="Uncategorized" branchCommand={null}' in category_tree
