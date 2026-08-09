@@ -19,6 +19,7 @@ from model_policy_todo_api import router as model_policy_todo_router
 from policy_api import router as policy_router
 from repository_docs_api import router as repository_docs_router
 from system_control_api import INSTANCE_ID, router as system_control_router
+from service_monitor_api import router as service_monitor_router
 from workflow_engine_api import router as workflow_engine_router
 from workflow_runner_todo_api import router as workflow_runner_todo_router
 from workspace_api import router as workspace_router
@@ -54,6 +55,7 @@ app.include_router(model_policy_todo_router, prefix="/api")
 app.include_router(policy_router, prefix="/api")
 app.include_router(repository_docs_router, prefix="/api")
 app.include_router(system_control_router, prefix="/api")
+app.include_router(service_monitor_router, prefix="/api")
 
 
 @app.get("/api/health")

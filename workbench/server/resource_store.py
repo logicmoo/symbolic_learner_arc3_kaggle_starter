@@ -146,6 +146,14 @@ class FilesystemProvider:
             content = "\n".join(json_document_to_metta(item).rstrip() for item in documents) + "\n"
         physical.write_text(content, encoding=encoding)
 
+    def open_append_text(self, path: Path, *, encoding: str = "utf-8"):
+        """Open an operational text sink while retaining the provider boundary."""
+        self._invalidate(path)
+        self._record("append", path)
+        physical = self._physical_path(path, writing=True)
+        physical.parent.mkdir(parents=True, exist_ok=True)
+        return physical.open("a", encoding=encoding)
+
     def read_bytes(self, path: Path) -> bytes:
         self._record("read", path)
         return path.read_bytes()
