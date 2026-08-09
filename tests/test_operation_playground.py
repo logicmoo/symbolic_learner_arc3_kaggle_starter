@@ -11,7 +11,7 @@ from urllib.error import HTTPError
 from operation_api import invoke_operation
 from operation_library import DEFAULT_WORKSPACES_ROOT, resolve_operation_implementation
 from operation_resolution import materialize_workflow_step
-from workflow_providers import _llm_complete
+from workflow_providers import _llm_complete, _llm_response_text
 
 
 def test_operation_playground_invokes_python_variant() -> None:
@@ -233,3 +233,24 @@ def test_automatic_vision_variant_sends_bitmap_inputs_and_parses_json(monkeypatc
     assert any(item.get("type") == "image_url" for item in content)
     assert sent["response_format"] == {"type": "json_object"}
     assert output == {"objects": [], "reconstruction": ""}
+
+
+def test_llm_response_parser_supports_responses_api_output() -> None:
+    assert _llm_response_text({
+        "output": [{"content": [{"type": "output_text", "text": "done"}]}]
+    }) == "done"
+
+
+def test_llm_response_parser_surfaces_embedded_provider_error() -> None:
+    with pytest.raises(RuntimeError, match="free vision capacity is temporarily unavailable"):
+        _llm_response_text({
+            "error": {
+                "code": 429,
+                "message": "free vision capacity is temporarily unavailable",
+            }
+        })
+
+
+def test_llm_response_parser_reports_unexpected_keys() -> None:
+    with pytest.raises(RuntimeError, match=r"unsupported response shape \(keys: id, model\)"):
+        _llm_response_text({"id": "response-id", "model": "unexpected"})

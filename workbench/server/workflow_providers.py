@@ -218,6 +218,49 @@ def _metta_evaluate(inputs: dict[str, Any], parameters: dict[str, Any]) -> dict[
     return {"result": {"stdout": completed.stdout, "stderr": completed.stderr}}
 
 
+def _llm_response_text(payload: dict[str, Any]) -> str:
+    error = payload.get("error")
+    if error:
+        if isinstance(error, dict):
+            message = str(error.get("message") or error.get("detail") or error)
+            code = error.get("code")
+            raise RuntimeError(f"LLM provider returned error{f' {code}' if code else ''}: {message}")
+        raise RuntimeError(f"LLM provider returned error: {error}")
+
+    choices = payload.get("choices")
+    if isinstance(choices, list) and choices:
+        message = choices[0].get("message") or {}
+        content = message.get("content")
+        if isinstance(content, str):
+            return content
+        if isinstance(content, list):
+            text = "".join(
+                str(item.get("text") or "")
+                for item in content
+                if isinstance(item, dict) and item.get("type") in {"text", "output_text"}
+            )
+            if text:
+                return text
+
+    output_text = payload.get("output_text")
+    if isinstance(output_text, str) and output_text:
+        return output_text
+    output = payload.get("output")
+    if isinstance(output, list):
+        text = "".join(
+            str(part.get("text") or "")
+            for item in output
+            if isinstance(item, dict)
+            for part in item.get("content", [])
+            if isinstance(part, dict) and part.get("type") in {"text", "output_text"}
+        )
+        if text:
+            return text
+
+    keys = ", ".join(sorted(str(key) for key in payload)) or "(none)"
+    raise RuntimeError(f"LLM provider returned an unsupported response shape (keys: {keys})")
+
+
 def _llm_complete(inputs: dict[str, Any], parameters: dict[str, Any]) -> dict[str, Any]:
     api_key = os.getenv(str(parameters.get("apiKeyEnv") or "OPENAI_API_KEY"))
     if not api_key:
@@ -267,7 +310,9 @@ def _llm_complete(inputs: dict[str, Any], parameters: dict[str, Any]) -> dict[st
     )
     with urllib.request.urlopen(request, timeout=float(parameters.get("timeoutSeconds", 120))) as response:
         payload = json.loads(response.read().decode("utf-8"))
-    text = payload["choices"][0]["message"]["content"]
+    if not isinstance(payload, dict):
+        raise RuntimeError("LLM provider returned a non-object response")
+    text = _llm_response_text(payload)
     if parameters.get("parseJson"):
         cleaned = str(text).strip()
         if cleaned.startswith("```"):
