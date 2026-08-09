@@ -20,7 +20,7 @@ def get_model_policy_todo() -> dict[str, object]:
     if not resources.is_file(TODO_PATH):
         raise HTTPException(status_code=404, detail="Model-policy TODO specification is missing")
     return {
-        "status": "pending",
+        "status": "implemented-with-followups",
         "specificationPath": TODO_PATH.relative_to(REPOSITORY_ROOT).as_posix(),
         "mockupPath": MOCKUP_PATH.relative_to(REPOSITORY_ROOT).as_posix(),
         "mockupAvailable": resources.is_file(MOCKUP_PATH),

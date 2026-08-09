@@ -13,7 +13,7 @@ from resource_store import get_filesystem_provider  # noqa: E402
 
 def test_model_policy_todo_is_read_from_checked_in_files() -> None:
     payload = get_model_policy_todo()
-    assert payload["status"] == "pending"
+    assert payload["status"] == "implemented-with-followups"
     assert payload["mockupAvailable"] is True
     assert "Model Runtime Usage" in str(payload["markdown"])
     assert str(payload["specificationPath"]).endswith("MODEL_RUNTIME_USAGE_AND_BENCHMARKING_POLICIES.md")
