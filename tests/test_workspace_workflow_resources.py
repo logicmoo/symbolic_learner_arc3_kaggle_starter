@@ -21,6 +21,6 @@ def test_default_inherits_shared_visual_learning_workflow() -> None:
 
 
 def test_openrouter_probe_never_prints_the_key() -> None:
-    source = (ROOT / "test_openrouter.py").read_text(encoding="utf-8")
+    source = (ROOT / "tests" / "test_openrouter.py").read_text(encoding="utf-8")
     assert 'print("my_api_key used:"' not in source
     assert "its value will not be displayed" in source

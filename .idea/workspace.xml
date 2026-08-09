@@ -5,44 +5,16 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="edb8fea1-73c1-4416-9e9a-8ac50d562623" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/tests/test_workspace_credentials_and_router_backends.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/workbench/server/workspace_credentials.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/workbench/workspaces/shared/design/backends/clawrouter.backend.metta" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/workbench/workspaces/shared/design/backends/freerouter.backend.metta" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/workbench/workspaces/shared/design/backends/omniroute.backend.metta" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/workbench/workspaces/shared/design/categories/models.free.artifact_category.metta" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/workbench/workspaces/shared/design/models/openrouter_routers.model.metta" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/workbench/workspaces/shared/policies/anthropic.vendor_policy.metta" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/workbench/workspaces/shared/policies/groq.vendor_policy.metta" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/workbench/workspaces/shared/policies/xai.vendor_policy.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/workbench/workspaces/shared/design/categories/backends.artifact_category.metta" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pyproject.toml" beforeDir="false" afterPath="$PROJECT_DIR$/pyproject.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_artifact_category_queries.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_artifact_category_queries.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_navigation_v2_ui.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_navigation_v2_ui.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_policy_resources.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_policy_resources.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/test_openrouter.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_openrouter.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_universal_artifact_editor_ui.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_universal_artifact_editor_ui.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/vendor/ARC-AGI-3-Agents/agents/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/vendor/ARC-AGI-3-Agents/agents/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/frontend/src/components/WorkspaceSettingsPanel.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/src/components/WorkspaceSettingsPanel.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/frontend/src/styles/workbench.css" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/src/styles/workbench.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/server/model_benchmark.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/server/model_benchmark.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/server/model_discovery.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/server/model_discovery.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/server/model_policy_ping.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/server/model_policy_ping.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/server/operation_resolution.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/server/operation_resolution.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/server/policy_api.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/server/policy_api.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/server/workflow_providers.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/server/workflow_providers.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/server/workspace_api.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/server/workspace_api.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/frontend/src/components/UniversalArtifactEditor.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/src/components/UniversalArtifactEditor.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/frontend/src/components/useArtifactTreeFilter.ts" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/src/components/useArtifactTreeFilter.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/frontend/src/styles/operation_editor.css" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/src/styles/operation_editor.css" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared/design/backends/anthropic.backend.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared/design/backends/anthropic.backend.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared/design/backends/groq.backend.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared/design/backends/groq.backend.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared/design/backends/openai.backend.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared/design/backends/openai.backend.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared/design/categories/filtered.prolog.artifact_category.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared/design/categories/filtered.prolog.artifact_category.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared/design/categories/models.large_context.artifact_category.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared/design/categories/models.large_context.artifact_category.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared/design/categories/models.local.artifact_category.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared/design/categories/models.local.artifact_category.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared/design/categories/models.openai.artifact_category.metta" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared/design/categories/models.vision.artifact_category.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared/design/categories/models.vision.artifact_category.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared/design/operations/echo_into_titlecased.operation.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared/design/operations/echo_into_titlecased.operation.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared/design/operations/text_to_scene_graph.operation.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared/design/operations/text_to_scene_graph.operation.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared/design/workflows/titlecase_demo.workflow.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared/design/workflows/titlecase_demo.workflow.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared/policies/openai.vendor_policy.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared/policies/openai.vendor_policy.metta" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared/design/models/clawrouter_routers.model.metta" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -73,23 +45,23 @@
   </component>
   <component name="NextEditCompletionFeaturesState">
     <decayedCancelled>
-      <entry key="MS100" value="1.0" />
-      <entry key="MS500" value="1.0000294780373817" />
-      <entry key="S2" value="1.073688043467537" />
-      <entry key="S5" value="1.359505628811136" />
-      <entry key="S10" value="1.6956684044230719" />
-      <entry key="S30" value="2.604399658801331" />
-      <entry key="S60" value="3.8293862462271213" />
-      <entry key="M2" value="6.264252399670503" />
-      <entry key="M5" value="10.487669516498464" />
-      <entry key="M10" value="13.139026356420167" />
-      <entry key="M15" value="14.263831930691316" />
-      <entry key="M30" value="15.542325614605256" />
-      <entry key="H1" value="16.247864278464135" />
-      <entry key="H2" value="16.65947211877104" />
-      <entry key="H4" value="17.221903441680322" />
-      <entry key="D1" value="28.429911302866856" />
-      <entry key="W1" value="40.08800961841965" />
+      <entry key="MS100" value="1.0000000000000584" />
+      <entry key="MS500" value="1.0022560269230143" />
+      <entry key="S2" value="1.2184303861245207" />
+      <entry key="S5" value="1.5911343189905396" />
+      <entry key="S10" value="1.9561637739495787" />
+      <entry key="S30" value="2.666253462044505" />
+      <entry key="S60" value="3.6378411244768696" />
+      <entry key="M2" value="5.624872234194525" />
+      <entry key="M5" value="8.814622456464189" />
+      <entry key="M10" value="10.612885424741723" />
+      <entry key="M15" value="11.334567552402168" />
+      <entry key="M30" value="12.173713647315122" />
+      <entry key="H1" value="13.146292230864827" />
+      <entry key="H2" value="15.101254930087523" />
+      <entry key="H4" value="18.791986305860302" />
+      <entry key="D1" value="39.604019113368246" />
+      <entry key="W1" value="58.84672424085516" />
     </decayedCancelled>
     <decayedSelected>
       <entry key="MS100" value="0.0" />
@@ -99,35 +71,35 @@
       <entry key="S10" value="0.0" />
       <entry key="S30" value="0.0" />
       <entry key="S60" value="0.0" />
-      <entry key="M2" value="4.243740250139757E-274" />
-      <entry key="M5" value="6.749490212988853E-110" />
-      <entry key="M10" value="3.670613071738566E-55" />
-      <entry key="M15" value="6.4576930774191745E-37" />
-      <entry key="M30" value="1.136338820139046E-18" />
-      <entry key="H1" value="1.5075004619359575E-9" />
-      <entry key="H2" value="5.490866164075831E-5" />
-      <entry key="H4" value="0.010479358799753027" />
-      <entry key="D1" value="0.8335161427223549" />
-      <entry key="W1" value="1.76493091466011" />
+      <entry key="M2" value="0.0" />
+      <entry key="M5" value="2.6172813164060104E-157" />
+      <entry key="M10" value="7.228169420181749E-79" />
+      <entry key="M15" value="1.014543199829054E-52" />
+      <entry key="M30" value="1.424309646509679E-26" />
+      <entry key="H1" value="1.68774076377807E-13" />
+      <entry key="H2" value="5.809851089485049E-7" />
+      <entry key="H4" value="0.0010779454453142567" />
+      <entry key="D1" value="0.5705464758372036" />
+      <entry key="W1" value="1.6718993948530365" />
     </decayedSelected>
     <decayedShown>
-      <entry key="MS100" value="0.8888426811665702" />
-      <entry key="MS500" value="0.97673768188387" />
-      <entry key="S2" value="1.0676095937159638" />
-      <entry key="S5" value="1.3567551534723519" />
-      <entry key="S10" value="1.6941178757354323" />
-      <entry key="S30" value="2.603739898473371" />
-      <entry key="S60" value="3.8289684924356973" />
-      <entry key="M2" value="6.263957046935792" />
-      <entry key="M5" value="10.487487869413764" />
-      <entry key="M10" value="13.138914596405572" />
-      <entry key="M15" value="14.263751380843628" />
-      <entry key="M30" value="15.542281867408992" />
-      <entry key="H1" value="16.247841436616074" />
-      <entry key="H2" value="16.659515144405773" />
-      <entry key="H4" value="17.232368496926863" />
-      <entry key="D1" value="29.26332107577445" />
-      <entry key="W1" value="41.85290858205641" />
+      <entry key="MS100" value="0.9592641193253212" />
+      <entry key="MS500" value="0.9939602822129542" />
+      <entry key="S2" value="1.2160496574818125" />
+      <entry key="S5" value="1.5899423138634092" />
+      <entry key="S10" value="1.9554072058405563" />
+      <entry key="S30" value="2.665875463925832" />
+      <entry key="S60" value="3.6375572474709124" />
+      <entry key="M2" value="5.624630515218442" />
+      <entry key="M5" value="8.81446092142066" />
+      <entry key="M10" value="10.612786279115847" />
+      <entry key="M15" value="11.334496528931941" />
+      <entry key="M30" value="12.173675247488063" />
+      <entry key="H1" value="13.146271248286515" />
+      <entry key="H2" value="15.101243212292795" />
+      <entry key="H4" value="18.79305570199732" />
+      <entry key="D1" value="40.174491353392405" />
+      <entry key="W1" value="60.51859315712398" />
     </decayedShown>
   </component>
   <component name="ProjectColorInfo">{
@@ -153,17 +125,23 @@
     "junie.onboarding.icon.badge.shown": "true",
     "last_opened_file_path": "C:/symbolic_learner_arc3_codex/workbench/workspaces/shared/design/categories",
     "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.jshint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.jshint": "",
     "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_package_manager_path": "yarn",
     "settings.editor.selected.configurable": "ml.llm.LLMConfigurable",
-    "to.speed.mode.migration.done": "true"
+    "to.speed.mode.migration.done": "true",
+    "ts.external.directory.path": "C:\\symbolic_learner_arc3_codex\\vendor\\freerouter\\node_modules\\typescript\\lib"
   }
 }]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="C:\symbolic_learner_arc3_codex\workbench\workspaces\shared\design\categories" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\symbolic_learner_arc3_codex\tests" />
     </key>
   </component>
   <component name="RunManager" selected="Python Debug Server.Unnamed">
@@ -232,7 +210,7 @@
       <updated>1785303688140</updated>
       <workItem from="1785303689274" duration="1439000" />
       <workItem from="1785305363136" duration="5594000" />
-      <workItem from="1786132864974" duration="23913000" />
+      <workItem from="1786132864974" duration="37074000" />
     </task>
     <servers />
   </component>

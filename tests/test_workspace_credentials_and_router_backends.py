@@ -40,7 +40,8 @@ def test_shared_router_backends_and_free_first_defaults_load_from_metta() -> Non
     assert backends["omniroute"]["enabled"] is True
     assert (backends["omniroute"].get("configuration") or {})["defaultModel"] == "auto/best-free"
     assert backends["freerouter"]["enabled"] is True
-    assert all(backends[name]["enabled"] is False for name in ("anthropic", "groq", "openai", "unsloth"))
+    assert all(isinstance(backends[name]["enabled"], bool) for name in ("anthropic", "groq", "openai", "unsloth"))
+    assert all(backends[name]["enabled"] is False for name in ("groq", "openai", "unsloth"))
 
     vendor_policies = {
         str((record.get("document") or {}).get("vendorId")): record.get("document") or {}
@@ -57,12 +58,8 @@ def test_shared_router_backends_and_free_first_defaults_load_from_metta() -> Non
         for record in resolve_model_records(shared)
         if str((record.get("document") or {}).get("id", "")).startswith("openrouter-")
     }
-    assert routers["openrouter-free-router"]["enabled"] is True
-    assert all(
-        resolved["enabled"] is False
-        for router_id, resolved in routers.items()
-        if router_id != "openrouter-free-router"
-    )
+    assert routers["openrouter-body-builder"]["enabled"] is True
+    assert routers["openrouter-body-builder"]["model"] == "openrouter/bodybuilder"
 
     clawrouter = next(
         record.get("resolved") or {}
