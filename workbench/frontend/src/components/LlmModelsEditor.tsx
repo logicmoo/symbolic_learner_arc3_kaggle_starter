@@ -23,6 +23,7 @@ type DiscoveredModel={id:string;label:string;resourceId?:string;status?:"new"|"c
 
 const slug=(v:string)=>v.toLowerCase().replace(/[^a-z0-9]+/g,"_").replace(/^_+|_+$/g,"")||"item";
 const recordKey=(record:RecordFile<ModelResource>)=>`${record.workspaceId||record.source||"resource"}:${record.path}:${record.document?.id||"unknown"}`;
+function flattenObject(obj:any,prefix="",result:Record<string,any>={}){for(const key in obj){const value=obj[key],name=prefix?`${prefix}.${key}`:key;if(value&&typeof value==="object"&&!Array.isArray(value)){flattenObject(value,name,result)}else{result[name]=value}}return result}
 async function request(path:string,init?:RequestInit){const r=await fetch(path,{cache:"no-store",headers:{"Content-Type":"application/json",...(init?.headers||{})},...init});const text=await r.text();let p:any;try{p=JSON.parse(text)}catch{throw new Error(text||r.statusText)}if(!r.ok)throw new Error(p.error||p.detail||r.statusText);return p;}
 function isLlmBackend(record:RecordFile<BackendDef>){const item=record.document;if(!item)return false;const caps=(item.capabilities||[]).join(" ").toLowerCase();return caps.includes("llm")||/openai|anthropic|openrouter|groq|ollama|unsloth|llm/.test(item.provider.toLowerCase());}
 function num(v:unknown,fallback:number){return typeof v==="number"&&Number.isFinite(v)?v:fallback;}
@@ -36,7 +37,7 @@ function ConfigForm({source,onChange,items}:{source:string;onChange:(v:string)=>
 }
 
 export function LlmModelsEditor({workspaceId}:{workspaceId:string}){
- const[snapshot,setSnapshot]=useState<Snapshot|null>(null),[layout,setLayout]=useState<Layout>("tiles"),[openDocs,setOpenDocs]=useState<OpenDocument[]>([]),[activeKey,setActiveKey]=useState<string|null>(null),[compareKey,setCompareKey]=useState<string|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState<string|null>(null),[discovery,setDiscovery]=useState<{backendId:string;models:DiscoveredModel[]}|null>(null),[discoverySelection,setDiscoverySelection]=useState<Set<string>>(new Set());
+ const[snapshot,setSnapshot]=useState<Snapshot|null>(null),[layout,setLayout]=useState<Layout>("tiles"),[openDocs,setOpenDocs]=useState<OpenDocument[]>([]),[activeKey,setActiveKey]=useState<string|null>(null),[compareKey,setCompareKey]=useState<string|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState<string|null>(null),[discovery,setDiscovery]=useState<{backendId:string;models:DiscoveredModel[]}|null>(null),[discoverySelection,setDiscoverySelection]=useState<Set<string>>(new Set()),[discoveryFilter,setDiscoveryFilter]=useState(""),[discoverySort,setDiscoverySort]=useState<{key:string;dir:"asc"|"desc"}>({key:"id",dir:"asc"});
  const load=async()=>{const next=await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/snapshot`) as Snapshot;setSnapshot(next);return next};
  useEffect(()=>{setOpenDocs([]);setActiveKey(null);setCompareKey(null);void load().catch(r=>setError(String(r)))},[workspaceId]);
  const backends=useMemo(()=>(snapshot?.backends||[]).filter(isLlmBackend),[snapshot]);const nodes=snapshot?.models||[];
@@ -60,8 +61,201 @@ export function LlmModelsEditor({workspaceId}:{workspaceId:string}){
  const removeMissing=(backendId:string)=>perform(async()=>{if(!discovery)return;const resourceIds=discovery.models.filter(model=>model.status==="missing"&&discoverySelection.has(model.id)).map(model=>model.resourceId).filter(Boolean);if(!resourceIds.length)throw new Error("Select at least one missing model");await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/models/remove-missing/${encodeURIComponent(backendId)}`,{method:"POST",body:JSON.stringify({resourceIds})});await purgeAndReload()});
  const executeModelExample=async(modelId:string,args:Record<string,unknown>)=>request(`/api/workspaces/${encodeURIComponent(workspaceId)}/models/${encodeURIComponent(modelId)}/example-invoke`,{method:"POST",body:JSON.stringify({arguments:args})});
  const renderTree=(item:CatalogItem,depth=0,parentEnablement?:ResourceEnablement):JSX.Element=>{const backend=item.kind==="backend";const record=item.record as RecordFile<ModelResource>;const nested=children.get(item.id)||[];const selected=active?.record.document?.id===item.id;const inherited=resolveResourceEnablement(record.document,parentEnablement);const itemEnablement=typeof record.resolved?.enabled==="boolean"?{enabled:record.resolved.enabled,source:record.document?.enabled===undefined&&parentEnablement?"parent":inherited.source} as ResourceEnablement:inherited;return <ArtifactTreeBranch className={`inheritance-node ${layout} ${item.kind}-node`} childrenClassName="inheritance-children" key={`${item.kind}:${item.id}`} label={item.label} initialCollapsed={backend} searchValue={{document:record.document,resolved:record.resolved}} style={{"--tree-depth":depth} as React.CSSProperties} header={<div className="inheritance-row"><button className={`inheritance-main ${enablementClass(itemEnablement)} ${selected?"selected":""}`} onClick={()=>open(record)}><span>{item.kind.toUpperCase()}</span><b>{item.label}</b><small>{backend?(record.document as BackendDef)?.provider:((record as RecordFile<ModelDef>).resolved?.model||(record.document as ModelDef)?.model||`inherits ${(record.document as ModelDef)?.inherits}`)}</small>{!backend&&<em>temp {String((((record as RecordFile<ModelDef>).resolved?.defaults||(record.document as ModelDef)?.defaults||{}).temperature)??"—")}</em>}<ResourceEnablementBadge state={itemEnablement}/></button><button className="hier-mini" onClick={()=>newChild(item,"model")}>+ model</button><button className="hier-mini" onClick={()=>newChild(item,"profile")}>+ profile</button></div>}>{nested.length?nested.map(r=>renderTree({kind:r.document!.kind,id:r.document!.id,label:r.document!.label||r.document!.id,record:r},depth+1,itemEnablement)):undefined}</ArtifactTreeBranch>};
- const renderEditor=(doc:OpenDocument,secondary=false)=>{let document:ModelResource|null=null;try{document=doc.source?JSON.parse(doc.source) as ModelResource:null}catch{document=null}const modelDoc=document&&document.kind!=="backend"?document as ModelDef:null;const backendDoc=document?.kind==="backend"?document as BackendDef:null;const resolution=(doc.record as RecordFile<ModelDef>).resolved;const example=exampleFor(document);const change=(next:string)=>updateSource(doc.key,next);return <section className={`model-editor-document ${secondary?"secondary":"primary"}`} key={doc.key}><div className="model-editor-toolbar"><div><span>{document?.kind?.toUpperCase()||"RESOURCE"}{doc.dirty?" · UNSAVED":""}</span><h2>{document?.label||document?.id||doc.record.path}</h2><small>{doc.record.source} · {doc.record.path}</small></div><div className="model-editor-actions">{!secondary&&<button onClick={chooseComparison}>{compareKey?"Single pane":"Split view"}</button>}{modelDoc&&<button onClick={()=>newChild({kind:modelDoc.kind,id:modelDoc.id,label:modelDoc.label||modelDoc.id,record:doc.record as RecordFile<ModelDef>},"profile")}>Clone child profile</button>}{backendDoc&&<button onClick={()=>void pullModels(backendDoc.id)} disabled={busy}>Pull models</button>}<button className="primary" onClick={()=>saveDoc(doc)} disabled={busy||!document}>Save</button></div></div><div className="model-editor-scroll">{!document&&<div className="demo-notice"><b>Invalid resource</b><span>Fix the source before saving this resource.</span></div>}{modelDoc&&<><ConfigForm source={doc.source} onChange={change} items={items}/>{example&&modelDoc&&<ExampleExecutePanel contract={example} onExecute={args=>executeModelExample(modelDoc.id,args)}/>}<ResourceSourceEditor value={doc.source} onChange={change} className="model-visible-editor" label="Edit this model/profile directly" /><aside className="resolved-inheritance"><span>RESOLVED INHERITANCE</span><pre>{JSON.stringify(resolution||{},null,2)}</pre></aside></>}{backendDoc&&<><div className="backend-inheritance-summary"><div><span>PROVIDER</span><b>{backendDoc.provider}</b></div><div><span>CONFIGURATION</span><pre>{JSON.stringify(backendDoc.configuration||{},null,2)}</pre></div><div><span>MODEL DEFAULTS</span><pre>{JSON.stringify(backendDoc.modelDefaults||{},null,2)}</pre></div></div>{discovery?.backendId===backendDoc.id&&<div className="model-discovery"><div className="llm-subhead"><div><span>DISCOVERED MODELS</span><b>{discovery.models.filter(model=>model.status!=="missing").length} available · {discovery.models.filter(model=>model.status==="new").length} new · {discovery.models.filter(model=>model.status==="changed").length} changed · {discovery.models.filter(model=>model.status==="missing").length} missing · {discoverySelection.size} selected</b></div><div className="model-discovery-actions"><button onClick={()=>setDiscoverySelection(new Set(discovery.models.filter(model=>model.status==="new"||model.status==="changed").map(model=>model.id)))} disabled={busy}>Select new/changed</button><button onClick={()=>setDiscoverySelection(new Set(discovery.models.filter(model=>model.status==="missing").map(model=>model.id)))} disabled={busy||!discovery.models.some(model=>model.status==="missing")}>Select missing</button><button onClick={()=>setDiscoverySelection(new Set())} disabled={busy||!discoverySelection.size}>Clear selection</button><button className="primary" onClick={()=>void importModels(backendDoc.id)} disabled={busy||!discovery.models.some(model=>model.status!=="missing"&&discoverySelection.has(model.id))}>Import/overwrite selected</button><button className="danger" onClick={()=>void removeMissing(backendDoc.id)} disabled={busy||!discovery.models.some(model=>model.status==="missing"&&discoverySelection.has(model.id))}>Remove missing</button></div></div><div className="model-discovery-list">{discovery.models.map(model=><label key={model.id}><input type="checkbox" checked={discoverySelection.has(model.id)} onChange={event=>setDiscoverySelection(current=>{const next=new Set(current);event.target.checked?next.add(model.id):next.delete(model.id);return next})}/><b>{model.label}</b><code>{model.id}</code><em className={`discovery-status ${model.status||"new"}`}>{model.status||"new"}</em></label>)}</div></div>}<ResourceSourceEditor value={doc.source} onChange={change} className="model-visible-editor" label="Edit this backend directly" /></>}</div></section>};
- if(!snapshot)return <section className="resource-view"><div className="studio-empty">Loading model catalog…</div></section>;
+     const renderEditor = (doc: OpenDocument, secondary = false) => {
+  let document: ModelResource | null = null;
+  try {
+   document = JSON.parse(doc.source) as ModelResource;
+  } catch {
+   /* show raw if invalid */
+  }
+  const backend = document?.kind === "backend";
+  const backendId = document?.id || "";
+  const discoveryForThis = (discovery && discovery.backendId === backendId) ? discovery : null;
+  const discoveredModels = discoveryForThis?.models || [];
+
+  const filteredModels = (() => {
+    if (!discoveryForThis) return [];
+    let result = discoveredModels.map(m => ({ ...m, _flat: flattenObject(m.properties || {}) }));
+
+    // Apply property and whole-resource filters: ~supported_parameters=topk, +supported_parameters=tem, +vision.
+    if (discoveryFilter.trim()) {
+      const parts = discoveryFilter.split(",").map(p => p.trim()).filter(Boolean);
+      result = result.filter(m => {
+        for (const part of parts) {
+          const isExclude = part.startsWith("~");
+          const isInclude = part.startsWith("+");
+          const expression = (isExclude || isInclude) ? part.substring(1) : part;
+          const separator = expression.indexOf("=");
+          let actualValue: string;
+          let expectedValue: string;
+          if (separator < 0) {
+            const {_flat, ...modelDocument} = m;
+            actualValue = JSON.stringify(modelDocument);
+            expectedValue = expression;
+          } else {
+            const key = expression.slice(0, separator).trim();
+            expectedValue = expression.slice(separator + 1);
+            if (key === "id") actualValue = m.id;
+            else if (key === "label") actualValue = m.label;
+            else if (key === "status") actualValue = m.status || "";
+            else {
+              const propertyValue = m._flat[key];
+              actualValue = propertyValue === undefined ? "" : (JSON.stringify(propertyValue) ?? String(propertyValue));
+            }
+          }
+
+          const match = actualValue.toLowerCase().includes(expectedValue.toLowerCase());
+          if (isExclude && match) return false;
+          if (isInclude && !match) return false;
+          if (!isExclude && !isInclude && !match) return false;
+        }
+        return true;
+      });
+    }
+
+    // Apply sort
+    const { key, dir } = discoverySort;
+    result.sort((a, b) => {
+      let va: any = "", vb: any = "";
+      if (key === "id") { va = a.id; vb = b.id; }
+      else if (key === "label") { va = a.label; vb = b.label; }
+      else if (key === "status") { va = a.status; vb = b.status; }
+      else { va = a._flat[key] ?? ""; vb = b._flat[key] ?? ""; }
+
+      if (typeof va === "string") va = va.toLowerCase();
+      if (typeof vb === "string") vb = vb.toLowerCase();
+
+      if (va < vb) return dir === "asc" ? -1 : 1;
+      if (va > vb) return dir === "asc" ? 1 : -1;
+      return 0;
+    });
+
+    return result;
+  })();
+
+  const allFlattened = filteredModels.map(m => m._flat);
+  const propKeys = Array.from(new Set(discoveredModels.flatMap(m => Object.keys(flattenObject(m.properties || {}))))).sort();
+
+  const toggleSort = (key: string) => {
+    setDiscoverySort(prev => ({
+      key,
+      dir: prev.key === key && prev.dir === "asc" ? "desc" : "asc"
+    }));
+  };
+
+  return (
+   <div className={"model-editor-scroll " + (secondary ? "secondary" : "")}>
+    <div className="model-editor-document">
+     <div className="model-editor-toolbar">
+      <div className="model-editor-identity">
+       <span className={"model-kind-badge " + (document?.kind || "")}>{document?.kind?.toUpperCase()}</span>
+       <b>{document?.label || document?.id || "New Item"}</b>
+       <small>{doc.record.path}</small>
+      </div>
+      <div className="model-editor-actions">
+       {doc.dirty && <button className="primary" onClick={() => saveDoc(doc)} disabled={busy}>Save Changes</button>}
+       {backend && <button onClick={() => pullModels(backendId)} disabled={busy}>Pull Models</button>}
+       {!secondary && <button onClick={chooseComparison}>{compareKey ? "Close Split" : "Split View"}</button>}
+       <button className="danger" onClick={() => close(doc.key)}>Close</button>
+      </div>
+     </div>
+
+     {backend && discoveryForThis && (
+      <div className="model-discovery">
+       <div className="llm-subhead">
+        <b>DISCOVERED MODELS</b>
+        <span>{discoveredModels.length} available · {discoveredModels.filter(m => m.status === "new").length} new · {discoveredModels.filter(m => m.status === "changed").length} changed · {discoveredModels.filter(m => m.status === "missing").length} missing · {discoverySelection.size} selected</span>
+        <div className="model-discovery-filter">
+          <input
+            type="text"
+            placeholder="Filter: +key=val, ~key=val, +text, ~text..."
+            value={discoveryFilter}
+            onChange={e => setDiscoveryFilter(e.target.value)}
+          />
+        </div>
+        <div className="model-discovery-actions">
+         <button onClick={() => setDiscoverySelection(new Set(discoveredModels.filter(m => m.status === "new" || m.status === "changed").map(m => m.id)))}>Select new/changed</button>
+         <button onClick={() => setDiscoverySelection(new Set(discoveredModels.filter(m => m.status === "missing").map(m => m.id)))}>Select missing</button>
+         <button onClick={() => setDiscoverySelection(new Set())}>Clear selection</button>
+         <button className="primary" onClick={() => importModels(backendId)} disabled={busy || !discoveredModels.some(m => m.status !== "missing" && discoverySelection.has(m.id))}>Import/overwrite selected</button>
+         <button className="danger" onClick={() => removeMissing(backendId)} disabled={busy || !discoveredModels.some(m => m.status === "missing" && discoverySelection.has(m.id))}>Remove missing</button>
+        </div>
+       </div>
+       <div className="model-discovery-list">
+        <table className="model-discovery-table">
+         <thead>
+          <tr>
+           <th></th>
+           <th onClick={() => toggleSort("status")} style={{cursor:"pointer"}}>Status {discoverySort.key === "status" ? (discoverySort.dir === "asc" ? "▲" : "▼") : ""}</th>
+           <th onClick={() => toggleSort("id")} style={{cursor:"pointer"}}>ID / Label {discoverySort.key === "id" ? (discoverySort.dir === "asc" ? "▲" : "▼") : ""}</th>
+           {propKeys.map(k => (
+             <th key={k} onClick={() => toggleSort(k)} style={{cursor:"pointer"}}>
+               {k} {discoverySort.key === k ? (discoverySort.dir === "asc" ? "▲" : "▼") : ""}
+             </th>
+           ))}
+          </tr>
+         </thead>
+         <tbody>
+          {filteredModels.map((model, idx) => {
+           const flat = allFlattened[idx];
+           const isSelected = discoverySelection.has(model.id);
+           return (
+            <tr key={model.id} onClick={() => {
+             const next = new Set(discoverySelection);
+             if (isSelected) next.delete(model.id); else next.add(model.id);
+             setDiscoverySelection(next);
+            }}>
+             <td><input type="checkbox" checked={isSelected} readOnly /></td>
+             <td><i className={"discovery-status " + (model.status || "")}>{model.status}</i></td>
+             <td><b>{model.label}</b><br /><code>{model.id}</code></td>
+             {propKeys.map(k => {
+              const val = flat[k];
+              return <td key={k}>{val === undefined ? "" : typeof val === "object" ? JSON.stringify(val) : String(val)}</td>
+             })}
+            </tr>
+           );
+          })}
+         </tbody>
+        </table>
+       </div>
+      </div>
+     )}
+
+     <div className="model-visible-editor">
+      <div className="studio-section-label">RESOURCE SPECIFICATION (JSON)</div>
+      <ResourceSourceEditor value={doc.source} onChange={src => updateSource(doc.key, src)} />
+     </div>
+
+     {!backend && document && (
+      <div className="model-config-panes">
+       <div className="model-config-pane">
+        <div className="studio-section-label">CONFIGURATION</div>
+        <ConfigForm source={doc.source} onChange={src => updateSource(doc.key, src)} items={items} />
+       </div>
+       <div className="model-config-pane resolved-inheritance">
+        <div className="studio-section-label">RESOLVED INHERITANCE</div>
+        <pre>{JSON.stringify(doc.record.resolved || {}, null, 2)}</pre>
+       </div>
+      </div>
+     )}
+
+     {backend && document && (
+      <div className="backend-inheritance-summary">
+       <div className="studio-section-label">BACKEND DEFAULTS & CAPABILITIES</div>
+       <pre>{JSON.stringify({ provider: (document as BackendDef).provider, official: (document as BackendDef).official, enabled: (document as BackendDef).enabled, capabilities: (document as BackendDef).capabilities, modelDefaults: (document as BackendDef).modelDefaults }, null, 2)}</pre>
+      </div>
+     )}
+
+     {exampleFor(document) && (
+      <div className="model-playground">
+       <div className="studio-section-label">PLAYGROUND / EXAMPLE INVOKE</div>
+       <ExampleExecutePanel contract={exampleFor(document)!} onExecute={args => executeModelExample(document!.id, args)} />
+      </div>
+     )}
+    </div>
+   </div>
+  );
+ };if(!snapshot)return <section className="resource-view"><div className="studio-empty">Loading model catalog…</div></section>;
  const leftPane=<div className={`inheritance-tree ${layout}`}>{roots.map(root=>renderTree(root))}</div>;
  const tabs=openDocs.map(doc=>({key:doc.key,kind:doc.record.document?.kind?.toUpperCase()||"ITEM",label:doc.record.document?.label||doc.record.document?.id||doc.record.path,dirty:doc.dirty}));
  const actions=<div className="layout-switch"><button onClick={newBackend}>+ Backend</button>{discovery&&<button onClick={()=>setDiscoverySelection(new Set(discovery.models.map(model=>model.id)))} disabled={busy||discoverySelection.size===discovery.models.length}>Select all discovered</button>}<button className={layout==="tiles"?"active":""} onClick={()=>setLayout("tiles")}>▦ Tiles</button><button className={layout==="list"?"active":""} onClick={()=>setLayout("list")}>☷ List</button></div>;

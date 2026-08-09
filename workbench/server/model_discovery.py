@@ -57,7 +57,10 @@ def discover_backend_models(backend: dict[str, Any], *, timeout_seconds: float =
     base_url = str(configuration.get("baseUrl") or "").rstrip("/")
     if not base_url:
         raise ValueError("backend has no configuration.baseUrl")
-    request = urllib.request.Request(f"{base_url}/models", headers=_headers(backend, workspace_root), method="GET")
+    url = f"{base_url}/models"
+    if "openrouter.ai" in base_url:
+        url += "?limit=1000"
+    request = urllib.request.Request(url, headers=_headers(backend, workspace_root), method="GET")
     with opener(request, timeout=timeout_seconds) as response:
         payload = json.loads(response.read().decode("utf-8"))
     rows = payload.get("data") if isinstance(payload, dict) else payload

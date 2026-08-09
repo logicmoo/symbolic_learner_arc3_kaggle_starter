@@ -177,6 +177,17 @@ def test_example_executor_is_shared_by_models_and_prompts() -> None:
     assert "contractParent?.example_execute" in prompts and "renderPromptExample" in prompts
 
 
+def test_model_discovery_grid_supports_json_property_filters_and_sorting() -> None:
+    models = (ROOT / "workbench" / "frontend" / "src" / "components" / "LlmModelsEditor.tsx").read_text(encoding="utf-8")
+    assert 'placeholder="Filter: +key=val, ~key=val, +text, ~text..."' in models
+    assert 'JSON.stringify(propertyValue)' in models
+    assert 'part.startsWith("~")' in models and 'part.startsWith("+")' in models
+    assert 'JSON.stringify(modelDocument)' in models
+    assert 'toggleSort("status")' in models and 'toggleSort("id")' in models
+    assert 'prev.key === key && prev.dir === "asc" ? "desc" : "asc"' in models
+    assert 'const filteredModels = (() =>' in models
+
+
 def test_discovery_reconciles_and_only_removes_managed_missing_models(tmp_path: Path) -> None:
     backend = {"id": "vendor", "label": "Vendor"}
     imported = import_discovered_models(tmp_path, backend, [{"id": "old", "label": "Old"}, {"id": "keep", "label": "Keep"}])
