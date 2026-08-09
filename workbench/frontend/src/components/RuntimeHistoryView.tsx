@@ -137,6 +137,7 @@ export function RuntimeHistoryView({ mode, workspaceId, goals = [], plans = [], 
 }) {
   const [runs, setRuns] = useState<RuntimeRun[]>([]), [goalRuns, setGoalRuns] = useState<GoalRun[]>([]);
   const [invocations, setInvocations] = useState<InvocationTrace[]>([]), [selectedInvocationId, setSelectedInvocationId] = useState("");
+  const [historyFilter, setHistoryFilter] = useState(""), [invocationLimit, setInvocationLimit] = useState(50);
   const [selectedId, setSelectedId] = useState<string>(""), [error, setError] = useState<string>(""), [busy, setBusy] = useState(false);
   const [frozenWorkflow, setFrozenWorkflow] = useState<FrozenWorkflow | null>(null);
   const goalDocs = useMemo(() => goals.map(row => row.document).filter(Boolean) as Record<string, any>[], [goals]);
@@ -162,15 +163,16 @@ export function RuntimeHistoryView({ mode, workspaceId, goals = [], plans = [], 
       const [runPayload, goalPayload, operationPayload, modelPayload] = await Promise.all([
         api(`/api/engine/runs?workspace_id=${encodeURIComponent(workspaceId)}&limit=200`),
         api(`/api/goal-runs?workspace_id=${encodeURIComponent(workspaceId)}&limit=200`),
-        includeInvocations ? api(`/api/workspaces/${encodeURIComponent(workspaceId)}/operations/invocations?limit=200`) : Promise.resolve({ invocations: [] }),
-        includeInvocations ? api(`/api/workspaces/${encodeURIComponent(workspaceId)}/models/invocations?limit=200`) : Promise.resolve({ invocations: [] }),
+        includeInvocations ? api(`/api/workspaces/${encodeURIComponent(workspaceId)}/operations/invocations?limit=${invocationLimit}`) : Promise.resolve({ invocations: [] }),
+        includeInvocations ? api(`/api/workspaces/${encodeURIComponent(workspaceId)}/models/invocations?limit=${invocationLimit}`) : Promise.resolve({ invocations: [] }),
       ]);
       setRuns((runPayload.runs || []).map((run: RuntimeRun) => ({ ...run, steps: run.steps || [], events: run.events || [], artifacts: run.artifacts || [], logs: run.logs || [] })));
       setGoalRuns((goalPayload.goalRuns || []).map((goalRun: GoalRun) => ({ ...goalRun, workflowRun: { ...goalRun.workflowRun, steps: goalRun.workflowRun.steps || [], events: goalRun.workflowRun.events || [], artifacts: goalRun.workflowRun.artifacts || [], logs: goalRun.workflowRun.logs || [] } })));
       setInvocations([...(operationPayload.invocations || []), ...(modelPayload.invocations || [])].sort((a: InvocationTrace, b: InvocationTrace) => String(b.createdAt || "").localeCompare(String(a.createdAt || ""))));
     } catch (reason) { setError(String(reason)); }
   };
-  useEffect(() => { void refresh(); }, [workspaceId, mode]);
+  useEffect(() => { setInvocationLimit(50); setHistoryFilter(""); }, [workspaceId, mode]);
+  useEffect(() => { void refresh(); }, [workspaceId, mode, invocationLimit]);
   useEffect(() => {
     if (!goalId && goalSpecs[0]) setGoalId(String(goalSpecs[0].id));
     if ((!planId || !availablePlanSpecs.some(doc => doc.id === planId)) && availablePlanSpecs[0]) setPlanId(String(availablePlanSpecs[0].id));
@@ -289,10 +291,14 @@ export function RuntimeHistoryView({ mode, workspaceId, goals = [], plans = [], 
     : mode === "states" ? runs.flatMap(run => run.artifacts.map(item => ({ key: item.id, a: item.name, b: item.datatype || "Any", c: item.stepId || "input", d: run.id.slice(0, 8), e: jsonValueToMetta(item.payload), run })))
     : mode === "runtimeContexts" ? goalRuns.filter(item => item.contextId).map(item => ({ key: `context:${item.id}`, a: item.contextVariantId || item.contextId || "context", b: item.status, c: stamp(item.createdAt), d: item.workflowRunId.slice(0, 8), e: item.contextId || "—", run: item.workflowRun }))
     : [...invocationRows, ...runs.flatMap(run => run.logs.map(log => ({ key: `${run.id}:${log.id}`, a: log.stream, b: log.stepId || "workflow", c: stamp(log.createdAt), d: run.id.slice(0, 8), e: log.message, run })))];
+  const normalizedFilter = historyFilter.trim().toLowerCase();
+  const visibleRows = normalizedFilter ? rows.filter(row => [row.a, row.b, row.c, row.d, row.e].some(value => String(value).toLowerCase().includes(normalizedFilter))) : rows;
+  const canLoadMoreInvocations = (mode === "execs" || mode === "logs") && invocations.length >= invocationLimit;
   return <section className="resource-view runtime-history-view">
     <div className="resource-heading"><div><span>PERSISTENT RUNTIME HISTORY</span><h1>{title}</h1><p>{mode === "execs" || mode === "logs" ? "Workflow-engine records and standalone resource invocation traces are loaded from their durable workspace stores." : "Records are loaded from the durable workflow-engine database across application sessions."}</p></div><button onClick={refresh}>Refresh</button></div>
     {error && <div className="backend-error"><b>Error</b><span>{error}</span></div>}
-    <div className="resource-table"><div className="resource-row resource-head"><span>Record</span><span>Status / type</span><span>Step / time</span><span>Run</span><span>Detail</span></div>{rows.map(row => <button className="resource-row" key={row.key} onClick={() => { if ("trace" in row) { setSelectedInvocationId(row.trace.id); setSelectedId(""); } else { setSelectedInvocationId(""); chooseRun(row.run); } }}><b>{row.a}</b><code>{row.b}</code><span>{row.c}</span><span>{row.d}</span><em title={row.e}>{row.e}</em></button>)}{!rows.length && <div className="studio-empty">No persisted {title.toLowerCase()} yet.</div>}</div>
+    <div className="runtime-history-tools"><label><span>FILTER RECORDS</span><input value={historyFilter} onChange={event => setHistoryFilter(event.target.value)} placeholder="ID, status, type, run, or detail…" /></label><small>{visibleRows.length} of {rows.length} loaded records</small>{canLoadMoreInvocations && <button type="button" onClick={() => setInvocationLimit(limit => Math.min(1000, limit + 100))}>Load 100 older invocations</button>}</div>
+    <div className="resource-table"><div className="resource-row resource-head"><span>Record</span><span>Status / type</span><span>Step / time</span><span>Run</span><span>Detail</span></div>{visibleRows.map(row => <button className="resource-row" key={row.key} onClick={() => { if ("trace" in row) { setSelectedInvocationId(row.trace.id); setSelectedId(""); } else { setSelectedInvocationId(""); chooseRun(row.run); } }}><b>{row.a}</b><code>{row.b}</code><span>{row.c}</span><span>{row.d}</span><em title={row.e}>{row.e}</em></button>)}{!visibleRows.length && <div className="studio-empty">{rows.length ? "No loaded records match this filter." : `No persisted ${title.toLowerCase()} yet.`}</div>}</div>
     {selectedInvocation && <section className="run-projection-inspector" aria-label="Selected standalone invocation"><div><span>STANDALONE {selectedInvocation.kind === "model_invocation_trace" ? "MODEL" : "OPERATION"} EXECUTION</span><h3>{selectedInvocation.modelId || selectedInvocation.operationId || selectedInvocation.operation?.label || selectedInvocation.operation?.id}</h3><p>{stamp(selectedInvocation.createdAt)} · {selectedInvocation.status}</p></div><dl><div><dt>Trace</dt><dd>{selectedInvocation.id}</dd></div><div><dt>Backend</dt><dd>{selectedInvocation.response?.backendId || selectedInvocation.implementation?.implementation || "resolved runtime"}</dd></div><div><dt>Latency</dt><dd>{selectedInvocation.response?.latencyMs != null ? `${selectedInvocation.response.latencyMs} ms` : "—"}</dd></div><div><dt>Log</dt><dd>{selectedInvocation.logPath}</dd></div></dl><details open><summary>Complete durable trace</summary><pre>{jsonValueToMetta(selectedInvocation)}</pre></details></section>}
     {mode === "workflowRuns" && selectedRun && <WorkflowRunProjection run={selectedRun} workflow={frozenWorkflow} busy={busy} onCommand={command => void commandWorkflowRun(command)} />}
     {mode === "workflowRuns" && <Suspense fallback={<div className="studio-empty">Loading workflow runner reference…</div>}><WorkflowRunnerTodoReference /></Suspense>}
