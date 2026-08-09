@@ -236,6 +236,14 @@ def _llm_complete(inputs: dict[str, Any], parameters: dict[str, Any]) -> dict[st
         or "https://api.openai.com/v1/chat/completions"
     )
     received = str(inputs.get("prompt") or inputs.get(str(parameters.get("inputBinding") or "text")) or parameters.get("prompt") or "")
+    if not received and parameters.get("automaticFallback"):
+        serializable_inputs = {
+            name: value
+            for name, value in inputs.items()
+            if not (isinstance(value, str) and value.startswith("data:image/"))
+        }
+        if serializable_inputs:
+            received = json.dumps(serializable_inputs, ensure_ascii=False, sort_keys=True)
     prefix = str(parameters.get("promptPrefix") or "")
     prompt = f"{prefix}\n\n{received}" if prefix and received else prefix or received
     image_inputs = [(str(name), value) for name, value in inputs.items() if isinstance(value, str) and value.startswith("data:image/")]

@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 from typing import Any, Iterable
 
+from metta_resource_codec import json_document_to_metta
 from resource_relationships import points_to, relationship_ids
 from workspace_inheritance import effective_workspace_layers, layer_source
 from resource_store import get_filesystem_provider
@@ -17,6 +18,61 @@ SHARED_WORKSPACE_ID = "shared"
 # expose it beyond validation.
 OPERATION_KINDS = {"operation", "operation_implementation"}
 OPERATION_DIRECTORIES = ("design/operations", "design/operation_implementations", "operations", "operation_implementations")
+AUTOMATIC_LLM_FALLBACK_SUFFIX = ".automatic_llm_fallback"
+
+
+def automatic_llm_fallback_id(operation_id: str) -> str:
+    return f"{operation_id}{AUTOMATIC_LLM_FALLBACK_SUFFIX}"
+
+
+def automatic_llm_fallback(operation: dict[str, Any]) -> dict[str, Any]:
+    """Build an ephemeral LLM implementation from an abstract contract.
+
+    This is deliberately not a filesystem resource. A real implementation
+    child always wins; the fallback exists only so an otherwise abstract-only
+    operation can be exercised in the playground or runtime.
+    """
+    operation_id = str(operation["id"])
+    label = str(operation.get("label") or operation_id)
+    description = str(operation.get("description") or "Perform the declared operation.")
+    inputs = dict(operation.get("inputs") or {})
+    outputs = dict(operation.get("outputs") or {})
+    operation_metta = json_document_to_metta(operation).strip()
+    prompt = "\n".join(
+        (
+            "No concrete implementation exists for this operation. You are its automatic LLM fallback.",
+            "Do the best you can to perform the operation while respecting its declared contracts.",
+            f'Execute the operation "{label}".',
+            f"Operation description: {description}",
+            f"Declared input contract: {json.dumps(inputs, ensure_ascii=False, sort_keys=True)}",
+            f"Declared output contract: {json.dumps(outputs, ensure_ascii=False, sort_keys=True)}",
+            "Return exactly one valid JSON object using the declared output field names.",
+            "Do not add Markdown fences or commentary outside the JSON object.",
+            "The complete operation resource follows in MeTTa; use every relevant field when making your best attempt:",
+            operation_metta,
+        )
+    )
+    parameters: dict[str, Any] = {
+        "promptPrefix": prompt,
+        "parseJson": True,
+        "responseFormat": "json_object",
+        "automaticFallback": True,
+    }
+    if len(inputs) == 1:
+        parameters["inputBinding"] = next(iter(inputs))
+    return {
+        "kind": "operation",
+        "id": automatic_llm_fallback_id(operation_id),
+        "label": f"{label} / Automatic LLM fallback",
+        "description": "Runtime-generated fallback derived from the operation name, description, and contracts.",
+        "implementation": "llm.complete",
+        "inputs": inputs,
+        "outputs": outputs,
+        "modelSelection": {"models": ["openrouter/free"], "strategy": "single"},
+        "parameters": parameters,
+        "parents": [operation_id],
+        "virtual": True,
+    }
 
 
 def _validate_operation(value: Any, path: Path) -> dict[str, Any]:
@@ -115,6 +171,24 @@ def resolve_operation_implementation(workspace_root: Path, operation_id: str, re
         if points_to(record.get("document") or {}, "parents", operation_id)
     ]
     variants = list(dict.fromkeys([*declared_variants, *reverse_variants]))
+    if not variants:
+        fallback = automatic_llm_fallback(operation)
+        fallback_id = str(fallback["id"])
+        if requested and requested != fallback_id:
+            raise ValueError(f"implementation {requested} is not allowed by operation {operation_id}")
+        return {
+            "operation": operation,
+            "operationRecord": operation_record,
+            "implementation": fallback,
+            "implementationRecord": {
+                "path": "runtime://automatic-llm-fallback",
+                "source": "runtime",
+                "workspaceId": workspace_root.name,
+                "document": fallback,
+                "virtual": True,
+            },
+            "fallback": True,
+        }
     chosen = requested or operation.get("preferredChild") or (variants[0] if variants else None)
     if not chosen:
         raise ValueError(f"operation has no implementation variant: {operation_id}")

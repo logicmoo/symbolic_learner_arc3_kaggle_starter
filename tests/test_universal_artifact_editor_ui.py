@@ -92,6 +92,14 @@ def test_operation_playground_formats_structured_datatype_contracts() -> None:
     )
 
 
+def test_operation_playground_offers_automatic_llm_fallback() -> None:
+    source = _text("OperationPlayground.tsx")
+    assert ".automatic_llm_fallback" in source
+    assert "Automatic LLM fallback (openrouter/free)" in source
+    assert "const runnableVariants=variants.length?variants:[fallback]" in source
+    assert "runtime derives a prompt from this operation and uses openrouter/free" in source
+
+
 def test_other_artifact_families_keep_their_variant_controls() -> None:
     assert "PREFERRED REPRESENTATION" in _text("DataCatalogPanel.tsx")
     assert "PREFERRED ALTERNATIVE" in _text("PromptLibraryEditor.tsx")
@@ -202,7 +210,7 @@ def test_operation_implementations_inherit_parent_playground() -> None:
     assert "relationshipIds(selectedImplementation.parents)" in operations
     assert "selectedImplementation&&parentOperation&&<OperationPlayground" in operations
     assert "variants={[selectedImplementation]}" in operations
-    assert "variants.some(item=>item.id===operation.preferredChild)" in playground
-    assert "invocationVariant=variants.length===1?variants[0].id:variant" in playground
+    assert "runnableVariants.some(item=>item.id===operation.preferredChild)" in playground
+    assert "invocationVariant=runnableVariants.length===1?runnableVariants[0].id:variant" in playground
     assert "implementationVariant:invocationVariant" in playground
-    assert "disabled={variants.length===1}" in playground
+    assert "disabled={runnableVariants.length===1}" in playground

@@ -73,6 +73,43 @@ def test_operation_materialization_resolves_requested_prompt_variant() -> None:
     assert executable["parameters"]["baseUrl"] == "https://openrouter.ai/api/v1"
 
 
+def test_abstract_only_operation_uses_contract_derived_openrouter_fallback() -> None:
+    resolved = resolve_operation_implementation(
+        DEFAULT_WORKSPACES_ROOT / "shared", "text_to_scene_graph"
+    )
+    implementation = resolved["implementation"]
+    assert resolved["fallback"] is True
+    assert implementation["id"] == "text_to_scene_graph.automatic_llm_fallback"
+    assert implementation["virtual"] is True
+    assert implementation["modelSelection"] == {
+        "models": ["openrouter/free"],
+        "strategy": "single",
+    }
+
+    executable = materialize_workflow_step(
+        {"id": "playground", "workspaceId": "shared"},
+        {
+            "id": "invoke",
+            "operation": "text_to_scene_graph",
+            "inputs": {"image": "A blue ball above a red box."},
+        },
+    )
+
+    assert executable["implementation"] == "llm.complete"
+    assert executable["inputs"] == {"prompt": "A blue ball above a red box."}
+    assert executable["parameters"]["backendId"] == "openrouter"
+    assert executable["parameters"]["model"] == "openrouter/free"
+    prompt = executable["parameters"]["promptPrefix"]
+    assert "automatic LLM fallback" in prompt
+    assert "Do the best you can" in prompt
+    assert 'Execute the operation "Text to Scene Graph"' in prompt
+    assert "natural-language description" in prompt
+    assert '"representation": "scene_graph"' in prompt
+    assert "complete operation resource follows in MeTTa" in prompt
+    assert "(id text_to_scene_graph)" in prompt
+    assert "(representation scene_graph)" in prompt
+
+
 def test_operation_playground_routes_selected_model_through_openrouter(monkeypatch: pytest.MonkeyPatch) -> None:
     sent: dict[str, object] = {}
 
