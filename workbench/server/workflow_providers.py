@@ -338,15 +338,20 @@ def _llm_complete(inputs: dict[str, Any], parameters: dict[str, Any]) -> dict[st
         or (f"{configured_base_url}/chat/completions" if configured_base_url else "")
         or "https://api.openai.com/v1/chat/completions"
     )
-    received = str(inputs.get("prompt") or inputs.get(str(parameters.get("inputBinding") or "text")) or parameters.get("prompt") or "")
-    if not received and parameters.get("automaticFallback"):
-        serializable_inputs = {
-            name: value
+    automatic_fallback = bool(parameters.get("automaticFallback"))
+    if automatic_fallback:
+        runtime_inputs = {
+            name: "[attached image data URL]"
+            if isinstance(value, str) and value.startswith("data:image/")
+            else value
             for name, value in inputs.items()
-            if not (isinstance(value, str) and value.startswith("data:image/"))
         }
-        if serializable_inputs:
-            received = json.dumps(serializable_inputs, ensure_ascii=False, sort_keys=True)
+        received = (
+            "AUTHORITATIVE RUNTIME INPUTS — execute these values, not any example/default values above:\n"
+            + json.dumps(runtime_inputs, ensure_ascii=False, sort_keys=True)
+        )
+    else:
+        received = str(inputs.get("prompt") or inputs.get(str(parameters.get("inputBinding") or "text")) or parameters.get("prompt") or "")
     prefix = str(parameters.get("promptPrefix") or "")
     prompt = f"{prefix}\n\n{received}" if prefix and received else prefix or received
     image_inputs = [(str(name), value) for name, value in inputs.items() if isinstance(value, str) and value.startswith("data:image/")]

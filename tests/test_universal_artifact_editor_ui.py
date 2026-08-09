@@ -115,6 +115,9 @@ def test_operation_playground_can_run_default_and_populate_from_runtime_artifact
     assert "/api/engine/runs?limit=100" in source
     assert "/api/goal-runs?workspace_id=" in source
     assert "artifactScore" in source
+    assert "valueShapeMatches" in source
+    assert 'if(actualAny&&!valueShapeMatches(expected,artifact.value))return 0' in source
+    assert 'return typeof value==="string"' in source
     assert "type RuntimeValueDictionary=" in source
     assert "byDatatype:Map" in source
     assert "byRepresentation:Map" in source

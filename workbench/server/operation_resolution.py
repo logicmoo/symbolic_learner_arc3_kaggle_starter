@@ -199,7 +199,11 @@ def materialize_workflow_step(workflow: dict[str, Any], step: dict[str, Any]) ->
             "outputs": {output_binding: output_binding},
             "resolvedPrompts": resolved_prompts,
         }
-    if implementation.get("implementation") == "llm.complete" and "prompt" not in executable_inputs:
+    if (
+        implementation.get("implementation") == "llm.complete"
+        and "prompt" not in executable_inputs
+        and not parameters.get("automaticFallback")
+    ):
         input_binding = str(parameters.get("inputBinding") or "text")
         if input_binding in executable_inputs:
             executable_inputs = {"prompt": executable_inputs[input_binding]}

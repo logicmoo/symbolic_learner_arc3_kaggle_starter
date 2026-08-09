@@ -126,7 +126,7 @@ def test_abstract_only_operation_uses_contract_derived_openrouter_fallback() -> 
     )
 
     assert executable["implementation"] == "llm.complete"
-    assert executable["inputs"] == {"prompt": "A blue ball above a red box."}
+    assert executable["inputs"] == {"image": "A blue ball above a red box."}
     assert executable["parameters"]["backendId"] == "openrouter"
     assert executable["parameters"]["model"] == "openrouter/free"
     prompt = executable["parameters"]["promptPrefix"]
@@ -136,6 +136,7 @@ def test_abstract_only_operation_uses_contract_derived_openrouter_fallback() -> 
     assert "natural-language description" in prompt
     assert '"representation": "scene_graph"' in prompt
     assert "complete operation resource follows in MeTTa" in prompt
+    assert "example/default value" in prompt
     assert "(id text_to_scene_graph)" in prompt
     assert "(representation scene_graph)" in prompt
 
@@ -173,6 +174,33 @@ def test_operation_playground_routes_selected_model_through_openrouter(monkeypat
     assert trace["providerExecution"]["request"]["headers"]["Authorization"] == "[REDACTED]"
     assert trace["providerExecution"]["request"]["body"] == sent["body"]
     assert trace["providerExecution"]["response"]["bodyJson"]["choices"][0]["message"]["content"] == "Hello World"
+
+
+def test_automatic_fallback_marks_live_inputs_authoritative(monkeypatch: pytest.MonkeyPatch) -> None:
+    sent: dict[str, object] = {}
+
+    class Response:
+        def __enter__(self): return self
+        def __exit__(self, *_args: object) -> None: return None
+        def read(self) -> bytes:
+            return json.dumps({"choices": [{"message": {"content": '{"text":"Codex Zebra Marker 92841"}'}}]}).encode()
+
+    def urlopen(request: object, **_kwargs: object) -> Response:
+        sent["body"] = json.loads(getattr(request, "data").decode())
+        return Response()
+
+    monkeypatch.setenv("OPENROUTER_API_KEY", "openrouter-test-key")
+    monkeypatch.setattr("workflow_providers.urllib.request.urlopen", urlopen)
+    result = invoke_operation("shared", "echo_into_titlecased", {
+        "implementationVariant": "echo_into_titlecased.automatic_llm_fallback",
+        "inputs": {"text": "codex zebra marker 92841"},
+    })
+
+    content = sent["body"]["messages"][0]["content"]  # type: ignore[index]
+    assert "AUTHORITATIVE RUNTIME INPUTS" in content
+    assert content.endswith('{"text": "codex zebra marker 92841"}')
+    assert content.rfind("codex zebra marker 92841") > content.rfind("the quick brown fox")
+    assert result["outputs"] == {"text": "Codex Zebra Marker 92841"}
 
 
 def test_constant_value_uses_workbench_provider() -> None:

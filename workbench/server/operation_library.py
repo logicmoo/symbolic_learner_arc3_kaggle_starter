@@ -48,6 +48,8 @@ def automatic_llm_fallback(operation: dict[str, Any]) -> dict[str, Any]:
             f"Declared output contract: {json.dumps(outputs, ensure_ascii=False, sort_keys=True)}",
             "Return exactly one valid JSON object using the declared output field names.",
             "Do not add Markdown fences or commentary outside the JSON object.",
+            "Values under example_execute, including default values, are examples only.",
+            "Never use an example/default value when an authoritative runtime input is supplied after the resource.",
             "The complete operation resource follows in MeTTa; use every relevant field when making your best attempt:",
             operation_metta,
         )

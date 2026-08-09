@@ -73,6 +73,21 @@ function ingestRuntimeRuns(workspaceId:string,runs:RuntimeRun[]){
   for(const artifact of run.artifacts||[]){const value=artifactValue(artifact,artifact.datatype||"Any");if(value===undefined)continue;const operationId=String(artifact.provenance?.operationId||artifact.provenance?.stepId||artifact.stepId||run.workflowId||run.id||"runtime");addIndexedValue(bank.outputs,{name:artifact.name||"artifact",datatype:artifact.datatype||"Any",representation:artifact.representation||"",value,timestamp:artifact.createdAt?Date.parse(artifact.createdAt)||timestamp:timestamp,source:"output",operationId,operationLabel:operationId})}
  }
 }
+function valueShapeMatches(expected:string,value:unknown):boolean{
+ if(expected==="any")return true;
+ if(/text|string|markdown|natural language/.test(expected))return typeof value==="string";
+ if(/bool/.test(expected))return typeof value==="boolean";
+ if(/int|float|double|decimal|number/.test(expected))return typeof value==="number"&&Number.isFinite(value);
+ if(/scene graph|object|record|json|annotation|ruleset|evidence|description/.test(expected))return value!==null&&typeof value==="object";
+ if(/program|source|code/.test(expected))return typeof value==="string"||(value!==null&&typeof value==="object");
+ if(/image|bitmap|png|jpeg|jpg/.test(expected)){
+  if(typeof value==="string")return true;
+  if(!value||typeof value!=="object"||Array.isArray(value))return false;
+  return ['dataUrl','image','bitmap','url','value'].some(key=>typeof (value as Record<string,unknown>)[key]==="string");
+ }
+ if(/list|array|set|sequence/.test(expected))return Array.isArray(value);
+ return value!==null&&typeof value==="object";
+}
 function artifactScore(name:string,datatype:string,artifact:IndexedRuntimeValue):number{
  const expected=normalized(datatype),inputName=normalized(name),actualType=normalized(`${artifact.datatype} ${artifact.representation}`),actualName=normalized(artifact.name);
  if(expected==="any")return actualName===inputName?12:1;
@@ -81,6 +96,7 @@ function artifactScore(name:string,datatype:string,artifact:IndexedRuntimeValue)
  const imageCompatible=/image|bitmap|png|jpeg|jpg/.test(expected)&&/image|bitmap|png|jpeg|jpg/.test(`${actualType} ${actualName}`);
  const textCompatible=/text|string|markdown|natural language/.test(expected)&&/text|string|markdown|natural language/.test(actualType);
  const matchingTokens=tokens.filter(token=>actualType.includes(token));
+ if(actualAny&&!valueShapeMatches(expected,artifact.value))return 0;
  if(!actualAny&&actualType!==expected&&!matchingTokens.length&&!imageCompatible&&!textCompatible)return 0;
  let score=actualType===expected?30:matchingTokens.length*8;
  if(actualAny)score=1;
@@ -127,13 +143,16 @@ export function OperationPlayground({workspaceId,operation,variants}:{workspaceI
  const outputs=Object.entries(operation.outputs||{});
  const invocationVariant=runnableVariants.length===1?runnableVariants[0].id:variant;
  const selected=runnableVariants.find(item=>item.id===invocationVariant)||null;
+ const clearInvocationResult=()=>{setResult(null);setError(null);setDebugLogPath(null);setDebugLog("")};
+ const updateInput=(name:string,value:string)=>{setRawInputs(current=>({...current,[name]:value}));setPopulationMessage(null);clearInvocationResult()};
+ const updateParameter=(name:string,value:string)=>{setRawParameters(current=>({...current,[name]:value}));clearInvocationResult()};
  const loadDebugLog=async(path:string)=>{
   setDebugLogPath(path);setDebugLog("Loading complete invocation trace...");
   try{const payload=await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/operations/debug-log?path=${encodeURIComponent(path)}`);setDebugLog(String(payload.content||""))}
   catch(reason){setDebugLog(`Debug trace could not be loaded: ${reason instanceof Error?reason.message:String(reason)}`)}
  };
  const populateInputs=async(populationMode:PopulationMode)=>{
-  setPopulating(populationMode);setPopulationMessage(null);setError(null);
+  setPopulating(populationMode);setPopulationMessage(null);clearInvocationResult();
   try{
    if(populationMode==="sample_input"){
     const sample=defaults(operation.example_execute?.arguments||{});setRawInputs(Object.fromEntries(inputs.map(([name])=>[name,sample[name]??""])));setPopulationMessage("Restored this operation's sample input values.");return;
@@ -165,9 +184,9 @@ export function OperationPlayground({workspaceId,operation,variants}:{workspaceI
  return <section className="operation-playground">
   <div className="llm-subhead"><div><span>OPERATION PLAYGROUND</span><b>Invoke the abstract operation with its default or a one-off route</b></div><div className="operation-population-actions"><span>POPULATE INPUTS</span><button type="button" title="Use the newest compatible output produced by any operation in this workspace" onClick={()=>populateInputs("last_outputs")} disabled={populating!==null||inputs.length===0}>{populating==="last_outputs"?"Loading…":"Last Output"}</button><button type="button" title="Use a random compatible output produced by any operation in this workspace" onClick={()=>populateInputs("random_outputs")} disabled={populating!==null||inputs.length===0}>{populating==="random_outputs"?"Loading…":"Random Output"}</button><button type="button" title="Restore the operation's example input" onClick={()=>populateInputs("sample_input")} disabled={populating!==null||inputs.length===0}>{populating==="sample_input"?"Loading…":"Sample's Input"}</button><button type="button" title="Clear text and image inputs and set structured inputs to null" onClick={()=>populateInputs("empty_null")} disabled={populating!==null||inputs.length===0}>{populating==="empty_null"?"Loading…":"Empty/Null"}</button></div></div>
   <div className="operation-playground-grid">
-   <div className="operation-run-route"><label className="operation-playground-field"><span>RUN WITH (THIS RUN ONLY)</span><select value={invocationVariant} disabled={runnableVariants.length===1} onChange={event=>{setVariant(event.target.value);setResult(null);setError(null)}}>{runnableVariants.map(item=><option key={item.id} value={item.id}>{item.label||item.id} · {item.implementation}</option>)}</select><small>{selected?.id===fallback.id?"Uses the automatic openrouter/free LLM fallback for this run only. The saved default implementation is unchanged.":selected?`Executes ${selected.implementation} for this run. The saved default implementation is unchanged.`:"Select how this invocation should run."}</small></label><div className="operation-run-actions"><button type="button" title="Run the operation's saved default implementation" onClick={()=>run()} disabled={running}>{running?"Running…":"Run Default"}</button><button className="primary" type="button" title="Run the one-off implementation selected at left" onClick={()=>run(invocationVariant)} disabled={running||!invocationVariant}>{running?"Running…":"▶ Run Selected"}</button></div></div>
-   {inputs.map(([name,datatype])=>{const example=operation.example_execute?.arguments?.[name],label=datatypeLabel(datatype);return <label className="operation-playground-field" key={name}><span>INPUT · {name} <em>{label}</em></span><TypedValueInput datatype={label} value={rawInputs[name]??""} options={example?.options} placeholder={isTextDatatype(label)?`Enter ${name}…`:/^any$/i.test(label.trim())?"Enter text or a JSON value…":`Enter ${label} as JSON…`} onChange={value=>setRawInputs(current=>({...current,[name]:value}))}/></label>})}
-   {parameters.map(([name,fallback])=>{const example=operation.example_execute?.parameters?.[name],datatype=example?.datatype||typeof fallback;return <label className="operation-playground-field" key={`parameter:${name}`}><span>PARAMETER · {name} <em>{datatype}</em></span><TypedValueInput datatype={datatype} value={rawParameters[name]??(typeof fallback==="string"?fallback:JSON.stringify(fallback??""))} options={example?.options} placeholder={`Configure ${name}…`} onChange={value=>setRawParameters(current=>({...current,[name]:value}))}/></label>})}
+   <div className="operation-run-route"><label className="operation-playground-field"><span>RUN WITH (THIS RUN ONLY)</span><select value={invocationVariant} disabled={runnableVariants.length===1} onChange={event=>{setVariant(event.target.value);clearInvocationResult()}}>{runnableVariants.map(item=><option key={item.id} value={item.id}>{item.label||item.id} · {item.implementation}</option>)}</select><small>{selected?.id===fallback.id?"Uses the automatic openrouter/free LLM fallback for this run only. The saved default implementation is unchanged.":selected?`Executes ${selected.implementation} for this run. The saved default implementation is unchanged.`:"Select how this invocation should run."}</small></label><div className="operation-run-actions"><button type="button" title="Run the operation's saved default implementation" onClick={()=>run()} disabled={running}>{running?"Running…":"Run Default"}</button><button className="primary" type="button" title="Run the one-off implementation selected at left" onClick={()=>run(invocationVariant)} disabled={running||!invocationVariant}>{running?"Running…":"▶ Run Selected"}</button></div></div>
+   {inputs.map(([name,datatype])=>{const example=operation.example_execute?.arguments?.[name],label=datatypeLabel(datatype);return <label className="operation-playground-field" key={name}><span>INPUT · {name} <em>{label}</em></span><TypedValueInput datatype={label} value={rawInputs[name]??""} options={example?.options} placeholder={isTextDatatype(label)?`Enter ${name}…`:/^any$/i.test(label.trim())?"Enter text or a JSON value…":`Enter ${label} as JSON…`} onChange={value=>updateInput(name,value)}/></label>})}
+   {parameters.map(([name,fallback])=>{const example=operation.example_execute?.parameters?.[name],datatype=example?.datatype||typeof fallback;return <label className="operation-playground-field" key={`parameter:${name}`}><span>PARAMETER · {name} <em>{datatype}</em></span><TypedValueInput datatype={datatype} value={rawParameters[name]??(typeof fallback==="string"?fallback:JSON.stringify(fallback??""))} options={example?.options} placeholder={`Configure ${name}…`} onChange={value=>updateParameter(name,value)}/></label>})}
   </div>
   {populationMessage&&<div className="operation-population-status">{populationMessage}</div>}
   <div className="operation-playground-contract"><span>OUTPUT CONTRACT</span>{outputs.map(([name,datatype])=><code key={name}>{name}: {datatypeLabel(datatype)}</code>)}</div>
