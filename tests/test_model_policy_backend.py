@@ -183,6 +183,9 @@ def test_model_discovery_grid_supports_json_property_filters_and_sorting() -> No
     assert 'JSON.stringify(propertyValue)' in models
     assert 'part.startsWith("~")' in models and 'part.startsWith("+")' in models
     assert 'JSON.stringify(modelDocument)' in models
+    assert 'flattenObject(m)' in models
+    assert 'path.split(".").at(-1) === key' in models
+    assert '.filter(key => !["id", "label", "status"].includes(key))' in models
     assert 'toggleSort("status")' in models and 'toggleSort("id")' in models
     assert 'prev.key === key && prev.dir === "asc" ? "desc" : "asc"' in models
     assert 'const filteredModels = (() =>' in models

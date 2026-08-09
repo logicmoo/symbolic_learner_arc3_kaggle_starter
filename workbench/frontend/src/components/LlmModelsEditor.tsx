@@ -75,7 +75,7 @@ export function LlmModelsEditor({workspaceId}:{workspaceId:string}){
 
   const filteredModels = (() => {
     if (!discoveryForThis) return [];
-    let result = discoveredModels.map(m => ({ ...m, _flat: flattenObject(m.properties || {}) }));
+    let result = discoveredModels.map(m => ({ ...m, _flat: flattenObject(m) }));
 
     // Apply property and whole-resource filters: ~supported_parameters=topk, +supported_parameters=tem, +vision.
     if (discoveryFilter.trim()) {
@@ -99,7 +99,13 @@ export function LlmModelsEditor({workspaceId}:{workspaceId:string}){
             else if (key === "label") actualValue = m.label;
             else if (key === "status") actualValue = m.status || "";
             else {
-              const propertyValue = m._flat[key];
+              let propertyValue = m._flat[key];
+              if (propertyValue === undefined) {
+                const leafMatches = Object.entries(m._flat)
+                  .filter(([path]) => path.split(".").at(-1) === key)
+                  .map(([, value]) => value);
+                propertyValue = leafMatches.length === 1 ? leafMatches[0] : leafMatches;
+              }
               actualValue = propertyValue === undefined ? "" : (JSON.stringify(propertyValue) ?? String(propertyValue));
             }
           }
@@ -134,7 +140,9 @@ export function LlmModelsEditor({workspaceId}:{workspaceId:string}){
   })();
 
   const allFlattened = filteredModels.map(m => m._flat);
-  const propKeys = Array.from(new Set(discoveredModels.flatMap(m => Object.keys(flattenObject(m.properties || {}))))).sort();
+  const propKeys = Array.from(new Set(discoveredModels.flatMap(m => Object.keys(flattenObject(m)))))
+    .filter(key => !["id", "label", "status"].includes(key))
+    .sort();
 
   const toggleSort = (key: string) => {
     setDiscoverySort(prev => ({
