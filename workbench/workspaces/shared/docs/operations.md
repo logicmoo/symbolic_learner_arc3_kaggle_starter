@@ -62,7 +62,7 @@ The runtime materializes `source_code`, invokes SWI-Prolog, passes the selected 
 
 ## LLM implementations
 
-LLM implementations bind an abstract Operation to a model and one or more reusable Prompt resources. The model decides *where* inference runs; the Prompt decides *what instructions* accompany the operation input. Prompt text therefore does not belong in a model profile or directly in the abstract Operation.
+LLM implementations bind an abstract Operation to a model or Model Preset and one or more reusable Prompt resources. The model/preset decides *where and with what invocation settings* inference runs; the Prompt decides *what instructions* accompany the operation input. Prompt text therefore does not belong in a Model Preset or directly in the abstract Operation.
 
 ### Complete titlecase example
 

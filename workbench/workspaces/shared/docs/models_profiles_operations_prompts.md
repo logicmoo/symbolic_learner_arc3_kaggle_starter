@@ -1,6 +1,6 @@
 [← Back to top-level README](../../../../README.md)
 
-# Models, Profiles, Operations, and Prompts
+# Models, Model Presets, Operations, and Prompts
 
 The workbench keeps four concepts separate because they answer different questions.
 
@@ -10,38 +10,38 @@ A backend is a root runtime/provider configuration. It describes **how to reach 
 
 ## Model
 
-A model selects a concrete remote/local model or inherits another model. It describes **what model is being used**. Model nodes may override generation defaults such as temperature, token limits, reasoning effort, timeout, or image detail.
+A model inherits a backend and selects a concrete remote/local model. It describes **what model is being used** and may establish generation defaults.
 
-## Profile
+## Model Preset
 
-A profile is a reusable model configuration. It describes **how we want to run a model**, but it does not contain prompts. Profiles participate in the same inheritance graph as models and can inherit a model or another profile.
+A Model Preset is a reusable specialization of a model. It describes **how we want to run a model**, but it does not contain prompts. A preset remains `kind model`; the UI recognizes it because its parent is another model rather than a backend. Presets may inherit other presets.
 
 ## Prompt
 
-A prompt is reusable instruction text. Prompts live under `prompts/` and are edited independently of models and profiles.
+A prompt is reusable instruction text. Prompts live under `prompts/` and are edited independently of models and Model Presets. Prompt Profiles are a separate prompt-composition concept; they are not Model Presets.
 
 ## Operation
 
-A Operation is the executable semantic operation. The old ARC3 `llm_profiles` records mixed model execution settings with a `prompt_text` list. The workbench splits those concerns: execution settings become profile nodes; the ordered prompt list becomes `promptSelection` on the Operation.
+An Operation is the executable semantic operation. The old ARC3 `llm_profiles` records mixed model execution settings with a `prompt_text` list. The workbench splits those concerns: model execution settings become Model Presets; the ordered prompt list becomes `promptSelection` on the Operation.
 
 ```text
 backend
   -> model
-      -> profile
+      -> model preset
 
 prompt fragments ------------------+
                                    |
-operation -> chooses model/profile -----+--> LLM invocation
+operation -> chooses model/preset ------+--> LLM invocation
      -> chooses ordered prompts ---+
 ```
 
-The same Operation can run against several profiles without duplicating its prompts, and the same profile can be reused by unrelated Operations.
+The same Operation can run against several Model Presets without duplicating its prompts, and the same preset can be reused by unrelated Operations.
 
 ## ARC3 migration rule
 
-For an old profile such as `openai-gpt-5.6-deep`, model/temperature/top-p/reasoning/token/timeout/image-detail fields become a prompt-free profile. Its old `prompt_text` list becomes the ordered prompt composition of an ARC3 Operation.
+For an old profile such as `openai-gpt-5.6-deep`, model/temperature/top-p/reasoning/token/timeout/image-detail fields become a prompt-free Model Preset. Its old `prompt_text` list becomes the ordered prompt composition of an ARC3 Operation.
 
-The old light, deep, and extreme ARC3 prompt lists are therefore represented as Operations, while light/deep/extreme execution settings remain Profiles.
+The old light, deep, and extreme ARC3 prompt lists are therefore represented as Operations, while light/deep/extreme execution settings become Model Presets.
 
 ## ARC3 is not the reusable boundary
 

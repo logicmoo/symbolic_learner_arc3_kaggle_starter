@@ -30,7 +30,7 @@ def test_operations_preserve_rich_baseline_features() -> None:
         "PYTHON SOURCE",
         "SWI-PROLOG SOURCE",
         "METTA SOURCE",
-        "MODEL / PROFILE DISPATCH",
+        "MODEL / PRESET DISPATCH",
         "PROMPT COMPOSITION",
         "Split view",
         "operation-document-tabs",

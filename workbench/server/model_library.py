@@ -14,6 +14,9 @@ from resource_store import get_filesystem_provider
 from resource_relationships import relationship_ids
 
 SHARED_WORKSPACE_ID = "shared"
+# ``profile`` and the old profile directories remain read-only compatibility
+# inputs. Validation normalizes every loaded resource to ``kind=model``; the
+# parent relationship determines whether the UI presents it as a model preset.
 MODEL_KINDS = {"model", "profile"}
 MODEL_DIRECTORIES = ("design/models", "design/profiles", "models", "profiles")
 _resolved_cache_lock = RLock()
@@ -38,17 +41,17 @@ def read_model_file(path: Path) -> dict[str, Any]:
     try:
         value = get_filesystem_provider().read_json_documents(path)[0]
     except (OSError, json.JSONDecodeError, ValueError) as error:
-        raise ValueError(f"Invalid model/profile definition {path}: {error}") from error
+        raise ValueError(f"Invalid model/preset definition {path}: {error}") from error
     return _validate_model(value, path)
 
 
 def _validate_model(value: Any, path: Path) -> dict[str, Any]:
     if not isinstance(value, dict):
-        raise ValueError(f"Model/profile definition must be a JSON object: {path}")
+        raise ValueError(f"Model/preset definition must be a JSON object: {path}")
     if value.get("kind") not in MODEL_KINDS:
-        raise ValueError(f"Model/profile definition must declare kind='model' or kind='profile': {path}")
+        raise ValueError(f"Model/preset definition must declare kind='model' (legacy kind='profile' is accepted): {path}")
     if not str(value.get("id") or "").strip():
-        raise ValueError(f"Model/profile definition requires id: {path}")
+        raise ValueError(f"Model/preset definition requires id: {path}")
     parents = relationship_ids(value.get("parents"))
     legacy_parent = str(value.get("inherits") or "").strip()
     if not parents and legacy_parent:
@@ -60,9 +63,9 @@ def _validate_model(value: Any, path: Path) -> dict[str, Any]:
     value["kind"] = "model"
     defaults = value.get("defaults")
     if defaults is not None and not isinstance(defaults, dict):
-        raise ValueError(f"Model/profile defaults must be a JSON object: {path}")
+        raise ValueError(f"Model/preset defaults must be a JSON object: {path}")
     if "prompt_text" in value or "prompts" in value:
-        raise ValueError(f"Prompt lists belong on operations, not model/profile definitions: {path}")
+        raise ValueError(f"Prompt lists belong on operations, not model/preset definitions: {path}")
     return value
 
 
@@ -133,12 +136,12 @@ def resolve_model_records(
     *,
     workspaces_root: Path = DEFAULT_WORKSPACES_ROOT,
 ) -> list[dict[str, Any]]:
-    """Resolve model/profile inheritance chains until they terminate at a backend.
+    """Resolve model and Model Preset inheritance chains to a backend.
 
-    Backends, models, and profiles share one catalog. A model can inherit a
-    backend or model. A profile normally inherits a model/profile and changes
-    only generation/runtime defaults. Prompt composition is deliberately not
-    part of this graph; prompt lists belong to operation definitions.
+    Backends, models, and presets share one catalog. A model inherits a backend;
+    a Model Preset remains ``kind=model`` but inherits a model or another preset
+    and changes only generation/runtime defaults. Prompt composition is not part
+    of this graph; Prompt Profiles are separate resources.
 
     Invalid catalog files are returned with an error and disabled resolution;
     they never abort workspace discovery.
@@ -174,10 +177,10 @@ def resolve_model_records(
 
     def resolve(node_id: str, trail: tuple[str, ...] = ()) -> dict[str, Any]:
         if not node_id or node_id not in nodes:
-            raise ValueError(f"Model/profile has no resolvable id: {node_id!r}")
+            raise ValueError(f"Model/preset has no resolvable id: {node_id!r}")
         if node_id in trail:
             raise ValueError(
-                f"Model/profile inheritance cycle: {' -> '.join((*trail, node_id))}"
+                f"Model/preset inheritance cycle: {' -> '.join((*trail, node_id))}"
             )
         record = nodes[node_id]
         node = record.get("document") or {}
@@ -224,7 +227,7 @@ def resolve_model_records(
             }
 
         raise ValueError(
-            f"Model/profile {node_id} inherits unavailable item: {parent_id}"
+            f"Model/preset {node_id} inherits unavailable item: {parent_id}"
         )
 
     resolved: list[dict[str, Any]] = []
@@ -240,7 +243,7 @@ def resolve_model_records(
                 "inheritance": [raw_id] if raw_id else [],
             }
             if not record.get("error"):
-                record["error"] = "Model/profile definition has no valid id"
+                record["error"] = "Model/preset definition has no valid id"
             resolved.append(record)
             continue
         try:

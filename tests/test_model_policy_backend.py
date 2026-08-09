@@ -200,6 +200,19 @@ def test_open_model_resource_has_a_persistent_enable_disable_control() -> None:
     assert "saveDoc({...doc,source,dirty:true})" in models
 
 
+def test_model_catalog_infers_presets_and_keeps_disabled_children_visible() -> None:
+    models = (ROOT / "workbench" / "frontend" / "src" / "components" / "LlmModelsEditor.tsx").read_text(encoding="utf-8")
+    styles = (ROOT / "workbench" / "frontend" / "src" / "styles" / "models_editor.css").read_text(encoding="utf-8")
+    assert 'type NodeKind="backend"|"model"|"preset"' in models
+    assert 'document.kind==="profile"' in models  # legacy compatibility only
+    assert 'backendIds.has(modelParent(document))' in models
+    assert 'newChild(item,"preset")' in models and ">+ preset</button>" in models
+    assert 'nested.length} {backend?"models":"presets"}' in models
+    assert 'nested.length?nested.map' in models
+    assert ".inheritance-status>.resource-enablement-badge" in styles
+    assert "width:max-content" in styles
+
+
 def test_discovery_reconciles_and_only_removes_managed_missing_models(tmp_path: Path) -> None:
     backend = {"id": "vendor", "label": "Vendor"}
     imported = import_discovered_models(tmp_path, backend, [{"id": "old", "label": "Old"}, {"id": "keep", "label": "Keep"}])
@@ -309,7 +322,7 @@ def test_ping_background_failure_becomes_terminal_job(tmp_path: Path, monkeypatc
 def test_model_policy_ui_edits_and_filters_dynamic_registry() -> None:
     source = (ROOT / "workbench" / "frontend" / "src" / "components" / "ModelPolicyPage.tsx").read_text(encoding="utf-8")
     styles = (ROOT / "workbench" / "frontend" / "src" / "styles" / "model_policy_todo.css").read_text(encoding="utf-8")
-    for token in ("Filesystem Load", "Filesystem Save", "Ping Selected", "Manage Backends, Models &amp; Profiles", "Create / edit", "Select Visible", "Clear Selection", "All capabilities", "All runtime", "All benchmark", "dynamicColumns", "toggleSort", "Shift+click adds a secondary sort", "setSorts"):
+    for token in ("Filesystem Load", "Filesystem Save", "Ping Selected", "Manage Backends, Models &amp; Presets", "Create / edit", "Select Visible", "Clear Selection", "All capabilities", "All runtime", "All benchmark", "dynamicColumns", "toggleSort", "Shift+click adds a secondary sort", "setSorts"):
         assert token in source
     assert 'scope==="selected"?[...selected]' in source
     assert "registryDocument" in source

@@ -40,7 +40,7 @@ The architecture is intended to cover Operations, Datatypes, Prompts, Converters
 
 ### Operation variants
 
-Operation implementations retain rich implementation-specific views. Python implementations expose module/file/class/callable information. Prolog implementations expose predicates and arity. MeTTa implementations expose MeTTa configuration. LLM implementations expose model/profile dispatch and ordered prompt bindings.
+Operation implementations retain rich implementation-specific views. Python implementations expose module/file/class/callable information. Prolog implementations expose predicates and arity. MeTTa implementations expose MeTTa configuration. LLM implementations expose model/Model Preset dispatch and ordered prompt bindings.
 
 The Operations page is also the regression oracle for the shared chrome: if the universal editor cannot still present the full rich Operations experience, the abstraction has removed too much.
 
@@ -54,7 +54,7 @@ Prompt implementations expose editable prompt text, targets, versions, variables
 
 ### Model variants
 
-Model/back-end/profile resources use the same editor shell while retaining inheritance/configuration controls and resolved runtime configuration.
+Model/back-end/Model Preset resources use the same editor shell while retaining inheritance/configuration controls and resolved runtime configuration.
 
 ## No-feature-loss rule
 

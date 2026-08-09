@@ -22,7 +22,7 @@ echo_into_titlecased_llm.operation.metta
 titlecase_received_text.prompt.metta
 openai.backend.metta
 gpt-5.6.model.metta
-gpt-5.6-deep.profile.metta
+gpt-5.6-deep.model.metta
 observe_choose_record.workflow.metta
 shared.workspace.metta
 image.semantic_datatype.metta
