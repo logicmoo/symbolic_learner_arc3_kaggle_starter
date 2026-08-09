@@ -200,6 +200,17 @@ def test_open_model_resource_has_a_persistent_enable_disable_control() -> None:
     assert "saveDoc({...doc,source,dirty:true})" in models
 
 
+def test_open_model_resource_has_the_universal_execution_runner() -> None:
+    models = (ROOT / "workbench" / "frontend" / "src" / "components" / "LlmModelsEditor.tsx").read_text(encoding="utf-8")
+    runner = (ROOT / "workbench" / "frontend" / "src" / "components" / "ModelResourcePlayground.tsx").read_text(encoding="utf-8")
+    api = (ROOT / "workbench" / "server" / "policy_api.py").read_text(encoding="utf-8")
+    assert "<ModelResourcePlayground" in models
+    assert "!backend && document && resourceEnabled" in models
+    assert "UNIVERSAL EXECUTION RUNNER" in runner
+    assert "/models/${encodeURIComponent(model.id)}/invoke" in runner
+    assert '@router.post("/{workspace_id}/models/{model_id}/invoke")' in api
+
+
 def test_model_policy_history_charts_real_persisted_results() -> None:
     source = (ROOT / "workbench" / "frontend" / "src" / "components" / "ModelPolicyPage.tsx").read_text(encoding="utf-8")
     styles = (ROOT / "workbench" / "frontend" / "src" / "styles" / "model_policy_todo.css").read_text(encoding="utf-8")

@@ -4,6 +4,7 @@ import {HierarchyResourceEditor} from "./HierarchyResourceEditor";
 import {ArtifactTreeBranch} from "./ArtifactTreeBranch";
 import {ExampleExecutePanel,type ExampleExecute} from "./ExampleExecutePanel";
 import {ResourceSourceEditor} from "./ResourceSourceEditor";
+import {ModelResourcePlayground} from "./ModelResourcePlayground";
 import {relationshipIds} from "./resourceRelationships";
 import {ResourceEnablementBadge,enablementClass,resolveResourceEnablement,type ResourceEnablement} from "./resourceEnablement";
 import "../styles/models_editor.css";
@@ -271,6 +272,10 @@ export function LlmModelsEditor({workspaceId}:{workspaceId:string}){
        <div className="studio-section-label">BACKEND DEFAULTS & CAPABILITIES</div>
        <pre>{JSON.stringify({ provider: (document as BackendDef).provider, official: (document as BackendDef).official, enabled: (document as BackendDef).enabled, capabilities: (document as BackendDef).capabilities, modelDefaults: (document as BackendDef).modelDefaults }, null, 2)}</pre>
       </div>
+     )}
+
+     {!backend && document && resourceEnabled && (
+      <ModelResourcePlayground workspaceId={workspaceId} model={document} resolved={doc.record.resolved as Record<string,unknown>|undefined}/>
      )}
 
      {exampleFor(document) && (

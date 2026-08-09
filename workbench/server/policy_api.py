@@ -80,6 +80,7 @@ def model_policy_registry(workspace_id: str) -> dict[str, Any]:
     return {"workspace": workspace, "resources": records, "registry": _effective_registry(root, records)}
 
 
+@router.post("/{workspace_id}/models/{model_id}/invoke")
 @router.post("/{workspace_id}/models/{model_id}/example-invoke")
 def invoke_model_example(workspace_id: str, model_id: str, request: dict[str, Any] = Body(...)) -> dict[str, Any]:
     try: workspace = _resolve_workspace(workspace_id)
