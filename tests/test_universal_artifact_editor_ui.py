@@ -65,7 +65,7 @@ def test_operation_playground_exposes_typed_inputs_variant_switching_and_results
     source = _text("OperationPlayground.tsx")
     for token in (
         "OPERATION PLAYGROUND",
-        "RUN VARIANT",
+        "RUN WITH (THIS RUN ONLY)",
         "OUTPUT CONTRACT",
         "implementationVariant",
         "/invoke",
@@ -96,8 +96,10 @@ def test_operation_playground_offers_automatic_llm_fallback() -> None:
     source = _text("OperationPlayground.tsx")
     assert ".automatic_llm_fallback" in source
     assert "Automatic LLM fallback (openrouter/free)" in source
-    assert "const runnableVariants=variants.length?variants:direct?[direct]:[fallback]" in source
-    assert "runtime derives a prompt from this operation and uses openrouter/free" in source
+    assert "const concreteVariants=variants.length?variants:direct?[direct]:[]" in source
+    assert "const runnableVariants=[...concreteVariants,fallback]" in source
+    assert "RUN WITH (THIS RUN ONLY)" in source
+    assert "The saved default implementation is unchanged" in source
 
 
 def test_operation_playground_displays_persisted_complete_debug_trace() -> None:
@@ -111,7 +113,7 @@ def test_operation_playground_runs_direct_routes_and_accepts_plain_any_values() 
     source = _text("OperationPlayground.tsx")
     editor = _text("OperationLibraryEditor.tsx")
     assert "operation.implementation?" in source
-    assert "direct?[direct]:[fallback]" in source
+    assert "direct?[direct]:[]" in source
     assert 'if(/^any$/i.test(datatype.trim()))' in source
     assert '"Enter text or a JSON value…"' in source
     assert "Direct — {directRoute}" in editor

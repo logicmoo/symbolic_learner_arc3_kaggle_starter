@@ -28,9 +28,9 @@ def automatic_llm_fallback_id(operation_id: str) -> str:
 def automatic_llm_fallback(operation: dict[str, Any]) -> dict[str, Any]:
     """Build an ephemeral LLM implementation from an abstract contract.
 
-    This is deliberately not a filesystem resource. A real implementation
-    child always wins; the fallback exists only so an otherwise abstract-only
-    operation can be exercised in the playground or runtime.
+    This is deliberately not a filesystem resource. Normal resolution prefers
+    a declared implementation, but callers may explicitly select the fallback
+    for a one-off playground or runtime invocation.
     """
     operation_id = str(operation["id"])
     label = str(operation.get("label") or operation_id)
@@ -164,6 +164,22 @@ def resolve_operation_implementation(workspace_root: Path, operation_id: str, re
     if not operation_record:
         raise KeyError(f"operation not found: {operation_id}")
     operation = operation_record["document"]
+    fallback = automatic_llm_fallback(operation)
+    fallback_id = str(fallback["id"])
+    if requested == fallback_id:
+        return {
+            "operation": operation,
+            "operationRecord": operation_record,
+            "implementation": fallback,
+            "implementationRecord": {
+                "path": "runtime://automatic-llm-fallback",
+                "source": "runtime",
+                "workspaceId": workspace_root.name,
+                "document": fallback,
+                "virtual": True,
+            },
+            "fallback": True,
+        }
     declared_variants = relationship_ids(operation.get("children"))
     reverse_variants = [
         implementation_id
@@ -183,8 +199,6 @@ def resolve_operation_implementation(workspace_root: Path, operation_id: str, re
                 "implementationRecord": operation_record,
                 "direct": True,
             }
-        fallback = automatic_llm_fallback(operation)
-        fallback_id = str(fallback["id"])
         if requested and requested != fallback_id:
             raise ValueError(f"implementation {requested} is not allowed by operation {operation_id}")
         return {

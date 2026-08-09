@@ -206,6 +206,27 @@ def test_direct_root_implementation_runs_without_an_llm_fallback() -> None:
     assert result["outputs"] == {"value": "Suff"}
 
 
+def test_automatic_llm_fallback_can_override_an_available_implementation() -> None:
+    direct = resolve_operation_implementation(
+        DEFAULT_WORKSPACES_ROOT / "shared",
+        "shared.echo",
+        "shared.echo.automatic_llm_fallback",
+    )
+    assert direct["fallback"] is True
+    assert direct["implementation"]["implementation"] == "llm.complete"
+
+    with_children = resolve_operation_implementation(
+        DEFAULT_WORKSPACES_ROOT / "shared",
+        "echo_into_titlecased",
+        "echo_into_titlecased.automatic_llm_fallback",
+    )
+    assert with_children["fallback"] is True
+    assert with_children["implementation"]["modelSelection"] == {
+        "models": ["openrouter/free"],
+        "strategy": "single",
+    }
+
+
 def test_user_request_materializes_as_human_input() -> None:
     executable = materialize_workflow_step(
         {"id": "sample", "workspaceId": "shared"},
