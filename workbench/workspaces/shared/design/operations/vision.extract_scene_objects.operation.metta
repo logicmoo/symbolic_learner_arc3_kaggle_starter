@@ -16,7 +16,10 @@
     (previous_image Image)
   ))
   (outputs (
-    (objects ObjectAnnotation)
+    (objects (
+      (datatype entity_collection)
+      (representation object_list)
+    ))
     (reconstruction Program)
   ))
   (promptSelection (

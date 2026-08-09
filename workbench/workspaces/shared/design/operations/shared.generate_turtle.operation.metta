@@ -9,8 +9,11 @@
   ))
   (implementation llm.turtle)
   (inputs (
-    (entities EntitySet)
-    (facts SymbolicFactSet)
+    (entities EntityCollection)
+    (facts (
+      (datatype entity_collection)
+      (representation symbolic_fact_set)
+    ))
   ))
   (outputs (
     (programs TurtleProgramSet)

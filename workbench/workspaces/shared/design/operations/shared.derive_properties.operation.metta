@@ -12,7 +12,10 @@
     (identities IdentityMap)
   ))
   (outputs (
-    (facts SymbolicFactSet)
+    (facts (
+      (datatype entity_collection)
+      (representation symbolic_fact_set)
+    ))
   ))
   (parameters ())
   (kind operation)

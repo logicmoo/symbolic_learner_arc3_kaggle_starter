@@ -10,7 +10,7 @@
   (implementation symbolic.transition)
   (inputs (
     (before Observation)
-    (action Action)
+    (action Intervention)
     (after Observation)
   ))
   (outputs (

@@ -12,7 +12,7 @@
     (observation Observation)
   ))
   (outputs (
-    (entities EntitySet)
+    (entities EntityCollection)
   ))
   (parameters ())
   (kind operation)

@@ -24,6 +24,7 @@ CONCRETE_DIRECTORY = "design/concrete_datatypes"
 DATATYPE_KIND = "semantic_datatype"
 REPRESENTATION_KIND = "representation_datatype"
 CONCRETE_KIND = "concrete_datatype"
+BUILTIN_INTERFACE_DATATYPES = {"Any"}
 
 
 def _type_key(value: Any) -> str:
@@ -256,11 +257,13 @@ def interface_type_inventory(
     referenced_representations = sorted({ref["representation"] for ref in refs if ref.get("representation")})
 
     declared_datatype_keys = {_type_key(item) for item in declared_datatypes}
+    builtin_datatype_keys = {_type_key(item) for item in BUILTIN_INTERFACE_DATATYPES}
     declared_representation_keys = {_type_key(item) for item in declared_representations}
     return {
         "references": refs,
         "referencedDatatypes": referenced_datatypes,
         "referencedRepresentations": referenced_representations,
-        "undeclaredDatatypes": sorted(item for item in set(referenced_datatypes) if _type_key(item) not in declared_datatype_keys),
+        "builtinDatatypes": sorted(BUILTIN_INTERFACE_DATATYPES),
+        "undeclaredDatatypes": sorted(item for item in set(referenced_datatypes) if _type_key(item) not in declared_datatype_keys | builtin_datatype_keys),
         "undeclaredRepresentations": sorted(item for item in set(referenced_representations) if _type_key(item) not in declared_representation_keys),
     }

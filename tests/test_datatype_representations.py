@@ -58,6 +58,15 @@ def test_numeric_document_and_program_contract_types_are_declared() -> None:
     assert {"number", "file_reference", "program"}.issubset(datatypes["information"]["children"])
 
 
+def test_evidence_and_reasoning_contract_types_are_declared() -> None:
+    datatypes = {record["document"]["id"]: record["document"] for record in load_workspace_datatype_records(SHARED) if record.get("document")}
+    expected = {"artifact_bundle", "change_description", "evidence", "evidence_bundle", "hypothesis_set", "rule_set"}
+    assert expected.issubset(datatypes)
+    assert expected.issubset(datatypes["information"]["children"])
+    assert datatypes["evidence"]["children"] == ["transition_evidence"]
+    assert datatypes["transition_evidence"]["parents"] == ["evidence"]
+
+
 def test_bitmap_encodings_are_independent_concrete_datatypes() -> None:
     representations = {record["document"]["id"]: record["document"] for record in load_workspace_representation_records(SHARED) if record.get("document")}
     bitmap = representations["bitmap"]
@@ -88,6 +97,9 @@ def test_interface_inventory_scans_canonical_workflows_and_matches_case() -> Non
     assert {"Image", "Text", "Object", "IdentityMap", "WorldModel"}.isdisjoint(undeclared)
     assert {"Number", "FileReference", "Markdown", "Program", "PrologProgram", "TurtleProgramSet"}.isdisjoint(undeclared)
     assert not any(datatype.startswith("$") for datatype in undeclared)
+    assert inventory["builtinDatatypes"] == ["Any"]
+    assert inventory["undeclaredDatatypes"] == []
+    assert inventory["undeclaredRepresentations"] == []
     workflow_references = [reference for reference in inventory["references"] if reference["ownerKind"] == "workflow"]
     assert any(reference["ownerId"] == "arc3_observe_choose_record" and reference["datatype"] == "Object" for reference in workflow_references)
 

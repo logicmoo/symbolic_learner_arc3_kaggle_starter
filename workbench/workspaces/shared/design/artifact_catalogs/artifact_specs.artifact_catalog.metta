@@ -7,7 +7,7 @@
       (confidence 1.0)
     ))
     (entity_set (
-      (type EntitySet)
+      (type EntityCollection)
       (producer vision.segment)
       (display entities)
       (confidence 0.94)

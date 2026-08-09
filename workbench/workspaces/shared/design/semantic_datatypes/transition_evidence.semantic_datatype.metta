@@ -23,6 +23,6 @@
     symbolic_fact_set
   ))
   (parents ([]
-    information
+    evidence
   ))
 )

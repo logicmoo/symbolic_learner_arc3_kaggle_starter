@@ -9,7 +9,10 @@
   ))
   (implementation llm.complete)
   (inputs (
-    (objects ObjectAnnotation)
+    (objects (
+      (datatype entity_collection)
+      (representation object_list)
+    ))
     (before ArtifactBundle)
     (after ArtifactBundle)
   ))

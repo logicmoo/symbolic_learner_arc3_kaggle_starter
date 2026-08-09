@@ -9,7 +9,7 @@
   ))
   (implementation symbolic.identity)
   (inputs (
-    (entities EntitySet)
+    (entities EntityCollection)
   ))
   (outputs (
     (identities IdentityMap)
