@@ -211,6 +211,14 @@ def test_model_policy_history_charts_real_persisted_results() -> None:
     assert ".performance-history-chart" in styles
 
 
+def test_model_policy_labels_benchmark_profiles_as_model_presets() -> None:
+    source = (ROOT / "workbench" / "frontend" / "src" / "components" / "ModelPolicyPage.tsx").read_text(encoding="utf-8")
+    assert "<span>Model Presets</span>" in source
+    assert "Filesystem model preset" in source
+    assert "<span>Preset</span>" in source
+    assert "legacy promptProfiles field" in source
+
+
 def test_model_catalog_infers_presets_and_keeps_disabled_children_visible() -> None:
     models = (ROOT / "workbench" / "frontend" / "src" / "components" / "LlmModelsEditor.tsx").read_text(encoding="utf-8")
     styles = (ROOT / "workbench" / "frontend" / "src" / "styles" / "models_editor.css").read_text(encoding="utf-8")
