@@ -93,7 +93,8 @@ const slug=(value:string)=>value.toLowerCase().replace(/[^a-z0-9]+/g,"_").replac
 export function FilesystemWorkbenchPage(){
  const[workspaces,setWorkspaces]=useState<Workspace[]>([]),[workspace,setWorkspace]=useState<Workspace|null>(null),[snapshot,setSnapshot]=useState<Snapshot|null>(null),[view,setViewState]=useState<View>(()=>viewFromLocation()||"canvas");
  const autoWorkspaceStarted=useRef(false);
- const setView=(next:View)=>{setViewState(next);const url=new URL(window.location.href);if(next==="canvas")url.searchParams.delete("view");else url.searchParams.set("view",next);window.history.replaceState(null,"",`${url.pathname}${url.search}${url.hash}`)};
+ const setView=(next:View)=>{setViewState(next);const url=new URL(window.location.href);if(next==="canvas")url.searchParams.delete("view");else url.searchParams.set("view",next);url.searchParams.delete("resource");window.history.replaceState(null,"",`${url.pathname}${url.search}${url.hash}`)};
+ const openRuntimeResource=(kind:"operation"|"model",id:string)=>{const next:View=kind==="operation"?"operations":"llms";setViewState(next);const url=new URL(window.location.href);url.searchParams.set("view",next);url.searchParams.set("resource",id);window.history.replaceState(null,"",`${url.pathname}${url.search}${url.hash}`)};
  const[workflowPath,setWorkflowPath]=useState(""),[workflowSource,setWorkflowSource]=useState(""),[runInputs,setRunInputs]=useState("{}"),[selectedStepId,setSelectedStepId]=useState<string|null>(null),[humanValues,setHumanValues]=useState<Record<string,unknown>>({}),[humanDraftLoaded,setHumanDraftLoaded]=useState(false),[humanDraftStatus,setHumanDraftStatus]=useState("");
  const[run,setRun]=useState<Run|null>(null),[selectedArtifactId,setSelectedArtifactId]=useState<string|null>(null),[validation,setValidation]=useState<string[]|null>(null),[capabilities,setCapabilities]=useState<Record<string,Capability>>({}),[implementations,setImplementations]=useState<EngineImplementation[]>([]),[busy,setBusy]=useState(false),[error,setError]=useState<string|null>(null);
  const[restarting,setRestarting]=useState(false);
@@ -149,13 +150,13 @@ export function FilesystemWorkbenchPage(){
  {view==="evidence"&&<section className="evidence-view"><div className="evidence-summary"><span>RUN EVIDENCE</span><strong>{run?.events.length||0}<small> events</small></strong><p>Persisted workflow-engine evidence.</p></div><div className="lineage">{run?.events.length?run.events.map((event,index)=><div className="lineage-node" key={String(event.id)}><span>{index+1}</span><b>{event.kind}</b><small>{event.stepId||"workflow"} · {event.createdAt}</small></div>):<p>Run a workflow to generate evidence.</p>}</div></section>}
  {view==="goals"&&<GoalPlanLibraryEditor workspaceId={workspace.id} family="goal"/>}
  {view==="plans"&&<GoalPlanLibraryEditor workspaceId={workspace.id} family="plan"/>}
- {view==="goalRuns"&&<RuntimeHistoryView mode="goalRuns" workspaceId={workspace.id} goals={snapshot?.goals} plans={snapshot?.plans} contexts={snapshot?.contexts} workflows={snapshot?.workflows} onSelectRun={selectRuntimeRun}/>}
- {view==="workflowRuns"&&<RuntimeHistoryView mode="workflowRuns" workspaceId={workspace.id} onSelectRun={selectRuntimeRun}/>}
- {view==="execs"&&<RuntimeHistoryView mode="execs" workspaceId={workspace.id} onSelectRun={selectRuntimeRun}/>}
- {view==="events"&&<RuntimeHistoryView mode="events" workspaceId={workspace.id} onSelectRun={selectRuntimeRun}/>}
- {view==="states"&&<RuntimeHistoryView mode="states" workspaceId={workspace.id} onSelectRun={selectRuntimeRun}/>}
- {view==="runtimeContexts"&&<RuntimeHistoryView mode="runtimeContexts" workspaceId={workspace.id} onSelectRun={selectRuntimeRun}/>}
- {view==="logs"&&<RuntimeHistoryView mode="logs" workspaceId={workspace.id} onSelectRun={selectRuntimeRun}/>}
+ {view==="goalRuns"&&<RuntimeHistoryView mode="goalRuns" workspaceId={workspace.id} goals={snapshot?.goals} plans={snapshot?.plans} contexts={snapshot?.contexts} workflows={snapshot?.workflows} onSelectRun={selectRuntimeRun} onOpenResource={openRuntimeResource}/>}
+ {view==="workflowRuns"&&<RuntimeHistoryView mode="workflowRuns" workspaceId={workspace.id} onSelectRun={selectRuntimeRun} onOpenResource={openRuntimeResource}/>}
+ {view==="execs"&&<RuntimeHistoryView mode="execs" workspaceId={workspace.id} onSelectRun={selectRuntimeRun} onOpenResource={openRuntimeResource}/>}
+ {view==="events"&&<RuntimeHistoryView mode="events" workspaceId={workspace.id} onSelectRun={selectRuntimeRun} onOpenResource={openRuntimeResource}/>}
+ {view==="states"&&<RuntimeHistoryView mode="states" workspaceId={workspace.id} onSelectRun={selectRuntimeRun} onOpenResource={openRuntimeResource}/>}
+ {view==="runtimeContexts"&&<RuntimeHistoryView mode="runtimeContexts" workspaceId={workspace.id} onSelectRun={selectRuntimeRun} onOpenResource={openRuntimeResource}/>}
+ {view==="logs"&&<RuntimeHistoryView mode="logs" workspaceId={workspace.id} onSelectRun={selectRuntimeRun} onOpenResource={openRuntimeResource}/>}
  {view==="modelPolicy"&&<ModelPolicyPage workspaceId={workspace.id} onOpenModels={()=>setView("llms")}/>}
  {view==="docs"&&<RepositoryDocsPage initialFilter={docsFilter}/>}
  {view==="benchmarks"&&<ModelPolicyPage workspaceId={workspace.id} onOpenModels={()=>setView("llms")}/>}

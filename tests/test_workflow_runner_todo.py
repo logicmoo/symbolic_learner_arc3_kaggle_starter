@@ -89,3 +89,18 @@ def test_runtime_history_initial_load_is_bounded_and_expandable() -> None:
     assert "Load 50 older goal runs" in source
     assert 'const includeGoalRuns = mode === "goalRuns" || mode === "runtimeContexts"' in source
     assert "includeWorkflowRuns ? api(" in source
+
+
+def test_runtime_records_link_back_to_executable_resources() -> None:
+    runtime = (ROOT / "workbench" / "frontend" / "src" / "components" / "RuntimeHistoryView.tsx").read_text(encoding="utf-8")
+    shell = (ROOT / "workbench" / "frontend" / "src" / "pages" / "FilesystemWorkbenchPage.tsx").read_text(encoding="utf-8")
+    operations = (ROOT / "workbench" / "frontend" / "src" / "components" / "OperationLibraryEditor.tsx").read_text(encoding="utf-8")
+    models = (ROOT / "workbench" / "frontend" / "src" / "components" / "LlmModelsEditor.tsx").read_text(encoding="utf-8")
+
+    assert "Open Operation ·" in runtime
+    assert "Open producing Model ·" in runtime
+    assert "OpenRuntimeResource" in runtime
+    assert 'url.searchParams.set("resource",id)' in shell
+    assert 'kind==="operation"?"operations":"llms"' in shell
+    assert 'new URLSearchParams(window.location.search).get("resource")' in operations
+    assert 'new URLSearchParams(window.location.search).get("resource")' in models

@@ -52,7 +52,7 @@ export function LlmModelsEditor({workspaceId}:{workspaceId:string}){
  const perform=async(work:()=>Promise<void>)=>{setBusy(true);setError(null);try{await work()}catch(r){setError(r instanceof Error?r.message:String(r))}finally{setBusy(false)}};
  const open=(record:RecordFile<ModelResource>)=>{const key=recordKey(record);setOpenDocs(current=>current.some(doc=>doc.key===key)?current:[...current,{key,record,source:record.document?JSON.stringify(record.document,null,2):"",dirty:false}]);setActiveKey(key)};
  const close=(key:string)=>{setOpenDocs(current=>{const index=current.findIndex(doc=>doc.key===key);const next=current.filter(doc=>doc.key!==key);if(activeKey===key)setActiveKey(next[Math.max(0,index-1)]?.key||next[0]?.key||null);if(compareKey===key)setCompareKey(null);return next})};
- useEffect(()=>{if(snapshot&&openDocs.length===0){if(nodes[0])open(nodes[0] as RecordFile<ModelResource>);else if(backends[0])open(backends[0] as RecordFile<ModelResource>)}},[snapshot]);
+ useEffect(()=>{if(snapshot&&openDocs.length===0){const requestedId=new URLSearchParams(window.location.search).get("resource");const requested=[...backends,...nodes].find(row=>row.document?.id===requestedId);if(requested)open(requested as RecordFile<ModelResource>);else if(nodes[0])open(nodes[0] as RecordFile<ModelResource>);else if(backends[0])open(backends[0] as RecordFile<ModelResource>)}},[snapshot]);
  const updateSource=(key:string,source:string)=>setOpenDocs(current=>current.map(doc=>doc.key===key?{...doc,source,dirty:true}:doc));
  const active=openDocs.find(doc=>doc.key===activeKey)||null;
  const chooseComparison=()=>{if(compareKey){setCompareKey(null);return}const other=[...openDocs].reverse().find(doc=>doc.key!==activeKey);if(other)setCompareKey(other.key)};
