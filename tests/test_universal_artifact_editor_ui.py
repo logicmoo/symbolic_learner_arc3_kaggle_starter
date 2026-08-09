@@ -182,6 +182,8 @@ def test_universal_shell_keeps_tabs_compare_inspector_and_docks() -> None:
         "Expand hierarchy",
         "Only Toplevel",
         "Show Tree",
+        "Expand All",
+        "Collapse All",
         "artifact-navigator-content",
     ):
         assert token in source
@@ -278,6 +280,8 @@ def test_universal_tree_exposes_composable_tri_state_view_controls() -> None:
     assert "roleKeys.map(key => [key, value])" in controls
     assert 'aria-label="Tree View Controls"' in universal
     assert "updateVisibilityRules" in universal
+    assert 'commandCategories("expand");commandTree("expand")' in universal
+    assert 'commandTree("collapse");commandCategories("collapse")' in universal
     assert ".tree-view-controls" in styles
     assert ".tree-rule-switch" in styles
 
