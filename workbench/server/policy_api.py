@@ -90,9 +90,12 @@ def invoke_model_example(workspace_id: str, model_id: str, request: dict[str, An
     if not record or not (record.get("resolved") or {}).get("enabled"): raise HTTPException(status_code=404, detail=f"enabled model/profile not found: {model_id}")
     prompt = str((request.get("arguments") or {}).get("prompt") or request.get("prompt") or "")
     if not prompt: raise HTTPException(status_code=400, detail="example argument prompt is required")
-    trace = {"workspaceId": workspace_id, "modelId": model_id, "status": "running", "prompt": prompt, "timeoutSeconds": int(request.get("timeoutSeconds") or 120), "resource": record.get("document"), "resolved": record.get("resolved")}
+    image = str(request.get("image") or "").strip()
+    if image and not image.startswith(("data:image/", "https://", "http://")): raise HTTPException(status_code=400, detail="image must be an image data URL or HTTP(S) URL")
+    image_summary = None if not image else {"source": "data_url" if image.startswith("data:") else "url", "mediaType": image[5:].split(";", 1)[0] if image.startswith("data:") else None, "length": len(image)}
+    trace = {"workspaceId": workspace_id, "modelId": model_id, "status": "running", "prompt": prompt, "image": image_summary, "timeoutSeconds": int(request.get("timeoutSeconds") or 120), "resource": record.get("document"), "resolved": record.get("resolved")}
     try:
-        result = call_model({"id": model_id, "modelId": (record.get("resolved") or {}).get("model")}, {**record, "_workspaceRoot": workspace["root"]}, prompt, trace["timeoutSeconds"])
+        result = call_model({"id": model_id, "modelId": (record.get("resolved") or {}).get("model")}, {**record, "_workspaceRoot": workspace["root"], "_inputImages": [image] if image else []}, prompt, trace["timeoutSeconds"])
     except Exception as error:
         debug_log_path = write_invocation_trace(Path(workspace["root"]), "model", model_id, "model_invocation_trace", {**trace, "status": "failed", "error": str(error)})
         raise HTTPException(status_code=400, detail={"message": str(error), "debugLogPath": debug_log_path}) from error

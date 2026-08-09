@@ -20,18 +20,28 @@ def _now() -> str:
 
 def call_model(model: dict[str, Any], profile: dict[str, Any], prompt: str, timeout_seconds: int) -> dict[str, Any]:
     resolved = profile.get("resolved") or {}; backend = resolved.get("backend") or {}; configuration = resolved.get("configuration") or {}; defaults = resolved.get("defaults") or {}
+    images = [str(value) for value in (profile.get("_inputImages") or []) if str(value).startswith(("data:image/", "https://", "http://"))]
     base_url = str(configuration.get("baseUrl") or "").rstrip("/"); adapter = str(configuration.get("adapter") or "openai_responses"); key_name = str(configuration.get("apiKeyEnvironmentVariable") or configuration.get("apiKeyEnvironment") or ""); api_key = resolve_workspace_credential(profile.get("_workspaceRoot"), key_name) if key_name else ""
     if not base_url: raise RuntimeError("model backend has no HTTP endpoint")
     if key_name and not api_key and not base_url.startswith(("http://127.0.0.1", "http://localhost")): raise RuntimeError(f"environment variable {key_name} is not set")
     model_name = str(resolved.get("model") or model.get("modelId") or model.get("id")); headers = {"Content-Type": "application/json", "Accept": "application/json"}
     if adapter == "anthropic_messages":
-        headers.update({"x-api-key": api_key, "anthropic-version": "2023-06-01"}); endpoint = f"{base_url}/messages"; body = {"model": model_name, "max_tokens": min(256,int(defaults.get("maxOutputTokens",256))), "messages": [{"role": "user", "content": prompt}]}
+        content: Any = prompt
+        if images:
+            content = [{"type": "text", "text": prompt}]
+            for image in images:
+                if image.startswith("data:image/") and ";base64," in image:
+                    metadata, data = image.split(",", 1); media_type = metadata[5:].split(";", 1)[0]
+                    content.append({"type": "image", "source": {"type": "base64", "media_type": media_type, "data": data}})
+        headers.update({"x-api-key": api_key, "anthropic-version": "2023-06-01"}); endpoint = f"{base_url}/messages"; body = {"model": model_name, "max_tokens": min(256,int(defaults.get("maxOutputTokens",256))), "messages": [{"role": "user", "content": content}]}
     elif adapter == "openai_chat_completions":
         if api_key: headers["Authorization"] = f"Bearer {api_key}"
-        endpoint = f"{base_url}/chat/completions"; body = {"model": model_name, "messages": [{"role": "user", "content": prompt}], "max_tokens": min(256,int(defaults.get("maxOutputTokens",256)))}
+        content = prompt if not images else [{"type": "text", "text": prompt}, *({"type": "image_url", "image_url": {"url": image}} for image in images)]
+        endpoint = f"{base_url}/chat/completions"; body = {"model": model_name, "messages": [{"role": "user", "content": content}], "max_tokens": min(256,int(defaults.get("maxOutputTokens",256)))}
     else:
         if api_key: headers["Authorization"] = f"Bearer {api_key}"
-        endpoint = f"{base_url}/responses"; body = {"model": model_name, "input": prompt, "max_output_tokens": min(256,int(defaults.get("maxOutputTokens",256)))}
+        input_value: Any = prompt if not images else [{"role": "user", "content": [{"type": "input_text", "text": prompt}, *({"type": "input_image", "image_url": image} for image in images)]}]
+        endpoint = f"{base_url}/responses"; body = {"model": model_name, "input": input_value, "max_output_tokens": min(256,int(defaults.get("maxOutputTokens",256)))}
     started = time.perf_counter(); request = urllib.request.Request(endpoint, data=json.dumps(body).encode("utf-8"), headers=headers, method="POST")
     with urllib.request.urlopen(request, timeout=timeout_seconds) as response: payload = json.loads(response.read().decode("utf-8"))
     if adapter == "anthropic_messages": text = "".join(str(item.get("text") or "") for item in payload.get("content", [])); usage = payload.get("usage") or {}

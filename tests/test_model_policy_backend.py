@@ -9,6 +9,7 @@ SERVER = ROOT / "workbench" / "server"
 sys.path.insert(0, str(SERVER))
 
 import policy_api  # noqa: E402
+import model_benchmark  # noqa: E402
 from model_discovery import discover_backend_models, import_discovered_models, reconcile_discovered_models, remove_missing_models  # noqa: E402
 from model_policy_ping import run_ping_job  # noqa: E402
 from model_benchmark import run_benchmark  # noqa: E402
@@ -161,14 +162,43 @@ def test_model_import_route_always_targets_shared_workspace(tmp_path: Path, monk
 def test_model_example_invokes_resolved_model(monkeypatch, tmp_path: Path) -> None:
     monkeypatch.setattr(policy_api, "_resolve_workspace", lambda workspace_id: {"id": workspace_id, "root": str(tmp_path)})
     monkeypatch.setattr(policy_api, "resolve_model_records", lambda _root: [{"document": {"id": "model"}, "resolved": {"enabled": True, "model": "remote", "configuration": {}, "defaults": {}}}])
-    monkeypatch.setattr(policy_api, "call_model", lambda model, profile, prompt, timeout: {"text": prompt.upper(), "latencyMs": 1})
-    result = policy_api.invoke_model_example("shared", "model", {"arguments": {"prompt": "hello"}})
+    captured: dict = {}
+    def invoke(_model, profile, prompt, _timeout):
+        captured.update({"images": profile.get("_inputImages"), "prompt": prompt})
+        return {"text": prompt.upper(), "latencyMs": 1}
+    monkeypatch.setattr(policy_api, "call_model", invoke)
+    image = "data:image/png;base64,aGVsbG8="
+    result = policy_api.invoke_model_example("shared", "model", {"arguments": {"prompt": "hello"}, "image": image})
     assert result["text"] == "HELLO"
+    assert captured == {"images": [image], "prompt": "hello"}
     assert result["debugLogPath"].startswith("runtime/logs/model_invocations/")
     trace = json.loads(policy_api.read_model_debug_log("shared", result["debugLogPath"])["content"])
     assert trace["status"] == "completed"
     assert trace["prompt"] == "hello"
+    assert trace["image"] == {"source": "data_url", "mediaType": "image/png", "length": len(image)}
     assert trace["response"]["text"] == "HELLO"
+
+
+def test_model_call_sends_multimodal_chat_content(monkeypatch) -> None:
+    captured: dict = {}
+    class Response:
+        def __enter__(self): return self
+        def __exit__(self, *_args): return None
+        def read(self): return json.dumps({"choices": [{"message": {"content": "seen"}}], "usage": {}}).encode()
+    def open_request(request, timeout):
+        captured.update({"body": json.loads(request.data), "timeout": timeout})
+        return Response()
+    monkeypatch.setattr(model_benchmark.urllib.request, "urlopen", open_request)
+    image = "data:image/png;base64,aGVsbG8="
+    result = model_benchmark.call_model(
+        {"id": "vision"},
+        {"resolved": {"model": "remote", "configuration": {"baseUrl": "http://localhost:3456/v1", "adapter": "openai_chat_completions"}}, "_inputImages": [image]},
+        "describe", 9,
+    )
+    content = captured["body"]["messages"][0]["content"]
+    assert content == [{"type": "text", "text": "describe"}, {"type": "image_url", "image_url": {"url": image}}]
+    assert captured["timeout"] == 9
+    assert result["text"] == "seen"
 
 
 def test_example_executor_is_shared_by_models_and_prompts() -> None:
@@ -215,6 +245,8 @@ def test_open_model_resource_has_the_universal_execution_runner() -> None:
     assert "/models/${encodeURIComponent(model.id)}/invoke" in runner
     assert "/models/debug-log?path=" in runner
     assert "COMPLETE DEBUG TRACE" in runner
+    assert 'type="file" accept="image/*"' in runner
+    assert "image:image||undefined" in runner
     assert '@router.post("/{workspace_id}/models/{model_id}/invoke")' in api
     assert '@router.get("/{workspace_id}/models/debug-log")' in api
 
