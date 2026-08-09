@@ -40,6 +40,9 @@ if "%CONNECT_IP%"=="0.0.0.0" set "CONNECT_IP=127.0.0.1"
 set "WEB_URL=http://%CONNECT_IP%:%WEB_PORT%/"
 set "API_URL=http://%CONNECT_IP%:%API_PORT%"
 set "API_HEALTH_URL=%API_URL%/api/health"
+set "CLAWROUTER_PORT=3456"
+set "CLAWROUTER_URL=http://127.0.0.1:%CLAWROUTER_PORT%"
+set "CLAWROUTER_HEALTH_URL=%CLAWROUTER_URL%/health"
 
 title MeTTaSymbolicLearnerWorkbench %BIND_IP%:%WEB_PORT%
 echo.
@@ -89,6 +92,20 @@ if not exist "%ROOT%frontend\node_modules\.bin\vite.cmd" (
   popd
 )
 
+echo Checking ClawRouter on 127.0.0.1:%CLAWROUTER_PORT%...
+powershell -NoProfile -ExecutionPolicy Bypass -Command "try { $r=Invoke-WebRequest -UseBasicParsing '%CLAWROUTER_HEALTH_URL%' -TimeoutSec 2; if ($r.StatusCode -eq 200) { exit 0 } } catch {}; exit 1" >nul 2>nul
+if errorlevel 1 (
+  echo Starting the local ClawRouter proxy on 127.0.0.1:%CLAWROUTER_PORT%...
+  start "ClawRouter %CLAWROUTER_PORT%" /D "%ROOT%" "%ComSpec%" /k scripts\run_clawrouter.bat %CLAWROUTER_PORT%
+  echo Waiting for ClawRouter...
+  powershell -NoProfile -ExecutionPolicy Bypass -Command "$limit=(Get-Date).AddSeconds(120); do { try { $r=Invoke-WebRequest -UseBasicParsing '%CLAWROUTER_HEALTH_URL%' -TimeoutSec 2; if ($r.StatusCode -eq 200) { exit 0 } } catch {}; Start-Sleep -Milliseconds 500 } while ((Get-Date) -lt $limit); exit 1"
+  if errorlevel 1 (
+    echo WARNING: ClawRouter did not answer yet. Check the ClawRouter %CLAWROUTER_PORT% window.
+  )
+) else (
+  echo ClawRouter is already running.
+)
+
 echo Starting the local event backend on %BIND_IP%:%API_PORT%...
 start "MeTTa Workbench API %API_PORT%" /D "%ROOT%" "%ComSpec%" /k scripts\run_api_server.bat %BIND_IP% %API_PORT%
 
@@ -112,10 +129,11 @@ if errorlevel 1 (
 echo.
 echo The workbench is running locally at %WEB_URL%
 echo API documentation is at %API_URL%/docs
+echo ClawRouter is at %CLAWROUTER_URL%/v1 using blockrun/free by default.
 echo Edit files under workbench\frontend\src or workbench\server;
 echo the appropriate process reloads automatically.
 echo Each API/Vite window shows the exact command to rerun after Ctrl+C.
-echo Close the two server windows for this instance when you are finished.
+echo Close the API, Vite, and ClawRouter windows for this instance when you are finished.
 echo.
 pause
 exit /b 0

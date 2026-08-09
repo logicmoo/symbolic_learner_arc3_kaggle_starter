@@ -35,7 +35,9 @@ def test_shared_router_backends_and_free_first_defaults_load_from_metta() -> Non
     omniroute = backends["omniroute"]
     assert (omniroute.get("configuration") or {})["baseUrl"] == "http://localhost:20128/v1"
     assert (omniroute.get("configuration") or {})["credentialBootstrap"]["url"] == "http://localhost:20128/api/keys"
-    assert all(backends[name]["enabled"] is False for name in ("anthropic", "clawrouter", "groq", "omniroute", "openai", "unsloth"))
+    assert backends["clawrouter"]["enabled"] is True
+    assert (backends["clawrouter"].get("configuration") or {})["defaultModel"] == "blockrun/free"
+    assert all(backends[name]["enabled"] is False for name in ("anthropic", "groq", "omniroute", "openai", "unsloth"))
 
     vendor_policies = {
         str((record.get("document") or {}).get("vendorId")): record.get("document") or {}
@@ -58,6 +60,25 @@ def test_shared_router_backends_and_free_first_defaults_load_from_metta() -> Non
         for router_id, resolved in routers.items()
         if router_id != "openrouter-free-router"
     )
+
+    clawrouter = next(
+        record.get("resolved") or {}
+        for record in resolve_model_records(shared)
+        if str((record.get("document") or {}).get("id")) == "clawrouter-free-router"
+    )
+    assert clawrouter["enabled"] is True
+    assert clawrouter["model"] == "blockrun/free"
+    assert (clawrouter.get("configuration") or {})["baseUrl"] == "http://127.0.0.1:3456/v1"
+
+
+def test_windows_clawrouter_launcher_uses_the_workbench_port_and_free_route() -> None:
+    launcher = (ROOT / "workbench" / "scripts" / "run_clawrouter.bat").read_text(encoding="utf-8")
+    demo = (ROOT / "workbench" / "run_demo.bat").read_text(encoding="utf-8")
+    assert 'if exist "C:\\snet\\setkeys.bat" call "C:\\snet\\setkeys.bat"' in launcher
+    assert "@blockrun/clawrouter --port %CLAWROUTER_PORT%" in launcher
+    assert "Default workbench model: blockrun/free" in launcher
+    assert 'set "CLAWROUTER_PORT=3456"' in demo
+    assert "scripts\\run_clawrouter.bat %CLAWROUTER_PORT%" in demo
 
 
 def test_workspace_credentials_override_environment_without_leaking_values(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
