@@ -1,6 +1,6 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { ArtifactTreeCommandContext, type ArtifactTreeCommand } from "./ArtifactTreeBranch";
-import { TreeViewControls } from "./TreeViewControls";
+import { RepeatSwitch, TreeViewControls } from "./TreeViewControls";
 import { DEFAULT_TREE_VISIBILITY_RULES, type TreeVisibilityRules, useArtifactTreeFilter } from "./useArtifactTreeFilter";
 import { CategorizedArtifactNodes } from "./CategorizedArtifactTree";
 import "../styles/operation_editor.css";
@@ -169,6 +169,7 @@ export function UniversalArtifactEditor({
           <span>HIERARCHY</span>
           <div className="artifact-navigator-actions">
             <label className="artifact-tree-filter"><span>Filter tree</span><input type="search" value={treeFilter} onChange={event=>{const value=event.target.value;setTreeFilter(value);if(value.trim())commandTree("expand")}} placeholder="Filter tree…" /></label>
+            <div className="tree-repeat-permanent"><RepeatSwitch value={visibilityRules.repeats} onChange={repeats=>updateVisibilityRules({...visibilityRules,repeats})} /></div>
             <button type="button" aria-label="Expand All" onClick={()=>{commandCategories("expand");commandTree("expand")}}><b>Expand All</b></button>
             <button type="button" aria-label="Collapse All" onClick={()=>{commandTree("collapse");commandCategories("collapse")}}><b>Collapse All</b></button>
             <button type="button" aria-label="Tree View Controls" aria-expanded={viewControlsOpen} aria-pressed={viewControlsOpen} onClick={()=>setViewControlsOpen(value=>!value)}><b>{viewControlsOpen ? "Hide View" : "Show View"}</b></button>

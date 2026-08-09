@@ -13,7 +13,7 @@ function ThreePositionSwitch({ label, value, onChange, onExpand, onCollapse }: {
   </div>;
 }
 
-function RepeatSwitch({ value, onChange }: { value: TreeRepeatMode; onChange: (value: TreeRepeatMode) => void }) {
+export function RepeatSwitch({ value, onChange }: { value: TreeRepeatMode; onChange: (value: TreeRepeatMode) => void }) {
   return <div className="tree-rule-row"><span>Repeated</span><div className="tree-rule-switch" role="radiogroup" aria-label="Repeated resources">
     {(["first", "all", "last"] as TreeRepeatMode[]).map(option => <button key={option} type="button" role="radio" aria-checked={value === option} className={value === option ? "active" : ""} onClick={() => onChange(option)}>{title(option)}</button>)}
   </div></div>;
@@ -38,7 +38,6 @@ export function TreeViewControls({ kinds, rules, onChange, showParents, onShowPa
       {card("enabled", <ThreePositionSwitch label="Enabled" value={rules.enabled} onChange={value => setRule("enabled", value)} onExpand={() => onBranchAction("expand", "enabled")} onCollapse={() => onBranchAction("collapse", "enabled")} />)}
       {card("disabled", <ThreePositionSwitch label="Disabled" value={rules.disabled} onChange={value => setRule("disabled", value)} onExpand={() => onBranchAction("expand", "disabled")} onCollapse={() => onBranchAction("collapse", "disabled")} />)}
       {card("categories", <ThreePositionSwitch label="Categories" value={rules.categories} onChange={value => setRule("categories", value)} onExpand={() => onBranchAction("expand", "categories")} onCollapse={() => onBranchAction("collapse", "categories")} />)}
-      {card("repeated", <RepeatSwitch value={rules.repeats} onChange={repeats => onChange({ ...rules, repeats })} />)}
       {card("other", <ThreePositionSwitch label={`Non-${kindLabels.join("/") || "Typed"}`} value={rules.roles.other || "unspecified"} onChange={value => setRole("other", value)} onExpand={() => onBranchAction("expand", "other")} onCollapse={() => onBranchAction("collapse", "other")} />)}
       {kinds.flatMap(kind => ([
         card(`top-${kind}`, <ThreePositionSwitch label={`Top ${plural(title(kind))}`} value={rules.roles[`top-${kind}`] || "unspecified"} onChange={value => setRole(`top-${kind}`, value)} onExpand={() => onBranchAction("expand", `top-${kind}`)} onCollapse={() => onBranchAction("collapse", `top-${kind}`)} />),

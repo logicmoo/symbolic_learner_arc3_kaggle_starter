@@ -274,6 +274,8 @@ def test_universal_tree_exposes_composable_tri_state_view_controls() -> None:
     for label in ('label="Search"', 'label="All"', "Enabled", "Disabled", "Categories", "Non-"):
         assert label in controls
     assert 'aria-label="Repeated resources"' in controls
+    assert "tree-repeat-permanent" in universal
+    assert "RepeatSwitch value={visibilityRules.repeats}" in universal
     assert '`top-${kind}`' in controls
     assert '`child-${kind}`' in controls
     assert '`childless-${kind}`' in controls
