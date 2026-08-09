@@ -53,6 +53,10 @@ export function LlmModelsEditor({workspaceId}:{workspaceId:string}){
  const active=openDocs.find(doc=>doc.key===activeKey)||null;
  const chooseComparison=()=>{if(compareKey){setCompareKey(null);return}const other=[...openDocs].reverse().find(doc=>doc.key!==activeKey);if(other)setCompareKey(other.key)};
  const saveDoc=(doc:OpenDocument)=>perform(async()=>{let document:ModelResource;try{document=JSON.parse(doc.source) as ModelResource}catch{throw new Error("Model resource source is invalid")};if(document.kind==="backend"&&!document.provider)throw new Error("Backend requires provider");if(document.kind!=="backend"){const parent=modelParent(document);if(!parent)throw new Error("Model requires a parent");document={...document,kind:"model",parents:[parent]};delete document.inherits}const original=doc.record.path;const directory=document.kind==="backend"?"design/backends":"design/models";const path=workspaceId==="shared"||doc.record.source==="workspace"?original:`${directory}/${slug(document.id)}.${document.kind}.json`;await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/file`,{method:"PUT",body:JSON.stringify({path,content:JSON.stringify(document,null,2)})});const next=await load();const pool:RecordFile<ModelResource>[]=[...(next.backends||[]),...(next.models||[])];const saved=pool.find(row=>row.document?.id===document.id);if(saved){const newKey=recordKey(saved);setOpenDocs(current=>current.map(item=>item.key===doc.key?{key:newKey,record:saved,source:JSON.stringify(saved.document,null,2),dirty:false}:item));if(activeKey===doc.key)setActiveKey(newKey);if(compareKey===doc.key)setCompareKey(newKey)}});
+ const setResourceEnabled=(doc:OpenDocument,document:ModelResource,enabled:boolean)=>{
+  const source=JSON.stringify({...document,enabled},null,2);
+  return saveDoc({...doc,source,dirty:true});
+ };
  const newBackend=()=>{const id=`backend-${Date.now().toString(36)}`;const document:BackendDef={kind:"backend",id,label:"New LLM Backend",description:"Configure the provider endpoint before pulling models.",provider:"openai",enabled:true,capabilities:["llm"],configuration:{baseUrl:"",apiKeyEnvironmentVariable:""},modelDefaults:{}};open({path:`design/backends/${slug(id)}.backend.json`,source:workspaceId==="shared"?"shared":"workspace",workspaceId,document})};
  const newChild=(parent:CatalogItem,role:"model"|"profile")=>{const id=`${parent.id}-${role}`;const document:ModelDef={kind:"model",id,label:`${parent.label} ${role}`,parents:[parent.id],enabled:true,defaults:{temperature:0,topP:1,maxOutputTokens:12000,reasoningEffort:"medium",timeoutSeconds:300}};open({path:`design/models/${slug(id)}.model.json`,source:workspaceId==="shared"?"shared":"workspace",workspaceId,document})};
  const pullModels=(backendId:string)=>perform(async()=>{const result=await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/models/discover/${encodeURIComponent(backendId)}`);setDiscovery({backendId,models:result.models||[]});setDiscoverySelection(new Set())});
@@ -70,6 +74,11 @@ export function LlmModelsEditor({workspaceId}:{workspaceId:string}){
   }
   const backend = document?.kind === "backend";
   const backendId = document?.id || "";
+  const resourceEnabled = document
+    ? (typeof document.enabled === "boolean"
+      ? document.enabled
+      : (typeof doc.record.resolved?.enabled === "boolean" ? doc.record.resolved.enabled : true))
+    : false;
   const discoveryForThis = (discovery && discovery.backendId === backendId) ? discovery : null;
   const discoveredModels = discoveryForThis?.models || [];
 
@@ -162,6 +171,13 @@ export function LlmModelsEditor({workspaceId}:{workspaceId:string}){
       </div>
       <div className="model-editor-actions">
        {doc.dirty && <button className="primary" onClick={() => saveDoc(doc)} disabled={busy}>Save Changes</button>}
+       {document && <button
+        className={resourceEnabled ? "disable-resource" : "enable-resource"}
+        onClick={() => setResourceEnabled(doc, document, !resourceEnabled)}
+        disabled={busy}
+        aria-pressed={!resourceEnabled}
+        title={`${resourceEnabled ? "Disable" : "Enable"} this ${document.kind} resource`}
+       >{resourceEnabled ? "Disable Resource" : "Enable Resource"}</button>}
        {backend && <button onClick={() => pullModels(backendId)} disabled={busy}>Pull Models</button>}
        {!secondary && <button onClick={chooseComparison}>{compareKey ? "Close Split" : "Split View"}</button>}
        <button className="danger" onClick={() => close(doc.key)}>Close</button>

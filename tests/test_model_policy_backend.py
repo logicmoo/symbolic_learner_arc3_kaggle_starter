@@ -191,6 +191,15 @@ def test_model_discovery_grid_supports_json_property_filters_and_sorting() -> No
     assert 'const filteredModels = (() =>' in models
 
 
+def test_open_model_resource_has_a_persistent_enable_disable_control() -> None:
+    models = (ROOT / "workbench" / "frontend" / "src" / "components" / "LlmModelsEditor.tsx").read_text(encoding="utf-8")
+    assert "setResourceEnabled" in models
+    assert 'typeof document.enabled === "boolean"' in models
+    assert 'doc.record.resolved?.enabled' in models
+    assert '"Disable Resource" : "Enable Resource"' in models
+    assert "saveDoc({...doc,source,dirty:true})" in models
+
+
 def test_discovery_reconciles_and_only_removes_managed_missing_models(tmp_path: Path) -> None:
     backend = {"id": "vendor", "label": "Vendor"}
     imported = import_discovered_models(tmp_path, backend, [{"id": "old", "label": "Old"}, {"id": "keep", "label": "Keep"}])
