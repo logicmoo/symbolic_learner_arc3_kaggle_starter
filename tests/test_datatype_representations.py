@@ -24,6 +24,19 @@ def test_image_is_abstract_datatype_with_multiple_representations() -> None:
     assert {"bitmap", "logo_program", "scene_graph", "natural_language"}.issubset(image["children"])
 
 
+def test_object_is_a_first_class_semantic_datatype() -> None:
+    datatypes = {record["document"]["id"]: record["document"] for record in load_workspace_datatype_records(SHARED) if record.get("document")}
+    representations = {record["document"]["id"]: record["document"] for record in load_workspace_representation_records(SHARED) if record.get("document")}
+    object_type = datatypes["object"]
+    assert object_type["kind"] == "semantic_datatype"
+    assert object_type["parents"] == ["information"]
+    assert object_type["preferredChild"] == "json_object"
+    assert object_type["children"] == ["json_object", "python_object"]
+    assert "object" in datatypes["information"]["children"]
+    assert "object" in representations["json_object"]["parents"]
+    assert "object" in representations["python_object"]["parents"]
+
+
 def test_semantic_datatype_hierarchy_is_explicit_and_bidirectional() -> None:
     datatypes = {record["document"]["id"]: record["document"] for record in load_workspace_datatype_records(SHARED) if record.get("document")}
     assert datatypes["identity_map"]["parents"] == ["information"]

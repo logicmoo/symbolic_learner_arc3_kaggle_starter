@@ -22,6 +22,7 @@
     image
     atomspace
     intervention
+    object
     object_representation_bundle
     observation
     observation_collection

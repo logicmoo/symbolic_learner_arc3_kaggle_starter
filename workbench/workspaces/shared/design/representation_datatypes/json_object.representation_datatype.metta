@@ -4,6 +4,7 @@
   (label "JSON Object")
   (parents ([]
     information
+    object
   ))
   (children ([]
     json

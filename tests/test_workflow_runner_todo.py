@@ -77,6 +77,9 @@ def test_goal_run_human_pause_uses_the_frozen_step_form_contract() -> None:
     assert '/api/goal-runs/${encodeURIComponent(requestedGoalRunId)}' in source
     assert 'persistRuntimeSelection("goalRun", goalRun.id)' in source
     assert 'persistRuntimeSelection("run", run.id)' in source
+    assert 'onOpenResource("datatype", datatypeId)' in source
+    assert "Open Datatype" in source
+    assert "!selectedStep || !item.stepId || item.stepId === selectedStep.id" in source
     assert "workflow={goalRunWorkflow}" in source
 
 
@@ -108,6 +111,6 @@ def test_runtime_records_link_back_to_executable_resources() -> None:
     assert "Open producing Model ·" in runtime
     assert "OpenRuntimeResource" in runtime
     assert 'url.searchParams.set("resource",id)' in shell
-    assert 'kind==="operation"?"operations":"llms"' in shell
+    assert 'kind==="operation"?"operations":kind==="model"?"llms":"data"' in shell
     assert 'new URLSearchParams(window.location.search).get("resource")' in operations
     assert 'new URLSearchParams(window.location.search).get("resource")' in models

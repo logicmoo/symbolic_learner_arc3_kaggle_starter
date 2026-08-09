@@ -64,7 +64,7 @@ function artifactRecords(artifact: RuntimeRun["artifacts"][number], collectionKe
   return [record];
 }
 
-type RuntimeResourceKind = "operation" | "model";
+type RuntimeResourceKind = "operation" | "model" | "datatype";
 type OpenRuntimeResource = (kind: RuntimeResourceKind, id: string) => void;
 
 type WorkflowRunCommand = "pause" | "resume" | "advance" | "replay" | "cancel";
@@ -83,7 +83,7 @@ function WorkflowRunProjection({ run, workflow, busy, onCommand, onOpenResource,
   const width = Math.max(760, steps.length * 180);
   const positions = new Map(steps.map((step, index) => [step.id, { x: 95 + index * 170, y: 75 + (index % 2) * 105 }]));
   const stepRuntime = selectedStep ? run.steps.find(item => item.stepId === selectedStep.id) : undefined;
-  const artifacts = run.artifacts.filter(item => !selectedStep || item.stepId === selectedStep.id);
+  const artifacts = run.artifacts.filter(item => !selectedStep || !item.stepId || item.stepId === selectedStep.id);
   const logs = run.logs.filter(item => !selectedStep || item.stepId === selectedStep.id);
   const stepEvents = run.events.filter(event => !selectedStep || event.stepId === selectedStep.id);
   const latestStepEvent = stepEvents.at(-1);
@@ -115,7 +115,7 @@ function WorkflowRunProjection({ run, workflow, busy, onCommand, onOpenResource,
       <div><span>{selectedEvent ? "EVENT" : "STEP"}</span><h3>{selectedEvent?.kind || selectedStep?.label || selectedStep?.id || "Select a node"}</h3><p>{selectedEvent?.stepId || selectedStep?.implementation || selectedStep?.operation || selectedStep?.kind || "workflow"}</p></div>
       <dl><div><dt>Status</dt><dd>{stepRuntime?.status || run.status}</dd></div><div><dt>Attempt</dt><dd>{stepRuntime?.attempt || 0}</dd></div><div><dt>Artifacts</dt><dd>{artifacts.length}</dd></div><div><dt>Logs</dt><dd>{logs.length}</dd></div></dl>
       {selectedEvent && <pre>{jsonValueToMetta(selectedEvent.payload || {})}</pre>}
-      {!selectedEvent && selectedStep && <><details><summary>Step contract</summary><pre>{jsonValueToMetta({ inputs: selectedStep.inputs || {}, outputs: selectedStep.outputs || {} })}</pre></details>{artifacts.map(item => { const operationId = String(item.provenance?.operationId || ""); const modelId = String(item.provenance?.modelId || ""); return <details key={item.id}><summary>Artifact · {item.name} · {item.datatype || "Any"}</summary><pre>{jsonValueToMetta(item.payload)}</pre><dl className="artifact-provenance"><div><dt>Content hash</dt><dd>{item.contentHash || "unavailable"}</dd></div><div><dt>Provenance</dt><dd>{jsonValueToMetta(item.provenance || {})}</dd></div></dl>{onOpenResource && <div className="runtime-resource-links">{operationId && <button type="button" onClick={() => onOpenResource("operation", operationId)}>Open producing Operation · {operationId}</button>}{modelId && <button type="button" onClick={() => onOpenResource("model", modelId)}>Open producing Model · {modelId}</button>}</div>}</details>})}{logs.map(item => <details key={item.id}><summary>{item.stream} log</summary><pre>{item.message}</pre></details>)}</>}
+      {!selectedEvent && selectedStep && <><details><summary>Step contract</summary><pre>{jsonValueToMetta({ inputs: selectedStep.inputs || {}, outputs: selectedStep.outputs || {} })}</pre></details>{artifacts.map(item => { const operationId = String(item.provenance?.operationId || ""); const modelId = String(item.provenance?.modelId || ""); const datatypeId = String(item.datatype || ""); return <details key={item.id}><summary>Artifact · {item.name} · {item.datatype || "Any"}</summary><pre>{jsonValueToMetta(item.payload)}</pre><dl className="artifact-provenance"><div><dt>Content hash</dt><dd>{item.contentHash || "unavailable"}</dd></div><div><dt>Provenance</dt><dd>{jsonValueToMetta(item.provenance || {})}</dd></div></dl>{onOpenResource && <div className="runtime-resource-links">{datatypeId && !/^any$/i.test(datatypeId) && <button type="button" onClick={() => onOpenResource("datatype", datatypeId)}>Open Datatype · {datatypeId}</button>}{operationId && <button type="button" onClick={() => onOpenResource("operation", operationId)}>Open producing Operation · {operationId}</button>}{modelId && <button type="button" onClick={() => onOpenResource("model", modelId)}>Open producing Model · {modelId}</button>}</div>}</details>})}{logs.map(item => <details key={item.id}><summary>{item.stream} log</summary><pre>{item.message}</pre></details>)}</>}
     </div>
   </section>;
 }

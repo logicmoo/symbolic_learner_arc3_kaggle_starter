@@ -6,6 +6,7 @@
   (description "An in-memory Python object representation used by Python operation implementations.")
   (parents ([]
     information
+    object
   ))
   (children ([]))
 )

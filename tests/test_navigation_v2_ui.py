@@ -105,6 +105,15 @@ def test_pending_pages_are_derived_from_workspace_or_runtime_state() -> None:
     assert '<RuntimeHistoryView mode="logs"' in source
 
 
+def test_runtime_artifacts_deep_link_to_datatype_resources() -> None:
+    page = ACTIVE_PAGE.read_text(encoding="utf-8")
+    data_editor = (ROOT / "workbench" / "frontend" / "src" / "components" / "DataCatalogPanel.tsx").read_text(encoding="utf-8")
+    assert 'kind:"operation"|"model"|"datatype"' in page
+    assert 'kind==="model"?"llms":"data"' in page
+    assert 'new URLSearchParams(window.location.search).get("resource")' in data_editor
+    assert "row.document?.label?.toLowerCase()===requestedId" in data_editor
+
+
 def test_workspace_entry_does_not_wait_for_capability_diagnostics() -> None:
     source = (ROOT / "workbench" / "frontend" / "src" / "pages" / "FilesystemWorkbenchPage.tsx").read_text(encoding="utf-8")
     load_workspace = source.split("const loadWorkspace=", 1)[1].split("const createWorkspace=", 1)[0]
