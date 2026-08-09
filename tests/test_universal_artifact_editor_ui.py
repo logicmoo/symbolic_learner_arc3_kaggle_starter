@@ -48,9 +48,6 @@ def test_operations_tree_supports_global_and_per_operation_folding() -> None:
         "Operations & implementations",
         "OPERATION CONTRACT SYSTEM",
         "collapsedOperations",
-        "variantsHidden",
-        "Only Toplevel",
-        "Show Tree",
         'branchCollapsed?"Unhide Variants":"Hide Variants"',
         '<b>{branchCollapsed?"Unhide Variants":"Hide Variants"}</b>',
         "tree-branch-toggle",
@@ -175,13 +172,10 @@ def test_universal_shell_keeps_tabs_compare_inspector_and_docks() -> None:
         "artifact-bottom-dock",
         "variantControls",
         "navigatorCollapsed",
-        "variantsHidden",
         "visibilityRules",
         "TreeViewControls",
         "Collapse hierarchy",
         "Expand hierarchy",
-        "Only Toplevel",
-        "Show Tree",
         "Expand All",
         "Collapse All",
         "artifact-navigator-content",
@@ -213,8 +207,9 @@ def test_all_artifact_trees_share_filter_and_parent_path_controls() -> None:
     filtering = _text("useArtifactTreeFilter.ts")
     for source in (universal, operations):
         assert "Filter tree…" in source
-        assert "Show Parents" in source
         assert "useArtifactTreeFilter" in source
+    assert "Parent" in _text("TreeViewControls.tsx")
+    assert "Show Parents" in operations
     assert "descendantVisible" in filtering
     assert "info.head.hidden = !showParents" in filtering
     assert "MutationObserver(applyFilter)" in filtering
@@ -239,16 +234,16 @@ def test_design_trees_share_virtual_categories() -> None:
     assert "CategorizedArtifactTree items={categorizedOperations}" in operations
     assert "variant.document?.categories" in operations
     for source in (universal, operations):
-        assert "Only Categories" in source
-        assert 'aria-pressed={onlyCategories}' in source
         assert "No Categories (All)" not in source
         assert "Show Categories" not in source
         assert "Expand Categories" not in source
+    assert "Only Categories" not in universal
+    assert "Only Categories" in operations
+    assert 'aria-pressed={onlyCategories}' in operations
     assert "onlyCategories" in category_tree
     assert "!onlyCategories&&" not in category_tree
     assert 'data-category-collapse-mode={onlyCategories ? "resources" : "none"}' in category_tree
     assert "setCollapsedOperations(next||variantsHidden||variantsCollapsed" in operations
-    assert 'categories:onlyCategories?"unspecified":"show"' in universal
     assert "branchCommand={categoryCommand}" in category_tree
     assert 'label="All" branchCommand={null}' in category_tree
     assert 'label="Uncategorized" branchCommand={null}' in category_tree
@@ -272,7 +267,7 @@ def test_universal_tree_exposes_composable_tri_state_view_controls() -> None:
     assert ".operation-tree-row.operation-child" in filtering
     assert "nestedKinds" in filtering
     assert "treeKinds" in filtering
-    for label in ("Set Everything", "Search Matches", "Enabled", "Disabled", "Categories", "Non-"):
+    for label in ('label="Search"', 'label="All"', "Enabled", "Disabled", "Categories", "Non-"):
         assert label in controls
     assert '`top-${kind}`' in controls
     assert '`child-${kind}`' in controls
@@ -280,12 +275,19 @@ def test_universal_tree_exposes_composable_tri_state_view_controls() -> None:
     assert "Childless ${plural(title(kind))}" in controls
     assert "setAll" in controls
     assert "roleKeys.map(key => [key, value])" in controls
-    assert 'aria-label="Tree View Controls"' in universal
+    assert 'aria-label="Tree View Controls"' in controls
+    assert "viewControlsOpen" not in universal
     assert "updateVisibilityRules" in universal
     assert 'commandCategories("expand");commandTree("expand")' in universal
     assert 'commandTree("collapse");commandCategories("collapse")' in universal
     assert ".tree-view-controls" in styles
     assert ".tree-rule-switch" in styles
+    assert ".tree-control-band" in styles
+    assert "onBranchAction(\"expand\", \"disabled\")" in controls
+    assert "onBranchAction(\"collapse\", \"all\")" in controls
+    branch = _text("ArtifactTreeBranch.tsx")
+    assert 'command.target === "disabled"' in branch
+    assert 'command.target === "search"' in branch
     assert "values.some(value => states[value] === \"hide\")" in filtering
 
 

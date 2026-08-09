@@ -115,14 +115,14 @@ export function useArtifactTreeFilter(rules?: TreeVisibilityRules) {
         if (info.searchMatch) info.element.classList.add("tree-search-match");
         if (info.category) {
           info.ownVisible = activeRules.categories !== "hide";
-          if (activeRules.categories === "hide" && info.category === "all") info.ownVisible = false;
-          if (activeRules.categories === "hide" && info.category !== "all") info.element.hidden = true;
           continue;
         }
         const availabilityVisible = groupAllows([info.enabled ? "enabled" : "disabled"], availabilityStates);
         const roleVisible = groupAllows(info.roles, hasTypedRoles ? roleStates : {});
-        const searchVisible = !query || activeRules.search === "unspecified" || (activeRules.search === "show" ? info.searchMatch : !info.searchMatch);
-        info.ownVisible = availabilityVisible && roleVisible && searchVisible;
+        const normallyVisible = availabilityVisible && roleVisible;
+        if (!query || activeRules.search === "unspecified") info.ownVisible = normallyVisible;
+        else if (activeRules.search === "show") info.ownVisible = info.searchMatch;
+        else info.ownVisible = info.searchMatch ? false : normallyVisible;
       }
 
       const visibleDescendants = new Set<HTMLElement>();

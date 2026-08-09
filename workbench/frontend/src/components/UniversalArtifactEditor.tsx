@@ -1,7 +1,7 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { ArtifactTreeCommandContext, type ArtifactTreeCommand } from "./ArtifactTreeBranch";
 import { TreeViewControls } from "./TreeViewControls";
-import { DEFAULT_TREE_VISIBILITY_RULES, type TreeVisibilityRule, type TreeVisibilityRules, useArtifactTreeFilter } from "./useArtifactTreeFilter";
+import { DEFAULT_TREE_VISIBILITY_RULES, type TreeVisibilityRules, useArtifactTreeFilter } from "./useArtifactTreeFilter";
 import { CategorizedArtifactNodes } from "./CategorizedArtifactTree";
 import "../styles/operation_editor.css";
 
@@ -118,31 +118,18 @@ export function UniversalArtifactEditor({
   const [navigatorCollapsed, setNavigatorCollapsed] = useState(false);
   const [treeCommand, setTreeCommand] = useState<ArtifactTreeCommand>(null);
   const [categoryCommand, setCategoryCommand] = useState<ArtifactTreeCommand>(null);
-  const [viewControlsOpen, setViewControlsOpen] = useState(false);
   const [visibilityRules, setVisibilityRules] = useState<TreeVisibilityRules>(DEFAULT_TREE_VISIBILITY_RULES);
   const { treeRef, treeFilter, setTreeFilter, showParents, setShowParents, treeKinds } = useArtifactTreeFilter(visibilityRules);
-  const commandTree = (action: "collapse" | "expand") => setTreeCommand(current => ({ action, revision: (current?.revision || 0) + 1 }));
+  const commandTree = (action: "collapse" | "expand", target?: string) => setTreeCommand(current => ({ action, target, revision: (current?.revision || 0) + 1 }));
   const commandCategories = (action: "collapse" | "expand") => setCategoryCommand(current => ({ action, revision: (current?.revision || 0) + 1 }));
-  const roleKeys = (position: "top" | "child") => treeKinds.map(kind => `${position}-${kind}`);
-  const rolesHave = (position: "top" | "child", value: TreeVisibilityRule) => {
-    const keys = roleKeys(position);
-    return keys.length > 0 && keys.every(key => (visibilityRules.roles[key] || "unspecified") === value);
+  const commandBranches = (action: "collapse" | "expand", target: string) => {
+    if (target === "all") { commandCategories(action); commandTree(action); }
+    else if (target === "categories") commandCategories(action);
+    else commandTree(action, target);
   };
   const updateVisibilityRules = (next: TreeVisibilityRules) => {
     setVisibilityRules(next);
-    const values = [next.search, next.enabled, next.disabled, next.categories, ...Object.values(next.roles)];
-    if (values.includes("show")) {
-      commandCategories("expand");
-      commandTree("expand");
-    }
   };
-  const setRoleRules = (position: "top" | "child", value: TreeVisibilityRule, base: TreeVisibilityRules = visibilityRules): TreeVisibilityRules => ({
-    ...base,
-    roles: { ...base.roles, ...Object.fromEntries(roleKeys(position).map(key => [key, value])) },
-  });
-  const onlyCategories = visibilityRules.categories === "show" && rolesHave("top", "hide") && rolesHave("child", "hide");
-  const variantsHidden = rolesHave("child", "hide");
-  const onlyToplevel = rolesHave("top", "show") && rolesHave("child", "hide");
   const activeBottomPanel = useMemo(
     () => bottomPanels.find(panel => panel.id === bottomPanelId) || bottomPanels[0] || null,
     [bottomPanels, bottomPanelId],
@@ -181,17 +168,12 @@ export function UniversalArtifactEditor({
           <span>HIERARCHY</span>
           <div className="artifact-navigator-actions">
             <label className="artifact-tree-filter"><span>Filter tree</span><input type="search" value={treeFilter} onChange={event=>{const value=event.target.value;setTreeFilter(value);if(value.trim())commandTree("expand")}} placeholder="Filter tree…" /></label>
-            <button type="button" aria-label={showParents?"Hide Parents":"Show Parents"} aria-pressed={showParents} disabled={!treeFilter.trim()} onClick={()=>setShowParents(value=>!value)}><b>{showParents?"Hide Parents":"Show Parents"}</b></button>
-            <button type="button" aria-label="Only Categories" aria-pressed={onlyCategories} onClick={()=>{let next={...visibilityRules,roles:{...visibilityRules.roles},categories:onlyCategories?"unspecified":"show"} as TreeVisibilityRules;next=setRoleRules("top",onlyCategories?"unspecified":"hide",next);next=setRoleRules("child",onlyCategories?"unspecified":"hide",next);updateVisibilityRules(next);commandCategories("expand")}}><b>Only Categories</b></button>
-            <button type="button" aria-label={variantsHidden?"Unhide Variants":"Hide Variants"} aria-pressed={variantsHidden} onClick={()=>updateVisibilityRules(setRoleRules("child",variantsHidden?"unspecified":"hide"))}><b>{variantsHidden?"Unhide Variants":"Hide Variants"}</b></button>
-            <button type="button" aria-label={onlyToplevel?"Show Tree":"Only Toplevel"} aria-pressed={onlyToplevel} onClick={()=>{let next=setRoleRules("top",onlyToplevel?"unspecified":"show");next=setRoleRules("child",onlyToplevel?"unspecified":"hide",next);updateVisibilityRules(next)}}><b>{onlyToplevel?"Show Tree":"Only Toplevel"}</b></button>
             <button type="button" aria-label="Expand All" onClick={()=>{commandCategories("expand");commandTree("expand")}}><b>Expand All</b></button>
             <button type="button" aria-label="Collapse All" onClick={()=>{commandTree("collapse");commandCategories("collapse")}}><b>Collapse All</b></button>
-            <button type="button" aria-label="Tree View Controls" aria-expanded={viewControlsOpen} aria-pressed={viewControlsOpen} onClick={()=>setViewControlsOpen(value=>!value)}><b>View</b></button>
             <button type="button" aria-label={navigatorCollapsed?"Expand hierarchy":"Collapse hierarchy"} aria-expanded={!navigatorCollapsed} onClick={()=>setNavigatorCollapsed(value=>!value)}>{navigatorCollapsed?"›":"‹"}<b>{navigatorCollapsed?"":"Pane"}</b></button>
           </div>
         </div>
-        {viewControlsOpen && <TreeViewControls kinds={treeKinds} rules={visibilityRules} onChange={updateVisibilityRules} />}
+        <TreeViewControls kinds={treeKinds} rules={visibilityRules} onChange={updateVisibilityRules} showParents={showParents} onShowParentsChange={setShowParents} onBranchAction={commandBranches} />
         <ArtifactTreeCommandContext.Provider value={treeCommand}><div className="artifact-navigator-content" ref={treeRef}><CategorizedArtifactNodes onlyCategories={false} categoryCommand={categoryCommand} workspaceId={workspaceId} categoryTree={categoryTree}>{leftPane}</CategorizedArtifactNodes></div></ArtifactTreeCommandContext.Provider>
       </div>
       <div className={workspaceClassName}>
