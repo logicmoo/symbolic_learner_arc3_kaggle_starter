@@ -1,0 +1,16 @@
+(
+  (kind backend)
+  (id freerouter)
+  (label FreeRouter)
+  (provider freerouter)
+  (official true)
+  (description "Self-hosted FreeRouter OpenAI-compatible gateway. Start FreeRouter separately; the workbench connects to its local service without a client API key.")
+  (enabled true)
+  (capabilities ([] llm.complete llm.reasoning llm.vision))
+  (configuration (
+    (adapter openai_chat_completions)
+    (baseUrl http://127.0.0.1:18800/v1)
+    (defaultModel auto)
+    (timeoutSeconds 900)
+  ))
+)

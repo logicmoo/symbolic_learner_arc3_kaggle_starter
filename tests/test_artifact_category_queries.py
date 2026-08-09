@@ -22,7 +22,6 @@ def test_shared_query_categories_are_valid_and_tree_scoped() -> None:
         "models.vision",
         "models.large_context",
         "models.local",
-        "models.openai",
     }
     assert all(record["document"]["trees"] for record in records)
 

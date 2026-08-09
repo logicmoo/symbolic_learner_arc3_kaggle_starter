@@ -88,7 +88,7 @@ def invoke_model_example(workspace_id: str, model_id: str, request: dict[str, An
     if not record or not (record.get("resolved") or {}).get("enabled"): raise HTTPException(status_code=404, detail=f"enabled model/profile not found: {model_id}")
     prompt = str((request.get("arguments") or {}).get("prompt") or request.get("prompt") or "")
     if not prompt: raise HTTPException(status_code=400, detail="example argument prompt is required")
-    try: result = call_model({"id": model_id, "modelId": (record.get("resolved") or {}).get("model")}, record, prompt, int(request.get("timeoutSeconds") or 120))
+    try: result = call_model({"id": model_id, "modelId": (record.get("resolved") or {}).get("model")}, {**record, "_workspaceRoot": workspace["root"]}, prompt, int(request.get("timeoutSeconds") or 120))
     except Exception as error: raise HTTPException(status_code=400, detail=str(error)) from error
     return {"modelId": model_id, **result}
 
@@ -100,7 +100,7 @@ def discover_models(workspace_id: str, backend_id: str) -> dict[str, Any]:
     backend = next((record.get("document") for record in load_workspace_backend_records(Path(workspace["root"]))
                     if (record.get("document") or {}).get("id") == backend_id), None)
     if not backend: raise HTTPException(status_code=404, detail=f"backend not found: {backend_id}")
-    try: models = discover_backend_models(backend)
+    try: models = discover_backend_models(backend, workspace_root=Path(workspace["root"]))
     except Exception as error: raise HTTPException(status_code=502, detail=str(error)) from error
     shared_workspace = _resolve_workspace("shared")
     return {"workspace": workspace, "backend": backend, "models": reconcile_discovered_models(Path(shared_workspace["root"]), backend, models)}

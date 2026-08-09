@@ -123,6 +123,7 @@ def _model_execution_parameters(
     parameters = {
         **defaults,
         "model": remote_model,
+        "workspaceRoot": str(workspace_root),
         "backendId": str(backend.get("id") or ""),
         "baseUrl": configuration.get("baseUrl"),
         "baseUrlEnvironmentVariable": configuration.get("baseUrlEnvironmentVariable"),

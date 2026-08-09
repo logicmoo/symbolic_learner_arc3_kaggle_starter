@@ -5,7 +5,7 @@
   (provider groq)
   (official true)
   (description "Shared Groq OpenAI-compatible transport inherited by every workspace. Model files inherit this endpoint and add model-specific generation settings.")
-  (enabled true)
+  (enabled false)
   (capabilities ([]
     llm.complete
     llm.vision

@@ -11,6 +11,7 @@ from typing import Any, Callable
 from uuid import uuid4
 
 from model_policy_ping import write_policy_resource
+from workspace_credentials import resolve_workspace_credential
 
 ModelCall = Callable[[dict[str, Any], dict[str, Any], str, int], dict[str, Any]]
 
@@ -19,18 +20,24 @@ def _now() -> str:
 
 def call_model(model: dict[str, Any], profile: dict[str, Any], prompt: str, timeout_seconds: int) -> dict[str, Any]:
     resolved = profile.get("resolved") or {}; backend = resolved.get("backend") or {}; configuration = resolved.get("configuration") or {}; defaults = resolved.get("defaults") or {}
-    base_url = str(configuration.get("baseUrl") or "").rstrip("/"); adapter = str(configuration.get("adapter") or "openai_responses"); key_name = str(configuration.get("apiKeyEnvironmentVariable") or configuration.get("apiKeyEnvironment") or ""); api_key = os.environ.get(key_name, "") if key_name else ""
+    base_url = str(configuration.get("baseUrl") or "").rstrip("/"); adapter = str(configuration.get("adapter") or "openai_responses"); key_name = str(configuration.get("apiKeyEnvironmentVariable") or configuration.get("apiKeyEnvironment") or ""); api_key = resolve_workspace_credential(profile.get("_workspaceRoot"), key_name) if key_name else ""
     if not base_url: raise RuntimeError("model backend has no HTTP endpoint")
     if key_name and not api_key and not base_url.startswith(("http://127.0.0.1", "http://localhost")): raise RuntimeError(f"environment variable {key_name} is not set")
     model_name = str(resolved.get("model") or model.get("modelId") or model.get("id")); headers = {"Content-Type": "application/json", "Accept": "application/json"}
     if adapter == "anthropic_messages":
         headers.update({"x-api-key": api_key, "anthropic-version": "2023-06-01"}); endpoint = f"{base_url}/messages"; body = {"model": model_name, "max_tokens": min(256,int(defaults.get("maxOutputTokens",256))), "messages": [{"role": "user", "content": prompt}]}
+    elif adapter == "openai_chat_completions":
+        if api_key: headers["Authorization"] = f"Bearer {api_key}"
+        endpoint = f"{base_url}/chat/completions"; body = {"model": model_name, "messages": [{"role": "user", "content": prompt}], "max_tokens": min(256,int(defaults.get("maxOutputTokens",256)))}
     else:
         if api_key: headers["Authorization"] = f"Bearer {api_key}"
         endpoint = f"{base_url}/responses"; body = {"model": model_name, "input": prompt, "max_output_tokens": min(256,int(defaults.get("maxOutputTokens",256)))}
     started = time.perf_counter(); request = urllib.request.Request(endpoint, data=json.dumps(body).encode("utf-8"), headers=headers, method="POST")
     with urllib.request.urlopen(request, timeout=timeout_seconds) as response: payload = json.loads(response.read().decode("utf-8"))
     if adapter == "anthropic_messages": text = "".join(str(item.get("text") or "") for item in payload.get("content", [])); usage = payload.get("usage") or {}
+    elif adapter == "openai_chat_completions":
+        text = str((((payload.get("choices") or [{}])[0].get("message") or {}).get("content") or "")); usage = payload.get("usage") or {}
+        usage = {"input_tokens": usage.get("prompt_tokens", 0), "output_tokens": usage.get("completion_tokens", 0)}
     else:
         text = str(payload.get("output_text") or "")
         if not text:
@@ -45,7 +52,7 @@ def run_benchmark(workspace_root: Path, policy: dict[str, Any], models: list[dic
     job = {"kind":"benchmark_job","id":job_id,"benchmarkPolicyId":policy["id"],"status":"running","createdAt":started_at,"modelCount":len(models),"profileCount":len(profiles),"caseCount":len(cases)}; write_policy_resource(workspace_root,job)
     work=[(model,profile,case,index) for model in models for profile in profiles for case in cases for index in range(repetitions)]; observations: list[dict[str,Any]]=[]
     def execute(item:tuple[dict[str,Any],dict[str,Any],dict[str,Any],int])->dict[str,Any]:
-        model,profile,case,index=item; response=invoke(model,profile,str(case.get("prompt") or ""),timeout); actual=str(response.get("text") or "").strip(); expected=str(case.get("expected") or "").strip(); evaluator=str(case.get("evaluator") or "exact_match"); passed=actual==expected if evaluator=="exact_match" else expected.lower() in actual.lower()
+        model,profile,case,index=item; response=invoke(model,{**profile,"_workspaceRoot":str(workspace_root)},str(case.get("prompt") or ""),timeout); actual=str(response.get("text") or "").strip(); expected=str(case.get("expected") or "").strip(); evaluator=str(case.get("evaluator") or "exact_match"); passed=actual==expected if evaluator=="exact_match" else expected.lower() in actual.lower()
         return {"modelPolicyEntryId":model["id"],"promptProfileId":(profile.get("document") or {}).get("id"),"caseId":case.get("id"),"repetition":index+1,"passed":passed,**response}
     with ThreadPoolExecutor(max_workers=concurrency,thread_name_prefix="model-benchmark") as executor:
         futures={executor.submit(execute,item):item for item in work}

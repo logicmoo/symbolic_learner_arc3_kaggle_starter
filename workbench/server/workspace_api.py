@@ -37,6 +37,7 @@ from workspace_inheritance import (
     workspace_metadata_path,
 )
 from resource_store import get_filesystem_provider
+from workspace_credentials import bootstrap_backend_credential, credential_statuses, write_workspace_credential
 
 router = APIRouter(prefix="/workspaces", tags=["workspaces"])
 
@@ -439,6 +440,85 @@ def update_workspace_settings(workspace_id: str, body: dict[str, Any] = Body(...
         get_filesystem_provider().write_json(path, metadata)
         invalidate_workspace_discovery()
         return {"workspace": _workspace_from_directory(root)}
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+    except (OSError, ValueError) as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+
+def _workspace_credential_statuses(workspace: dict[str, Any]) -> list[dict[str, Any]]:
+    root = Path(workspace["root"])
+    return credential_statuses(root, load_workspace_backend_records(root))
+
+
+@router.get("/{workspace_id}/credentials")
+def workspace_credentials(workspace_id: str) -> dict[str, Any]:
+    try:
+        workspace = _resolve_workspace(workspace_id)
+        return {"credentials": _workspace_credential_statuses(workspace)}
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+    except (OSError, ValueError) as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+
+@router.put("/{workspace_id}/credentials/{environment_name}")
+def update_workspace_credential(workspace_id: str, environment_name: str, body: dict[str, Any] = Body(...)) -> dict[str, Any]:
+    try:
+        workspace = _resolve_workspace(workspace_id)
+        allowed = {item["environmentVariable"] for item in _workspace_credential_statuses(workspace)}
+        if environment_name not in allowed:
+            raise ValueError("credential is not declared by a backend visible to this workspace")
+        value = body.get("value")
+        if not isinstance(value, str) or not value.strip():
+            raise ValueError("credential value is required")
+        if len(value) > 8192:
+            raise ValueError("credential value is too long")
+        write_workspace_credential(Path(workspace["root"]), environment_name, value)
+        return {"credentials": _workspace_credential_statuses(workspace)}
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+    except (OSError, ValueError) as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+
+@router.delete("/{workspace_id}/credentials/{environment_name}")
+def delete_workspace_credential(workspace_id: str, environment_name: str) -> dict[str, Any]:
+    try:
+        workspace = _resolve_workspace(workspace_id)
+        allowed = {item["environmentVariable"] for item in _workspace_credential_statuses(workspace)}
+        if environment_name not in allowed:
+            raise ValueError("credential is not declared by a backend visible to this workspace")
+        write_workspace_credential(Path(workspace["root"]), environment_name, None)
+        return {"credentials": _workspace_credential_statuses(workspace)}
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+    except (OSError, ValueError) as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+
+@router.post("/{workspace_id}/credentials/{environment_name}/bootstrap")
+def bootstrap_workspace_credential(workspace_id: str, environment_name: str, body: dict[str, Any] = Body(default={})) -> dict[str, Any]:
+    try:
+        workspace = _resolve_workspace(workspace_id)
+        records = load_workspace_backend_records(Path(workspace["root"]))
+        backend_id = str(body.get("backendId") or "")
+        backend = next(
+            (
+                record.get("document")
+                for record in records
+                if (record.get("document") or {}).get("id") == backend_id
+            ),
+            None,
+        )
+        if not backend:
+            raise ValueError("automatic credential backend is not visible to this workspace")
+        configuration = backend.get("configuration") or {}
+        declared_name = str(configuration.get("apiKeyEnvironmentVariable") or configuration.get("apiKeyEnvironment") or "")
+        if declared_name != environment_name:
+            raise ValueError("backend does not declare the requested credential")
+        bootstrap_backend_credential(Path(workspace["root"]), backend)
+        return {"credentials": _workspace_credential_statuses(workspace)}
     except KeyError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error
     except (OSError, ValueError) as error:

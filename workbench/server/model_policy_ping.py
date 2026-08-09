@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
 from resource_store import get_filesystem_provider
+from workspace_credentials import resolve_workspace_credential
 
 Probe = Callable[[dict[str, Any], dict[str, Any] | None, int], dict[str, Any]]
 
@@ -30,10 +31,10 @@ def write_policy_resource(root: Path, document: dict[str, Any]) -> Path:
     resources.write_json(temporary, document); resources.replace(temporary, target)
     return target
 
-def probe_model(model: dict[str, Any], backend: dict[str, Any] | None, timeout_ms: int) -> dict[str, Any]:
+def probe_model(model: dict[str, Any], backend: dict[str, Any] | None, timeout_ms: int, workspace_root: Path | None = None) -> dict[str, Any]:
     started = time.perf_counter(); configuration = (backend or {}).get("configuration") or {}; base_url = str(configuration.get("baseUrl") or "").rstrip("/")
     if not base_url: return {"status": "unknown", "latencyMs": 0, "error": "vendor backend has no HTTP endpoint"}
-    key_name = str(configuration.get("apiKeyEnvironmentVariable") or configuration.get("apiKeyEnvironment") or ""); api_key = os.environ.get(key_name, "") if key_name else ""
+    key_name = str(configuration.get("apiKeyEnvironmentVariable") or configuration.get("apiKeyEnvironment") or ""); api_key = resolve_workspace_credential(workspace_root, key_name) if key_name else ""
     if key_name and not api_key and not base_url.startswith(("http://127.0.0.1", "http://localhost")): return {"status": "authentication_error", "latencyMs": 0, "error": f"environment variable {key_name} is not set"}
     headers = {"Accept": "application/json", "User-Agent": "MeTTaSymbolicLearnerWorkbench/0.6"}
     if api_key:
@@ -53,7 +54,9 @@ def run_ping_job(workspace_root: Path, job: dict[str, Any], models: list[dict[st
     job = {**job, "kind": "model_ping_job", "status": "running", "startedAt": _now()}; write_policy_resource(workspace_root, job)
     backend_by_id = {str(item.get("id")): item for item in backends if item.get("id")}; timeout_ms = max(100, int(job.get("timeoutMs") or 15000)); concurrency = max(1, min(32, int(job.get("concurrency") or 4))); results: list[dict[str, Any]] = []
     def execute(model: dict[str, Any]) -> dict[str, Any]:
-        observed = probe(model, backend_by_id.get(str(model.get("vendorId") or "")), timeout_ms); latency = observed.get("latencyMs")
+        backend = backend_by_id.get(str(model.get("vendorId") or ""))
+        observed = probe(model, backend, timeout_ms, workspace_root) if probe is probe_model else probe(model, backend, timeout_ms)
+        latency = observed.get("latencyMs")
         if observed.get("status") == "online" and isinstance(latency, (int, float)) and latency > slow_latency_ms: observed["status"] = "slow"
         return observed
     if deduplicate_vendor_probes is None: deduplicate_vendor_probes = probe is probe_model

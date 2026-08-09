@@ -8,13 +8,14 @@ from pathlib import Path
 from typing import Any, Callable
 from resource_store import get_filesystem_provider
 from resource_relationships import relationship_ids
+from workspace_credentials import resolve_workspace_credential
 
 
-def _headers(backend: dict[str, Any]) -> dict[str, str]:
+def _headers(backend: dict[str, Any], workspace_root: Path | None = None) -> dict[str, str]:
     configuration = backend.get("configuration") or {}
     headers = {"Accept": "application/json", "User-Agent": "MeTTaSymbolicLearnerWorkbench/0.6"}
     environment_name = str(configuration.get("apiKeyEnvironmentVariable") or configuration.get("apiKeyEnvironment") or "")
-    api_key = os.environ.get(environment_name, "") if environment_name else ""
+    api_key = resolve_workspace_credential(workspace_root, environment_name) if environment_name else ""
     if api_key:
         if configuration.get("adapter") == "anthropic_messages":
             headers.update({"x-api-key": api_key, "anthropic-version": "2023-06-01"})
@@ -50,12 +51,13 @@ def _capabilities(row: dict[str, Any], backend: dict[str, Any], model_id: str) -
 
 
 def discover_backend_models(backend: dict[str, Any], *, timeout_seconds: float = 20,
-                            opener: Callable[..., Any] = urllib.request.urlopen) -> list[dict[str, Any]]:
+                            opener: Callable[..., Any] = urllib.request.urlopen,
+                            workspace_root: Path | None = None) -> list[dict[str, Any]]:
     configuration = backend.get("configuration") or {}
     base_url = str(configuration.get("baseUrl") or "").rstrip("/")
     if not base_url:
         raise ValueError("backend has no configuration.baseUrl")
-    request = urllib.request.Request(f"{base_url}/models", headers=_headers(backend), method="GET")
+    request = urllib.request.Request(f"{base_url}/models", headers=_headers(backend, workspace_root), method="GET")
     with opener(request, timeout=timeout_seconds) as response:
         payload = json.loads(response.read().decode("utf-8"))
     rows = payload.get("data") if isinstance(payload, dict) else payload

@@ -19,6 +19,7 @@ from urllib.error import HTTPError
 
 from workflow_engine import OperationRegistry, OperationSpec
 from resource_store import get_filesystem_provider
+from workspace_credentials import resolve_workspace_credential
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
@@ -317,9 +318,6 @@ def _llm_response_text(payload: dict[str, Any]) -> str:
 
 
 def _llm_complete(inputs: dict[str, Any], parameters: dict[str, Any]) -> dict[str, Any]:
-    api_key = os.getenv(str(parameters.get("apiKeyEnv") or "OPENAI_API_KEY"))
-    if not api_key:
-        raise RuntimeError("LLM API key is not configured")
     configured_base_url = str(parameters.get("baseUrl") or "").rstrip("/")
     for environment_name in (
         parameters.get("baseUrlEnvironmentVariable"),
@@ -328,6 +326,13 @@ def _llm_complete(inputs: dict[str, Any], parameters: dict[str, Any]) -> dict[st
         if environment_name and os.getenv(str(environment_name)):
             configured_base_url = str(os.getenv(str(environment_name))).rstrip("/")
             break
+    key_name = str(
+        parameters.get("apiKeyEnv")
+        or ("OPENAI_API_KEY" if not configured_base_url else "")
+    )
+    api_key = resolve_workspace_credential(parameters.get("workspaceRoot"), key_name) if key_name else ""
+    if key_name and not api_key:
+        raise RuntimeError(f"LLM API key {key_name} is not configured for this workspace")
     endpoint = str(
         parameters.get("endpoint")
         or (f"{configured_base_url}/chat/completions" if configured_base_url else "")
@@ -357,10 +362,13 @@ def _llm_complete(inputs: dict[str, Any], parameters: dict[str, Any]) -> dict[st
     }
     if parameters.get("parseJson") or parameters.get("responseFormat") == "json_object":
         body["response_format"] = {"type": "json_object"}
+    request_headers = {"Content-Type": "application/json"}
+    if api_key:
+        request_headers["Authorization"] = f"Bearer {api_key}"
     request = urllib.request.Request(
         endpoint,
         data=json.dumps(body).encode("utf-8"),
-        headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+        headers=request_headers,
         method="POST",
     )
     debug: dict[str, Any] = {
@@ -368,10 +376,10 @@ def _llm_complete(inputs: dict[str, Any], parameters: dict[str, Any]) -> dict[st
         "request": {
             "method": "POST",
             "url": endpoint,
-            "headers": {
-                "Authorization": "Bearer [REDACTED]",
-                "Content-Type": "application/json",
-            },
+              "headers": {
+                  **({"Authorization": "Bearer [REDACTED]"} if api_key else {}),
+                  "Content-Type": "application/json",
+              },
             "body": body,
         },
     }

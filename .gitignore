@@ -242,6 +242,7 @@ __pycache__/
 # Local workbench runtime state
 node_modules/
 workbench/data/
+workbench/workspaces/*/runtime/.credentials
 *.tsbuildinfo
 
 # Vendored framework + downloaded game source + agent recordings

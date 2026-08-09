@@ -1,0 +1,16 @@
+(
+  (kind backend)
+  (id clawrouter)
+  (label ClawRouter)
+  (provider clawrouter)
+  (official true)
+  (description "Local-first ClawRouter OpenAI-compatible gateway. Start ClawRouter separately; the workbench connects to its loopback service without a client API key.")
+  (enabled true)
+  (capabilities ([] llm.complete llm.reasoning llm.vision))
+  (configuration (
+    (adapter openai_chat_completions)
+    (baseUrl http://127.0.0.1:3456/v1)
+    (defaultModel auto)
+    (timeoutSeconds 900)
+  ))
+)

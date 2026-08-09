@@ -65,6 +65,17 @@ def test_navigation_reuses_current_rich_editors() -> None:
             assert token in source
 
 
+def test_workspace_settings_manage_keys_without_rendering_secret_values() -> None:
+    source = (ROOT / "workbench" / "frontend" / "src" / "components" / "WorkspaceSettingsPanel.tsx").read_text(encoding="utf-8")
+    assert "BACKEND CREDENTIALS" in source
+    assert 'type="password"' in source
+    assert "/credentials/${encodeURIComponent(name)}" in source
+    assert "/bootstrap" in source
+    assert "Set up automatically" not in source  # the backend supplies its specific setup label
+    assert "are never returned by the API" in source
+    assert "Clear workspace key" in source
+
+
 def test_rich_editors_are_loaded_by_route_instead_of_blocking_initial_shell() -> None:
     source = ACTIVE_PAGE.read_text(encoding="utf-8")
     assert 'lazy(()=>import("../components/OperationLibraryEditor")' in source

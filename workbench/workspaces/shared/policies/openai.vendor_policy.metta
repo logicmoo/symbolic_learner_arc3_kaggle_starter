@@ -4,12 +4,12 @@
   (vendorId openai)
   (label "OpenAI Vendor Policy")
   (description "Controls whether OpenAI resources are wanted by the workspace, eligible for live runtime selection, and included in benchmarks. Ping settings describe how the backend should refresh provider and model availability; their observations supply health evidence but do not silently rewrite these policy choices.")
-  (enabled true)
+  (enabled false)
   (example true)
   (policy (
-    (wanted on)
-    (runtime on)
-    (benchmark on)
+    (wanted off)
+    (runtime off)
+    (benchmark off)
   ))
   (ping (
     (enabled true)

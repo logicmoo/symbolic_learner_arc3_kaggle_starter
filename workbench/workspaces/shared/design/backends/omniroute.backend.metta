@@ -1,0 +1,27 @@
+(
+  (kind backend)
+  (id omniroute)
+  (label OmniRoute)
+  (provider omniroute)
+  (official true)
+  (description "Local OmniRoute OpenAI-compatible gateway. Start OmniRoute separately on port 20128 and configure its endpoint key in the workspace Settings page.")
+  (enabled true)
+  (capabilities ([] llm.complete llm.reasoning llm.vision))
+  (configuration (
+    (adapter openai_chat_completions)
+    (baseUrl http://localhost:20128/v1)
+    (apiKeyEnvironmentVariable OMNIROUTE_API_KEY)
+    (credentialBootstrap (
+      (label "Create a workspace key from local OmniRoute")
+      (url http://localhost:20128/api/keys)
+      (method POST)
+      (request (
+        (name MeTTaSymbolicLearnerWorkbench)
+      ))
+      (responseField key)
+      (timeoutSeconds 10)
+    ))
+    (defaultModel auto)
+    (timeoutSeconds 900)
+  ))
+)

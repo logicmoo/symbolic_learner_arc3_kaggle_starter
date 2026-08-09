@@ -13,7 +13,13 @@ def test_shared_policy_directory_loads_real_resources() -> None:
     shared = ROOT / "workbench" / "workspaces" / "shared"
     records = load_workspace_policy_records(shared)
     hierarchy = policy_hierarchy(records)
-    assert len(records) == 10
+    assert len(records) >= 13
+    vendor_ids = {
+        row["document"].get("vendorId")
+        for row in records
+        if row["document"].get("kind") == "vendor_policy"
+    }
+    assert {"anthropic", "groq", "openai", "xai"} <= vendor_ids
     assert {row["document"]["kind"] for row in records} >= {"model_policy", "model_policy_variant", "vendor_policy", "benchmark_policy"}
     assert len(hierarchy["variantsByParent"]["default_model_runtime"]) == 2
 

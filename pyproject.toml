@@ -124,5 +124,5 @@ webui = ["static/*.html"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["python"]
+pythonpath = ["python", "workbench/server"]
 addopts = "-ra"

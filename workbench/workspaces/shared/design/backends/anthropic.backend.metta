@@ -5,7 +5,7 @@
   (provider anthropic)
   (official true)
   (description "Shared Anthropic Messages API transport inherited by every workspace. Model files inherit this connection and add model-specific generation settings.")
-  (enabled true)
+  (enabled false)
   (capabilities ([]
     llm.complete
     llm.vision

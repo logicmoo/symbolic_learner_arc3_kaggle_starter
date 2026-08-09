@@ -5,7 +5,7 @@
   (provider openai)
   (official true)
   (description "Shared OpenAI-compatible backend used as the root of the visible model/profile inheritance example.")
-  (enabled true)
+  (enabled false)
   (capabilities ([]
     llm.complete
     llm.reasoning
