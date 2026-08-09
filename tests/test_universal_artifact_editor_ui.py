@@ -106,7 +106,12 @@ def test_operation_playground_can_run_default_and_populate_from_runtime_artifact
     source = _text("OperationPlayground.tsx")
     assert "Run Default" in source
     assert "Run Selected" in source
-    assert "Populate Inputs" in source
+    assert 'populateInputs("last_outputs")' in source
+    assert 'populateInputs("random_outputs")' in source
+    assert 'populateInputs("sample_input")' in source
+    assert 'populateInputs("empty_null")' in source
+    assert 'className="operation-run-route"' in source
+    assert 'className="operation-run-actions"' in source
     assert "/api/engine/runs?limit=100" in source
     assert "/api/goal-runs?workspace_id=" in source
     assert "artifactScore" in source
@@ -118,13 +123,13 @@ def test_operation_playground_can_run_default_and_populate_from_runtime_artifact
     assert "rememberInvocation" in source
     assert "const pool=dictionary.any" in source
     assert 'rememberInvocation(workspaceId,operation,' in source
-    assert "POPULATE FROM ANY OPERATION:" in source
+    assert "POPULATE INPUTS" in source
     assert "Last Output" in source
     assert "Random Output" in source
     assert "outputs produced by any operation in this workspace" in source
     assert "chosen.operationLabel" in source
     assert "Sample's Input" in source
-    assert "Make Empty/Null" in source
+    assert "Empty/Null" in source
     assert "implementationVariant?{implementationVariant}" in source
 
 
