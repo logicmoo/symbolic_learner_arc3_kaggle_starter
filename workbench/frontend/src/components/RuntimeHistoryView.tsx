@@ -64,7 +64,9 @@ function artifactRecords(artifact: RuntimeRun["artifacts"][number], collectionKe
 }
 
 function WorkflowRunProjection({ run, workflow, busy, onCommand }: { run: RuntimeRun; workflow: FrozenWorkflow | null; busy: boolean; onCommand: (command: "pause" | "resume" | "advance" | "replay" | "cancel") => void }) {
-  const [view, setView] = useState<"topology" | "chronology">("topology");
+  const initialView = new URLSearchParams(window.location.search).get("runView") === "chronology" ? "chronology" : "topology";
+  const [view, setViewState] = useState<"topology" | "chronology">(initialView);
+  const setView = (next: "topology" | "chronology") => { setViewState(next); const url = new URL(window.location.href); if (next === "topology") url.searchParams.delete("runView"); else url.searchParams.set("runView", next); window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`); };
   const [selectedStepId, setSelectedStepId] = useState("");
   const [selectedEventId, setSelectedEventId] = useState("");
   const steps = workflow?.steps || [];
@@ -166,7 +168,15 @@ export function RuntimeHistoryView({ mode, workspaceId, goals = [], plans = [], 
         includeInvocations ? api(`/api/workspaces/${encodeURIComponent(workspaceId)}/operations/invocations?limit=${invocationLimit}`) : Promise.resolve({ invocations: [] }),
         includeInvocations ? api(`/api/workspaces/${encodeURIComponent(workspaceId)}/models/invocations?limit=${invocationLimit}`) : Promise.resolve({ invocations: [] }),
       ]);
-      setRuns((runPayload.runs || []).map((run: RuntimeRun) => ({ ...run, steps: run.steps || [], events: run.events || [], artifacts: run.artifacts || [], logs: run.logs || [] })));
+      const normalizeRun = (run: RuntimeRun): RuntimeRun => ({ ...run, steps: run.steps || [], events: run.events || [], artifacts: run.artifacts || [], logs: run.logs || [] });
+      const loadedRuns = (runPayload.runs || []).map(normalizeRun);
+      const requestedRunId = mode === "workflowRuns" ? new URLSearchParams(window.location.search).get("run") : null;
+      if (requestedRunId && !loadedRuns.some((run: RuntimeRun) => run.id === requestedRunId)) {
+        const requestedPayload = await api(`/api/engine/runs/${encodeURIComponent(requestedRunId)}`);
+        if (requestedPayload.run) loadedRuns.unshift(normalizeRun(requestedPayload.run as RuntimeRun));
+      }
+      setRuns(loadedRuns);
+      if (requestedRunId) setSelectedId(requestedRunId);
       setGoalRuns((goalPayload.goalRuns || []).map((goalRun: GoalRun) => ({ ...goalRun, workflowRun: { ...goalRun.workflowRun, steps: goalRun.workflowRun.steps || [], events: goalRun.workflowRun.events || [], artifacts: goalRun.workflowRun.artifacts || [], logs: goalRun.workflowRun.logs || [] } })));
       setInvocations([...(operationPayload.invocations || []), ...(modelPayload.invocations || [])].sort((a: InvocationTrace, b: InvocationTrace) => String(b.createdAt || "").localeCompare(String(a.createdAt || ""))));
     } catch (reason) { setError(String(reason)); }

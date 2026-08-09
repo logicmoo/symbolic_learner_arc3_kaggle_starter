@@ -39,6 +39,14 @@ def test_navigation_v2_has_required_groups_and_labels() -> None:
         assert f'label:"{label}"' in source
 
 
+def test_navigation_views_are_deep_linkable_for_visual_acceptance() -> None:
+    source = ACTIVE_PAGE.read_text(encoding="utf-8")
+    assert 'new URLSearchParams(window.location.search).get("view")' in source
+    assert 'url.searchParams.set("view",next)' in source
+    assert 'window.addEventListener("popstate",restoreView)' in source
+    assert 'setView(viewFromLocation()||"canvas")' in source
+
+
 def test_artifact_editors_hide_the_run_pipeline_column() -> None:
     source = ACTIVE_PAGE.read_text(encoding="utf-8")
     styles = (ROOT / "workbench" / "frontend" / "src" / "styles" / "workbench.css").read_text(encoding="utf-8")
