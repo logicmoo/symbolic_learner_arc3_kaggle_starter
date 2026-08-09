@@ -116,8 +116,13 @@ def test_operation_playground_can_run_default_and_populate_from_runtime_artifact
     assert "byName:Map" in source
     assert "workspaceValueBanks" in source
     assert "rememberInvocation" in source
-    assert "Last Outputs" in source
-    assert "Random Outputs" in source
+    assert "const pool=dictionary.any" in source
+    assert 'rememberInvocation(workspaceId,operation,' in source
+    assert "POPULATE FROM ANY OPERATION:" in source
+    assert "Last Output" in source
+    assert "Random Output" in source
+    assert "outputs produced by any operation in this workspace" in source
+    assert "chosen.operationLabel" in source
     assert "Sample's Input" in source
     assert "Make Empty/Null" in source
     assert "implementationVariant?{implementationVariant}" in source

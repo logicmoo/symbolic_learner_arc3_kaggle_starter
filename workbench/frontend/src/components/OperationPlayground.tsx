@@ -9,10 +9,10 @@ type OperationDef={id:string;label?:string;implementation?:string;inputs?:Record
 type OperationImplementationDef={id:string;label?:string;implementation:string};
 type InvocationResult={operation:{id:string;label:string;inputs:Record<string,DatatypeContract>;outputs:Record<string,DatatypeContract>};implementation:{id:string;label:string;route:string};resolvedPrompts?:Array<{promptId:string;implementationId:string;targets?:string[];version?:number}>;inputs:Record<string,unknown>;outputs:Record<string,unknown>;elapsedMs:number;debugLogPath?:string};
 type RequestFailureDetail={message?:string;debugLogPath?:string};
-type RuntimeArtifact={name?:string;datatype?:string;representation?:string;payload?:unknown;value?:unknown;createdAt?:string};
-type RuntimeRun={createdAt?:string;inputs?:Record<string,unknown>;artifacts?:RuntimeArtifact[]};
+type RuntimeArtifact={name?:string;datatype?:string;representation?:string;payload?:unknown;value?:unknown;createdAt?:string;stepId?:string;provenance?:Record<string,unknown>};
+type RuntimeRun={id?:string;workflowId?:string;createdAt?:string;inputs?:Record<string,unknown>;artifacts?:RuntimeArtifact[]};
 type PopulationMode="last_outputs"|"random_outputs"|"sample_input"|"empty_null";
-type IndexedRuntimeValue={name:string;datatype:string;representation:string;value:unknown;timestamp:number;source:"input"|"output"};
+type IndexedRuntimeValue={name:string;datatype:string;representation:string;value:unknown;timestamp:number;source:"input"|"output";operationId?:string;operationLabel?:string};
 type RuntimeValueDictionary={byDatatype:Map<string,IndexedRuntimeValue[]>;byRepresentation:Map<string,IndexedRuntimeValue[]>;byName:Map<string,IndexedRuntimeValue[]>;any:IndexedRuntimeValue[]};
 type RuntimeValueIndex={inputs:RuntimeValueDictionary;outputs:RuntimeValueDictionary};
 
@@ -56,30 +56,36 @@ function contractParts(contract:DatatypeContract):{datatype:string;representatio
  return{datatype:String(contract.datatype||contract.type||"Any"),representation:contract.representation?String(contract.representation):""};
 }
 function addIndexedValue(dictionary:RuntimeValueDictionary,entry:IndexedRuntimeValue){
- const same=(candidate:IndexedRuntimeValue)=>candidate.timestamp===entry.timestamp&&candidate.name===entry.name&&candidate.datatype===entry.datatype&&candidate.representation===entry.representation&&candidate.source===entry.source;
+ const same=(candidate:IndexedRuntimeValue)=>candidate.timestamp===entry.timestamp&&candidate.name===entry.name&&candidate.datatype===entry.datatype&&candidate.representation===entry.representation&&candidate.source===entry.source&&candidate.operationId===entry.operationId;
  const add=(map:Map<string,IndexedRuntimeValue[]>,key:string)=>{const normalizedKey=normalized(key);if(!normalizedKey)return;const values=map.get(normalizedKey)||[];if(!values.some(same))values.unshift(entry);map.set(normalizedKey,values.slice(0,100))};
  add(dictionary.byDatatype,entry.datatype);add(dictionary.byRepresentation,entry.representation);add(dictionary.byName,entry.name);if(!dictionary.any.some(same))dictionary.any.unshift(entry);dictionary.any=dictionary.any.slice(0,500);
 }
-function rememberInvocation(workspaceId:string,inputContracts:Record<string,DatatypeContract>,inputValues:Record<string,unknown>,outputContracts:Record<string,DatatypeContract>,outputValues:Record<string,unknown>){
+function rememberInvocation(workspaceId:string,operation:Pick<OperationDef,"id"|"label">,inputContracts:Record<string,DatatypeContract>,inputValues:Record<string,unknown>,outputContracts:Record<string,DatatypeContract>,outputValues:Record<string,unknown>){
  const bank=valueBank(workspaceId),timestamp=Date.now();
- for(const[name,value]of Object.entries(inputValues)){const contract=contractParts(inputContracts[name]||"Any");addIndexedValue(bank.inputs,{name,datatype:contract.datatype,representation:contract.representation,value,timestamp,source:"input"})}
- for(const[name,value]of Object.entries(outputValues)){const contract=contractParts(outputContracts[name]||"Any");addIndexedValue(bank.outputs,{name,datatype:contract.datatype,representation:contract.representation,value,timestamp,source:"output"})}
+ for(const[name,value]of Object.entries(inputValues)){const contract=contractParts(inputContracts[name]||"Any");addIndexedValue(bank.inputs,{name,datatype:contract.datatype,representation:contract.representation,value,timestamp,source:"input",operationId:operation.id,operationLabel:operation.label||operation.id})}
+ for(const[name,value]of Object.entries(outputValues)){const contract=contractParts(outputContracts[name]||"Any");addIndexedValue(bank.outputs,{name,datatype:contract.datatype,representation:contract.representation,value,timestamp,source:"output",operationId:operation.id,operationLabel:operation.label||operation.id})}
 }
 function ingestRuntimeRuns(workspaceId:string,runs:RuntimeRun[]){
  const bank=valueBank(workspaceId);
  for(const[runIndex,run]of runs.entries()){
   const timestamp=run.createdAt?Date.parse(run.createdAt)||-runIndex:-runIndex;
   for(const[name,value]of Object.entries(run.inputs||{}))addIndexedValue(bank.inputs,{name,datatype:"Any",representation:"",value,timestamp,source:"input"});
-  for(const artifact of run.artifacts||[]){const value=artifactValue(artifact,artifact.datatype||"Any");if(value===undefined)continue;addIndexedValue(bank.outputs,{name:artifact.name||"artifact",datatype:artifact.datatype||"Any",representation:artifact.representation||"",value,timestamp:artifact.createdAt?Date.parse(artifact.createdAt)||timestamp:timestamp,source:"output"})}
+  for(const artifact of run.artifacts||[]){const value=artifactValue(artifact,artifact.datatype||"Any");if(value===undefined)continue;const operationId=String(artifact.provenance?.operationId||artifact.provenance?.stepId||artifact.stepId||run.workflowId||run.id||"runtime");addIndexedValue(bank.outputs,{name:artifact.name||"artifact",datatype:artifact.datatype||"Any",representation:artifact.representation||"",value,timestamp:artifact.createdAt?Date.parse(artifact.createdAt)||timestamp:timestamp,source:"output",operationId,operationLabel:operationId})}
  }
 }
 function artifactScore(name:string,datatype:string,artifact:IndexedRuntimeValue):number{
  const expected=normalized(datatype),inputName=normalized(name),actualType=normalized(`${artifact.datatype} ${artifact.representation}`),actualName=normalized(artifact.name);
  if(expected==="any")return actualName===inputName?12:1;
  const tokens=expected.split(" ").filter(token=>token.length>2&&!['datatype','semantic','representation'].includes(token));
- let score=actualType===expected?30:tokens.reduce((total,token)=>total+(actualType.includes(token)?8:0),0);
+ const actualAny=normalized(artifact.datatype)==="any";
+ const imageCompatible=/image|bitmap|png|jpeg|jpg/.test(expected)&&/image|bitmap|png|jpeg|jpg/.test(`${actualType} ${actualName}`);
+ const textCompatible=/text|string|markdown|natural language/.test(expected)&&/text|string|markdown|natural language/.test(actualType);
+ const matchingTokens=tokens.filter(token=>actualType.includes(token));
+ if(!actualAny&&actualType!==expected&&!matchingTokens.length&&!imageCompatible&&!textCompatible)return 0;
+ let score=actualType===expected?30:matchingTokens.length*8;
+ if(actualAny)score=1;
  if(actualName===inputName)score+=15;else if(actualName.includes(inputName)||inputName.includes(actualName))score+=5;
- if(/image|bitmap|png|jpeg|jpg/.test(expected)&&/image|bitmap|visual|observation/.test(`${actualType} ${actualName}`))score+=14;
+ if(imageCompatible)score+=14;
  if(/scene|object|program|text/.test(expected)&&tokens.some(token=>actualName.includes(token)))score+=7;
  return score;
 }
@@ -93,8 +99,7 @@ function artifactValue(artifact:RuntimeArtifact,datatype:string):unknown{
 }
 function rawArtifactValue(value:unknown):string{return typeof value==='string'?value:JSON.stringify(value??null,null,2)}
 function compatibleOutputs(dictionary:RuntimeValueDictionary,name:string,contract:DatatypeContract):IndexedRuntimeValue[]{
- const parts=contractParts(contract),keys=[dictionary.byName.get(normalized(name)),dictionary.byDatatype.get(normalized(parts.datatype)),dictionary.byRepresentation.get(normalized(parts.representation))];
- const pool=(normalized(parts.datatype)==="any"?dictionary.any:keys.some(Boolean)?keys.flatMap(values=>values||[]):dictionary.any).filter((entry,index,all)=>all.indexOf(entry)===index);
+ const pool=dictionary.any;
  return pool.map(entry=>({entry,score:artifactScore(name,datatypeLabel(contract),entry)})).filter(candidate=>candidate.score>0).sort((a,b)=>b.entry.timestamp-a.entry.timestamp||b.score-a.score).map(candidate=>candidate.entry);
 }
 function emptyValueFor(contract:DatatypeContract):string{return isTextDatatype(datatypeLabel(contract))||/image|bitmap|png|jpe?g/i.test(datatypeLabel(contract))?"":"null"}
@@ -141,8 +146,8 @@ export function OperationPlayground({workspaceId,operation,variants}:{workspaceI
    const engineRuns:RuntimeRun[]=responses[1].status==='fulfilled'&&Array.isArray(responses[1].value.runs)?responses[1].value.runs as RuntimeRun[]:[];
    ingestRuntimeRuns(workspaceId,[...goalRuns,...engineRuns]);
    const populated:Record<string,string>={...rawInputs};const matched:string[]=[];
-   for(const[name,contract]of inputs){const candidates=compatibleOutputs(valueBank(workspaceId).outputs,name,contract);const chosen=populationMode==="random_outputs"?candidates[Math.floor(Math.random()*candidates.length)]:candidates[0];if(!chosen)continue;populated[name]=rawArtifactValue(chosen.value);matched.push(`${name} <- ${chosen.name} (${chosen.datatype}${chosen.representation?` / ${chosen.representation}`:""})`)}
-   setRawInputs(populated);setPopulationMessage(matched.length?`${populationMode==="random_outputs"?"Randomly loaded":"Loaded latest"} ${matched.join(" | ")} from the typed output bank.`:'No compatible outputs were found. Existing inputs were left unchanged.');
+   for(const[name,contract]of inputs){const candidates=compatibleOutputs(valueBank(workspaceId).outputs,name,contract);const chosen=populationMode==="random_outputs"?candidates[Math.floor(Math.random()*candidates.length)]:candidates[0];if(!chosen)continue;populated[name]=rawArtifactValue(chosen.value);matched.push(`${name} <- ${chosen.operationLabel||chosen.operationId||"runtime"}.${chosen.name} (${chosen.datatype}${chosen.representation?` / ${chosen.representation}`:""})`)}
+   setRawInputs(populated);setPopulationMessage(matched.length?`${populationMode==="random_outputs"?"Randomly loaded":"Loaded latest"} ${matched.join(" | ")} from outputs produced by any operation in this workspace.`:'No compatible outputs from any operation in this workspace were found. Existing inputs were left unchanged.');
   }catch(reason){setError(reason instanceof Error?reason.message:String(reason))}finally{setPopulating(false)}
  };
  const run=async(implementationVariant?:string)=>{
@@ -153,12 +158,12 @@ export function OperationPlayground({workspaceId,operation,variants}:{workspaceI
    const parameterValues:Record<string,unknown>={};
    for(const[name,fallback]of parameters){const raw=rawParameters[name];if(raw===undefined||raw==="")parameterValues[name]=fallback;else try{parameterValues[name]=JSON.parse(raw)}catch{parameterValues[name]=raw}}
    const payload=await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/operations/${encodeURIComponent(operation.id)}/invoke`,{method:"POST",body:JSON.stringify({...(implementationVariant?{implementationVariant}:{}),inputs:values,parameters:parameterValues})});
-   const invocation=payload as InvocationResult;rememberInvocation(workspaceId,operation.inputs||{},values,operation.outputs||{},invocation.outputs||{});setResult(invocation);if(invocation.debugLogPath)await loadDebugLog(invocation.debugLogPath);
+   const invocation=payload as InvocationResult;rememberInvocation(workspaceId,operation,operation.inputs||{},values,operation.outputs||{},invocation.outputs||{});setResult(invocation);if(invocation.debugLogPath)await loadDebugLog(invocation.debugLogPath);
   }catch(reason){setError(reason instanceof Error?reason.message:String(reason));if(reason instanceof RequestFailure&&typeof reason.detail==="object"&&reason.detail.debugLogPath)await loadDebugLog(reason.detail.debugLogPath)}finally{setRunning(false)}
  };
  useEffect(()=>{setVariant(preferred);setRawInputs(defaults(operation.example_execute?.arguments||{}));setRawParameters(defaults(operation.example_execute?.parameters||{}));setPopulationMode("last_outputs");setPopulationMessage(null);setResult(null);setError(null);setDebugLogPath(null);setDebugLog("")},[operation.id]);
  return <section className="operation-playground">
-  <div className="llm-subhead"><div><span>OPERATION PLAYGROUND</span><b>Invoke the abstract operation with its default or a one-off route</b></div><div className="operation-playground-actions"><label className="operation-population-source"><span>POPULATE FROM:</span><select value={populationMode} onChange={event=>setPopulationMode(event.target.value as PopulationMode)}><option value="last_outputs">Last Outputs</option><option value="random_outputs">Random Outputs</option><option value="sample_input">Sample's Input</option><option value="empty_null">Make Empty/Null</option></select></label><button type="button" onClick={populateInputs} disabled={populating||inputs.length===0}>{populating?"Populating…":"Populate Inputs"}</button><button type="button" onClick={()=>run()} disabled={running}>{running?"Running…":"Run Default"}</button><button className="primary" type="button" onClick={()=>run(invocationVariant)} disabled={running||!invocationVariant}>{running?"Running…":"▶ Run Selected"}</button></div></div>
+  <div className="llm-subhead"><div><span>OPERATION PLAYGROUND</span><b>Invoke the abstract operation with its default or a one-off route</b></div><div className="operation-playground-actions"><label className="operation-population-source"><span>POPULATE FROM ANY OPERATION:</span><select value={populationMode} onChange={event=>setPopulationMode(event.target.value as PopulationMode)}><option value="last_outputs">Last Output</option><option value="random_outputs">Random Output</option><option value="sample_input">Sample's Input</option><option value="empty_null">Make Empty/Null</option></select></label><button type="button" onClick={populateInputs} disabled={populating||inputs.length===0}>{populating?"Populating…":"Populate Inputs"}</button><button type="button" onClick={()=>run()} disabled={running}>{running?"Running…":"Run Default"}</button><button className="primary" type="button" onClick={()=>run(invocationVariant)} disabled={running||!invocationVariant}>{running?"Running…":"▶ Run Selected"}</button></div></div>
   <div className="operation-playground-grid">
    <label className="operation-playground-field"><span>RUN WITH (THIS RUN ONLY)</span><select value={invocationVariant} disabled={runnableVariants.length===1} onChange={event=>{setVariant(event.target.value);setResult(null);setError(null)}}>{runnableVariants.map(item=><option key={item.id} value={item.id}>{item.label||item.id} · {item.implementation}</option>)}</select><small>{selected?.id===fallback.id?"Uses the automatic openrouter/free LLM fallback for this run only. The saved default implementation is unchanged.":selected?`Executes ${selected.implementation} for this run. The saved default implementation is unchanged.`:"Select how this invocation should run."}</small></label>
    {inputs.map(([name,datatype])=>{const example=operation.example_execute?.arguments?.[name],label=datatypeLabel(datatype);return <label className="operation-playground-field" key={name}><span>INPUT · {name} <em>{label}</em></span><TypedValueInput datatype={label} value={rawInputs[name]??""} options={example?.options} placeholder={isTextDatatype(label)?`Enter ${name}…`:/^any$/i.test(label.trim())?"Enter text or a JSON value…":`Enter ${label} as JSON…`} onChange={value=>setRawInputs(current=>({...current,[name]:value}))}/></label>})}
