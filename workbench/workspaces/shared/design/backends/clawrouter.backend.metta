@@ -5,7 +5,7 @@
   (provider clawrouter)
   (official true)
   (description "Local-first ClawRouter OpenAI-compatible gateway. Start ClawRouter separately; the workbench connects to its loopback service without a client API key.")
-  (enabled true)
+  (enabled false)
   (capabilities ([] llm.complete llm.reasoning llm.vision))
   (configuration (
     (adapter openai_chat_completions)

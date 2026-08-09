@@ -35,7 +35,7 @@ def test_shared_router_backends_and_free_first_defaults_load_from_metta() -> Non
     omniroute = backends["omniroute"]
     assert (omniroute.get("configuration") or {})["baseUrl"] == "http://localhost:20128/v1"
     assert (omniroute.get("configuration") or {})["credentialBootstrap"]["url"] == "http://localhost:20128/api/keys"
-    assert all(backends[name]["enabled"] is False for name in ("anthropic", "groq", "openai"))
+    assert all(backends[name]["enabled"] is False for name in ("anthropic", "clawrouter", "groq", "omniroute", "openai", "unsloth"))
 
     vendor_policies = {
         str((record.get("document") or {}).get("vendorId")): record.get("document") or {}

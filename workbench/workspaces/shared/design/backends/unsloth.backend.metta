@@ -5,7 +5,7 @@
   (provider unsloth)
   (official true)
   (description "Shared local Unsloth Studio OpenAI-compatible transport inherited by every workspace. Local model choices live in model files.")
-  (enabled true)
+  (enabled false)
   (capabilities ([]
     llm.complete
     llm.vision

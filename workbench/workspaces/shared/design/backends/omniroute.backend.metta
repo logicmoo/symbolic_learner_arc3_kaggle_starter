@@ -5,7 +5,7 @@
   (provider omniroute)
   (official true)
   (description "Local OmniRoute OpenAI-compatible gateway. Start OmniRoute separately on port 20128 and configure its endpoint key in the workspace Settings page.")
-  (enabled true)
+  (enabled false)
   (capabilities ([] llm.complete llm.reasoning llm.vision))
   (configuration (
     (adapter openai_chat_completions)
