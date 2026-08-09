@@ -259,6 +259,7 @@ def test_universal_tree_exposes_composable_tri_state_view_controls() -> None:
     filtering = _text("useArtifactTreeFilter.ts")
     styles = (ROOT / "workbench/frontend/src/styles/operation_editor.css").read_text(encoding="utf-8")
     assert 'TreeVisibilityRule = "show" | "hide" | "unspecified"' in filtering
+    assert 'TreeRepeatMode = "first" | "all" | "last"' in filtering
     assert "groupAllows" in filtering
     assert "availabilityStates" in filtering
     assert "activeRules.search === \"show\"" in filtering
@@ -268,8 +269,11 @@ def test_universal_tree_exposes_composable_tri_state_view_controls() -> None:
     assert "nestedKinds" in filtering
     assert "treeKinds" in filtering
     assert "[...current, ...kinds]" in filtering
+    assert "repeatedPositions" in filtering
+    assert 'activeRules.repeats === "first"' in filtering
     for label in ('label="Search"', 'label="All"', "Enabled", "Disabled", "Categories", "Non-"):
         assert label in controls
+    assert 'aria-label="Repeated resources"' in controls
     assert '`top-${kind}`' in controls
     assert '`child-${kind}`' in controls
     assert '`childless-${kind}`' in controls

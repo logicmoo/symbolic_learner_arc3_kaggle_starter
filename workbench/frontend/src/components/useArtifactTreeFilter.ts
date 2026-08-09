@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 
 export type TreeVisibilityRule = "show" | "hide" | "unspecified";
+export type TreeRepeatMode = "first" | "all" | "last";
 export type TreeVisibilityRules = {
   search: TreeVisibilityRule;
   enabled: TreeVisibilityRule;
   disabled: TreeVisibilityRule;
   categories: TreeVisibilityRule;
+  repeats: TreeRepeatMode;
   roles: Record<string, TreeVisibilityRule>;
 };
 
@@ -14,6 +16,7 @@ export const DEFAULT_TREE_VISIBILITY_RULES: TreeVisibilityRules = {
   enabled: "unspecified",
   disabled: "unspecified",
   categories: "unspecified",
+  repeats: "all",
   roles: {},
 };
 const LEGACY_FILTERING_RULES: TreeVisibilityRules = { ...DEFAULT_TREE_VISIBILITY_RULES, search: "show" };
@@ -28,6 +31,7 @@ type BranchInfo = {
   category: string | null;
   enabled: boolean;
   searchMatch: boolean;
+  resourceId: string | null;
   ownVisible: boolean;
 };
 
@@ -88,6 +92,7 @@ export function useArtifactTreeFilter(rules?: TreeVisibilityRules) {
         const document = documentValue(raw);
         const category = typeof raw.category === "string" ? raw.category : null;
         const kind = category ? null : typeof document.kind === "string" ? document.kind : null;
+        const resourceId = category ? null : typeof document.id === "string" ? `${kind || "resource"}:${document.id}` : null;
         const head = element.matches(".operation-tree-row.operation-child") ? element : element.querySelector<HTMLElement>(":scope > .artifact-tree-branch-head") || element.querySelector<HTMLElement>(":scope > .inheritance-row");
         const parentElement = element.parentElement?.closest<HTMLElement>(TREE_ITEM_SELECTOR) || null;
         const parentRaw = parentElement ? parsedSearchValue(parentElement) : {};
@@ -99,7 +104,7 @@ export function useArtifactTreeFilter(rules?: TreeVisibilityRules) {
           : ["other"];
         const enabled = !Boolean(head?.querySelector(".resource-disabled"));
         const searchMatch = Boolean(query) && `${searchableData(element).toLocaleLowerCase()} ${searchableText(head)}`.includes(query);
-        return { element, head, parentElement, kind, roles, category, enabled, searchMatch, ownVisible: true };
+        return { element, head, parentElement, kind, roles, category, enabled, searchMatch, resourceId, ownVisible: true };
       });
 
       const kinds = [...new Set(branchElements.flatMap(element => nestedKinds(parsedSearchValue(element))))].sort();
@@ -113,8 +118,10 @@ export function useArtifactTreeFilter(rules?: TreeVisibilityRules) {
       const roleStates = { ...activeRules.roles };
       const availabilityStates = { enabled: activeRules.enabled, disabled: activeRules.disabled };
       const hasTypedRoles = Object.keys(roleStates).length > 0;
+      const repeatedPositions = new Map<string, number[]>();
+      infos.forEach((info, index) => { if (info.resourceId) repeatedPositions.set(info.resourceId, [...(repeatedPositions.get(info.resourceId) || []), index]); });
 
-      for (const info of infos) {
+      for (const [index, info] of infos.entries()) {
         info.element.hidden = false;
         info.head?.removeAttribute("hidden");
         info.element.classList.remove("tree-search-match", "tree-structural-parent");
@@ -123,9 +130,11 @@ export function useArtifactTreeFilter(rules?: TreeVisibilityRules) {
           info.ownVisible = activeRules.categories !== "hide";
           continue;
         }
+        const positions = info.resourceId ? repeatedPositions.get(info.resourceId) || [index] : [index];
+        const repeatVisible = activeRules.repeats === "all" || (activeRules.repeats === "first" ? index === positions[0] : index === positions[positions.length - 1]);
         const availabilityVisible = groupAllows([info.enabled ? "enabled" : "disabled"], availabilityStates);
         const roleVisible = groupAllows(info.roles, hasTypedRoles ? roleStates : {});
-        const normallyVisible = availabilityVisible && roleVisible;
+        const normallyVisible = availabilityVisible && roleVisible && repeatVisible;
         if (!query || activeRules.search === "unspecified") info.ownVisible = normallyVisible;
         else if (activeRules.search === "show") info.ownVisible = info.searchMatch;
         else info.ownVisible = info.searchMatch ? false : normallyVisible;

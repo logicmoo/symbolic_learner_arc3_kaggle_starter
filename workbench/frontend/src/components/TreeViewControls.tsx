@@ -1,4 +1,4 @@
-import type { TreeVisibilityRule, TreeVisibilityRules } from "./useArtifactTreeFilter";
+import type { TreeRepeatMode, TreeVisibilityRule, TreeVisibilityRules } from "./useArtifactTreeFilter";
 
 function title(value: string) { return value.replace(/[_-]+/g, " ").replace(/\b\w/g, letter => letter.toUpperCase()); }
 function plural(value: string) { return value.endsWith("s") ? value : `${value}s`; }
@@ -13,6 +13,12 @@ function ThreePositionSwitch({ label, value, onChange, onExpand, onCollapse }: {
   </div>;
 }
 
+function RepeatSwitch({ value, onChange }: { value: TreeRepeatMode; onChange: (value: TreeRepeatMode) => void }) {
+  return <div className="tree-rule-row"><span>Repeated</span><div className="tree-rule-switch" role="radiogroup" aria-label="Repeated resources">
+    {(["first", "all", "last"] as TreeRepeatMode[]).map(option => <button key={option} type="button" role="radio" aria-checked={value === option} className={value === option ? "active" : ""} onClick={() => onChange(option)}>{title(option)}</button>)}
+  </div></div>;
+}
+
 export function TreeViewControls({ kinds, rules, onChange, showParents, onShowParentsChange, onBranchAction }: { kinds: string[]; rules: TreeVisibilityRules; onChange: (rules: TreeVisibilityRules) => void; showParents: boolean; onShowParentsChange: (value: boolean) => void; onBranchAction: (action: "expand" | "collapse", target: string) => void }) {
   const setRule = (key: "search" | "enabled" | "disabled" | "categories", value: TreeVisibilityRule) => onChange({ ...rules, [key]: value });
   const setRole = (key: string, value: TreeVisibilityRule) => onChange({ ...rules, roles: { ...rules.roles, [key]: value } });
@@ -20,8 +26,8 @@ export function TreeViewControls({ kinds, rules, onChange, showParents, onShowPa
   const roleKeys = [...kinds.flatMap(kind => [`top-${kind}`, `child-${kind}`, `childless-${kind}`]), "other"];
   const allValues = [rules.search, rules.enabled, rules.disabled, rules.categories, ...roleKeys.map(key => rules.roles[key] || "unspecified")];
   const masterValue: TreeVisibilityRule = allValues.every(value => value === allValues[0]) ? allValues[0] : "unspecified";
-  const setAll = (value: TreeVisibilityRule) => onChange({ search: value, enabled: value, disabled: value, categories: value, roles: Object.fromEntries(roleKeys.map(key => [key, value])) });
-  const reset = () => onChange({ search: "unspecified", enabled: "unspecified", disabled: "unspecified", categories: "unspecified", roles: {} });
+  const setAll = (value: TreeVisibilityRule) => onChange({ ...rules, search: value, enabled: value, disabled: value, categories: value, roles: Object.fromEntries(roleKeys.map(key => [key, value])) });
+  const reset = () => onChange({ search: "unspecified", enabled: "unspecified", disabled: "unspecified", categories: "unspecified", repeats: "all", roles: {} });
   const card = (key: string, control: React.ReactNode, className = "") => <div className={`tree-rule-group ${className}`} key={key}>{control}</div>;
 
   return <section className="tree-view-controls" aria-label="Tree View Controls">
@@ -32,6 +38,7 @@ export function TreeViewControls({ kinds, rules, onChange, showParents, onShowPa
       {card("enabled", <ThreePositionSwitch label="Enabled" value={rules.enabled} onChange={value => setRule("enabled", value)} onExpand={() => onBranchAction("expand", "enabled")} onCollapse={() => onBranchAction("collapse", "enabled")} />)}
       {card("disabled", <ThreePositionSwitch label="Disabled" value={rules.disabled} onChange={value => setRule("disabled", value)} onExpand={() => onBranchAction("expand", "disabled")} onCollapse={() => onBranchAction("collapse", "disabled")} />)}
       {card("categories", <ThreePositionSwitch label="Categories" value={rules.categories} onChange={value => setRule("categories", value)} onExpand={() => onBranchAction("expand", "categories")} onCollapse={() => onBranchAction("collapse", "categories")} />)}
+      {card("repeated", <RepeatSwitch value={rules.repeats} onChange={repeats => onChange({ ...rules, repeats })} />)}
       {card("other", <ThreePositionSwitch label={`Non-${kindLabels.join("/") || "Typed"}`} value={rules.roles.other || "unspecified"} onChange={value => setRole("other", value)} onExpand={() => onBranchAction("expand", "other")} onCollapse={() => onBranchAction("collapse", "other")} />)}
       {kinds.flatMap(kind => ([
         card(`top-${kind}`, <ThreePositionSwitch label={`Top ${plural(title(kind))}`} value={rules.roles[`top-${kind}`] || "unspecified"} onChange={value => setRole(`top-${kind}`, value)} onExpand={() => onBranchAction("expand", `top-${kind}`)} onCollapse={() => onBranchAction("collapse", `top-${kind}`)} />),
