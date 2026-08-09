@@ -185,6 +185,27 @@ def test_constant_value_uses_workbench_provider() -> None:
     assert result["outputs"] == {"value": 42}
 
 
+def test_direct_root_implementation_runs_without_an_llm_fallback() -> None:
+    resolved = resolve_operation_implementation(DEFAULT_WORKSPACES_ROOT / "shared", "shared.echo")
+    assert resolved["direct"] is True
+    assert resolved["implementation"]["id"] == "shared.echo"
+    assert resolved["implementation"]["implementation"] == "core.echo"
+
+    executable = materialize_workflow_step(
+        {"id": "playground", "workspaceId": "shared"},
+        {"id": "invoke", "operation": "shared.echo", "inputs": {"value": "Suff"}},
+    )
+    assert executable["implementation"] == "core.echo"
+    assert executable["implementationVariant"] == "shared.echo"
+
+    result = invoke_operation("shared", "shared.echo", {
+        "implementationVariant": "shared.echo",
+        "inputs": {"value": "Suff"},
+    })
+    assert result["implementation"]["route"] == "core.echo"
+    assert result["outputs"] == {"value": "Suff"}
+
+
 def test_user_request_materializes_as_human_input() -> None:
     executable = materialize_workflow_step(
         {"id": "sample", "workspaceId": "shared"},

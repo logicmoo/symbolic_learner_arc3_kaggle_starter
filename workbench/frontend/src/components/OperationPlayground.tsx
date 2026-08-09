@@ -5,7 +5,7 @@ import {jsonValueToMetta} from "../lib/mettaResourceCodec";
 
 type ExampleArgument={datatype?:string;label?:string;default?:unknown;options?:unknown[]};
 type DatatypeContract=string|Record<string,unknown>;
-type OperationDef={id:string;label?:string;inputs?:Record<string,DatatypeContract>;outputs?:Record<string,DatatypeContract>;parameters?:Record<string,unknown>;children?:string[];preferredChild?:string;example_execute?:{action?:string;arguments?:Record<string,ExampleArgument>;parameters?:Record<string,ExampleArgument>}};
+type OperationDef={id:string;label?:string;implementation?:string;inputs?:Record<string,DatatypeContract>;outputs?:Record<string,DatatypeContract>;parameters?:Record<string,unknown>;children?:string[];preferredChild?:string;example_execute?:{action?:string;arguments?:Record<string,ExampleArgument>;parameters?:Record<string,ExampleArgument>}};
 type OperationImplementationDef={id:string;label?:string;implementation:string};
 type InvocationResult={operation:{id:string;label:string;inputs:Record<string,DatatypeContract>;outputs:Record<string,DatatypeContract>};implementation:{id:string;label:string;route:string};resolvedPrompts?:Array<{promptId:string;implementationId:string;targets?:string[];version?:number}>;inputs:Record<string,unknown>;outputs:Record<string,unknown>;elapsedMs:number;debugLogPath?:string};
 type RequestFailureDetail={message?:string;debugLogPath?:string};
@@ -33,6 +33,7 @@ function datatypeLabel(contract:DatatypeContract):string{
 function parseInput(datatype:string,raw:string):unknown{
  if(isTextDatatype(datatype))return raw;
  if(/image|bitmap|png|jpe?g/i.test(datatype))return raw;
+ if(/^any$/i.test(datatype.trim())){const value=raw.trim();if(!value)return "";try{return JSON.parse(value)}catch{return raw}}
  const value=raw.trim();
  if(!value)return null;
  try{return JSON.parse(value)}catch{throw new Error(`Input for ${datatype} must be valid JSON (or use a Text datatype).`)}
@@ -49,7 +50,8 @@ function TypedValueInput({datatype,value,options,onChange,placeholder}:{datatype
 
 export function OperationPlayground({workspaceId,operation,variants}:{workspaceId:string;operation:OperationDef;variants:OperationImplementationDef[]}){
  const fallback:OperationImplementationDef={id:`${operation.id}.automatic_llm_fallback`,label:"Automatic LLM fallback (openrouter/free)",implementation:"llm.complete"};
- const runnableVariants=variants.length?variants:[fallback];
+ const direct:OperationImplementationDef|null=operation.implementation?{id:operation.id,label:operation.label||operation.id,implementation:operation.implementation}:null;
+ const runnableVariants=variants.length?variants:direct?[direct]:[fallback];
  const preferred=runnableVariants.some(item=>item.id===operation.preferredChild)?operation.preferredChild!:runnableVariants[0]?.id||"";
  const defaults=(values:Record<string,ExampleArgument>)=>Object.fromEntries(Object.entries(values).map(([name,arg])=>[name,typeof arg.default==="string"?arg.default:JSON.stringify(arg.default??"")]));
  const[variant,setVariant]=useState(preferred),[rawInputs,setRawInputs]=useState<Record<string,string>>(()=>defaults(operation.example_execute?.arguments||{})),[rawParameters,setRawParameters]=useState<Record<string,string>>(()=>defaults(operation.example_execute?.parameters||{})),[result,setResult]=useState<InvocationResult|null>(null),[error,setError]=useState<string|null>(null),[running,setRunning]=useState(false);
@@ -79,8 +81,8 @@ export function OperationPlayground({workspaceId,operation,variants}:{workspaceI
  return <section className="operation-playground">
   <div className="llm-subhead"><div><span>OPERATION PLAYGROUND</span><b>Invoke the abstract operation with a concrete variant</b></div><button className="primary" onClick={run} disabled={running||!invocationVariant}>{running?"Running…":"▶ Run"}</button></div>
   <div className="operation-playground-grid">
-   <label className="operation-playground-field"><span>RUN VARIANT</span><select value={invocationVariant} disabled={runnableVariants.length===1} onChange={event=>{setVariant(event.target.value);setResult(null);setError(null)}}>{runnableVariants.map(item=><option key={item.id} value={item.id}>{item.label||item.id} · {item.implementation}</option>)}</select><small>{variants.length?`${selected?`Executes ${selected.implementation}`:"Select an implementation"}. This does not change the saved preferred implementation.`:"No concrete implementation exists, so the runtime derives a prompt from this operation and uses openrouter/free."}</small></label>
-   {inputs.map(([name,datatype])=>{const example=operation.example_execute?.arguments?.[name],label=datatypeLabel(datatype);return <label className="operation-playground-field" key={name}><span>INPUT · {name} <em>{label}</em></span><TypedValueInput datatype={label} value={rawInputs[name]??""} options={example?.options} placeholder={isTextDatatype(label)?`Enter ${name}…`:`Enter ${label} as JSON…`} onChange={value=>setRawInputs(current=>({...current,[name]:value}))}/></label>})}
+   <label className="operation-playground-field"><span>RUN VARIANT</span><select value={invocationVariant} disabled={runnableVariants.length===1} onChange={event=>{setVariant(event.target.value);setResult(null);setError(null)}}>{runnableVariants.map(item=><option key={item.id} value={item.id}>{item.label||item.id} · {item.implementation}</option>)}</select><small>{variants.length?`${selected?`Executes ${selected.implementation}`:"Select an implementation"}. This does not change the saved preferred implementation.`:direct?`Executes the operation's declared ${direct.implementation} implementation directly.`:"No concrete implementation exists, so the runtime derives a prompt from this operation and uses openrouter/free."}</small></label>
+   {inputs.map(([name,datatype])=>{const example=operation.example_execute?.arguments?.[name],label=datatypeLabel(datatype);return <label className="operation-playground-field" key={name}><span>INPUT · {name} <em>{label}</em></span><TypedValueInput datatype={label} value={rawInputs[name]??""} options={example?.options} placeholder={isTextDatatype(label)?`Enter ${name}…`:/^any$/i.test(label.trim())?"Enter text or a JSON value…":`Enter ${label} as JSON…`} onChange={value=>setRawInputs(current=>({...current,[name]:value}))}/></label>})}
    {parameters.map(([name,fallback])=>{const example=operation.example_execute?.parameters?.[name],datatype=example?.datatype||typeof fallback;return <label className="operation-playground-field" key={`parameter:${name}`}><span>PARAMETER · {name} <em>{datatype}</em></span><TypedValueInput datatype={datatype} value={rawParameters[name]??(typeof fallback==="string"?fallback:JSON.stringify(fallback??""))} options={example?.options} placeholder={`Configure ${name}…`} onChange={value=>setRawParameters(current=>({...current,[name]:value}))}/></label>})}
   </div>
   <div className="operation-playground-contract"><span>OUTPUT CONTRACT</span>{outputs.map(([name,datatype])=><code key={name}>{name}: {datatypeLabel(datatype)}</code>)}</div>

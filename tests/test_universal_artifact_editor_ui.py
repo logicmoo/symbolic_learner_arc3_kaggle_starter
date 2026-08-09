@@ -96,7 +96,7 @@ def test_operation_playground_offers_automatic_llm_fallback() -> None:
     source = _text("OperationPlayground.tsx")
     assert ".automatic_llm_fallback" in source
     assert "Automatic LLM fallback (openrouter/free)" in source
-    assert "const runnableVariants=variants.length?variants:[fallback]" in source
+    assert "const runnableVariants=variants.length?variants:direct?[direct]:[fallback]" in source
     assert "runtime derives a prompt from this operation and uses openrouter/free" in source
 
 
@@ -105,6 +105,16 @@ def test_operation_playground_displays_persisted_complete_debug_trace() -> None:
     assert "COMPLETE DEBUG TRACE" in source
     assert "/operations/debug-log?path=" in source
     assert "debugLogPath" in source
+
+
+def test_operation_playground_runs_direct_routes_and_accepts_plain_any_values() -> None:
+    source = _text("OperationPlayground.tsx")
+    editor = _text("OperationLibraryEditor.tsx")
+    assert "operation.implementation?" in source
+    assert "direct?[direct]:[fallback]" in source
+    assert 'if(/^any$/i.test(datatype.trim()))' in source
+    assert '"Enter text or a JSON value…"' in source
+    assert "Direct — {directRoute}" in editor
 
 
 def test_other_artifact_families_keep_their_variant_controls() -> None:

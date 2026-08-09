@@ -172,6 +172,17 @@ def resolve_operation_implementation(workspace_root: Path, operation_id: str, re
     ]
     variants = list(dict.fromkeys([*declared_variants, *reverse_variants]))
     if not variants:
+        direct_route = str(operation.get("implementation") or "").strip()
+        if direct_route:
+            if requested and requested != operation_id:
+                raise ValueError(f"implementation {requested} is not allowed by operation {operation_id}")
+            return {
+                "operation": operation,
+                "operationRecord": operation_record,
+                "implementation": operation,
+                "implementationRecord": operation_record,
+                "direct": True,
+            }
         fallback = automatic_llm_fallback(operation)
         fallback_id = str(fallback["id"])
         if requested and requested != fallback_id:
