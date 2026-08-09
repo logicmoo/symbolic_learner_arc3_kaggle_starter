@@ -13,6 +13,7 @@ import traceback
 import urllib.request
 from contextlib import redirect_stderr, redirect_stdout
 from dataclasses import dataclass
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 from urllib.error import HTTPError
@@ -34,8 +35,13 @@ class CapabilityStatus:
         return {"status": self.status, "detail": self.detail}
 
 
+@lru_cache(maxsize=None)
+def _binary_path(name: str) -> str | None:
+    return shutil.which(name)
+
+
 def _binary_status(name: str) -> CapabilityStatus:
-    path = shutil.which(name)
+    path = _binary_path(name)
     if path:
         return CapabilityStatus("implemented", path)
     return CapabilityStatus("unavailable", f"{name} is not on PATH")
@@ -66,7 +72,7 @@ def probe_capabilities(registry: OperationRegistry) -> dict[str, dict[str, str]]
         "replay": CapabilityStatus("implemented", "Replay creates a new run from persisted workflow version and inputs"),
         "parallelWorkers": CapabilityStatus("partial", "Ready DAG steps are discovered, but local execution is not a distributed worker pool"),
         "pythonCallable": CapabilityStatus("implemented" if "python.callable" in registered else "unavailable", "Imports trusted Python modules/files and calls functions or class methods"),
-        "prologSource": CapabilityStatus("implemented" if "prolog.source" in registered and shutil.which("swipl") else "unavailable", "Runs embedded operation source with SWI-Prolog"),
+        "prologSource": CapabilityStatus("implemented" if "prolog.source" in registered and _binary_path("swipl") else "unavailable", "Runs embedded operation source with SWI-Prolog"),
         "artifactConversion": CapabilityStatus("implemented" if "artifact.convert" in registered else "unavailable", "JSON/text/bytes conversion provider"),
         "prolog": _binary_status("swipl"),
         "metta": _binary_status("metta"),
