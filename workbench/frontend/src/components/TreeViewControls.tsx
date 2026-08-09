@@ -13,7 +13,7 @@ export function TreeViewControls({ kinds, rules, onChange }: { kinds: string[]; 
   const setRule = (key: "search" | "enabled" | "disabled" | "categories", value: TreeVisibilityRule) => onChange({ ...rules, [key]: value });
   const setRole = (key: string, value: TreeVisibilityRule) => onChange({ ...rules, roles: { ...rules.roles, [key]: value } });
   const kindLabels = kinds.map(title);
-  const roleKeys = [...kinds.flatMap(kind => [`top-${kind}`, `child-${kind}`]), "other"];
+  const roleKeys = [...kinds.flatMap(kind => [`top-${kind}`, `child-${kind}`, `childless-${kind}`]), "other"];
   const allValues = [rules.search, rules.enabled, rules.disabled, rules.categories, ...roleKeys.map(key => rules.roles[key] || "unspecified")];
   const masterValue: TreeVisibilityRule = allValues.every(value => value === allValues[0]) ? allValues[0] : "unspecified";
   const setAll = (value: TreeVisibilityRule) => onChange({
@@ -32,6 +32,7 @@ export function TreeViewControls({ kinds, rules, onChange }: { kinds: string[]; 
     <div className="tree-rule-group"><b>RESOURCE ROLES</b>{kinds.flatMap(kind => ([
       <ThreePositionSwitch key={`top-${kind}`} label={`Top ${plural(title(kind))}`} value={rules.roles[`top-${kind}`] || "unspecified"} onChange={value => setRole(`top-${kind}`, value)} />,
       <ThreePositionSwitch key={`child-${kind}`} label={`Child ${plural(title(kind))}`} value={rules.roles[`child-${kind}`] || "unspecified"} onChange={value => setRole(`child-${kind}`, value)} />,
+      <ThreePositionSwitch key={`childless-${kind}`} label={`Childless ${plural(title(kind))}`} value={rules.roles[`childless-${kind}`] || "unspecified"} onChange={value => setRole(`childless-${kind}`, value)} />,
     ]))}<ThreePositionSwitch label={`Non-${kindLabels.join("/") || "Typed"}`} value={rules.roles.other || "unspecified"} onChange={value => setRole("other", value)} /></div>
   </section>;
 }

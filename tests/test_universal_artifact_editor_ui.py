@@ -276,6 +276,8 @@ def test_universal_tree_exposes_composable_tri_state_view_controls() -> None:
         assert label in controls
     assert '`top-${kind}`' in controls
     assert '`child-${kind}`' in controls
+    assert '`childless-${kind}`' in controls
+    assert "Childless ${plural(title(kind))}" in controls
     assert "setAll" in controls
     assert "roleKeys.map(key => [key, value])" in controls
     assert 'aria-label="Tree View Controls"' in universal
@@ -284,6 +286,7 @@ def test_universal_tree_exposes_composable_tri_state_view_controls() -> None:
     assert 'commandTree("collapse");commandCategories("collapse")' in universal
     assert ".tree-view-controls" in styles
     assert ".tree-rule-switch" in styles
+    assert "values.some(value => states[value] === \"hide\")" in filtering
 
 
 def test_first_class_categories_are_visually_distinct_from_virtual_folders() -> None:

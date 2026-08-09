@@ -24,7 +24,7 @@ type BranchInfo = {
   head: HTMLElement | null;
   parentElement: HTMLElement | null;
   kind: string | null;
-  role: string;
+  roles: string[];
   category: string | null;
   enabled: boolean;
   searchMatch: boolean;
@@ -54,10 +54,10 @@ function nestedKinds(value: unknown): string[] {
   return [...ownKind, ...nestedKinds(record.children)];
 }
 
-function groupAllows(value: string, states: Record<string, TreeVisibilityRule>): boolean {
-  if (states[value] === "hide") return false;
+function groupAllows(values: string[], states: Record<string, TreeVisibilityRule>): boolean {
+  if (values.some(value => states[value] === "hide")) return false;
   const hasShow = Object.values(states).some(state => state === "show");
-  return !hasShow || states[value] === "show";
+  return !hasShow || values.some(value => states[value] === "show");
 }
 
 export function useArtifactTreeFilter(rules?: TreeVisibilityRules) {
@@ -93,10 +93,13 @@ export function useArtifactTreeFilter(rules?: TreeVisibilityRules) {
         const parentRaw = parentElement ? parsedSearchValue(parentElement) : {};
         const parentDocument = documentValue(parentRaw);
         const parentKind = typeof parentDocument.kind === "string" ? parentDocument.kind : null;
-        const role = kind ? `${parentKind === kind ? "child" : "top"}-${kind}` : "other";
+        const declaredChildren = Array.isArray(raw.children) ? raw.children : Array.isArray(document.children) ? document.children : [];
+        const roles = kind
+          ? [`${parentKind === kind ? "child" : "top"}-${kind}`, ...(declaredChildren.length === 0 ? [`childless-${kind}`] : [])]
+          : ["other"];
         const enabled = !Boolean(head?.querySelector(".resource-disabled"));
         const searchMatch = Boolean(query) && `${searchableData(element).toLocaleLowerCase()} ${searchableText(head)}`.includes(query);
-        return { element, head, parentElement, kind, role, category, enabled, searchMatch, ownVisible: true };
+        return { element, head, parentElement, kind, roles, category, enabled, searchMatch, ownVisible: true };
       });
 
       const kinds = [...new Set(branchElements.flatMap(element => nestedKinds(parsedSearchValue(element))))].sort();
@@ -116,8 +119,8 @@ export function useArtifactTreeFilter(rules?: TreeVisibilityRules) {
           if (activeRules.categories === "hide" && info.category !== "all") info.element.hidden = true;
           continue;
         }
-        const availabilityVisible = groupAllows(info.enabled ? "enabled" : "disabled", availabilityStates);
-        const roleVisible = groupAllows(info.role, hasTypedRoles ? roleStates : {});
+        const availabilityVisible = groupAllows([info.enabled ? "enabled" : "disabled"], availabilityStates);
+        const roleVisible = groupAllows(info.roles, hasTypedRoles ? roleStates : {});
         const searchVisible = !query || activeRules.search === "unspecified" || (activeRules.search === "show" ? info.searchMatch : !info.searchMatch);
         info.ownVisible = availabilityVisible && roleVisible && searchVisible;
       }
