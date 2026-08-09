@@ -1,0 +1,32 @@
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[1]
+SERVER = ROOT / "workbench" / "server"
+sys.path.insert(0, str(SERVER))
+
+from backend_library import load_workspace_backend_records  # noqa: E402
+
+
+def test_shared_asi_backends_load_with_expected_credentials_and_endpoints() -> None:
+    shared = ROOT / "workbench" / "workspaces" / "shared"
+    backends = {
+        str((record.get("document") or {}).get("id")): record.get("document") or {}
+        for record in load_workspace_backend_records(shared)
+    }
+
+    asicloud = backends["asicloud"]
+    assert asicloud["enabled"] is True
+    assert asicloud["configuration"]["adapter"] == "openai_chat_completions"
+    assert asicloud["configuration"]["baseUrl"] == "https://inference.asicloud.cudos.org/v1"
+    assert asicloud["configuration"]["apiKeyEnvironmentVariable"] == "ASI_API_KEY"
+
+    asione = backends["asione"]
+    assert asione["enabled"] is True
+    assert asione["configuration"]["adapter"] == "openai_chat_completions"
+    assert asione["configuration"]["baseUrl"] == "https://api.asi1.ai/v1"
+    assert asione["configuration"]["apiKeyEnvironmentVariable"] == "ASIONE_API_KEY"
+    assert asione["configuration"]["defaultModel"] == "asi1-ultra"
