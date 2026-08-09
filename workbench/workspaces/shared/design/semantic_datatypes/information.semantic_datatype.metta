@@ -15,6 +15,7 @@
     entity_collection
     evaluation
     event
+    file_reference
     goal
     goal_set
     hypothesis
@@ -26,6 +27,8 @@
     object_representation_bundle
     observation
     observation_collection
+    number
+    program
     provenance_record
     relationship
     simulation_request

@@ -12,7 +12,11 @@
     (bundle ArtifactBundle)
   ))
   (outputs (
-    (audit_md Markdown)
+    (audit_md (
+      (datatype text)
+      (representation plain_text)
+      (concrete markdown)
+    ))
   ))
   (promptSelection (
     (prompts ([]

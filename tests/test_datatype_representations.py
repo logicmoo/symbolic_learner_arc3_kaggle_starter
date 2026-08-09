@@ -47,6 +47,17 @@ def test_semantic_datatype_hierarchy_is_explicit_and_bidirectional() -> None:
     assert "objectified_observation" in datatypes["observation"]["children"]
 
 
+def test_numeric_document_and_program_contract_types_are_declared() -> None:
+    datatypes = {record["document"]["id"]: record["document"] for record in load_workspace_datatype_records(SHARED) if record.get("document")}
+    assert datatypes["number"]["parents"] == ["information"]
+    assert datatypes["file_reference"]["parents"] == ["information"]
+    assert datatypes["program"]["parents"] == ["information"]
+    assert set(datatypes["program"]["children"]) == {"prolog_program", "turtle_program_set"}
+    assert datatypes["prolog_program"]["parents"] == ["program"]
+    assert datatypes["turtle_program_set"]["parents"] == ["program"]
+    assert {"number", "file_reference", "program"}.issubset(datatypes["information"]["children"])
+
+
 def test_bitmap_encodings_are_independent_concrete_datatypes() -> None:
     representations = {record["document"]["id"]: record["document"] for record in load_workspace_representation_records(SHARED) if record.get("document")}
     bitmap = representations["bitmap"]
@@ -75,6 +86,7 @@ def test_interface_inventory_scans_canonical_workflows_and_matches_case() -> Non
     inventory = interface_type_inventory(ARC3)
     undeclared = set(inventory["undeclaredDatatypes"])
     assert {"Image", "Text", "Object", "IdentityMap", "WorldModel"}.isdisjoint(undeclared)
+    assert {"Number", "FileReference", "Markdown", "Program", "PrologProgram", "TurtleProgramSet"}.isdisjoint(undeclared)
     assert not any(datatype.startswith("$") for datatype in undeclared)
     workflow_references = [reference for reference in inventory["references"] if reference["ownerKind"] == "workflow"]
     assert any(reference["ownerId"] == "arc3_observe_choose_record" and reference["datatype"] == "Object" for reference in workflow_references)
