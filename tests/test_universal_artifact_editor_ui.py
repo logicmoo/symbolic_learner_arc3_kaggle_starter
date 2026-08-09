@@ -102,6 +102,27 @@ def test_operation_playground_offers_automatic_llm_fallback() -> None:
     assert "The saved default implementation is unchanged" in source
 
 
+def test_operation_playground_can_run_default_and_populate_from_runtime_artifacts() -> None:
+    source = _text("OperationPlayground.tsx")
+    assert "Run Default" in source
+    assert "Run Selected" in source
+    assert "Populate Inputs" in source
+    assert "/api/engine/runs?limit=100" in source
+    assert "/api/goal-runs?workspace_id=" in source
+    assert "artifactScore" in source
+    assert "type RuntimeValueDictionary=" in source
+    assert "byDatatype:Map" in source
+    assert "byRepresentation:Map" in source
+    assert "byName:Map" in source
+    assert "workspaceValueBanks" in source
+    assert "rememberInvocation" in source
+    assert "Last Outputs" in source
+    assert "Random Outputs" in source
+    assert "Sample's Input" in source
+    assert "Make Empty/Null" in source
+    assert "implementationVariant?{implementationVariant}" in source
+
+
 def test_operation_playground_displays_persisted_complete_debug_trace() -> None:
     source = (ROOT / "workbench/frontend/src/components/OperationPlayground.tsx").read_text(encoding="utf-8")
     assert "COMPLETE DEBUG TRACE" in source
@@ -222,6 +243,17 @@ def test_design_trees_share_virtual_categories() -> None:
     assert "visibleVariants.map" in operations
 
 
+def test_first_class_categories_are_visually_distinct_from_virtual_folders() -> None:
+    category_tree = _text("CategorizedArtifactTree.tsx")
+    styles = (ROOT / "workbench" / "frontend" / "src" / "styles" / "operation_editor.css").read_text(encoding="utf-8")
+    assert '"First-class category" : "Virtual category"' in category_tree
+    assert 'firstClass ? "category-first-class" : "category-virtual"' in category_tree
+    assert "/artifact-categories" in category_tree
+    assert "document.trees?.includes(categoryTree)" in category_tree
+    assert ".operation-category-row.category-first-class" in styles
+    assert "var(--green)" in styles
+
+
 def test_operation_implementations_inherit_parent_playground() -> None:
     operations = _text("OperationLibraryEditor.tsx")
     playground = _text("OperationPlayground.tsx")
@@ -231,5 +263,6 @@ def test_operation_implementations_inherit_parent_playground() -> None:
     assert "variants={[selectedImplementation]}" in operations
     assert "runnableVariants.some(item=>item.id===operation.preferredChild)" in playground
     assert "invocationVariant=runnableVariants.length===1?runnableVariants[0].id:variant" in playground
-    assert "implementationVariant:invocationVariant" in playground
+    assert "run(invocationVariant)" in playground
+    assert "implementationVariant?{implementationVariant}" in playground
     assert "disabled={runnableVariants.length===1}" in playground

@@ -1,8 +1,9 @@
-import { Children, Fragment, isValidElement, useMemo, type ReactElement, type ReactNode } from "react";
+import { Children, Fragment, isValidElement, useEffect, useMemo, useState, type ReactElement, type ReactNode } from "react";
 import { ArtifactTreeBranch, type ArtifactTreeCommand } from "./ArtifactTreeBranch";
 
 export type CategorizedArtifactTreeItem = { id: string; categories?: unknown; searchValue?: unknown; render: (appearanceKey: string) => ReactNode };
 type CategoryNode = { name: string; path: string; items: CategorizedArtifactTreeItem[]; children: Map<string, CategoryNode> };
+type ArtifactCategoryRecord = { document?: { path?: string; trees?: string[] } };
 
 export function categoryPaths(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
@@ -10,16 +11,38 @@ export function categoryPaths(value: unknown): string[] {
 }
 function title(value: string) { return value.replace(/[-_]+/g, " ").replace(/\b\w/g, letter => letter.toUpperCase()); }
 function count(node: CategoryNode): number { return node.items.length + [...node.children.values()].reduce((total, child) => total + count(child), 0); }
-function CategoryHeader({ label, itemCount, special }: { label: string; itemCount: number; special?: "all" | "uncategorized" }) { return <div className={`operation-tree-row operation-category-row ${special ? `category-${special}` : ""}`}><span className="operation-kind-badge">CATEGORY</span><span><b>{label}</b><small>Virtual category</small></span><em>{itemCount} items</em></div>; }
-function renderCategory(node: CategoryNode, categoryCommand?: ArtifactTreeCommand): ReactNode {
+function CategoryHeader({ label, itemCount, special, firstClass = false }: { label: string; itemCount: number; special?: "all" | "uncategorized"; firstClass?: boolean }) { return <div className={`operation-tree-row operation-category-row ${special ? `category-${special}` : firstClass ? "category-first-class" : "category-virtual"}`}><span className="operation-kind-badge">CATEGORY</span><span><b>{label}</b><small>{firstClass ? "First-class category" : "Virtual category"}</small></span><em>{itemCount} items</em></div>; }
+function renderCategory(node: CategoryNode, categoryCommand: ArtifactTreeCommand | undefined, firstClassPaths: Set<string>): ReactNode {
   const children = [...node.children.values()].sort((a, b) => a.name.localeCompare(b.name));
-  return <ArtifactTreeBranch key={`category:${node.path}`} branchCommand={categoryCommand} className="operation-tree-group artifact-category-branch" label={title(node.name)} searchValue={{ category: node.path }} header={<CategoryHeader label={title(node.name)} itemCount={count(node)} />}>
-    {node.items.map(item => item.render(`category:${node.path}:${item.id}`))}{children.map(child => renderCategory(child, categoryCommand))}
+  return <ArtifactTreeBranch key={`category:${node.path}`} branchCommand={categoryCommand} className="operation-tree-group artifact-category-branch" label={title(node.name)} searchValue={{ category: node.path }} header={<CategoryHeader label={title(node.name)} itemCount={count(node)} firstClass={firstClassPaths.has(node.path)} />}>
+    {node.items.map(item => item.render(`category:${node.path}:${item.id}`))}{children.map(child => renderCategory(child, categoryCommand, firstClassPaths))}
   </ArtifactTreeBranch>;
 }
 
+function useFirstClassCategoryPaths(workspaceId?: string, categoryTree?: string): Set<string> {
+  const [paths, setPaths] = useState<Set<string>>(() => new Set());
+  useEffect(() => {
+    let active = true;
+    if (!workspaceId || !categoryTree) { setPaths(new Set()); return () => { active = false; }; }
+    void fetch(`/api/workspaces/${encodeURIComponent(workspaceId)}/artifact-categories`)
+      .then(response => response.ok ? response.json() : Promise.reject(new Error(response.statusText)))
+      .then(payload => {
+        if (!active) return;
+        const records = Array.isArray(payload.artifactCategories) ? payload.artifactCategories as ArtifactCategoryRecord[] : [];
+        setPaths(new Set(records.flatMap(record => {
+          const document = record.document;
+          return document?.path && document.trees?.includes(categoryTree) ? categoryPaths([document.path]) : [];
+        })));
+      })
+      .catch(() => { if (active) setPaths(new Set()); });
+    return () => { active = false; };
+  }, [workspaceId, categoryTree]);
+  return paths;
+}
+
 /** Builds virtual category folders without changing filesystem ownership or resource identity. */
-export function CategorizedArtifactTree({ items, onlyCategories = false, categoryCommand }: { items: CategorizedArtifactTreeItem[]; onlyCategories?: boolean; categoryCommand?: ArtifactTreeCommand }) {
+export function CategorizedArtifactTree({ items, onlyCategories = false, categoryCommand, workspaceId, categoryTree }: { items: CategorizedArtifactTreeItem[]; onlyCategories?: boolean; categoryCommand?: ArtifactTreeCommand; workspaceId?: string; categoryTree?: string }) {
+  const firstClassPaths = useFirstClassCategoryPaths(workspaceId, categoryTree);
   const roots = useMemo(() => {
     const result = new Map<string, CategoryNode>();
     for (const item of items) for (const path of categoryPaths(item.categories)) {
@@ -38,7 +61,7 @@ export function CategorizedArtifactTree({ items, onlyCategories = false, categor
   return <div className="categorized-artifact-tree" data-category-collapse-mode={onlyCategories ? "resources" : "none"}>
     <ArtifactTreeBranch label="All" branchCommand={null} searchValue={{ category: "all" }} header={<CategoryHeader label="All" itemCount={items.length} special="all" />}>{items.map(item => item.render(`all:${item.id}`))}</ArtifactTreeBranch>
     <ArtifactTreeBranch label="Uncategorized" branchCommand={null} searchValue={{ category: "uncategorized" }} header={<CategoryHeader label="Uncategorized" itemCount={uncategorized.length} special="uncategorized" />}>{uncategorized.map(item => item.render(`uncategorized:${item.id}`))}</ArtifactTreeBranch>
-    {[...roots.values()].sort((a, b) => a.name.localeCompare(b.name)).map(node => renderCategory(node, categoryCommand))}
+    {[...roots.values()].sort((a, b) => a.name.localeCompare(b.name)).map(node => renderCategory(node, categoryCommand, firstClassPaths))}
   </div>;
 }
 
@@ -62,7 +85,7 @@ function topLevelNodes(node: ReactNode): ReactElement[] {
 }
 
 /** Adapts existing rich tree branches to the shared virtual-category contract. */
-export function CategorizedArtifactNodes({ children, onlyCategories = false, categoryCommand }: { children: ReactNode; onlyCategories?: boolean; categoryCommand?: ArtifactTreeCommand }) {
+export function CategorizedArtifactNodes({ children, onlyCategories = false, categoryCommand, workspaceId, categoryTree }: { children: ReactNode; onlyCategories?: boolean; categoryCommand?: ArtifactTreeCommand; workspaceId?: string; categoryTree?: string }) {
   const nodes = topLevelNodes(children);
   const items = nodes.map((node, index) => ({
     id: String(node.key ?? index),
@@ -70,5 +93,5 @@ export function CategorizedArtifactNodes({ children, onlyCategories = false, cat
     searchValue: (node.props as { searchValue?: unknown }).searchValue,
     render: (appearanceKey: string) => <Fragment key={appearanceKey}>{node}</Fragment>,
   }));
-  return <CategorizedArtifactTree items={items} onlyCategories={onlyCategories} categoryCommand={categoryCommand} />;
+  return <CategorizedArtifactTree items={items} onlyCategories={onlyCategories} categoryCommand={categoryCommand} workspaceId={workspaceId} categoryTree={categoryTree} />;
 }

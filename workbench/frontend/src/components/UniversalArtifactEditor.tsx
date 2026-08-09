@@ -22,6 +22,8 @@ export type UniversalArtifactBottomPanel = {
 };
 
 export type UniversalArtifactEditorProps = {
+  workspaceId?: string;
+  categoryTree?: string;
   eyebrow: string;
   title: string;
   description: string;
@@ -77,6 +79,8 @@ export type UniversalArtifactEditorProps = {
  * Artifact-family adapters add capabilities; they must not remove baseline behavior.
  */
 export function UniversalArtifactEditor({
+  workspaceId,
+  categoryTree,
   eyebrow,
   title,
   description,
@@ -164,7 +168,7 @@ export function UniversalArtifactEditor({
             <button type="button" aria-label={navigatorCollapsed?"Expand hierarchy":"Collapse hierarchy"} aria-expanded={!navigatorCollapsed} onClick={()=>setNavigatorCollapsed(value=>!value)}>{navigatorCollapsed?"›":"‹"}<b>{navigatorCollapsed?"":"Pane"}</b></button>
           </div>
         </div>
-        <ArtifactTreeCommandContext.Provider value={treeCommand}><div className="artifact-navigator-content" ref={treeRef}><CategorizedArtifactNodes onlyCategories={onlyCategories} categoryCommand={categoryCommand}>{leftPane}</CategorizedArtifactNodes></div></ArtifactTreeCommandContext.Provider>
+        <ArtifactTreeCommandContext.Provider value={treeCommand}><div className="artifact-navigator-content" ref={treeRef}><CategorizedArtifactNodes onlyCategories={onlyCategories} categoryCommand={categoryCommand} workspaceId={workspaceId} categoryTree={categoryTree}>{leftPane}</CategorizedArtifactNodes></div></ArtifactTreeCommandContext.Provider>
       </div>
       <div className={workspaceClassName}>
         <div className={tabsClassName}>
