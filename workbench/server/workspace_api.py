@@ -26,7 +26,7 @@ from model_library import load_model_library_records, resolve_model_records
 from prompt_library import load_prompt_library_records, load_workspace_prompt_records
 from policy_library import load_workspace_policy_records, policy_hierarchy
 from resource_convention import canonical_resource_path, infer_resource_kind
-from resource_relationships import relationship_ids
+from resource_relationships import relationship_ids, synchronize_parent_backlinks
 from operation_library import DEFAULT_WORKSPACES_ROOT, load_workspace_operation_implementation_records, load_workspace_operation_records
 from workspace_inheritance import (
     SHARED_WORKSPACE_ID,
@@ -703,7 +703,18 @@ def write_workspace_file(workspace_id: str, body: dict[str, Any] = Body(...)) ->
             raise ValueError("file type is not editable text")
         content = str(body.get("content") or "")
         target = requested
+        previous_document: dict[str, Any] | None = None
+        relationship_sync = {"updated": [], "unresolved": []}
         if requested.suffix.lower() == ".json":
+            resources = get_filesystem_provider()
+            if resources.is_file(requested):
+                previous_value = resources.read_json(requested)
+                incoming_id = str(json.loads(content).get("id") or "")
+                previous_documents = previous_value if isinstance(previous_value, list) else [previous_value]
+                previous_document = next(
+                    (item for item in previous_documents if isinstance(item, dict) and str(item.get("id") or "") == incoming_id),
+                    None,
+                )
             document = json.loads(content)
             if not isinstance(document, dict):
                 raise ValueError("JSON resource must contain an object")
@@ -716,10 +727,12 @@ def write_workspace_file(workspace_id: str, body: dict[str, Any] = Body(...)) ->
         if target != requested and resources.exists(target) and resources.exists(requested):
             raise ValueError(f"canonical target already exists: {target.relative_to(root).as_posix()}")
         resources.write_text(target, content)
+        if requested.suffix.lower() == ".json":
+            relationship_sync = synchronize_parent_backlinks(root, document, previous_document, resources)
         if target != requested and resources.is_file(requested):
             resources.delete(requested)
         invalidate_workspace_discovery()
-        return {"file": {**_file_record(root, target), "content": content}}
+        return {"file": {**_file_record(root, target), "content": content}, "relationshipSync": relationship_sync}
     except KeyError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error
     except (OSError, ValueError, json.JSONDecodeError) as error:
