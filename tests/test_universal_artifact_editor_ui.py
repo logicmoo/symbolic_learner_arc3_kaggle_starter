@@ -277,7 +277,9 @@ def test_universal_tree_exposes_composable_tri_state_view_controls() -> None:
     assert "setAll" in controls
     assert "roleKeys.map(key => [key, value])" in controls
     assert 'aria-label="Tree View Controls"' in controls
-    assert "viewControlsOpen" not in universal
+    assert "useState(true)" in universal
+    assert 'aria-label="Tree View Controls"' in universal
+    assert 'viewControlsOpen ? "Hide View" : "Show View"' in universal
     assert "updateVisibilityRules" in universal
     assert 'commandCategories("expand");commandTree("expand")' in universal
     assert 'commandTree("collapse");commandCategories("collapse")' in universal

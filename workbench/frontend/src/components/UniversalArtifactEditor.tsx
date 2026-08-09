@@ -116,6 +116,7 @@ export function UniversalArtifactEditor({
     : [category || title, activeTab?.label || "Select artifact"];
   const [bottomPanelId, setBottomPanelId] = useState<string | null>(bottomPanels[0]?.id || null);
   const [navigatorCollapsed, setNavigatorCollapsed] = useState(false);
+  const [viewControlsOpen, setViewControlsOpen] = useState(true);
   const [treeCommand, setTreeCommand] = useState<ArtifactTreeCommand>(null);
   const [categoryCommand, setCategoryCommand] = useState<ArtifactTreeCommand>(null);
   const [visibilityRules, setVisibilityRules] = useState<TreeVisibilityRules>(DEFAULT_TREE_VISIBILITY_RULES);
@@ -170,10 +171,11 @@ export function UniversalArtifactEditor({
             <label className="artifact-tree-filter"><span>Filter tree</span><input type="search" value={treeFilter} onChange={event=>{const value=event.target.value;setTreeFilter(value);if(value.trim())commandTree("expand")}} placeholder="Filter tree…" /></label>
             <button type="button" aria-label="Expand All" onClick={()=>{commandCategories("expand");commandTree("expand")}}><b>Expand All</b></button>
             <button type="button" aria-label="Collapse All" onClick={()=>{commandTree("collapse");commandCategories("collapse")}}><b>Collapse All</b></button>
+            <button type="button" aria-label="Tree View Controls" aria-expanded={viewControlsOpen} aria-pressed={viewControlsOpen} onClick={()=>setViewControlsOpen(value=>!value)}><b>{viewControlsOpen ? "Hide View" : "Show View"}</b></button>
             <button type="button" aria-label={navigatorCollapsed?"Expand hierarchy":"Collapse hierarchy"} aria-expanded={!navigatorCollapsed} onClick={()=>setNavigatorCollapsed(value=>!value)}>{navigatorCollapsed?"›":"‹"}<b>{navigatorCollapsed?"":"Pane"}</b></button>
           </div>
         </div>
-        <TreeViewControls kinds={treeKinds} rules={visibilityRules} onChange={updateVisibilityRules} showParents={showParents} onShowParentsChange={setShowParents} onBranchAction={commandBranches} />
+        {viewControlsOpen && <TreeViewControls kinds={treeKinds} rules={visibilityRules} onChange={updateVisibilityRules} showParents={showParents} onShowParentsChange={setShowParents} onBranchAction={commandBranches} />}
         <ArtifactTreeCommandContext.Provider value={treeCommand}><div className="artifact-navigator-content" ref={treeRef}><CategorizedArtifactNodes onlyCategories={false} categoryCommand={categoryCommand} workspaceId={workspaceId} categoryTree={categoryTree}>{leftPane}</CategorizedArtifactNodes></div></ArtifactTreeCommandContext.Provider>
       </div>
       <div className={workspaceClassName}>
