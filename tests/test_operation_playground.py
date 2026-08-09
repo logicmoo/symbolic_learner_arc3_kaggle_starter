@@ -2,16 +2,18 @@ from __future__ import annotations
 
 import json
 import shutil
+import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 from fastapi import HTTPException
 from urllib.error import HTTPError
 
-from operation_api import invoke_operation
+from operation_api import invoke_operation, read_operation_debug_log
 from operation_library import DEFAULT_WORKSPACES_ROOT, resolve_operation_implementation
 from operation_resolution import materialize_workflow_step
-from workflow_providers import _llm_complete, _llm_response_text
+from workflow_providers import _llm_complete, _llm_response_text, _python_callable
 
 
 def test_operation_playground_invokes_python_variant() -> None:
@@ -27,6 +29,29 @@ def test_operation_playground_invokes_python_variant() -> None:
     assert result["implementation"]["route"] == "python.callable"
     assert result["outputs"]["text"] == "Hello Symbolic World"
     assert result["elapsedMs"] >= 0
+    trace = json.loads(read_operation_debug_log("shared", result["debugLogPath"])["content"])
+    assert trace["status"] == "completed"
+    assert trace["providerExecution"]["provider"] == "python.callable"
+    assert trace["providerExecution"]["stdout"] == ""
+    assert trace["providerExecution"]["stderr"] == ""
+
+
+def test_python_provider_captures_stdout_and_stderr(monkeypatch: pytest.MonkeyPatch) -> None:
+    def noisy(value: str) -> str:
+        print(f"stdout: {value}")
+        print(f"stderr: {value}", file=sys.stderr)
+        return value.upper()
+
+    monkeypatch.setattr("workflow_providers._load_python_module", lambda _source: SimpleNamespace(noisy=noisy))
+    parameters: dict[str, object] = {
+        "source": {"importMode": "module", "module": "fake", "callable": "noisy"},
+        "outputBinding": "value",
+    }
+    assert _python_callable({"value": "hello"}, parameters) == {"value": "HELLO"}
+    debug = parameters["_debugExecution"]
+    assert isinstance(debug, dict)
+    assert debug["stdout"] == "stdout: hello\n"
+    assert debug["stderr"] == "stderr: hello\n"
 
 
 @pytest.mark.skipif(shutil.which("swipl") is None, reason="SWI-Prolog is not installed")
@@ -39,6 +64,11 @@ def test_operation_playground_invokes_swi_prolog_variant() -> None:
     assert result["outputs"]["execution"]["predicate"] == "titlecase_text"
     assert result["implementation"]["route"] == "prolog.source"
     assert result["elapsedMs"] >= 0
+    trace = json.loads(read_operation_debug_log("shared", result["debugLogPath"])["content"])
+    assert trace["providerExecution"]["completeSource"].startswith("titlecase_text")
+    assert trace["providerExecution"]["returnCode"] == 0
+    assert trace["providerExecution"]["stdout"] == "The Quick Brown Fox\n"
+    assert trace["providerExecution"]["stderr"] == ""
 
 
 def test_operation_materialization_resolves_requested_prompt_variant() -> None:
@@ -137,6 +167,12 @@ def test_operation_playground_routes_selected_model_through_openrouter(monkeypat
     assert sent["authorization"] == "Bearer openrouter-test-key"
     assert sent["body"]["model"] == "openrouter/free"  # type: ignore[index]
     assert result["outputs"]["text"] == "Hello World"
+    trace_text = read_operation_debug_log("shared", result["debugLogPath"])["content"]
+    trace = json.loads(trace_text)
+    assert "openrouter-test-key" not in trace_text
+    assert trace["providerExecution"]["request"]["headers"]["Authorization"] == "[REDACTED]"
+    assert trace["providerExecution"]["request"]["body"] == sent["body"]
+    assert trace["providerExecution"]["response"]["bodyJson"]["choices"][0]["message"]["content"] == "Hello World"
 
 
 def test_constant_value_uses_workbench_provider() -> None:
@@ -206,6 +242,11 @@ def test_operation_playground_preserves_provider_rate_limit(monkeypatch: pytest.
 
     assert caught.value.status_code == 429
     assert "provider request failed with HTTP 429" in str(caught.value.detail)
+    assert isinstance(caught.value.detail, dict)
+    trace = json.loads(read_operation_debug_log("shared", caught.value.detail["debugLogPath"])["content"])
+    assert trace["status"] == "failed"
+    assert trace["providerExecution"]["response"]["status"] == 429
+    assert trace["error"]["type"] == "HTTPError"
 
 
 def test_automatic_vision_variant_sends_bitmap_inputs_and_parses_json(monkeypatch: pytest.MonkeyPatch) -> None:

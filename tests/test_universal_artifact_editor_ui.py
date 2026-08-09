@@ -100,6 +100,13 @@ def test_operation_playground_offers_automatic_llm_fallback() -> None:
     assert "runtime derives a prompt from this operation and uses openrouter/free" in source
 
 
+def test_operation_playground_displays_persisted_complete_debug_trace() -> None:
+    source = (ROOT / "workbench/frontend/src/components/OperationPlayground.tsx").read_text(encoding="utf-8")
+    assert "COMPLETE DEBUG TRACE" in source
+    assert "/operations/debug-log?path=" in source
+    assert "debugLogPath" in source
+
+
 def test_other_artifact_families_keep_their_variant_controls() -> None:
     assert "PREFERRED REPRESENTATION" in _text("DataCatalogPanel.tsx")
     assert "PREFERRED ALTERNATIVE" in _text("PromptLibraryEditor.tsx")

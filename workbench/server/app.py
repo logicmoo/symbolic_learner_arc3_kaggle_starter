@@ -37,7 +37,8 @@ store = WorkbenchStore()
 
 @app.exception_handler(HTTPException)
 async def http_error(_request: Request, error: HTTPException) -> JSONResponse:
-    return JSONResponse(status_code=error.status_code, content={"error": str(error.detail)})
+    detail = error.detail if isinstance(error.detail, (dict, list)) else str(error.detail)
+    return JSONResponse(status_code=error.status_code, content={"error": detail})
 
 
 app.include_router(workflow_router, prefix="/api")

@@ -2,16 +2,20 @@ from __future__ import annotations
 
 import importlib
 import importlib.util
+import io
 import json
 import os
 import re
 import shutil
 import subprocess
 import tempfile
+import traceback
 import urllib.request
+from contextlib import redirect_stderr, redirect_stdout
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+from urllib.error import HTTPError
 
 from workflow_engine import OperationRegistry, OperationSpec
 from resource_store import get_filesystem_provider
@@ -110,29 +114,52 @@ def _python_callable(inputs: dict[str, Any], parameters: dict[str, Any]) -> dict
         module_name, callable_name = target.split(":", 1)
         source = {"importMode": "module", "module": module_name, "callable": callable_name}
 
-    module = _load_python_module(source)
-    class_name = source.get("className")
-    callable_name = str(source.get("callable") or parameters.get("callable") or "")
-    if not callable_name:
-        raise ValueError("python.callable requires source.callable")
-
-    target_object: Any = module
-    if class_name:
-        cls = getattr(module, str(class_name))
-        constructor_args = list(source.get("constructorArgs") or parameters.get("constructorArgs") or [])
-        constructor_kwargs = dict(source.get("constructorKwargs") or parameters.get("constructorKwargs") or {})
-        target_object = cls(*constructor_args, **constructor_kwargs)
-
-    function = getattr(target_object, callable_name)
-    args = list(source.get("callArgs") or parameters.get("args") or [])
-    kwargs = {
-        **dict(source.get("callKwargs") or {}),
-        **dict(parameters.get("kwargs") or {}),
-        **inputs,
+    stdout = io.StringIO()
+    stderr = io.StringIO()
+    debug: dict[str, Any] = {
+        "provider": "python.callable",
+        "source": source,
+        "inputs": inputs,
     }
-    value = function(*args, **kwargs)
-    output_binding = str(parameters.get("outputBinding") or "value")
-    return {output_binding: value}
+    try:
+        with redirect_stdout(stdout), redirect_stderr(stderr):
+            module = _load_python_module(source)
+            class_name = source.get("className")
+            callable_name = str(source.get("callable") or parameters.get("callable") or "")
+            if not callable_name:
+                raise ValueError("python.callable requires source.callable")
+
+            target_object: Any = module
+            if class_name:
+                cls = getattr(module, str(class_name))
+                constructor_args = list(source.get("constructorArgs") or parameters.get("constructorArgs") or [])
+                constructor_kwargs = dict(source.get("constructorKwargs") or parameters.get("constructorKwargs") or {})
+                target_object = cls(*constructor_args, **constructor_kwargs)
+
+            function = getattr(target_object, callable_name)
+            args = list(source.get("callArgs") or parameters.get("args") or [])
+            kwargs = {
+                **dict(source.get("callKwargs") or {}),
+                **dict(parameters.get("kwargs") or {}),
+                **inputs,
+            }
+            debug.update({"className": class_name, "callable": callable_name, "args": args, "kwargs": kwargs})
+            value = function(*args, **kwargs)
+        output_binding = str(parameters.get("outputBinding") or "value")
+        result = {output_binding: value}
+        debug["result"] = result
+        return result
+    except Exception as error:
+        debug["exception"] = {
+            "type": type(error).__name__,
+            "message": str(error),
+            "traceback": traceback.format_exc(),
+        }
+        raise
+    finally:
+        debug["stdout"] = stdout.getvalue()
+        debug["stderr"] = stderr.getvalue()
+        parameters["_debugExecution"] = debug
 
 
 def _prolog_query(inputs: dict[str, Any], parameters: dict[str, Any]) -> dict[str, Any]:
@@ -144,10 +171,19 @@ def _prolog_query(inputs: dict[str, Any], parameters: dict[str, Any]) -> dict[st
     if not query:
         raise ValueError("prolog.query requires query")
     script = program + "\n:- initialization((" + query + " -> writeln(true) ; writeln(false)), halt).\n"
+    debug: dict[str, Any] = {
+        "provider": "prolog.query",
+        "command": [executable, "-q"],
+        "program": program,
+        "query": query,
+        "stdin": script,
+    }
+    parameters["_debugExecution"] = debug
     completed = subprocess.run(
         [executable, "-q"], input=script, text=True, capture_output=True,
         timeout=float(parameters.get("timeoutSeconds", 30)), check=False,
     )
+    debug.update({"returnCode": completed.returncode, "stdout": completed.stdout, "stderr": completed.stderr})
     if completed.returncode:
         raise RuntimeError(completed.stderr.strip() or f"swipl exited {completed.returncode}")
     return {"result": {"success": completed.stdout.strip().endswith("true"), "stdout": completed.stdout, "stderr": completed.stderr}}
@@ -178,6 +214,17 @@ def _prolog_source(inputs: dict[str, Any], parameters: dict[str, Any]) -> dict[s
         handle.write(source_code)
         handle.write(wrapper)
         script_path = handle.name
+    debug: dict[str, Any] = {
+        "provider": "prolog.source",
+        "command": [executable, "-q", "-s", script_path, "--", input_value],
+        "predicate": predicate,
+        "inputBinding": input_binding,
+        "input": input_value,
+        "sourceCode": source_code,
+        "wrapperSource": wrapper,
+        "completeSource": source_code + wrapper,
+    }
+    parameters["_debugExecution"] = debug
     try:
         completed = subprocess.run(
             [executable, "-q", "-s", script_path, "--", input_value],
@@ -186,6 +233,7 @@ def _prolog_source(inputs: dict[str, Any], parameters: dict[str, Any]) -> dict[s
             timeout=float(parameters.get("timeoutSeconds", 30)),
             check=False,
         )
+        debug.update({"returnCode": completed.returncode, "stdout": completed.stdout, "stderr": completed.stderr})
     finally:
         try:
             get_filesystem_provider().delete(Path(script_path))
@@ -209,10 +257,17 @@ def _metta_evaluate(inputs: dict[str, Any], parameters: dict[str, Any]) -> dict[
     if not executable:
         raise RuntimeError("MeTTa executable is unavailable")
     source = str(inputs.get("source") or parameters.get("source") or "")
+    debug: dict[str, Any] = {
+        "provider": "metta.evaluate",
+        "command": [executable],
+        "stdin": source,
+    }
+    parameters["_debugExecution"] = debug
     completed = subprocess.run(
         [executable], input=source, text=True, capture_output=True,
         timeout=float(parameters.get("timeoutSeconds", 30)), check=False,
     )
+    debug.update({"returnCode": completed.returncode, "stdout": completed.stdout, "stderr": completed.stderr})
     if completed.returncode:
         raise RuntimeError(completed.stderr.strip() or f"metta exited {completed.returncode}")
     return {"result": {"stdout": completed.stdout, "stderr": completed.stderr}}
@@ -308,21 +363,72 @@ def _llm_complete(inputs: dict[str, Any], parameters: dict[str, Any]) -> dict[st
         headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
         method="POST",
     )
-    with urllib.request.urlopen(request, timeout=float(parameters.get("timeoutSeconds", 120))) as response:
-        payload = json.loads(response.read().decode("utf-8"))
-    if not isinstance(payload, dict):
-        raise RuntimeError("LLM provider returned a non-object response")
-    text = _llm_response_text(payload)
-    if parameters.get("parseJson"):
-        cleaned = str(text).strip()
-        if cleaned.startswith("```"):
-            cleaned = cleaned.split("\n", 1)[-1].rsplit("```", 1)[0].strip()
-        parsed = json.loads(cleaned)
-        if not isinstance(parsed, dict):
-            raise RuntimeError("LLM operation returned JSON that is not an object")
-        return parsed
-    output_binding = str(parameters.get("outputBinding") or "text")
-    return {output_binding: text, "response": payload}
+    debug: dict[str, Any] = {
+        "provider": "llm.complete",
+        "request": {
+            "method": "POST",
+            "url": endpoint,
+            "headers": {
+                "Authorization": "Bearer [REDACTED]",
+                "Content-Type": "application/json",
+            },
+            "body": body,
+        },
+    }
+    parameters["_debugExecution"] = debug
+    try:
+        with urllib.request.urlopen(request, timeout=float(parameters.get("timeoutSeconds", 120))) as response:
+            response_body = response.read().decode("utf-8", errors="replace")
+            response_headers = dict(getattr(response, "headers", {}) or {})
+            response_status = int(getattr(response, "status", 200))
+        debug["response"] = {
+            "status": response_status,
+            "headers": response_headers,
+            "bodyText": response_body,
+        }
+        payload = json.loads(response_body)
+        debug["response"]["bodyJson"] = payload
+        if not isinstance(payload, dict):
+            raise RuntimeError("LLM provider returned a non-object response")
+        text = _llm_response_text(payload)
+        debug["parsing"] = {"responseText": text}
+        if parameters.get("parseJson"):
+            cleaned = str(text).strip()
+            if cleaned.startswith("```"):
+                cleaned = cleaned.split("\n", 1)[-1].rsplit("```", 1)[0].strip()
+            parsed = json.loads(cleaned)
+            if not isinstance(parsed, dict):
+                raise RuntimeError("LLM operation returned JSON that is not an object")
+            debug["parsing"].update({"mode": "json_object", "parsed": parsed})
+            return parsed
+        output_binding = str(parameters.get("outputBinding") or "text")
+        result = {output_binding: text, "response": payload}
+        debug["parsing"].update({"mode": "text", "outputBinding": output_binding})
+        return result
+    except HTTPError as error:
+        try:
+            response_body = error.read().decode("utf-8", errors="replace") if error.fp else ""
+        except OSError:
+            response_body = ""
+        try:
+            response_json: Any = json.loads(response_body) if response_body else None
+        except json.JSONDecodeError:
+            response_json = None
+        debug["response"] = {
+            "status": error.code,
+            "reason": str(error.reason),
+            "headers": dict(error.headers or {}),
+            "bodyText": response_body,
+            "bodyJson": response_json,
+        }
+        raise
+    except Exception as error:
+        debug["exception"] = {
+            "type": type(error).__name__,
+            "message": str(error),
+            "traceback": traceback.format_exc(),
+        }
+        raise
 
 
 def _artifact_convert(inputs: dict[str, Any], parameters: dict[str, Any]) -> dict[str, Any]:
