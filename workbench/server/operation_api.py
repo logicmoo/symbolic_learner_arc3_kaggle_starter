@@ -1,15 +1,11 @@
 from __future__ import annotations
 
 import json
-import re
 import traceback
-from datetime import UTC, datetime
 from pathlib import Path
-from pathlib import PurePosixPath
 from time import perf_counter
 from typing import Any
 from urllib.error import HTTPError
-from uuid import uuid4
 
 from fastapi import APIRouter, Body, HTTPException, Query
 
@@ -17,6 +13,7 @@ from operation_library import DEFAULT_WORKSPACES_ROOT, resolve_operation_impleme
 from operation_resolution import materialize_workflow_step
 from workflow_engine_api import engine
 from resource_store import get_filesystem_provider
+from invocation_trace import read_invocation_trace, redact_secrets, write_invocation_trace
 
 
 router = APIRouter(prefix="/workspaces", tags=["operations"])
@@ -30,13 +27,7 @@ def _workspace_root(workspace_id: str) -> Path:
 
 
 def _redact_secrets(value: Any, key: str = "") -> Any:
-    if key and re.search(r"(?:authorization|api.?key|access.?token|secret|password)$", key, re.IGNORECASE):
-        return "[REDACTED]"
-    if isinstance(value, dict):
-        return {str(name): _redact_secrets(item, str(name)) for name, item in value.items()}
-    if isinstance(value, list):
-        return [_redact_secrets(item) for item in value]
-    return value
+    return redact_secrets(value, key)
 
 
 def _write_invocation_trace(
@@ -44,22 +35,7 @@ def _write_invocation_trace(
     operation_id: str,
     trace: dict[str, Any],
 ) -> str:
-    created = datetime.now(UTC)
-    safe_operation = re.sub(r"[^A-Za-z0-9_.-]+", "_", operation_id).strip("._") or "operation"
-    trace_id = f"{created.strftime('%Y%m%dT%H%M%S.%fZ')}_{safe_operation}_{uuid4().hex[:8]}"
-    relative_path = f"runtime/logs/operation_invocations/{trace_id}.log"
-    trace.update({
-        "kind": "operation_invocation_trace",
-        "id": trace_id,
-        "createdAt": created.isoformat(),
-        "logPath": relative_path,
-    })
-    resources = get_filesystem_provider()
-    resources.write_text(
-        resources.resolve(workspace_root, relative_path),
-        json.dumps(_redact_secrets(trace), indent=2, ensure_ascii=False, default=str) + "\n",
-    )
-    return relative_path
+    return write_invocation_trace(workspace_root, "operation", operation_id, "operation_invocation_trace", trace)
 
 
 @router.get("/{workspace_id}/operations/debug-log")
@@ -68,16 +44,12 @@ def read_operation_debug_log(
     path: str = Query(...),
 ) -> dict[str, str]:
     workspace_root = _workspace_root(workspace_id)
-    logical = PurePosixPath(path)
-    if logical.is_absolute() or ".." in logical.parts:
-        raise HTTPException(status_code=400, detail="debug log path must stay inside the workspace")
-    if logical.parts[:3] != ("runtime", "logs", "operation_invocations") or logical.suffix.lower() != ".log":
-        raise HTTPException(status_code=400, detail="only operation invocation debug logs can be read here")
-    resources = get_filesystem_provider()
-    resolved = resources.resolve(workspace_root, logical.as_posix())
-    if not resources.is_file(resolved):
-        raise HTTPException(status_code=404, detail=f"debug log not found: {path}")
-    return {"path": logical.as_posix(), "content": resources.read_text(resolved)}
+    try:
+        return {"path": path, "content": read_invocation_trace(workspace_root, "operation", path)}
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    except FileNotFoundError as error:
+        raise HTTPException(status_code=404, detail=f"debug log not found: {path}") from error
 
 
 @router.post("/{workspace_id}/operations/{operation_id}/invoke")

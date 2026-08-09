@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
-from fastapi import APIRouter, BackgroundTasks, Body, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Body, HTTPException, Query
 
 from policy_library import POLICY_KINDS, effective_model_registry, load_workspace_policy_records
 from backend_library import load_workspace_backend_records
@@ -18,6 +18,7 @@ from model_discovery import discover_backend_models, import_discovered_models, r
 from model_benchmark import call_model
 from workspace_api import _resolve_workspace, invalidate_workspace_discovery
 from resource_store import get_filesystem_provider
+from invocation_trace import read_invocation_trace, write_invocation_trace
 
 router = APIRouter(prefix="/workspaces", tags=["model-policy"])
 WRITABLE_OBSERVATION_KINDS = {"model_health_observation", "model_ping_job", "model_ping_event", "benchmark_result"}
@@ -89,9 +90,24 @@ def invoke_model_example(workspace_id: str, model_id: str, request: dict[str, An
     if not record or not (record.get("resolved") or {}).get("enabled"): raise HTTPException(status_code=404, detail=f"enabled model/profile not found: {model_id}")
     prompt = str((request.get("arguments") or {}).get("prompt") or request.get("prompt") or "")
     if not prompt: raise HTTPException(status_code=400, detail="example argument prompt is required")
-    try: result = call_model({"id": model_id, "modelId": (record.get("resolved") or {}).get("model")}, {**record, "_workspaceRoot": workspace["root"]}, prompt, int(request.get("timeoutSeconds") or 120))
-    except Exception as error: raise HTTPException(status_code=400, detail=str(error)) from error
-    return {"modelId": model_id, **result}
+    trace = {"workspaceId": workspace_id, "modelId": model_id, "status": "running", "prompt": prompt, "timeoutSeconds": int(request.get("timeoutSeconds") or 120), "resource": record.get("document"), "resolved": record.get("resolved")}
+    try:
+        result = call_model({"id": model_id, "modelId": (record.get("resolved") or {}).get("model")}, {**record, "_workspaceRoot": workspace["root"]}, prompt, trace["timeoutSeconds"])
+    except Exception as error:
+        debug_log_path = write_invocation_trace(Path(workspace["root"]), "model", model_id, "model_invocation_trace", {**trace, "status": "failed", "error": str(error)})
+        raise HTTPException(status_code=400, detail={"message": str(error), "debugLogPath": debug_log_path}) from error
+    response = {"modelId": model_id, **result}
+    response["debugLogPath"] = write_invocation_trace(Path(workspace["root"]), "model", model_id, "model_invocation_trace", {**trace, "status": "completed", "response": result})
+    return response
+
+
+@router.get("/{workspace_id}/models/debug-log")
+def read_model_debug_log(workspace_id: str, path: str = Query(...)) -> dict[str, str]:
+    try: workspace = _resolve_workspace(workspace_id)
+    except KeyError as error: raise HTTPException(status_code=404, detail=str(error)) from error
+    try: return {"path": path, "content": read_invocation_trace(Path(workspace["root"]), "model", path)}
+    except ValueError as error: raise HTTPException(status_code=400, detail=str(error)) from error
+    except FileNotFoundError as error: raise HTTPException(status_code=404, detail=f"debug log not found: {path}") from error
 
 
 @router.get("/{workspace_id}/models/discover/{backend_id}")

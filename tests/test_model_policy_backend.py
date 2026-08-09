@@ -164,6 +164,11 @@ def test_model_example_invokes_resolved_model(monkeypatch, tmp_path: Path) -> No
     monkeypatch.setattr(policy_api, "call_model", lambda model, profile, prompt, timeout: {"text": prompt.upper(), "latencyMs": 1})
     result = policy_api.invoke_model_example("shared", "model", {"arguments": {"prompt": "hello"}})
     assert result["text"] == "HELLO"
+    assert result["debugLogPath"].startswith("runtime/logs/model_invocations/")
+    trace = json.loads(policy_api.read_model_debug_log("shared", result["debugLogPath"])["content"])
+    assert trace["status"] == "completed"
+    assert trace["prompt"] == "hello"
+    assert trace["response"]["text"] == "HELLO"
 
 
 def test_example_executor_is_shared_by_models_and_prompts() -> None:
@@ -208,7 +213,10 @@ def test_open_model_resource_has_the_universal_execution_runner() -> None:
     assert "!backend && document && resourceEnabled" in models
     assert "UNIVERSAL EXECUTION RUNNER" in runner
     assert "/models/${encodeURIComponent(model.id)}/invoke" in runner
+    assert "/models/debug-log?path=" in runner
+    assert "COMPLETE DEBUG TRACE" in runner
     assert '@router.post("/{workspace_id}/models/{model_id}/invoke")' in api
+    assert '@router.get("/{workspace_id}/models/debug-log")' in api
 
 
 def test_model_policy_history_charts_real_persisted_results() -> None:

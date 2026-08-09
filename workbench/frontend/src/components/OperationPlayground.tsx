@@ -160,7 +160,7 @@ export function OperationPlayground({workspaceId,operation,variants}:{workspaceI
    if(populationMode==="empty_null"){
     setRawInputs(Object.fromEntries(inputs.map(([name,contract])=>[name,emptyValueFor(contract)])));setPopulationMessage("Set text and image inputs to empty values; other inputs to null.");return;
    }
-   const responses=await Promise.allSettled([request(`/api/goal-runs?workspace_id=${encodeURIComponent(workspaceId)}&limit=100`),request('/api/engine/runs?limit=100')]);
+   const responses=await Promise.allSettled([request(`/api/goal-runs?workspace_id=${encodeURIComponent(workspaceId)}&limit=100`),request(`/api/engine/runs?workspace_id=${encodeURIComponent(workspaceId)}&limit=100`)]);
    const goalRuns:RuntimeRun[]=responses[0].status==='fulfilled'&&Array.isArray(responses[0].value.goalRuns)?responses[0].value.goalRuns.map((item:any)=>item.workflowRun as RuntimeRun):[];
    const engineRuns:RuntimeRun[]=responses[1].status==='fulfilled'&&Array.isArray(responses[1].value.runs)?responses[1].value.runs as RuntimeRun[]:[];
    ingestRuntimeRuns(workspaceId,[...goalRuns,...engineRuns]);
