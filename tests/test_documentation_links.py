@@ -38,6 +38,7 @@ def _maintained_markdown() -> tuple[Path, ...]:
         "action_trees",
         "reference",
         "node_modules",
+        "runtime",
     }
     return tuple(
         path
