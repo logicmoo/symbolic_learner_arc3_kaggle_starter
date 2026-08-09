@@ -128,6 +128,10 @@ def test_goal_runs_use_durable_goal_plan_context_contract() -> None:
     assert 'doc.kind === "atomspace" || doc.kind === "context"' in component
     assert '(!goalId || (plan.goals || []).includes(goalId))' in component
     assert 'contextSpecs.map(doc =>' in component
+    assert "function WorkflowInputsEditor" in component
+    assert "WORKFLOW INPUT CONTRACT" in component
+    assert "Datatype-aware fields update the advanced JSON source below." in component
+    assert "ADVANCED WORKFLOW INPUTS (JSON)" in component
 
 
 def test_topbar_offers_persistent_workbench_themes() -> None:

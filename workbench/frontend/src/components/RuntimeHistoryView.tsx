@@ -15,6 +15,7 @@ type RuntimeRun = {
 };
 type WorkflowStep = { id: string; label?: string; kind?: string; operation?: string; implementation?: string; dependsOn?: string[]; inputs?: unknown; outputs?: unknown; form?: Record<string, { type?: string; label?: string; description?: string; default?: unknown; options?: unknown[]; secret?: boolean; sensitive?: boolean }> };
 type FrozenWorkflow = { id: string; version: number; label?: string; description?: string; steps: WorkflowStep[] };
+type WorkflowInputContract = string | { datatype?: string; type?: string; representation?: string; default?: unknown; options?: unknown[] };
 type GoalRun = {
   id: string; goalId: string; goalVariantId?: string; planId: string; planVariantId: string;
   contextId?: string; contextVariantId?: string; workflowRunId: string; status: string; createdAt?: string; workflowRun: RuntimeRun;
@@ -138,6 +139,22 @@ export function HumanInputForm({ step, busy, draft, onDraft, onSubmit }: { step?
   })}<button className="run-button" disabled={busy} onClick={() => onSubmit(values)}>Submit human input</button></div>;
 }
 
+function WorkflowInputsEditor({ workflowId, contract, source, onSource }: { workflowId: string; contract: Record<string, WorkflowInputContract>; source: string; onSource: (source: string) => void }) {
+  const entries = Object.entries(contract);
+  const label = (value: WorkflowInputContract) => typeof value === "string" ? value : String(value.datatype || value.type || "Any");
+  const isText = (value: WorkflowInputContract) => /text|string|markdown|natural.?language/i.test(label(value));
+  const parseSource = () => { try { const value = JSON.parse(source); return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {}; } catch { return {}; } };
+  const rawValue = (value: unknown, spec: WorkflowInputContract) => value === undefined ? "" : isText(spec) && typeof value === "string" ? value : JSON.stringify(value, null, 2);
+  const initialDrafts = () => { const values = parseSource(); return Object.fromEntries(entries.map(([name, spec]) => [name, rawValue(values[name] ?? (typeof spec === "object" ? spec.default : undefined), spec)])); };
+  const [drafts, setDrafts] = useState<Record<string, string>>(initialDrafts);
+  const [fieldError, setFieldError] = useState("");
+  useEffect(() => { setDrafts(initialDrafts()); setFieldError(""); }, [workflowId]);
+  const materialize = (next: Record<string, string>) => Object.fromEntries(entries.map(([name, spec]) => { const raw = next[name] || ""; const options = typeof spec === "object" ? spec.options : undefined; const selectedOption = options?.find(option => (typeof option === "string" ? option : JSON.stringify(option)) === raw); if (selectedOption !== undefined) return [name, selectedOption]; if (isText(spec)) return [name, raw]; if (/^any$/i.test(label(spec))) { try { return [name, JSON.parse(raw)]; } catch { return [name, raw]; } } if (!raw.trim()) return [name, null]; try { return [name, JSON.parse(raw)]; } catch { throw new Error(`${name} (${label(spec)}) must be valid JSON.`); } }));
+  const update = (name: string, value: string) => { const next = { ...drafts, [name]: value }; setDrafts(next); try { onSource(JSON.stringify(materialize(next), null, 2)); setFieldError(""); } catch (reason) { setFieldError(reason instanceof Error ? reason.message : String(reason)); } };
+  if (!entries.length) return null;
+  return <div className="goal-workflow-inputs"><div className="llm-subhead"><div><span>WORKFLOW INPUT CONTRACT</span><b>{workflowId}</b><small>Datatype-aware fields update the advanced JSON source below.</small></div></div><div className="workflow-fields">{entries.map(([name, spec]) => { const type = label(spec), options = typeof spec === "object" ? spec.options : undefined; return <label key={name}><span>{name} <em>{type}</em></span>{options?.length ? <select value={drafts[name] || ""} onChange={event => update(name, event.target.value)}>{options.map(option => <option key={JSON.stringify(option)} value={typeof option === "string" ? option : JSON.stringify(option)}>{String(option)}</option>)}</select> : /boolean/i.test(type) ? <input type="checkbox" checked={drafts[name] === "true"} onChange={event => update(name, String(event.target.checked))} /> : /number|integer|float|double/i.test(type) ? <input type="number" value={drafts[name] || ""} onChange={event => update(name, event.target.value)} /> : <textarea value={drafts[name] || ""} placeholder={isText(spec) ? `Enter ${name}â€¦` : `Enter ${type} as JSONâ€¦`} onChange={event => update(name, event.target.value)} />}</label>; })}</div>{fieldError && <div className="validation bad">{fieldError}</div>}</div>;
+}
+
 export function RuntimeHistoryView({ mode, workspaceId, goals = [], plans = [], contexts = [], workflows = [], onSelectRun, onOpenResource }:{
   mode: Mode; workspaceId: string; goals?: DocumentRecord[]; plans?: DocumentRecord[]; contexts?: DocumentRecord[]; workflows?: DocumentRecord[];
   onSelectRun?: (run: RuntimeRun) => void;
@@ -165,6 +182,8 @@ export function RuntimeHistoryView({ mode, workspaceId, goals = [], plans = [], 
   const goalVariants = goalDocs.filter(doc => (doc.parents || []).includes(goalId));
   const planVariants = planDocs.filter(doc => (doc.parents || []).includes(planId) && workflowIds.has(doc.workflow));
   const contextVariants = contextDocs.filter(doc => (doc.parents || []).includes(contextId));
+  const selectedPlanVariant = planVariants.find(doc => doc.id === planVariantId);
+  const selectedGoalWorkflow = workflows.map(row => row.document).find(doc => doc?.id === selectedPlanVariant?.workflow) as Record<string, any> | undefined;
 
   const refresh = async () => {
     setError("");
@@ -303,7 +322,8 @@ export function RuntimeHistoryView({ mode, workspaceId, goals = [], plans = [], 
       <label><span>STRATEGY VARIANT</span><select value={planVariantId} onChange={event => setPlanVariantId(event.target.value)}>{planVariants.map(doc => <option key={doc.id} value={doc.id}>{doc.label || doc.id}</option>)}</select></label>
       <label><span>CONTEXT</span><select value={contextId} onChange={event => setContextId(event.target.value)}><option value="">none</option>{contextSpecs.map(doc => <option key={doc.id} value={doc.id}>{doc.label || doc.id}</option>)}</select></label>
       <label><span>CONTEXT VARIANT</span><select value={contextVariantId} disabled={!contextId} onChange={event => setContextVariantId(event.target.value)}><option value="">none</option>{contextVariants.map(doc => <option key={doc.id} value={doc.id}>{doc.label || doc.id}</option>)}</select></label>
-      <label><span>WORKFLOW INPUTS (JSON)</span><textarea value={inputs} onChange={event => setInputs(event.target.value)} /></label>
+      {selectedGoalWorkflow && <WorkflowInputsEditor key={selectedGoalWorkflow.id} workflowId={String(selectedGoalWorkflow.id)} contract={(selectedGoalWorkflow.inputs || {}) as Record<string, WorkflowInputContract>} source={inputs} onSource={setInputs} />}
+      <label><span>ADVANCED WORKFLOW INPUTS (JSON)</span><textarea value={inputs} onChange={event => setInputs(event.target.value)} /></label>
     </div>
     <button className="run-button" disabled={busy || !goalId || !planId} onClick={startGoalRun}>▶ Pursue goal</button>
     <div className="resource-table"><div className="resource-row resource-head"><span>Goal</span><span>Strategy variant</span><span>Status</span><span>Workflow/plan run</span><span>Created</span></div>{goalRuns.map(row => <button className="resource-row" key={row.id} onClick={() => selectGoalRun(row)}><b>{row.goalVariantId || row.goalId}</b><code>{row.planVariantId}</code><span>{row.status}</span><span>{row.workflowRunId.slice(0, 8)}</span><em>{stamp(row.createdAt)}</em></button>)}</div>
