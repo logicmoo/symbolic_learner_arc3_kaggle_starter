@@ -76,3 +76,11 @@ def test_goal_run_human_pause_uses_the_frozen_step_form_contract() -> None:
 def test_runner_panels_are_user_resizable() -> None:
     styles = (ROOT / "workbench" / "frontend" / "src" / "styles" / "workbench.css").read_text(encoding="utf-8")
     assert ".run-topology-scroll,.run-chronology,.run-visual-comparison,.run-projection-inspector{resize:vertical" in styles
+
+
+def test_runtime_history_initial_load_is_bounded_and_expandable() -> None:
+    source = (ROOT / "workbench" / "frontend" / "src" / "components" / "RuntimeHistoryView.tsx").read_text(encoding="utf-8")
+    assert '[runLimit, setRunLimit] = useState(50)' in source
+    assert "limit=${runLimit}" in source
+    assert "Load 50 older runs" in source
+    assert "Math.min(500, limit + 50)" in source
