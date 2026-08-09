@@ -17,7 +17,7 @@ Remaining work is intentionally narrower:
 
 The requirements below remain the acceptance specification. Existing completed behavior must not be replaced with mock data.
 
-This page is the central place where the user controls which vendors and models are wanted, which are allowed at runtime, which are benchmarked, which are currently healthy, and how prompt profiles are compared across enabled models.
+This page is the central place where the user controls which vendors and models are wanted, which are allowed at runtime, which are benchmarked, which are currently healthy, and how reusable Model Presets are compared across enabled models.
 
 The page should closely follow the existing mockup.
 
@@ -77,7 +77,7 @@ The main layout should be:
 | Vendors              | All Models                    | Summary    |
 |                      |                               |            |
 +------------------------------------------------------------------+
-| Prompt Profiles      | Benchmark Matrix              | Performance|
+| Model Presets        | Benchmark Matrix              | Performance|
 |                      |                               | Overview   |
 +------------------------------------------------------------------+
 | Testing Rules / Policy Controls                                 |
@@ -456,47 +456,30 @@ Thresholds should be configurable later.
 
 ---
 
-# Prompt Profiles Frame
+# Model Presets Frame
 
-Restore and preserve the **LLM Callable: Prompt Profiles** panel.
+Restore and preserve a **Model Presets** panel.
 
-Example profiles:
+Example presets:
 
 ```text
-Generic
-Object-First
-Scene-Graph
-Multimodal
-Compact
+Light
+Deep
+Deterministic
+Long Output
+Vision High Detail
 ```
 
-Prompt profiles represent competing ways to implement an LLM Callable.
+Model Presets inherit a Model (or another Model Preset) and override invocation defaults such as temperature, reasoning effort, timeout, token budget, or image detail. They remain prompt-free.
 
-They are NOT vendor identities.
+They are not vendor identities and they are not prompt composition.
 
-Do not create prompt variants called:
+Prompt Profiles are a separate, future prompt-composition concept. When added, they may express approaches such as Object-First or Scene-Graph without selecting a vendor or changing model invocation defaults.
 
-```text
-Claude Implementation
-GPT Implementation
-```
-
-Instead:
+Provide model-preset creation and editing through the rich Models hierarchy:
 
 ```text
-Generic Prompt Profile
-Object-First Prompt Profile
-Scene-Graph Prompt Profile
-Multimodal Prompt Profile
-Compact Prompt Profile
-```
-
-Model/vendor selection happens independently.
-
-Provide:
-
-```text
-[ + Add Prompt Profile ]
+[ + Add Model Preset ]
 ```
 
 ---
@@ -508,19 +491,19 @@ Restore and preserve the **Benchmark Matrix** panel.
 Conceptually:
 
 ```text
-Prompt Profiles × Enabled Models
+Model Presets × Enabled Models
 ```
 
 Rows:
 
 ```text
-Prompt Profiles
+Model Presets
 ```
 
 Columns:
 
 ```text
-Enabled Models / Model Profiles
+Enabled Models
 ```
 
 Cells should indicate states such as:
@@ -535,12 +518,12 @@ Not Compatible
 The benchmark framework should eventually profile:
 
 ```text
-Prompt Profile
+Model Preset
 × Model
 × Input Class
 ```
 
-The purpose is to discover which prompt profile works best with which model.
+The current purpose is to discover which Model Preset works best with which model. When first-class Prompt Profiles are introduced, prompt composition becomes an additional independent benchmark dimension rather than being folded into Model Presets.
 
 Claude vs OpenAI should emerge from benchmark results, not be encoded into prompt identity.
 
