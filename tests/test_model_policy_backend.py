@@ -200,6 +200,17 @@ def test_open_model_resource_has_a_persistent_enable_disable_control() -> None:
     assert "saveDoc({...doc,source,dirty:true})" in models
 
 
+def test_model_policy_history_charts_real_persisted_results() -> None:
+    source = (ROOT / "workbench" / "frontend" / "src" / "components" / "ModelPolicyPage.tsx").read_text(encoding="utf-8")
+    styles = (ROOT / "workbench" / "frontend" / "src" / "styles" / "model_policy_todo.css").read_text(encoding="utf-8")
+    assert "function PerformanceHistoryChart" in source
+    assert "historyResults.flatMap" in source
+    assert "Number.isFinite(Date.parse(recordedAt))" in source
+    assert '<polyline points={group.points.map' in source
+    assert "No numeric timestamped results match" in source
+    assert ".performance-history-chart" in styles
+
+
 def test_model_catalog_infers_presets_and_keeps_disabled_children_visible() -> None:
     models = (ROOT / "workbench" / "frontend" / "src" / "components" / "LlmModelsEditor.tsx").read_text(encoding="utf-8")
     styles = (ROOT / "workbench" / "frontend" / "src" / "styles" / "models_editor.css").read_text(encoding="utf-8")
