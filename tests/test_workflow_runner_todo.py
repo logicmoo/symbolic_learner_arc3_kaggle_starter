@@ -73,6 +73,10 @@ def test_goal_run_human_pause_uses_the_frozen_step_form_contract() -> None:
     assert "Typed artifacts persisted by this run" in source
     assert "run={selectedGoalRun.workflowRun}" in source
     assert 'commands={["pause", "resume", "advance", "cancel"]}' in source
+    assert 'get("goalRun")' in source
+    assert '/api/goal-runs/${encodeURIComponent(requestedGoalRunId)}' in source
+    assert 'persistRuntimeSelection("goalRun", goalRun.id)' in source
+    assert 'persistRuntimeSelection("run", run.id)' in source
     assert "workflow={goalRunWorkflow}" in source
 
 

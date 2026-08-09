@@ -187,7 +187,15 @@ export function RuntimeHistoryView({ mode, workspaceId, goals = [], plans = [], 
       }
       setRuns(loadedRuns);
       if (requestedRunId) setSelectedId(requestedRunId);
-      setGoalRuns((goalPayload.goalRuns || []).map((goalRun: GoalRun) => ({ ...goalRun, workflowRun: { ...goalRun.workflowRun, steps: goalRun.workflowRun.steps || [], events: goalRun.workflowRun.events || [], artifacts: goalRun.workflowRun.artifacts || [], logs: goalRun.workflowRun.logs || [] } })));
+      const normalizeGoalRun = (goalRun: GoalRun): GoalRun => ({ ...goalRun, workflowRun: normalizeRun(goalRun.workflowRun) });
+      const loadedGoalRuns = (goalPayload.goalRuns || []).map(normalizeGoalRun);
+      const requestedGoalRunId = mode === "goalRuns" ? new URLSearchParams(window.location.search).get("goalRun") : null;
+      if (requestedGoalRunId && !loadedGoalRuns.some((goalRun: GoalRun) => goalRun.id === requestedGoalRunId)) {
+        const requestedPayload = await api(`/api/goal-runs/${encodeURIComponent(requestedGoalRunId)}`);
+        if (requestedPayload.goalRun) loadedGoalRuns.unshift(normalizeGoalRun(requestedPayload.goalRun as GoalRun));
+      }
+      setGoalRuns(loadedGoalRuns);
+      if (requestedGoalRunId) setSelectedId(requestedGoalRunId);
       setInvocations([...(operationPayload.invocations || []), ...(modelPayload.invocations || [])].sort((a: InvocationTrace, b: InvocationTrace) => String(b.createdAt || "").localeCompare(String(a.createdAt || ""))));
     } catch (reason) { setError(String(reason)); }
   };
@@ -219,10 +227,12 @@ export function RuntimeHistoryView({ mode, workspaceId, goals = [], plans = [], 
     setBusy(true); setError("");
     try {
       const payload = await api("/api/goal-runs", { method: "POST", body: JSON.stringify({ workspaceId, goalId, goalVariantId, planId, planVariantId, contextId: contextId || undefined, contextVariantId: contextVariantId || undefined, inputs: JSON.parse(inputs) }) });
-      onSelectRun?.(payload.goalRun.workflowRun); await refresh(); setSelectedId(payload.goalRun.id);
+      onSelectRun?.(payload.goalRun.workflowRun); await refresh(); selectGoalRun(payload.goalRun);
     } catch (reason) { setError(String(reason)); } finally { setBusy(false); }
   };
-  const chooseRun = (run: RuntimeRun) => { setSelectedId(run.id); onSelectRun?.(run); };
+  const persistRuntimeSelection = (parameter: "run" | "goalRun", id: string) => { const url = new URL(window.location.href); url.searchParams.set(parameter, id); url.searchParams.delete(parameter === "run" ? "goalRun" : "run"); window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`); };
+  const chooseRun = (run: RuntimeRun) => { setSelectedId(run.id); if (mode === "workflowRuns") persistRuntimeSelection("run", run.id); onSelectRun?.(run); };
+  const selectGoalRun = (goalRun: GoalRun) => { setSelectedId(goalRun.id); persistRuntimeSelection("goalRun", goalRun.id); onSelectRun?.(goalRun.workflowRun); };
   const selectedRun = runs.find(row => row.id === selectedId) || runs[0];
   const selectedInvocation = invocations.find(row => row.id === selectedInvocationId);
   useEffect(() => {
@@ -296,7 +306,7 @@ export function RuntimeHistoryView({ mode, workspaceId, goals = [], plans = [], 
       <label><span>WORKFLOW INPUTS (JSON)</span><textarea value={inputs} onChange={event => setInputs(event.target.value)} /></label>
     </div>
     <button className="run-button" disabled={busy || !goalId || !planId} onClick={startGoalRun}>▶ Pursue goal</button>
-    <div className="resource-table"><div className="resource-row resource-head"><span>Goal</span><span>Strategy variant</span><span>Status</span><span>Workflow/plan run</span><span>Created</span></div>{goalRuns.map(row => <button className="resource-row" key={row.id} onClick={() => { setSelectedId(row.id); onSelectRun?.(row.workflowRun); }}><b>{row.goalVariantId || row.goalId}</b><code>{row.planVariantId}</code><span>{row.status}</span><span>{row.workflowRunId.slice(0, 8)}</span><em>{stamp(row.createdAt)}</em></button>)}</div>
+    <div className="resource-table"><div className="resource-row resource-head"><span>Goal</span><span>Strategy variant</span><span>Status</span><span>Workflow/plan run</span><span>Created</span></div>{goalRuns.map(row => <button className="resource-row" key={row.id} onClick={() => selectGoalRun(row)}><b>{row.goalVariantId || row.goalId}</b><code>{row.planVariantId}</code><span>{row.status}</span><span>{row.workflowRunId.slice(0, 8)}</span><em>{stamp(row.createdAt)}</em></button>)}</div>
     {goalRuns.length >= goalRunLimit && <button type="button" className="runtime-load-older" onClick={() => setGoalRunLimit(limit => Math.min(500, limit + 50))}>Load 50 older goal runs</button>}
     {selectedGoalRun && <div className="goal-run-controls"><div><b>Selected pursuit</b><span>{selectedGoalRun.goalVariantId} · {selectedGoalRun.planVariantId} · {selectedGoalRun.contextVariantId || "no context"}</span></div></div>}
     {waitingStep && <div className="human-pause goal-run-human"><div className="pause-ring">Ⅱ</div><b>Waiting for {waitingStep.stepId}</b><span>{waitingStepDefinition?.label || "Provide the values required by this workflow step."}</span><small className="human-draft-status">{draftStatus}</small><HumanInputForm step={waitingStepDefinition} busy={busy} draft={humanDraft} onDraft={setHumanDraft} onSubmit={values => void submitHumanInput(values)} /></div>}
