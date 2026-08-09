@@ -39,6 +39,11 @@ def test_all_variant_relationships_are_plural_and_bidirectional() -> None:
             allowed_parent_kinds = {expected_parent_kind}
             if child.get("kind") == "semantic_datatype":
                 allowed_parent_kinds.add("semantic_datatype")
+            if child.get("kind") == "model":
+                # Concrete models inherit transport/configuration from a backend;
+                # model presets inherit another model. Both links remain explicit
+                # and bidirectional in the unified model catalog.
+                allowed_parent_kinds.add("backend")
             assert parent["kind"] in allowed_parent_kinds
             backlinks = parent.get("children")
             assert isinstance(backlinks, list), f"{parent_id}.children must be an array"
