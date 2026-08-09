@@ -176,7 +176,8 @@ def test_universal_shell_keeps_tabs_compare_inspector_and_docks() -> None:
         "variantControls",
         "navigatorCollapsed",
         "variantsHidden",
-        "variantsCollapsed",
+        "visibilityRules",
+        "TreeViewControls",
         "Collapse hierarchy",
         "Expand hierarchy",
         "Only Toplevel",
@@ -212,13 +213,12 @@ def test_all_artifact_trees_share_filter_and_parent_path_controls() -> None:
         assert "Filter tree…" in source
         assert "Show Parents" in source
         assert "useArtifactTreeFilter" in source
-    assert "childBranchMatch" in filtering
-    assert "head.hidden = !ownMatch && !showParents" in filtering
+    assert "descendantVisible" in filtering
+    assert "info.head.hidden = !showParents" in filtering
     assert "MutationObserver(applyFilter)" in filtering
-    assert 'branch.dataset.filterOwnMatch = ownMatch ? "true" : "false"' in filtering
     assert "children: _children" in filtering
     assert "preferredChild: _preferredChild" in filtering
-    assert "searchableData(branch)" in filtering
+    assert "searchableData(element)" in filtering
     assert "dataset.treeSearch" in filtering
     assert "searchValue" in _text("ArtifactTreeBranch.tsx")
     for component in ("OperationLibraryEditor.tsx", "DataCatalogPanel.tsx", "PromptLibraryEditor.tsx", "GoalPlanLibraryEditor.tsx", "LlmModelsEditor.tsx"):
@@ -246,7 +246,7 @@ def test_design_trees_share_virtual_categories() -> None:
     assert "!onlyCategories&&" not in category_tree
     assert 'data-category-collapse-mode={onlyCategories ? "resources" : "none"}' in category_tree
     assert "setCollapsedOperations(next||variantsHidden||variantsCollapsed" in operations
-    assert 'commandTree(next||variantsHidden||variantsCollapsed?"collapse":"expand")' in universal
+    assert 'categories:onlyCategories?"unspecified":"show"' in universal
     assert "branchCommand={categoryCommand}" in category_tree
     assert 'label="All" branchCommand={null}' in category_tree
     assert 'label="Uncategorized" branchCommand={null}' in category_tree
@@ -254,6 +254,32 @@ def test_design_trees_share_virtual_categories() -> None:
     assert "operationBelongsHere" in operations
     assert "visibleVariants=categoryPath&&!operationBelongsHere" in operations
     assert "visibleVariants.map" in operations
+
+
+def test_universal_tree_exposes_composable_tri_state_view_controls() -> None:
+    universal = _text("UniversalArtifactEditor.tsx")
+    controls = _text("TreeViewControls.tsx")
+    filtering = _text("useArtifactTreeFilter.ts")
+    styles = (ROOT / "workbench/frontend/src/styles/operation_editor.css").read_text(encoding="utf-8")
+    assert 'TreeVisibilityRule = "show" | "hide" | "unspecified"' in filtering
+    assert "groupAllows" in filtering
+    assert "availabilityStates" in filtering
+    assert "activeRules.search === \"show\"" in filtering
+    assert "activeRules.search === \"unspecified\"" in filtering
+    assert "LEGACY_FILTERING_RULES" in filtering
+    assert ".operation-tree-row.operation-child" in filtering
+    assert "nestedKinds" in filtering
+    assert "treeKinds" in filtering
+    for label in ("Set Everything", "Search Matches", "Enabled", "Disabled", "Categories", "Non-"):
+        assert label in controls
+    assert '`top-${kind}`' in controls
+    assert '`child-${kind}`' in controls
+    assert "setAll" in controls
+    assert "roleKeys.map(key => [key, value])" in controls
+    assert 'aria-label="Tree View Controls"' in universal
+    assert "updateVisibilityRules" in universal
+    assert ".tree-view-controls" in styles
+    assert ".tree-rule-switch" in styles
 
 
 def test_first_class_categories_are_visually_distinct_from_virtual_folders() -> None:
