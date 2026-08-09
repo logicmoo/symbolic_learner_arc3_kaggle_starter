@@ -3,7 +3,7 @@
   (id models.local)
   (label "Local Models")
   (description "Models resolved through the local Unsloth Studio backend.")
-  (path filtered/models/local)
+  (path filtered/local)
   (trees ([]
     models
   ))
@@ -17,5 +17,5 @@
       ))
     ))
   ))
-  (parentMode show)
+  (parentMode hide)
 )

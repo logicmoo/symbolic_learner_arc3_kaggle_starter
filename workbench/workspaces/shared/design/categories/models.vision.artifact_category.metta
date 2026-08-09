@@ -3,7 +3,7 @@
   (id models.vision)
   (label "Vision Models")
   (description "Models and profiles declaring visual-input capability.")
-  (path filtered/models/vision)
+  (path filtered/vision)
   (trees ([]
     models
   ))
@@ -17,5 +17,5 @@
       ))
     ))
   ))
-  (parentMode show)
+  (parentMode hide)
 )

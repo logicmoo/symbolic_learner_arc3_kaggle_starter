@@ -29,5 +29,5 @@
     echo_into_titlecased_prolog
     echo_into_titlecased_python
   ))
-  (preferredChild echo_into_titlecased_llm)
+  (preferredChild echo_into_titlecased_python)
 )

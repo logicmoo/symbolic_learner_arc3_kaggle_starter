@@ -5,10 +5,44 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="edb8fea1-73c1-4416-9e9a-8ac50d562623" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/tests/test_workspace_credentials_and_router_backends.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/workbench/server/workspace_credentials.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/workbench/workspaces/shared/design/backends/clawrouter.backend.metta" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/workbench/workspaces/shared/design/backends/freerouter.backend.metta" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/workbench/workspaces/shared/design/backends/omniroute.backend.metta" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/workbench/workspaces/shared/design/categories/models.free.artifact_category.metta" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/workbench/workspaces/shared/design/models/openrouter_routers.model.metta" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/workbench/workspaces/shared/policies/anthropic.vendor_policy.metta" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/workbench/workspaces/shared/policies/groq.vendor_policy.metta" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/workbench/workspaces/shared/policies/xai.vendor_policy.metta" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pyproject.toml" beforeDir="false" afterPath="$PROJECT_DIR$/pyproject.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_artifact_category_queries.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_artifact_category_queries.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_navigation_v2_ui.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_navigation_v2_ui.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_policy_resources.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_policy_resources.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/vendor/ARC-AGI-3-Agents/agents/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/vendor/ARC-AGI-3-Agents/agents/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/server/resource_convention.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/server/resource_convention.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/frontend/src/components/WorkspaceSettingsPanel.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/src/components/WorkspaceSettingsPanel.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/frontend/src/styles/workbench.css" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/src/styles/workbench.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/server/model_benchmark.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/server/model_benchmark.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/server/model_discovery.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/server/model_discovery.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/server/model_policy_ping.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/server/model_policy_ping.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/server/operation_resolution.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/server/operation_resolution.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/server/policy_api.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/server/policy_api.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/server/workflow_providers.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/server/workflow_providers.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/workbench/server/workspace_api.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/server/workspace_api.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared/design/backends/anthropic.backend.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared/design/backends/anthropic.backend.metta" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared/design/backends/groq.backend.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared/design/backends/groq.backend.metta" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared/design/backends/openai.backend.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared/design/backends/openai.backend.metta" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared/design/categories/filtered.prolog.artifact_category.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared/design/categories/filtered.prolog.artifact_category.metta" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared/design/categories/models.large_context.artifact_category.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared/design/categories/models.large_context.artifact_category.metta" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared/design/categories/models.local.artifact_category.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared/design/categories/models.local.artifact_category.metta" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared/design/categories/models.openai.artifact_category.metta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared/design/categories/models.vision.artifact_category.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared/design/categories/models.vision.artifact_category.metta" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared/design/operations/echo_into_titlecased.operation.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared/design/operations/echo_into_titlecased.operation.metta" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared/design/operations/text_to_scene_graph.operation.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared/design/operations/text_to_scene_graph.operation.metta" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared/design/workflows/titlecase_demo.workflow.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared/design/workflows/titlecase_demo.workflow.metta" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared/policies/openai.vendor_policy.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared/policies/openai.vendor_policy.metta" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -39,61 +73,61 @@
   </component>
   <component name="NextEditCompletionFeaturesState">
     <decayedCancelled>
-      <entry key="MS100" value="1.2191514352445587" />
-      <entry key="MS500" value="1.760240538742675" />
-      <entry key="S2" value="2.5302671709589135" />
-      <entry key="S5" value="3.4779031872824877" />
-      <entry key="S10" value="4.0958733083000745" />
-      <entry key="S30" value="4.661232071840116" />
-      <entry key="S60" value="5.008047936154934" />
-      <entry key="M2" value="6.687346561534021" />
-      <entry key="M5" value="12.201663408768743" />
-      <entry key="M10" value="16.66887793134649" />
-      <entry key="M15" value="18.719054054122722" />
-      <entry key="M30" value="21.139479657877416" />
-      <entry key="H1" value="22.509855069875865" />
-      <entry key="H2" value="23.239298102738967" />
-      <entry key="H4" value="23.61565612245736" />
-      <entry key="D1" value="23.935380692021567" />
-      <entry key="W1" value="23.99075480928038" />
+      <entry key="MS100" value="1.0" />
+      <entry key="MS500" value="1.0000294780373817" />
+      <entry key="S2" value="1.073688043467537" />
+      <entry key="S5" value="1.359505628811136" />
+      <entry key="S10" value="1.6956684044230719" />
+      <entry key="S30" value="2.604399658801331" />
+      <entry key="S60" value="3.8293862462271213" />
+      <entry key="M2" value="6.264252399670503" />
+      <entry key="M5" value="10.487669516498464" />
+      <entry key="M10" value="13.139026356420167" />
+      <entry key="M15" value="14.263831930691316" />
+      <entry key="M30" value="15.542325614605256" />
+      <entry key="H1" value="16.247864278464135" />
+      <entry key="H2" value="16.65947211877104" />
+      <entry key="H4" value="17.221903441680322" />
+      <entry key="D1" value="28.429911302866856" />
+      <entry key="W1" value="40.08800961841965" />
     </decayedCancelled>
     <decayedSelected>
       <entry key="MS100" value="0.0" />
-      <entry key="MS500" value="6.92835913329576E-271" />
-      <entry key="S2" value="2.885078257432614E-68" />
-      <entry key="S5" value="9.639964529674297E-28" />
-      <entry key="S10" value="3.121373024322556E-14" />
-      <entry key="S30" value="3.692451301607424E-5" />
-      <entry key="S60" value="0.007950289136313508" />
-      <entry key="M2" value="0.12329019904344402" />
-      <entry key="M5" value="0.6524434505410841" />
-      <entry key="M10" value="1.1412336243254697" />
-      <entry key="M15" value="1.3756291431471388" />
-      <entry key="M30" value="1.658516618284177" />
-      <entry key="H1" value="1.8212243401013677" />
-      <entry key="H2" value="1.9085074264047015" />
-      <entry key="H4" value="1.95371498832459" />
-      <entry key="D1" value="1.9922099197376282" />
-      <entry key="W1" value="1.9988852579651932" />
+      <entry key="MS500" value="0.0" />
+      <entry key="S2" value="0.0" />
+      <entry key="S5" value="0.0" />
+      <entry key="S10" value="0.0" />
+      <entry key="S30" value="0.0" />
+      <entry key="S60" value="0.0" />
+      <entry key="M2" value="4.243740250139757E-274" />
+      <entry key="M5" value="6.749490212988853E-110" />
+      <entry key="M10" value="3.670613071738566E-55" />
+      <entry key="M15" value="6.4576930774191745E-37" />
+      <entry key="M30" value="1.136338820139046E-18" />
+      <entry key="H1" value="1.5075004619359575E-9" />
+      <entry key="H2" value="5.490866164075831E-5" />
+      <entry key="H4" value="0.010479358799753027" />
+      <entry key="D1" value="0.8335161427223549" />
+      <entry key="W1" value="1.76493091466011" />
     </decayedSelected>
     <decayedShown>
-      <entry key="MS100" value="0.21915144036668108" />
-      <entry key="MS500" value="0.7638235675284721" />
-      <entry key="S2" value="1.657346432536341" />
-      <entry key="S5" value="2.9016778478885725" />
-      <entry key="S10" value="3.7440623850810475" />
-      <entry key="S30" value="4.525931216361929" />
-      <entry key="S60" value="4.9442196615191545" />
-      <entry key="M2" value="6.764850999129994" />
-      <entry key="M5" value="12.820038668079139" />
-      <entry key="M10" value="17.786046397891337" />
-      <entry key="M15" value="20.07641279807976" />
-      <entry key="M30" value="22.78752297133933" />
-      <entry key="H1" value="24.32545905958522" />
-      <entry key="H2" value="25.14489258072565" />
-      <entry key="H4" value="25.56788803924555" />
-      <entry key="D1" value="25.92733966003275" />
-      <entry key="W1" value="25.989604123548517" />
+      <entry key="MS100" value="0.8888426811665702" />
+      <entry key="MS500" value="0.97673768188387" />
+      <entry key="S2" value="1.0676095937159638" />
+      <entry key="S5" value="1.3567551534723519" />
+      <entry key="S10" value="1.6941178757354323" />
+      <entry key="S30" value="2.603739898473371" />
+      <entry key="S60" value="3.8289684924356973" />
+      <entry key="M2" value="6.263957046935792" />
+      <entry key="M5" value="10.487487869413764" />
+      <entry key="M10" value="13.138914596405572" />
+      <entry key="M15" value="14.263751380843628" />
+      <entry key="M30" value="15.542281867408992" />
+      <entry key="H1" value="16.247841436616074" />
+      <entry key="H2" value="16.659515144405773" />
+      <entry key="H4" value="17.232368496926863" />
+      <entry key="D1" value="29.26332107577445" />
+      <entry key="W1" value="41.85290858205641" />
     </decayedShown>
   </component>
   <component name="ProjectColorInfo">{
@@ -117,7 +151,7 @@
     "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
     "git-widget-placeholder": "codex/workbench-navigation-v2",
     "junie.onboarding.icon.badge.shown": "true",
-    "last_opened_file_path": "C:/symbolic_learner_arc3_kaggle_starter",
+    "last_opened_file_path": "C:/symbolic_learner_arc3_codex/workbench/workspaces/shared/design/categories",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
@@ -127,6 +161,11 @@
     "to.speed.mode.migration.done": "true"
   }
 }]]></component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\symbolic_learner_arc3_codex\workbench\workspaces\shared\design\categories" />
+    </key>
+  </component>
   <component name="RunManager" selected="Python Debug Server.Unnamed">
     <configuration name="Unnamed" type="PyRemoteDebugConfigurationType" factoryName="Python Remote Debug" nameIsGenerated="true">
       <module name="logicmoo-world-workbench" />
@@ -193,7 +232,7 @@
       <updated>1785303688140</updated>
       <workItem from="1785303689274" duration="1439000" />
       <workItem from="1785305363136" duration="5594000" />
-      <workItem from="1786132864974" duration="2815000" />
+      <workItem from="1786132864974" duration="23913000" />
     </task>
     <servers />
   </component>

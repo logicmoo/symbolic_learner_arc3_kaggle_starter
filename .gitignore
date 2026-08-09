@@ -254,6 +254,7 @@ logs.log
 # Generated artefacts
 notebooks/submission.ipynb
 reference/
+.llm_responses/
 .codex-commit-message.txt
 
 # OS / editors

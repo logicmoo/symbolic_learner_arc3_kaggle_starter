@@ -144,3 +144,29 @@ def test_theme_selector_runs_from_darkest_to_lightest() -> None:
     ordered = ["Retro Green", "Midnight Teal", "Nord Night", "Solarized Light", "Paper White", "High Visibility"]
     positions = [page.index(f'label:"{label}"') for label in ordered]
     assert positions == sorted(positions)
+
+
+def test_design_trees_show_effective_enablement() -> None:
+    components = ROOT / "workbench" / "frontend" / "src" / "components"
+    helper = (components / "resourceEnablement.tsx").read_text(encoding="utf-8")
+    assert 'source: "self" | "parent" | "default"' in helper
+    assert 'resource?.enabled === true' in helper
+    assert 'resource?.enabled === false' in helper
+    assert 'inherited ${state.enabled ? "on" : "off"}' in helper
+    for filename in (
+        "OperationLibraryEditor.tsx",
+        "DataCatalogPanel.tsx",
+        "PromptLibraryEditor.tsx",
+        "LlmModelsEditor.tsx",
+        "GoalPlanLibraryEditor.tsx",
+        "PolicyLibraryEditor.tsx",
+    ):
+        source = (components / filename).read_text(encoding="utf-8")
+        assert "ResourceEnablementBadge" in source
+        assert "resolveResourceEnablement" in source
+        assert "enablementClass" in source
+    page = ACTIVE_PAGE.read_text(encoding="utf-8")
+    assert "stage-button ${enablementClass(itemEnablement)}" in page
+    styles = (ROOT / "workbench" / "frontend" / "src" / "styles" / "workbench.css").read_text(encoding="utf-8")
+    assert ".operation-tree-row.resource-disabled" in styles
+    assert ".stage-button.resource-disabled" in styles

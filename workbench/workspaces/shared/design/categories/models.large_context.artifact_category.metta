@@ -3,7 +3,7 @@
   (id models.large_context)
   (label "Large Context Models")
   (description "Models whose imported provider metadata advertises at least a 100K-token context window.")
-  (path filtered/models/large-context)
+  (path filtered/large-context)
   (trees ([]
     models
   ))
@@ -17,5 +17,5 @@
       ))
     ))
   ))
-  (parentMode show)
+  (parentMode hide)
 )
