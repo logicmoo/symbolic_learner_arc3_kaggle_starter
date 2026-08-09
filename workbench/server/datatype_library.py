@@ -96,9 +96,9 @@ def load_workspace_concrete_datatype_records(workspace_root: Path, *, workspaces
 
 
 def resolve_datatype_representation(workspace_root: Path, datatype_id: str, requested: str | None = None, *, workspaces_root: Path = DEFAULT_WORKSPACES_ROOT) -> dict[str, Any]:
-    datatypes = {str((record.get("document") or {}).get("id")): record for record in load_workspace_datatype_records(workspace_root, workspaces_root=workspaces_root)}
-    representations = {str((record.get("document") or {}).get("id")): record for record in load_workspace_representation_records(workspace_root, workspaces_root=workspaces_root)}
-    datatype_record = datatypes.get(datatype_id)
+    datatypes = {str((record.get("document") or {}).get("id")).casefold(): record for record in load_workspace_datatype_records(workspace_root, workspaces_root=workspaces_root)}
+    representations = {str((record.get("document") or {}).get("id")).casefold(): record for record in load_workspace_representation_records(workspace_root, workspaces_root=workspaces_root)}
+    datatype_record = datatypes.get(datatype_id.casefold())
     if not datatype_record:
         raise KeyError(f"datatype not found: {datatype_id}")
     datatype = datatype_record["document"]
@@ -106,13 +106,15 @@ def resolve_datatype_representation(workspace_root: Path, datatype_id: str, requ
     chosen = requested or datatype.get("preferredChild") or (variants[0] if variants else None)
     if not chosen:
         raise ValueError(f"datatype has no representation variant: {datatype_id}")
-    if variants and chosen not in variants:
+    canonical_variants = {variant.casefold(): variant for variant in variants}
+    if variants and str(chosen).casefold() not in canonical_variants:
         raise ValueError(f"representation {chosen} is not allowed by datatype {datatype_id}")
-    representation_record = representations.get(str(chosen))
+    chosen = canonical_variants.get(str(chosen).casefold(), str(chosen))
+    representation_record = representations.get(str(chosen).casefold())
     if not representation_record:
         raise KeyError(f"datatype representation not found: {chosen}")
     representation = representation_record["document"]
-    if not points_to(representation, "parents", datatype_id):
+    if not points_to(representation, "parents", str(datatype.get("id"))):
         raise ValueError(f"representation {chosen} does not implement {datatype_id}")
     return {
         "datatype": datatype,
@@ -147,8 +149,9 @@ def representation_graph(workspace_root: Path, *, workspaces_root: Path = DEFAUL
 def _port_contract_types(value: Any) -> Iterable[tuple[str, str | None]]:
     """Yield (datatype, representation) pairs from old and new port syntax."""
     if isinstance(value, str):
-        if value.strip():
-            yield value, None
+        datatype = value.strip()
+        if datatype and not datatype.startswith("$"):
+            yield datatype, None
         return
     if isinstance(value, dict):
         datatype = value.get("datatype") or value.get("type")
@@ -207,10 +210,10 @@ def interface_type_inventory(
         _collect_contract(owner_kind, owner_id, document.get("inputs"), "input", refs)
         _collect_contract(owner_kind, owner_id, document.get("outputs"), "output", refs)
 
-    workflow_dir = workspace_root / "workflows"
     resources = get_filesystem_provider()
-    if resources.is_dir(workflow_dir):
-        for path in resources.glob(workspace_root, ("workflows",)):
+    workflow_documents: dict[str, dict[str, Any]] = {}
+    for layer in effective_workspace_layers(workspace_root, workspaces_root):
+        for path in resources.glob(layer, ("design/workflows", "workflows")):
             try:
                 documents = resources.read_json_documents(path)
             except (OSError, json.JSONDecodeError, ValueError):
@@ -218,18 +221,22 @@ def interface_type_inventory(
             for document in documents:
                 if not isinstance(document, dict):
                     continue
-                owner_id = str(document.get("id") or path.stem)
-                _collect_contract("workflow", owner_id, document.get("inputs"), "input", refs)
-                _collect_contract("workflow", owner_id, document.get("outputs"), "output", refs)
-                steps = document.get("steps") or []
-                if isinstance(steps, list):
-                    for step in steps:
-                        if not isinstance(step, dict):
-                            continue
-                        step_id = f"{owner_id}/{step.get('id') or 'step'}"
-                        for direction in ("inputs", "outputs"):
-                            contracts = step.get(f"{direction}Contract") or step.get(f"{direction}Types")
-                            _collect_contract("workflow_step", step_id, contracts, direction[:-1], refs)
+                if str(document.get("kind") or "workflow") != "workflow":
+                    continue
+                workflow_documents[str(document.get("id") or path.stem)] = document
+    for document in workflow_documents.values():
+        owner_id = str(document.get("id") or "workflow")
+        _collect_contract("workflow", owner_id, document.get("inputs"), "input", refs)
+        _collect_contract("workflow", owner_id, document.get("outputs"), "output", refs)
+        steps = document.get("steps") or []
+        if isinstance(steps, list):
+            for step in steps:
+                if not isinstance(step, dict):
+                    continue
+                step_id = f"{owner_id}/{step.get('id') or 'step'}"
+                for direction in ("inputs", "outputs"):
+                    contracts = step.get(f"{direction}Contract") or step.get(f"{direction}Types")
+                    _collect_contract("workflow_step", step_id, contracts, direction[:-1], refs)
 
     declared_datatypes = {
         str((record.get("document") or {}).get("id"))
@@ -244,10 +251,12 @@ def interface_type_inventory(
     referenced_datatypes = sorted({ref["datatype"] for ref in refs})
     referenced_representations = sorted({ref["representation"] for ref in refs if ref.get("representation")})
 
+    declared_datatype_keys = {item.casefold() for item in declared_datatypes}
+    declared_representation_keys = {item.casefold() for item in declared_representations}
     return {
         "references": refs,
         "referencedDatatypes": referenced_datatypes,
         "referencedRepresentations": referenced_representations,
-        "undeclaredDatatypes": sorted(set(referenced_datatypes) - declared_datatypes),
-        "undeclaredRepresentations": sorted(set(referenced_representations) - declared_representations),
+        "undeclaredDatatypes": sorted(item for item in set(referenced_datatypes) if item.casefold() not in declared_datatype_keys),
+        "undeclaredRepresentations": sorted(item for item in set(referenced_representations) if item.casefold() not in declared_representation_keys),
     }

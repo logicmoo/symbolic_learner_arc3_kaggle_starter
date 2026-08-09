@@ -8,7 +8,7 @@ SERVER = ROOT / "workbench" / "server"
 if str(SERVER) not in sys.path:
     sys.path.insert(0, str(SERVER))
 
-from datatype_library import load_workspace_concrete_datatype_records, load_workspace_datatype_records, load_workspace_representation_records, resolve_datatype_representation
+from datatype_library import interface_type_inventory, load_workspace_concrete_datatype_records, load_workspace_datatype_records, load_workspace_representation_records, resolve_datatype_representation
 from representation_planner import plan_representation_conversion
 
 
@@ -63,6 +63,21 @@ def test_workspace_inherits_shared_representations() -> None:
     assert resolved["datatype"]["id"] == "image"
     assert resolved["representation"]["id"] == "scene_graph"
     assert resolved["representationRecord"]["source"] == "shared"
+
+
+def test_datatype_resolution_accepts_interface_case() -> None:
+    resolved = resolve_datatype_representation(ARC3, "Object", "JSON_OBJECT")
+    assert resolved["datatype"]["id"] == "object"
+    assert resolved["representation"]["id"] == "json_object"
+
+
+def test_interface_inventory_scans_canonical_workflows_and_matches_case() -> None:
+    inventory = interface_type_inventory(ARC3)
+    undeclared = set(inventory["undeclaredDatatypes"])
+    assert {"Image", "Text", "Object"}.isdisjoint(undeclared)
+    assert not any(datatype.startswith("$") for datatype in undeclared)
+    workflow_references = [reference for reference in inventory["references"] if reference["ownerKind"] == "workflow"]
+    assert any(reference["ownerId"] == "arc3_observe_choose_record" and reference["datatype"] == "Object" for reference in workflow_references)
 
 
 def test_planner_finds_multi_step_bitmap_to_logo_path() -> None:
