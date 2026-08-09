@@ -152,12 +152,14 @@ export function RuntimeHistoryView({ mode, workspaceId, goals = [], plans = [], 
   const planDocs = useMemo(() => plans.map(row => row.document).filter(Boolean) as Record<string, any>[], [plans]);
   const contextDocs = useMemo(() => contexts.map(row => row.document).filter(Boolean) as Record<string, any>[], [contexts]);
   const workflowIds = useMemo(() => new Set(workflows.map(row => row.document?.id).filter(Boolean)), [workflows]);
-  const goalSpecs = goalDocs.filter(doc => doc.kind === "goal"), planSpecs = planDocs.filter(doc => doc.kind === "planning_strategy" || doc.kind === "plan");
-  const contextSpecs = contextDocs.filter(doc => doc.kind === "context");
-  const availablePlanSpecs = planSpecs.filter(plan => (plan.children || []).some((childId: string) => workflowIds.has(planDocs.find(doc => doc.id === childId)?.workflow)));
+  const isRootResource = (doc: Record<string, any>) => !Array.isArray(doc.parents) || doc.parents.length === 0;
+  const goalSpecs = goalDocs.filter(doc => doc.kind === "goal" && isRootResource(doc));
+  const planSpecs = planDocs.filter(doc => (doc.kind === "planning_strategy" || doc.kind === "plan") && isRootResource(doc));
+  const contextSpecs = contextDocs.filter(doc => (doc.kind === "atomspace" || doc.kind === "context") && isRootResource(doc));
   const [goalId, setGoalId] = useState(""), [goalVariantId, setGoalVariantId] = useState("");
   const [planId, setPlanId] = useState(""), [planVariantId, setPlanVariantId] = useState("");
   const [contextId, setContextId] = useState(""), [contextVariantId, setContextVariantId] = useState("");
+  const availablePlanSpecs = planSpecs.filter(plan => (!goalId || (plan.goals || []).includes(goalId)) && (plan.children || []).some((childId: string) => workflowIds.has(planDocs.find(doc => doc.id === childId)?.workflow)));
   const [inputs, setInputs] = useState("{}");
   const [humanDraft, setHumanDraft] = useState<Record<string, unknown>>({}), [draftLoaded, setDraftLoaded] = useState(false), [draftStatus, setDraftStatus] = useState("");
   const goalVariants = goalDocs.filter(doc => (doc.parents || []).includes(goalId));
@@ -195,7 +197,7 @@ export function RuntimeHistoryView({ mode, workspaceId, goals = [], plans = [], 
     if (!goalId && goalSpecs[0]) setGoalId(String(goalSpecs[0].id));
     if ((!planId || !availablePlanSpecs.some(doc => doc.id === planId)) && availablePlanSpecs[0]) setPlanId(String(availablePlanSpecs[0].id));
     if (!availablePlanSpecs.length) setPlanId("");
-  }, [goalDocs.length, planDocs.length, workflows.length]);
+  }, [goalId, goalDocs.length, planDocs.length, workflows.length]);
   useEffect(() => {
     const parent = goalSpecs.find(doc => doc.id === goalId);
     const preferred = goalVariants.find(doc => doc.id === parent?.preferredChild);
@@ -289,7 +291,7 @@ export function RuntimeHistoryView({ mode, workspaceId, goals = [], plans = [], 
       <label><span>GOAL VARIANT</span><select value={goalVariantId} onChange={event => setGoalVariantId(event.target.value)}>{goalVariants.map(doc => <option key={doc.id} value={doc.id}>{doc.label || doc.id}</option>)}</select></label>
       <label><span>PLANNING STRATEGY</span><select value={planId} onChange={event => setPlanId(event.target.value)}>{availablePlanSpecs.filter(doc => !goalId || (doc.goals || []).includes(goalId)).map(doc => <option key={doc.id} value={doc.id}>{doc.label || doc.id}</option>)}</select><small>{availablePlanSpecs.length ? "Only strategies resolving to a workflow in this workspace are runnable." : "No strategy variant names a workflow available in this workspace."}</small></label>
       <label><span>STRATEGY VARIANT</span><select value={planVariantId} onChange={event => setPlanVariantId(event.target.value)}>{planVariants.map(doc => <option key={doc.id} value={doc.id}>{doc.label || doc.id}</option>)}</select></label>
-      <label><span>CONTEXT</span><select value={contextId} onChange={event => setContextId(event.target.value)}><option value="">none</option>{contextDocs.filter(doc => doc.kind === "context").map(doc => <option key={doc.id} value={doc.id}>{doc.label || doc.id}</option>)}</select></label>
+      <label><span>CONTEXT</span><select value={contextId} onChange={event => setContextId(event.target.value)}><option value="">none</option>{contextSpecs.map(doc => <option key={doc.id} value={doc.id}>{doc.label || doc.id}</option>)}</select></label>
       <label><span>CONTEXT VARIANT</span><select value={contextVariantId} disabled={!contextId} onChange={event => setContextVariantId(event.target.value)}><option value="">none</option>{contextVariants.map(doc => <option key={doc.id} value={doc.id}>{doc.label || doc.id}</option>)}</select></label>
       <label><span>WORKFLOW INPUTS (JSON)</span><textarea value={inputs} onChange={event => setInputs(event.target.value)} /></label>
     </div>

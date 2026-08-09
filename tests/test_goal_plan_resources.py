@@ -11,6 +11,7 @@ if str(SERVER) not in sys.path:
 from goal_plan_library import load_workspace_symbolic_records, symbolic_hierarchy
 from resource_convention import canonical_resource_path
 from resource_store import get_filesystem_provider
+from goal_run_api import start_goal_run
 
 
 def _write(root: Path, workspace: str, directory: str, name: str, document: str) -> None:
@@ -70,6 +71,23 @@ def test_shared_workspace_contains_bidirectional_context_examples() -> None:
     assert {document["kind"] for document in by_id.values()} == {"atomspace"}
     assert by_id["vision_analysis"]["children"] == ["vision_analysis.default"]
     assert by_id["vision_analysis.default"]["parents"] == ["vision_analysis"]
+
+
+def test_goal_run_api_accepts_atomspace_context_kind(monkeypatch, tmp_path: Path) -> None:
+    workspace = tmp_path / "project"
+    _write(tmp_path, "project", "design/goals", "learn.goal.json", '{"kind":"goal","id":"learn","children":["learn.safe"],"preferredChild":"learn.safe"}')
+    _write(tmp_path, "project", "design/goals", "learn.safe.goal.json", '{"kind":"goal","id":"learn.safe","parents":["learn"]}')
+    _write(tmp_path, "project", "design/planning_strategies", "route.planning_strategy.json", '{"kind":"planning_strategy","id":"route","goals":["learn"],"children":["route.safe"],"preferredChild":"route.safe"}')
+    _write(tmp_path, "project", "design/planning_strategies", "route.safe.planning_strategy.json", '{"kind":"planning_strategy","id":"route.safe","parents":["route"],"workflow":"run"}')
+    _write(tmp_path, "project", "design/atomspaces", "memory.atomspace.json", '{"kind":"atomspace","id":"memory","children":["memory.default"],"preferredChild":"memory.default"}')
+    _write(tmp_path, "project", "design/atomspaces", "memory.default.atomspace.json", '{"kind":"atomspace","id":"memory.default","parents":["memory"]}')
+    monkeypatch.setattr("goal_run_api._resolve_workspace", lambda _workspace_id: {"root": str(workspace)})
+    monkeypatch.setattr("goal_run_api._workflow_document", lambda _workspace, _workflow_id: {"id": "run", "steps": []})
+    monkeypatch.setattr("goal_run_api.engine.get_workflow", lambda _workflow_id: {"id": "run", "version": 1})
+    monkeypatch.setattr("goal_run_api.engine.start", lambda *_args, **_kwargs: {"id": "workflow-run"})
+    monkeypatch.setattr("goal_run_api.engine.create_goal_run", lambda *args: {"contextId": args[5], "contextVariantId": args[6]})
+    payload = start_goal_run({"workspaceId": "project", "goalId": "learn", "planId": "route", "contextId": "memory"})
+    assert payload["goalRun"] == {"contextId": "memory", "contextVariantId": "memory.default"}
 
 
 def test_goal_plan_editor_preserves_rich_hierarchy_features() -> None:

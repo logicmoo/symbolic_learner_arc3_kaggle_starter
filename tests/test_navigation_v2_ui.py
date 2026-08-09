@@ -123,6 +123,11 @@ def test_goal_runs_use_durable_goal_plan_context_contract() -> None:
     assert "Pursue goal" in component
     assert "Submit human input" in component
     assert "selectRuntimeRun" in page
+    assert 'doc.kind === "goal" && isRootResource(doc)' in component
+    assert 'doc.kind === "planning_strategy" || doc.kind === "plan"' in component
+    assert 'doc.kind === "atomspace" || doc.kind === "context"' in component
+    assert '(!goalId || (plan.goals || []).includes(goalId))' in component
+    assert 'contextSpecs.map(doc =>' in component
 
 
 def test_topbar_offers_persistent_workbench_themes() -> None:

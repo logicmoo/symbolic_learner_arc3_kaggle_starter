@@ -82,7 +82,7 @@ def start_goal_run(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
         context_variant = None
         if context_id:
             context = contexts.get(context_id)
-            if not context or context.get("kind") != "context":
+            if not context or context.get("kind") not in {"atomspace", "context"}:
                 raise ValueError(f"context not found: {context_id}")
             context_variant = _select_variant(contexts, context_id, body.get("contextVariantId"))
         workflow_id = str(plan_variant.get("workflow") or "")
