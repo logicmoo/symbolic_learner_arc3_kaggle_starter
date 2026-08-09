@@ -66,7 +66,9 @@ function artifactRecords(artifact: RuntimeRun["artifacts"][number], collectionKe
 type RuntimeResourceKind = "operation" | "model";
 type OpenRuntimeResource = (kind: RuntimeResourceKind, id: string) => void;
 
-function WorkflowRunProjection({ run, workflow, busy, onCommand, onOpenResource }: { run: RuntimeRun; workflow: FrozenWorkflow | null; busy: boolean; onCommand: (command: "pause" | "resume" | "advance" | "replay" | "cancel") => void; onOpenResource?: OpenRuntimeResource }) {
+type WorkflowRunCommand = "pause" | "resume" | "advance" | "replay" | "cancel";
+
+function WorkflowRunProjection({ run, workflow, busy, onCommand, onOpenResource, commands = ["pause", "resume", "advance", "replay", "cancel"] }: { run: RuntimeRun; workflow: FrozenWorkflow | null; busy: boolean; onCommand: (command: WorkflowRunCommand) => void; onOpenResource?: OpenRuntimeResource; commands?: WorkflowRunCommand[] }) {
   const initialView = new URLSearchParams(window.location.search).get("runView") === "chronology" ? "chronology" : "topology";
   const [view, setViewState] = useState<"topology" | "chronology">(initialView);
   const setView = (next: "topology" | "chronology") => { setViewState(next); const url = new URL(window.location.href); if (next === "topology") url.searchParams.delete("runView"); else url.searchParams.set("runView", next); window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`); };
@@ -96,7 +98,7 @@ function WorkflowRunProjection({ run, workflow, busy, onCommand, onOpenResource 
       <div><span>FROZEN WORKFLOW v{run.workflowVersion}</span><h2>{workflow?.label || run.workflowId}</h2><small>{run.id} · {run.status} · {run.events.length} durable events</small></div>
       <div className="run-projection-modes" role="group" aria-label="Workflow run view"><button className={view === "topology" ? "active" : ""} onClick={() => setView("topology")}>Topology</button><button className={view === "chronology" ? "active" : ""} onClick={() => setView("chronology")}>Chronology</button></div>
     </div>
-    <div className="run-command-controls"><span>RUN CONTROL</span><button disabled={busy || run.status !== "running"} onClick={() => onCommand("pause")}>Pause</button><button disabled={busy || run.status !== "paused"} onClick={() => onCommand("resume")}>Resume</button><button disabled={busy || ["waiting", "paused", "completed", "failed", "cancelled"].includes(run.status)} onClick={() => onCommand("advance")}>Advance</button><button disabled={busy} onClick={() => onCommand("replay")}>Replay as new run</button><button className="danger" disabled={busy || ["completed", "failed", "cancelled"].includes(run.status)} onClick={() => onCommand("cancel")}>Cancel</button></div>
+    <div className="run-command-controls"><span>RUN CONTROL</span>{commands.includes("pause") && <button disabled={busy || run.status !== "running"} onClick={() => onCommand("pause")}>Pause</button>}{commands.includes("resume") && <button disabled={busy || run.status !== "paused"} onClick={() => onCommand("resume")}>Resume</button>}{commands.includes("advance") && <button disabled={busy || ["waiting", "paused", "completed", "failed", "cancelled"].includes(run.status)} onClick={() => onCommand("advance")}>Advance</button>}{commands.includes("replay") && <button disabled={busy} onClick={() => onCommand("replay")}>Replay as new run</button>}{commands.includes("cancel") && <button className="danger" disabled={busy || ["completed", "failed", "cancelled"].includes(run.status)} onClick={() => onCommand("cancel")}>Cancel</button>}</div>
     {view === "topology" ? workflow ? <div className="run-topology-scroll">
       <svg className="run-topology" viewBox={`0 0 ${width} 270`} style={{ minWidth: width }}>
         <defs><marker id={`run-arrow-${run.id}`} viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" /></marker></defs>
@@ -259,7 +261,7 @@ export function RuntimeHistoryView({ mode, workspaceId, goals = [], plans = [], 
       onSelectRun?.(payload.run); await refresh();
     } catch (reason) { setError(String(reason)); } finally { setBusy(false); }
   };
-  const commandGoalRun = async (command: "resume" | "cancel") => {
+  const commandGoalRun = async (command: Exclude<WorkflowRunCommand, "replay">) => {
     if (!selectedGoalRun) return;
     setBusy(true); setError("");
     try {
@@ -294,8 +296,9 @@ export function RuntimeHistoryView({ mode, workspaceId, goals = [], plans = [], 
     <button className="run-button" disabled={busy || !goalId || !planId} onClick={startGoalRun}>▶ Pursue goal</button>
     <div className="resource-table"><div className="resource-row resource-head"><span>Goal</span><span>Strategy variant</span><span>Status</span><span>Workflow/plan run</span><span>Created</span></div>{goalRuns.map(row => <button className="resource-row" key={row.id} onClick={() => { setSelectedId(row.id); onSelectRun?.(row.workflowRun); }}><b>{row.goalVariantId || row.goalId}</b><code>{row.planVariantId}</code><span>{row.status}</span><span>{row.workflowRunId.slice(0, 8)}</span><em>{stamp(row.createdAt)}</em></button>)}</div>
     {goalRuns.length >= goalRunLimit && <button type="button" className="runtime-load-older" onClick={() => setGoalRunLimit(limit => Math.min(500, limit + 50))}>Load 50 older goal runs</button>}
-    {selectedGoalRun && <div className="goal-run-controls"><div><b>Selected pursuit</b><span>{selectedGoalRun.goalVariantId} · {selectedGoalRun.planVariantId} · {selectedGoalRun.contextVariantId || "no context"}</span></div><button disabled={busy || selectedGoalRun.status !== "paused"} onClick={() => void commandGoalRun("resume")}>Resume</button><button disabled={busy || ["completed", "failed", "cancelled"].includes(selectedGoalRun.status)} onClick={() => void commandGoalRun("cancel")}>Cancel</button></div>}
+    {selectedGoalRun && <div className="goal-run-controls"><div><b>Selected pursuit</b><span>{selectedGoalRun.goalVariantId} · {selectedGoalRun.planVariantId} · {selectedGoalRun.contextVariantId || "no context"}</span></div></div>}
     {waitingStep && <div className="human-pause goal-run-human"><div className="pause-ring">Ⅱ</div><b>Waiting for {waitingStep.stepId}</b><span>{waitingStepDefinition?.label || "Provide the values required by this workflow step."}</span><small className="human-draft-status">{draftStatus}</small><HumanInputForm step={waitingStepDefinition} busy={busy} draft={humanDraft} onDraft={setHumanDraft} onSubmit={values => void submitHumanInput(values)} /></div>}
+    {selectedGoalRun && <WorkflowRunProjection run={selectedGoalRun.workflowRun} workflow={goalRunWorkflow} busy={busy} commands={["pause", "resume", "advance", "cancel"]} onCommand={command => void commandGoalRun(command as Exclude<WorkflowRunCommand, "replay">)} onOpenResource={onOpenResource} />}
   </section>;
 
   const invocationRows = invocations.map(trace => {
