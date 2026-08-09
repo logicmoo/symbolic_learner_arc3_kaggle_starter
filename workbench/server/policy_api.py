@@ -18,7 +18,7 @@ from model_discovery import discover_backend_models, import_discovered_models, r
 from model_benchmark import call_model
 from workspace_api import _resolve_workspace, invalidate_workspace_discovery
 from resource_store import get_filesystem_provider
-from invocation_trace import read_invocation_trace, write_invocation_trace
+from invocation_trace import list_invocation_traces, read_invocation_trace, write_invocation_trace
 
 router = APIRouter(prefix="/workspaces", tags=["model-policy"])
 WRITABLE_OBSERVATION_KINDS = {"model_health_observation", "model_ping_job", "model_ping_event", "benchmark_result"}
@@ -111,6 +111,13 @@ def read_model_debug_log(workspace_id: str, path: str = Query(...)) -> dict[str,
     try: return {"path": path, "content": read_invocation_trace(Path(workspace["root"]), "model", path)}
     except ValueError as error: raise HTTPException(status_code=400, detail=str(error)) from error
     except FileNotFoundError as error: raise HTTPException(status_code=404, detail=f"debug log not found: {path}") from error
+
+
+@router.get("/{workspace_id}/models/invocations")
+def list_model_invocations(workspace_id: str, limit: int = Query(200, ge=1, le=1000)) -> dict[str, Any]:
+    try: workspace = _resolve_workspace(workspace_id)
+    except KeyError as error: raise HTTPException(status_code=404, detail=str(error)) from error
+    return {"workspaceId": workspace_id, "family": "model", "invocations": list_invocation_traces(Path(workspace["root"]), "model", limit)}
 
 
 @router.get("/{workspace_id}/models/discover/{backend_id}")

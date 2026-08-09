@@ -41,3 +41,21 @@ def read_invocation_trace(workspace_root: Path, family: str, path: str) -> str:
     if not resources.is_file(resolved):
         raise FileNotFoundError(path)
     return resources.read_text(resolved)
+
+
+def list_invocation_traces(workspace_root: Path, family: str, limit: int = 200) -> list[dict[str, Any]]:
+    """Return newest durable playground invocations through the resource provider."""
+    resources = get_filesystem_provider()
+    directory = resources.resolve(workspace_root, f"runtime/logs/{family}_invocations")
+    rows: list[dict[str, Any]] = []
+    for path in reversed(resources.glob(directory, ["."], "*.log")):
+        try:
+            document = json.loads(resources.read_text(path))
+        except (OSError, ValueError, TypeError):
+            continue
+        if not isinstance(document, dict):
+            continue
+        rows.append({**document, "logPath": path.relative_to(workspace_root).as_posix()})
+        if len(rows) >= max(1, min(limit, 1000)):
+            break
+    return rows

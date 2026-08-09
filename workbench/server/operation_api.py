@@ -13,7 +13,7 @@ from operation_library import DEFAULT_WORKSPACES_ROOT, resolve_operation_impleme
 from operation_resolution import materialize_workflow_step
 from workflow_engine_api import engine
 from resource_store import get_filesystem_provider
-from invocation_trace import read_invocation_trace, redact_secrets, write_invocation_trace
+from invocation_trace import list_invocation_traces, read_invocation_trace, redact_secrets, write_invocation_trace
 
 
 router = APIRouter(prefix="/workspaces", tags=["operations"])
@@ -50,6 +50,15 @@ def read_operation_debug_log(
         raise HTTPException(status_code=400, detail=str(error)) from error
     except FileNotFoundError as error:
         raise HTTPException(status_code=404, detail=f"debug log not found: {path}") from error
+
+
+@router.get("/{workspace_id}/operations/invocations")
+def list_operation_invocations(workspace_id: str, limit: int = Query(200, ge=1, le=1000)) -> dict[str, Any]:
+    try:
+        workspace_root = _workspace_root(workspace_id)
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+    return {"workspaceId": workspace_id, "family": "operation", "invocations": list_invocation_traces(workspace_root, "operation", limit)}
 
 
 @router.post("/{workspace_id}/operations/{operation_id}/invoke")
