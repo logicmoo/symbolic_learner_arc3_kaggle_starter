@@ -267,6 +267,7 @@ def test_universal_tree_exposes_composable_tri_state_view_controls() -> None:
     assert ".operation-tree-row.operation-child" in filtering
     assert "nestedKinds" in filtering
     assert "treeKinds" in filtering
+    assert "[...current, ...kinds]" in filtering
     for label in ('label="Search"', 'label="All"', "Enabled", "Disabled", "Categories", "Non-"):
         assert label in controls
     assert '`top-${kind}`' in controls

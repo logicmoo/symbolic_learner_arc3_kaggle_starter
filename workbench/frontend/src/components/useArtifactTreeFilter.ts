@@ -103,7 +103,13 @@ export function useArtifactTreeFilter(rules?: TreeVisibilityRules) {
       });
 
       const kinds = [...new Set(branchElements.flatMap(element => nestedKinds(parsedSearchValue(element))))].sort();
-      setTreeKinds(current => current.join("\u0000") === kinds.join("\u0000") ? current : kinds);
+      // Controls describe the complete tree, not only the currently mounted or
+      // visible branches. Once a resource kind is discovered, keep its controls
+      // available while filtering and collapsing temporarily unmount children.
+      setTreeKinds(current => {
+        const completeKinds = [...new Set([...current, ...kinds])].sort();
+        return current.join("\u0000") === completeKinds.join("\u0000") ? current : completeKinds;
+      });
       const roleStates = { ...activeRules.roles };
       const availabilityStates = { enabled: activeRules.enabled, disabled: activeRules.disabled };
       const hasTypedRoles = Object.keys(roleStates).length > 0;
