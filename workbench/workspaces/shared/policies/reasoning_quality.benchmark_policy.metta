@@ -10,7 +10,7 @@
     (policyState on)
     (requireEffectiveBenchmark true)
   ))
-  (promptProfiles ([]
+  (modelPresets ([]
     gpt-5.6-light
     gpt-5.6-deep
   ))

@@ -51,9 +51,9 @@ def _run_ping_job_safely(root: Path, job: dict[str, Any], models: list[dict[str,
         })
 
 
-def _run_benchmark_safely(root: Path, policy: dict[str, Any], models: list[dict[str, Any]], profiles: list[dict[str, Any]], job_id: str) -> None:
+def _run_benchmark_safely(root: Path, policy: dict[str, Any], models: list[dict[str, Any]], presets: list[dict[str, Any]], job_id: str) -> None:
     try:
-        run_benchmark(root, policy, models, profiles, job_id=job_id)
+        run_benchmark(root, policy, models, presets, job_id=job_id)
     except Exception as error:
         completed_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
         write_policy_resource(root, {
@@ -64,7 +64,7 @@ def _run_benchmark_safely(root: Path, policy: dict[str, Any], models: list[dict[
             "createdAt": completed_at,
             "completedAt": completed_at,
             "modelCount": len(models),
-            "profileCount": len(profiles),
+            "presetCount": len(presets),
             "caseCount": len(policy.get("cases") or []),
             "error": str(error),
         })
@@ -183,10 +183,10 @@ def execute_model_benchmark(workspace_id: str, policy_id: str, background_tasks:
     except KeyError as error: raise HTTPException(status_code=404, detail=str(error)) from error
     root=Path(workspace["root"]);records=load_workspace_policy_records(root);registry=_effective_registry(root,records);policy=next((item for item in registry["benchmarkPolicies"] if item.get("id")==policy_id),None)
     if not policy: raise HTTPException(status_code=404,detail=f"benchmark policy not found: {policy_id}")
-    models=[item for item in registry["models"] if item["effective"]["benchmark"]]; resolved=resolve_model_records(root); profile_ids=set(policy.get("promptProfiles") or []);profiles=[record for record in resolved if (record.get("document") or {}).get("id") in profile_ids and (record.get("resolved") or {}).get("enabled")]
+    models=[item for item in registry["models"] if item["effective"]["benchmark"]]; resolved=resolve_model_records(root); preset_ids=set(policy.get("modelPresets") or policy.get("promptProfiles") or []);presets=[record for record in resolved if (record.get("document") or {}).get("id") in preset_ids and (record.get("resolved") or {}).get("enabled")]
     cases = policy.get("cases")
     if not isinstance(cases, list) or not cases: raise HTTPException(status_code=400,detail="benchmark policy requires at least one declared case")
-    job_id=f"benchmark_{policy['id']}_{uuid4().hex[:10]}";queued={"kind":"benchmark_job","id":job_id,"benchmarkPolicyId":policy["id"],"status":"queued","createdAt":datetime.now(timezone.utc).isoformat().replace("+00:00","Z"),"modelCount":len(models),"profileCount":len(profiles),"caseCount":len(cases)}
+    job_id=f"benchmark_{policy['id']}_{uuid4().hex[:10]}";queued={"kind":"benchmark_job","id":job_id,"benchmarkPolicyId":policy["id"],"status":"queued","createdAt":datetime.now(timezone.utc).isoformat().replace("+00:00","Z"),"modelCount":len(models),"presetCount":len(presets),"caseCount":len(cases)}
     write_policy_resource(root,queued)
-    background_tasks.add_task(_run_benchmark_safely, root, policy, models, profiles, job_id)
+    background_tasks.add_task(_run_benchmark_safely, root, policy, models, presets, job_id)
     return {"workspace":workspace,"job":queued,"results":[]}

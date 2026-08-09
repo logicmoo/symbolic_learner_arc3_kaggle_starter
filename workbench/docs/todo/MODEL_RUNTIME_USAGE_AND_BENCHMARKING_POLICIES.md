@@ -12,7 +12,7 @@ Remaining work is intentionally narrower:
 
 - optionally embed vendor creation and backend discovery instead of using the current direct link to the Models editor's backend creation, discovery, selection, and overwrite import tools;
 - refine multi-column sorting if future catalog usage reveals additional ordering needs (Shift+click already composes sort keys);
-- optionally migrate the legacy benchmark-policy `promptProfiles` field to `modelPresets`; the dashboard now labels and edits these references according to their actual Model Preset semantics;
+- optionally remove legacy read compatibility for the former benchmark-policy `promptProfiles` field after existing workspaces have migrated to `modelPresets`;
 - optionally add comparison overlays or aggregation controls beyond the current persisted-result time-series chart and exact chronological result rows.
 
 The requirements below remain the acceptance specification. Existing completed behavior must not be replaced with mock data.

@@ -3,7 +3,7 @@
   (id example_reasoning_quality_gpt_5_6)
   (benchmarkPolicyId reasoning_quality)
   (modelPolicyEntryId openai:gpt-5.6)
-  (promptProfileId gpt-5.6-light)
+  (modelPresetId gpt-5.6-light)
   (description "Illustrative result for one model and prompt-profile cell in the reasoning-quality benchmark matrix. It shows the shape of persisted performance evidence used by history and comparison views; the example status means these numbers are documentation data and must not be treated as a current measured production result.")
   (recordedAt 2026-08-08T00:00:00Z)
   (status example)

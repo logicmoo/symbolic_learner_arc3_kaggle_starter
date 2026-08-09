@@ -216,7 +216,9 @@ def test_model_policy_labels_benchmark_profiles_as_model_presets() -> None:
     assert "<span>Model Presets</span>" in source
     assert "Filesystem model preset" in source
     assert "<span>Preset</span>" in source
-    assert "legacy promptProfiles field" in source
+    assert "reference its ID from modelPresets" in source
+    assert "activeBenchmarkPolicy?.modelPresets||activeBenchmarkPolicy?.promptProfiles" in source
+    assert "result?.modelPresetId||result?.promptProfileId" in source
 
 
 def test_model_catalog_infers_presets_and_keeps_disabled_children_visible() -> None:
@@ -365,6 +367,9 @@ def test_benchmark_job_executes_declared_cases_and_persists_measurements(tmp_pat
         return {"text":"OK","latencyMs":10,"inputTokens":2,"outputTokens":1}
     result = run_benchmark(tmp_path,policy,models,profiles,invoke=invoke)
     assert result["job"]["status"] == "completed"
+    assert result["job"]["presetCount"] == 1
+    assert result["results"][0]["modelPresetId"] == "profile"
+    assert "promptProfileId" not in result["results"][0]
     assert result["results"][0]["metrics"] == {"accuracy":1.0,"latency_ms":10.0,"input_tokens":4,"output_tokens":2,"success_rate":1.0}
     assert list((tmp_path/"policies").glob("*.benchmark_job.metta"))
     assert list((tmp_path/"policies").glob("*.benchmark_result.metta"))
@@ -379,7 +384,7 @@ def test_model_policy_ui_exposes_explicit_benchmark_run() -> None:
     assert "latestResultByCell" in source
     assert 'aria-label="Performance history metric"' in source
     assert 'aria-label="Performance history model"' in source
-    assert 'aria-label="Performance history profile"' in source
+    assert 'aria-label="Performance history preset"' in source
     assert "activeHistoryMetric" in source
     assert "historyMaximum" in source
     assert "historyResults" in source
@@ -401,7 +406,7 @@ def test_model_policy_ui_exposes_explicit_benchmark_run() -> None:
 def test_benchmark_api_queues_durable_background_job(tmp_path: Path, monkeypatch) -> None:
     from fastapi import BackgroundTasks
 
-    policy = {"id": "quality", "cases": [{"id": "one", "prompt": "OK", "expected": "OK"}], "promptProfiles": []}
+    policy = {"id": "quality", "cases": [{"id": "one", "prompt": "OK", "expected": "OK"}], "modelPresets": []}
     monkeypatch.setattr(policy_api, "_resolve_workspace", lambda workspace_id: {"id": workspace_id, "root": str(tmp_path)})
     monkeypatch.setattr(policy_api, "load_workspace_policy_records", lambda _root: [])
     monkeypatch.setattr(policy_api, "_effective_registry", lambda _root, _records: {"models": [], "benchmarkPolicies": [policy]})
@@ -410,6 +415,7 @@ def test_benchmark_api_queues_durable_background_job(tmp_path: Path, monkeypatch
     result = policy_api.execute_model_benchmark("demo", "quality", tasks)
     assert result["job"]["status"] == "queued"
     assert result["job"]["caseCount"] == 1
+    assert result["job"]["presetCount"] == 0
     assert len(tasks.tasks) == 1
     persisted = list((tmp_path / "policies").glob("*.benchmark_job.metta"))
     assert len(persisted) == 1
@@ -428,5 +434,6 @@ def test_benchmark_background_failure_becomes_terminal_job(tmp_path: Path, monke
     record = get_filesystem_provider().read_json(tmp_path / "policies" / "benchmark-failure.benchmark_job.json")
     assert record["status"] == "failed"
     assert record["modelCount"] == 1
+    assert record["presetCount"] == 1
     assert record["createdAt"] == record["completedAt"]
     assert record["error"] == "benchmark broke"
