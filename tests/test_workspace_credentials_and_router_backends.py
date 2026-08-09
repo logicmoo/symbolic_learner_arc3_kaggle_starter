@@ -39,6 +39,7 @@ def test_shared_router_backends_and_free_first_defaults_load_from_metta() -> Non
     assert (backends["clawrouter"].get("configuration") or {})["defaultModel"] == "blockrun/free"
     assert backends["omniroute"]["enabled"] is True
     assert (backends["omniroute"].get("configuration") or {})["defaultModel"] == "auto/best-free"
+    assert backends["freerouter"]["enabled"] is True
     assert all(backends[name]["enabled"] is False for name in ("anthropic", "groq", "openai", "unsloth"))
 
     vendor_policies = {
@@ -80,6 +81,14 @@ def test_shared_router_backends_and_free_first_defaults_load_from_metta() -> Non
     assert omniroute_model["enabled"] is True
     assert omniroute_model["model"] == "auto/best-free"
 
+    freerouter_model = next(
+        record.get("resolved") or {}
+        for record in resolve_model_records(shared)
+        if str((record.get("document") or {}).get("id")) == "freerouter-auto-free"
+    )
+    assert freerouter_model["enabled"] is True
+    assert freerouter_model["model"] == "auto"
+
 
 def test_windows_clawrouter_launcher_uses_the_workbench_port_and_free_route() -> None:
     launcher = (ROOT / "workbench" / "scripts" / "run_clawrouter.bat").read_text(encoding="utf-8")
@@ -100,6 +109,20 @@ def test_windows_omniroute_launcher_uses_the_official_gateway_and_bootstrap() ->
     assert "bootstrap_backend_credential" in bootstrap
     assert 'set "OMNIROUTE_PORT=20128"' in demo
     assert "scripts\\bootstrap_omniroute.py" in demo
+
+
+def test_windows_freerouter_launcher_uses_only_the_free_openrouter_route() -> None:
+    launcher = (ROOT / "workbench" / "scripts" / "run_freerouter.bat").read_text(encoding="utf-8")
+    configuration = json.loads((ROOT / "workbench" / "config" / "freerouter.config.json").read_text(encoding="utf-8"))
+    demo = (ROOT / "workbench" / "run_demo.bat").read_text(encoding="utf-8")
+    assert "https://github.com/openfreerouter/freerouter.git" in launcher
+    assert "node dist\\server.js" in launcher
+    assert configuration["providers"]["openrouter"]["auth"]["key"] == "OPENROUTER_API_KEY"
+    for tier_map in (configuration["tiers"], configuration["agenticTiers"]):
+        assert {tier["primary"] for tier in tier_map.values()} == {"openrouter/openrouter/free"}
+        assert all(tier["fallback"] == [] for tier in tier_map.values())
+    assert 'set "FREEROUTER_PORT=18800"' in demo
+    assert "scripts\\run_freerouter.bat" in demo
 
 
 def test_workspace_credentials_override_environment_without_leaking_values(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

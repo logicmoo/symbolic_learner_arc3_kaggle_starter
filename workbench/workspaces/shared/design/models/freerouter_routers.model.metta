@@ -1,0 +1,16 @@
+(
+  (kind model)
+  (id freerouter-auto-free)
+  (label "FreeRouter Automatic Free Route")
+  (description "Classifies each request locally and forwards every tier through OpenRouter's free model router.")
+  (inherits freerouter)
+  (model auto)
+  (enabled true)
+  (categories ([] models/freerouter models/routers models/free))
+  (capabilities ([] text vision reasoning json tools))
+  (properties (
+    (router true)
+    (free true)
+    (localProxy true)
+  ))
+)

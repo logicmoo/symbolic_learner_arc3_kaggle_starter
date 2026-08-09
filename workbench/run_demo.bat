@@ -45,6 +45,8 @@ set "CLAWROUTER_URL=http://127.0.0.1:%CLAWROUTER_PORT%"
 set "CLAWROUTER_HEALTH_URL=%CLAWROUTER_URL%/health"
 set "OMNIROUTE_PORT=20128"
 set "OMNIROUTE_URL=http://127.0.0.1:%OMNIROUTE_PORT%"
+set "FREEROUTER_PORT=18800"
+set "FREEROUTER_URL=http://127.0.0.1:%FREEROUTER_PORT%"
 
 title MeTTaSymbolicLearnerWorkbench %BIND_IP%:%WEB_PORT%
 echo.
@@ -127,6 +129,20 @@ if exist "%ROOT%.venv\Scripts\python.exe" (
   if errorlevel 1 echo WARNING: OmniRoute endpoint-key setup failed. Configure it under Settings.
 )
 
+echo Checking FreeRouter on 127.0.0.1:%FREEROUTER_PORT%...
+powershell -NoProfile -ExecutionPolicy Bypass -Command "try { $r=Invoke-WebRequest -UseBasicParsing '%FREEROUTER_URL%/health' -TimeoutSec 3; if ($r.StatusCode -eq 200) { exit 0 } } catch {}; exit 1" >nul 2>nul
+if errorlevel 1 (
+  echo Starting the local FreeRouter gateway on 127.0.0.1:%FREEROUTER_PORT%...
+  start "FreeRouter %FREEROUTER_PORT%" /D "%ROOT%" "%ComSpec%" /k scripts\run_freerouter.bat
+  echo Waiting for FreeRouter...
+  powershell -NoProfile -ExecutionPolicy Bypass -Command "$limit=(Get-Date).AddSeconds(180); do { try { $r=Invoke-WebRequest -UseBasicParsing '%FREEROUTER_URL%/health' -TimeoutSec 3; if ($r.StatusCode -eq 200) { exit 0 } } catch {}; Start-Sleep -Seconds 1 } while ((Get-Date) -lt $limit); exit 1"
+  if errorlevel 1 (
+    echo WARNING: FreeRouter did not answer yet. Check the FreeRouter %FREEROUTER_PORT% window.
+  )
+) else (
+  echo FreeRouter is already running.
+)
+
 echo Starting the local event backend on %BIND_IP%:%API_PORT%...
 start "MeTTa Workbench API %API_PORT%" /D "%ROOT%" "%ComSpec%" /k scripts\run_api_server.bat %BIND_IP% %API_PORT%
 
@@ -152,10 +168,11 @@ echo The workbench is running locally at %WEB_URL%
 echo API documentation is at %API_URL%/docs
 echo ClawRouter is at %CLAWROUTER_URL%/v1 using blockrun/free by default.
 echo OmniRoute is at %OMNIROUTE_URL%/v1 using auto/best-free by default.
+echo FreeRouter is at %FREEROUTER_URL%/v1 using OpenRouter's free route.
 echo Edit files under workbench\frontend\src or workbench\server;
 echo the appropriate process reloads automatically.
 echo Each API/Vite window shows the exact command to rerun after Ctrl+C.
-echo Close the API, Vite, ClawRouter, and OmniRoute windows for this instance when you are finished.
+echo Close the API, Vite, ClawRouter, OmniRoute, and FreeRouter windows for this instance when you are finished.
 echo.
 pause
 exit /b 0

@@ -4,7 +4,7 @@
   (label FreeRouter)
   (provider freerouter)
   (official true)
-  (description "Self-hosted FreeRouter OpenAI-compatible gateway. Start FreeRouter separately; the workbench connects to its local service without a client API key.")
+  (description "Self-hosted FreeRouter OpenAI-compatible gateway. run_workbench.bat builds and starts it on port 18800 with every routing tier pinned to OpenRouter's free model router.")
   (enabled true)
   (capabilities ([] llm.complete llm.reasoning llm.vision))
   (configuration (

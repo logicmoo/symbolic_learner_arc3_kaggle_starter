@@ -1,0 +1,29 @@
+{
+  "port": 18800,
+  "host": "127.0.0.1",
+  "providers": {
+    "openrouter": {
+      "baseUrl": "https://openrouter.ai/api/v1",
+      "api": "openai",
+      "auth": {
+        "type": "env",
+        "key": "OPENROUTER_API_KEY"
+      }
+    }
+  },
+  "tiers": {
+    "SIMPLE": { "primary": "openrouter/openrouter/free", "fallback": [] },
+    "MEDIUM": { "primary": "openrouter/openrouter/free", "fallback": [] },
+    "COMPLEX": { "primary": "openrouter/openrouter/free", "fallback": [] },
+    "REASONING": { "primary": "openrouter/openrouter/free", "fallback": [] }
+  },
+  "agenticTiers": {
+    "SIMPLE": { "primary": "openrouter/openrouter/free", "fallback": [] },
+    "MEDIUM": { "primary": "openrouter/openrouter/free", "fallback": [] },
+    "COMPLEX": { "primary": "openrouter/openrouter/free", "fallback": [] },
+    "REASONING": { "primary": "openrouter/openrouter/free", "fallback": [] }
+  },
+  "auth": {
+    "default": "environment"
+  }
+}
