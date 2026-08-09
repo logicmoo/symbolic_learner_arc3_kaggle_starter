@@ -139,7 +139,7 @@ export function RuntimeHistoryView({ mode, workspaceId, goals = [], plans = [], 
 }) {
   const [runs, setRuns] = useState<RuntimeRun[]>([]), [goalRuns, setGoalRuns] = useState<GoalRun[]>([]);
   const [invocations, setInvocations] = useState<InvocationTrace[]>([]), [selectedInvocationId, setSelectedInvocationId] = useState("");
-  const [historyFilter, setHistoryFilter] = useState(""), [runLimit, setRunLimit] = useState(50), [invocationLimit, setInvocationLimit] = useState(50);
+  const [historyFilter, setHistoryFilter] = useState(""), [runLimit, setRunLimit] = useState(50), [goalRunLimit, setGoalRunLimit] = useState(50), [invocationLimit, setInvocationLimit] = useState(50);
   const [selectedId, setSelectedId] = useState<string>(""), [error, setError] = useState<string>(""), [busy, setBusy] = useState(false);
   const [frozenWorkflow, setFrozenWorkflow] = useState<FrozenWorkflow | null>(null);
   const goalDocs = useMemo(() => goals.map(row => row.document).filter(Boolean) as Record<string, any>[], [goals]);
@@ -162,9 +162,11 @@ export function RuntimeHistoryView({ mode, workspaceId, goals = [], plans = [], 
     setError("");
     try {
       const includeInvocations = mode === "execs" || mode === "logs";
+      const includeGoalRuns = mode === "goalRuns" || mode === "runtimeContexts";
+      const includeWorkflowRuns = !includeGoalRuns;
       const [runPayload, goalPayload, operationPayload, modelPayload] = await Promise.all([
-        api(`/api/engine/runs?workspace_id=${encodeURIComponent(workspaceId)}&limit=${runLimit}`),
-        api(`/api/goal-runs?workspace_id=${encodeURIComponent(workspaceId)}&limit=200`),
+        includeWorkflowRuns ? api(`/api/engine/runs?workspace_id=${encodeURIComponent(workspaceId)}&limit=${runLimit}`) : Promise.resolve({ runs: [] }),
+        includeGoalRuns ? api(`/api/goal-runs?workspace_id=${encodeURIComponent(workspaceId)}&limit=${goalRunLimit}`) : Promise.resolve({ goalRuns: [] }),
         includeInvocations ? api(`/api/workspaces/${encodeURIComponent(workspaceId)}/operations/invocations?limit=${invocationLimit}`) : Promise.resolve({ invocations: [] }),
         includeInvocations ? api(`/api/workspaces/${encodeURIComponent(workspaceId)}/models/invocations?limit=${invocationLimit}`) : Promise.resolve({ invocations: [] }),
       ]);
@@ -181,8 +183,8 @@ export function RuntimeHistoryView({ mode, workspaceId, goals = [], plans = [], 
       setInvocations([...(operationPayload.invocations || []), ...(modelPayload.invocations || [])].sort((a: InvocationTrace, b: InvocationTrace) => String(b.createdAt || "").localeCompare(String(a.createdAt || ""))));
     } catch (reason) { setError(String(reason)); }
   };
-  useEffect(() => { setRunLimit(50); setInvocationLimit(50); setHistoryFilter(""); }, [workspaceId, mode]);
-  useEffect(() => { void refresh(); }, [workspaceId, mode, runLimit, invocationLimit]);
+  useEffect(() => { setRunLimit(50); setGoalRunLimit(50); setInvocationLimit(50); setHistoryFilter(""); }, [workspaceId, mode]);
+  useEffect(() => { void refresh(); }, [workspaceId, mode, runLimit, goalRunLimit, invocationLimit]);
   useEffect(() => {
     if (!goalId && goalSpecs[0]) setGoalId(String(goalSpecs[0].id));
     if ((!planId || !availablePlanSpecs.some(doc => doc.id === planId)) && availablePlanSpecs[0]) setPlanId(String(availablePlanSpecs[0].id));
@@ -287,6 +289,7 @@ export function RuntimeHistoryView({ mode, workspaceId, goals = [], plans = [], 
     </div>
     <button className="run-button" disabled={busy || !goalId || !planId} onClick={startGoalRun}>▶ Pursue goal</button>
     <div className="resource-table"><div className="resource-row resource-head"><span>Goal</span><span>Strategy variant</span><span>Status</span><span>Workflow/plan run</span><span>Created</span></div>{goalRuns.map(row => <button className="resource-row" key={row.id} onClick={() => { setSelectedId(row.id); onSelectRun?.(row.workflowRun); }}><b>{row.goalVariantId || row.goalId}</b><code>{row.planVariantId}</code><span>{row.status}</span><span>{row.workflowRunId.slice(0, 8)}</span><em>{stamp(row.createdAt)}</em></button>)}</div>
+    {goalRuns.length >= goalRunLimit && <button type="button" className="runtime-load-older" onClick={() => setGoalRunLimit(limit => Math.min(500, limit + 50))}>Load 50 older goal runs</button>}
     {selectedGoalRun && <div className="goal-run-controls"><div><b>Selected pursuit</b><span>{selectedGoalRun.goalVariantId} · {selectedGoalRun.planVariantId} · {selectedGoalRun.contextVariantId || "no context"}</span></div><button disabled={busy || selectedGoalRun.status !== "paused"} onClick={() => void commandGoalRun("resume")}>Resume</button><button disabled={busy || ["completed", "failed", "cancelled"].includes(selectedGoalRun.status)} onClick={() => void commandGoalRun("cancel")}>Cancel</button></div>}
     {waitingStep && <div className="human-pause goal-run-human"><div className="pause-ring">Ⅱ</div><b>Waiting for {waitingStep.stepId}</b><span>{waitingStepDefinition?.label || "Provide the values required by this workflow step."}</span><small className="human-draft-status">{draftStatus}</small><HumanInputForm step={waitingStepDefinition} busy={busy} draft={humanDraft} onDraft={setHumanDraft} onSubmit={values => void submitHumanInput(values)} /></div>}
   </section>;

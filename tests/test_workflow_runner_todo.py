@@ -84,3 +84,8 @@ def test_runtime_history_initial_load_is_bounded_and_expandable() -> None:
     assert "limit=${runLimit}" in source
     assert "Load 50 older runs" in source
     assert "Math.min(500, limit + 50)" in source
+    assert '[goalRunLimit, setGoalRunLimit] = useState(50)' in source
+    assert "limit=${goalRunLimit}" in source
+    assert "Load 50 older goal runs" in source
+    assert 'const includeGoalRuns = mode === "goalRuns" || mode === "runtimeContexts"' in source
+    assert "includeWorkflowRuns ? api(" in source
