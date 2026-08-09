@@ -74,7 +74,7 @@ def test_datatype_resolution_accepts_interface_case() -> None:
 def test_interface_inventory_scans_canonical_workflows_and_matches_case() -> None:
     inventory = interface_type_inventory(ARC3)
     undeclared = set(inventory["undeclaredDatatypes"])
-    assert {"Image", "Text", "Object"}.isdisjoint(undeclared)
+    assert {"Image", "Text", "Object", "IdentityMap", "WorldModel"}.isdisjoint(undeclared)
     assert not any(datatype.startswith("$") for datatype in undeclared)
     workflow_references = [reference for reference in inventory["references"] if reference["ownerKind"] == "workflow"]
     assert any(reference["ownerId"] == "arc3_observe_choose_record" and reference["datatype"] == "Object" for reference in workflow_references)

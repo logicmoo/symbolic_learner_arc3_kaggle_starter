@@ -111,7 +111,7 @@ def test_runtime_artifacts_deep_link_to_datatype_resources() -> None:
     assert 'kind:"operation"|"model"|"datatype"' in page
     assert 'kind==="model"?"llms":"data"' in page
     assert 'new URLSearchParams(window.location.search).get("resource")' in data_editor
-    assert "row.document?.label?.toLowerCase()===requestedId" in data_editor
+    assert "resourceIdentity(row.document?.label)===requestedId" in data_editor
 
 
 def test_workspace_entry_does_not_wait_for_capability_diagnostics() -> None:

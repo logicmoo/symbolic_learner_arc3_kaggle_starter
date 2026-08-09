@@ -26,6 +26,10 @@ REPRESENTATION_KIND = "representation_datatype"
 CONCRETE_KIND = "concrete_datatype"
 
 
+def _type_key(value: Any) -> str:
+    return "".join(character for character in str(value).casefold() if character.isalnum())
+
+
 def _implemented_datatypes(document: dict[str, Any]) -> list[str]:
     return relationship_ids(document.get("parents"))
 
@@ -96,9 +100,9 @@ def load_workspace_concrete_datatype_records(workspace_root: Path, *, workspaces
 
 
 def resolve_datatype_representation(workspace_root: Path, datatype_id: str, requested: str | None = None, *, workspaces_root: Path = DEFAULT_WORKSPACES_ROOT) -> dict[str, Any]:
-    datatypes = {str((record.get("document") or {}).get("id")).casefold(): record for record in load_workspace_datatype_records(workspace_root, workspaces_root=workspaces_root)}
-    representations = {str((record.get("document") or {}).get("id")).casefold(): record for record in load_workspace_representation_records(workspace_root, workspaces_root=workspaces_root)}
-    datatype_record = datatypes.get(datatype_id.casefold())
+    datatypes = {_type_key((record.get("document") or {}).get("id")): record for record in load_workspace_datatype_records(workspace_root, workspaces_root=workspaces_root)}
+    representations = {_type_key((record.get("document") or {}).get("id")): record for record in load_workspace_representation_records(workspace_root, workspaces_root=workspaces_root)}
+    datatype_record = datatypes.get(_type_key(datatype_id))
     if not datatype_record:
         raise KeyError(f"datatype not found: {datatype_id}")
     datatype = datatype_record["document"]
@@ -106,11 +110,11 @@ def resolve_datatype_representation(workspace_root: Path, datatype_id: str, requ
     chosen = requested or datatype.get("preferredChild") or (variants[0] if variants else None)
     if not chosen:
         raise ValueError(f"datatype has no representation variant: {datatype_id}")
-    canonical_variants = {variant.casefold(): variant for variant in variants}
-    if variants and str(chosen).casefold() not in canonical_variants:
+    canonical_variants = {_type_key(variant): variant for variant in variants}
+    if variants and _type_key(chosen) not in canonical_variants:
         raise ValueError(f"representation {chosen} is not allowed by datatype {datatype_id}")
-    chosen = canonical_variants.get(str(chosen).casefold(), str(chosen))
-    representation_record = representations.get(str(chosen).casefold())
+    chosen = canonical_variants.get(_type_key(chosen), str(chosen))
+    representation_record = representations.get(_type_key(chosen))
     if not representation_record:
         raise KeyError(f"datatype representation not found: {chosen}")
     representation = representation_record["document"]
@@ -251,12 +255,12 @@ def interface_type_inventory(
     referenced_datatypes = sorted({ref["datatype"] for ref in refs})
     referenced_representations = sorted({ref["representation"] for ref in refs if ref.get("representation")})
 
-    declared_datatype_keys = {item.casefold() for item in declared_datatypes}
-    declared_representation_keys = {item.casefold() for item in declared_representations}
+    declared_datatype_keys = {_type_key(item) for item in declared_datatypes}
+    declared_representation_keys = {_type_key(item) for item in declared_representations}
     return {
         "references": refs,
         "referencedDatatypes": referenced_datatypes,
         "referencedRepresentations": referenced_representations,
-        "undeclaredDatatypes": sorted(item for item in set(referenced_datatypes) if item.casefold() not in declared_datatype_keys),
-        "undeclaredRepresentations": sorted(item for item in set(referenced_representations) if item.casefold() not in declared_representation_keys),
+        "undeclaredDatatypes": sorted(item for item in set(referenced_datatypes) if _type_key(item) not in declared_datatype_keys),
+        "undeclaredRepresentations": sorted(item for item in set(referenced_representations) if _type_key(item) not in declared_representation_keys),
     }
