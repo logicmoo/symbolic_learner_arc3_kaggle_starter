@@ -241,6 +241,7 @@ __pycache__/
 *.pyc
 
 # Local workbench runtime state
+runtime/
 node_modules/
 workbench/data/
 workbench/workspaces/*/runtime/.credentials
