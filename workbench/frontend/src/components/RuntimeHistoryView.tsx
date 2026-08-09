@@ -150,7 +150,7 @@ export function RuntimeHistoryView({ mode, workspaceId, goals = [], plans = [], 
     setError("");
     try {
       const [runPayload, goalPayload] = await Promise.all([
-        api("/api/engine/runs?limit=200"),
+        api(`/api/engine/runs?workspace_id=${encodeURIComponent(workspaceId)}&limit=200`),
         api(`/api/goal-runs?workspace_id=${encodeURIComponent(workspaceId)}&limit=200`),
       ]);
       setRuns((runPayload.runs || []).map((run: RuntimeRun) => ({ ...run, steps: run.steps || [], events: run.events || [], artifacts: run.artifacts || [], logs: run.logs || [] })));

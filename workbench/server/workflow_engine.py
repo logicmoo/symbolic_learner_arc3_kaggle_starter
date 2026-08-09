@@ -107,6 +107,10 @@ class WorkflowEngine:
             columns = {row['name'] for row in db.execute('PRAGMA table_info(goal_runs)').fetchall()}
             if 'context_variant_id' not in columns:
                 db.execute('ALTER TABLE goal_runs ADD COLUMN context_variant_id TEXT')
+            run_columns = {row['name'] for row in db.execute('PRAGMA table_info(wf_runs)').fetchall()}
+            if 'workspace_id' not in run_columns:
+                db.execute('ALTER TABLE wf_runs ADD COLUMN workspace_id TEXT')
+            db.execute('CREATE INDEX IF NOT EXISTS wf_runs_workspace_created_idx ON wf_runs(workspace_id,created_at DESC)')
 
     def save_workflow(self, document: dict[str, Any]) -> dict[str, Any]:
         errors = self.validate(document)
@@ -137,9 +141,15 @@ class WorkflowEngine:
               ON d.id=x.id AND d.version=x.version ORDER BY d.id''').fetchall()
         return [json.loads(r['document']) for r in rows]
 
-    def list_runs(self, limit: int = 100) -> list[dict[str, Any]]:
+    def list_runs(self, limit: int = 100, workspace_id: str | None = None) -> list[dict[str, Any]]:
         with self._db() as db:
-            rows = db.execute('SELECT id FROM wf_runs ORDER BY created_at DESC LIMIT ?', (limit,)).fetchall()
+            if workspace_id:
+                rows = db.execute(
+                    'SELECT id FROM wf_runs WHERE workspace_id=? ORDER BY created_at DESC LIMIT ?',
+                    (workspace_id, limit),
+                ).fetchall()
+            else:
+                rows = db.execute('SELECT id FROM wf_runs ORDER BY created_at DESC LIMIT ?', (limit,)).fetchall()
         return [self.get_run(str(row['id'])) for row in rows]
 
     def create_goal_run(self, workspace_id: str, goal_id: str, goal_variant_id: str | None,
@@ -214,15 +224,22 @@ class WorkflowEngine:
         return errors
 
     def start(self, workflow_id: str, inputs: dict[str, Any], version: int | None = None,
-              parent_run_id: str | None = None, parent_step_id: str | None = None) -> dict[str, Any]:
+              parent_run_id: str | None = None, parent_step_id: str | None = None,
+              workspace_id: str | None = None) -> dict[str, Any]:
         wf = self.get_workflow(workflow_id, version)
         missing = [k for k in (wf.get('inputs') or {}) if k not in inputs]
         if missing: raise ValueError(f'missing workflow inputs: {missing}')
         run_id = str(uuid.uuid4())
         stamp = now()
+        if not workspace_id and parent_run_id:
+            workspace_id = self.get_run(parent_run_id).get('workspaceId')
         with self._db() as db:
-            db.execute('INSERT INTO wf_runs VALUES(?,?,?,?,?,?,?,?,?,?,?)',
-                       (run_id, workflow_id, wf['version'], parent_run_id, parent_step_id, 'running', json.dumps(inputs), '{}', None, stamp, stamp))
+            db.execute('''INSERT INTO wf_runs(
+                       id,workflow_id,workflow_version,parent_run_id,parent_step_id,status,
+                       inputs,outputs,error,created_at,updated_at,workspace_id)
+                       VALUES(?,?,?,?,?,?,?,?,?,?,?,?)''',
+                       (run_id, workflow_id, wf['version'], parent_run_id, parent_step_id, 'running',
+                        json.dumps(inputs), '{}', None, stamp, stamp, workspace_id))
             for step in wf.get('steps', []):
                 db.execute('INSERT INTO wf_steps(run_id,step_id,status) VALUES(?,?,?)', (run_id, step['id'], 'pending'))
         self._event(run_id, None, 'workflow.started', {'workflowId': workflow_id, 'version': wf['version']})
@@ -410,7 +427,8 @@ class WorkflowEngine:
             artifacts = db.execute('SELECT * FROM wf_artifacts WHERE run_id=? ORDER BY created_at', (run_id,)).fetchall()
             events = db.execute('SELECT * FROM wf_events WHERE run_id=? ORDER BY id', (run_id,)).fetchall()
             logs = db.execute('SELECT * FROM wf_logs WHERE run_id=? ORDER BY id', (run_id,)).fetchall()
-        return {'id': run['id'], 'workflowId': run['workflow_id'], 'workflowVersion': run['workflow_version'],
+        return {'id': run['id'], 'workspaceId': run['workspace_id'],
+                'workflowId': run['workflow_id'], 'workflowVersion': run['workflow_version'],
                 'parentRunId': run['parent_run_id'], 'parentStepId': run['parent_step_id'], 'status': run['status'],
                 'inputs': json.loads(run['inputs']), 'outputs': json.loads(run['outputs']), 'error': run['error'],
                 'createdAt': run['created_at'], 'updatedAt': run['updated_at'],

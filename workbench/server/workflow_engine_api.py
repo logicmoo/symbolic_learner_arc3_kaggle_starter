@@ -95,14 +95,17 @@ def get_workflow(workflow_id: str, version: int | None = None) -> dict[str, Any]
 @router.post('/runs', status_code=201)
 def start_run(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
     try:
-        return {'run': engine.start(str(body['workflowId']), body.get('inputs') or {}, body.get('version'))}
+        return {'run': engine.start(
+            str(body['workflowId']), body.get('inputs') or {}, body.get('version'),
+            workspace_id=str(body.get('workspaceId') or '').strip() or None,
+        )}
     except (ValueError, KeyError) as error:
         raise _http(error) from error
 
 
 @router.get('/runs')
-def list_runs(limit: int = Query(default=100, ge=1, le=500)) -> dict[str, Any]:
-    return {'runs': engine.list_runs(limit)}
+def list_runs(limit: int = Query(default=100, ge=1, le=500), workspace_id: str | None = None) -> dict[str, Any]:
+    return {'runs': engine.list_runs(limit, workspace_id)}
 
 
 @router.get('/runs/{run_id}')

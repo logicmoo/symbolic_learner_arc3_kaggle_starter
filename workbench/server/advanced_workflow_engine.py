@@ -372,7 +372,10 @@ class AdvancedWorkflowEngine(WorkflowEngine):
 
     def replay(self, run_id: str) -> dict[str, Any]:
         original = self.get_run(run_id)
-        replayed = self.start(original['workflowId'], original['inputs'], original['workflowVersion'])
+        replayed = self.start(
+            original['workflowId'], original['inputs'], original['workflowVersion'],
+            workspace_id=original.get('workspaceId'),
+        )
         self._event(replayed['id'], None, 'workflow.replayed', {'sourceRunId': run_id})
         return self.get_run(replayed['id'])
 

@@ -92,7 +92,9 @@ def start_goal_run(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
             workflow = engine.get_workflow(workflow_id)
         except KeyError:
             workflow = engine.save_workflow(_workflow_document(workspace, workflow_id))
-        workflow_run = engine.start(workflow_id, body.get("inputs") or {}, workflow.get("version"))
+        workflow_run = engine.start(
+            workflow_id, body.get("inputs") or {}, workflow.get("version"), workspace_id=workspace_id,
+        )
         goal_run = engine.create_goal_run(
             workspace_id,
             goal_id,

@@ -150,3 +150,20 @@ def test_durable_run_history_and_goal_run_linkage(tmp_path: Path) -> None:
 
     reopened = WorkflowEngine(tmp_path / 'engine.db', default_registry())
     assert reopened.list_goal_runs('default')[0]['contextVariantId'] == 'vision_analysis.default'
+
+
+def test_run_history_is_scoped_to_workspace_and_survives_restart(tmp_path: Path) -> None:
+    path = tmp_path / 'engine.db'
+    e = WorkflowEngine(path, default_registry())
+    e.save_workflow({'id': 'scoped', 'inputs': {}, 'outputs': {}, 'steps': []})
+
+    alpha = e.start('scoped', {}, workspace_id='alpha')
+    beta = e.start('scoped', {}, workspace_id='beta')
+
+    assert alpha['workspaceId'] == 'alpha'
+    assert [run['id'] for run in e.list_runs(workspace_id='alpha')] == [alpha['id']]
+    assert [run['id'] for run in e.list_runs(workspace_id='beta')] == [beta['id']]
+    assert {run['id'] for run in e.list_runs()} == {alpha['id'], beta['id']}
+
+    reopened = WorkflowEngine(path, default_registry())
+    assert reopened.get_run(alpha['id'])['workspaceId'] == 'alpha'
