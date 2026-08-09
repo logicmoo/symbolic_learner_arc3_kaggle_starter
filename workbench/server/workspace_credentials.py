@@ -5,6 +5,7 @@ import os
 import re
 import urllib.error
 import urllib.request
+from http.cookiejar import CookieJar
 from pathlib import Path
 from threading import RLock
 from typing import Any
@@ -62,14 +63,26 @@ def write_workspace_credential(workspace_root: Path, name: str, value: str | Non
 def resolve_workspace_credential(workspace_root: Path | str | None, name: str) -> str:
     name = _validate_name(name)
     if workspace_root:
-        value = read_workspace_credentials(Path(workspace_root)).get(name, "")
+        root = Path(workspace_root)
+        value = read_workspace_credentials(root).get(name, "")
         if value:
             return value
+        shared_root = root.parent / "shared"
+        if root.name != "shared" and get_filesystem_provider().is_dir(shared_root):
+            value = read_workspace_credentials(shared_root).get(name, "")
+            if value:
+                return value
     return os.environ.get(name, "")
 
 
 def credential_statuses(workspace_root: Path, backends: list[dict[str, Any]]) -> list[dict[str, Any]]:
     local = read_workspace_credentials(workspace_root)
+    shared_root = workspace_root.parent / "shared"
+    shared = (
+        read_workspace_credentials(shared_root)
+        if workspace_root.name != "shared" and get_filesystem_provider().is_dir(shared_root)
+        else {}
+    )
     entries: dict[str, dict[str, Any]] = {}
     for record in backends:
         backend = record.get("document") if isinstance(record.get("document"), dict) else record
@@ -88,7 +101,7 @@ def credential_statuses(workspace_root: Path, backends: list[dict[str, Any]]) ->
                 "label": str(bootstrap.get("label") or f"Set up {backend.get('label') or backend.get('id')} automatically"),
             }
     for name, entry in entries.items():
-        source = "workspace" if local.get(name) else "environment" if os.environ.get(name) else "missing"
+        source = "workspace" if local.get(name) else "shared" if shared.get(name) else "environment" if os.environ.get(name) else "missing"
         entry.update({"configured": source != "missing", "source": source})
     return sorted(entries.values(), key=lambda item: item["environmentVariable"])
 
@@ -106,6 +119,33 @@ def bootstrap_backend_credential(workspace_root: Path, backend: dict[str, Any]) 
     if parsed.scheme != "http" or parsed.hostname not in {"localhost", "127.0.0.1", "::1"}:
         raise ValueError("automatic credential setup is restricted to a local HTTP service")
     body = bootstrap.get("request") if isinstance(bootstrap.get("request"), dict) else {}
+    open_request: Any = urllib.request.urlopen
+    session_login = bootstrap.get("sessionLogin")
+    if isinstance(session_login, dict):
+        login_url = str(session_login.get("url") or "")
+        login_parsed = urlparse(login_url)
+        if login_parsed.scheme != "http" or login_parsed.hostname not in {"localhost", "127.0.0.1", "::1"}:
+            raise ValueError("automatic credential login is restricted to a local HTTP service")
+        password_name = str(session_login.get("passwordEnvironmentVariable") or "")
+        password = os.environ.get(password_name, "") if password_name else ""
+        password = password or str(session_login.get("defaultPassword") or "")
+        if not password:
+            raise ValueError(f"{backend.get('label') or backend.get('id')} management password is not configured")
+        login_body = {str(session_login.get("requestField") or "password"): password}
+        opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(CookieJar()))
+        open_request = opener.open
+        login_request = urllib.request.Request(
+            login_url,
+            data=json.dumps(login_body).encode("utf-8"),
+            headers={"Content-Type": "application/json", "Accept": "application/json"},
+            method="POST",
+        )
+        try:
+            with opener.open(login_request, timeout=float(bootstrap.get("timeoutSeconds") or 10)) as response:
+                response.read()
+        except urllib.error.HTTPError as error:
+            detail = error.read().decode("utf-8", errors="replace")[:500]
+            raise ValueError(f"{backend.get('label') or backend.get('id')} management login failed (HTTP {error.code}): {detail}") from error
     request = urllib.request.Request(
         url,
         data=json.dumps(body).encode("utf-8"),
@@ -113,7 +153,7 @@ def bootstrap_backend_credential(workspace_root: Path, backend: dict[str, Any]) 
         method=str(bootstrap.get("method") or "POST").upper(),
     )
     try:
-        with urllib.request.urlopen(request, timeout=float(bootstrap.get("timeoutSeconds") or 10)) as response:
+        with open_request(request, timeout=float(bootstrap.get("timeoutSeconds") or 10)) as response:
             payload = json.loads(response.read().decode("utf-8"))
     except urllib.error.HTTPError as error:
         detail = error.read().decode("utf-8", errors="replace")[:500]

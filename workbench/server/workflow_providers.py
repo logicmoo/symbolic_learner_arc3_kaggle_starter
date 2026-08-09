@@ -364,6 +364,7 @@ def _llm_complete(inputs: dict[str, Any], parameters: dict[str, Any]) -> dict[st
         "model": str(parameters.get("model") or "gpt-4.1-mini"),
         "messages": parameters.get("messages") or [{"role": "user", "content": content}],
         "temperature": float(parameters.get("temperature", 0)),
+        "stream": False,
     }
     if parameters.get("parseJson") or parameters.get("responseFormat") == "json_object":
         body["response_format"] = {"type": "json_object"}

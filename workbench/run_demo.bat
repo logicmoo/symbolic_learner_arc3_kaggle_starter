@@ -43,6 +43,8 @@ set "API_HEALTH_URL=%API_URL%/api/health"
 set "CLAWROUTER_PORT=3456"
 set "CLAWROUTER_URL=http://127.0.0.1:%CLAWROUTER_PORT%"
 set "CLAWROUTER_HEALTH_URL=%CLAWROUTER_URL%/health"
+set "OMNIROUTE_PORT=20128"
+set "OMNIROUTE_URL=http://127.0.0.1:%OMNIROUTE_PORT%"
 
 title MeTTaSymbolicLearnerWorkbench %BIND_IP%:%WEB_PORT%
 echo.
@@ -106,6 +108,25 @@ if errorlevel 1 (
   echo ClawRouter is already running.
 )
 
+echo Checking OmniRoute on 127.0.0.1:%OMNIROUTE_PORT%...
+powershell -NoProfile -ExecutionPolicy Bypass -Command "try { $r=Invoke-WebRequest -UseBasicParsing '%OMNIROUTE_URL%/' -TimeoutSec 3; if ($r.StatusCode -eq 200) { exit 0 } } catch {}; exit 1" >nul 2>nul
+if errorlevel 1 (
+  echo Starting the local OmniRoute gateway on 127.0.0.1:%OMNIROUTE_PORT%...
+  start "OmniRoute %OMNIROUTE_PORT%" /D "%ROOT%" "%ComSpec%" /k scripts\run_omniroute.bat %OMNIROUTE_PORT%
+  echo Waiting for OmniRoute...
+  powershell -NoProfile -ExecutionPolicy Bypass -Command "$limit=(Get-Date).AddSeconds(240); do { try { $r=Invoke-WebRequest -UseBasicParsing '%OMNIROUTE_URL%/' -TimeoutSec 3; if ($r.StatusCode -eq 200) { exit 0 } } catch {}; Start-Sleep -Seconds 1 } while ((Get-Date) -lt $limit); exit 1"
+  if errorlevel 1 (
+    echo WARNING: OmniRoute did not answer yet. Check the OmniRoute %OMNIROUTE_PORT% window.
+  )
+) else (
+  echo OmniRoute is already running.
+)
+
+if exist "%ROOT%.venv\Scripts\python.exe" (
+  "%ROOT%.venv\Scripts\python.exe" "%ROOT%scripts\bootstrap_omniroute.py" "%ROOT%workspaces\shared"
+  if errorlevel 1 echo WARNING: OmniRoute endpoint-key setup failed. Configure it under Settings.
+)
+
 echo Starting the local event backend on %BIND_IP%:%API_PORT%...
 start "MeTTa Workbench API %API_PORT%" /D "%ROOT%" "%ComSpec%" /k scripts\run_api_server.bat %BIND_IP% %API_PORT%
 
@@ -130,10 +151,11 @@ echo.
 echo The workbench is running locally at %WEB_URL%
 echo API documentation is at %API_URL%/docs
 echo ClawRouter is at %CLAWROUTER_URL%/v1 using blockrun/free by default.
+echo OmniRoute is at %OMNIROUTE_URL%/v1 using auto/best-free by default.
 echo Edit files under workbench\frontend\src or workbench\server;
 echo the appropriate process reloads automatically.
 echo Each API/Vite window shows the exact command to rerun after Ctrl+C.
-echo Close the API, Vite, and ClawRouter windows for this instance when you are finished.
+echo Close the API, Vite, ClawRouter, and OmniRoute windows for this instance when you are finished.
 echo.
 pause
 exit /b 0

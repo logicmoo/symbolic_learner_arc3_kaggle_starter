@@ -37,7 +37,9 @@ def test_shared_router_backends_and_free_first_defaults_load_from_metta() -> Non
     assert (omniroute.get("configuration") or {})["credentialBootstrap"]["url"] == "http://localhost:20128/api/keys"
     assert backends["clawrouter"]["enabled"] is True
     assert (backends["clawrouter"].get("configuration") or {})["defaultModel"] == "blockrun/free"
-    assert all(backends[name]["enabled"] is False for name in ("anthropic", "groq", "omniroute", "openai", "unsloth"))
+    assert backends["omniroute"]["enabled"] is True
+    assert (backends["omniroute"].get("configuration") or {})["defaultModel"] == "auto/best-free"
+    assert all(backends[name]["enabled"] is False for name in ("anthropic", "groq", "openai", "unsloth"))
 
     vendor_policies = {
         str((record.get("document") or {}).get("vendorId")): record.get("document") or {}
@@ -70,6 +72,14 @@ def test_shared_router_backends_and_free_first_defaults_load_from_metta() -> Non
     assert clawrouter["model"] == "blockrun/free"
     assert (clawrouter.get("configuration") or {})["baseUrl"] == "http://127.0.0.1:3456/v1"
 
+    omniroute_model = next(
+        record.get("resolved") or {}
+        for record in resolve_model_records(shared)
+        if str((record.get("document") or {}).get("id")) == "omniroute-free-router"
+    )
+    assert omniroute_model["enabled"] is True
+    assert omniroute_model["model"] == "auto/best-free"
+
 
 def test_windows_clawrouter_launcher_uses_the_workbench_port_and_free_route() -> None:
     launcher = (ROOT / "workbench" / "scripts" / "run_clawrouter.bat").read_text(encoding="utf-8")
@@ -79,6 +89,17 @@ def test_windows_clawrouter_launcher_uses_the_workbench_port_and_free_route() ->
     assert "Default workbench model: blockrun/free" in launcher
     assert 'set "CLAWROUTER_PORT=3456"' in demo
     assert "scripts\\run_clawrouter.bat %CLAWROUTER_PORT%" in demo
+
+
+def test_windows_omniroute_launcher_uses_the_official_gateway_and_bootstrap() -> None:
+    launcher = (ROOT / "workbench" / "scripts" / "run_omniroute.bat").read_text(encoding="utf-8")
+    bootstrap = (ROOT / "workbench" / "scripts" / "bootstrap_omniroute.py").read_text(encoding="utf-8")
+    demo = (ROOT / "workbench" / "run_demo.bat").read_text(encoding="utf-8")
+    assert "npm.cmd install -g omniroute" in launcher
+    assert "serve --port %OMNIROUTE_PORT% --no-open --no-tray --log" in launcher
+    assert "bootstrap_backend_credential" in bootstrap
+    assert 'set "OMNIROUTE_PORT=20128"' in demo
+    assert "scripts\\bootstrap_omniroute.py" in demo
 
 
 def test_workspace_credentials_override_environment_without_leaking_values(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -136,6 +157,68 @@ def test_omniroute_bootstrap_fetches_one_time_key_from_loopback(tmp_path: Path, 
     assert captured["url"] == "http://localhost:20128/api/keys"
     assert captured["body"] == {"name": "MeTTaSymbolicLearnerWorkbench"}
     assert resolve_workspace_credential(tmp_path, "OMNIROUTE_API_KEY") == "omni-secret"
+
+
+def test_omniroute_bootstrap_can_authenticate_a_local_management_session(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    requests: list[dict[str, object]] = []
+
+    class Response:
+        def __init__(self, payload: bytes):
+            self.payload = payload
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return None
+
+        def read(self) -> bytes:
+            return self.payload
+
+    class Opener:
+        def open(self, request, timeout):
+            requests.append({"url": request.full_url, "body": json.loads(request.data.decode("utf-8")), "timeout": timeout})
+            return Response(b'{"success":true}' if request.full_url.endswith("/login") else b'{"key":"session-key"}')
+
+    monkeypatch.setattr("workspace_credentials.urllib.request.build_opener", lambda *_args: Opener())
+    backend = {
+        "id": "omniroute",
+        "label": "OmniRoute",
+        "configuration": {
+            "apiKeyEnvironmentVariable": "OMNIROUTE_API_KEY",
+            "credentialBootstrap": {
+                "url": "http://localhost:20128/api/keys",
+                "request": {"name": "MeTTaSymbolicLearnerWorkbench"},
+                "responseField": "key",
+                "sessionLogin": {
+                    "url": "http://localhost:20128/api/auth/login",
+                    "passwordEnvironmentVariable": "OMNIROUTE_ADMIN_PASSWORD",
+                    "defaultPassword": "CHANGEME",
+                    "requestField": "password",
+                },
+            },
+        },
+    }
+    bootstrap_backend_credential(tmp_path, backend)
+    assert [request["url"] for request in requests] == [
+        "http://localhost:20128/api/auth/login",
+        "http://localhost:20128/api/keys",
+    ]
+    assert requests[0]["body"] == {"password": "CHANGEME"}
+    assert resolve_workspace_credential(tmp_path, "OMNIROUTE_API_KEY") == "session-key"
+
+
+def test_workspace_credentials_inherit_from_shared_and_allow_local_override(tmp_path: Path) -> None:
+    shared = tmp_path / "shared"
+    project = tmp_path / "project"
+    shared.mkdir()
+    project.mkdir()
+    write_workspace_credential(shared, "ROUTER_API_KEY", "shared-secret")
+    assert resolve_workspace_credential(project, "ROUTER_API_KEY") == "shared-secret"
+    write_workspace_credential(project, "ROUTER_API_KEY", "project-secret")
+    assert resolve_workspace_credential(project, "ROUTER_API_KEY") == "project-secret"
 
 
 def test_credential_bootstrap_rejects_non_loopback_services(tmp_path: Path) -> None:
