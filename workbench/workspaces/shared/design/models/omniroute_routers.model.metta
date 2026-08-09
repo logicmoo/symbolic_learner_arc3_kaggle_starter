@@ -3,7 +3,12 @@
   (id omniroute-free-router)
   (label "OmniRoute Best Free Router")
   (description "Uses OmniRoute's best-free route across the free providers connected to the local gateway.")
-  (inherits omniroute)
+  (parents ([]
+    omniroute
+  ))
+  (children ([]
+    omniroute-free-router-preset-high
+  ))
   (model auto/best-free)
   (enabled true)
   (categories ([] models/omniroute models/routers models/free))

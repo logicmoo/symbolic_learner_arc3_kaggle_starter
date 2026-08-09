@@ -6,6 +6,9 @@
   (official true)
   (description "Shared OpenRouter OpenAI-compatible transport inherited by every workspace. Individual OpenRouter models and presets live in model files.")
   (enabled true)
+  (children ([]
+    openrouter-body-builder
+  ))
   (capabilities ([]
     llm.complete
     llm.reasoning

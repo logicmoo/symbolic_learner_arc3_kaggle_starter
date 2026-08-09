@@ -6,6 +6,9 @@
   (official true)
   (description "ASI Alliance OpenAI-compatible inference transport for MiniMax models hosted by ASICloud on CUDOS.")
   (enabled true)
+  (children ([]
+    asicloud-asi1
+  ))
   (capabilities ([]
     llm.complete
     llm.reasoning
