@@ -199,13 +199,35 @@ class WorkflowEngine:
                 rows = db.execute('SELECT id FROM goal_runs ORDER BY created_at DESC LIMIT ?', (limit,)).fetchall()
         return [self.get_goal_run(str(row['id'])) for row in rows]
 
+    @staticmethod
+    def _contract_compatible(actual: Any, expected: Any) -> bool:
+        actual_type, actual_representation = WorkflowEngine._artifact_contract(actual)
+        expected_type, expected_representation = WorkflowEngine._artifact_contract(expected)
+        aliases = {
+            'str': 'text', 'string': 'text',
+            'bool': 'boolean',
+            'int': 'number', 'integer': 'number', 'float': 'number', 'double': 'number',
+            'list': 'array',
+        }
+        normalized_actual = aliases.get(actual_type.lower(), actual_type.lower())
+        normalized_expected = aliases.get(expected_type.lower(), expected_type.lower())
+        type_matches = normalized_actual == normalized_expected or normalized_actual in {'any', 'object'} or normalized_expected in {'any', 'object'}
+        representation_matches = not expected_representation or not actual_representation or expected_representation == actual_representation
+        return type_matches and representation_matches
+
+    @staticmethod
+    def _binding_name(binding: Any) -> str | None:
+        if not isinstance(binding, str) or not binding.startswith('$'):
+            return None
+        return binding.lstrip('$').split('.')[-1]
+
     def validate(self, document: dict[str, Any]) -> list[str]:
         errors: list[str] = []
         if not document.get('id'): errors.append('workflow id is required')
         steps = document.get('steps')
         if not isinstance(steps, list): return errors + ['steps must be an array']
         ids: set[str] = set()
-        produced = set((document.get('inputs') or {}).keys())
+        produced: dict[str, Any] = dict(document.get('inputs') or {})
         for i, step in enumerate(steps):
             sid = str(step.get('id') or '')
             if not sid: errors.append(f'step {i} requires id')
@@ -215,15 +237,43 @@ class WorkflowEngine:
             if kind == 'operation':
                 try: spec = self.registry.get(str(step.get('implementation') or step.get('operation') or ''))
                 except KeyError as e: errors.append(str(e)); continue
+                foreach = step.get('foreach') if isinstance(step.get('foreach'), dict) else None
+                item_port = str(foreach.get('itemPort', 'item')) if foreach else None
+                if foreach:
+                    items_binding = foreach.get('items')
+                    items_name = self._binding_name(items_binding)
+                    if items_name and items_name not in produced:
+                        errors.append(f'{sid}.foreach.items references unavailable artifact ${items_name}')
+                    elif items_name and not self._contract_compatible(produced[items_name], 'Array'):
+                        actual, _ = self._artifact_contract(produced[items_name])
+                        errors.append(f'{sid}.foreach.items expects Array but ${items_name} is {actual}')
                 for port, dtype in spec.inputs.items():
                     binding = (step.get('inputs') or {}).get(port)
+                    if foreach and port == item_port:
+                        continue
                     if binding is None: errors.append(f'{sid}.{port} is required ({dtype})')
-                for name in (step.get('outputs') or {}): produced.add(name)
+                    binding_name = self._binding_name(binding)
+                    if binding_name and binding_name not in produced:
+                        errors.append(f'{sid}.{port} references unavailable artifact ${binding_name}')
+                    elif binding_name and not self._contract_compatible(produced[binding_name], dtype):
+                        actual, _ = self._artifact_contract(produced[binding_name])
+                        expected, _ = self._artifact_contract(dtype)
+                        errors.append(f'{sid}.{port} expects {expected} but ${binding_name} is {actual}')
+                for port, name in (step.get('outputs') or {}).items():
+                    produced[str(name)] = spec.outputs.get(port, 'Any')
             elif kind == 'workflow':
                 if not step.get('workflowId'): errors.append(f'{sid} requires workflowId')
+                for _port, name in (step.get('outputs') or {}).items(): produced[str(name)] = 'Any'
             elif kind == 'human':
-                pass
+                form = step.get('form') or {}
+                for port, name in (step.get('outputs') or {}).items():
+                    field = form.get(port) if isinstance(form, dict) else None
+                    produced[str(name)] = field.get('datatype') or field.get('type') or 'Any' if isinstance(field, dict) else 'Any'
             else: errors.append(f'{sid} has unsupported kind {kind}')
+        for port, binding in (document.get('outputs') or {}).items():
+            binding_name = self._binding_name(binding)
+            if binding_name and binding_name not in produced:
+                errors.append(f'workflow output {port} references unavailable artifact ${binding_name}')
         return errors
 
     def start(self, workflow_id: str, inputs: dict[str, Any], version: int | None = None,

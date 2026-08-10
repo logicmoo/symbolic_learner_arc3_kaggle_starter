@@ -52,7 +52,7 @@ def probe_capabilities(registry: OperationRegistry) -> dict[str, dict[str, str]]
     statuses: dict[str, CapabilityStatus] = {
         "durableRuns": CapabilityStatus("implemented", "SQLite-backed run, step, event, artifact and log state"),
         "versionedWorkflows": CapabilityStatus("implemented", "Immutable workflow versions are persisted"),
-        "typedArtifacts": CapabilityStatus("partial", "Datatype labels and provenance are enforced; full schema/subtype validation is not yet present"),
+        "typedArtifacts": CapabilityStatus("partial", "Artifact bindings, port datatype compatibility, representation labels, and provenance are enforced; full payload schema/subtype validation is not yet present"),
         "dependencyGraph": CapabilityStatus("implemented", "Explicit and binding-derived dependencies with cycle validation"),
         "conditions": CapabilityStatus("implemented", "Backend evaluates persisted step conditions"),
         "foreachFanOut": CapabilityStatus("implemented", "Bounded foreach execution with aggregated outputs"),

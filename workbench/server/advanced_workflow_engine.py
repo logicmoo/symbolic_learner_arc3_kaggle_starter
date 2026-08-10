@@ -227,8 +227,9 @@ class AdvancedWorkflowEngine(WorkflowEngine):
                         db.execute('INSERT OR IGNORE INTO wf_run_relations VALUES(?,?,?,?)', (run_id, sid, state['childRunId'], now()))
                 return
             spec = self.registry.get(str(step.get('implementation') or step.get('operation')))
-            values = {k: self._resolve(run_id, v) for k, v in (step.get('inputs') or {}).items()}
             foreach = step.get('foreach')
+            item_port = str(foreach.get('itemPort', 'item')) if foreach else None
+            values = {k: self._resolve(run_id, v) for k, v in (step.get('inputs') or {}).items() if k != item_port}
             timeout = float(step.get('timeoutSeconds', 0) or 0)
             def invoke() -> dict[str, Any]:
                 if foreach:
@@ -238,7 +239,6 @@ class AdvancedWorkflowEngine(WorkflowEngine):
                     max_items = int(foreach.get('maxItems', 1000))
                     if len(items) > max_items:
                         raise ValueError(f'foreach exceeds maxItems={max_items}')
-                    item_port = str(foreach.get('itemPort', 'item'))
                     results = []
                     for index, item in enumerate(items):
                         self._log(run_id, sid, 'system', f'foreach item {index + 1}/{len(items)}')
