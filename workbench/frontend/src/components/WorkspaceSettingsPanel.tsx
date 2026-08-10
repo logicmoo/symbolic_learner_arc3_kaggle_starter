@@ -22,9 +22,9 @@ type WorkbenchService = {
   stdout: string; stderr: string;
 };
 
-export function WorkspaceSettingsPanel({workspace, workspaces, fileCount, implementationCount, onSwitch, onSaved}: {
+export function WorkspaceSettingsPanel({workspace, workspaces, fileCount, implementationCount, onSwitch, onSaved, mode="settings"}: {
   workspace: Workspace; workspaces: Workspace[]; fileCount: number; implementationCount: number;
-  onSwitch: () => void; onSaved: () => Promise<unknown>;
+  onSwitch: () => void; onSaved: () => Promise<unknown>; mode?: "settings" | "processes";
 }) {
   const [includes, setIncludes] = useState<IncludeSpec[]>(workspace.includes || []);
   const [busy, setBusy] = useState(false);
@@ -132,8 +132,9 @@ export function WorkspaceSettingsPanel({workspace, workspaces, fileCount, implem
 
   const choices = workspaces.filter(item => item.id !== workspace.id);
   const byId = new Map(workspaces.map(item => [item.id, item]));
-  return <section className="resource-view workspace-settings-page">
-    <div className="resource-heading"><div><span>WORKSPACE SETUP</span><h1>{workspace.label}</h1><p>{workspace.root}</p></div>
+  return <section className={`resource-view workspace-settings-page ${mode==="processes"?"processes-only":""}`}>
+    {mode==="processes"&&<style>{`.workspace-settings-page.processes-only>.settings-grid,.workspace-settings-page.processes-only>.workspace-inclusion-editor:not(.workbench-service-monitor){display:none}.workspace-settings-page.processes-only .workspace-settings-actions .primary{display:none}`}</style>}
+    <div className="resource-heading"><div><span>{mode==="processes"?"SYSTEM PROCESS MONITOR":"WORKSPACE SETUP"}</span><h1>{mode==="processes"?"Processes":workspace.label}</h1><p>{mode==="processes"?"Monitor and control the UI, API, model routers, and other managed workbench listeners.":workspace.root}</p></div>
       <div className="workspace-settings-actions"><button onClick={onSwitch}>Switch workspace</button><button className="primary" disabled={busy || workspace.id === "shared"} onClick={() => void save()}>{busy ? "Saving..." : "Save inclusions"}</button></div>
     </div>
     <div className="settings-grid"><label><span>WORKSPACE TYPE</span><select value={workspace.id === "shared" ? "shared" : "project"} disabled><option value="shared">Shared library</option><option value="project">Project workspace</option></select><small>{fileCount} editable local text files discovered from disk.</small></label><label><span>ENGINE IMPLEMENTATIONS</span><select value={implementationCount} disabled><option value={implementationCount}>{implementationCount} registered implementations</option></select></label></div>

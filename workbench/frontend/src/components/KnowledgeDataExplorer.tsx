@@ -1,0 +1,5 @@
+type WorkspaceFile={path:string;name:string;suffix:string;size:number;modified:number;kind:string};
+export function KnowledgeDataExplorer({files}:{files:WorkspaceFile[]}){
+ const values=files.filter(file=>!file.path.startsWith("design/")&&!/\.md$/i.test(file.path));
+ return <section className="resource-view"><div className="resource-heading"><div><span>TYPED WORKSPACE CONTENT</span><h1>Data</h1><p>Imported and generated images, text, datasets, demonstrations, and other values. Datatype definitions remain under Capabilities.</p></div></div><div className="resource-table"><div className="resource-row resource-head"><span>VALUE / FILE</span><span>KIND</span><span>FORMAT</span><span>SIZE</span><span>WORKSPACE PATH</span></div>{values.map(file=><div className="resource-row" key={file.path}><b>{file.name}</b><code>{file.kind||"data"}</code><span>{file.suffix||"value"}</span><span>{file.size.toLocaleString()} bytes</span><em>{file.path}</em></div>)}{values.length===0&&<div className="studio-empty">No imported Data values yet. Workflow outputs and imported collections will appear here.</div>}</div></section>;
+}

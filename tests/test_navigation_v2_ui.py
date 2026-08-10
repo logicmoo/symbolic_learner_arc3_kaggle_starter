@@ -14,26 +14,31 @@ def test_app_launches_filesystem_workbench_page() -> None:
 
 def test_navigation_v2_has_required_groups_and_labels() -> None:
     source = ACTIVE_PAGE.read_text(encoding="utf-8")
-    for group in ("DESIGN", "RUNTIME", "SYSTEM"):
+    for group in ("WORKSPACE", "CAPABILITIES", "KNOWLEDGE", "RUNTIME", "SYSTEM"):
         assert f'group:"{group}"' in source
     for label in (
         "Goals",
-        "Planning Strategies",
-        "Workflows / Plans",
+        "Overview",
+        "Planning",
+        "Workflows",
         "Operations",
+        "Source Code",
+        "Backends",
         "Datatypes",
-        "Prompts",
         "Models",
+        "Policies",
+        "Data",
+        "Artifacts",
         "Goal Runs",
         "Workflow Runs",
-        "Execs",
+        "Executions",
         "Events",
         "States",
         "Logs",
         "Model Policy",
         "Benchmarks",
         "AtomSpaces",
-        "Contexts",
+        "Processes",
         "Settings",
     ):
         assert f'label:"{label}"' in source
@@ -59,19 +64,31 @@ def test_navigation_reuses_current_rich_editors() -> None:
     source = ACTIVE_PAGE.read_text(encoding="utf-8")
     expected = {
         "Goals": ('view:"goals"', 'view==="goals"&&<GoalPlanLibraryEditor workspaceId={workspace.id} family="goal"'),
-        "Planning Strategies": ('view:"plans"', 'view==="plans"&&<GoalPlanLibraryEditor workspaceId={workspace.id} family="plan"'),
+        "Planning": ('view:"plans"', 'view==="plans"&&<GoalPlanLibraryEditor workspaceId={workspace.id} family="plan"'),
         "AtomSpaces": ('view:"contexts"', 'view==="contexts"&&<GoalPlanLibraryEditor workspaceId={workspace.id} family="context"'),
         "Operations": ('view:"operations"', 'view==="operations"&&<OperationLibraryEditor'),
         "Datatypes": ('view:"data"', 'view==="data"&&<DataCatalogPanel'),
-        "Prompts": ('view:"prompts"', 'view==="prompts"&&<PromptLibraryEditor'),
+        "Source Code": ('view:"sourceCode"', 'view==="sourceCode"&&<SourceCodeEditor'),
+        "Backends": ('view:"backends"', 'catalogMode="backends"'),
         "Models": ('view:"llms"', 'view==="llms"&&<LlmModelsEditor'),
-        "Workflows / Plans": ('view:"canvas"', 'view==="editor"&&<section className="editor-surface"'),
+        "Workflows": ('view:"canvas"', 'view==="editor"&&<section className="editor-surface"'),
         "Settings": ('view:"setup"', 'view==="setup"&&<WorkspaceSettingsPanel'),
     }
     for label, tokens in expected.items():
         assert f'label:"{label}"' in source
         for token in tokens:
             assert token in source
+
+
+def test_source_code_editor_reuses_prompt_and_operation_source_editors() -> None:
+    source = (ROOT / "workbench" / "frontend" / "src" / "components" / "SourceCodeEditor.tsx").read_text(encoding="utf-8")
+    for label in ("Prompts", "Prolog", "MeTTa", "Python"):
+        assert f'label:"{label}"' in source
+    assert '<PromptLibraryEditor workspaceId={workspaceId}/>' in source
+    assert '<OperationLibraryEditor workspaceId={workspaceId} sourceLanguage={tab}/>' in source
+    operation_editor = (ROOT / "workbench" / "frontend" / "src" / "components" / "OperationLibraryEditor.tsx").read_text(encoding="utf-8")
+    assert 'sourceLanguage?:SourceLanguage' in operation_editor
+    assert 'implementation?.startsWith(sourceLanguage)' in operation_editor
 
 
 def test_workspace_settings_manage_keys_without_rendering_secret_values() -> None:

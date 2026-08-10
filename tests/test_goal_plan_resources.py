@@ -119,8 +119,8 @@ def test_pddl_vocabulary_maps_plans_to_workflows() -> None:
     page = (ROOT / "workbench" / "frontend" / "src" / "pages" / "FilesystemWorkbenchPage.tsx").read_text(encoding="utf-8")
     assert "| Plan | Workflow |" in docs
     assert "| Ground action | Workflow step |" in docs
-    assert 'label:"Planning Strategies"' in page
-    assert 'label:"Workflows / Plans"' in page
+    assert 'label:"Planning"' in page
+    assert 'label:"Workflows"' in page
     assert "planProvenance" in page
     assert "PDDL DOMAIN" in page
     assert "ORIGINAL GROUNDED PLAN" in page
