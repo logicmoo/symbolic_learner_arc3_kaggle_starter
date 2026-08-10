@@ -133,3 +133,14 @@ def test_human_input_submission_has_a_durable_link_event() -> None:
     assert "'redactedFields': redacted_fields" in engine
     assert "'payload': '[REDACTED]' if sensitive" in engine
     assert 'item.redacted ? " · REDACTED"' in (ROOT / "workbench" / "frontend" / "src" / "components" / "RuntimeHistoryView.tsx").read_text(encoding="utf-8")
+
+
+def test_detected_objects_link_to_persisted_provenance_resources() -> None:
+    runtime = (ROOT / "workbench" / "frontend" / "src" / "components" / "RuntimeHistoryView.tsx").read_text(encoding="utf-8")
+    engine = (ROOT / "workbench" / "server" / "workflow_engine.py").read_text(encoding="utf-8")
+    assert "DETECTED OBJECTS" in runtime
+    assert "function objectArtifactRecords" in runtime
+    assert '["objects", "entities", "objectAnnotations"]' in runtime
+    assert 'record.representation || artifact.representation' in runtime
+    assert 'record.operationId || artifact.provenance?.operationId' in runtime
+    assert "provenance['operationId']" in engine

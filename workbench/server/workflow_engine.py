@@ -357,7 +357,17 @@ class WorkflowEngine:
             else: output_types = {k: 'Any' for k in output_bindings}
             for port, artifact_name in output_bindings.items():
                 if port not in result: raise ValueError(f'missing operation output: {port}')
-                self._artifact(run_id, sid, artifact_name, output_types.get(port, 'Any'), result[port], {'stepId': sid})
+                provenance: dict[str, Any] = {'stepId': sid}
+                operation_id = step.get('operation') or step.get('implementation')
+                implementation_id = step.get('implementation')
+                if operation_id:
+                    provenance['operationId'] = str(operation_id)
+                if implementation_id and implementation_id != operation_id:
+                    provenance['implementationId'] = str(implementation_id)
+                model_id = (step.get('parameters') or {}).get('modelId')
+                if model_id:
+                    provenance['modelId'] = str(model_id)
+                self._artifact(run_id, sid, artifact_name, output_types.get(port, 'Any'), result[port], provenance)
             with self._db() as db:
                 db.execute('UPDATE wf_steps SET status=?,finished_at=? WHERE run_id=? AND step_id=?', ('completed', now(), run_id, sid))
             self._event(run_id, sid, 'step.completed', {'outputs': list(output_bindings.values())})

@@ -46,6 +46,7 @@ def test_artifacts_preserve_datatype_representation_contract(tmp_path: Path) -> 
     assert artifact['datatype'] == 'Image'
     assert artifact['representation'] == 'scene_graph'
     assert artifact['createdAt']
+    assert artifact['provenance']['operationId'] == 'test.scene'
     event = next(item for item in run['events'] if item['kind'] == 'artifact.created')
     assert event['payload']['representation'] == 'scene_graph'
 
