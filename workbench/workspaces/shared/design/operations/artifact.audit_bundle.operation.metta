@@ -13,7 +13,7 @@
   (outputs (
     (audit Evidence)
   ))
-  (promptSelection (
+  (bindings (
     (prompts ([]
       structured_json_response
       transaction_audit_artifact_bundle

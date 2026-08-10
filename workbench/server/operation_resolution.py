@@ -5,7 +5,7 @@ from typing import Any
 
 from backend_library import load_workspace_backend_records
 from model_library import resolve_model_records
-from prompt_library import resolve_prompt_implementation
+from prompt_library import resolve_prompt_implementation, resolve_prompt_profile
 from operation_library import DEFAULT_WORKSPACES_ROOT, SHARED_WORKSPACE_ID, resolve_operation_implementation
 
 
@@ -50,6 +50,47 @@ def _prompt_prefix(
             }
         )
     return separator.join(parts), resolved_prompts
+
+
+def _prompt_composition_prefix(
+    workspace_root: Path,
+    profile_ids: list[str],
+    prompt_ids: list[str],
+    separator: str,
+    prompt_variants: dict[str, str] | None = None,
+) -> tuple[str, list[dict[str, Any]], list[dict[str, Any]]]:
+    """Compose independent Prompt Profiles followed by directly bound prompts."""
+    parts: list[str] = []
+    resolved_prompts: list[dict[str, Any]] = []
+    resolved_profiles: list[dict[str, Any]] = []
+    for profile_id in profile_ids:
+        resolved_profile = resolve_prompt_profile(workspace_root, profile_id)
+        profile_prompt_ids = resolved_profile["prompts"]
+        prefix, profile_prompts = _prompt_prefix(
+            workspace_root,
+            profile_prompt_ids,
+            resolved_profile["separator"],
+            prompt_variants,
+        )
+        if prefix:
+            parts.append(prefix)
+        resolved_prompts.extend(profile_prompts)
+        resolved_profiles.append({
+            "profileId": profile_id,
+            "promptIds": profile_prompt_ids,
+            "separator": resolved_profile["separator"],
+        })
+    if prompt_ids:
+        prefix, direct_prompts = _prompt_prefix(
+            workspace_root,
+            prompt_ids,
+            separator,
+            prompt_variants,
+        )
+        if prefix:
+            parts.append(prefix)
+        resolved_prompts.extend(direct_prompts)
+    return separator.join(parts), resolved_prompts, resolved_profiles
 
 
 def _implementation_parameters(implementation: dict[str, Any], step: dict[str, Any]) -> dict[str, Any]:
@@ -157,23 +198,33 @@ def materialize_workflow_step(workflow: dict[str, Any], step: dict[str, Any]) ->
         **_implementation_parameters(implementation, step),
     }
     prompt_ids = [str(item) for item in bindings.get("prompts") or []]
+    raw_profile_ids = bindings.get("promptProfiles") or ([] if not bindings.get("promptProfile") else [bindings.get("promptProfile")])
+    if isinstance(raw_profile_ids, str):
+        raw_profile_ids = [raw_profile_ids]
+    elif not isinstance(raw_profile_ids, list):
+        raw_profile_ids = []
+    prompt_profile_ids = [str(item) for item in raw_profile_ids]
     resolved_prompts: list[dict[str, Any]] = []
-    if prompt_ids:
+    resolved_prompt_profiles: list[dict[str, Any]] = []
+    if prompt_ids or prompt_profile_ids:
         separator = str(bindings.get("separator") or "\n\n")
         prompt_variants = {
             str(key): str(value)
             for key, value in dict(step.get("promptVariants") or {}).items()
             if value
         }
-        prompt_prefix, resolved_prompts = _prompt_prefix(
+        prompt_prefix, resolved_prompts, resolved_prompt_profiles = _prompt_composition_prefix(
             workspace_root,
+            prompt_profile_ids,
             prompt_ids,
             separator,
             prompt_variants,
         )
         parameters["promptPrefix"] = prompt_prefix
         parameters["promptIds"] = prompt_ids
+        parameters["promptProfileIds"] = prompt_profile_ids
         parameters["resolvedPrompts"] = resolved_prompts
+        parameters["resolvedPromptProfiles"] = resolved_prompt_profiles
 
     executable_inputs = dict(step.get("inputs") or {})
     route = str(implementation.get("implementation") or "")
@@ -198,6 +249,7 @@ def materialize_workflow_step(workflow: dict[str, Any], step: dict[str, Any]) ->
             },
             "outputs": {output_binding: output_binding},
             "resolvedPrompts": resolved_prompts,
+            "resolvedPromptProfiles": resolved_prompt_profiles,
         }
     if (
         implementation.get("implementation") == "llm.complete"
@@ -219,6 +271,7 @@ def materialize_workflow_step(workflow: dict[str, Any], step: dict[str, Any]) ->
         "operationBindings": bindings,
         "modelSelection": model_selection,
         "resolvedPrompts": resolved_prompts,
+        "resolvedPromptProfiles": resolved_prompt_profiles,
     }
 
 

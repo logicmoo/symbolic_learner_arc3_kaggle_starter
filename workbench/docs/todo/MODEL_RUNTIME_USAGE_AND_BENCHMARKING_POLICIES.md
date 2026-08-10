@@ -474,7 +474,7 @@ Model Presets inherit a Model (or another Model Preset) and override invocation 
 
 They are not vendor identities and they are not prompt composition.
 
-Prompt Profiles are a separate, future prompt-composition concept. When added, they may express approaches such as Object-First or Scene-Graph without selecting a vendor or changing model invocation defaults.
+Prompt Profiles are separate, first-class prompt-composition resources. They express reusable approaches such as Object-First or Scene-Graph without selecting a vendor or changing model invocation defaults. An LLM Operation may bind one or more profiles through `bindings.promptProfiles`, then append any directly bound prompts.
 
 Provide model-preset creation and editing through the rich Models hierarchy:
 
@@ -523,7 +523,7 @@ Model Preset
 × Input Class
 ```
 
-The current purpose is to discover which Model Preset works best with which model. When first-class Prompt Profiles are introduced, prompt composition becomes an additional independent benchmark dimension rather than being folded into Model Presets.
+The current purpose is to discover which Model Preset works best with which model. Prompt Profiles now make prompt composition an additional independent benchmark dimension rather than folding it into Model Presets; adding that dimension to the benchmark matrix remains future work.
 
 Claude vs OpenAI should emerge from benchmark results, not be encoded into prompt identity.
 

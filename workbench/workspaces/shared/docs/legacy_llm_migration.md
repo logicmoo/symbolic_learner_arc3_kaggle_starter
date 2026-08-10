@@ -14,7 +14,7 @@ The migration was based on the legacy `config/llm_providers.json` and `config/ll
 - Concrete model records -> workspace `*.metta` resources with `kind: model`.
 - Light/deep/extreme and other execution presets -> workspace `*.model.metta` resources with `kind model`, inheriting their base model and containing no prompt list.
 - Reusable instruction fragments -> workspace prompt `*.metta` resources.
-- Ordered `prompt_text` lists and old LLM transactions -> Operation `promptSelection` in `shared/operations/` or `arc3/operations/`.
+- Ordered `prompt_text` lists and old LLM transactions -> Prompt Profiles or direct Prompt IDs selected through Operation implementation `bindings` under `design/operations/`.
 
 ## Vision-first split
 

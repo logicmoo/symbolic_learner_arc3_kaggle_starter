@@ -12,7 +12,8 @@ from urllib.error import HTTPError
 
 from operation_api import invoke_operation, read_operation_debug_log
 from operation_library import DEFAULT_WORKSPACES_ROOT, resolve_operation_implementation
-from operation_resolution import materialize_workflow_step
+from operation_resolution import _prompt_composition_prefix, materialize_workflow_step
+from prompt_library import prompt_hierarchy, resolve_prompt_profile
 from workflow_providers import _llm_complete, _llm_response_text, _python_callable
 
 
@@ -101,6 +102,57 @@ def test_operation_materialization_resolves_requested_prompt_variant() -> None:
     assert executable["parameters"]["backendId"] == "openrouter"
     assert executable["parameters"]["apiKeyEnv"] == "OPENROUTER_API_KEY"
     assert executable["parameters"]["baseUrl"] == "https://openrouter.ai/api/v1"
+
+
+def test_prompt_profiles_are_first_class_composition_resources() -> None:
+    root = DEFAULT_WORKSPACES_ROOT / "shared"
+    hierarchy = prompt_hierarchy(root)
+    profiles = {record["document"]["id"]: record["document"] for record in hierarchy["promptProfiles"]}
+    assert set(profiles) >= {"object_first", "scene_graph"}
+    assert profiles["object_first"]["kind"] == "prompt_profile"
+    assert profiles["object_first"]["prompts"][0] == "object_extraction"
+
+    resolved = resolve_prompt_profile(root, "scene_graph")
+    assert resolved["prompts"] == [
+        "symbolic_scene_fact_schema",
+        "logical_image_coordinates",
+        "structured_json_response",
+        "output_quality_control",
+    ]
+    prefix, resolved_prompts, resolved_profiles = _prompt_composition_prefix(
+        root, ["scene_graph"], [], "\n\n"
+    )
+    assert "JSON" in prefix
+    assert [item["promptId"] for item in resolved_prompts] == resolved["prompts"]
+    assert resolved_profiles == [{
+        "profileId": "scene_graph",
+        "promptIds": resolved["prompts"],
+        "separator": "\n\n",
+    }]
+
+
+def test_direct_llm_operation_materializes_bound_prompt_profile() -> None:
+    executable = materialize_workflow_step(
+        {"id": "vision", "workspaceId": "shared"},
+        {
+            "id": "analyze",
+            "operation": "vision.object_analysis",
+            "inputs": {"image": "data:image/png;base64,AAAA"},
+        },
+    )
+    assert executable["implementation"] == "llm.complete"
+    assert executable["parameters"]["promptProfileIds"] == ["vision_object_analysis"]
+    assert executable["resolvedPromptProfiles"][0]["profileId"] == "vision_object_analysis"
+    assert [item["promptId"] for item in executable["resolvedPrompts"]] == [
+        "structured_json_response",
+        "logical_image_coordinates",
+        "object_extraction",
+        "symbolic_scene_fact_schema",
+        "turtle_reconstruction",
+        "turtle_motion_dsl",
+        "output_quality_control",
+    ]
+    assert "coordinates of the source image" in executable["parameters"]["promptPrefix"].lower()
 
 
 def test_abstract_only_operation_uses_contract_derived_openrouter_fallback() -> None:

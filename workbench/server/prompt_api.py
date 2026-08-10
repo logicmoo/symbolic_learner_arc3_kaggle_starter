@@ -7,9 +7,11 @@ from fastapi import APIRouter, HTTPException, Query
 
 from prompt_library import (
     load_workspace_prompt_implementation_records,
+    load_workspace_prompt_profile_records,
     load_workspace_prompt_records,
     prompt_hierarchy,
     resolve_prompt_implementation,
+    resolve_prompt_profile,
 )
 from workspace_api import _resolve_workspace
 
@@ -37,7 +39,18 @@ def workspace_prompt_implementations(workspace_id: str) -> dict[str, Any]:
         "workspace": workspace,
         "prompts": load_workspace_prompt_records(root),
         "promptImplementations": load_workspace_prompt_implementation_records(root),
+        "promptProfiles": load_workspace_prompt_profile_records(root),
     }
+
+
+@router.get("/{workspace_id}/prompt-profiles/{profile_id}/resolve")
+def resolve_profile(workspace_id: str, profile_id: str) -> dict[str, Any]:
+    workspace, root = _root(workspace_id)
+    try:
+        resolved = resolve_prompt_profile(root, profile_id)
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+    return {"workspace": workspace, **resolved}
 
 
 @router.get("/{workspace_id}/prompts/{prompt_id}/resolve")

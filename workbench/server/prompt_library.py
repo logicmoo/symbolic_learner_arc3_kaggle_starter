@@ -12,7 +12,8 @@ from resource_store import get_filesystem_provider
 PROMPT_DIRECTORY = "prompts"
 PROMPT_KIND = "prompt"
 PROMPT_IMPLEMENTATION_KIND = "prompt_implementation"
-PROMPT_KINDS = {PROMPT_KIND, PROMPT_IMPLEMENTATION_KIND}
+PROMPT_PROFILE_KIND = "prompt_profile"
+PROMPT_KINDS = {PROMPT_KIND, PROMPT_IMPLEMENTATION_KIND, PROMPT_PROFILE_KIND}
 PROMPT_DIRECTORIES = ("design/prompts", "design/prompt_implementations", "prompts", "prompt_implementations")
 
 
@@ -23,12 +24,22 @@ def _validate_prompt(value: Any, path: Path) -> dict[str, Any]:
     raw_kind = str(value.get("kind") or PROMPT_KIND).replace("-", "_")
     if raw_kind not in PROMPT_KINDS:
         raise ValueError(
-            f"Prompt resource must declare kind='prompt' or kind='prompt_implementation': {path}"
+            f"Prompt resource must declare kind='prompt', 'prompt_implementation', or 'prompt_profile': {path}"
         )
-    value["kind"] = PROMPT_KIND
+    value["kind"] = PROMPT_PROFILE_KIND if raw_kind == PROMPT_PROFILE_KIND else PROMPT_KIND
 
     if not str(value.get("id") or "").strip():
         raise ValueError(f"Prompt definition requires id: {path}")
+
+    if raw_kind == PROMPT_PROFILE_KIND:
+        prompts = value.get("prompts")
+        if not isinstance(prompts, list) or not prompts or not all(isinstance(item, str) and item.strip() for item in prompts):
+            raise ValueError(f"Prompt profile requires a non-empty prompts list: {path}")
+        separator = value.get("separator", "\n\n")
+        if not isinstance(separator, str):
+            raise ValueError(f"Prompt profile separator must be a string: {path}")
+        value["separator"] = separator
+        return value
 
     if raw_kind == PROMPT_IMPLEMENTATION_KIND and not relationship_ids(value.get("parents")):
         raise ValueError(f"Legacy prompt implementation requires parents: {path}")
@@ -112,7 +123,8 @@ def load_shared_prompt_records(workspaces_root: Path = DEFAULT_WORKSPACES_ROOT) 
     return [
         record
         for record in load_shared_prompt_resource_records(workspaces_root)
-        if not relationship_ids((record.get("document") or {}).get("parents"))
+        if (record.get("document") or {}).get("kind") == PROMPT_KIND
+        and not relationship_ids((record.get("document") or {}).get("parents"))
     ]
 
 
@@ -122,7 +134,8 @@ def load_shared_prompt_implementation_records(
     return [
         record
         for record in load_shared_prompt_resource_records(workspaces_root)
-        if relationship_ids((record.get("document") or {}).get("parents"))
+        if (record.get("document") or {}).get("kind") == PROMPT_KIND
+        and relationship_ids((record.get("document") or {}).get("parents"))
     ]
 
 
@@ -130,7 +143,8 @@ def load_workspace_local_prompt_records(workspace_root: Path) -> list[dict[str, 
     return [
         record
         for record in load_workspace_local_prompt_resource_records(workspace_root)
-        if not relationship_ids((record.get("document") or {}).get("parents"))
+        if (record.get("document") or {}).get("kind") == PROMPT_KIND
+        and not relationship_ids((record.get("document") or {}).get("parents"))
     ]
 
 
@@ -142,7 +156,8 @@ def load_workspace_prompt_records(
     return [
         record
         for record in _effective_prompt_resources(workspace_root, workspaces_root=workspaces_root)
-        if not relationship_ids((record.get("document") or {}).get("parents"))
+        if (record.get("document") or {}).get("kind") == PROMPT_KIND
+        and not relationship_ids((record.get("document") or {}).get("parents"))
     ]
 
 
@@ -154,8 +169,45 @@ def load_workspace_prompt_implementation_records(
     return [
         record
         for record in _effective_prompt_resources(workspace_root, workspaces_root=workspaces_root)
-        if relationship_ids((record.get("document") or {}).get("parents"))
+        if (record.get("document") or {}).get("kind") == PROMPT_KIND
+        and relationship_ids((record.get("document") or {}).get("parents"))
     ]
+
+
+def load_workspace_prompt_profile_records(
+    workspace_root: Path,
+    *,
+    workspaces_root: Path = DEFAULT_WORKSPACES_ROOT,
+) -> list[dict[str, Any]]:
+    return [
+        record
+        for record in _effective_prompt_resources(workspace_root, workspaces_root=workspaces_root)
+        if (record.get("document") or {}).get("kind") == PROMPT_PROFILE_KIND
+    ]
+
+
+def resolve_prompt_profile(
+    workspace_root: Path,
+    profile_id: str,
+    *,
+    workspaces_root: Path = DEFAULT_WORKSPACES_ROOT,
+) -> dict[str, Any]:
+    record = next(
+        (
+            item for item in load_workspace_prompt_profile_records(workspace_root, workspaces_root=workspaces_root)
+            if str((item.get("document") or {}).get("id")) == profile_id
+        ),
+        None,
+    )
+    if not record:
+        raise KeyError(f"prompt profile not found: {profile_id}")
+    profile = record["document"]
+    return {
+        "profile": profile,
+        "profileRecord": record,
+        "prompts": [str(item) for item in profile.get("prompts") or []],
+        "separator": str(profile.get("separator") or "\n\n"),
+    }
 
 
 def resolve_prompt_implementation(
@@ -222,6 +274,7 @@ def prompt_hierarchy(
     implementations = load_workspace_prompt_implementation_records(
         workspace_root, workspaces_root=workspaces_root
     )
+    profiles = load_workspace_prompt_profile_records(workspace_root, workspaces_root=workspaces_root)
     by_prompt: dict[str, list[dict[str, Any]]] = {}
     for record in implementations:
         document = record.get("document") or {}
@@ -232,6 +285,7 @@ def prompt_hierarchy(
     return {
         "prompts": prompts,
         "promptImplementations": implementations,
+        "promptProfiles": profiles,
         "implementationsByPrompt": by_prompt,
     }
 

@@ -20,6 +20,7 @@ KIND_DIRECTORIES = {
     "operation": "operations",
     "planning_strategy": "planning_strategies",
     "prompt": "prompts",
+    "prompt_profile": "prompts",
     "representation_datatype": "representation_datatypes",
     "schema": "schemas",
     "semantic_datatype": "semantic_datatypes",

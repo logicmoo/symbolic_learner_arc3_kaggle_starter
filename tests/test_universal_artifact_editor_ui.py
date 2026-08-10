@@ -42,6 +42,26 @@ def test_operations_preserve_rich_baseline_features() -> None:
         assert token in source, f"rich Operations baseline feature disappeared: {token}"
 
 
+def test_prompt_profiles_are_independent_editable_operation_bindings() -> None:
+    prompts = _text("PromptLibraryEditor.tsx")
+    operations = _text("OperationLibraryEditor.tsx")
+    for token in (
+        'kind:"prompt_profile"',
+        "+ Prompt profile",
+        "PROMPT PROFILE",
+        "Choose and order the semantic prompts this profile contributes",
+        "promptProfiles",
+    ):
+        assert token in prompts
+    for token in (
+        "PROMPT PROFILES",
+        "selectedPromptProfiles",
+        "togglePromptProfile",
+        "promptLibrary?.hierarchy?.promptProfiles",
+    ):
+        assert token in operations
+
+
 def test_operations_tree_supports_global_and_per_operation_folding() -> None:
     source = _text("OperationLibraryEditor.tsx")
     for token in (

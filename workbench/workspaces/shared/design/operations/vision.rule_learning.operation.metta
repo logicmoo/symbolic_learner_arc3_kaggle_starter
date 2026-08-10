@@ -15,7 +15,7 @@
   (outputs (
     (rules RuleSet)
   ))
-  (promptSelection (
+  (bindings (
     (prompts ([]
       structured_json_response
       transition_observation

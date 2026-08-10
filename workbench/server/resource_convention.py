@@ -33,6 +33,7 @@ KNOWN_RESOURCE_KINDS = {
     "context_variant",
     "profile",
     "prompt",
+    "prompt_profile",
     "prompt_implementation",
     "schema",
     "benchmark_policy",

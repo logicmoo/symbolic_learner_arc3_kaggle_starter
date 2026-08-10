@@ -17,7 +17,7 @@
     (objects_pl PrologProgram)
     (turtle_from_image_pl PrologProgram)
   ))
-  (promptSelection (
+  (bindings (
     (prompts ([]
       structured_json_response
       arc3_response_contract

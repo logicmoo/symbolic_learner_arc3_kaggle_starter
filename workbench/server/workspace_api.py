@@ -361,11 +361,12 @@ def _load_prompt_library(workspace: dict[str, Any]) -> dict[str, list[dict[str, 
     hierarchy = library["hierarchy"]
     prompts = _with_artifact_categories(workspace, hierarchy["prompts"], "prompts")
     implementations = _with_artifact_categories(workspace, hierarchy["promptImplementations"], "prompts")
+    profiles = _with_artifact_categories(workspace, hierarchy["promptProfiles"], "prompts")
     by_prompt: dict[str, list[dict[str, Any]]] = {}
     for record in implementations:
         for parent in relationship_ids((record.get("document") or {}).get("parents")):
             by_prompt.setdefault(parent, []).append(record)
-    library["hierarchy"] = {"prompts": prompts, "promptImplementations": implementations, "implementationsByPrompt": by_prompt}
+    library["hierarchy"] = {"prompts": prompts, "promptImplementations": implementations, "promptProfiles": profiles, "implementationsByPrompt": by_prompt}
     return library
 
 

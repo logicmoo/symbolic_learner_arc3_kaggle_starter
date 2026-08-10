@@ -18,7 +18,7 @@
       (concrete markdown)
     ))
   ))
-  (promptSelection (
+  (bindings (
     (prompts ([]
       transaction_audit_artifact_bundle
       output_quality_control

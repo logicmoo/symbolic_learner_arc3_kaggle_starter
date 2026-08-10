@@ -204,6 +204,7 @@ def invoke_operation(
                 "route": implementation["implementation"],
             },
             "resolvedPrompts": executable.get("resolvedPrompts") or [],
+            "resolvedPromptProfiles": executable.get("resolvedPromptProfiles") or [],
             "inputs": supplied_inputs,
             "outputs": result,
             "elapsedMs": elapsed_ms,

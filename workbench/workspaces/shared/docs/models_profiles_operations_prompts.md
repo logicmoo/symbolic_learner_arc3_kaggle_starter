@@ -18,21 +18,21 @@ A Model Preset is a reusable specialization of a model. It describes **how we wa
 
 ## Prompt
 
-A prompt is reusable instruction text. Prompts live under `prompts/` and are edited independently of models and Model Presets. Prompt Profiles are a separate prompt-composition concept; they are not Model Presets.
+A prompt is reusable instruction text. Prompts live under `prompts/` and are edited independently of models and Model Presets. A Prompt Profile is a first-class ordered composition of Prompt IDs; it is selected by an Operation and is not a Model Preset.
 
 ## Operation
 
-An Operation is the executable semantic operation. The old ARC3 `llm_profiles` records mixed model execution settings with a `prompt_text` list. The workbench splits those concerns: model execution settings become Model Presets; the ordered prompt list becomes `promptSelection` on the Operation.
+An Operation is the executable semantic operation. The old ARC3 `llm_profiles` records mixed model execution settings with a `prompt_text` list. The workbench splits those concerns: model execution settings become Model Presets; reusable ordered prompt lists become Prompt Profiles selected through an Operation implementation's `bindings.promptProfiles`.
 
 ```text
 backend
   -> model
       -> model preset
 
-prompt fragments ------------------+
-                                   |
-operation -> chooses model/preset ------+--> LLM invocation
-     -> chooses ordered prompts ---+
+prompt fragments -> prompt profile -----+
+                                         |
+operation -> chooses model/preset -------+--> LLM invocation
+     -> chooses profiles/prompts --------+
 ```
 
 The same Operation can run against several Model Presets without duplicating its prompts, and the same preset can be reused by unrelated Operations.

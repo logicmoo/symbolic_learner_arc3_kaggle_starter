@@ -14,7 +14,7 @@
   (outputs (
     (rules_pl PrologProgram)
   ))
-  (promptSelection (
+  (bindings (
     (prompts ([]
       structured_json_response
       arc3_response_contract

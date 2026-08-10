@@ -17,7 +17,7 @@
   (outputs (
     (analysis ArtifactBundle)
   ))
-  (promptSelection (
+  (bindings (
     (prompts ([]
       structured_json_response
       arc3_response_contract

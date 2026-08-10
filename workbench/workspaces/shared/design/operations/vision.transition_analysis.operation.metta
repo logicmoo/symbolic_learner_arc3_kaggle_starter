@@ -16,7 +16,7 @@
     (changes ChangeDescription)
     (correspondences Object)
   ))
-  (promptSelection (
+  (bindings (
     (prompts ([]
       structured_json_response
       logical_image_coordinates

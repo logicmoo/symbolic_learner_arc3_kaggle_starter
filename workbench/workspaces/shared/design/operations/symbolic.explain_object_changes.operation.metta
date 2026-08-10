@@ -20,7 +20,7 @@
     (changes ChangeDescription)
     (correspondences Object)
   ))
-  (promptSelection (
+  (bindings (
     (prompts ([]
       structured_json_response
       transition_observation

@@ -15,15 +15,9 @@
     (analysis Object)
     (reconstruction Program)
   ))
-  (promptSelection (
-    (prompts ([]
-      structured_json_response
-      logical_image_coordinates
-      object_extraction
-      symbolic_scene_fact_schema
-      turtle_reconstruction
-      turtle_motion_dsl
-      output_quality_control
+  (bindings (
+    (promptProfiles ([]
+      vision_object_analysis
     ))
     (separator "\n\n")
   ))

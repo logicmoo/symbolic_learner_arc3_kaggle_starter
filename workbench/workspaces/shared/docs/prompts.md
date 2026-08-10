@@ -6,7 +6,7 @@ Prompts are reusable instruction fragments stored under `prompts/`.
 
 A Prompt has an ID, label, optional variables/metadata, and text. It does not choose a model and it does not decide when it runs.
 
-Operations select and order Prompt IDs in `promptSelection` to build the instruction package for an LLM invocation. This makes prompt text independently editable and reusable across models, Model Presets, operations, and workspaces.
+Operation implementations bind Prompt Profiles and/or individual Prompt IDs in `bindings` to build the instruction package for an LLM invocation. This makes prompt text independently editable and reusable across models, Model Presets, operations, and workspaces.
 
 ## Shared vision prompts
 
@@ -42,4 +42,8 @@ An ARC3 Operation therefore composes shared visual prompts with a small ARC3-spe
 
 ## Old `prompt_text`
 
-The legacy `llm_profiles[].prompt_text` arrays are no longer model-configuration fields. Their ordering is represented on the Operation as `promptSelection.prompts`. A Model Preset can change temperature or reasoning effort without silently changing the job instructions. Prompt Profiles remain a separate prompt-composition concept.
+The legacy `llm_profiles[].prompt_text` arrays are no longer model-configuration fields. Reusable ordered compositions are `kind prompt_profile` resources; an Operation implementation binds them with `bindings.promptProfiles` and may append individual prompts with `bindings.prompts`. A Model Preset can change temperature or reasoning effort without silently changing the job instructions.
+
+## Prompt Profiles
+
+A Prompt Profile is an ordered, reusable composition—not a model configuration and not a prompt alternative. Profiles live beside prompts under `design/prompts/`, declare `kind prompt_profile`, list semantic Prompt IDs in `prompts`, and define the separator used within that composition. The shared library includes Object-First and Scene-Graph examples. The Prompts editor can create, reorder, edit, enable, and save profiles; LLM Operation implementations select them independently of models and Model Presets.

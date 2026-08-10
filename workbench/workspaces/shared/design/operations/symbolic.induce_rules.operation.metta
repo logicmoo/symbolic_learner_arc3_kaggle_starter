@@ -14,7 +14,7 @@
   (outputs (
     (rules RuleSet)
   ))
-  (promptSelection (
+  (bindings (
     (prompts ([]
       structured_json_response
       rule_hypothesis
