@@ -46,6 +46,12 @@ def test_workflow_runs_page_displays_reference_without_replacing_history() -> No
     assert "visualArtifactPayload" in source
     assert "SOURCE / RENDER COMPARISON" in source
     assert 'startsWith("data:image/")' in source
+    assert "RUN HEALTH" in source
+    assert 'role="progressbar"' in source
+    assert "completedSteps" in source
+    assert "activeSteps" in source
+    assert "failedSteps" in source
+    assert "run.events.length" in source
     assert "Records are loaded from the durable workflow-engine database" in source
 
 
@@ -86,6 +92,8 @@ def test_goal_run_human_pause_uses_the_frozen_step_form_contract() -> None:
 def test_runner_panels_are_user_resizable() -> None:
     styles = (ROOT / "workbench" / "frontend" / "src" / "styles" / "workbench.css").read_text(encoding="utf-8")
     assert ".run-topology-scroll,.run-chronology,.run-visual-comparison,.run-projection-inspector{resize:vertical" in styles
+    assert ".run-health-strip" in styles
+    assert ".run-health-progress" in styles
 
 
 def test_runtime_history_initial_load_is_bounded_and_expandable() -> None:
