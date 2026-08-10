@@ -28,6 +28,21 @@ def test_resource_source_editor_defaults_to_metta_and_keeps_json_available() -> 
     assert "jsonDocumentToMetta" in source
 
 
+def test_primary_design_editors_display_physical_metta_paths() -> None:
+    path_helper = (FRONTEND / "components/resourcePath.ts").read_text(encoding="utf-8")
+    assert 'replace(/\\.json$/i, ".metta")' in path_helper
+    for relative in (
+        "components/OperationLibraryEditor.tsx",
+        "components/LlmModelsEditor.tsx",
+        "components/PolicyLibraryEditor.tsx",
+    ):
+        source = (FRONTEND / relative).read_text(encoding="utf-8")
+        assert "displayResourcePath(doc.record.path)" in source, relative
+    models = (FRONTEND / "components/LlmModelsEditor.tsx").read_text(encoding="utf-8")
+    assert "RESOURCE SPECIFICATION (JSON)" not in models
+    assert "RESOURCE SOURCE" in models
+
+
 def test_runtime_object_previews_render_as_metta() -> None:
     expected = {
         "pages/FilesystemWorkbenchPage.tsx": ("selectedStep.inputs", "selectedArtifact"),

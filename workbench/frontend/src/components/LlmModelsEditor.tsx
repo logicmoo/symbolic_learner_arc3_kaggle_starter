@@ -7,6 +7,7 @@ import {ResourceSourceEditor} from "./ResourceSourceEditor";
 import {ModelResourcePlayground} from "./ModelResourcePlayground";
 import {relationshipIds} from "./resourceRelationships";
 import {ResourceEnablementBadge,enablementClass,resolveResourceEnablement,type ResourceEnablement} from "./resourceEnablement";
+import {displayResourcePath} from "./resourcePath";
 import "../styles/models_editor.css";
 
 type Source="shared"|"workspace";
@@ -171,7 +172,7 @@ export function LlmModelsEditor({workspaceId}:{workspaceId:string}){
       <div className="model-editor-identity">
        <span className={"model-kind-badge " + (document?.kind || "")}>{document?.kind?.toUpperCase()}</span>
        <b>{document?.label || document?.id || "New Item"}</b>
-       <small>{doc.record.path}</small>
+       <small>{displayResourcePath(doc.record.path)}</small>
       </div>
       <div className="model-editor-actions">
        {doc.dirty && <button className="primary" onClick={() => saveDoc(doc)} disabled={busy}>Save Changes</button>}
@@ -250,7 +251,7 @@ export function LlmModelsEditor({workspaceId}:{workspaceId:string}){
      )}
 
      <div className="model-visible-editor">
-      <div className="studio-section-label">RESOURCE SPECIFICATION (JSON)</div>
+      <div className="studio-section-label">RESOURCE SOURCE</div>
       <ResourceSourceEditor value={doc.source} onChange={src => updateSource(doc.key, src)} showEnablement={false} />
      </div>
 
