@@ -124,3 +124,10 @@ def test_runtime_records_link_back_to_executable_resources() -> None:
     assert 'kind==="operation"?"operations":kind==="model"?"llms":"data"' in shell
     assert 'new URLSearchParams(window.location.search).get("resource")' in operations
     assert 'new URLSearchParams(window.location.search).get("resource")' in models
+
+
+def test_human_input_submission_has_a_durable_link_event() -> None:
+    engine = (ROOT / "workbench" / "server" / "workflow_engine.py").read_text(encoding="utf-8")
+    assert "'human_input.received'" in engine
+    assert "'artifactIds': artifact_ids" in engine
+    assert "'redactedFields': redacted_fields" in engine

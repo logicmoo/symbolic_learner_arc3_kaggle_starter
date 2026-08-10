@@ -77,6 +77,14 @@ def test_human_step_waits_and_resumes(tmp_path: Path) -> None:
     run = e.submit_human_input(run['id'], 'ask', {'choice': 'approved'})
     assert run['status'] == 'completed'
     assert run['outputs']['choice'] == 'approved'
+    artifact = next(item for item in run['artifacts'] if item['name'] == 'choice')
+    received = next(item for item in run['events'] if item['kind'] == 'human_input.received')
+    assert received['stepId'] == 'ask'
+    assert received['createdAt']
+    assert received['payload'] == {
+        'artifactIds': [artifact['id']], 'artifacts': ['choice'],
+        'fields': ['choice'], 'redactedFields': [],
+    }
 
 
 def test_human_input_draft_survives_restart_and_omits_secrets(tmp_path: Path) -> None:
@@ -96,6 +104,11 @@ def test_human_input_draft_survives_restart_and_omits_secrets(tmp_path: Path) ->
     assert reopened.get_human_input_draft(run['id'], 'ask')['values'] == {'choice': 'yes'}
     reopened.submit_human_input(run['id'], 'ask', {'choice': 'yes', 'token': 'used-once'})
     assert reopened.get_human_input_draft(run['id'], 'ask')['values'] == {}
+    submitted = reopened.get_run(run['id'])
+    received = next(item for item in submitted['events'] if item['kind'] == 'human_input.received')
+    assert received['payload']['fields'] == ['choice']
+    assert received['payload']['redactedFields'] == ['token']
+    assert 'used-once' not in str(received['payload'])
 
 
 def test_retry_policy(tmp_path: Path) -> None:

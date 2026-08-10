@@ -385,13 +385,31 @@ class WorkflowEngine:
         if not step or step.get('kind') != 'human': raise ValueError('not a human step')
         state = next(s for s in run['steps'] if s['stepId'] == step_id)
         if state['status'] != 'waiting': raise ValueError('step is not waiting')
+        form = step.get('form') or {}
+        artifact_ids: list[str] = []
+        artifact_names: list[str] = []
+        redacted_fields: list[str] = []
         for port, artifact_name in (step.get('outputs') or {}).items():
             if port not in values: raise ValueError(f'missing human value: {port}')
-            self._artifact(run_id, step_id, artifact_name, (step.get('form') or {}).get(port, {}).get('type', 'Any'), values[port], {'source': 'human'})
+            field = form.get(port, {})
+            contract = field if isinstance(field, dict) else {'type': field}
+            artifact_ids.append(self._artifact(
+                run_id, step_id, artifact_name, contract, values[port],
+                {'source': 'human', 'field': port, 'sensitive': bool(contract.get('secret') or contract.get('sensitive'))},
+            ))
+            artifact_names.append(str(artifact_name))
+            if contract.get('secret') or contract.get('sensitive'):
+                redacted_fields.append(port)
         with self._db() as db:
             db.execute('UPDATE wf_steps SET status=?,finished_at=? WHERE run_id=? AND step_id=?', ('completed', now(), run_id, step_id))
             db.execute('UPDATE wf_runs SET status=?,updated_at=? WHERE id=?', ('running', now(), run_id))
             db.execute('DELETE FROM wf_human_drafts WHERE run_id=? AND step_id=?', (run_id, step_id))
+        self._event(run_id, step_id, 'human_input.received', {
+            'artifactIds': artifact_ids,
+            'artifacts': artifact_names,
+            'fields': [port for port in (step.get('outputs') or {}) if port not in redacted_fields],
+            'redactedFields': redacted_fields,
+        })
         self._event(run_id, step_id, 'step.completed', {'source': 'human'})
         self.advance(run_id)
         return self.get_run(run_id)
