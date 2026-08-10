@@ -91,7 +91,10 @@ def test_goal_run_human_pause_uses_the_frozen_step_form_contract() -> None:
 
 def test_runner_panels_are_user_resizable() -> None:
     styles = (ROOT / "workbench" / "frontend" / "src" / "styles" / "workbench.css").read_text(encoding="utf-8")
-    assert ".run-topology-scroll,.run-chronology,.run-visual-comparison,.run-projection-inspector{resize:vertical" in styles
+    source = (ROOT / "workbench" / "frontend" / "src" / "components" / "RuntimeHistoryView.tsx").read_text(encoding="utf-8")
+    assert ".run-topology-scroll,.run-chronology-scroll,.run-visual-comparison,.run-projection-inspector{resize:vertical" in styles
+    assert 'className="run-chronology-edge"' in source
+    assert 'className={`run-chronology-node' in source
     assert ".run-health-strip" in styles
     assert ".run-health-progress" in styles
 
