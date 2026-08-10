@@ -15,7 +15,8 @@ from model_policy_ping import run_ping_job, write_policy_resource
 from model_benchmark import run_benchmark
 from model_library import resolve_model_records
 from model_discovery import discover_backend_models, import_discovered_models, reconcile_discovered_models, remove_missing_models
-from model_benchmark import call_model
+from operation_resolution import _model_execution_parameters
+from workflow_providers import _llm_complete
 from workspace_api import _resolve_workspace, invalidate_workspace_discovery
 from resource_store import get_filesystem_provider
 from invocation_trace import list_invocation_traces, read_invocation_trace, write_invocation_trace
@@ -94,8 +95,26 @@ def invoke_model_example(workspace_id: str, model_id: str, request: dict[str, An
     if image and not image.startswith(("data:image/", "https://", "http://")): raise HTTPException(status_code=400, detail="image must be an image data URL or HTTP(S) URL")
     image_summary = None if not image else {"source": "data_url" if image.startswith("data:") else "url", "mediaType": image[5:].split(";", 1)[0] if image.startswith("data:") else None, "length": len(image)}
     trace = {"workspaceId": workspace_id, "modelId": model_id, "status": "running", "prompt": prompt, "image": image_summary, "timeoutSeconds": int(request.get("timeoutSeconds") or 120), "resource": record.get("document"), "resolved": record.get("resolved")}
+    parameters = _model_execution_parameters(Path(workspace["root"]), {"models": [model_id], "strategy": "single"})
+    parameters["timeoutSeconds"] = trace["timeoutSeconds"]
+    debug_execution: dict[str, Any] = {}
+    parameters["_debugExecution"] = debug_execution
+    inputs = {"prompt": prompt, **({"image": image} if image else {})}
+    started = datetime.now(timezone.utc)
     try:
-        result = call_model({"id": model_id, "modelId": (record.get("resolved") or {}).get("model")}, {**record, "_workspaceRoot": workspace["root"], "_inputImages": [image] if image else []}, prompt, trace["timeoutSeconds"])
+        provider_result = _llm_complete(inputs, parameters)
+        response_payload = provider_result.get("response") if isinstance(provider_result, dict) else None
+        usage = response_payload.get("usage") if isinstance(response_payload, dict) and isinstance(response_payload.get("usage"), dict) else {}
+        result = {
+            "text": str(provider_result.get("text") or ""),
+            "latencyMs": round((datetime.now(timezone.utc) - started).total_seconds() * 1000, 2),
+            "inputTokens": usage.get("prompt_tokens", usage.get("input_tokens", 0)),
+            "outputTokens": usage.get("completion_tokens", usage.get("output_tokens", 0)),
+            "responseId": response_payload.get("id") if isinstance(response_payload, dict) else None,
+            "backendId": parameters.get("backendId"),
+            "response": response_payload,
+            "debugExecution": parameters.get("_debugExecution"),
+        }
     except Exception as error:
         debug_log_path = write_invocation_trace(Path(workspace["root"]), "model", model_id, "model_invocation_trace", {**trace, "status": "failed", "error": str(error)})
         raise HTTPException(status_code=400, detail={"message": str(error), "debugLogPath": debug_log_path}) from error

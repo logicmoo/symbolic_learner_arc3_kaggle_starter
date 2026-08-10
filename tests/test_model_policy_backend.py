@@ -162,15 +162,19 @@ def test_model_import_route_always_targets_shared_workspace(tmp_path: Path, monk
 def test_model_example_invokes_resolved_model(monkeypatch, tmp_path: Path) -> None:
     monkeypatch.setattr(policy_api, "_resolve_workspace", lambda workspace_id: {"id": workspace_id, "root": str(tmp_path)})
     monkeypatch.setattr(policy_api, "resolve_model_records", lambda _root: [{"document": {"id": "model"}, "resolved": {"enabled": True, "model": "remote", "configuration": {}, "defaults": {}}}])
+    monkeypatch.setattr(policy_api, "_model_execution_parameters", lambda _root, _selection: {"model": "remote", "backendId": "backend"})
     captured: dict = {}
-    def invoke(_model, profile, prompt, _timeout):
-        captured.update({"images": profile.get("_inputImages"), "prompt": prompt})
-        return {"text": prompt.upper(), "latencyMs": 1}
-    monkeypatch.setattr(policy_api, "call_model", invoke)
+    def invoke(inputs, parameters):
+        captured.update({"image": inputs.get("image"), "prompt": inputs.get("prompt"), "model": parameters.get("model")})
+        parameters["_debugExecution"] = {"provider": "llm.complete", "request": {"body": {"model": parameters.get("model")}}}
+        return {"text": str(inputs.get("prompt")).upper(), "response": {"id": "response-1", "usage": {"prompt_tokens": 2, "completion_tokens": 1}}}
+    monkeypatch.setattr(policy_api, "_llm_complete", invoke)
     image = "data:image/png;base64,aGVsbG8="
     result = policy_api.invoke_model_example("shared", "model", {"arguments": {"prompt": "hello"}, "image": image})
     assert result["text"] == "HELLO"
-    assert captured == {"images": [image], "prompt": "hello"}
+    assert captured == {"image": image, "prompt": "hello", "model": "remote"}
+    assert result["inputTokens"] == 2
+    assert result["outputTokens"] == 1
     assert result["debugLogPath"].startswith("runtime/logs/model_invocations/")
     trace = json.loads(policy_api.read_model_debug_log("shared", result["debugLogPath"])["content"])
     assert trace["status"] == "completed"
@@ -249,6 +253,8 @@ def test_open_model_resource_has_the_universal_execution_runner() -> None:
     assert "image:image||undefined" in runner
     assert '@router.post("/{workspace_id}/models/{model_id}/invoke")' in api
     assert '@router.get("/{workspace_id}/models/debug-log")' in api
+    assert "_model_execution_parameters" in api
+    assert "_llm_complete(inputs, parameters)" in api
 
 
 def test_model_policy_history_charts_real_persisted_results() -> None:
