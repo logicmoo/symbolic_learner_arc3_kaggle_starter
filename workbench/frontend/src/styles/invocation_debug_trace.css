@@ -1,0 +1,4 @@
+.invocation-debug-trace>nav{display:flex;gap:4px;flex-wrap:wrap;padding:7px;border-bottom:1px solid var(--line,#263d49);background:color-mix(in srgb,var(--panel,#07141c) 88%,black)}
+.invocation-debug-trace>nav button{border:1px solid var(--line,#294654);background:transparent;color:var(--muted,#8da1aa);padding:5px 8px;font:8px ui-monospace,monospace;cursor:pointer}
+.invocation-debug-trace>nav button.active{border-color:var(--accent,#20d7c5);color:var(--accent,#20d7c5);background:color-mix(in srgb,var(--accent,#20d7c5) 12%,transparent)}
+.invocation-debug-trace>pre{max-height:430px;min-height:130px;margin:0;overflow:auto;white-space:pre;tab-size:2}

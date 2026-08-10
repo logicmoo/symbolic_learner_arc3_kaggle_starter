@@ -191,7 +191,7 @@ def materialize_workflow_step(workflow: dict[str, Any], step: dict[str, Any]) ->
     operation = resolved["operation"]
     implementation = resolved["implementation"]
     bindings = implementation.get("bindings") or {}
-    model_selection = implementation.get("modelSelection") or {}
+    model_selection = step.get("modelSelection") or implementation.get("modelSelection") or {}
     parameters = {
         **_model_execution_parameters(workspace_root, model_selection),
         **dict(operation.get("parameters") or {}),

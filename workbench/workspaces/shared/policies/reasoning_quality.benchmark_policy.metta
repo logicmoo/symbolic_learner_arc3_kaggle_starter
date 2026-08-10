@@ -2,7 +2,7 @@
   (kind benchmark_policy)
   (id reasoning_quality)
   (label "Reasoning Quality Matrix")
-  (description "Defines a repeatable reasoning-quality benchmark matrix rather than storing a result. At execution time it selects models whose effective benchmark state is eligible, runs each listed prompt profile three times, and records accuracy, latency, token use, and estimated cost for comparison and later policy decisions.")
+  (description "Defines a repeatable reasoning-quality benchmark matrix rather than storing a result. At execution time it selects models whose effective benchmark state is eligible, crosses current free-router Model Presets with the Strict Output Prompt Profile, and records accuracy, latency, and token use for comparison and later policy decisions.")
   (enabled true)
   (example true)
   (modelPolicyId default_model_runtime)
@@ -11,8 +11,11 @@
     (requireEffectiveBenchmark true)
   ))
   (modelPresets ([]
-    gpt-5.6-light
-    gpt-5.6-deep
+    clawrouter-free-router
+    omniroute-free-router-preset-high
+  ))
+  (promptProfiles ([]
+    strict_output
   ))
   (metrics ([]
     accuracy

@@ -104,6 +104,21 @@ def test_operation_materialization_resolves_requested_prompt_variant() -> None:
     assert executable["parameters"]["baseUrl"] == "https://openrouter.ai/api/v1"
 
 
+def test_playground_model_selection_overrides_implementation_for_one_run() -> None:
+    executable = materialize_workflow_step(
+        {"id": "playground", "workspaceId": "shared"},
+        {
+            "id": "operation_playground",
+            "operation": "echo_into_titlecased",
+            "implementationVariant": "echo_into_titlecased_llm",
+            "inputs": {"text": "hello"},
+            "modelSelection": {"models": ["asicloud-asi1-mini"], "strategy": "single"},
+        },
+    )
+    assert executable["modelSelection"] == {"models": ["asicloud-asi1-mini"], "strategy": "single"}
+    assert executable["parameters"]["model"] == "asi1-mini"
+
+
 def test_prompt_profiles_are_first_class_composition_resources() -> None:
     root = DEFAULT_WORKSPACES_ROOT / "shared"
     hierarchy = prompt_hierarchy(root)

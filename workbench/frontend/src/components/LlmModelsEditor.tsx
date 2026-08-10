@@ -276,7 +276,7 @@ export function LlmModelsEditor({workspaceId}:{workspaceId:string}){
      )}
 
      {!backend && document && resourceEnabled && (
-      <ModelResourcePlayground workspaceId={workspaceId} model={document} resolved={doc.record.resolved as Record<string,unknown>|undefined}/>
+      <ModelResourcePlayground workspaceId={workspaceId} model={document} resolved={doc.record.resolved as Record<string,unknown>|undefined} models={nodes.filter(row=>row.document).map(row=>({id:row.document!.id,label:row.document!.label,enabled:row.document!.enabled}))}/>
      )}
 
      {exampleFor(document) && (

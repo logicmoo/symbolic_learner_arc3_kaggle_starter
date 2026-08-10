@@ -100,6 +100,7 @@ def invoke_operation(
             "inputs": supplied_inputs,
             "parameters": body.get("parameters") or {},
             "promptVariants": body.get("promptVariants") or {},
+            "modelSelection": body.get("modelSelection") or {},
         }
         executable = materialize_workflow_step(
             {"id": "operation_playground", "workspaceId": workspace_id},

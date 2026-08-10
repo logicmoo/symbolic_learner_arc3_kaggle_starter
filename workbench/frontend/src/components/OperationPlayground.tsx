@@ -2,16 +2,19 @@ import {useEffect,useMemo,useState} from "react";
 import "../styles/operation_editor.css";
 import "../styles/operation_playground.css";
 import {jsonValueToMetta} from "../lib/mettaResourceCodec";
+import {InvocationDebugTrace} from "./InvocationDebugTrace";
+import {UniversalExecutionControls,type RunnerPopulationMode} from "./UniversalExecutionControls";
 
 type ExampleArgument={datatype?:string;label?:string;default?:unknown;options?:unknown[]};
 type DatatypeContract=string|Record<string,unknown>;
 type OperationDef={id:string;label?:string;implementation?:string;inputs?:Record<string,DatatypeContract>;outputs?:Record<string,DatatypeContract>;parameters?:Record<string,unknown>;children?:string[];preferredChild?:string;example_execute?:{action?:string;arguments?:Record<string,ExampleArgument>;parameters?:Record<string,ExampleArgument>}};
-type OperationImplementationDef={id:string;label?:string;implementation:string};
+type OperationImplementationDef={id:string;label?:string;implementation:string;modelSelection?:{models?:string[];strategy?:string}};
+type RunnerModel={id:string;label?:string;enabled?:boolean};
 type InvocationResult={operation:{id:string;label:string;inputs:Record<string,DatatypeContract>;outputs:Record<string,DatatypeContract>};implementation:{id:string;label:string;route:string};resolvedPrompts?:Array<{promptId:string;implementationId:string;targets?:string[];version?:number}>;inputs:Record<string,unknown>;outputs:Record<string,unknown>;elapsedMs:number;debugLogPath?:string};
 type RequestFailureDetail={message?:string;debugLogPath?:string};
 type RuntimeArtifact={name?:string;datatype?:string;representation?:string;payload?:unknown;value?:unknown;createdAt?:string;stepId?:string;provenance?:Record<string,unknown>};
 type RuntimeRun={id?:string;workflowId?:string;createdAt?:string;inputs?:Record<string,unknown>;artifacts?:RuntimeArtifact[]};
-type PopulationMode="last_outputs"|"random_outputs"|"sample_input"|"empty_null";
+type PopulationMode=RunnerPopulationMode;
 type IndexedRuntimeValue={name:string;datatype:string;representation:string;value:unknown;timestamp:number;source:"input"|"output";operationId?:string;operationLabel?:string};
 type RuntimeValueDictionary={byDatatype:Map<string,IndexedRuntimeValue[]>;byRepresentation:Map<string,IndexedRuntimeValue[]>;byName:Map<string,IndexedRuntimeValue[]>;any:IndexedRuntimeValue[]};
 type RuntimeValueIndex={inputs:RuntimeValueDictionary;outputs:RuntimeValueDictionary};
@@ -129,7 +132,7 @@ function TypedValueInput({datatype,value,options,onChange,placeholder}:{datatype
  return <textarea value={value} placeholder={placeholder} onChange={event=>onChange(event.target.value)}/>;
 }
 
-export function OperationPlayground({workspaceId,operation,variants}:{workspaceId:string;operation:OperationDef;variants:OperationImplementationDef[]}){
+export function OperationPlayground({workspaceId,operation,variants,models=[]}:{workspaceId:string;operation:OperationDef;variants:OperationImplementationDef[];models?:RunnerModel[]}){
  const fallback:OperationImplementationDef={id:`${operation.id}.automatic_llm_fallback`,label:"Automatic LLM fallback (openrouter/free)",implementation:"llm.complete"};
  const direct:OperationImplementationDef|null=operation.implementation?{id:operation.id,label:operation.label||operation.id,implementation:operation.implementation}:null;
  const concreteVariants=variants.length?variants:direct?[direct]:[];
@@ -143,6 +146,8 @@ export function OperationPlayground({workspaceId,operation,variants}:{workspaceI
  const outputs=Object.entries(operation.outputs||{});
  const invocationVariant=runnableVariants.length===1?runnableVariants[0].id:variant;
  const selected=runnableVariants.find(item=>item.id===invocationVariant)||null;
+ const deducedModel=selected?.modelSelection?.models?.[0]||(selected?.id===fallback.id?"openrouter/free":"");
+ const[selectedModel,setSelectedModel]=useState(deducedModel);
  const clearInvocationResult=()=>{setResult(null);setError(null);setDebugLogPath(null);setDebugLog("")};
  const updateInput=(name:string,value:string)=>{setRawInputs(current=>({...current,[name]:value}));setPopulationMessage(null);clearInvocationResult()};
  const updateParameter=(name:string,value:string)=>{setRawParameters(current=>({...current,[name]:value}));clearInvocationResult()};
@@ -176,15 +181,17 @@ export function OperationPlayground({workspaceId,operation,variants}:{workspaceI
    for(const[name,datatype]of inputs){const raw=rawInputs[name]??"",label=datatypeLabel(datatype),options=operation.example_execute?.arguments?.[name]?.options,matched=options?.find(option=>(typeof option==="string"?option:JSON.stringify(option))===raw);values[name]=matched!==undefined?matched:parseInput(label,raw)}
    const parameterValues:Record<string,unknown>={};
    for(const[name,fallback]of parameters){const raw=rawParameters[name];if(raw===undefined||raw==="")parameterValues[name]=fallback;else try{parameterValues[name]=JSON.parse(raw)}catch{parameterValues[name]=raw}}
-   const payload=await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/operations/${encodeURIComponent(operation.id)}/invoke`,{method:"POST",body:JSON.stringify({...(implementationVariant?{implementationVariant}:{}),inputs:values,parameters:parameterValues})});
+   const payload=await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/operations/${encodeURIComponent(operation.id)}/invoke`,{method:"POST",body:JSON.stringify({...(implementationVariant?{implementationVariant}:{}),...(selectedModel?{modelSelection:{models:[selectedModel],strategy:"single"}}:{}),inputs:values,parameters:parameterValues})});
    const invocation=payload as InvocationResult;rememberInvocation(workspaceId,operation,operation.inputs||{},values,operation.outputs||{},invocation.outputs||{});setResult(invocation);if(invocation.debugLogPath)await loadDebugLog(invocation.debugLogPath);
   }catch(reason){setError(reason instanceof Error?reason.message:String(reason));if(reason instanceof RequestFailure&&typeof reason.detail==="object"&&reason.detail.debugLogPath)await loadDebugLog(reason.detail.debugLogPath)}finally{setRunning(false)}
  };
- useEffect(()=>{setVariant(preferred);setRawInputs(defaults(operation.example_execute?.arguments||{}));setRawParameters(defaults(operation.example_execute?.parameters||{}));setPopulationMessage(null);setResult(null);setError(null);setDebugLogPath(null);setDebugLog("")},[operation.id]);
+ useEffect(()=>{setVariant(preferred);setSelectedModel(deducedModel);setRawInputs(defaults(operation.example_execute?.arguments||{}));setRawParameters(defaults(operation.example_execute?.parameters||{}));setPopulationMessage(null);setResult(null);setError(null);setDebugLogPath(null);setDebugLog("")},[operation.id]);
  return <section className="operation-playground">
-  <div className="llm-subhead"><div><span>OPERATION PLAYGROUND</span><b>Invoke the abstract operation with its default or a one-off route</b></div><div className="operation-population-actions"><span>POPULATE INPUTS</span><button type="button" title="Use the newest compatible output produced by any operation in this workspace" onClick={()=>populateInputs("last_outputs")} disabled={populating!==null||inputs.length===0}>{populating==="last_outputs"?"Loading…":"Last Output"}</button><button type="button" title="Use a random compatible output produced by any operation in this workspace" onClick={()=>populateInputs("random_outputs")} disabled={populating!==null||inputs.length===0}>{populating==="random_outputs"?"Loading…":"Random Output"}</button><button type="button" title="Restore the operation's example input" onClick={()=>populateInputs("sample_input")} disabled={populating!==null||inputs.length===0}>{populating==="sample_input"?"Loading…":"Sample's Input"}</button><button type="button" title="Clear text and image inputs and set structured inputs to null" onClick={()=>populateInputs("empty_null")} disabled={populating!==null||inputs.length===0}>{populating==="empty_null"?"Loading…":"Empty/Null"}</button></div></div>
+  <UniversalExecutionControls title="OPERATION PLAYGROUND" description="Invoke the abstract operation with its default or a one-off route" actions={<><button type="button" title="Run the operation's saved default implementation" onClick={()=>run()} disabled={running}>{running?"Running…":"Run Default"}</button><button className="primary" type="button" title="Run the one-off implementation selected below" onClick={()=>run(invocationVariant)} disabled={running||!invocationVariant}>{running?"Running…":"▶ Run Selected"}</button></>} populating={populating} inputCount={inputs.length} onPopulate={populateInputs}/>
   <div className="operation-playground-grid">
    <div className="operation-run-route"><label className="operation-playground-field"><span>RUN WITH (THIS RUN ONLY)</span><select value={invocationVariant} disabled={runnableVariants.length===1} onChange={event=>{setVariant(event.target.value);clearInvocationResult()}}>{runnableVariants.map(item=><option key={item.id} value={item.id}>{item.label||item.id} · {item.implementation}</option>)}</select><small>{selected?.id===fallback.id?"Uses the automatic openrouter/free LLM fallback for this run only. The saved default implementation is unchanged.":selected?`Executes ${selected.implementation} for this run. The saved default implementation is unchanged.`:"Select how this invocation should run."}</small></label><div className="operation-run-actions"><button type="button" title="Run the operation's saved default implementation" onClick={()=>run()} disabled={running}>{running?"Running…":"Run Default"}</button><button className="primary" type="button" title="Run the one-off implementation selected at left" onClick={()=>run(invocationVariant)} disabled={running||!invocationVariant}>{running?"Running…":"▶ Run Selected"}</button></div></div>
+   <label className="operation-playground-field"><span>OPERATION</span><select value={operation.id} disabled><option value={operation.id}>{operation.label||operation.id}</option></select><small>The open operation is selected first; other resource runners may offer compatible operations here.</small></label>
+   <label className="operation-playground-field"><span>MODEL · ONE-OFF</span><select value={selectedModel} onChange={event=>setSelectedModel(event.target.value)}><option value="">Declared / deduced model</option>{models.filter(item=>item.enabled!==false).map(item=><option key={item.id} value={item.id}>{item.label||item.id}</option>)}</select><small>{selectedModel?`This run uses ${selectedModel} without changing the operation.`:"Uses the implementation's declared or deduced model."}</small></label>
    {inputs.map(([name,datatype])=>{const example=operation.example_execute?.arguments?.[name],label=datatypeLabel(datatype);return <label className="operation-playground-field" key={name}><span>INPUT · {name} <em>{label}</em></span><TypedValueInput datatype={label} value={rawInputs[name]??""} options={example?.options} placeholder={isTextDatatype(label)?`Enter ${name}…`:/^any$/i.test(label.trim())?"Enter text or a JSON value…":`Enter ${label} as JSON…`} onChange={value=>updateInput(name,value)}/></label>})}
    {parameters.map(([name,fallback])=>{const example=operation.example_execute?.parameters?.[name],datatype=example?.datatype||typeof fallback;return <label className="operation-playground-field" key={`parameter:${name}`}><span>PARAMETER · {name} <em>{datatype}</em></span><TypedValueInput datatype={datatype} value={rawParameters[name]??(typeof fallback==="string"?fallback:JSON.stringify(fallback??""))} options={example?.options} placeholder={`Configure ${name}…`} onChange={value=>updateParameter(name,value)}/></label>})}
   </div>
@@ -192,6 +199,6 @@ export function OperationPlayground({workspaceId,operation,variants}:{workspaceI
   <div className="operation-playground-contract"><span>OUTPUT CONTRACT</span>{outputs.map(([name,datatype])=><code key={name}>{name}: {datatypeLabel(datatype)}</code>)}</div>
   {error&&<div className="demo-notice"><b>Invocation failed</b><span>{error}</span></div>}
   {result&&<div className="operation-playground-result"><div><span>RESULT</span><b>{result.implementation.label}</b><small>{result.implementation.route} · {result.elapsedMs} ms</small></div><pre>{jsonValueToMetta(result.outputs)}</pre>{result.resolvedPrompts&&result.resolvedPrompts.length>0&&<div className="operation-playground-prompts"><span>RESOLVED PROMPTS</span>{result.resolvedPrompts.map(item=><code key={`${item.promptId}:${item.implementationId}`}>{item.promptId} → {item.implementationId}</code>)}</div>}</div>}
-  {debugLogPath&&<details className="operation-debug-trace" open><summary><span>COMPLETE DEBUG TRACE</span><code>{debugLogPath}</code></summary><pre>{debugLog}</pre></details>}
+  {debugLogPath&&<InvocationDebugTrace path={debugLogPath} content={debugLog}/>}
  </section>;
 }

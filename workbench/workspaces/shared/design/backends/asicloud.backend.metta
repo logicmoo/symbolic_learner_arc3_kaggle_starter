@@ -4,10 +4,11 @@
   (label ASICloud)
   (provider asicloud)
   (official true)
-  (description "ASI Alliance OpenAI-compatible inference transport for MiniMax models hosted by ASICloud on CUDOS.")
+  (description "ASI Alliance OpenAI-compatible inference transport hosted by ASICloud on CUDOS, including the asi1-mini route.")
   (enabled true)
   (children ([]
     asicloud-asi1
+    asicloud-asi1-mini
   ))
   (capabilities ([]
     llm.complete
@@ -18,6 +19,7 @@
     (adapter openai_chat_completions)
     (baseUrl https://inference.asicloud.cudos.org/v1)
     (apiKeyEnvironmentVariable ASI_API_KEY)
+    (defaultModel asi1-mini)
     (baseUrlEnvironmentVariable WORKBENCH_ASICLOUD_BASE_URL)
     (modelEnvironmentVariable WORKBENCH_ASICLOUD_MODEL)
     (defaultAnalysisLevel 3)

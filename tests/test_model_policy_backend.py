@@ -242,13 +242,17 @@ def test_open_model_resource_has_a_persistent_enable_disable_control() -> None:
 def test_open_model_resource_has_the_universal_execution_runner() -> None:
     models = (ROOT / "workbench" / "frontend" / "src" / "components" / "LlmModelsEditor.tsx").read_text(encoding="utf-8")
     runner = (ROOT / "workbench" / "frontend" / "src" / "components" / "ModelResourcePlayground.tsx").read_text(encoding="utf-8")
+    trace_viewer = (ROOT / "workbench" / "frontend" / "src" / "components" / "InvocationDebugTrace.tsx").read_text(encoding="utf-8")
     api = (ROOT / "workbench" / "server" / "policy_api.py").read_text(encoding="utf-8")
     assert "<ModelResourcePlayground" in models
     assert "!backend && document && resourceEnabled" in models
     assert "UNIVERSAL EXECUTION RUNNER" in runner
-    assert "/models/${encodeURIComponent(model.id)}/invoke" in runner
-    assert "/models/debug-log?path=" in runner
-    assert "COMPLETE DEBUG TRACE" in runner
+    assert "/models/${encodeURIComponent(selectedModel)}/invoke" in runner
+    assert '${family}/debug-log?path=' in runner
+    assert "<InvocationDebugTrace" in runner
+    assert "COMPLETE DEBUG TRACE" in trace_viewer
+    assert 'label:"MeTTa"' in trace_viewer and 'label:"JSON"' in trace_viewer
+    assert "responseBody" in trace_viewer and "stdout" in trace_viewer and "stderr" in trace_viewer
     assert 'type="file" accept="image/*"' in runner
     assert "image:image||undefined" in runner
     assert '@router.post("/{workspace_id}/models/{model_id}/invoke")' in api
@@ -464,6 +468,10 @@ def test_model_policy_ui_exposes_explicit_benchmark_run() -> None:
     assert 'aria-label="Benchmark policy"' in source
     assert 'aria-label="Benchmark prompt profile"' in source
     assert 'aria-label="Performance history prompt profile"' in source
+    assert "benchmarkBlockingReasons" in source
+    assert "benchmarkReady" in source
+    assert "Benchmark preflight blocked" in source
+    assert "No effectively benchmark-enabled models" in source
     assert "activeBenchmarkPolicy.id" in source
     assert "latestResultByCell" in source
     assert 'aria-label="Performance history metric"' in source
@@ -490,19 +498,42 @@ def test_model_policy_ui_exposes_explicit_benchmark_run() -> None:
 def test_benchmark_api_queues_durable_background_job(tmp_path: Path, monkeypatch) -> None:
     from fastapi import BackgroundTasks
 
-    policy = {"id": "quality", "cases": [{"id": "one", "prompt": "OK", "expected": "OK"}], "modelPresets": []}
+    policy = {"id": "quality", "cases": [{"id": "one", "prompt": "OK", "expected": "OK"}], "modelPresets": ["preset"]}
     monkeypatch.setattr(policy_api, "_resolve_workspace", lambda workspace_id: {"id": workspace_id, "root": str(tmp_path)})
     monkeypatch.setattr(policy_api, "load_workspace_policy_records", lambda _root: [])
-    monkeypatch.setattr(policy_api, "_effective_registry", lambda _root, _records: {"models": [], "benchmarkPolicies": [policy]})
-    monkeypatch.setattr(policy_api, "resolve_model_records", lambda _root: [])
+    monkeypatch.setattr(policy_api, "_effective_registry", lambda _root, _records: {"models": [{"id": "vendor:model", "effective": {"benchmark": True}}], "benchmarkPolicies": [policy]})
+    monkeypatch.setattr(policy_api, "resolve_model_records", lambda _root: [{"document": {"id": "preset"}, "resolved": {"enabled": True}}])
     tasks = BackgroundTasks()
     result = policy_api.execute_model_benchmark("demo", "quality", tasks)
     assert result["job"]["status"] == "queued"
     assert result["job"]["caseCount"] == 1
-    assert result["job"]["presetCount"] == 0
+    assert result["job"]["modelCount"] == 1
+    assert result["job"]["presetCount"] == 1
     assert len(tasks.tasks) == 1
     persisted = list((tmp_path / "policies").glob("*.benchmark_job.metta"))
     assert len(persisted) == 1
+
+
+def test_benchmark_api_rejects_empty_or_stale_execution_dimensions(tmp_path: Path, monkeypatch) -> None:
+    from fastapi import BackgroundTasks, HTTPException
+
+    policy = {"id": "quality", "cases": [{"id": "one", "prompt": "OK", "expected": "OK"}], "modelPresets": ["deleted-preset"]}
+    monkeypatch.setattr(policy_api, "_resolve_workspace", lambda workspace_id: {"id": workspace_id, "root": str(tmp_path)})
+    monkeypatch.setattr(policy_api, "load_workspace_policy_records", lambda _root: [])
+    monkeypatch.setattr(policy_api, "resolve_model_records", lambda _root: [])
+    monkeypatch.setattr(policy_api, "_effective_registry", lambda _root, _records: {"models": [], "benchmarkPolicies": [policy]})
+    try: policy_api.execute_model_benchmark("demo", "quality", BackgroundTasks())
+    except HTTPException as error:
+        assert error.status_code == 409
+        assert "no effectively benchmark-enabled models" in str(error.detail)
+    else: raise AssertionError("zero-model benchmark should fail preflight")
+
+    monkeypatch.setattr(policy_api, "_effective_registry", lambda _root, _records: {"models": [{"id": "vendor:model", "effective": {"benchmark": True}}], "benchmarkPolicies": [policy]})
+    try: policy_api.execute_model_benchmark("demo", "quality", BackgroundTasks())
+    except HTTPException as error:
+        assert error.status_code == 400
+        assert "deleted-preset" in str(error.detail)
+    else: raise AssertionError("stale preset benchmark should fail preflight")
 
 
 def test_benchmark_background_failure_becomes_terminal_job(tmp_path: Path, monkeypatch) -> None:

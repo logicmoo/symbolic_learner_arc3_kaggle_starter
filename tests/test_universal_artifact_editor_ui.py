@@ -136,10 +136,11 @@ def test_operation_playground_can_run_default_and_populate_from_runtime_artifact
     source = _text("OperationPlayground.tsx")
     assert "Run Default" in source
     assert "Run Selected" in source
-    assert 'populateInputs("last_outputs")' in source
-    assert 'populateInputs("random_outputs")' in source
-    assert 'populateInputs("sample_input")' in source
-    assert 'populateInputs("empty_null")' in source
+    controls = _text("UniversalExecutionControls.tsx")
+    assert '"last_outputs"' in controls
+    assert '"random_outputs"' in controls
+    assert '"sample_input"' in controls
+    assert '"empty_null"' in controls
     assert 'className="operation-run-route"' in source
     assert 'className="operation-run-actions"' in source
     assert "/api/engine/runs?workspace_id=${encodeURIComponent(workspaceId)}&limit=100" in source
@@ -156,19 +157,23 @@ def test_operation_playground_can_run_default_and_populate_from_runtime_artifact
     assert "rememberInvocation" in source
     assert "const pool=dictionary.any" in source
     assert 'rememberInvocation(workspaceId,operation,' in source
-    assert "POPULATE INPUTS" in source
-    assert "Last Output" in source
-    assert "Random Output" in source
+    assert "POPULATE INPUTS" in controls
+    assert "Last Output" in controls
+    assert "Random Output" in controls
     assert "outputs produced by any operation in this workspace" in source
     assert "chosen.operationLabel" in source
-    assert "Sample's Input" in source
-    assert "Empty/Null" in source
+    assert "Sample's Input" in controls
+    assert "Empty/Null" in controls
     assert "implementationVariant?{implementationVariant}" in source
 
 
 def test_operation_playground_displays_persisted_complete_debug_trace() -> None:
     source = (ROOT / "workbench/frontend/src/components/OperationPlayground.tsx").read_text(encoding="utf-8")
-    assert "COMPLETE DEBUG TRACE" in source
+    trace_viewer = (ROOT / "workbench/frontend/src/components/InvocationDebugTrace.tsx").read_text(encoding="utf-8")
+    assert "<InvocationDebugTrace" in source
+    assert "COMPLETE DEBUG TRACE" in trace_viewer
+    assert "collectStringBlocks" in trace_viewer
+    assert 'aria-label="Debug trace views"' in trace_viewer
     assert "/operations/debug-log?path=" in source
     assert "debugLogPath" in source
 

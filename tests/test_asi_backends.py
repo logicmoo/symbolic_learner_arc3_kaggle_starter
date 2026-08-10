@@ -9,6 +9,7 @@ SERVER = ROOT / "workbench" / "server"
 sys.path.insert(0, str(SERVER))
 
 from backend_library import load_workspace_backend_records  # noqa: E402
+from model_library import resolve_model_records  # noqa: E402
 
 
 def test_shared_asi_backends_load_with_expected_credentials_and_endpoints() -> None:
@@ -23,6 +24,18 @@ def test_shared_asi_backends_load_with_expected_credentials_and_endpoints() -> N
     assert asicloud["configuration"]["adapter"] == "openai_chat_completions"
     assert asicloud["configuration"]["baseUrl"] == "https://inference.asicloud.cudos.org/v1"
     assert asicloud["configuration"]["apiKeyEnvironmentVariable"] == "ASI_API_KEY"
+    assert asicloud["configuration"]["defaultModel"] == "asi1-mini"
+    assert "asicloud-asi1-mini" in asicloud["children"]
+
+    models = {
+        str((record.get("document") or {}).get("id")): record
+        for record in resolve_model_records(shared)
+    }
+    asi1_mini = models["asicloud-asi1-mini"]
+    assert asi1_mini["document"]["model"] == "asi1-mini"
+    assert asi1_mini["resolved"]["model"] == "asi1-mini"
+    assert asi1_mini["resolved"]["configuration"]["baseUrl"] == "https://inference.asicloud.cudos.org/v1"
+    assert asi1_mini["resolved"]["configuration"]["apiKeyEnvironmentVariable"] == "ASI_API_KEY"
 
     asione = backends["asione"]
     assert asione["enabled"] is True

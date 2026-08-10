@@ -14,7 +14,7 @@ from backend_library import load_workspace_backend_records
 from model_policy_ping import run_ping_job, write_policy_resource
 from model_benchmark import run_benchmark
 from model_library import resolve_model_records
-from prompt_library import load_workspace_prompt_profile_records
+from prompt_library import load_workspace_prompt_profile_records, resolve_prompt_profile
 from model_discovery import discover_backend_models, import_discovered_models, reconcile_discovered_models, remove_missing_models
 from operation_resolution import _model_execution_parameters
 from workflow_providers import _llm_complete
@@ -235,9 +235,20 @@ def execute_model_benchmark(workspace_id: str, policy_id: str, background_tasks:
     except KeyError as error: raise HTTPException(status_code=404, detail=str(error)) from error
     root=Path(workspace["root"]);records=load_workspace_policy_records(root);registry=_effective_registry(root,records);policy=next((item for item in registry["benchmarkPolicies"] if item.get("id")==policy_id),None)
     if not policy: raise HTTPException(status_code=404,detail=f"benchmark policy not found: {policy_id}")
-    models=[item for item in registry["models"] if item["effective"]["benchmark"]]; resolved=resolve_model_records(root); preset_ids=set(policy.get("modelPresets") or []);presets=[record for record in resolved if (record.get("document") or {}).get("id") in preset_ids and (record.get("resolved") or {}).get("enabled")]
+    models=[item for item in registry["models"] if item["effective"]["benchmark"]]; resolved=resolve_model_records(root); preset_ids=set(map(str, policy.get("modelPresets") or []));presets=[record for record in resolved if (record.get("document") or {}).get("id") in preset_ids and (record.get("resolved") or {}).get("enabled")]
     cases = policy.get("cases")
     if not isinstance(cases, list) or not cases: raise HTTPException(status_code=400,detail="benchmark policy requires at least one declared case")
+    if not models: raise HTTPException(status_code=409,detail="benchmark policy has no effectively benchmark-enabled models; ping eligible models and review vendor/model benchmark policy")
+    resolved_preset_ids={(record.get("document") or {}).get("id") for record in presets}
+    missing_presets=sorted(preset_ids-resolved_preset_ids)
+    if not preset_ids: raise HTTPException(status_code=400,detail="benchmark policy requires at least one modelPresets entry")
+    if missing_presets: raise HTTPException(status_code=400,detail=f"benchmark policy references unavailable or disabled model presets: {', '.join(missing_presets)}")
+    prompt_profile_ids=list(map(str, policy.get("promptProfiles") or []))
+    missing_prompt_profiles=[]
+    for prompt_profile_id in prompt_profile_ids:
+        try: resolve_prompt_profile(root, prompt_profile_id)
+        except (KeyError, ValueError): missing_prompt_profiles.append(prompt_profile_id)
+    if missing_prompt_profiles: raise HTTPException(status_code=400,detail=f"benchmark policy references unavailable or disabled Prompt Profiles: {', '.join(missing_prompt_profiles)}")
     job_id=f"benchmark_{policy['id']}_{uuid4().hex[:10]}";queued={"kind":"benchmark_job","id":job_id,"benchmarkPolicyId":policy["id"],"status":"queued","createdAt":datetime.now(timezone.utc).isoformat().replace("+00:00","Z"),"modelCount":len(models),"presetCount":len(presets),"promptProfileCount":len(policy.get("promptProfiles") or []),"caseCount":len(cases)}
     write_policy_resource(root,queued)
     background_tasks.add_task(_run_benchmark_safely, root, policy, models, presets, job_id)
