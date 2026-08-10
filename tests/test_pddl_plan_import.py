@@ -19,6 +19,7 @@ def test_grounded_pddl_plan_becomes_sequential_operation_steps() -> None:
         "problem": "delivery-7.pddl",
         "sourcePlan": "; cost = 2\n0: (MOVE ROBOT-A ROOM-1 ROOM-2) [1.5]\n1.5: (DROP ROBOT-A BOX-9 ROOM-2) [0.5]",
         "actionMap": {"move": "navigation.move", "drop": "manipulation.drop"},
+        "actionBindings": {"move": {"actor": 0, "origin": 1, "destination": 2}},
     })
     assert workflow["kind"] == "workflow"
     assert workflow["planProvenance"]["origin"] == "pddl"
@@ -26,6 +27,7 @@ def test_grounded_pddl_plan_becomes_sequential_operation_steps() -> None:
     assert [step["operation"] for step in workflow["steps"]] == ["navigation.move", "manipulation.drop"]
     assert workflow["steps"][0]["dependsOn"] == []
     assert workflow["steps"][1]["dependsOn"] == ["move_1"]
+    assert workflow["steps"][0]["inputs"] == {"actor": "ROBOT-A", "origin": "ROOM-1", "destination": "ROOM-2"}
     assert workflow["steps"][0]["parameters"] == {
         "pddlAction": "MOVE",
         "pddlArguments": ["ROBOT-A", "ROOM-1", "ROOM-2"],
@@ -37,6 +39,14 @@ def test_grounded_pddl_plan_becomes_sequential_operation_steps() -> None:
 def test_pddl_import_rejects_non_action_text() -> None:
     with pytest.raises(ValueError, match="invalid grounded plan line 1"):
         grounded_plan_to_workflow({"sourcePlan": "this is not a grounded action"})
+
+
+def test_pddl_import_rejects_argument_binding_outside_grounded_action() -> None:
+    with pytest.raises(ValueError, match="refers to missing argument 2"):
+        grounded_plan_to_workflow({
+            "sourcePlan": "(inspect room-a)",
+            "actionBindings": {"inspect": {"target": 1}},
+        })
 
 
 def test_temporal_pddl_actions_with_equal_start_times_remain_parallel() -> None:
@@ -62,5 +72,7 @@ def test_active_workflow_editor_exposes_unsaved_pddl_conversion() -> None:
     assert "/snapshot" in panel
     assert "ACTION TO OPERATION MAP" in panel
     assert "groundedActions(sourcePlan)" in panel
-    assert "Unmapped names use their normalized PDDL action name" in panel
+    assert "maps grounded arguments to its input ports" in panel
+    assert "actionBindings" in panel
+    assert "inputPorts" in panel
     assert "unsaved Workflow" in panel

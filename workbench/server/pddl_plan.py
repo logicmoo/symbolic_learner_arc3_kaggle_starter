@@ -28,6 +28,9 @@ def grounded_plan_to_workflow(request: dict[str, Any]) -> dict[str, Any]:
     action_map = request.get("actionMap") or {}
     if not isinstance(action_map, dict):
         raise ValueError("actionMap must be an object")
+    action_bindings = request.get("actionBindings") or {}
+    if not isinstance(action_bindings, dict):
+        raise ValueError("actionBindings must be an object")
     parsed: list[dict[str, Any]] = []
     for line_number, original in enumerate(source.splitlines(), start=1):
         line = original.split(";", 1)[0].strip()
@@ -46,7 +49,17 @@ def grounded_plan_to_workflow(request: dict[str, Any]) -> dict[str, Any]:
             parameters["pddlStartTime"] = float(match.group("start"))
         if match.group("duration") is not None:
             parameters["pddlDuration"] = float(match.group("duration"))
-        parsed.append({"action": action, "operation": operation, "parameters": parameters})
+        bindings = action_bindings.get(action) or {}
+        if not isinstance(bindings, dict):
+            raise ValueError(f"actionBindings.{action} must be an object")
+        inputs: dict[str, Any] = {}
+        for port, argument_index in bindings.items():
+            if not isinstance(argument_index, int) or isinstance(argument_index, bool):
+                raise ValueError(f"actionBindings.{action}.{port} must be a zero-based integer argument index")
+            if argument_index < 0 or argument_index >= len(tokens) - 1:
+                raise ValueError(f"actionBindings.{action}.{port} refers to missing argument {argument_index + 1}")
+            inputs[str(port)] = tokens[argument_index + 1]
+        parsed.append({"action": action, "operation": operation, "parameters": parameters, "inputs": inputs})
     if not parsed:
         raise ValueError("sourcePlan must contain at least one grounded PDDL action")
     steps = []
@@ -75,6 +88,8 @@ def grounded_plan_to_workflow(request: dict[str, Any]) -> dict[str, Any]:
             "parameters": item["parameters"],
             "dependsOn": dependencies,
         }
+        if item["inputs"]:
+            step["inputs"] = item["inputs"]
         steps.append(step)
         current_group.append(step_id)
     workflow_id = _identifier(str(request.get("id") or "pddl_plan"))
