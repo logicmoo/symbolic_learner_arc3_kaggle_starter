@@ -157,3 +157,14 @@ def test_runner_selection_survives_reload_through_deep_links() -> None:
     assert 'url.searchParams.set("runEvent", eventId)' in runtime
     assert 'url.searchParams.delete("runEvent")' in runtime
     assert 'url.searchParams.set("run", selectedRun.id)' in runtime
+
+
+def test_waiting_workflow_runs_expose_durable_human_input_forms() -> None:
+    runtime = (ROOT / "workbench" / "frontend" / "src" / "components" / "RuntimeHistoryView.tsx").read_text(encoding="utf-8")
+    assert "workflowWaitingStep" in runtime
+    assert "workflowWaitingDefinition" in runtime
+    assert 'className="human-pause workflow-run-human"' in runtime
+    assert "setWorkflowHumanDraft(payload.draft?.values || {})" in runtime
+    assert "!workflowDraftDirty" in runtime
+    assert "!humanDraftDirty" in runtime
+    assert "submitWorkflowHumanInput" in runtime

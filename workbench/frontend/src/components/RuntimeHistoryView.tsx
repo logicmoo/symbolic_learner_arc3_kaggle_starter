@@ -206,7 +206,8 @@ export function RuntimeHistoryView({ mode, workspaceId, goals = [], plans = [], 
   const [contextId, setContextId] = useState(""), [contextVariantId, setContextVariantId] = useState("");
   const availablePlanSpecs = planSpecs.filter(plan => (!goalId || (plan.goals || []).includes(goalId)) && (plan.children || []).some((childId: string) => workflowIds.has(planDocs.find(doc => doc.id === childId)?.workflow)));
   const [inputs, setInputs] = useState("{}");
-  const [humanDraft, setHumanDraft] = useState<Record<string, unknown>>({}), [draftLoaded, setDraftLoaded] = useState(false), [draftStatus, setDraftStatus] = useState("");
+  const [humanDraft, setHumanDraft] = useState<Record<string, unknown>>({}), [draftLoaded, setDraftLoaded] = useState(false), [draftStatus, setDraftStatus] = useState(""), [humanDraftDirty, setHumanDraftDirty] = useState(false);
+  const [workflowHumanDraft, setWorkflowHumanDraft] = useState<Record<string, unknown>>({}), [workflowDraftLoaded, setWorkflowDraftLoaded] = useState(false), [workflowDraftStatus, setWorkflowDraftStatus] = useState(""), [workflowDraftDirty, setWorkflowDraftDirty] = useState(false);
   const goalVariants = goalDocs.filter(doc => (doc.parents || []).includes(goalId));
   const planVariants = planDocs.filter(doc => (doc.parents || []).includes(planId) && workflowIds.has(doc.workflow));
   const contextVariants = contextDocs.filter(doc => (doc.parents || []).includes(contextId));
@@ -297,6 +298,21 @@ export function RuntimeHistoryView({ mode, workspaceId, goals = [], plans = [], 
       .catch(reason => { if (active) { setFrozenWorkflow(null); setError(String(reason)); } });
     return () => { active = false; };
   }, [mode, selectedRun?.id, selectedRun?.workflowId, selectedRun?.workflowVersion]);
+  const workflowWaitingStep = selectedRun?.steps.find(step => step.status === "waiting");
+  const workflowWaitingDefinition = frozenWorkflow?.steps.find(step => step.id === workflowWaitingStep?.stepId);
+  useEffect(() => {
+    if (mode !== "workflowRuns" || !selectedRun || !workflowWaitingStep) { setWorkflowHumanDraft({}); setWorkflowDraftLoaded(false); setWorkflowDraftDirty(false); setWorkflowDraftStatus(""); return; }
+    setWorkflowDraftLoaded(false); setWorkflowDraftStatus("Loading saved draft…");
+    void api(`/api/engine/runs/${encodeURIComponent(selectedRun.id)}/steps/${encodeURIComponent(workflowWaitingStep.stepId)}/draft`)
+      .then(payload => { setWorkflowHumanDraft(payload.draft?.values || {}); setWorkflowDraftDirty(false); setWorkflowDraftLoaded(true); setWorkflowDraftStatus(payload.draft?.updatedAt ? `Draft restored · ${stamp(payload.draft.updatedAt)}` : "Draft autosave ready"); })
+      .catch(reason => { setWorkflowDraftLoaded(true); setWorkflowDraftStatus(`Draft unavailable · ${String(reason)}`); });
+  }, [mode, selectedRun?.id, workflowWaitingStep?.stepId]);
+  useEffect(() => {
+    if (!workflowDraftLoaded || !workflowDraftDirty || !selectedRun || !workflowWaitingStep) return;
+    setWorkflowDraftStatus("Saving draft…");
+    const timer = window.setTimeout(() => { void api(`/api/engine/runs/${encodeURIComponent(selectedRun.id)}/steps/${encodeURIComponent(workflowWaitingStep.stepId)}/draft`, { method: "PUT", body: JSON.stringify(workflowHumanDraft) }).then(payload => { setWorkflowDraftDirty(false); setWorkflowDraftStatus(`Draft saved · ${stamp(payload.draft?.updatedAt)}`); }).catch(reason => setWorkflowDraftStatus(`Draft save failed · ${String(reason)}`)); }, 500);
+    return () => window.clearTimeout(timer);
+  }, [workflowHumanDraft, workflowDraftLoaded, workflowDraftDirty, selectedRun?.id, workflowWaitingStep?.stepId]);
   const selectedGoalRun = goalRuns.find(row => row.id === selectedId);
   const [goalRunWorkflow, setGoalRunWorkflow] = useState<FrozenWorkflow | null>(null);
   useEffect(() => {
@@ -309,16 +325,16 @@ export function RuntimeHistoryView({ mode, workspaceId, goals = [], plans = [], 
   const waitingStep = selectedGoalRun?.workflowRun.steps.find(step => step.status === "waiting");
   const waitingStepDefinition = goalRunWorkflow?.steps.find(step => step.id === waitingStep?.stepId);
   useEffect(() => {
-    if (!selectedGoalRun || !waitingStep) { setHumanDraft({}); setDraftLoaded(false); return; }
+    if (!selectedGoalRun || !waitingStep) { setHumanDraft({}); setDraftLoaded(false); setHumanDraftDirty(false); return; }
     setDraftLoaded(false); setDraftStatus("Loading saved draft…");
-    void api(`/api/engine/runs/${encodeURIComponent(selectedGoalRun.workflowRunId)}/steps/${encodeURIComponent(waitingStep.stepId)}/draft`).then(payload => { setHumanDraft(payload.draft?.values || {}); setDraftLoaded(true); setDraftStatus(payload.draft?.updatedAt ? `Draft restored · ${stamp(payload.draft.updatedAt)}` : "Draft autosave ready"); }).catch(reason => { setDraftLoaded(true); setDraftStatus(`Draft unavailable · ${String(reason)}`); });
+    void api(`/api/engine/runs/${encodeURIComponent(selectedGoalRun.workflowRunId)}/steps/${encodeURIComponent(waitingStep.stepId)}/draft`).then(payload => { setHumanDraft(payload.draft?.values || {}); setHumanDraftDirty(false); setDraftLoaded(true); setDraftStatus(payload.draft?.updatedAt ? `Draft restored · ${stamp(payload.draft.updatedAt)}` : "Draft autosave ready"); }).catch(reason => { setDraftLoaded(true); setDraftStatus(`Draft unavailable · ${String(reason)}`); });
   }, [selectedGoalRun?.id, waitingStep?.stepId]);
   useEffect(() => {
-    if (!draftLoaded || !selectedGoalRun || !waitingStep) return;
+    if (!draftLoaded || !humanDraftDirty || !selectedGoalRun || !waitingStep) return;
     setDraftStatus("Saving draft…");
-    const timer = window.setTimeout(() => { void api(`/api/engine/runs/${encodeURIComponent(selectedGoalRun.workflowRunId)}/steps/${encodeURIComponent(waitingStep.stepId)}/draft`, { method: "PUT", body: JSON.stringify(humanDraft) }).then(payload => setDraftStatus(`Draft saved · ${stamp(payload.draft?.updatedAt)}`)).catch(reason => setDraftStatus(`Draft save failed · ${String(reason)}`)); }, 500);
+    const timer = window.setTimeout(() => { void api(`/api/engine/runs/${encodeURIComponent(selectedGoalRun.workflowRunId)}/steps/${encodeURIComponent(waitingStep.stepId)}/draft`, { method: "PUT", body: JSON.stringify(humanDraft) }).then(payload => { setHumanDraftDirty(false); setDraftStatus(`Draft saved · ${stamp(payload.draft?.updatedAt)}`); }).catch(reason => setDraftStatus(`Draft save failed · ${String(reason)}`)); }, 500);
     return () => window.clearTimeout(timer);
-  }, [humanDraft, draftLoaded, selectedGoalRun?.id, waitingStep?.stepId]);
+  }, [humanDraft, draftLoaded, humanDraftDirty, selectedGoalRun?.id, waitingStep?.stepId]);
   const submitHumanInput = async (values: Record<string, unknown>) => {
     if (!selectedGoalRun || !waitingStep) return;
     setBusy(true); setError("");
@@ -345,6 +361,16 @@ export function RuntimeHistoryView({ mode, workspaceId, goals = [], plans = [], 
       chooseRun(updated);
     } catch (reason) { setError(String(reason)); } finally { setBusy(false); }
   };
+  const submitWorkflowHumanInput = async (values: Record<string, unknown>) => {
+    if (!selectedRun || !workflowWaitingStep) return;
+    setBusy(true); setError("");
+    try {
+      const payload = await api(`/api/engine/runs/${encodeURIComponent(selectedRun.id)}/steps/${encodeURIComponent(workflowWaitingStep.stepId)}/input`, { method: "POST", body: JSON.stringify(values) });
+      const updated = payload.run as RuntimeRun;
+      setRuns(current => current.map(item => item.id === updated.id ? updated : item));
+      setWorkflowHumanDraft({}); setWorkflowDraftLoaded(false); setWorkflowDraftDirty(false); chooseRun(updated);
+    } catch (reason) { setError(String(reason)); } finally { setBusy(false); }
+  };
   const title = { goalRuns: "Goal Runs", workflowRuns: "Workflow Runs", execs: "Execs", events: "Events", states: "States", runtimeContexts: "Contexts", logs: "Logs" }[mode];
 
   if (mode === "goalRuns") return <section className="resource-view runtime-history-view">
@@ -364,7 +390,7 @@ export function RuntimeHistoryView({ mode, workspaceId, goals = [], plans = [], 
     <div className="resource-table"><div className="resource-row resource-head"><span>Goal</span><span>Strategy variant</span><span>Status</span><span>Workflow/plan run</span><span>Created</span></div>{goalRuns.map(row => <button className="resource-row" key={row.id} onClick={() => selectGoalRun(row)}><b>{row.goalVariantId || row.goalId}</b><code>{row.planVariantId}</code><span>{row.status}</span><span>{row.workflowRunId.slice(0, 8)}</span><em>{stamp(row.createdAt)}</em></button>)}</div>
     {goalRuns.length >= goalRunLimit && <button type="button" className="runtime-load-older" onClick={() => setGoalRunLimit(limit => Math.min(500, limit + 50))}>Load 50 older goal runs</button>}
     {selectedGoalRun && <div className="goal-run-controls"><div><b>Selected pursuit</b><span>{selectedGoalRun.goalVariantId} · {selectedGoalRun.planVariantId} · {selectedGoalRun.contextVariantId || "no context"}</span></div></div>}
-    {waitingStep && <div className="human-pause goal-run-human"><div className="pause-ring">Ⅱ</div><b>Waiting for {waitingStep.stepId}</b><span>{waitingStepDefinition?.label || "Provide the values required by this workflow step."}</span><small className="human-draft-status">{draftStatus}</small><HumanInputForm step={waitingStepDefinition} busy={busy} draft={humanDraft} onDraft={setHumanDraft} onSubmit={values => void submitHumanInput(values)} /></div>}
+    {waitingStep && <div className="human-pause goal-run-human"><div className="pause-ring">Ⅱ</div><b>Waiting for {waitingStep.stepId}</b><span>{waitingStepDefinition?.label || "Provide the values required by this workflow step."}</span><small className="human-draft-status">{draftStatus}</small><HumanInputForm step={waitingStepDefinition} busy={busy} draft={humanDraft} onDraft={values => { setHumanDraft(values); setHumanDraftDirty(true); }} onSubmit={values => void submitHumanInput(values)} /></div>}
     {selectedGoalRun && <WorkflowRunProjection run={selectedGoalRun.workflowRun} workflow={goalRunWorkflow} busy={busy} commands={["pause", "resume", "advance", "cancel"]} onCommand={command => void commandGoalRun(command as Exclude<WorkflowRunCommand, "replay">)} onOpenResource={onOpenResource} />}
   </section>;
 
@@ -388,6 +414,7 @@ export function RuntimeHistoryView({ mode, workspaceId, goals = [], plans = [], 
     <div className="runtime-history-tools"><label><span>FILTER RECORDS</span><input value={historyFilter} onChange={event => setHistoryFilter(event.target.value)} placeholder="ID, status, type, run, or detail…" /></label><small>{visibleRows.length} of {rows.length} loaded records</small>{canLoadMoreRuns && <button type="button" onClick={() => setRunLimit(limit => Math.min(500, limit + 50))}>Load 50 older runs</button>}{canLoadMoreInvocations && <button type="button" onClick={() => setInvocationLimit(limit => Math.min(1000, limit + 100))}>Load 100 older invocations</button>}</div>
     <div className="resource-table"><div className="resource-row resource-head"><span>Record</span><span>Status / type</span><span>Step / time</span><span>Run</span><span>Detail</span></div>{visibleRows.map(row => <button className="resource-row" key={row.key} onClick={() => { if ("trace" in row) { setSelectedInvocationId(row.trace.id); setSelectedId(""); } else { setSelectedInvocationId(""); chooseRun(row.run); } }}><b>{row.a}</b><code>{row.b}</code><span>{row.c}</span><span>{row.d}</span><em title={row.e}>{row.e}</em></button>)}{!visibleRows.length && <div className="studio-empty">{rows.length ? "No loaded records match this filter." : `No persisted ${title.toLowerCase()} yet.`}</div>}</div>
     {selectedInvocation && <section className="run-projection-inspector" aria-label="Selected standalone invocation"><div><span>STANDALONE {selectedInvocation.kind === "model_invocation_trace" ? "MODEL" : "OPERATION"} EXECUTION</span><h3>{selectedInvocation.modelId || selectedInvocation.operationId || selectedInvocation.operation?.label || selectedInvocation.operation?.id}</h3><p>{stamp(selectedInvocation.createdAt)} · {selectedInvocation.status}</p>{onOpenResource && selectedInvocation.modelId && <button type="button" className="runtime-resource-link" onClick={() => onOpenResource("model", selectedInvocation.modelId!)}>Open Model · {selectedInvocation.modelId}</button>}{onOpenResource && (selectedInvocation.operationId || selectedInvocation.operation?.id) && <button type="button" className="runtime-resource-link" onClick={() => onOpenResource("operation", String(selectedInvocation.operationId || selectedInvocation.operation?.id))}>Open Operation · {selectedInvocation.operationId || selectedInvocation.operation?.id}</button>}</div><dl><div><dt>Trace</dt><dd>{selectedInvocation.id}</dd></div><div><dt>Backend</dt><dd>{selectedInvocation.response?.backendId || selectedInvocation.implementation?.implementation || "resolved runtime"}</dd></div><div><dt>Latency</dt><dd>{selectedInvocation.response?.latencyMs != null ? `${selectedInvocation.response.latencyMs} ms` : "—"}</dd></div><div><dt>Log</dt><dd>{selectedInvocation.logPath}</dd></div></dl><details open><summary>Complete durable trace</summary><pre>{jsonValueToMetta(selectedInvocation)}</pre></details></section>}
+    {mode === "workflowRuns" && selectedRun && workflowWaitingStep && <div className="human-pause workflow-run-human"><div className="pause-ring">Ⅱ</div><b>Waiting for {workflowWaitingStep.stepId}</b><span>{workflowWaitingDefinition?.label || "Provide the values required by this workflow step."}</span><small className="human-draft-status">{workflowDraftStatus}</small><HumanInputForm step={workflowWaitingDefinition} busy={busy} draft={workflowHumanDraft} onDraft={values => { setWorkflowHumanDraft(values); setWorkflowDraftDirty(true); }} onSubmit={values => void submitWorkflowHumanInput(values)} /></div>}
     {mode === "workflowRuns" && selectedRun && <WorkflowRunProjection run={selectedRun} workflow={frozenWorkflow} busy={busy} onCommand={command => void commandWorkflowRun(command)} onOpenResource={onOpenResource} />}
     {mode === "workflowRuns" && <Suspense fallback={<div className="studio-empty">Loading workflow runner reference…</div>}><WorkflowRunnerTodoReference /></Suspense>}
     {mode !== "workflowRuns" && selectedRun && <div className="demo-notice"><b>SELECTED RUN {selectedRun.id.slice(0, 8)}</b><span>{selectedRun.workflowId} · {selectedRun.status} · {selectedRun.events.length} events · {selectedRun.artifacts.length} states</span></div>}
