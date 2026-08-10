@@ -414,6 +414,11 @@ def test_model_policy_ui_edits_and_filters_dynamic_registry() -> None:
     assert 'heading("Effective Benchmark","effective.benchmark")' in source
     assert 'aria-label={`Sort by ${label}`}' in source
     assert ".policy-sort{display:flex;width:100%" in styles
+    for label in ("Enabled & Compatible", "Enabled but Limited", "Disabled", "Not Compatible"):
+        assert label in source
+    assert "benchmarkRequirements" in source
+    assert "benchmarkCellState" in source
+    assert ".benchmark-state-legend" in styles
 
 
 def test_benchmark_job_executes_declared_cases_and_persists_measurements(tmp_path: Path) -> None:
