@@ -23,8 +23,8 @@ def digest(value: Any) -> str:
 @dataclass(frozen=True)
 class OperationSpec:
     name: str
-    inputs: dict[str, str]
-    outputs: dict[str, str]
+    inputs: dict[str, Any]
+    outputs: dict[str, Any]
     handler: Callable[[dict[str, Any], dict[str, Any]], dict[str, Any]]
 
 
@@ -81,7 +81,7 @@ class WorkflowEngine:
               started_at TEXT, finished_at TEXT, PRIMARY KEY(run_id,step_id));
             CREATE TABLE IF NOT EXISTS wf_artifacts(
               id TEXT PRIMARY KEY, run_id TEXT NOT NULL, step_id TEXT,
-              name TEXT NOT NULL, datatype TEXT NOT NULL, payload TEXT NOT NULL,
+              name TEXT NOT NULL, datatype TEXT NOT NULL, representation TEXT, payload TEXT NOT NULL,
               content_hash TEXT NOT NULL, provenance TEXT NOT NULL, created_at TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS wf_events(
               id INTEGER PRIMARY KEY AUTOINCREMENT, run_id TEXT NOT NULL,
@@ -110,6 +110,9 @@ class WorkflowEngine:
             run_columns = {row['name'] for row in db.execute('PRAGMA table_info(wf_runs)').fetchall()}
             if 'workspace_id' not in run_columns:
                 db.execute('ALTER TABLE wf_runs ADD COLUMN workspace_id TEXT')
+            artifact_columns = {row['name'] for row in db.execute('PRAGMA table_info(wf_artifacts)').fetchall()}
+            if 'representation' not in artifact_columns:
+                db.execute('ALTER TABLE wf_artifacts ADD COLUMN representation TEXT')
             db.execute('CREATE INDEX IF NOT EXISTS wf_runs_workspace_created_idx ON wf_runs(workspace_id,created_at DESC)')
 
     def save_workflow(self, document: dict[str, Any]) -> dict[str, Any]:
@@ -269,13 +272,27 @@ class WorkflowEngine:
                 if candidate.get(stream):
                     self._log(run_id, step_id, stream, candidate[stream])
 
-    def _artifact(self, run_id: str, step_id: str | None, name: str, datatype: str,
+    @staticmethod
+    def _artifact_contract(contract: Any) -> tuple[str, str | None]:
+        if isinstance(contract, dict):
+            datatype = str(contract.get('datatype') or contract.get('type') or 'Any')
+            representation = contract.get('representation')
+            return datatype, str(representation) if representation else None
+        return str(contract or 'Any'), None
+
+    def _artifact(self, run_id: str, step_id: str | None, name: str, contract: Any,
                   payload: Any, provenance: dict[str, Any]) -> str:
         artifact_id = str(uuid.uuid4())
+        datatype, representation = self._artifact_contract(contract)
         with self._db() as db:
-            db.execute('INSERT INTO wf_artifacts VALUES(?,?,?,?,?,?,?,?,?)',
-                       (artifact_id, run_id, step_id, name, datatype, json.dumps(payload), digest(payload), json.dumps(provenance), now()))
-        self._event(run_id, step_id, 'artifact.created', {'artifactId': artifact_id, 'name': name, 'datatype': datatype})
+            db.execute('''INSERT INTO wf_artifacts(
+                          id,run_id,step_id,name,datatype,payload,content_hash,provenance,created_at,representation)
+                          VALUES(?,?,?,?,?,?,?,?,?,?)''',
+                       (artifact_id, run_id, step_id, name, datatype, json.dumps(payload), digest(payload), json.dumps(provenance), now(), representation))
+        event = {'artifactId': artifact_id, 'name': name, 'datatype': datatype}
+        if representation:
+            event['representation'] = representation
+        self._event(run_id, step_id, 'artifact.created', event)
         return artifact_id
 
     def _resolve(self, run_id: str, binding: Any) -> Any:
@@ -433,7 +450,7 @@ class WorkflowEngine:
                 'inputs': json.loads(run['inputs']), 'outputs': json.loads(run['outputs']), 'error': run['error'],
                 'createdAt': run['created_at'], 'updatedAt': run['updated_at'],
                 'steps': [{'stepId': s['step_id'], 'status': s['status'], 'attempt': s['attempt'], 'childRunId': s['child_run_id'], 'error': s['error']} for s in steps],
-                'artifacts': [{'id': a['id'], 'stepId': a['step_id'], 'name': a['name'], 'datatype': a['datatype'], 'payload': json.loads(a['payload']), 'contentHash': a['content_hash'], 'provenance': json.loads(a['provenance'])} for a in artifacts],
+                'artifacts': [{'id': a['id'], 'stepId': a['step_id'], 'name': a['name'], 'datatype': a['datatype'], 'representation': a['representation'], 'payload': json.loads(a['payload']), 'contentHash': a['content_hash'], 'provenance': json.loads(a['provenance']), 'createdAt': a['created_at']} for a in artifacts],
                 'events': [{'id': e['id'], 'stepId': e['step_id'], 'kind': e['kind'], 'payload': json.loads(e['payload']), 'createdAt': e['created_at']} for e in events],
                 'logs': [{'id': entry['id'], 'stepId': entry['step_id'], 'stream': entry['stream'], 'message': entry['message'], 'createdAt': entry['created_at']} for entry in logs]}
 

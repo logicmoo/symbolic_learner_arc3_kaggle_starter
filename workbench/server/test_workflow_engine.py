@@ -27,6 +27,29 @@ def test_versioned_workflow_and_artifacts(tmp_path: Path) -> None:
     assert any(event['kind'] == 'workflow.completed' for event in run['events'])
 
 
+def test_artifacts_preserve_datatype_representation_contract(tmp_path: Path) -> None:
+    registry = OperationRegistry()
+    registry.register(OperationSpec(
+        'test.scene', {},
+        {'image': {'datatype': 'Image', 'representation': 'scene_graph'}},
+        lambda _inputs, _params: {'image': {'objects': []}},
+    ))
+    e = WorkflowEngine(tmp_path / 'engine.db', registry)
+    e.save_workflow({
+        'id': 'represented_artifact', 'inputs': {}, 'outputs': {},
+        'steps': [{'id': 'scene', 'kind': 'operation', 'implementation': 'test.scene',
+                   'inputs': {}, 'outputs': {'image': 'scene_image'}}],
+    })
+
+    run = e.start('represented_artifact', {})
+    artifact = next(item for item in run['artifacts'] if item['name'] == 'scene_image')
+    assert artifact['datatype'] == 'Image'
+    assert artifact['representation'] == 'scene_graph'
+    assert artifact['createdAt']
+    event = next(item for item in run['events'] if item['kind'] == 'artifact.created')
+    assert event['payload']['representation'] == 'scene_graph'
+
+
 def test_direct_dollar_binding_resolves_workflow_input(tmp_path: Path) -> None:
     e = engine(tmp_path)
     e.save_workflow({

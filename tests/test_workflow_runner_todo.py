@@ -117,6 +117,8 @@ def test_runtime_records_link_back_to_executable_resources() -> None:
 
     assert "Open Operation ·" in runtime
     assert "Open producing Model ·" in runtime
+    assert "Open Representation ·" in runtime
+    assert 'onOpenResource("datatype", representationId)' in runtime
     assert "OpenRuntimeResource" in runtime
     assert 'url.searchParams.set("resource",id)' in shell
     assert 'kind==="operation"?"operations":kind==="model"?"llms":"data"' in shell
