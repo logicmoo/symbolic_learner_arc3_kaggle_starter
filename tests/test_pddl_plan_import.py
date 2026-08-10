@@ -57,8 +57,10 @@ def test_temporal_pddl_plan_rejects_out_of_order_start_times() -> None:
 def test_active_workflow_editor_exposes_unsaved_pddl_conversion() -> None:
     page = (ROOT / "workbench" / "frontend" / "src" / "pages" / "FilesystemWorkbenchPage.tsx").read_text(encoding="utf-8")
     panel = (ROOT / "workbench" / "frontend" / "src" / "components" / "PddlPlanImportPanel.tsx").read_text(encoding="utf-8")
-    assert 'workflow?.planProvenance?.origin==="pddl"&&<PddlPlanImportPanel' in page
+    assert 'workflow&&<PddlPlanImportPanel workspaceId={workspace.id}' in page
     assert "/api/engine/workflows/import-pddl-plan" in panel
-    assert "ACTION MAP · JSON" in panel
-    assert "does not save or run" in panel
-    assert "Equal temporal start times remain parallel" in panel
+    assert "/snapshot" in panel
+    assert "ACTION TO OPERATION MAP" in panel
+    assert "groundedActions(sourcePlan)" in panel
+    assert "Unmapped names use their normalized PDDL action name" in panel
+    assert "unsaved Workflow" in panel
