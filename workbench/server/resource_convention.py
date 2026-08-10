@@ -36,6 +36,7 @@ KNOWN_RESOURCE_KINDS = {
     "prompt_profile",
     "prompt_implementation",
     "schema",
+    "system",
     "benchmark_policy",
     "benchmark_result",
     "operation",
@@ -108,6 +109,8 @@ def infer_resource_kind(path: Path, document: dict[str, Any]) -> str:
         if document.get("inherits") or document.get("parents"):
             return "model"
         return "model"
+    if parent == "systems":
+        return "system"
     if parent == "config":
         if "datatype" in name:
             return "config"

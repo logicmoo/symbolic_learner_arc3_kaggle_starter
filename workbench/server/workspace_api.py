@@ -335,6 +335,17 @@ def _load_backends(workspace: dict[str, Any]) -> list[dict[str, Any]]:
     return _with_artifact_categories(workspace, load_workspace_backend_records(Path(workspace["root"])), "models")
 
 
+def _load_systems(workspace: dict[str, Any]) -> list[dict[str, Any]]:
+    root = Path(workspace["root"])
+    combined: dict[str, dict[str, Any]] = {}
+    for layer in effective_workspace_layers(root, root.parent):
+        for directory in (layer / "design" / "systems", layer / "systems"):
+            for record in _load_documents(layer, directory, layer_source(layer, root), "system"):
+                document = record.get("document") or {}
+                combined[str(document.get("id") or record["path"])] = record
+    return sorted(combined.values(), key=lambda record: str((record.get("document") or {}).get("label") or record["path"]).lower())
+
+
 def _load_models(workspace: dict[str, Any]) -> list[dict[str, Any]]:
     return _with_artifact_categories(workspace, resolve_model_records(Path(workspace["root"])), "models")
 
@@ -663,6 +674,7 @@ def workspace_snapshot(workspace_id: str, scope: str = Query(default="full", pat
         "representations": _load_representations(workspace),
         "concreteDatatypes": _load_concrete_datatypes(workspace),
         "backends": _load_backends(workspace),
+        "systems": _load_systems(workspace),
         "backendLibrary": _load_backend_library(workspace),
         "models": _load_models(workspace),
         "modelLibrary": _load_model_library(workspace),

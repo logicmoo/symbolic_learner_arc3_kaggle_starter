@@ -23,7 +23,7 @@ def test_navigation_v2_has_required_groups_and_labels() -> None:
         "Workflows",
         "Operations",
         "Source Code",
-        "Backends",
+        "Systems",
         "Datatypes",
         "Models",
         "Policies",
@@ -69,7 +69,7 @@ def test_navigation_reuses_current_rich_editors() -> None:
         "Operations": ('view:"operations"', 'view==="operations"&&<OperationLibraryEditor'),
         "Datatypes": ('view:"data"', 'view==="data"&&<DataCatalogPanel'),
         "Source Code": ('view:"sourceCode"', 'view==="sourceCode"&&<SourceCodeEditor'),
-        "Backends": ('view:"backends"', 'catalogMode="backends"'),
+        "Systems": ('view:"backends"', 'catalogMode="systems"'),
         "Models": ('view:"llms"', 'view==="llms"&&<LlmModelsEditor'),
         "Workflows": ('view:"canvas"', 'view==="editor"&&<section className="editor-surface"'),
         "Settings": ('view:"setup"', 'view==="setup"&&<WorkspaceSettingsPanel'),
@@ -78,6 +78,19 @@ def test_navigation_reuses_current_rich_editors() -> None:
         assert f'label:"{label}"' in source
         for token in tokens:
             assert token in source
+
+
+def test_systems_are_separate_from_model_backends() -> None:
+    page = ACTIVE_PAGE.read_text(encoding="utf-8")
+    editor = (ROOT / "workbench" / "frontend" / "src" / "components" / "LlmModelsEditor.tsx").read_text(encoding="utf-8")
+    api = (ROOT / "workbench" / "server" / "workspace_api.py").read_text(encoding="utf-8")
+    assert 'label:"Systems",view:"backends"' in page
+    assert 'catalogMode="systems"' in page
+    assert "snapshot?.systems" in editor
+    assert 'document.kind==="system"?"design/systems"' in editor
+    assert '"systems": _load_systems(workspace)' in api
+    for system_id in ("python", "prolog", "metta", "llm", "omegaclaw", "codex"):
+        assert (ROOT / "workbench" / "workspaces" / "shared" / "design" / "systems" / f"{system_id}.system.metta").is_file()
 
 
 def test_source_code_editor_reuses_prompt_and_operation_source_editors() -> None:
