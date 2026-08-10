@@ -268,14 +268,16 @@ def test_model_policy_history_charts_real_persisted_results() -> None:
     assert ".performance-history-chart" in styles
 
 
-def test_model_policy_labels_benchmark_profiles_as_model_presets() -> None:
+def test_model_policy_keeps_model_presets_and_prompt_profiles_independent() -> None:
     source = (ROOT / "workbench" / "frontend" / "src" / "components" / "ModelPolicyPage.tsx").read_text(encoding="utf-8")
-    assert "<span>Model Presets</span>" in source
-    assert "Filesystem model preset" in source
+    assert "<span>Benchmark Dimensions</span>" in source
+    assert "Model preset · inherited invocation defaults" in source
+    assert "Prompt Profile · ordered prompt composition independent of model settings" in source
     assert "<span>Preset</span>" in source
-    assert "reference its ID from modelPresets" in source
-    assert "activeBenchmarkPolicy?.modelPresets||activeBenchmarkPolicy?.promptProfiles" in source
-    assert "result?.modelPresetId||result?.promptProfileId" in source
+    assert "activeBenchmarkPolicy?.modelPresets||[]" in source
+    assert "activeBenchmarkPolicy?.promptProfiles||[]" in source
+    assert "result?.modelPresetId||\"\"" in source
+    assert "result?.promptProfileId||\"\"" in source
 
 
 def test_model_catalog_infers_presets_and_keeps_disabled_children_visible() -> None:
@@ -400,7 +402,7 @@ def test_ping_background_failure_becomes_terminal_job(tmp_path: Path, monkeypatc
 def test_model_policy_ui_edits_and_filters_dynamic_registry() -> None:
     source = (ROOT / "workbench" / "frontend" / "src" / "components" / "ModelPolicyPage.tsx").read_text(encoding="utf-8")
     styles = (ROOT / "workbench" / "frontend" / "src" / "styles" / "model_policy_todo.css").read_text(encoding="utf-8")
-    for token in ("Filesystem Load", "Filesystem Save", "Ping Selected", "Manage Backends, Models &amp; Presets", "Create / edit", "Select Visible", "Clear Selection", "All capabilities", "All runtime", "All benchmark", "dynamicColumns", "toggleSort", "Shift+click adds a secondary sort", "setSorts"):
+    for token in ("Filesystem Load", "Filesystem Save", "Ping Selected", "Manage Backends, Models &amp; Presets", "Benchmark Dimensions", "Select Visible", "Clear Selection", "All capabilities", "All runtime", "All benchmark", "dynamicColumns", "toggleSort", "Shift+click adds a secondary sort", "setSorts"):
         assert token in source
     assert 'scope==="selected"?[...selected]' in source
     assert "registryDocument" in source
@@ -437,11 +439,31 @@ def test_benchmark_job_executes_declared_cases_and_persists_measurements(tmp_pat
     assert list((tmp_path/"policies").glob("*.benchmark_result.metta"))
 
 
+def test_benchmark_prompt_profiles_are_an_independent_cross_product_dimension(tmp_path: Path, monkeypatch) -> None:
+    policy = {"id":"quality","cases":[{"id":"token","prompt":"case input","expected":"OK"}],"modelPresets":["preset"],"promptProfiles":["concise","deliberate"],"repetitions":2}
+    models = [{"id":"vendor:model"}]
+    presets = [{"document":{"id":"preset"},"resolved":{"enabled":True}}]
+    sent: list[str] = []
+    monkeypatch.setattr(model_benchmark, "_prompt_composition_prefix", lambda _root, ids, *_args: (f"profile:{ids[0]}", [], []))
+    def invoke(_model:dict,_preset:dict,prompt:str,_timeout:int)->dict:
+        sent.append(prompt)
+        return {"text":"OK","latencyMs":1,"inputTokens":1,"outputTokens":1}
+    result = run_benchmark(tmp_path,policy,models,presets,invoke=invoke)
+    assert result["job"]["promptProfileCount"] == 2
+    assert len(result["results"]) == 2
+    assert {row["promptProfileId"] for row in result["results"]} == {"concise","deliberate"}
+    assert all(row["modelPresetId"] == "preset" for row in result["results"])
+    assert len(sent) == 4
+    assert set(sent) == {"profile:concise\n\ncase input", "profile:deliberate\n\ncase input"}
+
+
 def test_model_policy_ui_exposes_explicit_benchmark_run() -> None:
     source = (ROOT / "workbench" / "frontend" / "src" / "components" / "ModelPolicyPage.tsx").read_text(encoding="utf-8")
     assert "/model-policy/benchmarks/" in source
     assert "Run Benchmark" in source
     assert 'aria-label="Benchmark policy"' in source
+    assert 'aria-label="Benchmark prompt profile"' in source
+    assert 'aria-label="Performance history prompt profile"' in source
     assert "activeBenchmarkPolicy.id" in source
     assert "latestResultByCell" in source
     assert 'aria-label="Performance history metric"' in source

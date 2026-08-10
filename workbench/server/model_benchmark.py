@@ -11,6 +11,7 @@ from typing import Any, Callable
 from uuid import uuid4
 
 from model_policy_ping import write_policy_resource
+from operation_resolution import _prompt_composition_prefix
 from workspace_credentials import resolve_workspace_credential
 
 ModelCall = Callable[[dict[str, Any], dict[str, Any], str, int], dict[str, Any]]
@@ -59,21 +60,41 @@ def run_benchmark(workspace_root: Path, policy: dict[str, Any], models: list[dic
     cases = policy.get("cases") or []
     if not isinstance(cases, list) or not cases: raise ValueError("benchmark policy requires at least one declared case")
     job_id = job_id or f"benchmark_{policy['id']}_{uuid4().hex[:10]}"; started_at = _now(); repetitions = max(1, int(policy.get("repetitions") or 1)); timeout = max(1, int(policy.get("timeoutSeconds") or 300)); concurrency = max(1, min(16, int(policy.get("concurrency") or 4)))
-    job = {"kind":"benchmark_job","id":job_id,"benchmarkPolicyId":policy["id"],"status":"running","createdAt":started_at,"modelCount":len(models),"presetCount":len(presets),"caseCount":len(cases)}; write_policy_resource(workspace_root,job)
-    work=[(model,preset,case,index) for model in models for preset in presets for case in cases for index in range(repetitions)]; observations: list[dict[str,Any]]=[]
-    def execute(item:tuple[dict[str,Any],dict[str,Any],dict[str,Any],int])->dict[str,Any]:
-        model,preset,case,index=item; response=invoke(model,{**preset,"_workspaceRoot":str(workspace_root)},str(case.get("prompt") or ""),timeout); actual=str(response.get("text") or "").strip(); expected=str(case.get("expected") or "").strip(); evaluator=str(case.get("evaluator") or "exact_match"); passed=actual==expected if evaluator=="exact_match" else expected.lower() in actual.lower()
-        return {"modelPolicyEntryId":model["id"],"modelPresetId":(preset.get("document") or {}).get("id"),"caseId":case.get("id"),"repetition":index+1,"passed":passed,**response}
+    prompt_profile_ids = [str(value) for value in (policy.get("promptProfiles") or [])]
+    prompt_profiles: list[str | None] = prompt_profile_ids or [None]
+    prefixes = {
+        profile_id: _prompt_composition_prefix(workspace_root, [profile_id], [], "\n\n")[0]
+        for profile_id in prompt_profile_ids
+    }
+    job = {"kind":"benchmark_job","id":job_id,"benchmarkPolicyId":policy["id"],"status":"running","createdAt":started_at,"modelCount":len(models),"presetCount":len(presets),"promptProfileCount":len(prompt_profile_ids),"caseCount":len(cases)}; write_policy_resource(workspace_root,job)
+    work=[(model,preset,prompt_profile_id,case,index) for model in models for preset in presets for prompt_profile_id in prompt_profiles for case in cases for index in range(repetitions)]; observations: list[dict[str,Any]]=[]
+    def execute(item:tuple[dict[str,Any],dict[str,Any],str|None,dict[str,Any],int])->dict[str,Any]:
+        model,preset,prompt_profile_id,case,index=item
+        case_prompt = str(case.get("prompt") or "")
+        prefix = prefixes.get(prompt_profile_id, "")
+        prompt = f"{prefix}\n\n{case_prompt}" if prefix and case_prompt else prefix or case_prompt
+        response=invoke(model,{**preset,"_workspaceRoot":str(workspace_root)},prompt,timeout); actual=str(response.get("text") or "").strip(); expected=str(case.get("expected") or "").strip(); evaluator=str(case.get("evaluator") or "exact_match"); passed=actual==expected if evaluator=="exact_match" else expected.lower() in actual.lower()
+        observation = {"modelPolicyEntryId":model["id"],"modelPresetId":(preset.get("document") or {}).get("id"),"caseId":case.get("id"),"repetition":index+1,"passed":passed,**response}
+        if prompt_profile_id is not None: observation["promptProfileId"] = prompt_profile_id
+        return observation
     with ThreadPoolExecutor(max_workers=concurrency,thread_name_prefix="model-benchmark") as executor:
         futures={executor.submit(execute,item):item for item in work}
         for future in as_completed(futures):
-            model,preset,case,index=futures[future]
+            model,preset,prompt_profile_id,case,index=futures[future]
             try: observations.append(future.result())
-            except Exception as error: observations.append({"modelPolicyEntryId":model["id"],"modelPresetId":(preset.get("document") or {}).get("id"),"caseId":case.get("id"),"repetition":index+1,"passed":False,"error":str(error),"latencyMs":0,"inputTokens":0,"outputTokens":0})
+            except Exception as error:
+                observation = {"modelPolicyEntryId":model["id"],"modelPresetId":(preset.get("document") or {}).get("id"),"caseId":case.get("id"),"repetition":index+1,"passed":False,"error":str(error),"latencyMs":0,"inputTokens":0,"outputTokens":0}
+                if prompt_profile_id is not None: observation["promptProfileId"] = prompt_profile_id
+                observations.append(observation)
     results=[]
     for model in models:
         for preset in presets:
-            preset_id=(preset.get("document") or {}).get("id"); rows=[row for row in observations if row["modelPolicyEntryId"]==model["id"] and row["modelPresetId"]==preset_id]; successes=[row for row in rows if not row.get("error")]; passed=sum(bool(row.get("passed")) for row in rows); count=len(rows)
-            result={"kind":"benchmark_result","id":f"{job_id}:{model['id']}:{preset_id}","benchmarkPolicyId":policy["id"],"benchmarkJobId":job_id,"modelPolicyEntryId":model["id"],"modelPresetId":preset_id,"recordedAt":_now(),"status":"completed" if len(successes)==count else "completed_with_errors","metrics":{"accuracy":passed/count if count else 0,"latency_ms":sum(float(row.get("latencyMs") or 0) for row in successes)/len(successes) if successes else 0,"input_tokens":sum(int(row.get("inputTokens") or 0) for row in successes),"output_tokens":sum(int(row.get("outputTokens") or 0) for row in successes),"success_rate":len(successes)/count if count else 0},"observations":rows}; write_policy_resource(workspace_root,result); results.append(result)
+            preset_id=(preset.get("document") or {}).get("id")
+            for prompt_profile_id in prompt_profiles:
+                rows=[row for row in observations if row["modelPolicyEntryId"]==model["id"] and row["modelPresetId"]==preset_id and row.get("promptProfileId")==prompt_profile_id]; successes=[row for row in rows if not row.get("error")]; passed=sum(bool(row.get("passed")) for row in rows); count=len(rows)
+                suffix = f":{prompt_profile_id}" if prompt_profile_id is not None else ""
+                result={"kind":"benchmark_result","id":f"{job_id}:{model['id']}:{preset_id}{suffix}","benchmarkPolicyId":policy["id"],"benchmarkJobId":job_id,"modelPolicyEntryId":model["id"],"modelPresetId":preset_id,"recordedAt":_now(),"status":"completed" if len(successes)==count else "completed_with_errors","metrics":{"accuracy":passed/count if count else 0,"latency_ms":sum(float(row.get("latencyMs") or 0) for row in successes)/len(successes) if successes else 0,"input_tokens":sum(int(row.get("inputTokens") or 0) for row in successes),"output_tokens":sum(int(row.get("outputTokens") or 0) for row in successes),"success_rate":len(successes)/count if count else 0},"observations":rows}
+                if prompt_profile_id is not None: result["promptProfileId"] = prompt_profile_id
+                write_policy_resource(workspace_root,result); results.append(result)
     failures=sum(bool(row.get("error")) for row in observations); completed={**job,"status":"completed_with_errors" if failures else "completed","completedAt":_now(),"observationCount":len(observations),"failureCount":failures}; write_policy_resource(workspace_root,completed)
     return {"job":completed,"results":results}

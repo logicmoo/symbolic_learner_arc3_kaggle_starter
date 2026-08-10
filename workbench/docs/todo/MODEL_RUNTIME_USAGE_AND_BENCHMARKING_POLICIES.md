@@ -523,7 +523,7 @@ Model Preset
 × Input Class
 ```
 
-The current purpose is to discover which Model Preset works best with which model. Prompt Profiles now make prompt composition an additional independent benchmark dimension rather than folding it into Model Presets; adding that dimension to the benchmark matrix remains future work.
+The benchmark cross product now treats Model Presets and Prompt Profiles as independent dimensions. Each result records both `modelPresetId` and, when configured, `promptProfileId`; the matrix can facet by Prompt Profile without folding prompt composition into model invocation settings.
 
 Claude vs OpenAI should emerge from benchmark results, not be encoded into prompt identity.
 
