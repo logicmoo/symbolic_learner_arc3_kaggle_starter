@@ -304,6 +304,17 @@ class WorkflowEngine:
         if not row: raise ValueError(f'unresolved binding: {binding}')
         return json.loads(row['payload'])
 
+    def _resolve_public(self, run_id: str, binding: Any) -> Any:
+        if not isinstance(binding, str) or not binding.startswith('$'):
+            return binding
+        name = binding.lstrip('$').split('.')[-1]
+        with self._db() as db:
+            row = db.execute('SELECT payload,provenance FROM wf_artifacts WHERE run_id=? AND name=? ORDER BY created_at DESC LIMIT 1', (run_id, name)).fetchone()
+        if not row:
+            raise ValueError(f'unresolved binding: {binding}')
+        provenance = json.loads(row['provenance'])
+        return '[REDACTED]' if provenance.get('sensitive') else json.loads(row['payload'])
+
     def advance(self, run_id: str) -> None:
         run = self.get_run(run_id)
         if run['status'] in self.TERMINAL or run['status'] in {'waiting', 'paused'}: return
@@ -318,7 +329,7 @@ class WorkflowEngine:
             if current['status'] != 'completed': return
             run = refreshed
         outputs: dict[str, Any] = {}
-        for name, binding in (wf.get('outputs') or {}).items(): outputs[name] = self._resolve(run_id, binding)
+        for name, binding in (wf.get('outputs') or {}).items(): outputs[name] = self._resolve_public(run_id, binding)
         with self._db() as db:
             db.execute('UPDATE wf_runs SET status=?,outputs=?,updated_at=? WHERE id=?', ('completed', json.dumps(outputs), now(), run_id))
         self._event(run_id, None, 'workflow.completed', {'outputs': list(outputs)})

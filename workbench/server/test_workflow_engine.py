@@ -116,6 +116,21 @@ def test_human_input_draft_survives_restart_and_omits_secrets(tmp_path: Path) ->
     assert 'used-once' not in str(submitted)
 
 
+def test_sensitive_human_values_are_redacted_from_final_outputs(tmp_path: Path) -> None:
+    e = engine(tmp_path)
+    e.save_workflow({
+        'id': 'secret_output', 'inputs': {}, 'outputs': {'token': '$slots.token'},
+        'steps': [{'id': 'ask', 'kind': 'human', 'form': {
+            'token': {'type': 'String', 'secret': True},
+        }, 'outputs': {'token': 'token'}}],
+    })
+    waiting = e.start('secret_output', {})
+    completed = e.submit_human_input(waiting['id'], 'ask', {'token': 'do-not-return'})
+    assert completed['status'] == 'completed'
+    assert completed['outputs']['token'] == '[REDACTED]'
+    assert 'do-not-return' not in str(completed)
+
+
 def test_retry_policy(tmp_path: Path) -> None:
     attempts = {'count': 0}
     registry = OperationRegistry()
