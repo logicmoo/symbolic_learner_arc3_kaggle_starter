@@ -125,6 +125,9 @@ The script:
 8. verifies the core Python imports.
 
 The repository-standard environment name is **`.venv`**, not `venv`.
+The ARC3 tools and browser workbench share this one root-level environment,
+installed with all optional dependencies. Do not create `workbench\.venv` or
+another nested environment.
 
 ### 6. Start the terminal debugger
 

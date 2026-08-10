@@ -43,3 +43,14 @@ def test_missing_json_repair_message_is_copy_pasteable_on_windows() -> None:
 
     assert '.venv\\Scripts\\python.exe -m pip install -e ".[all]"' in source
     assert "if os.name == \"nt\"" in source
+
+
+def test_workbench_launchers_share_the_root_environment() -> None:
+    launcher = (ROOT / "workbench" / "run_demo.bat").read_text(encoding="utf-8")
+    api = (ROOT / "workbench" / "scripts" / "run_api_server.bat").read_text(encoding="utf-8")
+
+    assert 'set "WORKBENCH_PYTHON=%REPO_ROOT%\\.venv\\Scripts\\python.exe"' in launcher
+    assert 'set "PYTHON_EXE=%REPO_ROOT%\\.venv\\Scripts\\python.exe"' in api
+    assert '"%REPO_ROOT%[all]"' in launcher
+    assert ".venv-workbench" not in launcher + api
+    assert "workbench\\.venv" not in launcher + api
