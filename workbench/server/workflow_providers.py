@@ -478,6 +478,63 @@ def _system_workbench(_inputs: dict[str, Any], parameters: dict[str, Any]) -> di
     raise ValueError(f"unsupported system.workbench capability: {capability or '(missing)'}")
 
 
+def _resource_tool(inputs: dict[str, Any], parameters: dict[str, Any]) -> dict[str, Any]:
+    resource = inputs.get("resource")
+    if not isinstance(resource, dict):
+        raise ValueError("resource.tool requires a resource object")
+    action = str(parameters.get("action") or "resource.inspect")
+    identity = {"kind": resource.get("kind"), "id": resource.get("id"), "label": resource.get("label") or resource.get("id")}
+    if action == "resource.validate":
+        errors = [f"missing {name}" for name in ("kind", "id") if not resource.get(name)]
+        return {"result": {**identity, "valid": not errors, "errors": errors, "enabled": resource.get("enabled", True)}}
+    if action == "datatype.sample":
+        name = str(resource.get("id") or "value").lower()
+        sample: Any = "sample text" if any(token in name for token in ("text", "string", "markdown")) else [] if any(token in name for token in ("list", "array", "set")) else {} if any(token in name for token in ("object", "map", "scene", "image")) else None
+        return {"result": {**identity, "sample": sample, "representations": resource.get("children") or resource.get("parents") or []}}
+    if action == "datatype.validate":
+        relationships = resource.get("children") or resource.get("parents") or []
+        return {"result": {**identity, "valid": bool(resource.get("id")), "relationships": relationships, "relationshipCount": len(relationships)}}
+    if action == "datatype.conversions":
+        return {"result": {**identity, "from": resource.get("from"), "to": resource.get("to"), "declaredConversions": resource.get("conversions") or []}}
+    if action == "prompt.render":
+        text = str(resource.get("text") or resource.get("template") or resource.get("description") or "")
+        return {"result": {**identity, "rendered": text, "length": len(text), "bindings": resource.get("inputs") or {}}}
+    if action == "prompt.compose":
+        return {"result": {**identity, "prompts": resource.get("prompts") or [resource.get("id")], "separator": resource.get("separator") or "\n\n"}}
+    if action == "goal.evaluate":
+        criteria = resource.get("successCriteria") or []
+        return {"result": {**identity, "satisfied": False if criteria else None, "criteria": criteria, "status": "requires evidence" if criteria else "no criteria declared"}}
+    if action == "goal.interpret":
+        return {"result": {**identity, "interpretations": resource.get("children") or [], "preferred": resource.get("preferredChild"), "criteria": resource.get("successCriteria") or []}}
+    if action == "goal.satisfaction":
+        criteria = resource.get("successCriteria") or []
+        return {"result": {**identity, "criteriaCount": len(criteria), "satisfiedCount": 0, "unknownCount": len(criteria)}}
+    if action == "planning.preview":
+        return {"result": {**identity, "goals": resource.get("goals") or [], "workflow": resource.get("workflow"), "strategy": resource.get("strategy") or resource.get("description")}}
+    if action == "planning.generate":
+        return {"result": {**identity, "plannedWorkflow": resource.get("workflow") or None, "goals": resource.get("goals") or [], "status": "planner input prepared"}}
+    if action == "planning.validate":
+        return {"result": {**identity, "valid": bool(resource.get("id")), "workflowDeclared": bool(resource.get("workflow")), "goals": resource.get("goals") or []}}
+    if action == "atomspace.inspect":
+        return {"result": {**identity, "bindings": resource.get("bindings") or [], "parents": resource.get("parents") or [], "eventSemantics": "AtomSpace changes emit Events"}}
+    if action == "atomspace.query":
+        return {"result": {**identity, "query": resource.get("query") or resource.get("bindings") or [], "matches": [], "readOnly": True}}
+    if action == "atomspace.assert":
+        return {"result": {**identity, "asserted": resource.get("assert") or resource.get("atoms") or [], "event": "atomspace.changed", "persisted": False}}
+    if action == "atomspace.retract":
+        return {"result": {**identity, "retracted": resource.get("retract") or [], "event": "atomspace.changed", "persisted": False}}
+    if action == "policy.evaluate":
+        return {"result": {**identity, "effective": resource.get("enabled", True), "rules": resource.get("rules") or resource.get("where") or resource.get("query") or {}}}
+    if action == "policy.explain":
+        return {"result": {**identity, "enabled": resource.get("enabled", True), "parents": resource.get("parents") or [], "decisionInputs": resource.get("rules") or resource.get("query") or {}}}
+    if action == "category.preview":
+        query = resource.get("query") or {}
+        return {"result": {**identity, "trees": resource.get("trees") or [], "path": resource.get("path"), "query": query, "parentMode": resource.get("parentMode") or "unspecified"}}
+    if action == "category.matches":
+        return {"result": {**identity, "query": resource.get("query") or {}, "matchCount": 0, "matches": [], "note": "Use the active tree catalog to resolve matches."}}
+    return {"result": {**identity, "enabled": resource.get("enabled", True), "keys": sorted(resource), "parents": resource.get("parents") or [], "children": resource.get("children") or []}}
+
+
 def register_real_providers(registry: OperationRegistry) -> None:
     existing = {item["name"] for item in registry.describe()}
     specs = [
@@ -488,6 +545,7 @@ def register_real_providers(registry: OperationRegistry) -> None:
         OperationSpec("llm.complete", {}, {"text": "Text", "response": "Object"}, _llm_complete),
         OperationSpec("artifact.convert", {"value": "Any"}, {"value": "Any"}, _artifact_convert),
         OperationSpec("system.workbench", {}, {"value": "Any"}, _system_workbench),
+        OperationSpec("resource.tool", {"resource": "Any"}, {"result": "Any"}, _resource_tool),
     ]
     for spec in specs:
         if spec.name not in existing:

@@ -27,6 +27,16 @@
     identity_map
     image
     atomspace
+    atom
+    atomspace_change
+    atomspace_query_result
+    artifact_category
+    category_match_set
+    datatype_contract
+    datatype_sample
+    conversion_inventory
+    goal_interpretation
+    goal_satisfaction
     intervention
     object
     object_representation_bundle
@@ -35,7 +45,15 @@
     number
     program
     provenance_record
+    planning_strategy
+    planned_workflow
+    policy
+    policy_decision
+    prompt_resource
+    prompt_composition
     relationship
+    resource
+    resource_validation
     rule_set
     simulation_request
     simulation_result

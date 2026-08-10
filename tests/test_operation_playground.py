@@ -11,10 +11,35 @@ from fastapi import HTTPException
 from urllib.error import HTTPError
 
 from operation_api import invoke_operation, read_operation_debug_log
-from operation_library import DEFAULT_WORKSPACES_ROOT, resolve_operation_implementation
+from operation_library import DEFAULT_WORKSPACES_ROOT, load_shared_operation_documents, resolve_operation_implementation
 from operation_resolution import _prompt_composition_prefix, materialize_workflow_step
 from prompt_library import prompt_hierarchy, resolve_prompt_profile
 from workflow_providers import _llm_complete, _llm_response_text, _python_callable
+
+
+def test_resource_tool_operations_use_declared_semantic_datatypes() -> None:
+    operations = {item["id"]: item for item in load_shared_operation_documents()}
+    expected = {
+        "resource_validate": ("Resource", "ResourceValidation"),
+        "datatype_sample": ("DatatypeContract", "DatatypeSample"),
+        "datatype_conversion_inspect": ("DatatypeContract", "ConversionInventory"),
+        "prompt_render": ("PromptResource", "Text"),
+        "prompt_compose": ("PromptResource", "PromptComposition"),
+        "goal_evaluate": ("Goal", "Evaluation"),
+        "goal_interpret": ("Goal", "GoalInterpretation"),
+        "goal_check_satisfaction": ("Goal", "GoalSatisfaction"),
+        "planning_strategy_generate": ("PlanningStrategy", "PlannedWorkflow"),
+        "atomspace_query": ("AtomSpace", "AtomSpaceQueryResult"),
+        "atomspace_assert": ("AtomSpace", "AtomSpaceChange"),
+        "atomspace_retract": ("AtomSpace", "AtomSpaceChange"),
+        "policy_evaluate": ("Policy", "PolicyDecision"),
+        "category_resolve_matches": ("ArtifactCategory", "CategoryMatchSet"),
+    }
+    for operation_id, (input_type, output_type) in expected.items():
+        operation = operations[operation_id]
+        assert operation["inputs"] == {"resource": input_type}
+        assert operation["outputs"] == {"result": output_type}
+        assert "Any" not in {*operation["inputs"].values(), *operation["outputs"].values()}
 
 
 def test_operation_playground_invokes_python_variant() -> None:
@@ -35,6 +60,22 @@ def test_operation_playground_invokes_python_variant() -> None:
     assert trace["providerExecution"]["provider"] == "python.callable"
     assert trace["providerExecution"]["stdout"] == ""
     assert trace["providerExecution"]["stderr"] == ""
+
+
+def test_resource_tool_operations_execute_real_filesystem_resources() -> None:
+    atomspace = {
+        "kind": "atomspace",
+        "id": "test_space",
+        "label": "Test Space",
+        "bindings": ["facts", "rules"],
+    }
+    query = invoke_operation("shared", "atomspace_query", {"inputs": {"resource": atomspace}})
+    assert query["implementation"]["route"] == "resource.tool"
+    assert query["outputs"]["result"]["query"] == ["facts", "rules"]
+    asserted = invoke_operation("shared", "atomspace_assert", {"inputs": {"resource": atomspace}})
+    assert asserted["outputs"]["result"]["event"] == "atomspace.changed"
+    retracted = invoke_operation("shared", "atomspace_retract", {"inputs": {"resource": atomspace}})
+    assert retracted["outputs"]["result"]["event"] == "atomspace.changed"
 
 
 def test_python_provider_captures_stdout_and_stderr(monkeypatch: pytest.MonkeyPatch) -> None:

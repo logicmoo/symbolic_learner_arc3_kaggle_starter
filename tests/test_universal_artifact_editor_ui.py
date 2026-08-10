@@ -23,6 +23,20 @@ def test_universal_editor_keeps_compatibility_chrome_for_adapted_panels() -> Non
         assert 'from "./HierarchyResourceEditor"' in source or 'from "./UniversalArtifactEditor"' in source
 
 
+def test_design_resource_editors_share_the_universal_execution_runner() -> None:
+    runner = _text("ResourceExecutionPlayground.tsx")
+    controls = _text("UniversalExecutionControls.tsx")
+    for component in ("DataCatalogPanel.tsx", "PromptLibraryEditor.tsx", "GoalPlanLibraryEditor.tsx", "PolicyLibraryEditor.tsx"):
+        source = _text(component)
+        assert 'from "./ResourceExecutionPlayground"' in source
+        assert "<ResourceExecutionPlayground" in source
+    for operation_id in ("datatype_sample", "prompt_render", "goal_evaluate", "planning_strategy_generate", "atomspace_query", "atomspace_assert", "atomspace_retract", "policy_evaluate", "category_preview"):
+        assert operation_id in runner
+    assert "OPERATION · ONE-OFF" in runner
+    assert "MODEL · ONE-OFF" in runner
+    assert "POPULATE INPUTS" in controls
+
+
 def test_operations_preserve_rich_baseline_features() -> None:
     source = _text("OperationLibraryEditor.tsx")
     required = (

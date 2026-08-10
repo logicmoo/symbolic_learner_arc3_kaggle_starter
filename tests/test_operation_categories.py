@@ -12,10 +12,12 @@ def test_every_operation_has_at_least_one_valid_category_path() -> None:
     operations = list(WORKSPACES.glob("*/design/operations/*.operation.metta"))
     assert operations
     for path in operations:
-        document = resources.read_json(path.with_suffix(".json"))
-        categories = document.get("categories")
-        assert isinstance(categories, list) and categories, path
-        assert all(isinstance(category, str) and category.strip(" /") for category in categories), path
+        payload = resources.read_json(path.with_suffix(".json"))
+        documents = payload if isinstance(payload, list) else [payload]
+        for document in documents:
+            categories = document.get("categories")
+            assert isinstance(categories, list) and categories, (path, document.get("id"))
+            assert all(isinstance(category, str) and category.strip(" /") for category in categories), (path, document.get("id"))
 
 
 def test_titlecase_llm_implementation_is_a_sample_llm() -> None:
