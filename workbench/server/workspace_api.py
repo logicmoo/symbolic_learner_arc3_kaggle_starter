@@ -582,6 +582,15 @@ def workspace_backends(workspace_id: str) -> dict[str, Any]:
         raise HTTPException(status_code=404, detail=str(error)) from error
 
 
+@router.get("/{workspace_id}/systems")
+def workspace_systems(workspace_id: str) -> dict[str, Any]:
+    try:
+        workspace = _resolve_workspace(workspace_id)
+        return {"workspace": workspace, "systems": _load_systems(workspace)}
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+
+
 @router.get("/{workspace_id}/models")
 def workspace_models(workspace_id: str) -> dict[str, Any]:
     try:
