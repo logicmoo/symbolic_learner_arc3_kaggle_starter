@@ -5,6 +5,17 @@
 [Back to repository README](README.md)
 
 
+\## Codex TODO ownership and recovery
+
+
+
+The durable Codex recovery ledger is [CODEX_TODO.md](CODEX_TODO.md). Codex
+owns keeping that file current at meaningful implementation, validation, and
+handoff checkpoints. Contributors may add or correct tasks, but should not use
+`AGENTS.md` as a transient progress log. After context loss, restart, or
+handoff, read `AGENTS.md` first and then `CODEX_TODO.md` before changing code.
+
+
 
 \## Project Purpose
 
