@@ -80,16 +80,20 @@ type OpenRuntimeResource = (kind: RuntimeResourceKind, id: string) => void;
 type WorkflowRunCommand = "pause" | "resume" | "advance" | "replay" | "cancel";
 
 function WorkflowRunProjection({ run, workflow, busy, onCommand, onOpenResource, commands = ["pause", "resume", "advance", "replay", "cancel"] }: { run: RuntimeRun; workflow: FrozenWorkflow | null; busy: boolean; onCommand: (command: WorkflowRunCommand) => void; onOpenResource?: OpenRuntimeResource; commands?: WorkflowRunCommand[] }) {
-  const initialView = new URLSearchParams(window.location.search).get("runView") === "chronology" ? "chronology" : "topology";
+  const initialParameters = new URLSearchParams(window.location.search);
+  const initialView = initialParameters.get("runView") === "chronology" ? "chronology" : "topology";
   const [view, setViewState] = useState<"topology" | "chronology">(initialView);
   const setView = (next: "topology" | "chronology") => { setViewState(next); const url = new URL(window.location.href); if (next === "topology") url.searchParams.delete("runView"); else url.searchParams.set("runView", next); window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`); };
-  const [selectedStepId, setSelectedStepId] = useState("");
-  const [selectedEventId, setSelectedEventId] = useState("");
+  const initialSelectionMatchesRun = initialParameters.get("run") === run.id || !initialParameters.has("run");
+  const [selectedStepId, setSelectedStepId] = useState(initialSelectionMatchesRun ? initialParameters.get("runStep") || "" : "");
+  const [selectedEventId, setSelectedEventId] = useState(initialSelectionMatchesRun ? initialParameters.get("runEvent") || "" : "");
   const steps = workflow?.steps || [];
   const selectedStep = steps.find(step => step.id === selectedStepId) || steps[0];
   const selectedEvent = run.events.find(event => String(event.id) === selectedEventId);
-  const selectStep = (stepId: string) => { setSelectedStepId(stepId); setSelectedEventId(""); };
-  const selectEvent = (event: RuntimeRun["events"][number]) => { setSelectedEventId(String(event.id)); if (event.stepId) setSelectedStepId(event.stepId); };
+  const persistProjectionSelection = (stepId: string, eventId = "") => { const url = new URL(window.location.href); if (stepId) url.searchParams.set("runStep", stepId); else url.searchParams.delete("runStep"); if (eventId) url.searchParams.set("runEvent", eventId); else url.searchParams.delete("runEvent"); window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`); };
+  const selectStep = (stepId: string) => { setSelectedStepId(stepId); setSelectedEventId(""); persistProjectionSelection(stepId); };
+  const selectEvent = (event: RuntimeRun["events"][number]) => { const stepId = event.stepId || selectedStepId; setSelectedEventId(String(event.id)); if (event.stepId) setSelectedStepId(event.stepId); persistProjectionSelection(stepId, String(event.id)); };
+  useEffect(() => { const parameters = new URLSearchParams(window.location.search); const matchesRun = parameters.get("run") === run.id || !parameters.has("run"); setSelectedStepId(matchesRun ? parameters.get("runStep") || "" : ""); setSelectedEventId(matchesRun ? parameters.get("runEvent") || "" : ""); }, [run.id]);
   const width = Math.max(760, steps.length * 180);
   const positions = new Map(steps.map((step, index) => [step.id, { x: 95 + index * 170, y: 75 + (index % 2) * 105 }]));
   const chronologyWidth = Math.max(760, run.events.length * 135 + 90);
@@ -273,11 +277,18 @@ export function RuntimeHistoryView({ mode, workspaceId, goals = [], plans = [], 
       onSelectRun?.(payload.goalRun.workflowRun); await refresh(); selectGoalRun(payload.goalRun);
     } catch (reason) { setError(String(reason)); } finally { setBusy(false); }
   };
-  const persistRuntimeSelection = (parameter: "run" | "goalRun", id: string) => { const url = new URL(window.location.href); url.searchParams.set(parameter, id); url.searchParams.delete(parameter === "run" ? "goalRun" : "run"); window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`); };
+  const persistRuntimeSelection = (parameter: "run" | "goalRun", id: string) => { const url = new URL(window.location.href); url.searchParams.set(parameter, id); url.searchParams.delete(parameter === "run" ? "goalRun" : "run"); url.searchParams.delete("runStep"); url.searchParams.delete("runEvent"); window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`); };
   const chooseRun = (run: RuntimeRun) => { setSelectedId(run.id); if (mode === "workflowRuns") persistRuntimeSelection("run", run.id); onSelectRun?.(run); };
   const selectGoalRun = (goalRun: GoalRun) => { setSelectedId(goalRun.id); persistRuntimeSelection("goalRun", goalRun.id); onSelectRun?.(goalRun.workflowRun); };
   const selectedRun = runs.find(row => row.id === selectedId) || runs[0];
   const selectedInvocation = invocations.find(row => row.id === selectedInvocationId);
+  useEffect(() => {
+    if (mode !== "workflowRuns" || !selectedRun) return;
+    const url = new URL(window.location.href);
+    if (url.searchParams.has("run")) return;
+    url.searchParams.set("run", selectedRun.id);
+    window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
+  }, [mode, selectedRun?.id]);
   useEffect(() => {
     if (mode !== "workflowRuns" || !selectedRun) { setFrozenWorkflow(null); return; }
     let active = true;
@@ -331,7 +342,7 @@ export function RuntimeHistoryView({ mode, workspaceId, goals = [], plans = [], 
       const payload = await api(`/api/engine/runs/${encodeURIComponent(selectedRun.id)}/commands`, { method: "POST", body: JSON.stringify({ command }) });
       const updated = payload.run as RuntimeRun;
       setRuns(current => command === "replay" ? [updated, ...current] : current.map(item => item.id === updated.id ? updated : item));
-      setSelectedId(updated.id); onSelectRun?.(updated);
+      chooseRun(updated);
     } catch (reason) { setError(String(reason)); } finally { setBusy(false); }
   };
   const title = { goalRuns: "Goal Runs", workflowRuns: "Workflow Runs", execs: "Execs", events: "Events", states: "States", runtimeContexts: "Contexts", logs: "Logs" }[mode];

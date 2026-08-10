@@ -147,3 +147,13 @@ def test_detected_objects_link_to_persisted_provenance_resources() -> None:
     assert 'record.representation || artifact.representation' in runtime
     assert 'record.operationId || artifact.provenance?.operationId' in runtime
     assert "provenance['operationId']" in engine
+
+
+def test_runner_selection_survives_reload_through_deep_links() -> None:
+    runtime = (ROOT / "workbench" / "frontend" / "src" / "components" / "RuntimeHistoryView.tsx").read_text(encoding="utf-8")
+    assert 'initialParameters.get("runStep")' in runtime
+    assert 'initialParameters.get("runEvent")' in runtime
+    assert 'url.searchParams.set("runStep", stepId)' in runtime
+    assert 'url.searchParams.set("runEvent", eventId)' in runtime
+    assert 'url.searchParams.delete("runEvent")' in runtime
+    assert 'url.searchParams.set("run", selectedRun.id)' in runtime
