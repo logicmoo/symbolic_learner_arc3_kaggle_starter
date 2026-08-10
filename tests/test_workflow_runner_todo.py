@@ -131,3 +131,5 @@ def test_human_input_submission_has_a_durable_link_event() -> None:
     assert "'human_input.received'" in engine
     assert "'artifactIds': artifact_ids" in engine
     assert "'redactedFields': redacted_fields" in engine
+    assert "'payload': '[REDACTED]' if sensitive" in engine
+    assert 'item.redacted ? " · REDACTED"' in (ROOT / "workbench" / "frontend" / "src" / "components" / "RuntimeHistoryView.tsx").read_text(encoding="utf-8")

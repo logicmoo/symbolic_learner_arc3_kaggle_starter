@@ -454,6 +454,18 @@ class WorkflowEngine:
         if status == 'running': self.advance(run_id)
         return self.get_run(run_id)
 
+    @staticmethod
+    def _artifact_view(row: sqlite3.Row) -> dict[str, Any]:
+        provenance = json.loads(row['provenance'])
+        sensitive = bool(provenance.get('sensitive'))
+        return {
+            'id': row['id'], 'stepId': row['step_id'], 'name': row['name'],
+            'datatype': row['datatype'], 'representation': row['representation'],
+            'payload': '[REDACTED]' if sensitive else json.loads(row['payload']),
+            'contentHash': row['content_hash'], 'provenance': provenance,
+            'createdAt': row['created_at'], 'redacted': sensitive,
+        }
+
     def get_run(self, run_id: str) -> dict[str, Any]:
         with self._db() as db:
             run = db.execute('SELECT * FROM wf_runs WHERE id=?', (run_id,)).fetchone()
@@ -468,7 +480,7 @@ class WorkflowEngine:
                 'inputs': json.loads(run['inputs']), 'outputs': json.loads(run['outputs']), 'error': run['error'],
                 'createdAt': run['created_at'], 'updatedAt': run['updated_at'],
                 'steps': [{'stepId': s['step_id'], 'status': s['status'], 'attempt': s['attempt'], 'childRunId': s['child_run_id'], 'error': s['error']} for s in steps],
-                'artifacts': [{'id': a['id'], 'stepId': a['step_id'], 'name': a['name'], 'datatype': a['datatype'], 'representation': a['representation'], 'payload': json.loads(a['payload']), 'contentHash': a['content_hash'], 'provenance': json.loads(a['provenance']), 'createdAt': a['created_at']} for a in artifacts],
+                'artifacts': [self._artifact_view(a) for a in artifacts],
                 'events': [{'id': e['id'], 'stepId': e['step_id'], 'kind': e['kind'], 'payload': json.loads(e['payload']), 'createdAt': e['created_at']} for e in events],
                 'logs': [{'id': entry['id'], 'stepId': entry['step_id'], 'stream': entry['stream'], 'message': entry['message'], 'createdAt': entry['created_at']} for entry in logs]}
 

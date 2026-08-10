@@ -109,6 +109,10 @@ def test_human_input_draft_survives_restart_and_omits_secrets(tmp_path: Path) ->
     assert received['payload']['fields'] == ['choice']
     assert received['payload']['redactedFields'] == ['token']
     assert 'used-once' not in str(received['payload'])
+    secret_artifact = next(item for item in submitted['artifacts'] if item['name'] == 'token')
+    assert secret_artifact['payload'] == '[REDACTED]'
+    assert secret_artifact['redacted'] is True
+    assert 'used-once' not in str(submitted)
 
 
 def test_retry_policy(tmp_path: Path) -> None:
