@@ -76,7 +76,7 @@ function objectArtifactRecords(artifact: RuntimeRun["artifacts"][number]): Recor
   return /object_list/i.test(String(artifact.representation || "")) ? [record] : [];
 }
 
-type RuntimeResourceKind = "operation" | "model" | "datatype";
+type RuntimeResourceKind = "operation" | "model" | "datatype" | "goal" | "plan" | "context";
 type OpenRuntimeResource = (kind: RuntimeResourceKind, id: string) => void;
 
 type WorkflowRunCommand = "pause" | "resume" | "advance" | "replay" | "cancel";
@@ -187,8 +187,10 @@ function WorkflowInputsEditor({ workflowId, contract, source, onSource }: { work
 
 function RuntimeRecordInspector({ row, onOpenResource }: { row: RuntimeHistoryRow; onOpenResource?: OpenRuntimeResource }) {
   const artifact = row.recordKind === "state artifact" ? row.record as RuntimeRun["artifacts"][number] : undefined;
+  const context = row.recordKind === "runtime context" ? row.record as GoalRun : undefined;
   return <section className="run-projection-inspector" aria-label="Selected durable runtime record">
     <div><span>DURABLE {row.recordKind.toUpperCase()}</span><h3>{row.a}</h3><p>Run {row.run.id} · {row.run.workflowId}</p>{artifact && onOpenResource && <div className="runtime-resource-links">{artifact.datatype && <button type="button" onClick={() => onOpenResource("datatype", artifact.datatype!)}>Datatype · {artifact.datatype}</button>}{artifact.representation && <button type="button" onClick={() => onOpenResource("datatype", artifact.representation!)}>Representation · {artifact.representation}</button>}{Boolean(artifact.provenance?.operationId) && <button type="button" onClick={() => onOpenResource("operation", String(artifact.provenance?.operationId))}>Operation · {String(artifact.provenance?.operationId)}</button>}{Boolean(artifact.provenance?.modelId) && <button type="button" onClick={() => onOpenResource("model", String(artifact.provenance?.modelId))}>Model · {String(artifact.provenance?.modelId)}</button>}</div>}</div>
+    {context && onOpenResource && <div className="runtime-resource-links">{context.contextId && <button type="button" onClick={() => onOpenResource("context", context.contextId!)}>AtomSpace · {context.contextId}</button>}{context.contextVariantId && <button type="button" onClick={() => onOpenResource("context", context.contextVariantId!)}>Resolved variant · {context.contextVariantId}</button>}</div>}
     <dl><div><dt>Record key</dt><dd>{row.key}</dd></div><div><dt>Status / type</dt><dd>{row.b}</dd></div><div><dt>Step / time</dt><dd>{row.c}</dd></div><div><dt>Run status</dt><dd>{row.run.status}</dd></div></dl>
     <details open><summary>Complete persisted record</summary><pre>{jsonValueToMetta(row.record)}</pre></details>
   </section>;
@@ -402,7 +404,7 @@ export function RuntimeHistoryView({ mode, workspaceId, goals = [], plans = [], 
     <button className="run-button" disabled={busy || !goalId || !planId} onClick={startGoalRun}>▶ Pursue goal</button>
     <div className="resource-table"><div className="resource-row resource-head"><span>Goal</span><span>Strategy variant</span><span>Status</span><span>Workflow/plan run</span><span>Created</span></div>{goalRuns.map(row => <button className="resource-row" key={row.id} onClick={() => selectGoalRun(row)}><b>{row.goalVariantId || row.goalId}</b><code>{row.planVariantId}</code><span>{row.status}</span><span>{row.workflowRunId.slice(0, 8)}</span><em>{stamp(row.createdAt)}</em></button>)}</div>
     {goalRuns.length >= goalRunLimit && <button type="button" className="runtime-load-older" onClick={() => setGoalRunLimit(limit => Math.min(500, limit + 50))}>Load 50 older goal runs</button>}
-    {selectedGoalRun && <div className="goal-run-controls"><div><b>Selected pursuit</b><span>{selectedGoalRun.goalVariantId} · {selectedGoalRun.planVariantId} · {selectedGoalRun.contextVariantId || "no context"}</span></div></div>}
+    {selectedGoalRun && <div className="goal-run-controls"><div><b>Selected pursuit</b><span>{selectedGoalRun.goalVariantId} · {selectedGoalRun.planVariantId} · {selectedGoalRun.contextVariantId || "no context"}</span></div>{onOpenResource && <div className="runtime-resource-links"><button type="button" onClick={() => onOpenResource("goal", selectedGoalRun.goalVariantId || selectedGoalRun.goalId)}>Goal · {selectedGoalRun.goalVariantId || selectedGoalRun.goalId}</button><button type="button" onClick={() => onOpenResource("plan", selectedGoalRun.planVariantId || selectedGoalRun.planId)}>Planning strategy · {selectedGoalRun.planVariantId || selectedGoalRun.planId}</button>{(selectedGoalRun.contextVariantId || selectedGoalRun.contextId) && <button type="button" onClick={() => onOpenResource("context", selectedGoalRun.contextVariantId || selectedGoalRun.contextId!)}>AtomSpace · {selectedGoalRun.contextVariantId || selectedGoalRun.contextId}</button>}</div>}</div>}
     {waitingStep && <div className="human-pause goal-run-human"><div className="pause-ring">Ⅱ</div><b>Waiting for {waitingStep.stepId}</b><span>{waitingStepDefinition?.label || "Provide the values required by this workflow step."}</span><small className="human-draft-status">{draftStatus}</small><HumanInputForm step={waitingStepDefinition} busy={busy} draft={humanDraft} onDraft={values => { setHumanDraft(values); setHumanDraftDirty(true); }} onSubmit={values => void submitHumanInput(values)} /></div>}
     {selectedGoalRun && <WorkflowRunProjection run={selectedGoalRun.workflowRun} workflow={goalRunWorkflow} busy={busy} commands={["pause", "resume", "advance", "cancel"]} onCommand={command => void commandGoalRun(command as Exclude<WorkflowRunCommand, "replay">)} onOpenResource={onOpenResource} />}
   </section>;

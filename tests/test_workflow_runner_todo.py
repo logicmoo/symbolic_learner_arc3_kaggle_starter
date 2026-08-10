@@ -124,7 +124,8 @@ def test_runtime_records_link_back_to_executable_resources() -> None:
     assert 'onOpenResource("datatype", representationId)' in runtime
     assert "OpenRuntimeResource" in runtime
     assert 'url.searchParams.set("resource",id)' in shell
-    assert 'kind==="operation"?"operations":kind==="model"?"llms":"data"' in shell
+    assert 'kind==="operation"?"operations":kind==="model"?"llms":kind==="goal"?"goals"' in shell
+    assert 'kind==="context"?"contexts":"data"' in shell
     assert 'new URLSearchParams(window.location.search).get("resource")' in operations
     assert 'new URLSearchParams(window.location.search).get("resource")' in models
 
@@ -179,3 +180,15 @@ def test_runtime_history_rows_open_exact_persisted_records() -> None:
     assert "Complete persisted record" in runtime
     assert 'row.recordKind === "state artifact"' in runtime
     assert 'artifact.provenance?.operationId' in runtime
+
+
+def test_runtime_context_and_goal_runs_link_to_design_resources() -> None:
+    runtime = (ROOT / "workbench" / "frontend" / "src" / "components" / "RuntimeHistoryView.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "workbench" / "frontend" / "src" / "pages" / "FilesystemWorkbenchPage.tsx").read_text(encoding="utf-8")
+    editor = (ROOT / "workbench" / "frontend" / "src" / "components" / "GoalPlanLibraryEditor.tsx").read_text(encoding="utf-8")
+    assert 'onOpenResource("context", context.contextId' in runtime
+    assert 'onOpenResource("goal", selectedGoalRun.goalVariantId' in runtime
+    assert 'onOpenResource("plan", selectedGoalRun.planVariantId' in runtime
+    assert 'kind==="context"?"contexts"' in page
+    assert 'get("resource")' in editor
+    assert "payload.resources.find(record => record.document?.id === requestedId)" in editor

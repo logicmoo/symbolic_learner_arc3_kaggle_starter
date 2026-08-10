@@ -44,7 +44,8 @@ def test_navigation_views_are_deep_linkable_for_visual_acceptance() -> None:
     assert 'new URLSearchParams(window.location.search).get("view")' in source
     assert 'url.searchParams.set("view",next)' in source
     assert 'window.addEventListener("popstate",restoreView)' in source
-    assert 'setView(viewFromLocation()||"canvas")' in source
+    assert 'const restoredView=viewFromLocation()' in source
+    assert 'setViewState(restoredView||"canvas")' in source
 
 
 def test_artifact_editors_hide_the_run_pipeline_column() -> None:
@@ -109,7 +110,8 @@ def test_runtime_artifacts_deep_link_to_datatype_resources() -> None:
     page = ACTIVE_PAGE.read_text(encoding="utf-8")
     data_editor = (ROOT / "workbench" / "frontend" / "src" / "components" / "DataCatalogPanel.tsx").read_text(encoding="utf-8")
     assert 'kind:"operation"|"model"|"datatype"' in page
-    assert 'kind==="model"?"llms":"data"' in page
+    assert 'kind==="model"?"llms":kind==="goal"?"goals"' in page
+    assert 'kind==="context"?"contexts":"data"' in page
     assert 'new URLSearchParams(window.location.search).get("resource")' in data_editor
     assert "resourceIdentity(row.document?.label)===requestedId" in data_editor
 

@@ -52,7 +52,7 @@ export function GoalPlanLibraryEditor({ workspaceId, family }: { workspaceId: st
   const children = payload?.hierarchy.variantsBySpecification || {};
   const ordered = useMemo(() => [...specifications].sort((a, b) => String(a.document?.label || a.path).localeCompare(String(b.document?.label || b.path))), [specifications]);
   const open = (record: RecordFile<Resource>) => { const key = recordKey(record); setOpenDocs(current => current.some(doc => doc.key === key) ? current : [...current, { key, record, source: record.document ? JSON.stringify(record.document, null, 2) : "", dirty: false }]); setActiveKey(key); };
-  useEffect(() => { if (payload && openDocs.length === 0 && ordered[0]) open(ordered[0] as RecordFile<Resource>); }, [payload, ordered]);
+  useEffect(() => { if (!payload || openDocs.length) return; const requestedId = new URLSearchParams(window.location.search).get("resource"); const requested = requestedId ? payload.resources.find(record => record.document?.id === requestedId) : undefined; if (requested) open(requested); else if (ordered[0]) open(ordered[0] as RecordFile<Resource>); }, [payload, ordered]);
   const updateSource = (key: string, source: string) => setOpenDocs(current => current.map(doc => doc.key === key ? { ...doc, source, dirty: true } : doc));
   const active = openDocs.find(doc => doc.key === activeKey) || null;
   const close = (key: string) => { setOpenDocs(current => { const index = current.findIndex(doc => doc.key === key); const next = current.filter(doc => doc.key !== key); if (activeKey === key) setActiveKey(next[Math.max(0, index - 1)]?.key || next[0]?.key || null); if (compareKey === key) setCompareKey(null); return next; }); };
