@@ -41,6 +41,8 @@ values here.
   universal-editor suite: 97 tests passed on 2026-08-11.
 - [x] Start the API and Vite UI on acceptance ports and verify the live Systems
   endpoint returns `codex,llm,metta,omegaclaw,python,prolog`.
+- [x] Add a durable mailbox polling command with bounded checks, early message
+  exit, monitored-port failure detection, and deterministic regression tests.
 
 ## Next work
 

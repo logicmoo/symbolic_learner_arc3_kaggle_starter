@@ -9,7 +9,9 @@ import mimetypes
 import os
 import re
 import shutil
+import socket
 import sys
+import time
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -181,6 +183,42 @@ def receive(recipient: str, *, root: Path | None = None) -> list[dict[str, Any]]
     return found
 
 
+def _port_is_listening(port: int) -> bool:
+    try:
+        with socket.create_connection(("127.0.0.1", port), timeout=0.25):
+            return True
+    except OSError:
+        return False
+
+
+def poll(
+    recipient: str,
+    *,
+    interval_seconds: float = 30.0,
+    max_checks: int = 10,
+    required_ports: tuple[int, ...] = (),
+    root: Path | None = None,
+    sleep: Any = time.sleep,
+    port_probe: Any = _port_is_listening,
+) -> tuple[list[dict[str, Any]], list[int]]:
+    """Poll until mail or a monitored listener failure ends the session."""
+    if interval_seconds < 0:
+        raise ValueError("interval_seconds must be non-negative")
+    if max_checks < 1:
+        raise ValueError("max_checks must be at least 1")
+
+    for check in range(max_checks):
+        if check:
+            sleep(interval_seconds)
+        found = receive(recipient, root=root)
+        if found:
+            return found, []
+        missing_ports = [port for port in required_ports if not port_probe(port)]
+        if missing_ports:
+            return [], missing_ports
+    return [], []
+
+
 def status(*, root: Path | None = None) -> dict[str, Any]:
     target = root or mailbox_dir()
     path = target / "messages.jsonl"
@@ -215,6 +253,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     receive_parser = commands.add_parser("receive", help="consume unread messages")
     receive_parser.add_argument("recipient")
+    poll_parser = commands.add_parser("poll", help="poll for unread messages")
+    poll_parser.add_argument("recipient")
+    poll_parser.add_argument("--interval", type=float, default=30.0)
+    poll_parser.add_argument("--checks", type=int, default=10)
+    poll_parser.add_argument("--require-port", action="append", default=[], type=int)
     commands.add_parser("status", help="show mailbox configuration")
     return parser
 
@@ -242,6 +285,21 @@ def main(argv: list[str] | None = None) -> int:
     elif args.command == "receive":
         for record in receive(args.recipient):
             print(json.dumps(record, ensure_ascii=False))
+    elif args.command == "poll":
+        records, missing_ports = poll(
+            args.recipient,
+            interval_seconds=args.interval,
+            max_checks=args.checks,
+            required_ports=tuple(args.require_port),
+        )
+        for record in records:
+            print(json.dumps(record, ensure_ascii=False))
+        if missing_ports:
+            print(
+                json.dumps({"error": "monitored_process_failure", "missing_ports": missing_ports}),
+                file=sys.stderr,
+            )
+            return 2
     else:
         print(json.dumps(status(), ensure_ascii=False, indent=2))
     return 0

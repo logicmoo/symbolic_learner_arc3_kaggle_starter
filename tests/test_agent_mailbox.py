@@ -39,6 +39,62 @@ def test_environment_override_controls_cli_storage(tmp_path: Path, monkeypatch, 
     assert received["id"] == sent["id"]
 
 
+def test_poll_checks_immediately_then_stops_when_mail_arrives(tmp_path: Path) -> None:
+    sleeps: list[float] = []
+
+    def deliver_after_first_check(interval: float) -> None:
+        sleeps.append(interval)
+        agent_mailbox.send("agent-a", "work", sender="agent-b", root=tmp_path)
+
+    records, missing_ports = agent_mailbox.poll(
+        "agent-a",
+        interval_seconds=30,
+        max_checks=10,
+        root=tmp_path,
+        sleep=deliver_after_first_check,
+    )
+
+    assert [record["text"] for record in records] == ["work"]
+    assert missing_ports == []
+    assert sleeps == [30]
+
+
+def test_poll_runs_exact_check_limit_for_quiet_mailbox(tmp_path: Path) -> None:
+    sleeps: list[float] = []
+
+    records, missing_ports = agent_mailbox.poll(
+        "agent-a",
+        interval_seconds=30,
+        max_checks=10,
+        root=tmp_path,
+        sleep=sleeps.append,
+    )
+
+    assert records == []
+    assert missing_ports == []
+    assert sleeps == [30] * 9
+
+
+def test_poll_exits_early_when_monitored_port_is_missing(tmp_path: Path) -> None:
+    probed: list[int] = []
+
+    def port_probe(port: int) -> bool:
+        probed.append(port)
+        return port != 8000
+
+    records, missing_ports = agent_mailbox.poll(
+        "agent-a",
+        required_ports=(5173, 8000),
+        root=tmp_path,
+        sleep=lambda _: None,
+        port_probe=port_probe,
+    )
+
+    assert records == []
+    assert missing_ports == [8000]
+    assert probed == [5173, 8000]
+
+
 def test_status_does_not_create_mailbox(tmp_path: Path) -> None:
     result = agent_mailbox.status(root=tmp_path)
     assert result["size_bytes"] == 0
