@@ -43,6 +43,8 @@ values here.
   endpoint returns `codex,llm,metta,omegaclaw,python,prolog`.
 - [x] Add a durable mailbox polling command with bounded checks, early message
   exit, monitored-port failure detection, and deterministic regression tests.
+- [x] Add a repository-owned Codex heartbeat definition and document its
+  mapping to the machine-local installed automation.
 
 ## Next work
 

@@ -1,8 +1,12 @@
 import json
 import hashlib
+import tomllib
 from pathlib import Path
 
 from scripts import agent_mailbox
+
+
+REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_send_and_receive_are_filtered_and_consumed(tmp_path: Path) -> None:
@@ -93,6 +97,24 @@ def test_poll_exits_early_when_monitored_port_is_missing(tmp_path: Path) -> None
     assert records == []
     assert missing_ports == [8000]
     assert probed == [5173, 8000]
+
+
+def test_repository_automation_uses_bounded_poll_command() -> None:
+    definition = tomllib.loads(
+        (
+            REPOSITORY_ROOT
+            / "config"
+            / "codex-automations"
+            / "symbolic-workbench-mailbox-agent.toml"
+        ).read_text(encoding="utf-8")
+    )
+
+    assert definition["id"] == "symbolic-workbench-mailbox-agent"
+    assert definition["kind"] == "heartbeat"
+    assert definition["rrule"] == "FREQ=SECONDLY;INTERVAL=30"
+    assert definition["notification_policy"] == "failed_runs_only"
+    assert "agent_mailbox.py poll symbolic-workbench-codex" in definition["prompt"]
+    assert "--interval 30 --checks 10" in definition["prompt"]
 
 
 def test_status_does_not_create_mailbox(tmp_path: Path) -> None:

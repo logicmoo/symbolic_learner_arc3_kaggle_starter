@@ -27,6 +27,7 @@ python scripts/agent_mailbox.py send omegaclaw-core-codex "UI captures" --attach
 python scripts/agent_mailbox.py send omegaclaw-core-codex "Relayed request" --type mattermost_message --channel-type mattermost --channel-id CHANNEL --source-id POST
 python scripts/agent_mailbox.py send omegaclaw-core-codex "Thread reply" --channel-type mattermost --channel-id CHANNEL --source-id POST --thread-id THREAD --root-id ROOT
 python scripts/agent_mailbox.py receive symbolic-workbench-codex
+python scripts/agent_mailbox.py poll symbolic-workbench-codex --interval 30 --checks 10 --require-port 5173 --require-port 8000
 python scripts/agent_mailbox.py status
 ```
 
@@ -49,3 +50,26 @@ Handoff: point every participating repository at the same
 and invoke `receive <identity>` periodically. Do not edit or truncate
 `messages.jsonl`; archive it only after all consumers have been stopped and
 their cursors have been coordinated.
+
+## Codex heartbeat automation
+
+The repository-owned source of truth for the Workbench mailbox heartbeat is
+[`config/codex-automations/symbolic-workbench-mailbox-agent.toml`](../config/codex-automations/symbolic-workbench-mailbox-agent.toml).
+It intentionally omits machine-local scheduler metadata such as
+`target_thread_id`, `created_at`, and `updated_at`.
+
+The installed Codex automation is stored outside Git at
+`$CODEX_HOME/automations/symbolic-workbench-mailbox-agent/automation.toml`.
+Its durable fields must match the repository definition:
+
+- `id`, `kind`, `name`, `status`, and `rrule` map directly;
+- `notification_policy` remains `failed_runs_only`;
+- the installed prompt runs the repository `poll` command and preserves its
+  non-overlap, early-exit, routing, acknowledgement, and quiet-run rules;
+- `target_thread_id` binds the local installation to its Codex task and is not
+  copied into the repository definition.
+
+After changing either side, compare these durable fields and update the other
+side in the same maintenance task. Use the Codex automation API to install or
+update the local copy; do not copy the TOML directly into `$CODEX_HOME` because
+the app owns thread binding and scheduler metadata.
