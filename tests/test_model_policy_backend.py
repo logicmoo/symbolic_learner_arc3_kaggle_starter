@@ -115,7 +115,7 @@ def test_model_discovery_has_bulk_selection_controls() -> None:
     assert "Remove missing" in source
     assert "+ Backend" in source
     assert "Select all discovered" in source
-    assert "initialCollapsed={backend}" in source
+    assert "initialCollapsed={backend&&!systemMode}" in source
 
 
 def test_collapsed_artifact_branches_do_not_mount_hidden_children() -> None:
@@ -287,11 +287,11 @@ def test_model_policy_keeps_model_presets_and_prompt_profiles_independent() -> N
 def test_model_catalog_infers_presets_and_keeps_disabled_children_visible() -> None:
     models = (ROOT / "workbench" / "frontend" / "src" / "components" / "LlmModelsEditor.tsx").read_text(encoding="utf-8")
     styles = (ROOT / "workbench" / "frontend" / "src" / "styles" / "models_editor.css").read_text(encoding="utf-8")
-    assert 'type NodeKind="backend"|"model"|"preset"' in models
+    assert 'type NodeKind="system"|"backend"|"model"|"preset"' in models
     assert 'document.kind==="profile"' in models  # legacy compatibility only
     assert 'backendIds.has(modelParent(document))' in models
     assert 'newChild(item,"preset")' in models and ">+ preset</button>" in models
-    assert 'nested.length} {backend?"models":"presets"}' in models
+    assert '`${nested.length} ${backend?"models":"presets"}`' in models
     assert 'nested.length?nested.map' in models
     assert ".inheritance-status>.resource-enablement-badge" in styles
     assert "width:max-content" in styles

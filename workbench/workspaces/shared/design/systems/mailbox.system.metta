@@ -1,0 +1,18 @@
+(
+  (kind system)
+  (id mailbox)
+  (label "Agent Mailbox")
+  (provider local_mailbox)
+  (systemType communication)
+  (description "Exchanges durable filesystem messages and attachments between local agents.")
+  (enabled true)
+  (capabilities ([] agent.message.send agent.message.receive attachment.transfer system.execute))
+  (configuration (
+    (mailboxEnvironmentVariable AGENT_MAILBOX_DIR)
+    (mailboxDirectory "C:\\snet\\PeTTa\\repos\\agent-mailbox")
+    (adapterScript scripts/agent_mailbox.py)
+    (localIdentity symbolic-workbench-codex)
+    (corePeer omegaclaw-core-codex)
+    (minPeer omegaclaw-min)
+  ))
+)

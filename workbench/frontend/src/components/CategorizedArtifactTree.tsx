@@ -60,7 +60,7 @@ export function CategorizedArtifactTree({ items, onlyCategories = false, categor
   const uncategorized = items.filter(item => categoryPaths(item.categories).length === 0);
   return <div className="categorized-artifact-tree" data-category-collapse-mode={onlyCategories ? "resources" : "none"}>
     <ArtifactTreeBranch label="All" branchCommand={null} searchValue={{ category: "all" }} header={<CategoryHeader label="All" itemCount={items.length} special="all" />}>{items.map(item => item.render(`all:${item.id}`))}</ArtifactTreeBranch>
-    <ArtifactTreeBranch label="Uncategorized" branchCommand={null} searchValue={{ category: "uncategorized" }} header={<CategoryHeader label="Uncategorized" itemCount={uncategorized.length} special="uncategorized" />}>{uncategorized.map(item => item.render(`uncategorized:${item.id}`))}</ArtifactTreeBranch>
+    <ArtifactTreeBranch label="Uncategorized" branchCommand={null} initialCollapsed searchValue={{ category: "uncategorized" }} header={<CategoryHeader label="Uncategorized" itemCount={uncategorized.length} special="uncategorized" />}>{uncategorized.map(item => item.render(`uncategorized:${item.id}`))}</ArtifactTreeBranch>
     {[...roots.values()].sort((a, b) => a.name.localeCompare(b.name)).map(node => renderCategory(node, categoryCommand, firstClassPaths))}
   </div>;
 }

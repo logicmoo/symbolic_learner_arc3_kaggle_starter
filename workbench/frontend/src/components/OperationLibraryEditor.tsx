@@ -30,7 +30,7 @@ async function request(path:string,init?:RequestInit){const r=await fetch(path,{
 
 type SourceLanguage="prolog"|"metta"|"python";
 export function OperationLibraryEditor({workspaceId,sourceLanguage}:{workspaceId:string;sourceLanguage?:SourceLanguage}){
- const[snapshot,setSnapshot]=useState<Snapshot|null>(null),[openDocs,setOpenDocs]=useState<OpenDocument[]>([]),[activeKey,setActiveKey]=useState<string|null>(null),[compareKey,setCompareKey]=useState<string|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState<string|null>(null),[navigatorCollapsed,setNavigatorCollapsed]=useState(false),[viewControlsOpen,setViewControlsOpen]=useState(true),[collapsedOperations,setCollapsedOperations]=useState<Set<string>>(()=>new Set());
+ const[snapshot,setSnapshot]=useState<Snapshot|null>(null),[openDocs,setOpenDocs]=useState<OpenDocument[]>([]),[activeKey,setActiveKey]=useState<string|null>(null),[compareKey,setCompareKey]=useState<string|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState<string|null>(null),[navigatorCollapsed,setNavigatorCollapsed]=useState(false),[viewControlsOpen,setViewControlsOpen]=useState(false),[collapsedOperations,setCollapsedOperations]=useState<Set<string>>(()=>new Set());
  const[categoryCommand,setCategoryCommand]=useState<ArtifactTreeCommand>(null),[visibilityRules,setVisibilityRules]=useState<TreeVisibilityRules>(DEFAULT_TREE_VISIBILITY_RULES);
  const {treeRef,treeFilter,setTreeFilter,showParents,setShowParents,treeKinds}=useArtifactTreeFilter(visibilityRules);
  const load=async()=>{const next=await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/snapshot`) as Snapshot;setSnapshot(next);return next};

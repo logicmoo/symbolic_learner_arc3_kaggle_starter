@@ -1,0 +1,11 @@
+(
+  (kind system)
+  (id codex)
+  (label Codex)
+  (provider codex)
+  (systemType agent)
+  (description "Invokes Codex as a callable coding-agent system.")
+  (enabled true)
+  (capabilities ([] agent.invoke code.execute system.execute))
+  (configuration ((executable codex) (timeoutSeconds 300)))
+)

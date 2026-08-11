@@ -116,7 +116,7 @@ export function UniversalArtifactEditor({
     : [category || title, activeTab?.label || "Select artifact"];
   const [bottomPanelId, setBottomPanelId] = useState<string | null>(bottomPanels[0]?.id || null);
   const [navigatorCollapsed, setNavigatorCollapsed] = useState(false);
-  const [viewControlsOpen, setViewControlsOpen] = useState(true);
+  const [viewControlsOpen, setViewControlsOpen] = useState(false);
   const [treeCommand, setTreeCommand] = useState<ArtifactTreeCommand>(null);
   const [categoryCommand, setCategoryCommand] = useState<ArtifactTreeCommand>(null);
   const [visibilityRules, setVisibilityRules] = useState<TreeVisibilityRules>(DEFAULT_TREE_VISIBILITY_RULES);

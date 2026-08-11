@@ -1,0 +1,11 @@
+(
+  (kind system)
+  (id llm)
+  (label "LLM System Caller")
+  (provider llm)
+  (systemType llm_caller)
+  (description "Calls the model selected by model policy; vendor backends remain in Models.")
+  (enabled true)
+  (capabilities ([] llm.complete llm.reasoning llm.vision))
+  (configuration ((selection model_policy) (timeoutSeconds 300)))
+)

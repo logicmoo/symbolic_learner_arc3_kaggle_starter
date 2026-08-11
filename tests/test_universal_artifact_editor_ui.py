@@ -296,7 +296,7 @@ def test_design_trees_share_virtual_categories() -> None:
     assert 'data-category-collapse-mode={onlyCategories ? "resources" : "none"}' in category_tree
     assert "branchCommand={categoryCommand}" in category_tree
     assert 'label="All" branchCommand={null}' in category_tree
-    assert 'label="Uncategorized" branchCommand={null}' in category_tree
+    assert 'label="Uncategorized" branchCommand={null} initialCollapsed' in category_tree
     assert "appearanceCategoryPath" in operations
     assert "operationBelongsHere" in operations
     assert "visibleVariants=categoryPath&&!operationBelongsHere" in operations
@@ -333,7 +333,9 @@ def test_universal_tree_exposes_composable_tri_state_view_controls() -> None:
     assert "setAll" in controls
     assert "roleKeys.map(key => [key, value])" in controls
     assert 'aria-label="Tree View Controls"' in controls
-    assert "useState(true)" in universal
+    assert "[viewControlsOpen, setViewControlsOpen] = useState(false)" in universal
+    operation_editor = _text("OperationLibraryEditor.tsx")
+    assert "[viewControlsOpen,setViewControlsOpen]=useState(false)" in operation_editor
     assert 'aria-label="Tree View Controls"' in universal
     assert 'viewControlsOpen ? "Hide View" : "Show View"' in universal
     assert "updateVisibilityRules" in universal

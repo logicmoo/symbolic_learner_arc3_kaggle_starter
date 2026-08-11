@@ -1,0 +1,11 @@
+(
+  (kind system)
+  (id python)
+  (label "Python Runtime")
+  (provider python)
+  (systemType runtime)
+  (description "Executes trusted Python callables and operation implementations.")
+  (enabled true)
+  (capabilities ([] python.callable python.expression))
+  (configuration ((executable python) (isolation process) (timeoutSeconds 300)))
+)

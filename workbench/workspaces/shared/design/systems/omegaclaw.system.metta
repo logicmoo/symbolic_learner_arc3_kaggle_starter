@@ -1,0 +1,11 @@
+(
+  (kind system)
+  (id omegaclaw)
+  (label OmegaClaw)
+  (provider omegaclaw)
+  (systemType agent)
+  (description "Invokes OmegaClaw as a callable agent system.")
+  (enabled true)
+  (capabilities ([] agent.invoke system.execute))
+  (configuration ((executable omegaclaw) (timeoutSeconds 300)))
+)

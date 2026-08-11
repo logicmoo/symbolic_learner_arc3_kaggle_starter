@@ -23,7 +23,7 @@ def test_navigation_v2_has_required_groups_and_labels() -> None:
         "Workflows",
         "Operations",
         "Source Code",
-        "Backends",
+        "Systems",
         "Datatypes",
         "Models",
         "Policies",
@@ -69,7 +69,7 @@ def test_navigation_reuses_current_rich_editors() -> None:
         "Operations": ('view:"operations"', 'view==="operations"&&<OperationLibraryEditor'),
         "Datatypes": ('view:"data"', 'view==="data"&&<DataCatalogPanel'),
         "Source Code": ('view:"sourceCode"', 'view==="sourceCode"&&<SourceCodeEditor'),
-        "Backends": ('view:"backends"', 'catalogMode="backends"'),
+        "Systems": ('view:"systems"', 'catalogMode="systems"'),
         "Models": ('view:"llms"', 'view==="llms"&&<LlmModelsEditor'),
         "Workflows": ('view:"canvas"', 'view==="editor"&&<section className="editor-surface"'),
         "Settings": ('view:"setup"', 'view==="setup"&&<WorkspaceSettingsPanel'),
@@ -78,6 +78,32 @@ def test_navigation_reuses_current_rich_editors() -> None:
         assert f'label:"{label}"' in source
         for token in tokens:
             assert token in source
+
+
+def test_systems_are_separate_from_model_backends() -> None:
+    page = ACTIVE_PAGE.read_text(encoding="utf-8")
+    editor = (ROOT / "workbench" / "frontend" / "src" / "components" / "LlmModelsEditor.tsx").read_text(encoding="utf-8")
+    api = (ROOT / "workbench" / "server" / "workspace_api.py").read_text(encoding="utf-8")
+    assert 'label:"Systems",view:"systems"' in page
+    assert 'catalogMode="systems"' in page
+    assert 'if(value==="backends")return "llms"' in page
+    assert "snapshot?.systems" in editor
+    assert 'document.kind==="system"?"design/systems"' in editor
+    assert 'view==="systems"?"systems"' in page
+    assert 'systemResources:snapshot?.systems?.length||0' in page
+    help_tabs = (ROOT / "workbench" / "frontend" / "src" / "components" / "HelpDocumentTabs.tsx").read_text(encoding="utf-8")
+    assert '{id:"systems",label:"Systems",path:"docs/systems.md"}' in help_tabs
+    systems_docs = ROOT / "workbench" / "workspaces" / "shared" / "docs" / "systems.md"
+    assert systems_docs.is_file()
+    documentation = systems_docs.read_text(encoding="utf-8")
+    assert "Systems are not model backends" in documentation
+    assert "Agent Mailbox" in documentation
+    assert "OmegaClaw is the local autonomous agent runtime" in documentation
+    assert "OmegaClaw is not the Symbolic Learner Workbench" in documentation
+    assert 'view==="sourceCode"||view==="prompts"?"prompts"' in page
+    assert '"systems": _load_systems(workspace)' in api
+    for system_id in ("python", "prolog", "metta", "llm", "omegaclaw", "codex", "mailbox"):
+        assert (ROOT / "workbench" / "workspaces" / "shared" / "design" / "systems" / f"{system_id}.system.metta").is_file()
 
 
 def test_source_code_editor_reuses_prompt_and_operation_source_editors() -> None:
