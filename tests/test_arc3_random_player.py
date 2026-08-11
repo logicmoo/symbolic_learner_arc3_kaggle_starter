@@ -8,6 +8,7 @@ from arc3_random_player import (
     RandomArc3Player,
     assess_transition,
     build_game_preview_gallery,
+    capture_observation,
     choose_action,
     discover_games,
     update_learning_memory,
@@ -86,6 +87,14 @@ def test_enriches_every_game_with_its_real_first_frame(tmp_path: Path) -> None:
 def test_reusable_random_list_element_returns_a_real_member() -> None:
     items = [{"id": "a"}, {"id": "b"}, {"id": "c"}]
     assert random_list_element(items, seed=7) in items
+
+
+def test_capture_observation_retains_selected_game_binding() -> None:
+    selected_game = {"game_id": "aa00", "title": "Alpha"}
+
+    observation = capture_observation(None, "NOT_PLAYED", 1, selected_game)
+
+    assert observation["game"] == selected_game
 
 
 def test_generic_gallery_resource_preserves_source_for_humans_and_ai() -> None:
@@ -230,5 +239,8 @@ def test_random_player_workspace_is_discoverable_and_operation_backed(tmp_path: 
     assert gallery_step["probe"] == {"enabled": False, "required": False, "blocking": False}
     assert chooser_step["dependsOn"] == ["discover_games"]
     assert chooser_step["inputs"]["items"] == "$games"
+    capture_steps = [step for step in workflow["steps"] if step["operation"] == "arc3_random.capture_observation"]
+    assert capture_steps
+    assert all(step["inputs"]["game"] == "$game" for step in capture_steps)
     executable = materialize_workflow({**workflow, "workspaceId": "arc3_random_player"})
     assert all(step["implementation"] in {"python.callable", "llm.complete"} for step in executable["steps"])

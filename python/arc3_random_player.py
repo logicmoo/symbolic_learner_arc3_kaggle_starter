@@ -227,11 +227,13 @@ def capture_observation(
     frame_path: str | None,
     state: str | None,
     level: int | str = 1,
+    game: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     path = Path(frame_path) if frame_path else None
     digest = hashlib.sha256(path.read_bytes()).hexdigest() if path and path.is_file() else None
     return {
         "captured_at": _utc_now(),
+        "game": dict(game or {}),
         "state": state,
         "level": int(level),
         "frame_path": str(path) if path else None,

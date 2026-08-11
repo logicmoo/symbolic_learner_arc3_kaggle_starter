@@ -98,6 +98,13 @@ Preserve the canonical checkout and its `codex/workbench-navigation-v2` branch.
 
 ## Generic insertable inspection gallery checkpoint
 
+- The corrected direct ARC3 chooser path now binds its selected `$game` into
+  both downstream observation playgrounds. Live verification selected `s5i5`
+  without running either optional gallery probe and visibly populated the next
+  Operation's `game` input. Evidence: `artifacts/arc3_chooser_downstream_binding_verified.png`.
+- Focused ARC3 tests: 10 passed. Frontend production build and `git diff
+  --check` passed on 2026-08-12.
+
 - Added shared `gallery.curate_resource` and `collection.random_list_element`
   filesystem Operations backed by `python/collection_operations.py`.
 - The workflow editor can insert any abstract Operation after the selected step;

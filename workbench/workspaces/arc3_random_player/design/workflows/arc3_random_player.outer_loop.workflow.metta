@@ -97,6 +97,7 @@
         select_game
       ))
       (inputs (
+        (game $game)
         (frame_path $frame_path)
         (state $state)
         (level $level)
@@ -150,6 +151,7 @@
         execute_action
       ))
       (inputs (
+        (game $game)
         (frame_path $action_result.frame_path)
         (state $action_result.state)
         (level $action_result.level)
