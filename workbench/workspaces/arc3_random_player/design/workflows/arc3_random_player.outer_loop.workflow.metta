@@ -52,6 +52,21 @@
         (workspace_root $workspace_root)
       ))
       (outputs (
+        (gallery arc_preview_candidates)
+      ))
+    )
+    (
+      (id curate_game_preview_gallery)
+      (label "Render the neutral Gallery Resource")
+      (kind operation)
+      (operation gallery.curate_resource)
+      (dependsOn ([]
+        build_game_preview_gallery
+      ))
+      (inputs (
+        (items $arc_preview_candidates.games)
+      ))
+      (outputs (
         (gallery game_preview_gallery)
       ))
     )
@@ -61,10 +76,10 @@
       (kind operation)
       (operation collection.random_list_element)
       (dependsOn ([]
-        build_game_preview_gallery
+        curate_game_preview_gallery
       ))
       (inputs (
-        (items $game_preview_gallery.games)
+        (items $game_preview_gallery.items)
         (seed $seed)
       ))
       (outputs (

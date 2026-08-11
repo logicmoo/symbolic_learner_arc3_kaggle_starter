@@ -212,6 +212,7 @@ def test_random_player_workspace_is_discoverable_and_operation_backed(tmp_path: 
     assert [step["operation"] for step in workflow["steps"]] == [
         "arc3_random.discover_games",
         "arc3_random.build_game_preview_gallery",
+        "gallery.curate_resource",
         "collection.random_list_element",
         "arc3_random.capture_observation",
         "arc3_random.propose_action",
@@ -221,5 +222,10 @@ def test_random_player_workspace_is_discoverable_and_operation_backed(tmp_path: 
         "arc3_random.update_memory",
         "arc3_random.should_rotate",
     ]
+    gallery_step = next(step for step in workflow["steps"] if step["id"] == "curate_game_preview_gallery")
+    chooser_step = next(step for step in workflow["steps"] if step["id"] == "select_game")
+    assert gallery_step["dependsOn"] == ["build_game_preview_gallery"]
+    assert chooser_step["dependsOn"] == ["curate_game_preview_gallery"]
+    assert chooser_step["inputs"]["items"] == "$game_preview_gallery.items"
     executable = materialize_workflow({**workflow, "workspaceId": "arc3_random_player"})
     assert all(step["implementation"] in {"python.callable", "llm.complete"} for step in executable["steps"])

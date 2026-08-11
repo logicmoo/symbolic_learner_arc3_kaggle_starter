@@ -43,3 +43,10 @@ Those synthesis systems can learn from the specification and accumulated
 evidence, write implementation code, and promote that result into a
 deterministic callable; non-model execution is therefore not limited to code
 written manually.
+
+The visible selection path is deliberately ordered and cannot bypass review:
+ARC discovery produces candidates, the ARC preview step enriches them with
+first-frame evidence, the shared neutral `gallery.curate_resource` Operation
+produces the Gallery Resource, and only then does the chooser consume that
+Gallery Resource's `items`. The Gallery is therefore a real typed workflow
+output, not a UI-only decoration after selection.
