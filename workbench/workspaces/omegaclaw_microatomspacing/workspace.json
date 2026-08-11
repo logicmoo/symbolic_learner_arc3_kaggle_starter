@@ -1,0 +1,7 @@
+{
+  "kind": "workspace",
+  "id": "omegaclaw_microatomspacing",
+  "label": "OmegaClaw MicroAtomSpacing",
+  "description": "Disk-backed project workspace for turning agent exchanges into reviewable micro-atom memory records.",
+  "includes": [{"workspaceId": "shared", "includeInherited": true}]
+}

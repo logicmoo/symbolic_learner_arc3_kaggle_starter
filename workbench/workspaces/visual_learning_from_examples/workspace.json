@@ -1,0 +1,12 @@
+{
+  "kind": "workspace",
+  "id": "visual_learning_from_examples",
+  "label": "Visual Learning from Examples",
+  "description": "Disk-backed project workspace for visual learning from staged examples and durable memory silos.",
+  "includes": [
+    {
+      "workspaceId": "shared",
+      "includeInherited": true
+    }
+  ]
+}
