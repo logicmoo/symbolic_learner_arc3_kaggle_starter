@@ -95,3 +95,27 @@ git -C C:\snet\PeTTa\repos\symbolic_learner_workbench worktree list
 ```
 
 Preserve the canonical checkout and its `codex/workbench-navigation-v2` branch.
+
+## Generic insertable inspection gallery checkpoint
+
+- Added shared `gallery.curate_resource` and `collection.random_list_element`
+  filesystem Operations backed by `python/collection_operations.py`.
+- The workflow editor can insert any abstract Operation after the selected step;
+  the inserted node is immediately available through the normal playground path.
+- Gallery invocation results render human-inspectable cards while preserving the
+  identical structured artifact for downstream AI/Operations.
+- ARC3's `arc3_random.build_game_preview_gallery` is only an intentionally costly
+  demonstration. See `workbench/workspaces/arc3_random_player/docs/GAME_PREVIEW_GALLERY_BAD_EXAMPLE.md`.
+- Focused ARC/gallery tests: 9 passed. Frontend production build and live browser
+  insertion check passed. Changes remain uncommitted.
+- Douglas clarified that Operations should be presented as durable delayed
+  Codex/agent task specifications. The Operation Playground now makes this
+  lifecycle explicit (`defined`, `running`, `completed`, or `failed`) while
+  retaining inputs, outputs, implementations, and invocation evidence.
+- The implementation ladder explicitly includes capable agents/LLMs,
+  progressively smaller models, ILP/program-synthesis systems that derive and
+  write code from specifications plus evidence, and the resulting deterministic
+  implementations. Non-model execution is not assumed to be manually authored.
+- Fixed filesystem Python Operation loading so an entrypoint can import sibling
+  modules from its own source directory. This repairs the live ARC3 discovery
+  failure (`No module named 'collection_operations'`) shown in Mattermost.

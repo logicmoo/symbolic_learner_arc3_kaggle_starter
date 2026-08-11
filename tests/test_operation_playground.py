@@ -14,7 +14,7 @@ from operation_api import invoke_operation, read_operation_debug_log
 from operation_library import DEFAULT_WORKSPACES_ROOT, load_shared_operation_documents, resolve_operation_implementation
 from operation_resolution import _prompt_composition_prefix, materialize_workflow_step
 from prompt_library import prompt_hierarchy, resolve_prompt_profile
-from workflow_providers import _llm_complete, _llm_response_text, _python_callable
+from workflow_providers import _llm_complete, _llm_response_text, _load_python_module, _python_callable
 
 
 def test_resource_tool_operations_use_declared_semantic_datatypes() -> None:
@@ -94,6 +94,22 @@ def test_python_provider_captures_stdout_and_stderr(monkeypatch: pytest.MonkeyPa
     assert isinstance(debug, dict)
     assert debug["stdout"] == "stdout: hello\n"
     assert debug["stderr"] == "stderr: hello\n"
+
+
+def test_file_python_provider_can_import_sibling_modules(tmp_path: Path) -> None:
+    (tmp_path / "sibling_helper.py").write_text(
+        "def answer():\n    return 42\n",
+        encoding="utf-8",
+    )
+    entrypoint = tmp_path / "entrypoint.py"
+    entrypoint.write_text(
+        "from sibling_helper import answer\n\ndef run():\n    return answer()\n",
+        encoding="utf-8",
+    )
+
+    module = _load_python_module({"importMode": "file", "file": str(entrypoint)})
+
+    assert module.run() == 42
 
 
 @pytest.mark.skipif(shutil.which("swipl") is None, reason="SWI-Prolog is not installed")

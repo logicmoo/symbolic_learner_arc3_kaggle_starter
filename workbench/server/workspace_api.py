@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, Body, HTTPException, Query
+from fastapi.responses import FileResponse
 
 from artifact_category_library import apply_artifact_categories, load_workspace_artifact_categories
 from backend_library import MODEL_CATALOG_DIRECTORY, load_backend_library_records, load_workspace_backend_records
@@ -706,6 +707,24 @@ def read_workspace_file(workspace_id: str, path: str = Query(...)) -> dict[str, 
         if target.suffix.lower() not in TEXT_SUFFIXES:
             raise ValueError("file type is not editable text")
         return {"file": {**_file_record(root, target), "content": resources.read_text(target)}}
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+    except (OSError, ValueError) as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+
+@router.get("/{workspace_id}/asset")
+def read_workspace_asset(workspace_id: str, path: str = Query(...)) -> FileResponse:
+    try:
+        workspace = _resolve_workspace(workspace_id)
+        root = Path(workspace["root"]).resolve()
+        requested = Path(path)
+        target = requested.resolve() if requested.is_absolute() else _safe_child(root, path).resolve()
+        if target != root and root not in target.parents:
+            raise ValueError("asset path escapes workspace")
+        if not target.is_file():
+            raise ValueError("asset not found")
+        return FileResponse(target)
     except KeyError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error
     except (OSError, ValueError) as error:

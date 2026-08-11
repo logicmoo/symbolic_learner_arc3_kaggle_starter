@@ -8,6 +8,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import tempfile
 import traceback
 import urllib.request
@@ -106,7 +107,18 @@ def _load_python_module(source: dict[str, Any]):
         if spec is None or spec.loader is None:
             raise ImportError(f"Could not load Python source file: {path}")
         module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
+        source_directory = str(path.parent)
+        added_source_directory = source_directory not in sys.path
+        if added_source_directory:
+            sys.path.insert(0, source_directory)
+        try:
+            spec.loader.exec_module(module)
+        finally:
+            if added_source_directory:
+                try:
+                    sys.path.remove(source_directory)
+                except ValueError:
+                    pass
         return module
 
     raise ValueError(f"Unsupported Python importMode: {import_mode}")
