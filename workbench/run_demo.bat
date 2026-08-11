@@ -2,6 +2,8 @@
 setlocal EnableExtensions
 if exist "C:\snet\setkeys.bat" call "C:\snet\setkeys.bat"
 set "ROOT=%~dp0"
+for %%I in ("%ROOT%..") do set "REPO_ROOT=%%~fI"
+set "WORKBENCH_PYTHON=%REPO_ROOT%\.venv\Scripts\python.exe"
 
 rem Usage:
 rem   run_demo.bat [bind_ip] [web_port] [api_port]
@@ -72,16 +74,16 @@ if errorlevel 1 (
   exit /b 1
 )
 
-if not exist "%ROOT%.venv\Scripts\python.exe" (
-  echo Creating the local Python environment...
-  python -m venv "%ROOT%.venv"
+if not exist "%WORKBENCH_PYTHON%" (
+  echo Creating the repository Python environment...
+  python -m venv "%REPO_ROOT%\.venv"
   if errorlevel 1 goto :failed
 )
 
-"%ROOT%.venv\Scripts\python.exe" -c "import fastapi, pydantic, uvicorn" >nul 2>nul
+"%WORKBENCH_PYTHON%" -c "import fastapi, pydantic, uvicorn" >nul 2>nul
 if errorlevel 1 (
   echo Installing Python packages for the first run...
-  "%ROOT%.venv\Scripts\python.exe" -m pip install --disable-pip-version-check -q -r "%ROOT%server\requirements.txt"
+  "%WORKBENCH_PYTHON%" -m pip install --disable-pip-version-check -q -e "%REPO_ROOT%[all]"
   if errorlevel 1 goto :failed
 )
 
@@ -124,8 +126,8 @@ if errorlevel 1 (
   echo OmniRoute is already running.
 )
 
-if exist "%ROOT%.venv\Scripts\python.exe" (
-  "%ROOT%.venv\Scripts\python.exe" "%ROOT%scripts\bootstrap_omniroute.py" "%ROOT%workspaces\shared"
+if exist "%WORKBENCH_PYTHON%" (
+  "%WORKBENCH_PYTHON%" "%ROOT%scripts\bootstrap_omniroute.py" "%ROOT%workspaces\shared"
   if errorlevel 1 echo WARNING: OmniRoute endpoint-key setup failed. Configure it under Settings.
 )
 

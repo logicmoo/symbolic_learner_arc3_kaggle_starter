@@ -2,11 +2,12 @@
 setlocal EnableExtensions
 if exist "C:\snet\setkeys.bat" call "C:\snet\setkeys.bat"
 set "ROOT=%~dp0.."
+for %%I in ("%ROOT%\..") do set "REPO_ROOT=%%~fI"
 set "BIND_IP=%~1"
 if not defined BIND_IP set "BIND_IP=127.0.0.1"
 set "API_PORT=%~2"
 if not defined API_PORT set "API_PORT=8000"
-set "PYTHON_EXE=%ROOT%\.venv\Scripts\python.exe"
+set "PYTHON_EXE=%REPO_ROOT%\.venv\Scripts\python.exe"
 
 title MeTTa Workbench API %BIND_IP%:%API_PORT%
 cd /d "%ROOT%\server"

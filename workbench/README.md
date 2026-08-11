@@ -70,7 +70,9 @@ Requirements:
 - Node.js 22 or newer, including `npm`, on `PATH`
 
 The first launch installs dependencies and therefore takes longer. Later
-launches reuse `workbench\.venv` and `workbench\frontend\node_modules`.
+launches reuse the repository-root `.venv` and
+`workbench\frontend\node_modules`. This single Python environment contains
+the ARC3, workbench, test, notebook, and optional integration dependencies.
 
 ## What is included
 
