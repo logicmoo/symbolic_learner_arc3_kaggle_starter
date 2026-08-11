@@ -44,9 +44,11 @@ evidence, write implementation code, and promote that result into a
 deterministic callable; non-model execution is therefore not limited to code
 written manually.
 
-The visible selection path is deliberately ordered and cannot bypass review:
-ARC discovery produces candidates, the ARC preview step enriches them with
-first-frame evidence, the shared neutral `gallery.curate_resource` Operation
-produces the Gallery Resource, and only then does the chooser consume that
-Gallery Resource's `items`. The Gallery is therefore a real typed workflow
-output, not a UI-only decoration after selection.
+ARC discovery fans out into independent consumers. The chooser may consume the
+original `$games` candidate list directly, so selection does not require image
+downloads or Gallery rendering. Separately, disabled-by-default preview and
+`gallery.curate_resource` probe steps can materialize a typed Gallery Resource
+for human or AI inspection. They behave like test points on a circuit board:
+useful when observing the flow, non-blocking when unused. Their `probe`
+configuration remains overrideable; a specialized workflow may set
+`required true` (and normally `blocking true`) when review must become a gate.

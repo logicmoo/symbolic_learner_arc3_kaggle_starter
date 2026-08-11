@@ -2,10 +2,11 @@
   (kind operation)
   (id gallery.curate_resource)
   (label "Gallery Curation Operation")
-  (description "Durable delayed Codex/agent task specification that assembles any upstream collection into a Gallery Resource for humans, AI, and downstream operations without filtering, judging utility, or learning. Its Python child is the deterministic implementation available when the task executes.")
+  (description "Optional, specializable circuit-board-style inspection probe that assembles any upstream collection into a Gallery Resource for humans, AI, and downstream operations without filtering, judging utility, or learning. It is non-blocking by default; a child or workflow may require it. Its Python child is the deterministic implementation available when the task executes.")
   (inputs ((items Array)))
   (parameters ((label "Gallery Resource") (title_field "title") (image_field "frame_path") (description_field "description")))
   (outputs ((gallery Object)))
+  (probePolicy ((defaultRequired false) (defaultBlocking false) (specializable true)))
   (children ([] gallery.curate_resource.python))
   (preferredChild gallery.curate_resource.python)
   (example_execute (

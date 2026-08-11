@@ -27,6 +27,43 @@ def test_versioned_workflow_and_artifacts(tmp_path: Path) -> None:
     assert any(event['kind'] == 'workflow.completed' for event in run['events'])
 
 
+def test_optional_probe_is_skipped_but_required_specialization_executes(tmp_path: Path) -> None:
+    calls = {'count': 0}
+    registry = OperationRegistry()
+
+    def probe(_inputs, _params):
+        calls['count'] += 1
+        return {'gallery': {'kind': 'gallery_resource'}}
+
+    registry.register(OperationSpec('test.gallery', {}, {'gallery': 'Object'}, probe))
+    e = WorkflowEngine(tmp_path / 'engine.db', registry)
+    e.save_workflow({
+        'id': 'optional_probe', 'inputs': {}, 'outputs': {}, 'steps': [
+            {'id': 'gallery', 'kind': 'operation', 'implementation': 'test.gallery',
+             'probe': {'enabled': False, 'required': False, 'blocking': False},
+             'outputs': {'gallery': 'gallery'}},
+        ],
+    })
+    skipped = e.start('optional_probe', {})
+    assert skipped['status'] == 'completed'
+    assert skipped['steps'][0]['status'] == 'skipped'
+    assert calls['count'] == 0
+    assert next(event for event in skipped['events'] if event['kind'] == 'step.skipped')['payload'] == {
+        'reason': 'optional_probe_disabled', 'blocking': False,
+    }
+
+    e.save_workflow({
+        'id': 'required_probe', 'inputs': {}, 'outputs': {}, 'steps': [
+            {'id': 'gallery', 'kind': 'operation', 'implementation': 'test.gallery',
+             'probe': {'enabled': False, 'required': True, 'blocking': True},
+             'outputs': {'gallery': 'gallery'}},
+        ],
+    })
+    required = e.start('required_probe', {})
+    assert required['steps'][0]['status'] == 'completed'
+    assert calls['count'] == 1
+
+
 def test_artifacts_preserve_datatype_representation_contract(tmp_path: Path) -> None:
     registry = OperationRegistry()
     registry.register(OperationSpec(

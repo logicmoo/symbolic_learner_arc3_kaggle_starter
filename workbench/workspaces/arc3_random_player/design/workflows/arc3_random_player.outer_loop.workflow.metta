@@ -44,6 +44,7 @@
       (label "Build the Game Preview Gallery")
       (kind operation)
       (operation arc3_random.build_game_preview_gallery)
+      (probe ((enabled false) (required false) (blocking false)))
       (dependsOn ([]
         discover_games
       ))
@@ -60,6 +61,7 @@
       (label "Render the neutral Gallery Resource")
       (kind operation)
       (operation gallery.curate_resource)
+      (probe ((enabled false) (required false) (blocking false)))
       (dependsOn ([]
         build_game_preview_gallery
       ))
@@ -76,10 +78,10 @@
       (kind operation)
       (operation collection.random_list_element)
       (dependsOn ([]
-        curate_game_preview_gallery
+        discover_games
       ))
       (inputs (
-        (items $game_preview_gallery.items)
+        (items $games)
         (seed $seed)
       ))
       (outputs (

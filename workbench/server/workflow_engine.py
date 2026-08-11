@@ -371,8 +371,24 @@ class WorkflowEngine:
         wf = self.get_workflow(run['workflowId'], run['workflowVersion'])
         for step in wf.get('steps', []):
             state = next(s for s in run['steps'] if s['stepId'] == step['id'])
-            if state['status'] == 'completed': continue
+            if state['status'] in {'completed', 'skipped'}: continue
             if state['status'] in {'running', 'waiting'}: return
+            probe = step.get('probe') if isinstance(step.get('probe'), dict) else None
+            if probe is not None:
+                required = bool(probe.get('required', False))
+                enabled = bool(probe.get('enabled', required))
+                if not required and not enabled:
+                    with self._db() as db:
+                        db.execute(
+                            'UPDATE wf_steps SET status=?,finished_at=? WHERE run_id=? AND step_id=?',
+                            ('skipped', now(), run_id, step['id']),
+                        )
+                    self._event(run_id, step['id'], 'step.skipped', {
+                        'reason': 'optional_probe_disabled',
+                        'blocking': bool(probe.get('blocking', False)),
+                    })
+                    run = self.get_run(run_id)
+                    continue
             self._execute_step(run_id, step)
             refreshed = self.get_run(run_id)
             current = next(s for s in refreshed['steps'] if s['stepId'] == step['id'])

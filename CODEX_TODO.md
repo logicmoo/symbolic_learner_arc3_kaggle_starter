@@ -119,7 +119,9 @@ Preserve the canonical checkout and its `codex/workbench-navigation-v2` branch.
 - Fixed filesystem Python Operation loading so an entrypoint can import sibling
   modules from its own source directory. This repairs the live ARC3 discovery
   failure (`No module named 'collection_operations'`) shown in Mattermost.
-- Enforced the candidate-selection ordering in the persisted workflow:
-  discovery -> ARC preview enrichment -> shared neutral Gallery Curation ->
-  chooser. The chooser depends on the gallery step and consumes only
-  `$game_preview_gallery.items`, so it cannot bypass the Gallery Resource.
+- Correction after superseded ordering guidance: discovery now fans out. The
+  chooser depends directly on discovery and consumes `$games`; preview and
+  Gallery Curation are disabled-by-default non-blocking probe steps. The engine
+  persists optional disabled probes as `skipped`, while `required true` remains
+  available to specialized workflows that intentionally turn a probe into a
+  gate.

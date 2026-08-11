@@ -36,3 +36,17 @@ contract reliably.
 Workflow steps reference these durable Operations. A workflow therefore
 coordinates delayed tasks, propagates typed outputs into downstream inputs,
 and persists the status and evidence of the whole cascade.
+
+## Optional inspection probes
+
+A Gallery Curation Operation may be inserted as a non-blocking inspection
+probe, analogous to a test point on a circuit board. A probe can observe an
+upstream collection and materialize a Gallery Resource without becoming a
+mandatory dependency of the primary dataflow. Disabled optional probes are
+persisted as `skipped`, including a durable `step.skipped` event, while the
+workflow continues.
+
+Optionality is a default, not a universal restriction. The base Gallery
+Operation declares a specializable probe policy. A child Operation or workflow
+step may override it with `required true` and `blocking true`, turning the same
+inspection point into a required review or production stage.
