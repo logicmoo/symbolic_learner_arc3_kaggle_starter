@@ -58,18 +58,17 @@ values here.
 
 ## Runtime recovery
 
-The most recent development session used:
+The canonical development ports are:
 
-- UI: `http://127.0.0.1:16666`
-- API: `http://127.0.0.1:17778` (OmniRoute currently occupies `17777` with
-  its local API bridge)
+- UI: `http://127.0.0.1:5173`
+- API: `http://127.0.0.1:8000`
 - Logs: `C:\snet\PeTTa\workbench-codex-session`
 
 Process IDs are intentionally not durable. Rediscover listeners before stopping
 services:
 
 ```powershell
-Get-NetTCPConnection -State Listen -LocalPort 16666,17778 |
+Get-NetTCPConnection -State Listen -LocalPort 5173,8000 |
     Select-Object LocalPort,OwningProcess
 ```
 
