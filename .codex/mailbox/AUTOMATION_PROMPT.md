@@ -3,7 +3,7 @@
 Copy the prompt below into a recurring Codex automation for the workspace that
 should receive mailbox work. Replace every `<PLACEHOLDER>` before enabling it.
 
-Schedule the Codex automation approximately every five minutes. Each wake runs
+Schedule the Codex automation every 30 seconds. Each accepted wake runs
 one bounded polling session that checks immediately and then every 30 seconds,
 for at most ten checks. Do **not** schedule a new Codex task every 30 seconds;
 the bounded client command performs those checks and prevents overlapping
