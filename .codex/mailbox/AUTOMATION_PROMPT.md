@@ -10,13 +10,13 @@ the bounded client command performs those checks and prevents overlapping
 polling sessions.
 
 ```text
-Mailbox identity: symbolic-learner-workbench-codex
+Mailbox identity: symbolic-workbench
 Mailbox REST URL: http://127.0.0.1:46667
 Mailbox token environment variable: AGENT_MAILBOX_TOKEN
 Workspace directory: C:\snet\PeTTa\repos\symbolic_learner_workbench
 
 From the workspace directory, first inspect running processes and reuse or
-await any active `agent_mailbox.py poll symbolic-learner-workbench-codex` subprocess. Never start an
+await any active `agent_mailbox.py poll symbolic-workbench` subprocess. Never start an
 overlapping polling session for this identity.
 
 Set AGENT_MAILBOX_URL to http://127.0.0.1:46667. If the relay requires authentication,
@@ -30,7 +30,7 @@ otherwise use `python3` or `python`.
 
 When no prior polling session is running, execute the platform-equivalent of:
 
-python agent_mailbox.py poll symbolic-learner-workbench-codex --interval 30 --checks 10 --require-port 46667
+python agent_mailbox.py poll symbolic-workbench --interval 30 --checks 10 --require-port 46667
 
 The poll checks immediately and then every 30 seconds for ten checks maximum.
 It exits early when addressed mail arrives. Exit status 2 with a
@@ -38,7 +38,7 @@ It exits early when addressed mail arrives. Exit status 2 with a
 Empty successful output is a healthy no-op.
 
 Ignore outbound echoes, empty messages, system events, messages not addressed
-to symbolic-learner-workbench-codex, and already-handled message IDs. For genuine new requests:
+to symbolic-workbench, and already-handled message IDs. For genuine new requests:
 
 1. Immediately acknowledge the source through the mailbox.
 2. Perform only work authorized by the message and this workspace's AGENTS.md.
@@ -54,7 +54,7 @@ relay failures, authentication failures, or required-service failures.
 
 ## Example: REST relay on the same machine
 
-This workspace uses the stable identity `symbolic-learner-workbench-codex`, the
+This workspace uses the stable identity `symbolic-workbench`, the
 local relay at `http://127.0.0.1:46667`, and a required-port check for 46667.
 
 ```text

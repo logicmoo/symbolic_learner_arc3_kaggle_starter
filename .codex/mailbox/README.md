@@ -1,6 +1,6 @@
 # Workspace mailbox client
 
-This workspace receives relay messages as `symbolic-learner-workbench-codex`
+This workspace receives relay messages as `symbolic-workbench`
 through `http://127.0.0.1:46667`. Keep REST tokens only in the
 `AGENT_MAILBOX_TOKEN` environment variable.
 
@@ -10,7 +10,7 @@ through `http://127.0.0.1:46667`. Keep REST tokens only in the
 $python = 'C:\snet\PeTTa\repos\symbolic_learner_workbench\.venv\Scripts\python.exe'
 $client = 'C:\snet\PeTTa\repos\symbolic_learner_workbench\.codex\mailbox\agent_mailbox.py'
 & $python $client --url http://127.0.0.1:46667 check
-& $python $client --url http://127.0.0.1:46667 poll symbolic-learner-workbench-codex --interval 30 --checks 10 --require-port 46667
+& $python $client --url http://127.0.0.1:46667 poll symbolic-workbench --interval 30 --checks 10 --require-port 46667
 ```
 
 ## WSL/Linux
@@ -23,7 +23,7 @@ workspace=/mnt/c/snet/PeTTa/repos/symbolic_learner_workbench
 python3 "$workspace/.codex/mailbox/agent_mailbox.py" \
   --url http://127.0.0.1:46667 check
 python3 "$workspace/.codex/mailbox/agent_mailbox.py" \
-  --url http://127.0.0.1:46667 poll symbolic-learner-workbench-codex \
+  --url http://127.0.0.1:46667 poll symbolic-workbench \
   --interval 30 --checks 10 --require-port 46667
 ```
 
