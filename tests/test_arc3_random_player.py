@@ -11,6 +11,12 @@ from arc3_random_player import (
     capture_observation,
     choose_action,
     discover_games,
+    enumerate_game_controls,
+    execute_action,
+    populate_game_atomspace,
+    query_game_metta,
+    select_random_game,
+    start_selected_game,
     update_learning_memory,
 )
 from collection_operations import curate_gallery_resource, random_list_element
@@ -87,6 +93,30 @@ def test_enriches_every_game_with_its_real_first_frame(tmp_path: Path) -> None:
 def test_reusable_random_list_element_returns_a_real_member() -> None:
     items = [{"id": "a"}, {"id": "b"}, {"id": "c"}]
     assert random_list_element(items, seed=7) in items
+
+
+def test_select_game_random_implementation_delegates_without_immediate_repeat() -> None:
+    games = [{"game_id": "a"}, {"game_id": "b"}]
+    assert select_random_game(games, previous_game_id="a", seed=7) == {"game_id": "b"}
+
+
+def test_selected_game_is_loaded_into_atomspace_started_and_enumerated(tmp_path: Path) -> None:
+    source = tmp_path / "design" / "games" / "aa00.game.metta"
+    source.parent.mkdir(parents=True)
+    source.write_text('(game (id "aa00") (hint "look for symmetry"))', encoding="utf-8")
+    game = {"game_id": "aa00", "title": "Alpha", "tags": ["test"]}
+
+    knowledge = query_game_metta(game, tmp_path)
+    atomspace = populate_game_atomspace(game, knowledge, tmp_path)
+    session = start_selected_game(game, tmp_path, FakeRunner)
+    controls = enumerate_game_controls(session)
+    result = execute_action(session, {"action": "ACTION1", "data": {}})
+
+    assert knowledge["matches"][0]["path"] == "design/games/aa00.game.metta"
+    assert Path(atomspace["path"]).is_file()
+    assert "look for symmetry" in Path(atomspace["path"]).read_text(encoding="utf-8")
+    assert [control["name"] for control in controls] == ["RESET", "ACTION1"]
+    assert result["state"] == "PLAYING"
 
 
 def test_capture_observation_retains_selected_game_binding() -> None:
@@ -170,6 +200,35 @@ def test_random_player_workspace_is_discoverable_and_operation_backed(tmp_path: 
     workspace = workspace_api._workspace_from_directory(root, include_counts=False)
     assert workspace["id"] == "arc3_random_player"
     assert workspace["label"] == "ARC3 Random Player"
+    assert workspace["includes"] == [{"workspaceId": "shared_library_arc3", "includeInherited": True}]
+    assert workspace["effectiveIncludes"] == ["shared_library_system", "shared_library_arc3"]
+    arc3_library = workspace_api.get_workspace("shared_library_arc3")["workspace"]
+    assert arc3_library["label"] == "ARC3 Shared Library"
+
+    effective_operations = {
+        record["document"]["id"]
+        for record in workspace_api._load_operations(workspace)
+        if record.get("document")
+    }
+    assert {
+        "vision.extract_scene_objects",
+        "arc3.extract_scene_objects",
+        "arc3.explain_object_changes",
+    } <= effective_operations
+
+    effective_prompts = {
+        record["document"]["id"]
+        for record in workspace_api._load_prompts(workspace)
+        if record.get("document")
+    }
+    assert {
+        "transaction_extract_scene_objects",
+        "transaction_explain_object_changes",
+        "transaction_induce_rules_from_symbolic",
+        "arc3_identity_registry",
+        "arc3_file_separation",
+        "arc3_root_state",
+    } <= effective_prompts
 
     operations = {
         record["document"]["id"]: record["document"]
@@ -185,6 +244,10 @@ def test_random_player_workspace_is_discoverable_and_operation_backed(tmp_path: 
         "arc3_random.discover_games",
         "arc3_random.build_game_preview_gallery",
         "arc3_random.select_game",
+        "arc3_random.query_game_metta",
+        "arc3_random.populate_game_atomspace",
+        "arc3_random.start_game",
+        "arc3_random.enumerate_controls",
         "arc3_random.capture_observation",
         "arc3_random.propose_action",
         "arc3_random.execute_action",
@@ -196,6 +259,12 @@ def test_random_player_workspace_is_discoverable_and_operation_backed(tmp_path: 
     assert expected_parents <= operations.keys()
     assert operations["arc3_random.propose_action"]["preferredChild"] == (
         "arc3_random.propose_action.python"
+    )
+    assert operations["arc3_random.select_game"]["preferredChild"] == (
+        "arc3_random.select_game.random"
+    )
+    assert implementations["arc3_random.select_game.random"]["delegatesTo"] == (
+        "collection.random_list_element"
     )
     assert {
         implementations["arc3_random.propose_action.python"]["implementation"],
@@ -222,7 +291,11 @@ def test_random_player_workspace_is_discoverable_and_operation_backed(tmp_path: 
         "arc3_random.discover_games",
         "arc3_random.build_game_preview_gallery",
         "gallery.curate_resource",
-        "collection.random_list_element",
+        "arc3_random.select_game",
+        "arc3_random.query_game_metta",
+        "arc3_random.populate_game_atomspace",
+        "arc3_random.start_game",
+        "arc3_random.enumerate_controls",
         "arc3_random.capture_observation",
         "arc3_random.propose_action",
         "arc3_random.execute_action",
@@ -238,7 +311,11 @@ def test_random_player_workspace_is_discoverable_and_operation_backed(tmp_path: 
     assert gallery_step["dependsOn"] == ["build_game_preview_gallery"]
     assert gallery_step["probe"] == {"enabled": False, "required": False, "blocking": False}
     assert chooser_step["dependsOn"] == ["discover_games"]
-    assert chooser_step["inputs"]["items"] == "$games"
+    assert chooser_step["inputs"]["games"] == "$games"
+    assert next(step for step in workflow["steps"] if step["id"] == "query_game_metta")["dependsOn"] == ["select_game"]
+    assert next(step for step in workflow["steps"] if step["id"] == "populate_game_atomspace")["dependsOn"] == ["query_game_metta"]
+    assert next(step for step in workflow["steps"] if step["id"] == "start_game")["dependsOn"] == ["populate_game_atomspace"]
+    assert next(step for step in workflow["steps"] if step["id"] == "enumerate_controls")["dependsOn"] == ["start_game"]
     capture_steps = [step for step in workflow["steps"] if step["operation"] == "arc3_random.capture_observation"]
     assert capture_steps
     assert all(step["inputs"]["game"] == "$game" for step in capture_steps)

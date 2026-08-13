@@ -11,6 +11,10 @@ from pathlib import Path
 from typing import Any, Callable, Mapping, Sequence
 
 from collection_operations import curate_gallery_resource
+from collection_operations import random_list_element
+
+
+_RUNNER_SESSIONS: dict[str, Any] = {}
 
 
 def _utc_now() -> str:
@@ -95,6 +99,123 @@ def select_game(
     choices = [dict(game) for game in games]
     alternatives = [game for game in choices if game.get("game_id") != previous_game_id]
     return random.Random(seed).choice(alternatives or choices)
+
+
+def select_random_game(
+    games: Sequence[Mapping[str, Any]],
+    previous_game_id: str | None = None,
+    seed: int | None = None,
+) -> dict[str, Any]:
+    """Implement semantic game selection by delegating to Random List Element."""
+    choices = [dict(game) for game in games]
+    alternatives = [game for game in choices if game.get("game_id") != previous_game_id]
+    return dict(random_list_element(alternatives or choices, seed))
+
+
+def query_game_metta(
+    game: Mapping[str, Any],
+    workspace_root: str | Path,
+) -> dict[str, Any]:
+    """Find existing MeTTa resources that mention the selected game metadata."""
+    root = Path(workspace_root).resolve()
+    terms = {
+        str(game.get("game_id") or "").lower(),
+        str(game.get("server_game_id") or "").lower(),
+        str(game.get("title") or "").lower(),
+        *(str(tag).lower() for tag in game.get("tags") or []),
+    } - {""}
+    matches: list[dict[str, Any]] = []
+    for path in sorted(root.rglob("*.metta")):
+        try:
+            text = path.read_text(encoding="utf-8")
+        except OSError:
+            continue
+        matched_terms = sorted(term for term in terms if term in text.lower())
+        if matched_terms:
+            matches.append({
+                "path": path.relative_to(root).as_posix(),
+                "matched_terms": matched_terms,
+                "source": text,
+            })
+    atoms = [
+        ["game", str(game.get("game_id") or "")],
+        ["title", str(game.get("title") or game.get("game_id") or "")],
+        *(["tag", str(tag)] for tag in game.get("tags") or []),
+        *(["metta_source", item["path"]] for item in matches),
+        *(["metta_source_text", item["source"]] for item in matches),
+    ]
+    return {"game": dict(game), "query_terms": sorted(terms), "matches": matches, "atoms": atoms}
+
+
+def _metta_string(value: Any) -> str:
+    return json.dumps(str(value), ensure_ascii=False)
+
+
+def populate_game_atomspace(
+    game: Mapping[str, Any],
+    knowledge: Mapping[str, Any],
+    workspace_root: str | Path,
+) -> dict[str, Any]:
+    """Persist selected-game knowledge into its default runtime AtomSpace."""
+    game_id = str(game.get("game_id") or "unknown")
+    path = Path(workspace_root).resolve() / "runtime" / "contexts" / "games" / f"{game_id}.default.atomspace.metta"
+    atoms = list(knowledge.get("atoms") or [])
+    atom_lines = "\n".join(
+        f"      ({_metta_string(atom[0])} {_metta_string(atom[1])})"
+        for atom in atoms
+        if isinstance(atom, (list, tuple)) and len(atom) >= 2
+    )
+    source = (
+        "(\n"
+        "  (kind atomspace)\n"
+        f"  (id {_metta_string(f'arc3.game.{game_id}.default')})\n"
+        f"  (label {_metta_string(f'{game_id} Default Game AtomSpace')})\n"
+        f"  (gameId {_metta_string(game_id)})\n"
+        "  (role runtime_context)\n"
+        "  (atoms ([]\n"
+        f"{atom_lines}\n"
+        "  ))\n"
+        ")\n"
+    )
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(source, encoding="utf-8")
+    return {
+        "kind": "atomspace",
+        "id": f"arc3.game.{game_id}.default",
+        "game_id": game_id,
+        "path": str(path),
+        "atoms": atoms,
+        "source_matches": len(knowledge.get("matches") or []),
+    }
+
+
+def start_selected_game(
+    game: Mapping[str, Any],
+    workspace_root: str | Path,
+    runner_factory: Callable[..., Any] | None = None,
+) -> dict[str, Any]:
+    """Start the selected game and return a durable handle plus initial state."""
+    if runner_factory is None:
+        from arc3_runner import Arc3Runner
+
+        runner_factory = Arc3Runner
+    game_id = str(game["game_id"])
+    runner = runner_factory(
+        game_id=game_id,
+        render_mode=None,
+        capture_terminal=True,
+        tree_root=Path(workspace_root).resolve() / "runtime" / "states" / "action_trees",
+    )
+    handle = uuid.uuid4().hex
+    _RUNNER_SESSIONS[handle] = runner
+    return {"handle": handle, "game": dict(game), **_frame_snapshot(runner)}
+
+
+def enumerate_game_controls(session: Mapping[str, Any]) -> list[dict[str, Any]]:
+    runner = _RUNNER_SESSIONS.get(str(session.get("handle") or ""))
+    if runner is None:
+        raise ValueError("ARC game session is unavailable or expired")
+    return runner.action_table()
 
 
 def choose_action(
@@ -241,8 +362,14 @@ def capture_observation(
     }
 
 
-def execute_action(runner: Any, proposal: Mapping[str, Any]) -> dict[str, Any]:
+def execute_action(session: Any, proposal: Mapping[str, Any]) -> dict[str, Any]:
     """Apply one proposed action and return the resulting observable state."""
+    runner = session
+    if isinstance(session, Mapping):
+        handle = str(session.get("handle") or "")
+        runner = _RUNNER_SESSIONS.get(handle)
+        if runner is None:
+            raise ValueError("ARC game session is unavailable or expired")
     runner.step(str(proposal["action"]), data=dict(proposal.get("data") or {}))
     return _frame_snapshot(runner)
 
@@ -347,7 +474,7 @@ class RandomArc3Player:
 
 
 def run_random_arc3_session(
-    workspace_root: str = "workbench/workspaces/arc3_random_player",
+    workspace_root: str = "workbench/workspaces/image_perception_to_recognizable_memory_and_arc3",
     seconds_per_game: float = 600.0,
     max_games: int | None = 1,
     seed: int | None = None,

@@ -11,11 +11,6 @@
     (started_monotonic Number)
     (now_monotonic Number)
     (seed Number)
-    (runner Object)
-    (frame_path Text)
-    (state Text)
-    (level Number)
-    (action_table Array)
   ))
   (outputs (
     (game $game)
@@ -74,37 +69,80 @@
     )
     (
       (id select_game)
-      (label "Choose a random previewed game")
+      (label "Select a game")
       (kind operation)
-      (operation collection.random_list_element)
+      (operation arc3_random.select_game)
       (dependsOn ([]
         discover_games
       ))
       (inputs (
-        (items $games)
+        (games $games)
+        (previous_game_id $previous_game_id)
         (seed $seed)
       ))
       (outputs (
-        (element game)
+        (game game)
       ))
+    )
+    (
+      (id query_game_metta)
+      (label "Query MeTTa data for the selected game")
+      (kind operation)
+      (operation arc3_random.query_game_metta)
+      (dependsOn ([] select_game))
+      (inputs (
+        (game $game)
+        (workspace_root $workspace_root)
+      ))
+      (outputs ((knowledge game_metta)))
+    )
+    (
+      (id populate_game_atomspace)
+      (label "Populate the game's default AtomSpace")
+      (kind operation)
+      (operation arc3_random.populate_game_atomspace)
+      (dependsOn ([] query_game_metta))
+      (inputs (
+        (game $game)
+        (knowledge $game_metta)
+        (workspace_root $workspace_root)
+      ))
+      (outputs ((atomspace game_atomspace)))
+    )
+    (
+      (id start_game)
+      (label "Start the selected game")
+      (kind operation)
+      (operation arc3_random.start_game)
+      (dependsOn ([] populate_game_atomspace))
+      (inputs (
+        (game $game)
+        (workspace_root $workspace_root)
+      ))
+      (outputs ((session game_session)))
+    )
+    (
+      (id enumerate_controls)
+      (label "Enumerate available controls")
+      (kind operation)
+      (operation arc3_random.enumerate_controls)
+      (dependsOn ([] start_game))
+      (inputs ((session $game_session)))
+      (outputs ((controls action_table)))
     )
     (
       (id capture_before)
       (label "Capture the current image")
       (kind operation)
       (operation arc3_random.capture_observation)
-      (dependsOn ([]
-        select_game
-      ))
+      (dependsOn ([] enumerate_controls))
       (inputs (
         (game $game)
-        (frame_path $frame_path)
-        (state $state)
-        (level $level)
+        (frame_path $game_session.frame_path)
+        (state $game_session.state)
+        (level $game_session.level)
       ))
-      (outputs (
-        (observation before)
-      ))
+      (outputs ((observation before)))
     )
     (
       (id propose_action)
@@ -135,7 +173,7 @@
         propose_action
       ))
       (inputs (
-        (runner $runner)
+        (session $game_session)
         (proposal $proposal)
       ))
       (outputs (

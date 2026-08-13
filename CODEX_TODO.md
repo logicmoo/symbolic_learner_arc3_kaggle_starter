@@ -26,6 +26,9 @@ values here.
 
 ## Completed and validated
 
+- [x] Add the shared SingularityNET OpenAI-compatible LLM backend at
+  `https://llm.c.singularitynet.io/v1`, with credentials resolved only from
+  `SNET_API_KEY`.
 - [x] Rename the active Backends navigation concept to Systems.
 - [x] Give Systems a first-class `view=systems` route and `/systems` API.
 - [x] Keep vendor/API backends exclusively in Models and model policy.
@@ -61,6 +64,58 @@ values here.
   `codex/workbench-navigation-v2` so the Systems diff remains focused.
 
 ## Runtime recovery
+
+- [x] Install the standalone relay client under `.codex/mailbox/` for the
+  stable identity `symbolic-workbench-codex`, with a workspace-specific
+  README and bounded recurring-poll prompt targeting the local relay on port
+  46667. The served client was repaired upstream to run outside its package.
+
+- [x] Extract the JSONL/REST mailbox and Mattermost relay into the standalone
+  sibling project `C:\snet\PeTTa\repos\mailbox_channel_relay_bridging_proxy`,
+  branded **Mailbox Channel Relay Bridging Proxy**. Workbench now acts only as
+  a client and external-service controller. The proxy owns loopback port 46667,
+  stays healthy in mailbox-only mode, and reports optional adapter status.
+- [x] Preserve `agent_mailbox.py` filesystem and `--url` compatibility while
+  using transport-neutral identities and retaining the existing mailbox data.
+- [x] Separate standalone proxy configuration under `config/` from durable
+  mailbox data under `mailbox/`; support independent `--config-dir` and
+  `--mailbox-dir` overrides without overlapping source or runtime files.
+- [x] Add the client-side `--dir` JSONL override with deterministic transport
+  precedence and serve the matching client from `/agent_mailbox.py`.
+- [x] Expand the canonical mailbox client with named mailbox configuration,
+  peek/follow, explicit cursors and acknowledgements, filtering, bounded waits,
+  output formats/files, REST timeout/retries, checks, counts, and diagnostics;
+  delegate the Workbench CLI entrypoint to that canonical sibling client.
+- [x] Add the mailbox-backed Discord adapter with multiple listener support,
+  inbound polling, outbound text/attachments, and delivery-ledger deduplication.
+- [x] Add a safe public attachment gateway with configurable advertised URL;
+  IRC now emits hosted links for image and other file attachments.
+- [x] Add Matrix/Element and Slack mailbox adapters with multiple listeners,
+  inbound polling/sync, threads, file transfer, and durable deduplication.
+- [x] Add persisted channel-to-channel routes controlled either by mailbox
+  relay agents or internal presence controllers, plus trusted `!relay` runtime
+  administration using open mailbox identities; remove the obsolete
+  `agents.json` registry entirely.
+- [x] Add optional REST Bearer authentication: clients accept `--token` or
+  `AGENT_MAILBOX_TOKEN`; servers enforce it only when `MAILBOX_RELAY_TOKEN` is set.
+- [x] Add REST `--curl` dry-run output for every mailbox command with Bearer
+  tokens redacted and no network side effects.
+- [x] Package a cross-platform `AUTOMATION_PROMPT.md` explaining how users add
+  a bounded, non-overlapping mailbox poller as a recurring Codex task.
+- [x] Add a paste-ready `INSTALL_WITH_CODEX.md` bootstrap prompt that instructs
+  another Codex to create and validate `.codex/mailbox/` in its own workspace.
+- [x] Validate the standalone proxy suite (39 passed) and focused Workbench
+  mailbox/service/system integration suite (18 passed) on 2026-08-13.
+
+- [x] Pin OmniRoute's generic `PORT` and `DASHBOARD_PORT` variables to 20128
+  so loading the repository `.env` cannot make its dashboard occupy the
+  Workbench API port 8000.
+- [x] Pin FreeRouter's inherited `CLAWROUTER_PORT` override to 18800 so it
+  cannot occupy ClawRouter's port 3456.
+- [x] Restrict Uvicorn live reload to application Python source changes under
+  `workbench/server`, explicitly excluding generated `environment_files`,
+  `runtime`, `__pycache__`, and server-test files so execution cannot restart
+  the API.
 
 The canonical development ports are:
 
@@ -132,3 +187,18 @@ Preserve the canonical checkout and its `codex/workbench-navigation-v2` branch.
   persists optional disabled probes as `skipped`, while `required true` remains
   available to specialized workflows that intentionally turn a probe into a
   gate.
+- ARC3 workflow refinement: `arc3_random.select_game` is again the semantic
+  workflow step. Its preferred `Select Random` child delegates to the shared
+  `collection.random_list_element` behavior, so selection itself is not defined
+  as intrinsically random and can still be replaced by another implementation.
+- After selection, the workflow now queries real workspace MeTTa sources,
+  persists the selected game's default runtime AtomSpace, starts the game,
+  enumerates its live controls, and only then enters capture/propose/execute.
+  Live runners stay in a process-local session registry while workflow state
+  carries a JSON-compatible handle. Focused ARC3 tests: 12 passed.
+- Workspace visibility correction: `arc3_random_player` now includes the
+  `arc3` workspace, labeled **ARC3 Shared Library**, with inherited resources.
+  Because `arc3` includes `shared`,
+  the effective layer order is `shared -> arc3 -> arc3_random_player`; the
+  Random Player designer can therefore resolve and display the reusable shared
+  resources plus ARC3's prompt-backed symbolic-analysis Operations and Prompts.
