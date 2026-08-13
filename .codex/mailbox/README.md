@@ -4,6 +4,11 @@ This workspace receives relay messages as `symbolic-workbench-codex`
 through `http://127.0.0.1:46667`. Keep REST tokens only in the
 `AGENT_MAILBOX_TOKEN` environment variable.
 
+The workspace virtual environment has the current relay checkout installed in
+editable mode from `C:\snet\PeTTa\repos\mailbox_channel`. The local
+`agent_mailbox.py` is a compatibility launcher for that package, so it uses the
+same current command, adapter, registry, and resolver code as the relay.
+
 ## PowerShell
 
 ```powershell
