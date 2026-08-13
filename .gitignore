@@ -258,6 +258,9 @@ notebooks/submission.ipynb
 reference/
 .llm_responses/
 .codex-commit-message.txt
+.codex-tmp/
+.pytest-local/
+workbench-ui-current.png
 
 # OS / editors
 .DS_Store

@@ -11,8 +11,8 @@ from workspace_api import _load_systems  # noqa: E402
 
 
 def test_shared_callable_systems_are_not_model_backends() -> None:
-    shared = ROOT / "workbench" / "workspaces" / "shared"
-    records = _load_systems({"id": "shared", "root": str(shared)})
+    shared = ROOT / "workbench" / "workspaces" / "shared_library_system"
+    records = _load_systems({"id": "shared_library_system", "root": str(shared)})
     documents = {record["document"]["id"]: record["document"] for record in records}
 
     assert {"python", "prolog", "metta", "llm", "omegaclaw", "codex", "mailbox"} <= documents.keys()

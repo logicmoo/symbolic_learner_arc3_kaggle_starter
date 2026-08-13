@@ -127,7 +127,7 @@ if errorlevel 1 (
 )
 
 if exist "%WORKBENCH_PYTHON%" (
-  "%WORKBENCH_PYTHON%" "%ROOT%scripts\bootstrap_omniroute.py" "%ROOT%workspaces\shared"
+  "%WORKBENCH_PYTHON%" "%ROOT%scripts\bootstrap_omniroute.py" "%ROOT%workspaces\shared_library_system"
   if errorlevel 1 echo WARNING: OmniRoute endpoint-key setup failed. Configure it under Settings.
 )
 

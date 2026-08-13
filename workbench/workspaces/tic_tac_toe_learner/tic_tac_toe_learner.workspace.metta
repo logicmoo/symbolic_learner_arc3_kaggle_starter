@@ -5,7 +5,7 @@
   (description "Small learning workspace with observation and human-input examples.")
   (includes ([]
     (
-      (workspaceId shared)
+      (workspaceId shared_library_system)
       (includeInherited true)
     )
   ))

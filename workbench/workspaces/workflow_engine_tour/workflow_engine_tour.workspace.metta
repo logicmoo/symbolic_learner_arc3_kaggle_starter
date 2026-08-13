@@ -5,7 +5,7 @@
   (description "Filesystem workspace demonstrating workflow-engine scheduling and evidence.")
   (includes ([]
     (
-      (workspaceId shared)
+      (workspaceId shared_library_system)
       (includeInherited true)
     )
   ))

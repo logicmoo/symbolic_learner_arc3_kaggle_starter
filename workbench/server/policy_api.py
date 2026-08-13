@@ -154,13 +154,13 @@ def discover_models(workspace_id: str, backend_id: str) -> dict[str, Any]:
     if not backend: raise HTTPException(status_code=404, detail=f"backend not found: {backend_id}")
     try: models = discover_backend_models(backend, workspace_root=Path(workspace["root"]))
     except Exception as error: raise HTTPException(status_code=502, detail=str(error)) from error
-    shared_workspace = _resolve_workspace("shared")
+    shared_workspace = _resolve_workspace("shared_library_system")
     return {"workspace": workspace, "backend": backend, "models": reconcile_discovered_models(Path(shared_workspace["root"]), backend, models)}
 
 
 @router.post("/{workspace_id}/models/import/{backend_id}", status_code=201)
 def import_models(workspace_id: str, backend_id: str, request: dict[str, Any] = Body(...)) -> dict[str, Any]:
-    try: workspace = _resolve_workspace(workspace_id); shared_workspace = _resolve_workspace("shared")
+    try: workspace = _resolve_workspace(workspace_id); shared_workspace = _resolve_workspace("shared_library_system")
     except KeyError as error: raise HTTPException(status_code=404, detail=str(error)) from error
     backend = next((record.get("document") for record in load_workspace_backend_records(Path(shared_workspace["root"]))
                     if (record.get("document") or {}).get("id") == backend_id), None)
@@ -175,7 +175,7 @@ def import_models(workspace_id: str, backend_id: str, request: dict[str, Any] = 
 
 @router.post("/{workspace_id}/models/remove-missing/{backend_id}")
 def remove_missing(workspace_id: str, backend_id: str, request: dict[str, Any] = Body(...)) -> dict[str, Any]:
-    try: workspace = _resolve_workspace(workspace_id); shared_workspace = _resolve_workspace("shared")
+    try: workspace = _resolve_workspace(workspace_id); shared_workspace = _resolve_workspace("shared_library_system")
     except KeyError as error: raise HTTPException(status_code=404, detail=str(error)) from error
     backend = next((record.get("document") for record in load_workspace_backend_records(Path(shared_workspace["root"]))
                     if (record.get("document") or {}).get("id") == backend_id), None)

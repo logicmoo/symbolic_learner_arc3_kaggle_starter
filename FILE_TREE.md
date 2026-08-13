@@ -30,7 +30,7 @@ The planning documents have deliberately separate scopes and cross-link one anot
 - [`python/worldworkbench/adapters/arc3.py`](python/worldworkbench/adapters/arc3.py) — ARC3 observation, intervention, human-choice, and artifact translation boundary.
 - [`python/worldworkbench/adapters/__init__.py`](python/worldworkbench/adapters/__init__.py) — public ARC3 adapter exports.
 - [`workbench/docs/DATA_REPRESENTATIONS.md`](workbench/docs/DATA_REPRESENTATIONS.md) — filesystem-backed semantic, representation, and concrete datatype model.
-- [`workbench/workspaces/shared/design/configs/world_workbench_operations.config.metta`](workbench/workspaces/shared/design/configs/world_workbench_operations.config.metta) — reusable processing-resource contracts, including object extraction and Turtle representation operations.
+- [`workbench/workspaces/shared_library_system/design/configs/world_workbench_operations.config.metta`](workbench/workspaces/shared_library_system/design/configs/world_workbench_operations.config.metta) — reusable processing-resource contracts, including object extraction and Turtle representation operations.
 - [`config/llm_workflows.json`](config/llm_workflows.json) — runnable workflow-desktop catalog, including the seven-step `ls20` human-observation workflow and its nested subworkflows.
 - [`python/workflow_operation_editor.py`](python/workflow_operation_editor.py) — MeTTaSymbolicLearnerWorkbench desktop for composing, validating, inspecting, saving, and running typed operations and nested subworkflows.
 
@@ -97,22 +97,22 @@ The other files under `workbench/frontend/src/pages/` and older shell-oriented c
 
 ## Filesystem workspaces and resource families
 
-- [`workbench/workspaces/shared/shared.workspace.metta`](workbench/workspaces/shared/shared.workspace.metta) — shared-library identity and inheritance root.
-- [`workbench/workspaces/shared/docs/data.md`](workbench/workspaces/shared/docs/data.md), [`goals.md`](workbench/workspaces/shared/docs/goals.md), [`plans.md`](workbench/workspaces/shared/docs/plans.md), [`operations.md`](workbench/workspaces/shared/docs/operations.md), [`prompts.md`](workbench/workspaces/shared/docs/prompts.md), [`policies.md`](workbench/workspaces/shared/docs/policies.md), and [`llm_catalog.md`](workbench/workspaces/shared/docs/llm_catalog.md) — contextual Help documents displayed beside rich editors.
-- `workbench/workspaces/shared/design/semantic_datatypes/*.semantic_datatype.metta` — abstract meanings such as Image, Entity, Observation, AtomSpace, Goal, Event, and World Model.
-- `workbench/workspaces/shared/design/representation_datatypes/*.representation_datatype.metta` — interchangeable structures such as bitmap, scene graph, object list, symbolic facts, Turtle program, and natural language.
-- `workbench/workspaces/shared/design/concrete_datatypes/*.concrete_datatype.metta` — exact encodings such as PNG, JPEG, JSON, UTF-8 text, Prolog, NumPy, and SVG.
-- `workbench/workspaces/shared/design/operations/*.operation.metta` and `design/operation_implementations/*.operation_implementation.metta` — abstract executable contracts and replaceable implementations.
-- `workbench/workspaces/shared/design/prompts/*.prompt.metta` and `design/prompt_implementations/*.prompt_implementation.metta` — semantic prompt contracts and model/modal variants.
-- `workbench/workspaces/shared/design/backends`, `design/models`, and `design/profiles` — provider transport, model identity, and reasoning/runtime profile layers.
-- `workbench/workspaces/shared/design/goals` and `design/goal_variants` — desired-outcome specifications and interpretations.
-- `workbench/workspaces/shared/design/plans` and `design/plan_variants` — reusable plan specifications and strategies.
-- `workbench/workspaces/shared/design/atomspaces` and `design/atomspace_variants` — AtomSpace declarations and concrete alternatives.
-- `workbench/workspaces/shared/runtime/` — generated goal runs, workflow runs, execs, events, states, resolved contexts, and logs; normally empty in Shared.
-- `workbench/workspaces/shared/policies/*.metta` — model runtime policies, vendor policy, eligibility entries, health observations, ping jobs/events, benchmark policies, and benchmark results.
-- [`workbench/workspaces/arc3/docs/README.md`](workbench/workspaces/arc3/docs/README.md) — ARC3 workspace purpose; its `design/workflows/`, `design/operations/`, and `design/prompts/` override or extend Shared resources.
+- [`workbench/workspaces/shared_library_system/shared_library_system.workspace.metta`](workbench/workspaces/shared_library_system/shared_library_system.workspace.metta) — system shared-library identity and inheritance root.
+- [`workbench/workspaces/shared_library_system/docs/data.md`](workbench/workspaces/shared_library_system/docs/data.md), [`goals.md`](workbench/workspaces/shared_library_system/docs/goals.md), [`plans.md`](workbench/workspaces/shared_library_system/docs/plans.md), [`operations.md`](workbench/workspaces/shared_library_system/docs/operations.md), [`prompts.md`](workbench/workspaces/shared_library_system/docs/prompts.md), [`policies.md`](workbench/workspaces/shared_library_system/docs/policies.md), and [`llm_catalog.md`](workbench/workspaces/shared_library_system/docs/llm_catalog.md) — contextual Help documents displayed beside rich editors.
+- `workbench/workspaces/shared_library_system/design/semantic_datatypes/*.semantic_datatype.metta` — abstract meanings such as Image, Entity, Observation, AtomSpace, Goal, Event, and World Model.
+- `workbench/workspaces/shared_library_system/design/representation_datatypes/*.representation_datatype.metta` — interchangeable structures such as bitmap, scene graph, object list, symbolic facts, Turtle program, and natural language.
+- `workbench/workspaces/shared_library_system/design/concrete_datatypes/*.concrete_datatype.metta` — exact encodings such as PNG, JPEG, JSON, UTF-8 text, Prolog, NumPy, and SVG.
+- `workbench/workspaces/shared_library_system/design/operations/*.operation.metta` and `design/operation_implementations/*.operation_implementation.metta` — abstract executable contracts and replaceable implementations.
+- `workbench/workspaces/shared_library_system/design/prompts/*.prompt.metta` and `design/prompt_implementations/*.prompt_implementation.metta` — semantic prompt contracts and model/modal variants.
+- `workbench/workspaces/shared_library_system/design/backends`, `design/models`, and `design/profiles` — provider transport, model identity, and reasoning/runtime profile layers.
+- `workbench/workspaces/shared_library_system/design/goals` and `design/goal_variants` — desired-outcome specifications and interpretations.
+- `workbench/workspaces/shared_library_system/design/plans` and `design/plan_variants` — reusable plan specifications and strategies.
+- `workbench/workspaces/shared_library_system/design/atomspaces` and `design/atomspace_variants` — AtomSpace declarations and concrete alternatives.
+- `workbench/workspaces/shared_library_system/runtime/` — generated goal runs, workflow runs, execs, events, states, resolved contexts, and logs; normally empty in the system shared library.
+- `workbench/workspaces/shared_library_system/policies/*.metta` — model runtime policies, vendor policy, eligibility entries, health observations, ping jobs/events, benchmark policies, and benchmark results.
+- [`workbench/workspaces/shared_library_arc3/docs/README.md`](workbench/workspaces/shared_library_arc3/docs/README.md) — ARC3 shared-library purpose; its `design/workflows/`, `design/operations/`, and `design/prompts/` extend the system shared library.
 - [`workbench/workspaces/default/default.workspace.metta`](workbench/workspaces/default/default.workspace.metta) — minimal editable starter template; it declares Shared as its initial inclusion and intentionally contains no local resources.
-- [`workbench/workspaces/shared/design/workflows/titlecase_demo.workflow.metta`](workbench/workspaces/shared/design/workflows/titlecase_demo.workflow.metta) and [`review_with_approval.workflow.metta`](workbench/workspaces/shared/design/workflows/review_with_approval.workflow.metta) — reusable executable engine examples inherited by Default and other workspaces that include Shared.
+- [`workbench/workspaces/shared_library_system/design/workflows/titlecase_demo.workflow.metta`](workbench/workspaces/shared_library_system/design/workflows/titlecase_demo.workflow.metta) and [`review_with_approval.workflow.metta`](workbench/workspaces/shared_library_system/design/workflows/review_with_approval.workflow.metta) — reusable executable engine examples inherited by Default and other workspaces that include the system shared library.
 - [`workbench/workspaces/tic_tac_toe_learner/docs/README.md`](workbench/workspaces/tic_tac_toe_learner/docs/README.md) and [`workbench/workspaces/workflow_engine_tour/docs/README.md`](workbench/workspaces/workflow_engine_tour/docs/README.md) — focused example-workspace entry documents.
 - [`workbench.workspace.json`](workbench.workspace.json) — repository-level workspace selection/configuration.
 

@@ -5,7 +5,7 @@
   (description "Minimal starter workspace. Add project-specific resources here; reusable resources are inherited from Shared.")
   (includes ([]
     (
-      (workspaceId shared)
+      (workspaceId shared_library_system)
       (includeInherited true)
     )
   ))

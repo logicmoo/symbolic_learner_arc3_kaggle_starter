@@ -8,7 +8,7 @@ from resource_store import get_filesystem_provider
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 WORKSPACES_ROOT = Path(os.getenv("WORKBENCH_WORKSPACES_ROOT", REPOSITORY_ROOT / "workbench" / "workspaces")).resolve()
-SHARED_WORKSPACE = WORKSPACES_ROOT / "shared"
+SHARED_WORKSPACE = WORKSPACES_ROOT / "shared_library_system"
 
 
 def _read_json(path: Path, default: Any) -> Any:
@@ -83,7 +83,7 @@ def operation_catalog_for_legacy_api() -> list[dict[str, Any]]:
             "label": operation.get("label"),
             "ports": f"{', '.join(inputs)} → {', '.join(outputs)}",
             "routes": operation.get("implementation"),
-            "source": "workbench/workspaces/shared/design/operations",
+            "source": "workbench/workspaces/shared_library_system/design/operations",
         })
     return result
 

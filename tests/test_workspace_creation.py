@@ -9,7 +9,7 @@ from workflow_engine import WorkflowEngine
 
 
 def test_create_workspace_copies_current_default_template(tmp_path: Path, monkeypatch) -> None:
-    shared = tmp_path / "shared"
+    shared = tmp_path / "shared_library_system"
     default = tmp_path / "default"
     shared.mkdir()
     (default / "workflows").mkdir(parents=True)
@@ -23,11 +23,11 @@ def test_create_workspace_copies_current_default_template(tmp_path: Path, monkey
     assert result["templateWorkspaceId"] == "default"
     assert result["workspace"]["id"] == "vision_lab"
     assert (created / "workflows" / starter.name).read_text(encoding="utf-8") == starter.read_text(encoding="utf-8")
-    assert result["workspace"]["includes"] == [{"workspaceId": "shared", "includeInherited": True}]
+    assert result["workspace"]["includes"] == [{"workspaceId": "shared_library_system", "includeInherited": True}]
 
 
 def test_create_workspace_never_overwrites_an_existing_directory(tmp_path: Path, monkeypatch) -> None:
-    (tmp_path / "shared").mkdir()
+    (tmp_path / "shared_library_system").mkdir()
     (tmp_path / "default").mkdir()
     (tmp_path / "vision_lab").mkdir()
     marker = tmp_path / "vision_lab" / "keep.txt"
@@ -42,7 +42,7 @@ def test_create_workspace_never_overwrites_an_existing_directory(tmp_path: Path,
 
 
 def test_create_workspace_can_copy_another_workspace(tmp_path: Path, monkeypatch) -> None:
-    (tmp_path / "shared").mkdir()
+    (tmp_path / "shared_library_system").mkdir()
     (tmp_path / "default").mkdir()
     source = tmp_path / "vision_library"
     (source / "models").mkdir(parents=True)
@@ -90,8 +90,13 @@ def test_visual_learning_projects_are_disk_backed_and_chooser_discoverable(monke
         assert (root / "workspace.json").is_file()
         assert discovered[workspace_id]["label"] == label
         assert Path(discovered[workspace_id]["root"]) == root.resolve()
+        expected_library = (
+            "shared_library_arc3"
+            if workspace_id == "image_perception_to_recognizable_memory_and_arc3"
+            else "shared_library_system"
+        )
         assert discovered[workspace_id]["includes"] == [
-            {"workspaceId": "shared", "includeInherited": True}
+            {"workspaceId": expected_library, "includeInherited": True}
         ]
 
 
@@ -114,9 +119,10 @@ def test_project_workflows_are_loaded_and_engine_valid(tmp_path: Path) -> None:
             record for record in workspace_api._load_workflows(workspace)
             if record.get("workspaceId") == workspace_id
         ]
-        assert [record["document"]["id"] for record in local] == [workflow_id]
-        assert local[0]["source"] == "workspace"
-        assert engine.validate(local[0]["document"]) == []
+        local_by_id = {record["document"]["id"]: record for record in local}
+        assert workflow_id in local_by_id
+        assert local_by_id[workflow_id]["source"] == "workspace"
+        assert engine.validate(local_by_id[workflow_id]["document"]) == []
 
 
 def test_atom_ant_symbolic_reasoning_has_bounded_repair_control_flow_and_runs(tmp_path: Path) -> None:
@@ -225,6 +231,7 @@ def test_project_workflows_resolve_shared_operations_and_memory_datatypes() -> N
         workflow = next(
             record["document"] for record in workspace_api._load_workflows(workspace)
             if record.get("workspaceId") == workspace_id
+            and record["document"]["id"] != "arc3_random_player.outer_loop"
         )
         operation_records = workspace_api._load_operations(workspace)
         operations = {

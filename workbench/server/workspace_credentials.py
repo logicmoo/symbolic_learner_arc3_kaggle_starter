@@ -67,8 +67,8 @@ def resolve_workspace_credential(workspace_root: Path | str | None, name: str) -
         value = read_workspace_credentials(root).get(name, "")
         if value:
             return value
-        shared_root = root.parent / "shared"
-        if root.name != "shared" and get_filesystem_provider().is_dir(shared_root):
+        shared_root = root.parent / "shared_library_system"
+        if root.name != "shared_library_system" and get_filesystem_provider().is_dir(shared_root):
             value = read_workspace_credentials(shared_root).get(name, "")
             if value:
                 return value
@@ -77,10 +77,10 @@ def resolve_workspace_credential(workspace_root: Path | str | None, name: str) -
 
 def credential_statuses(workspace_root: Path, backends: list[dict[str, Any]]) -> list[dict[str, Any]]:
     local = read_workspace_credentials(workspace_root)
-    shared_root = workspace_root.parent / "shared"
+    shared_root = workspace_root.parent / "shared_library_system"
     shared = (
         read_workspace_credentials(shared_root)
-        if workspace_root.name != "shared" and get_filesystem_provider().is_dir(shared_root)
+        if workspace_root.name != "shared_library_system" and get_filesystem_provider().is_dir(shared_root)
         else {}
     )
     entries: dict[str, dict[str, Any]] = {}

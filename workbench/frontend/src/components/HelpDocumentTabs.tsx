@@ -10,6 +10,7 @@ const docTabs:HelpTab[]=[
  {id:"overview",label:"Overview",path:"docs/models_profiles_operations_prompts.md"},
  {id:"goals",label:"Goals",path:"docs/goals.md"},
  {id:"plans",label:"Planning",path:"docs/plans.md"},
+ {id:"workflows",label:"Workflows",path:"docs/workflows.md"},
  {id:"contexts",label:"AtomSpaces",path:"docs/contexts.md"},
  {id:"data",label:"Data",path:"docs/data.md"},
  {id:"datatypeGuide",label:"Datatype Guide",repositoryPath:"docs/DATATYPES_MANIFEST_EXPLAINED.md"},
@@ -22,7 +23,7 @@ const docTabs:HelpTab[]=[
 ];
 
 async function readShared(path:string){
- const response=await fetch(`/api/workspaces/shared/file?path=${encodeURIComponent(path)}`);
+ const response=await fetch(`/api/workspaces/shared_library_system/file?path=${encodeURIComponent(path)}`);
  const text=await response.text();let payload:any;
  try{payload=JSON.parse(text)}catch{throw new Error(text||response.statusText)}
  if(!response.ok)throw new Error(payload.error||payload.detail||response.statusText);
@@ -36,7 +37,7 @@ async function readRepository(path:string){
  return {path:String(payload.path),content:String(payload.content)} as OpenedDocument;
 }
 
-const repositoryPath=(path:string)=>`workbench/workspaces/shared/${path}`;
+const repositoryPath=(path:string)=>`workbench/workspaces/shared_library_system/${path}`;
 function resolveMarkdownPath(currentPath:string,href:string){
  const clean=href.split("#",1)[0];
  if(clean.startsWith("/"))return clean.replace(/^\/+/,"");
@@ -47,11 +48,13 @@ function resolveMarkdownPath(currentPath:string,href:string){
 
 export function HelpDocumentTabs({preferred,context,onOpenDocs}:{preferred?:string;context?:string;onOpenDocs?:(filter:string)=>void}){
  const tabs:HelpTab[]=[{id:"context",label:"Context"},...docTabs];
- const initial=preferred&&tabs.some(tab=>tab.id===preferred)?preferred:"context";
+ const pageView=new URLSearchParams(window.location.search).get("view");
+ const effectivePreferred=preferred==="overview"&&(pageView===null||pageView==="canvas")?"workflows":preferred;
+ const initial=effectivePreferred&&tabs.some(tab=>tab.id===effectivePreferred)?effectivePreferred:"context";
  const[active,setActive]=useState(initial),[docs,setDocs]=useState<Record<string,string>>({}),[errors,setErrors]=useState<Record<string,string>>({});
  const[opened,setOpened]=useState<OpenedDocument|null>(null),[history,setHistory]=useState<OpenedDocument[]>([]);
  useEffect(()=>{if(active==="context"||docs[active]||errors[active])return;const requested=tabs.find(tab=>tab.id===active);if(!requested)return;let cancelled=false;const pending=requested.repositoryPath?readRepository(requested.repositoryPath).then(document=>document.content):readShared(requested.path!);void pending.then(content=>{if(!cancelled)setDocs(current=>({...current,[requested.id]:content}))}).catch(reason=>{if(!cancelled)setErrors(current=>({...current,[requested.id]:String(reason)}))});return()=>{cancelled=true}},[active]);
- useEffect(()=>{if(preferred&&tabs.some(tab=>tab.id===preferred)){setActive(preferred);setOpened(null);setHistory([])}},[preferred]);
+ useEffect(()=>{if(effectivePreferred&&tabs.some(tab=>tab.id===effectivePreferred)){setActive(effectivePreferred);setOpened(null);setHistory([])}},[effectivePreferred]);
  const tab=tabs.find(item=>item.id===active)!;
  const baseDocument:OpenedDocument={path:tab.repositoryPath||(tab.path?repositoryPath(tab.path):""),content:active==="context"?(context?`\`\`\`json\n${context}\n\`\`\``:"No contextual inspector data is available for this page."):errors[active]?`> **Documentation failed to load:** ${errors[active]}`:(docs[active]||"Loading shared documentation…")};
  const document=opened||baseDocument;

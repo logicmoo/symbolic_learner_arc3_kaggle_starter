@@ -25,7 +25,7 @@ A workflow should normally ask for an abstract datatype such as `image`, not for
 Shared reusable definitions live in:
 
 ```text
-workbench/workspaces/shared/
+workbench/workspaces/shared_library_system/
 ├── datatypes/
 ├── representations/
 ├── operations/

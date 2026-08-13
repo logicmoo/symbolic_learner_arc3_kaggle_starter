@@ -60,6 +60,27 @@ def test_artifact_editors_hide_the_run_pipeline_column() -> None:
     assert ".workspace.artifact-focused>.stages-panel{display:none}" in styles
 
 
+def test_workflow_designer_shows_filesystem_documentation_in_right_panel() -> None:
+    page = ACTIVE_PAGE.read_text(encoding="utf-8")
+    help_tabs = (ROOT / "workbench" / "frontend" / "src" / "components" / "HelpDocumentTabs.tsx").read_text(encoding="utf-8")
+    playground = (ROOT / "workbench" / "frontend" / "src" / "components" / "OperationPlayground.tsx").read_text(encoding="utf-8")
+    controls = (ROOT / "workbench" / "frontend" / "src" / "components" / "UniversalExecutionControls.tsx").read_text(encoding="utf-8")
+    playground_styles = (ROOT / "workbench" / "frontend" / "src" / "styles" / "operation_playground.css").read_text(encoding="utf-8")
+    workflow_docs = ROOT / "workbench" / "workspaces" / "shared_library_system" / "docs" / "workflows.md"
+
+    assert 'view==="canvas"' in page.split("const relationshipView=", 1)[1].split(";", 1)[0]
+    assert '{id:"workflows",label:"Workflows",path:"docs/workflows.md"}' in help_tabs
+    assert 'pageView===null||pageView==="canvas"' in help_tabs
+    assert workflow_docs.is_file()
+    docs = workflow_docs.read_text(encoding="utf-8")
+    assert "## Populate Inputs" in docs
+    assert "No inputs to populate" in docs
+    assert "DELAYED TASK SPECIFICATION" not in playground
+    assert "operation-task-contract" not in playground_styles
+    assert "flex-wrap:nowrap" in playground_styles
+    assert "No inputs to populate" in controls
+
+
 def test_navigation_reuses_current_rich_editors() -> None:
     source = ACTIVE_PAGE.read_text(encoding="utf-8")
     expected = {
@@ -93,7 +114,7 @@ def test_systems_are_separate_from_model_backends() -> None:
     assert 'systemResources:snapshot?.systems?.length||0' in page
     help_tabs = (ROOT / "workbench" / "frontend" / "src" / "components" / "HelpDocumentTabs.tsx").read_text(encoding="utf-8")
     assert '{id:"systems",label:"Systems",path:"docs/systems.md"}' in help_tabs
-    systems_docs = ROOT / "workbench" / "workspaces" / "shared" / "docs" / "systems.md"
+    systems_docs = ROOT / "workbench" / "workspaces" / "shared_library_system" / "docs" / "systems.md"
     assert systems_docs.is_file()
     documentation = systems_docs.read_text(encoding="utf-8")
     assert "Systems are not model backends" in documentation
@@ -103,7 +124,7 @@ def test_systems_are_separate_from_model_backends() -> None:
     assert 'view==="sourceCode"||view==="prompts"?"prompts"' in page
     assert '"systems": _load_systems(workspace)' in api
     for system_id in ("python", "prolog", "metta", "llm", "omegaclaw", "codex", "mailbox"):
-        assert (ROOT / "workbench" / "workspaces" / "shared" / "design" / "systems" / f"{system_id}.system.metta").is_file()
+        assert (ROOT / "workbench" / "workspaces" / "shared_library_system" / "design" / "systems" / f"{system_id}.system.metta").is_file()
 
 
 def test_source_code_editor_reuses_prompt_and_operation_source_editors() -> None:

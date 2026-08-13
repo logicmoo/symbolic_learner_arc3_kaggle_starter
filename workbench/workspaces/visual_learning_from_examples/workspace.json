@@ -5,7 +5,7 @@
   "description": "Disk-backed project workspace for visual learning from staged examples and durable memory silos.",
   "includes": [
     {
-      "workspaceId": "shared",
+      "workspaceId": "shared_library_system",
       "includeInherited": true
     }
   ]
