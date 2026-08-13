@@ -35,6 +35,10 @@ class ServiceDefinition:
 
 MANAGED_SERVICES = (
     ServiceDefinition(
+        "channel-relay", "Mailbox Channel Relay Proxy", "Standalone mailbox and chat-platform bridging proxy daemon.", 46667, "/health",
+        ROOT.parent / "mailbox_channel" / "mailbox-server.cmd", True,
+    ),
+    ServiceDefinition(
         "clawrouter", "ClawRouter", "Keyless local model-routing gateway.", 3456, "/health",
         ROOT / "workbench" / "scripts" / "run_clawrouter.bat", True,
     ),
@@ -137,7 +141,11 @@ def _service_payload(definition: ServiceDefinition, listeners: dict[int, int]) -
         "pid": pid,
         "processName": _process_name(pid),
         "controllable": definition.controllable,
-        "launcher": str(definition.launcher.relative_to(ROOT)) if definition.launcher else None,
+        "launcher": (
+            str(definition.launcher.relative_to(ROOT))
+            if definition.launcher and definition.launcher.is_relative_to(ROOT)
+            else str(definition.launcher) if definition.launcher else None
+        ),
         "stdout": _tail(LOG_ROOT / f"{definition.id}.stdout.log"),
         "stderr": _tail(LOG_ROOT / f"{definition.id}.stderr.log"),
     }

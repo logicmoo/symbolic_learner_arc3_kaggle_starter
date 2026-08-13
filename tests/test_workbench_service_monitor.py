@@ -21,13 +21,14 @@ def test_monitor_registers_real_service_routes() -> None:
     assert ("/system/services/{service_id}/{action}", "POST") in routes
     assert {item.id for item in service_monitor_api.MANAGED_SERVICES} == {
         "clawrouter", "omniroute", "freerouter",
+        "channel-relay",
     }
-    assert {item.port for item in service_monitor_api.MANAGED_SERVICES} == {3456, 20128, 18800}
+    assert {item.port for item in service_monitor_api.MANAGED_SERVICES} == {3456, 20128, 18800, 46667}
     assert all(item.launcher and item.launcher.is_file() for item in service_monitor_api.MANAGED_SERVICES)
 
 
 def test_service_payload_reports_listener_process_and_redacted_logs(monkeypatch) -> None:
-    definition = service_monitor_api.MANAGED_SERVICES[0]
+    definition = next(item for item in service_monitor_api.MANAGED_SERVICES if item.id == "clawrouter")
     monkeypatch.setattr(service_monitor_api, "_health", lambda _port, _path: "healthy")
     monkeypatch.setattr(service_monitor_api, "_process_name", lambda _pid: "node.exe")
     monkeypatch.setattr(service_monitor_api, "_tail", lambda _path: "Authorization: Bearer secret-token")

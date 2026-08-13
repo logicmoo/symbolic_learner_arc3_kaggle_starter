@@ -6,13 +6,13 @@ status = "ACTIVE"
 rrule = "FREQ=SECONDLY;INTERVAL=30"
 notification_policy = "failed_runs_only"
 prompt = """
-Set AGENT_MAILBOX_DIR to C:\\snet\\PeTTa\\repos\\agent-mailbox.
+Set AGENT_MAILBOX_URL to http://127.0.0.1:46667.
 From the Symbolic Learner Workbench checkout, first reuse or await any active
 mailbox polling subprocess. Never start an overlapping polling session.
 
 When no prior session is running, execute:
 
-python scripts/agent_mailbox.py poll symbolic-workbench-codex --interval 30 --checks 10 --require-port 5173 --require-port 8000 --require-port 3456 --require-port 20128 --require-port 18800
+python .codex/mailbox/agent_mailbox.py --url http://127.0.0.1:46667 poll symbolic-workbench-codex --interval 30 --checks 10 --require-port 46667
 
 The poll command checks immediately, then every 30 seconds, for exactly ten
 checks maximum. It exits early and prints JSONL when addressed mail arrives.
@@ -21,11 +21,10 @@ required listener disappears. Empty successful output is a quiet no-op.
 
 Ignore outbound echoes, empty messages, system events, messages not addressed
 to symbolic-workbench-codex, and already-handled message IDs. For genuine new
-requests, immediately acknowledge omegaclaw-core-codex, perform the authorized
+requests, immediately acknowledge the source agent or channel through channel-relay, perform the authorized
 Workbench work, and send concise progress plus completion or failure messages.
 Send conversational or autonomous context intended for Min to omegaclaw-min.
 Follow AGENTS.md and Git/worktree rules. Do not commit or push unless Douglas
 asks. Keep the desktop app and Workbench services running. Remain quiet for
 healthy sessions and surface only genuine work or failures.
 """
-

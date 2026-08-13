@@ -1,8 +1,11 @@
 # Shared agent mailbox
 
+[Back to repository README](../README.md)
+
 The workbench can exchange local agent messages through a minimal append-only
-JSONL mailbox. By default it uses the sibling `agent-mailbox/` directory next
-to this repository. Set `AGENT_MAILBOX_DIR` to share another directory.
+JSONL mailbox. By default it uses the sibling
+`mailbox_channel/mailbox/` directory next to this
+repository. Set `AGENT_MAILBOX_DIR` to share another directory.
 
 Each line in `messages.jsonl` contains `id`, UTC `timestamp`, `from`, `to`,
 `type`, and `text`; callers of the Python API may also add `metadata`. Relay
@@ -23,16 +26,16 @@ From the repository root:
 ```powershell
 python scripts/agent_mailbox.py send omegaclaw-core-codex "Please inspect the API"
 python scripts/agent_mailbox.py send omegaclaw-min "Status update" --sender symbolic-workbench-codex
-python scripts/agent_mailbox.py send omegaclaw-core-codex "UI captures" --attach .\systems.png --attach .\details.json
-python scripts/agent_mailbox.py send omegaclaw-core-codex "Relayed request" --type mattermost_message --channel-type mattermost --channel-id CHANNEL --source-id POST
-python scripts/agent_mailbox.py send omegaclaw-core-codex "Thread reply" --channel-type mattermost --channel-id CHANNEL --source-id POST --thread-id THREAD --root-id ROOT
+python scripts/agent_mailbox.py send channel-relay "UI captures" --attach .\systems.png --attach .\details.json --channel-id CHANNEL
+python scripts/agent_mailbox.py send channel-relay "Relayed request" --type channel_send --channel-type mattermost --channel-id CHANNEL --source-id POST
+python scripts/agent_mailbox.py send channel-relay "Thread reply" --type channel_send --channel-type mattermost --channel-id CHANNEL --source-id POST --thread-id THREAD --root-id ROOT
 python scripts/agent_mailbox.py receive symbolic-workbench-codex
 python scripts/agent_mailbox.py poll symbolic-workbench-codex --interval 30 --checks 10 --require-port 5173 --require-port 8000
 python scripts/agent_mailbox.py status
 ```
 
-The local identity defaults to `symbolic-workbench-codex`. Known peers are
-`omegaclaw-core-codex` and `omegaclaw-min`. Each successful `send` prints the
+The stable local agent identity defaults to `symbolic-workbench-codex`. Known
+peers are `omegaclaw-core-codex`, `omegaclaw-min`, and `channel-relay`. Each successful `send` prints the
 new JSON record. `receive` prints unread addressed records as JSONL and prints
 nothing when there are none, which makes it suitable for polling scripts.
 `--attach PATH` is repeatable. Each source must be an existing file. Basenames
@@ -50,6 +53,26 @@ Handoff: point every participating repository at the same
 and invoke `receive <identity>` periodically. Do not edit or truncate
 `messages.jsonl`; archive it only after all consumers have been stopped and
 their cursors have been coordinated.
+
+## External Mailbox Channel Relay Bridging Proxy
+
+Channel transport is owned by the sibling proxy project, not by Workbench,
+OmegaClaw, or the FastAPI process lifecycle. The Workbench API can start, stop,
+restart, and inspect it through `/api/system/services/channel-relay/{action}`
+and `/api/system/services`.
+It binds loopback port `46667`; `/health` is the machine-local ownership and
+health signal used to detect an already-running relay and prevent overlap.
+
+Inbound Mattermost posts are fanned out to the configured transport-neutral
+recipients (by default `symbolic-workbench-codex`, `omegaclaw-core-codex`, and
+`omegaclaw-min`). To post outbound, send a record to
+`channel-relay` with `channel_type`, `channel_id`, and optional
+`root_id`/`thread_id` routing
+context. Credentials remain in the proxy project's ignored `.env` as `MM_URL`,
+`MM_BOT_TOKEN`, and `MM_CHANNEL_ID`; they are never stored in workspace files.
+The complete REST, Codex, OmegaClaw, MeTTaClaw, and workflow integration guide
+is maintained by the sibling `C:\snet\PeTTa\repos\mailbox_channel\README.md`
+project. This Workbench is only a client and external-service controller.
 
 ## Codex heartbeat automation
 

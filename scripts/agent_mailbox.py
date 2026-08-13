@@ -8,24 +8,30 @@ import json
 import mimetypes
 import os
 import re
+import runpy
 import shutil
 import socket
 import sys
 import time
 import uuid
+import urllib.error
+import urllib.parse
+import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 
 DEFAULT_SENDER = "symbolic-workbench-codex"
-PEERS = ("omegaclaw-core-codex", "omegaclaw-min")
+PEERS = ("omegaclaw-core-codex", "omegaclaw-min", "channel-relay")
 MAILBOX_ENV = "AGENT_MAILBOX_DIR"
+MAILBOX_URL_ENV = "AGENT_MAILBOX_URL"
+DEFAULT_MAILBOX_URL = "http://127.0.0.1:46667"
 UNSAFE_FILENAME = re.compile(r'[<>:"/\\|?*\x00-\x1f]')
 
 
 def default_mailbox_dir() -> Path:
-    return Path(__file__).resolve().parents[2] / "agent-mailbox"
+    return Path(__file__).resolve().parents[2] / "mailbox_channel" / "mailbox"
 
 
 def mailbox_dir() -> Path:
@@ -105,6 +111,7 @@ def send(
     sender: str = DEFAULT_SENDER,
     message_type: str = "message",
     metadata: dict[str, Any] | None = None,
+    extra_fields: dict[str, Any] | None = None,
     attachments: list[Path] | None = None,
     channel_id: str | None = None,
     channel_type: str | None = None,
@@ -126,6 +133,8 @@ def send(
     }
     if metadata is not None:
         record["metadata"] = metadata
+    if extra_fields:
+        record.update(extra_fields)
     routing_context = {
         "channel_id": channel_id,
         "channel_type": channel_type,
@@ -231,8 +240,59 @@ def status(*, root: Path | None = None) -> dict[str, Any]:
     }
 
 
+def _rest_request(method: str, path: str, payload: dict[str, Any] | None = None, *, base_url: str | None = None) -> Any:
+    url = (base_url or os.environ.get(MAILBOX_URL_ENV) or DEFAULT_MAILBOX_URL).rstrip("/") + path
+    encoded = json.dumps(payload).encode("utf-8") if payload is not None else None
+    request = urllib.request.Request(url, data=encoded, method=method)
+    if encoded is not None:
+        request.add_header("Content-Type", "application/json")
+    with urllib.request.urlopen(request, timeout=15) as response:
+        return json.loads(response.read().decode("utf-8"))
+
+
+def send_rest(
+    recipient: str,
+    text: str,
+    *,
+    sender: str = DEFAULT_SENDER,
+    message_type: str = "message",
+    attachments: list[Path] | None = None,
+    channel_id: str | None = None,
+    channel_type: str | None = None,
+    source_id: str | None = None,
+    thread_id: str | None = None,
+    root_id: str | None = None,
+    base_url: str | None = None,
+) -> dict[str, Any]:
+    payload = {
+        "to": recipient,
+        "text": text,
+        "from": sender,
+        "type": message_type,
+        "attachments": [str(path.expanduser().resolve()) for path in (attachments or [])],
+        "channel_id": channel_id,
+        "channel_type": channel_type,
+        "source_id": source_id,
+        "thread_id": thread_id,
+        "root_id": root_id,
+    }
+    return dict(_rest_request("POST", "/v1/messages", payload, base_url=base_url)["message"])
+
+
+def receive_rest(recipient: str, *, base_url: str | None = None) -> list[dict[str, Any]]:
+    query = urllib.parse.urlencode({"recipient": recipient})
+    return list(_rest_request("GET", f"/v1/messages?{query}", base_url=base_url)["messages"])
+
+
+def status_rest(*, base_url: str | None = None) -> dict[str, Any]:
+    return dict(_rest_request("GET", "/v1/status", base_url=base_url))
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
+    transport = parser.add_mutually_exclusive_group()
+    transport.add_argument("--dir", type=Path, help="use this JSONL mailbox directory")
+    transport.add_argument("--url", help=f"use REST instead of JSONL (default service: {DEFAULT_MAILBOX_URL})")
     commands = parser.add_subparsers(dest="command", required=True)
     send_parser = commands.add_parser("send", help="append a message")
     send_parser.add_argument("recipient")
@@ -264,10 +324,16 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    configured_dir = os.environ.get(MAILBOX_ENV)
+    mailbox_root = args.dir.expanduser().resolve() if args.dir else (
+        Path(configured_dir).expanduser().resolve() if configured_dir else None
+    )
+    rest_url = args.url or (None if mailbox_root else os.environ.get(MAILBOX_URL_ENV))
+    use_rest = bool(rest_url)
     if args.command == "send":
         print(
             json.dumps(
-                send(
+                (send_rest if use_rest else send)(
                     args.recipient,
                     args.text,
                     sender=args.sender,
@@ -278,20 +344,36 @@ def main(argv: list[str] | None = None) -> int:
                     source_id=args.source_id,
                     thread_id=args.thread_id,
                     root_id=args.root_id,
+                    **({"base_url": rest_url} if use_rest else {"root": mailbox_root}),
                 ),
                 ensure_ascii=False,
             )
         )
     elif args.command == "receive":
-        for record in receive(args.recipient):
+        records = receive_rest(args.recipient, base_url=rest_url) if use_rest else receive(args.recipient, root=mailbox_root)
+        for record in records:
             print(json.dumps(record, ensure_ascii=False))
     elif args.command == "poll":
-        records, missing_ports = poll(
-            args.recipient,
-            interval_seconds=args.interval,
-            max_checks=args.checks,
-            required_ports=tuple(args.require_port),
-        )
+        if use_rest:
+            records = []
+            missing_ports = []
+            for check in range(args.checks):
+                if check:
+                    time.sleep(args.interval)
+                records = receive_rest(args.recipient, base_url=rest_url)
+                if records:
+                    break
+                missing_ports = [port for port in args.require_port if not _port_is_listening(port)]
+                if missing_ports:
+                    break
+        else:
+            records, missing_ports = poll(
+                args.recipient,
+                interval_seconds=args.interval,
+                max_checks=args.checks,
+                required_ports=tuple(args.require_port),
+                root=mailbox_root,
+            )
         for record in records:
             print(json.dumps(record, ensure_ascii=False))
         if missing_ports:
@@ -301,9 +383,20 @@ def main(argv: list[str] | None = None) -> int:
             )
             return 2
     else:
-        print(json.dumps(status(), ensure_ascii=False, indent=2))
+        print(json.dumps(status_rest(base_url=rest_url) if use_rest else status(root=mailbox_root),
+                         ensure_ascii=False, indent=2))
     return 0
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    canonical_client = (
+        Path(__file__).resolve().parents[2]
+        / "mailbox_channel"
+        / "src"
+        / "mailbox_channels"
+        / "agent_mailbox.py"
+    )
+    if canonical_client.is_file() and canonical_client.resolve() != Path(__file__).resolve():
+        runpy.run_path(str(canonical_client), run_name="__main__")
+    else:
+        sys.exit(main())

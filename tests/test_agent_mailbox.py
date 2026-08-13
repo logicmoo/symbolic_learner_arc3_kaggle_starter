@@ -34,11 +34,11 @@ def test_receive_leaves_partial_last_record_for_next_call(tmp_path: Path) -> Non
 def test_environment_override_controls_cli_storage(tmp_path: Path, monkeypatch, capsys) -> None:
     monkeypatch.setenv(agent_mailbox.MAILBOX_ENV, str(tmp_path))
 
-    assert agent_mailbox.main(["send", "omegaclaw-core-codex", "ready"]) == 0
+    assert agent_mailbox.main(["send", "omegaclaw-core", "ready"]) == 0
     sent = json.loads(capsys.readouterr().out)
     assert sent["from"] == agent_mailbox.DEFAULT_SENDER
 
-    assert agent_mailbox.main(["receive", "omegaclaw-core-codex"]) == 0
+    assert agent_mailbox.main(["receive", "omegaclaw-core"]) == 0
     received = json.loads(capsys.readouterr().out)
     assert received["id"] == sent["id"]
 
@@ -113,14 +113,15 @@ def test_repository_automation_uses_bounded_poll_command() -> None:
     assert definition["kind"] == "heartbeat"
     assert definition["rrule"] == "FREQ=SECONDLY;INTERVAL=30"
     assert definition["notification_policy"] == "failed_runs_only"
-    assert "agent_mailbox.py poll symbolic-workbench-codex" in definition["prompt"]
+    assert "agent_mailbox.py" in definition["prompt"]
+    assert "poll symbolic-workbench" in definition["prompt"]
     assert "--interval 30 --checks 10" in definition["prompt"]
 
 
 def test_status_does_not_create_mailbox(tmp_path: Path) -> None:
     result = agent_mailbox.status(root=tmp_path)
     assert result["size_bytes"] == 0
-    assert result["peers"] == ["omegaclaw-core-codex", "omegaclaw-min"]
+    assert result["peers"] == ["omegaclaw-core-codex", "omegaclaw-min", "channel-relay"]
     assert not (tmp_path / "messages.jsonl").exists()
     assert not (tmp_path / "cursors").exists()
 
@@ -222,3 +223,13 @@ def test_cli_send_accepts_routing_context_without_requiring_thread(tmp_path: Pat
     assert sent["source_id"] == "post-1"
     assert "thread_id" not in sent
     assert "root_id" not in sent
+
+
+def test_cli_dir_overrides_environment_transports(tmp_path: Path, monkeypatch, capsys) -> None:
+    selected = tmp_path / "selected-mailbox"
+    monkeypatch.setenv(agent_mailbox.MAILBOX_ENV, str(tmp_path / "environment-mailbox"))
+    monkeypatch.setenv(agent_mailbox.MAILBOX_URL_ENV, "http://127.0.0.1:9")
+
+    assert agent_mailbox.main(["--dir", str(selected), "status"]) == 0
+
+    assert json.loads(capsys.readouterr().out)["directory"] == str(selected.resolve())
