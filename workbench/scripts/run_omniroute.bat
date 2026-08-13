@@ -6,6 +6,12 @@ set "OMNIROUTE_PORT=%~1"
 if not defined OMNIROUTE_PORT set "OMNIROUTE_PORT=20128"
 set "OMNIROUTE_CMD=%APPDATA%\npm\omniroute.cmd"
 
+rem OmniRoute loads the repository .env before spawning its dashboard. Pin
+rem both generic dashboard variables so a repository PORT value (the
+rem Workbench API normally uses 8000) cannot create a second listener there.
+set "PORT=%OMNIROUTE_PORT%"
+set "DASHBOARD_PORT=%OMNIROUTE_PORT%"
+
 title OmniRoute %OMNIROUTE_PORT%
 cd /d "%~dp0..\.."
 

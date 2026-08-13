@@ -25,7 +25,7 @@ from workspace_credentials import (  # noqa: E402
 
 
 def test_shared_router_backends_and_free_first_defaults_load_from_metta() -> None:
-    shared = ROOT / "workbench" / "workspaces" / "shared"
+    shared = ROOT / "workbench" / "workspaces" / "shared_library_system"
     backends = {
         str((record.get("document") or {}).get("id")): record.get("document") or {}
         for record in load_workspace_backend_records(shared)
@@ -102,6 +102,8 @@ def test_windows_omniroute_launcher_uses_the_official_gateway_and_bootstrap() ->
     bootstrap = (ROOT / "workbench" / "scripts" / "bootstrap_omniroute.py").read_text(encoding="utf-8")
     demo = (ROOT / "workbench" / "run_demo.bat").read_text(encoding="utf-8")
     assert "npm.cmd install -g omniroute" in launcher
+    assert 'set "PORT=%OMNIROUTE_PORT%"' in launcher
+    assert 'set "DASHBOARD_PORT=%OMNIROUTE_PORT%"' in launcher
     assert "serve --port %OMNIROUTE_PORT% --no-open --no-tray --log" in launcher
     assert "bootstrap_backend_credential" in bootstrap
     assert 'set "OMNIROUTE_PORT=20128"' in demo
@@ -113,6 +115,7 @@ def test_windows_freerouter_launcher_uses_only_the_free_openrouter_route() -> No
     configuration = json.loads((ROOT / "workbench" / "config" / "freerouter.config.json").read_text(encoding="utf-8"))
     demo = (ROOT / "workbench" / "run_demo.bat").read_text(encoding="utf-8")
     assert "https://github.com/openfreerouter/freerouter.git" in launcher
+    assert 'set "CLAWROUTER_PORT=18800"' in launcher
     assert "node dist\\server.js" in launcher
     assert configuration["providers"]["openrouter"]["auth"]["key"] == "OPENROUTER_API_KEY"
     for tier_map in (configuration["tiers"], configuration["agenticTiers"]):
@@ -231,7 +234,7 @@ def test_omniroute_bootstrap_can_authenticate_a_local_management_session(
 
 
 def test_workspace_credentials_inherit_from_shared_and_allow_local_override(tmp_path: Path) -> None:
-    shared = tmp_path / "shared"
+    shared = tmp_path / "shared_library_system"
     project = tmp_path / "project"
     shared.mkdir()
     project.mkdir()

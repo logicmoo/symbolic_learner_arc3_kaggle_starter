@@ -54,3 +54,16 @@ def test_workbench_launchers_share_the_root_environment() -> None:
     assert '"%REPO_ROOT%[all]"' in launcher
     assert ".venv-workbench" not in launcher + api
     assert "workbench\\.venv" not in launcher + api
+
+
+def test_api_reload_is_limited_to_server_python_sources() -> None:
+    api = (ROOT / "workbench" / "scripts" / "run_api_server.bat").read_text(encoding="utf-8")
+    runner = (ROOT / "workbench" / "scripts" / "run_api_server.py").read_text(encoding="utf-8")
+
+    assert '"%ROOT%\\scripts\\run_api_server.py"' in api
+    assert 'reload_dirs=[str(SERVER_ROOT)]' in runner
+    assert 'reload_includes=["*.py"]' in runner
+    assert '"environment_files/*"' in runner
+    assert '"runtime/*"' in runner
+    assert '"__pycache__/*"' in runner
+    assert '"test_*.py"' in runner

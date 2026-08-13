@@ -11,7 +11,7 @@ set "PYTHON_EXE=%REPO_ROOT%\.venv\Scripts\python.exe"
 
 title MeTTa Workbench API %BIND_IP%:%API_PORT%
 cd /d "%ROOT%\server"
-doskey restart="%PYTHON_EXE%" -m uvicorn app:app --reload --host %BIND_IP% --port %API_PORT%
+doskey restart="%PYTHON_EXE%" "%ROOT%\scripts\run_api_server.py" --host %BIND_IP% --port %API_PORT%
 
 echo.
 echo ============================================================
@@ -21,7 +21,7 @@ echo  Working directory:
 echo    %CD%
 echo.
 echo  Command being run:
-echo    "%PYTHON_EXE%" -m uvicorn app:app --reload --host %BIND_IP% --port %API_PORT%
+echo    "%PYTHON_EXE%" "%ROOT%\scripts\run_api_server.py" --host %BIND_IP% --port %API_PORT%
 echo.
 echo  If you stop it with Ctrl+C:
 echo    type restart
@@ -30,13 +30,13 @@ echo  This command window stays open after the server exits.
 echo ============================================================
 echo.
 
-"%PYTHON_EXE%" -m uvicorn app:app --reload --host %BIND_IP% --port %API_PORT%
+"%PYTHON_EXE%" "%ROOT%\scripts\run_api_server.py" --host %BIND_IP% --port %API_PORT%
 
 echo.
 echo ------------------------------------------------------------
 echo  API server stopped.
 echo  Type: restart
 echo  Full restart command:
-echo    "%PYTHON_EXE%" -m uvicorn app:app --reload --host %BIND_IP% --port %API_PORT%
+echo    "%PYTHON_EXE%" "%ROOT%\scripts\run_api_server.py" --host %BIND_IP% --port %API_PORT%
 echo ------------------------------------------------------------
 echo.

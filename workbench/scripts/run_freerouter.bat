@@ -6,6 +6,11 @@ set "ROOT=%~dp0..\.."
 set "FREEROUTER_DIR=%ROOT%\vendor\freerouter"
 set "FREEROUTER_CONFIG=%ROOT%\workbench\config\freerouter.config.json"
 
+rem FreeRouter's server uses CLAWROUTER_PORT as its highest-priority port
+rem override. Pin it here so a value inherited from setkeys or another router
+rem cannot move this service onto ClawRouter's port 3456.
+set "CLAWROUTER_PORT=18800"
+
 title FreeRouter 18800
 cd /d "%ROOT%"
 
