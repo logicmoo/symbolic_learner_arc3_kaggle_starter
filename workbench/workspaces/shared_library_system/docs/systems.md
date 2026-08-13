@@ -26,8 +26,9 @@ recipient-specific cursors. Messages may include attachments copied beneath
 `attachments/<message-id>/` with filename, MIME type, size, and SHA-256
 metadata.
 
-The Workbench identity is `symbolic-workbench-codex`; its configured peers are
-`omegaclaw-core-codex` and `omegaclaw-min`.
+The Codex Workbench presence is `symbolic-workbench-codex`; its configured
+peers include `omegaclaw-core-codex`, `omegaclaw-min`, and the
+transport-neutral `channel-relay`.
 
 ## OmegaClaw
 

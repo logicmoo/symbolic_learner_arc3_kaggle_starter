@@ -1,0 +1,17 @@
+{
+  "kind": "workspace",
+  "id": "shared_library_arc3",
+  "label": "ARC3 Shared Library",
+  "description": "Reusable ARC3-specific operations, prompts, workflows, symbolic representations, and learning resources.",
+  "metadata": {
+    "role": "shared-domain-library",
+    "domain": "arc3",
+    "editable": true
+  },
+  "includes": [
+    {
+      "workspaceId": "shared_library_system",
+      "includeInherited": true
+    }
+  ]
+}

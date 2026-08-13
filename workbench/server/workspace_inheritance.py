@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any
 from resource_store import get_filesystem_provider
 
-SHARED_WORKSPACE_ID = "shared"
+SHARED_WORKSPACE_ID = "shared_library_system"
 
 
 def workspace_metadata_path(root: Path) -> Path:

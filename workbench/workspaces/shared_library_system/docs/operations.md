@@ -4,6 +4,19 @@
 
 An Operation is a semantic operation in the workbench. A root `operation` is an abstract contract; an `operation` with a same-kind parent is one concrete implementation.
 
+## Durable task specification and lifecycle
+
+An Operation is also a durable delayed task specification. Its filesystem
+resource records the stable input/output contract, implementation alternatives,
+preferred implementation, prompts, models, examples, and parameters before any
+execution exists. This is an architectural property of the resource, not a
+banner that needs to occupy the Operation Playground.
+
+At runtime an invocation moves through `defined`, `running`, `completed`, or
+`failed`. Those states belong in execution evidence, workflow runs, events, and
+logs. The playground stays focused on inputs, implementation selection, running,
+and concrete results.
+
 The workflow should normally point to the abstract Operation ID. The Operation lists allowed implementation variants and a default. The runtime resolves that abstract stage to a concrete implementation when the workflow is validated/executed.
 
 ```text

@@ -24,7 +24,7 @@ openai.backend.metta
 gpt-5.6.model.metta
 gpt-5.6-deep.model.metta
 observe_choose_record.workflow.metta
-shared.workspace.metta
+shared_library_system.workspace.metta
 image.semantic_datatype.metta
 bitmap.representation_datatype.metta
 png.concrete_datatype.metta

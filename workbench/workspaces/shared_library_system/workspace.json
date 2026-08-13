@@ -1,0 +1,12 @@
+{
+  "kind": "workspace",
+  "id": "shared_library_system",
+  "label": "Shared System Library",
+  "description": "Editable reusable system resources inherited by ordinary workspaces.",
+  "metadata": {
+    "role": "shared-system-library",
+    "editable": true,
+    "inheritedByDefault": true
+  },
+  "includes": []
+}

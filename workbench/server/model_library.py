@@ -13,7 +13,7 @@ from workspace_inheritance import effective_workspace_layers, layer_source
 from resource_store import get_filesystem_provider
 from resource_relationships import relationship_ids
 
-SHARED_WORKSPACE_ID = "shared"
+SHARED_WORKSPACE_ID = "shared_library_system"
 # ``profile`` and the old profile directories remain read-only compatibility
 # inputs. Validation normalizes every loaded resource to ``kind=model``; the
 # parent relationship determines whether the UI presents it as a model preset.

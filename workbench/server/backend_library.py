@@ -8,7 +8,7 @@ from operation_library import DEFAULT_WORKSPACES_ROOT
 from workspace_inheritance import effective_workspace_layers, layer_source
 from resource_store import get_filesystem_provider
 
-SHARED_WORKSPACE_ID = "shared"
+SHARED_WORKSPACE_ID = "shared_library_system"
 MODEL_CATALOG_DIRECTORY = "models"
 BACKEND_DIRECTORIES = ("design/backends", "backends", "models")
 
