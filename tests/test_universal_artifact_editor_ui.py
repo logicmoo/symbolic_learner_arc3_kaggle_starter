@@ -35,6 +35,7 @@ def test_design_resource_editors_share_the_universal_execution_runner() -> None:
     assert "OPERATION · ONE-OFF" in runner
     assert "MODEL · ONE-OFF" in runner
     assert "POPULATE INPUTS" in controls
+    assert "No inputs to populate" in controls
 
 
 def test_operations_preserve_rich_baseline_features() -> None:
@@ -108,9 +109,9 @@ def test_every_generic_resource_source_is_enableable() -> None:
 def test_operation_playground_exposes_typed_inputs_variant_switching_and_results() -> None:
     source = _text("OperationPlayground.tsx")
     for token in (
-        "OPERATION PLAYGROUND",
-        "RUN WITH (THIS RUN ONLY)",
-        "OUTPUT CONTRACT",
+        "OPERATION DEFAULTS",
+        "RUN WITH · WORKFLOW CASCADE",
+        "OUTPUT(S)",
         "implementationVariant",
         "/invoke",
         "elapsedMs",
@@ -123,6 +124,28 @@ def test_operation_playground_exposes_typed_inputs_variant_switching_and_results
         "Operation input preview",
     ):
         assert token in source
+    assert "OPERATION PLAYGROUND" not in source
+    assert "Inspect inputs, choose an implementation" not in source
+    operation = source.index('<span>OPERATION</span>')
+    run_with = source.index('<span>RUN WITH', operation)
+    defaults = source.index('<span>OPERATION DEFAULTS</span>', operation)
+    run_with = source.index('<span>RUN WITH · WORKFLOW CASCADE</span>', defaults)
+    model = source.index('<span>MODEL · WORKFLOW CASCADE</span>', run_with)
+    populate = source.index('<UniversalExecutionControls', model)
+    inputs = source.index('INPUT · {name}', populate)
+    outputs = source.index('<span>OUTPUT(S)</span>', inputs)
+    assert operation < defaults < run_with < model < populate < inputs < outputs
+    assert 'className="operation-defaults-toggle"' in source
+    assert "aria-expanded={defaultsOpen}" in source
+    assert "onDefaultImplementationChange" in source
+    assert "Use the editor Save button to persist it" in source
+    assert "onDefaultImplementationChange={setDefaultImplementation}" in _text("OperationLibraryEditor.tsx")
+    assert 'className="operation-cascade-toggle"' in source
+    assert "aria-expanded={cascadeOpen}" in source
+    assert 'cascadeOpen?"Collapse":"Change overrides"' in source
+    assert "SUB-IMPLEMENTATION · WORKFLOW CASCADE" in source
+    for mode in ('"last_outputs",name', '"random_outputs",name', '"sample_input",name', '"empty_null",name'):
+        assert mode in source
 
 
 def test_operation_playground_formats_structured_datatype_contracts() -> None:
@@ -142,8 +165,8 @@ def test_operation_playground_offers_automatic_llm_fallback() -> None:
     assert "Automatic LLM fallback (openrouter/free)" in source
     assert "const concreteVariants=variants.length?variants:direct?[direct]:[]" in source
     assert "const runnableVariants=[...concreteVariants,fallback]" in source
-    assert "RUN WITH (THIS RUN ONLY)" in source
-    assert "The saved default implementation is unchanged" in source
+    assert "RUN WITH · WORKFLOW CASCADE" in source
+    assert "without changing the saved Operation" in source
 
 
 def test_operation_playground_can_run_default_and_populate_from_runtime_artifacts() -> None:
