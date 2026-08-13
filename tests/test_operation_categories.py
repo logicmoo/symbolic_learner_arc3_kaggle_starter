@@ -21,7 +21,7 @@ def test_every_operation_has_at_least_one_valid_category_path() -> None:
 
 
 def test_titlecase_llm_implementation_is_a_sample_llm() -> None:
-    path = WORKSPACES / "shared" / "design" / "operations" / "echo_into_titlecased_llm.operation.json"
+    path = WORKSPACES / "shared_library_system" / "design" / "operations" / "echo_into_titlecased_llm.operation.metta"
     document = get_filesystem_provider().read_json(path)
     assert document["kind"] == "operation"
     assert document["parents"] == ["echo_into_titlecased"]

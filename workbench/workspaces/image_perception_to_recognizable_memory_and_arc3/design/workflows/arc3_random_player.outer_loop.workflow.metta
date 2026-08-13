@@ -252,5 +252,4 @@
     )
   ))
   (workspaceId image_perception_to_recognizable_memory_and_arc3)
-  (version 1)
 )

@@ -12,8 +12,8 @@ from datatype_library import interface_type_inventory, load_workspace_concrete_d
 from representation_planner import plan_representation_conversion
 
 
-SHARED = ROOT / "workbench" / "workspaces" / "shared"
-ARC3 = ROOT / "workbench" / "workspaces" / "arc3"
+SHARED = ROOT / "workbench" / "workspaces" / "shared_library_system"
+ARC3 = ROOT / "workbench" / "workspaces" / "shared_library_arc3"
 
 
 def test_image_is_abstract_datatype_with_multiple_representations() -> None:

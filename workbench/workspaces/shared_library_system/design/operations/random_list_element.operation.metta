@@ -1,5 +1,6 @@
 (
   (kind operation)
+  (categories ([] collection/random))
   (id collection.random_list_element)
   (label "Random List Element")
   (description "Select one actual element from a non-empty list using an optional deterministic seed.")
@@ -10,6 +11,7 @@
 )
 (
   (kind operation)
+  (categories ([] collection/random sample/python))
   (id collection.random_list_element.python)
   (label "Random List Element / Python")
   (implementation python.callable)

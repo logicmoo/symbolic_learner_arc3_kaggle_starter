@@ -16,7 +16,7 @@ def test_editable_workspace_workflows_do_not_claim_runtime_versions() -> None:
 
 
 def test_default_inherits_shared_visual_learning_workflow() -> None:
-    assert (WORKSPACES / "shared" / "design" / "workflows" / "vision_learn_by_observation.workflow.metta").is_file()
+    assert (WORKSPACES / "shared_library_system" / "design" / "workflows" / "vision_learn_by_observation.workflow.metta").is_file()
     assert not (WORKSPACES / "default" / "design" / "workflows" / "vision_learn_by_observation.workflow.metta").exists()
 
 

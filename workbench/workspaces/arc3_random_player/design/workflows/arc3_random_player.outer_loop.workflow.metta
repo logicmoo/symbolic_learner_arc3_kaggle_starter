@@ -252,5 +252,4 @@
     )
   ))
   (workspaceId arc3_random_player)
-  (version 1)
 )
