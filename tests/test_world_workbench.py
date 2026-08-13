@@ -156,10 +156,14 @@ def test_human_demonstration_mode_observes_without_selecting_actions() -> None:
 
 
 def test_domain_neutral_manifests_keep_arc3_at_the_adapter_boundary() -> None:
-    shared_config = ROOT / "workbench" / "workspaces" / "shared" / "design" / "configs"
+    shared_config = ROOT / "workbench" / "workspaces" / "shared_library_system" / "design" / "configs"
     semantic_dir = shared_config.parent / "semantic_datatypes"
     resources = get_filesystem_provider()
-    semantic = [resources.read_json(path.with_suffix(".json")) for path in semantic_dir.glob("*.semantic_datatype.metta")]
+    semantic = [
+        document
+        for path in semantic_dir.glob("*.semantic_datatype.metta")
+        for document in resources.read_json_documents(path)
+    ]
     by_id = {item["id"]: item for item in semantic}
     assert {"world_model", "goal_set", "simulation_result"}.issubset(by_id)
     assert not {item_id for item_id in by_id if item_id.startswith("arc3_")}

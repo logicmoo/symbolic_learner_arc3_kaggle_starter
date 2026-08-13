@@ -10,7 +10,7 @@ from policy_library import load_workspace_policy_records, policy_hierarchy  # no
 
 
 def test_shared_policy_directory_loads_real_resources() -> None:
-    shared = ROOT / "workbench" / "workspaces" / "shared"
+    shared = ROOT / "workbench" / "workspaces" / "shared_library_system"
     records = load_workspace_policy_records(shared)
     hierarchy = policy_hierarchy(records)
     assert len(records) >= 13

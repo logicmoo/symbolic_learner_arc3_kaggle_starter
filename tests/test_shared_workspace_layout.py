@@ -4,7 +4,7 @@ from resource_store import get_filesystem_provider
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SHARED = ROOT / "workbench" / "workspaces" / "shared"
+SHARED = ROOT / "workbench" / "workspaces" / "shared_library_system"
 WORKSPACES = SHARED.parent
 
 KIND_DIRECTORIES = {

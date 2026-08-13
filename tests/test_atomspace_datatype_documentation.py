@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_active_atomspace_datatype_replaces_information_silo() -> None:
-    directory = ROOT / "workbench" / "workspaces" / "shared" / "design" / "semantic_datatypes"
+    directory = ROOT / "workbench" / "workspaces" / "shared_library_system" / "design" / "semantic_datatypes"
     resources = get_filesystem_provider()
     atomspace = resources.read_json(directory / "atomspace.semantic_datatype.json")
     information = resources.read_json(directory / "information.semantic_datatype.json")

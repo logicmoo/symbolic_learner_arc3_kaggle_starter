@@ -72,7 +72,7 @@ def test_catalog_backends_models_and_profiles_load_until_policy_disables_them() 
 
 
 def test_resolved_model_cache_tracks_catalog_revisions_without_sharing_mutations(tmp_path: Path) -> None:
-    shared = tmp_path / "shared"
+    shared = tmp_path / "shared_library_system"
     resources = get_filesystem_provider()
     backend = shared / "design" / "backends" / "vendor.backend.json"
     model = shared / "design" / "models" / "model.model.json"
@@ -145,15 +145,15 @@ def test_backend_model_discovery_supports_openai_and_ollama_shapes(tmp_path: Pat
 
 
 def test_model_import_route_always_targets_shared_workspace(tmp_path: Path, monkeypatch) -> None:
-    project = tmp_path / "project"; shared = tmp_path / "shared"
+    project = tmp_path / "project"; shared = tmp_path / "shared_library_system"
     (shared / "models").mkdir(parents=True); project.mkdir()
     (shared / "models" / "vendor.backend.json").write_text(json.dumps({"kind": "backend", "id": "vendor", "provider": "openai", "configuration": {"baseUrl": "https://example.invalid/v1"}}))
-    monkeypatch.setattr(policy_api, "_resolve_workspace", lambda workspace_id: {"id": workspace_id, "root": str(shared if workspace_id == "shared" else project)})
+    monkeypatch.setattr(policy_api, "_resolve_workspace", lambda workspace_id: {"id": workspace_id, "root": str(shared if workspace_id == "shared_library_system" else project)})
     monkeypatch.setattr(policy_api, "load_workspace_backend_records", lambda _root: [{"document": {"kind": "backend", "id": "vendor", "provider": "openai"}}])
     invalidations: list[bool] = []
     monkeypatch.setattr(policy_api, "invalidate_workspace_discovery", lambda: invalidations.append(True))
     result = policy_api.import_models("project", "vendor", {"models": [{"id": "remote/model", "label": "Remote"}]})
-    assert result["targetWorkspace"]["id"] == "shared"
+    assert result["targetWorkspace"]["id"] == "shared_library_system"
     assert not (project / "models").exists()
     assert (shared / "design" / "models" / "vendor-remote_model.model.metta").is_file()
     assert invalidations == [True]
@@ -170,13 +170,13 @@ def test_model_example_invokes_resolved_model(monkeypatch, tmp_path: Path) -> No
         return {"text": str(inputs.get("prompt")).upper(), "response": {"id": "response-1", "usage": {"prompt_tokens": 2, "completion_tokens": 1}}}
     monkeypatch.setattr(policy_api, "_llm_complete", invoke)
     image = "data:image/png;base64,aGVsbG8="
-    result = policy_api.invoke_model_example("shared", "model", {"arguments": {"prompt": "hello"}, "image": image})
+    result = policy_api.invoke_model_example("shared_library_system", "model", {"arguments": {"prompt": "hello"}, "image": image})
     assert result["text"] == "HELLO"
     assert captured == {"image": image, "prompt": "hello", "model": "remote"}
     assert result["inputTokens"] == 2
     assert result["outputTokens"] == 1
     assert result["debugLogPath"].startswith("runtime/logs/model_invocations/")
-    trace = json.loads(policy_api.read_model_debug_log("shared", result["debugLogPath"])["content"])
+    trace = json.loads(policy_api.read_model_debug_log("shared_library_system", result["debugLogPath"])["content"])
     assert trace["status"] == "completed"
     assert trace["prompt"] == "hello"
     assert trace["image"] == {"source": "data_url", "mediaType": "image/png", "length": len(image)}

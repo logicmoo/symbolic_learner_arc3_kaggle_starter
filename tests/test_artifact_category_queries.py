@@ -12,7 +12,7 @@ from operation_library import load_workspace_operation_implementation_records
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SHARED = ROOT / "workbench" / "workspaces" / "shared"
+SHARED = ROOT / "workbench" / "workspaces" / "shared_library_system"
 
 
 def test_shared_query_categories_are_valid_and_tree_scoped() -> None:

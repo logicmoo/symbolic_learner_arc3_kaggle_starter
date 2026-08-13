@@ -36,7 +36,7 @@ def test_active_model_policy_page_uses_live_filesystem_policy_api() -> None:
 
 
 def test_shared_policy_examples_form_a_resolvable_reference_graph() -> None:
-    shared = ROOT / "workbench" / "workspaces" / "shared"
+    shared = ROOT / "workbench" / "workspaces" / "shared_library_system"
     paths = [
         shared / "policies" / "default_model_runtime.model_policy.json",
         shared / "policies" / "balanced_model_runtime.model_policy_variant.json",

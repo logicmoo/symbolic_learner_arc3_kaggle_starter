@@ -21,8 +21,8 @@ def _write(root: Path, workspace: str, directory: str, name: str, document: str)
 
 
 def test_goal_resources_inherit_shared_and_allow_workspace_overrides(tmp_path: Path) -> None:
-    _write(tmp_path, "shared", "goals", "learn.goal.json", '{"kind":"goal","id":"learn","label":"Shared"}')
-    _write(tmp_path, "shared", "goals", "safe.goal.json", '{"kind":"goal","id":"safe","parents":["learn"]}')
+    _write(tmp_path, "shared_library_system", "goals", "learn.goal.json", '{"kind":"goal","id":"learn","label":"Shared"}')
+    _write(tmp_path, "shared_library_system", "goals", "safe.goal.json", '{"kind":"goal","id":"safe","parents":["learn"]}')
     _write(tmp_path, "project", "goals", "learn.goal.json", '{"kind":"goal","id":"learn","label":"Override"}')
     records = load_workspace_symbolic_records(tmp_path / "project", "goal", workspaces_root=tmp_path)
     by_id = {record["document"]["id"]: record for record in records}
@@ -34,9 +34,9 @@ def test_goal_resources_inherit_shared_and_allow_workspace_overrides(tmp_path: P
 
 
 def test_plan_variant_uses_parent_link_and_base_kind_suffix(tmp_path: Path) -> None:
-    _write(tmp_path, "shared", "planning_strategies", "route.planning_strategy.json", '{"kind":"planning_strategy","id":"route"}')
-    _write(tmp_path, "shared", "planning_strategies", "route.fast.planning_strategy.json", '{"kind":"planning_strategy","id":"route.fast","parents":["route"]}')
-    records = load_workspace_symbolic_records(tmp_path / "shared", "plan", workspaces_root=tmp_path)
+    _write(tmp_path, "shared_library_system", "planning_strategies", "route.planning_strategy.json", '{"kind":"planning_strategy","id":"route"}')
+    _write(tmp_path, "shared_library_system", "planning_strategies", "route.fast.planning_strategy.json", '{"kind":"planning_strategy","id":"route.fast","parents":["route"]}')
+    records = load_workspace_symbolic_records(tmp_path / "shared_library_system", "plan", workspaces_root=tmp_path)
     hierarchy = symbolic_hierarchy(records, "plan")
     assert hierarchy["variantsBySpecification"]["route"][0]["document"]["kind"] == "planning_strategy"
     path = canonical_resource_path(Path("planning_strategies/draft.json"), {"kind": "planning_strategy", "id": "route.fast", "parents": ["route"]})
@@ -44,7 +44,7 @@ def test_plan_variant_uses_parent_link_and_base_kind_suffix(tmp_path: Path) -> N
 
 
 def test_shared_workspace_contains_goal_and_plan_examples() -> None:
-    shared = ROOT / "workbench" / "workspaces" / "shared"
+    shared = ROOT / "workbench" / "workspaces" / "shared_library_system"
     goals = load_workspace_symbolic_records(shared, "goal")
     plans = load_workspace_symbolic_records(shared, "plan")
     assert {record["document"]["kind"] for record in goals} == {"goal"}
@@ -54,7 +54,7 @@ def test_shared_workspace_contains_goal_and_plan_examples() -> None:
 
 
 def test_shared_design_examples_are_domain_neutral_and_runnable() -> None:
-    shared = ROOT / "workbench" / "workspaces" / "shared"
+    shared = ROOT / "workbench" / "workspaces" / "shared_library_system"
     resources = get_filesystem_provider()
     design_dirs = [shared / "design" / name for name in ("goals", "planning_strategies", "workflows")]
     documents = [document for directory in design_dirs for path in directory.glob("*.metta") for document in resources.read_json_documents(path.with_suffix(".json"))]
@@ -65,7 +65,7 @@ def test_shared_design_examples_are_domain_neutral_and_runnable() -> None:
 
 
 def test_shared_workspace_contains_bidirectional_context_examples() -> None:
-    shared = ROOT / "workbench" / "workspaces" / "shared"
+    shared = ROOT / "workbench" / "workspaces" / "shared_library_system"
     contexts = load_workspace_symbolic_records(shared, "context")
     by_id = {record["document"]["id"]: record["document"] for record in contexts}
     assert {document["kind"] for document in by_id.values()} == {"atomspace"}
@@ -109,13 +109,13 @@ def test_goal_plan_and_context_pages_load_their_shared_right_panel_docs() -> Non
     assert '<pre className="mini-code relationship-markdown">' not in help_source
     assert 'view==="goals"?"goals":view==="plans"?"plans"' in page_source
     assert 'view==="goals"||view==="plans"' in page_source
-    assert (ROOT / "workbench" / "workspaces" / "shared" / "docs" / "goals.md").is_file()
-    assert (ROOT / "workbench" / "workspaces" / "shared" / "docs" / "plans.md").is_file()
-    assert (ROOT / "workbench" / "workspaces" / "shared" / "docs" / "contexts.md").is_file()
+    assert (ROOT / "workbench" / "workspaces" / "shared_library_system" / "docs" / "goals.md").is_file()
+    assert (ROOT / "workbench" / "workspaces" / "shared_library_system" / "docs" / "plans.md").is_file()
+    assert (ROOT / "workbench" / "workspaces" / "shared_library_system" / "docs" / "contexts.md").is_file()
 
 
 def test_pddl_vocabulary_maps_plans_to_workflows() -> None:
-    docs = (ROOT / "workbench" / "workspaces" / "shared" / "docs" / "plans.md").read_text(encoding="utf-8")
+    docs = (ROOT / "workbench" / "workspaces" / "shared_library_system" / "docs" / "plans.md").read_text(encoding="utf-8")
     page = (ROOT / "workbench" / "frontend" / "src" / "pages" / "FilesystemWorkbenchPage.tsx").read_text(encoding="utf-8")
     assert "| Plan | Workflow |" in docs
     assert "| Ground action | Workflow step |" in docs

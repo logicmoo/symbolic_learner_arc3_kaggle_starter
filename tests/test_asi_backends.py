@@ -13,7 +13,7 @@ from model_library import resolve_model_records  # noqa: E402
 
 
 def test_shared_asi_backends_load_with_expected_credentials_and_endpoints() -> None:
-    shared = ROOT / "workbench" / "workspaces" / "shared"
+    shared = ROOT / "workbench" / "workspaces" / "shared_library_system"
     backends = {
         str((record.get("document") or {}).get("id")): record.get("document") or {}
         for record in load_workspace_backend_records(shared)

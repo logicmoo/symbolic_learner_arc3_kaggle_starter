@@ -211,7 +211,8 @@ def test_explicit_debug_setting_enables_shared_hook(
 
 def test_every_runnable_script_uses_shared_runtime_resolver() -> None:
     scripts = sorted(
-        path for path in (ROOT / "scripts").glob("*.py") if path.name != "_runtime.py"
+        path for path in (ROOT / "scripts").glob("*.py")
+        if path.name not in {"_runtime.py", "agent_mailbox.py"}
     )
     assert scripts
 

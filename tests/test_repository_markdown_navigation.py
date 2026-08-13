@@ -84,7 +84,7 @@ def test_repository_markdown_index_and_ui_links(tmp_path: Path, monkeypatch) -> 
     assert 'refreshing?"Refreshing...":"Refresh"' in docs_source
     assert "current.checksum!==opened.checksum" in docs_source
     assert "ignored_names=IGNORED_DIRECTORIES" in (SERVER / "repository_docs_api.py").read_text(encoding="utf-8")
-    data_docs = (ROOT / "workbench" / "workspaces" / "shared" / "docs" / "data.md").read_text(encoding="utf-8")
+    data_docs = (ROOT / "workbench" / "workspaces" / "shared_library_system" / "docs" / "data.md").read_text(encoding="utf-8")
     assert "[Browse Data documents](?docs=data)" in data_docs
     assert "[Browse datatype documents](?docs=datatype)" in data_docs
     assert 'new CustomEvent("workbench:open-docs"' in help_source

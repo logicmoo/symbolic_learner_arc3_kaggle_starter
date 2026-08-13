@@ -44,7 +44,7 @@ def test_resource_tool_operations_use_declared_semantic_datatypes() -> None:
 
 def test_operation_playground_invokes_python_variant() -> None:
     result = invoke_operation(
-        "shared",
+        "shared_library_system",
         "echo_into_titlecased",
         {
             "implementationVariant": "echo_into_titlecased_python",
@@ -55,7 +55,7 @@ def test_operation_playground_invokes_python_variant() -> None:
     assert result["implementation"]["route"] == "python.callable"
     assert result["outputs"]["text"] == "Hello Symbolic World"
     assert result["elapsedMs"] >= 0
-    trace = json.loads(read_operation_debug_log("shared", result["debugLogPath"])["content"])
+    trace = json.loads(read_operation_debug_log("shared_library_system", result["debugLogPath"])["content"])
     assert trace["status"] == "completed"
     assert trace["providerExecution"]["provider"] == "python.callable"
     assert trace["providerExecution"]["stdout"] == ""
@@ -69,12 +69,12 @@ def test_resource_tool_operations_execute_real_filesystem_resources() -> None:
         "label": "Test Space",
         "bindings": ["facts", "rules"],
     }
-    query = invoke_operation("shared", "atomspace_query", {"inputs": {"resource": atomspace}})
+    query = invoke_operation("shared_library_system", "atomspace_query", {"inputs": {"resource": atomspace}})
     assert query["implementation"]["route"] == "resource.tool"
     assert query["outputs"]["result"]["query"] == ["facts", "rules"]
-    asserted = invoke_operation("shared", "atomspace_assert", {"inputs": {"resource": atomspace}})
+    asserted = invoke_operation("shared_library_system", "atomspace_assert", {"inputs": {"resource": atomspace}})
     assert asserted["outputs"]["result"]["event"] == "atomspace.changed"
-    retracted = invoke_operation("shared", "atomspace_retract", {"inputs": {"resource": atomspace}})
+    retracted = invoke_operation("shared_library_system", "atomspace_retract", {"inputs": {"resource": atomspace}})
     assert retracted["outputs"]["result"]["event"] == "atomspace.changed"
 
 
@@ -114,7 +114,7 @@ def test_file_python_provider_can_import_sibling_modules(tmp_path: Path) -> None
 
 @pytest.mark.skipif(shutil.which("swipl") is None, reason="SWI-Prolog is not installed")
 def test_operation_playground_invokes_swi_prolog_variant() -> None:
-    result = invoke_operation("shared", "echo_into_titlecased", {
+    result = invoke_operation("shared_library_system", "echo_into_titlecased", {
         "implementationVariant": "echo_into_titlecased_prolog",
         "inputs": {"text": "the quick brown fox"},
     })
@@ -122,7 +122,7 @@ def test_operation_playground_invokes_swi_prolog_variant() -> None:
     assert result["outputs"]["execution"]["predicate"] == "titlecase_text"
     assert result["implementation"]["route"] == "prolog.source"
     assert result["elapsedMs"] >= 0
-    trace = json.loads(read_operation_debug_log("shared", result["debugLogPath"])["content"])
+    trace = json.loads(read_operation_debug_log("shared_library_system", result["debugLogPath"])["content"])
     assert trace["providerExecution"]["completeSource"].startswith("titlecase_text")
     assert trace["providerExecution"]["returnCode"] == 0
     assert trace["providerExecution"]["stdout"] == "The Quick Brown Fox\n"
@@ -131,7 +131,7 @@ def test_operation_playground_invokes_swi_prolog_variant() -> None:
 
 def test_operation_materialization_resolves_requested_prompt_variant() -> None:
     executable = materialize_workflow_step(
-        {"id": "playground", "workspaceId": "shared"},
+        {"id": "playground", "workspaceId": "shared_library_system"},
         {
             "id": "invoke",
             "operation": "echo_into_titlecased",
@@ -163,7 +163,7 @@ def test_operation_materialization_resolves_requested_prompt_variant() -> None:
 
 def test_playground_model_selection_overrides_implementation_for_one_run() -> None:
     executable = materialize_workflow_step(
-        {"id": "playground", "workspaceId": "shared"},
+        {"id": "playground", "workspaceId": "shared_library_system"},
         {
             "id": "operation_playground",
             "operation": "echo_into_titlecased",
@@ -177,7 +177,7 @@ def test_playground_model_selection_overrides_implementation_for_one_run() -> No
 
 
 def test_prompt_profiles_are_first_class_composition_resources() -> None:
-    root = DEFAULT_WORKSPACES_ROOT / "shared"
+    root = DEFAULT_WORKSPACES_ROOT / "shared_library_system"
     hierarchy = prompt_hierarchy(root)
     profiles = {record["document"]["id"]: record["document"] for record in hierarchy["promptProfiles"]}
     assert set(profiles) >= {"object_first", "scene_graph"}
@@ -205,7 +205,7 @@ def test_prompt_profiles_are_first_class_composition_resources() -> None:
 
 def test_direct_llm_operation_materializes_bound_prompt_profile() -> None:
     executable = materialize_workflow_step(
-        {"id": "vision", "workspaceId": "shared"},
+        {"id": "vision", "workspaceId": "shared_library_system"},
         {
             "id": "analyze",
             "operation": "vision.object_analysis",
@@ -229,7 +229,7 @@ def test_direct_llm_operation_materializes_bound_prompt_profile() -> None:
 
 def test_abstract_only_operation_uses_contract_derived_openrouter_fallback() -> None:
     resolved = resolve_operation_implementation(
-        DEFAULT_WORKSPACES_ROOT / "shared", "text_to_scene_graph"
+        DEFAULT_WORKSPACES_ROOT / "shared_library_system", "text_to_scene_graph"
     )
     implementation = resolved["implementation"]
     assert resolved["fallback"] is True
@@ -241,7 +241,7 @@ def test_abstract_only_operation_uses_contract_derived_openrouter_fallback() -> 
     }
 
     executable = materialize_workflow_step(
-        {"id": "playground", "workspaceId": "shared"},
+        {"id": "playground", "workspaceId": "shared_library_system"},
         {
             "id": "invoke",
             "operation": "text_to_scene_graph",
@@ -283,7 +283,7 @@ def test_operation_playground_routes_selected_model_through_openrouter(monkeypat
     monkeypatch.setenv("OPENROUTER_API_KEY", "openrouter-test-key")
     monkeypatch.setattr("workflow_providers.urllib.request.urlopen", urlopen)
 
-    result = invoke_operation("shared", "echo_into_titlecased", {
+    result = invoke_operation("shared_library_system", "echo_into_titlecased", {
         "implementationVariant": "echo_into_titlecased_llm",
         "inputs": {"text": "hello world"},
     })
@@ -292,7 +292,7 @@ def test_operation_playground_routes_selected_model_through_openrouter(monkeypat
     assert sent["authorization"] == "Bearer openrouter-test-key"
     assert sent["body"]["model"] == "openrouter/free"  # type: ignore[index]
     assert result["outputs"]["text"] == "Hello World"
-    trace_text = read_operation_debug_log("shared", result["debugLogPath"])["content"]
+    trace_text = read_operation_debug_log("shared_library_system", result["debugLogPath"])["content"]
     trace = json.loads(trace_text)
     assert "openrouter-test-key" not in trace_text
     assert trace["providerExecution"]["request"]["headers"]["Authorization"] == "[REDACTED]"
@@ -315,7 +315,7 @@ def test_automatic_fallback_marks_live_inputs_authoritative(monkeypatch: pytest.
 
     monkeypatch.setenv("OPENROUTER_API_KEY", "openrouter-test-key")
     monkeypatch.setattr("workflow_providers.urllib.request.urlopen", urlopen)
-    result = invoke_operation("shared", "echo_into_titlecased", {
+    result = invoke_operation("shared_library_system", "echo_into_titlecased", {
         "implementationVariant": "echo_into_titlecased.automatic_llm_fallback",
         "inputs": {"text": "codex zebra marker 92841"},
     })
@@ -328,7 +328,7 @@ def test_automatic_fallback_marks_live_inputs_authoritative(monkeypatch: pytest.
 
 
 def test_constant_value_uses_workbench_provider() -> None:
-    result = invoke_operation("shared", "shared.constant", {
+    result = invoke_operation("shared_library_system", "shared.constant", {
         "implementationVariant": "shared.constant.workbench",
         "inputs": {},
         "parameters": {"value": 42},
@@ -338,19 +338,19 @@ def test_constant_value_uses_workbench_provider() -> None:
 
 
 def test_direct_root_implementation_runs_without_an_llm_fallback() -> None:
-    resolved = resolve_operation_implementation(DEFAULT_WORKSPACES_ROOT / "shared", "shared.echo")
+    resolved = resolve_operation_implementation(DEFAULT_WORKSPACES_ROOT / "shared_library_system", "shared.echo")
     assert resolved["direct"] is True
     assert resolved["implementation"]["id"] == "shared.echo"
     assert resolved["implementation"]["implementation"] == "core.echo"
 
     executable = materialize_workflow_step(
-        {"id": "playground", "workspaceId": "shared"},
+        {"id": "playground", "workspaceId": "shared_library_system"},
         {"id": "invoke", "operation": "shared.echo", "inputs": {"value": "Suff"}},
     )
     assert executable["implementation"] == "core.echo"
     assert executable["implementationVariant"] == "shared.echo"
 
-    result = invoke_operation("shared", "shared.echo", {
+    result = invoke_operation("shared_library_system", "shared.echo", {
         "implementationVariant": "shared.echo",
         "inputs": {"value": "Suff"},
     })
@@ -360,7 +360,7 @@ def test_direct_root_implementation_runs_without_an_llm_fallback() -> None:
 
 def test_automatic_llm_fallback_can_override_an_available_implementation() -> None:
     direct = resolve_operation_implementation(
-        DEFAULT_WORKSPACES_ROOT / "shared",
+        DEFAULT_WORKSPACES_ROOT / "shared_library_system",
         "shared.echo",
         "shared.echo.automatic_llm_fallback",
     )
@@ -368,7 +368,7 @@ def test_automatic_llm_fallback_can_override_an_available_implementation() -> No
     assert direct["implementation"]["implementation"] == "llm.complete"
 
     with_children = resolve_operation_implementation(
-        DEFAULT_WORKSPACES_ROOT / "shared",
+        DEFAULT_WORKSPACES_ROOT / "shared_library_system",
         "echo_into_titlecased",
         "echo_into_titlecased.automatic_llm_fallback",
     )
@@ -381,7 +381,7 @@ def test_automatic_llm_fallback_can_override_an_available_implementation() -> No
 
 def test_user_request_materializes_as_human_input() -> None:
     executable = materialize_workflow_step(
-        {"id": "sample", "workspaceId": "shared"},
+        {"id": "sample", "workspaceId": "shared_library_system"},
         {
             "id": "ask",
             "operation": "sample.request_number",
@@ -393,19 +393,19 @@ def test_user_request_materializes_as_human_input() -> None:
     assert executable["form"]["value"]["prompt"] == "Enter the count"
     assert executable["form"]["value"]["type"] == "Number"
 
-    preview = invoke_operation("shared", "sample.request_number", {"inputs": {}})
+    preview = invoke_operation("shared_library_system", "sample.request_number", {"inputs": {}})
     assert preview["outputs"]["status"] == "waiting_for_input"
     assert preview["outputs"]["form"]["value"]["type"] == "Number"
     assert preview["outputs"]["form"]["value"]["prompt"] == "How many objects are visible?"
 
 
 def test_implementation_parent_link_is_sufficient_for_resolution(tmp_path: Path) -> None:
-    directory = tmp_path / "shared" / "design" / "operations"
+    directory = tmp_path / "shared_library_system" / "design" / "operations"
     directory.mkdir(parents=True)
     (directory / "echo.operation.json").write_text(json.dumps({
         "kind": "operation", "id": "shared.echo", "inputs": {"value": "Any"}, "outputs": {"value": "Any"},
     }), encoding="utf-8")
-    implementations = tmp_path / "shared" / "design" / "operation_implementations"
+    implementations = tmp_path / "shared_library_system" / "design" / "operation_implementations"
     implementations.mkdir(parents=True)
     (implementations / "echo_prolog.operation_implementation.json").write_text(json.dumps({
         "kind": "operation_implementation",
@@ -415,7 +415,7 @@ def test_implementation_parent_link_is_sufficient_for_resolution(tmp_path: Path)
     }), encoding="utf-8")
 
     resolved = resolve_operation_implementation(
-        tmp_path / "shared", "shared.echo", "shared.echo.prolog", workspaces_root=tmp_path,
+        tmp_path / "shared_library_system", "shared.echo", "shared.echo.prolog", workspaces_root=tmp_path,
     )
 
     assert resolved["implementation"]["id"] == "shared.echo.prolog"
@@ -429,7 +429,7 @@ def test_operation_playground_preserves_provider_rate_limit(monkeypatch: pytest.
 
     monkeypatch.setattr("workflow_providers.urllib.request.urlopen", rate_limited)
     with pytest.raises(HTTPException) as caught:
-        invoke_operation("shared", "echo_into_titlecased", {
+        invoke_operation("shared_library_system", "echo_into_titlecased", {
             "implementationVariant": "echo_into_titlecased_llm",
             "inputs": {"text": "hello"},
         })
@@ -437,14 +437,14 @@ def test_operation_playground_preserves_provider_rate_limit(monkeypatch: pytest.
     assert caught.value.status_code == 429
     assert "provider request failed with HTTP 429" in str(caught.value.detail)
     assert isinstance(caught.value.detail, dict)
-    trace = json.loads(read_operation_debug_log("shared", caught.value.detail["debugLogPath"])["content"])
+    trace = json.loads(read_operation_debug_log("shared_library_system", caught.value.detail["debugLogPath"])["content"])
     assert trace["status"] == "failed"
     assert trace["providerExecution"]["response"]["status"] == 429
     assert trace["error"]["type"] == "HTTPError"
 
 
 def test_automatic_vision_variant_sends_bitmap_inputs_and_parses_json(monkeypatch: pytest.MonkeyPatch) -> None:
-    resolved = resolve_operation_implementation(DEFAULT_WORKSPACES_ROOT / "shared", "vision.extract_scene_objects")
+    resolved = resolve_operation_implementation(DEFAULT_WORKSPACES_ROOT / "shared_library_system", "vision.extract_scene_objects")
     assert resolved["implementation"]["id"] == "vision.extract_scene_objects.automatic_llm"
     sent: dict[str, object] = {}
 
