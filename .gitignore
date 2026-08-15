@@ -264,6 +264,7 @@ reference/
 .pytest-tmp-echo/
 .codex/pytest-*/
 .codex/commit-validation-*/
+.codex/post-commit-validation/
 workbench/workspaces/.workspace-trash/
 config/workbench_startup.json
 workbench-ui-current.png
