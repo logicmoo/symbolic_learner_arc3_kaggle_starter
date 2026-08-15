@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -42,7 +43,49 @@ def test_repository_file_endpoint_opens_linked_source_files_safely(tmp_path: Pat
     (tmp_path / ".env").write_text("SECRET=value", encoding="utf-8")
     with pytest.raises(HTTPException) as secret:
         repository_docs_api.read_repository_file(".env")
-    assert secret.value.status_code == 400
+    assert secret.value.status_code == 403
+
+
+def test_repository_filesystem_index_separates_exposed_and_sensitive_files(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr(repository_docs_api, "REPOSITORY_ROOT", tmp_path)
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs" / "guide.md").write_text("# Guide", encoding="utf-8")
+    (tmp_path / "runner.py").write_text("print('safe')", encoding="utf-8")
+    (tmp_path / ".env").write_text("API_KEY=never-return-this", encoding="utf-8")
+    (tmp_path / "client.pem").write_text("private material", encoding="utf-8")
+    (tmp_path / "archive.zip").write_bytes(b"not browser safe")
+
+    payload = repository_docs_api.list_repository_filesystem()
+    assert [item["path"] for item in payload["files"]] == ["docs/guide.md", "runner.py"]
+    excluded = {item["path"]: item["reason"] for item in payload["unexposed"]}
+    assert "credentials" in excluded[".env"]
+    assert "credentials" in excluded["client.pem"]
+    assert "not approved" in excluded["archive.zip"]
+    assert all("content" not in item for item in payload["unexposed"])
+
+
+def test_repository_json_and_metta_files_can_be_updated(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr(repository_docs_api, "REPOSITORY_ROOT", tmp_path)
+    json_file = tmp_path / "config.json"
+    metta_file = tmp_path / "rule.metta"
+    json_file.write_text('{"before": true}', encoding="utf-8")
+    metta_file.write_text("(before)", encoding="utf-8")
+    updated_json = repository_docs_api.update_repository_file(repository_docs_api.RepositoryFileUpdate(content='{"after": true}'), "config.json")
+    updated_metta = repository_docs_api.update_repository_file(repository_docs_api.RepositoryFileUpdate(content="(after)"), "rule.metta")
+    assert json.loads(updated_json["content"]) == {"after": True}
+    assert updated_metta["content"] == "(after)"
+    with pytest.raises(HTTPException) as invalid:
+        repository_docs_api.update_repository_file(repository_docs_api.RepositoryFileUpdate(content="{"), "config.json")
+    assert invalid.value.status_code == 422
+
+
+def test_repository_images_are_exposed_as_renderable_assets(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr(repository_docs_api, "REPOSITORY_ROOT", tmp_path)
+    image = tmp_path / "diagram.png"
+    image.write_bytes(b"not-a-real-png")
+    assert repository_docs_api.read_repository_file("diagram.png")["format"] == "image"
+    asset = repository_docs_api.read_repository_asset("diagram.png")
+    assert Path(asset.path) == image
 
 
 def test_help_view_intercepts_repository_markdown_links() -> None:
@@ -75,7 +118,7 @@ def test_repository_markdown_index_and_ui_links(tmp_path: Path, monkeypatch) -> 
     help_source = (components / "HelpDocumentTabs.tsx").read_text(encoding="utf-8")
     docs_source = (components / "RepositoryDocsPage.tsx").read_text(encoding="utf-8")
     assert 'label:"Datatype Guide",repositoryPath:"docs/DATATYPES_MANIFEST_EXPLAINED.md"' in help_source
-    assert "/api/repository/markdown-index" in docs_source
+    assert "/api/repository/filesystem-index" in docs_source
     assert "/api/repository/file?path=" in docs_source
     assert 'opened.format==="markdown"' in docs_source
     assert 'history.length>0&&<button onClick={back}>← Back</button>' in docs_source
@@ -83,6 +126,51 @@ def test_repository_markdown_index_and_ui_links(tmp_path: Path, monkeypatch) -> 
     assert "event.stopPropagation()" in docs_source
     assert 'refreshing?"Refreshing...":"Refresh"' in docs_source
     assert "current.checksum!==opened.checksum" in docs_source
+    assert 'initialFilter||".md|.metta|.json"' in docs_source
+    assert "Contents of unexposed files never reach the browser" in docs_source
+    assert "function buildFileTree" in docs_source
+    assert "<FileTree node={tree}" in docs_source
+    assert "repository-tree-sidebar" in docs_source
+    assert 'setBrowserMode("tree")' in docs_source
+    assert 'setBrowserMode("navigator")' in docs_source
+    assert 'browserMode==="tree"' in docs_source
+    assert "Exposed Tree" in docs_source
+    assert "Exposed Navigator" in docs_source
+    assert "Exposed Full Path" in docs_source
+    assert "Unexposed Full Path" in docs_source
+    assert "repository-full-paths" in docs_source
+    assert 'method:"PUT"' in docs_source
+    assert "Save to filesystem" in docs_source
+    assert "Edit source" in docs_source
+    assert "Rendered preview" in docs_source
+    assert "@uiw/react-codemirror" in docs_source
+    assert "/api/repository/asset?path=" in docs_source
+    assert "Find in Tree" in docs_source
+    assert "Find in Navigator" in docs_source
+    assert "Find in Full Paths" in docs_source
+    assert "data-repository-path" in docs_source
+    assert 'split("|")' in docs_source
+    assert ".md|.txt" in docs_source
+    assert "File Name" in docs_source
+    assert "File Size" in docs_source
+    assert "Directory Name" in docs_source
+    assert "Parent Name (is Directory)" in docs_source
+    assert "Parent Bytes (is Directory)" in docs_source
+    assert "Path Depth" in docs_source
+    assert "Hide\"} .dotdirs" in docs_source
+    assert "Hide\"} .dotfiles" in docs_source
+    assert "isInDotDirectory" in docs_source
+    assert "isDotFile" in docs_source
+    assert 'useState("runtime/|venv/")' in docs_source
+    assert "setHideDotDirectories]=useState(true)" in docs_source
+    assert "setHideDotFiles]=useState(true)" in docs_source
+    assert "Exclude repository files" in docs_source
+    assert "directoryMetrics" in docs_source
+    assert 'useState<"tree"|"navigator"|"paths">("paths")' in docs_source
+    assert "function FilesystemNavigator" in docs_source
+    assert "filesystem-breadcrumbs" in docs_source
+    assert "Parent directory" in docs_source
+    assert "Close document" in docs_source
     assert "ignored_names=IGNORED_DIRECTORIES" in (SERVER / "repository_docs_api.py").read_text(encoding="utf-8")
     data_docs = (ROOT / "workbench" / "workspaces" / "shared_library_system" / "docs" / "data.md").read_text(encoding="utf-8")
     assert "[Browse Data documents](?docs=data)" in data_docs
@@ -94,6 +182,8 @@ def test_repository_markdown_index_and_ui_links(tmp_path: Path, monkeypatch) -> 
     assert "body.docs-focused .workspace>.stages-panel" in styles
     assert "body.docs-focused .workspace>.inspector-resizer" in styles
     assert "body.docs-focused .workspace .view-tabs" in styles
+    assert '.workbench[data-view="docs"] .workspace>.stages-panel' in styles
+    assert '.workbench[data-view="docs"] .workspace>.resource-browser-resizer' in styles
 
 
 def test_help_view_loads_only_the_active_document() -> None:

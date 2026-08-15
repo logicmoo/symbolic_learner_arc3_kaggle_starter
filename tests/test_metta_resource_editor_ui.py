@@ -26,6 +26,10 @@ def test_resource_source_editor_defaults_to_metta_and_keeps_json_available() -> 
     assert '>JSON</button>' in source
     assert "mettaDocumentToJson" in source
     assert "jsonDocumentToMetta" in source
+    assert "setJsonDraft(next)" in source
+    assert "onValidityChange?.(false)" in source
+    assert "Draft preserved; synchronization and saving are paused" in source
+    assert 'onChange("")' not in source
 
 
 def test_primary_design_editors_display_physical_metta_paths() -> None:

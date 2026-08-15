@@ -1,10 +1,20 @@
 import {useEffect,useMemo,useState} from "react";
+import CodeMirror from "@uiw/react-codemirror";
+import {css} from "@codemirror/lang-css";
+import {html} from "@codemirror/lang-html";
+import {javascript} from "@codemirror/lang-javascript";
+import {json} from "@codemirror/lang-json";
+import {markdown} from "@codemirror/lang-markdown";
+import {python} from "@codemirror/lang-python";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import {replaceWorkbenchLocation} from "../lib/workbenchNavigation";
 import "../styles/repository_docs.css";
 
-type DocumentEntry={path:string;name:string;size:number;modified:number;checksum:string};
-type OpenDocument={path:string;content:string;format:"markdown"|"source";checksum:string};
+type FileEntry={path:string;name:string;size:number;modified:number;checksum?:string;reason?:string};
+type OpenDocument={path:string;content:string;format:"markdown"|"source"|"image";checksum:string};
+type FileTreeNode={name:string;path:string;directories:Map<string,FileTreeNode>;files:FileEntry[]};
+type SortKey="name"|"size"|"directory"|"parentName"|"parentBytes"|"pathDepth";
 
 async function requestJson(path:string){
  const response=await fetch(path);const payload=await response.json();
@@ -12,36 +22,85 @@ async function requestJson(path:string){
  return payload;
 }
 const parentPath=(path:string)=>path.includes("/")?path.slice(0,path.lastIndexOf("/")):"Repository root";
+const immediateParentName=(path:string)=>{const directory=parentPath(path);return directory.includes("/")?directory.slice(directory.lastIndexOf("/")+1):directory};
+const fileType=(path:string)=>{const name=path.slice(path.lastIndexOf("/")+1),dot=name.lastIndexOf(".");return dot>=0?name.slice(dot+1).toLowerCase():"(no extension)"};
+const isInDotDirectory=(path:string)=>path.split("/").slice(0,-1).some(part=>part.startsWith("."));
+const isDotFile=(path:string)=>path.split("/").pop()?.startsWith(".")||false;
 function resolvePath(current:string,href:string){
  const clean=href.split("#",1)[0];if(clean.startsWith("/"))return clean.replace(/^\/+/,"");
  const parts=current.split("/");parts.pop();
  for(const part of clean.split("/")){if(!part||part===".")continue;if(part==="..")parts.pop();else parts.push(part)}
  return parts.join("/");
 }
+function syntaxExtensions(path:string){const suffix=path.toLowerCase().split(".").pop();if(suffix==="json"||suffix==="ipynb")return[json()];if(suffix==="md")return[markdown()];if(suffix==="py")return[python()];if(["js","mjs","ts","tsx"].includes(suffix||""))return[javascript({typescript:suffix==="ts"||suffix==="tsx",jsx:suffix==="tsx"})];if(suffix==="css")return[css()];if(suffix==="html")return[html()];return[]}
+function buildFileTree(entries:FileEntry[]){
+ const root:FileTreeNode={name:"Repository",path:"",directories:new Map(),files:[]};
+ for(const entry of entries){let node=root;const parts=entry.path.split("/");for(const part of parts.slice(0,-1)){const path=node.path?`${node.path}/${part}`:part;let child=node.directories.get(part);if(!child){child={name:part,path,directories:new Map(),files:[]};node.directories.set(part,child)}node=child}node.files.push(entry)}
+ return root;
+}
+function FileTree({node,expanded,toggle,open,selected,unexposed=false}:{node:FileTreeNode;expanded:Set<string>;toggle:(path:string)=>void;open:(path:string)=>void;selected?:string;unexposed?:boolean}){
+ const directories=[...node.directories.values()].sort((a,b)=>a.name.localeCompare(b.name));
+ return <div className="repository-tree-children">
+  {directories.map(directory=><div key={directory.path} className="repository-tree-directory"><button className="repository-tree-folder" onClick={()=>toggle(directory.path)} aria-expanded={expanded.has(directory.path)}><span aria-hidden="true">{expanded.has(directory.path)?"▾":"▸"}</span><b>{directory.name}</b><small>{directory.files.length+directory.directories.size}</small></button>{expanded.has(directory.path)&&<FileTree node={directory} expanded={expanded} toggle={toggle} open={open} selected={selected} unexposed={unexposed}/>}</div>)}
+  {node.files.sort((a,b)=>a.name.localeCompare(b.name)).map(file=><button key={file.path} data-repository-path={file.path} className={`repository-tree-file ${selected===file.path?"active":""}`} disabled={unexposed} onClick={()=>open(file.path)}><span aria-hidden="true">{unexposed?"⊘":"◇"}</span><b>{file.name}</b><small>{unexposed?file.reason:parentPath(file.path)}</small></button>)}
+ </div>;
+}
+function FilesystemNavigator({entries,directory,setDirectory,open,selected,unexposed=false}:{entries:FileEntry[];directory:string;setDirectory:(path:string)=>void;open:(path:string)=>void;selected?:string;unexposed?:boolean}){
+ const prefix=directory?`${directory}/`:"";
+ const folders=new Set<string>();
+ const files:FileEntry[]=[];
+ for(const entry of entries){if(!entry.path.startsWith(prefix))continue;const remainder=entry.path.slice(prefix.length),slash=remainder.indexOf("/");if(slash>=0)folders.add(remainder.slice(0,slash));else files.push(entry)}
+ const crumbs=directory?directory.split("/"):[];
+ return <div className="filesystem-navigator"><nav className="filesystem-breadcrumbs" aria-label="Current repository directory"><button onClick={()=>setDirectory("")}>Repository</button>{crumbs.map((crumb,index)=><span key={`${crumb}-${index}`}><i>/</i><button onClick={()=>setDirectory(crumbs.slice(0,index+1).join("/"))}>{crumb}</button></span>)}</nav><div className="filesystem-directory-list">{directory&&<button className="filesystem-entry folder" onClick={()=>setDirectory(crumbs.slice(0,-1).join("/"))}><span>↰</span><b>..</b><small>Parent directory</small></button>}{[...folders].sort().map(folder=><button key={folder} className="filesystem-entry folder" onClick={()=>setDirectory(prefix+folder)}><span>▰</span><b>{folder}</b><small>Folder</small></button>)}{files.sort((a,b)=>a.name.localeCompare(b.name)).map(file=><button key={file.path} data-repository-path={file.path} className={`filesystem-entry file ${selected===file.path?"active":""}`} disabled={unexposed} onClick={()=>open(file.path)}><span>{unexposed?"⊘":"◇"}</span><b>{file.name}</b><small>{unexposed?file.reason:`${file.size.toLocaleString()} bytes`}</small></button>)}</div>{folders.size===0&&files.length===0&&<div className="studio-empty">No matching files in this directory.</div>}</div>;
+}
 
 export function RepositoryDocsPage({initialFilter=""}:{initialFilter?:string}){
- const[documents,setDocuments]=useState<DocumentEntry[]>([]),[opened,setOpened]=useState<OpenDocument|null>(null),[history,setHistory]=useState<OpenDocument[]>([]),[filter,setFilter]=useState(initialFilter),[error,setError]=useState(""),[refreshing,setRefreshing]=useState(false);
- const load=async(path:string,remember=false)=>{try{const payload=await requestJson(`/api/repository/file?path=${encodeURIComponent(path)}`);if(remember&&opened)setHistory(current=>[...current,opened]);setOpened({path:payload.path,content:payload.content,format:payload.format,checksum:payload.checksum});setError("")}catch(reason){setError(String(reason))}};
- const back=()=>setHistory(current=>{const next=[...current];setOpened(next.pop()||null);return next});
- const refresh=async()=>{setRefreshing(true);try{const payload=await requestJson("/api/repository/markdown-index");const next=(payload.documents||[]) as DocumentEntry[];setDocuments(next);if(opened){const current=next.find(item=>item.path===opened.path);if(!current){setOpened(null);setError(`Document was removed from disk: ${opened.path}`)}else if(current.checksum!==opened.checksum)await load(opened.path);else setError("")}else setError("")}catch(reason){setError(String(reason))}finally{setRefreshing(false)}};
+ const initialParameters=new URLSearchParams(window.location.search),initialPanel=initialParameters.get("docsPanel");
+ const[files,setFiles]=useState<FileEntry[]>([]),[unexposed,setUnexposed]=useState<FileEntry[]>([]),[opened,setOpened]=useState<OpenDocument|null>(null),[history,setHistory]=useState<OpenDocument[]>([]),[filter,setFilter]=useState(initialFilter||".md|.metta|.json"),[exclusions,setExclusions]=useState("runtime/|venv/"),[hideDotDirectories,setHideDotDirectories]=useState(true),[hideDotFiles,setHideDotFiles]=useState(true),[showUnexposed,setShowUnexposed]=useState(initialPanel==="unexposed"),[browserMode,setBrowserMode]=useState<"tree"|"navigator"|"paths">(initialPanel==="tree"||initialPanel==="navigator"?initialPanel:"paths"),[currentDirectory,setCurrentDirectory]=useState(initialParameters.get("docsDirectory")||""),[sortKey,setSortKey]=useState<SortKey>("name"),[sortDirection,setSortDirection]=useState<"asc"|"desc">("asc"),[editDraft,setEditDraft]=useState(""),[editMode,setEditMode]=useState(false),[saving,setSaving]=useState(false),[error,setError]=useState(""),[refreshing,setRefreshing]=useState(false);
+ const recordLocation=(label:string,changes:Record<string,string|null>)=>{const url=new URL(window.location.href);for(const[key,value]of Object.entries(changes)){if(value)url.searchParams.set(key,value);else url.searchParams.delete(key)}replaceWorkbenchLocation(url,label)};
+ const load=async(path:string,remember=false)=>{try{const payload=await requestJson(`/api/repository/file?path=${encodeURIComponent(path)}`);if(remember&&opened)setHistory(current=>[...current,opened]);setOpened({path:payload.path,content:payload.content,format:payload.format,checksum:payload.checksum});setEditDraft(payload.content);setEditMode(payload.format!=="markdown");setError("")}catch(reason){setError(String(reason))}};
+ const editable=Boolean(opened&&opened.format!=="image");
+ const save=async()=>{if(!opened||!editable)return;setSaving(true);try{const response=await fetch(`/api/repository/file?path=${encodeURIComponent(opened.path)}`,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({content:editDraft})});const payload=await response.json();if(!response.ok)throw new Error(payload.detail||response.statusText);setOpened({path:payload.path,content:payload.content,format:payload.format,checksum:payload.checksum});setEditDraft(payload.content);setError("");await refresh()}catch(reason){setError(String(reason))}finally{setSaving(false)}};
+ const back=()=>setHistory(current=>{const next=[...current],target=next.pop()||null;setOpened(target);recordLocation(target?.path||"Docs",{docsFile:target?.path||null});return next});
+ const refresh=async()=>{setRefreshing(true);try{const payload=await requestJson("/api/repository/filesystem-index");const next=(payload.files||[]) as FileEntry[];setFiles(next);setUnexposed((payload.unexposed||[]) as FileEntry[]);if(opened){const current=next.find(item=>item.path===opened.path);if(!current){setOpened(null);setError(`File is no longer exposed: ${opened.path}`)}else if(current.checksum!==opened.checksum)await load(opened.path);else setError("")}else setError("")}catch(reason){setError(String(reason))}finally{setRefreshing(false)}};
  useEffect(()=>{void refresh()},[]);
- useEffect(()=>setFilter(initialFilter),[initialFilter]);
- const visible=useMemo(()=>{const query=filter.trim().toLowerCase();return query?documents.filter(item=>item.path.toLowerCase().includes(query)):documents},[documents,filter]);
+ useEffect(()=>setFilter(initialFilter||".md|.metta|.json"),[initialFilter]);
+ useEffect(()=>{const restore=()=>{const parameters=new URLSearchParams(window.location.search),panel=parameters.get("docsPanel"),path=parameters.get("docsFile")||"";setShowUnexposed(panel==="unexposed");setBrowserMode(panel==="tree"||panel==="navigator"?panel:"paths");setCurrentDirectory(parameters.get("docsDirectory")||"");if(path&&opened?.path!==path)void load(path);else if(!path)setOpened(null)};restore();window.addEventListener("popstate",restore);return()=>window.removeEventListener("popstate",restore)},[opened?.path]);
+ const visible=useMemo(()=>{const source=showUnexposed?unexposed:files,queries=filter.toLowerCase().split("|").map(value=>value.trim()).filter(Boolean),excluded=exclusions.toLowerCase().split("|").map(value=>value.trim()).filter(Boolean);return source.filter(item=>{const path=item.path.toLowerCase();return(!hideDotDirectories||!isInDotDirectory(item.path))&&(!hideDotFiles||!isDotFile(item.path))&&(!queries.length||queries.some(query=>path.includes(query)))&&!excluded.some(query=>path.includes(query))})},[files,unexposed,filter,exclusions,hideDotDirectories,hideDotFiles,showUnexposed]);
+ const directoryMetrics=useMemo(()=>{const metrics=new Map<string,{files:number;size:number}>();for(const item of visible){const directory=parentPath(item.path),current=metrics.get(directory)||{files:0,size:0};current.files+=1;current.size+=item.size;metrics.set(directory,current)}return metrics},[visible]);
+ const sortedVisible=useMemo(()=>[...visible].sort((left,right)=>{const leftDirectory=parentPath(left.path),rightDirectory=parentPath(right.path);const compare=sortKey==="size"?left.size-right.size:sortKey==="directory"?leftDirectory.localeCompare(rightDirectory):sortKey==="parentName"?immediateParentName(left.path).localeCompare(immediateParentName(right.path)):sortKey==="parentBytes"?(directoryMetrics.get(leftDirectory)?.size||0)-(directoryMetrics.get(rightDirectory)?.size||0):sortKey==="pathDepth"?left.path.split("/").length-right.path.split("/").length:left.name.localeCompare(right.name);return (compare||left.path.localeCompare(right.path))*(sortDirection==="asc"?1:-1)}),[visible,sortKey,sortDirection,directoryMetrics]);
+ const tree=useMemo(()=>buildFileTree(sortedVisible),[sortedVisible]);
+ const[expanded,setExpanded]=useState<Set<string>>(()=>new Set());
+ const toggleDirectory=(path:string)=>setExpanded(current=>{const next=new Set(current);if(next.has(path))next.delete(path);else next.add(path);return next});
+ const openFromTree=(path:string)=>{setHistory([]);recordLocation(path,{docsFile:path});void load(path)};
+ const selectPanel=(mode:"tree"|"navigator"|"paths",unexposed=false)=>{setShowUnexposed(unexposed);setBrowserMode(mode);recordLocation(unexposed?"Unexposed Full Path":mode==="tree"?"Exposed Tree":mode==="navigator"?"Exposed Navigator":"Exposed Full Path",{docsPanel:unexposed?"unexposed":mode==="paths"?null:mode})};
+ const selectDirectory=(path:string)=>{setCurrentDirectory(path);recordLocation(path||"Repository",{docsDirectory:path||null})};
+ const revealOpened=(mode:"tree"|"navigator"|"paths")=>{if(!opened)return;setShowUnexposed(false);setBrowserMode(mode);setFilter("");const parts=opened.path.split("/");parts.pop();const directory=parts.join("/");if(mode==="tree")setExpanded(new Set(parts.map((_part,index)=>parts.slice(0,index+1).join("/"))));if(mode==="navigator")setCurrentDirectory(directory);recordLocation(`Find ${opened.path} in ${mode==="tree"?"Tree":mode==="navigator"?"Navigator":"Full Paths"}`,{docsPanel:mode==="paths"?null:mode,docsDirectory:mode==="navigator"?directory||null:null});window.setTimeout(()=>document.querySelector<HTMLElement>(`[data-repository-path="${CSS.escape(opened.path)}"]`)?.scrollIntoView({block:"center"}),0)};
+ const chooseSort=(next:SortKey)=>{if(sortKey===next)setSortDirection(current=>current==="asc"?"desc":"asc");else{setSortKey(next);setSortDirection(next==="name"||next==="directory"||next==="parentName"?"asc":"desc")}};
  return <section className="repository-docs-page">
   <aside className="repository-docs-index">
-   <div className="repository-docs-heading"><span>REPOSITORY DOCUMENTATION</span><div><h1>Docs</h1><button onClick={()=>void refresh()} disabled={refreshing}>{refreshing?"Refreshing...":"Refresh"}</button></div><p>{documents.length} Markdown files indexed from disk.</p></div>
-   <input value={filter} onChange={event=>setFilter(event.target.value)} placeholder="Filter paths and filenames..." aria-label="Filter repository documents"/>
-   <div className="repository-doc-links">{visible.map(item=><button key={item.path} className={opened?.path===item.path?"active":""} onClick={()=>{setHistory([]);void load(item.path)}}><small>{parentPath(item.path)}</small><b>{item.name}</b></button>)}</div>
+   <div className="repository-docs-heading"><span>REPOSITORY FILESYSTEM</span><div><h1>Docs</h1><button onClick={()=>void refresh()} disabled={refreshing}>{refreshing?"Refreshing...":"Refresh"}</button></div><p>{files.length} exposed files · {unexposed.length} unexposed paths. Contents of unexposed files never reach the browser.</p></div>
+   <div className="repository-four-tabs" role="tablist" aria-label="Filesystem browser panels"><button className={!showUnexposed&&browserMode==="paths"?"active":""} onClick={()=>selectPanel("paths")}>Exposed Full Path</button><button className={!showUnexposed&&browserMode==="navigator"?"active":""} onClick={()=>selectPanel("navigator")}>Exposed Navigator</button><button className={!showUnexposed&&browserMode==="tree"?"active":""} onClick={()=>selectPanel("tree")}>Exposed Tree</button><button className={showUnexposed?"active":""} onClick={()=>selectPanel("paths",true)}>Unexposed Full Path</button></div>
+   <label className="repository-filter-line"><span>INCLUDE</span><input value={filter} onChange={event=>setFilter(event.target.value)} placeholder="Use | for alternatives, e.g. .md|.txt" aria-label="Include repository files"/></label>
+   <label className="repository-filter-line exclusion"><span>EXCLUDE</span><input value={exclusions} onChange={event=>setExclusions(event.target.value)} placeholder="Use | for exclusions, e.g. runtime/|venv/" aria-label="Exclude repository files"/></label>
+   <div className="repository-visibility-controls"><button className={hideDotDirectories?"active":""} aria-pressed={hideDotDirectories} onClick={()=>setHideDotDirectories(value=>!value)}>{hideDotDirectories?"Show":"Hide"} .dotdirs</button><button className={hideDotFiles?"active":""} aria-pressed={hideDotFiles} onClick={()=>setHideDotFiles(value=>!value)}>{hideDotFiles?"Show":"Hide"} .dotfiles</button></div>
+   {browserMode==="paths"&&<div className="repository-sort-controls" aria-label="Sort file list"><span>SORT</span>{([['name','File Name'],['size','File Size'],['directory','Directory Name'],['parentName','Parent Name (is Directory)'],['parentBytes','Parent Bytes (is Directory)'],['pathDepth','Path Depth']] as [SortKey,string][]).map(([key,label])=><button key={key} className={sortKey===key?"active":""} onClick={()=>chooseSort(key)}>{label}{sortKey===key?sortDirection==="asc"?" ↑":" ↓":""}</button>)}</div>}
+   {browserMode==="tree"
+    ?<div className="repository-tree-sidebar"><div className="repository-tree-summary"><b>{showUnexposed?"Unexposed paths":"Repository files"}</b><small>{visible.length} matching paths</small></div><FileTree node={tree} expanded={expanded} toggle={toggleDirectory} open={openFromTree} selected={opened?.path} unexposed={showUnexposed}/></div>
+    :browserMode==="navigator"
+     ?<FilesystemNavigator entries={sortedVisible} directory={currentDirectory} setDirectory={selectDirectory} open={openFromTree} selected={opened?.path} unexposed={showUnexposed}/>
+     :<div className="repository-full-paths">{sortedVisible.map(item=>{const metrics=directoryMetrics.get(parentPath(item.path));return <button key={item.path} data-repository-path={item.path} disabled={showUnexposed} className={opened?.path===item.path?"active":""} onClick={()=>{if(!showUnexposed)openFromTree(item.path)}}><b>{item.path}</b><small>{showUnexposed?item.reason:`${fileType(item.path)} · ${item.size.toLocaleString()} bytes · ${metrics?.files||0} files in directory · ${(metrics?.size||0).toLocaleString()} bytes total`}</small></button>})}</div>
+   }
   </aside>
   <article className="repository-doc-view markdown-body">
    {error&&<div className="backend-error">{error}</div>}
    {opened?<>
-    <div className="repository-doc-path">{history.length>0&&<button onClick={back}>← Back</button>}<span>FILESYSTEM DOCUMENT</span><code>{opened.path}</code></div>
-    {opened.format==="markdown"?<ReactMarkdown remarkPlugins={[remarkGfm]} components={{a:({node:_node,href="",...props})=>{
+    <div className="repository-doc-path">{history.length>0&&<button onClick={back}>← Back</button>}<span>FILESYSTEM DOCUMENT</span><code>{opened.path}</code><div className="repository-reveal-actions"><button onClick={()=>revealOpened("tree")}>Find in Tree</button><button onClick={()=>revealOpened("navigator")}>Find in Navigator</button><button onClick={()=>revealOpened("paths")}>Find in Full Paths</button></div>{opened.format==="markdown"&&!editMode&&<button onClick={()=>setEditMode(true)}>Edit source</button>}<button className="repository-tree-return" onClick={()=>{setOpened(null);setHistory([]);setError("");recordLocation("Docs",{docsFile:null})}}>Close document</button></div>
+    {opened.format==="image"?<figure className="repository-image-view"><img src={`/api/repository/asset?path=${encodeURIComponent(opened.path)}`} alt={opened.path}/><figcaption>{opened.path}</figcaption></figure>:editable&&editMode?<section className="repository-file-editor"><header><div><span>EDITABLE FILE</span><b>{opened.path.split(".").pop()?.toUpperCase()||"TEXT"}</b></div><div className="repository-editor-actions">{opened.format==="markdown"&&<button onClick={()=>setEditMode(false)}>Rendered preview</button>}<button disabled={saving||editDraft===opened.content} onClick={()=>void save()}>{saving?"Saving…":"Save to filesystem"}</button></div></header><CodeMirror value={editDraft} extensions={syntaxExtensions(opened.path)} theme="dark" height="100%" onChange={setEditDraft} aria-label={`Edit ${opened.path}`}/></section>:opened.format==="markdown"?<ReactMarkdown remarkPlugins={[remarkGfm]} components={{a:({node:_node,href="",...props})=>{
      const local=!/^(https?:|mailto:|#)/i.test(href);
-     return <a {...props} href={local?"#":href} target={local?undefined:"_blank"} rel={local?undefined:"noreferrer"} onClick={local?(event=>{event.preventDefault();event.stopPropagation();void load(resolvePath(opened.path,href),true)}):undefined}/>;
-    }}}>{opened.content}</ReactMarkdown>:<pre className="repository-source-view"><code>{opened.content}</code></pre>}
-   </>:<div className="studio-empty">Select a Markdown document. Use "Datatype Guide" for the AtomSpace and datatype architecture guide.</div>}
+     return <a {...props} href={local?"#":href} target={local?undefined:"_blank"} rel={local?undefined:"noreferrer"} onClick={local?(event=>{event.preventDefault();event.stopPropagation();const path=resolvePath(opened.path,href);recordLocation(path,{docsFile:path});void load(path,true)}):undefined}/>;
+   }}}>{opened.content}</ReactMarkdown>:<pre className="repository-source-view"><code>{opened.content}</code></pre>}
+   </>:<div className="studio-empty">The filesystem tree remains available on the left. Select an exposed file to open it here.</div>}
   </article>
  </section>;
 }
