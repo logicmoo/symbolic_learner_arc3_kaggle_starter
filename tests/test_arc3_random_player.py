@@ -350,6 +350,19 @@ def test_learned_random_action_uses_reset_for_new_attempt() -> None:
     assert proposal["action"] == "RESET"
 
 
+def test_learned_random_action_avoids_moves_with_no_visible_effect() -> None:
+    proposal = choose_action(
+        [
+            {"index": 1, "name": "ACTION1"},
+            {"index": 2, "name": "ACTION2"},
+        ],
+        state="PLAYING",
+        seed=4,
+        excluded_actions=["ACTION1"],
+    )
+    assert proposal["action"] == "ACTION2"
+
+
 def test_assessment_and_memory_retain_good_and_bad_evidence() -> None:
     good = assess_transition(
         {"state": "PLAYING", "level": 1, "frame_sha256": "a"},
@@ -551,10 +564,24 @@ def test_random_player_workspace_is_discoverable_and_operation_backed(tmp_path: 
     assert workflow["outputs"]["played_games"] == "$played_games_after_next_selection"
     automatic_step = next(step for step in workflow["steps"] if step["id"] == "play_all_remaining_games_automatically")
     assert automatic_step["operation"] == "arc3_random.run_session"
+    assert automatic_step["dependsOn"] == ["filter_unplayed_games"]
+    assert automatic_step["while"] == [
+        {
+            "condition": "$unplayed_games",
+            "operator": "not_empty",
+            "maxIterations": 100,
+        },
+        {
+            "condition": "$elapsed_game_seconds",
+            "operator": "less_than",
+            "conditionPort": "$seconds_per_game",
+            "maxIterations": 1000,
+        },
+    ]
     assert automatic_step["inputs"]["mode"] == "$mode"
     assert automatic_step["inputs"]["move_limit"] == "$move_limit"
     executable = materialize_workflow({**workflow, "workspaceId": "arc3_random_player"})
     assert all(
-        step["implementation"] in {"python.callable", "llm.complete", "human.await_input"}
+        step["implementation"] in {"echo.value", "python.callable", "llm.complete", "human.await_input"}
         for step in executable["steps"]
     )

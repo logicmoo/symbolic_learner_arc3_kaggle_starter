@@ -134,6 +134,8 @@ type Step = {
   inputs?: Record<string, unknown>;
   outputs?: Record<string, string>;
   parameters?: Record<string, unknown>;
+  foreach?: {items:unknown;itemPort?:string;maxItems?:number};
+  while?: {condition:unknown;operator?:"truthy"|"not_empty"|"equals"|"less_than";conditionPort?:string;maxIterations:number;targetStepId?:string} | {condition:unknown;operator?:"truthy"|"not_empty"|"equals"|"less_than";conditionPort?:string;maxIterations:number;targetStepId?:string}[];
   probe?: { enabled?: boolean; required?: boolean; blocking?: boolean };
   form?: Record<
     string,
@@ -181,6 +183,7 @@ type PreflightStateValue = {
   treatAsList: boolean;
   allowRedefinition: boolean;
   applicability: string[];
+  captureGroupIds?: string[];
   defaultValue?: unknown;
   value?: unknown;
 };
@@ -484,6 +487,34 @@ const viewLabel = (view: View) =>
   )[view] ||
   view;
 
+type CaptureGroupPlan={id:string;markerName:string;iteration:number;memberStepIds:string[]};
+const inferCaptureGroupPlan=(steps:Step[]):CaptureGroupPlan[]=>{const writes=new Map<string,number[]>();steps.forEach((step,index)=>Object.values(step.outputs||{}).forEach(binding=>{const name=String(binding||"");if(name)writes.set(name,[...(writes.get(name)||[]),index])}));return[...writes].flatMap(([markerName,positions])=>positions.length<2?[]:positions.map((start,offset)=>({id:`${markerName}:${offset+1}`,markerName,iteration:offset+1,memberStepIds:steps.slice(start,positions[offset+1]??steps.length).map(step=>step.id)})))};
+
+function WorkflowPreflightSpline({steps}:{steps:Step[]}){
+  const[mode,setMode]=useState<AccordionDisplayMode>("scroll");
+  const groups=inferCaptureGroupPlan(steps);
+  type ExplicitLoop={stepId:string;targetStepId:string;kind:"FOR"|"WHILE";label:string;limit:number;nesting:number};
+  const explicitLoops:ExplicitLoop[]=steps.flatMap<ExplicitLoop>(step=>{
+    const loops:ExplicitLoop[]=[];
+    if(step.foreach)loops.push({stepId:step.id,targetStepId:step.id,kind:"FOR",label:String(step.foreach.items),limit:step.foreach.maxItems??1000,nesting:0});
+    const whileLoops=step.while?(Array.isArray(step.while)?step.while:[step.while]):[];
+    whileLoops.forEach((loop,nesting)=>loops.push({stepId:step.id,targetStepId:loop.targetStepId||step.id,kind:"WHILE",label:`${String(loop.condition)}${loop.operator?` ${loop.operator}`:""}`,limit:loop.maxIterations,nesting}));
+    return loops;
+  });
+  const dependencies=new Map(steps.map((step,index)=>[step.id,step.dependsOn?.length?step.dependsOn:index?[steps[index-1].id]:[]]));
+  const depthCache=new Map<string,number>();
+  const depthOf=(id:string,visiting=new Set<string>()):number=>{if(depthCache.has(id))return depthCache.get(id)!;if(visiting.has(id))return 0;const parents=dependencies.get(id)||[];const next=new Set(visiting).add(id);const depth=parents.length?Math.max(...parents.map(parent=>depthOf(parent,next)))+1:0;depthCache.set(id,depth);return depth};
+  const layers=new Map<number,Step[]>();
+  steps.forEach(step=>{const depth=depthOf(step.id);layers.set(depth,[...(layers.get(depth)||[]),step])});
+  const maxDepth=Math.max(0,...layers.keys()),maxRows=Math.max(1,...[...layers.values()].map(layer=>layer.length));
+  const width=Math.max(620,(maxDepth+1)*175+100),height=Math.max(165,maxRows*70+75),positions=new Map<string,{x:number;y:number}>();
+  layers.forEach((layer,depth)=>layer.forEach((step,row)=>positions.set(step.id,{x:70+depth*175,y:48+row*70})));
+  const edges=steps.flatMap(step=>(dependencies.get(step.id)||[]).map(parentId=>({parentId,childId:step.id})));
+  return <ThreeStateAccordionMember stackId="spline-stack" label="PREFLIGHT SPLINE" value={`${groups.length} inferred groups · ${explicitLoops.length} explicit loops`} detail="Dependency branches, repeated-output capture groups, and bounded loop operations before launch." mode={mode} onChange={setMode} baseClass="workflow-preflight-spline" scrollSize="240px" footer={<span>{steps.length} workflow steps · {groups.length} inferred groups · {explicitLoops.length} explicit loops</span>}>
+    <div className="workflow-preflight-spline-scroll"><svg viewBox={`0 0 ${width} ${height}`} style={{minWidth:width,height}}><defs><marker id="preflight-spline-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z"/></marker></defs>{edges.map(edge=>{const from=positions.get(edge.parentId),to=positions.get(edge.childId);if(!from||!to)return null;const middle=(from.x+to.x)/2;return <path key={`${edge.parentId}:${edge.childId}`} className="preflight-spline-edge" d={`M${from.x+38},${from.y}C${middle},${from.y} ${middle},${to.y} ${to.x-38},${to.y}`} markerEnd="url(#preflight-spline-arrow)"/>})}{groups.map(group=>{const start=positions.get(group.memberStepIds[0]),end=positions.get(group.memberStepIds.at(-1)||"");if(!start||!end||start.x===end.x)return null;const arch=12+Math.min(22,group.iteration*5);return <g key={group.id}><path className="preflight-spline-loop" d={`M${end.x},${end.y-26}C${end.x},${arch} ${start.x},${arch} ${start.x},${start.y-26}`} markerEnd="url(#preflight-spline-arrow)"/><text className="preflight-spline-loop-label" x={(start.x+end.x)/2} y={arch-4} textAnchor="middle">{group.markerName} · {group.iteration}</text></g>})}{explicitLoops.map(loop=>{const point=positions.get(loop.stepId),target=positions.get(loop.targetStepId);if(!point||!target)return null;const lift=58+loop.nesting*17,middle=(point.x+target.x)/2;return <g key={`${loop.kind}:${loop.stepId}:${loop.targetStepId}:${loop.nesting}`}><path className={`preflight-spline-explicit-loop ${loop.kind.toLowerCase()}`} d={loop.stepId===loop.targetStepId?`M${point.x+29},${point.y-22}C${point.x+62},${point.y-lift} ${point.x-62},${point.y-lift} ${point.x-29},${point.y-22}`:`M${point.x},${point.y-25}C${middle},${point.y-lift} ${middle},${target.y-lift} ${target.x},${target.y-25}`} markerEnd="url(#preflight-spline-arrow)"/><text className="preflight-spline-explicit-label" x={middle} y={Math.min(point.y,target.y)-lift+15} textAnchor="middle">{loop.kind} · ≤ {loop.limit}</text><title>{`${loop.kind} ${loop.label} · return to ${loop.targetStepId} · bounded to ${loop.limit} iterations`}</title></g>})}{steps.map((step,index)=>{const point=positions.get(step.id)!;const memberships=groups.filter(group=>group.memberStepIds.includes(step.id)),nodeLoops=explicitLoops.filter(loop=>loop.stepId===step.id),explicit=nodeLoops[0];return <g key={step.id} className={`preflight-spline-node ${memberships.length?"grouped":""} ${explicit?"explicit-loop":""}`} transform={`translate(${point.x-38},${point.y-22})`}><rect width="76" height="44" rx="5"/><text x="38" y="17" textAnchor="middle">{explicit?nodeLoops.map(loop=>loop.kind).join("/"):index+1}</text><text x="38" y="32" textAnchor="middle">{step.label||step.id}</text><title>{`${dependencies.get(step.id)?.length?`Depends on: ${dependencies.get(step.id)!.join(", ")}. `:"Root step. "}${nodeLoops.length?`${nodeLoops.map(loop=>`${loop.kind} ${loop.label}, return to ${loop.targetStepId}, bounded to ${loop.limit}`).join("; ")}. `:""}${memberships.length?`Value groups: ${memberships.map(group=>group.id).join(", ")}`:"No inferred value group"}`}</title></g>})}</svg></div>
+  </ThreeStateAccordionMember>;
+}
+
 async function request(path: string, init?: RequestInit) {
   const response = await fetch(path, {
     headers: { "Content-Type": "application/json", ...(init?.headers || {}) },
@@ -761,7 +792,9 @@ export function FilesystemWorkbenchPage() {
       defaultValue: workflow?.inputDefaults?.[input],
       value,
     }));
-    const outputs = (workflow?.steps || []).flatMap((step) =>
+    const steps = workflow?.steps || [];
+    const capturePlan=inferCaptureGroupPlan(steps);
+    const outputs = steps.flatMap((step) =>
       Object.entries(step.outputs || {}).map(([output, binding]) => ({
         kind: "state_value" as const,
         id: `${slug(step.id)}_${slug(String(binding || output))}`,
@@ -778,6 +811,7 @@ export function FilesystemWorkbenchPage() {
         treatAsList: false,
         allowRedefinition: true,
         applicability: ["steps", "chapter", "game", "postMortem"],
+        captureGroupIds: capturePlan.filter(group=>group.memberStepIds.includes(step.id)).map(group=>group.id),
       })),
     );
     return [...startup, ...outputs];
@@ -2320,6 +2354,7 @@ export function FilesystemWorkbenchPage() {
               Checks
             </button>
           </nav>
+          {workflowCombinedView&&workflow&&<WorkflowPreflightSpline steps={workflow.steps}/>}
           {workflowCombinedView && (
             <ThreeStateAccordionMember
               stackId="spline-stack"

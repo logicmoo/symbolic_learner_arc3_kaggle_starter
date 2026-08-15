@@ -67,6 +67,38 @@ class WorkflowEngine:
         ]
         return normalized
 
+    @staticmethod
+    def _infer_capture_group_plan(document: dict[str, Any]) -> list[dict[str, Any]]:
+        steps = document.get('steps') or []
+        writes: dict[str, list[int]] = {}
+        for step_index, step in enumerate(steps):
+            for binding in (step.get('outputs') or {}).values():
+                name = str(binding or '')
+                if name:
+                    writes.setdefault(name, []).append(step_index)
+        plans: list[dict[str, Any]] = []
+        for marker_name, positions in writes.items():
+            if len(positions) < 2:
+                continue
+            iterations = []
+            for iteration, start in enumerate(positions, 1):
+                end = positions[iteration] if iteration < len(positions) else len(steps)
+                members = steps[start:end]
+                iterations.append({
+                    'iteration': iteration,
+                    'startStepId': steps[start]['id'],
+                    'endStepId': members[-1]['id'] if members else steps[start]['id'],
+                    'memberStepIds': [step['id'] for step in members],
+                })
+            plans.append({
+                'id': f'repeated-output:{marker_name}',
+                'inference': 'repeated_output_binding',
+                'markerName': marker_name,
+                'iterationCount': len(positions),
+                'iterations': iterations,
+            })
+        return plans
+
     def __init__(self, db_path: str | Path, registry: OperationRegistry | None = None) -> None:
         self.db_path = Path(db_path)
         get_filesystem_provider().make_directory(self.db_path.parent)
@@ -140,7 +172,11 @@ class WorkflowEngine:
         with self._db() as db:
             row = db.execute('SELECT COALESCE(MAX(version),0)+1 v FROM wf_definitions WHERE id=?', (workflow_id,)).fetchone()
             version = int(row['v'])
-            frozen = {**document, 'version': version}
+            frozen = {
+                **document,
+                'version': version,
+                'captureGroupPlan': self._infer_capture_group_plan(document),
+            }
             db.execute('INSERT INTO wf_definitions VALUES(?,?,?,?)', (workflow_id, version, json.dumps(frozen), now()))
         return frozen
 
@@ -319,6 +355,7 @@ class WorkflowEngine:
             'workflowId': workflow_id,
             'version': wf['version'],
             'stateValues': state_values or [],
+            'captureGroupPlan': wf.get('captureGroupPlan') or self._infer_capture_group_plan(wf),
         })
         for name, value in inputs.items():
             dtype = (wf.get('inputs') or {}).get(name, 'Any')
@@ -577,6 +614,41 @@ class WorkflowEngine:
             'createdAt': row['created_at'], 'redacted': sensitive,
         }
 
+    @staticmethod
+    def _infer_capture_groups(artifacts: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """Infer loop iterations from repeated writes to the same output binding.
+
+        A marker write begins an iteration. Every artifact from that write up to,
+        but not including, the next write to the marker belongs to that group.
+        Multiple repeated bindings are retained because inferred loops may overlap.
+        """
+        marker_positions: dict[str, list[int]] = {}
+        for index, artifact in enumerate(artifacts):
+            provenance = artifact.get('provenance') or {}
+            if provenance.get('source') == 'workflow.input':
+                continue
+            marker_positions.setdefault(str(artifact.get('name') or ''), []).append(index)
+        groups: list[dict[str, Any]] = []
+        for marker_name, positions in marker_positions.items():
+            if not marker_name or len(positions) < 2:
+                continue
+            for iteration, start in enumerate(positions, 1):
+                end = positions[iteration] if iteration < len(positions) else len(artifacts)
+                members = artifacts[start:end]
+                groups.append({
+                    'id': f'{marker_name}:{iteration}',
+                    'markerName': marker_name,
+                    'iteration': iteration,
+                    'iterationCount': len(positions),
+                    'startArtifactId': artifacts[start]['id'],
+                    'endArtifactId': members[-1]['id'] if members else artifacts[start]['id'],
+                    'memberArtifactIds': [artifact['id'] for artifact in members],
+                    'memberNames': [artifact['name'] for artifact in members],
+                    'startedAt': artifacts[start].get('createdAt'),
+                    'endedAt': members[-1].get('createdAt') if members else artifacts[start].get('createdAt'),
+                })
+        return groups
+
     def get_run(self, run_id: str) -> dict[str, Any]:
         with self._db() as db:
             run = db.execute('SELECT * FROM wf_runs WHERE id=?', (run_id,)).fetchone()
@@ -585,13 +657,15 @@ class WorkflowEngine:
             artifacts = db.execute('SELECT * FROM wf_artifacts WHERE run_id=? ORDER BY created_at', (run_id,)).fetchall()
             events = db.execute('SELECT * FROM wf_events WHERE run_id=? ORDER BY id', (run_id,)).fetchall()
             logs = db.execute('SELECT * FROM wf_logs WHERE run_id=? ORDER BY id', (run_id,)).fetchall()
+        artifact_views = [self._artifact_view(a) for a in artifacts]
         return {'id': run['id'], 'workspaceId': run['workspace_id'],
                 'workflowId': run['workflow_id'], 'workflowVersion': run['workflow_version'],
                 'parentRunId': run['parent_run_id'], 'parentStepId': run['parent_step_id'], 'status': run['status'],
                 'inputs': json.loads(run['inputs']), 'outputs': json.loads(run['outputs']), 'error': run['error'],
                 'createdAt': run['created_at'], 'updatedAt': run['updated_at'],
                 'steps': [{'stepId': s['step_id'], 'status': s['status'], 'attempt': s['attempt'], 'childRunId': s['child_run_id'], 'error': s['error']} for s in steps],
-                'artifacts': [self._artifact_view(a) for a in artifacts],
+                'artifacts': artifact_views,
+                'captureGroups': self._infer_capture_groups(artifact_views),
                 'events': [{'id': e['id'], 'stepId': e['step_id'], 'kind': e['kind'], 'payload': json.loads(e['payload']), 'createdAt': e['created_at']} for e in events],
                 'logs': [{'id': entry['id'], 'stepId': entry['step_id'], 'stream': entry['stream'], 'message': entry['message'], 'createdAt': entry['created_at']} for entry in logs]}
 

@@ -47,6 +47,14 @@ type RuntimeRun = {
     createdAt?: string;
     redacted?: boolean;
   }>;
+  captureGroups?: Array<{
+    id: string;
+    markerName: string;
+    iteration: number;
+    iterationCount: number;
+    memberArtifactIds: string[];
+    memberNames: string[];
+  }>;
   logs: Array<{
     id: number | string;
     stepId?: string;
@@ -162,6 +170,7 @@ type BootstrappedStateValue = {
   treatAsList: boolean;
   allowRedefinition: boolean;
   applicability: string[];
+  captureGroupIds?: string[];
   defaultValue?: unknown;
   value?: unknown;
 };
@@ -289,6 +298,12 @@ function BootstrappedStateValues({
   durable: boolean;
 }) {
   if (!values.length) return null;
+  const groups = new Map<string, BootstrappedStateValue[]>();
+  values.forEach((value) =>
+    (value.captureGroupIds || []).forEach((groupId) =>
+      groups.set(groupId, [...(groups.get(groupId) || []), value]),
+    ),
+  );
   return (
     <section className="detected-memory-preflight">
       <header>
@@ -303,6 +318,7 @@ function BootstrappedStateValues({
             : "System bootstrap · review in Workflow Runner before launch"}
         </small>
       </header>
+      {groups.size > 0 && <div className="preflight-capture-groups"><strong>INFERRED VALUE GROUPS</strong>{[...groups].map(([groupId, members]) => <article key={groupId}><div><b>{groupId}</b><small>Repeated output boundary · {members.length} tracked values</small></div><span>{members.map((member) => member.label || member.id).join(" · ")}</span></article>)}</div>}
       <div>
         {values.map((value) => (
           <article
@@ -321,6 +337,7 @@ function BootstrappedStateValues({
               {value.preferredRenderer}
               {value.treatAsList ? " · list" : ""}
               {value.allowRedefinition ? " · redefine" : ""}
+              {value.captureGroupIds?.length ? ` · ${value.captureGroupIds.join(" · ")}` : ""}
             </em>
           </article>
         ))}
@@ -645,7 +662,7 @@ function WorkflowRunSplineWorkspace({
     "step" | "level" | "game" | "allGames" | "postMortem"
   >("step");
   const [memoryStepId, setMemoryStepId] = useState("");
-  const [memoryScopeDisplayModes, setMemoryScopeDisplayModes] = useState<Record<"startup" | "step" | "level" | "game" | "allGames" | "postMortem", AccordionDisplayMode>>({
+  const [memoryScopeDisplayModes, setMemoryScopeDisplayModes] = useState<Record<string, AccordionDisplayMode>>({
     startup: "scroll",
     step: "scroll",
     level: "strip",
@@ -677,6 +694,9 @@ function WorkflowRunSplineWorkspace({
       { x: 85 + index * 155, y: 72 + (index % 2) * 76 },
     ]),
   );
+  const repeatedWrites = new Map<string, number[]>();
+  steps.forEach((step, index) => Object.values(step.outputs && typeof step.outputs === "object" ? step.outputs as Record<string, unknown> : {}).forEach((binding) => { const name=String(binding||"");if(name)repeatedWrites.set(name,[...(repeatedWrites.get(name)||[]),index]); }));
+  const captureLoopEdges=[...repeatedWrites].flatMap(([markerName,indices])=>indices.length<2?[]:indices.flatMap((start,iteration)=>{const end=(indices[iteration+1]??steps.length)-1;return end>start?[{id:`${markerName}:${iteration+1}`,markerName,iteration:iteration+1,startStepId:steps[start].id,endStepId:steps[end].id}]:[]}));
   const chronologyWidth = Math.max(760, run.events.length * 120 + 80);
   const focalStepId =
     memoryStepId ||
@@ -810,16 +830,18 @@ function WorkflowRunSplineWorkspace({
     return <pre>{jsonValueToMetta(value)}</pre>;
   };
   const memoryScopeSections: Array<{
-    id: "startup" | "step" | "level" | "game" | "allGames" | "postMortem";
+    id: string;
+    scope?: "step" | "level" | "game" | "allGames" | "postMortem";
     title: string;
     detail: string;
     value: unknown;
   }> = [
-    { id: "step", title: "VALUES OF STEPS", detail: steps.find((step) => step.id === focalStepId)?.label || focalStepId || "Step", value: selectedGameArtifacts.filter((artifact) => artifact.stepId === focalStepId).map((artifact) => artifact.payload) },
-    { id: "level", title: "VALUES OF CHAPTER", detail: selectedLevelId, value: selectedGameArtifacts.filter((artifact) => selectedLevelId === "unselected" || levelIdentity(artifact.payload) === selectedLevelId).map((artifact) => artifact.payload) },
-    { id: "game", title: "VALUES OF GAME", detail: selectedGameId, value: selectedGameArtifacts.map((artifact) => artifact.payload) },
-    { id: "allGames", title: "VALUES OF ALL TIME", detail: `${run.artifacts.length} persisted states`, value: run.artifacts.map((artifact) => artifact.payload) },
-    { id: "postMortem", title: "VALUES POST-MORTEM", detail: run.status, value: [run.outputs, ...run.artifacts.map((artifact) => artifact.payload)] },
+    ...(run.captureGroups || []).map((group) => { const ids=new Set(group.memberArtifactIds);return {id:`loop:${group.id}`,title:`${group.markerName} · ITERATION ${group.iteration}`,detail:`${group.memberArtifactIds.length} values · inferred from repeated output`,value:run.artifacts.filter((artifact)=>ids.has(artifact.id)).map((artifact)=>({name:artifact.name,stepId:artifact.stepId,value:artifact.payload}))};}),
+    { id: "step", scope: "step", title: "VALUES OF STEPS", detail: steps.find((step) => step.id === focalStepId)?.label || focalStepId || "Step", value: selectedGameArtifacts.filter((artifact) => artifact.stepId === focalStepId).map((artifact) => artifact.payload) },
+    { id: "level", scope: "level", title: "VALUES OF CHAPTER", detail: selectedLevelId, value: selectedGameArtifacts.filter((artifact) => selectedLevelId === "unselected" || levelIdentity(artifact.payload) === selectedLevelId).map((artifact) => artifact.payload) },
+    { id: "game", scope: "game", title: "VALUES OF GAME", detail: selectedGameId, value: selectedGameArtifacts.map((artifact) => artifact.payload) },
+    { id: "allGames", scope: "allGames", title: "VALUES OF ALL TIME", detail: `${run.artifacts.length} persisted states`, value: run.artifacts.map((artifact) => artifact.payload) },
+    { id: "postMortem", scope: "postMortem", title: "VALUES POST-MORTEM", detail: run.status, value: [run.outputs, ...run.artifacts.map((artifact) => artifact.payload)] },
   ];
   return (
     <>
@@ -882,6 +904,7 @@ function WorkflowRunSplineWorkspace({
                   ) : null;
                 }),
               )}
+              {captureLoopEdges.map((edge) => { const start=positions.get(edge.startStepId),end=positions.get(edge.endStepId);if(!start||!end)return null;const top=12+Math.min(edge.iteration*5,22);return <g key={edge.id}><path className="run-topology-loop-edge" d={`M${end.x},${end.y-28} C${end.x},${top} ${start.x},${top} ${start.x},${start.y-28}`} markerEnd={`url(#spline-arrow-${run.id})`}/><text className="run-topology-loop-label" x={(start.x+end.x)/2} y={top-3} textAnchor="middle">{edge.markerName} · {edge.iteration}</text></g>;})}
               {steps.map((step, index) => {
                 const point = positions.get(step.id)!;
                 const status =
@@ -998,7 +1021,7 @@ function WorkflowRunSplineWorkspace({
                   value={section.detail}
                   mode={mode}
                   onChange={(nextMode) => {
-                    if (section.id !== "startup") setMemoryScope(section.id);
+                    if (section.scope) setMemoryScope(section.scope);
                     setMemoryScopeDisplayModes((current) => ({ ...current, [section.id]: nextMode }));
                   }}
                   baseClass="detected-memory-scope-member"

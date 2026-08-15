@@ -371,6 +371,7 @@ def choose_action(
     state: str | None = None,
     seed: int | None = None,
     current_image: Any | None = None,
+    excluded_actions: Sequence[str] | None = None,
 ) -> dict[str, Any]:
     del current_image  # Reserved for prompt-backed and future vision implementations.
     actions = [dict(action) for action in action_table]
@@ -381,6 +382,10 @@ def choose_action(
         selected = reset
     else:
         candidates = [action for action in actions if action.get("name") != "RESET"] or actions
+        excluded = {str(action) for action in (excluded_actions or [])}
+        alternatives = [action for action in candidates if str(action.get("name")) not in excluded]
+        if alternatives:
+            candidates = alternatives
         learned = dict((memory or {}).get("games", {}).get(game_id or "", {}).get("actions", {}))
         weights = []
         for action in candidates:
@@ -687,15 +692,25 @@ class RandomArc3Player:
         memory = load_learning_memory(self.memory_path)
         steps = 0
         ratings = {"good": 0, "bad": 0, "neutral": 0}
+        ineffective_actions: set[str] = set()
         _append_jsonl(events_path, {"type": "game_selected", "at": _utc_now(), "game": dict(game)})
         while not should_rotate(started, self.seconds_per_game, self.clock()):
             before = _frame_snapshot(runner)
             proposal = choose_action(
-                runner.action_table(), memory, game_id, before["state"], self.rng.randrange(2**32)
+                runner.action_table(),
+                memory,
+                game_id,
+                before["state"],
+                self.rng.randrange(2**32),
+                excluded_actions=ineffective_actions,
             )
             runner.step(proposal["action"], data=proposal["data"])
             after = _frame_snapshot(runner)
             assessment = assess_transition(before, after)
+            if assessment["frame_changed"]:
+                ineffective_actions.clear()
+            else:
+                ineffective_actions.add(str(proposal["action"]))
             memory = update_learning_memory(memory, game_id, str(proposal["action"]), assessment)
             _write_json(self.memory_path, memory)
             event = {

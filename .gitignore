@@ -30,6 +30,8 @@ downloads/
 eggs/
 .eggs/
 lib/
+!workbench/frontend/src/lib/
+!workbench/frontend/src/lib/**
 lib64/
 parts/
 sdist/
@@ -265,6 +267,7 @@ reference/
 .codex/pytest-*/
 .codex/commit-validation-*/
 .codex/post-commit-validation/
+.codex/*-validation/
 workbench/workspaces/.workspace-trash/
 config/workbench_startup.json
 workbench-ui-current.png

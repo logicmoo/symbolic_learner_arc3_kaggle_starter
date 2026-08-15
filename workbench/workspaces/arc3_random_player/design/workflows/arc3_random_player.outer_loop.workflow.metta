@@ -239,6 +239,13 @@
         pick_random_move_and_execute
         capture_after
       ))
+      (while (
+        (condition $assessment.frame_changed)
+        (operator equals)
+        (conditionPort false)
+        (maxIterations 32)
+        (targetStepId pick_random_move_and_execute)
+      ))
       (inputs (
         (before $before)
         (after $after)
@@ -333,11 +340,24 @@
     )
     (
       (id play_all_remaining_games_automatically)
-      (label "Automatically Play Every Remaining Game")
+      (label "While Unplayed Games Remain, Play Next Game")
       (kind operation)
       (operation arc3_random.run_session)
       (dependsOn ([]
-        discover_games
+        filter_unplayed_games
+      ))
+      (while ([]
+        (
+          (condition $unplayed_games)
+          (operator not_empty)
+          (maxIterations 100)
+        )
+        (
+          (condition $elapsed_game_seconds)
+          (operator less_than)
+          (conditionPort $seconds_per_game)
+          (maxIterations 1000)
+        )
       ))
       (inputs (
         (workspace_root $workspace_root)

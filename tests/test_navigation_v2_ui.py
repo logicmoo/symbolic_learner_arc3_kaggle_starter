@@ -492,6 +492,19 @@ def test_workflow_runner_bootstraps_editable_state_value_definitions() -> None:
     assert "allowRedefinition:true" in page
     api = (ROOT / "workbench" / "server" / "workflow_engine_api.py").read_text(encoding="utf-8")
     assert "state_values=body.get('stateValues') or []" in api
+
+
+def test_repeated_outputs_create_preflight_value_groups_and_spline_loops() -> None:
+    page = ACTIVE_PAGE.read_text(encoding="utf-8")
+    history = (ROOT / "workbench" / "frontend" / "src" / "components" / "RuntimeHistoryView.tsx").read_text(encoding="utf-8")
+    engine = (ROOT / "workbench" / "server" / "workflow_engine.py").read_text(encoding="utf-8")
+    assert "captureGroupIds" in page
+    assert "WorkflowPreflightSpline" in page
+    assert "PREFLIGHT SPLINE" in page
+    assert "captureLoopEdges" in history
+    assert "run.captureGroups" in history
+    assert "_infer_capture_group_plan" in engine
+    assert "_infer_capture_groups" in engine
     runtime = (ROOT / "workbench" / "frontend" / "src" / "components" / "RuntimeHistoryView.tsx").read_text(encoding="utf-8")
     assert "BootstrappedStateValues" in runtime
     assert "displayedStateValues" in runtime

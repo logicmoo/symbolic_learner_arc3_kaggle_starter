@@ -67,6 +67,40 @@ def test_same_name_output_list_is_normalized_and_runnable(tmp_path: Path) -> Non
     assert run['outputs'] == {'played_games': []}
 
 
+def test_repeated_output_bindings_infer_loop_capture_groups(tmp_path: Path) -> None:
+    e = engine(tmp_path)
+    saved = e.save_workflow({
+        'id': 'inferred_loop', 'inputs': {}, 'outputs': {}, 'steps': [
+            {'id': 'marker_1', 'implementation': 'core.constant', 'parameters': {'value': 'frame-1'}, 'outputs': {'value': 'moveScreenShot'}},
+            {'id': 'action_1', 'implementation': 'core.constant', 'parameters': {'value': 'left'}, 'outputs': {'value': 'gameControl'}},
+            {'id': 'marker_2', 'implementation': 'core.constant', 'parameters': {'value': 'frame-2'}, 'outputs': {'value': 'moveScreenShot'}},
+            {'id': 'action_2', 'implementation': 'core.constant', 'parameters': {'value': 'right'}, 'outputs': {'value': 'gameControl'}},
+            {'id': 'marker_3', 'implementation': 'core.constant', 'parameters': {'value': 'frame-3'}, 'outputs': {'value': 'moveScreenShot'}},
+        ],
+    })
+
+    plan = saved['captureGroupPlan'][0]
+    assert plan['markerName'] == 'moveScreenShot'
+    assert [group['memberStepIds'] for group in plan['iterations']] == [
+        ['marker_1', 'action_1'],
+        ['marker_2', 'action_2'],
+        ['marker_3'],
+    ]
+
+    run = e.start('inferred_loop', {})
+    started = next(event for event in run['events'] if event['kind'] == 'workflow.started')
+    assert started['payload']['captureGroupPlan'] == saved['captureGroupPlan']
+    screenshot_groups = [group for group in run['captureGroups'] if group['markerName'] == 'moveScreenShot']
+
+    assert [group['memberNames'] for group in screenshot_groups] == [
+        ['moveScreenShot', 'gameControl'],
+        ['moveScreenShot', 'gameControl'],
+        ['moveScreenShot'],
+    ]
+    assert [group['iteration'] for group in screenshot_groups] == [1, 2, 3]
+    assert all(group['iterationCount'] == 3 for group in screenshot_groups)
+
+
 def test_optional_probe_is_skipped_but_required_specialization_executes(tmp_path: Path) -> None:
     calls = {'count': 0}
     registry = OperationRegistry()
