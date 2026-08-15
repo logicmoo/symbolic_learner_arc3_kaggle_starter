@@ -17,6 +17,15 @@ from collection_operations import random_list_element
 _RUNNER_SESSIONS: dict[str, Any] = {}
 
 
+def _selected_game_record(game: Mapping[str, Any] | str) -> dict[str, Any]:
+    if isinstance(game, str):
+        name = game.strip()
+        if not name:
+            raise ValueError("A game name or ID is required")
+        return {"game_id": name, "title": name, "tags": []}
+    return dict(game)
+
+
 def _utc_now() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
@@ -48,7 +57,7 @@ def build_game_preview_gallery(
     workspace_root: str | Path,
     runner_factory: Callable[..., Any] | None = None,
 ) -> dict[str, Any]:
-    """Build a human- and AI-inspectable gallery from every game's first frame."""
+    """Capture first frames and return one human- and AI-viewable gallery."""
     if runner_factory is None:
         from arc3_runner import Arc3Runner
 
@@ -80,6 +89,31 @@ def build_game_preview_gallery(
     return {**gallery, "kind": "game_preview_gallery", "games": enriched}
 
 
+def curate_viewable_gallery(
+    games: Sequence[Mapping[str, Any]] | None = None,
+    workspace_root: str | Path | None = None,
+    game: Mapping[str, Any] | str | None = None,
+    session: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Curate either available-game previews or one selected-game screenshot."""
+    if session is None:
+        if games is None or workspace_root is None:
+            raise ValueError("games and workspace_root are required for the available-games gallery")
+        return build_game_preview_gallery(games, workspace_root)
+    if game is None:
+        raise ValueError("game is required for the selected-game gallery")
+    record = _selected_game_record(game)
+    record["frame_path"] = session.get("initial_screenshot") or session.get("frame_path")
+    record["preview"] = dict(session)
+    gallery = curate_gallery_resource(
+        [record],
+        label="Selected Game Gallery",
+        title_field="title",
+        image_field="frame_path",
+    )
+    return {**gallery, "kind": "game_preview_gallery", "games": [record]}
+
+
 def enrich_game_previews(
     games: Sequence[Mapping[str, Any]],
     workspace_root: str | Path,
@@ -87,6 +121,34 @@ def enrich_game_previews(
 ) -> list[dict[str, Any]]:
     """Compatibility wrapper for callers that still expect only the game list."""
     return build_game_preview_gallery(games, workspace_root, runner_factory)["games"]
+
+
+def initialize_played_games() -> list[str]:
+    """Start a workflow run with no ARC games marked as played."""
+    return []
+
+
+def filter_unplayed_games(
+    games: Sequence[Mapping[str, Any]],
+    played_games: Sequence[str] | None = None,
+) -> list[dict[str, Any]]:
+    """Exclude played IDs, starting a fresh cycle only after all games were seen."""
+    choices = [dict(game) for game in games]
+    played = {str(game_id) for game_id in played_games or []}
+    unplayed = [game for game in choices if str(game.get("game_id") or "") not in played]
+    return unplayed or choices
+
+
+def remember_played_game(
+    played_games: Sequence[str] | None,
+    game: Mapping[str, Any] | str,
+) -> list[str]:
+    """Append the selected game ID once while preserving selection order."""
+    game_id = str(_selected_game_record(game)["game_id"])
+    result = [str(item) for item in played_games or []]
+    if game_id not in result:
+        result.append(game_id)
+    return result
 
 
 def select_game(
@@ -113,10 +175,11 @@ def select_random_game(
 
 
 def query_game_metta(
-    game: Mapping[str, Any],
+    game: Mapping[str, Any] | str,
     workspace_root: str | Path,
 ) -> dict[str, Any]:
     """Find existing MeTTa resources that mention the selected game metadata."""
+    game = _selected_game_record(game)
     root = Path(workspace_root).resolve()
     terms = {
         str(game.get("game_id") or "").lower(),
@@ -152,11 +215,12 @@ def _metta_string(value: Any) -> str:
 
 
 def populate_game_atomspace(
-    game: Mapping[str, Any],
+    game: Mapping[str, Any] | str,
     knowledge: Mapping[str, Any],
     workspace_root: str | Path,
 ) -> dict[str, Any]:
     """Persist selected-game knowledge into its default runtime AtomSpace."""
+    game = _selected_game_record(game)
     game_id = str(game.get("game_id") or "unknown")
     path = Path(workspace_root).resolve() / "runtime" / "contexts" / "games" / f"{game_id}.default.atomspace.metta"
     atoms = list(knowledge.get("atoms") or [])
@@ -190,11 +254,12 @@ def populate_game_atomspace(
 
 
 def start_selected_game(
-    game: Mapping[str, Any],
+    game: Mapping[str, Any] | str,
     workspace_root: str | Path,
     runner_factory: Callable[..., Any] | None = None,
 ) -> dict[str, Any]:
     """Start the selected game and return a durable handle plus initial state."""
+    game = _selected_game_record(game)
     if runner_factory is None:
         from arc3_runner import Arc3Runner
 
@@ -208,7 +273,88 @@ def start_selected_game(
     )
     handle = uuid.uuid4().hex
     _RUNNER_SESSIONS[handle] = runner
-    return {"handle": handle, "game": dict(game), **_frame_snapshot(runner)}
+    return {
+        "handle": handle,
+        "workspace_root": str(Path(workspace_root).resolve()),
+        "game": dict(game),
+        **_frame_snapshot(runner),
+    }
+
+
+def load_game_metta_data(
+    game: Mapping[str, Any] | str,
+    workspace_root: str | Path,
+    runner_factory: Callable[..., Any] | None = None,
+) -> dict[str, Any]:
+    """Load selected-game knowledge and return a ready-to-run live session."""
+    game_record = _selected_game_record(game)
+    knowledge = query_game_metta(game_record, workspace_root)
+    atomspace = populate_game_atomspace(game_record, knowledge, workspace_root)
+    session = start_selected_game(game_record, workspace_root, runner_factory)
+    controls = enumerate_game_controls(session)
+    loaded = {
+        **session,
+        "game": game_record,
+        "game_id": game_record["game_id"],
+        "knowledge": knowledge,
+        "atomspace": atomspace,
+        "controls": controls,
+        "initial_screenshot": session.get("frame_path"),
+    }
+    return {**loaded, "session": loaded}
+
+
+def initialize_selected_game(session: Mapping[str, Any]) -> dict[str, Any]:
+    """Initialize the episode and capture its first frame without making a move."""
+    runner = _RUNNER_SESSIONS.get(str(session.get("handle") or ""))
+    if runner is None:
+        raise ValueError("ARC game session is unavailable or expired")
+    runner.reset(clear_history=True)
+    initial_state = {**dict(session), **_frame_snapshot(runner)}
+    initial_state["initial_screenshot"] = initial_state.get("frame_path")
+    return {
+        "session": initial_state,
+        "result": {
+            **initial_state,
+            "initialized": True,
+            "moves_made": 0,
+            "message": "Game initialized; no move has been made",
+        },
+        "initial_screenshot": initial_state.get("frame_path"),
+    }
+
+
+def reset_selected_game(
+    session: Mapping[str, Any],
+    target: str = "level",
+) -> dict[str, Any]:
+    """Reset the current level or restart the selected game from its beginning."""
+    runner = _RUNNER_SESSIONS.get(str(session.get("handle") or ""))
+    if runner is None:
+        raise ValueError("ARC game session is unavailable or expired")
+    requested_target = str(target or "level").strip().lower()
+    normalized_target = "level" if requested_target == "checkpoint" else requested_target
+    if normalized_target == "level":
+        runner.reset(clear_history=False)
+        message = "Current level restored to its last saved checkpoint"
+    elif normalized_target == "game":
+        runner.open()
+        runner.reset(clear_history=True)
+        message = "Entire game restarted from its first level"
+    else:
+        raise ValueError("Reset target must be 'level'/'checkpoint' or 'game'")
+    reset_state = {**dict(session), **_frame_snapshot(runner)}
+    return {
+        "session": reset_state,
+        "result": {
+            **reset_state,
+            "reset_executed": True,
+            "reset_target": normalized_target,
+            "requested_target": requested_target,
+            "message": message,
+        },
+        "reset_screenshot": reset_state.get("frame_path"),
+    }
 
 
 def enumerate_game_controls(session: Mapping[str, Any]) -> list[dict[str, Any]]:
@@ -348,13 +494,13 @@ def capture_observation(
     frame_path: str | None,
     state: str | None,
     level: int | str = 1,
-    game: Mapping[str, Any] | None = None,
+    game: Mapping[str, Any] | str | None = None,
 ) -> dict[str, Any]:
     path = Path(frame_path) if frame_path else None
     digest = hashlib.sha256(path.read_bytes()).hexdigest() if path and path.is_file() else None
     return {
         "captured_at": _utc_now(),
-        "game": dict(game or {}),
+        "game": _selected_game_record(game) if game is not None else {},
         "state": state,
         "level": int(level),
         "frame_path": str(path) if path else None,
@@ -372,6 +518,118 @@ def execute_action(session: Any, proposal: Mapping[str, Any]) -> dict[str, Any]:
             raise ValueError("ARC game session is unavailable or expired")
     runner.step(str(proposal["action"]), data=dict(proposal.get("data") or {}))
     return _frame_snapshot(runner)
+
+
+def pick_random_move_and_execute(
+    session: Mapping[str, Any],
+    controls: Sequence[Mapping[str, Any]],
+    game: Mapping[str, Any] | str,
+    memory: Mapping[str, Any] | None = None,
+    seed: int | None = None,
+    move_limit: int | None = None,
+) -> dict[str, Any]:
+    """Choose one legal move from the declared controls and execute it."""
+    game_record = _selected_game_record(game)
+    runner = _RUNNER_SESSIONS.get(str(session.get("handle") or ""))
+    if runner is None:
+        raise ValueError("ARC game session is unavailable or expired")
+    moves_made = len(getattr(runner, "records", []) or [])
+    if move_limit is not None:
+        limit = int(move_limit)
+        if limit < 0:
+            raise ValueError("move_limit must be zero or greater")
+        if moves_made >= limit:
+            current = _frame_snapshot(runner)
+            replay_gallery = _build_replay_gallery(session, runner)
+            return {
+                "session": {**dict(session), **current},
+                "before": capture_observation(current.get("frame_path"), current.get("state"), current.get("level", 1), game),
+                "proposal": None,
+                "result": {**current, "move_executed": False, "move_limit_reached": True, "move_limit": limit, "moves_made": moves_made},
+                "next_screenshot": current.get("frame_path"),
+                "replay_gallery": replay_gallery,
+                "animated_replay": replay_gallery.get("animation"),
+            }
+    current = _frame_snapshot(runner)
+    before = capture_observation(
+        current.get("frame_path"),
+        current.get("state"),
+        current.get("level", 1),
+        game_record,
+    )
+    proposal = choose_action(
+        controls,
+        memory,
+        str(game_record["game_id"]),
+        str(before.get("state") or ""),
+        seed,
+        before.get("frame_path"),
+    )
+    result = execute_action(session, proposal)
+    next_session = {**dict(session), **result}
+    replay_gallery = _build_replay_gallery(next_session, runner)
+    return {
+        "session": next_session,
+        "before": before,
+        "proposal": proposal,
+        "result": {**result, "move_executed": True, "move_limit_reached": False, "move_limit": move_limit, "moves_made": moves_made + 1},
+        "next_screenshot": result.get("frame_path"),
+        "replay_gallery": replay_gallery,
+        "animated_replay": replay_gallery.get("animation"),
+    }
+
+
+def _build_replay_gallery(session: Mapping[str, Any], runner: Any) -> dict[str, Any]:
+    """Build chronological stills and a GIF from the live runner history."""
+    initial_path = session.get("initial_screenshot") or session.get("frame_path")
+    items: list[dict[str, Any]] = []
+    if initial_path:
+        items.append({
+            "title": "Initial frame — 0 moves",
+            "description": "Playable game state before the first move.",
+            "frame_path": str(initial_path),
+            "move": 0,
+        })
+    for index, record in enumerate(getattr(runner, "records", []) or [], start=1):
+        frame_path = getattr(record, "frame_path", None)
+        action = getattr(record, "action", None)
+        if isinstance(record, Mapping):
+            frame_path = record.get("frame_path") or frame_path
+            action = record.get("action") or action
+        if frame_path:
+            items.append({
+                "title": f"Move {index} — {action or 'action'}",
+                "description": f"State captured immediately after move {index}.",
+                "frame_path": str(frame_path),
+                "move": index,
+                "action": action,
+            })
+    gallery = curate_gallery_resource(items, label="ARC Game Step-by-Step Replay")
+    workspace_root = Path(str(session.get("workspace_root") or ".")).resolve()
+    replay_dir = workspace_root / "runtime" / "artifacts" / "arc3_replays" / str(session.get("handle") or "session")
+    replay_dir.mkdir(parents=True, exist_ok=True)
+    animation_path = replay_dir / "replay.gif"
+    image_paths = [Path(str(item["frame_path"])) for item in items if Path(str(item["frame_path"])).is_file()]
+    if image_paths:
+        from PIL import Image
+
+        frames = [Image.open(path).convert("RGBA") for path in image_paths]
+        frames[0].save(
+            animation_path,
+            save_all=True,
+            append_images=frames[1:],
+            duration=650,
+            loop=0,
+            disposal=2,
+        )
+        for frame in frames:
+            frame.close()
+    return {
+        **gallery,
+        "kind": "arc_replay_gallery",
+        "animation": str(animation_path) if animation_path.is_file() else None,
+        "move_count": len(getattr(runner, "records", []) or []),
+    }
 
 
 class RandomArc3Player:
@@ -404,12 +662,14 @@ class RandomArc3Player:
         catalog_path = self.workspace_root / "runtime" / "states" / "arc3_game_catalog.json"
         _write_json(catalog_path, {"fetched_at": _utc_now(), "games": games})
         summaries: list[dict[str, Any]] = []
-        previous_game_id: str | None = None
-        while max_games is None or len(summaries) < max_games:
-            chosen = select_game(games, previous_game_id, self.rng.randrange(2**32))
+        played_games: list[str] = []
+        game_limit = len(games) if max_games is None else min(int(max_games), len(games))
+        while len(summaries) < game_limit:
+            available = filter_unplayed_games(games, played_games)
+            chosen = select_random_game(available, seed=self.rng.randrange(2**32))
             summary = self._play_game(chosen, max_steps=max_steps_per_game)
             summaries.append(summary)
-            previous_game_id = chosen["game_id"]
+            played_games = remember_played_game(played_games, chosen)
         return summaries
 
     def _play_game(self, game: Mapping[str, Any], *, max_steps: int | None) -> dict[str, Any]:
@@ -474,13 +734,26 @@ class RandomArc3Player:
 
 
 def run_random_arc3_session(
-    workspace_root: str = "workbench/workspaces/image_perception_to_recognizable_memory_and_arc3",
+    workspace_root: str = "workbench/workspaces/arc3_random_player",
     seconds_per_game: float = 600.0,
-    max_games: int | None = 1,
+    max_games: int | None = None,
+    move_limit: int | None = 10,
     seed: int | None = None,
+    mode: str = "automatic",
 ) -> list[dict[str, Any]]:
+    normalized_mode = str(mode or "automatic").strip().lower()
+    if normalized_mode == "interactive":
+        return []
+    if normalized_mode != "automatic":
+        raise ValueError("mode must be 'interactive' or 'automatic'")
+    normalized_seconds = 600.0 if seconds_per_game is None else float(seconds_per_game)
+    normalized_move_limit = 10 if move_limit is None else int(move_limit)
+    if normalized_seconds < 0:
+        raise ValueError("seconds_per_game must be zero or greater")
+    if normalized_move_limit < 0:
+        raise ValueError("move_limit must be zero or greater")
     return RandomArc3Player(
         workspace_root,
-        seconds_per_game=seconds_per_game,
+        seconds_per_game=normalized_seconds,
         seed=seed,
-    ).run(max_games=max_games)
+    ).run(max_games=max_games, max_steps_per_game=normalized_move_limit)

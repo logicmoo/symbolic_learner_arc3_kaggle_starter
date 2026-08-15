@@ -1,16 +1,26 @@
 from __future__ import annotations
 
 import hashlib
+import json
+from fnmatch import fnmatch
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Query
+from fastapi.responses import FileResponse
+from pydantic import BaseModel
 from resource_store import get_filesystem_provider
 
 router = APIRouter(prefix="/repository", tags=["repository-docs"])
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
-IGNORED_DIRECTORIES = {".git", ".venv", "node_modules", "dist", "build", "__pycache__", "action_trees"}
-VIEWABLE_SUFFIXES = {".md", ".py", ".json", ".toml", ".txt", ".bat", ".pl", ".html", ".css", ".tsx", ".ts", ".js", ".mjs", ".yml", ".yaml", ".ipynb"}
+IGNORED_DIRECTORIES = {".git", ".venv", "node_modules", "dist", "build", "__pycache__", "action_trees", ".pytest_cache"}
+VIEWABLE_SUFFIXES = {".md", ".py", ".json", ".metta", ".toml", ".txt", ".bat", ".pl", ".html", ".css", ".tsx", ".ts", ".js", ".mjs", ".yml", ".yaml", ".ipynb"}
+IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg"}
 VIEWABLE_NAMES = {"Makefile", ".gitattributes", ".gitignore", ".env.example"}
+SENSITIVE_PATTERNS = {
+    ".env", ".env.*", "*.key", "*.pem", "*.p12", "*.pfx", "*.jks",
+    "id_rsa", "id_dsa", "id_ecdsa", "id_ed25519", "credentials.json",
+    "credentials.*.json", "secrets.json", "secrets.*", "*.kdbx",
+}
 MOJIBAKE_REPLACEMENTS = {
     "\u00e2\u2020\u0090": "←",
     "\u00e2\u2020\u2019": "→",
@@ -26,6 +36,10 @@ MOJIBAKE_REPLACEMENTS = {
 }
 
 
+class RepositoryFileUpdate(BaseModel):
+    content: str
+
+
 def repair_display_text(content: str) -> str:
     for broken, intended in MOJIBAKE_REPLACEMENTS.items():
         content = content.replace(broken, intended)
@@ -37,6 +51,53 @@ def _file_revision(stat: object) -> str:
     size = int(getattr(stat, "st_size"))
     modified_ns = int(getattr(stat, "st_mtime_ns", round(float(getattr(stat, "st_mtime")) * 1_000_000_000)))
     return hashlib.sha256(f"{size}:{modified_ns}".encode("ascii")).hexdigest()
+
+
+def _exclusion_reason(relative: Path) -> str | None:
+    if any(part in IGNORED_DIRECTORIES for part in relative.parts[:-1]):
+        return "generated, dependency, or internal directory"
+    name = relative.name
+    lower_name = name.lower()
+    if name not in VIEWABLE_NAMES and any(fnmatch(lower_name, pattern) for pattern in SENSITIVE_PATTERNS):
+        return "potential credentials or private key material"
+    if relative.suffix.lower() not in VIEWABLE_SUFFIXES | IMAGE_SUFFIXES and name not in VIEWABLE_NAMES:
+        return "file type is not approved for browser display"
+    return None
+
+
+def _entry(target: Path, *, exposed: bool, reason: str | None = None) -> dict[str, object]:
+    relative = target.relative_to(REPOSITORY_ROOT)
+    stat = target.stat()
+    entry: dict[str, object] = {
+        "path": relative.as_posix(),
+        "name": target.name,
+        "size": stat.st_size,
+        "modified": stat.st_mtime,
+        "exposed": exposed,
+    }
+    if exposed:
+        entry["checksum"] = _file_revision(stat)
+    else:
+        entry["reason"] = reason or "not exposed"
+    return entry
+
+
+@router.get("/filesystem-index")
+def list_repository_filesystem() -> dict[str, object]:
+    """Inventory browser-safe files and disclose exclusions without file contents."""
+    resources = get_filesystem_provider()
+    files: list[dict[str, object]] = []
+    unexposed: list[dict[str, object]] = []
+    for target in resources.rglob(REPOSITORY_ROOT, "*", ignored_names=IGNORED_DIRECTORIES):
+        relative = target.relative_to(REPOSITORY_ROOT)
+        reason = _exclusion_reason(relative)
+        if reason:
+            unexposed.append(_entry(target, exposed=False, reason=reason))
+        else:
+            files.append(_entry(target, exposed=True))
+    files.sort(key=lambda item: str(item["path"]).lower())
+    unexposed.sort(key=lambda item: str(item["path"]).lower())
+    return {"root": str(REPOSITORY_ROOT), "files": files, "unexposed": unexposed}
 
 
 @router.get("/markdown-index")
@@ -88,10 +149,20 @@ def read_repository_file(path: str = Query(..., min_length=1)) -> dict[str, str]
         target.relative_to(REPOSITORY_ROOT)
     except ValueError as error:
         raise HTTPException(status_code=400, detail="File path must stay inside the repository") from error
-    if target.suffix.lower() not in VIEWABLE_SUFFIXES and target.name not in VIEWABLE_NAMES:
-        raise HTTPException(status_code=400, detail="This repository file type cannot be displayed")
+    reason = _exclusion_reason(target.relative_to(REPOSITORY_ROOT))
+    if reason:
+        raise HTTPException(status_code=403, detail=f"This repository file is not exposed: {reason}")
     if not resources.is_file(target):
         raise HTTPException(status_code=404, detail=f"Repository file not found: {path}")
+    if target.suffix.lower() in IMAGE_SUFFIXES:
+        stat = resources.stat(target)
+        return {
+            "path": target.relative_to(REPOSITORY_ROOT).as_posix(),
+            "content": "",
+            "format": "image",
+            "checksum": _file_revision(stat),
+            "contentChecksum": "",
+        }
     if resources.stat(target).st_size > 5_000_000:
         raise HTTPException(status_code=413, detail="Repository file is too large to display")
     stat = resources.stat(target)
@@ -103,3 +174,46 @@ def read_repository_file(path: str = Query(..., min_length=1)) -> dict[str, str]
         "checksum": _file_revision(stat),
         "contentChecksum": hashlib.sha256(display_content.encode("utf-8")).hexdigest(),
     }
+
+
+@router.get("/asset")
+def read_repository_asset(path: str = Query(..., min_length=1)) -> FileResponse:
+    resources = get_filesystem_provider()
+    try:
+        target = resources.resolve(REPOSITORY_ROOT, path)
+        relative = target.relative_to(REPOSITORY_ROOT)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail="Asset path must stay inside the repository") from error
+    reason = _exclusion_reason(relative)
+    if reason or target.suffix.lower() not in IMAGE_SUFFIXES:
+        raise HTTPException(status_code=403, detail="This repository asset is not exposed")
+    if not resources.is_file(target):
+        raise HTTPException(status_code=404, detail=f"Repository asset not found: {path}")
+    return FileResponse(target)
+
+
+@router.put("/file")
+def update_repository_file(payload: RepositoryFileUpdate, path: str = Query(..., min_length=1)) -> dict[str, str]:
+    resources = get_filesystem_provider()
+    try:
+        target = resources.resolve(REPOSITORY_ROOT, path)
+        relative = target.relative_to(REPOSITORY_ROOT)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail="File path must stay inside the repository") from error
+    reason = _exclusion_reason(relative)
+    if reason:
+        raise HTTPException(status_code=403, detail=f"This repository file is not exposed: {reason}")
+    suffix = target.suffix.lower()
+    if suffix not in VIEWABLE_SUFFIXES and target.name not in VIEWABLE_NAMES:
+        raise HTTPException(status_code=400, detail="Only exposed text and source files can be edited here")
+    if not resources.is_file(target):
+        raise HTTPException(status_code=404, detail=f"Repository file not found: {path}")
+    if len(payload.content.encode("utf-8")) > 5_000_000:
+        raise HTTPException(status_code=413, detail="Repository file is too large to save")
+    if suffix in {".json", ".ipynb"}:
+        try:
+            json.loads(payload.content)
+        except json.JSONDecodeError as error:
+            raise HTTPException(status_code=422, detail=f"Invalid JSON at line {error.lineno}, column {error.colno}") from error
+    resources.write_text(target, payload.content)
+    return read_repository_file(path)

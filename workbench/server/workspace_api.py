@@ -5,6 +5,7 @@ import os
 import re
 import shutil
 import time
+from collections import Counter
 from threading import RLock
 from pathlib import Path
 from typing import Any
@@ -79,6 +80,43 @@ def _humanize(name: str) -> str:
     return name.replace("-", " ").replace("_", " ").strip().title()
 
 
+def _workspace_disk_summary(root: Path) -> tuple[int, int]:
+    resources = get_filesystem_provider()
+    files = [path for path in resources.rglob(root, "*") if resources.is_file(path)]
+    total_bytes = 0
+    for path in files:
+        try:
+            total_bytes += resources.stat(path).st_size
+        except OSError:
+            continue
+    return len(files), total_bytes
+
+
+def _local_resource_counts(root: Path) -> dict[str, int]:
+    resources = get_filesystem_provider()
+    counts: Counter[str] = Counter()
+    kind_labels = {
+        "workflow": "workflows", "operation": "operations", "operation_implementation": "implementations",
+        "semantic_datatype": "datatypes", "representation_datatype": "representations",
+        "concrete_datatype": "concreteDatatypes", "backend": "systems", "system": "systems",
+        "model": "models", "prompt": "prompts", "prompt_implementation": "prompts",
+        "prompt_profile": "prompts", "goal": "goals", "plan": "plans",
+        "planning_strategy": "plans", "context": "atomspaces", "atomspace": "atomspaces",
+    }
+    paths = resources.rglob(root, "*.metta") + resources.rglob(root, "*.json")
+    for path in sorted(set(paths)):
+        try:
+            documents = resources.read_json_documents(path)
+        except (OSError, ValueError):
+            continue
+        for document in documents:
+            if isinstance(document, dict):
+                label = kind_labels.get(str(document.get("kind") or ""))
+                if label:
+                    counts[label] += 1
+    return dict(counts)
+
+
 def _workspace_from_directory(root: Path, *, include_counts: bool = True) -> dict[str, Any]:
     resources = get_filesystem_provider()
     metadata = _optional_metadata(root)
@@ -104,12 +142,16 @@ def _workspace_from_directory(root: Path, *, include_counts: bool = True) -> dic
     goal_count = len(load_workspace_symbolic_records(root, "goal")) if include_counts else 0
     plan_count = len(load_workspace_symbolic_records(root, "plan")) if include_counts else 0
     context_count = len(load_workspace_symbolic_records(root, "context")) if include_counts else 0
+    file_count, disk_usage_bytes = _workspace_disk_summary(root) if include_counts else (0, 0)
+    local_resource_counts = _local_resource_counts(root) if include_counts else {}
     layers = effective_workspace_layers(root, root.parent)
     include_specs = declared_include_specs(root)
     return {
         "id": root.name,
         "label": str(metadata.get("label") or _humanize(root.name)),
         "description": str(metadata.get("description") or "Filesystem workspace"),
+        "workspaceType": str(metadata.get("workspaceType") or ("library" if root.name == SHARED_WORKSPACE_ID else "project")),
+        "hidden": metadata.get("hidden") is True,
         "root": str(root.resolve()),
         "manifest": None,
         "discovery": "directory-enumeration",
@@ -139,6 +181,10 @@ def _workspace_from_directory(root: Path, *, include_counts: bool = True) -> dic
         "includes": include_specs,
         "effectiveIncludes": [layer.name for layer in layers if layer.resolve() != root.resolve()],
         "countsAvailable": include_counts,
+        "fileCount": file_count,
+        "diskUsageBytes": disk_usage_bytes,
+        "resourceCounts": local_resource_counts,
+        "resourceCountScope": "local",
         "workflowFileCount": len(resources.glob(root, ("design/workflows",))) if include_counts and resources.is_dir(workflow_dir) else 0,
         "operationFileCount": operation_count,
         "operationImplementationFileCount": operation_implementation_count,
@@ -183,6 +229,15 @@ def discover_workspaces(*, force: bool = False, include_counts: bool = True) -> 
                 workspace = _workspace_from_directory(child, include_counts=include_counts)
                 found[workspace["root"]] = workspace
         discovered = sorted(found.values(), key=lambda item: (item["label"].lower(), item["root"].lower()))
+        projects = [item for item in discovered if item.get("workspaceType") == "project"]
+        project_ids = {item["id"] for item in projects}
+        for item in discovered:
+            used_by = sorted(project["id"] for project in projects if item["id"] in project.get("effectiveIncludes", []))
+            consumed_projects = sorted(project_id for project_id in item.get("effectiveIncludes", []) if project_id in project_ids)
+            item["usedByProjectCount"] = len(used_by)
+            item["usedByProjects"] = used_by
+            item["consumedProjectCount"] = len(consumed_projects)
+            item["consumedProjects"] = consumed_projects
         _workspace_cache = (cache_key, time.monotonic(), discovered)
         return [dict(item) for item in discovered]
 
@@ -384,7 +439,10 @@ def _load_prompt_library(workspace: dict[str, Any]) -> dict[str, list[dict[str, 
 
 @router.get("")
 def list_workspaces(refresh: bool = Query(default=False), detailed: bool = Query(default=False)) -> dict[str, Any]:
-    return {"workspaceRoots": [str(path) for path in _workspace_roots()], "workspaces": discover_workspaces(force=refresh, include_counts=detailed)}
+    workspaces = discover_workspaces(force=refresh, include_counts=detailed)
+    if not detailed:
+        workspaces = [workspace for workspace in workspaces if not workspace.get("hidden")]
+    return {"workspaceRoots": [str(path) for path in _workspace_roots()], "workspaces": workspaces}
 
 
 @router.post("", status_code=201)
@@ -435,24 +493,73 @@ def get_workspace(workspace_id: str) -> dict[str, Any]:
         raise HTTPException(status_code=404, detail=str(error)) from error
 
 
+@router.get("/{workspace_id}/settings")
+def get_workspace_settings(workspace_id: str) -> dict[str, Any]:
+    try:
+        workspace = _resolve_workspace(workspace_id)
+        root = Path(workspace["root"])
+        return {"workspace": workspace, "document": read_workspace_metadata(root), "path": str(workspace_metadata_path(root))}
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+    except (OSError, ValueError) as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+
 @router.put("/{workspace_id}/settings")
 def update_workspace_settings(workspace_id: str, body: dict[str, Any] = Body(...)) -> dict[str, Any]:
     try:
         workspace = _resolve_workspace(workspace_id)
-        includes = _normalize_include_specs(workspace, body.get("includes"))
+        incoming_document = body.get("document")
+        if incoming_document is not None and not isinstance(incoming_document, dict):
+            raise ValueError("document must be an object")
+        changes = incoming_document if isinstance(incoming_document, dict) else body
+        includes = _normalize_include_specs(workspace, changes.get("includes")) if "includes" in changes else declared_include_specs(Path(workspace["root"]))
+        workspace_type = str(changes.get("workspaceType") or workspace.get("workspaceType") or "project")
+        if workspace_type not in {"project", "library"}:
+            raise ValueError("workspaceType must be 'project' or 'library'")
         root = Path(workspace["root"])
         path = workspace_metadata_path(root)
         metadata = read_workspace_metadata(root)
+        if incoming_document is not None:
+            metadata = dict(incoming_document)
+            incoming_id = str(metadata.get("id") or workspace["id"])
+            if incoming_id != workspace["id"]:
+                raise ValueError("workspace id cannot be changed from the registry editor")
         metadata.update({
             "kind": "workspace",
             "id": workspace["id"],
-            "label": metadata.get("label") or workspace["label"],
-            "description": metadata.get("description") or workspace["description"],
+            "label": str(metadata.get("label") or workspace["label"]),
+            "description": str(metadata.get("description") or workspace["description"]),
             "includes": includes,
+            "workspaceType": workspace_type,
+            "hidden": changes.get("hidden") is True if "hidden" in changes else metadata.get("hidden") is True,
         })
         get_filesystem_provider().write_json(path, metadata)
         invalidate_workspace_discovery()
-        return {"workspace": _workspace_from_directory(root)}
+        return {"workspace": _workspace_from_directory(root), "document": metadata, "path": str(path)}
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+    except (OSError, ValueError) as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+
+@router.delete("/{workspace_id}")
+def delete_workspace(workspace_id: str) -> dict[str, Any]:
+    if workspace_id in {SHARED_WORKSPACE_ID, "default", "shared_library_system"}:
+        raise HTTPException(status_code=400, detail="This protected workspace cannot be deleted")
+    try:
+        workspace = _resolve_workspace(workspace_id)
+        dependents = [item["id"] for item in discover_workspaces(force=True) if item["id"] != workspace_id and any(spec["workspaceId"] == workspace_id for spec in item.get("includes", []))]
+        if dependents:
+            raise ValueError(f"Workspace is still included by: {', '.join(sorted(dependents))}")
+        root = Path(workspace["root"])
+        trash = root.parent / ".workspace-trash"
+        target = trash / f"{root.name}-{int(time.time())}"
+        resources = get_filesystem_provider()
+        resources.make_directory(trash)
+        resources.replace(root, target)
+        invalidate_workspace_discovery()
+        return {"deleted": workspace_id, "recoverable": True, "recoveryPath": str(target)}
     except KeyError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error
     except (OSError, ValueError) as error:

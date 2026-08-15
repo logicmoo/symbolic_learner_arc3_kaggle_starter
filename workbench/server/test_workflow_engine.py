@@ -27,6 +27,46 @@ def test_versioned_workflow_and_artifacts(tmp_path: Path) -> None:
     assert any(event['kind'] == 'workflow.completed' for event in run['events'])
 
 
+def test_run_preserves_bootstrapped_state_value_configuration(tmp_path: Path) -> None:
+    e = engine(tmp_path)
+    e.save_workflow({'id': 'stateful', 'inputs': {}, 'outputs': {}, 'steps': []})
+    state_values = [{
+        'kind': 'state_value',
+        'id': 'step_objects',
+        'enabled': True,
+        'datatype': 'object_list',
+        'source': {'kind': 'step_output', 'stepId': 'detect', 'output': 'objects'},
+        'preferredRenderer': 'metta',
+        'treatAsList': True,
+        'allowRedefinition': True,
+        'applicability': ['steps', 'game', 'postMortem'],
+    }]
+    run = e.start('stateful', {}, state_values=state_values)
+    started = next(event for event in run['events'] if event['kind'] == 'workflow.started')
+    assert started['payload']['stateValues'] == state_values
+
+
+def test_same_name_output_list_is_normalized_and_runnable(tmp_path: Path) -> None:
+    e = engine(tmp_path)
+    saved = e.save_workflow({
+        'id': 'initialize_played_games',
+        'inputs': {},
+        'outputs': {'played_games': '$played_games'},
+        'steps': [{
+            'id': 'initialize_played_games',
+            'kind': 'operation',
+            'operation': 'echo.value',
+            'inputs': {'played_games': []},
+            'outputs': ['played_games'],
+        }],
+    })
+
+    assert saved['steps'][0]['outputs'] == {'played_games': 'played_games'}
+    run = e.start('initialize_played_games', {})
+    assert run['status'] == 'completed'
+    assert run['outputs'] == {'played_games': []}
+
+
 def test_optional_probe_is_skipped_but_required_specialization_executes(tmp_path: Path) -> None:
     calls = {'count': 0}
     registry = OperationRegistry()
@@ -98,6 +138,28 @@ def test_direct_dollar_binding_resolves_workflow_input(tmp_path: Path) -> None:
     run = e.start('direct_binding', {'payload': {'value': 3}})
     assert run['status'] == 'completed'
     assert next(item for item in run['artifacts'] if item['name'] == 'copied')['payload'] == {'value': 3}
+
+
+def test_workflow_input_defaults_are_merged_before_required_input_validation(tmp_path: Path) -> None:
+    e = engine(tmp_path)
+    e.save_workflow({
+        'id': 'defaulted_binding',
+        'inputs': {'message': 'String', 'suffix': 'String'},
+        'inputDefaults': {'message': 'hello', 'suffix': '!'},
+        'outputs': {'result': '$copied'},
+        'steps': [{
+            'id': 'echo', 'kind': 'operation', 'implementation': 'core.echo',
+            'inputs': {'value': '$message'}, 'outputs': {'value': 'copied'},
+        }],
+    })
+
+    defaulted = e.start('defaulted_binding', {})
+    overridden = e.start('defaulted_binding', {'message': 'goodbye'})
+
+    assert defaulted['inputs'] == {'message': 'hello', 'suffix': '!'}
+    assert defaulted['outputs']['result'] == 'hello'
+    assert overridden['inputs'] == {'message': 'goodbye', 'suffix': '!'}
+    assert overridden['outputs']['result'] == 'goodbye'
 
 
 def test_human_step_waits_and_resumes(tmp_path: Path) -> None:

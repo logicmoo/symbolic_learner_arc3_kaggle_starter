@@ -51,6 +51,22 @@ class WorkflowEngine:
 
     TERMINAL = {'completed', 'failed', 'cancelled'}
 
+    @staticmethod
+    def _normalize_output_bindings(value: Any) -> dict[str, Any]:
+        """Accept concise same-name output lists as well as explicit mappings."""
+        if isinstance(value, list):
+            return {str(name): str(name) for name in value}
+        return dict(value or {})
+
+    @classmethod
+    def _normalize_workflow(cls, document: dict[str, Any]) -> dict[str, Any]:
+        normalized = {**document}
+        normalized['steps'] = [
+            {**step, 'outputs': cls._normalize_output_bindings(step.get('outputs'))}
+            for step in document.get('steps') or []
+        ]
+        return normalized
+
     def __init__(self, db_path: str | Path, registry: OperationRegistry | None = None) -> None:
         self.db_path = Path(db_path)
         get_filesystem_provider().make_directory(self.db_path.parent)
@@ -116,6 +132,7 @@ class WorkflowEngine:
             db.execute('CREATE INDEX IF NOT EXISTS wf_runs_workspace_created_idx ON wf_runs(workspace_id,created_at DESC)')
 
     def save_workflow(self, document: dict[str, Any]) -> dict[str, Any]:
+        document = self._normalize_workflow(document)
         errors = self.validate(document)
         if errors:
             raise ValueError('; '.join(errors))
@@ -222,6 +239,7 @@ class WorkflowEngine:
         return binding.lstrip('$').split('.')[-1]
 
     def validate(self, document: dict[str, Any]) -> list[str]:
+        document = self._normalize_workflow(document)
         errors: list[str] = []
         if not document.get('id'): errors.append('workflow id is required')
         steps = document.get('steps')
@@ -278,8 +296,10 @@ class WorkflowEngine:
 
     def start(self, workflow_id: str, inputs: dict[str, Any], version: int | None = None,
               parent_run_id: str | None = None, parent_step_id: str | None = None,
-              workspace_id: str | None = None) -> dict[str, Any]:
+              workspace_id: str | None = None,
+              state_values: list[dict[str, Any]] | None = None) -> dict[str, Any]:
         wf = self.get_workflow(workflow_id, version)
+        inputs = {**(wf.get('inputDefaults') or {}), **inputs}
         missing = [k for k in (wf.get('inputs') or {}) if k not in inputs]
         if missing: raise ValueError(f'missing workflow inputs: {missing}')
         run_id = str(uuid.uuid4())
@@ -295,7 +315,11 @@ class WorkflowEngine:
                         json.dumps(inputs), '{}', None, stamp, stamp, workspace_id))
             for step in wf.get('steps', []):
                 db.execute('INSERT INTO wf_steps(run_id,step_id,status) VALUES(?,?,?)', (run_id, step['id'], 'pending'))
-        self._event(run_id, None, 'workflow.started', {'workflowId': workflow_id, 'version': wf['version']})
+        self._event(run_id, None, 'workflow.started', {
+            'workflowId': workflow_id,
+            'version': wf['version'],
+            'stateValues': state_values or [],
+        })
         for name, value in inputs.items():
             dtype = (wf.get('inputs') or {}).get(name, 'Any')
             self._artifact(run_id, None, name, dtype, value, {'source': 'workflow.input'})
@@ -575,6 +599,7 @@ class WorkflowEngine:
 def default_registry() -> OperationRegistry:
     registry = OperationRegistry()
     registry.register(OperationSpec('core.echo', {'value': 'Any'}, {'value': 'Any'}, lambda i, p: {'value': i['value']}))
+    registry.register(OperationSpec('echo.value', {'played_games': 'Array'}, {'played_games': 'Array'}, lambda i, p: {'played_games': i['played_games']}))
     registry.register(OperationSpec('core.merge', {'left': 'Object', 'right': 'Object'}, {'value': 'Object'}, lambda i, p: {'value': {**i['left'], **i['right']}}))
     registry.register(OperationSpec('core.select', {'value': 'Object'}, {'value': 'Any'}, lambda i, p: {'value': i['value'][p['key']]}))
     registry.register(OperationSpec('core.constant', {}, {'value': 'Any'}, lambda i, p: {'value': p.get('value')}))

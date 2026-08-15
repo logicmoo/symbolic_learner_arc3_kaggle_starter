@@ -2,18 +2,29 @@
   (kind workflow)
   (id arc3_random_player.outer_loop)
   (label "ARC3 Random Player Outer Loop")
-  (description "A reusable learning-tree topology whose ARC3-specific behavior is supplied entirely by operation bindings. A generic workflow runner executes the dependency tree and repeats it until the rotation decision is true.")
+  (description "A reusable learning-tree topology that plays and displays one move at a time, repeating until the user says they have seen enough.")
   (inputs (
+    (mode Text)
+    (move_limit Number)
     (workspace_root Text)
     (previous_game_id Text)
     (memory Object)
     (seconds_per_game Number)
-    (started_monotonic Number)
-    (now_monotonic Number)
     (seed Number)
+  ))
+  (inputDefaults (
+    (mode automatic)
+    (move_limit 10)
+    (workspace_root "")
+    (previous_game_id "")
+    (memory ())
+    (seconds_per_game 60)
+    (seed 0)
   ))
   (outputs (
     (game $game)
+    (next_game $next_game)
+    (played_games $played_games_after_next_selection)
     (proposal $proposal)
     (assessment $assessment)
     (memory $updated_memory)
@@ -26,6 +37,18 @@
   ))
   (steps ([]
     (
+      (id initialize_played_games)
+      (label "Start Empty Played-Games List")
+      (kind operation)
+      (operation echo.value)
+      (inputs (
+        (played_games ([]))
+      ))
+      (outputs ([]
+        played_games
+      ))
+    )
+    (
       (id discover_games)
       (label "Ask ARC server for games")
       (kind operation)
@@ -35,33 +58,38 @@
       ))
     )
     (
-      (id build_game_preview_gallery)
-      (label "Build the Game Preview Gallery")
+      (id filter_unplayed_games)
+      (label "Filter Already-Played Games")
       (kind operation)
-      (operation arc3_random.build_game_preview_gallery)
-      (probe ((enabled false) (required false) (blocking false)))
+      (operation arc3_random.filter_unplayed_games)
       (dependsOn ([]
         discover_games
+        initialize_played_games
       ))
       (inputs (
         (games $games)
-        (workspace_root $workspace_root)
+        (played_games $played_games)
       ))
       (outputs (
-        (gallery arc_preview_candidates)
+        (games unplayed_games)
       ))
     )
     (
-      (id curate_game_preview_gallery)
-      (label "Render the neutral Gallery Resource")
+      (id curate_viewable_gallery)
+      (label "Curate Viewable Gallery")
       (kind operation)
-      (operation gallery.curate_resource)
-      (probe ((enabled false) (required false) (blocking false)))
+      (operation arc3_random.curate_viewable_gallery)
+      (probe (
+        (enabled false)
+        (required false)
+        (blocking false)
+      ))
       (dependsOn ([]
-        build_game_preview_gallery
+        filter_unplayed_games
       ))
       (inputs (
-        (items $arc_preview_candidates.games)
+        (games $unplayed_games)
+        (workspace_root $workspace_root)
       ))
       (outputs (
         (gallery game_preview_gallery)
@@ -73,111 +101,115 @@
       (kind operation)
       (operation arc3_random.select_game)
       (dependsOn ([]
-        discover_games
+        filter_unplayed_games
       ))
       (inputs (
-        (games $games)
+        (games $unplayed_games)
         (previous_game_id $previous_game_id)
         (seed $seed)
+        (move_limit $move_limit)
       ))
       (outputs (
         (game game)
       ))
     )
     (
-      (id query_game_metta)
-      (label "Query MeTTa data for the selected game")
+      (id remember_selected_game)
+      (label "Remember Selected Game")
       (kind operation)
-      (operation arc3_random.query_game_metta)
-      (dependsOn ([] select_game))
-      (inputs (
-        (game $game)
-        (workspace_root $workspace_root)
-      ))
-      (outputs ((knowledge game_metta)))
-    )
-    (
-      (id populate_game_atomspace)
-      (label "Populate the game's default AtomSpace")
-      (kind operation)
-      (operation arc3_random.populate_game_atomspace)
-      (dependsOn ([] query_game_metta))
-      (inputs (
-        (game $game)
-        (knowledge $game_metta)
-        (workspace_root $workspace_root)
-      ))
-      (outputs ((atomspace game_atomspace)))
-    )
-    (
-      (id start_game)
-      (label "Start the selected game")
-      (kind operation)
-      (operation arc3_random.start_game)
-      (dependsOn ([] populate_game_atomspace))
-      (inputs (
-        (game $game)
-        (workspace_root $workspace_root)
-      ))
-      (outputs ((session game_session)))
-    )
-    (
-      (id enumerate_controls)
-      (label "Enumerate available controls")
-      (kind operation)
-      (operation arc3_random.enumerate_controls)
-      (dependsOn ([] start_game))
-      (inputs ((session $game_session)))
-      (outputs ((controls action_table)))
-    )
-    (
-      (id capture_before)
-      (label "Capture the current image")
-      (kind operation)
-      (operation arc3_random.capture_observation)
-      (dependsOn ([] enumerate_controls))
-      (inputs (
-        (game $game)
-        (frame_path $game_session.frame_path)
-        (state $game_session.state)
-        (level $game_session.level)
-      ))
-      (outputs ((observation before)))
-    )
-    (
-      (id propose_action)
-      (label "Guess a legal move")
-      (kind operation)
-      (operation arc3_random.propose_action)
+      (operation arc3_random.remember_played_game)
       (dependsOn ([]
-        capture_before
+        select_game
+        initialize_played_games
       ))
       (inputs (
-        (action_table $action_table)
-        (memory $memory)
-        (game_id $game.game_id)
-        (state $before.state)
-        (seed $seed)
-        (current_image $before.frame_path)
+        (played_games $played_games)
+        (game $game)
       ))
       (outputs (
-        (proposal proposal)
+        (played_games played_games_after_selection)
       ))
     )
     (
-      (id execute_action)
-      (label "Play the move")
+      (id load_game_metta_data)
+      (label "Load Game MeTTa Data")
       (kind operation)
-      (operation arc3_random.execute_action)
+      (operation arc3_random.load_game_metta_data)
       (dependsOn ([]
-        propose_action
+        select_game
+      ))
+      (inputs (
+        (game $game)
+        (workspace_root $workspace_root)
+      ))
+      (outputs (
+        (session game_session)
+        (controls action_table)
+        (initial_screenshot initial_screenshot)
+      ))
+    )
+    (
+      (id curate_selected_game_gallery)
+      (label "Curate Viewable Gallery")
+      (kind operation)
+      (operation arc3_random.curate_viewable_gallery)
+      (probe (
+        (enabled false)
+        (required false)
+        (blocking false)
+      ))
+      (dependsOn ([]
+        load_game_metta_data
+      ))
+      (inputs (
+        (game $game)
+        (session $game_session)
+      ))
+      (outputs (
+        (gallery selected_game_gallery)
+      ))
+    )
+    (
+      (id initialize_selected_game)
+      (label "Initialize Selected ARC Game")
+      (kind operation)
+      (operation arc3_random.initialize_selected_game)
+      (dependsOn ([]
+        load_game_metta_data
       ))
       (inputs (
         (session $game_session)
-        (proposal $proposal)
       ))
       (outputs (
+        (session initialized_game_session)
+        (result initialization_result)
+        (initial_screenshot initial_game_screenshot)
+      ))
+    )
+    (
+      (id pick_random_move_and_execute)
+      (label "Pick Random Move and Execute It")
+      (kind operation)
+      (operation arc3_random.pick_random_move_and_execute)
+      (dependsOn ([]
+        initialize_selected_game
+      ))
+      (inputs (
+        (session $initialized_game_session)
+        (controls $action_table)
+        (game $game)
+        (memory $memory)
+        (seed $seed)
+        (move_limit $move_limit)
+      ))
+      (outputs (
+        (session moved_game_session)
+        (before before)
+        (proposal proposal)
         (result action_result)
+        (next_screenshot next_screenshot)
+        (replay_gallery replay_gallery)
+        (animated_replay animated_replay)
       ))
     )
     (
@@ -186,11 +218,11 @@
       (kind operation)
       (operation arc3_random.capture_observation)
       (dependsOn ([]
-        execute_action
+        pick_random_move_and_execute
       ))
       (inputs (
         (game $game)
-        (frame_path $action_result.frame_path)
+        (frame_path $next_screenshot)
         (state $action_result.state)
         (level $action_result.level)
       ))
@@ -204,7 +236,7 @@
       (kind operation)
       (operation arc3_random.assess_transition)
       (dependsOn ([]
-        capture_before
+        pick_random_move_and_execute
         capture_after
       ))
       (inputs (
@@ -234,20 +266,89 @@
       ))
     )
     (
-      (id decide_repeat_or_rotate)
-      (label "Repeat or rotate after the time budget")
+      (id ask_if_seen_enough)
+      (label "Have You Seen Enough?")
       (kind operation)
-      (operation arc3_random.should_rotate)
+      (operation arc3_random.seen_enough)
       (dependsOn ([]
         remember_outcome
       ))
-      (inputs (
-        (started_monotonic $started_monotonic)
-        (duration_seconds $seconds_per_game)
-        (now_monotonic $now_monotonic)
-      ))
+      (inputs ())
       (outputs (
         (rotate rotate)
+      ))
+    )
+    (
+      (id filter_games_for_next_selection)
+      (label "Filter Games for Next Selection")
+      (kind operation)
+      (operation arc3_random.filter_unplayed_games)
+      (dependsOn ([]
+        ask_if_seen_enough
+        discover_games
+        remember_selected_game
+      ))
+      (inputs (
+        (games $games)
+        (played_games $played_games_after_selection)
+      ))
+      (outputs (
+        (games games_for_next_selection)
+      ))
+    )
+    (
+      (id select_next_game)
+      (label "Select Another Unplayed Game")
+      (kind operation)
+      (operation arc3_random.select_game)
+      (implementationVariant arc3_random.select_game.random)
+      (dependsOn ([]
+        filter_games_for_next_selection
+      ))
+      (inputs (
+        (games $games_for_next_selection)
+        (previous_game_id $game.game_id)
+        (seed $seed)
+      ))
+      (outputs (
+        (game next_game)
+      ))
+    )
+    (
+      (id remember_next_game)
+      (label "Remember Next Selected Game")
+      (kind operation)
+      (operation arc3_random.remember_played_game)
+      (dependsOn ([]
+        select_next_game
+        remember_selected_game
+      ))
+      (inputs (
+        (played_games $played_games_after_selection)
+        (game $next_game)
+      ))
+      (outputs (
+        (played_games played_games_after_next_selection)
+      ))
+    )
+    (
+      (id play_all_remaining_games_automatically)
+      (label "Automatically Play Every Remaining Game")
+      (kind operation)
+      (operation arc3_random.run_session)
+      (dependsOn ([]
+        discover_games
+      ))
+      (inputs (
+        (workspace_root $workspace_root)
+        (seconds_per_game $seconds_per_game)
+        (max_games null)
+        (move_limit $move_limit)
+        (seed $seed)
+        (mode $mode)
+      ))
+      (outputs (
+        (sessions automatic_sessions)
       ))
     )
   ))

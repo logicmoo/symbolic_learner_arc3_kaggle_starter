@@ -79,7 +79,7 @@ LLM implementations bind an abstract Operation to a model or Model Preset and on
 
 ### Complete titlecase example
 
-The `titlecase_demo` workflow points only to the abstract Operation and maps workflow data into and out of it:
+The application workspace `titlecase_demo` owns a workflow that points only to the inherited abstract Operation and maps workflow data into and out of it:
 
 ```metta
 (

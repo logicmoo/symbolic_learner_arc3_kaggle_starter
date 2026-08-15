@@ -197,6 +197,7 @@ def materialize_workflow_step(workflow: dict[str, Any], step: dict[str, Any]) ->
         **dict(operation.get("parameters") or {}),
         **_implementation_parameters(implementation, step),
     }
+    parameters["_outputBindings"] = list((operation.get("outputs") or {}).keys())
     prompt_ids = [str(item) for item in bindings.get("prompts") or []]
     raw_profile_ids = bindings.get("promptProfiles") or ([] if not bindings.get("promptProfile") else [bindings.get("promptProfile")])
     if isinstance(raw_profile_ids, str):
@@ -229,6 +230,22 @@ def materialize_workflow_step(workflow: dict[str, Any], step: dict[str, Any]) ->
     executable_inputs = dict(step.get("inputs") or {})
     route = str(implementation.get("implementation") or "")
     capability = str(parameters.get("capability") or bindings.get("capability") or "")
+    if route == "human.await_input":
+        declared_form = parameters.get("form") or implementation.get("form") or {}
+        if not isinstance(declared_form, dict):
+            declared_form = {}
+        return {
+            **step,
+            "kind": "human",
+            "operation": operation["id"],
+            "implementation": route,
+            "implementationVariant": implementation["id"],
+            "parameters": parameters,
+            "form": declared_form,
+            "outputs": dict(step.get("outputs") or operation.get("outputs") or {}),
+            "resolvedPrompts": resolved_prompts,
+            "resolvedPromptProfiles": resolved_prompt_profiles,
+        }
     if route == "system.workbench" and capability == "input.request":
         output_binding = str(parameters.get("outputBinding") or "value")
         datatype = str(parameters.get("datatype") or (operation.get("outputs") or {}).get(output_binding) or "Any")

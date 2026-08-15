@@ -94,6 +94,8 @@ def credential_statuses(workspace_root: Path, backends: list[dict[str, Any]]) ->
         entry = entries.setdefault(name, {"environmentVariable": name, "backendIds": [], "backendLabels": []})
         entry["backendIds"].append(str(backend.get("id") or ""))
         entry["backendLabels"].append(str(backend.get("label") or backend.get("id") or name))
+        optional = bool(configuration.get("apiKeyOptional") or configuration.get("api_key_optional") or configuration.get("credentialRequired") is False)
+        entry["required"] = bool(entry.get("required", False) or not optional)
         bootstrap = configuration.get("credentialBootstrap")
         if isinstance(bootstrap, dict):
             entry["bootstrap"] = {
@@ -102,7 +104,7 @@ def credential_statuses(workspace_root: Path, backends: list[dict[str, Any]]) ->
             }
     for name, entry in entries.items():
         source = "workspace" if local.get(name) else "shared" if shared.get(name) else "environment" if os.environ.get(name) else "missing"
-        entry.update({"configured": source != "missing", "source": source})
+        entry.update({"configured": source != "missing", "source": source, "required": bool(entry.get("required", True))})
     return sorted(entries.values(), key=lambda item: item["environmentVariable"])
 
 

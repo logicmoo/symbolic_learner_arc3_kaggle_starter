@@ -6,12 +6,14 @@ import re
 import socket
 import subprocess
 import urllib.request
+import json
+import psutil
 from dataclasses import dataclass
 from io import StringIO
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Body, HTTPException, Request
 
 from resource_store import get_filesystem_provider
 from system_control_api import _is_loopback
@@ -20,6 +22,12 @@ from system_control_api import _is_loopback
 router = APIRouter()
 ROOT = Path(__file__).resolve().parents[2]
 LOG_ROOT = ROOT / "runtime" / "logs"
+STARTUP_POLICY_PATH = (
+    ROOT / "workbench" / "workspaces" / "shared_library_system" / "policies"
+    / "workbench_startup.workbench_startup_policy.json"
+)
+LEGACY_STARTUP_POLICY_PATH = ROOT / "config" / "workbench_startup.json"
+MANAGED_SERVICE_DIRECTORY = ROOT / "workbench" / "workspaces" / "shared_library_system" / "design" / "services"
 
 
 @dataclass(frozen=True)
@@ -31,24 +39,35 @@ class ServiceDefinition:
     health_path: str
     launcher: Path | None = None
     controllable: bool = False
+    command_patterns: tuple[str, ...] = ()
+    working_directory: Path = ROOT
+    allow_kill: bool = True
+    allow_relaunch: bool = True
+    default_start: bool = True
+    default_hidden: bool = False
+    singleton: bool = False
 
 
 MANAGED_SERVICES = (
     ServiceDefinition(
         "channel-relay", "Mailbox Channel Relay Proxy", "Standalone mailbox and chat-platform bridging proxy daemon.", 46667, "/health",
         ROOT.parent / "mailbox_channel" / "mailbox-server.cmd", True,
+        ("mailbox-server", "mailbox_channel"),
     ),
     ServiceDefinition(
         "clawrouter", "ClawRouter", "Keyless local model-routing gateway.", 3456, "/health",
         ROOT / "workbench" / "scripts" / "run_clawrouter.bat", True,
+        ("clawrouter",),
     ),
     ServiceDefinition(
         "omniroute", "OmniRoute", "Local multi-provider routing gateway.", 20128, "/",
         ROOT / "workbench" / "scripts" / "run_omniroute.bat", True,
+        ("omniroute", "omni-route"),
     ),
     ServiceDefinition(
         "freerouter", "FreeRouter", "Local gateway pinned to OpenRouter's free route.", 18800, "/health",
         ROOT / "workbench" / "scripts" / "run_freerouter.bat", True,
+        ("freerouter",),
     ),
 )
 
@@ -100,6 +119,105 @@ def _process_name(pid: int | None) -> str | None:
     return rows[0][0]
 
 
+def _system_processes() -> list[dict[str, Any]]:
+    """Return enough OS process metadata to recognize equivalent external launches."""
+    if os.name != "nt":
+        return []
+    script = (
+        "Get-CimInstance Win32_Process | Select-Object ProcessId,ParentProcessId,Name,CommandLine | "
+        "ConvertTo-Json -Compress"
+    )
+    completed = subprocess.run(
+        ["powershell", "-NoProfile", "-Command", script], capture_output=True, text=True,
+        encoding="utf-8", errors="replace", timeout=10, check=False,
+    )
+    if completed.returncode != 0 or not completed.stdout.strip():
+        return []
+    try:
+        document = json.loads(completed.stdout)
+    except json.JSONDecodeError:
+        return []
+    rows = document if isinstance(document, list) else [document]
+    return [row for row in rows if isinstance(row, dict)]
+
+
+def _matching_processes(
+    definition: ServiceDefinition,
+    processes: list[dict[str, Any]],
+    listener_pid: int | None,
+) -> list[dict[str, Any]]:
+    matches: dict[int, dict[str, Any]] = {}
+    processes_by_pid = {
+        int(process["ProcessId"]): process
+        for process in processes if str(process.get("ProcessId") or "").isdigit()
+    }
+    process_names = {
+        int(process["ProcessId"]): str(process.get("Name") or "") or None
+        for process in processes if str(process.get("ProcessId") or "").isdigit()
+    }
+    patterns = tuple(pattern.lower() for pattern in definition.command_patterns)
+    for process in processes:
+        try:
+            pid = int(process.get("ProcessId"))
+        except (TypeError, ValueError):
+            continue
+        command = str(process.get("CommandLine") or "")
+        if pid != listener_pid and not any(pattern in command.lower() for pattern in patterns):
+            continue
+        try:
+            parent_pid = int(process.get("ParentProcessId"))
+        except (TypeError, ValueError):
+            parent_pid = None
+        parent_process = processes_by_pid.get(parent_pid) if parent_pid else None
+        matches[pid] = {
+            "pid": pid,
+            "processName": str(process.get("Name") or "") or None,
+            "commandLine": _redact(command),
+            "listener": pid == listener_pid,
+            "workingDirectory": _working_directory(pid),
+            "parentPid": parent_pid,
+            "parentProcessName": process_names.get(parent_pid) if parent_pid else None,
+            "parentWorkingDirectory": _working_directory(parent_pid) if parent_pid else None,
+            "parentCommandLine": _redact(str(parent_process.get("CommandLine") or "")) if parent_process else None,
+        }
+    if listener_pid and listener_pid not in matches:
+        parent_pid, parent_name, parent_working_directory, parent_command_line = _parent_process(listener_pid)
+        matches[listener_pid] = {
+            "pid": listener_pid, "processName": _process_name(listener_pid),
+            "commandLine": None, "listener": True,
+            "workingDirectory": _working_directory(listener_pid),
+            "parentPid": parent_pid, "parentProcessName": parent_name,
+            "parentWorkingDirectory": parent_working_directory,
+            "parentCommandLine": parent_command_line,
+        }
+    return sorted(matches.values(), key=lambda item: (not item["listener"], item["pid"]))
+
+
+def _working_directory(pid: int) -> str | None:
+    try:
+        return psutil.Process(pid).cwd()
+    except (psutil.Error, OSError):
+        return None
+
+
+def _parent_process(pid: int) -> tuple[int | None, str | None, str | None, str | None]:
+    try:
+        parent = psutil.Process(pid).parent()
+        if not parent:
+            return None, None, None, None
+        try:
+            working_directory = parent.cwd()
+        except (psutil.Error, OSError):
+            working_directory = None
+        try:
+            command_line = _redact(" ".join(parent.cmdline()))
+        except (psutil.Error, OSError):
+            command_line = None
+        return parent.pid, parent.name(), working_directory, command_line
+    except (psutil.Error, OSError):
+        return None, None, None, None
+
+
 def _port_open(port: int) -> bool:
     try:
         with socket.create_connection(("127.0.0.1", port), timeout=0.3):
@@ -128,48 +246,212 @@ def _tail(path: Path, line_count: int = 60) -> str:
     return _redact("\n".join(lines[-line_count:]))
 
 
-def _service_payload(definition: ServiceDefinition, listeners: dict[int, int]) -> dict[str, Any]:
+def _service_payload(
+    definition: ServiceDefinition,
+    listeners: dict[int, int],
+    processes: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
     pid = listeners.get(definition.port)
+    matches = _matching_processes(definition, processes or [], pid)
     status = _health(definition.port, definition.health_path) if pid or _port_open(definition.port) else "stopped"
+    detected = status != "stopped" or bool(matches)
+    if status == "stopped" and matches:
+        status = "process detected"
     return {
         "id": definition.id,
         "label": definition.label,
         "description": definition.description,
         "port": definition.port,
         "status": status,
-        "running": status != "stopped",
+        "running": detected,
+        "listening": pid is not None,
         "pid": pid,
         "processName": _process_name(pid),
+        "processes": matches,
+        "matchingProcessCount": len(matches),
         "controllable": definition.controllable,
         "launcher": (
             str(definition.launcher.relative_to(ROOT))
             if definition.launcher and definition.launcher.is_relative_to(ROOT)
             else str(definition.launcher) if definition.launcher else None
         ),
+        "workingDirectory": str(definition.working_directory),
+        "commandPatterns": list(definition.command_patterns),
+        "allowKill": definition.allow_kill,
+        "allowRelaunch": definition.allow_relaunch,
+        "singleton": definition.singleton,
         "stdout": _tail(LOG_ROOT / f"{definition.id}.stdout.log"),
         "stderr": _tail(LOG_ROOT / f"{definition.id}.stderr.log"),
     }
 
 
-def _definitions(api_port: int) -> tuple[ServiceDefinition, ...]:
+def _builtin_definitions(api_port: int) -> tuple[ServiceDefinition, ...]:
     return (
-        ServiceDefinition("workbench-api", "Workbench API", "Active FastAPI development server.", api_port, "/api/health"),
-        ServiceDefinition("workbench-web", "Workbench Web", "Active Vite development frontend.", int(os.getenv("WORKBENCH_WEB_PORT", "5173")), "/"),
+        ServiceDefinition(
+            "workbench-api", "Workbench API", "Active Python API development server.", api_port, "/api/health",
+            command_patterns=("run_api_server.py", "uvicorn", "flask"),
+        ),
+        ServiceDefinition(
+            "workbench-web", "Workbench Web", "Active Vite development frontend.",
+            int(os.getenv("WORKBENCH_WEB_PORT", "5173")), "/", command_patterns=("vite",),
+        ),
         *MANAGED_SERVICES,
     )
 
 
+def _read_policy_resource() -> dict[str, Any]:
+    resources = get_filesystem_provider()
+    source_path = STARTUP_POLICY_PATH if resources.is_file(STARTUP_POLICY_PATH) else LEGACY_STARTUP_POLICY_PATH
+    if not resources.is_file(source_path):
+        return {}
+    try:
+        document = resources.read_json(source_path)
+        return document if isinstance(document, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def _read_managed_service_resources() -> dict[str, dict[str, Any]]:
+    resources = get_filesystem_provider()
+    configured: dict[str, dict[str, Any]] = {}
+    if not resources.is_dir(MANAGED_SERVICE_DIRECTORY):
+        return configured
+    for path in resources.glob(MANAGED_SERVICE_DIRECTORY.parent.parent, ("design/services",), "*.managed_service.json"):
+        try:
+            documents = resources.read_json_documents(path)
+        except (OSError, ValueError):
+            continue
+        for document in documents:
+            if isinstance(document, dict) and document.get("kind") == "managed_service" and document.get("id"):
+                configured[str(document["id"])] = document
+    return configured
+
+
+def _configured_definition(service_id: str, value: dict[str, Any], fallback: ServiceDefinition | None) -> ServiceDefinition | None:
+    launcher_value = value.get("launcher")
+    launcher = Path(str(launcher_value)) if launcher_value else fallback.launcher if fallback else None
+    if launcher and not launcher.is_absolute():
+        launcher = ROOT / launcher
+    if launcher:
+        launcher = launcher.resolve()
+    working_value = value.get("workingDirectory")
+    working_directory = Path(str(working_value)) if working_value else fallback.working_directory if fallback else ROOT
+    if not working_directory.is_absolute():
+        working_directory = ROOT / working_directory
+    working_directory = working_directory.resolve()
+    try:
+        port = int(value.get("port", fallback.port if fallback else 0))
+    except (TypeError, ValueError):
+        return None
+    patterns_value = value.get("commandPatterns", fallback.command_patterns if fallback else ())
+    patterns = tuple(str(item) for item in patterns_value) if isinstance(patterns_value, (list, tuple)) else ()
+    if not port and not patterns:
+        return None
+    return ServiceDefinition(
+        service_id, str(value.get("label") or (fallback.label if fallback else service_id)),
+        str(value.get("description") or (fallback.description if fallback else "Configured managed process.")),
+        port, str(value.get("healthPath") or (fallback.health_path if fallback else "/")), launcher,
+        value.get("controllable", fallback.controllable if fallback else bool(launcher)) is True,
+        patterns, working_directory,
+        value.get("allowKill", fallback.allow_kill if fallback else True) is True,
+        value.get("allowRelaunch", fallback.allow_relaunch if fallback else True) is True,
+        (value.get("defaultStartup") or {}).get("start", fallback.default_start if fallback else True) is True,
+        (value.get("defaultStartup") or {}).get("hidden", fallback.default_hidden if fallback else False) is True,
+        value.get("singleton", fallback.singleton if fallback else False) is True,
+    )
+
+
+def _definitions(api_port: int) -> tuple[ServiceDefinition, ...]:
+    builtins = {item.id: item for item in _builtin_definitions(api_port)}
+    configured = _read_managed_service_resources()
+    if not configured:
+        return tuple(builtins.values())
+    definitions: dict[str, ServiceDefinition] = dict(builtins)
+    for service_id, value in configured.items():
+        if isinstance(value, dict):
+            definition = _configured_definition(str(service_id), value, builtins.get(str(service_id)))
+            if definition:
+                definitions[str(service_id)] = definition
+    return tuple(definitions.values())
+
+
+def _startup_policy() -> dict[str, dict[str, bool]]:
+    defaults = {item.id: {"start": item.default_start, "hiddenWindow": item.default_hidden, "hideFromProcessViewer": False} for item in _definitions(8000)}
+    document = _read_policy_resource()
+    configured = document.get("services") if isinstance(document, dict) else None
+    if not isinstance(configured, dict):
+        return defaults
+    for service_id, value in configured.items():
+        if service_id in defaults and isinstance(value, dict):
+            defaults[service_id] = {"start": value.get("start") is True, "hiddenWindow": value.get("hiddenWindow", value.get("hidden")) is True, "hideFromProcessViewer": value.get("hideFromProcessViewer") is True}
+    return defaults
+
+
+def _startup_policy_document() -> dict[str, Any]:
+    document = _read_policy_resource()
+    configured = document.get("services") if isinstance(document.get("services"), dict) else {}
+    services: dict[str, Any] = {}
+    for definition in _definitions(8000):
+        existing = configured.get(definition.id) if isinstance(configured.get(definition.id), dict) else {}
+        services[definition.id] = {
+            "start": existing.get("start", definition.default_start) is True,
+            "hiddenWindow": existing.get("hiddenWindow", existing.get("hidden", definition.default_hidden)) is True,
+            "hideFromProcessViewer": existing.get("hideFromProcessViewer") is True,
+        }
+    return {
+        **document,
+        "kind": "workbench_startup_policy", "id": "workbench_startup",
+        "label": "Managed Process Startup Policy", "services": services,
+    }
+
+
+@router.get("/system/startup")
+def get_startup_policy() -> dict[str, Any]:
+    document = _startup_policy_document()
+    return {"services": document["services"], "document": document, "path": str(STARTUP_POLICY_PATH)}
+
+
+@router.put("/system/startup")
+def update_startup_policy(request: Request, body: dict[str, Any] = Body(...)) -> dict[str, Any]:
+    _require_local(request)
+    incoming_document = body.get("document")
+    if incoming_document is not None and not isinstance(incoming_document, dict):
+        raise HTTPException(status_code=400, detail="document must be an object")
+    incoming = (incoming_document or body).get("services")
+    if not isinstance(incoming, dict):
+        raise HTTPException(status_code=400, detail="services must be an object")
+    normalized: dict[str, Any] = {}
+    for service_id, value in incoming.items():
+        if not isinstance(value, dict):
+            raise HTTPException(status_code=400, detail=f"Invalid service policy: {service_id}")
+        if service_id not in {item.id for item in _definitions(8000)}:
+            raise HTTPException(status_code=400, detail=f"Unknown managed service: {service_id}")
+        normalized[str(service_id)] = {"start": value.get("start") is True, "hiddenWindow": value.get("hiddenWindow", value.get("hidden")) is True, "hideFromProcessViewer": value.get("hideFromProcessViewer") is True}
+    resources = get_filesystem_provider()
+    resources.make_directory(STARTUP_POLICY_PATH.parent)
+    document = {
+        **(incoming_document or {}), "kind": "workbench_startup_policy",
+        "id": "workbench_startup", "services": normalized,
+    }
+    resources.write_json(STARTUP_POLICY_PATH, document)
+    return {"services": _startup_policy(), "document": document, "path": str(STARTUP_POLICY_PATH)}
+
+
 @router.get("/system/services")
-def list_services(request: Request) -> dict[str, Any]:
+def list_services(request: Request, include_hidden: bool = False) -> dict[str, Any]:
     api_port = request.url.port or 8000
     listeners = _listener_pids()
-    services = [_service_payload(item, listeners) for item in _definitions(api_port)]
+    processes = _system_processes()
+    services = [_service_payload(item, listeners, processes) for item in _definitions(api_port)]
+    if not include_hidden:
+        policy = _startup_policy()
+        services = [item for item in services if not policy.get(item["id"], {}).get("hideFromProcessViewer")]
     return {"services": services, "running": sum(1 for item in services if item["running"])}
 
 
 def _managed(service_id: str) -> ServiceDefinition:
-    definition = next((item for item in MANAGED_SERVICES if item.id == service_id), None)
-    if definition is None:
+    definition = next((item for item in _definitions(8000) if item.id == service_id), None)
+    if definition is None or not definition.controllable or not definition.launcher:
         raise HTTPException(status_code=404, detail="Unknown controllable workbench service")
     return definition
 
@@ -182,6 +464,8 @@ def _require_local(request: Request) -> None:
 def _start(definition: ServiceDefinition) -> None:
     if _port_open(definition.port):
         return
+    if definition.singleton and _matching_processes(definition, _system_processes(), None):
+        return
     assert definition.launcher is not None
     resources = get_filesystem_provider()
     resources.make_directory(LOG_ROOT)
@@ -191,7 +475,7 @@ def _start(definition: ServiceDefinition) -> None:
     try:
         subprocess.Popen(
             [os.environ.get("COMSPEC", "cmd.exe"), "/d", "/c", str(definition.launcher)],
-            cwd=ROOT, stdin=subprocess.DEVNULL, stdout=stdout_handle, stderr=stderr_handle,
+            cwd=definition.working_directory, stdin=subprocess.DEVNULL, stdout=stdout_handle, stderr=stderr_handle,
             creationflags=flags, close_fds=False,
         )
     finally:
@@ -213,6 +497,25 @@ def _stop(definition: ServiceDefinition) -> None:
         raise HTTPException(status_code=500, detail=_redact(completed.stderr.strip() or "Unable to stop service"))
 
 
+def _kill_pid(pid: int) -> None:
+    """Terminate only the selected PID; service-level controls own tree termination."""
+    if os.name != "nt":
+        raise HTTPException(status_code=501, detail="Process killing is currently implemented for Windows")
+    completed = subprocess.run(
+        ["taskkill", "/PID", str(pid), "/F"], capture_output=True, text=True,
+        encoding="utf-8", errors="replace", timeout=15, check=False,
+    )
+    if completed.returncode != 0 and psutil.pid_exists(pid):
+        raise HTTPException(status_code=500, detail=_redact(completed.stderr.strip() or "Unable to kill process"))
+
+
+def _require_matching_pid(definition: ServiceDefinition, pid: int) -> None:
+    listener_pid = _listener_pids().get(definition.port)
+    matches = _matching_processes(definition, _system_processes(), listener_pid)
+    if pid not in {item["pid"] for item in matches}:
+        raise HTTPException(status_code=409, detail="PID no longer matches this service; refresh Processes")
+
+
 @router.post("/system/services/{service_id}/{action}")
 def control_service(service_id: str, action: str, request: Request) -> dict[str, str]:
     _require_local(request)
@@ -227,3 +530,20 @@ def control_service(service_id: str, action: str, request: Request) -> dict[str,
     else:
         raise HTTPException(status_code=400, detail="Action must be start, stop, or restart")
     return {"status": action, "serviceId": service_id}
+
+
+@router.post("/system/services/{service_id}/processes/{pid}/{action}")
+def control_matching_process(service_id: str, pid: int, action: str, request: Request) -> dict[str, Any]:
+    _require_local(request)
+    definition = _managed(service_id)
+    _require_matching_pid(definition, pid)
+    if action not in {"kill", "relaunch"}:
+        raise HTTPException(status_code=400, detail="Action must be kill or relaunch")
+    if action == "kill" and not definition.allow_kill:
+        raise HTTPException(status_code=403, detail="Killing is disabled by the managed process policy")
+    if action == "relaunch" and not definition.allow_relaunch:
+        raise HTTPException(status_code=403, detail="Relaunching is disabled by the managed process policy")
+    _kill_pid(pid)
+    if action == "relaunch":
+        _start(definition)
+    return {"status": action, "serviceId": service_id, "pid": pid, "terminationScope": "selected-pid-only"}

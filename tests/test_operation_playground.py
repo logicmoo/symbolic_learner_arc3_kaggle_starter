@@ -62,6 +62,35 @@ def test_operation_playground_invokes_python_variant() -> None:
     assert trace["providerExecution"]["stderr"] == ""
 
 
+def test_operation_playground_materializes_human_input_variant() -> None:
+    executable = materialize_workflow_step(
+        {"id": "playground", "workspaceId": "arc3_random_player"},
+        {
+            "id": "select_game",
+            "operation": "arc3_random.select_game",
+            "implementationVariant": "arc3_random.select_game.manual",
+            "inputs": {"games": [], "previous_game_id": "", "seed": 0},
+        },
+    )
+
+    assert executable["kind"] == "human"
+    assert executable["implementation"] == "human.await_input"
+    assert executable["form"]["game"]["prompt"] == "Enter the ARC game name or ID"
+    assert executable["outputs"] == {"game": "Object"}
+
+    response = invoke_operation(
+        "arc3_random_player",
+        "arc3_random.select_game",
+        {
+            "implementationVariant": "arc3_random.select_game.manual",
+            "inputs": {"games": [], "previous_game_id": "", "seed": 0},
+        },
+    )
+    assert response["implementation"]["route"] == "human.await_input"
+    assert response["outputs"]["status"] == "waiting_for_input"
+    assert response["outputs"]["form"]["game"]["prompt"] == "Enter the ARC game name or ID"
+
+
 def test_resource_tool_operations_execute_real_filesystem_resources() -> None:
     atomspace = {
         "kind": "atomspace",
@@ -96,6 +125,22 @@ def test_python_provider_captures_stdout_and_stderr(monkeypatch: pytest.MonkeyPa
     assert debug["stderr"] == "stderr: hello\n"
 
 
+def test_python_provider_preserves_declared_multiple_outputs(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        "workflow_providers._load_python_module",
+        lambda _source: SimpleNamespace(run=lambda: {"session": {"handle": "abc"}, "controls": ["RESET"]}),
+    )
+    parameters = {
+        "source": {"importMode": "module", "module": "fake", "callable": "run"},
+        "_outputBindings": ["session", "controls"],
+    }
+
+    assert _python_callable({}, parameters) == {
+        "session": {"handle": "abc"},
+        "controls": ["RESET"],
+    }
+
+
 def test_file_python_provider_can_import_sibling_modules(tmp_path: Path) -> None:
     (tmp_path / "sibling_helper.py").write_text(
         "def answer():\n    return 42\n",
@@ -110,6 +155,22 @@ def test_file_python_provider_can_import_sibling_modules(tmp_path: Path) -> None
     module = _load_python_module({"importMode": "file", "file": str(entrypoint)})
 
     assert module.run() == 42
+
+
+def test_file_python_provider_reuses_module_state(tmp_path: Path) -> None:
+    entrypoint = tmp_path / "stateful.py"
+    entrypoint.write_text(
+        "counter = 0\n\ndef increment():\n    global counter\n    counter += 1\n    return counter\n",
+        encoding="utf-8",
+    )
+    source = {"importMode": "file", "file": str(entrypoint)}
+
+    first = _load_python_module(source)
+    second = _load_python_module(source)
+
+    assert first is second
+    assert first.increment() == 1
+    assert second.increment() == 2
 
 
 @pytest.mark.skipif(shutil.which("swipl") is None, reason="SWI-Prolog is not installed")

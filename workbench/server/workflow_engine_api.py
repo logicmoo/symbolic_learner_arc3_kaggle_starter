@@ -98,6 +98,7 @@ def start_run(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
         return {'run': engine.start(
             str(body['workflowId']), body.get('inputs') or {}, body.get('version'),
             workspace_id=str(body.get('workspaceId') or '').strip() or None,
+            state_values=body.get('stateValues') or [],
         )}
     except (ValueError, KeyError) as error:
         raise _http(error) from error

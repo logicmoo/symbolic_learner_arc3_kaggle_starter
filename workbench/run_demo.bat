@@ -102,11 +102,13 @@ echo Checking ClawRouter on 127.0.0.1:%CLAWROUTER_PORT%...
 powershell -NoProfile -ExecutionPolicy Bypass -Command "try { $r=Invoke-WebRequest -UseBasicParsing '%CLAWROUTER_HEALTH_URL%' -TimeoutSec 2; if ($r.StatusCode -eq 200) { exit 0 } } catch {}; exit 1" >nul 2>nul
 if errorlevel 1 (
   echo Starting the local ClawRouter proxy on 127.0.0.1:%CLAWROUTER_PORT%...
-  start "ClawRouter %CLAWROUTER_PORT%" /D "%ROOT%" "%ComSpec%" /k scripts\run_clawrouter.bat %CLAWROUTER_PORT%
-  echo Waiting for ClawRouter...
-  powershell -NoProfile -ExecutionPolicy Bypass -Command "$limit=(Get-Date).AddSeconds(120); do { try { $r=Invoke-WebRequest -UseBasicParsing '%CLAWROUTER_HEALTH_URL%' -TimeoutSec 2; if ($r.StatusCode -eq 200) { exit 0 } } catch {}; Start-Sleep -Milliseconds 500 } while ((Get-Date) -lt $limit); exit 1"
-  if errorlevel 1 (
-    echo WARNING: ClawRouter did not answer yet. Check the ClawRouter %CLAWROUTER_PORT% window.
+  "%WORKBENCH_PYTHON%" "%ROOT%scripts\start_with_policy.py" --service clawrouter --cwd "%ROOT%" "%ComSpec%" /d /c scripts\run_clawrouter.bat %CLAWROUTER_PORT%
+  if errorlevel 3 (
+    echo ClawRouter startup is disabled in System Settings.
+  ) else (
+    echo Waiting for ClawRouter...
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "$limit=(Get-Date).AddSeconds(120); do { try { $r=Invoke-WebRequest -UseBasicParsing '%CLAWROUTER_HEALTH_URL%' -TimeoutSec 2; if ($r.StatusCode -eq 200) { exit 0 } } catch {}; Start-Sleep -Milliseconds 500 } while ((Get-Date) -lt $limit); exit 1"
+    if errorlevel 1 echo WARNING: ClawRouter did not answer yet. Check its configured process window.
   )
 ) else (
   echo ClawRouter is already running.
@@ -116,11 +118,13 @@ echo Checking OmniRoute on 127.0.0.1:%OMNIROUTE_PORT%...
 powershell -NoProfile -ExecutionPolicy Bypass -Command "try { $r=Invoke-WebRequest -UseBasicParsing '%OMNIROUTE_URL%/' -TimeoutSec 3; if ($r.StatusCode -eq 200) { exit 0 } } catch {}; exit 1" >nul 2>nul
 if errorlevel 1 (
   echo Starting the local OmniRoute gateway on 127.0.0.1:%OMNIROUTE_PORT%...
-  start "OmniRoute %OMNIROUTE_PORT%" /D "%ROOT%" "%ComSpec%" /k scripts\run_omniroute.bat %OMNIROUTE_PORT%
-  echo Waiting for OmniRoute...
-  powershell -NoProfile -ExecutionPolicy Bypass -Command "$limit=(Get-Date).AddSeconds(240); do { try { $r=Invoke-WebRequest -UseBasicParsing '%OMNIROUTE_URL%/' -TimeoutSec 3; if ($r.StatusCode -eq 200) { exit 0 } } catch {}; Start-Sleep -Seconds 1 } while ((Get-Date) -lt $limit); exit 1"
-  if errorlevel 1 (
-    echo WARNING: OmniRoute did not answer yet. Check the OmniRoute %OMNIROUTE_PORT% window.
+  "%WORKBENCH_PYTHON%" "%ROOT%scripts\start_with_policy.py" --service omniroute --cwd "%ROOT%" "%ComSpec%" /d /c scripts\run_omniroute.bat %OMNIROUTE_PORT%
+  if errorlevel 3 (
+    echo OmniRoute startup is disabled in System Settings.
+  ) else (
+    echo Waiting for OmniRoute...
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "$limit=(Get-Date).AddSeconds(240); do { try { $r=Invoke-WebRequest -UseBasicParsing '%OMNIROUTE_URL%/' -TimeoutSec 3; if ($r.StatusCode -eq 200) { exit 0 } } catch {}; Start-Sleep -Seconds 1 } while ((Get-Date) -lt $limit); exit 1"
+    if errorlevel 1 echo WARNING: OmniRoute did not answer yet. Check its configured process window.
   )
 ) else (
   echo OmniRoute is already running.
@@ -135,18 +139,20 @@ echo Checking FreeRouter on 127.0.0.1:%FREEROUTER_PORT%...
 powershell -NoProfile -ExecutionPolicy Bypass -Command "try { $r=Invoke-WebRequest -UseBasicParsing '%FREEROUTER_URL%/health' -TimeoutSec 3; if ($r.StatusCode -eq 200) { exit 0 } } catch {}; exit 1" >nul 2>nul
 if errorlevel 1 (
   echo Starting the local FreeRouter gateway on 127.0.0.1:%FREEROUTER_PORT%...
-  start "FreeRouter %FREEROUTER_PORT%" /D "%ROOT%" "%ComSpec%" /k scripts\run_freerouter.bat
-  echo Waiting for FreeRouter...
-  powershell -NoProfile -ExecutionPolicy Bypass -Command "$limit=(Get-Date).AddSeconds(180); do { try { $r=Invoke-WebRequest -UseBasicParsing '%FREEROUTER_URL%/health' -TimeoutSec 3; if ($r.StatusCode -eq 200) { exit 0 } } catch {}; Start-Sleep -Seconds 1 } while ((Get-Date) -lt $limit); exit 1"
-  if errorlevel 1 (
-    echo WARNING: FreeRouter did not answer yet. Check the FreeRouter %FREEROUTER_PORT% window.
+  "%WORKBENCH_PYTHON%" "%ROOT%scripts\start_with_policy.py" --service freerouter --cwd "%ROOT%" "%ComSpec%" /d /c scripts\run_freerouter.bat
+  if errorlevel 3 (
+    echo FreeRouter startup is disabled in System Settings.
+  ) else (
+    echo Waiting for FreeRouter...
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "$limit=(Get-Date).AddSeconds(180); do { try { $r=Invoke-WebRequest -UseBasicParsing '%FREEROUTER_URL%/health' -TimeoutSec 3; if ($r.StatusCode -eq 200) { exit 0 } } catch {}; Start-Sleep -Seconds 1 } while ((Get-Date) -lt $limit); exit 1"
+    if errorlevel 1 echo WARNING: FreeRouter did not answer yet. Check its configured process window.
   )
 ) else (
   echo FreeRouter is already running.
 )
 
 echo Starting the local event backend on %BIND_IP%:%API_PORT%...
-start "MeTTa Workbench API %API_PORT%" /D "%ROOT%" "%ComSpec%" /k scripts\run_api_server.bat %BIND_IP% %API_PORT%
+"%WORKBENCH_PYTHON%" "%ROOT%scripts\start_with_policy.py" --service workbench-api --cwd "%ROOT%" "%ComSpec%" /d /c scripts\run_api_server.bat %BIND_IP% %API_PORT%
 
 echo Waiting for the backend...
 powershell -NoProfile -ExecutionPolicy Bypass -Command "$limit=(Get-Date).AddSeconds(45); $url='%API_HEALTH_URL%'; do { try { $r=Invoke-WebRequest -UseBasicParsing $url -TimeoutSec 2; if ($r.StatusCode -eq 200) { exit 0 } } catch {}; Start-Sleep -Milliseconds 400 } while ((Get-Date) -lt $limit); exit 1"
@@ -155,7 +161,7 @@ if errorlevel 1 (
 )
 
 echo Starting the live-editing web interface on %BIND_IP%:%WEB_PORT%...
-start "MeTTa Workbench Vite %WEB_PORT%" /D "%ROOT%" "%ComSpec%" /k scripts\run_vite_server.bat %BIND_IP% %WEB_PORT% %API_URL%
+"%WORKBENCH_PYTHON%" "%ROOT%scripts\start_with_policy.py" --service workbench-web --cwd "%ROOT%" "%ComSpec%" /d /c scripts\run_vite_server.bat %BIND_IP% %WEB_PORT% %API_URL%
 
 echo Waiting for the website...
 powershell -NoProfile -ExecutionPolicy Bypass -Command "$limit=(Get-Date).AddSeconds(45); do { try { $r=Invoke-WebRequest -UseBasicParsing '%WEB_URL%' -TimeoutSec 2; if ($r.StatusCode -eq 200) { exit 0 } } catch {}; Start-Sleep -Milliseconds 400 } while ((Get-Date) -lt $limit); exit 1"

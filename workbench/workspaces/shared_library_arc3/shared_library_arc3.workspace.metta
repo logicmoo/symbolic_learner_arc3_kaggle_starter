@@ -9,4 +9,6 @@
       (includeInherited true)
     )
   ))
+  (workspaceType library)
+  (hidden false)
 )

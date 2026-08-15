@@ -7,7 +7,7 @@
     "Query the real ARC game catalog before choosing a game"
     "Persist every action with before/after image evidence and an outcome assessment"
     "Carry action-outcome memory into later attempts"
-    "Rotate games after the configured time budget"
+    "Continue one visible move at a time until the user has seen enough"
   ))
   (metadata (
     (domain arc3)

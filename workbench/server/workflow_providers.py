@@ -103,16 +103,29 @@ def _load_python_module(source: dict[str, Any]):
         if not get_filesystem_provider().is_file(path):
             raise ValueError(f"Python source file not found: {path}")
         dynamic_name = module_name or f"workbench_dynamic_{abs(hash(str(path)))}"
+        source_mtime_ns = path.stat().st_mtime_ns
+        cached_module = sys.modules.get(dynamic_name)
+        if (
+            not reload_module
+            and cached_module is not None
+            and getattr(cached_module, "__workbench_source_mtime_ns__", None) == source_mtime_ns
+        ):
+            return cached_module
         spec = importlib.util.spec_from_file_location(dynamic_name, path)
         if spec is None or spec.loader is None:
             raise ImportError(f"Could not load Python source file: {path}")
         module = importlib.util.module_from_spec(spec)
+        sys.modules[dynamic_name] = module
         source_directory = str(path.parent)
         added_source_directory = source_directory not in sys.path
         if added_source_directory:
             sys.path.insert(0, source_directory)
         try:
             spec.loader.exec_module(module)
+            module.__workbench_source_mtime_ns__ = source_mtime_ns
+        except Exception:
+            sys.modules.pop(dynamic_name, None)
+            raise
         finally:
             if added_source_directory:
                 try:
@@ -164,8 +177,12 @@ def _python_callable(inputs: dict[str, Any], parameters: dict[str, Any]) -> dict
             }
             debug.update({"className": class_name, "callable": callable_name, "args": args, "kwargs": kwargs})
             value = function(*args, **kwargs)
-        output_binding = str(parameters.get("outputBinding") or "value")
-        result = {output_binding: value}
+        output_bindings = [str(item) for item in parameters.get("_outputBindings") or []]
+        if len(output_bindings) > 1 and isinstance(value, dict):
+            result = {name: value.get(name) for name in output_bindings}
+        else:
+            output_binding = str(parameters.get("outputBinding") or (output_bindings[0] if len(output_bindings) == 1 else "value"))
+            result = {output_binding: value}
         debug["result"] = result
         return result
     except Exception as error:

@@ -260,6 +260,12 @@ reference/
 .codex-commit-message.txt
 .codex-tmp/
 .pytest-local/
+.pytest-codex/
+.pytest-tmp-echo/
+.codex/pytest-*/
+.codex/commit-validation-*/
+workbench/workspaces/.workspace-trash/
+config/workbench_startup.json
 workbench-ui-current.png
 
 # OS / editors

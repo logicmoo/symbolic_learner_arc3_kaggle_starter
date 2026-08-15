@@ -4,6 +4,10 @@ import json
 from pathlib import Path
 from types import SimpleNamespace
 
+from PIL import Image
+import pytest
+import arc3_random_player as arc3_random_player_module
+
 from arc3_random_player import (
     RandomArc3Player,
     assess_transition,
@@ -13,8 +17,16 @@ from arc3_random_player import (
     discover_games,
     enumerate_game_controls,
     execute_action,
+    filter_unplayed_games,
+    initialize_played_games,
+    load_game_metta_data,
+    pick_random_move_and_execute,
     populate_game_atomspace,
     query_game_metta,
+    remember_played_game,
+    run_random_arc3_session,
+    initialize_selected_game,
+    reset_selected_game,
     select_random_game,
     start_selected_game,
     update_learning_memory,
@@ -44,7 +56,8 @@ class FakeRunner:
 
     def _node(self, text):
         path = self.root / f"{self.step_count}.png"
-        path.write_bytes(text.encode("ascii"))
+        color = (sum(text.encode("ascii")) % 255, self.step_count % 255, 96, 255)
+        Image.new("RGBA", (8, 8), color).save(path)
         return SimpleNamespace(image_path=path)
 
     def state_name(self):
@@ -63,7 +76,18 @@ class FakeRunner:
         self.step_count += 1
         self._state = "PLAYING"
         self.current_node = self._node(f"{action}:{data}:{self.step_count}")
-        self.records.append({"action": action, "data": data})
+        self.records.append({"action": action, "data": data, "frame_path": str(self.current_node.image_path)})
+
+    def reset(self, *, clear_history=True):
+        self._state = "PLAYING"
+        if clear_history:
+            self.records.clear()
+        self.current_node = self._node("initialized")
+
+    def open(self):
+        self._state = "NOT_PLAYED"
+        self.records.clear()
+        self.current_node = self._node("opened")
 
     def save_history(self, path):
         Path(path).parent.mkdir(parents=True, exist_ok=True)
@@ -100,6 +124,16 @@ def test_select_game_random_implementation_delegates_without_immediate_repeat() 
     assert select_random_game(games, previous_game_id="a", seed=7) == {"game_id": "b"}
 
 
+def test_played_game_tracking_filters_random_selection_until_catalog_exhaustion() -> None:
+    games = [{"game_id": "a"}, {"game_id": "b"}, {"game_id": "c"}]
+    played = initialize_played_games()
+    assert played == []
+    played = remember_played_game(played, {"game_id": "b"})
+    assert played == ["b"]
+    assert [game["game_id"] for game in filter_unplayed_games(games, played)] == ["a", "c"]
+    assert [game["game_id"] for game in filter_unplayed_games(games, ["a", "b", "c"])] == ["a", "b", "c"]
+
+
 def test_selected_game_is_loaded_into_atomspace_started_and_enumerated(tmp_path: Path) -> None:
     source = tmp_path / "design" / "games" / "aa00.game.metta"
     source.parent.mkdir(parents=True)
@@ -117,6 +151,156 @@ def test_selected_game_is_loaded_into_atomspace_started_and_enumerated(tmp_path:
     assert "look for symmetry" in Path(atomspace["path"]).read_text(encoding="utf-8")
     assert [control["name"] for control in controls] == ["RESET", "ACTION1"]
     assert result["state"] == "PLAYING"
+
+
+def test_load_game_metta_data_returns_runnable_session_controls_and_first_screenshot(tmp_path: Path) -> None:
+    game = {"game_id": "aa00", "title": "Alpha", "tags": []}
+
+    loaded = load_game_metta_data(game, tmp_path, FakeRunner)
+
+    assert loaded["handle"]
+    assert loaded["session"]["handle"] == loaded["handle"]
+    assert loaded["state"] == "NOT_PLAYED"
+    assert loaded["initial_screenshot"] == loaded["frame_path"]
+    assert [control["name"] for control in loaded["controls"]] == ["RESET", "ACTION1"]
+    assert Path(loaded["atomspace"]["path"]).is_file()
+
+    initialized = initialize_selected_game(loaded)
+    assert initialized["session"]["state"] == "PLAYING"
+    assert initialized["result"]["initialized"] is True
+    assert initialized["result"]["moves_made"] == 0
+    assert Path(initialized["initial_screenshot"]).is_file()
+
+
+def test_load_game_metta_data_accepts_human_friendly_game_name(tmp_path: Path) -> None:
+    loaded = load_game_metta_data("ls20", tmp_path, FakeRunner)
+
+    assert loaded["game_id"] == "ls20"
+    assert Path(loaded["initial_screenshot"]).is_file()
+    observation = capture_observation(
+        loaded["initial_screenshot"], loaded["state"], loaded["level"], "ls20"
+    )
+    assert observation["game"]["game_id"] == "ls20"
+
+
+def test_initialization_does_not_depend_on_a_declared_reset_action(tmp_path: Path) -> None:
+    class NoResetRunner(FakeRunner):
+        def action_table(self):
+            return [{"index": 1, "name": "ACTION1", "complex": False}]
+
+    loaded = load_game_metta_data("ls20", tmp_path, NoResetRunner)
+    initialized = initialize_selected_game(loaded)
+
+    assert initialized["result"]["initialized"] is True
+    assert initialized["result"]["moves_made"] == 0
+    assert initialized["session"]["state"] == "PLAYING"
+    assert loaded["controls"] == [{"index": 1, "name": "ACTION1", "complex": False}]
+
+
+def test_reset_operation_resets_current_level_without_becoming_initialization_alias(tmp_path: Path) -> None:
+    loaded = load_game_metta_data("ls20", tmp_path, FakeRunner)
+    initialized = initialize_selected_game(loaded)
+    execute_action(initialized["session"], {"action": "ACTION1", "data": {}})
+
+    reset = reset_selected_game(initialized["session"])
+
+    assert reset["result"]["reset_executed"] is True
+    assert reset["result"]["reset_target"] == "level"
+    assert reset["result"]["message"] == "Current level restored to its last saved checkpoint"
+    assert Path(reset["reset_screenshot"]).is_file()
+
+
+def test_reset_operation_can_restart_entire_game(tmp_path: Path) -> None:
+    loaded = load_game_metta_data("ls20", tmp_path, FakeRunner)
+    initialized = initialize_selected_game(loaded)
+    execute_action(initialized["session"], {"action": "ACTION1", "data": {}})
+
+    reset = reset_selected_game(initialized["session"], target="game")
+
+    assert reset["result"]["reset_target"] == "game"
+    assert reset["result"]["message"] == "Entire game restarted from its first level"
+    assert reset["session"]["state"] == "PLAYING"
+
+
+def test_checkpoint_is_an_alias_for_level_reset(tmp_path: Path) -> None:
+    loaded = load_game_metta_data("ls20", tmp_path, FakeRunner)
+
+    reset = reset_selected_game(loaded, target="checkpoint")
+
+    assert reset["result"]["reset_target"] == "level"
+    assert reset["result"]["requested_target"] == "checkpoint"
+
+
+def test_reset_operation_rejects_unknown_target(tmp_path: Path) -> None:
+    loaded = load_game_metta_data("ls20", tmp_path, FakeRunner)
+
+    with pytest.raises(ValueError, match="level.*game"):
+        reset_selected_game(loaded, target="checkpoint-name-that-does-not-exist")
+
+
+def test_pick_random_move_executes_and_returns_next_screenshot(tmp_path: Path) -> None:
+    game = {"game_id": "aa00", "title": "Alpha", "tags": []}
+    loaded = load_game_metta_data(game, tmp_path, FakeRunner)
+
+    initialized = initialize_selected_game(loaded)
+    moved = pick_random_move_and_execute(initialized["session"], loaded["controls"], game, seed=7)
+
+    assert moved["proposal"]["action"] == "ACTION1"
+    assert moved["result"]["state"] == "PLAYING"
+    assert moved["next_screenshot"] == moved["result"]["frame_path"]
+    assert Path(moved["next_screenshot"]).is_file()
+    assert moved["replay_gallery"]["move_count"] == 1
+    assert [entry["title"] for entry in moved["replay_gallery"]["entries"]] == [
+        "Initial frame — 0 moves",
+        "Move 1 — ACTION1",
+    ]
+    assert Path(moved["animated_replay"]).is_file()
+
+
+def test_random_move_stops_before_exceeding_move_limit(tmp_path: Path) -> None:
+    game = {"game_id": "aa00", "title": "Alpha", "tags": []}
+    loaded = load_game_metta_data(game, tmp_path, FakeRunner)
+    initialized = initialize_selected_game(loaded)
+    first = pick_random_move_and_execute(initialized["session"], loaded["controls"], game, seed=7, move_limit=1)
+    stopped = pick_random_move_and_execute(first["session"], loaded["controls"], game, seed=8, move_limit=1)
+
+    assert first["result"]["move_executed"] is True
+    assert stopped["result"]["move_executed"] is False
+    assert stopped["result"]["move_limit_reached"] is True
+    assert stopped["result"]["moves_made"] == 1
+    assert stopped["proposal"] is None
+
+
+def test_automatic_mode_plays_each_catalog_game_once_and_obeys_move_limit(tmp_path: Path) -> None:
+    player = RandomArc3Player(tmp_path, seconds_per_game=100, seed=7, runner_factory=FakeRunner, arcade=FakeArcade(), clock=lambda: 0.0)
+
+    summaries = player.run(max_games=None, max_steps_per_game=2)
+
+    assert len(summaries) == 2
+    assert len({summary["game"]["game_id"] for summary in summaries}) == 2
+    assert [summary["steps"] for summary in summaries] == [2, 2]
+
+
+def test_interactive_session_mode_does_not_start_background_game_loop(tmp_path: Path) -> None:
+    assert run_random_arc3_session(tmp_path, mode="interactive") == []
+
+
+def test_automatic_session_restores_defaults_for_blank_optional_limits(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    captured: dict[str, object] = {}
+
+    class CapturingPlayer:
+        def __init__(self, workspace_root: Path, *, seconds_per_game: float, seed: int | None) -> None:
+            captured.update(workspace_root=workspace_root, seconds_per_game=seconds_per_game, seed=seed)
+
+        def run(self, *, max_games: int | None, max_steps_per_game: int | None) -> list[dict[str, object]]:
+            captured.update(max_games=max_games, max_steps_per_game=max_steps_per_game)
+            return []
+
+    monkeypatch.setattr(arc3_random_player_module, "RandomArc3Player", CapturingPlayer)
+
+    assert run_random_arc3_session(tmp_path, seconds_per_game=None, move_limit=None, mode="automatic") == []
+    assert captured["seconds_per_game"] == 600.0
+    assert captured["max_steps_per_game"] == 10
 
 
 def test_capture_observation_retains_selected_game_binding() -> None:
@@ -143,6 +327,17 @@ def test_workbench_exposes_insertable_gallery_and_human_renderer() -> None:
     playground = (root / "workbench/frontend/src/components/OperationPlayground.tsx").read_text(encoding="utf-8")
     assert "INSERT OPERATION AFTER SELECTED STEP" in page
     assert "insertOperationStep" in page
+    assert "completedPlaygrounds" in page
+    assert 'runtime?.status||(completedPlaygrounds[step.id]?"completed":"not run")' in page
+    assert "Expand · rerun available" in playground
+    assert "▶ Run this step" in playground
+    assert "operation-execute-step" in playground
+    assert "Auto-play all" in page
+    assert "selectRelativeStep" in page
+    assert "AUTOMATED RUNNER" in page
+    assert 'aria-label="Runner move limit"' in page
+    assert 'aria-label="Runner seconds per game"' in page
+    assert 'aria-label="Runner maximum games"' in page
     assert "GALLERY RESOURCE" in playground
 
 
@@ -233,7 +428,7 @@ def test_random_player_workspace_is_discoverable_and_operation_backed(tmp_path: 
     operations = {
         record["document"]["id"]: record["document"]
         for record in workspace_api._load_operations(workspace)
-        if record.get("workspaceId") == "arc3_random_player" and record.get("document")
+        if record.get("document")
     }
     implementations = {
         record["document"]["id"]: record["document"]
@@ -242,18 +437,23 @@ def test_random_player_workspace_is_discoverable_and_operation_backed(tmp_path: 
     }
     expected_parents = {
         "arc3_random.discover_games",
-        "arc3_random.build_game_preview_gallery",
+        "arc3_random.initialize_played_games",
+        "arc3_random.filter_unplayed_games",
+        "arc3_random.remember_played_game",
+        "arc3_random.run_session",
+        "arc3_random.curate_viewable_gallery",
         "arc3_random.select_game",
-        "arc3_random.query_game_metta",
-        "arc3_random.populate_game_atomspace",
-        "arc3_random.start_game",
-        "arc3_random.enumerate_controls",
+        "arc3_random.load_game_metta_data",
+        "arc3_random.initialize_selected_game",
+        "arc3_random.reset_selected_game",
+        "arc3_random.pick_random_move_and_execute",
         "arc3_random.capture_observation",
         "arc3_random.propose_action",
         "arc3_random.execute_action",
         "arc3_random.assess_transition",
         "arc3_random.update_memory",
         "arc3_random.should_rotate",
+        "arc3_random.seen_enough",
         "arc3_random.run_session",
     }
     assert expected_parents <= operations.keys()
@@ -266,6 +466,15 @@ def test_random_player_workspace_is_discoverable_and_operation_backed(tmp_path: 
     assert implementations["arc3_random.select_game.random"]["delegatesTo"] == (
         "collection.random_list_element"
     )
+    assert operations["arc3_random.select_game"]["children"] == [
+        "arc3_random.select_game.random",
+        "arc3_random.select_game.manual",
+    ]
+    assert implementations["arc3_random.select_game.manual"]["implementation"] == "human.await_input"
+    assert implementations["arc3_random.select_game.manual"]["parameters"]["form"]["game"] == {
+        "type": "Text",
+        "prompt": "Enter the ARC game name or ID",
+    }
     assert {
         implementations["arc3_random.propose_action.python"]["implementation"],
         implementations["arc3_random.propose_action.llm"]["implementation"],
@@ -288,36 +497,64 @@ def test_random_player_workspace_is_discoverable_and_operation_backed(tmp_path: 
         if record.get("workspaceId") == "arc3_random_player"
     )
     assert [step["operation"] for step in workflow["steps"]] == [
+        "echo.value",
         "arc3_random.discover_games",
-        "arc3_random.build_game_preview_gallery",
-        "gallery.curate_resource",
+        "arc3_random.filter_unplayed_games",
+        "arc3_random.curate_viewable_gallery",
         "arc3_random.select_game",
-        "arc3_random.query_game_metta",
-        "arc3_random.populate_game_atomspace",
-        "arc3_random.start_game",
-        "arc3_random.enumerate_controls",
-        "arc3_random.capture_observation",
-        "arc3_random.propose_action",
-        "arc3_random.execute_action",
+        "arc3_random.remember_played_game",
+        "arc3_random.load_game_metta_data",
+        "arc3_random.curate_viewable_gallery",
+        "arc3_random.initialize_selected_game",
+        "arc3_random.pick_random_move_and_execute",
         "arc3_random.capture_observation",
         "arc3_random.assess_transition",
         "arc3_random.update_memory",
-        "arc3_random.should_rotate",
+        "arc3_random.seen_enough",
+        "arc3_random.filter_unplayed_games",
+        "arc3_random.select_game",
+        "arc3_random.remember_played_game",
+        "arc3_random.run_session",
     ]
-    gallery_step = next(step for step in workflow["steps"] if step["id"] == "curate_game_preview_gallery")
+    initialize_played_games_step = workflow["steps"][0]
+    assert initialize_played_games_step["inputs"] == {"played_games": []}
+    assert initialize_played_games_step["outputs"] == ["played_games"]
+    gallery_step = next(step for step in workflow["steps"] if step["id"] == "curate_viewable_gallery")
     chooser_step = next(step for step in workflow["steps"] if step["id"] == "select_game")
-    preview_step = next(step for step in workflow["steps"] if step["id"] == "build_game_preview_gallery")
-    assert preview_step["probe"] == {"enabled": False, "required": False, "blocking": False}
-    assert gallery_step["dependsOn"] == ["build_game_preview_gallery"]
     assert gallery_step["probe"] == {"enabled": False, "required": False, "blocking": False}
-    assert chooser_step["dependsOn"] == ["discover_games"]
-    assert chooser_step["inputs"]["games"] == "$games"
-    assert next(step for step in workflow["steps"] if step["id"] == "query_game_metta")["dependsOn"] == ["select_game"]
-    assert next(step for step in workflow["steps"] if step["id"] == "populate_game_atomspace")["dependsOn"] == ["query_game_metta"]
-    assert next(step for step in workflow["steps"] if step["id"] == "start_game")["dependsOn"] == ["populate_game_atomspace"]
-    assert next(step for step in workflow["steps"] if step["id"] == "enumerate_controls")["dependsOn"] == ["start_game"]
-    capture_steps = [step for step in workflow["steps"] if step["operation"] == "arc3_random.capture_observation"]
-    assert capture_steps
-    assert all(step["inputs"]["game"] == "$game" for step in capture_steps)
+    assert gallery_step["dependsOn"] == ["filter_unplayed_games"]
+    assert gallery_step["inputs"]["games"] == "$unplayed_games"
+    assert chooser_step["dependsOn"] == ["filter_unplayed_games"]
+    assert chooser_step["inputs"]["games"] == "$unplayed_games"
+    load_step = next(step for step in workflow["steps"] if step["id"] == "load_game_metta_data")
+    assert load_step["dependsOn"] == ["select_game"]
+    assert load_step["outputs"]["initial_screenshot"] == "initial_screenshot"
+    selected_gallery = next(step for step in workflow["steps"] if step["id"] == "curate_selected_game_gallery")
+    assert selected_gallery["dependsOn"] == ["load_game_metta_data"]
+    assert selected_gallery["operation"] == "arc3_random.curate_viewable_gallery"
+    move_step = next(step for step in workflow["steps"] if step["id"] == "pick_random_move_and_execute")
+    initialize_step = next(step for step in workflow["steps"] if step["id"] == "initialize_selected_game")
+    assert initialize_step["operation"] == "arc3_random.initialize_selected_game"
+    assert initialize_step["outputs"]["initial_screenshot"] == "initial_game_screenshot"
+    assert move_step["dependsOn"] == ["initialize_selected_game"]
+    assert move_step["inputs"]["session"] == "$initialized_game_session"
+    assert move_step["inputs"]["move_limit"] == "$move_limit"
+    assert move_step["outputs"]["next_screenshot"] == "next_screenshot"
+    capture_after = next(step for step in workflow["steps"] if step["id"] == "capture_after")
+    assert capture_after["inputs"]["frame_path"] == "$next_screenshot"
+    ask_step = next(step for step in workflow["steps"] if step["id"] == "ask_if_seen_enough")
+    assert ask_step["operation"] == "arc3_random.seen_enough"
+    assert ask_step["outputs"]["rotate"] == "rotate"
+    next_step = next(step for step in workflow["steps"] if step["id"] == "select_next_game")
+    assert next_step["implementationVariant"] == "arc3_random.select_game.random"
+    assert next_step["inputs"]["games"] == "$games_for_next_selection"
+    assert workflow["outputs"]["played_games"] == "$played_games_after_next_selection"
+    automatic_step = next(step for step in workflow["steps"] if step["id"] == "play_all_remaining_games_automatically")
+    assert automatic_step["operation"] == "arc3_random.run_session"
+    assert automatic_step["inputs"]["mode"] == "$mode"
+    assert automatic_step["inputs"]["move_limit"] == "$move_limit"
     executable = materialize_workflow({**workflow, "workspaceId": "arc3_random_player"})
-    assert all(step["implementation"] in {"python.callable", "llm.complete"} for step in executable["steps"])
+    assert all(
+        step["implementation"] in {"python.callable", "llm.complete", "human.await_input"}
+        for step in executable["steps"]
+    )

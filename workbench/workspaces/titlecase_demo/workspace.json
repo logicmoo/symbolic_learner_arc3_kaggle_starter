@@ -1,0 +1,1 @@
+{"kind":"workspace","id":"titlecase_demo","label":"Titlecase Demo","description":"Runnable titlecase operation workflow.","includes":[{"workspaceId":"shared_library_system","includeInherited":true}]}

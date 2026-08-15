@@ -35,6 +35,7 @@ dependencies = [
   "numpy>=1.26",
   "Pillow>=10.0",
   "python-dotenv>=1.0",
+  "psutil>=7.0",
 ]
 
 [project.optional-dependencies]

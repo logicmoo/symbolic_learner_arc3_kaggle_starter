@@ -14,6 +14,7 @@ from representation_planner import plan_representation_conversion
 
 SHARED = ROOT / "workbench" / "workspaces" / "shared_library_system"
 ARC3 = ROOT / "workbench" / "workspaces" / "shared_library_arc3"
+ARC3_OBSERVE = ROOT / "workbench" / "workspaces" / "vision_observe_choose_record"
 
 
 def test_image_is_abstract_datatype_with_multiple_representations() -> None:
@@ -92,7 +93,7 @@ def test_datatype_resolution_accepts_interface_case() -> None:
 
 
 def test_interface_inventory_scans_canonical_workflows_and_matches_case() -> None:
-    inventory = interface_type_inventory(ARC3)
+    inventory = interface_type_inventory(ARC3_OBSERVE)
     undeclared = set(inventory["undeclaredDatatypes"])
     assert {"Image", "Text", "Object", "IdentityMap", "WorldModel"}.isdisjoint(undeclared)
     assert {"Number", "FileReference", "Markdown", "Program", "PrologProgram", "TurtleProgramSet"}.isdisjoint(undeclared)
@@ -101,7 +102,7 @@ def test_interface_inventory_scans_canonical_workflows_and_matches_case() -> Non
     assert inventory["undeclaredDatatypes"] == []
     assert inventory["undeclaredRepresentations"] == []
     workflow_references = [reference for reference in inventory["references"] if reference["ownerKind"] == "workflow"]
-    assert any(reference["ownerId"] == "arc3_observe_choose_record" and reference["datatype"] == "Object" for reference in workflow_references)
+    assert any(reference["ownerId"] == "vision_observe_choose_record" and reference["datatype"] == "Object" for reference in workflow_references)
 
 
 def test_planner_finds_multi_step_bitmap_to_logo_path() -> None:

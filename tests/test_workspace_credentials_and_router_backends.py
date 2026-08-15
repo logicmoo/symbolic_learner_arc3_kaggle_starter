@@ -138,9 +138,18 @@ def test_workspace_credentials_override_environment_without_leaking_values(tmp_p
     assert resolve_workspace_credential(tmp_path, "EXAMPLE_API_KEY") == "workspace-secret"
     statuses = credential_statuses(tmp_path, [backend])
     assert statuses[0]["source"] == "workspace"
+    assert statuses[0]["required"] is True
     assert "workspace-secret" not in json.dumps(statuses)
     write_workspace_credential(tmp_path, "EXAMPLE_API_KEY", None)
     assert resolve_workspace_credential(tmp_path, "EXAMPLE_API_KEY") == "process-secret"
+
+
+def test_credential_status_reports_optional_backend_keys(tmp_path: Path) -> None:
+    backend = {"id": "local", "label": "Local backend", "configuration": {"apiKeyEnvironmentVariable": "LOCAL_OPTIONAL_KEY", "apiKeyOptional": True}}
+    status = credential_statuses(tmp_path, [backend])[0]
+    assert status["required"] is False
+    assert status["configured"] is False
+    assert status["source"] == "missing"
 
 
 def test_omniroute_bootstrap_fetches_one_time_key_from_loopback(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

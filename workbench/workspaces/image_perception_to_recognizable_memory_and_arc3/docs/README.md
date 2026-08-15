@@ -5,7 +5,7 @@
 This workspace runs a real outer learning loop against the ARC service. It
 fetches the live game catalog, selects a game, captures image evidence, chooses
 legal actions, assesses each transition, updates durable action-outcome memory,
-and rotates games after a configurable budget (ten minutes by default).
+and plays one visible move at a time until the user says they have seen enough.
 
 Start continuous play from the repository root:
 
@@ -47,7 +47,7 @@ written manually.
 ARC discovery fans out into independent consumers. The chooser may consume the
 original `$games` candidate list directly, so selection does not require image
 downloads or Gallery rendering. Separately, disabled-by-default preview and
-`gallery.curate_resource` probe steps can materialize a typed Gallery Resource
+The optional `Curate Viewable Gallery` probe captures previews and materializes one typed Gallery Resource
 for human or AI inspection. They behave like test points on a circuit board:
 useful when observing the flow, non-blocking when unused. Their `probe`
 configuration remains overrideable; a specialized workflow may set

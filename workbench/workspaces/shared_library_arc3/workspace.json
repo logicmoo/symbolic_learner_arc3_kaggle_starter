@@ -2,7 +2,7 @@
   "kind": "workspace",
   "id": "shared_library_arc3",
   "label": "ARC3 Shared Library",
-  "description": "Reusable ARC3-specific operations, prompts, workflows, symbolic representations, and learning resources.",
+  "description": "Reusable ARC3-specific operations, prompts, symbolic representations, and learning resources. Runnable workflows live in application workspaces.",
   "metadata": {
     "role": "shared-domain-library",
     "domain": "arc3",

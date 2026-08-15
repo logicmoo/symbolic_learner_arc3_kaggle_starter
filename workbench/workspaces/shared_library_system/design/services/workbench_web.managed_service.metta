@@ -1,0 +1,1 @@
+((kind managed_service) (id workbench-web) (label "Workbench Web") (description "Active Vite development frontend.") (port 5173) (healthPath /) (launcher workbench/scripts/run_vite_server.bat) (workingDirectory workbench) (commandPatterns ([] vite)) (controllable false) (allowKill false) (allowRelaunch false) (singleton true) (defaultStartup ((start true) (hiddenWindow false))))
