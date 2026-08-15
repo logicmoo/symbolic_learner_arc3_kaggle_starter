@@ -1,10 +1,17 @@
 import { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { ThreeStateAccordionMember, type AccordionDisplayMode } from "./ThreeStateAccordion";
 
 type TodoPayload = { markdown: string; specificationPath: string; mockupAvailable: boolean; mockups?: Array<{view:string;description:string;available:boolean;url:string}> };
 
-export function WorkflowRunnerTodoReference() {
+export function WorkflowRunnerTodoReference({
+  displayMode,
+  onDisplayModeChange,
+}: {
+  displayMode: AccordionDisplayMode;
+  onDisplayModeChange: (mode: AccordionDisplayMode) => void;
+}) {
   const [todo, setTodo] = useState<TodoPayload | null>(null);
   const [error, setError] = useState("");
 
@@ -18,12 +25,11 @@ export function WorkflowRunnerTodoReference() {
       .catch(reason => setError(String(reason)));
   }, []);
 
-  return <details className="workflow-runner-reference">
-    <summary><span>RUNNER DESIGN REFERENCE</span><b>Mockups and remaining experience TODO</b><em>REFERENCE</em></summary>
+  return <ThreeStateAccordionMember stackId="spline-stack" label="RUNNER DESIGN REFERENCE" value="Mockups and TODO" detail="REFERENCE" mode={displayMode} onChange={onDisplayModeChange} baseClass="workflow-runner-reference" scrollSize="320px" footer={<><b>REFERENCE</b><span>{todo?.specificationPath || "Workflow runner design specification"}</span></>}>
     {error && <div className="demo-notice"><b>Reference unavailable</b><span>{error}</span></div>}
     {todo && <div className="workflow-runner-reference-body">
       <div className="workflow-runner-mockups">{(todo.mockups||[]).filter(item=>item.available).map(item=><figure key={item.view}><figcaption><b>{item.view}</b><span>{item.description}</span></figcaption><a className="workflow-runner-mockup" href={item.url} target="_blank" rel="noreferrer"><img src={item.url} alt={`${item.view} workflow runner design reference`} /></a></figure>)}</div>
       <article className="markdown-body"><ReactMarkdown remarkPlugins={[remarkGfm]}>{todo.markdown}</ReactMarkdown><small>{todo.specificationPath}</small></article>
     </div>}
-  </details>;
+  </ThreeStateAccordionMember>;
 }

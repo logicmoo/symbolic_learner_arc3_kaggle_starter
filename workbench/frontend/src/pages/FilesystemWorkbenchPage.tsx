@@ -1,197 +1,3434 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 import { PddlPlanImportPanel } from "../components/PddlPlanImportPanel";
-import { HumanInputForm, RuntimeHistoryView } from "../components/RuntimeHistoryView";
+import {
+  HumanInputForm,
+  RuntimeHistoryView,
+} from "../components/RuntimeHistoryView";
 import { jsonValueToMetta } from "../lib/mettaResourceCodec";
-import { ResourceEnablementBadge, enablementClass, resolveResourceEnablement } from "../components/resourceEnablement";
+import {
+  ResourceEnablementBadge,
+  enablementClass,
+  resolveResourceEnablement,
+} from "../components/resourceEnablement";
 import { ArtifactTreeBranch } from "../components/ArtifactTreeBranch";
+import {
+  ThreeStateAccordionControls,
+  ThreeStateAccordionMember,
+  ThreeStateAccordionStack,
+  ThreeStateAccordionStripSummary,
+  accordionPanelClass,
+  type AccordionDisplayMode,
+} from "../components/ThreeStateAccordion";
+import { DurableRunLauncher } from "../components/DurableRunLauncher";
+import "../styles/workflow_layout.css";
 
-const DataCatalogPanel=lazy(()=>import("../components/DataCatalogPanel").then(module=>({default:module.DataCatalogPanel})));
-const GoalPlanLibraryEditor=lazy(()=>import("../components/GoalPlanLibraryEditor").then(module=>({default:module.GoalPlanLibraryEditor})));
-const LlmModelsEditor=lazy(()=>import("../components/LlmModelsEditor").then(module=>({default:module.LlmModelsEditor})));
-const PromptLibraryEditor=lazy(()=>import("../components/PromptLibraryEditor").then(module=>({default:module.PromptLibraryEditor})));
-const OperationLibraryEditor=lazy(()=>import("../components/OperationLibraryEditor").then(module=>({default:module.OperationLibraryEditor})));
-const OperationPlayground=lazy(()=>import("../components/OperationPlayground").then(module=>({default:module.OperationPlayground})));
-const ModelPolicyPage=lazy(()=>import("../components/ModelPolicyPage").then(module=>({default:module.ModelPolicyPage})));
-const PolicyLibraryEditor=lazy(()=>import("../components/PolicyLibraryEditor").then(module=>({default:module.PolicyLibraryEditor})));
-const RepositoryDocsPage=lazy(()=>import("../components/RepositoryDocsPage").then(module=>({default:module.RepositoryDocsPage})));
-const WorkspaceSettingsPanel=lazy(()=>import("../components/WorkspaceSettingsPanel").then(module=>({default:module.WorkspaceSettingsPanel})));
-const SourceCodeEditor=lazy(()=>import("../components/SourceCodeEditor").then(module=>({default:module.SourceCodeEditor})));
-const WorkspaceOverview=lazy(()=>import("../components/WorkspaceOverview").then(module=>({default:module.WorkspaceOverview})));
-const KnowledgeDataExplorer=lazy(()=>import("../components/KnowledgeDataExplorer").then(module=>({default:module.KnowledgeDataExplorer})));
-const HelpDocumentTabs=lazy(()=>import("../components/HelpDocumentTabs").then(module=>({default:module.HelpDocumentTabs})));
+const DataCatalogPanel = lazy(() =>
+  import("../components/DataCatalogPanel").then((module) => ({
+    default: module.DataCatalogPanel,
+  })),
+);
+const GoalPlanLibraryEditor = lazy(() =>
+  import("../components/GoalPlanLibraryEditor").then((module) => ({
+    default: module.GoalPlanLibraryEditor,
+  })),
+);
+const LlmModelsEditor = lazy(() =>
+  import("../components/LlmModelsEditor").then((module) => ({
+    default: module.LlmModelsEditor,
+  })),
+);
+const PromptLibraryEditor = lazy(() =>
+  import("../components/PromptLibraryEditor").then((module) => ({
+    default: module.PromptLibraryEditor,
+  })),
+);
+const OperationLibraryEditor = lazy(() =>
+  import("../components/OperationLibraryEditor").then((module) => ({
+    default: module.OperationLibraryEditor,
+  })),
+);
+const OperationPlayground = lazy(() =>
+  import("../components/OperationPlayground").then((module) => ({
+    default: module.OperationPlayground,
+  })),
+);
+const ModelPolicyPage = lazy(() =>
+  import("../components/ModelPolicyPage").then((module) => ({
+    default: module.ModelPolicyPage,
+  })),
+);
+const PolicyLibraryEditor = lazy(() =>
+  import("../components/PolicyLibraryEditor").then((module) => ({
+    default: module.PolicyLibraryEditor,
+  })),
+);
+const RepositoryDocsPage = lazy(() =>
+  import("../components/RepositoryDocsPage").then((module) => ({
+    default: module.RepositoryDocsPage,
+  })),
+);
+const WorkspaceSettingsPanel = lazy(() =>
+  import("../components/WorkspaceSettingsPanel").then((module) => ({
+    default: module.WorkspaceSettingsPanel,
+  })),
+);
+const SourceCodeEditor = lazy(() =>
+  import("../components/SourceCodeEditor").then((module) => ({
+    default: module.SourceCodeEditor,
+  })),
+);
+const WorkspaceOverview = lazy(() =>
+  import("../components/WorkspaceOverview").then((module) => ({
+    default: module.WorkspaceOverview,
+  })),
+);
+const KnowledgeDataExplorer = lazy(() =>
+  import("../components/KnowledgeDataExplorer").then((module) => ({
+    default: module.KnowledgeDataExplorer,
+  })),
+);
+const HelpDocumentTabs = lazy(() =>
+  import("../components/HelpDocumentTabs").then((module) => ({
+    default: module.HelpDocumentTabs,
+  })),
+);
 
-type Workspace={id:string;label:string;description:string;root:string;includes?:Array<{workspaceId:string;includeInherited:boolean}>;effectiveIncludes?:string[];countsAvailable?:boolean;workflowFileCount:number;operationFileCount:number;backendFileCount?:number;modelFileCount?:number;promptFileCount?:number;datatypeFileCount?:number;representationFileCount?:number;concreteDatatypeFileCount?:number};
-type Step={id:string;label?:string;description?:string;enabled?:boolean;kind?:string;implementation?:string;implementationVariant?:string;operation?:string;dependsOn?:string[];inputs?:Record<string,unknown>;outputs?:Record<string,string>;parameters?:Record<string,unknown>;probe?:{enabled?:boolean;required?:boolean;blocking?:boolean};form?:Record<string,{type?:string;label?:string;description?:string;default?:unknown;options?:unknown[];secret?:boolean;sensitive?:boolean}>};
-type PlanProvenance={origin?:"human"|"pddl"|"llm"|"rules"|"imported";planner?:string;domain?:string;problem?:string;sourcePlan?:string};
-type Workflow={id:string;version?:number;workspaceId?:string;label?:string;description?:string;enabled?:boolean;inputs?:Record<string,string>;outputs?:Record<string,string>;steps:Step[];planProvenance?:PlanProvenance};
-type RecordFile<T>={path:string;source?:"shared"|"included"|"workspace";workspaceId?:string;document?:T;error?:string;resolved?:{enabled?:boolean}};
-type DatatypeContract=string|Record<string,unknown>;
-type OperationResource={id:string;label?:string;description?:string;implementation?:string;parents?:string[];children?:string[];preferredChild?:string;enabled?:boolean;inputs?:Record<string,DatatypeContract>;outputs?:Record<string,DatatypeContract>;parameters?:Record<string,unknown>;modelSelection?:{models?:string[];strategy?:string};example_execute?:{action?:string;arguments?:Record<string,{datatype?:string;label?:string;default?:unknown;options?:unknown[]}>;parameters?:Record<string,{datatype?:string;label?:string;default?:unknown;options?:unknown[]}>}};
-type OperationLibrary={operations:RecordFile<OperationResource>[];operationImplementations:RecordFile<OperationResource>[]};
-type WorkspaceFile={path:string;name:string;suffix:string;size:number;modified:number;kind:string};
-type Snapshot={workspace:Workspace;workflows:RecordFile<Workflow>[];goals?:RecordFile<Record<string,unknown>>[];plans?:RecordFile<Record<string,unknown>>[];contexts?:RecordFile<Record<string,unknown>>[];systems?:RecordFile<Record<string,unknown>>[];files:WorkspaceFile[]};
-type Run={id:string;workflowId:string;workflowVersion:number;status:string;inputs:unknown;outputs:unknown;error?:string;steps:Array<{stepId:string;status:string;attempt?:number;error?:string}>;artifacts:Array<{id:string;stepId?:string;name:string;datatype?:string;payload?:unknown;contentHash?:string;provenance?:Record<string,unknown>;createdAt?:string}>;events:Array<{id:number|string;kind:string;stepId?:string;createdAt:string;payload?:unknown}>;logs:Array<{id:number|string;stream:string;message:string;createdAt?:string}>};
-type Capability={status:string;detail:string};
+type Workspace = {
+  id: string;
+  label: string;
+  description: string;
+  root: string;
+  workspaceType?: "project" | "library";
+  hidden?: boolean;
+  includes?: Array<{ workspaceId: string; includeInherited: boolean }>;
+  effectiveIncludes?: string[];
+  countsAvailable?: boolean;
+  workflowFileCount: number;
+  operationFileCount: number;
+  backendFileCount?: number;
+  modelFileCount?: number;
+  promptFileCount?: number;
+  datatypeFileCount?: number;
+  representationFileCount?: number;
+  concreteDatatypeFileCount?: number;
+};
+type Step = {
+  id: string;
+  label?: string;
+  description?: string;
+  enabled?: boolean;
+  kind?: string;
+  implementation?: string;
+  implementationVariant?: string;
+  operation?: string;
+  dependsOn?: string[];
+  inputs?: Record<string, unknown>;
+  outputs?: Record<string, string>;
+  parameters?: Record<string, unknown>;
+  probe?: { enabled?: boolean; required?: boolean; blocking?: boolean };
+  form?: Record<
+    string,
+    {
+      type?: string;
+      label?: string;
+      description?: string;
+      default?: unknown;
+      options?: unknown[];
+      secret?: boolean;
+      sensitive?: boolean;
+    }
+  >;
+};
+type PlanProvenance = {
+  origin?: "human" | "pddl" | "llm" | "rules" | "imported";
+  planner?: string;
+  domain?: string;
+  problem?: string;
+  sourcePlan?: string;
+};
+type Workflow = {
+  id: string;
+  version?: number;
+  workspaceId?: string;
+  label?: string;
+  description?: string;
+  enabled?: boolean;
+  inputs?: Record<string, string>;
+  inputDefaults?: Record<string, unknown>;
+  outputs?: Record<string, string>;
+  steps: Step[];
+  planProvenance?: PlanProvenance;
+};
+type PreflightStateValue = {
+  kind: "state_value";
+  id: string;
+  label: string;
+  enabled: boolean;
+  datatype: string;
+  source:
+    | { kind: "startup_input"; input: string }
+    | { kind: "step_output"; stepId: string; output: string; binding?: string };
+  preferredRenderer: "metta" | "json";
+  treatAsList: boolean;
+  allowRedefinition: boolean;
+  applicability: string[];
+  defaultValue?: unknown;
+  value?: unknown;
+};
+type RecordFile<T> = {
+  path: string;
+  source?: "shared" | "included" | "workspace";
+  workspaceId?: string;
+  document?: T;
+  error?: string;
+  resolved?: { enabled?: boolean };
+};
+type DatatypeContract = string | Record<string, unknown>;
+type OperationResource = {
+  id: string;
+  label?: string;
+  description?: string;
+  implementation?: string;
+  parents?: string[];
+  children?: string[];
+  preferredChild?: string;
+  enabled?: boolean;
+  inputs?: Record<string, DatatypeContract>;
+  outputs?: Record<string, DatatypeContract>;
+  parameters?: Record<string, unknown>;
+  modelSelection?: { models?: string[]; strategy?: string };
+  example_execute?: {
+    action?: string;
+    arguments?: Record<
+      string,
+      {
+        datatype?: string;
+        label?: string;
+        default?: unknown;
+        options?: unknown[];
+      }
+    >;
+    parameters?: Record<
+      string,
+      {
+        datatype?: string;
+        label?: string;
+        default?: unknown;
+        options?: unknown[];
+      }
+    >;
+  };
+};
+type OperationLibrary = {
+  operations: RecordFile<OperationResource>[];
+  operationImplementations: RecordFile<OperationResource>[];
+};
+type WorkspaceFile = {
+  path: string;
+  name: string;
+  suffix: string;
+  size: number;
+  modified: number;
+  kind: string;
+};
+type Snapshot = {
+  workspace: Workspace;
+  workflows: RecordFile<Workflow>[];
+  goals?: RecordFile<Record<string, unknown>>[];
+  plans?: RecordFile<Record<string, unknown>>[];
+  contexts?: RecordFile<Record<string, unknown>>[];
+  systems?: RecordFile<Record<string, unknown>>[];
+  files: WorkspaceFile[];
+};
+type Run = {
+  id: string;
+  workflowId: string;
+  workflowVersion: number;
+  status: string;
+  inputs: unknown;
+  outputs: unknown;
+  error?: string;
+  steps: Array<{
+    stepId: string;
+    status: string;
+    attempt?: number;
+    error?: string;
+  }>;
+  artifacts: Array<{
+    id: string;
+    stepId?: string;
+    name: string;
+    datatype?: string;
+    payload?: unknown;
+    contentHash?: string;
+    provenance?: Record<string, unknown>;
+    createdAt?: string;
+  }>;
+  events: Array<{
+    id: number | string;
+    kind: string;
+    stepId?: string;
+    createdAt: string;
+    payload?: unknown;
+  }>;
+  logs: Array<{
+    id: number | string;
+    stream: string;
+    message: string;
+    createdAt?: string;
+  }>;
+};
+type Capability = { status: string; detail: string };
 import { ResourceSourceEditor } from "../components/ResourceSourceEditor";
-type View="overview"|"canvas"|"editor"|"data"|"knowledgeData"|"artifacts"|"evidence"|"operations"|"sourceCode"|"systems"|"llms"|"prompts"|"policies"|"checks"|"setup"|"processes"|"goals"|"plans"|"goalRuns"|"workflowRuns"|"execs"|"events"|"states"|"logs"|"modelPolicy"|"benchmarks"|"contexts"|"runtimeContexts"|"docs";
-const WORKBENCH_VIEWS:Set<View>=new Set(["overview","canvas","editor","data","knowledgeData","artifacts","evidence","operations","sourceCode","systems","llms","prompts","policies","checks","setup","processes","goals","plans","goalRuns","workflowRuns","execs","events","states","logs","modelPolicy","benchmarks","contexts","runtimeContexts","docs"]);
-const viewFromLocation=():View|null=>{const value=new URLSearchParams(window.location.search).get("view");if(value==="backends")return "llms";return value&&WORKBENCH_VIEWS.has(value as View)?value as View:null};
-const workspaceFromLocation=()=>new URLSearchParams(window.location.search).get("workspace")?.trim()||null;
-type EngineImplementation={name:string;[key:string]:unknown};
-const WORKBENCH_THEMES=[
- {id:"retro-green",label:"Retro Green"},
- {id:"midnight",label:"Midnight Teal"},
- {id:"forest",label:"Forest"},
- {id:"crimson",label:"Crimson"},
- {id:"retro-amber",label:"Retro Amber"},
- {id:"copper",label:"Copper Terminal"},
- {id:"ultraviolet",label:"Ultraviolet"},
- {id:"arctic",label:"Arctic Blue"},
- {id:"cobalt",label:"Cobalt"},
- {id:"graphite",label:"Graphite"},
- {id:"monokai",label:"Monokai"},
- {id:"dracula",label:"Dracula"},
- {id:"solarized-dark",label:"Solarized Dark"},
- {id:"nord-night",label:"Nord Night"},
- {id:"solarized-light",label:"Solarized Light"},
- {id:"rose-light",label:"Rose Quartz"},
- {id:"peach-light",label:"Peach Paper"},
- {id:"sand-light",label:"Sandstone"},
- {id:"orchid-light",label:"Orchid Mist"},
- {id:"lavender-light",label:"Lavender Paper"},
- {id:"blush-light",label:"Soft Blush"},
- {id:"nord-snow-light",label:"Nord Snow"},
- {id:"sage-light",label:"Soft Sage"},
- {id:"sepia-light",label:"Sepia Paper"},
- {id:"fog-light",label:"Morning Fog"},
- {id:"aqua-light",label:"Aqua Wash"},
- {id:"mint-light",label:"Mint Paper"},
- {id:"blueprint-light",label:"Blueprint Paper"},
- {id:"sky-light",label:"Open Sky"},
- {id:"lemon-light",label:"Lemon Wash"},
- {id:"parchment-light",label:"Parchment"},
- {id:"ocean-light",label:"Ocean Day"},
- {id:"ice-light",label:"Arctic Ice"},
- {id:"azure-mist-light",label:"Azure Mist"},
- {id:"msdn-light",label:"MSDN Light"},
- {id:"visual-studio-light",label:"Visual Studio Blue"},
- {id:"cream-light",label:"Warm Cream"},
- {id:"silver-light",label:"Silver Office"},
- {id:"newsprint-light",label:"Newsprint"},
- {id:"paper-light",label:"Paper White"},
- {id:"github-light",label:"GitHub Light"},
- {id:"windows-light",label:"Windows Classic"},
- {id:"porcelain-light",label:"Porcelain"},
- {id:"contrast-light",label:"High Contrast Light"},
- {id:"high-vis-light",label:"High Visibility"},
+type View =
+  | "overview"
+  | "canvas"
+  | "editor"
+  | "data"
+  | "knowledgeData"
+  | "artifacts"
+  | "evidence"
+  | "operations"
+  | "sourceCode"
+  | "systems"
+  | "llms"
+  | "prompts"
+  | "policies"
+  | "checks"
+  | "setup"
+  | "processes"
+  | "goals"
+  | "plans"
+  | "goalRuns"
+  | "workflowRuns"
+  | "execs"
+  | "events"
+  | "states"
+  | "logs"
+  | "modelPolicy"
+  | "benchmarks"
+  | "contexts"
+  | "runtimeContexts"
+  | "docs";
+type BreadcrumbEntry = { view: View; label: string; url: string };
+const WORKBENCH_VIEWS: Set<View> = new Set([
+  "overview",
+  "canvas",
+  "editor",
+  "data",
+  "knowledgeData",
+  "artifacts",
+  "evidence",
+  "operations",
+  "sourceCode",
+  "systems",
+  "llms",
+  "prompts",
+  "policies",
+  "checks",
+  "setup",
+  "processes",
+  "goals",
+  "plans",
+  "goalRuns",
+  "workflowRuns",
+  "execs",
+  "events",
+  "states",
+  "logs",
+  "modelPolicy",
+  "benchmarks",
+  "contexts",
+  "runtimeContexts",
+  "docs",
+]);
+const viewFromLocation = (): View | null => {
+  const parameters = new URLSearchParams(window.location.search);
+  const rawValue = parameters.get("view") || parameters.get("menu");
+  if (!rawValue) return null;
+  const value = rawValue.trim().toLowerCase();
+  if (value === "workflows" || value === "workflow") return "canvas";
+  if (value === "workflowv2" || value === "workflows-v2" || value === "workflow-v2") return "canvas";
+  if (value === "editor") return "canvas";
+  if (value === "backends") return "llms";
+  return WORKBENCH_VIEWS.has(value as View) ? (value as View) : null;
+};
+const workspaceFromLocation = () =>
+  new URLSearchParams(window.location.search).get("workspace")?.trim() || null;
+type EngineImplementation = { name: string; [key: string]: unknown };
+const WORKBENCH_THEMES = [
+  { id: "retro-green", label: "Retro Green" },
+  { id: "midnight", label: "Midnight Teal" },
+  { id: "forest", label: "Forest" },
+  { id: "crimson", label: "Crimson" },
+  { id: "retro-amber", label: "Retro Amber" },
+  { id: "copper", label: "Copper Terminal" },
+  { id: "ultraviolet", label: "Ultraviolet" },
+  { id: "arctic", label: "Arctic Blue" },
+  { id: "cobalt", label: "Cobalt" },
+  { id: "graphite", label: "Graphite" },
+  { id: "monokai", label: "Monokai" },
+  { id: "dracula", label: "Dracula" },
+  { id: "solarized-dark", label: "Solarized Dark" },
+  { id: "nord-night", label: "Nord Night" },
+  { id: "solarized-light", label: "Solarized Light" },
+  { id: "rose-light", label: "Rose Quartz" },
+  { id: "peach-light", label: "Peach Paper" },
+  { id: "sand-light", label: "Sandstone" },
+  { id: "orchid-light", label: "Orchid Mist" },
+  { id: "lavender-light", label: "Lavender Paper" },
+  { id: "blush-light", label: "Soft Blush" },
+  { id: "nord-snow-light", label: "Nord Snow" },
+  { id: "sage-light", label: "Soft Sage" },
+  { id: "sepia-light", label: "Sepia Paper" },
+  { id: "fog-light", label: "Morning Fog" },
+  { id: "aqua-light", label: "Aqua Wash" },
+  { id: "mint-light", label: "Mint Paper" },
+  { id: "blueprint-light", label: "Blueprint Paper" },
+  { id: "sky-light", label: "Open Sky" },
+  { id: "lemon-light", label: "Lemon Wash" },
+  { id: "parchment-light", label: "Parchment" },
+  { id: "ocean-light", label: "Ocean Day" },
+  { id: "ice-light", label: "Arctic Ice" },
+  { id: "azure-mist-light", label: "Azure Mist" },
+  { id: "msdn-light", label: "MSDN Light" },
+  { id: "visual-studio-light", label: "Visual Studio Blue" },
+  { id: "cream-light", label: "Warm Cream" },
+  { id: "silver-light", label: "Silver Office" },
+  { id: "newsprint-light", label: "Newsprint" },
+  { id: "paper-light", label: "Paper White" },
+  { id: "github-light", label: "GitHub Light" },
+  { id: "windows-light", label: "Windows Classic" },
+  { id: "porcelain-light", label: "Porcelain" },
+  { id: "contrast-light", label: "High Contrast Light" },
+  { id: "high-vis-light", label: "High Visibility" },
 ] as const;
-type WorkbenchTheme=(typeof WORKBENCH_THEMES)[number]["id"];
-const isWorkbenchTheme=(value:string|null):value is WorkbenchTheme=>WORKBENCH_THEMES.some(theme=>theme.id===value);
+type WorkbenchTheme = (typeof WORKBENCH_THEMES)[number]["id"];
+const isWorkbenchTheme = (value: string | null): value is WorkbenchTheme =>
+  WORKBENCH_THEMES.some((theme) => theme.id === value);
 
-export const NAVIGATION_V2:Array<{group:"WORKSPACE"|"CAPABILITIES"|"KNOWLEDGE"|"RUNTIME"|"SYSTEM";items:Array<{label:string;view:View;glyph:string}>}>=[
- {group:"WORKSPACE",items:[{label:"Overview",view:"overview",glyph:"⌂"},{label:"Goals",view:"goals",glyph:"◎"},{label:"Planning",view:"plans",glyph:"◇"},{label:"Workflows",view:"canvas",glyph:"⌘"}]},
- {group:"CAPABILITIES",items:[{label:"Operations",view:"operations",glyph:"▦"},{label:"Source Code",view:"sourceCode",glyph:"</>"},{label:"Systems",view:"systems",glyph:"⚙"},{label:"Models",view:"llms",glyph:"✦"},{label:"Datatypes",view:"data",glyph:"◆"},{label:"Policies",view:"policies",glyph:"P"}]},
- {group:"KNOWLEDGE",items:[{label:"Data",view:"knowledgeData",glyph:"◫"},{label:"AtomSpaces",view:"contexts",glyph:"⚛"},{label:"Artifacts",view:"artifacts",glyph:"▣"}]},
- {group:"RUNTIME",items:[{label:"Goal Runs",view:"goalRuns",glyph:"◉"},{label:"Workflow Runs",view:"workflowRuns",glyph:"↳"},{label:"Executions",view:"execs",glyph:"▶"},{label:"Events",view:"events",glyph:"△"},{label:"States",view:"states",glyph:"▣"},{label:"Logs",view:"logs",glyph:"▤"}]},
- {group:"SYSTEM",items:[{label:"Docs",view:"docs",glyph:"?"},{label:"Model Policy",view:"modelPolicy",glyph:"⚛"},{label:"Benchmarks",view:"benchmarks",glyph:"⌁"},{label:"Processes",view:"processes",glyph:"◌"},{label:"Settings",view:"setup",glyph:"⚒"}]},
+export const NAVIGATION_V2: Array<{
+  group: "WORKSPACE" | "CAPABILITIES" | "KNOWLEDGE" | "RUNTIME" | "SYSTEM";
+  items: Array<{ label: string; view: View; glyph: string }>;
+}> = [
+  {
+    group: "WORKSPACE",
+    items: [
+      { label: "Overview", view: "overview", glyph: "⌂" },
+      { label: "Goals", view: "goals", glyph: "◎" },
+      { label: "Planning", view: "plans", glyph: "◇" },
+      { label: "Workflows (Legacy)", view: "canvas", glyph: "⌘" },
+    ],
+  },
+  {
+    group: "CAPABILITIES",
+    items: [
+      { label: "Operations", view: "operations", glyph: "▦" },
+      { label: "Source Code", view: "sourceCode", glyph: "</>" },
+      { label: "Systems", view: "systems", glyph: "⚙" },
+      { label: "Models", view: "llms", glyph: "✦" },
+      { label: "Datatypes", view: "data", glyph: "◆" },
+      { label: "Policies", view: "policies", glyph: "P" },
+    ],
+  },
+  {
+    group: "KNOWLEDGE",
+    items: [
+      { label: "Data", view: "knowledgeData", glyph: "◫" },
+      { label: "AtomSpaces", view: "contexts", glyph: "⚛" },
+      { label: "Artifacts", view: "artifacts", glyph: "▣" },
+    ],
+  },
+  {
+    group: "RUNTIME",
+    items: [
+      { label: "Goal Runs", view: "goalRuns", glyph: "◉" },
+      { label: "Executions", view: "execs", glyph: "▶" },
+      { label: "Events", view: "events", glyph: "△" },
+      { label: "States", view: "states", glyph: "▣" },
+      { label: "Logs", view: "logs", glyph: "▤" },
+    ],
+  },
+  {
+    group: "SYSTEM",
+    items: [
+      { label: "Docs", view: "docs", glyph: "?" },
+      { label: "Model Policy", view: "modelPolicy", glyph: "⚛" },
+      { label: "Benchmarks", view: "benchmarks", glyph: "⌁" },
+      { label: "Processes", view: "processes", glyph: "◌" },
+      { label: "Settings", view: "setup", glyph: "⚒" },
+    ],
+  },
 ];
+const viewLabel = (view: View) =>
+  NAVIGATION_V2.flatMap((section) => section.items).find(
+    (item) => item.view === view,
+  )?.label ||
+  (
+    {
+      editor: "Workflow Editor",
+      workflowRuns: "Workflow Runs",
+      evidence: "Evidence & provenance",
+      checks: "Checks",
+      runtimeContexts: "Runtime Contexts",
+    } as Partial<Record<View, string>>
+  )[view] ||
+  view;
 
-async function request(path:string,init?:RequestInit){const response=await fetch(path,{headers:{"Content-Type":"application/json",...(init?.headers||{})},...init});const payload:unknown=await response.json();if(!response.ok){const detail=typeof payload==="object"&&payload!==null?String((payload as Record<string,unknown>).error||(payload as Record<string,unknown>).detail||response.statusText):response.statusText;throw new Error(detail)}return payload as Record<string,any>}
-const engine=(path:string,init?:RequestInit)=>request(`/api/engine${path}`,init);
-const slug=(value:string)=>value.toLowerCase().replace(/[^a-z0-9]+/g,"_").replace(/^_+|_+$/g,"")||"workflow";
+async function request(path: string, init?: RequestInit) {
+  const response = await fetch(path, {
+    headers: { "Content-Type": "application/json", ...(init?.headers || {}) },
+    ...init,
+  });
+  const payload: unknown = await response.json();
+  if (!response.ok) {
+    const detail =
+      typeof payload === "object" && payload !== null
+        ? String(
+            (payload as Record<string, unknown>).error ||
+              (payload as Record<string, unknown>).detail ||
+              response.statusText,
+          )
+        : response.statusText;
+    throw new Error(detail);
+  }
+  return payload as Record<string, any>;
+}
+const engine = (path: string, init?: RequestInit) =>
+  request(`/api/engine${path}`, init);
+const slug = (value: string) =>
+  value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "") || "workflow";
 
-export function FilesystemWorkbenchPage(){
- const[workspaces,setWorkspaces]=useState<Workspace[]>([]),[workspace,setWorkspace]=useState<Workspace|null>(null),[snapshot,setSnapshot]=useState<Snapshot|null>(null),[view,setViewState]=useState<View>(()=>viewFromLocation()||"canvas");
- const autoWorkspaceStarted=useRef(false);
- const setView=(next:View)=>{setViewState(next);const url=new URL(window.location.href);if(next==="canvas")url.searchParams.delete("view");else url.searchParams.set("view",next);url.searchParams.delete("resource");window.history.replaceState(null,"",`${url.pathname}${url.search}${url.hash}`)};
- const openRuntimeResource=(kind:"operation"|"model"|"datatype"|"goal"|"plan"|"context",id:string)=>{const next:View=kind==="operation"?"operations":kind==="model"?"llms":kind==="goal"?"goals":kind==="plan"?"plans":kind==="context"?"contexts":"data";setViewState(next);const url=new URL(window.location.href);url.searchParams.set("view",next);url.searchParams.set("resource",id);window.history.replaceState(null,"",`${url.pathname}${url.search}${url.hash}`)};
- const[workflowPath,setWorkflowPath]=useState(""),[workflowSource,setWorkflowSource]=useState(""),[runInputs,setRunInputs]=useState("{}"),[selectedStepId,setSelectedStepId]=useState<string|null>(null),[humanValues,setHumanValues]=useState<Record<string,unknown>>({}),[humanDraftLoaded,setHumanDraftLoaded]=useState(false),[humanDraftStatus,setHumanDraftStatus]=useState("");
- const[run,setRun]=useState<Run|null>(null),[selectedArtifactId,setSelectedArtifactId]=useState<string|null>(null),[validation,setValidation]=useState<string[]|null>(null),[capabilities,setCapabilities]=useState<Record<string,Capability>>({}),[implementations,setImplementations]=useState<EngineImplementation[]>([]),[busy,setBusy]=useState(false),[error,setError]=useState<string|null>(null);
- const[operationLibrary,setOperationLibrary]=useState<OperationLibrary>({operations:[],operationImplementations:[]});
- const[playgroundContext,setPlaygroundContext]=useState<Record<string,unknown>>({});
- const[collapsedPlaygrounds,setCollapsedPlaygrounds]=useState<Record<string,boolean>>({});
- const[restarting,setRestarting]=useState(false);
- const[theme,setTheme]=useState<WorkbenchTheme>(()=>{const saved=localStorage.getItem("workbench.theme");return isWorkbenchTheme(saved)?saved:"midnight"});
- const[newWorkspaceLabel,setNewWorkspaceLabel]=useState("");
- const[newWorkspaceTemplateId,setNewWorkspaceTemplateId]=useState("default");
- const[insertOperationId,setInsertOperationId]=useState("gallery.curate_resource");
- const[inspectorWidth,setInspectorWidth]=useState(()=>Math.max(240,Number(localStorage.getItem("workbench.inspectorWidth"))||310));
- const[docsFilter,setDocsFilter]=useState("");
- const workflow=useMemo<Workflow|null>(()=>{try{return workflowSource?JSON.parse(workflowSource) as Workflow:null}catch{return null}},[workflowSource]);
- const selectedStep=workflow?.steps.find(step=>step.id===selectedStepId)||null;const selectedRuntime=run?.steps.find(step=>step.stepId===selectedStepId)||null;const selectedArtifact=run?.artifacts.find(item=>item.id===selectedArtifactId)||run?.artifacts[0]||null;
- const enabledModelCount=workspace?.modelFileCount||0;
+export function FilesystemWorkbenchPage() {
+  const [workspaces, setWorkspaces] = useState<Workspace[]>([]),
+    [workspace, setWorkspace] = useState<Workspace | null>(null),
+    [snapshot, setSnapshot] = useState<Snapshot | null>(null),
+    [view, setViewState] = useState<View>(() => viewFromLocation() || "canvas");
+  const [viewTrail, setViewTrail] = useState<BreadcrumbEntry[]>(() => {
+    const initial = viewFromLocation() || "canvas";
+    return [
+      { view: initial, label: viewLabel(initial), url: window.location.href },
+    ];
+  });
+  const [viewTrailIndex, setViewTrailIndex] = useState(0);
+  const breadcrumbNavigation = useRef(false);
+  const autoWorkspaceStarted = useRef(false);
+  const setView = (next: View) => {
+    setViewState(next);
+    if (next === "states") {
+      setWorkflowPaneFocus("runs");
+      setWorkflowEditorPercent(33.333);
+    }
+    const url = new URL(window.location.href);
+    url.searchParams.set("view", next === "canvas" ? "workflows" : next);
+    url.searchParams.delete("menu");
+    url.searchParams.delete("resource");
+    window.history.replaceState(
+      null,
+      "",
+      `${url.pathname}${url.search}${url.hash}`,
+    );
+  };
+  const openRuntimeResource = (
+    kind: "operation" | "model" | "datatype" | "goal" | "plan" | "context",
+    id: string,
+  ) => {
+    const next: View =
+      kind === "operation"
+        ? "operations"
+        : kind === "model"
+          ? "llms"
+          : kind === "goal"
+            ? "goals"
+            : kind === "plan"
+              ? "plans"
+              : kind === "context"
+                ? "contexts"
+                : "data";
+    setViewState(next);
+    const url = new URL(window.location.href);
+    url.searchParams.set("view", next);
+    url.searchParams.set("resource", id);
+    window.history.replaceState(
+      null,
+      "",
+      `${url.pathname}${url.search}${url.hash}`,
+    );
+  };
+  const [workflowPath, setWorkflowPath] = useState(""),
+    [workflowSource, setWorkflowSource] = useState(""),
+    [runInputs, setRunInputs] = useState("{}"),
+    [selectedStepId, setSelectedStepId] = useState<string | null>(null),
+    [humanValues, setHumanValues] = useState<Record<string, unknown>>({}),
+    [humanDraftLoaded, setHumanDraftLoaded] = useState(false),
+    [humanDraftStatus, setHumanDraftStatus] = useState("");
+  const [preflightStateOverrides, setPreflightStateOverrides] = useState<
+    Record<string, Partial<PreflightStateValue>>
+  >({});
+  const [workflowStepDisplayModes, setWorkflowStepDisplayModes] = useState<Record<string, AccordionDisplayMode>>({});
+  const [resourceBrowserDisplayMode, setResourceBrowserDisplayMode] = useState<AccordionDisplayMode>("scroll");
+  const [selectedStageDisplayMode, setSelectedStageDisplayMode] = useState<AccordionDisplayMode>("scroll");
+  const [workflowColumnsStackDisplayMode, setWorkflowColumnsStackDisplayMode] = useState<AccordionDisplayMode>("scroll");
+  const [workflowLeftColumnDisplayMode, setWorkflowLeftColumnDisplayMode] = useState<AccordionDisplayMode>("scroll");
+  const [workflowRightColumnDisplayMode, setWorkflowRightColumnDisplayMode] = useState<AccordionDisplayMode>("scroll");
+  const toggleSelectedStageDisplayMode = () =>
+    setSelectedStageDisplayMode((mode) => mode === "strip" ? "scroll" : "strip");
+  const [workflowPaneFocus, setWorkflowPaneFocus] = useState<"editor" | "runs">(
+    () =>
+      ["workflowRuns", "states"].includes(viewFromLocation() || "")
+        ? "runs"
+        : "editor",
+  );
+  const [workflowEditorPercent, setWorkflowEditorPercent] = useState(() =>
+    ["workflowRuns", "states"].includes(viewFromLocation() || "")
+      ? 33.333
+      : 66.667,
+  );
+  const [takeoverShellPanel, setTakeoverShellPanel] = useState<
+    "resource" | "docs" | null
+  >(null);
+  useEffect(() => {
+    if (view !== "workflowRuns") return;
+    setWorkflowPaneFocus("runs");
+    setView("canvas");
+  }, [view]);
+  useEffect(() => {
+    if (breadcrumbNavigation.current) {
+      breadcrumbNavigation.current = false;
+      return;
+    }
+    setViewTrail((current) => {
+      if (current[viewTrailIndex]?.view === view) return current;
+      const next = [
+        ...current.slice(0, viewTrailIndex + 1),
+        { view, label: viewLabel(view), url: window.location.href },
+      ];
+      setViewTrailIndex(next.length - 1);
+      return next;
+    });
+  }, [view]);
+  useEffect(() => {
+    const record = (event: Event) => {
+      const detail = (event as CustomEvent<{ label?: string }>).detail;
+      const label = detail?.label?.trim();
+      if (!label) return;
+      const entry = { view, label, url: window.location.href };
+      setViewTrail((current) => {
+        const active = current[viewTrailIndex];
+        if (active?.url === entry.url && active.label === entry.label)
+          return current;
+        const next = [...current.slice(0, viewTrailIndex + 1), entry];
+        setViewTrailIndex(next.length - 1);
+        return next;
+      });
+    };
+    window.addEventListener("workbench:navigation", record);
+    return () => window.removeEventListener("workbench:navigation", record);
+  }, [view, viewTrailIndex]);
+  useEffect(() => {
+    if (workspace) {
+      setViewTrail([
+        { view, label: viewLabel(view), url: window.location.href },
+      ]);
+      setViewTrailIndex(0);
+    }
+  }, [workspace?.id]);
+  const [run, setRun] = useState<Run | null>(null),
+    [selectedArtifactId, setSelectedArtifactId] = useState<string | null>(null),
+    [validation, setValidation] = useState<string[] | null>(null),
+    [capabilities, setCapabilities] = useState<Record<string, Capability>>({}),
+    [implementations, setImplementations] = useState<EngineImplementation[]>(
+      [],
+    ),
+    [busy, setBusy] = useState(false),
+    [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    const terminalIds = (run?.steps || []).filter((step) => ["completed", "failed", "skipped", "cancelled"].includes(step.status)).map((step) => step.stepId);
+    if (!terminalIds.length) return;
+    setWorkflowStepDisplayModes((current) => {
+      const next = { ...current };
+      for (const id of terminalIds) next[id] = "strip";
+      return next;
+    });
+  }, [run?.steps]);
+  const [operationLibrary, setOperationLibrary] = useState<OperationLibrary>({
+    operations: [],
+    operationImplementations: [],
+  });
+  const [playgroundContext, setPlaygroundContext] = useState<
+    Record<string, unknown>
+  >({});
+  const [collapsedPlaygrounds, setCollapsedPlaygrounds] = useState<
+    Record<string, boolean>
+  >({});
+  const [completedPlaygrounds, setCompletedPlaygrounds] = useState<
+    Record<string, boolean>
+  >({});
+  const [restarting, setRestarting] = useState(false);
+  const [theme, setTheme] = useState<WorkbenchTheme>(() => {
+    const saved = localStorage.getItem("workbench.theme");
+    return isWorkbenchTheme(saved) ? saved : "midnight";
+  });
+  const [newWorkspaceLabel, setNewWorkspaceLabel] = useState("");
+  const [newWorkspaceTemplateId, setNewWorkspaceTemplateId] =
+    useState("default");
+  const [insertOperationId, setInsertOperationId] = useState(
+    "gallery.curate_resource",
+  );
+  const [resourceBrowserWidth, setResourceBrowserWidth] = useState(() =>
+    Math.max(
+      180,
+      Math.min(
+        520,
+        Number(localStorage.getItem("workbench.resourceBrowserWidth")) || 250,
+      ),
+    ),
+  );
+  const [inspectorWidth, setInspectorWidth] = useState(() =>
+    Math.max(
+      240,
+      Number(localStorage.getItem("workbench.inspectorWidth")) || 310,
+    ),
+  );
+  const [docsFilter, setDocsFilter] = useState("");
+  const workflow = useMemo<Workflow | null>(() => {
+    try {
+      return workflowSource ? (JSON.parse(workflowSource) as Workflow) : null;
+    } catch {
+      return null;
+    }
+  }, [workflowSource]);
+  const setLeftColumnAccordionMode = (mode: AccordionDisplayMode) => {
+    setWorkflowLeftColumnDisplayMode(mode);
+    setSelectedStageDisplayMode(mode);
+    setWorkflowStepDisplayModes(
+      Object.fromEntries((workflow?.steps || []).map((step) => [step.id, mode])),
+    );
+  };
+  const setRightColumnAccordionMode = (mode: AccordionDisplayMode) => {
+    setWorkflowRightColumnDisplayMode(mode);
+  };
+  const parsedRunInputs = useMemo<Record<string, unknown>>(() => {
+    try {
+      return JSON.parse(runInputs) as Record<string, unknown>;
+    } catch {
+      return {};
+    }
+  }, [runInputs]);
+  const runInputsValid = useMemo(() => {
+    try {
+      const value = JSON.parse(runInputs);
+      return Boolean(
+        value && typeof value === "object" && !Array.isArray(value),
+      );
+    } catch {
+      return false;
+    }
+  }, [runInputs]);
+  const preflightStateValues = useMemo<PreflightStateValue[]>(() => {
+    const inferDatatype = (value: unknown, declared?: string) =>
+      declared ||
+      (Array.isArray(value)
+        ? "list"
+        : value === null
+          ? "null"
+          : typeof value === "object"
+            ? "object"
+            : typeof value);
+    const startup = Object.entries(parsedRunInputs).map(([input, value]) => ({
+      kind: "state_value" as const,
+      id: `startup_${slug(input)}`,
+      label: input.replace(/_/g, " "),
+      enabled: true,
+      datatype: inferDatatype(value, workflow?.inputs?.[input]),
+      source: { kind: "startup_input" as const, input },
+      preferredRenderer: "json" as const,
+      treatAsList: Array.isArray(value),
+      allowRedefinition: false,
+      applicability: ["startup", "always"],
+      defaultValue: workflow?.inputDefaults?.[input],
+      value,
+    }));
+    const outputs = (workflow?.steps || []).flatMap((step) =>
+      Object.entries(step.outputs || {}).map(([output, binding]) => ({
+        kind: "state_value" as const,
+        id: `${slug(step.id)}_${slug(String(binding || output))}`,
+        label: String(binding || output).replace(/_/g, " "),
+        enabled: true,
+        datatype: "unknown",
+        source: {
+          kind: "step_output" as const,
+          stepId: step.id,
+          output,
+          binding,
+        },
+        preferredRenderer: "metta" as const,
+        treatAsList: false,
+        allowRedefinition: true,
+        applicability: ["steps", "chapter", "game", "postMortem"],
+      })),
+    );
+    return [...startup, ...outputs];
+  }, [parsedRunInputs, workflow]);
+  const effectivePreflightStateValues = useMemo(
+    () =>
+      preflightStateValues.map((value) => ({
+        ...value,
+        ...preflightStateOverrides[value.id],
+      })),
+    [preflightStateOverrides, preflightStateValues],
+  );
+  const updatePreflightStateValue = (
+    id: string,
+    patch: Partial<PreflightStateValue>,
+  ) =>
+    setPreflightStateOverrides((current) => ({
+      ...current,
+      [id]: { ...current[id], ...patch },
+    }));
+  const setRunInput = (name: string, value: unknown) =>
+    setRunInputs(
+      JSON.stringify({ ...parsedRunInputs, [name]: value }, null, 2),
+    );
+  const selectedStep =
+    workflow?.steps.find((step) => step.id === selectedStepId) || null;
+  const selectedRuntime =
+    run?.steps.find((step) => step.stepId === selectedStepId) || null;
+  const selectedArtifact =
+    run?.artifacts.find((item) => item.id === selectedArtifactId) ||
+    run?.artifacts[0] ||
+    null;
+  const enabledModelCount = workspace?.modelFileCount || 0;
 
- useEffect(()=>{void request("/api/workspaces").then(payload=>setWorkspaces((payload.workspaces||[]) as Workspace[])).catch(reason=>setError(String(reason)))},[]);
- useEffect(()=>{if(!run||["completed","failed","cancelled"].includes(run.status))return;const timer=window.setInterval(()=>void engine(`/runs/${run.id}`).then(payload=>setRun(payload.run as Run)).catch(reason=>setError(String(reason))),1000);return()=>window.clearInterval(timer)},[run?.id,run?.status]);
- const perform=async(work:()=>Promise<void>)=>{setBusy(true);setError(null);try{await work()}catch(reason){setError(reason instanceof Error?reason.message:String(reason))}finally{setBusy(false)}};
- const refreshSnapshot=async()=>{if(!workspace)return null;const next=await request(`/api/workspaces/${encodeURIComponent(workspace.id)}/snapshot?scope=shell`) as unknown as Snapshot;setWorkspace(next.workspace);setSnapshot(next);return next};
- const loadWorkspace=(item:Workspace)=>perform(async()=>{const[snapshotPayload,implementationPayload,operationPayload]=await Promise.all([request(`/api/workspaces/${encodeURIComponent(item.id)}/snapshot?scope=shell`),engine("/implementations"),request(`/api/workspaces/${encodeURIComponent(item.id)}/operations`)]);const next=snapshotPayload as unknown as Snapshot;setWorkspace(next.workspace);const workspaceUrl=new URL(window.location.href);workspaceUrl.searchParams.set("workspace",next.workspace.id);window.history.replaceState(null,"",`${workspaceUrl.pathname}${workspaceUrl.search}${workspaceUrl.hash}`);setSnapshot(next);setImplementations((implementationPayload.implementations||[]) as EngineImplementation[]);setOperationLibrary({operations:(operationPayload.operations||[]) as RecordFile<OperationResource>[],operationImplementations:(operationPayload.operationImplementations||[]) as RecordFile<OperationResource>[]});const first=next.workflows.find(row=>row.document);const restoredView=viewFromLocation();if(first?.document){setWorkflowPath(first.path);setWorkflowSource(JSON.stringify(first.document,null,2));setSelectedStepId(first.document.steps[0]?.id||null);setViewState(restoredView||"canvas")}else{setWorkflowPath("");setWorkflowSource("");setSelectedStepId(null);setViewState(restoredView||"data")}setRun(null);setSelectedArtifactId(null);setValidation(null);void engine("/capabilities").then(payload=>setCapabilities((payload.capabilities||{}) as Record<string,Capability>)).catch(()=>undefined);void request("/api/workspaces?detailed=true").then(payload=>setWorkspaces((payload.workspaces||[]) as Workspace[])).catch(()=>undefined)});
- useEffect(()=>{const requested=workspaceFromLocation();if(!requested||workspace||autoWorkspaceStarted.current||!workspaces.length)return;const match=workspaces.find(item=>item.id===requested);if(!match)return;autoWorkspaceStarted.current=true;void loadWorkspace(match)},[workspaces,workspace]);
- const createWorkspace=()=>perform(async()=>{const label=newWorkspaceLabel.trim();if(!label)throw new Error("Enter a workspace name");const payload=await request("/api/workspaces",{method:"POST",body:JSON.stringify({label,templateWorkspaceId:newWorkspaceTemplateId})});const created=payload.workspace as Workspace;setWorkspaces(current=>[...current.filter(item=>item.root!==created.root),created].sort((a,b)=>a.label.localeCompare(b.label)));setNewWorkspaceLabel("");setNewWorkspaceTemplateId("default");await loadWorkspace(created)});
- const openWorkflow=(path:string)=>perform(async()=>{if(!workspace||!path)return;const inherited=snapshot?.workflows.find(row=>row.path===path&&row.workspaceId!==workspace.id);if(inherited?.document){setWorkflowPath(path);setWorkflowSource(JSON.stringify(inherited.document,null,2));setValidation(null);setSelectedStepId(inherited.document.steps[0]?.id||null);return}const payload=await request(`/api/workspaces/${encodeURIComponent(workspace.id)}/file?path=${encodeURIComponent(path)}`);const content=String((payload.file as Record<string,unknown>).content||"");setWorkflowPath(path);setWorkflowSource(content);setValidation(null);try{const document=JSON.parse(content) as Workflow;setSelectedStepId(document.steps[0]?.id||null)}catch{setSelectedStepId(null)}});
- const saveWorkflow=()=>perform(async()=>{if(!workspace||!workflow)throw new Error("Select a valid workflow document first");const path=workflowPath||`design/workflows/${slug(workflow.id)}.json`;await request(`/api/workspaces/${encodeURIComponent(workspace.id)}/file`,{method:"PUT",body:JSON.stringify({path,content:JSON.stringify(workflow,null,2)})});setWorkflowPath(path);await refreshSnapshot()});
- const updatePlanProvenance=(changes:Partial<PlanProvenance>)=>{if(!workflow)return;setWorkflowSource(JSON.stringify({...workflow,planProvenance:{origin:"human",...(workflow.planProvenance||{}),...changes}},null,2))};
- const validateWorkflow=()=>perform(async()=>{if(!workflow)throw new Error("Invalid workflow resource");const payload=await engine("/workflows/validate",{method:"POST",body:JSON.stringify(workflow)});setValidation((payload.errors||[]) as string[])});
- const startRun=()=>perform(async()=>{if(!workflow||!workspace)throw new Error("Invalid workflow resource");const definition={...workflow,workspaceId:workspace.id};delete definition.version;const saved=(await engine("/workflows",{method:"POST",body:JSON.stringify(definition)})).workflow as Workflow;const content=JSON.stringify(saved,null,2);setWorkflowSource(content);const path=workflowPath||`design/workflows/${slug(saved.id)}.json`;await request(`/api/workspaces/${encodeURIComponent(workspace.id)}/file`,{method:"PUT",body:JSON.stringify({path,content})});setWorkflowPath(path);const payload=await engine("/runs",{method:"POST",body:JSON.stringify({workspaceId:workspace.id,workflowId:saved.id,version:saved.version,inputs:JSON.parse(runInputs)})});setRun(payload.run as Run);setSelectedArtifactId(null);setCollapsedPlaygrounds({})});
- const command=(name:string)=>perform(async()=>{if(!run)return;const payload=await engine(`/runs/${run.id}/commands`,{method:"POST",body:JSON.stringify({command:name})});setRun(payload.run as Run)});
- const restartServers=async()=>{if(!window.confirm(`Restart the UI and API servers${run?.status==="running"?"? The active workflow run may be interrupted.":"?"}`))return;setRestarting(true);setError(null);try{const accepted=await request("/api/system/restart",{method:"POST",body:"{}"});const previous=String(accepted.instanceId||"");for(let attempt=0;attempt<80;attempt+=1){await new Promise(resolve=>window.setTimeout(resolve,250));try{const response=await fetch("/api/health",{cache:"no-store"});if(response.ok){const health=await response.json() as {instanceId?:string};if(health.instanceId&&health.instanceId!==previous){window.location.reload();return}}}catch{/* The servers are expected to be briefly unavailable. */}}throw new Error("The servers did not return within 20 seconds. Check their command windows.")}catch(reason){setError(reason instanceof Error?reason.message:String(reason));setRestarting(false)}};
- const submitHuman=()=>perform(async()=>{if(!run||!selectedStepId)return;const payload=await engine(`/runs/${run.id}/steps/${selectedStepId}/input`,{method:"POST",body:JSON.stringify(humanValues)});setRun(payload.run as Run);setHumanDraftLoaded(false);setHumanDraftStatus("")});
- const selectRuntimeRun=(nextRun:Run)=>{void perform(async()=>{const payload=await engine(`/workflows/${encodeURIComponent(nextRun.workflowId)}?version=${nextRun.workflowVersion}`);const frozen=payload.workflow as Workflow;const record=snapshot?.workflows.find(row=>row.document?.id===nextRun.workflowId);const active=nextRun.steps.find(step=>["waiting","running","failed"].includes(step.status))||[...nextRun.steps].reverse().find(step=>step.status==="completed");setWorkflowPath(record?.path||"");setWorkflowSource(JSON.stringify(frozen,null,2));setRun(nextRun);setSelectedArtifactId(null);setSelectedStepId(active?.stepId||frozen.steps[0]?.id||null)})};
- const beginInspectorResize=(event:ReactPointerEvent<HTMLDivElement>)=>{event.preventDefault();const move=(pointer:PointerEvent)=>setInspectorWidth(Math.max(240,Math.min(window.innerWidth*.6,window.innerWidth-pointer.clientX)));const stop=()=>{window.removeEventListener("pointermove",move);window.removeEventListener("pointerup",stop);document.body.classList.remove("resizing-panel")};document.body.classList.add("resizing-panel");window.addEventListener("pointermove",move);window.addEventListener("pointerup",stop)};
- useEffect(()=>{localStorage.setItem("workbench.inspectorWidth",String(Math.round(inspectorWidth)))},[inspectorWidth]);
- useEffect(()=>{document.documentElement.dataset.workbenchTheme=theme;localStorage.setItem("workbench.theme",theme)},[theme]);
- useEffect(()=>{const openDocs=(event:Event)=>{setDocsFilter(String((event as CustomEvent).detail||""));setView("docs")};window.addEventListener("workbench:open-docs",openDocs);return()=>window.removeEventListener("workbench:open-docs",openDocs)},[]);
- useEffect(()=>{const restoreView=()=>setViewState(viewFromLocation()||"canvas");window.addEventListener("popstate",restoreView);return()=>window.removeEventListener("popstate",restoreView)},[]);
- useEffect(()=>{document.body.classList.toggle("docs-focused",view==="docs");return()=>document.body.classList.remove("docs-focused")},[view]);
- useEffect(()=>{if(!run||!selectedStepId||selectedRuntime?.status!=="waiting"){setHumanDraftLoaded(false);setHumanDraftStatus("");return}setHumanDraftLoaded(false);setHumanDraftStatus("Loading saved draft…");void engine(`/runs/${run.id}/steps/${selectedStepId}/draft`).then(payload=>{setHumanValues((payload.draft?.values||{}) as Record<string,unknown>);setHumanDraftLoaded(true);setHumanDraftStatus(payload.draft?.updatedAt?`Draft restored · ${String(payload.draft.updatedAt).replace("T"," ").slice(0,19)}`:"Draft autosave ready")}).catch(reason=>{setHumanDraftLoaded(true);setHumanDraftStatus(`Draft unavailable · ${String(reason)}`)})},[run?.id,selectedStepId,selectedRuntime?.status]);
- useEffect(()=>{if(!run||!selectedStepId||selectedRuntime?.status!=="waiting"||!humanDraftLoaded)return;setHumanDraftStatus("Saving draft…");const timer=window.setTimeout(()=>{void engine(`/runs/${run.id}/steps/${selectedStepId}/draft`,{method:"PUT",body:JSON.stringify(humanValues)}).then(payload=>setHumanDraftStatus(`Draft saved · ${String(payload.draft?.updatedAt||"").replace("T"," ").slice(0,19)}`)).catch(reason=>setHumanDraftStatus(`Draft save failed · ${String(reason)}`))},500);return()=>window.clearTimeout(timer)},[humanValues,humanDraftLoaded,run?.id,selectedStepId,selectedRuntime?.status]);
+  useEffect(() => {
+    void request("/api/workspaces")
+      .then((payload) =>
+        setWorkspaces((payload.workspaces || []) as Workspace[]),
+      )
+      .catch((reason) => setError(String(reason)));
+  }, []);
+  useEffect(() => {
+    if (workspace)
+      setPlaygroundContext((current) => ({
+        ...current,
+        ...(workflow?.inputDefaults || {}),
+        workspace_root: workspace.root,
+      }));
+  }, [
+    workspace?.root,
+    workflow?.id,
+    JSON.stringify(workflow?.inputDefaults || {}),
+  ]);
+  useEffect(() => {
+    setCollapsedPlaygrounds({});
+    setCompletedPlaygrounds({});
+  }, [workflowPath]);
+  useEffect(() => {
+    if (!run || ["completed", "failed", "cancelled"].includes(run.status))
+      return;
+    const timer = window.setInterval(
+      () =>
+        void engine(`/runs/${run.id}`)
+          .then((payload) => setRun(payload.run as Run))
+          .catch((reason) => setError(String(reason))),
+      1000,
+    );
+    return () => window.clearInterval(timer);
+  }, [run?.id, run?.status]);
+  const perform = async (work: () => Promise<void>) => {
+    setBusy(true);
+    setError(null);
+    try {
+      await work();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : String(reason));
+    } finally {
+      setBusy(false);
+    }
+  };
+  const refreshSnapshot = async () => {
+    if (!workspace) return null;
+    const next = (await request(
+      `/api/workspaces/${encodeURIComponent(workspace.id)}/snapshot?scope=shell`,
+    )) as unknown as Snapshot;
+    setWorkspace(next.workspace);
+    setSnapshot(next);
+    return next;
+  };
+  const loadWorkspace = (item: Workspace) =>
+    perform(async () => {
+      const [snapshotPayload, implementationPayload, operationPayload] =
+        await Promise.all([
+          request(
+            `/api/workspaces/${encodeURIComponent(item.id)}/snapshot?scope=shell`,
+          ),
+          engine("/implementations"),
+          request(`/api/workspaces/${encodeURIComponent(item.id)}/operations`),
+        ]);
+      const next = snapshotPayload as unknown as Snapshot;
+      setWorkspace(next.workspace);
+      const workspaceUrl = new URL(window.location.href);
+      workspaceUrl.searchParams.set("workspace", next.workspace.id);
+      window.history.replaceState(
+        null,
+        "",
+        `${workspaceUrl.pathname}${workspaceUrl.search}${workspaceUrl.hash}`,
+      );
+      setSnapshot(next);
+      setImplementations(
+        (implementationPayload.implementations || []) as EngineImplementation[],
+      );
+      setOperationLibrary({
+        operations: (operationPayload.operations ||
+          []) as RecordFile<OperationResource>[],
+        operationImplementations: (operationPayload.operationImplementations ||
+          []) as RecordFile<OperationResource>[],
+      });
+      const first = next.workflows.find((row) => row.document);
+      const restoredView = viewFromLocation();
+      if (first?.document) {
+        setWorkflowPath(first.path);
+        setWorkflowSource(JSON.stringify(first.document, null, 2));
+        setRunInputs(
+          JSON.stringify(
+            {
+              ...first.document.inputDefaults,
+              workspace_root: next.workspace.root,
+            },
+            null,
+            2,
+          ),
+        );
+        setSelectedStepId(first.document.steps[0]?.id || null);
+        setViewState(restoredView || "canvas");
+      } else {
+        setWorkflowPath("");
+        setWorkflowSource("");
+        setRunInputs("{}");
+        setSelectedStepId(null);
+        setViewState(restoredView || "data");
+      }
+      setRun(null);
+      setSelectedArtifactId(null);
+      setValidation(null);
+      void engine("/capabilities")
+        .then((payload) =>
+          setCapabilities(
+            (payload.capabilities || {}) as Record<string, Capability>,
+          ),
+        )
+        .catch(() => undefined);
+      void request("/api/workspaces?detailed=true")
+        .then((payload) =>
+          setWorkspaces((payload.workspaces || []) as Workspace[]),
+        )
+        .catch(() => undefined);
+    });
+  useEffect(() => {
+    const requested = workspaceFromLocation();
+    if (
+      !requested ||
+      workspace ||
+      autoWorkspaceStarted.current ||
+      !workspaces.length
+    )
+      return;
+    const match = workspaces.find((item) => item.id === requested);
+    if (!match) return;
+    autoWorkspaceStarted.current = true;
+    void loadWorkspace(match);
+  }, [workspaces, workspace]);
+  const createWorkspace = () =>
+    perform(async () => {
+      const label = newWorkspaceLabel.trim();
+      if (!label) throw new Error("Enter a workspace name");
+      const payload = await request("/api/workspaces", {
+        method: "POST",
+        body: JSON.stringify({
+          label,
+          templateWorkspaceId: newWorkspaceTemplateId,
+        }),
+      });
+      const created = payload.workspace as Workspace;
+      setWorkspaces((current) =>
+        [...current.filter((item) => item.root !== created.root), created].sort(
+          (a, b) => a.label.localeCompare(b.label),
+        ),
+      );
+      setNewWorkspaceLabel("");
+      setNewWorkspaceTemplateId("default");
+      await loadWorkspace(created);
+    });
+  const openWorkflow = (path: string) =>
+    perform(async () => {
+      if (!workspace || !path) return;
+      const inherited = snapshot?.workflows.find(
+        (row) => row.path === path && row.workspaceId !== workspace.id,
+      );
+      if (inherited?.document) {
+        setWorkflowPath(path);
+        setWorkflowSource(JSON.stringify(inherited.document, null, 2));
+        setValidation(null);
+        setSelectedStepId(inherited.document.steps[0]?.id || null);
+        return;
+      }
+      const payload = await request(
+        `/api/workspaces/${encodeURIComponent(workspace.id)}/file?path=${encodeURIComponent(path)}`,
+      );
+      const content = String(
+        (payload.file as Record<string, unknown>).content || "",
+      );
+      setWorkflowPath(path);
+      setWorkflowSource(content);
+      setValidation(null);
+      try {
+        const document = JSON.parse(content) as Workflow;
+        setSelectedStepId(document.steps[0]?.id || null);
+      } catch {
+        setSelectedStepId(null);
+      }
+    });
+  const saveWorkflow = () =>
+    perform(async () => {
+      if (!workspace || !workflow)
+        throw new Error("Select a valid workflow document first");
+      const path = workflowPath || `design/workflows/${slug(workflow.id)}.json`;
+      await request(
+        `/api/workspaces/${encodeURIComponent(workspace.id)}/file`,
+        {
+          method: "PUT",
+          body: JSON.stringify({
+            path,
+            content: JSON.stringify(workflow, null, 2),
+          }),
+        },
+      );
+      setWorkflowPath(path);
+      await refreshSnapshot();
+    });
+  const updatePlanProvenance = (changes: Partial<PlanProvenance>) => {
+    if (!workflow) return;
+    setWorkflowSource(
+      JSON.stringify(
+        {
+          ...workflow,
+          planProvenance: {
+            origin: "human",
+            ...(workflow.planProvenance || {}),
+            ...changes,
+          },
+        },
+        null,
+        2,
+      ),
+    );
+  };
+  const validateWorkflow = () =>
+    perform(async () => {
+      if (!workflow) throw new Error("Invalid workflow resource");
+      const payload = await engine("/workflows/validate", {
+        method: "POST",
+        body: JSON.stringify(workflow),
+      });
+      setValidation((payload.errors || []) as string[]);
+    });
+  const startRun = () =>
+    perform(async () => {
+      if (!workflow || !workspace) throw new Error("Invalid workflow resource");
+      const definition = { ...workflow, workspaceId: workspace.id };
+      delete definition.version;
+      const saved = (
+        await engine("/workflows", {
+          method: "POST",
+          body: JSON.stringify(definition),
+        })
+      ).workflow as Workflow;
+      const content = JSON.stringify(saved, null, 2);
+      setWorkflowSource(content);
+      const path = workflowPath || `design/workflows/${slug(saved.id)}.json`;
+      await request(
+        `/api/workspaces/${encodeURIComponent(workspace.id)}/file`,
+        { method: "PUT", body: JSON.stringify({ path, content }) },
+      );
+      setWorkflowPath(path);
+      const payload = await engine("/runs", {
+        method: "POST",
+        body: JSON.stringify({
+          workspaceId: workspace.id,
+          workflowId: saved.id,
+          version: saved.version,
+          inputs: JSON.parse(runInputs),
+          stateValues: effectivePreflightStateValues,
+        }),
+      });
+      setRun(payload.run as Run);
+      setSelectedArtifactId(null);
+      setCollapsedPlaygrounds({});
+    });
+  const startAutomaticRun = () => {
+    let values: Record<string, unknown>;
+    try {
+      values = JSON.parse(runInputs) as Record<string, unknown>;
+    } catch {
+      setError(
+        "Run inputs must be valid JSON before automatic play can start.",
+      );
+      return;
+    }
+    const automaticInputs = { ...values, mode: "automatic" };
+    setRunInputs(JSON.stringify(automaticInputs, null, 2));
+    void perform(async () => {
+      if (!workflow || !workspace) throw new Error("Invalid workflow resource");
+      const definition = { ...workflow, workspaceId: workspace.id };
+      delete definition.version;
+      const saved = (
+        await engine("/workflows", {
+          method: "POST",
+          body: JSON.stringify(definition),
+        })
+      ).workflow as Workflow;
+      const payload = await engine("/runs", {
+        method: "POST",
+        body: JSON.stringify({
+          workspaceId: workspace.id,
+          workflowId: saved.id,
+          version: saved.version,
+          inputs: automaticInputs,
+          stateValues: effectivePreflightStateValues,
+        }),
+      });
+      setRun(payload.run as Run);
+      setSelectedArtifactId(null);
+      setCollapsedPlaygrounds({});
+    });
+  };
+  const command = (name: string) =>
+    perform(async () => {
+      if (!run) return;
+      const payload = await engine(`/runs/${run.id}/commands`, {
+        method: "POST",
+        body: JSON.stringify({ command: name }),
+      });
+      setRun(payload.run as Run);
+    });
+  const selectRelativeStep = (offset: number) => {
+    if (!workflow || !selectedStepId) return;
+    const index = workflow.steps.findIndex(
+      (step) => step.id === selectedStepId,
+    );
+    const target =
+      workflow.steps[
+        Math.max(0, Math.min(workflow.steps.length - 1, index + offset))
+      ];
+    if (!target) return;
+    setSelectedStepId(target.id);
+    window.setTimeout(
+      () =>
+        document
+          .getElementById(`workflow-playground-${target.id}`)
+          ?.scrollIntoView({ behavior: "smooth", block: "start" }),
+      0,
+    );
+  };
+  const stepWorkflow = () => {
+    if (view !== "canvas" && view !== "editor") {
+      setError("Workflow Step controls are only available in Workflow Editor.");
+      return;
+    }
+    if (!selectedStepId) return;
+    const playground = document.getElementById(
+      `workflow-playground-${selectedStepId}`,
+    );
+    const button = playground?.querySelector<HTMLButtonElement>(
+      ".operation-execute-step",
+    );
+    if (!button) {
+      setError(
+        "This selected workflow node does not expose a directly runnable Operation.",
+      );
+      return;
+    }
+    if (button.disabled) {
+      setError(button.title || "This step is waiting for its upstream inputs.");
+      playground?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+    button.click();
+  };
+  const restartServers = async () => {
+    if (
+      !window.confirm(
+        `Restart the UI and API servers${run?.status === "running" ? "? The active workflow run may be interrupted." : "?"}`,
+      )
+    )
+      return;
+    setRestarting(true);
+    setError(null);
+    try {
+      const accepted = await request("/api/system/restart", {
+        method: "POST",
+        body: "{}",
+      });
+      const previous = String(accepted.instanceId || "");
+      for (let attempt = 0; attempt < 80; attempt += 1) {
+        await new Promise((resolve) => window.setTimeout(resolve, 250));
+        try {
+          const response = await fetch("/api/health", { cache: "no-store" });
+          if (response.ok) {
+            const health = (await response.json()) as { instanceId?: string };
+            if (health.instanceId && health.instanceId !== previous) {
+              window.location.reload();
+              return;
+            }
+          }
+        } catch {
+          /* The servers are expected to be briefly unavailable. */
+        }
+      }
+      throw new Error(
+        "The servers did not return within 20 seconds. Check their command windows.",
+      );
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : String(reason));
+      setRestarting(false);
+    }
+  };
+  const submitHuman = () =>
+    perform(async () => {
+      if (!run || !selectedStepId) return;
+      const payload = await engine(
+        `/runs/${run.id}/steps/${selectedStepId}/input`,
+        { method: "POST", body: JSON.stringify(humanValues) },
+      );
+      setRun(payload.run as Run);
+      setHumanDraftLoaded(false);
+      setHumanDraftStatus("");
+    });
+  const selectRuntimeRun = (nextRun: Run) => {
+    void perform(async () => {
+      const payload = await engine(
+        `/workflows/${encodeURIComponent(nextRun.workflowId)}?version=${nextRun.workflowVersion}`,
+      );
+      const frozen = payload.workflow as Workflow;
+      const record = snapshot?.workflows.find(
+        (row) => row.document?.id === nextRun.workflowId,
+      );
+      const active =
+        nextRun.steps.find((step) =>
+          ["waiting", "running", "failed"].includes(step.status),
+        ) ||
+        [...nextRun.steps]
+          .reverse()
+          .find((step) => step.status === "completed");
+      setWorkflowPath(record?.path || "");
+      setWorkflowSource(JSON.stringify(frozen, null, 2));
+      setRun(nextRun);
+      setSelectedArtifactId(null);
+      setSelectedStepId(active?.stepId || frozen.steps[0]?.id || null);
+    });
+  };
+  const beginInspectorResize = (event: ReactPointerEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    const move = (pointer: PointerEvent) =>
+      setInspectorWidth(
+        Math.max(
+          240,
+          Math.min(
+            window.innerWidth * 0.6,
+            window.innerWidth - pointer.clientX,
+          ),
+        ),
+      );
+    const stop = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", stop);
+      document.body.classList.remove("resizing-panel");
+    };
+    document.body.classList.add("resizing-panel");
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", stop);
+  };
+  const beginResourceBrowserResize = (
+    event: ReactPointerEvent<HTMLDivElement>,
+  ) => {
+    event.preventDefault();
+    const startX = event.clientX,
+      startWidth = resourceBrowserWidth;
+    const move = (pointer: PointerEvent) =>
+      setResourceBrowserWidth(
+        Math.max(180, Math.min(520, startWidth + pointer.clientX - startX)),
+      );
+    const stop = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", stop);
+      document.body.classList.remove("resizing-panel");
+    };
+    document.body.classList.add("resizing-panel");
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", stop);
+  };
+  useEffect(() => {
+    localStorage.setItem(
+      "workbench.resourceBrowserWidth",
+      String(Math.round(resourceBrowserWidth)),
+    );
+    document.documentElement.style.setProperty(
+      "--resource-browser-width",
+      `${resourceBrowserWidth}px`,
+    );
+  }, [resourceBrowserWidth]);
+  useEffect(() => {
+    localStorage.setItem(
+      "workbench.inspectorWidth",
+      String(Math.round(inspectorWidth)),
+    );
+  }, [inspectorWidth]);
+  useEffect(() => {
+    if (view !== "canvas" && view !== "states") return;
+    const bindings: Array<[HTMLElement | null, () => void, string]> = [
+      [
+        document.querySelector<HTMLElement>(".stages-panel .panel-label span"),
+        () => setResourceBrowserWidth((width) => (width <= 36 ? 250 : 36)),
+        "Resource Browser",
+      ],
+      [
+        document.querySelector<HTMLElement>(".inspector-head > span"),
+        () => setInspectorWidth((width) => (width <= 36 ? 310 : 36)),
+        "Documentation",
+      ],
+    ];
+    const cleanups = bindings.flatMap(([element, toggle, label]) => {
+      if (!element) return [];
+      element.setAttribute("role", "button");
+      element.setAttribute("tabindex", "0");
+      element.setAttribute("title", `Minimize or restore ${label}`);
+      const click = () => toggle();
+      const key = (event: KeyboardEvent) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          toggle();
+        }
+      };
+      element.addEventListener("click", click);
+      element.addEventListener("keydown", key);
+      return [
+        () => {
+          element.removeEventListener("click", click);
+          element.removeEventListener("keydown", key);
+        },
+      ];
+    });
+    return () => cleanups.forEach((cleanup) => cleanup());
+  }, [view, resourceBrowserWidth, inspectorWidth]);
+  useEffect(() => {
+    const states: Array<[string, boolean]> = [
+      [".resource-browser-frame-controls", resourceBrowserWidth <= 36],
+      [".documentation-frame-controls", inspectorWidth <= 36],
+    ];
+    states.forEach(([selector, minimized]) =>
+      document
+        .querySelector(selector)
+        ?.classList.toggle("restore-only", minimized),
+    );
+  }, [view, resourceBrowserWidth, inspectorWidth]);
+  useEffect(() => {
+    if (view !== "canvas") return;
+    const activate = (target: EventTarget | null) => {
+      const element = target instanceof Element ? target : null;
+      if (element?.closest(".stages-panel .panel-label span")) {
+        setResourceBrowserWidth((width) => (width <= 36 ? 250 : 36));
+        return true;
+      }
+      if (element?.closest(".inspector-head > span")) {
+        setInspectorWidth((width) => (width <= 36 ? 310 : 36));
+        return true;
+      }
+      return false;
+    };
+    const click = (event: MouseEvent) => {
+      if (activate(event.target)) event.stopPropagation();
+    };
+    document.addEventListener("click", click, true);
+    return () => document.removeEventListener("click", click, true);
+  }, [view]);
+  useEffect(() => {
+    document.documentElement.dataset.workbenchTheme = theme;
+    localStorage.setItem("workbench.theme", theme);
+  }, [theme]);
+  useEffect(() => {
+    document.body.classList.toggle(
+      "shell-takeover-resource",
+      takeoverShellPanel === "resource",
+    );
+    document.body.classList.toggle(
+      "shell-takeover-docs",
+      takeoverShellPanel === "docs",
+    );
+    return () => {
+      document.body.classList.remove(
+        "shell-takeover-resource",
+        "shell-takeover-docs",
+      );
+    };
+  }, [takeoverShellPanel]);
+  useEffect(() => {
+    if (takeoverShellPanel === "resource" && resourceBrowserWidth > 36)
+      setTakeoverShellPanel(null);
+    if (takeoverShellPanel === "docs" && inspectorWidth > 36)
+      setTakeoverShellPanel(null);
+  }, [takeoverShellPanel, resourceBrowserWidth, inspectorWidth]);
+  useEffect(() => {
+    const openDocs = (event: Event) => {
+      setDocsFilter(String((event as CustomEvent).detail || ""));
+      setView("docs");
+    };
+    window.addEventListener("workbench:open-docs", openDocs);
+    return () => window.removeEventListener("workbench:open-docs", openDocs);
+  }, []);
+  useEffect(() => {
+    const restoreView = () => setViewState(viewFromLocation() || "canvas");
+    window.addEventListener("popstate", restoreView);
+    return () => window.removeEventListener("popstate", restoreView);
+  }, []);
+  useEffect(() => {
+    if (view !== "overview") return;
+    const url = new URL(window.location.href);
+    const parametersToRemove = [
+      "run",
+      "goalRun",
+      "runStep",
+      "runEvent",
+      "runtimeRecord",
+      ...(url.searchParams.get("menu") === "overview" ? ["view"] : []),
+    ];
+    const changed = parametersToRemove.some((parameter) => {
+      const present = url.searchParams.has(parameter);
+      url.searchParams.delete(parameter);
+      return present;
+    });
+    if (changed)
+      window.history.replaceState(
+        null,
+        "",
+        `${url.pathname}${url.search}${url.hash}`,
+      );
+  }, [view]);
+  useEffect(() => {
+    document.body.classList.toggle("docs-focused", view === "docs");
+    return () => document.body.classList.remove("docs-focused");
+  }, [view]);
+  useEffect(() => {
+    if (view !== "states") return;
+    const timer = window.setTimeout(
+      () =>
+        document
+          .querySelector<HTMLElement>(".detected-memory-controls")
+          ?.scrollIntoView({ block: "start" }),
+      0,
+    );
+    return () => window.clearTimeout(timer);
+  }, [view, run?.id]);
+  useEffect(() => {
+    if (!run || !selectedStepId || selectedRuntime?.status !== "waiting") {
+      setHumanDraftLoaded(false);
+      setHumanDraftStatus("");
+      return;
+    }
+    setHumanDraftLoaded(false);
+    setHumanDraftStatus("Loading saved draft…");
+    void engine(`/runs/${run.id}/steps/${selectedStepId}/draft`)
+      .then((payload) => {
+        setHumanValues(
+          (payload.draft?.values || {}) as Record<string, unknown>,
+        );
+        setHumanDraftLoaded(true);
+        setHumanDraftStatus(
+          payload.draft?.updatedAt
+            ? `Draft restored · ${String(payload.draft.updatedAt).replace("T", " ").slice(0, 19)}`
+            : "Draft autosave ready",
+        );
+      })
+      .catch((reason) => {
+        setHumanDraftLoaded(true);
+        setHumanDraftStatus(`Draft unavailable · ${String(reason)}`);
+      });
+  }, [run?.id, selectedStepId, selectedRuntime?.status]);
+  useEffect(() => {
+    if (
+      !run ||
+      !selectedStepId ||
+      selectedRuntime?.status !== "waiting" ||
+      !humanDraftLoaded
+    )
+      return;
+    setHumanDraftStatus("Saving draft…");
+    const timer = window.setTimeout(() => {
+      void engine(`/runs/${run.id}/steps/${selectedStepId}/draft`, {
+        method: "PUT",
+        body: JSON.stringify(humanValues),
+      })
+        .then((payload) =>
+          setHumanDraftStatus(
+            `Draft saved · ${String(payload.draft?.updatedAt || "")
+              .replace("T", " ")
+              .slice(0, 19)}`,
+          ),
+        )
+        .catch((reason) =>
+          setHumanDraftStatus(`Draft save failed · ${String(reason)}`),
+        );
+    }, 500);
+    return () => window.clearTimeout(timer);
+  }, [
+    humanValues,
+    humanDraftLoaded,
+    run?.id,
+    selectedStepId,
+    selectedRuntime?.status,
+  ]);
 
- if(!workspace)return <main className="workbench-shell"><section className="workspace-gate"><div className="brand-lockup"><span className="brand-mark">M</span><div><b>MeTTa Symbolic Learner Workbench</b><small>Choose a filesystem workspace</small></div></div><div className="workspace-picker-grid"><form className="workspace-card create-workspace-card" onSubmit={event=>{event.preventDefault();void createWorkspace()}}><span className="workspace-kind">NEW FILESYSTEM WORKSPACE</span><h2>Create A New Workspace</h2><p>Copy the current files and inclusion settings from an existing workspace.</p><input aria-label="New workspace name" placeholder="Workspace name" value={newWorkspaceLabel} onChange={event=>setNewWorkspaceLabel(event.target.value)}/><label>Copy from<select aria-label="Workspace template" value={newWorkspaceTemplateId} onChange={event=>setNewWorkspaceTemplateId(event.target.value)}>{workspaces.map(item=><option key={item.root} value={item.id}>{item.label}{item.id==="default"?" (recommended)":""}</option>)}</select></label><button type="submit" disabled={busy||!newWorkspaceLabel.trim()}>Create Workspace</button><small>Default is preselected. The new workspace becomes an independent copy.</small></form>{workspaces.map(item=><button className={`workspace-card ${item.id==="shared"?"shared-workspace-card":""} ${item.id==="default"?"default-workspace-card":""}`} key={item.root} onClick={()=>loadWorkspace(item)}><span className="workspace-kind">{item.id==="shared"?"SHARED LIBRARY":item.id==="default"?"EDITABLE STARTER TEMPLATE":"FILESYSTEM WORKSPACE"}</span><h2>{item.label}</h2><p>{item.description||"Filesystem workspace"}</p><strong>{item.countsAvailable?`${item.workflowFileCount} workflows · ${item.operationFileCount||0} operations · ${item.datatypeFileCount||0} datatypes · ${item.representationFileCount||0} representations · ${item.modelFileCount||0} model/preset items · ${item.promptFileCount||0} prompts`:"Inherited resource totals load after opening"}</strong><small>{item.root}</small></button>)}</div>{error&&<div className="backend-error"><b>Error</b><span>{error}</span><button onClick={()=>setError(null)}>×</button></div>}</section></main>;
+  if (!workspace) {
+    const visibleWorkspaces = workspaces.filter((item) => !item.hidden);
+    return (
+      <main className="workbench-shell">
+        <section className="workspace-gate">
+          <div className="brand-lockup">
+            <span className="brand-mark">M</span>
+            <div>
+              <b>MeTTa Symbolic Learner Workbench</b>
+              <small>Choose a filesystem workspace</small>
+            </div>
+          </div>
+          <div className="workspace-picker-grid">
+            <form
+              className="workspace-card create-workspace-card"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void createWorkspace();
+              }}
+            >
+              <span className="workspace-kind">NEW FILESYSTEM WORKSPACE</span>
+              <h2>Create A New Workspace</h2>
+              <p>
+                Copy the current files and inclusion settings from an existing
+                workspace.
+              </p>
+              <input
+                aria-label="New workspace name"
+                placeholder="Workspace name"
+                value={newWorkspaceLabel}
+                onChange={(event) => setNewWorkspaceLabel(event.target.value)}
+              />
+              <label>
+                Copy from
+                <select
+                  aria-label="Workspace template"
+                  value={newWorkspaceTemplateId}
+                  onChange={(event) =>
+                    setNewWorkspaceTemplateId(event.target.value)
+                  }
+                >
+                  {visibleWorkspaces.map((item) => (
+                    <option key={item.root} value={item.id}>
+                      {item.label}
+                      {item.id === "default" ? " (recommended)" : ""}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <button
+                type="submit"
+                disabled={busy || !newWorkspaceLabel.trim()}
+              >
+                Create Workspace
+              </button>
+              <small>
+                Default is preselected. The new workspace becomes an independent
+                copy.
+              </small>
+            </form>
+            {visibleWorkspaces.map((item) => (
+              <button
+                className={`workspace-card ${item.workspaceType === "library" ? "shared-workspace-card" : ""} ${item.id === "default" ? "default-workspace-card" : ""}`}
+                key={item.root}
+                onClick={() => loadWorkspace(item)}
+              >
+                <span className="workspace-kind">
+                  {item.workspaceType === "library"
+                    ? "RESOURCE LIBRARY"
+                    : item.id === "default"
+                      ? "EDITABLE STARTER TEMPLATE"
+                      : "FILESYSTEM WORKSPACE"}
+                </span>
+                <h2>{item.label}</h2>
+                <p>{item.description || "Filesystem workspace"}</p>
+                <strong>
+                  {item.countsAvailable
+                    ? `${item.workflowFileCount} workflows · ${item.operationFileCount || 0} operations · ${item.datatypeFileCount || 0} datatypes · ${item.representationFileCount || 0} representations · ${item.modelFileCount || 0} model/preset items · ${item.promptFileCount || 0} prompts`
+                    : "Inherited resource totals load after opening"}
+                </strong>
+                <small>{item.root}</small>
+              </button>
+            ))}
+          </div>
+          {error && (
+            <div className="backend-error">
+              <b>Error</b>
+              <span>{error}</span>
+              <button onClick={() => setError(null)}>×</button>
+            </div>
+          )}
+        </section>
+      </main>
+    );
+  }
 
- const currentStepNumber=Math.max(1,(workflow?.steps.findIndex(item=>item.id===selectedStepId)??0)+1);
- const operationById=new Map(operationLibrary.operations.flatMap(record=>record.document?[[record.document.id,record] as const]:[]));
- const implementationsByOperation=new Map<string,RecordFile<OperationResource>[]>();
- for(const record of operationLibrary.operationImplementations){for(const parentId of record.document?.parents||[]){const rows=implementationsByOperation.get(parentId)||[];rows.push(record);implementationsByOperation.set(parentId,rows)}}
- const insertOperationStep=()=>{if(!workflow)return;const operation=operationById.get(insertOperationId)?.document;if(!operation)return;const selectedIndex=Math.max(-1,workflow.steps.findIndex(step=>step.id===selectedStepId));const insertIndex=selectedIndex+1;const upstream=selectedIndex>=0?workflow.steps[selectedIndex]:undefined;const upstreamAlias=upstream?Object.values(upstream.outputs||{})[0]:undefined;const baseId=slug(operation.id);let id=baseId;let suffix=2;while(workflow.steps.some(step=>step.id===id)){id=`${baseId}_${suffix++}`};const inputNames=Object.keys(operation.inputs||{});const inputs=Object.fromEntries(inputNames.map((name,index)=>[name,index===0&&upstreamAlias?`$${upstreamAlias}`:`$${name}`]));const outputName=Object.keys(operation.outputs||{})[0]||"result";const step:Step={id,label:operation.label||operation.id,kind:"operation",operation:operation.id,dependsOn:upstream?[upstream.id]:[],inputs,outputs:{[outputName]:`${id}_${outputName}`},parameters:operation.parameters};const steps=[...workflow.steps];steps.splice(insertIndex,0,step);setWorkflowSource(JSON.stringify({...workflow,steps},null,2));setSelectedStepId(id);setView("canvas")};
- const workflowResourceBrowser=(workflow?.steps||[]).map((item,index)=>{const status=run?.steps.find(step=>step.stepId===item.id)?.status||"defined";const active=selectedStepId===item.id;const itemEnablement=resolveResourceEnablement(item,resolveResourceEnablement(workflow));const operationRecord=item.operation?operationById.get(item.operation):undefined;const operation=operationRecord?.document;const variants=operation?implementationsByOperation.get(operation.id)||[]:[];const stepKind=item.probe?(item.probe.required?"REQUIRED PROBE":"OPTIONAL PROBE"):item.kind||"OPERATION";const stepButton=<button className={`stage-button ${enablementClass(itemEnablement)} ${active?"active":""} ${status==="completed"?"done":""}`} onClick={()=>{setSelectedStepId(item.id);setView("canvas")}}><span className="stage-number">{index+1}</span><span className="stage-line"/><span className={`stage-icon ${item.kind==="human"?"amber":index%3===1?"violet":"cyan"}`}>{status==="completed"?"✓":status==="skipped"?"○":index+1}</span><div><small>{stepKind} · <ResourceEnablementBadge state={itemEnablement}/></small><b>{item.label||item.id}</b></div>{item.kind==="workflow"&&<span className="nested-badge">↳</span>}</button>;if(!operation)return <ArtifactTreeBranch key={item.id} label={item.label||item.id} header={stepButton} className="operation-tree-group workflow-resource-step" childrenClassName="operation-tree-children"/>;const operationButton=<button className="operation-tree-row operation-parent" onClick={()=>openRuntimeResource("operation",operation.id)}><span className="operation-kind-badge">OP</span><span><b>{operation.label||operation.id}</b><small>{operation.description||operation.id}</small></span><em>{variants.length} implementations</em></button>;return <ArtifactTreeBranch key={item.id} label={item.label||item.id} header={stepButton} className="operation-tree-group workflow-resource-step" childrenClassName="operation-tree-children"><ArtifactTreeBranch label={operation.label||operation.id} header={operationButton} className="operation-tree-group workflow-operation-resource" childrenClassName="operation-tree-children">{variants.map(record=>{const variant=record.document!;return <button key={variant.id} className="operation-tree-row operation-child" data-tree-search={JSON.stringify(variant)} onClick={()=>openRuntimeResource("operation",variant.id)}><span className={`operation-kind-badge ${variant.implementation?.startsWith("llm")?"llm":""}`}>{variant.implementation?.startsWith("llm")?"LLM":"IMPL"}</span><span><b>{variant.label||variant.id}</b><small>{variant.description||variant.implementation||variant.id}</small></span><em>{operation.preferredChild===variant.id?"preferred":"alternative"}</em></button>})}</ArtifactTreeBranch></ArtifactTreeBranch>});
- const selectedOperation=selectedStep?.operation?operationById.get(selectedStep.operation)?.document:undefined;
- const selectedOperationVariants=(selectedOperation?implementationsByOperation.get(selectedOperation.id)||[]:[]).flatMap(record=>record.document?.implementation?[{...record.document,implementation:record.document.implementation}]:[]);
- const setStepImplementationVariant=(stepId:string,implementationVariant:string)=>{if(!workflow)return;setWorkflowSource(JSON.stringify({...workflow,steps:workflow.steps.map(step=>step.id===stepId?{...step,implementationVariant}:step)},null,2))};
- const resolvePlaygroundValue=(value:unknown):unknown=>{if(typeof value!=="string"||!value.startsWith("$"))return value;const [root,...path]=value.slice(1).split(".");let resolved=playgroundContext[root];for(const part of path){if(!resolved||typeof resolved!=="object")return undefined;resolved=(resolved as Record<string,unknown>)[part]}return resolved};
- const workflowPlaygrounds=(workflow?.steps||[]).flatMap((step,index)=>{const operation=step.operation?operationById.get(step.operation)?.document:undefined;if(!operation)return[];const variants=(implementationsByOperation.get(operation.id)||[]).flatMap(record=>record.document?.implementation?[{...record.document,implementation:record.document.implementation}]:[]);const runtime=run?.steps.find(item=>item.stepId===step.id);const resolvedInputs=Object.fromEntries(Object.entries(step.inputs||{}).flatMap(([name,value])=>{const resolved=resolvePlaygroundValue(value);return resolved===undefined?[]:[[name,resolved]]}));return[<article id={`workflow-playground-${step.id}`} className={`workflow-step-playground ${selectedStepId===step.id?"selected":""}`} key={step.id}><button className="workflow-step-playground-heading" onClick={()=>setSelectedStepId(step.id)}><span>STEP {index+1} OF {workflow?.steps.length||0}</span><b>{step.label||step.id}</b><small>{runtime?.status||collapsedPlaygrounds[step.id]?"completed":"not run"} · {operation.label||operation.id}</small></button><OperationPlayground workspaceId={workspace.id} operation={operation} variants={variants} selectedImplementationVariant={step.implementationVariant} onImplementationVariantChange={variant=>setStepImplementationVariant(step.id,variant)} inputValues={resolvedInputs} collapsed={Boolean(collapsedPlaygrounds[step.id])} onCollapsedChange={collapsed=>setCollapsedPlaygrounds(current=>({...current,[step.id]:collapsed}))} onInvocationComplete={outputs=>{const aliases=Object.fromEntries(Object.entries(step.outputs||{}).map(([outputName,alias])=>[alias,outputs[outputName]]));setPlaygroundContext(current=>({...current,...outputs,...aliases}));const next=workflow?.steps[index+1];if(next){setSelectedStepId(next.id);window.setTimeout(()=>document.getElementById(`workflow-playground-${next.id}`)?.scrollIntoView({behavior:"smooth",block:"start"}),0)}}}/></article>]});
- const relationshipView=view==="goals"||view==="plans"||view==="canvas"||view==="data"||view==="llms"||view==="systems"||view==="operations"||view==="sourceCode"||view==="prompts"||view==="policies"||view==="contexts";
- const navSelected=(target:View)=>target==="canvas"?(view==="canvas"||view==="editor"):target===view;
+  const currentStepNumber = Math.max(
+    1,
+    run
+      ? run.steps.findIndex((item) => item.stepId === selectedStepId) + 1
+      : (workflow?.steps.findIndex((item) => item.id === selectedStepId) ?? 0) +
+          1,
+  );
+  const operationById = new Map(
+    operationLibrary.operations.flatMap((record) =>
+      record.document ? [[record.document.id, record] as const] : [],
+    ),
+  );
+  const implementationsByOperation = new Map<
+    string,
+    RecordFile<OperationResource>[]
+  >();
+  for (const record of operationLibrary.operationImplementations) {
+    for (const parentId of record.document?.parents || []) {
+      const rows = implementationsByOperation.get(parentId) || [];
+      rows.push(record);
+      implementationsByOperation.set(parentId, rows);
+    }
+  }
+  const insertOperationStep = () => {
+    if (!workflow) return;
+    const operation = operationById.get(insertOperationId)?.document;
+    if (!operation) return;
+    const selectedIndex = Math.max(
+      -1,
+      workflow.steps.findIndex((step) => step.id === selectedStepId),
+    );
+    const insertIndex = selectedIndex + 1;
+    const upstream =
+      selectedIndex >= 0 ? workflow.steps[selectedIndex] : undefined;
+    const upstreamAlias = upstream
+      ? Object.values(upstream.outputs || {})[0]
+      : undefined;
+    const baseId = slug(operation.id);
+    let id = baseId;
+    let suffix = 2;
+    while (workflow.steps.some((step) => step.id === id)) {
+      id = `${baseId}_${suffix++}`;
+    }
+    const inputNames = Object.keys(operation.inputs || {});
+    const inputs = Object.fromEntries(
+      inputNames.map((name, index) => [
+        name,
+        index === 0 && upstreamAlias ? `$${upstreamAlias}` : `$${name}`,
+      ]),
+    );
+    const outputName = Object.keys(operation.outputs || {})[0] || "result";
+    const step: Step = {
+      id,
+      label: operation.label || operation.id,
+      kind: "operation",
+      operation: operation.id,
+      dependsOn: upstream ? [upstream.id] : [],
+      inputs,
+      outputs: { [outputName]: `${id}_${outputName}` },
+      parameters: operation.parameters,
+    };
+    const steps = [...workflow.steps];
+    steps.splice(insertIndex, 0, step);
+    setWorkflowSource(JSON.stringify({ ...workflow, steps }, null, 2));
+    setSelectedStepId(id);
+    setView("canvas");
+  };
+  const workflowResourceBrowser = (workflow?.steps || []).map((item, index) => {
+    const status =
+      run?.steps.find((step) => step.stepId === item.id)?.status || "defined";
+    const active = selectedStepId === item.id;
+    const itemEnablement = resolveResourceEnablement(
+      item,
+      resolveResourceEnablement(workflow),
+    );
+    const operationRecord = item.operation
+      ? operationById.get(item.operation)
+      : undefined;
+    const operation = operationRecord?.document;
+    const variants = operation
+      ? implementationsByOperation.get(operation.id) || []
+      : [];
+    const stepKind = item.probe
+      ? item.probe.required
+        ? "REQUIRED PROBE"
+        : "OPTIONAL PROBE"
+      : item.kind || "OPERATION";
+    const stepButton = (
+      <button
+        className={`stage-button ${enablementClass(itemEnablement)} ${active ? "active" : ""} ${status === "completed" ? "done" : ""}`}
+        onClick={() => {
+          setSelectedStepId(item.id);
+          setView("canvas");
+        }}
+      >
+        <span className="stage-number">{index + 1}</span>
+        <span className="stage-line" />
+        <span
+          className={`stage-icon ${item.kind === "human" ? "amber" : index % 3 === 1 ? "violet" : "cyan"}`}
+        >
+          {status === "completed"
+            ? "✓"
+            : status === "skipped"
+              ? "○"
+              : index + 1}
+        </span>
+        <div>
+          <small>
+            {stepKind} · <ResourceEnablementBadge state={itemEnablement} />
+          </small>
+          <b>{item.label || item.id}</b>
+        </div>
+        {item.kind === "workflow" && <span className="nested-badge">↳</span>}
+      </button>
+    );
+    if (!operation)
+      return (
+        <ArtifactTreeBranch
+          key={item.id}
+          label={item.label || item.id}
+          header={stepButton}
+          className="operation-tree-group workflow-resource-step"
+          childrenClassName="operation-tree-children"
+          summaryValue={status}
+        />
+      );
+    const operationButton = (
+      <button
+        className="operation-tree-row operation-parent"
+        onClick={() => openRuntimeResource("operation", operation.id)}
+      >
+        <span className="operation-kind-badge">OP</span>
+        <span>
+          <b>{operation.label || operation.id}</b>
+          <small>{operation.description || operation.id}</small>
+        </span>
+        <em>{variants.length} implementations</em>
+      </button>
+    );
+    return (
+      <ArtifactTreeBranch
+        key={item.id}
+        label={item.label || item.id}
+        header={stepButton}
+        className="operation-tree-group workflow-resource-step"
+        childrenClassName="operation-tree-children"
+        summaryValue={status}
+      >
+        <ArtifactTreeBranch
+          label={operation.label || operation.id}
+          header={operationButton}
+          className="operation-tree-group workflow-operation-resource"
+          childrenClassName="operation-tree-children"
+        >
+          {variants.map((record) => {
+            const variant = record.document!;
+            return (
+              <button
+                key={variant.id}
+                className="operation-tree-row operation-child"
+                data-tree-search={JSON.stringify(variant)}
+                onClick={() => openRuntimeResource("operation", variant.id)}
+              >
+                <span
+                  className={`operation-kind-badge ${variant.implementation?.startsWith("llm") ? "llm" : ""}`}
+                >
+                  {variant.implementation?.startsWith("llm") ? "LLM" : "IMPL"}
+                </span>
+                <span>
+                  <b>{variant.label || variant.id}</b>
+                  <small>
+                    {variant.description ||
+                      variant.implementation ||
+                      variant.id}
+                  </small>
+                </span>
+                <em>
+                  {operation.preferredChild === variant.id
+                    ? "preferred"
+                    : "alternative"}
+                </em>
+              </button>
+            );
+          })}
+        </ArtifactTreeBranch>
+      </ArtifactTreeBranch>
+    );
+  });
+  const selectedOperation = selectedStep?.operation
+    ? operationById.get(selectedStep.operation)?.document
+    : undefined;
+  const unresolvedWorkflowSteps = (workflow?.steps || []).filter(
+    (step) => step.operation && !operationById.has(step.operation),
+  );
+  const selectedOperationVariants = (
+    selectedOperation
+      ? implementationsByOperation.get(selectedOperation.id) || []
+      : []
+  ).flatMap((record) =>
+    record.document?.implementation
+      ? [{ ...record.document, implementation: record.document.implementation }]
+      : [],
+  );
+  const setStepImplementationVariant = (
+    stepId: string,
+    implementationVariant: string,
+  ) => {
+    if (!workflow) return;
+    setWorkflowSource(
+      JSON.stringify(
+        {
+          ...workflow,
+          steps: workflow.steps.map((step) =>
+            step.id === stepId ? { ...step, implementationVariant } : step,
+          ),
+        },
+        null,
+        2,
+      ),
+    );
+  };
+  const resolvePlaygroundValue = (value: unknown): unknown => {
+    if (typeof value !== "string" || !value.startsWith("$")) return value;
+    const [root, ...path] = value.slice(1).split(".");
+    let resolved = playgroundContext[root];
+    for (const part of path) {
+      if (!resolved || typeof resolved !== "object") return undefined;
+      resolved = (resolved as Record<string, unknown>)[part];
+    }
+    return resolved;
+  };
+  const workflowPlaygrounds = (workflow?.steps || []).flatMap((step, index) => {
+    const operation = step.operation
+      ? operationById.get(step.operation)?.document
+      : undefined;
+    if (!operation) return [];
+    const variants = (
+      implementationsByOperation.get(operation.id) || []
+    ).flatMap((record) =>
+      record.document?.implementation
+        ? [
+            {
+              ...record.document,
+              implementation: record.document.implementation,
+            },
+          ]
+        : [],
+    );
+    const runtime = run?.steps.find((item) => item.stepId === step.id);
+    const upstreamAliases = new Set(
+      (workflow?.steps || [])
+        .slice(0, index)
+        .flatMap((candidate) => Object.values(candidate.outputs || {})),
+    );
+    const requiredUpstreamInputs = Object.entries(step.inputs || {}).flatMap(
+      ([name, value]) =>
+        typeof value === "string" &&
+        value.startsWith("$") &&
+        upstreamAliases.has(value.slice(1).split(".")[0])
+          ? [name]
+          : [],
+    );
+    const resolvedInputs = Object.fromEntries(
+      Object.entries(step.inputs || {}).flatMap(([name, value]) => {
+        const resolved = resolvePlaygroundValue(value);
+        return resolved === undefined ? [] : [[name, resolved]];
+      }),
+    );
+    return [
+      <ThreeStateAccordionMember
+        id={`workflow-playground-${step.id}`}
+        key={step.id}
+        stackId="left-column"
+        label={`WORKFLOW STEP ${index + 1}`}
+        value={step.label || step.id}
+        detail={`${runtime?.status || (completedPlaygrounds[step.id] ? "completed" : "not run")} · ${operation.label || operation.id}`}
+        mode={workflowStepDisplayModes[step.id] || "scroll"}
+        onChange={(nextMode) => setWorkflowStepDisplayModes((current) => ({ ...current, [step.id]: nextMode }))}
+        baseClass={`${selectedStepId === step.id ? "workflow-step-playground selected" : "workflow-step-playground"}`}
+        scrollSize="620px"
+        itemHeader={<button
+          className="workflow-step-playground-heading"
+          onClick={() => setSelectedStepId(step.id)}
+        >
+          <span>
+            STEP {index + 1} OF {workflow?.steps.length || 0}
+          </span>
+          <b>{step.label || step.id}</b>
+          <small>
+            {runtime?.status ||
+              (completedPlaygrounds[step.id] ? "completed" : "not run")}{" "}
+            · {operation.label || operation.id}
+          </small>
+        </button>}
+        footer={<><b>{runtime?.status || (completedPlaygrounds[step.id] ? "completed" : "not run")}</b><span>{operation.label || operation.id}</span></>}
+      >
+        <OperationPlayground
+          workspaceId={workspace.id}
+          operation={operation}
+          variants={variants}
+          workflowStep={step as unknown as Record<string, unknown>}
+          onWorkflowStepChange={(next) => {
+            if (!workflow) return;
+            setWorkflowSource(
+              JSON.stringify(
+                {
+                  ...workflow,
+                  steps: workflow.steps.map((candidate) =>
+                    candidate.id === step.id
+                      ? (next as unknown as Step)
+                      : candidate,
+                  ),
+                },
+                null,
+                2,
+              ),
+            );
+          }}
+          selectedImplementationVariant={step.implementationVariant}
+          onImplementationVariantChange={(variant) =>
+            setStepImplementationVariant(step.id, variant)
+          }
+          inputValues={resolvedInputs}
+          expectedInputNames={requiredUpstreamInputs}
+          collapsed={Boolean(collapsedPlaygrounds[step.id])}
+          onCollapsedChange={(collapsed) =>
+            setCollapsedPlaygrounds((current) => ({
+              ...current,
+              [step.id]: collapsed,
+            }))
+          }
+          onInvocationComplete={(outputs) => {
+            setCompletedPlaygrounds((current) => ({
+              ...current,
+              [step.id]: true,
+            }));
+            const aliases = Object.fromEntries(
+              Object.entries(step.outputs || {}).map(([outputName, alias]) => [
+                alias,
+                outputs[outputName],
+              ]),
+            );
+            setPlaygroundContext((current) => ({
+              ...current,
+              ...outputs,
+              ...aliases,
+            }));
+            const next = workflow?.steps[index + 1];
+            if (next) {
+              setSelectedStepId(next.id);
+              window.setTimeout(
+                () =>
+                  document
+                    .getElementById(`workflow-playground-${next.id}`)
+                    ?.scrollIntoView({ behavior: "smooth", block: "start" }),
+                0,
+              );
+            }
+          }}
+        />
+      </ThreeStateAccordionMember>,
+    ];
+  });
+  const artifactFocused =
+    view === "goals" ||
+    view === "plans" ||
+    view === "data" ||
+    view === "llms" ||
+    view === "systems" ||
+    view === "operations" ||
+    view === "sourceCode" ||
+    view === "prompts" ||
+    view === "policies" ||
+    view === "contexts";
+  const workflowCombinedView = view === "canvas" || view === "states";
+  const relationshipView =
+    workflowCombinedView ||
+    view === "editor" ||
+    artifactFocused ||
+    !artifactFocused;
+  const workflowBrowserActive =
+    workflowCombinedView || view === "editor" || view === "workflowRuns";
+  const browserKind =
+    view === "docs"
+      ? "documentation"
+      : view === "states"
+        ? "canvas"
+        : view === "goalRuns" ||
+            view === "execs" ||
+            view === "events" ||
+            view === "logs" ||
+            view === "runtimeContexts"
+          ? "runtime"
+          : view;
+  const contextBrowserFiles = (snapshot?.files || [])
+    .filter((file) =>
+      browserKind === "documentation"
+        ? /\.md$/i.test(file.path)
+        : browserKind === "runtime"
+          ? /runtime|run|event|state|log|context/i.test(file.path)
+          : file.path
+              .toLowerCase()
+              .includes(
+                String(browserKind).toLowerCase().replace("data", "datatype"),
+              ),
+    )
+    .slice(0, 120);
+  const contextBrowserTitle =
+    view === "docs"
+      ? "Help topics"
+      : browserKind === "runtime"
+        ? "Runtime records"
+        : `${NAVIGATION_V2.flatMap((section) => section.items).find((item) => item.view === view)?.label || "Workspace"} resources`;
+  const navSelected = (target: View) =>
+    target === "canvas"
+      ? view === "canvas" || view === "editor" || view === "workflowRuns"
+      : target === view;
+  const returnToBreadcrumb = (entry: BreadcrumbEntry, index: number) => {
+    breadcrumbNavigation.current = true;
+    setViewTrailIndex(index);
+    window.history.replaceState(null, "", entry.url);
+    setViewState(entry.view);
+    window.dispatchEvent(new PopStateEvent("popstate"));
+  };
+  const jumpTo = (selector: string) =>
+    document
+      .querySelector<HTMLElement>(selector)
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
 
- return <main className="workbench"><header className="topbar"><div className="brand"><span className="brand-mark">M</span><div><strong>MeTTaSymbolicLearnerWorkbench</strong><small>NEUROSYMBOLIC EXPERIMENT DESKTOP</small></div></div><div className="run-context"><span className="pulse"/><b>{restarting?"restarting servers":run?run.status:"backend live"}</b><span>/</span><span>{workspace.label}</span><span>/</span><span>{run?`run ${run.id.slice(0,8)}`:"ready"}</span></div><div className="toolbar"><button className="server-restart-button" title="Restart UI and API servers" disabled={restarting} onClick={restartServers}>{restarting?"Restarting…":"↻ Restart"}</button><label className="theme-picker" title="Change workbench color scheme"><span>Theme</span><select aria-label="Workbench theme" value={theme} onChange={event=>setTheme(event.target.value as WorkbenchTheme)}>{WORKBENCH_THEMES.map(option=><option key={option.id} value={option.id}>{option.label}</option>)}</select></label><button className="icon-button" title="Pause" disabled={busy||run?.status!=="running"} onClick={()=>command("pause")}>Ⅱ</button><button className="icon-button" title="Stop" disabled={busy||!run||["completed","failed","cancelled"].includes(run.status)} onClick={()=>command("cancel")}>□</button><button className="run-button" title="Save the selected implementations as a new workflow version and run the whole cascade" disabled={busy||!workflow} onClick={startRun}><span>▶</span>Run cascade</button></div></header>{error&&<div className="backend-error"><b>Error</b><span>{error}</span><button onClick={()=>setError(null)}>×</button></div>}
- <section className={`workspace ${relationshipView?"artifact-focused":""} ${view==="modelPolicy"?"policy-focused":""}`} style={{"--inspector-width":`${inspectorWidth}px`} as CSSProperties}><aside className="rail navigation-v2">{NAVIGATION_V2.map(section=><div className="rail-section" key={section.group}><span>{section.group}</span>{section.items.map(item=><button key={item.label} data-navigation-label={item.label} className={`rail-icon ${navSelected(item.view)?"selected":""}`} onClick={()=>setView(item.view)}><span>{item.glyph}</span><small>{item.label}</small></button>)}</div>)}<div className="rail-bottom"><button className="rail-icon" onClick={()=>{setWorkspace(null);setSnapshot(null);setRun(null)}} title="Switch workspace"><span>↩</span><small>Switch Workspace</small></button></div></aside>
- <aside className="stages-panel"><div className="panel-label"><span>RESOURCE BROWSER</span><button onClick={()=>setView("editor")}>•••</button></div><div className="workflow-title"><b>{workflow?.label||workflow?.id||workspace.label}</b><small>{workflow?.description||`${workspace.label} filesystem workflow`}</small></div><div className="stage-list workflow-resource-browser">{workflowResourceBrowser}{!workflow&&<div className="studio-empty">No workflow file in this workspace.</div>}</div><div className="run-health"><div><span>RUN HEALTH</span><b>{run?.status||"ready"}</b></div><div className="health-bar"><i style={{width:workflow?.steps.length?`${Math.round(((run?.steps.filter(step=>step.status==="completed").length||0)/workflow.steps.length)*100)}%`:"0%"}}/></div><small>{run?`${run.steps.filter(step=>step.status==="completed").length} steps complete · ${run.events.length} durable events`:"No active run"}</small></div></aside>
- <section className="main-stage"><nav className="view-tabs"><button className={view==="canvas"?"active":""} onClick={()=>setView("canvas")}>Workflow canvas</button><button className={view==="editor"?"active":""} onClick={()=>setView("editor")}>Workflow editor</button><button className={view==="artifacts"?"active":""} onClick={()=>setView("artifacts")}>Artifact explorer <span>{run?.artifacts.length||0}</span></button><button className={view==="evidence"?"active":""} onClick={()=>setView("evidence")}>Evidence & provenance <span>{run?.events.length||0}</span></button><button className={view==="checks"?"active":""} onClick={()=>setView("checks")}>Checks</button></nav><Suspense fallback={<div className="studio-empty">Loading editor…</div>}>
- {view==="canvas"&&<section className="canvas-view"><div className="canvas-heading"><div><span>STAGE {currentStepNumber} OF {workflow?.steps.length||0}</span><h1>{selectedStep?.label||selectedStep?.id||"Select a workflow step"}</h1><p>{selectedStep?.description||selectedStep?.implementation||selectedStep?.operation||"This view is populated from the selected filesystem workflow."}</p></div><div className={`stage-state ${selectedRuntime?.status||"active"}`}>{(selectedRuntime?.status||"defined").toUpperCase()}</div></div>{selectedStep?<div className="stage-story"><div className="subworkflow-head"><span>{selectedStep.kind==="human"?"HUMAN":"STEP"}</span><b>{selectedStep.implementation||selectedStep.operation||selectedStep.kind||"operation"}</b><small>{selectedStep.dependsOn?.length?`depends on ${selectedStep.dependsOn.join(", ")}`:"no explicit dependencies"}</small></div><div className="detail-note"><b>Inputs</b><span><code>{jsonValueToMetta(selectedStep.inputs||{})}</code></span></div><div className="detail-note"><b>Outputs</b><span><code>{jsonValueToMetta(selectedStep.outputs||{})}</code></span></div>{selectedRuntime?.status==="waiting"&&<div className="human-pause"><div className="pause-ring">Ⅱ</div><b>Waiting for human input</b><small className="human-draft-status">{humanDraftStatus}</small><HumanInputForm step={selectedStep} busy={busy} draft={humanValues} onDraft={setHumanValues} onSubmit={()=>void submitHuman()}/></div>}</div>:<div className="stage-story"><div className="studio-empty">Choose a workflow or use the Data, Models, Prompts, Operations, Checks, and Setup pages.</div></div>}<div className="workflow-playground-stack">{workflowPlaygrounds}</div></section>}
- {view==="editor"&&<section className="editor-surface"><div className="studio-view"><div className="studio-topline"><div><span>WORKFLOW STUDIO</span><h1>{workflow?.label||workflow?.id||"No workflow"}</h1><p>Live filesystem resource from {workspace.root}</p></div><div className="studio-actions"><button onClick={validateWorkflow} disabled={!workflow}>Validate</button><button onClick={saveWorkflow} disabled={!workflow}>Save file</button><button className="primary" onClick={startRun} disabled={!workflow||busy}>Run</button></div></div><div className="workflow-insert-operation"><label><span>INSERT OPERATION AFTER SELECTED STEP</span><select value={insertOperationId} onChange={event=>setInsertOperationId(event.target.value)}>{operationLibrary.operations.flatMap(record=>record.document?[<option key={record.document.id} value={record.document.id}>{record.document.label||record.document.id}</option>]:[])}</select></label><button type="button" onClick={insertOperationStep} disabled={!workflow||!insertOperationId}>+ Insert resource</button><small>The new node is a real filesystem Operation. Its first input is bound to the selected upstream step output and remains editable in the workflow source/playground.</small></div>{snapshot?.workflows.length?<select value={workflowPath} onChange={event=>openWorkflow(event.target.value)}>{snapshot.workflows.map(row=><option key={row.path} value={row.path}>{row.document?.label||row.document?.id||row.path}</option>)}</select>:null}<div className="plan-provenance-editor"><div className="llm-subhead"><div><span>EXECUTABLE PLAN PROVENANCE</span><b>Workflow origin for human and PDDL tooling</b><small>A PDDL plan is stored as this same Workflow; these fields preserve how its grounded steps were produced.</small></div></div><div className="workflow-fields"><label><span>ORIGIN</span><select value={workflow?.planProvenance?.origin||"human"} disabled={!workflow} onChange={event=>updatePlanProvenance({origin:event.target.value as PlanProvenance["origin"]})}><option value="human">Human authored</option><option value="pddl">PDDL planner</option><option value="llm">LLM generated</option><option value="rules">Rule generated</option><option value="imported">Imported</option></select></label><label><span>PLANNER / GENERATOR</span><input value={workflow?.planProvenance?.planner||""} disabled={!workflow} onChange={event=>updatePlanProvenance({planner:event.target.value})}/></label>{workflow?.planProvenance?.origin==="pddl"&&<><label><span>PDDL DOMAIN</span><input value={workflow.planProvenance.domain||""} onChange={event=>updatePlanProvenance({domain:event.target.value})}/></label><label><span>PDDL PROBLEM</span><input value={workflow.planProvenance.problem||""} onChange={event=>updatePlanProvenance({problem:event.target.value})}/></label><label className="wide"><span>ORIGINAL GROUNDED PLAN</span><textarea value={workflow.planProvenance.sourcePlan||""} placeholder="(move robot room-a room-b)" onChange={event=>updatePlanProvenance({sourcePlan:event.target.value})}/></label></>}</div></div><ResourceSourceEditor value={workflowSource} onChange={setWorkflowSource} label="Edit this workflow resource directly" /><div className="workflow-fields"><label className="wide"><span>RUN INPUTS</span><textarea value={runInputs} onChange={event=>setRunInputs(event.target.value)}/></label></div>{validation&&<div className={validation.length?"validation bad":"validation good"}>{validation.length?validation.join("\n"):"Validated by backend"}</div>}</div></section>}
- {view==="editor"&&workflow&&<PddlPlanImportPanel workspaceId={workspace.id} workflow={workflow} onImported={imported=>{setWorkflowSource(JSON.stringify(imported,null,2));setSelectedStepId(imported.steps[0]?.id||null);setValidation(null)}}/>}
- {view==="overview"&&<WorkspaceOverview label={workspace.label} summary={{workflows:snapshot?.workflows.length||0,goals:snapshot?.goals?.length||0,operations:workspace.operationFileCount||0,datatypes:workspace.datatypeFileCount||0,representations:workspace.representationFileCount||0,models:workspace.modelFileCount||0,files:snapshot?.files.length||0}} onOpenWorkflow={()=>setView("canvas")}/>}
- {view==="data"&&<DataCatalogPanel workspaceId={workspace.id}/>}
- {view==="knowledgeData"&&<KnowledgeDataExplorer files={snapshot?.files||[]}/>}
- {view==="artifacts"&&<section className="artifact-view"><div className="artifact-table"><div className="table-head"><span>ARTIFACT</span><span>TYPE</span><span>STEP</span><span>CREATED</span><span/></div>{run?.artifacts.length?run.artifacts.map(item=><button key={item.id} className={selectedArtifact?.id===item.id?"selected":""} onClick={()=>setSelectedArtifactId(item.id)}><span><i className="cyan"/>{item.name}</span><span>{item.datatype||"artifact"}</span><span>{item.stepId||"workflow input"}</span><span>{item.createdAt?.slice(11,19)||"—"}</span><span>›</span></button>):<div className="studio-empty">Run a workflow to create persisted artifacts.</div>}</div><aside className="artifact-detail">{selectedArtifact?<><span className="detail-eyebrow">ARTIFACT DETAIL</span><h2>{selectedArtifact.name}</h2><dl><div><dt>Produced by step</dt><dd>{selectedArtifact.stepId||"workflow input"}</dd></div><div><dt>Content hash</dt><dd>{selectedArtifact.contentHash||"unavailable"}</dd></div></dl><h3>Payload</h3><pre>{jsonValueToMetta(selectedArtifact.payload)}</pre><h3>Provenance</h3><pre>{jsonValueToMetta(selectedArtifact.provenance||{})}</pre></>:<div className="studio-empty">No artifact selected.</div>}</aside></section>}
- {view==="evidence"&&<section className="evidence-view"><div className="evidence-summary"><span>RUN EVIDENCE</span><strong>{run?.events.length||0}<small> events</small></strong><p>Persisted workflow-engine evidence.</p></div><div className="lineage">{run?.events.length?run.events.map((event,index)=><div className="lineage-node" key={String(event.id)}><span>{index+1}</span><b>{event.kind}</b><small>{event.stepId||"workflow"} · {event.createdAt}</small></div>):<p>Run a workflow to generate evidence.</p>}</div></section>}
- {view==="goals"&&<GoalPlanLibraryEditor workspaceId={workspace.id} family="goal"/>}
- {view==="plans"&&<GoalPlanLibraryEditor workspaceId={workspace.id} family="plan"/>}
- {view==="goalRuns"&&<RuntimeHistoryView mode="goalRuns" workspaceId={workspace.id} goals={snapshot?.goals} plans={snapshot?.plans} contexts={snapshot?.contexts} workflows={snapshot?.workflows} onSelectRun={selectRuntimeRun} onOpenResource={openRuntimeResource}/>}
- {view==="workflowRuns"&&<RuntimeHistoryView mode="workflowRuns" workspaceId={workspace.id} onSelectRun={selectRuntimeRun} onOpenResource={openRuntimeResource}/>}
- {view==="execs"&&<RuntimeHistoryView mode="execs" workspaceId={workspace.id} onSelectRun={selectRuntimeRun} onOpenResource={openRuntimeResource}/>}
- {view==="events"&&<RuntimeHistoryView mode="events" workspaceId={workspace.id} onSelectRun={selectRuntimeRun} onOpenResource={openRuntimeResource}/>}
- {view==="states"&&<RuntimeHistoryView mode="states" workspaceId={workspace.id} onSelectRun={selectRuntimeRun} onOpenResource={openRuntimeResource}/>}
- {view==="runtimeContexts"&&<RuntimeHistoryView mode="runtimeContexts" workspaceId={workspace.id} onSelectRun={selectRuntimeRun} onOpenResource={openRuntimeResource}/>}
- {view==="logs"&&<RuntimeHistoryView mode="logs" workspaceId={workspace.id} onSelectRun={selectRuntimeRun} onOpenResource={openRuntimeResource}/>}
- {view==="modelPolicy"&&<ModelPolicyPage workspaceId={workspace.id} onOpenModels={()=>setView("llms")}/>}
- {view==="docs"&&<RepositoryDocsPage initialFilter={docsFilter}/>}
- {view==="benchmarks"&&<ModelPolicyPage workspaceId={workspace.id} onOpenModels={()=>setView("llms")}/>}
- {view==="contexts"&&<GoalPlanLibraryEditor workspaceId={workspace.id} family="context"/>}
- {view==="operations"&&<OperationLibraryEditor workspaceId={workspace.id}/>} {view==="sourceCode"&&<SourceCodeEditor workspaceId={workspace.id}/>} {view==="policies"&&<PolicyLibraryEditor workspaceId={workspace.id}/>} {view==="systems"&&<LlmModelsEditor workspaceId={workspace.id} catalogMode="systems"/>} {view==="llms"&&<LlmModelsEditor workspaceId={workspace.id} catalogMode="models"/>} {view==="prompts"&&<PromptLibraryEditor workspaceId={workspace.id}/>}
- {view==="checks"&&<section className="resource-view"><div className="resource-heading"><div><span>VALIDATION</span><h1>Checks & diagnostics</h1><p>Workflow validation and runtime capability probes are computed by the backend.</p></div><button onClick={validateWorkflow} disabled={!workflow}>Run validation</button></div><div className="checks-summary"><div className="check-score">{validation===null?"—":validation.length?"!":"✓"}<small>{validation===null?"idle":validation.length?"issues":"pass"}</small><span>WORKFLOW CHECK</span></div><div className="check-list">{Object.entries(capabilities).map(([name,value])=><div key={name}><span>{value.status==="implemented"?"✓":value.status==="partial"?"◐":"·"}</span><b>{name}</b><small>{value.detail}</small><em>{value.status}</em></div>)}</div></div></section>}
- {view==="processes"&&<WorkspaceSettingsPanel workspace={workspace} workspaces={workspaces} fileCount={snapshot?.files.length||0} implementationCount={implementations.length} mode="processes" onSwitch={()=>{setWorkspace(null);setSnapshot(null);setRun(null)}} onSaved={refreshSnapshot}/>} {view==="setup"&&<WorkspaceSettingsPanel workspace={workspace} workspaces={workspaces} fileCount={snapshot?.files.length||0} implementationCount={implementations.length} onSwitch={()=>{setWorkspace(null);setSnapshot(null);setRun(null)}} onSaved={refreshSnapshot}/>}</Suspense>
- </section>
- <div className="inspector-resizer" role="separator" aria-label="Resize inspector" aria-orientation="vertical" onPointerDown={beginInspectorResize} onDoubleClick={()=>setInspectorWidth(310)}/>
- <aside className="inspector"><div className="inspector-head"><span>{relationshipView?"DOCUMENTATION":"LIVE INSPECTOR"}</span><div><span className="live-dot"/> {relationshipView?"shared markdown":"real data"}</div></div>{relationshipView?<Suspense fallback={<div className="studio-empty">Loading documentation…</div>}><HelpDocumentTabs preferred={view==="goals"?"goals":view==="plans"?"plans":view==="data"?"data":view==="llms"?"llms":view==="systems"?"systems":view==="operations"?"operations":view==="policies"?"policies":view==="contexts"?"contexts":view==="sourceCode"||view==="prompts"?"prompts":"overview"} context={view==="goals"?JSON.stringify({goalResources:snapshot?.goals?.length||0,workspace:workspace.id},null,2):view==="plans"?JSON.stringify({planningStrategies:snapshot?.plans?.length||0,workspace:workspace.id},null,2):view==="contexts"?JSON.stringify({contextResources:snapshot?.contexts?.length||0,workspace:workspace.id},null,2):view==="systems"?JSON.stringify({systemResources:snapshot?.systems?.length||0,workspace:workspace.id},null,2):view==="data"?JSON.stringify({datatypes:workspace.datatypeFileCount||0,representations:workspace.representationFileCount||0},null,2):undefined}/></Suspense>:selectedStep?<><div className="inspect-section"><div className="section-title"><span>STEP</span><b>{selectedRuntime?.status||"defined"}</b></div><pre className="mini-code">{jsonValueToMetta({inputs:selectedStep.inputs||{},outputs:selectedStep.outputs||{}})}</pre></div></>:<div className="inspect-section"><pre className="mini-code">{jsonValueToMetta({id:workspace.id,root:workspace.root,files:snapshot?.files.length||0})}</pre></div>}</aside>
- </section><footer><span><i className="online"/> Backend connected</span><span>{workspace.id==="shared"?"Shared library":workspace.id}</span><span>{workspace.datatypeFileCount||0} datatypes · {workspace.representationFileCount||0} representations</span><span>{enabledModelCount} enabled models/presets</span><span>{workspace.promptFileCount||0} prompts</span><span className="footer-right">filesystem workspace</span></footer></main>;
+  return (
+    <main className="workbench" data-view={view}>
+      <header className="topbar">
+        <div className="brand">
+          <span className="brand-mark">M</span>
+          <div>
+            <strong>MeTTaSymbolicLearnerWorkbench</strong>
+            <small>NEUROSYMBOLIC EXPERIMENT DESKTOP</small>
+          </div>
+        </div>
+        <div className="automated-runner-tools">
+          <span className="pulse" />
+          <b>AUTOMATED RUNNER</b>
+          <label>
+            <span>MODE</span>
+            <select
+              aria-label="Runner mode"
+              value={String(parsedRunInputs.mode || "automatic")}
+              onChange={(event) => setRunInput("mode", event.target.value)}
+            >
+              <option value="interactive">Interactive</option>
+              <option value="automatic">Automatic</option>
+            </select>
+          </label>
+          <label>
+            <span>MOVES</span>
+            <input
+              aria-label="Runner move limit"
+              type="number"
+              min="0"
+              value={Number(parsedRunInputs.move_limit ?? 10)}
+              onChange={(event) =>
+                setRunInput("move_limit", Number(event.target.value))
+              }
+            />
+          </label>
+          <label>
+            <span>SECONDS</span>
+            <input
+              aria-label="Runner seconds per game"
+              type="number"
+              min="0"
+              value={Number(parsedRunInputs.seconds_per_game ?? 60)}
+              onChange={(event) =>
+                setRunInput("seconds_per_game", Number(event.target.value))
+              }
+            />
+          </label>
+          <label>
+            <span>GAMES</span>
+            <input
+              aria-label="Runner maximum games"
+              type="number"
+              min="1"
+              placeholder="ALL"
+              value={
+                parsedRunInputs.max_games == null
+                  ? ""
+                  : Number(parsedRunInputs.max_games)
+              }
+              onChange={(event) =>
+                setRunInput(
+                  "max_games",
+                  event.target.value === "" ? null : Number(event.target.value),
+                )
+              }
+            />
+          </label>
+          <label>
+            <span>SEED</span>
+            <input
+              aria-label="Runner seed"
+              type="number"
+              value={Number(parsedRunInputs.seed ?? 0)}
+              onChange={(event) =>
+                setRunInput("seed", Number(event.target.value))
+              }
+            />
+          </label>
+          <button
+            type="button"
+            title="Run only the selected workflow Operation"
+            disabled={busy || !selectedStep?.operation}
+            onClick={stepWorkflow}
+          >
+            ▶ Step
+          </button>
+        </div>
+        <div className="toolbar">
+          <button
+            className="server-restart-button"
+            title="Restart UI and API servers"
+            disabled={restarting}
+            onClick={restartServers}
+          >
+            {restarting ? "Restarting…" : "↻ Restart"}
+          </button>
+          <button
+            className="icon-button"
+            title="Pause automated runner"
+            disabled={busy || run?.status !== "running"}
+            onClick={() => command("pause")}
+          >
+            Ⅱ
+          </button>
+          <button
+            className="icon-button"
+            title="Stop automated runner"
+            disabled={
+              busy ||
+              !run ||
+              ["completed", "failed", "cancelled"].includes(run.status)
+            }
+            onClick={() => command("cancel")}
+          >
+            □
+          </button>
+          <button
+            className="run-button workflow-cascade-button"
+            title="Run the complete workflow using the runner settings"
+            disabled={busy || !workflow}
+            onClick={startRun}
+          >
+            <span>▶</span>Run cascade
+          </button>
+          <button
+            className="run-button automatic-run-button"
+            title="Play every remaining ARC game automatically using the move and time limits"
+            disabled={
+              busy ||
+              !workflow ||
+              Boolean(
+                run &&
+                  !["completed", "failed", "cancelled"].includes(run.status),
+              )
+            }
+            onClick={startAutomaticRun}
+          >
+            <span>▶▶</span>Auto-play all
+          </button>
+        </div>
+      </header>
+      {error && (
+        <div className="backend-error">
+          <b>Error</b>
+          <span>{error}</span>
+          <button onClick={() => setError(null)}>×</button>
+        </div>
+      )}
+      <nav
+        className="page-breadcrumb-trail"
+        aria-label="Visited workbench pages"
+      >
+        {viewTrail.map((entry, index) => (
+          <span key={`${entry.url}-${entry.label}-${index}`}>
+            {index > 0 && <i aria-hidden="true">›</i>}
+            <button
+              className={index === viewTrailIndex ? "current" : ""}
+              disabled={index === viewTrailIndex}
+              onClick={() => returnToBreadcrumb(entry, index)}
+            >
+              {entry.label}
+            </button>
+          </span>
+        ))}
+      </nav>
+      <section
+        className={`workspace ${relationshipView ? "artifact-focused" : ""} ${view === "modelPolicy" ? "policy-focused" : ""} ${view === "overview" ? "overview-focused" : ""}`}
+        style={{ "--inspector-width": `${inspectorWidth}px` } as CSSProperties}
+      >
+        <aside className="rail navigation-v2">
+          {NAVIGATION_V2.map((section) => (
+            <div className="rail-section" key={section.group}>
+              <span>{section.group}</span>
+              {section.items.map((item) => (
+                <button
+                  key={item.label}
+                  data-navigation-label={item.label}
+                  className={`rail-icon ${navSelected(item.view) ? "selected" : ""}`}
+                  onClick={() => setView(item.view)}
+                >
+                  <span>{item.glyph}</span>
+                  <small>{item.label}</small>
+                </button>
+              ))}
+            </div>
+          ))}
+          <div className="rail-bottom">
+            <button
+              className="rail-icon"
+              onClick={() => {
+                setWorkspace(null);
+                setSnapshot(null);
+                setRun(null);
+              }}
+              title="Switch workspace"
+            >
+              <span>↩</span>
+              <small>Switch Workspace</small>
+            </button>
+          </div>
+        </aside>
+        <aside className="stages-panel">
+          <div className="panel-label">
+            <span>RESOURCE BROWSER</span>
+            <button onClick={() => setView("editor")}>•••</button>
+          </div>
+          <section className={accordionPanelClass("resource-browser-contents", resourceBrowserDisplayMode)}>
+          <ThreeStateAccordionControls label="Resource Browser Contents" mode={resourceBrowserDisplayMode} onChange={setResourceBrowserDisplayMode} />
+          <ThreeStateAccordionStripSummary title="RESOURCE BROWSER CONTENTS" value={`${workflow?.steps.length || 0} workflow steps`} onOpen={() => setResourceBrowserDisplayMode("scroll")} />
+          <div className="workflow-title">
+            <b>{workflow?.label || workflow?.id || workspace.label}</b>
+            <small>
+              {workflow?.description ||
+                `${workspace.label} filesystem workflow`}
+            </small>
+          </div>
+          <div className="stage-list workflow-resource-browser">
+            {workflowResourceBrowser}
+            {!workflow && (
+              <div className="studio-empty">
+                No workflow file in this workspace.
+              </div>
+            )}
+          </div>
+          <div className="run-health">
+            <div>
+              <span>RUN HEALTH</span>
+              <b>{run?.status || "ready"}</b>
+            </div>
+            <div className="health-bar">
+              <i
+                style={{
+                  width: workflow?.steps.length
+                    ? `${Math.round(((run?.steps.filter((step) => step.status === "completed").length || 0) / workflow.steps.length) * 100)}%`
+                    : "0%",
+                }}
+              />
+            </div>
+            <small>
+              {run
+                ? `${run.steps.filter((step) => step.status === "completed").length} steps complete · ${run.events.length} durable events`
+                : "No active run"}
+            </small>
+          </div>
+          </section>
+        </aside>
+        <section
+          className={`main-stage workflow-columns-${workflowColumnsStackDisplayMode} workflow-left-column-${workflowLeftColumnDisplayMode} workflow-right-column-${workflowRightColumnDisplayMode}`}
+          style={
+            {
+              "--workflow-editor-percent": `${workflowEditorPercent}%`,
+              "--workflow-runs-percent": `${100 - workflowEditorPercent}%`,
+            } as CSSProperties
+          }
+        >
+          <nav className="view-tabs">
+            <button
+              className={`workflow-focus-tab ${workflowCombinedView && workflowPaneFocus === "editor" ? "active" : ""}`}
+              onClick={() => {
+                setWorkflowPaneFocus("editor");
+                setWorkflowEditorPercent(66.667);
+                setView("canvas");
+              }}
+            >
+              Workflow Editor
+            </button>
+            <button
+              className={`workflow-focus-tab ${workflowCombinedView && workflowPaneFocus === "runs" ? "active" : ""}`}
+              onClick={() => {
+                setWorkflowPaneFocus("runs");
+                setWorkflowEditorPercent(33.333);
+                setView("canvas");
+              }}
+            >
+              Workflow Runs
+            </button>
+            <button
+              className={view === "artifacts" ? "active" : ""}
+              onClick={() => setView("artifacts")}
+            >
+              Artifact explorer <span>{run?.artifacts.length || 0}</span>
+            </button>
+            <button
+              className={view === "evidence" ? "active" : ""}
+              onClick={() => setView("evidence")}
+            >
+              Evidence & provenance <span>{run?.events.length || 0}</span>
+            </button>
+            <button
+              className={view === "checks" ? "active" : ""}
+              onClick={() => setView("checks")}
+            >
+              Checks
+            </button>
+          </nav>
+          {workflowCombinedView && (
+            <ThreeStateAccordionMember
+              stackId="spline-stack"
+              label="LEFT COLUMN / RIGHT COLUMN"
+              mode={workflowColumnsStackDisplayMode}
+              onChange={setWorkflowColumnsStackDisplayMode}
+              baseClass="workflow-columns-stack-control"
+              scrollSize="76px"
+              itemHeader={<div className="workflow-column-control-groups">
+                <span className="workflow-column-control-description"><b>LEFT / RIGHT</b><small>Independent column sizing</small></span>
+                <div className="workflow-column-control-group">
+                  <b>LEFT</b>
+                  <ThreeStateAccordionControls label="Left Column" mode={workflowLeftColumnDisplayMode} onChange={setLeftColumnAccordionMode} />
+                </div>
+                <div className="workflow-column-control-group">
+                  <b>RIGHT</b>
+                  <ThreeStateAccordionControls label="Right Column" mode={workflowRightColumnDisplayMode} onChange={setRightColumnAccordionMode} />
+                </div>
+              </div>}
+              footer={null}
+            />
+          )}
+          <Suspense
+            fallback={<div className="studio-empty">Loading editor…</div>}
+          >
+            {workflowCombinedView && (
+              <section className="canvas-view">
+                <ThreeStateAccordionStack id="left-column" className="canvas-left-accordion-stack">
+                <div className="left-durable-run-launcher-slot" />
+                <ThreeStateAccordionMember
+                  stackId="left-column"
+                  label={`STAGE ${currentStepNumber} OF ${workflow?.steps.length || 0}`}
+                  value={selectedStep?.label || selectedStep?.id || "Select a workflow step"}
+                  detail={selectedRuntime?.status || (completedPlaygrounds[selectedStepId || ""] ? "completed" : "defined")}
+                  mode={selectedStageDisplayMode}
+                  onChange={setSelectedStageDisplayMode}
+                  baseClass="selected-stage-accordion"
+                  scrollSize="360px"
+                  footer={<><b>{selectedRuntime?.status || (completedPlaygrounds[selectedStepId || ""] ? "completed" : "defined")}</b><span>{selectedStep?.operation || selectedStep?.kind || "operation"}</span></>}
+                >
+                <div className="canvas-heading">
+                  <div>
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      title="Collapse or restore this stage"
+                      onClick={toggleSelectedStageDisplayMode}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          toggleSelectedStageDisplayMode();
+                        }
+                      }}
+                    >
+                      STAGE {currentStepNumber} OF {workflow?.steps.length || 0}
+                    </span>
+                    <h1
+                      role="button"
+                      tabIndex={0}
+                      title="Collapse or restore this stage"
+                      onClick={toggleSelectedStageDisplayMode}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          toggleSelectedStageDisplayMode();
+                        }
+                      }}
+                    >
+                      {selectedStep?.label ||
+                        selectedStep?.id ||
+                        "Select a workflow step"}
+                    </h1>
+                    <p>
+                      {selectedStep?.description ||
+                        selectedStep?.implementation ||
+                        selectedStep?.operation ||
+                        "This view is populated from the selected filesystem workflow."}
+                    </p>
+                  </div>
+                  <div className="canvas-step-controls">
+                    <div
+                      className={`stage-state ${selectedRuntime?.status || completedPlaygrounds[selectedStepId || ""] ? "completed" : "active"}`}
+                    >
+                      {(selectedRuntime?.status ||
+                      completedPlaygrounds[selectedStepId || ""]
+                        ? "completed"
+                        : "defined"
+                      ).toUpperCase()}
+                    </div>
+                    <button
+                      type="button"
+                      title="Select the previous workflow step"
+                      disabled={busy || currentStepNumber <= 1}
+                      onClick={() => selectRelativeStep(-1)}
+                    >
+                      ◀ Previous
+                    </button>
+                    <button
+                      type="button"
+                      className="run-button workflow-step-button"
+                      title="Run only this selected Operation with the inputs displayed below"
+                      disabled={busy || !workflow || !selectedStep?.operation}
+                      onClick={stepWorkflow}
+                    >
+                      ▶ Run this step
+                    </button>
+                    <button
+                      type="button"
+                      title="Select the next workflow step"
+                      disabled={
+                        busy ||
+                        currentStepNumber >= (workflow?.steps.length || 0)
+                      }
+                      onClick={() => selectRelativeStep(1)}
+                    >
+                      Next ▶
+                    </button>
+                  </div>
+                </div>
+                {selectedStep ? (
+                  <div className="stage-story">
+                    <div className="subworkflow-head">
+                      <span>
+                        {selectedStep.kind === "human" ? "HUMAN" : "STEP"}
+                      </span>
+                      <b>
+                        {selectedStep.implementation ||
+                          selectedStep.operation ||
+                          selectedStep.kind ||
+                          "operation"}
+                      </b>
+                      <small>
+                        {selectedStep.dependsOn?.length
+                          ? `depends on ${selectedStep.dependsOn.join(", ")}`
+                          : "no explicit dependencies"}
+                      </small>
+                    </div>
+                    <div className="detail-note">
+                      <b>Inputs</b>
+                      <span>
+                        <code>
+                          {jsonValueToMetta(selectedStep.inputs || {})}
+                        </code>
+                      </span>
+                    </div>
+                    <div className="detail-note">
+                      <b>Outputs</b>
+                      <span>
+                        <code>
+                          {jsonValueToMetta(selectedStep.outputs || {})}
+                        </code>
+                      </span>
+                    </div>
+                    {selectedRuntime?.status === "waiting" && (
+                      <div className="human-pause">
+                        <div className="pause-ring">Ⅱ</div>
+                        <b>Waiting for human input</b>
+                        <small className="human-draft-status">
+                          {humanDraftStatus}
+                        </small>
+                        <HumanInputForm
+                          step={selectedStep}
+                          busy={busy}
+                          draft={humanValues}
+                          onDraft={setHumanValues}
+                          onSubmit={() => void submitHuman()}
+                        />
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="stage-story">
+                    <div className="studio-empty">
+                      Choose a workflow or use the Data, Models, Prompts,
+                      Operations, Checks, and Setup pages.
+                    </div>
+                  </div>
+                )}
+                </ThreeStateAccordionMember>
+                <div className="workflow-playground-stack three-state-accordion-stack-members">
+                  {workflowPlaygrounds}
+                </div>
+                </ThreeStateAccordionStack>
+              </section>
+            )}
+            {view === "editor" && (
+              <section className="editor-surface">
+                <div className="studio-view">
+                  <div className="studio-topline">
+                    <div>
+                      <span>WORKFLOW STUDIO</span>
+                      <h1>
+                        {workflow?.label || workflow?.id || "No workflow"}
+                      </h1>
+                      <p>Live filesystem resource from {workspace.root}</p>
+                    </div>
+                    <div className="studio-actions">
+                      <button onClick={validateWorkflow} disabled={!workflow}>
+                        Validate
+                      </button>
+                      <button onClick={saveWorkflow} disabled={!workflow}>
+                        Save file
+                      </button>
+                      <button
+                        className="primary"
+                        onClick={startRun}
+                        disabled={!workflow || busy}
+                      >
+                        Run
+                      </button>
+                    </div>
+                  </div>
+                  <div className="workflow-insert-operation">
+                    <label>
+                      <span>INSERT OPERATION AFTER SELECTED STEP</span>
+                      <select
+                        value={insertOperationId}
+                        onChange={(event) =>
+                          setInsertOperationId(event.target.value)
+                        }
+                      >
+                        {operationLibrary.operations.flatMap((record) =>
+                          record.document
+                            ? [
+                                <option
+                                  key={record.document.id}
+                                  value={record.document.id}
+                                >
+                                  {record.document.label || record.document.id}
+                                </option>,
+                              ]
+                            : [],
+                        )}
+                      </select>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={insertOperationStep}
+                      disabled={!workflow || !insertOperationId}
+                    >
+                      + Insert resource
+                    </button>
+                    <small>
+                      The new node is a real filesystem Operation. Its first
+                      input is bound to the selected upstream step output and
+                      remains editable in the workflow source/playground.
+                    </small>
+                  </div>
+                  {snapshot?.workflows.length ? (
+                    <select
+                      value={workflowPath}
+                      onChange={(event) => openWorkflow(event.target.value)}
+                    >
+                      {snapshot.workflows.map((row) => (
+                        <option key={row.path} value={row.path}>
+                          {row.document?.label || row.document?.id || row.path}
+                        </option>
+                      ))}
+                    </select>
+                  ) : null}
+                  <div className="plan-provenance-editor">
+                    <div className="llm-subhead">
+                      <div>
+                        <span>EXECUTABLE PLAN PROVENANCE</span>
+                        <b>Workflow origin for human and PDDL tooling</b>
+                        <small>
+                          A PDDL plan is stored as this same Workflow; these
+                          fields preserve how its grounded steps were produced.
+                        </small>
+                      </div>
+                    </div>
+                    <div className="workflow-fields">
+                      <label>
+                        <span>ORIGIN</span>
+                        <select
+                          value={workflow?.planProvenance?.origin || "human"}
+                          disabled={!workflow}
+                          onChange={(event) =>
+                            updatePlanProvenance({
+                              origin: event.target
+                                .value as PlanProvenance["origin"],
+                            })
+                          }
+                        >
+                          <option value="human">Human authored</option>
+                          <option value="pddl">PDDL planner</option>
+                          <option value="llm">LLM generated</option>
+                          <option value="rules">Rule generated</option>
+                          <option value="imported">Imported</option>
+                        </select>
+                      </label>
+                      <label>
+                        <span>PLANNER / GENERATOR</span>
+                        <input
+                          value={workflow?.planProvenance?.planner || ""}
+                          disabled={!workflow}
+                          onChange={(event) =>
+                            updatePlanProvenance({
+                              planner: event.target.value,
+                            })
+                          }
+                        />
+                      </label>
+                      {workflow?.planProvenance?.origin === "pddl" && (
+                        <>
+                          <label>
+                            <span>PDDL DOMAIN</span>
+                            <input
+                              value={workflow.planProvenance.domain || ""}
+                              onChange={(event) =>
+                                updatePlanProvenance({
+                                  domain: event.target.value,
+                                })
+                              }
+                            />
+                          </label>
+                          <label>
+                            <span>PDDL PROBLEM</span>
+                            <input
+                              value={workflow.planProvenance.problem || ""}
+                              onChange={(event) =>
+                                updatePlanProvenance({
+                                  problem: event.target.value,
+                                })
+                              }
+                            />
+                          </label>
+                          <label className="wide">
+                            <span>ORIGINAL GROUNDED PLAN</span>
+                            <textarea
+                              value={workflow.planProvenance.sourcePlan || ""}
+                              placeholder="(move robot room-a room-b)"
+                              onChange={(event) =>
+                                updatePlanProvenance({
+                                  sourcePlan: event.target.value,
+                                })
+                              }
+                            />
+                          </label>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  <ResourceSourceEditor
+                    value={workflowSource}
+                    onChange={setWorkflowSource}
+                    label="Edit this workflow resource directly"
+                  />
+                  <div className="workflow-fields">
+                    <label className="wide">
+                      <span>RUN INPUTS</span>
+                      <textarea
+                        value={runInputs}
+                        onChange={(event) => setRunInputs(event.target.value)}
+                      />
+                    </label>
+                  </div>
+                  {validation && (
+                    <div
+                      className={
+                        validation.length ? "validation bad" : "validation good"
+                      }
+                    >
+                      {validation.length
+                        ? validation.join("\n")
+                        : "Validated by backend"}
+                    </div>
+                  )}
+                </div>
+              </section>
+            )}
+            {view === "editor" && workflow && (
+              <PddlPlanImportPanel
+                workspaceId={workspace.id}
+                workflow={workflow}
+                onImported={(imported) => {
+                  setWorkflowSource(JSON.stringify(imported, null, 2));
+                  setSelectedStepId(imported.steps[0]?.id || null);
+                  setValidation(null);
+                }}
+              />
+            )}
+            {view === "overview" && (
+              <div className="workspace-overview-scroll">
+                <WorkspaceOverview
+                  workspaceId={workspace.id}
+                  label={workspace.label}
+                  description={workspace.description}
+                  inheritedWorkspaces={(workspace.effectiveIncludes || []).map(
+                    (id) => {
+                      const item = workspaces.find(
+                        (candidate) => candidate.id === id,
+                      );
+                      return {
+                        id,
+                        label: item?.label || id,
+                        description: item?.description,
+                      };
+                    },
+                  )}
+                  summary={{
+                    workflows: snapshot?.workflows.length || 0,
+                    goals: snapshot?.goals?.length || 0,
+                    operations: workspace.operationFileCount || 0,
+                    datatypes: workspace.datatypeFileCount || 0,
+                    representations: workspace.representationFileCount || 0,
+                    models: workspace.modelFileCount || 0,
+                    files: snapshot?.files.length || 0,
+                  }}
+                  onOpenWorkflow={
+                    snapshot?.workflows.length
+                      ? () => setView("canvas")
+                      : undefined
+                  }
+                />
+                <WorkspaceSettingsPanel
+                  workspace={workspace}
+                  workspaces={workspaces}
+                  fileCount={snapshot?.files.length || 0}
+                  implementationCount={implementations.length}
+                  mode="workspace"
+                  onSwitch={() => {
+                    setWorkspace(null);
+                    setSnapshot(null);
+                    setRun(null);
+                  }}
+                  onSaved={refreshSnapshot}
+                />
+              </div>
+            )}
+            {view === "data" && <DataCatalogPanel workspaceId={workspace.id} />}
+            {view === "knowledgeData" && (
+              <KnowledgeDataExplorer files={snapshot?.files || []} />
+            )}
+            {view === "artifacts" && (
+              <section className="artifact-view">
+                <div className="artifact-table">
+                  <div className="table-head">
+                    <span>ARTIFACT</span>
+                    <span>TYPE</span>
+                    <span>STEP</span>
+                    <span>CREATED</span>
+                    <span />
+                  </div>
+                  {run?.artifacts.length ? (
+                    run.artifacts.map((item) => (
+                      <button
+                        key={item.id}
+                        className={
+                          selectedArtifact?.id === item.id ? "selected" : ""
+                        }
+                        onClick={() => setSelectedArtifactId(item.id)}
+                      >
+                        <span>
+                          <i className="cyan" />
+                          {item.name}
+                        </span>
+                        <span>{item.datatype || "artifact"}</span>
+                        <span>{item.stepId || "workflow input"}</span>
+                        <span>{item.createdAt?.slice(11, 19) || "—"}</span>
+                        <span>›</span>
+                      </button>
+                    ))
+                  ) : (
+                    <div className="studio-empty">
+                      Run a workflow to create persisted artifacts.
+                    </div>
+                  )}
+                </div>
+                <aside className="artifact-detail">
+                  {selectedArtifact ? (
+                    <>
+                      <span className="detail-eyebrow">ARTIFACT DETAIL</span>
+                      <h2>{selectedArtifact.name}</h2>
+                      <dl>
+                        <div>
+                          <dt>Produced by step</dt>
+                          <dd>{selectedArtifact.stepId || "workflow input"}</dd>
+                        </div>
+                        <div>
+                          <dt>Content hash</dt>
+                          <dd>
+                            {selectedArtifact.contentHash || "unavailable"}
+                          </dd>
+                        </div>
+                      </dl>
+                      <h3>Payload</h3>
+                      <pre>{jsonValueToMetta(selectedArtifact.payload)}</pre>
+                      <h3>Provenance</h3>
+                      <pre>
+                        {jsonValueToMetta(selectedArtifact.provenance || {})}
+                      </pre>
+                    </>
+                  ) : (
+                    <div className="studio-empty">No artifact selected.</div>
+                  )}
+                </aside>
+              </section>
+            )}
+            {view === "evidence" && (
+              <section className="evidence-view">
+                <div className="evidence-summary">
+                  <span>RUN EVIDENCE</span>
+                  <strong>
+                    {run?.events.length || 0}
+                    <small> events</small>
+                  </strong>
+                  <p>Persisted workflow-engine evidence.</p>
+                </div>
+                <div className="lineage">
+                  {run?.events.length ? (
+                    run.events.map((event, index) => (
+                      <div className="lineage-node" key={String(event.id)}>
+                        <span>{index + 1}</span>
+                        <b>{event.kind}</b>
+                        <small>
+                          {event.stepId || "workflow"} · {event.createdAt}
+                        </small>
+                      </div>
+                    ))
+                  ) : (
+                    <p>Run a workflow to generate evidence.</p>
+                  )}
+                </div>
+              </section>
+            )}
+            {view === "goals" && (
+              <GoalPlanLibraryEditor workspaceId={workspace.id} family="goal" />
+            )}
+            {view === "plans" && (
+              <GoalPlanLibraryEditor workspaceId={workspace.id} family="plan" />
+            )}
+            {view === "goalRuns" && (
+              <RuntimeHistoryView
+                mode="goalRuns"
+                workspaceId={workspace.id}
+                goals={snapshot?.goals}
+                plans={snapshot?.plans}
+                contexts={snapshot?.contexts}
+                workflows={snapshot?.workflows}
+                onSelectRun={selectRuntimeRun}
+                onOpenResource={openRuntimeResource}
+              />
+            )}
+            {workflowCombinedView && (
+              <div
+                className="workflow-pane-divider"
+                role="separator"
+                aria-label="Resize Workflow Editor and Workflow Runs"
+                aria-orientation="vertical"
+                aria-valuemin={20}
+                aria-valuemax={80}
+                aria-valuenow={Math.round(workflowEditorPercent)}
+                tabIndex={0}
+                onPointerDown={(event) => {
+                  event.currentTarget.setPointerCapture(event.pointerId);
+                }}
+                onPointerMove={(event) => {
+                  if (!event.currentTarget.hasPointerCapture(event.pointerId))
+                    return;
+                  const bounds =
+                    event.currentTarget.parentElement!.getBoundingClientRect();
+                  const percent = Math.max(
+                    20,
+                    Math.min(
+                      80,
+                      ((event.clientX - bounds.left) / bounds.width) * 100,
+                    ),
+                  );
+                  setWorkflowEditorPercent(percent);
+                  setWorkflowPaneFocus(percent >= 50 ? "editor" : "runs");
+                }}
+                onPointerUp={(event) =>
+                  event.currentTarget.releasePointerCapture(event.pointerId)
+                }
+                onKeyDown={(event) => {
+                  if (event.key !== "ArrowLeft" && event.key !== "ArrowRight")
+                    return;
+                  event.preventDefault();
+                  const percent = Math.max(
+                    20,
+                    Math.min(
+                      80,
+                      workflowEditorPercent +
+                        (event.key === "ArrowRight" ? 2 : -2),
+                    ),
+                  );
+                  setWorkflowEditorPercent(percent);
+                  setWorkflowPaneFocus(percent >= 50 ? "editor" : "runs");
+                }}
+              >
+                <span />
+              </div>
+            )}
+            {workflowCombinedView && (
+              <RuntimeHistoryView
+                mode="workflowRuns"
+                leftColumnDisplayMode={workflowLeftColumnDisplayMode}
+                rightColumnDisplayMode={workflowRightColumnDisplayMode}
+                runLauncher={
+                  <DurableRunLauncher
+                    blocked={!runInputsValid || unresolvedWorkflowSteps.length > 0 || Boolean(validation?.length)}
+                    status={!runInputsValid ? "INVALID INPUT JSON" : unresolvedWorkflowSteps.length ? `${unresolvedWorkflowSteps.length} UNRESOLVED STEPS` : validation?.length ? `${validation.length} VALIDATION ISSUES` : "READY"}
+                    statusDetail={run?.status ? `Current run: ${run.status}` : "No active run"}
+                    fields={
+                      <>
+                        <label className="durable-run-launcher-wide"><span>WORKFLOW</span><select value={workflowPath} onChange={(event) => openWorkflow(event.target.value)}>{snapshot?.workflows.map((row) => <option key={row.path} value={row.path}>{row.document?.label || row.document?.id || row.path}</option>)}</select><small>{workflow?.id || "No workflow selected"} · {workflow?.steps.length || 0} steps</small></label>
+                        <label><span>MODE</span><select value={String(parsedRunInputs.mode || "interactive")} onChange={(event) => setRunInput("mode", event.target.value)}><option value="interactive">Interactive</option><option value="automatic">Automatic</option></select></label>
+                        <label><span>MOVE LIMIT</span><input type="number" min="0" value={Number(parsedRunInputs.move_limit ?? 10)} onChange={(event) => setRunInput("move_limit", Number(event.target.value))} /></label>
+                        <label><span>SECONDS / GAME</span><input type="number" min="0" value={Number(parsedRunInputs.seconds_per_game ?? 60)} onChange={(event) => setRunInput("seconds_per_game", Number(event.target.value))} /></label>
+                        <label><span>MAX GAMES</span><input type="number" min="1" placeholder="All" value={parsedRunInputs.max_games == null ? "" : Number(parsedRunInputs.max_games)} onChange={(event) => setRunInput("max_games", event.target.value === "" ? null : Number(event.target.value))} /></label>
+                        <label><span>SEED</span><input type="number" value={Number(parsedRunInputs.seed ?? 0)} onChange={(event) => setRunInput("seed", Number(event.target.value))} /></label>
+                        <label className="durable-run-launcher-wide"><span>WORKFLOW INPUTS · JSON</span><textarea value={runInputs} onChange={(event) => setRunInputs(event.target.value)} aria-invalid={!runInputsValid} /><small>{runInputsValid ? "Valid input object" : "Enter one valid JSON object."}</small></label>
+                      </>
+                    }
+                    actions={
+                      <>
+                        <button onClick={validateWorkflow} disabled={busy || !workflow}>Validate</button>
+                        <button onClick={saveWorkflow} disabled={busy || !workflow}>Save Workflow</button>
+                        <button onClick={stepWorkflow} disabled={busy || !selectedStep?.operation || !runInputsValid}>Run Selected Step</button>
+                        <button className="primary" onClick={startRun} disabled={busy || !workflow || !runInputsValid || unresolvedWorkflowSteps.length > 0}>Run Workflow</button>
+                        <button className="primary automatic" onClick={startAutomaticRun} disabled={busy || !workflow || !runInputsValid || unresolvedWorkflowSteps.length > 0}>Run All Games</button>
+                      </>
+                    }
+                  />
+                }
+                workspaceId={workspace.id}
+                preflightStateValues={effectivePreflightStateValues}
+                onSelectRun={selectRuntimeRun}
+                onOpenResource={openRuntimeResource}
+              />
+            )}
+            {workflowCombinedView && workflowColumnsStackDisplayMode !== "strip" && (
+              <footer className="workflow-columns-stack-footer">
+                <b>LEFT / RIGHT COLUMNS</b>
+                <span>Left {workflowLeftColumnDisplayMode} · Right {workflowRightColumnDisplayMode}</span>
+              </footer>
+            )}
+            {view === "execs" && (
+              <RuntimeHistoryView
+                mode="execs"
+                workspaceId={workspace.id}
+                onSelectRun={selectRuntimeRun}
+                onOpenResource={openRuntimeResource}
+              />
+            )}
+            {view === "events" && (
+              <RuntimeHistoryView
+                mode="events"
+                workspaceId={workspace.id}
+                onSelectRun={selectRuntimeRun}
+                onOpenResource={openRuntimeResource}
+              />
+            )}
+            {view === "runtimeContexts" && (
+              <RuntimeHistoryView
+                mode="runtimeContexts"
+                workspaceId={workspace.id}
+                onSelectRun={selectRuntimeRun}
+                onOpenResource={openRuntimeResource}
+              />
+            )}
+            {view === "logs" && (
+              <RuntimeHistoryView
+                mode="logs"
+                workspaceId={workspace.id}
+                onSelectRun={selectRuntimeRun}
+                onOpenResource={openRuntimeResource}
+              />
+            )}
+            {view === "modelPolicy" && (
+              <ModelPolicyPage
+                workspaceId={workspace.id}
+                onOpenModels={() => setView("llms")}
+              />
+            )}
+            {view === "docs" && (
+              <RepositoryDocsPage initialFilter={docsFilter} />
+            )}
+            {view === "benchmarks" && (
+              <ModelPolicyPage
+                workspaceId={workspace.id}
+                onOpenModels={() => setView("llms")}
+              />
+            )}
+            {view === "contexts" && (
+              <GoalPlanLibraryEditor
+                workspaceId={workspace.id}
+                family="context"
+              />
+            )}
+            {view === "operations" && (
+              <OperationLibraryEditor workspaceId={workspace.id} />
+            )}{" "}
+            {view === "sourceCode" && (
+              <SourceCodeEditor workspaceId={workspace.id} />
+            )}{" "}
+            {view === "policies" && (
+              <PolicyLibraryEditor workspaceId={workspace.id} />
+            )}{" "}
+            {view === "systems" && (
+              <LlmModelsEditor
+                workspaceId={workspace.id}
+                catalogMode="systems"
+              />
+            )}{" "}
+            {view === "llms" && (
+              <LlmModelsEditor
+                workspaceId={workspace.id}
+                catalogMode="models"
+              />
+            )}{" "}
+            {view === "prompts" && (
+              <PromptLibraryEditor workspaceId={workspace.id} />
+            )}
+            {view === "checks" && (
+              <section className="resource-view">
+                <div className="resource-heading">
+                  <div>
+                    <span>VALIDATION</span>
+                    <h1>Checks & diagnostics</h1>
+                    <p>
+                      Workflow validation and runtime capability probes are
+                      computed by the backend.
+                    </p>
+                  </div>
+                  <button onClick={validateWorkflow} disabled={!workflow}>
+                    Run validation
+                  </button>
+                </div>
+                <div className="checks-summary">
+                  <div className="check-score">
+                    {validation === null ? "—" : validation.length ? "!" : "✓"}
+                    <small>
+                      {validation === null
+                        ? "idle"
+                        : validation.length
+                          ? "issues"
+                          : "pass"}
+                    </small>
+                    <span>WORKFLOW CHECK</span>
+                  </div>
+                  <div className="check-list">
+                    {Object.entries(capabilities).map(([name, value]) => (
+                      <div key={name}>
+                        <span>
+                          {value.status === "implemented"
+                            ? "✓"
+                            : value.status === "partial"
+                              ? "◐"
+                              : "·"}
+                        </span>
+                        <b>{name}</b>
+                        <small>{value.detail}</small>
+                        <em>{value.status}</em>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </section>
+            )}
+            {view === "processes" && (
+              <WorkspaceSettingsPanel
+                workspace={workspace}
+                workspaces={workspaces}
+                fileCount={snapshot?.files.length || 0}
+                implementationCount={implementations.length}
+                mode="processes"
+                onSwitch={() => {
+                  setWorkspace(null);
+                  setSnapshot(null);
+                  setRun(null);
+                }}
+                onSaved={refreshSnapshot}
+              />
+            )}{" "}
+            {view === "setup" && (
+              <WorkspaceSettingsPanel
+                workspace={workspace}
+                workspaces={workspaces}
+                fileCount={snapshot?.files.length || 0}
+                implementationCount={implementations.length}
+                onSwitch={() => {
+                  setWorkspace(null);
+                  setSnapshot(null);
+                  setRun(null);
+                }}
+                onSaved={refreshSnapshot}
+              />
+            )}
+          </Suspense>
+        </section>
+        <div className="topbar-panel-restore-stack">
+          <div className="topbar-global-actions" data-stack-scope="global">
+            <button
+              type="button"
+              className="topbar-panel-restore"
+              disabled={restarting}
+              onClick={restartServers}
+            >
+              {restarting ? "Restarting…" : "Restart App"}
+            </button>
+            <button
+              type="button"
+              className="topbar-panel-restore"
+              onClick={() => {
+                setWorkspace(null);
+                setSnapshot(null);
+                setRun(null);
+              }}
+            >
+              Switch Workspace
+            </button>
+            <button
+              type="button"
+              className="topbar-panel-restore"
+              onClick={() => {
+                setResourceBrowserWidth(250);
+                setInspectorWidth(310);
+                setWorkflowEditorPercent(66.667);
+                setWorkflowPaneFocus("editor");
+              }}
+            >
+              Reset layouts
+            </button>
+            <label className="topbar-theme-switch">
+              <span>Theme</span>
+              <select
+                aria-label="Workbench theme"
+                value={theme}
+                onChange={(event) =>
+                  setTheme(event.target.value as WorkbenchTheme)
+                }
+              >
+                {WORKBENCH_THEMES.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <div className="topbar-view-actions" data-stack-scope="view">
+            {resourceBrowserWidth <= 36 && (
+              <button
+                type="button"
+                className="topbar-panel-restore"
+                onClick={() => setResourceBrowserWidth(250)}
+              >
+                Restore Resource Browser
+              </button>
+            )}
+            {inspectorWidth <= 36 && (
+              <button
+                type="button"
+                className="topbar-panel-restore"
+                onClick={() => setInspectorWidth(310)}
+              >
+                Restore Documentation
+              </button>
+            )}
+          </div>
+        </div>
+        <div
+          className="shell-panel-controls resource-browser-frame-controls panel-frame-controls"
+          role="group"
+          aria-label="Resource Browser panel controls"
+        >
+          <button
+            type="button"
+            title="Minimize Resource Browser"
+            onClick={() => {
+              setTakeoverShellPanel(null);
+              setResourceBrowserWidth(36);
+            }}
+          >
+            −
+          </button>
+          <button
+            type="button"
+            title="Restore Resource Browser"
+            onClick={() => {
+              setTakeoverShellPanel(null);
+              setResourceBrowserWidth(250);
+            }}
+          >
+            *
+          </button>
+          <button
+            type="button"
+            title="Display all Resource Browser content"
+            onClick={() => {
+              setTakeoverShellPanel(null);
+              setResourceBrowserWidth(520);
+            }}
+          >
+            +
+          </button>
+          <button
+            type="button"
+            title="Resource Browser takes over the middle workspace"
+            onClick={() => {
+              setResourceBrowserWidth(36);
+              setTakeoverShellPanel("resource");
+            }}
+          >
+            [ـ]
+          </button>
+        </div>
+        <div
+          className="resource-browser-resizer"
+          role="separator"
+          aria-label="Resize Resource Browser"
+          aria-orientation="vertical"
+          aria-valuemin={36}
+          aria-valuemax={520}
+          aria-valuenow={Math.round(resourceBrowserWidth)}
+          tabIndex={0}
+          onPointerDown={beginResourceBrowserResize}
+          onDoubleClick={() => setResourceBrowserWidth(250)}
+        />
+        <div
+          className="shell-panel-controls documentation-frame-controls panel-frame-controls"
+          role="group"
+          aria-label="Documentation panel controls"
+        >
+          <button
+            type="button"
+            title="Minimize Documentation"
+            onClick={() => {
+              setTakeoverShellPanel(null);
+              setInspectorWidth(36);
+            }}
+          >
+            −
+          </button>
+          <button
+            type="button"
+            title="Restore Documentation"
+            onClick={() => {
+              setTakeoverShellPanel(null);
+              setInspectorWidth(310);
+            }}
+          >
+            *
+          </button>
+          <button
+            type="button"
+            title="Display all Documentation content"
+            onClick={() => {
+              setTakeoverShellPanel(null);
+              setInspectorWidth(Math.round(window.innerWidth * 0.6));
+            }}
+          >
+            +
+          </button>
+          <button
+            type="button"
+            title="Documentation takes over the middle workspace"
+            onClick={() => {
+              setInspectorWidth(36);
+              setTakeoverShellPanel("docs");
+            }}
+          >
+            [ـ]
+          </button>
+        </div>
+        <div
+          className="inspector-resizer"
+          role="separator"
+          aria-label="Resize Documentation"
+          aria-orientation="vertical"
+          aria-valuemin={36}
+          aria-valuemax={Math.round(window.innerWidth * 0.6)}
+          aria-valuenow={Math.round(inspectorWidth)}
+          tabIndex={0}
+          onPointerDown={beginInspectorResize}
+          onDoubleClick={() => setInspectorWidth(310)}
+        />
+        <aside className="inspector">
+          <div className="inspector-head">
+            <span>{relationshipView ? "DOCUMENTATION" : "LIVE INSPECTOR"}</span>
+            <div>
+              <span className="live-dot" />{" "}
+              {relationshipView ? "shared markdown" : "real data"}
+            </div>
+          </div>
+          {relationshipView ? (
+            <Suspense
+              fallback={
+                <div className="studio-empty">Loading documentation…</div>
+              }
+            >
+              <HelpDocumentTabs
+                preferred={
+                  view === "goals"
+                    ? "goals"
+                    : view === "plans"
+                      ? "plans"
+                      : view === "data"
+                        ? "data"
+                        : view === "llms"
+                          ? "llms"
+                          : view === "systems"
+                            ? "systems"
+                            : view === "operations"
+                              ? "operations"
+                              : view === "policies"
+                                ? "policies"
+                                : view === "contexts"
+                                  ? "contexts"
+                                  : view === "sourceCode" || view === "prompts"
+                                    ? "prompts"
+                                    : "overview"
+                }
+                context={
+                  view === "goals"
+                    ? JSON.stringify(
+                        {
+                          goalResources: snapshot?.goals?.length || 0,
+                          workspace: workspace.id,
+                        },
+                        null,
+                        2,
+                      )
+                    : view === "plans"
+                      ? JSON.stringify(
+                          {
+                            planningStrategies: snapshot?.plans?.length || 0,
+                            workspace: workspace.id,
+                          },
+                          null,
+                          2,
+                        )
+                      : view === "contexts"
+                        ? JSON.stringify(
+                            {
+                              contextResources: snapshot?.contexts?.length || 0,
+                              workspace: workspace.id,
+                            },
+                            null,
+                            2,
+                          )
+                        : view === "systems"
+                          ? JSON.stringify(
+                              {
+                                systemResources: snapshot?.systems?.length || 0,
+                                workspace: workspace.id,
+                              },
+                              null,
+                              2,
+                            )
+                          : view === "data"
+                            ? JSON.stringify(
+                                {
+                                  datatypes: workspace.datatypeFileCount || 0,
+                                  representations:
+                                    workspace.representationFileCount || 0,
+                                },
+                                null,
+                                2,
+                              )
+                            : undefined
+                }
+              />
+            </Suspense>
+          ) : selectedStep ? (
+            <>
+              <div className="inspect-section">
+                <div className="section-title">
+                  <span>STEP</span>
+                  <b>{selectedRuntime?.status || "defined"}</b>
+                </div>
+                <pre className="mini-code">
+                  {jsonValueToMetta({
+                    inputs: selectedStep.inputs || {},
+                    outputs: selectedStep.outputs || {},
+                  })}
+                </pre>
+              </div>
+            </>
+          ) : (
+            <div className="inspect-section">
+              <pre className="mini-code">
+                {jsonValueToMetta({
+                  id: workspace.id,
+                  root: workspace.root,
+                  files: snapshot?.files.length || 0,
+                })}
+              </pre>
+            </div>
+          )}
+        </aside>
+      </section>
+      <footer>
+        <span>
+          <i className="online" /> Backend connected
+        </span>
+        <span>
+          {workspace.id === "shared" ? "Shared library" : workspace.id}
+        </span>
+        <span>
+          {workspace.datatypeFileCount || 0} datatypes ·{" "}
+          {workspace.representationFileCount || 0} representations
+        </span>
+        <span>{enabledModelCount} enabled models/presets</span>
+        <span>{workspace.promptFileCount || 0} prompts</span>
+        <span className="footer-right">filesystem workspace</span>
+      </footer>
+    </main>
+  );
 }

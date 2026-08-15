@@ -1,0 +1,1199 @@
+@media (min-width: 1181px) {
+  .main-stage:has(> .canvas-view):has(> .runtime-history-view) > .runtime-history-view > .three-state-accordion-stack[data-accordion-stack="right-column"] {
+    grid-column: 2 !important;
+    grid-row: 3 / 6 !important;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  .automated-runner-tools {
+    display: none !important;
+  }
+
+  body.shell-takeover-resource .workspace > .stages-panel {
+    position: fixed;
+    top: 58px;
+    bottom: 26px;
+    left: 58px;
+    right: var(--inspector-width, 310px);
+    width: auto !important;
+    z-index: 80;
+    overflow: hidden;
+  }
+
+  body.shell-takeover-docs .workspace > .inspector {
+    position: fixed;
+    top: 58px;
+    bottom: 26px;
+    left: calc(58px + var(--resource-browser-width, 250px));
+    right: 36px;
+    width: auto !important;
+    z-index: 80;
+    overflow: hidden auto;
+  }
+
+  .toolbar .server-restart-button {
+    display: none;
+  }
+
+  .topbar > .toolbar {
+    position: fixed;
+    top: 31px;
+    right: 8px;
+    z-index: 110;
+  }
+
+  .topbar > .toolbar .icon-button,
+  .topbar > .toolbar .run-button {
+    height: 24px;
+    padding-top: 3px;
+    padding-bottom: 3px;
+  }
+
+  .shell-panel-controls {
+    position: absolute;
+    top: 7px;
+    z-index: 50;
+    opacity: 0.2;
+    transition: opacity 120ms ease;
+  }
+
+  .resource-browser-frame-controls {
+    left: max(178px, calc(174px + var(--resource-browser-width, 250px) - 82px));
+  }
+
+  .documentation-frame-controls {
+    right: 8px;
+  }
+
+  .shell-panel-controls:hover,
+  .stages-panel:hover ~ .resource-browser-frame-controls,
+  .workspace:has(.inspector:hover) > .documentation-frame-controls {
+    opacity: 1;
+  }
+
+  .workspace[style*="--resource-browser-width: 36px"] .stages-panel > :not(.panel-label),
+  .workspace[style*="--resource-browser-width: 36px"] .stages-panel .panel-label button {
+    display: none;
+  }
+
+  .workspace[style*="--inspector-width: 36px"] .inspector > :not(.inspector-head),
+  .workspace[style*="--inspector-width: 36px"] .inspector-head > div {
+    display: none;
+  }
+
+  .workbench[data-view="canvas"] .workspace {
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .workbench[data-view="canvas"] .stages-panel,
+  .workbench[data-view="canvas"] .inspector {
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .workbench[data-view="canvas"] .stage-list,
+  .workbench[data-view="canvas"] .inspector > :last-child {
+    min-height: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+  }
+
+  .main-stage:has(> .canvas-view):has(> .runtime-history-view) {
+    --durable-launcher-track: minmax(190px, 34%);
+    --workflow-runs-track: minmax(145px, 25%);
+    --memory-values-track: minmax(0, 1fr);
+    --run-spline-track: minmax(48px, 18%);
+    position: relative;
+    display: grid !important;
+    grid-template-columns: minmax(0, var(--workflow-editor-percent)) minmax(240px, var(--workflow-runs-percent)) !important;
+    grid-template-rows: 38px minmax(34px, 30%) minmax(68px, 1fr) 0 var(--run-spline-track) 38px !important;
+    height: 100% !important;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .main-stage:has(> .canvas-view):has(> .runtime-history-view) > .view-tabs {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+
+  .main-stage:has(> .canvas-view):has(> .runtime-history-view) > .canvas-view {
+    grid-column: 1;
+    grid-row: 2 / 4;
+    min-width: 0;
+    min-height: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+  }
+
+  .main-stage:has(> .canvas-view):has(> .runtime-history-view) > .canvas-view:has(> .canvas-left-accordion-stack) {
+    padding: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .main-stage:has(> .canvas-view):has(> .runtime-history-view) > .runtime-history-view {
+    display: contents !important;
+  }
+
+  .main-stage:has(> .canvas-view):has(> .runtime-history-view) > .runtime-history-view > .workflow-run-list-pane {
+    grid-column: 2 !important;
+    grid-row: 2 !important;
+    width: auto;
+    height: auto;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    overscroll-behavior: contain;
+  }
+
+  .workflow-run-list-pane > .resource-heading,
+  .workflow-run-list-pane > .runtime-history-tools {
+    flex: 0 0 auto;
+  }
+
+  .workflow-run-list-pane > .resource-table {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+  }
+
+  .main-stage:has(> .canvas-view):has(> .runtime-history-view) > .runtime-history-view > .workflow-run-object-workspace {
+    grid-column: 2 !important;
+    grid-row: 3 !important;
+    width: auto;
+    height: auto;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    overscroll-behavior: contain;
+  }
+
+  .workflow-run-object-workspace > header {
+    flex: 0 0 auto;
+  }
+
+  .workflow-run-object-workspace > .workflow-run-object-list,
+  .workflow-run-object-workspace > .studio-empty {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+  }
+
+  .main-stage:has(> .runtime-history-view.panel-maximized-runs),
+  .main-stage:has(> .runtime-history-view.panel-maximized-objects),
+  .main-stage:has(> .runtime-history-view.panel-maximized-spline) {
+    overflow: auto;
+  }
+
+  .workflow-run-list-pane.display-all,
+  .workflow-run-object-workspace.display-all,
+  .workflow-run-spline-band.display-all {
+    height: max-content !important;
+    max-height: none !important;
+    overflow: visible !important;
+    z-index: 30;
+  }
+
+  .workflow-run-list-pane.display-all > .resource-table,
+  .workflow-run-object-workspace.display-all > .workflow-run-object-list,
+  .workflow-run-spline-band.display-all > .workflow-run-spline-scroll {
+    flex: 0 0 auto;
+    height: max-content;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .panel-frame-controls button:last-child {
+    width: 32px;
+  }
+
+  .main-stage:has(> .runtime-history-view.panel-maximized-runs) > .runtime-history-view > .workflow-run-list-pane,
+  .main-stage:has(> .runtime-history-view.panel-maximized-objects) > .runtime-history-view > .workflow-run-object-workspace,
+  .main-stage:has(> .runtime-history-view.panel-maximized-spline) > .runtime-history-view > .workflow-run-spline-band {
+    grid-column: 1 / -1 !important;
+    grid-row: 2 / 6 !important;
+    z-index: 50;
+    align-self: start;
+    min-height: calc(100vh - 96px);
+    height: max-content !important;
+    max-height: none !important;
+  }
+
+  .main-stage:has(> .runtime-history-view.panel-maximized-runs) .workflow-run-list-pane > .resource-table,
+  .main-stage:has(> .runtime-history-view.panel-maximized-objects) .workflow-run-object-workspace > .workflow-run-object-list {
+    flex: 0 0 auto;
+    height: max-content;
+    overflow: visible;
+  }
+
+  .main-stage:has(> .canvas-view):has(> .runtime-history-view) > .runtime-history-view > .workflow-run-spline-band {
+    grid-column: 1 / -1 !important;
+    grid-row: 4 !important;
+    position: relative;
+    inset: auto;
+    width: auto;
+    height: auto;
+    min-height: 0;
+    overflow: hidden;
+    z-index: 12;
+    transform-origin: bottom center;
+  }
+
+  .workflow-run-list-pane.minimized,
+  .workflow-run-object-workspace.minimized {
+    height: 38px !important;
+    min-height: 38px !important;
+    overflow: hidden !important;
+  }
+
+  .workflow-run-list-pane.minimized {
+    width: auto !important;
+    justify-self: stretch;
+    align-self: start;
+    z-index: 16;
+  }
+
+  .main-stage:has(> .runtime-history-view > .workflow-run-list-pane.minimized) > .runtime-history-view > .workflow-run-object-workspace {
+    grid-row: 2 / 4 !important;
+    padding-top: 38px;
+  }
+
+  .workflow-run-spline-band.minimized {
+    height: 34px !important;
+    min-height: 34px !important;
+    align-self: end;
+    transform: none !important;
+  }
+
+  .main-stage:has(> .runtime-history-view > .workflow-run-spline-band.minimized) {
+    grid-template-rows: 38px minmax(150px, 30%) minmax(0, 1fr) 34px 34px !important;
+  }
+
+  .main-stage:has(> .runtime-history-view > .workflow-runner-reference[open]) {
+    grid-template-rows: 38px minmax(120px, 22%) minmax(0, 1fr) minmax(48px, 18%) minmax(160px, 35%) !important;
+  }
+
+  .main-stage:has(> .runtime-history-view > .workflow-run-spline-band.minimized):has(> .runtime-history-view > .workflow-runner-reference[open]) {
+    grid-template-rows: 38px minmax(120px, 22%) minmax(0, 1fr) 34px minmax(160px, 35%) !important;
+  }
+
+  .main-stage:has(> .canvas-view):has(> .runtime-history-view) > .runtime-history-view > .workflow-runner-reference {
+    grid-column: 1 / -1;
+    grid-row: 5;
+    min-height: 0;
+    overflow: hidden auto;
+    transform-origin: bottom center;
+  }
+
+  .panel-title-toggle {
+    min-width: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .workflow-run-list-pane .resource-heading > .panel-title-toggle {
+    width: auto;
+    flex: 1 1 auto;
+    min-height: 42px;
+    justify-content: center;
+    gap: 2px;
+  }
+
+  .workflow-run-list-pane .resource-heading > .panel-title-toggle span {
+    color: var(--cyan);
+    font: 700 10px/1.1 ui-monospace, monospace;
+    letter-spacing: .08em;
+  }
+
+  .workflow-run-list-pane .resource-heading > .panel-title-toggle b,
+  .workflow-run-list-pane .resource-heading > .panel-title-toggle small {
+    font: 600 9px/1.2 ui-monospace, monospace;
+  }
+
+  .panel-frame-controls.restore-only .panel-restore-button {
+    width: auto;
+    min-width: 58px;
+    padding: 0 8px;
+  }
+
+  .shell-panel-controls.restore-only button:not(:nth-child(2)) {
+    display: none;
+  }
+
+  .shell-panel-controls.restore-only button:nth-child(2) {
+    width: auto;
+    min-width: 58px;
+    font-size: 0;
+  }
+
+  .shell-panel-controls.restore-only button:nth-child(2)::after {
+    content: "Restore";
+    font-size: 10px;
+  }
+
+  .shell-panel-controls.restore-only {
+    display: none !important;
+  }
+
+  .panel-frame > .panel-frame-controls {
+    top: 10%;
+  }
+
+  .canvas-heading h1,
+  .stages-panel .panel-label span,
+  .inspector-head > span {
+    cursor: pointer;
+  }
+
+  .topbar-panel-restore-stack {
+    position: fixed;
+    top: 3px;
+    right: 8px;
+    z-index: 120;
+    display: flex;
+    flex-direction: row-reverse;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .topbar-global-actions,
+  .topbar-view-actions {
+    display: flex;
+    flex-direction: row-reverse;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .topbar-view-actions {
+    position: fixed;
+    top: 31px;
+    right: 310px;
+    z-index: 115;
+    height: 24px;
+  }
+
+  .topbar-view-actions:empty {
+    display: none;
+  }
+
+  .topbar-panel-restore {
+    height: 24px;
+    border: 1px solid var(--line-strong, #365868);
+    border-radius: 4px;
+    background: var(--panel, #0d1820);
+    color: var(--accent, #78e1ce);
+    font: 600 10px/1 monospace;
+    letter-spacing: .04em;
+  }
+
+  .topbar-theme-switch {
+    height: 24px;
+    display: flex;
+    align-items: center;
+    border: 1px solid var(--line-strong, #365868);
+    border-radius: 4px;
+    overflow: hidden;
+    background: var(--panel, #0d1820);
+    color: var(--muted);
+    font: 600 9px/1 monospace;
+  }
+
+  .topbar-theme-switch span {
+    padding: 0 6px;
+  }
+
+  .topbar-theme-switch select {
+    height: 100%;
+    max-width: 130px;
+    border: 0;
+    border-left: 1px solid var(--line-strong, #365868);
+    background: var(--panel2, #13232d);
+    color: var(--text);
+    font: inherit;
+  }
+}
+
+/* Legacy workflow outer accordion stack: columns, spline, design reference. */
+@media (min-width:1181px){
+  .main-stage:has(>.canvas-view):has(>.runtime-history-view){position:relative}
+  .workflow-columns-stack-control{position:absolute;z-index:35;top:42px;left:6px;right:6px;height:30px;min-height:30px;border:1px solid var(--line);background:color-mix(in srgb,var(--panel) 94%,var(--cyan) 3%);pointer-events:none}
+  .workflow-columns-stack-control>.three-state-accordion-controls{position:absolute;top:2px;right:3px;pointer-events:auto}
+  .workflow-columns-stack-control>span{display:flex;height:28px;align-items:center;padding:0 100px 0 8px;color:var(--cyan);font:700 8px ui-monospace,monospace;letter-spacing:.1em}
+  .workflow-columns-stack-control>.three-state-accordion-strip-summary{pointer-events:auto}
+  .main-stage.workflow-columns-strip:has(>.canvas-view):has(>.runtime-history-view){grid-template-rows:38px 34px 0 0 var(--run-spline-track) 38px!important}
+  .main-stage.workflow-columns-strip>.canvas-view,
+  .main-stage.workflow-columns-strip>.runtime-history-view>.workflow-run-list-pane,
+  .main-stage.workflow-columns-strip>.runtime-history-view>.durable-runs-accordion,
+  .main-stage.workflow-columns-strip>.runtime-history-view>.workflow-run-object-workspace{height:0!important;min-height:0!important;overflow:hidden!important;visibility:hidden}
+  .main-stage.workflow-columns-strip>.workflow-columns-stack-control{top:38px;height:34px;min-height:34px}
+  .main-stage.workflow-columns-full:has(>.canvas-view):has(>.runtime-history-view){overflow-x:hidden!important;overflow-y:auto!important}
+}
+
+@media (min-width: 1181px) {
+  .main-stage:has(> .canvas-view):has(> .runtime-history-view) > .runtime-history-view > .workflow-runs-control {
+    grid-column: 2 !important;
+    grid-row: 3 !important;
+    width: auto;
+    min-width: 0;
+    min-height: 0;
+    max-width: 100%;
+    overflow: hidden;
+  }
+
+  .main-stage:has(> .runtime-history-view.panel-maximized-runs) > .runtime-history-view > .workflow-runs-control {
+    grid-column: 1 / -1 !important;
+    grid-row: 2 / 6 !important;
+    z-index: 20;
+  }
+}
+
+/* Resource Browser responsiveness follows the pane, not the browser window. */
+.stages-panel {
+  container-name: resource-browser;
+  container-type: inline-size;
+}
+
+@container resource-browser (max-width: 360px) {
+  .workflow-resource-browser .artifact-tree-branch-head {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+
+  .workflow-resource-browser .tree-branch-toggle {
+    width: 100%;
+    min-width: 0;
+    min-height: 27px;
+  }
+
+  .workflow-resource-browser .stage-button {
+    height: auto;
+    min-height: 66px;
+    grid-template-columns: 18px 8px 22px minmax(0, 1fr);
+    padding: 6px 7px 6px 2px;
+  }
+
+  .workflow-resource-browser .stage-button .nested-badge {
+    grid-column: 4;
+    justify-self: start;
+  }
+
+  .workflow-resource-browser .operation-tree-children {
+    margin-left: 8px;
+    padding-left: 5px;
+  }
+
+  .workflow-resource-browser .operation-tree-row {
+    grid-template-columns: 52px minmax(0, 1fr);
+    gap: 6px;
+    padding: 7px 6px;
+  }
+
+  .workflow-resource-browser .operation-tree-row > em {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  .workflow-resource-browser .operation-tree-row b,
+  .workflow-resource-browser .operation-tree-row small {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .workflow-resource-browser .operation-kind-badge {
+    padding-inline: 3px;
+  }
+
+  .workflow-resource-browser button {
+    max-width: 100%;
+  }
+}
+
+@container resource-browser (max-width: 210px) {
+  .workflow-resource-browser {
+    padding-inline: 4px;
+  }
+
+  .workflow-resource-browser .stage-button {
+    grid-template-columns: 20px minmax(0, 1fr);
+    min-height: 64px;
+  }
+
+  .workflow-resource-browser .stage-number,
+  .workflow-resource-browser .stage-line {
+    display: none;
+  }
+
+  .workflow-resource-browser .stage-icon {
+    grid-column: 1;
+  }
+
+  .workflow-resource-browser .stage-button > div {
+    grid-column: 2;
+  }
+
+  .workflow-resource-browser .operation-tree-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .workflow-resource-browser .operation-tree-row > span,
+  .workflow-resource-browser .operation-tree-row > em {
+    grid-column: 1;
+  }
+
+  .workflow-resource-browser .operation-kind-badge {
+    justify-self: start;
+  }
+
+  .workflow-resource-browser .tree-branch-toggle b {
+    white-space: normal;
+  }
+}
+
+/* Reserved left middle column; editor and runtime panels stack together on the right. */
+@media (min-width: 1181px) {
+  .main-stage:has(> .canvas-view):has(> .runtime-history-view) {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) !important;
+    grid-template-rows: 38px 420px 220px max-content 280px 120px 34px !important;
+    overflow: hidden auto !important;
+    overscroll-behavior: contain;
+  }
+
+  .main-stage:has(> .canvas-view):has(> .runtime-history-view) > .canvas-view {
+    grid-column: 2 !important;
+    grid-row: 2 !important;
+    width: auto !important;
+    max-width: 100%;
+    padding-right: 25px !important;
+    overflow-x: hidden !important;
+    contain: inline-size;
+  }
+
+  .main-stage:has(> .canvas-view):has(> .runtime-history-view) > .runtime-history-view > .durable-runs-accordion {
+    grid-column: 2 !important;
+    grid-row: 3 !important;
+  }
+
+  .main-stage:has(> .canvas-view):has(> .runtime-history-view) > .runtime-history-view > .workflow-run-object-workspace {
+    grid-column: 2 !important;
+    grid-row: 5 !important;
+  }
+
+  .main-stage:has(> .canvas-view):has(> .runtime-history-view) > .runtime-history-view > .workflow-run-spline-band {
+    grid-column: 2 !important;
+    grid-row: 6 !important;
+    position: relative !important;
+  }
+
+  .main-stage:has(> .canvas-view):has(> .runtime-history-view) > .runtime-history-view > .workflow-runner-reference {
+    grid-column: 2 !important;
+    grid-row: 7 !important;
+  }
+
+  .main-stage:has(> .canvas-view):has(> .runtime-history-view) > .workflow-pane-divider {
+    display: none !important;
+  }
+}
+
+/* Workflow Runs keeps its controls fixed and scrolls records only. */
+.workflow-run-list-pane {
+  display: flex !important;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden !important;
+}
+
+.workflow-run-list-pane > .resource-heading,
+.workflow-run-list-pane > .runtime-history-tools,
+.workflow-run-list-pane > .backend-error {
+  flex: 0 0 auto;
+}
+
+.workflow-run-list-pane > .resource-heading {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 10px;
+  padding: 10px 104px 9px 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.workflow-run-list-pane > .resource-heading > .panel-title-toggle {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: start;
+  gap: 3px;
+  margin: 0;
+  padding: 0;
+  border: 0 !important;
+  border-radius: 0;
+  background: transparent !important;
+  color: inherit;
+  text-align: left;
+  box-shadow: none !important;
+}
+
+.workflow-run-list-pane > .resource-heading > .panel-title-toggle span {
+  color: var(--cyan);
+  font: 700 8px ui-monospace, monospace;
+  letter-spacing: 0.11em;
+}
+
+.workflow-run-list-pane > .resource-heading > .panel-title-toggle b {
+  max-width: 100%;
+  color: var(--text);
+  font: 700 11px ui-monospace, monospace;
+  overflow-wrap: anywhere;
+}
+
+.workflow-run-list-pane > .resource-heading > .panel-title-toggle small {
+  max-width: 100%;
+  color: var(--muted);
+  font: 8px ui-monospace, monospace;
+  overflow-wrap: anywhere;
+}
+
+.workflow-run-list-pane > .resource-heading > button:last-child {
+  align-self: center;
+  white-space: nowrap;
+}
+
+.workflow-run-list-pane > .resource-table {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden auto !important;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+/* Rollback checkpoint: original Detected Memory Values workflow composition. */
+@media (min-width: 1181px) {
+  .main-stage:has(> .canvas-view):has(> .runtime-history-view) {
+    grid-template-columns: minmax(0, var(--workflow-editor-percent)) minmax(240px, var(--workflow-runs-percent)) !important;
+    grid-template-rows: 38px minmax(34px, 30%) minmax(68px, 1fr) 0 var(--run-spline-track) 38px !important;
+    height: 100% !important;
+    overflow: hidden !important;
+  }
+
+  .main-stage:has(> .canvas-view):has(> .runtime-history-view) > .canvas-view {
+    grid-column: 1 !important;
+    grid-row: 2 / 4 !important;
+    width: auto !important;
+    max-width: none;
+    padding-right: 25px !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    contain: none;
+  }
+
+  .main-stage:has(> .canvas-view):has(> .runtime-history-view) > .runtime-history-view > .workflow-run-list-pane,
+  .main-stage:has(> .canvas-view):has(> .runtime-history-view) > .runtime-history-view > .durable-runs-accordion {
+    grid-column: 2 !important;
+    grid-row: 2 !important;
+  }
+
+  .main-stage:has(> .canvas-view):has(> .runtime-history-view) > .runtime-history-view > .workflow-run-object-workspace {
+    grid-column: 2 !important;
+    grid-row: 3 / 5 !important;
+  }
+
+  .main-stage:has(> .canvas-view):has(> .runtime-history-view) > .runtime-history-view > .workflow-run-spline-band {
+    grid-column: 1 / -1 !important;
+    grid-row: 5 !important;
+  }
+
+  .main-stage:has(> .canvas-view):has(> .runtime-history-view) > .runtime-history-view > .workflow-runner-reference {
+    grid-column: 1 / -1 !important;
+    grid-row: 6 !important;
+  }
+
+  .main-stage:has(> .canvas-view):has(> .runtime-history-view) > .runtime-history-view > .durable-run-launcher {
+    grid-column: 2 !important;
+    grid-row: 2 !important;
+    width: auto;
+    min-width: 0;
+    min-height: 0;
+    max-width: 100%;
+  }
+
+  .main-stage:has(> .runtime-history-view > .durable-run-launcher.three-state-accordion-strip) {
+    --durable-launcher-track: 34px;
+  }
+
+  .main-stage:has(> .runtime-history-view > .durable-run-launcher.three-state-accordion-scroll) {
+    --durable-launcher-track: 300px;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+  }
+
+  .main-stage:has(> .runtime-history-view > .durable-run-launcher.three-state-accordion-full) {
+    --durable-launcher-track: max-content;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+  }
+
+  .main-stage:has(> .runtime-history-view .durable-runs-accordion.three-state-accordion-strip) {
+    --workflow-runs-track: 38px;
+  }
+
+  .main-stage:has(> .runtime-history-view .durable-runs-accordion.three-state-accordion-scroll) {
+    --workflow-runs-track: 380px;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+  }
+
+  .main-stage:has(> .runtime-history-view .durable-runs-accordion.three-state-accordion-full) {
+    --workflow-runs-track: max-content;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+  }
+
+  .main-stage:has(> .runtime-history-view .workflow-run-object-workspace.three-state-accordion-strip) {
+    --memory-values-track: 34px;
+  }
+
+  .main-stage:has(> .runtime-history-view .workflow-run-object-workspace.three-state-accordion-scroll) {
+    --memory-values-track: 320px;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+  }
+
+  .main-stage:has(> .runtime-history-view > .three-state-accordion-strip > .three-state-accordion-nested > .three-state-accordion) {
+    --memory-values-track: 68px;
+  }
+
+  .main-stage:has(> .runtime-history-view .workflow-run-object-workspace.three-state-accordion-full) {
+    --memory-values-track: max-content;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+  }
+
+  .main-stage:has(> .runtime-history-view .durable-runs-accordion.three-state-accordion-full),
+  .main-stage:has(> .runtime-history-view .workflow-run-object-workspace.three-state-accordion-full) {
+    grid-template-rows: 38px var(--durable-launcher-track) var(--workflow-runs-track) 0 var(--run-spline-track) 38px !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+  }
+
+  .main-stage:has(> .runtime-history-view > .workflow-run-object-workspace.minimized) {
+    --memory-values-track: 44px;
+  }
+
+  .main-stage:has(> .runtime-history-view > .workflow-run-spline-band.minimized) {
+    --run-spline-track: 34px;
+  }
+
+  .main-stage:has(> .runtime-history-view > .workflow-run-spline-band.three-state-accordion-strip) {
+    --run-spline-track: 34px;
+  }
+
+  .main-stage:has(> .runtime-history-view > .workflow-run-spline-band.three-state-accordion-full) {
+    --run-spline-track: max-content;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+  }
+
+  .main-stage:has(> .runtime-history-view > .workflow-runner-reference.three-state-accordion-full) {
+    grid-template-rows: 38px var(--durable-launcher-track) var(--workflow-runs-track) var(--memory-values-track) var(--run-spline-track) max-content !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+  }
+}
+
+.workflow-run-list-pane.minimized {
+  height: 44px !important;
+  min-height: 44px !important;
+}
+
+.workflow-run-list-pane.minimized > :not(.workflow-runs-collapsed-head):not(.panel-frame-controls) {
+  display: none !important;
+}
+
+.workflow-runs-collapsed-head {
+  box-sizing: border-box;
+  width: 100%;
+  height: 42px;
+  min-height: 42px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 104px 5px 10px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.workflow-runs-collapsed-head > div:first-child {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+  overflow: hidden;
+}
+
+.workflow-runs-collapsed-head span {
+  color: var(--cyan);
+  font: 700 8px ui-monospace, monospace;
+  letter-spacing: 0.1em;
+}
+
+.workflow-runs-collapsed-head > div:first-child b {
+  color: var(--text);
+  font: 700 10px ui-monospace, monospace;
+}
+
+.workflow-runs-collapsed-head span,
+.workflow-runs-collapsed-head b,
+.workflow-runs-collapsed-head small {
+  margin: 0;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.workflow-runs-collapsed-state {
+  min-width: 86px;
+  display: grid;
+  gap: 2px;
+  padding: 4px 7px;
+  border: 1px solid #38515d;
+  border-radius: 3px;
+}
+
+.workflow-runs-collapsed-state b {
+  color: var(--green);
+  font: 700 8px ui-monospace, monospace;
+}
+
+.workflow-runs-collapsed-state small {
+  color: var(--muted);
+  font: 7px ui-monospace, monospace;
+}
+
+@media (min-width:1181px){
+  .main-stage.workflow-columns-strip:has(>.canvas-view):has(>.runtime-history-view){grid-template-rows:38px 34px 0 0 var(--run-spline-track) 38px!important}
+  .main-stage.workflow-columns-strip>.canvas-view,.main-stage.workflow-columns-strip>.runtime-history-view>.workflow-run-list-pane,.main-stage.workflow-columns-strip>.runtime-history-view>.durable-runs-accordion,.main-stage.workflow-columns-strip>.runtime-history-view>.workflow-run-object-workspace{height:0!important;min-height:0!important;overflow:hidden!important;visibility:hidden}
+}
+
+/* The paired-column control is a layout row, not an overlay over either pane. */
+@media (min-width: 1181px) {
+  .main-stage:has(> .canvas-view):has(> .runtime-history-view) {
+    grid-template-rows: 38px 34px var(--workflow-runs-track) minmax(68px, 1fr) 0 var(--run-spline-track) 38px !important;
+  }
+
+  .main-stage:has(> .canvas-view):has(> .runtime-history-view) > .workflow-columns-stack-control {
+    position: relative;
+    inset: auto;
+    grid-column: 1 / -1;
+    grid-row: 2;
+    align-self: stretch;
+    width: auto;
+    height: 34px;
+    min-height: 34px;
+  }
+
+  .main-stage > .workflow-columns-stack-control > .three-state-accordion-strip-summary {
+    display: flex !important;
+    width: 100%;
+    height: 32px;
+    pointer-events: auto;
+  }
+
+  .main-stage > .workflow-columns-stack-control > .three-state-accordion-strip-summary > .three-state-accordion-strip-summary-main {
+    padding-right: 8px;
+    cursor: pointer;
+  }
+
+  .workflow-column-control-groups {
+    position: static;
+    display: flex;
+    gap: 6px;
+    pointer-events: auto;
+  }
+
+  .main-stage > .workflow-columns-stack-control > .workflow-column-control-groups {
+    display: flex !important;
+  }
+
+  .main-stage > .workflow-columns-stack-control.three-state-accordion.three-state-accordion-strip > span {
+    display: flex !important;
+  }
+
+  .main-stage > .workflow-columns-stack-control.three-state-accordion.three-state-accordion-strip > .workflow-column-control-groups {
+    display: flex !important;
+  }
+
+  .workflow-column-control-group {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+  }
+
+  .workflow-column-control-group > b {
+    color: var(--muted);
+    font: 700 7px ui-monospace, monospace;
+    letter-spacing: 0.06em;
+  }
+
+  .workflow-column-control-group > .three-state-accordion-controls {
+    position: static !important;
+    display: flex !important;
+    opacity: 1 !important;
+    transform: none !important;
+    visibility: visible !important;
+  }
+
+  .workflow-column-control-group > .three-state-accordion-controls > button {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    visibility: visible !important;
+  }
+
+  .main-stage:has(> .canvas-view):has(> .runtime-history-view) > .canvas-view {
+    grid-row: 3 / 5 !important;
+  }
+
+  .main-stage:has(> .canvas-view):has(> .runtime-history-view) > .runtime-history-view > .workflow-run-list-pane,
+  .main-stage:has(> .canvas-view):has(> .runtime-history-view) > .runtime-history-view > .durable-runs-accordion,
+  .main-stage:has(> .canvas-view):has(> .runtime-history-view) > .runtime-history-view > .durable-run-launcher {
+    grid-row: 3 !important;
+  }
+
+  .main-stage:has(> .canvas-view):has(> .runtime-history-view) > .runtime-history-view > .workflow-run-object-workspace {
+    grid-row: 4 / 6 !important;
+  }
+
+  .main-stage:has(> .runtime-history-view > .workflow-run-list-pane.three-state-accordion-strip) > .runtime-history-view > .workflow-run-object-workspace,
+  .main-stage:has(> .runtime-history-view > .durable-runs-accordion.three-state-accordion-strip) > .runtime-history-view > .workflow-run-object-workspace {
+    grid-row: 3 / 6 !important;
+    box-sizing: border-box;
+    padding-top: 34px;
+  }
+
+  .main-stage:has(> .runtime-history-view > .workflow-run-list-pane.three-state-accordion-strip) > .runtime-history-view > .workflow-run-list-pane,
+  .main-stage:has(> .runtime-history-view > .durable-runs-accordion.three-state-accordion-strip) > .runtime-history-view > .durable-runs-accordion {
+    position: relative;
+    z-index: 4;
+    align-self: start;
+  }
+
+  .main-stage:has(> .canvas-view):has(> .runtime-history-view) > .runtime-history-view > .workflow-run-spline-band {
+    grid-row: 6 !important;
+  }
+
+  .main-stage:has(> .canvas-view):has(> .runtime-history-view) > .runtime-history-view > .workflow-runner-reference {
+    grid-row: 7 !important;
+  }
+
+  .main-stage.workflow-columns-strip:has(> .canvas-view):has(> .runtime-history-view) {
+    grid-template-rows: 38px 34px 0 0 0 var(--run-spline-track) 38px !important;
+  }
+
+  .main-stage.workflow-columns-strip > .workflow-columns-stack-control {
+    height: 34px;
+    min-height: 34px;
+  }
+}
+
+/* The spline stack uses the same four-region member frame for all three peers. */
+@media (min-width: 1181px) {
+  .main-stage:has(> .canvas-view):has(> .runtime-history-view) {
+    --workflow-columns-control-track: 76px;
+    grid-template-rows: 38px var(--workflow-columns-control-track) var(--workflow-runs-track) minmax(68px, 1fr) 30px var(--run-spline-track) 38px !important;
+  }
+
+  .main-stage.workflow-columns-strip:has(> .canvas-view):has(> .runtime-history-view) {
+    --workflow-columns-control-track: 38px;
+    grid-template-rows: 38px var(--workflow-columns-control-track) 0 0 0 var(--run-spline-track) 38px !important;
+  }
+
+  .main-stage:has(> .canvas-view):has(> .runtime-history-view) > .workflow-columns-stack-control {
+    height: var(--workflow-columns-control-track) !important;
+    min-height: var(--workflow-columns-control-track) !important;
+    max-height: var(--workflow-columns-control-track) !important;
+    margin: 0 !important;
+    border-radius: 0;
+    pointer-events: auto;
+  }
+
+  .main-stage > .workflow-columns-stack-control > .three-state-accordion-member-item-header {
+    padding: 0 10px;
+  }
+
+  .main-stage > .workflow-columns-stack-control > .three-state-accordion-member-item-header > .workflow-column-control-groups {
+    display: flex !important;
+    width: 100%;
+    justify-content: flex-end;
+    align-items: center;
+  }
+
+  .workflow-column-control-description {
+    display: flex;
+    min-width: 0;
+    align-items: baseline;
+    gap: 8px;
+    margin-right: auto;
+    white-space: nowrap;
+  }
+
+  .workflow-column-control-description > b,
+  .run-projection-mode-description {
+    color: var(--violet);
+    font: 700 8px ui-monospace, monospace;
+    letter-spacing: .1em;
+  }
+
+  .workflow-column-control-description > small {
+    color: var(--muted);
+    font: 8px ui-monospace, monospace;
+  }
+
+  .main-stage:has(> .runtime-history-view > .workflow-run-spline-band.three-state-accordion-strip) {
+    --run-spline-track: 38px;
+  }
+
+  .main-stage:has(> .runtime-history-view > .workflow-run-spline-band.three-state-accordion-scroll) {
+    --run-spline-track: 360px;
+  }
+
+  .main-stage:has(> .runtime-history-view) > .runtime-history-view > [data-accordion-stack="spline-stack"] {
+    margin: 0 !important;
+    border-radius: 0;
+  }
+
+  .main-stage:has(> .canvas-view):has(> .runtime-history-view) > .runtime-history-view > .workflow-run-spline-band,
+  .main-stage:has(> .canvas-view):has(> .runtime-history-view) > .runtime-history-view > .workflow-runner-reference {
+    grid-row: calc(6 + var(--accordion-member-order)) !important;
+  }
+
+  .main-stage:has(> .canvas-view):has(> .runtime-history-view) > .workflow-columns-stack-footer {
+    box-sizing: border-box;
+    display: flex;
+    grid-column: 1 / -1;
+    grid-row: 5;
+    min-width: 0;
+    height: 30px;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 10px;
+    border: 1px solid color-mix(in srgb,var(--violet) 52%,#31505c);
+    border-top-color: var(--line);
+    background: color-mix(in srgb,var(--panel) 96%,var(--violet) 4%);
+    color: var(--muted);
+    font: 8px ui-monospace,monospace;
+  }
+
+  .main-stage:has(> .canvas-view):has(> .runtime-history-view) > .workflow-columns-stack-footer > b {
+    color: var(--violet);
+    letter-spacing: .08em;
+  }
+
+  .main-stage:has(> .canvas-view):has(> .runtime-history-view) > .runtime-history-view > .workflow-run-object-workspace {
+    grid-row: 4 / 5 !important;
+  }
+
+  .main-stage:has(> .canvas-view):has(> .runtime-history-view) > .runtime-history-view > .three-state-accordion-stack[data-accordion-stack="right-column"] {
+    grid-row: 3 / 5 !important;
+  }
+
+  .main-stage:has(> .runtime-history-view > .workflow-run-list-pane.three-state-accordion-strip) > .runtime-history-view > .workflow-run-object-workspace,
+  .main-stage:has(> .runtime-history-view > .durable-runs-accordion.three-state-accordion-strip) > .runtime-history-view > .workflow-run-object-workspace {
+    grid-row: 3 / 5 !important;
+  }
+
+  .main-stage:has(> .runtime-history-view) > .runtime-history-view > .workflow-run-spline-band > .three-state-accordion-member-item-header {
+    justify-content: flex-end;
+  }
+
+  .workflow-run-spline-band > .three-state-accordion-member-item-header > .run-projection-modes {
+    margin-left: auto;
+  }
+
+  .workflow-run-spline-band.three-state-accordion-scroll > .three-state-accordion-member-body {
+    display: flex;
+    min-height: 0;
+    flex-direction: column;
+  }
+
+  .workflow-run-spline-band.three-state-accordion-scroll .workflow-run-spline-scroll {
+    box-sizing: border-box;
+    flex: 0 0 200px;
+    width: 100%;
+    height: 200px;
+  }
+
+  .run-spline-node-inspector {
+    display: grid;
+    min-height: 118px;
+    grid-template-columns: 1.25fr .85fr 1fr 1fr;
+    gap: 10px;
+    padding: 10px 12px;
+    border-top: 1px solid var(--line);
+    background: color-mix(in srgb,var(--panel) 94%,var(--violet) 6%);
+  }
+
+  .run-spline-node-inspector > div {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    padding-left: 8px;
+    border-left: 2px solid color-mix(in srgb,var(--violet) 70%,var(--line));
+  }
+
+  .run-spline-node-inspector span {
+    color: var(--violet);
+    font: 700 7px ui-monospace,monospace;
+    letter-spacing: .1em;
+  }
+
+  .run-spline-node-inspector h3,
+  .run-spline-node-inspector b,
+  .run-spline-node-inspector code,
+  .run-spline-node-inspector small {
+    max-width: 100%;
+    margin: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .run-spline-node-inspector h3,
+  .run-spline-node-inspector b {
+    color: var(--text);
+    font: 700 9px ui-monospace,monospace;
+  }
+
+  .run-spline-node-inspector code,
+  .run-spline-node-inspector small {
+    color: var(--muted);
+    font: 7px/1.45 ui-monospace,monospace;
+  }
+}
