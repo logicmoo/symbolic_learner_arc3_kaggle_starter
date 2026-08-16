@@ -743,3 +743,16 @@ Preserve the canonical checkout and its `codex/workbench-navigation-v2` branch.
   All 21 shared section Prompts declare their applicability, button name,
   classification, and produced contract field. Live verification confirmed
   the classified order and that `+ summary` selects the Summary Prompt.
+
+# Phase 2 semantic-memory records (2026-08-17)
+
+- [x] Freeze versioned `Observation`, `EncounterRecord`, `RecognitionAccount`,
+  artifact/provenance, instance-parameter, evidence, identity-decision, and
+  per-object Turtle-reference contracts in the existing object-memory package.
+- [x] Give observations, encounters, artifacts, evidence, match proposals,
+  recognition accounts, merge decisions, and split decisions deterministic,
+  order-stable construction paths while leaving durable object identity under
+  `object_registry.pl` governance.
+- [x] Add focused tests for Phase 1 node linkage, artifact/provenance layering,
+  Turtle references, positive/negative evidence, rivals, reversible identity
+  decisions, immutability, schema versions, and deterministic identifiers.

@@ -58,15 +58,15 @@ Deliverables: [Phase 2 checklist](SOW_DELIVERABLES.md#phase-2--object-perception
 
 Keep the shared records in `python/object_memory/models.py`; do not create another model package.
 
-- [ ] Add or finalize `Observation` as a semantic record layered over the rendered observation already stored by Phase 1.
-- [ ] Add or finalize `EncounterRecord` with a reference to its Phase 1 action-tree node.
-- [ ] Add `RecognitionAccount` explaining matches, changes, rivals, residuals, confidence, and decision source.
-- [ ] Add `ArtifactRef` and `ProvenanceRef`.
-- [ ] Add `InstanceParameters` for position, orientation, scale, appearance, and supported transformations.
-- [ ] Add `MatchProposal`, `MergeDecision`, and `SplitDecision`.
-- [ ] Add `EvidenceRecord` supporting positive and negative evidence.
-- [ ] Add normalized per-object Turtle-program references.
-- [ ] Add schema versions and deterministic identifiers for observations, encounters, objects, artifacts, and evidence.
+- [x] Add or finalize `Observation` as a semantic record layered over the rendered observation already stored by Phase 1.
+- [x] Add or finalize `EncounterRecord` with a reference to its Phase 1 action-tree node.
+- [x] Add `RecognitionAccount` explaining matches, changes, rivals, residuals, confidence, and decision source.
+- [x] Add `ArtifactRef` and `ProvenanceRef`.
+- [x] Add `InstanceParameters` for position, orientation, scale, appearance, and supported transformations.
+- [x] Add `MatchProposal`, `MergeDecision`, and `SplitDecision`.
+- [x] Add `EvidenceRecord` supporting positive and negative evidence.
+- [x] Add normalized per-object Turtle-program references.
+- [x] Add schema versions and deterministic identifiers for observations, encounters, artifacts, evidence, proposals, recognition accounts, and identity decisions. Persistent object identifiers remain governed by `object_registry.pl`.
 
 ## Connect perception providers
 

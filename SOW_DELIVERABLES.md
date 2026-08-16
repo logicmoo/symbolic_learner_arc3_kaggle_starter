@@ -152,8 +152,8 @@ Phase 2 implements the semantic object layer behind the Phase 1 debugger. It use
 - [ ] **Open** Implement pluggable perception providers for image and simple-video inputs.
 
 - [ ] **Partial** Extract objects and represent geometry, structure, properties, relationships, position, orientation, scale, and appearance.  
-  Existing evidence: object-memory contracts and provider artifacts.  
-  Remaining: deterministic extraction and normalized persistent records.
+  Existing evidence: frozen, versioned `Observation`, `InstanceParameters`, `ArtifactRef`, `ProvenanceRef`, and Turtle-reference contracts in [`python/object_memory/models.py`](python/object_memory/models.py), with deterministic-ID coverage in [`tests/test_phase2_semantic_records.py`](tests/test_phase2_semantic_records.py).
+  Remaining: deterministic extraction into those normalized persistent records.
 
 ## Persistent identity and correspondence
 
@@ -162,8 +162,8 @@ Phase 2 implements the semantic object layer behind the Phase 1 debugger. It use
   Remaining: cross-encounter semantic identity governance.
 
 - [ ] **Partial** Match corresponding objects between states and repeated encounters while retaining competing proposals.  
-  Existing evidence: `similarities.pl`, provider contracts, and candidate records.  
-  Remaining: deterministic matching, rival proposals, and evidence records.
+  Existing evidence: `similarities.pl`, provider contracts, candidate records, plus frozen `MatchProposal`, `RecognitionAccount`, `EvidenceRecord`, `MergeDecision`, and `SplitDecision` contracts with deterministic construction.
+  Remaining: matching behavior that creates and governs these records across real encounters.
 
 - [ ] **Open** Recognize recurring objects under supported translation, rotation, scale, reflection, recoloring, noise, and partial visibility.
 
@@ -174,7 +174,7 @@ Phase 2 implements the semantic object layer behind the Phase 1 debugger. It use
 ## Per-object Turtle programs and regeneration
 
 - [ ] **Partial** Store every recognized grid object with a Turtle program.  
-  Existing evidence: `GenerativeForm`, `CellLogoForm`, Turtle artifacts, and Turtle DSL.  
+  Existing evidence: `GenerativeForm`, `CellLogoForm`, Turtle artifacts, Turtle DSL, and normalized versioned `TurtleProgramRef`/`ArtifactRef` contracts.
   Remaining: persistent one-program-per-object storage and normalized references.
 
 - [ ] **Open** Require the Turtle program to redraw the object through movement, rotation, pen state, and pen width rather than filled coordinate boxes.
@@ -192,7 +192,7 @@ Phase 2 implements the semantic object layer behind the Phase 1 debugger. It use
 - [ ] **Open** Prevent duplicate persistent storage when an existing object is recognized again.
 
 - [ ] **Partial** Accumulate positive and negative recognition evidence and provenance across the encounter history preserved by Phase 1.  
-  Existing evidence: `SingleWriter`, evidence structures, action-tree provenance.  
+  Existing evidence: `SingleWriter`, frozen positive/negative `EvidenceRecord` and `ProvenanceRef` contracts, deterministic evidence identifiers, action-tree provenance, and focused tests.
   Remaining: durable encounter-linked recognition evidence.
 
 - [ ] **Open** Refine and calibrate confidence for object identity, correspondence, and competing interpretations.
@@ -204,7 +204,7 @@ Phase 2 implements the semantic object layer behind the Phase 1 debugger. It use
   Remaining: durable `SymbolicStore`, `ArtifactIndex`, and lifecycle governance.
 
 - [ ] **Partial** Associate semantic encounters and memory updates with the history already preserved by Phase 1.  
-  Existing evidence: deterministic debugger history and node references.  
+  Existing evidence: deterministic debugger history plus the versioned `EncounterRecord` contract with an explicit Phase 1 action-tree-node reference and deterministic encounter identifier.
   Remaining: semantic `EncounterLog` and stable links.
 
 - [ ] **Open** Support deterministic semantic-memory replay and reproducible updates from the debugger’s recorded history.
