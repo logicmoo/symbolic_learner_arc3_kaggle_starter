@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from typing import Mapping
 
 from .models import (
@@ -17,6 +18,18 @@ from .store import SymbolicStore
 
 class InstanceMatcher:
     """Generate advisory correspondence proposals from normalized instances."""
+
+    @staticmethod
+    def change_transformation(field: str) -> str:
+        if field == "position":
+            return "translation"
+        if field == "orientation":
+            return "rotation"
+        if field == "scale":
+            return "scale"
+        if field == "appearance.color":
+            return "recolor"
+        return "appearance_change"
 
     def compare(
         self,
@@ -152,8 +165,24 @@ class RecognitionSession:
             stored=self.latest_known_instances(),
             provenance=encounter.provenance,
         )
+        source = (
+            encounter.provenance[0]
+            if encounter.provenance
+            else ProvenanceRef(encounter.encounter_id, "property_matcher")
+        )
+        enriched: list[MatchProposal] = []
+        builder = CorrespondenceEvidenceBuilder()
         for proposal in proposals:
+            evidence = builder.build(proposal, source=source)
+            for item in evidence:
+                self.store.put_evidence(item)
+            proposal = replace(
+                proposal,
+                evidence_ids=tuple(item.evidence_id for item in evidence),
+            )
             self.store.put_match_proposal(proposal)
+            enriched.append(proposal)
+        proposals = tuple(enriched)
         self.store.put_recognition(
             self.matcher.recognition_account(
                 candidate_id=encounter.candidate_identity_id,
@@ -173,6 +202,61 @@ class RecognitionSession:
             ),
             None,
         )
+
+
+class CorrespondenceEvidenceBuilder:
+    """Create attributable signed evidence from a proposal's property explanation."""
+
+    def build(
+        self,
+        proposal: MatchProposal,
+        *,
+        source: ProvenanceRef,
+        created_sequence: int = 0,
+    ) -> tuple[EvidenceRecord, ...]:
+        evidence: list[EvidenceRecord] = []
+        for field in sorted(proposal.matched_properties):
+            evidence.append(
+                EvidenceRecord.create(
+                    subject_id=proposal.stored_identity_id,
+                    polarity=EvidencePolarity.SUPPORTS,
+                    source=source,
+                    detail={
+                        "proposal_id": proposal.proposal_id,
+                        "property": field,
+                        "assessment": "exact_match",
+                    },
+                    created_sequence=created_sequence,
+                )
+            )
+        allowed = set(proposal.allowed_transformations)
+        for field, change in sorted(proposal.changed_properties.items()):
+            transformation = InstanceMatcher.change_transformation(field)
+            explained = transformation in allowed
+            evidence.append(
+                EvidenceRecord.create(
+                    subject_id=proposal.stored_identity_id,
+                    polarity=(
+                        EvidencePolarity.SUPPORTS
+                        if explained
+                        else EvidencePolarity.CONTRADICTS
+                    ),
+                    source=source,
+                    detail={
+                        "proposal_id": proposal.proposal_id,
+                        "property": field,
+                        "change": change,
+                        "transformation": transformation,
+                        "assessment": (
+                            "allowed_transformation"
+                            if explained
+                            else "unexplained_change"
+                        ),
+                    },
+                    created_sequence=created_sequence,
+                )
+            )
+        return tuple(evidence)
 
 
 class ChangeDetector:

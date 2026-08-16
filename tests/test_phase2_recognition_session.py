@@ -38,6 +38,8 @@ def test_recognition_session_persists_all_unresolved_proposals() -> None:
 
     assert [item.stored_identity_id for item in proposals] == ["red_ball", "blue_square"]
     assert len(store.values("match_proposals")) == 2
+    assert len(store.values("evidence")) > 0
+    assert all(item.evidence_ids for item in proposals)
     account = store.values("recognition_accounts")[0]
     assert account.stored_identity_id is None
     assert account.decision_source == "unresolved"

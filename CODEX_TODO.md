@@ -827,3 +827,6 @@ Preserve the canonical checkout and its `codex/workbench-navigation-v2` branch.
 - [x] Invoke unresolved recognition from live semantic grid capture whenever
   known identity history is present, persist proposal/account artifacts beside
   the state, and link them through the action-tree semantic manifest.
+- [x] Build deterministic signed evidence from correspondence explanations.
+  Exact properties and allowed transformations support identity; unexplained
+  changes contradict it, while aggregate similarity remains advisory only.

@@ -64,6 +64,7 @@ from .prediction import PredictionLedger, RuleStore
 from .providers import ArtifactProvider, GptArtifactProvider, PrologProvider, PythonProvider
 from .recognition import (
     ChangeDetector,
+    CorrespondenceEvidenceBuilder,
     InstanceMatcher,
     RecognitionSession,
     RegistryCorrespondenceAuthority,
@@ -78,6 +79,7 @@ __all__ = [
     "ChangeDetector",
     "CellLogoForm",
     "CommittedAtom",
+    "CorrespondenceEvidenceBuilder",
     "EncounterRecord",
     "EncounterLog",
     "EvidencePolarity",
