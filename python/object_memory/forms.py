@@ -38,9 +38,18 @@ class CellLogoForm(GenerativeForm):
 
     domain = "grid"
 
-    def __init__(self, program: str, renderer: Any | None = None) -> None:
+    def __init__(
+        self,
+        program: str,
+        renderer: Any | None = None,
+        swi_bridge: Any | None = None,
+    ) -> None:
         self.program = "\n".join(line.rstrip() for line in program.splitlines()).strip()
-        self.renderer = renderer
+        if renderer is not None and swi_bridge is not None:
+            raise ValueError("supply renderer or swi_bridge, not both")
+        self.renderer = renderer or (
+            swi_bridge.execute_turtle if swi_bridge is not None else None
+        )
 
     def canonicalize(self) -> str:
         return self.program
@@ -51,7 +60,35 @@ class CellLogoForm(GenerativeForm):
         return self.renderer(self.program, params or {})
 
     def fit_instance(self, candidate: Any) -> FitResult:
-        return FitResult(parameters={}, residual=0.0 if candidate == self.program else 1.0)
+        expected = self._cell_set(candidate)
+        actual = self._cell_set(self.render())
+        union = expected | actual
+        residual = len(expected ^ actual) / len(union) if union else 0.0
+        return FitResult(
+            parameters={
+                "expected_cells": len(expected),
+                "rendered_cells": len(actual),
+                "description_length": self.description_length(),
+            },
+            residual=residual,
+        )
 
     def distance(self, other: GenerativeForm) -> float:
-        return 0.0 if self.canonicalize() == other.canonicalize() else 1.0
+        if not isinstance(other, CellLogoForm):
+            return 1.0
+        if self.renderer is None or other.renderer is None:
+            return 0.0 if self.canonicalize() == other.canonicalize() else 1.0
+        left = self._cell_set(self.render())
+        right = self._cell_set(other.render())
+        union = left | right
+        return len(left ^ right) / len(union) if union else 0.0
+
+    def description_length(self) -> int:
+        return len(self.canonicalize().encode("utf-8"))
+
+    @staticmethod
+    def _cell_set(value: Any) -> set[tuple[int, int]]:
+        cells = value.get("cells", ()) if isinstance(value, dict) else value
+        if not isinstance(cells, (list, tuple, set)):
+            raise TypeError("cell candidate must be a collection or mapping with cells")
+        return {(int(cell[0]), int(cell[1])) for cell in cells}

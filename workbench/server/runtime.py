@@ -162,6 +162,8 @@ def _turtle(component: Component) -> str:
                 f"    set_pos({start_x}, {y}),",
                 f"    setcolor({COLOR_NAMES.get(component.color, component.color)}),",
                 "    pendown,",
+                "    pen_width(1),",
+                "    set_cell,",
                 f"    fwd({end_x - start_x})",
             ])
             first = False

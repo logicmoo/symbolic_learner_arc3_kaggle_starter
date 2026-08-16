@@ -180,8 +180,8 @@ Phase 2 implements the semantic object layer behind the Phase 1 debugger. It use
 - [ ] **Open** Require the Turtle program to redraw the object through movement, rotation, pen state, and pen width rather than filled coordinate boxes.
 
 - [ ] **Partial** Execute the stored Turtle program to regenerate the object and compare it with the source observation.  
-  Existing evidence: Turtle execution and reconstruction mocks.  
-  Remaining: object-level render/fit/distance/residual integration.
+  Existing evidence: `CellLogoForm` now executes extracted programs through `SWIPrologBridge` and the canonical `prolog/turtle_dsl.pl`; regenerated-cell fit, distance, normalized residual, and description-length metrics have live SWI-Prolog coverage.
+  Remaining: invoke and persist these metrics automatically in the recognition pipeline.
 
 - [ ] **Open** Preserve exact holes, disconnected strokes, topology, and supported thickness through the stored Turtle program.
 

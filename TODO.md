@@ -85,10 +85,10 @@ Keep the shared records in `python/object_memory/models.py`; do not create anoth
 - [ ] Use pen-up and pen-down state for disconnected strokes and repositioning.
 - [ ] Use pen width for thick lines rather than drawing adjacent filled rectangles.
 - [ ] Preserve supported color or drawing-state changes.
-- [ ] Connect `CellLogoForm.render()` to `prolog/turtle_dsl.pl` through `SWIPrologBridge`.
-- [ ] Define normalized Turtle-program storage and artifact references.
-- [ ] Implement `fit`, `distance`, residual measurement, and description length.
-- [ ] Compare regenerated cells with the source object.
+- [x] Connect `CellLogoForm.render()` to `prolog/turtle_dsl.pl` through `SWIPrologBridge`.
+- [x] Define normalized Turtle-program storage and artifact references.
+- [x] Implement `fit`, `distance`, residual measurement, and description length.
+- [x] Compare regenerated cells with the source object.
 - [ ] Preserve holes, disconnected strokes, topology, and line thickness.
 - [ ] Retain competing Turtle programs with their fit scores and provenance when the representation is ambiguous.
 - [ ] Add tests rejecting box-filling shortcuts for shapes that should use movement and pen width.
