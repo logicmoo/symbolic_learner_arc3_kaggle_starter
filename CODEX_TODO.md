@@ -836,3 +836,7 @@ Preserve the canonical checkout and its `codex/workbench-navigation-v2` branch.
 - [x] Add complete deterministic semantic-store snapshots and replay. Restore
   all exact record namespaces in dependency order, rebuild encounter/artifact
   indexes, reject unknown namespaces, and make repeated replay idempotent.
+- [x] Expose live recognition evidence through Phase 1 inspection. Persist and
+  link evidence beside proposals/accounts, then summarize candidates, selected
+  identity, advisory similarity, polarity, confidence, decision source, and
+  rivals in each action-tree node README.

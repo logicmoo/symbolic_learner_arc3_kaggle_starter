@@ -148,6 +148,22 @@ class SemanticGridCaptureObserver:
                         schema_version=proposal.schema_version,
                         deterministic_hash=proposal.proposal_id.rsplit("-", 1)[-1],
                     )
+                    for evidence_id in proposal.evidence_ids:
+                        evidence = self.symbolic_store.get("evidence", evidence_id)
+                        if evidence is None:
+                            continue
+                        evidence_path = self._write_record(
+                            semantic_dir / f"{evidence.evidence_id}.evidence.json",
+                            evidence,
+                        )
+                        store.link_semantic_record(
+                            node,
+                            record_type="evidence",
+                            record_id=evidence.evidence_id,
+                            artifact_path=evidence_path,
+                            schema_version=evidence.schema_version,
+                            deterministic_hash=evidence.evidence_id.rsplit("-", 1)[-1],
+                        )
                 account = self.recognition.unresolved_account(candidate.candidate_id)
                 if account is not None:
                     account_path = self._write_record(

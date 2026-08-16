@@ -212,7 +212,7 @@ Phase 2 implements the semantic object layer behind the Phase 1 debugger. It use
   Remaining: durable Prolog or AtomSpace backend implementation and lifecycle governance.
 
 - [ ] **Partial** Associate semantic encounters and memory updates with the history already preserved by Phase 1.  
-  Existing evidence: deterministic debugger history, versioned records, append-only `EncounterLog`, external manifests/README links, and the isolated runner observer seam; `SemanticGridCaptureObserver` now normalizes captured grids, persists observation/encounter/Turtle artifacts, chains repeated candidates, composes `SymbolicStore`, and links records to nodes.
+  Existing evidence: deterministic debugger history, versioned records, append-only `EncounterLog`, external manifests/README links, and the isolated runner observer seam; `SemanticGridCaptureObserver` now normalizes captured grids, persists observation/encounter/Turtle/proposal/account/evidence artifacts, chains repeated candidates, composes `SymbolicStore`, and links records to nodes. Node READMEs summarize unresolved proposals, advisory similarity, evidence polarity, selected identity, decision source, confidence, and rivals with links to exact records.
   Remaining: configure observer enablement in additional runner entry points and connect unresolved candidate proposals to explicit registry authorization controls.
 
 - [ ] **Partial** Support deterministic semantic-memory replay and reproducible updates from the debugger’s recorded history.

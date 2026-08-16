@@ -647,6 +647,33 @@ class ActionTreeStore:
                         f"`{record['deterministic_hash']}`) — "
                         f"[open record]({record['artifact']})"
                     )
+                    artifact_path = (node.path / record["artifact"]).resolve()
+                    try:
+                        detail = json.loads(artifact_path.read_text(encoding="utf-8"))
+                    except (OSError, json.JSONDecodeError, TypeError):
+                        continue
+                    if record["record_type"] == "match_proposal":
+                        lines.append(
+                            "  - unresolved candidate "
+                            f"`{detail.get('candidate_id')}` → `{detail.get('stored_identity_id')}`; "
+                            f"advisory similarity `{detail.get('similarity')}`; "
+                            f"{len(detail.get('evidence_ids') or [])} evidence record(s)"
+                        )
+                    elif record["record_type"] == "recognition_account":
+                        lines.append(
+                            "  - decision "
+                            f"`{detail.get('decision_source', 'unresolved')}`; selected identity "
+                            f"`{detail.get('stored_identity_id')}`; confidence "
+                            f"`{detail.get('calibrated_confidence', 0.0)}`; "
+                            f"{len(detail.get('rival_proposal_ids') or [])} rival(s)"
+                        )
+                    elif record["record_type"] == "evidence":
+                        evidence_detail = detail.get("detail") or {}
+                        lines.append(
+                            f"  - `{detail.get('polarity')}` for `{detail.get('subject_id')}`; "
+                            f"{evidence_detail.get('assessment', 'unspecified')} "
+                            f"on `{evidence_detail.get('property', 'representation')}`"
+                        )
 
         lines.extend(["", "## Embedded files", ""])
 

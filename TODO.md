@@ -121,7 +121,7 @@ Keep the shared records in `python/object_memory/models.py`; do not create anoth
 - [x] Prevent similarity scores from being treated directly as committed confidence.
 - [x] Make confidence updates reproducible and attributable to evidence records.
 - [ ] Preserve confidence history when identities are merged, split, demoted, or tombstoned.
-- [ ] Show recognition accounts, evidence, rivals, and confidence through the Phase 1 README inspection surface.
+- [x] Show recognition accounts, evidence, rivals, advisory similarity, decision source, and calibrated confidence through the Phase 1 README inspection surface.
 
 ## Implement persistent memory
 

@@ -89,8 +89,14 @@ def test_semantic_capture_links_unresolved_proposals_against_known_history(tmp_p
     record_types = [item["record_type"] for item in manifest["records"]]
     assert record_types.count("match_proposal") == 2
     assert record_types.count("recognition_account") == 2
+    assert record_types.count("evidence") > 0
     assert len(semantic_store.values("match_proposals")) == 2
     assert all(
         account.stored_identity_id is None
         for account in semantic_store.values("recognition_accounts")
     )
+    readme = initial.readme_path.read_text(encoding="utf-8")
+    assert "unresolved candidate" in readme
+    assert "advisory similarity" in readme
+    assert "evidence record(s)" in readme
+    assert "rival(s)" in readme
