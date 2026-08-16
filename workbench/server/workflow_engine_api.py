@@ -109,6 +109,14 @@ def list_runs(limit: int = Query(default=100, ge=1, le=500), workspace_id: str |
     return {'runs': engine.list_runs(limit, workspace_id)}
 
 
+@router.get('/states/{state_id}')
+def get_state(state_id: str) -> dict[str, Any]:
+    try:
+        return engine.get_state(state_id)
+    except KeyError as error:
+        raise _http(error) from error
+
+
 @router.get('/runs/{run_id}')
 def get_run(run_id: str) -> dict[str, Any]:
     try:

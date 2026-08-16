@@ -669,6 +669,20 @@ class WorkflowEngine:
                 'events': [{'id': e['id'], 'stepId': e['step_id'], 'kind': e['kind'], 'payload': json.loads(e['payload']), 'createdAt': e['created_at']} for e in events],
                 'logs': [{'id': entry['id'], 'stepId': entry['step_id'], 'stream': entry['stream'], 'message': entry['message'], 'createdAt': entry['created_at']} for entry in logs]}
 
+    def get_state(self, state_id: str) -> dict[str, Any]:
+        """Resolve a durable state artifact and the run that owns it."""
+        with self._db() as db:
+            artifact = db.execute(
+                'SELECT * FROM wf_artifacts WHERE id=?',
+                (state_id,),
+            ).fetchone()
+        if not artifact:
+            raise KeyError('state not found')
+        return {
+            'state': self._artifact_view(artifact),
+            'run': self.get_run(str(artifact['run_id'])),
+        }
+
 
 def default_registry() -> OperationRegistry:
     registry = OperationRegistry()

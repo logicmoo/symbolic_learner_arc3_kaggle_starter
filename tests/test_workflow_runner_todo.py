@@ -174,8 +174,9 @@ def test_waiting_workflow_runs_expose_durable_human_input_forms() -> None:
 
 def test_runtime_history_rows_open_exact_persisted_records() -> None:
     runtime = (ROOT / "workbench" / "frontend" / "src" / "components" / "RuntimeHistoryView.tsx").read_text(encoding="utf-8")
-    assert 'get("runtimeRecord")' in runtime
+    assert 'mode === "states" ? "state" : "runtimeRecord"' in runtime
     assert 'url.searchParams.set("runtimeRecord", row.key)' in runtime
+    assert 'url.searchParams.set("state", row.key)' in runtime
     assert 'aria-label="Selected durable runtime record"' in runtime
     assert "Complete persisted record" in runtime
     assert 'row.recordKind === "state artifact"' in runtime

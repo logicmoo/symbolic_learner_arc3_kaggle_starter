@@ -27,6 +27,29 @@ def test_versioned_workflow_and_artifacts(tmp_path: Path) -> None:
     assert any(event['kind'] == 'workflow.completed' for event in run['events'])
 
 
+def test_state_uuid_resolves_its_owning_run(tmp_path: Path) -> None:
+    e = engine(tmp_path)
+    e.save_workflow({
+        'id': 'state_link',
+        'inputs': {'message': 'String'},
+        'outputs': {'result': '$slots.echoed'},
+        'steps': [{
+            'id': 'echo', 'kind': 'operation', 'implementation': 'core.echo',
+            'inputs': {'value': '$workflow.message'},
+            'outputs': {'value': 'echoed'},
+        }],
+    })
+    run = e.start('state_link', {'message': 'linked'}, workspace_id='linked_workspace')
+    state = next(item for item in run['artifacts'] if item['name'] == 'echoed')
+
+    resolved = e.get_state(state['id'])
+
+    assert resolved['state']['id'] == state['id']
+    assert resolved['state']['payload'] == 'linked'
+    assert resolved['run']['id'] == run['id']
+    assert resolved['run']['workspaceId'] == 'linked_workspace'
+
+
 def test_run_preserves_bootstrapped_state_value_configuration(tmp_path: Path) -> None:
     e = engine(tmp_path)
     e.save_workflow({'id': 'stateful', 'inputs': {}, 'outputs': {}, 'steps': []})

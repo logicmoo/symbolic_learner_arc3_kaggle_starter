@@ -138,6 +138,10 @@ type Mode =
   | "states"
   | "runtimeContexts"
   | "logs";
+const runtimeRecordFromLocation = (mode: Mode) => {
+  const parameters = new URLSearchParams(window.location.search);
+  return parameters.get(mode === "states" ? "state" : "runtimeRecord") || "";
+};
 type RuntimeRecordKind =
   | "workflow run"
   | "step execution"
@@ -2497,8 +2501,7 @@ export function RuntimeHistoryView({
   const [invocations, setInvocations] = useState<InvocationTrace[]>([]),
     [selectedInvocationId, setSelectedInvocationId] = useState("");
   const [selectedRecordKey, setSelectedRecordKey] = useState(
-    () =>
-      new URLSearchParams(window.location.search).get("runtimeRecord") || "",
+    () => runtimeRecordFromLocation(mode),
   );
   const [historyFilter, setHistoryFilter] = useState(""),
     [runLimit, setRunLimit] = useState(50),
@@ -2686,9 +2689,10 @@ export function RuntimeHistoryView({
         logs: run.logs || [],
       });
       const loadedRuns = (runPayload.runs || []).map(normalizeRun);
+      const locationParameters = new URLSearchParams(window.location.search);
       const requestedRunId =
         mode === "workflowRuns"
-          ? new URLSearchParams(window.location.search).get("run")
+          ? locationParameters.get("run")
           : null;
       if (
         requestedRunId &&
@@ -2700,8 +2704,38 @@ export function RuntimeHistoryView({
         if (requestedPayload.run)
           loadedRuns.unshift(normalizeRun(requestedPayload.run as RuntimeRun));
       }
+      const requestedStateId =
+        mode === "states" ? locationParameters.get("state") : null;
+      if (
+        requestedStateId &&
+        !loadedRuns.some((run: RuntimeRun) =>
+          run.artifacts.some((artifact) => artifact.id === requestedStateId),
+        )
+      ) {
+        try {
+          const requestedPayload = await api(
+            `/api/engine/states/${encodeURIComponent(requestedStateId)}`,
+          );
+          if (
+            requestedPayload.run &&
+            requestedPayload.run.workspaceId === workspaceId
+          )
+            loadedRuns.unshift(
+              normalizeRun(requestedPayload.run as RuntimeRun),
+            );
+        } catch {
+          // An unknown or cross-workspace state must not hide the normal history.
+        }
+      }
       setRuns(loadedRuns);
       if (requestedRunId) setSelectedId(requestedRunId);
+      else if (requestedStateId) {
+        const stateRun = loadedRuns.find((run: RuntimeRun) =>
+          run.artifacts.some((artifact) => artifact.id === requestedStateId),
+        );
+        setSelectedRecordKey(stateRun ? requestedStateId : "");
+        setSelectedId(stateRun?.id || "");
+      }
       else if (mode === "workflowRuns")
         setSelectedId((current) =>
           loadedRuns.some((run: RuntimeRun) => run.id === current)
@@ -2755,12 +2789,19 @@ export function RuntimeHistoryView({
     setInvocationLimit(50);
     setHistoryFilter("");
     setRunStatusFilter("all");
-    setSelectedRecordKey(
-      new URLSearchParams(window.location.search).get("runtimeRecord") || "",
-    );
+    setSelectedRecordKey(runtimeRecordFromLocation(mode));
   }, [workspaceId, mode]);
   useEffect(() => {
     void refresh();
+  }, [workspaceId, mode, runLimit, goalRunLimit, invocationLimit]);
+  useEffect(() => {
+    const restoreRuntimeLocation = () => {
+      setSelectedRecordKey(runtimeRecordFromLocation(mode));
+      void refresh();
+    };
+    window.addEventListener("popstate", restoreRuntimeLocation);
+    return () =>
+      window.removeEventListener("popstate", restoreRuntimeLocation);
   }, [workspaceId, mode, runLimit, goalRunLimit, invocationLimit]);
   useEffect(() => {
     if (!goalId && goalSpecs[0]) setGoalId(String(goalSpecs[0].id));
@@ -2849,7 +2890,13 @@ export function RuntimeHistoryView({
     setSelectedRecordKey(row.key);
     chooseRun(row.run);
     const url = new URL(window.location.href);
-    url.searchParams.set("runtimeRecord", row.key);
+    if (mode === "states") {
+      url.searchParams.set("state", row.key);
+      url.searchParams.delete("runtimeRecord");
+    } else {
+      url.searchParams.set("runtimeRecord", row.key);
+      url.searchParams.delete("state");
+    }
     replaceWorkbenchLocation(url, row.key);
   };
   const selectGoalRun = (goalRun: GoalRun) => {
@@ -3778,9 +3825,12 @@ export function RuntimeHistoryView({
             </div>
             {visibleRows.map((row) => (
               <button
-                className={`resource-row ${!("trace" in row) && row.run.id === selectedRun?.id ? "selected" : ""}`}
+                className={`resource-row ${!("trace" in row) && (mode === "workflowRuns" ? row.run.id === selectedRun?.id : row.key === selectedRecordKey) ? "selected" : ""}`}
                 aria-pressed={
-                  !("trace" in row) && row.run.id === selectedRun?.id
+                  !("trace" in row) &&
+                  (mode === "workflowRuns"
+                    ? row.run.id === selectedRun?.id
+                    : row.key === selectedRecordKey)
                 }
                 key={row.key}
                 onClick={() => {

@@ -66,20 +66,29 @@ def test_navigation_v2_has_required_groups_and_labels() -> None:
 
 def test_navigation_views_are_deep_linkable_for_visual_acceptance() -> None:
     source = ACTIVE_PAGE.read_text(encoding="utf-8")
+    compact = "".join(source.split())
     assert 'new URLSearchParams(window.location.search)' in source
-    assert 'url.searchParams.set("view",next)' in source
-    assert 'window.addEventListener("popstate",restoreView)' in source
-    assert 'const restoredView=viewFromLocation()' in source
-    assert 'setViewState(restoredView||"canvas")' in source
+    assert 'url.searchParams.set("view",next==="canvas"?"workflows":next)' in compact
+    assert 'window.addEventListener("popstate",restoreLocation)' in compact
+    assert 'constrestoredView=viewFromLocation()' in compact
+    assert 'setViewState(restoredView||"canvas")' in compact
+    assert 'constrequested=workspaceFromLocation()' in compact
+    assert 'requested===currentWorkspaceId.current' in compact
+    assert 'loadRequestedWorkspace()' in compact
+    assert 'loadingWorkspaceId.current!==null' in compact
+    assert 'onClick={showWorkspaceChooser}' in compact
+    assert '"workspace","resource","run","goalRun","runStep","runEvent","runtimeRecord","state"' in compact
 
 
 def test_navigation_accepts_menu_as_a_deep_link_alias() -> None:
     source = ACTIVE_PAGE.read_text(encoding="utf-8")
-    assert 'parameters.get("view")||parameters.get("menu")' in source
-    assert 'WORKBENCH_VIEWS.has(value as View)' in source
-    assert 'if(view!=="overview")return' in source
-    assert '["run","goalRun","runStep","runEvent","runtimeRecord",...' in source
-    assert 'url.searchParams.get("menu")==="overview"?["view"]' in source
+    compact = "".join(source.split())
+    assert 'parameters.get("view")||parameters.get("menu")' in compact
+    assert 'parameters.has("state")?"states":null' in compact
+    assert '[...WORKBENCH_VIEWS].find((candidate)=>candidate.toLowerCase()===value)' in compact
+    assert 'if(view!=="overview")return' in compact
+    assert '"run","goalRun","runStep","runEvent","runtimeRecord","state"' in compact
+    assert 'url.searchParams.get("menu")==="overview"?["view"]' in compact
 
 
 def test_overview_and_system_settings_have_distinct_responsibilities() -> None:
@@ -170,6 +179,7 @@ def test_navigation_reuses_current_rich_editors() -> None:
 
 def test_workflow_runs_are_combined_with_the_workflow_page() -> None:
     source = ACTIVE_PAGE.read_text(encoding="utf-8")
+    compact = "".join(source.split())
     runtime_navigation = source.split('{group:"RUNTIME"', 1)[1].split("}]},", 1)[0]
     assert 'label:"Workflow Runs"' not in runtime_navigation
     assert '>Workflow Runs</button>' in source
@@ -177,7 +187,7 @@ def test_workflow_runs_are_combined_with_the_workflow_page() -> None:
     assert 'setWorkflowPaneFocus("runs");setView("canvas")' in source
     assert 'if(view!=="workflowRuns")return;setWorkflowPaneFocus("runs");setView("canvas")' in source
     assert 'view==="canvas"||view==="editor"||view==="workflowRuns"' in source
-    assert 'workflowCombinedView&&<RuntimeHistoryView mode="workflowRuns"' in source
+    assert 'mode={view==="states"?"states":"workflowRuns"}' in compact
     styles = (ROOT / "workbench" / "frontend" / "src" / "styles" / "workbench.css").read_text(encoding="utf-8")
     assert 'grid-template-columns:minmax(0,calc(var(--workflow-editor-percent) - 3px)) 6px' in styles
     assert 'className="workflow-pane-divider"' in source
@@ -193,7 +203,8 @@ def test_workflow_runs_are_combined_with_the_workflow_page() -> None:
     assert 'PanelFrameControls panel="spline"' in runtime_history
     assert 'PanelFrameControls panel="runs"' in runtime_history
     assert 'PanelFrameControls panel="objects"' in runtime_history
-    assert 'row.run.id === selectedRun?.id ? "selected"' in runtime_history
+    assert 'mode === "workflowRuns"' in runtime_history
+    assert 'row.key === selectedRecordKey' in runtime_history
     assert 'aria-label="Resize Workflow Editor and Workflow Runs"' in source
     assert 'aria-label="Workflow Runner panel controls"' in source
     assert 'aria-label="Workflow Task Editor panel controls"' in source
@@ -203,6 +214,22 @@ def test_workflow_runs_are_combined_with_the_workflow_page() -> None:
     assert "grid-row: 4 !important" in workflow_layout
     assert 'setWorkflowEditorPercent(percent)' in source
     assert 'margin-top:calc(var(--workflow-runner-height,0px) + 25px)' in styles
+
+
+def test_state_uuid_deep_link_selects_a_durable_state_record() -> None:
+    page = ACTIVE_PAGE.read_text(encoding="utf-8")
+    runtime_history = (ROOT / "workbench/frontend/src/components/RuntimeHistoryView.tsx").read_text(encoding="utf-8")
+    engine = (ROOT / "workbench/server/workflow_engine.py").read_text(encoding="utf-8")
+    api = (ROOT / "workbench/server/workflow_engine_api.py").read_text(encoding="utf-8")
+    page_compact = "".join(page.split())
+    runtime_compact = "".join(runtime_history.split())
+
+    assert 'mode={view==="states"?"states":"workflowRuns"}' in page_compact
+    assert 'parameters.get(mode==="states"?"state":"runtimeRecord")' in runtime_compact
+    assert 'url.searchParams.set("state",row.key)' in runtime_compact
+    assert '`/api/engine/states/${encodeURIComponent(requestedStateId)}`' in runtime_history
+    assert "def get_state(self, state_id: str)" in engine
+    assert "@router.get('/states/{state_id}')" in api
 
 
 def test_workflow_canvas_and_editor_share_one_navigation_destination() -> None:
@@ -478,10 +505,10 @@ def test_detected_memory_values_preserve_the_global_object_prefill() -> None:
 
 def test_states_navigation_deep_links_to_the_combined_workflow_inspector() -> None:
     page = ACTIVE_PAGE.read_text(encoding="utf-8")
-    assert 'const workflowCombinedView=view==="canvas"||view==="states"' in page
-    assert 'view==="states"?"canvas"' in page
-    assert 'querySelector<HTMLElement>(".detected-memory-controls")' in page
-    assert 'view==="states"&&<RuntimeHistoryView mode="states"' not in page
+    compact = "".join(page.split())
+    assert 'constworkflowCombinedView=view==="canvas"||view==="states"' in compact
+    assert 'mode={view==="states"?"states":"workflowRuns"}' in compact
+    assert 'if(!rawValue)returnparameters.has("state")?"states":null' in compact
 
 
 def test_workflow_runner_bootstraps_editable_state_value_definitions() -> None:

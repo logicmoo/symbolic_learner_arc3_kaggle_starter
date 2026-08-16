@@ -382,7 +382,7 @@ const WORKBENCH_VIEWS: Set<View> = new Set([
 const viewFromLocation = (): View | null => {
   const parameters = new URLSearchParams(window.location.search);
   const rawValue = parameters.get("view") || parameters.get("menu");
-  if (!rawValue) return null;
+  if (!rawValue) return parameters.has("state") ? "states" : null;
   const value = rawValue.trim().toLowerCase();
   if (value === "workflows" || value === "workflow") return "canvas";
   if (value === "english-workflow" || value === "englishworkflow") return "englishWorkflow";
@@ -582,7 +582,8 @@ export function FilesystemWorkbenchPage() {
   });
   const [viewTrailIndex, setViewTrailIndex] = useState(0);
   const breadcrumbNavigation = useRef(false);
-  const autoWorkspaceStarted = useRef(false);
+  const loadingWorkspaceId = useRef<string | null>(null);
+  const currentWorkspaceId = useRef<string | null>(null);
   const setView = (next: View) => {
     setViewState(next);
     if (next === "states") {
@@ -593,6 +594,7 @@ export function FilesystemWorkbenchPage() {
     url.searchParams.set("view", next === "canvas" ? "workflows" : next);
     url.searchParams.delete("menu");
     url.searchParams.delete("resource");
+    if (next !== "states") url.searchParams.delete("state");
     window.history.replaceState(
       null,
       "",
@@ -619,6 +621,7 @@ export function FilesystemWorkbenchPage() {
     const url = new URL(window.location.href);
     url.searchParams.set("view", next);
     url.searchParams.set("resource", id);
+    url.searchParams.delete("state");
     window.history.replaceState(
       null,
       "",
@@ -967,6 +970,7 @@ export function FilesystemWorkbenchPage() {
         ]);
       const next = snapshotPayload as unknown as Snapshot;
       setWorkspace(next.workspace);
+      currentWorkspaceId.current = next.workspace.id;
       const workspaceUrl = new URL(window.location.href);
       workspaceUrl.searchParams.set("workspace", next.workspace.id);
       window.history.replaceState(
@@ -1031,20 +1035,50 @@ export function FilesystemWorkbenchPage() {
         )
         .catch(() => undefined);
     });
-  useEffect(() => {
+  const loadRequestedWorkspace = () => {
     const requested = workspaceFromLocation();
     if (
       !requested ||
-      workspace ||
-      autoWorkspaceStarted.current ||
+      requested === currentWorkspaceId.current ||
+      loadingWorkspaceId.current !== null ||
       !workspaces.length
     )
       return;
     const match = workspaces.find((item) => item.id === requested);
     if (!match) return;
-    autoWorkspaceStarted.current = true;
-    void loadWorkspace(match);
-  }, [workspaces, workspace]);
+    loadingWorkspaceId.current = requested;
+    void loadWorkspace(match).finally(() => {
+      if (loadingWorkspaceId.current === requested)
+        loadingWorkspaceId.current = null;
+      if (workspaceFromLocation() !== currentWorkspaceId.current)
+        loadRequestedWorkspace();
+    });
+  };
+  useEffect(() => {
+    loadRequestedWorkspace();
+  }, [workspaces, workspace?.id]);
+  const showWorkspaceChooser = () => {
+    const url = new URL(window.location.href);
+    [
+      "workspace",
+      "resource",
+      "run",
+      "goalRun",
+      "runStep",
+      "runEvent",
+      "runtimeRecord",
+      "state",
+    ].forEach((parameter) => url.searchParams.delete(parameter));
+    window.history.replaceState(
+      null,
+      "",
+      `${url.pathname}${url.search}${url.hash}`,
+    );
+    setWorkspace(null);
+    currentWorkspaceId.current = null;
+    setSnapshot(null);
+    setRun(null);
+  };
   const createWorkspace = () =>
     perform(async () => {
       const label = newWorkspaceLabel.trim();
@@ -1503,10 +1537,13 @@ export function FilesystemWorkbenchPage() {
     return () => window.removeEventListener("workbench:open-docs", openDocs);
   }, []);
   useEffect(() => {
-    const restoreView = () => setViewState(viewFromLocation() || "canvas");
-    window.addEventListener("popstate", restoreView);
-    return () => window.removeEventListener("popstate", restoreView);
-  }, []);
+    const restoreLocation = () => {
+      setViewState(viewFromLocation() || "canvas");
+      loadRequestedWorkspace();
+    };
+    window.addEventListener("popstate", restoreLocation);
+    return () => window.removeEventListener("popstate", restoreLocation);
+  }, [workspaces, workspace?.id]);
   useEffect(() => {
     if (view !== "overview") return;
     const url = new URL(window.location.href);
@@ -1516,6 +1553,7 @@ export function FilesystemWorkbenchPage() {
       "runStep",
       "runEvent",
       "runtimeRecord",
+      "state",
       ...(url.searchParams.get("menu") === "overview" ? ["view"] : []),
     ];
     const changed = parametersToRemove.some((parameter) => {
@@ -2352,11 +2390,7 @@ export function FilesystemWorkbenchPage() {
           <div className="rail-bottom">
             <button
               className="rail-icon"
-              onClick={() => {
-                setWorkspace(null);
-                setSnapshot(null);
-                setRun(null);
-              }}
+              onClick={showWorkspaceChooser}
               title="Switch workspace"
             >
               <span>↩</span>
@@ -2941,11 +2975,7 @@ export function FilesystemWorkbenchPage() {
                   fileCount={snapshot?.files.length || 0}
                   implementationCount={implementations.length}
                   mode="workspace"
-                  onSwitch={() => {
-                    setWorkspace(null);
-                    setSnapshot(null);
-                    setRun(null);
-                  }}
+                  onSwitch={showWorkspaceChooser}
                   onSaved={refreshSnapshot}
                 />
               </div>
@@ -3139,7 +3169,7 @@ export function FilesystemWorkbenchPage() {
             )}
             {workflowCombinedView && workflowColumnsHost && createPortal(
               <RuntimeHistoryView
-                mode="workflowRuns"
+                mode={view === "states" ? "states" : "workflowRuns"}
                 showDesignReference={false}
                 leftColumnDisplayMode={workflowLeftColumnDisplayMode}
                 rightColumnDisplayMode={workflowRightColumnDisplayMode}
@@ -3314,11 +3344,7 @@ export function FilesystemWorkbenchPage() {
                 fileCount={snapshot?.files.length || 0}
                 implementationCount={implementations.length}
                 mode="processes"
-                onSwitch={() => {
-                  setWorkspace(null);
-                  setSnapshot(null);
-                  setRun(null);
-                }}
+                onSwitch={showWorkspaceChooser}
                 onSaved={refreshSnapshot}
               />
             )}{" "}
@@ -3328,11 +3354,7 @@ export function FilesystemWorkbenchPage() {
                 workspaces={workspaces}
                 fileCount={snapshot?.files.length || 0}
                 implementationCount={implementations.length}
-                onSwitch={() => {
-                  setWorkspace(null);
-                  setSnapshot(null);
-                  setRun(null);
-                }}
+                onSwitch={showWorkspaceChooser}
                 onSaved={refreshSnapshot}
               />
             )}
@@ -3351,11 +3373,7 @@ export function FilesystemWorkbenchPage() {
             <button
               type="button"
               className="topbar-panel-restore"
-              onClick={() => {
-                setWorkspace(null);
-                setSnapshot(null);
-                setRun(null);
-              }}
+              onClick={showWorkspaceChooser}
             >
               Switch Workspace
             </button>

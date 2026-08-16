@@ -707,3 +707,12 @@ Preserve the canonical checkout and its `codex/workbench-navigation-v2` branch.
 - [x] Group-container validation on 2026-08-16: focused English Workflow tests (5) and the frontend production build passed; live browser checks confirmed Summary and Memory inserted as nested `1.1`/`1.2` entries while highlighted, Workflow returned to top-level `2` after unhighlighting, and no console errors were emitted.
 - [x] Make Generation Contract section arrows cyclic one-position rotations: left from the first position wraps to the end, and right from the last position wraps to the beginning.
 - [x] Prevent experimental contract candidates from enabling Apply. Only the authoritative Generate Draft path can enable filesystem Apply after backend validation passes.
+- [x] Make `workspace=` plus `view=` authoritative deep links. Initial loads,
+  browser history, and in-app location changes now switch away from an already
+  selected workspace when the URL names a different one; Switch Workspace
+  clears the old workspace and runtime selection parameters instead of
+  immediately reopening it.
+- [x] Add durable State deep links with the canonical `state=<uuid>` query
+  parameter. The States destination uses the real state-artifact history,
+  resolves an older state UUID to its owning run through the engine API, and
+  selects that exact record without replacing it with `runtimeRecord=`.
