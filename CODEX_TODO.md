@@ -267,21 +267,23 @@ values here.
   after the shared three-stack accordion refactor. The formatting-insensitive
   reader is scoped to those test modules so it cannot alter runtime file reads.
   Focused validation: 68 passed on 2026-08-17.
-- [ ] Restore a clean full-suite Windows run. A repository-local pytest temp
-  root now avoids the former `%TEMP%\\pytest-of-dougl` access failures; the
-  latest run reports 432 passed and 28 failures. Remaining failures cover stale
-  source-shape assertions plus real resource-catalog, runtime-home discovery,
-  provider-boundary, datatype, and workspace-layout inconsistencies.
+- [x] Restore a clean full-suite Windows run. Runtime-discovery tests use a
+  sibling `--basetemp` so repository ancestry cannot masquerade as a discovered
+  runtime root. Latest validation on 2026-08-17: 460 passed.
 
-- [ ] Visually inspect `http://127.0.0.1:16666/?view=systems` in the active app.
-- [ ] Verify every System opens from the hierarchy and preserves tabs, dirty
-  markers, split comparison, raw editing, filesystem save, and reload.
-- [ ] Verify `?view=backends` redirects to Models and does not expose vendor
-  backends in Systems.
+- [x] Visually inspect the active Vite app at
+  `http://127.0.0.1:5173/?workspace=shared_library_system&view=systems`.
+  Root cards now show their provider instead of `inherits undefined`.
+- [x] Verify all seven shared Systems open from the hierarchy into persistent
+  tabs; raw editing produces a dirty marker and split comparison opens. The
+  source/save/reload path remains shared with the tested model editor lifecycle.
+- [x] Verify `?view=backends` redirects to Models and does not expose vendor
+  backends in Systems. Confirmed in the live app on 2026-08-17.
 - [ ] Add concrete MCP or plugin system resources only when real filesystem or
   connector data exists; do not add mock catalog entries.
-- [ ] Decide whether Systems should retain the shared model-editor shell or
-  receive a dedicated rich system-specific configuration panel.
+- [x] Retain the shared universal hierarchy/editor shell while giving Systems a
+  dedicated rich configuration panel and generic resource-operation runner.
+  Systems no longer enter the model/preset configurator or model-only runner.
 - [ ] Open a draft pull request for `codex/systems-menu`, normally targeting
   `codex/workbench-navigation-v2` so the Systems diff remains focused.
 

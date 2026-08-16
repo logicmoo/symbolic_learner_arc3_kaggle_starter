@@ -336,6 +336,11 @@ def test_systems_are_separate_from_model_backends() -> None:
     assert 'document.kind==="system"?"design/systems"' in editor
     assert 'view==="systems"?"systems"' in page
     assert 'systemResources:snapshot?.systems?.length||0' in page
+    assert 'constrootResource=backend||system' in "".join(editor.split())
+    assert 'rootResource?(record.documentasBackendDef|SystemDef)?.provider' in "".join(editor.split())
+    assert "SYSTEM CONFIGURATION" in editor
+    assert '<SystemConfigForm source={doc.source}' in editor
+    assert '<ResourceExecutionPlayground workspaceId={workspaceId} resource={document}' in editor
     help_tabs = (ROOT / "workbench" / "frontend" / "src" / "components" / "HelpDocumentTabs.tsx").read_text(encoding="utf-8")
     assert '{id:"systems",label:"Systems",path:"docs/systems.md"}' in help_tabs
     systems_docs = ROOT / "workbench" / "workspaces" / "shared_library_system" / "docs" / "systems.md"

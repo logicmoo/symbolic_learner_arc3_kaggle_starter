@@ -245,7 +245,8 @@ def test_open_model_resource_has_the_universal_execution_runner() -> None:
     trace_viewer = (ROOT / "workbench" / "frontend" / "src" / "components" / "InvocationDebugTrace.tsx").read_text(encoding="utf-8")
     api = (ROOT / "workbench" / "server" / "policy_api.py").read_text(encoding="utf-8")
     assert "<ModelResourcePlayground" in models
-    assert "!backend && document && resourceEnabled" in models
+    assert "!backend && !system && document && resourceEnabled" in models
+    assert "system && document && resourceEnabled" in models
     assert "UNIVERSAL EXECUTION RUNNER" in runner
     assert "/models/${encodeURIComponent(selectedModel)}/invoke" in runner
     assert '${family}/debug-log?path=' in runner
