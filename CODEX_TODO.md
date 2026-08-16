@@ -833,3 +833,6 @@ Preserve the canonical checkout and its `codex/workbench-navigation-v2` branch.
 - [x] Represent Turtle reconstruction fit as signed identity evidence. Preserve
   the artifact, fit parameters, and measured residual; exact regeneration
   supports identity while a nonzero residual contradicts it.
+- [x] Add complete deterministic semantic-store snapshots and replay. Restore
+  all exact record namespaces in dependency order, rebuild encounter/artifact
+  indexes, reject unknown namespaces, and make repeated replay idempotent.

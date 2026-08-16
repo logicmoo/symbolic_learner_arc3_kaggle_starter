@@ -126,3 +126,41 @@ class SymbolicStore:
 
     def values(self, namespace: str) -> tuple[Any, ...]:
         return self.backend.values(namespace)
+
+    SNAPSHOT_NAMESPACES = (
+        "artifacts",
+        "turtle_programs",
+        "atoms",
+        "observations",
+        "encounters",
+        "match_proposals",
+        "recognition_accounts",
+        "evidence",
+    )
+
+    def snapshot(self) -> dict[str, tuple[Any, ...]]:
+        """Capture exact semantic records in deterministic replay order."""
+        return {
+            namespace: self.values(namespace)
+            for namespace in self.SNAPSHOT_NAMESPACES
+        }
+
+    def replay(self, snapshot: dict[str, tuple[Any, ...]]) -> "SymbolicStore":
+        """Idempotently reconstruct this facade and its indexes from a snapshot."""
+        unknown = set(snapshot) - set(self.SNAPSHOT_NAMESPACES)
+        if unknown:
+            raise ValueError(f"unknown semantic snapshot namespaces: {sorted(unknown)}")
+        writers = {
+            "artifacts": self.put_artifact,
+            "turtle_programs": self.put_turtle,
+            "atoms": self.put_atom,
+            "observations": self.put_observation,
+            "encounters": self.put_encounter,
+            "match_proposals": self.put_match_proposal,
+            "recognition_accounts": self.put_recognition,
+            "evidence": self.put_evidence,
+        }
+        for namespace in self.SNAPSHOT_NAMESPACES:
+            for value in snapshot.get(namespace, ()):
+                writers[namespace](value)
+        return self

@@ -208,14 +208,16 @@ Phase 2 implements the semantic object layer behind the Phase 1 debugger. It use
 ## Persistent symbolic memory and replay
 
 - [ ] **Partial** Maintain persistent symbolic memory for recognized objects, observations, Turtle programs, and associated artifacts.  
-  Existing evidence: `SymbolicMemory`, a backend-neutral `SymbolicStore` facade with write-once exact identity, a replaceable `SemanticStoreBackend` boundary, observation/encounter/Turtle composition, and an `ArtifactIndex` populated by stable identifier and semantic type.
+  Existing evidence: `SymbolicMemory`, a backend-neutral `SymbolicStore` facade with write-once exact identity, a replaceable `SemanticStoreBackend` boundary, observation/encounter/Turtle composition, and an `ArtifactIndex` populated by stable identifier and semantic type. Exact snapshots replay every semantic namespace in dependency order and rebuild encounter/artifact indexes idempotently.
   Remaining: durable Prolog or AtomSpace backend implementation and lifecycle governance.
 
 - [ ] **Partial** Associate semantic encounters and memory updates with the history already preserved by Phase 1.  
   Existing evidence: deterministic debugger history, versioned records, append-only `EncounterLog`, external manifests/README links, and the isolated runner observer seam; `SemanticGridCaptureObserver` now normalizes captured grids, persists observation/encounter/Turtle artifacts, chains repeated candidates, composes `SymbolicStore`, and links records to nodes.
   Remaining: configure observer enablement in additional runner entry points and connect unresolved candidate proposals to explicit registry authorization controls.
 
-- [ ] **Open** Support deterministic semantic-memory replay and reproducible updates from the debugger’s recorded history.
+- [ ] **Partial** Support deterministic semantic-memory replay and reproducible updates from the debugger’s recorded history.
+  Existing evidence: complete `SymbolicStore` snapshots deterministically restore artifacts, Turtle references, atoms, observations, encounters, proposals, recognition accounts, and evidence; repeated replay is idempotent and encounter hashes remain stable.
+  Remaining: derive snapshots directly from a recorded Phase 1 tree and a durable starting backend.
 
 - [ ] **Open** Demonstrate recognition and reconstruction under modest degradation and partial occlusion.
 
