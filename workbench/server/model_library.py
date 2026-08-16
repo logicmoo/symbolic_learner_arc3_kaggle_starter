@@ -7,7 +7,7 @@ from threading import RLock
 import time
 from typing import Any
 
-from backend_library import BACKEND_DIRECTORIES, MODEL_CATALOG_DIRECTORY, load_workspace_backend_records
+from backend_library import BACKEND_DIRECTORIES, MODEL_CATALOG_DIRECTORY, backend_record_index, load_workspace_backend_records
 from operation_library import DEFAULT_WORKSPACES_ROOT
 from workspace_inheritance import effective_workspace_layers, layer_source
 from resource_store import get_filesystem_provider
@@ -164,11 +164,7 @@ def resolve_model_records(
     backend_records = load_workspace_backend_records(
         workspace_root, workspaces_root=workspaces_root
     )
-    backends = {
-        str((record.get("document") or {}).get("id")): record
-        for record in backend_records
-        if (record.get("document") or {}).get("id")
-    }
+    backends = backend_record_index(backend_records)
     nodes = {
         str((record.get("document") or {}).get("id")): record
         for record in records
@@ -192,16 +188,17 @@ def resolve_model_records(
         backend_record = backends.get(parent_id)
         if backend_record:
             backend = backend_record.get("document") or {}
+            canonical_backend_id = str(backend.get("id") or parent_id)
             configuration = dict(backend.get("configuration") or {})
             inherited_defaults = dict(backend.get("modelDefaults") or {})
             return {
                 "parentId": parent_id,
                 "parentKind": "backend",
-                "backendId": parent_id,
+                "backendId": canonical_backend_id,
                 "backendSource": backend_record.get("source"),
                 "backendPath": backend_record.get("path"),
                 "backend": backend,
-                "inheritance": [parent_id, node_id],
+                "inheritance": [canonical_backend_id, node_id],
                 "configuration": configuration,
                 "model": own_model or configuration.get("defaultModel"),
                 "defaults": {**inherited_defaults, **own_defaults},

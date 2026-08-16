@@ -54,7 +54,9 @@ echo ============================================================
 echo.
 
 cd /d "%FREEROUTER_DIR%"
-node dist\server.js
+set "WORKBENCH_CONTROL_API=%WORKBENCH_CONTROL_API%"
+if not defined WORKBENCH_CONTROL_API set "WORKBENCH_CONTROL_API=http://127.0.0.1:8000"
+"%ROOT%\.venv\Scripts\python.exe" "%ROOT%\workbench\scripts\submit_managed_command.py" --api "%WORKBENCH_CONTROL_API%" --service freerouter --cwd "%CD%" --env CLAWROUTER_PORT -- node dist\server.js
 
 echo.
 echo FreeRouter stopped. Rerun this script to restart it.

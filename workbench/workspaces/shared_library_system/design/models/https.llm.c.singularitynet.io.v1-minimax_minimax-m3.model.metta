@@ -1,0 +1,47 @@
+(
+  (kind model)
+  (id https.llm.c.singularitynet.io.v1-minimax_minimax-m3)
+  (label minimax/minimax-m3)
+  (description "Discovered from SingularityNET LLM.")
+  (parents ([]
+    https.llm.c.singularitynet.io.v1
+  ))
+  (model minimax/minimax-m3)
+  (enabled true)
+  (capabilities (
+    (audio false)
+    (code false)
+    (functionCalling false)
+    (json false)
+    (jsonMode false)
+    (local false)
+    (multimodal false)
+    (reasoning false)
+    (text true)
+    (tools false)
+    (vision false)
+  ))
+  (limits (
+    (contextWindow null)
+    (maxOutputTokens null)
+  ))
+  (pricing ())
+  (properties (
+    (id minimax/minimax-m3)
+    (owned_by snet+cudo)
+    (object model)
+    (created 0)
+    (ownedBy snet+cudo)
+  ))
+  (providerMetadata (
+    (id minimax/minimax-m3)
+    (owned_by snet+cudo)
+    (object model)
+    (created 0)
+  ))
+  (discovery (
+    (managed true)
+    (backendId https.llm.c.singularitynet.io.v1)
+    (remoteModelId minimax/minimax-m3)
+  ))
+)

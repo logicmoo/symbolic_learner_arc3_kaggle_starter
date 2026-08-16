@@ -7,12 +7,17 @@ export type AccordionAnchor = "top" | "bottom";
 
 const accordionOrders = new Map<string, string[]>();
 const accordionOrderListeners = new Set<() => void>();
+const accordionModeListeners = new Map<string, Set<(mode: AccordionDisplayMode) => void>>();
 const ACCORDION_ORDER_EVENT = "three-state-accordion-order-change";
 let activeAccordionDrag: { stackId: string; label: string } | null = null;
 
 function publishAccordionChange(drag: { stackId: string; label: string } | null = activeAccordionDrag) {
   activeAccordionDrag = drag;
   accordionOrderListeners.forEach((listener) => listener());
+}
+
+function publishAccordionMode(stackId: string, mode: AccordionDisplayMode) {
+  Array.from(accordionModeListeners.get(stackId) || []).forEach((listener) => listener(mode));
 }
 
 function storedAccordionOrder(stackId: string) {
@@ -33,12 +38,8 @@ function publishAccordionOrder(stackId: string, order: string[]) {
   window.dispatchEvent(new CustomEvent(ACCORDION_ORDER_EVENT, { detail: { stackId } }));
   publishAccordionChange();
   requestAnimationFrame(() => {
-    const layoutOrder = stackId === "spline-stack"
-      ? order.filter((item) => item !== "LEFT COLUMN / RIGHT COLUMN")
-      : order;
     document.querySelectorAll<HTMLElement>(`[data-accordion-stack="${stackId}"][data-accordion-member]`).forEach((member) => {
-      if (stackId === "spline-stack" && member.dataset.accordionMember === "LEFT COLUMN / RIGHT COLUMN") return;
-      const index = layoutOrder.indexOf(member.dataset.accordionMember || "");
+      const index = order.indexOf(member.dataset.accordionMember || "");
       if (index < 0) return;
       member.style.order = String(index);
       member.style.setProperty("--accordion-member-order", String(index));
@@ -46,7 +47,7 @@ function publishAccordionOrder(stackId: string, order: string[]) {
   });
 }
 
-function useAccordionMemberOrder(stackId: string, label: string) {
+function useAccordionMemberOrder(stackId: string, label: string, initialIndex?: number, initialPlacementVersion = "v2") {
   const [, refresh] = useState(0);
   useEffect(() => {
     const listener = () => refresh((revision) => revision + 1);
@@ -58,29 +59,26 @@ function useAccordionMemberOrder(stackId: string, label: string) {
     accordionOrderListeners.add(listener);
     window.addEventListener(ACCORDION_ORDER_EVENT, storageListener);
     const current = storedAccordionOrder(stackId);
-    if (!current.includes(label)) publishAccordionOrder(stackId, [...current, label]);
+    const firstPlacementKey = `accordion-order-initial-placement:${stackId}:${label}:${initialPlacementVersion}`;
+    if (initialIndex !== undefined && !localStorage.getItem(firstPlacementKey)) {
+      const withoutMember = current.filter((item) => item !== label);
+      withoutMember.splice(Math.max(0, Math.min(initialIndex, withoutMember.length)), 0, label);
+      publishAccordionOrder(stackId, withoutMember);
+      localStorage.setItem(firstPlacementKey, "true");
+    } else if (!current.includes(label)) {
+      publishAccordionOrder(stackId, [...current, label]);
+    }
     return () => {
       accordionOrderListeners.delete(listener);
       window.removeEventListener(ACCORDION_ORDER_EVENT, storageListener);
     };
-  }, [stackId, label]);
+  }, [stackId, label, initialIndex, initialPlacementVersion]);
   const order = storedAccordionOrder(stackId);
   return order.indexOf(label) < 0 ? order.length : order.indexOf(label);
 }
 
 function moveAccordionMember(stackId: string, source: string, target: string) {
   const current = [...storedAccordionOrder(stackId)];
-  if (stackId === "spline-stack") {
-    const movable = current.filter((item) => item !== "LEFT COLUMN / RIGHT COLUMN");
-    const sourceMovableIndex = movable.indexOf(source);
-    const targetMovableIndex = movable.indexOf(target);
-    if (sourceMovableIndex < 0 || targetMovableIndex < 0 || sourceMovableIndex === targetMovableIndex) return;
-    const nextMovableIndex = sourceMovableIndex + (targetMovableIndex < sourceMovableIndex ? -1 : 1);
-    [movable[sourceMovableIndex], movable[nextMovableIndex]] = [movable[nextMovableIndex], movable[sourceMovableIndex]];
-    let cursor = 0;
-    publishAccordionOrder(stackId, current.map((item) => item === "LEFT COLUMN / RIGHT COLUMN" ? item : movable[cursor++]));
-    return;
-  }
   const sourceIndex = current.indexOf(source);
   const targetIndex = current.indexOf(target);
   if (sourceIndex < 0 || targetIndex < 0 || sourceIndex === targetIndex) return;
@@ -94,14 +92,30 @@ export function ThreeStateAccordionStack({
   children,
   hostRef,
   className = "",
+  controlsLabel,
 }: {
   id: string;
   children?: ReactNode;
   hostRef?: Ref<HTMLDivElement>;
   className?: string;
+  controlsLabel?: string;
 }) {
+  const [collectiveMode, setCollectiveMode] = useState<AccordionDisplayMode>("scroll");
+  const setAllMembers = (mode: AccordionDisplayMode) => {
+    setCollectiveMode(mode);
+    publishAccordionMode(id, mode);
+  };
   return (
     <div ref={hostRef} className={`three-state-accordion-stack ${className}`.trim()} data-accordion-stack={id} role="group" aria-label={`${id} accordion stack`}>
+      {controlsLabel && <section className="three-state-accordion-member three-state-accordion-stack-controls" data-accordion-stack-control={id}>
+        <div className="three-state-accordion-member-strip">
+          <button type="button" className="three-state-accordion-member-summary" title={`Set every member in ${controlsLabel}`} onClick={() => setAllMembers(collectiveMode === "strip" ? "scroll" : "strip")}>
+            <span>{controlsLabel}</span>
+            <small>Set every member in this stack</small>
+          </button>
+          <ThreeStateAccordionControls label={controlsLabel} mode={collectiveMode} onChange={setAllMembers} />
+        </div>
+      </section>}
       {children}
     </div>
   );
@@ -123,6 +137,8 @@ export function ThreeStateAccordionMember({
   accessories,
   itemHeader,
   scrollSize = "320px",
+  initialIndex,
+  initialPlacementVersion,
   children,
   footer,
 }: {
@@ -137,15 +153,17 @@ export function ThreeStateAccordionMember({
   accessories?: ReactNode;
   itemHeader?: ReactNode;
   scrollSize?: string;
+  initialIndex?: number;
+  initialPlacementVersion?: string;
   children?: ReactNode;
   footer?: ReactNode;
 }) {
-  const memberOrder = useAccordionMemberOrder(stackId, label);
-  const layoutOrder = stackId === "spline-stack" && label !== "LEFT COLUMN / RIGHT COLUMN"
-    ? storedAccordionOrder(stackId).filter((item) => item !== "LEFT COLUMN / RIGHT COLUMN").indexOf(label)
-    : memberOrder;
+  const memberOrder = useAccordionMemberOrder(stackId, label, initialIndex, initialPlacementVersion);
+  const layoutOrder = memberOrder;
   const [dragging, setDragging] = useState(false);
   const suppressClick = useRef(false);
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
   const lastExpandedMode = useRef<Exclude<AccordionDisplayMode, "strip">>(mode === "full" ? "full" : "scroll");
   useEffect(() => {
     if (mode !== "strip") lastExpandedMode.current = mode;
@@ -154,6 +172,19 @@ export function ThreeStateAccordionMember({
     if (nextMode !== "strip") lastExpandedMode.current = nextMode;
     onChange(nextMode);
   };
+  useEffect(() => {
+    const setFromStack = (nextMode: AccordionDisplayMode) => {
+      if (nextMode !== "strip") lastExpandedMode.current = nextMode;
+      onChangeRef.current(nextMode);
+    };
+    const listeners = accordionModeListeners.get(stackId) || new Set<(mode: AccordionDisplayMode) => void>();
+    listeners.add(setFromStack);
+    accordionModeListeners.set(stackId, listeners);
+    return () => {
+      listeners.delete(setFromStack);
+      if (!listeners.size && accordionModeListeners.get(stackId) === listeners) accordionModeListeners.delete(stackId);
+    };
+  }, [stackId]);
   const effectiveMode = activeAccordionDrag?.stackId === stackId ? "strip" : mode;
   const beginDrag = (event: DragEvent<HTMLButtonElement>) => {
     setDragging(true);

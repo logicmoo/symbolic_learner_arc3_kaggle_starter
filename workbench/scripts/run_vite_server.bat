@@ -42,7 +42,9 @@ echo  This command window stays open after Vite exits.
 echo ============================================================
 echo.
 
-call npm run dev
+set "WORKBENCH_CONTROL_API=%WORKBENCH_CONTROL_API%"
+if not defined WORKBENCH_CONTROL_API set "WORKBENCH_CONTROL_API=%API_TARGET%"
+"%ROOT%\..\.venv\Scripts\python.exe" "%ROOT%\scripts\submit_managed_command.py" --api "%WORKBENCH_CONTROL_API%" --service workbench-web --cwd "%CD%" --env WORKBENCH_WEB_HOST --env WORKBENCH_WEB_PORT --env WORKBENCH_API_TARGET -- npm.cmd run dev
 
 echo.
 echo ------------------------------------------------------------

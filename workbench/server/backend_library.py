@@ -7,10 +7,33 @@ from typing import Any
 from operation_library import DEFAULT_WORKSPACES_ROOT
 from workspace_inheritance import effective_workspace_layers, layer_source
 from resource_store import get_filesystem_provider
+from resource_relationships import relationship_ids
 
 SHARED_WORKSPACE_ID = "shared_library_system"
 MODEL_CATALOG_DIRECTORY = "models"
 BACKEND_DIRECTORIES = ("design/backends", "backends", "models")
+
+
+def backend_identifiers(document: dict[str, Any]) -> list[str]:
+    """Return a backend's canonical ID followed by compatibility aliases."""
+    canonical = str(document.get("id") or "").strip()
+    return list(dict.fromkeys(
+        value for value in (canonical, *relationship_ids(document.get("aliases"))) if value
+    ))
+
+
+def backend_matches(document: dict[str, Any], identifier: str) -> bool:
+    return str(identifier).strip() in backend_identifiers(document)
+
+
+def backend_record_index(records: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    """Index records by canonical ID and every declared alias."""
+    result: dict[str, dict[str, Any]] = {}
+    for record in records:
+        document = record.get("document") or {}
+        for identifier in backend_identifiers(document):
+            result.setdefault(identifier, record)
+    return result
 
 
 def read_backend_file(path: Path) -> dict[str, Any]:
@@ -30,6 +53,11 @@ def _validate_backend(value: Any, path: Path) -> dict[str, Any]:
         raise ValueError(f"Backend definition requires id: {path}")
     if not str(value.get("provider") or "").strip():
         raise ValueError(f"Backend definition requires provider: {path}")
+    aliases = relationship_ids(value.get("aliases"))
+    canonical = str(value.get("id") or "").strip()
+    if canonical in aliases:
+        aliases = [alias for alias in aliases if alias != canonical]
+    value["aliases"] = aliases
     return value
 
 

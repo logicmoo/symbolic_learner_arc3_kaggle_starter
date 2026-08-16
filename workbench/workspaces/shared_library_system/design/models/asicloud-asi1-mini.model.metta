@@ -4,7 +4,7 @@
   (label "Free asi1-mini")
   (description "Discovered from ASICloud.")
   (parents ([]
-    asicloud
+    https.inference.asicloud.cudos.org.v1
   ))
   (model asi1-mini)
   (enabled true)
@@ -41,7 +41,7 @@
   ))
   (discovery (
     (managed true)
-    (backendId asicloud)
+    (backendId https.inference.asicloud.cudos.org.v1)
     (remoteModelId asi1-mini)
   ))
   (categories ([]

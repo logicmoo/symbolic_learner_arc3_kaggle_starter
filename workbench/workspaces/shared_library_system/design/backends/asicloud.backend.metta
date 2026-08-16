@@ -1,6 +1,12 @@
 (
   (kind backend)
-  (id asicloud)
+  (id https.inference.asicloud.cudos.org.v1)
+  (aliases ([]
+    asicloud
+    asi-cloud
+    cudos
+    https://inference.asicloud.cudos.org/v1
+  ))
   (label ASICloud)
   (provider asicloud)
   (official true)

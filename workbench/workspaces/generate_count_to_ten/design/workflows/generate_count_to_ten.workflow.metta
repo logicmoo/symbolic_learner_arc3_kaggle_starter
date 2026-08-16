@@ -1,0 +1,18 @@
+(
+  (kind workflow)
+  (id generate_count_to_ten)
+  (label "Generate Count to Ten")
+  (description "Empty generation target. Populate this workflow from generate_count_to_ten.english_workflow_specification.")
+  (status draft-awaiting-generation)
+  (generation (
+    (operation workflow.populate_from_english)
+    (englishSpecificationPrompt generate_count_to_ten.english_workflow_specification)
+    (englishDescriptionPath docs/WORKFLOW_DESCRIPTION.md)
+    (generationOrderPath docs/WORKFLOW_GENERATION_ORDER.txt)
+    (operationCategories ([] workflow-language))
+    (preflightRequired true)
+  ))
+  (inputs ())
+  (outputs ())
+  (steps ([]))
+)

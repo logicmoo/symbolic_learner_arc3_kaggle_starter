@@ -34,6 +34,9 @@ type WorkbenchService = {
   processes?: Array<{pid: number; parentPid?: number | null; parentProcessName?: string | null; parentCommandLine?: string | null; parentWorkingDirectory?: string | null; processName?: string | null; commandLine?: string | null; workingDirectory?: string | null; listener: boolean}>;
 };
 type StartupPolicy = Record<string, {start: boolean; hiddenWindow: boolean; hideFromProcessViewer: boolean}>;
+type ModelChoice = {id: string; label: string; backendId?: string; remoteModel?: string};
+type SystemModelSelection = {kind?: string; id?: string; label?: string; fallbackModelId: string; pervasive: boolean};
+type WorkspaceModelSelection = {kind?: string; id?: string; label?: string; overrideModelId: string};
 const formatDiskUsage=(bytes=0)=>bytes>=1024*1024*1024?`${(bytes/(1024*1024*1024)).toFixed(2)} GB`:bytes>=1024*1024?`${(bytes/(1024*1024)).toFixed(1)} MB`:bytes>=1024?`${(bytes/1024).toFixed(1)} KB`:`${bytes} B`;
 
 function RegistryWorkspaceSourceEditor({item, busy, onSaved}: {item: Workspace; busy: boolean; onSaved: (workspace: Workspace) => void}) {
@@ -82,6 +85,11 @@ export function WorkspaceSettingsPanel({workspace, workspaces, fileCount, implem
   const [startupPolicy, setStartupPolicy] = useState<StartupPolicy>({});
   const [startupPolicySource, setStartupPolicySource] = useState("");
   const [startupPolicyValid, setStartupPolicyValid] = useState(true);
+  const [modelChoices, setModelChoices] = useState<ModelChoice[]>([]);
+  const [systemModelSelection, setSystemModelSelection] = useState<SystemModelSelection>({fallbackModelId:"",pervasive:false});
+  const [workspaceModelSelection, setWorkspaceModelSelection] = useState<WorkspaceModelSelection>({overrideModelId:""});
+  const [effectiveModelId, setEffectiveModelId] = useState("");
+  const [effectiveModelSource, setEffectiveModelSource] = useState("");
   const credentialTargetId = mode==="settings" ? "shared_library_system" : workspace.id;
   const credentialTargetLabel = mode==="settings" ? "the workbench system" : workspace.label;
 
@@ -113,6 +121,23 @@ export function WorkspaceSettingsPanel({workspace, workspaces, fileCount, implem
     setStartupPolicySource(JSON.stringify(payload.document || {kind:"workbench_startup_policy",id:"workbench_startup",services:payload.services||{}}, null, 2));
   }).catch(reason => setMessage(String(reason)));
   useEffect(refreshStartupPolicy, []);
+  const modelSelectionEndpoint = mode==="settings"?"/api/system/model-selection":`/api/workspaces/${encodeURIComponent(workspace.id)}/model-selection`;
+  const refreshModelSelection = () => {
+    if(mode==="processes")return;
+    void fetch(modelSelectionEndpoint).then(async response=>{
+      const payload=await response.json();
+      if(!response.ok)throw new Error(payload.detail||response.statusText);
+      setModelChoices(payload.models||[]);
+      if(mode==="settings")setSystemModelSelection(payload.document||{fallbackModelId:"",pervasive:false});
+      else {
+        setWorkspaceModelSelection(payload.document||{overrideModelId:""});
+        setSystemModelSelection(payload.system||{fallbackModelId:"",pervasive:false});
+        setEffectiveModelId(String(payload.effective?.models?.[0]||""));
+        setEffectiveModelSource(String(payload.source||""));
+      }
+    }).catch(reason=>setMessage(reason instanceof Error?reason.message:String(reason)));
+  };
+  useEffect(refreshModelSelection,[mode,workspace.id]);
 
   const selected = (id: string) => includes.find(item => item.workspaceId === id);
   const toggle = (id: string) => setIncludes(current => selected(id)
@@ -232,6 +257,25 @@ export function WorkspaceSettingsPanel({workspace, workspaces, fileCount, implem
     try { const document=JSON.parse(source); if(document.services&&typeof document.services==="object")setStartupPolicy(document.services); }
     catch { /* ResourceSourceEditor reports and preserves invalid drafts. */ }
   };
+  const saveModelSelection = async () => {
+    setBusy(true); setMessage("");
+    try {
+      const document=mode==="settings"?systemModelSelection:workspaceModelSelection;
+      const response=await fetch(modelSelectionEndpoint,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({document})});
+      const payload=await response.json();
+      if(!response.ok)throw new Error(payload.detail||response.statusText);
+      setModelChoices(payload.models||[]);
+      if(mode==="settings")setSystemModelSelection(payload.document);
+      else {
+        setWorkspaceModelSelection(payload.document);
+        setSystemModelSelection(payload.system);
+        setEffectiveModelId(String(payload.effective?.models?.[0]||""));
+        setEffectiveModelSource(String(payload.source||""));
+      }
+      setMessage(mode==="settings"?"System model selection saved.":"Workspace model override saved.");
+    } catch(reason){setMessage(reason instanceof Error?reason.message:String(reason));}
+    finally{setBusy(false);}
+  };
   const deleteRegistryWorkspace = async (item: Workspace) => {
     if (!window.confirm(`Delete ${item.label}? The workspace will be moved to the recoverable workspace trash.`)) return;
     setBusy(true); setMessage("");
@@ -248,11 +292,12 @@ export function WorkspaceSettingsPanel({workspace, workspaces, fileCount, implem
   const choices = workspaces.filter(item => item.id !== workspace.id);
   const byId = new Map(workspaces.map(item => [item.id, item]));
   return <section id={mode==="workspace"?"overview-workspace-configuration":undefined} className={`resource-view workspace-settings-page ${mode}-settings`}>
-    {mode==="settings"&&<nav className="context-jump-tabs settings-jump-tabs"><button onClick={()=>document.querySelector(".system-workspace-registry")?.scrollIntoView({behavior:"smooth"})}>Workspace Registry</button><button onClick={()=>document.querySelector(".system-startup-policy")?.scrollIntoView({behavior:"smooth"})}>Startup Processes</button><button onClick={()=>document.querySelector(".resource-provider-status")?.scrollIntoView({behavior:"smooth"})}>Resource Provider</button></nav>}
+    {mode==="settings"&&<nav className="context-jump-tabs settings-jump-tabs"><button onClick={()=>document.querySelector(".system-model-selection")?.scrollIntoView({behavior:"smooth"})}>Model Selection</button><button onClick={()=>document.querySelector(".system-workspace-registry")?.scrollIntoView({behavior:"smooth"})}>Workspace Registry</button><button onClick={()=>document.querySelector(".system-startup-policy")?.scrollIntoView({behavior:"smooth"})}>Startup Processes</button><button onClick={()=>document.querySelector(".resource-provider-status")?.scrollIntoView({behavior:"smooth"})}>Resource Provider</button></nav>}
     <div className="resource-heading"><div><span>{mode==="processes"?"SYSTEM PROCESS MONITOR":mode==="workspace"?"WORKSPACE CONFIGURATION":"SYSTEM-WIDE SETTINGS"}</span><h1>{mode==="processes"?"Processes":mode==="workspace"?`${workspace.label} configuration`:"Settings"}</h1><p>{mode==="processes"?"Monitor and control the UI, API, model routers, and other managed workbench listeners.":mode==="workspace"?workspace.root:"Configuration and status shared by every filesystem workspace."}</p></div>
       {mode==="workspace"&&<div className="workspace-settings-actions"><button onClick={onSwitch}>Switch workspace</button><button className="primary" disabled={busy || workspace.id === "shared"} onClick={() => void save()}>{busy ? "Saving..." : "Save inclusions"}</button></div>}
     </div>
     {mode!=="processes"&&<div className="settings-grid">{mode==="workspace"&&<label><span>WORKSPACE TYPE</span><select value={workspace.id === "shared" ? "shared" : "project"} disabled><option value="shared">Shared library</option><option value="project">Project workspace</option></select><small>{fileCount} editable local text files discovered from disk.</small></label>}<label><span>ENGINE IMPLEMENTATIONS</span><select value={implementationCount} disabled><option value={implementationCount}>{implementationCount} registered implementations</option></select></label></div>}
+    {mode!=="processes"&&<div className="workspace-inclusion-editor system-model-selection"><div className="llm-subhead"><div><span>{mode==="settings"?"SYSTEM MODEL SELECTION":"WORKSPACE MODEL OVERRIDE"}</span><b>{mode==="settings"?"Global fallback and pervasive model":"Override the system model for this workspace"}</b><small>{mode==="settings"?"The selected model is fallback-only by default. Enable Pervasive to override Operation and policy choices unless a workspace explicitly overrides it.":"A workspace override has the highest priority. Leave it empty to use the pervasive system model, the Operation or policy choice, and finally the global fallback."}</small></div><button disabled={busy} onClick={()=>void saveModelSelection()}>Save model selection</button></div><div className="system-startup-list"><article><span><b>{mode==="settings"?"Workbench default model":"Workspace execution model"}</b><small>{mode==="settings"?systemModelSelection.fallbackModelId||"No fallback selected":workspaceModelSelection.overrideModelId||`Inherited effective model: ${effectiveModelId||"none"}`}</small>{mode==="workspace"&&<small>RESOLUTION {effectiveModelSource||"unresolved"} · SYSTEM {systemModelSelection.fallbackModelId||"none"}{systemModelSelection.pervasive?" · pervasive":" · fallback only"}</small>}</span><label>{mode==="settings"?"FALLBACK MODEL":"WORKSPACE OVERRIDE"}<select aria-label={mode==="settings"?"Global fallback model":"Workspace model override"} value={mode==="settings"?systemModelSelection.fallbackModelId:workspaceModelSelection.overrideModelId} onChange={event=>mode==="settings"?setSystemModelSelection(current=>({...current,fallbackModelId:event.target.value})):setWorkspaceModelSelection(current=>({...current,overrideModelId:event.target.value}))}><option value="">{mode==="settings"?"No global fallback":"Use system and Operation resolution"}</option>{modelChoices.map(model=><option key={model.id} value={model.id}>{model.label} · {model.backendId||model.id}</option>)}</select></label>{mode==="settings"&&<label><input aria-label="Pervasive model selection" type="checkbox" checked={systemModelSelection.pervasive} disabled={!systemModelSelection.fallbackModelId} onChange={event=>setSystemModelSelection(current=>({...current,pervasive:event.target.checked}))}/> Pervasive — always use this model</label>}</article></div></div>}
     {mode==="settings"&&<div className="workspace-inclusion-editor system-workspace-registry"><div className="llm-subhead"><div><span>WORKSPACE REGISTRY</span><b>Workspace types and chooser visibility</b><small>Hidden workspaces remain available for inheritance and administration but do not appear in the workspace chooser. Expand any row to edit its complete filesystem metadata as synchronized MeTTa or JSON.</small></div></div><div className="system-workspace-list">{registry.map(item=>{const protectedWorkspace=item.id==="default"||item.id==="shared"||item.id==="shared_library_system"||item.id===workspace.id;const resourceCounts=Object.entries(item.resourceCounts||{}).filter(([,count])=>count>0);return <article key={item.id}><span><b>{item.label}</b><small>{item.id} · {item.root}</small><small className="workspace-disk-summary">{item.fileCount||0} files · {formatDiskUsage(item.diskUsageBytes)} on disk · used by {item.usedByProjectCount||0} project{item.usedByProjectCount===1?"":"s"} · consumes {item.consumedProjectCount||0} project{item.consumedProjectCount===1?"":"s"}</small><small className="workspace-project-usage">USED BY {item.usedByProjects?.length?item.usedByProjects.join(" · "):"none"} · CONSUMES {item.consumedProjects?.length?item.consumedProjects.join(" · "):"none"}</small><small className="workspace-resource-counts">{resourceCounts.length?resourceCounts.map(([kind,count])=>`${kind} ${count}`).join(" · "):"No typed resources"}</small></span><label>TYPE<select aria-label={`${item.label} workspace type`} value={item.workspaceType||"project"} disabled={busy} onChange={event=>void updateRegistryWorkspace(item,{workspaceType:event.target.value as "project"|"library"})}><option value="project">Project</option><option value="library">Library</option></select></label><label className="workspace-hidden-toggle"><input type="checkbox" checked={Boolean(item.hidden)} disabled={busy||item.id===workspace.id} onChange={event=>void updateRegistryWorkspace(item,{hidden:event.target.checked})}/> Hide from chooser</label><button className="workspace-delete-button" disabled={busy||protectedWorkspace} title={protectedWorkspace?"Active and system workspaces cannot be deleted":"Move workspace to recoverable trash"} onClick={()=>void deleteRegistryWorkspace(item)}>Delete</button><RegistryWorkspaceSourceEditor item={item} busy={busy} onSaved={acceptRegistryWorkspace}/></article>})}</div></div>}
     {mode==="settings"&&<div className="workspace-inclusion-editor system-startup-policy"><div className="llm-subhead"><div><span>RUN_WORKBENCH STARTUP · METTA/JSON</span><b>Managed process startup policy</b><small>Window visibility and Process Viewer visibility are separate. Process identity, launch metadata, control permissions, and fallback defaults live in independent managed_service resources.</small></div><button disabled={busy||!startupPolicyValid} onClick={()=>void saveStartupPolicy()}>Save startup policy</button></div><div className="system-startup-list">{services.map(service=>{const policy=startupPolicy[service.id]||{start:false,hiddenWindow:false,hideFromProcessViewer:false};return <article key={service.id}><span><b>{service.label}</b><small>{service.id} · 127.0.0.1:{service.port}</small><small>LAUNCH {service.launcher||"observation only"}</small><small>CWD {service.workingDirectory||"repository root"}</small><small>MATCH {service.commandPatterns?.join(" · ")||"listener port"}</small><small>CONTROL kill {service.allowKill===false?"disabled":"enabled"} · relaunch {service.allowRelaunch===false?"disabled":"enabled"}</small></span><label><input type="checkbox" checked={policy.start} onChange={event=>changeStartupPolicy(service.id,{start:event.target.checked})}/> Start with run_workbench</label><label><input type="checkbox" checked={policy.hiddenWindow} disabled={!policy.start} onChange={event=>changeStartupPolicy(service.id,{hiddenWindow:event.target.checked})}/> Hidden launch window</label><label><input type="checkbox" checked={policy.hideFromProcessViewer} onChange={event=>changeStartupPolicy(service.id,{hideFromProcessViewer:event.target.checked})}/> Hide from Process Viewer</label></article>})}</div><ResourceSourceEditor value={startupPolicySource} onChange={editStartupPolicySource} onValidityChange={setStartupPolicyValid} label="Edit start, window visibility, and Process Viewer overrides" showEnablement={false}/></div>}
     {mode==="workspace"&&<div className="workspace-inclusion-editor"><div className="llm-subhead"><div><span>FILESYSTEM INCLUSIONS</span><b>Low-to-high resource precedence</b><small>Shared is selected by default but can be removed. Included workspaces override earlier layers; {workspace.label} overrides every included layer.</small></div></div>

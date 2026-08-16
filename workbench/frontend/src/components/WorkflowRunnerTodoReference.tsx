@@ -25,7 +25,7 @@ export function WorkflowRunnerTodoReference({
       .catch(reason => setError(String(reason)));
   }, []);
 
-  return <ThreeStateAccordionMember stackId="spline-stack" label="RUNNER DESIGN REFERENCE" value="Mockups and TODO" detail="REFERENCE" mode={displayMode} onChange={onDisplayModeChange} baseClass="workflow-runner-reference" scrollSize="320px" footer={<><b>REFERENCE</b><span>{todo?.specificationPath || "Workflow runner design specification"}</span></>}>
+  return <ThreeStateAccordionMember stackId="center-stack" initialIndex={7} label="RUNNER DESIGN REFERENCE" value="Mockups and TODO" detail="REFERENCE" mode={displayMode} onChange={onDisplayModeChange} baseClass="workflow-runner-reference" scrollSize="320px" footer={<><b>REFERENCE</b><span>{todo?.specificationPath || "Workflow runner design specification"}</span></>}>
     {error && <div className="demo-notice"><b>Reference unavailable</b><span>{error}</span></div>}
     {todo && <div className="workflow-runner-reference-body">
       <div className="workflow-runner-mockups">{(todo.mockups||[]).filter(item=>item.available).map(item=><figure key={item.view}><figcaption><b>{item.view}</b><span>{item.description}</span></figcaption><a className="workflow-runner-mockup" href={item.url} target="_blank" rel="noreferrer"><img src={item.url} alt={`${item.view} workflow runner design reference`} /></a></figure>)}</div>

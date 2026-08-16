@@ -29,6 +29,9 @@ echo  or rerun the full command shown above.
 echo  This command window stays open after the server exits.
 echo ============================================================
 echo.
+echo WARNING: Bootstrap legacy mode: the API cannot submit its own startup command.
+echo The outer Python launcher owns and tracks this API process tree.
+echo.
 
 "%PYTHON_EXE%" "%ROOT%\scripts\run_api_server.py" --host %BIND_IP% --port %API_PORT%
 

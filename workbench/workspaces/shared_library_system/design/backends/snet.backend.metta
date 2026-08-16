@@ -1,6 +1,12 @@
 (
   (kind backend)
-  (id snet)
+  (id https.llm.c.singularitynet.io.v1)
+  (aliases ([]
+    snet
+    singularitynet
+    singularitynet-llm
+    https://llm.c.singularitynet.io/v1
+  ))
   (label "SingularityNET LLM")
   (provider singularitynet)
   (official true)

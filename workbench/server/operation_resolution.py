@@ -5,6 +5,7 @@ from typing import Any
 
 from backend_library import load_workspace_backend_records
 from model_library import resolve_model_records
+from model_selection_settings import effective_model_selection
 from prompt_library import resolve_prompt_implementation, resolve_prompt_profile
 from operation_library import DEFAULT_WORKSPACES_ROOT, SHARED_WORKSPACE_ID, resolve_operation_implementation
 
@@ -191,12 +192,17 @@ def materialize_workflow_step(workflow: dict[str, Any], step: dict[str, Any]) ->
     operation = resolved["operation"]
     implementation = resolved["implementation"]
     bindings = implementation.get("bindings") or {}
-    model_selection = step.get("modelSelection") or implementation.get("modelSelection") or {}
+    requested_model_selection = step.get("modelSelection") or implementation.get("modelSelection") or {}
+    model_selection, model_selection_source = effective_model_selection(
+        workspace_root,
+        requested_model_selection,
+    )
     parameters = {
         **_model_execution_parameters(workspace_root, model_selection),
         **dict(operation.get("parameters") or {}),
         **_implementation_parameters(implementation, step),
     }
+    parameters["modelSelectionSource"] = model_selection_source
     parameters["_outputBindings"] = list((operation.get("outputs") or {}).keys())
     prompt_ids = [str(item) for item in bindings.get("prompts") or []]
     raw_profile_ids = bindings.get("promptProfiles") or ([] if not bindings.get("promptProfile") else [bindings.get("promptProfile")])
@@ -209,9 +215,12 @@ def materialize_workflow_step(workflow: dict[str, Any], step: dict[str, Any]) ->
     resolved_prompt_profiles: list[dict[str, Any]] = []
     if prompt_ids or prompt_profile_ids:
         separator = str(bindings.get("separator") or "\n\n")
+        binding_prompt_variants = bindings.get("promptVariants") or {}
+        if not isinstance(binding_prompt_variants, dict):
+            binding_prompt_variants = {}
         prompt_variants = {
             str(key): str(value)
-            for key, value in dict(step.get("promptVariants") or {}).items()
+            for key, value in {**binding_prompt_variants, **dict(step.get("promptVariants") or {})}.items()
             if value
         }
         prompt_prefix, resolved_prompts, resolved_prompt_profiles = _prompt_composition_prefix(

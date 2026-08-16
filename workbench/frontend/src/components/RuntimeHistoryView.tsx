@@ -846,7 +846,7 @@ function WorkflowRunSplineWorkspace({
   return (
     <>
       <ThreeStateAccordionMember
-        stackId="spline-stack"
+        stackId="right-stack"
         label="SELECTED RUN SPLINE"
         value={run.workflowId}
         detail={run.status}
@@ -1016,7 +1016,7 @@ function WorkflowRunSplineWorkspace({
               return (
                 <ThreeStateAccordionMember
                   key={section.id}
-                  stackId="right-column"
+                  stackId="right-stack"
                   label={section.title}
                   value={section.detail}
                   mode={mode}
@@ -1041,7 +1041,7 @@ function WorkflowRunSplineWorkspace({
               );
             })}
         <ThreeStateAccordionMember
-          stackId="right-column"
+          stackId="right-stack"
           label="DETECTED OBJECTS"
           value={`${objects.length} persisted records`}
           detail={`selected run ${run.id.slice(0, 8)}`}
@@ -2474,6 +2474,7 @@ export function RuntimeHistoryView({
   runLauncher,
   leftColumnDisplayMode,
   rightColumnDisplayMode,
+  showDesignReference = true,
   onSelectRun,
   onOpenResource,
 }: {
@@ -2487,6 +2488,7 @@ export function RuntimeHistoryView({
   runLauncher?: ReactNode;
   leftColumnDisplayMode?: AccordionDisplayMode;
   rightColumnDisplayMode?: AccordionDisplayMode;
+  showDesignReference?: boolean;
   onSelectRun?: (run: RuntimeRun) => void;
   onOpenResource?: OpenRuntimeResource;
 }) {
@@ -3594,8 +3596,8 @@ export function RuntimeHistoryView({
     mode === "workflowRuns"
       ? document.querySelector(".topbar-view-actions")
       : null;
-  const leftRunLauncherSlot = mode === "workflowRuns"
-    ? document.querySelector(".left-durable-run-launcher-slot")
+  const leftColumnStack = mode === "workflowRuns"
+    ? document.querySelector('[data-accordion-stack="left-stack"]:not([data-accordion-member])')
     : null;
   return (
     <>
@@ -3638,21 +3640,21 @@ export function RuntimeHistoryView({
           </>,
           titlebarViewActions,
         )}
-      {leftRunLauncherSlot && isValidElement(runLauncher) && createPortal(
+      {leftColumnStack && isValidElement(runLauncher) && createPortal(
         cloneElement(runLauncher as ReactElement<{ displayMode?: AccordionDisplayMode; onDisplayModeChange?: (mode: AccordionDisplayMode) => void }>, {
           displayMode: launcherDisplayMode,
           onDisplayModeChange: setLauncherDisplayMode,
         }),
-        leftRunLauncherSlot,
+        leftColumnStack,
       )}
       <section
         className={`resource-view runtime-history-view ${expandedPanel ? `panel-maximized-${expandedPanel}` : ""}`}
       >
-        {mode === "workflowRuns" && !leftRunLauncherSlot && isValidElement(runLauncher) && cloneElement(runLauncher as ReactElement<{ displayMode?: AccordionDisplayMode; onDisplayModeChange?: (mode: AccordionDisplayMode) => void }>, {
+        {mode === "workflowRuns" && !leftColumnStack && isValidElement(runLauncher) && cloneElement(runLauncher as ReactElement<{ displayMode?: AccordionDisplayMode; onDisplayModeChange?: (mode: AccordionDisplayMode) => void }>, {
           displayMode: launcherDisplayMode,
           onDisplayModeChange: setLauncherDisplayMode,
         })}
-        <ThreeStateAccordionStack id="right-column" hostRef={setRightColumnAccordionHost}>
+        <ThreeStateAccordionStack id="right-stack" hostRef={setRightColumnAccordionHost}>
         <WorkflowRunsControl
           workflowRuns={mode === "workflowRuns"}
           modern={false}
@@ -3805,6 +3807,24 @@ export function RuntimeHistoryView({
             )}
           </div>
         </WorkflowRunsControl>
+        {mode === "workflowRuns" && selectedRun && (
+          <WorkflowRunSplineWorkspace
+            run={selectedRun}
+            workflow={frozenWorkflow}
+            onOpenResource={onOpenResource}
+            expandedPanel={expandedPanel}
+            minimizedPanels={minimizedPanels}
+            objectDisplayMode={objectDisplayMode}
+            setObjectDisplayMode={setObjectDisplayMode}
+            objectsListDisplayMode={objectsListDisplayMode}
+            setObjectsListDisplayMode={setObjectsListDisplayMode}
+            rightColumnAccordionHost={rightColumnAccordionHost}
+            splineDisplayMode={splineDisplayMode}
+            setSplineDisplayMode={setSplineDisplayMode}
+            setExpandedPanel={setExpandedPanel}
+            setPanelMinimized={setPanelMinimized}
+          />
+        )}
         </ThreeStateAccordionStack>
         {selectedRuntimeRow && mode !== "workflowRuns" && (
           <RuntimeRecordInspector
@@ -3921,25 +3941,7 @@ export function RuntimeHistoryView({
             />
           </div>
         )}
-        {mode === "workflowRuns" && selectedRun && (
-          <WorkflowRunSplineWorkspace
-            run={selectedRun}
-            workflow={frozenWorkflow}
-            onOpenResource={onOpenResource}
-            expandedPanel={expandedPanel}
-            minimizedPanels={minimizedPanels}
-            objectDisplayMode={objectDisplayMode}
-            setObjectDisplayMode={setObjectDisplayMode}
-            objectsListDisplayMode={objectsListDisplayMode}
-            setObjectsListDisplayMode={setObjectsListDisplayMode}
-            rightColumnAccordionHost={rightColumnAccordionHost}
-            splineDisplayMode={splineDisplayMode}
-            setSplineDisplayMode={setSplineDisplayMode}
-            setExpandedPanel={setExpandedPanel}
-            setPanelMinimized={setPanelMinimized}
-          />
-        )}
-        {mode === "workflowRuns" && (
+        {mode === "workflowRuns" && showDesignReference && (
           <Suspense
             fallback={
               <div className="studio-empty">

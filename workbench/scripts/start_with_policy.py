@@ -5,6 +5,8 @@ import json
 import os
 import subprocess
 import sys
+import time
+from threading import get_ident
 from pathlib import Path
 
 
@@ -15,6 +17,33 @@ POLICY_PATH = (
 )
 LEGACY_POLICY_PATH = ROOT / "config" / "workbench_startup.json"
 SERVICE_DIRECTORY = ROOT / "workbench" / "workspaces" / "shared_library_system" / "design" / "services"
+PROCESS_LEDGER = ROOT / "runtime" / "run_workbench_processes.json"
+
+
+def _record_started_process(
+    service_id: str, process: subprocess.Popen, command: list[str], cwd: Path
+) -> None:
+    PROCESS_LEDGER.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        entries = json.loads(PROCESS_LEDGER.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        entries = []
+    if not isinstance(entries, list):
+        entries = []
+    entries = [entry for entry in entries if isinstance(entry, dict) and entry.get("service") != service_id]
+    entries.append({
+        "service": service_id,
+        "pid": process.pid,
+        "startedAtEpoch": time.time(),
+        "cwd": str(cwd.resolve()),
+        "rawCommand": command,
+        "terminationScope": "process-tree",
+    })
+    temporary = PROCESS_LEDGER.with_name(
+        f".{PROCESS_LEDGER.name}.{os.getpid()}.{get_ident()}.tmp"
+    )
+    temporary.write_text(json.dumps(entries, indent=2) + "\n", encoding="utf-8")
+    temporary.replace(PROCESS_LEDGER)
 
 
 def _policy_document() -> dict:
@@ -57,6 +86,8 @@ def main() -> int:
     parser.add_argument("--cwd", type=Path, default=ROOT / "workbench")
     parser.add_argument("command", nargs=argparse.REMAINDER)
     args = parser.parse_args()
+    if args.command[:1] == ["--"]:
+        args.command = args.command[1:]
     policy = policy_for(args.service)
     if not policy["start"]:
         print(f"{args.service}: disabled by the shared Workbench startup policy resource")
@@ -73,7 +104,8 @@ def main() -> int:
         stdout = (log_root / f"{args.service}.stdout.log").open("a", encoding="utf-8")
         stderr = (log_root / f"{args.service}.stderr.log").open("a", encoding="utf-8")
     try:
-        subprocess.Popen(args.command, cwd=args.cwd, stdin=subprocess.DEVNULL, stdout=stdout, stderr=stderr, creationflags=flags, close_fds=False)
+        process = subprocess.Popen(args.command, cwd=args.cwd, stdin=subprocess.DEVNULL, stdout=stdout, stderr=stderr, creationflags=flags, close_fds=False)
+        _record_started_process(args.service, process, list(args.command), args.cwd)
     finally:
         if stdout:
             stdout.close()

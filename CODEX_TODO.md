@@ -14,6 +14,21 @@ values here.
 
 ## Current recovery state
 
+- Workflow UI invariant: every grouped accordion surface must be rendered by
+  `ThreeStateAccordionStack`, and every direct member must use that stack's ID.
+  Do not imitate stacking with wrapper divs, page grids, positioning, or CSS
+  repairs. The workflow page has exactly three structural stacks: CENTER,
+  LEFT, and RIGHT. CENTER owns the full workspace column between Resource and
+  Docs. Its `LEFT + RIGHT` member contains the LEFT and RIGHT stacks.
+- Accordion control invariant: existing accordion members are the page layout
+  and control surface. Keep each control full-width inside the appropriate
+  existing member. Do not add new accordion members, floating toolbars, cards,
+  side controls, or independent control rows unless the user explicitly asks
+  for a new panel.
+- The canonical workflow accordion names and placement destinations are listed
+  in `workbench/docs/design/WORKFLOW_ACCORDION_MAP.md`. When the user names an
+  accordion, place the requested control inside that exact existing member.
+
 - Canonical checkout: `C:\snet\PeTTa\repos\symbolic_learner_workbench`
 - Active branch: `codex/workbench-navigation-v2`
 - Remote branch: not configured for the current local branch
@@ -25,6 +40,82 @@ values here.
   never copy its secrets into this ledger
 
 ## Completed and validated
+
+- [x] Extend the English Workflow Generation Order composer inside its existing
+  `ThreeStateAccordionStack`: `[+group]` now creates and selects a simultaneous
+  group; a composed `[group]` row runs only that group; the full-width insertion
+  selector sits below the group's children; and every occurrence exposes a real
+  filesystem-backed Prompt selector followed by an effective-model override.
+  Prompt/model routing is serialized into nested `generation_steps`, group model
+  overrides control the actual group invocation, the analyzer receives the
+  effective Prompt catalog, and saved audit files retain both the full composer
+  and the last subset run. Summary, Memory, Checklist, Outputs, Rules, Workflow,
+  and Group rows now have distinct semantic background/border tints. Each group
+  also owns a full-width inner shuffle control, independent of the existing
+  top-level shuffle. The former New/Reuse/Preserve/Hide occurrence modes are
+  removed. Every listed occurrence executes, and its compact `VISIBLE` control
+  independently declares whether its current value is exposed to later stages
+  of other output types (`peers`, default on) or exposed as the old value to a
+  later occurrence of the same type (`updates`, default off). The twenty-one
+  composer outputs now map one-to-one to filesystem-backed shared prompts. The
+  authoring pipelines include `+englishsteps` -> `+steps` -> `+workflow`,
+  `+libops` -> `+matchops` -> `+inventops` -> `+codeops` -> `+promptops`,
+  `+libdt` -> `+matchdt` -> `+inventdt` -> `+codedt`, and
+  `+libwf` -> `+matchwf` -> `+inventwf` -> `+codewf`. Operation prompts are
+  proposed only for new LLM-backed implementations; deterministic Operations
+  do not receive unnecessary prompt resources. Datatype and Workflow selection
+  use the real effective filesystem catalogs. Groups can be copied with their
+  child order, Prompt/model overrides, and visibility scopes preserved under fresh
+  composer identities. New and restored rows default to their matching Prompt
+  while retaining the override dropdown. Focused tests: 10 passed; frontend
+  production build passed on 2026-08-16. Live browser validation confirmed all
+  twenty-one full-width composer buttons, real filesystem Prompt defaults for
+  `englishsteps`, `steps`, and `promptops`, and a copied group whose child order,
+  selected Prompts, inherited-model overrides, and visibility scopes were preserved.
+  The add-output composer now keeps its controls in the same existing accordion
+  while placing the Operations (`libops` onward), Datatypes (`libdt` onward),
+  and Workflows (`libwf` onward) pipelines on distinct full-width rows.
+
+- [x] Add persisted system-wide model selection with a real model catalog,
+  global fallback, and an explicit `Pervasive` checkbox that makes the global
+  model override operation/policy choices while still allowing the Workspace
+  Overview to declare a highest-priority workspace override. The
+  `generate_count_to_ten` workspace currently overrides to SNET `asi1`; the
+  global fallback remains MiniMax M3 with
+  pervasiveness disabled. English-to-Workflow now browses the previous
+  Workflow and returns a revised Workflow JSON object instead of compiling
+  MeTTa, sends every multi-field runtime input to the LLM, limits its catalog
+  to the shared workflow-language primitives, and requires a combined
+  `new_memory_values_plan` companion output. The UI rejects incomplete output,
+  adopts the combined plan in the existing Memory / Value Plan accordion, and
+  leaves filesystem application as a separate user action. Focused tests (17)
+  and the frontend production build passed. Live SNET invocations on
+  2026-08-16 returned a 10-step Workflow with ten combined memory values from
+  `asi1-mini`, then a 16-step Workflow with seventeen combined memory values
+  from `asi1`; both reported zero unresolved operations and validation reports
+  with no errors or warnings. The non-mini result remains an unapplied draft
+  pending review because its loop condition appears bound to the initial count
+  rather than a reevaluated count.
+  OmniRoute Best Free was also exercised first, but its upstream free pool
+  failed twice with HTTP 400/403 and then 429, so no draft was accepted from
+  that route.
+
+- [x] Rebuild the active Workflows layout as exactly three native
+  `ThreeStateAccordionStack` surfaces: CENTER, LEFT, and RIGHT. CENTER now owns
+  all authoring, preflight, `LEFT + RIGHT`, and reference members; the actual
+  LEFT and RIGHT stacks are DOM children of `LEFT + RIGHT`; WORKFLOW RUNNER is
+  first in LEFT; and RUNNER DESIGN REFERENCE is last in CENTER. Removed the
+  old center-stack drag exception so every member remains reorderable. CENTER
+  also has one native `− / * / +` stack control that updates all eight direct
+  members together. No CSS resizing was added. The English-to-Workflow rich
+  runner now loads its model selector from the effective `/models` catalog,
+  and its operation binds the abstract `workflow.generate_from_english` prompt
+  with a concrete MeTTa/JSON prompt variant rather than incorrectly treating a
+  child prompt ID as an abstract prompt. Focused tests: 8 workflow-layout tests
+  plus prompt-resolution regression tests passed; frontend production build
+  and `git diff --check` passed; live validation confirmed only the three stack
+  IDs, correct nesting/order, matching 546px CENTER/member boundaries, all
+  eight members changing together, and 16 enabled model choices on 2026-08-16.
 
 - [x] Remove the experimental `Workflows (New)` page, its navigation entry,
   `workflowV2` rendering state, component, and dedicated CSS. Legacy V2 URLs
@@ -523,3 +614,96 @@ Preserve the canonical checkout and its `codex/workbench-navigation-v2` branch.
 
 - The workflow preflight spline is a real accordion member above the LEFT/RIGHT controls and renders dependency branches, inferred repeated-output capture groups, and explicit bounded FOR/WHILE control arcs.
 - `arc3_random_player.outer_loop` now describes the existing automatic session operation as two nested bounded loops: while unplayed games remain, and while elapsed game time is below the configured seconds-per-game limit. The existing `arc3_random.run_session` implementation remains the executable owner of those loops.
+- Repository Docs can summarize the current exposed/filtered file list with a selected effective workspace model and configurable first-N-lines excerpts, persist the result under `workbench/docs/generated/`, and open the Markdown immediately in the right pane. Unexposed paths are rejected server-side.
+- [x] Keep SingularityNET as an enabled shared LLM backend and add a real
+  `snet-asi1` model child from its live `/v1/models` catalog, so effective
+  workspace model selectors can use SingularityNET rather than showing an
+  enabled backend with zero selectable models.
+- [x] Identify ASI:One, ASI Cloud, and SingularityNET backend resources by
+  normalized base API endpoints: `https.api.asi1.ai.v1`,
+  `https.inference.asicloud.cudos.org.v1`, and
+  `https.llm.c.singularitynet.io.v1`; preserve provider names separately.
+- [x] Add backend aliases and alias-aware resolution so legacy IDs, provider
+  names, hyphenated names, and literal base URLs resolve to the canonical
+  endpoint-derived backend IDs without breaking existing model parents or API
+  discovery routes.
+- [x] Verify authenticated model discovery for ASI:One, ASI Cloud, and
+  SingularityNET: each `<baseUrl>/models` request resolves its declared
+  workspace/system/environment credential and sends it as a Bearer token.
+- [x] Add `run_workbench.bat /kill [web_port] [api_port]` to stop the three
+  router gateways plus the workbench API and Vite process trees. Shutdown is
+  scoped by listener port and verified command evidence; it never broadly
+  kills every Python or Node process.
+- [x] Route the sibling Mailbox Channel Relay through `run_workbench` when its
+  System Settings startup policy is enabled. Record every process actually
+  launched by `start_with_policy.py` in an ownership ledger, and make `/kill`
+  stop only those recorded process trees—including the relay—while leaving
+  independently started services untouched.
+- [x] Enforce the managed-launch invariant for all six long-running services:
+  each final batch command is passed as a raw argument vector through the
+  Python launcher. The ownership ledger records its root PID, working
+  directory, raw command, and process-tree termination scope; child Node,
+  Python, npm, and cmd processes remain descendants of that owned root.
+- [x] Add the loopback-only managed-command submission API and batch client.
+  `run_clawrouter.bat` now expands its port and submits the final `npx.cmd`
+  argument vector to the Workbench API, which validates, launches, and records
+  it. If the API is unavailable, the client emits a prominent warning and
+  executes the same command in legacy mode.
+- [x] Move every non-bootstrap daemon to that same API submission boundary:
+  OmniRoute, FreeRouter, Vite, and Mailbox Relay batch wrappers now submit
+  their fully expanded final commands. The API server explicitly reports its
+  unavoidable bootstrap legacy mode; foreground dependency checks and
+  installers remain untracked one-shot setup commands.
+- [x] Enable Mailbox Channel Relay automatic startup by default and in the
+  shared startup policy. `run_workbench` still checks port 46667 health first,
+  so it starts the relay only when it is not already running.
+- [x] Add delayed API-startup reconciliation for enabled managed daemons.
+  After an API restart it restores missing Mailbox Relay/router services,
+  skips disabled services, leaves healthy external listeners unclaimed, and
+  excludes the bootstrapping API and port-ambiguous Vite process. Results are
+  persisted to `runtime/logs/startup-reconciliation.json`.
+- [x] Fix Windows raw-command parsing by placing an explicit `--` boundary
+  before every `%ComSpec% /d /c ...` child command and stripping that marker
+  inside `start_with_policy.py` before launch.
+- [x] Fix the Windows trailing-backslash quoting failure in `run_demo.bat`:
+  pass the workbench directory as `%ROOT%.` so quoted `--cwd` values cannot
+  escape their closing quote and swallow the raw child command.
+- [x] Make managed launches concurrency-safe: serialize API launch admission,
+  deduplicate per-service requests while a listener is still starting, and use
+  unique atomic ledger temp files so API reconciliation and `run_workbench`
+  cannot collide or start duplicate daemons.
+- [x] Preserve required batch-local environment across API-owned launches with
+  strict per-service allowlists (OmniRoute ports, Vite host/port/API target,
+  FreeRouter port isolation, and Mailbox Relay `PYTHONPATH`).
+- [x] Replace blind daemon health sleeps with ownership-aware waits that fail
+  immediately when the API-owned process exits before opening its health port.
+- [x] Add the `generate_count_to_ten` project workspace as a minimal
+  English-to-workflow acceptance fixture. It inherits Shared, contains an
+  authoritative English prompt and documentation, and exposes an intentionally
+  empty workflow target wired to `workflow.populate_from_english` for preflight
+  generation.
+- [x] Stack a real-data `WORKFLOW ACTIONS` accordion above Preflight Spline and
+  LEFT/RIGHT on the active Workflow page. It enumerates effective authoring
+  Operations, prioritizes Generate from English, and exposes memory planning,
+  preflight, and run controls without mixing them into Add Step.
+# Workflow description authoring (2026-08-16)
+
+- `workflow.populate_from_english` is the semantic authoring boundary; description editing is an implied phase rather than a separate Operation.
+- ENGLISH → WORKFLOW defaults to the top of the draggable spline accordion stack.
+- Its UI is a nested accordion stack: English editor, model/format, memory/value plan, draft generation, validation, and apply.
+- Memory/value inference now exposes a nested evidence accordion per value with origin, source binding, datatype, and current/default value; it explicitly distinguishes runtime inference from future English-description proposals.
+- English-to-workflow prompts require complete operation prototypes and exactly one complete workflow resource in the selected format.
+- Generate Draft embeds the canonical rich `OperationPlayground`, prepopulated with the English specification, complete effective operation catalog, workflow schema, memory/value plan, existing workflow, validation errors, and selected output format.
+- Removed the redundant Model/Output accordion because those choices belong to the rich runner; system-injected `workspace_root` is no longer misclassified as an inferred workflow memory/value.
+- Flattened authoring phases into the main draggable spline stack above the rich runner. Relocated Runner Design Reference out of the overlaid runtime grid into normal main-stack flow so mockups cannot float across runner inputs.
+- [x] Add the real `English Workflow` route as three native `ThreeStateAccordionStack` columns: an editable filesystem English specification, a model-resolved generation surface, and a generated-contract stack. No contract fields are shown as inferred before Analyze runs.
+- [x] Make Generation Contract analysis a filesystem-backed `workflow.analyze_generation_contract` LLM Operation. One response produces summary, memory candidates, acceptance checklist, output requirements, validation rules, and a candidate Workflow in a user-controlled order.
+- [x] Replace decorative generation progress with `GENERATION ORDER`, an append-only in-page audit list of the actual button-press order and the concrete outputs created by each press.
+- [x] Add contract-order trials with a recorded requested/returned order, selected model, heuristic coverage score, generated Workflow step count, and backend validation issue count. Live SNET asi1 verification with Workflow first produced 12 steps, 12 acceptance checks, 2 memory candidates, and 5 validation issues (80/100).
+- [x] Make Generation Order a true composer. Clicking an output title appends an occurrence; the first occurrence defaults to New and repeated occurrences default to Reuse old. Every occurrence independently supports New, Reuse old, Preserve, or Hide, repeated output names remain in the submitted order, and the remove control is positioned between the cyclic left/right controls.
+- [x] Make Analyze execute the exact composed `generation_steps` sequence in one LLM call and persist the requested steps, returned order, generated contract, candidate Workflow, validation result, model, and score to the workspace filesystem. The saved sequence is restored when the English Workflow page reloads.
+- [x] Composer validation on 2026-08-16: 5 focused English Workflow tests passed, the frontend production build passed, and live browser verification confirmed an empty initial order, first Summary occurrence = New, repeated Summary occurrence = Reuse old, visible `← × →` controls, and no console errors.
+- [x] Add `[group]` as a first-class highlighted Generation Order container. Creating or clicking a group selects it as the insertion target; output `+` buttons then add nested steps into that group, clicking it again returns insertion to the top level, and Analyze submits the nested steps as one simultaneous batch. Groups and their children retain per-occurrence modes, repeats, cyclic movement, removal, audit order, and persistence.
+- [x] Group-container validation on 2026-08-16: focused English Workflow tests (5) and the frontend production build passed; live browser checks confirmed Summary and Memory inserted as nested `1.1`/`1.2` entries while highlighted, Workflow returned to top-level `2` after unhighlighting, and no console errors were emitted.
+- [x] Make Generation Contract section arrows cyclic one-position rotations: left from the first position wraps to the end, and right from the last position wraps to the beginning.
+- [x] Prevent experimental contract candidates from enabling Apply. Only the authoritative Generate Draft path can enable filesystem Apply after backend validation passes.

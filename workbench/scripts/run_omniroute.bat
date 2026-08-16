@@ -35,7 +35,9 @@ echo  longer OmniRoute's initial CHANGEME value.
 echo ============================================================
 echo.
 
-call "%OMNIROUTE_CMD%" serve --port %OMNIROUTE_PORT% --no-open --no-tray --log
+set "WORKBENCH_CONTROL_API=%WORKBENCH_CONTROL_API%"
+if not defined WORKBENCH_CONTROL_API set "WORKBENCH_CONTROL_API=http://127.0.0.1:8000"
+"%~dp0..\..\.venv\Scripts\python.exe" "%~dp0submit_managed_command.py" --api "%WORKBENCH_CONTROL_API%" --service omniroute --cwd "%CD%" --env PORT --env DASHBOARD_PORT -- "%OMNIROUTE_CMD%" serve --port %OMNIROUTE_PORT% --no-open --no-tray --log
 
 echo.
 echo OmniRoute stopped. Rerun this script to restart it.

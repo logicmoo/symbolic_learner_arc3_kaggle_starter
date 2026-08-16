@@ -374,19 +374,25 @@ def _llm_complete(inputs: dict[str, Any], parameters: dict[str, Any]) -> dict[st
         or "https://api.openai.com/v1/chat/completions"
     )
     automatic_fallback = bool(parameters.get("automaticFallback"))
+    runtime_inputs = {
+        name: "[attached image data URL]"
+        if isinstance(value, str) and value.startswith("data:image/")
+        else value
+        for name, value in inputs.items()
+    }
     if automatic_fallback:
-        runtime_inputs = {
-            name: "[attached image data URL]"
-            if isinstance(value, str) and value.startswith("data:image/")
-            else value
-            for name, value in inputs.items()
-        }
         received = (
             "AUTHORITATIVE RUNTIME INPUTS — execute these values, not any example/default values above:\n"
             + json.dumps(runtime_inputs, ensure_ascii=False, sort_keys=True)
         )
     else:
-        received = str(inputs.get("prompt") or inputs.get(str(parameters.get("inputBinding") or "text")) or parameters.get("prompt") or "")
+        direct_input = inputs.get("prompt") or inputs.get(str(parameters.get("inputBinding") or "text")) or parameters.get("prompt")
+        received = str(direct_input or "")
+        if not received and runtime_inputs:
+            received = (
+                "AUTHORITATIVE RUNTIME INPUTS:\n"
+                + json.dumps(runtime_inputs, ensure_ascii=False, sort_keys=True)
+            )
     prefix = str(parameters.get("promptPrefix") or "")
     prompt = f"{prefix}\n\n{received}" if prefix and received else prefix or received
     image_inputs = [(str(name), value) for name, value in inputs.items() if isinstance(value, str) and value.startswith("data:image/")]
@@ -449,6 +455,10 @@ def _llm_complete(inputs: dict[str, Any], parameters: dict[str, Any]) -> dict[st
             if not isinstance(parsed, dict):
                 raise RuntimeError("LLM operation returned JSON that is not an object")
             debug["parsing"].update({"mode": "json_object", "parsed": parsed})
+            if parameters.get("wrapJsonOutput"):
+                output_binding = str(parameters.get("outputBinding") or "result")
+                debug["parsing"]["outputBinding"] = output_binding
+                return {output_binding: parsed}
             return parsed
         output_binding = str(parameters.get("outputBinding") or "text")
         result = {output_binding: text, "response": payload}

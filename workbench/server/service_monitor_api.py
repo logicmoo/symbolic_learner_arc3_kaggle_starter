@@ -8,6 +8,8 @@ import subprocess
 import urllib.request
 import json
 import psutil
+import time
+from threading import RLock, Thread, get_ident
 from dataclasses import dataclass
 from io import StringIO
 from pathlib import Path
@@ -28,6 +30,9 @@ STARTUP_POLICY_PATH = (
 )
 LEGACY_STARTUP_POLICY_PATH = ROOT / "config" / "workbench_startup.json"
 MANAGED_SERVICE_DIRECTORY = ROOT / "workbench" / "workspaces" / "shared_library_system" / "design" / "services"
+PROCESS_LEDGER = ROOT / "runtime" / "run_workbench_processes.json"
+_LAUNCH_LOCK = RLock()
+_PENDING_LAUNCHES: dict[str, tuple[int, float]] = {}
 
 
 @dataclass(frozen=True)
@@ -461,6 +466,84 @@ def _require_local(request: Request) -> None:
         raise HTTPException(status_code=403, detail="Workbench service controls are available only locally")
 
 
+def _validate_submitted_command(service_id: str, cwd: Path, command: list[str]) -> None:
+    text = " ".join(command).lower()
+    cwd_text = str(cwd.resolve()).lower()
+    allowed = {
+        "clawrouter": "@blockrun/clawrouter" in text,
+        "omniroute": "omniroute" in text,
+        "freerouter": "freerouter" in cwd_text and "server.js" in text,
+        "workbench-web": cwd.name.lower() == "frontend" and "npm" in text and "dev" in text,
+        "channel-relay": "mailbox_channel" in cwd_text and "mailbox_channels.server" in text,
+    }
+    if not allowed.get(service_id, False):
+        raise HTTPException(status_code=400, detail="Submitted command does not match the managed service contract")
+
+
+def _validated_environment(service_id: str, value: Any) -> dict[str, str]:
+    if value is None:
+        return {}
+    if not isinstance(value, dict) or not all(isinstance(key, str) and isinstance(item, str) for key, item in value.items()):
+        raise HTTPException(status_code=400, detail="environment must be a string map")
+    allowed = {
+        "clawrouter": {"CLAWROUTER_PORT"},
+        "omniroute": {"PORT", "DASHBOARD_PORT"},
+        "freerouter": {"CLAWROUTER_PORT"},
+        "workbench-web": {"WORKBENCH_WEB_HOST", "WORKBENCH_WEB_PORT", "WORKBENCH_API_TARGET"},
+        "channel-relay": {"PYTHONPATH"},
+    }.get(service_id, set())
+    unexpected = set(value) - allowed
+    if unexpected:
+        raise HTTPException(status_code=400, detail=f"Unsupported environment overrides: {', '.join(sorted(unexpected))}")
+    return dict(value)
+
+
+def _record_api_launch(service_id: str, process: subprocess.Popen, cwd: Path, command: list[str]) -> None:
+    try:
+        entries = json.loads(PROCESS_LEDGER.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        entries = []
+    if not isinstance(entries, list):
+        entries = []
+    entries = [entry for entry in entries if isinstance(entry, dict) and entry.get("service") != service_id]
+    entries.append({"service": service_id, "pid": process.pid, "startedAtEpoch": time.time(), "cwd": str(cwd.resolve()), "rawCommand": command, "terminationScope": "process-tree", "launchedBy": "workbench-api"})
+    PROCESS_LEDGER.parent.mkdir(parents=True, exist_ok=True)
+    temporary = PROCESS_LEDGER.with_name(
+        f".{PROCESS_LEDGER.name}.{os.getpid()}.{get_ident()}.tmp"
+    )
+    temporary.write_text(json.dumps(entries, indent=2) + "\n", encoding="utf-8")
+    temporary.replace(PROCESS_LEDGER)
+
+
+@router.post("/system/services/{service_id}/launch-command")
+def launch_submitted_command(service_id: str, request: Request, body: dict[str, Any] = Body(...)) -> dict[str, Any]:
+    _require_local(request)
+    command = body.get("command")
+    if not isinstance(command, list) or not command or not all(isinstance(value, str) and value for value in command):
+        raise HTTPException(status_code=400, detail="command must be a non-empty string array")
+    cwd = Path(str(body.get("cwd") or ""))
+    if not cwd.is_dir():
+        raise HTTPException(status_code=400, detail="cwd must be an existing directory")
+    _validate_submitted_command(service_id, cwd, command)
+    environment = _validated_environment(service_id, body.get("environment"))
+    definition = next((item for item in _definitions(request.url.port or 8000) if item.id == service_id), None)
+    with _LAUNCH_LOCK:
+        if definition and definition.port and _port_open(definition.port):
+            return {"status": "already-running", "serviceId": service_id, "pid": _listener_pids().get(definition.port), "terminationScope": "external-or-existing"}
+        pending = _PENDING_LAUNCHES.get(service_id)
+        if pending and psutil.pid_exists(pending[0]) and time.monotonic() - pending[1] < 120:
+            return {"status": "launch-pending", "serviceId": service_id, "pid": pending[0], "terminationScope": "process-tree"}
+        _PENDING_LAUNCHES.pop(service_id, None)
+        flags = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0) | getattr(subprocess, "CREATE_NEW_CONSOLE", 0)
+        executable_command = command
+        if Path(command[0]).suffix.lower() in {".bat", ".cmd"}:
+            executable_command = [os.environ.get("COMSPEC", "cmd.exe"), "/d", "/c", *command]
+        process = subprocess.Popen(executable_command, cwd=cwd, env={**os.environ, **environment}, stdin=subprocess.DEVNULL, creationflags=flags, close_fds=False)
+        _PENDING_LAUNCHES[service_id] = (process.pid, time.monotonic())
+        _record_api_launch(service_id, process, cwd, command)
+        return {"status": "started", "serviceId": service_id, "pid": process.pid, "rawCommand": command, "terminationScope": "process-tree"}
+
+
 def _start(definition: ServiceDefinition) -> None:
     if _port_open(definition.port):
         return
@@ -495,6 +578,39 @@ def _stop(definition: ServiceDefinition) -> None:
     )
     if completed.returncode != 0 and _port_open(definition.port):
         raise HTTPException(status_code=500, detail=_redact(completed.stderr.strip() or "Unable to stop service"))
+
+
+def reconcile_startup_services(api_port: int = 8000) -> list[dict[str, Any]]:
+    """Restore enabled daemons after an API restart without claiming outsiders."""
+    policy = _startup_policy()
+    results: list[dict[str, Any]] = []
+    for definition in _definitions(api_port):
+        if definition.id in {"workbench-api", "workbench-web"}:
+            continue
+        if not policy.get(definition.id, {}).get("start"):
+            results.append({"serviceId": definition.id, "status": "disabled"})
+            continue
+        if _port_open(definition.port):
+            results.append({"serviceId": definition.id, "status": "already-running", "owned": False})
+            continue
+        try:
+            _start(definition)
+            results.append({"serviceId": definition.id, "status": "launch-requested"})
+        except Exception as error:
+            results.append({"serviceId": definition.id, "status": "error", "error": _redact(str(error))})
+    return results
+
+
+def schedule_startup_reconciliation(api_port: int = 8000, delay_seconds: float = 2.0) -> None:
+    def run() -> None:
+        time.sleep(delay_seconds)
+        results = reconcile_startup_services(api_port)
+        get_filesystem_provider().make_directory(LOG_ROOT)
+        get_filesystem_provider().write_text(
+            LOG_ROOT / "startup-reconciliation.json",
+            json.dumps({"reconciledAtEpoch": time.time(), "results": results}, indent=2) + "\n",
+        )
+    Thread(target=run, name="workbench-startup-reconciler", daemon=True).start()
 
 
 def _kill_pid(pid: int) -> None:

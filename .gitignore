@@ -264,10 +264,13 @@ reference/
 .pytest-local/
 .pytest-codex/
 .pytest-tmp-echo/
+.pytest-repository-summary-*/
+.pytest_*_tmp/
 .codex/pytest-*/
 .codex/commit-validation-*/
 .codex/post-commit-validation/
 .codex/*-validation/
+.codex/team-batch-*/
 workbench/workspaces/.workspace-trash/
 config/workbench_startup.json
 workbench-ui-current.png

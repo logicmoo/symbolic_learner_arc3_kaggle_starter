@@ -10,7 +10,7 @@ from uuid import uuid4
 from fastapi import APIRouter, BackgroundTasks, Body, HTTPException, Query
 
 from policy_library import POLICY_KINDS, effective_model_registry, load_workspace_policy_records
-from backend_library import load_workspace_backend_records
+from backend_library import backend_matches, load_workspace_backend_records
 from model_policy_ping import run_ping_job, write_policy_resource
 from model_benchmark import run_benchmark
 from model_library import resolve_model_records
@@ -150,7 +150,7 @@ def discover_models(workspace_id: str, backend_id: str) -> dict[str, Any]:
     try: workspace = _resolve_workspace(workspace_id)
     except KeyError as error: raise HTTPException(status_code=404, detail=str(error)) from error
     backend = next((record.get("document") for record in load_workspace_backend_records(Path(workspace["root"]))
-                    if (record.get("document") or {}).get("id") == backend_id), None)
+                    if backend_matches(record.get("document") or {}, backend_id)), None)
     if not backend: raise HTTPException(status_code=404, detail=f"backend not found: {backend_id}")
     try: models = discover_backend_models(backend, workspace_root=Path(workspace["root"]))
     except Exception as error: raise HTTPException(status_code=502, detail=str(error)) from error
@@ -163,7 +163,7 @@ def import_models(workspace_id: str, backend_id: str, request: dict[str, Any] = 
     try: workspace = _resolve_workspace(workspace_id); shared_workspace = _resolve_workspace("shared_library_system")
     except KeyError as error: raise HTTPException(status_code=404, detail=str(error)) from error
     backend = next((record.get("document") for record in load_workspace_backend_records(Path(shared_workspace["root"]))
-                    if (record.get("document") or {}).get("id") == backend_id), None)
+                    if backend_matches(record.get("document") or {}, backend_id)), None)
     if not backend: raise HTTPException(status_code=404, detail=f"shared backend not found: {backend_id}")
     models = request.get("models")
     if not isinstance(models, list): raise HTTPException(status_code=400, detail="models must be a list")
@@ -178,7 +178,7 @@ def remove_missing(workspace_id: str, backend_id: str, request: dict[str, Any] =
     try: workspace = _resolve_workspace(workspace_id); shared_workspace = _resolve_workspace("shared_library_system")
     except KeyError as error: raise HTTPException(status_code=404, detail=str(error)) from error
     backend = next((record.get("document") for record in load_workspace_backend_records(Path(shared_workspace["root"]))
-                    if (record.get("document") or {}).get("id") == backend_id), None)
+                    if backend_matches(record.get("document") or {}, backend_id)), None)
     if not backend: raise HTTPException(status_code=404, detail=f"shared backend not found: {backend_id}")
     resource_ids = request.get("resourceIds")
     if not isinstance(resource_ids, list): raise HTTPException(status_code=400, detail="resourceIds must be a list")

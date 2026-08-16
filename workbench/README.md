@@ -2,6 +2,8 @@
 
 # MeTTaSymbolicLearnerWorkbench local web workbench
 
+[Executive vision](docs/design/EXECUTIVE_VISION.md)
+
 This directory contains the complete locally runnable workbench: a React/Vite
 web interface and a FastAPI event backend with SQLite persistence.
 

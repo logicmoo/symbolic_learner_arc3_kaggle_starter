@@ -14,7 +14,7 @@ from fastapi import APIRouter, Body, HTTPException, Query
 from fastapi.responses import FileResponse
 
 from artifact_category_library import apply_artifact_categories, load_workspace_artifact_categories
-from backend_library import MODEL_CATALOG_DIRECTORY, load_backend_library_records, load_workspace_backend_records
+from backend_library import MODEL_CATALOG_DIRECTORY, backend_matches, load_backend_library_records, load_workspace_backend_records
 from goal_plan_library import load_workspace_symbolic_records, symbolic_hierarchy
 from datatype_library import (
     DATATYPE_DIRECTORY,
@@ -627,7 +627,7 @@ def bootstrap_workspace_credential(workspace_id: str, environment_name: str, bod
             (
                 record.get("document")
                 for record in records
-                if (record.get("document") or {}).get("id") == backend_id
+                if backend_matches(record.get("document") or {}, backend_id)
             ),
             None,
         )

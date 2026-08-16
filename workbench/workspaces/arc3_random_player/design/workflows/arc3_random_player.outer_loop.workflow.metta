@@ -240,6 +240,7 @@
         capture_after
       ))
       (while (
+        (operation control.while)
         (condition $assessment.frame_changed)
         (operator equals)
         (conditionPort false)
@@ -348,11 +349,13 @@
       ))
       (while ([]
         (
+          (operation control.while)
           (condition $unplayed_games)
           (operator not_empty)
           (maxIterations 100)
         )
         (
+          (operation control.while)
           (condition $elapsed_game_seconds)
           (operator less_than)
           (conditionPort $seconds_per_game)

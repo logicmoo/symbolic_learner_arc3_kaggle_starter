@@ -1,6 +1,12 @@
 (
   (kind backend)
-  (id asione)
+  (id https.api.asi1.ai.v1)
+  (aliases ([]
+    asione
+    asi-one
+    asi1
+    https://api.asi1.ai/v1
+  ))
   (label ASI:One)
   (provider asione)
   (official true)

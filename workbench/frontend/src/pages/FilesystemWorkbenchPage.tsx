@@ -8,6 +8,7 @@ import {
   type CSSProperties,
   type PointerEvent as ReactPointerEvent,
 } from "react";
+import { createPortal } from "react-dom";
 import { PddlPlanImportPanel } from "../components/PddlPlanImportPanel";
 import {
   HumanInputForm,
@@ -61,6 +62,11 @@ const OperationPlayground = lazy(() =>
     default: module.OperationPlayground,
   })),
 );
+const WorkflowRunnerTodoReference = lazy(() =>
+  import("../components/WorkflowRunnerTodoReference").then((module) => ({
+    default: module.WorkflowRunnerTodoReference,
+  })),
+);
 const ModelPolicyPage = lazy(() =>
   import("../components/ModelPolicyPage").then((module) => ({
     default: module.ModelPolicyPage,
@@ -89,6 +95,11 @@ const SourceCodeEditor = lazy(() =>
 const WorkspaceOverview = lazy(() =>
   import("../components/WorkspaceOverview").then((module) => ({
     default: module.WorkspaceOverview,
+  })),
+);
+const EnglishWorkflowPage = lazy(() =>
+  import("../components/EnglishWorkflowPage").then((module) => ({
+    default: module.EnglishWorkflowPage,
   })),
 );
 const KnowledgeDataExplorer = lazy(() =>
@@ -134,8 +145,8 @@ type Step = {
   inputs?: Record<string, unknown>;
   outputs?: Record<string, string>;
   parameters?: Record<string, unknown>;
-  foreach?: {items:unknown;itemPort?:string;maxItems?:number};
-  while?: {condition:unknown;operator?:"truthy"|"not_empty"|"equals"|"less_than";conditionPort?:string;maxIterations:number;targetStepId?:string} | {condition:unknown;operator?:"truthy"|"not_empty"|"equals"|"less_than";conditionPort?:string;maxIterations:number;targetStepId?:string}[];
+  foreach?: {operation?:string;items:unknown;itemPort?:string;maxItems?:number};
+  while?: {operation?:string;condition:unknown;operator?:"truthy"|"not_empty"|"equals"|"less_than";conditionPort?:string;maxIterations:number;targetStepId?:string} | {operation?:string;condition:unknown;operator?:"truthy"|"not_empty"|"equals"|"less_than";conditionPort?:string;maxIterations:number;targetStepId?:string}[];
   probe?: { enabled?: boolean; required?: boolean; blocking?: boolean };
   form?: Record<
     string,
@@ -169,6 +180,14 @@ type Workflow = {
   outputs?: Record<string, string>;
   steps: Step[];
   planProvenance?: PlanProvenance;
+  generation?: {
+    operation?: string;
+    englishSpecificationPrompt?: string;
+    englishDescriptionPath?: string;
+    preferredFormat?: string;
+    operationCategories?: string[];
+    preflightRequired?: boolean;
+  };
 };
 type PreflightStateValue = {
   kind: "state_value";
@@ -178,7 +197,8 @@ type PreflightStateValue = {
   datatype: string;
   source:
     | { kind: "startup_input"; input: string }
-    | { kind: "step_output"; stepId: string; output: string; binding?: string };
+    | { kind: "step_output"; stepId: string; output: string; binding?: string }
+    | { kind: "description_inference"; requirement: string };
   preferredRenderer: "metta" | "json";
   treatAsList: boolean;
   allowRedefinition: boolean;
@@ -200,6 +220,7 @@ type OperationResource = {
   id: string;
   label?: string;
   description?: string;
+  categories?: string[];
   implementation?: string;
   parents?: string[];
   children?: string[];
@@ -235,6 +256,7 @@ type OperationLibrary = {
   operations: RecordFile<OperationResource>[];
   operationImplementations: RecordFile<OperationResource>[];
 };
+type WorkflowRunnerModel = { id: string; label?: string; enabled?: boolean };
 type WorkspaceFile = {
   path: string;
   name: string;
@@ -246,6 +268,7 @@ type WorkspaceFile = {
 type Snapshot = {
   workspace: Workspace;
   workflows: RecordFile<Workflow>[];
+  models?: RecordFile<{ id: string; label?: string; enabled?: boolean }>[];
   goals?: RecordFile<Record<string, unknown>>[];
   plans?: RecordFile<Record<string, unknown>>[];
   contexts?: RecordFile<Record<string, unknown>>[];
@@ -294,6 +317,7 @@ type Capability = { status: string; detail: string };
 import { ResourceSourceEditor } from "../components/ResourceSourceEditor";
 type View =
   | "overview"
+  | "englishWorkflow"
   | "canvas"
   | "editor"
   | "data"
@@ -325,6 +349,7 @@ type View =
 type BreadcrumbEntry = { view: View; label: string; url: string };
 const WORKBENCH_VIEWS: Set<View> = new Set([
   "overview",
+  "englishWorkflow",
   "canvas",
   "editor",
   "data",
@@ -360,10 +385,11 @@ const viewFromLocation = (): View | null => {
   if (!rawValue) return null;
   const value = rawValue.trim().toLowerCase();
   if (value === "workflows" || value === "workflow") return "canvas";
+  if (value === "english-workflow" || value === "englishworkflow") return "englishWorkflow";
   if (value === "workflowv2" || value === "workflows-v2" || value === "workflow-v2") return "canvas";
   if (value === "editor") return "canvas";
   if (value === "backends") return "llms";
-  return WORKBENCH_VIEWS.has(value as View) ? (value as View) : null;
+  return [...WORKBENCH_VIEWS].find((candidate) => candidate.toLowerCase() === value) || null;
 };
 const workspaceFromLocation = () =>
   new URLSearchParams(window.location.search).get("workspace")?.trim() || null;
@@ -430,6 +456,7 @@ export const NAVIGATION_V2: Array<{
       { label: "Goals", view: "goals", glyph: "◎" },
       { label: "Planning", view: "plans", glyph: "◇" },
       { label: "Workflows (Legacy)", view: "canvas", glyph: "⌘" },
+      { label: "English Workflow", view: "englishWorkflow", glyph: "✧" },
     ],
   },
   {
@@ -493,12 +520,12 @@ const inferCaptureGroupPlan=(steps:Step[]):CaptureGroupPlan[]=>{const writes=new
 function WorkflowPreflightSpline({steps}:{steps:Step[]}){
   const[mode,setMode]=useState<AccordionDisplayMode>("scroll");
   const groups=inferCaptureGroupPlan(steps);
-  type ExplicitLoop={stepId:string;targetStepId:string;kind:"FOR"|"WHILE";label:string;limit:number;nesting:number};
+  type ExplicitLoop={stepId:string;targetStepId:string;operation:string;kind:"FOR"|"WHILE";label:string;limit:number;nesting:number};
   const explicitLoops:ExplicitLoop[]=steps.flatMap<ExplicitLoop>(step=>{
     const loops:ExplicitLoop[]=[];
-    if(step.foreach)loops.push({stepId:step.id,targetStepId:step.id,kind:"FOR",label:String(step.foreach.items),limit:step.foreach.maxItems??1000,nesting:0});
+    if(step.foreach)loops.push({stepId:step.id,targetStepId:step.id,operation:step.foreach.operation||"control.for_each",kind:"FOR",label:String(step.foreach.items),limit:step.foreach.maxItems??1000,nesting:0});
     const whileLoops=step.while?(Array.isArray(step.while)?step.while:[step.while]):[];
-    whileLoops.forEach((loop,nesting)=>loops.push({stepId:step.id,targetStepId:loop.targetStepId||step.id,kind:"WHILE",label:`${String(loop.condition)}${loop.operator?` ${loop.operator}`:""}`,limit:loop.maxIterations,nesting}));
+    whileLoops.forEach((loop,nesting)=>loops.push({stepId:step.id,targetStepId:loop.targetStepId||step.id,operation:loop.operation||"control.while",kind:"WHILE",label:`${String(loop.condition)}${loop.operator?` ${loop.operator}`:""}`,limit:loop.maxIterations,nesting}));
     return loops;
   });
   const dependencies=new Map(steps.map((step,index)=>[step.id,step.dependsOn?.length?step.dependsOn:index?[steps[index-1].id]:[]]));
@@ -510,7 +537,7 @@ function WorkflowPreflightSpline({steps}:{steps:Step[]}){
   const width=Math.max(620,(maxDepth+1)*175+100),height=Math.max(165,maxRows*70+75),positions=new Map<string,{x:number;y:number}>();
   layers.forEach((layer,depth)=>layer.forEach((step,row)=>positions.set(step.id,{x:70+depth*175,y:48+row*70})));
   const edges=steps.flatMap(step=>(dependencies.get(step.id)||[]).map(parentId=>({parentId,childId:step.id})));
-  return <ThreeStateAccordionMember stackId="spline-stack" label="PREFLIGHT SPLINE" value={`${groups.length} inferred groups · ${explicitLoops.length} explicit loops`} detail="Dependency branches, repeated-output capture groups, and bounded loop operations before launch." mode={mode} onChange={setMode} baseClass="workflow-preflight-spline" scrollSize="240px" footer={<span>{steps.length} workflow steps · {groups.length} inferred groups · {explicitLoops.length} explicit loops</span>}>
+  return <ThreeStateAccordionMember stackId="center-stack" label="PREFLIGHT SPLINE" value={`${groups.length} inferred groups · ${explicitLoops.length} explicit loops`} detail="Dependency branches, repeated-output capture groups, and bounded loop operations before launch." mode={mode} onChange={setMode} baseClass="workflow-preflight-spline" scrollSize="240px" footer={<span>{steps.length} workflow steps · {groups.length} inferred groups · {explicitLoops.length} explicit loops</span>}>
     <div className="workflow-preflight-spline-scroll"><svg viewBox={`0 0 ${width} ${height}`} style={{minWidth:width,height}}><defs><marker id="preflight-spline-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z"/></marker></defs>{edges.map(edge=>{const from=positions.get(edge.parentId),to=positions.get(edge.childId);if(!from||!to)return null;const middle=(from.x+to.x)/2;return <path key={`${edge.parentId}:${edge.childId}`} className="preflight-spline-edge" d={`M${from.x+38},${from.y}C${middle},${from.y} ${middle},${to.y} ${to.x-38},${to.y}`} markerEnd="url(#preflight-spline-arrow)"/>})}{groups.map(group=>{const start=positions.get(group.memberStepIds[0]),end=positions.get(group.memberStepIds.at(-1)||"");if(!start||!end||start.x===end.x)return null;const arch=12+Math.min(22,group.iteration*5);return <g key={group.id}><path className="preflight-spline-loop" d={`M${end.x},${end.y-26}C${end.x},${arch} ${start.x},${arch} ${start.x},${start.y-26}`} markerEnd="url(#preflight-spline-arrow)"/><text className="preflight-spline-loop-label" x={(start.x+end.x)/2} y={arch-4} textAnchor="middle">{group.markerName} · {group.iteration}</text></g>})}{explicitLoops.map(loop=>{const point=positions.get(loop.stepId),target=positions.get(loop.targetStepId);if(!point||!target)return null;const lift=58+loop.nesting*17,middle=(point.x+target.x)/2;return <g key={`${loop.kind}:${loop.stepId}:${loop.targetStepId}:${loop.nesting}`}><path className={`preflight-spline-explicit-loop ${loop.kind.toLowerCase()}`} d={loop.stepId===loop.targetStepId?`M${point.x+29},${point.y-22}C${point.x+62},${point.y-lift} ${point.x-62},${point.y-lift} ${point.x-29},${point.y-22}`:`M${point.x},${point.y-25}C${middle},${point.y-lift} ${middle},${target.y-lift} ${target.x},${target.y-25}`} markerEnd="url(#preflight-spline-arrow)"/><text className="preflight-spline-explicit-label" x={middle} y={Math.min(point.y,target.y)-lift+15} textAnchor="middle">{loop.kind} · ≤ {loop.limit}</text><title>{`${loop.kind} ${loop.label} · return to ${loop.targetStepId} · bounded to ${loop.limit} iterations`}</title></g>})}{steps.map((step,index)=>{const point=positions.get(step.id)!;const memberships=groups.filter(group=>group.memberStepIds.includes(step.id)),nodeLoops=explicitLoops.filter(loop=>loop.stepId===step.id),explicit=nodeLoops[0];return <g key={step.id} className={`preflight-spline-node ${memberships.length?"grouped":""} ${explicit?"explicit-loop":""}`} transform={`translate(${point.x-38},${point.y-22})`}><rect width="76" height="44" rx="5"/><text x="38" y="17" textAnchor="middle">{explicit?nodeLoops.map(loop=>loop.kind).join("/"):index+1}</text><text x="38" y="32" textAnchor="middle">{step.label||step.id}</text><title>{`${dependencies.get(step.id)?.length?`Depends on: ${dependencies.get(step.id)!.join(", ")}. `:"Root step. "}${nodeLoops.length?`${nodeLoops.map(loop=>`${loop.kind} ${loop.label}, return to ${loop.targetStepId}, bounded to ${loop.limit}`).join("; ")}. `:""}${memberships.length?`Value groups: ${memberships.map(group=>group.id).join(", ")}`:"No inferred value group"}`}</title></g>})}</svg></div>
   </ThreeStateAccordionMember>;
 }
@@ -608,8 +635,14 @@ export function FilesystemWorkbenchPage() {
   const [preflightStateOverrides, setPreflightStateOverrides] = useState<
     Record<string, Partial<PreflightStateValue>>
   >({});
+  const [generatedMemoryValues, setGeneratedMemoryValues] = useState<PreflightStateValue[]>([]);
+  useEffect(() => setGeneratedMemoryValues([]), [workspace?.id]);
   const [workflowStepDisplayModes, setWorkflowStepDisplayModes] = useState<Record<string, AccordionDisplayMode>>({});
   const [resourceBrowserDisplayMode, setResourceBrowserDisplayMode] = useState<AccordionDisplayMode>("scroll");
+  const [workflowAuthoringSubDisplayModes, setWorkflowAuthoringSubDisplayModes] = useState<Record<string, AccordionDisplayMode>>({});
+  const [workflowReferenceDisplayMode, setWorkflowReferenceDisplayMode] = useState<AccordionDisplayMode>("strip");
+  const [workflowEnglishDescription, setWorkflowEnglishDescription] = useState("");
+  const [workflowEnglishDescriptionSaved, setWorkflowEnglishDescriptionSaved] = useState("");
   const [selectedStageDisplayMode, setSelectedStageDisplayMode] = useState<AccordionDisplayMode>("scroll");
   const [workflowColumnsStackDisplayMode, setWorkflowColumnsStackDisplayMode] = useState<AccordionDisplayMode>("scroll");
   const [workflowLeftColumnDisplayMode, setWorkflowLeftColumnDisplayMode] = useState<AccordionDisplayMode>("scroll");
@@ -627,6 +660,7 @@ export function FilesystemWorkbenchPage() {
       ? 33.333
       : 66.667,
   );
+  const [workflowColumnsHost, setWorkflowColumnsHost] = useState<HTMLDivElement | null>(null);
   const [takeoverShellPanel, setTakeoverShellPanel] = useState<
     "resource" | "docs" | null
   >(null);
@@ -698,6 +732,7 @@ export function FilesystemWorkbenchPage() {
     operations: [],
     operationImplementations: [],
   });
+  const [workflowRunnerModels, setWorkflowRunnerModels] = useState<WorkflowRunnerModel[]>([]);
   const [playgroundContext, setPlaygroundContext] = useState<
     Record<string, unknown>
   >({});
@@ -778,7 +813,7 @@ export function FilesystemWorkbenchPage() {
           : typeof value === "object"
             ? "object"
             : typeof value);
-    const startup = Object.entries(parsedRunInputs).map(([input, value]) => ({
+    const startup = Object.entries(parsedRunInputs).filter(([input])=>input!=="workspace_root").map(([input, value]) => ({
       kind: "state_value" as const,
       id: `startup_${slug(input)}`,
       label: input.replace(/_/g, " "),
@@ -818,11 +853,11 @@ export function FilesystemWorkbenchPage() {
   }, [parsedRunInputs, workflow]);
   const effectivePreflightStateValues = useMemo(
     () =>
-      preflightStateValues.map((value) => ({
+      (generatedMemoryValues.length ? generatedMemoryValues : preflightStateValues).map((value) => ({
         ...value,
         ...preflightStateOverrides[value.id],
       })),
-    [preflightStateOverrides, preflightStateValues],
+    [generatedMemoryValues, preflightStateOverrides, preflightStateValues],
   );
   const updatePreflightStateValue = (
     id: string,
@@ -870,6 +905,24 @@ export function FilesystemWorkbenchPage() {
     setCompletedPlaygrounds({});
   }, [workflowPath]);
   useEffect(() => {
+    const path = workflow?.generation?.englishDescriptionPath;
+    if (!workspace || !path) {
+      setWorkflowEnglishDescription("");
+      setWorkflowEnglishDescriptionSaved("");
+      return;
+    }
+    let cancelled = false;
+    void request(`/api/workspaces/${encodeURIComponent(workspace.id)}/file?path=${encodeURIComponent(path)}`)
+      .then((payload) => {
+        if (cancelled) return;
+        const content = String((payload.file as Record<string, unknown>).content || "");
+        setWorkflowEnglishDescription(content);
+        setWorkflowEnglishDescriptionSaved(content);
+      })
+      .catch((reason) => { if (!cancelled) setError(String(reason)); });
+    return () => { cancelled = true; };
+  }, [workspace?.id, workflow?.id, workflow?.generation?.englishDescriptionPath]);
+  useEffect(() => {
     if (!run || ["completed", "failed", "cancelled"].includes(run.status))
       return;
     const timer = window.setInterval(
@@ -903,13 +956,14 @@ export function FilesystemWorkbenchPage() {
   };
   const loadWorkspace = (item: Workspace) =>
     perform(async () => {
-      const [snapshotPayload, implementationPayload, operationPayload] =
+      const [snapshotPayload, implementationPayload, operationPayload, modelPayload] =
         await Promise.all([
           request(
             `/api/workspaces/${encodeURIComponent(item.id)}/snapshot?scope=shell`,
           ),
           engine("/implementations"),
           request(`/api/workspaces/${encodeURIComponent(item.id)}/operations`),
+          request(`/api/workspaces/${encodeURIComponent(item.id)}/models`),
         ]);
       const next = snapshotPayload as unknown as Snapshot;
       setWorkspace(next.workspace);
@@ -930,6 +984,13 @@ export function FilesystemWorkbenchPage() {
         operationImplementations: (operationPayload.operationImplementations ||
           []) as RecordFile<OperationResource>[],
       });
+      setWorkflowRunnerModels(
+        (modelPayload.models || []).flatMap((record: RecordFile<{ id: string; label?: string; enabled?: boolean }>) =>
+          record.document && record.resolved?.enabled !== false && record.document.enabled !== false
+            ? [{ id: record.document.id, label: record.document.label, enabled: true }]
+            : [],
+        ),
+      );
       const first = next.workflows.find((row) => row.document);
       const restoredView = viewFromLocation();
       if (first?.document) {
@@ -1051,6 +1112,16 @@ export function FilesystemWorkbenchPage() {
       );
       setWorkflowPath(path);
       await refreshSnapshot();
+    });
+  const saveWorkflowEnglishDescription = () =>
+    perform(async () => {
+      const path = workflow?.generation?.englishDescriptionPath;
+      if (!workspace || !path) throw new Error("This workflow does not declare an editable English description path");
+      await request(`/api/workspaces/${encodeURIComponent(workspace.id)}/file`, {
+        method: "PUT",
+        body: JSON.stringify({ path, content: workflowEnglishDescription }),
+      });
+      setWorkflowEnglishDescriptionSaved(workflowEnglishDescription);
     });
   const updatePlanProvenance = (changes: Partial<PlanProvenance>) => {
     if (!workflow) return;
@@ -1641,6 +1712,39 @@ export function FilesystemWorkbenchPage() {
       record.document ? [[record.document.id, record] as const] : [],
     ),
   );
+  const workflowAuthoringOperationIds = [
+    workflow?.generation?.operation || "workflow.populate_from_english",
+    "workflow.plan_memory_values",
+    "workflow.preflight",
+    "workflow.validate",
+    "workflow.repair",
+    "workflow.resolve_implementations",
+  ];
+  const workflowAuthoringOperations = [...new Set(workflowAuthoringOperationIds)]
+    .map((id) => operationById.get(id)?.document)
+    .filter((operation): operation is OperationResource => Boolean(operation));
+  const englishWorkflowOperation = workflowAuthoringOperations.find(
+    (operation) => operation.id === (workflow?.generation?.operation || "workflow.populate_from_english"),
+  );
+  const acceptEnglishWorkflowOutputs = (outputs: Record<string, unknown>) => {
+    if (!workflow) return;
+    const returnedPlan = outputs.new_memory_values_plan && typeof outputs.new_memory_values_plan === "object" && !Array.isArray(outputs.new_memory_values_plan)
+      ? outputs.new_memory_values_plan as { values?: unknown[] }
+      : null;
+    if (!Array.isArray(returnedPlan?.values)) {
+      setError("Authoring output is missing the combined new_memory_values_plan.values array.");
+      return;
+    }
+    setGeneratedMemoryValues(returnedPlan.values.filter((value): value is PreflightStateValue => Boolean(value && typeof value === "object" && !Array.isArray(value) && (value as { id?: unknown }).id)));
+    const generated = outputs.workflow && typeof outputs.workflow === "object" && !Array.isArray(outputs.workflow)
+      ? outputs.workflow as Record<string, unknown>
+      : outputs;
+    if (!generated || typeof generated !== "object" || Array.isArray(generated) || !Array.isArray(generated.steps)) return;
+    const draft = { ...workflow, ...generated, generation: workflow.generation };
+    setWorkflowSource(JSON.stringify(draft, null, 2));
+    setSelectedStepId(draft.steps[0] && typeof draft.steps[0] === "object" ? String((draft.steps[0] as Record<string, unknown>).id || "") : null);
+    setValidation(null);
+  };
   const implementationsByOperation = new Map<
     string,
     RecordFile<OperationResource>[]
@@ -1901,7 +2005,7 @@ export function FilesystemWorkbenchPage() {
       <ThreeStateAccordionMember
         id={`workflow-playground-${step.id}`}
         key={step.id}
-        stackId="left-column"
+        stackId="left-stack"
         label={`WORKFLOW STEP ${index + 1}`}
         value={step.label || step.id}
         detail={`${runtime?.status || (completedPlaygrounds[step.id] ? "completed" : "not run")} · ${operation.label || operation.id}`}
@@ -2354,15 +2458,65 @@ export function FilesystemWorkbenchPage() {
               Checks
             </button>
           </nav>
+          {workflowCombinedView&&<ThreeStateAccordionStack id="center-stack" controlsLabel="CENTER STACK">
+          {workflow&&englishWorkflowOperation&&(()=>{
+            const operation=englishWorkflowOperation;
+            const subMode=(name:string)=>workflowAuthoringSubDisplayModes[`${operation.id}:${name}`]||"scroll";
+            const setSubMode=(name:string,next:AccordionDisplayMode)=>setWorkflowAuthoringSubDisplayModes(current=>({...current,[`${operation.id}:${name}`]:next}));
+            return <>
+                  <ThreeStateAccordionMember stackId="center-stack" initialIndex={0} label="ENGLISH SPECIFICATION EDITOR" value={workflow.generation?.englishDescriptionPath||"No description path"} mode={subMode("description")} onChange={(next)=>setSubMode("description",next)} baseClass="workflow-authoring-suboperation" scrollSize="260px">
+                    {workflow.generation?.englishDescriptionPath&&<div className="workflow-english-description-editor"><div><span>ENGLISH WORKFLOW DESCRIPTION</span><code>{workflow.generation.englishDescriptionPath}</code><small>{workflowEnglishDescription!==workflowEnglishDescriptionSaved?"Unsaved changes":"Saved filesystem resource"}</small></div><textarea aria-label="Editable English workflow description" value={workflowEnglishDescription} onChange={(event)=>setWorkflowEnglishDescription(event.target.value)} spellCheck/><button type="button" disabled={busy||workflowEnglishDescription===workflowEnglishDescriptionSaved} onClick={saveWorkflowEnglishDescription}>Save English Description</button></div>}
+                  </ThreeStateAccordionMember>
+                  <ThreeStateAccordionMember stackId="center-stack" initialIndex={1} label="MEMORY / VALUE PLAN" value={`${effectivePreflightStateValues.length} inferred runtime ${effectivePreflightStateValues.length===1?"value":"values"}`} mode={subMode("memory")} onChange={(next)=>setSubMode("memory",next)} baseClass="workflow-authoring-suboperation" scrollSize="300px">
+                    <div className="workflow-inferred-values-intro"><b>{effectivePreflightStateValues.length} inferred runtime {effectivePreflightStateValues.length===1?"value":"values"}</b><span>These come from current startup inputs and generated step outputs—not from the English description.</span>{!workflow.steps.length&&<small>No draft steps exist yet, so description-derived value proposals have not been generated.</small>}</div>
+                    <div className="workflow-inferred-values-stack">
+                      {effectivePreflightStateValues.map((stateValue)=>{
+                        const declared=stateValue.source.kind==="startup_input"&&Boolean(workflow.inputs?.[stateValue.source.input]);
+                        const origin=stateValue.source.kind==="startup_input"?(declared?"declared workflow input":"inferred startup input"):stateValue.source.kind==="step_output"?"inferred step output":"inferred from English specification";
+                        const source=stateValue.source.kind==="startup_input"?stateValue.source.input:stateValue.source.kind==="step_output"?`${stateValue.source.stepId}.${stateValue.source.output}${stateValue.source.binding?` → ${stateValue.source.binding}`:""}`:stateValue.source.requirement;
+                        const displayedValue=stateValue.value!==undefined?JSON.stringify(stateValue.value):stateValue.defaultValue!==undefined?JSON.stringify(stateValue.defaultValue):"not available before execution";
+                        return <article key={stateValue.id} className="workflow-inferred-value"><dl><dt>Name</dt><dd><code>{stateValue.label||stateValue.id}</code></dd><dt>Origin</dt><dd>{origin}</dd><dt>Source</dt><dd><code>{source}</code></dd><dt>Datatype</dt><dd>{stateValue.datatype}</dd><dt>Current/default value</dt><dd><code>{displayedValue}</code></dd></dl></article>;
+                      })}
+                    </div>
+                  </ThreeStateAccordionMember>
+                  <ThreeStateAccordionMember stackId="center-stack" initialIndex={2} label="GENERATE DRAFT" value={operation.id} detail="Rich operation runner" mode={subMode("runner")} onChange={(next)=>setSubMode("runner",next)} baseClass="workflow-authoring-operation" scrollSize="720px">
+                    <OperationPlayground
+                      workspaceId={workspace.id}
+                      operation={operation}
+                      variants={(implementationsByOperation.get(operation.id)||[]).flatMap((record)=>record.document?.implementation?[record.document as OperationResource&{implementation:string}]:[])}
+                      models={workflowRunnerModels}
+                      inputValues={{
+                        english_specification:workflowEnglishDescription,
+                        effective_operation_catalog:operationLibrary.operations.flatMap((record)=>{
+                          const document=record.document;
+                          if(!document)return[];
+                          const requiredCategories=workflow.generation?.operationCategories||[];
+                          if(!requiredCategories.length)return[document];
+                          const categories=document.categories||[];
+                          return requiredCategories.some(required=>categories.some(category=>category===required||category.startsWith(`${required}/`)))?[document]:[];
+                        }),
+                        workflow_schema:{kind:"workflow",required:["id","steps"],stepRequired:["id","label","kind","operation","dependsOn","inputs","outputs"],stepOptional:["parameters","when","while","foreach","branch","maxIterations","metadata"]},
+                        memory_values_plan:{values:effectivePreflightStateValues},
+                        existing_workflow:workflow,
+                        validation_errors:validation||[],
+                      }}
+                      expectedInputNames={["english_specification","effective_operation_catalog","workflow_schema"]}
+                      onInvocationComplete={acceptEnglishWorkflowOutputs}
+                    />
+                  </ThreeStateAccordionMember>
+                  <ThreeStateAccordionMember stackId="center-stack" initialIndex={3} label="VALIDATION RESULTS" value={validation===null?"Not validated":validation.length?`${validation.length} errors`:"Valid"} mode={subMode("validation")} onChange={(next)=>setSubMode("validation",next)} baseClass="workflow-authoring-suboperation" scrollSize="150px"><div className="workflow-authoring-operation-controls"><button type="button" onClick={validateWorkflow}>Validate Draft</button><span>{validation===null?"Validation has not run.":validation.length?validation.join(" · "):"The current workflow is valid."}</span></div></ThreeStateAccordionMember>
+                  <ThreeStateAccordionMember stackId="center-stack" initialIndex={4} label="APPLY TO WORKFLOW" value={workflow.steps.length?`${workflow.steps.length} steps ready`:"Waiting for draft"} mode={subMode("apply")} onChange={(next)=>setSubMode("apply",next)} baseClass="workflow-authoring-suboperation" scrollSize="130px"><div className="workflow-authoring-operation-controls"><button type="button" disabled={busy||!workflow.steps.length} onClick={saveWorkflow}>Apply and Save Workflow</button><span>Writes the accepted draft to the workflow filesystem resource.</span></div></ThreeStateAccordionMember>
+            </>;
+          })()}
           {workflowCombinedView&&workflow&&<WorkflowPreflightSpline steps={workflow.steps}/>}
           {workflowCombinedView && (
             <ThreeStateAccordionMember
-              stackId="spline-stack"
-              label="LEFT COLUMN / RIGHT COLUMN"
+              stackId="center-stack"
+              label="LEFT + RIGHT"
               mode={workflowColumnsStackDisplayMode}
               onChange={setWorkflowColumnsStackDisplayMode}
-              baseClass="workflow-columns-stack-control"
-              scrollSize="76px"
+              baseClass="workflow-columns-stack-member"
+              scrollSize="900px"
               itemHeader={<div className="workflow-column-control-groups">
                 <span className="workflow-column-control-description"><b>LEFT / RIGHT</b><small>Independent column sizing</small></span>
                 <div className="workflow-column-control-group">
@@ -2375,17 +2529,27 @@ export function FilesystemWorkbenchPage() {
                 </div>
               </div>}
               footer={null}
-            />
+            >
+              <div
+                ref={setWorkflowColumnsHost}
+                className={`workflow-columns-host main-stage workflow-columns-${workflowColumnsStackDisplayMode} workflow-left-column-${workflowLeftColumnDisplayMode} workflow-right-column-${workflowRightColumnDisplayMode}`}
+                style={{
+                  "--workflow-editor-percent": `${workflowEditorPercent}%`,
+                  "--workflow-runs-percent": `${100 - workflowEditorPercent}%`,
+                } as CSSProperties}
+              />
+            </ThreeStateAccordionMember>
           )}
+          {workflowCombinedView&&<Suspense fallback={<div className="studio-empty">Loading runner design reference…</div>}><WorkflowRunnerTodoReference displayMode={workflowReferenceDisplayMode} onDisplayModeChange={setWorkflowReferenceDisplayMode}/></Suspense>}
+          </ThreeStateAccordionStack>}
           <Suspense
             fallback={<div className="studio-empty">Loading editor…</div>}
           >
-            {workflowCombinedView && (
+            {workflowCombinedView && workflowColumnsHost && createPortal(
               <section className="canvas-view">
-                <ThreeStateAccordionStack id="left-column" className="canvas-left-accordion-stack">
-                <div className="left-durable-run-launcher-slot" />
+                <ThreeStateAccordionStack id="left-stack" className="canvas-left-accordion-stack">
                 <ThreeStateAccordionMember
-                  stackId="left-column"
+                  stackId="left-stack"
                   label={`STAGE ${currentStepNumber} OF ${workflow?.steps.length || 0}`}
                   value={selectedStep?.label || selectedStep?.id || "Select a workflow step"}
                   detail={selectedRuntime?.status || (completedPlaygrounds[selectedStepId || ""] ? "completed" : "defined")}
@@ -2538,7 +2702,8 @@ export function FilesystemWorkbenchPage() {
                   {workflowPlaygrounds}
                 </div>
                 </ThreeStateAccordionStack>
-              </section>
+              </section>,
+              workflowColumnsHost,
             )}
             {view === "editor" && (
               <section className="editor-surface">
@@ -2785,6 +2950,28 @@ export function FilesystemWorkbenchPage() {
                 />
               </div>
             )}
+            {view === "englishWorkflow" && workflow && (
+              <EnglishWorkflowPage
+                workspaceId={workspace.id}
+                workspaceLabel={workspace.label}
+                workflow={workflow}
+                workflowPath={workflowPath}
+                description={workflowEnglishDescription}
+                savedDescription={workflowEnglishDescriptionSaved}
+                onDescriptionChange={setWorkflowEnglishDescription}
+                onSaveDescription={saveWorkflowEnglishDescription}
+                operation={englishWorkflowOperation}
+                operationCatalog={operationLibrary.operations.flatMap((record) => record.document ? [record.document] : [])}
+                models={workflowRunnerModels}
+                memoryValues={effectivePreflightStateValues}
+                onGenerated={acceptEnglishWorkflowOutputs}
+                onApply={saveWorkflow}
+                onOpenWorkflow={() => setView("canvas")}
+              />
+            )}
+            {view === "englishWorkflow" && !workflow && (
+              <div className="studio-empty">This workspace has no Workflow resource to revise from English.</div>
+            )}
             {view === "data" && <DataCatalogPanel workspaceId={workspace.id} />}
             {view === "knowledgeData" && (
               <KnowledgeDataExplorer files={snapshot?.files || []} />
@@ -2899,7 +3086,7 @@ export function FilesystemWorkbenchPage() {
                 onOpenResource={openRuntimeResource}
               />
             )}
-            {workflowCombinedView && (
+            {workflowCombinedView && workflowColumnsHost && createPortal(
               <div
                 className="workflow-pane-divider"
                 role="separator"
@@ -2947,11 +3134,13 @@ export function FilesystemWorkbenchPage() {
                 }}
               >
                 <span />
-              </div>
+              </div>,
+              workflowColumnsHost,
             )}
-            {workflowCombinedView && (
+            {workflowCombinedView && workflowColumnsHost && createPortal(
               <RuntimeHistoryView
                 mode="workflowRuns"
+                showDesignReference={false}
                 leftColumnDisplayMode={workflowLeftColumnDisplayMode}
                 rightColumnDisplayMode={workflowRightColumnDisplayMode}
                 runLauncher={
@@ -2985,13 +3174,15 @@ export function FilesystemWorkbenchPage() {
                 preflightStateValues={effectivePreflightStateValues}
                 onSelectRun={selectRuntimeRun}
                 onOpenResource={openRuntimeResource}
-              />
+              />,
+              workflowColumnsHost,
             )}
-            {workflowCombinedView && workflowColumnsStackDisplayMode !== "strip" && (
+            {workflowCombinedView && workflowColumnsHost && workflowColumnsStackDisplayMode !== "strip" && createPortal(
               <footer className="workflow-columns-stack-footer">
                 <b>LEFT / RIGHT COLUMNS</b>
                 <span>Left {workflowLeftColumnDisplayMode} · Right {workflowRightColumnDisplayMode}</span>
-              </footer>
+              </footer>,
+              workflowColumnsHost,
             )}
             {view === "execs" && (
               <RuntimeHistoryView

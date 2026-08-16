@@ -42,6 +42,7 @@ if "%CONNECT_IP%"=="0.0.0.0" set "CONNECT_IP=127.0.0.1"
 set "WEB_URL=http://%CONNECT_IP%:%WEB_PORT%/"
 set "API_URL=http://%CONNECT_IP%:%API_PORT%"
 set "API_HEALTH_URL=%API_URL%/api/health"
+set "WORKBENCH_CONTROL_API=%API_URL%"
 set "CLAWROUTER_PORT=3456"
 set "CLAWROUTER_URL=http://127.0.0.1:%CLAWROUTER_PORT%"
 set "CLAWROUTER_HEALTH_URL=%CLAWROUTER_URL%/health"
@@ -49,6 +50,9 @@ set "OMNIROUTE_PORT=20128"
 set "OMNIROUTE_URL=http://127.0.0.1:%OMNIROUTE_PORT%"
 set "FREEROUTER_PORT=18800"
 set "FREEROUTER_URL=http://127.0.0.1:%FREEROUTER_PORT%"
+set "CHANNEL_RELAY_PORT=46667"
+set "CHANNEL_RELAY_URL=http://127.0.0.1:%CHANNEL_RELAY_PORT%"
+set "CHANNEL_RELAY_DIR=%REPO_ROOT%\..\mailbox_channel"
 
 title MeTTaSymbolicLearnerWorkbench %BIND_IP%:%WEB_PORT%
 echo.
@@ -98,16 +102,42 @@ if not exist "%ROOT%frontend\node_modules\.bin\vite.cmd" (
   popd
 )
 
+echo Starting the local event backend on %BIND_IP%:%API_PORT%...
+"%WORKBENCH_PYTHON%" "%ROOT%scripts\start_with_policy.py" --service workbench-api --cwd "%ROOT%." -- "%ComSpec%" /d /c scripts\run_api_server.bat %BIND_IP% %API_PORT%
+echo Waiting for the backend before submitting managed commands...
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$limit=(Get-Date).AddSeconds(45); $url='%API_HEALTH_URL%'; do { try { $r=Invoke-WebRequest -UseBasicParsing $url -TimeoutSec 2; if ($r.StatusCode -eq 200) { exit 0 } } catch {}; Start-Sleep -Milliseconds 400 } while ((Get-Date) -lt $limit); exit 1"
+if errorlevel 1 echo WARNING: The API is unavailable; managed batch files will use legacy mode.
+
+echo Checking Mailbox Channel Relay on 127.0.0.1:%CHANNEL_RELAY_PORT%...
+powershell -NoProfile -ExecutionPolicy Bypass -Command "try { $r=Invoke-WebRequest -UseBasicParsing '%CHANNEL_RELAY_URL%/health' -TimeoutSec 2; if ($r.StatusCode -eq 200) { exit 0 } } catch {}; exit 1" >nul 2>nul
+if errorlevel 1 (
+  if exist "%CHANNEL_RELAY_DIR%\mailbox-server.cmd" (
+    echo Starting the Mailbox Channel Relay when enabled in System Settings...
+    "%WORKBENCH_PYTHON%" "%ROOT%scripts\start_with_policy.py" --service channel-relay --cwd "%ROOT%." -- "%ComSpec%" /d /c scripts\run_channel_relay.bat "%CHANNEL_RELAY_DIR%"
+    if errorlevel 3 (
+      echo Mailbox Channel Relay startup is disabled in System Settings.
+    ) else (
+      echo Waiting for Mailbox Channel Relay...
+      "%WORKBENCH_PYTHON%" "%ROOT%scripts\wait_for_managed_service.py" --service channel-relay --url "%CHANNEL_RELAY_URL%/health" --timeout 90
+      if errorlevel 1 echo WARNING: Mailbox Channel Relay did not answer yet.
+    )
+  ) else (
+    echo Mailbox Channel Relay launcher was not found at %CHANNEL_RELAY_DIR%\mailbox-server.cmd.
+  )
+) else (
+  echo Mailbox Channel Relay is already running and will not be claimed by this launcher.
+)
+
 echo Checking ClawRouter on 127.0.0.1:%CLAWROUTER_PORT%...
 powershell -NoProfile -ExecutionPolicy Bypass -Command "try { $r=Invoke-WebRequest -UseBasicParsing '%CLAWROUTER_HEALTH_URL%' -TimeoutSec 2; if ($r.StatusCode -eq 200) { exit 0 } } catch {}; exit 1" >nul 2>nul
 if errorlevel 1 (
   echo Starting the local ClawRouter proxy on 127.0.0.1:%CLAWROUTER_PORT%...
-  "%WORKBENCH_PYTHON%" "%ROOT%scripts\start_with_policy.py" --service clawrouter --cwd "%ROOT%" "%ComSpec%" /d /c scripts\run_clawrouter.bat %CLAWROUTER_PORT%
+  "%WORKBENCH_PYTHON%" "%ROOT%scripts\start_with_policy.py" --service clawrouter --cwd "%ROOT%." -- "%ComSpec%" /d /c scripts\run_clawrouter.bat %CLAWROUTER_PORT%
   if errorlevel 3 (
     echo ClawRouter startup is disabled in System Settings.
   ) else (
     echo Waiting for ClawRouter...
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "$limit=(Get-Date).AddSeconds(120); do { try { $r=Invoke-WebRequest -UseBasicParsing '%CLAWROUTER_HEALTH_URL%' -TimeoutSec 2; if ($r.StatusCode -eq 200) { exit 0 } } catch {}; Start-Sleep -Milliseconds 500 } while ((Get-Date) -lt $limit); exit 1"
+    "%WORKBENCH_PYTHON%" "%ROOT%scripts\wait_for_managed_service.py" --service clawrouter --url "%CLAWROUTER_HEALTH_URL%" --timeout 120
     if errorlevel 1 echo WARNING: ClawRouter did not answer yet. Check its configured process window.
   )
 ) else (
@@ -118,12 +148,12 @@ echo Checking OmniRoute on 127.0.0.1:%OMNIROUTE_PORT%...
 powershell -NoProfile -ExecutionPolicy Bypass -Command "try { $r=Invoke-WebRequest -UseBasicParsing '%OMNIROUTE_URL%/' -TimeoutSec 3; if ($r.StatusCode -eq 200) { exit 0 } } catch {}; exit 1" >nul 2>nul
 if errorlevel 1 (
   echo Starting the local OmniRoute gateway on 127.0.0.1:%OMNIROUTE_PORT%...
-  "%WORKBENCH_PYTHON%" "%ROOT%scripts\start_with_policy.py" --service omniroute --cwd "%ROOT%" "%ComSpec%" /d /c scripts\run_omniroute.bat %OMNIROUTE_PORT%
+  "%WORKBENCH_PYTHON%" "%ROOT%scripts\start_with_policy.py" --service omniroute --cwd "%ROOT%." -- "%ComSpec%" /d /c scripts\run_omniroute.bat %OMNIROUTE_PORT%
   if errorlevel 3 (
     echo OmniRoute startup is disabled in System Settings.
   ) else (
     echo Waiting for OmniRoute...
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "$limit=(Get-Date).AddSeconds(240); do { try { $r=Invoke-WebRequest -UseBasicParsing '%OMNIROUTE_URL%/' -TimeoutSec 3; if ($r.StatusCode -eq 200) { exit 0 } } catch {}; Start-Sleep -Seconds 1 } while ((Get-Date) -lt $limit); exit 1"
+    "%WORKBENCH_PYTHON%" "%ROOT%scripts\wait_for_managed_service.py" --service omniroute --url "%OMNIROUTE_URL%/" --timeout 240
     if errorlevel 1 echo WARNING: OmniRoute did not answer yet. Check its configured process window.
   )
 ) else (
@@ -139,29 +169,20 @@ echo Checking FreeRouter on 127.0.0.1:%FREEROUTER_PORT%...
 powershell -NoProfile -ExecutionPolicy Bypass -Command "try { $r=Invoke-WebRequest -UseBasicParsing '%FREEROUTER_URL%/health' -TimeoutSec 3; if ($r.StatusCode -eq 200) { exit 0 } } catch {}; exit 1" >nul 2>nul
 if errorlevel 1 (
   echo Starting the local FreeRouter gateway on 127.0.0.1:%FREEROUTER_PORT%...
-  "%WORKBENCH_PYTHON%" "%ROOT%scripts\start_with_policy.py" --service freerouter --cwd "%ROOT%" "%ComSpec%" /d /c scripts\run_freerouter.bat
+  "%WORKBENCH_PYTHON%" "%ROOT%scripts\start_with_policy.py" --service freerouter --cwd "%ROOT%." -- "%ComSpec%" /d /c scripts\run_freerouter.bat
   if errorlevel 3 (
     echo FreeRouter startup is disabled in System Settings.
   ) else (
     echo Waiting for FreeRouter...
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "$limit=(Get-Date).AddSeconds(180); do { try { $r=Invoke-WebRequest -UseBasicParsing '%FREEROUTER_URL%/health' -TimeoutSec 3; if ($r.StatusCode -eq 200) { exit 0 } } catch {}; Start-Sleep -Seconds 1 } while ((Get-Date) -lt $limit); exit 1"
+    "%WORKBENCH_PYTHON%" "%ROOT%scripts\wait_for_managed_service.py" --service freerouter --url "%FREEROUTER_URL%/health" --timeout 180
     if errorlevel 1 echo WARNING: FreeRouter did not answer yet. Check its configured process window.
   )
 ) else (
   echo FreeRouter is already running.
 )
 
-echo Starting the local event backend on %BIND_IP%:%API_PORT%...
-"%WORKBENCH_PYTHON%" "%ROOT%scripts\start_with_policy.py" --service workbench-api --cwd "%ROOT%" "%ComSpec%" /d /c scripts\run_api_server.bat %BIND_IP% %API_PORT%
-
-echo Waiting for the backend...
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$limit=(Get-Date).AddSeconds(45); $url='%API_HEALTH_URL%'; do { try { $r=Invoke-WebRequest -UseBasicParsing $url -TimeoutSec 2; if ($r.StatusCode -eq 200) { exit 0 } } catch {}; Start-Sleep -Milliseconds 400 } while ((Get-Date) -lt $limit); exit 1"
-if errorlevel 1 (
-  echo WARNING: The API did not answer yet. Check the MeTTa Workbench API %API_PORT% window.
-)
-
 echo Starting the live-editing web interface on %BIND_IP%:%WEB_PORT%...
-"%WORKBENCH_PYTHON%" "%ROOT%scripts\start_with_policy.py" --service workbench-web --cwd "%ROOT%" "%ComSpec%" /d /c scripts\run_vite_server.bat %BIND_IP% %WEB_PORT% %API_URL%
+"%WORKBENCH_PYTHON%" "%ROOT%scripts\start_with_policy.py" --service workbench-web --cwd "%ROOT%." -- "%ComSpec%" /d /c scripts\run_vite_server.bat %BIND_IP% %WEB_PORT% %API_URL%
 
 echo Waiting for the website...
 powershell -NoProfile -ExecutionPolicy Bypass -Command "$limit=(Get-Date).AddSeconds(45); do { try { $r=Invoke-WebRequest -UseBasicParsing '%WEB_URL%' -TimeoutSec 2; if ($r.StatusCode -eq 200) { exit 0 } } catch {}; Start-Sleep -Milliseconds 400 } while ((Get-Date) -lt $limit); exit 1"
@@ -177,6 +198,7 @@ echo API documentation is at %API_URL%/docs
 echo ClawRouter is at %CLAWROUTER_URL%/v1 using blockrun/free by default.
 echo OmniRoute is at %OMNIROUTE_URL%/v1 using auto/best-free by default.
 echo FreeRouter is at %FREEROUTER_URL%/v1 using OpenRouter's free route.
+echo Mailbox Channel Relay is at %CHANNEL_RELAY_URL% when enabled in System Settings.
 echo Edit files under workbench\frontend\src or workbench\server;
 echo the appropriate process reloads automatically.
 echo Each API/Vite window shows the exact command to rerun after Ctrl+C.

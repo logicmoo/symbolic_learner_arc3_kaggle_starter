@@ -7,6 +7,7 @@ type HelpTab={id:string;label:string;path?:string;repositoryPath?:string};
 type OpenedDocument={path:string;content:string};
 
 const docTabs:HelpTab[]=[
+ {id:"theses",label:"Theses",repositoryPath:"workbench/docs/design/EXECUTIVE_VISION.md"},
  {id:"overview",label:"Overview",path:"docs/models_profiles_operations_prompts.md"},
  {id:"goals",label:"Goals",path:"docs/goals.md"},
  {id:"plans",label:"Planning",path:"docs/plans.md"},
@@ -47,7 +48,7 @@ function resolveMarkdownPath(currentPath:string,href:string){
 }
 
 export function HelpDocumentTabs({preferred,context,onOpenDocs}:{preferred?:string;context?:string;onOpenDocs?:(filter:string)=>void}){
- const tabs:HelpTab[]=[{id:"context",label:"Context"},...docTabs];
+ const tabs:HelpTab[]=[{id:"contents",label:"Contents",path:"docs/contents.md"},{id:"context",label:"Context"},...docTabs];
  const pageView=new URLSearchParams(window.location.search).get("view");
  const effectivePreferred=preferred==="overview"&&(pageView===null||pageView==="canvas")?"workflows":preferred;
  const initial=effectivePreferred&&tabs.some(tab=>tab.id===effectivePreferred)?effectivePreferred:"context";

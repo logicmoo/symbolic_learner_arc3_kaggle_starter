@@ -2,6 +2,9 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
+import re
+from datetime import datetime, timezone
 from fnmatch import fnmatch
 from pathlib import Path
 
@@ -9,6 +12,7 @@ from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from resource_store import get_filesystem_provider
+from workflow_providers import _llm_complete
 
 router = APIRouter(prefix="/repository", tags=["repository-docs"])
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
@@ -38,6 +42,13 @@ MOJIBAKE_REPLACEMENTS = {
 
 class RepositoryFileUpdate(BaseModel):
     content: str
+
+
+class RepositorySummaryRequest(BaseModel):
+    paths: list[str]
+    model: str | None = None
+    workspaceId: str | None = None
+    lineCount: int = 10
 
 
 def repair_display_text(content: str) -> str:
@@ -217,3 +228,78 @@ def update_repository_file(payload: RepositoryFileUpdate, path: str = Query(...,
             raise HTTPException(status_code=422, detail=f"Invalid JSON at line {error.lineno}, column {error.colno}") from error
     resources.write_text(target, payload.content)
     return read_repository_file(path)
+
+
+@router.post("/summarize-files")
+def summarize_repository_files(payload: RepositorySummaryRequest) -> dict[str, str]:
+    """Ask the configured LLM to group and explain exposed files, then persist Markdown."""
+    resources = get_filesystem_provider()
+    requested = list(dict.fromkeys(str(path).strip() for path in payload.paths if str(path).strip()))
+    if not requested:
+        raise HTTPException(status_code=400, detail="Select at least one exposed file")
+    if len(requested) > 200:
+        raise HTTPException(status_code=400, detail="Summaries are limited to 200 files per request")
+    line_count = max(1, min(200, int(payload.lineCount)))
+    records: list[dict[str, object]] = []
+    total_characters = 0
+    for logical_path in requested:
+        try:
+            target = resources.resolve(REPOSITORY_ROOT, logical_path)
+            relative = target.relative_to(REPOSITORY_ROOT)
+        except ValueError as error:
+            raise HTTPException(status_code=400, detail=f"Invalid repository path: {logical_path}") from error
+        reason = _exclusion_reason(relative)
+        if reason:
+            raise HTTPException(status_code=403, detail=f"Cannot summarize unexposed file {logical_path}: {reason}")
+        if not resources.is_file(target):
+            raise HTTPException(status_code=404, detail=f"Repository file not found: {logical_path}")
+        excerpt = ""
+        if target.suffix.lower() not in IMAGE_SUFFIXES and total_characters < 120_000:
+            excerpt = "\n".join(repair_display_text(resources.read_text(target)).splitlines()[:line_count])
+            excerpt = excerpt[:12_000]
+            total_characters += len(excerpt)
+        records.append({"path": relative.as_posix(), "bytes": resources.stat(target).st_size, "excerpt": excerpt})
+    prompt = (
+        "Create a useful Markdown guide to the supplied repository files. Group files by their actual purpose, "
+        "explain what each file is for in one or two concrete sentences, describe important relationships between "
+        "groups, and include every supplied path exactly once. Do not invent files or claim behavior absent from the "
+        f"path or the supplied first {line_count} lines. Use headings and linked file paths. Return Markdown only, beginning with '# File List Summary'.\n\n"
+        + json.dumps(records, ensure_ascii=False)
+    )
+    parameters: dict[str, object]
+    if payload.model:
+        from operation_resolution import _model_execution_parameters
+        from workspace_api import _resolve_workspace
+
+        try:
+            workspace = _resolve_workspace(payload.workspaceId or "shared_library_system")
+            parameters = _model_execution_parameters(Path(workspace["root"]), {"models": [payload.model], "strategy": "single"})
+            parameters["timeoutSeconds"] = 180
+        except Exception as error:
+            raise HTTPException(status_code=400, detail=f"Selected summary model is unavailable: {error}") from error
+    else:
+        parameters = {
+            "baseUrlEnvironmentVariable": "OPENAI_BASE_URL",
+            "apiKeyEnv": os.getenv("WORKBENCH_LLM_API_KEY_ENV", "OPENAI_API_KEY"),
+            "model": os.getenv("WORKBENCH_LLM_MODEL", os.getenv("OPENAI_MODEL", "gpt-4.1-mini")),
+            "temperature": 0,
+            "timeoutSeconds": 180,
+        }
+    try:
+        result = _llm_complete(
+            {"prompt": prompt},
+            parameters,
+        )
+    except Exception as error:
+        raise HTTPException(status_code=502, detail=f"LLM file summary failed: {error}") from error
+    markdown = str(result.get("text") or "").strip()
+    markdown = re.sub(r"^```(?:markdown|md)?\s*", "", markdown, flags=re.IGNORECASE)
+    markdown = re.sub(r"\s*```$", "", markdown).strip()
+    if not markdown:
+        raise HTTPException(status_code=502, detail="LLM returned an empty file summary")
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    relative_output = Path("workbench/docs/generated") / f"FILE_LIST_SUMMARY_{stamp}.md"
+    target_output = REPOSITORY_ROOT / relative_output
+    content = "[← Back to repository README](../../../README.md)\n\n" + markdown + "\n"
+    resources.write_text(target_output, content)
+    return read_repository_file(relative_output.as_posix())

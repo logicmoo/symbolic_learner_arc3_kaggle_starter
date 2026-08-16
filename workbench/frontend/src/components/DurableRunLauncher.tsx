@@ -16,7 +16,9 @@ type DurableRunLauncherProps = {
 export function DurableRunLauncher({ status, statusDetail, blocked, fields, actions, displayMode = "scroll", onDisplayModeChange }: DurableRunLauncherProps) {
   return (
     <ThreeStateAccordionMember
-      stackId="left-column"
+      stackId="left-stack"
+      initialIndex={0}
+      initialPlacementVersion="runner-first-v1"
       label="WORKFLOW RUNNER"
       value={status}
       detail={statusDetail}

@@ -10,6 +10,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
+from backend_library import backend_record_index
 from resource_store import get_filesystem_provider
 from workspace_credentials import resolve_workspace_credential
 
@@ -52,7 +53,12 @@ def probe_model(model: dict[str, Any], backend: dict[str, Any] | None, timeout_m
 
 def run_ping_job(workspace_root: Path, job: dict[str, Any], models: list[dict[str, Any]], backends: list[dict[str, Any]], *, slow_latency_ms: float = 5000, probe: Probe = probe_model, deduplicate_vendor_probes: bool | None = None) -> dict[str, Any]:
     job = {**job, "kind": "model_ping_job", "status": "running", "startedAt": _now()}; write_policy_resource(workspace_root, job)
-    backend_by_id = {str(item.get("id")): item for item in backends if item.get("id")}; timeout_ms = max(100, int(job.get("timeoutMs") or 15000)); concurrency = max(1, min(32, int(job.get("concurrency") or 4))); results: list[dict[str, Any]] = []
+    backend_by_id = {
+        identifier: record["document"]
+        for identifier, record in backend_record_index(
+            [{"document": item} for item in backends]
+        ).items()
+    }; timeout_ms = max(100, int(job.get("timeoutMs") or 15000)); concurrency = max(1, min(32, int(job.get("concurrency") or 4))); results: list[dict[str, Any]] = []
     def execute(model: dict[str, Any]) -> dict[str, Any]:
         backend = backend_by_id.get(str(model.get("vendorId") or ""))
         observed = probe(model, backend, timeout_ms, workspace_root) if probe is probe_model else probe(model, backend, timeout_ms)

@@ -1,0 +1,12 @@
+{
+  "kind": "workspace",
+  "id": "generate_count_to_ten",
+  "label": "Generate Count to Ten",
+  "description": "A minimal project for testing English-specification-to-workflow generation, preflight loop inference, value memory, and runtime implementation resolution.",
+  "includes": [
+    {
+      "workspaceId": "shared_library_system",
+      "includeInherited": true
+    }
+  ]
+}

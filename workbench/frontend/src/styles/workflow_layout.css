@@ -1,5 +1,5 @@
 @media (min-width: 1181px) {
-  .main-stage:has(> .canvas-view):has(> .runtime-history-view) > .runtime-history-view > .three-state-accordion-stack[data-accordion-stack="right-column"] {
+  .main-stage:has(> .canvas-view):has(> .runtime-history-view) > .runtime-history-view > .three-state-accordion-stack[data-accordion-stack="right-stack"] {
     grid-column: 2 !important;
     grid-row: 3 / 6 !important;
     min-width: 0;
@@ -1084,7 +1084,7 @@
     --run-spline-track: 360px;
   }
 
-  .main-stage:has(> .runtime-history-view) > .runtime-history-view > [data-accordion-stack="spline-stack"] {
+  .main-stage:has(> .runtime-history-view) > .runtime-history-view > [data-accordion-stack="center-stack"] {
     margin: 0 !important;
     border-radius: 0;
   }
@@ -1120,7 +1120,7 @@
     grid-row: 4 / 5 !important;
   }
 
-  .main-stage:has(> .canvas-view):has(> .runtime-history-view) > .runtime-history-view > .three-state-accordion-stack[data-accordion-stack="right-column"] {
+  .main-stage:has(> .canvas-view):has(> .runtime-history-view) > .runtime-history-view > .three-state-accordion-stack[data-accordion-stack="right-stack"] {
     grid-row: 3 / 5 !important;
   }
 

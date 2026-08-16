@@ -328,9 +328,9 @@ def test_workbench_exposes_insertable_gallery_and_human_renderer() -> None:
     assert "INSERT OPERATION AFTER SELECTED STEP" in page
     assert "insertOperationStep" in page
     assert "completedPlaygrounds" in page
-    assert 'runtime?.status||(completedPlaygrounds[step.id]?"completed":"not run")' in page
+    assert 'runtime?.status || (completedPlaygrounds[step.id] ? "completed" : "not run")' in page
     assert "Expand · rerun available" in playground
-    assert "▶ Run this step" in playground
+    assert 'workflowStep?"▶ Run Workflow Step":"▶ Run Operation"' in playground
     assert "operation-execute-step" in playground
     assert "Auto-play all" in page
     assert "selectRelativeStep" in page
@@ -422,6 +422,8 @@ def test_random_player_workspace_is_discoverable_and_operation_backed(tmp_path: 
         "vision.extract_scene_objects",
         "arc3.extract_scene_objects",
         "arc3.explain_object_changes",
+        "control.while",
+        "control.for_each",
     } <= effective_operations
 
     effective_prompts = {
@@ -567,11 +569,13 @@ def test_random_player_workspace_is_discoverable_and_operation_backed(tmp_path: 
     assert automatic_step["dependsOn"] == ["filter_unplayed_games"]
     assert automatic_step["while"] == [
         {
+            "operation": "control.while",
             "condition": "$unplayed_games",
             "operator": "not_empty",
             "maxIterations": 100,
         },
         {
+            "operation": "control.while",
             "condition": "$elapsed_game_seconds",
             "operator": "less_than",
             "conditionPort": "$seconds_per_game",

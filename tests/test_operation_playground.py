@@ -222,6 +222,37 @@ def test_operation_materialization_resolves_requested_prompt_variant() -> None:
     assert executable["parameters"]["baseUrl"] == "https://openrouter.ai/api/v1"
 
 
+def test_populate_workflow_from_english_resolves_its_bound_prompt_variant() -> None:
+    executable = materialize_workflow_step(
+        {"id": "generate", "workspaceId": "generate_count_to_ten"},
+        {
+            "id": "author",
+            "operation": "workflow.populate_from_english",
+            "implementationVariant": "workflow.populate_from_english.json",
+            "inputs": {
+                "english_specification": "Count to ten.",
+                "effective_operation_catalog": [],
+                "workflow_schema": {},
+                "memory_values_plan": {},
+                "existing_workflow": {},
+                "validation_errors": [],
+            },
+        },
+    )
+    assert executable["resolvedPrompts"][0]["promptId"] == "workflow.generate_from_english"
+    assert executable["resolvedPrompts"][0]["implementationId"] == "workflow.generate_from_english.json"
+    assert "Workflow revision author" in executable["parameters"]["promptPrefix"]
+    assert "Do not compile or emit MeTTa source" in executable["parameters"]["promptPrefix"]
+    assert "new_memory_values_plan is required" in executable["parameters"]["promptPrefix"]
+    assert "existing_workflow is always the previous Workflow" in executable["parameters"]["promptPrefix"]
+    assert executable["parameters"]["parseJson"] is True
+    assert executable["parameters"].get("wrapJsonOutput") is not True
+    assert executable["modelSelection"] == {
+        "models": ["https.llm.c.singularitynet.io.v1-asi1"],
+        "strategy": "workspace_override",
+    }
+
+
 def test_playground_model_selection_overrides_implementation_for_one_run() -> None:
     executable = materialize_workflow_step(
         {"id": "playground", "workspaceId": "shared_library_system"},
@@ -386,6 +417,46 @@ def test_automatic_fallback_marks_live_inputs_authoritative(monkeypatch: pytest.
     assert content.endswith('{"text": "codex zebra marker 92841"}')
     assert content.rfind("codex zebra marker 92841") > content.rfind("the quick brown fox")
     assert result["outputs"] == {"text": "Codex Zebra Marker 92841"}
+
+
+def test_llm_complete_sends_multi_input_authoring_envelope_and_wraps_workflow(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    sent: dict[str, object] = {}
+
+    class Response:
+        def __enter__(self): return self
+        def __exit__(self, *_args: object) -> None: return None
+        def read(self) -> bytes:
+            return json.dumps({
+                "choices": [{"message": {"content": '{"kind":"workflow","id":"count","steps":[]}'}}],
+            }).encode()
+
+    def urlopen(request: object, **_kwargs: object) -> Response:
+        sent["body"] = json.loads(getattr(request, "data").decode())
+        return Response()
+
+    monkeypatch.setenv("OPENAI_API_KEY", "openai-test-key")
+    monkeypatch.setattr("workflow_providers.urllib.request.urlopen", urlopen)
+    result = _llm_complete(
+        {
+            "english_specification": "Count from one through ten.",
+            "workflow_schema": {"kind": "workflow", "required": ["id", "steps"]},
+        },
+        {
+            "promptPrefix": "Return one Workflow JSON object.",
+            "parseJson": True,
+            "responseFormat": "json_object",
+            "wrapJsonOutput": True,
+            "outputBinding": "workflow",
+        },
+    )
+
+    content = sent["body"]["messages"][0]["content"]  # type: ignore[index]
+    assert "AUTHORITATIVE RUNTIME INPUTS" in content
+    assert '"english_specification": "Count from one through ten."' in content
+    assert '"workflow_schema": {"kind": "workflow"' in content
+    assert result == {"workflow": {"kind": "workflow", "id": "count", "steps": []}}
 
 
 def test_constant_value_uses_workbench_provider() -> None:

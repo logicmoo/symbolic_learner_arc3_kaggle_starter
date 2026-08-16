@@ -27,7 +27,9 @@ echo  The free route does not require an API key or wallet balance.
 echo ============================================================
 echo.
 
-call npx.cmd --yes @blockrun/clawrouter --port %CLAWROUTER_PORT%
+set "WORKBENCH_CONTROL_API=%WORKBENCH_CONTROL_API%"
+if not defined WORKBENCH_CONTROL_API set "WORKBENCH_CONTROL_API=http://127.0.0.1:8000"
+"%~dp0..\..\.venv\Scripts\python.exe" "%~dp0submit_managed_command.py" --api "%WORKBENCH_CONTROL_API%" --service clawrouter --cwd "%CD%" -- npx.cmd --yes @blockrun/clawrouter --port %CLAWROUTER_PORT%
 
 echo.
 echo ClawRouter stopped. Rerun this script to restart it.

@@ -18,6 +18,6 @@ type WorkflowRunsControlProps = {
 
 export function WorkflowRunsControl({ workflowRuns, modern, displayMode, children, value, detail, onDisplayModeChange, accessories, footer }: WorkflowRunsControlProps) {
   if (!workflowRuns) return <div className="runtime-record-list-pane">{children}</div>;
-  if (!modern) return <ThreeStateAccordionMember stackId="right-column" label="WORKFLOW RUNS" value={value} detail={detail} mode={displayMode} onChange={onDisplayModeChange!} baseClass="durable-runs-accordion panel-frame" scrollSize="380px" accessories={accessories} footer={footer}>{children}</ThreeStateAccordionMember>;
+  if (!modern) return <ThreeStateAccordionMember stackId="right-stack" label="WORKFLOW RUNS" value={value} detail={detail} mode={displayMode} onChange={onDisplayModeChange!} baseClass="durable-runs-accordion panel-frame" scrollSize="380px" accessories={accessories} footer={footer}>{children}</ThreeStateAccordionMember>;
   return <section className={`workflow-runs-control panel-frame ${displayMode === "strip" ? "minimized" : ""}`}>{children}</section>;
 }

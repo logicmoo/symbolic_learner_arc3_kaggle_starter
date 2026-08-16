@@ -131,8 +131,8 @@ def test_repository_markdown_index_and_ui_links(tmp_path: Path, monkeypatch) -> 
     assert "function buildFileTree" in docs_source
     assert "<FileTree node={tree}" in docs_source
     assert "repository-tree-sidebar" in docs_source
-    assert 'setBrowserMode("tree")' in docs_source
-    assert 'setBrowserMode("navigator")' in docs_source
+    assert 'selectPanel("tree")' in docs_source
+    assert 'selectPanel("navigator")' in docs_source
     assert 'browserMode==="tree"' in docs_source
     assert "Exposed Tree" in docs_source
     assert "Exposed Navigator" in docs_source
@@ -166,7 +166,8 @@ def test_repository_markdown_index_and_ui_links(tmp_path: Path, monkeypatch) -> 
     assert "setHideDotFiles]=useState(true)" in docs_source
     assert "Exclude repository files" in docs_source
     assert "directoryMetrics" in docs_source
-    assert 'useState<"tree"|"navigator"|"paths">("paths")' in docs_source
+    assert 'useState<"tree"|"navigator"|"paths">' in docs_source
+    assert 'initialPanel==="tree"||initialPanel==="navigator"?initialPanel:"paths"' in docs_source
     assert "function FilesystemNavigator" in docs_source
     assert "filesystem-breadcrumbs" in docs_source
     assert "Parent directory" in docs_source
@@ -178,7 +179,7 @@ def test_repository_markdown_index_and_ui_links(tmp_path: Path, monkeypatch) -> 
     assert 'new CustomEvent("workbench:open-docs"' in help_source
     page_source = (ROOT / "workbench" / "frontend" / "src" / "pages" / "FilesystemWorkbenchPage.tsx").read_text(encoding="utf-8")
     styles = (ROOT / "workbench" / "frontend" / "src" / "styles" / "workbench.css").read_text(encoding="utf-8")
-    assert 'classList.toggle("docs-focused",view==="docs")' in page_source
+    assert 'classList.toggle("docs-focused", view === "docs")' in page_source
     assert "body.docs-focused .workspace>.stages-panel" in styles
     assert "body.docs-focused .workspace>.inspector-resizer" in styles
     assert "body.docs-focused .workspace .view-tabs" in styles

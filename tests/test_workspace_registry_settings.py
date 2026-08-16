@@ -136,7 +136,7 @@ def test_each_managed_service_is_an_independent_resource() -> None:
     assert set(configured) >= {"workbench-api", "workbench-web", "channel-relay", "clawrouter", "omniroute", "freerouter"}
     assert all(document["kind"] == "managed_service" for document in configured.values())
     assert all(document["singleton"] is True for document in configured.values())
-    assert configured["channel-relay"]["defaultStartup"] == {"start": False, "hiddenWindow": False}
+    assert configured["channel-relay"]["defaultStartup"] == {"start": True, "hiddenWindow": False}
     assert configured["omniroute"]["defaultStartup"] == {"start": True, "hiddenWindow": False}
     policy = service_monitor_api._read_policy_resource()
     assert set(policy["services"]["omniroute"]) == {"start", "hiddenWindow", "hideFromProcessViewer"}
