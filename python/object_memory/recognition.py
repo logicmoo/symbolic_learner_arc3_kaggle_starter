@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import replace
 from typing import Mapping
 
+from .forms import FitResult
 from .models import (
     EvidencePolarity,
     EvidenceRecord,
@@ -257,6 +258,35 @@ class CorrespondenceEvidenceBuilder:
                 )
             )
         return tuple(evidence)
+
+
+class TurtleReconstructionEvidenceBuilder:
+    """Represent an exact or residual Turtle reconstruction fit as signed evidence."""
+
+    def build(
+        self,
+        *,
+        identity_id: str,
+        fit: FitResult,
+        source: ProvenanceRef,
+        artifact_id: str | None = None,
+        created_sequence: int = 0,
+    ) -> EvidenceRecord:
+        exact = fit.residual == 0.0
+        return EvidenceRecord.create(
+            subject_id=identity_id,
+            polarity=(
+                EvidencePolarity.SUPPORTS if exact else EvidencePolarity.CONTRADICTS
+            ),
+            source=source,
+            detail={
+                "assessment": "exact_turtle_reconstruction" if exact else "turtle_residual",
+                "artifact_id": artifact_id,
+                "residual": fit.residual,
+                "parameters": fit.parameters,
+            },
+            created_sequence=created_sequence,
+        )
 
 
 class ChangeDetector:

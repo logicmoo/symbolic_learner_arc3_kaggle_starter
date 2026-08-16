@@ -111,7 +111,7 @@ Keep the shared records in `python/object_memory/models.py`; do not create anoth
 - [x] Detect moved, recolored, resized, reshaped, appeared, disappeared, split, and merged objects from explicit correspondences.
 - [ ] Distinguish recognized or explained content from residual, potentially new object structure.
 - [ ] Keep incomplete or partially occluded observations from overwriting the complete stored form.
-- [ ] Compare Turtle reconstruction fit as one source of recognition evidence.
+- [x] Compare Turtle reconstruction fit as one attributable source of signed recognition evidence.
 - [ ] Keep embeddings advisory for retrieval and proposal generation only.
 
 ## Implement evidence and calibrated confidence

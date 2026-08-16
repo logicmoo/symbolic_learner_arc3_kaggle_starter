@@ -830,3 +830,6 @@ Preserve the canonical checkout and its `codex/workbench-navigation-v2` branch.
 - [x] Build deterministic signed evidence from correspondence explanations.
   Exact properties and allowed transformations support identity; unexplained
   changes contradict it, while aggregate similarity remains advisory only.
+- [x] Represent Turtle reconstruction fit as signed identity evidence. Preserve
+  the artifact, fit parameters, and measured residual; exact regeneration
+  supports identity while a nonzero residual contradicts it.

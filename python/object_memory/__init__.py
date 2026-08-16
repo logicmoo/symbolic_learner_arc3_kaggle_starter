@@ -68,6 +68,7 @@ from .recognition import (
     InstanceMatcher,
     RecognitionSession,
     RegistryCorrespondenceAuthority,
+    TurtleReconstructionEvidenceBuilder,
 )
 from .store import ArtifactIndex, InMemorySemanticBackend, SemanticStoreBackend, SymbolicStore
 
@@ -142,5 +143,6 @@ __all__ = [
     "TransitionRecord",
     "TransitionRule",
     "TurtleProgramRef",
+    "TurtleReconstructionEvidenceBuilder",
     "deterministic_identifier",
 ]

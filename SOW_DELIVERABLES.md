@@ -163,7 +163,7 @@ Phase 2 implements the semantic object layer behind the Phase 1 debugger. It use
 
 - [ ] **Partial** Match corresponding objects between states and repeated encounters while retaining competing proposals.  
   Existing evidence: deterministic proposals retain every rival and explain matched/changed properties; `RecognitionSession` derives the latest known instance for each durable identity from encounter history and persists every proposal plus an unresolved recognition account. `RegistryCorrespondenceAuthority` requires explicit friendly-ID selection plus attributable evidence, calibrates through `SingleWriter`, creates a resolved recognition account, and records Prolog decision history. Perfect similarity alone is rejected.
-  Live `SemanticGridCaptureObserver` sessions now invoke this path when durable identity history is available and link proposal/account artifacts into the action-tree node. Exact property matches and declared transformations produce attributable support records; unexplained changes produce contradiction records. Aggregate similarity is never copied into evidence or confidence. Remaining: add topology/Turtle evidence generation and explicit authorization controls.
+  Live `SemanticGridCaptureObserver` sessions now invoke this path when durable identity history is available and link proposal/account artifacts into the action-tree node. Exact property matches, declared transformations, and exact Turtle reconstruction fits produce attributable support records; unexplained changes and nonzero Turtle residuals produce contradiction records. Aggregate similarity is never copied into evidence or confidence. Remaining: invoke Turtle fitting automatically during capture, add topology evidence, and expose explicit authorization controls.
 
 - [ ] **Open** Recognize recurring objects under supported translation, rotation, scale, reflection, recoloring, noise, and partial visibility.
 
@@ -185,7 +185,7 @@ Phase 2 implements the semantic object layer behind the Phase 1 debugger. It use
 
 - [ ] **Partial** Execute the stored Turtle program to regenerate the object and compare it with the source observation.  
   Existing evidence: `CellLogoForm` now executes extracted programs through `SWIPrologBridge` and the canonical `prolog/turtle_dsl.pl`; regenerated-cell fit, distance, normalized residual, and description-length metrics have live SWI-Prolog coverage.
-  Remaining: invoke and persist these metrics automatically in the recognition pipeline.
+  `TurtleReconstructionEvidenceBuilder` now converts exact fit or residual measurements into attributable signed evidence without hiding the measured residual. Remaining: invoke and persist these metrics automatically in the live recognition pipeline.
 
 - [ ] **Open** Preserve exact holes, disconnected strokes, topology, and supported thickness through the stored Turtle program.
 
