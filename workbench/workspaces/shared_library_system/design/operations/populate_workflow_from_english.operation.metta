@@ -27,6 +27,7 @@
   (kind operation)
   (id workflow.populate_from_english.json)
   (label "Revise Workflow from English")
+  (categories ([] workflow/generation workflow/revision))
   (implementation llm.complete)
   (parents ([] workflow.populate_from_english))
   (inputs (

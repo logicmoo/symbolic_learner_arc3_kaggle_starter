@@ -28,6 +28,7 @@
   (kind operation)
   (id workflow.analyze_generation_contract.json)
   (label "Analyze Workflow Generation Contract / JSON")
+  (categories ([] workflow/generation workflow/preflight))
   (implementation llm.complete)
   (parents ([] workflow.analyze_generation_contract))
   (inputs (

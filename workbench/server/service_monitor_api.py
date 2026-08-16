@@ -499,20 +499,21 @@ def _validated_environment(service_id: str, value: Any) -> dict[str, str]:
 
 
 def _record_api_launch(service_id: str, process: subprocess.Popen, cwd: Path, command: list[str]) -> None:
+    resources = get_filesystem_provider()
     try:
-        entries = json.loads(PROCESS_LEDGER.read_text(encoding="utf-8"))
+        entries = json.loads(resources.read_text(PROCESS_LEDGER, encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         entries = []
     if not isinstance(entries, list):
         entries = []
     entries = [entry for entry in entries if isinstance(entry, dict) and entry.get("service") != service_id]
     entries.append({"service": service_id, "pid": process.pid, "startedAtEpoch": time.time(), "cwd": str(cwd.resolve()), "rawCommand": command, "terminationScope": "process-tree", "launchedBy": "workbench-api"})
-    PROCESS_LEDGER.parent.mkdir(parents=True, exist_ok=True)
+    resources.make_directory(PROCESS_LEDGER.parent, parents=True, exist_ok=True)
     temporary = PROCESS_LEDGER.with_name(
         f".{PROCESS_LEDGER.name}.{os.getpid()}.{get_ident()}.tmp"
     )
-    temporary.write_text(json.dumps(entries, indent=2) + "\n", encoding="utf-8")
-    temporary.replace(PROCESS_LEDGER)
+    resources.write_text(temporary, json.dumps(entries, indent=2) + "\n", encoding="utf-8")
+    resources.replace(temporary, PROCESS_LEDGER)
 
 
 @router.post("/system/services/{service_id}/launch-command")
