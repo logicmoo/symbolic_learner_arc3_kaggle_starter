@@ -716,3 +716,15 @@ Preserve the canonical checkout and its `codex/workbench-navigation-v2` branch.
   parameter. The States destination uses the real state-artifact history,
   resolves an older state UUID to its owning run through the engine API, and
   selects that exact record without replacing it with `runtimeRecord=`.
+- [x] Drive English Workflow Generation Contract buttons from effective Prompt
+  resources instead of a hard-coded React list. Applicable prompts now declare
+  their button name, produced section, and sortable classification in MeTTa;
+  the selected Prompt ID is persisted with each generated-order occurrence.
+- [x] Make English Workflow contract-section controls filesystem-driven. The
+  UI now discovers effective Prompt resources whose `applicability` includes
+  `english_to_workbench.contract_section`, uses each resource's `buttonName`
+  and exact Prompt ID when inserting a generation step, and orders the
+  controls by durable `classificationId` with deterministic name fallbacks.
+  All 21 shared section Prompts declare their applicability, button name,
+  classification, and produced contract field. Live verification confirmed
+  the classified order and that `+ summary` selects the Summary Prompt.

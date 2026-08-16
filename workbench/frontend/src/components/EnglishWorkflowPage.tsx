@@ -54,6 +54,10 @@ type PromptChoice = {
   kind?: string;
   text?: string | string[];
   enabled?: boolean;
+  applicability?: string[];
+  buttonName?: string;
+  classificationId?: string;
+  produces?: string[];
 };
 
 type DatatypeDocument = {
@@ -159,13 +163,8 @@ type GenerationStepEvent = {
 };
 
 const CONTRACT_SECTIONS: GenerationOutputName[] = ["summary", "memory", "checklist", "outputs", "rules", "englishsteps", "steps", "workflow", "libops", "matchops", "inventops", "codeops", "promptops", "libdt", "matchdt", "inventdt", "codedt", "libwf", "matchwf", "inventwf", "codewf"];
-const CONTRACT_SECTION_ROWS: Array<{ id: string; names: GenerationOutputName[] }> = [
-  { id: "contract", names: CONTRACT_SECTIONS.slice(0, 8) },
-  { id: "operations", names: CONTRACT_SECTIONS.slice(8, 13) },
-  { id: "datatypes", names: CONTRACT_SECTIONS.slice(13, 17) },
-  { id: "workflows", names: CONTRACT_SECTIONS.slice(17) },
-];
 const GENERATION_OUTPUTS: GenerationOutputName[] = [...CONTRACT_SECTIONS, "group"];
+const CONTRACT_SECTION_APPLICABILITY = "english_to_workbench.contract_section";
 const DEFAULT_PROMPT_BY_OUTPUT: Record<GenerationOutputName, string> = {
   summary: "workflow.generation.summary",
   memory: "workflow.generation.memory",
@@ -190,6 +189,29 @@ const DEFAULT_PROMPT_BY_OUTPUT: Record<GenerationOutputName, string> = {
   codewf: "workflow.generation.codewf",
   group: "workflow.analyze_generation_contract",
 };
+
+type ContractSectionPrompt = PromptChoice & { buttonName: GenerationOutputName };
+
+function reversedName(value: string) {
+  return [...value].reverse().join("");
+}
+
+function contractSectionPrompts(prompts: PromptChoice[]): ContractSectionPrompt[] {
+  return prompts.flatMap((prompt): ContractSectionPrompt[] => {
+    const buttonName = String(prompt.buttonName || "").trim() as GenerationOutputName;
+    const applicable = Array.isArray(prompt.applicability)
+      && prompt.applicability.includes(CONTRACT_SECTION_APPLICABILITY);
+    if (!applicable || buttonName === "group" || !CONTRACT_SECTIONS.includes(buttonName)) return [];
+    return [{ ...prompt, buttonName }];
+  }).sort((left, right) => {
+    const leftClassification = String(left.classificationId || "\uffff");
+    const rightClassification = String(right.classificationId || "\uffff");
+    return leftClassification.localeCompare(rightClassification)
+      || reversedName(left.buttonName).localeCompare(reversedName(right.buttonName))
+      || left.buttonName.localeCompare(right.buttonName)
+      || left.id.localeCompare(right.id);
+  });
+}
 
 function initialGenerationOrder(): GenerationOrderEntry[] {
   return [];
@@ -621,6 +643,7 @@ export function EnglishWorkflowPage({
   const lineNumberRef = useRef<HTMLPreElement | null>(null);
   const generationOrderPath = workflow.generation?.generationOrderPath || "docs/WORKFLOW_GENERATION_ORDER.txt";
   const contractOperation = operationCatalog.find((candidate) => candidate.id === "workflow.analyze_generation_contract");
+  const availableContractSectionPrompts = contractSectionPrompts(promptChoices);
   const contract = analysisContract || {
     summary: "Analyze the English specification to produce the generation contract.",
     memory: [],
@@ -704,10 +727,10 @@ export function EnglishWorkflowPage({
   const setGenerationEntryUpdates = (entryId: string, visibleToUpdates: boolean, parentGroupId?: string) => updateGenerationEntry(entryId, { visibleToUpdates }, parentGroupId);
   const setGenerationEntryPrompt = (entryId: string, promptId: string, parentGroupId?: string) => updateGenerationEntry(entryId, { promptId }, parentGroupId);
   const setGenerationEntryModel = (entryId: string, modelId: string, parentGroupId?: string) => updateGenerationEntry(entryId, { modelId }, parentGroupId);
-  const addGenerationOutput = (name: GenerationOutputName) => {
+  const addGenerationOutput = (name: GenerationOutputName, promptId?: string) => {
     const id = `${Date.now()}:${Math.random()}`;
     setGenerationOrder((current) => {
-      const entry: GenerationOrderEntry = { id, name, visibleToPeers: true, visibleToUpdates: false, promptId: DEFAULT_PROMPT_BY_OUTPUT[name], ...(name === "group" ? { steps: [] } : {}) };
+      const entry: GenerationOrderEntry = { id, name, visibleToPeers: true, visibleToUpdates: false, promptId: promptId || DEFAULT_PROMPT_BY_OUTPUT[name], ...(name === "group" ? { steps: [] } : {}) };
       if (name !== "group" && selectedGroupId) {
         return current.map((candidate) => candidate.id === selectedGroupId ? { ...candidate, steps: [...(candidate.steps || []), entry] } : candidate);
       }
@@ -1116,7 +1139,13 @@ export function EnglishWorkflowPage({
               <label><span>OUTPUT FORMAT</span><select aria-label="English Workflow output format" value={outputFormat} onChange={(event) => setOutputFormat(event.target.value)}><option value="json">Workflow JSON</option><option value="metta">MeTTa workflow resource</option></select></label>
               <fieldset className="english-workflow-contract-order">
                 <legend>CONTRACT SECTION ORDER · ONE LLM CALL</legend>
-                <div className="english-workflow-output-composer" aria-label="Add outputs to Generation Order">{CONTRACT_SECTION_ROWS.map((row, rowIndex) => <div key={row.id} className={`english-workflow-output-composer-row generation-${row.id}-buttons`} aria-label={`Add ${row.id} outputs`}>{row.names.map((name) => <button type="button" key={name} disabled={busyAction !== ""} onClick={() => addGenerationOutput(name)}>+ {name}</button>)}{rowIndex === 0 && <button type="button" className="english-workflow-group-output" disabled={busyAction !== ""} title="Create and select a simultaneous-generation group" onClick={() => addGenerationOutput("group")}>[+group]</button>}</div>)}</div>
+                <div className="english-workflow-output-composer" aria-label="Add outputs to Generation Order">
+                  <div className="english-workflow-output-composer-row" aria-label="Applicable Prompt resource outputs">
+                    {availableContractSectionPrompts.map((prompt) => <button type="button" key={prompt.id} disabled={busyAction !== ""} title={`${prompt.classificationId || "Unclassified"} · ${prompt.label || prompt.id}`} onClick={() => addGenerationOutput(prompt.buttonName, prompt.id)}>+ {prompt.buttonName}</button>)}
+                    <button type="button" className="english-workflow-group-output" disabled={busyAction !== ""} title="Create and select a simultaneous-generation group" onClick={() => addGenerationOutput("group")}>[+group]</button>
+                  </div>
+                  {!availableContractSectionPrompts.length && <small>No effective Prompt resources declare applicability <code>{CONTRACT_SECTION_APPLICABILITY}</code>.</small>}
+                </div>
                 <ol>{generationOrder.map((entry, index) => <GenerationOrderItem key={entry.id} entry={entry} ordinal={`${index + 1}`} index={index} siblingCount={generationOrder.length} selectedGroupId={selectedGroupId} busy={busyAction !== ""} prompts={promptChoices} models={modelChoices} onSelectGroup={(id) => setSelectedGroupId((current) => current === id ? null : id)} onRunGroup={(group, ordinal) => void analyze([group], `Run Group ${ordinal}`, group.modelId || selectedModel)} onShuffleGroup={shuffleGenerationGroup} onCopyGroup={copyGenerationGroup} onClearGroup={clearGenerationGroup} onAdd={addGenerationOutput} onPeers={setGenerationEntryPeers} onUpdates={setGenerationEntryUpdates} onPrompt={setGenerationEntryPrompt} onModel={setGenerationEntryModel} onRotate={rotateGenerationEntry} onRemove={removeGenerationEntry} />)}</ol>
                 <div className="english-workflow-order-actions"><button type="button" disabled={busyAction !== "" || generationOrder.length < 2} onClick={() => setGenerationOrder((current) => shuffledGenerationOrder(current))}>Shuffle order</button><button type="button" disabled={busyAction !== "" || generationOrder.length === 0} onClick={() => { setGenerationOrder([]); setSelectedGroupId(null); }}>Clear order</button></div>
                 <small>Analyze follows the full sequence. A row title [group] runs only that group. Prompt and Model Override routing is saved with every occurrence in <code>{generationOrderPath}</code>.</small>

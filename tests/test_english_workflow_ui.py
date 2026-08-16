@@ -44,17 +44,21 @@ def test_generation_order_is_one_call_audited_and_selectively_revisable() -> Non
     assert 'matchwf: "workflow.generation.matchwf"' in page
     assert 'inventwf: "workflow.generation.inventwf"' in page
     assert 'codewf: "workflow.generation.codewf"' in page
-    assert "promptId: DEFAULT_PROMPT_BY_OUTPUT[name]" in page
+    assert "promptId: promptId || DEFAULT_PROMPT_BY_OUTPUT[name]" in page
     assert "GENERATION ORDER · BUTTON PRESS HISTORY" in page
     assert "recordGenerationStep" in page
     assert "generation_steps: requestedSteps" in page
     assert "existing_generation_contract: analysisContract || {}" in page
     assert "existing_workflow: draft || workflow" in page
     assert 'aria-label="Add outputs to Generation Order"' in page
-    assert 'id: "operations", names: CONTRACT_SECTIONS.slice(8, 13)' in page
-    assert 'id: "datatypes", names: CONTRACT_SECTIONS.slice(13, 17)' in page
-    assert 'id: "workflows", names: CONTRACT_SECTIONS.slice(17)' in page
-    assert 'className={`english-workflow-output-composer-row generation-${row.id}-buttons`}' in page
+    assert 'const CONTRACT_SECTION_APPLICABILITY = "english_to_workbench.contract_section"' in page
+    assert "function contractSectionPrompts(prompts: PromptChoice[])" in page
+    assert "prompt.applicability.includes(CONTRACT_SECTION_APPLICABILITY)" in page
+    assert "leftClassification.localeCompare(rightClassification)" in page
+    assert "reversedName(left.buttonName).localeCompare(reversedName(right.buttonName))" in page
+    assert "availableContractSectionPrompts.map((prompt)" in page
+    assert "addGenerationOutput(prompt.buttonName, prompt.id)" in page
+    assert "CONTRACT_SECTION_ROWS" not in page
     assert "onAdd(entry.name)" in page
     assert 'addGenerationOutput("group")' in page
     assert ">[+group]</button>" in page
@@ -146,6 +150,14 @@ def test_generation_contract_sections_have_matching_shared_prompts() -> None:
 
     for section in ("summary", "memory", "checklist", "outputs", "rules", "englishsteps", "steps", "workflow", "libops", "matchops", "inventops", "codeops", "promptops", "libdt", "matchdt", "inventdt", "codedt", "libwf", "matchwf", "inventwf", "codewf"):
         assert f"(id workflow.generation.{section})" in prompts
+        assert f"(buttonName {section})" in prompts
+        assert f"(produces ([] {section}))" in prompts
+    assert prompts.count("(applicability ([] english_to_workbench.contract_section))") == 21
+    assert prompts.count("(classificationId english_to_workbench.") == 21
+    assert "(classificationId english_to_workbench.10.contract.010.summary)" in prompts
+    assert "(classificationId english_to_workbench.20.operations.010.library)" in prompts
+    assert "(classificationId english_to_workbench.30.datatypes.010.library)" in prompts
+    assert "(classificationId english_to_workbench.40.workflows.010.library)" in prompts
     assert "Generate Summary From Current Workflow Information" in prompts
     assert "Generate Memory Plan From Current Workflow Information" in prompts
     assert "Generate Acceptance Checklist From Current Workflow Information" in prompts
