@@ -162,10 +162,12 @@ Phase 2 implements the semantic object layer behind the Phase 1 debugger. It use
   Remaining: synchronize these semantic decisions with each live action tree's generated `object_registry.pl` and govern identities across encounters.
 
 - [ ] **Partial** Match corresponding objects between states and repeated encounters while retaining competing proposals.  
-  Existing evidence: `similarities.pl`, provider contracts, candidate records, plus frozen `MatchProposal`, `RecognitionAccount`, `EvidenceRecord`, `MergeDecision`, and `SplitDecision` contracts with deterministic construction.
-  Remaining: matching behavior that creates and governs these records across real encounters.
+  Existing evidence: frozen proposal/account/evidence/decision contracts plus `InstanceMatcher`, which deterministically explains matched/changed normalized properties, identifies allowed transformations, retains and ranks every rival, and produces unresolved or explicitly selected recognition accounts.
+  Remaining: feed stored instances from real encounter history, add topology/Turtle evidence, and route selection through registry-backed authority.
 
 - [ ] **Open** Recognize recurring objects under supported translation, rotation, scale, reflection, recoloring, noise, and partial visibility.
+
+  Existing partial evidence: correspondence proposals explicitly recognize declared translation, rotation, scale, and recoloring changes. Reflection, noise, partial visibility, and real-history recognition remain open.
 
 - [ ] **Partial** Detect movement, recoloring, resizing, addition, removal, splitting, merging, and structural change.  
   Existing evidence: provider difference artifacts and transition contracts.  

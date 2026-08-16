@@ -61,6 +61,7 @@ from .models import (
 from .memory import EncounterLog, ResidualGate, SingleWriter, SymbolicMemory
 from .prediction import PredictionLedger, RuleStore
 from .providers import ArtifactProvider, GptArtifactProvider, PrologProvider, PythonProvider
+from .recognition import InstanceMatcher
 from .store import ArtifactIndex, InMemorySemanticBackend, SemanticStoreBackend, SymbolicStore
 
 __all__ = [
@@ -89,6 +90,7 @@ __all__ = [
     "IntegrationValidator",
     "IdentityDecision",
     "InstanceParameters",
+    "InstanceMatcher",
     "InMemorySemanticBackend",
     "LearningStepResult",
     "MatchProposal",

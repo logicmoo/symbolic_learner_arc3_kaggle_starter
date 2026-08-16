@@ -805,3 +805,7 @@ Preserve the canonical checkout and its `codex/workbench-navigation-v2` branch.
   count, line thickness, and pairwise spatial relations. Cover hollow,
   irregular, thick, and disconnected fixtures without changing the adapter
   boundary.
+- [x] Add deterministic `InstanceMatcher` correspondence proposals. Explain
+  matched and changed fields, identify declared transformations, retain every
+  rival in stable advisory order, and create recognition accounts without
+  allowing even perfect similarity to commit identity or confidence.
