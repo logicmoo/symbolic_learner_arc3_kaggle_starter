@@ -6,6 +6,7 @@ Prolog artifact contracts.
 """
 
 from .adapters import GridAdapter, GridPerceptionBatch, PerceptionAdapter
+from .capture import SemanticGridCaptureObserver
 from .forms import CellLogoForm, FitResult, GenerativeForm
 from .integration import (
     GameObjectLearnerPayload,
@@ -117,6 +118,7 @@ __all__ = [
     "RuleStore",
     "SingleWriter",
     "SemanticStoreBackend",
+    "SemanticGridCaptureObserver",
     "SplitDecision",
     "SymbolicMemory",
     "SymbolicStore",

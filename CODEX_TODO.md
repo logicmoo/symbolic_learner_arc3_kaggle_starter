@@ -795,3 +795,8 @@ Preserve the canonical checkout and its `codex/workbench-navigation-v2` branch.
   Observers receive current/previous nodes and action context after durable
   Phase 1 capture; failures are isolated so semantic services cannot interrupt
   gameplay or suppress other observers.
+- [x] Implement `SemanticGridCaptureObserver` on the external seam. It writes
+  deterministic Observation and Encounter JSON records, SHA-256-addressed
+  per-candidate Turtle artifacts, previous-encounter chains, semantic-store
+  entries, action-tree manifests, and README links while retaining candidate
+  status until registry-backed recognition commits durable identity.
