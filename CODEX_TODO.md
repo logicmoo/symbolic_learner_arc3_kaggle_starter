@@ -824,3 +824,6 @@ Preserve the canonical checkout and its `codex/workbench-navigation-v2` branch.
 - [x] Turn encounter history into durable unresolved recognition work. Select
   the latest known instance per identity, persist every competing proposal,
   and persist an unresolved account without authorizing identity by similarity.
+- [x] Invoke unresolved recognition from live semantic grid capture whenever
+  known identity history is present, persist proposal/account artifacts beside
+  the state, and link them through the action-tree semantic manifest.

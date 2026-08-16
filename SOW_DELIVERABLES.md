@@ -163,7 +163,7 @@ Phase 2 implements the semantic object layer behind the Phase 1 debugger. It use
 
 - [ ] **Partial** Match corresponding objects between states and repeated encounters while retaining competing proposals.  
   Existing evidence: deterministic proposals retain every rival and explain matched/changed properties; `RecognitionSession` derives the latest known instance for each durable identity from encounter history and persists every proposal plus an unresolved recognition account. `RegistryCorrespondenceAuthority` requires explicit friendly-ID selection plus attributable evidence, calibrates through `SingleWriter`, creates a resolved recognition account, and records Prolog decision history. Perfect similarity alone is rejected.
-  Remaining: invoke the session automatically from live capture and add topology/Turtle evidence generation.
+  Live `SemanticGridCaptureObserver` sessions now invoke this path when durable identity history is available and link proposal/account artifacts into the action-tree node. Remaining: add topology/Turtle evidence generation and explicit authorization controls.
 
 - [ ] **Open** Recognize recurring objects under supported translation, rotation, scale, reflection, recoloring, noise, and partial visibility.
 
@@ -213,7 +213,7 @@ Phase 2 implements the semantic object layer behind the Phase 1 debugger. It use
 
 - [ ] **Partial** Associate semantic encounters and memory updates with the history already preserved by Phase 1.  
   Existing evidence: deterministic debugger history, versioned records, append-only `EncounterLog`, external manifests/README links, and the isolated runner observer seam; `SemanticGridCaptureObserver` now normalizes captured grids, persists observation/encounter/Turtle artifacts, chains repeated candidates, composes `SymbolicStore`, and links records to nodes.
-  Remaining: configure observer enablement in real runner entry points and connect candidate encounters to registry-governed durable identities.
+  Remaining: configure observer enablement in additional runner entry points and connect unresolved candidate proposals to explicit registry authorization controls.
 
 - [ ] **Open** Support deterministic semantic-memory replay and reproducible updates from the debugger’s recorded history.
 

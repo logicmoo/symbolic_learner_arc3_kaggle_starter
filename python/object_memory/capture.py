@@ -9,6 +9,7 @@ from typing import Any, Callable, Mapping
 
 from .adapters import GridAdapter
 from .models import ArtifactRef, EncounterRecord, InstanceParameters, TurtleProgramRef
+from .recognition import RecognitionSession
 from .store import InMemorySemanticBackend, SymbolicStore
 
 
@@ -36,6 +37,7 @@ class SemanticGridCaptureObserver:
         self.adapter = adapter
         self.grid_selector = grid_selector
         self.symbolic_store = symbolic_store or SymbolicStore(InMemorySemanticBackend())
+        self.recognition = RecognitionSession(self.symbolic_store)
         self._latest_by_candidate: dict[str, str] = {}
 
     @staticmethod
@@ -131,3 +133,32 @@ class SemanticGridCaptureObserver:
                 schema_version=encounter.schema_version,
                 deterministic_hash=encounter.deterministic_hash,
             )
+            if self.recognition.latest_known_instances():
+                proposals = self.recognition.propose(encounter.encounter_id)
+                for proposal in proposals:
+                    proposal_path = self._write_record(
+                        semantic_dir / f"{proposal.proposal_id}.match-proposal.json",
+                        proposal,
+                    )
+                    store.link_semantic_record(
+                        node,
+                        record_type="match_proposal",
+                        record_id=proposal.proposal_id,
+                        artifact_path=proposal_path,
+                        schema_version=proposal.schema_version,
+                        deterministic_hash=proposal.proposal_id.rsplit("-", 1)[-1],
+                    )
+                account = self.recognition.unresolved_account(candidate.candidate_id)
+                if account is not None:
+                    account_path = self._write_record(
+                        semantic_dir / f"{account.account_id}.recognition-account.json",
+                        account,
+                    )
+                    store.link_semantic_record(
+                        node,
+                        record_type="recognition_account",
+                        record_id=account.account_id,
+                        artifact_path=account_path,
+                        schema_version=account.schema_version,
+                        deterministic_hash=account.account_id.rsplit("-", 1)[-1],
+                    )

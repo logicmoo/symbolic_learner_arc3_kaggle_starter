@@ -162,6 +162,18 @@ class RecognitionSession:
         )
         return proposals
 
+    def unresolved_account(self, candidate_id: str) -> RecognitionAccount | None:
+        accounts = self.store.values("recognition_accounts")
+        return next(
+            (
+                account
+                for account in reversed(accounts)
+                if account.candidate_id == candidate_id
+                and account.decision_source == "unresolved"
+            ),
+            None,
+        )
+
 
 class ChangeDetector:
     """Classify explicit before/after correspondences into semantic changes."""
