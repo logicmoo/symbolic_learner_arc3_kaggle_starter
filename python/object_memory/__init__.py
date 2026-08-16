@@ -60,10 +60,12 @@ from .models import (
 from .memory import EncounterLog, ResidualGate, SingleWriter, SymbolicMemory
 from .prediction import PredictionLedger, RuleStore
 from .providers import ArtifactProvider, GptArtifactProvider, PrologProvider, PythonProvider
+from .store import ArtifactIndex, InMemorySemanticBackend, SemanticStoreBackend, SymbolicStore
 
 __all__ = [
     "ArtifactProvider",
     "ArtifactRef",
+    "ArtifactIndex",
     "CandidateObject",
     "CellLogoForm",
     "CommittedAtom",
@@ -86,6 +88,7 @@ __all__ = [
     "IntegrationValidator",
     "IdentityDecision",
     "InstanceParameters",
+    "InMemorySemanticBackend",
     "LearningStepResult",
     "MatchProposal",
     "MergeDecision",
@@ -113,8 +116,10 @@ __all__ = [
     "RuleRivalSet",
     "RuleStore",
     "SingleWriter",
+    "SemanticStoreBackend",
     "SplitDecision",
     "SymbolicMemory",
+    "SymbolicStore",
     "TransformationCandidate",
     "TransformationLearner",
     "TransitionAnalyzer",

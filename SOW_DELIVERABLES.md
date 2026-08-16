@@ -200,8 +200,8 @@ Phase 2 implements the semantic object layer behind the Phase 1 debugger. It use
 ## Persistent symbolic memory and replay
 
 - [ ] **Partial** Maintain persistent symbolic memory for recognized objects, observations, Turtle programs, and associated artifacts.  
-  Existing evidence: `SymbolicMemory` reference implementation and generated action-tree storage.  
-  Remaining: durable `SymbolicStore`, `ArtifactIndex`, and lifecycle governance.
+  Existing evidence: `SymbolicMemory`, a backend-neutral `SymbolicStore` facade with write-once exact identity, a replaceable `SemanticStoreBackend` boundary, observation/encounter/Turtle composition, and an `ArtifactIndex` populated by stable identifier and semantic type.
+  Remaining: durable Prolog or AtomSpace backend implementation and lifecycle governance.
 
 - [ ] **Partial** Associate semantic encounters and memory updates with the history already preserved by Phase 1.  
   Existing evidence: deterministic debugger history plus the versioned `EncounterRecord` contract with an explicit Phase 1 action-tree-node reference and deterministic encounter identifier; the append-only `EncounterLog` enforces prior-link order, idempotent replay, conflict rejection, and stable history hashing.

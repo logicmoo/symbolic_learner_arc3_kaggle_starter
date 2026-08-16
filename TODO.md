@@ -128,7 +128,7 @@ Keep the shared records in `python/object_memory/models.py`; do not create anoth
 - [x] Implement append-only semantic `EncounterLog` linked to the encounter history already recorded by Phase 1.
 - [ ] Implement deterministic replay of semantic memory updates from the same Phase 1 history and starting store.
 - [ ] Implement `SymbolicStore` over the selected Prolog or Atomspace storage.
-- [ ] Implement `ArtifactIndex` for source frames, masks, Turtle programs, reconstructions, embeddings, transcripts, evidence, predictions, and outcomes.
+- [x] Implement `ArtifactIndex` for exact artifact lookup by stable identifier and semantic artifact type; populate it as observations, encounters, and Turtle programs enter `SymbolicStore`.
 - [ ] Add active, demoted, and tombstoned lifecycle states.
 - [ ] Preserve provenance when identities are merged, split, demoted, or tombstoned.
 - [ ] Store recognized objects, observations, Turtle programs, recognition accounts, confidence, and associated artifacts.

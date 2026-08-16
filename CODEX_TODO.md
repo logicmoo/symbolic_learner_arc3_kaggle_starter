@@ -764,3 +764,8 @@ Preserve the canonical checkout and its `codex/workbench-navigation-v2` branch.
   coordinate contract, action-tree node, extractor provenance, candidate IDs,
   regions, and Turtle details while keeping provider intermediates outside the
   persistent observation record.
+- [x] Add the backend-neutral `SymbolicStore`/`SemanticStoreBackend` boundary
+  with exact write-once identity, conflict rejection, idempotent composition,
+  semantic encounter history, and automatic artifact/Turtle indexing. Provide
+  a deterministic in-memory backend for tests while leaving the durable
+  backend slot open for Prolog or AtomSpace.
