@@ -809,3 +809,7 @@ Preserve the canonical checkout and its `codex/workbench-navigation-v2` branch.
   matched and changed fields, identify declared transformations, retain every
   rival in stable advisory order, and create recognition accounts without
   allowing even perfect similarity to commit identity or confidence.
+- [x] Add deterministic `ObjectChange` records and `ChangeDetector` handling
+  explicit correspondences. Cover movement, recolor, resize, orientation,
+  reshape, appearance/disappearance, one-to-many split, and many-to-one merge
+  without treating advisory proposals as authoritative correspondence.

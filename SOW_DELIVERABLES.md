@@ -170,8 +170,8 @@ Phase 2 implements the semantic object layer behind the Phase 1 debugger. It use
   Existing partial evidence: correspondence proposals explicitly recognize declared translation, rotation, scale, and recoloring changes. Reflection, noise, partial visibility, and real-history recognition remain open.
 
 - [ ] **Partial** Detect movement, recoloring, resizing, addition, removal, splitting, merging, and structural change.  
-  Existing evidence: provider difference artifacts and transition contracts.  
-  Remaining: repeatable object-level implementation and fixtures.
+  Existing evidence: provider difference artifacts and transition contracts plus deterministic `ObjectChange` records and `ChangeDetector` coverage for moved, recolored, resized, reoriented, reshaped, appeared, disappeared, one-to-many split, and many-to-one merge cases.
+  Remaining: connect detection to live before/after semantic encounters and persist evidence-backed changes.
 
 ## Per-object Turtle programs and regeneration
 

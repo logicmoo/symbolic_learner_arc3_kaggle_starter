@@ -47,6 +47,7 @@ from .models import (
     MergeDecision,
     NormalizedResult,
     Observation,
+    ObjectChange,
     PHASE2_SCHEMA_VERSION,
     PredictionRecord,
     ProvenanceRef,
@@ -61,7 +62,7 @@ from .models import (
 from .memory import EncounterLog, ResidualGate, SingleWriter, SymbolicMemory
 from .prediction import PredictionLedger, RuleStore
 from .providers import ArtifactProvider, GptArtifactProvider, PrologProvider, PythonProvider
-from .recognition import InstanceMatcher
+from .recognition import ChangeDetector, InstanceMatcher
 from .store import ArtifactIndex, InMemorySemanticBackend, SemanticStoreBackend, SymbolicStore
 
 __all__ = [
@@ -69,6 +70,7 @@ __all__ = [
     "ArtifactRef",
     "ArtifactIndex",
     "CandidateObject",
+    "ChangeDetector",
     "CellLogoForm",
     "CommittedAtom",
     "EncounterRecord",
@@ -97,6 +99,7 @@ __all__ = [
     "MergeDecision",
     "NormalizedResult",
     "Observation",
+    "ObjectChange",
     "OutcomeChannel",
     "PerceptionAdapter",
     "PipelineGameObjectLearnerPlugin",

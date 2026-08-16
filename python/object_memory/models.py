@@ -358,6 +358,42 @@ class RecognitionAccount:
 
 
 @dataclass(frozen=True)
+class ObjectChange:
+    change_id: str
+    kind: str
+    before_identity_ids: tuple[str, ...] = ()
+    after_candidate_ids: tuple[str, ...] = ()
+    properties: Mapping[str, Any] = field(default_factory=dict)
+    provenance: tuple[ProvenanceRef, ...] = ()
+    schema_version: str = PHASE2_SCHEMA_VERSION
+
+    @classmethod
+    def create(
+        cls,
+        *,
+        kind: str,
+        before_identity_ids: tuple[str, ...] = (),
+        after_candidate_ids: tuple[str, ...] = (),
+        properties: Mapping[str, Any] | None = None,
+        provenance: tuple[ProvenanceRef, ...] = (),
+    ) -> "ObjectChange":
+        identity = {
+            "kind": kind,
+            "before_identity_ids": tuple(sorted(before_identity_ids)),
+            "after_candidate_ids": tuple(sorted(after_candidate_ids)),
+            "properties": properties or {},
+        }
+        return cls(
+            change_id=deterministic_identifier("object-change", identity),
+            kind=kind,
+            before_identity_ids=before_identity_ids,
+            after_candidate_ids=after_candidate_ids,
+            properties=properties or {},
+            provenance=provenance,
+        )
+
+
+@dataclass(frozen=True)
 class EncounterRecord:
     encounter_id: str
     observation_id: str

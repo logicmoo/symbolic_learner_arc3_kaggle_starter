@@ -108,7 +108,7 @@ Keep the shared records in `python/object_memory/models.py`; do not create anoth
 ## Implement recognition and change detection
 
 - [ ] Recognize supported translation, rotation, reflection, recoloring, scaling, noise, and partial visibility.
-- [ ] Detect moved, recolored, resized, reshaped, appeared, disappeared, split, and merged objects.
+- [x] Detect moved, recolored, resized, reshaped, appeared, disappeared, split, and merged objects from explicit correspondences.
 - [ ] Distinguish recognized or explained content from residual, potentially new object structure.
 - [ ] Keep incomplete or partially occluded observations from overwriting the complete stored form.
 - [ ] Compare Turtle reconstruction fit as one source of recognition evidence.
@@ -137,7 +137,7 @@ Keep the shared records in `python/object_memory/models.py`; do not create anoth
 
 - [ ] Stable persistent identity across multiple encounters and state transitions.
 - [ ] Correspondence across before/after states and repeated examples.
-- [ ] Movement, recolor, resize, addition, removal, split, merge, and structural-change detection.
+- [x] Movement, recolor, resize, addition, removal, split, merge, and structural-change detection.
 - [ ] Per-object Turtle regeneration using movement, rotation, pen state, and pen width.
 - [ ] Regenerated/source comparison and residual measurement.
 - [ ] Duplicate-prevention test.
