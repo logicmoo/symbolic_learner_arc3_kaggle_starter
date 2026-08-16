@@ -390,6 +390,19 @@ def configure_runtime_home(script_file: str | Path) -> Path:
     script_path = _resolved_path(script_file, base=launch_cwd)
     script_root = _find_project_root(script_path)
 
+    # Resource-location selectors are launch decisions, not dotenv defaults.
+    # Capture the caller's environment before loading project files so a .env
+    # from a fallback checkout cannot redirect an invocation away from its
+    # launch workspace. Other values (provider keys, model defaults, etc.)
+    # still load normally from dotenv files.
+    selector_names = (
+        "ARC3_RUNTIME_HOME",
+        "ARC3_CONFIG_ROOT",
+        "ARC3_LLM_CONFIG",
+        "ARC3_TREE_ROOT",
+    )
+    launch_selectors = {name: os.environ.get(name) for name in selector_names}
+
     initial_runtime = os.environ.get("ARC3_RUNTIME_HOME", "").strip()
     initial_runtime_root = (
         _find_project_root(_resolved_path(initial_runtime, base=launch_cwd))
@@ -403,6 +416,11 @@ def configure_runtime_home(script_file: str | Path) -> Path:
     )
     script_env = script_root / ".env" if script_root is not None else None
     env_files = _load_environment_files((launch_env, runtime_env, script_env))
+    for name, value in launch_selectors.items():
+        if value is None:
+            os.environ.pop(name, None)
+        else:
+            os.environ[name] = value
 
     code_root, code_source = _resolve_code_root(
         launch_cwd=launch_cwd,
