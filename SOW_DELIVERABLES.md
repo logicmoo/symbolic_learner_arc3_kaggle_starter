@@ -158,8 +158,8 @@ Phase 2 implements the semantic object layer behind the Phase 1 debugger. It use
 ## Persistent identity and correspondence
 
 - [ ] **Partial** Extend `object_registry.pl` into persistent identities across examples, encounters, and transitions while preserving Phase 1 provenance.  
-  Existing evidence: readable state-transition identities.  
-  Remaining: cross-encounter semantic identity governance.
+  Existing evidence: readable state-transition identities plus `SingleWriter` lifecycle governance for explicit merge/split decisions, active/demoted/tombstoned states, provenance-preserving snapshots, and reversible false decisions.
+  Remaining: synchronize these semantic decisions with each live action tree's generated `object_registry.pl` and govern identities across encounters.
 
 - [ ] **Partial** Match corresponding objects between states and repeated encounters while retaining competing proposals.  
   Existing evidence: `similarities.pl`, provider contracts, candidate records, plus frozen `MatchProposal`, `RecognitionAccount`, `EvidenceRecord`, `MergeDecision`, and `SplitDecision` contracts with deterministic construction.
@@ -192,6 +192,8 @@ Phase 2 implements the semantic object layer behind the Phase 1 debugger. It use
 - [ ] **Open** Distinguish recognized or explained content from residual, potentially new object structure.
 
 - [ ] **Open** Prevent duplicate persistent storage when an existing object is recognized again.
+
+  Existing partial evidence: semantic store writes and merge/split decisions are idempotent by deterministic identity and reject conflicting reuse. Recognition-driven duplicate prevention remains open.
 
 - [ ] **Partial** Accumulate positive and negative recognition evidence and provenance across the encounter history preserved by Phase 1.  
   Existing evidence: `SingleWriter` accepts frozen positive/negative `EvidenceRecord` values, checks their subject, deduplicates stable evidence IDs, preserves base provenance, and derives confidence from signed weights independently of arrival order.

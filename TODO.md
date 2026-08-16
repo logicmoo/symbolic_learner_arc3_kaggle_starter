@@ -101,9 +101,9 @@ Keep the shared records in `python/object_memory/models.py`; do not create anoth
 - [ ] Match objects across repeated encounters and examples.
 - [ ] Preserve multiple competing match proposals.
 - [ ] Record matched and changed properties plus supporting and contradicting evidence.
-- [ ] Route identity merge and split decisions through `SingleWriter` or authoritative Prolog logic.
+- [x] Route identity merge and split decisions through `SingleWriter` or authoritative Prolog logic.
 - [ ] Prevent duplicate durable storage when an existing object is recognized again.
-- [ ] Keep false merges and false splits reversible through evidence and provenance.
+- [x] Keep false merges and false splits reversible through evidence and provenance.
 
 ## Implement recognition and change detection
 
@@ -129,8 +129,8 @@ Keep the shared records in `python/object_memory/models.py`; do not create anoth
 - [ ] Implement deterministic replay of semantic memory updates from the same Phase 1 history and starting store.
 - [ ] Implement `SymbolicStore` over the selected Prolog or Atomspace storage.
 - [x] Implement `ArtifactIndex` for exact artifact lookup by stable identifier and semantic artifact type; populate it as observations, encounters, and Turtle programs enter `SymbolicStore`.
-- [ ] Add active, demoted, and tombstoned lifecycle states.
-- [ ] Preserve provenance when identities are merged, split, demoted, or tombstoned.
+- [x] Add active, demoted, and tombstoned lifecycle states.
+- [x] Preserve provenance when identities are merged, split, demoted, or tombstoned.
 - [ ] Store recognized objects, observations, Turtle programs, recognition accounts, confidence, and associated artifacts.
 
 ## Phase 2 tests and demonstrations
@@ -141,7 +141,7 @@ Keep the shared records in `python/object_memory/models.py`; do not create anoth
 - [ ] Per-object Turtle regeneration using movement, rotation, pen state, and pen width.
 - [ ] Regenerated/source comparison and residual measurement.
 - [ ] Duplicate-prevention test.
-- [ ] False-merge and false-split tests.
+- [x] False-merge and false-split tests.
 - [ ] Translation, rotation, reflection, recolor, scale, noise, and partial-visibility fixtures.
 - [ ] Modest degradation and partial-occlusion recognition.
 - [ ] Positive and negative evidence accumulation.

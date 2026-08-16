@@ -782,3 +782,8 @@ Preserve the canonical checkout and its `codex/workbench-navigation-v2` branch.
   confidence. It validates evidence subjects, deduplicates deterministic IDs,
   preserves source provenance, accumulates positive and negative weights, and
   derives the same confidence and attribution regardless of arrival order.
+- [x] Add explicit, idempotent `SingleWriter` merge/split application with
+  same-type validation, decision/evidence provenance, active/demoted/tombstoned
+  lifecycle states, prior-state snapshots, and reversible false-merge and
+  false-split behavior. Keep generated Phase 1 `object_registry.pl` files as
+  the eventual synchronization target rather than creating a second registry.

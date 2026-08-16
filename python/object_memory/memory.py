@@ -10,8 +10,11 @@ from .models import (
     EncounterRecord,
     EvidencePolarity,
     EvidenceRecord,
+    IdentityDecision,
+    MergeDecision,
     ResidualCandidate,
     ResidualDisposition,
+    SplitDecision,
 )
 
 
@@ -93,6 +96,8 @@ class SymbolicMemory:
         self._atoms: dict[str, CommittedAtom] = {}
         self._events: list[dict[str, Any]] = []
         self._evidence: dict[str, dict[str, EvidenceRecord]] = {}
+        self._identity_decisions: dict[str, MergeDecision | SplitDecision] = {}
+        self._decision_snapshots: dict[str, dict[str, CommittedAtom | None]] = {}
 
     def get(self, handle: str) -> CommittedAtom | None:
         return self._atoms.get(handle)
@@ -108,6 +113,9 @@ class SymbolicMemory:
             self._evidence.get(handle, {})[evidence_id]
             for evidence_id in sorted(self._evidence.get(handle, {}))
         )
+
+    def identity_decision(self, decision_id: str) -> MergeDecision | SplitDecision | None:
+        return self._identity_decisions.get(decision_id)
 
 
 class SingleWriter:
@@ -221,3 +229,145 @@ class SingleWriter:
         self.memory._atoms[handle] = updated
         self.memory._events.append({"event": "tombstone", "handle": handle, "reason": reason})
         return updated
+
+    def demote(self, handle: str, reason: str) -> CommittedAtom:
+        atom = self.memory._atoms[handle]
+        updated = replace(
+            atom,
+            lifecycle_state="demoted",
+            provenance=(*atom.provenance, reason),
+        )
+        self.memory._atoms[handle] = updated
+        self.memory._events.append({"event": "demote", "handle": handle, "reason": reason})
+        return updated
+
+    def merge_identities(
+        self,
+        decision: MergeDecision,
+        resulting_atom: CommittedAtom,
+    ) -> CommittedAtom:
+        if decision.status is not IdentityDecision.ACCEPTED:
+            raise ValueError("merge decision must be accepted before application")
+        if resulting_atom.handle != decision.resulting_identity_id:
+            raise ValueError("resulting atom does not match merge decision")
+        existing_decision = self.memory._identity_decisions.get(decision.decision_id)
+        if existing_decision is not None:
+            if existing_decision != decision:
+                raise ValueError(f"Identity decision conflict for {decision.decision_id!r}")
+            return self.memory._atoms[decision.resulting_identity_id]
+        sources = [self.memory._atoms[item] for item in decision.identity_ids]
+        if len({item.atom_type for item in sources}) != 1:
+            raise ValueError("merged identities must have the same atom type")
+        if resulting_atom.atom_type != sources[0].atom_type:
+            raise ValueError("merge result must preserve the source atom type")
+        snapshot = {
+            handle: self.memory._atoms.get(handle)
+            for handle in {*decision.identity_ids, decision.resulting_identity_id}
+        }
+        self.memory._decision_snapshots[decision.decision_id] = snapshot
+        provenance = tuple(
+            dict.fromkeys(
+                (
+                    *(item for source in sources for item in source.provenance),
+                    *resulting_atom.provenance,
+                    decision.decision_id,
+                    *decision.evidence_ids,
+                )
+            )
+        )
+        prior_result = self.memory._atoms.get(decision.resulting_identity_id)
+        confidence = prior_result.confidence if prior_result is not None else 0.0
+        merged = replace(
+            resulting_atom,
+            confidence=confidence,
+            provenance=provenance,
+            lifecycle_state="active",
+        )
+        self.memory._atoms[merged.handle] = merged
+        for handle in decision.identity_ids:
+            if handle != merged.handle:
+                self.demote(handle, decision.decision_id)
+        self.memory._identity_decisions[decision.decision_id] = decision
+        self.memory._events.append(
+            {
+                "event": "merge",
+                "decision_id": decision.decision_id,
+                "sources": decision.identity_ids,
+                "result": merged.handle,
+            }
+        )
+        return merged
+
+    def split_identity(
+        self,
+        decision: SplitDecision,
+        resulting_atoms: tuple[CommittedAtom, ...],
+    ) -> tuple[CommittedAtom, ...]:
+        if decision.status is not IdentityDecision.ACCEPTED:
+            raise ValueError("split decision must be accepted before application")
+        if tuple(item.handle for item in resulting_atoms) != decision.resulting_identity_ids:
+            raise ValueError("split atoms must match the decision result order")
+        existing_decision = self.memory._identity_decisions.get(decision.decision_id)
+        if existing_decision is not None:
+            if existing_decision != decision:
+                raise ValueError(f"Identity decision conflict for {decision.decision_id!r}")
+            return tuple(self.memory._atoms[item] for item in decision.resulting_identity_ids)
+        source = self.memory._atoms[decision.source_identity_id]
+        if any(item.atom_type != source.atom_type for item in resulting_atoms):
+            raise ValueError("split results must preserve the source atom type")
+        snapshot = {
+            handle: self.memory._atoms.get(handle)
+            for handle in {decision.source_identity_id, *decision.resulting_identity_ids}
+        }
+        self.memory._decision_snapshots[decision.decision_id] = snapshot
+        stored: list[CommittedAtom] = []
+        for item in resulting_atoms:
+            admitted = replace(
+                item,
+                confidence=0.0,
+                provenance=tuple(
+                    dict.fromkeys(
+                        (
+                            *source.provenance,
+                            *item.provenance,
+                            decision.decision_id,
+                            *decision.evidence_ids,
+                        )
+                    )
+                ),
+                lifecycle_state="active",
+            )
+            self.memory._atoms[item.handle] = admitted
+            stored.append(admitted)
+        self.demote(source.handle, decision.decision_id)
+        self.memory._identity_decisions[decision.decision_id] = decision
+        self.memory._events.append(
+            {
+                "event": "split",
+                "decision_id": decision.decision_id,
+                "source": source.handle,
+                "results": decision.resulting_identity_ids,
+            }
+        )
+        return tuple(stored)
+
+    def reverse_identity_decision(self, decision_id: str, reason: str) -> None:
+        decision = self.memory._identity_decisions[decision_id]
+        snapshot = self.memory._decision_snapshots[decision_id]
+        for handle, prior in snapshot.items():
+            if prior is None:
+                current = self.memory._atoms.get(handle)
+                if current is not None:
+                    self.memory._atoms[handle] = replace(
+                        current,
+                        lifecycle_state="tombstoned",
+                        provenance=(*current.provenance, reason),
+                    )
+            else:
+                self.memory._atoms[handle] = replace(
+                    prior,
+                    provenance=(*prior.provenance, reason),
+                )
+        self.memory._events.append(
+            {"event": "identity_decision_reversed", "decision_id": decision_id, "reason": reason}
+        )
