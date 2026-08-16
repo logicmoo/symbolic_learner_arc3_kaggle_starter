@@ -9,6 +9,7 @@ from .models import (
     CommittedAtom,
     EncounterRecord,
     EvidenceRecord,
+    MatchProposal,
     Observation,
     RecognitionAccount,
     TurtleProgramRef,
@@ -99,6 +100,9 @@ class SymbolicStore:
 
     def put_recognition(self, value: RecognitionAccount) -> RecognitionAccount:
         return self.backend.write_once("recognition_accounts", value.account_id, value)
+
+    def put_match_proposal(self, value: MatchProposal) -> MatchProposal:
+        return self.backend.write_once("match_proposals", value.proposal_id, value)
 
     def put_evidence(self, value: EvidenceRecord) -> EvidenceRecord:
         return self.backend.write_once("evidence", value.evidence_id, value)

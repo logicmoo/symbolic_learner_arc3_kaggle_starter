@@ -62,7 +62,12 @@ from .models import (
 from .memory import EncounterLog, ResidualGate, SingleWriter, SymbolicMemory
 from .prediction import PredictionLedger, RuleStore
 from .providers import ArtifactProvider, GptArtifactProvider, PrologProvider, PythonProvider
-from .recognition import ChangeDetector, InstanceMatcher, RegistryCorrespondenceAuthority
+from .recognition import (
+    ChangeDetector,
+    InstanceMatcher,
+    RecognitionSession,
+    RegistryCorrespondenceAuthority,
+)
 from .store import ArtifactIndex, InMemorySemanticBackend, SemanticStoreBackend, SymbolicStore
 
 __all__ = [
@@ -115,6 +120,7 @@ __all__ = [
     "ResidualDisposition",
     "ResidualGate",
     "RecognitionAccount",
+    "RecognitionSession",
     "RegistryCorrespondenceAuthority",
     "RuleEvidence",
     "RuleExecutor",

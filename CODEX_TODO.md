@@ -821,3 +821,6 @@ Preserve the canonical checkout and its `codex/workbench-navigation-v2` branch.
   attributable evidence are mandatory even for a perfect match; acceptance
   calibrates through `SingleWriter`, preserves rivals and property explanations,
   emits a recognition account, and records encounter/decision/evidence history.
+- [x] Turn encounter history into durable unresolved recognition work. Select
+  the latest known instance per identity, persist every competing proposal,
+  and persist an unresolved account without authorizing identity by similarity.

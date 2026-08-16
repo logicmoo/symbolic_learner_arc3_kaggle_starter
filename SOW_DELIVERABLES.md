@@ -162,8 +162,8 @@ Phase 2 implements the semantic object layer behind the Phase 1 debugger. It use
   Remaining: automatically propose and authorize identity decisions from consecutive live encounters and carry registry state across examples.
 
 - [ ] **Partial** Match corresponding objects between states and repeated encounters while retaining competing proposals.  
-  Existing evidence: deterministic proposals retain every rival and explain matched/changed properties; `RegistryCorrespondenceAuthority` requires explicit friendly-ID selection plus attributable evidence, calibrates through `SingleWriter`, creates a recognition account, and records Prolog decision history. Perfect similarity alone is rejected.
-  Remaining: feed stored instances automatically from live encounter history and add topology/Turtle evidence generation.
+  Existing evidence: deterministic proposals retain every rival and explain matched/changed properties; `RecognitionSession` derives the latest known instance for each durable identity from encounter history and persists every proposal plus an unresolved recognition account. `RegistryCorrespondenceAuthority` requires explicit friendly-ID selection plus attributable evidence, calibrates through `SingleWriter`, creates a resolved recognition account, and records Prolog decision history. Perfect similarity alone is rejected.
+  Remaining: invoke the session automatically from live capture and add topology/Turtle evidence generation.
 
 - [ ] **Open** Recognize recurring objects under supported translation, rotation, scale, reflection, recoloring, noise, and partial visibility.
 

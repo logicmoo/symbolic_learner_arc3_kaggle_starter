@@ -98,7 +98,7 @@ Keep the shared records in `python/object_memory/models.py`; do not create anoth
 - [ ] Reuse the readable identities maintained by the Phase 1 debugger.
 - [ ] Map provider-proposed identities to persistent semantic identities without discarding provenance.
 - [ ] Match objects across parent/current states.
-- [ ] Match objects across repeated encounters and examples.
+- [x] Match objects across repeated encounters and examples through unresolved, persisted proposals over the latest known instance for every durable identity.
 - [x] Preserve multiple competing match proposals.
 - [x] Record matched and changed properties plus supporting and contradicting evidence.
 - [x] Route identity merge and split decisions through `SingleWriter` or authoritative Prolog logic.

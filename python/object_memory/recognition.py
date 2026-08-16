@@ -12,6 +12,7 @@ from .models import (
     RecognitionAccount,
 )
 from .memory import SingleWriter
+from .store import SymbolicStore
 
 
 class InstanceMatcher:
@@ -123,6 +124,43 @@ class InstanceMatcher:
             ),
             decision_source=decision_source,
         )
+
+
+class RecognitionSession:
+    """Persist unresolved proposals between a candidate and known encounter histories."""
+
+    def __init__(self, store: SymbolicStore, matcher: InstanceMatcher | None = None) -> None:
+        self.store = store
+        self.matcher = matcher or InstanceMatcher()
+
+    def latest_known_instances(self) -> dict[str, InstanceParameters]:
+        latest: dict[str, InstanceParameters] = {}
+        for encounter in self.store.encounters.records():
+            if encounter.object_identity_id is not None:
+                latest[encounter.object_identity_id] = encounter.instance
+        return latest
+
+    def propose(self, encounter_id: str) -> tuple[MatchProposal, ...]:
+        encounter = self.store.encounters.get(encounter_id)
+        if encounter is None:
+            raise KeyError(encounter_id)
+        if encounter.candidate_identity_id is None:
+            raise ValueError("recognition proposals require a candidate encounter")
+        proposals = self.matcher.proposals(
+            candidate_id=encounter.candidate_identity_id,
+            current=encounter.instance,
+            stored=self.latest_known_instances(),
+            provenance=encounter.provenance,
+        )
+        for proposal in proposals:
+            self.store.put_match_proposal(proposal)
+        self.store.put_recognition(
+            self.matcher.recognition_account(
+                candidate_id=encounter.candidate_identity_id,
+                proposals=proposals,
+            )
+        )
+        return proposals
 
 
 class ChangeDetector:
@@ -250,13 +288,14 @@ class RegistryCorrespondenceAuthority:
         registry = self.action_tree_store.registry_identities()
         if selected_identity_id not in registry:
             raise ValueError("selected identity is not a friendly registry identity")
+        if self.writer.memory.get(selected_identity_id) is None:
+            raise KeyError(selected_identity_id)
         for item in evidence:
             if item.subject_id != selected_identity_id:
                 raise ValueError("correspondence evidence must target the selected identity")
             self.writer.apply_evidence(selected_identity_id, item)
         atom = self.writer.memory.get(selected_identity_id)
-        if atom is None:
-            raise KeyError(selected_identity_id)
+        assert atom is not None
         supporting = tuple(
             item.evidence_id
             for item in evidence
