@@ -251,14 +251,15 @@ values here.
 
 ## Next work
 
-- [ ] Refresh brittle source-text UI assertions after the accordion and active
-  page refactor. On 2026-08-16 the production frontend build passed and the
-  changed-test validation (using a repository-local pytest temp root) reported
-  143 passed and 33 failed; most failures assert obsolete compact source
-  strings, while runtime/browser acceptance remains the authoritative UI check.
-- [ ] Restore a clean full-suite Windows run after fixing access to the shared
-  `%TEMP%\\pytest-of-dougl` directory. The first full run was dominated by 130
-  setup errors caused by `WinError 5`, not application exceptions.
+- [x] Refresh the navigation and workflow-runner source-contract assertions
+  after the shared three-stack accordion refactor. The formatting-insensitive
+  reader is scoped to those test modules so it cannot alter runtime file reads.
+  Focused validation: 68 passed on 2026-08-17.
+- [ ] Restore a clean full-suite Windows run. A repository-local pytest temp
+  root now avoids the former `%TEMP%\\pytest-of-dougl` access failures; the
+  latest run reports 432 passed and 28 failures. Remaining failures cover stale
+  source-shape assertions plus real resource-catalog, runtime-home discovery,
+  provider-boundary, datatype, and workspace-layout inconsistencies.
 
 - [ ] Visually inspect `http://127.0.0.1:16666/?view=systems` in the active app.
 - [ ] Verify every System opens from the hierarchy and preserves tabs, dirty

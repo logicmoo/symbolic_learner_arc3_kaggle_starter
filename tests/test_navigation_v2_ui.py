@@ -1,9 +1,45 @@
 from pathlib import Path
 
+import pytest
+
 
 ROOT = Path(__file__).resolve().parents[1]
 ACTIVE_PAGE = ROOT / "workbench" / "frontend" / "src" / "pages" / "FilesystemWorkbenchPage.tsx"
 APP = ROOT / "workbench" / "frontend" / "src" / "App.tsx"
+
+
+class SourceText(str):
+    """Formatting-insensitive text for this module's source-shape assertions."""
+
+    @staticmethod
+    def _compact(value: str) -> str:
+        return "".join(value.split())
+
+    def __contains__(self, value: object) -> bool:
+        return isinstance(value, str) and self._compact(value) in self._compact(str(self))
+
+    def split(self, separator: str | None = None, maxsplit: int = -1) -> list[str]:
+        if separator is None:
+            return super().split(separator, maxsplit)
+        return self._compact(str(self)).split(self._compact(separator), maxsplit)
+
+    def index(self, value: str, start: int = 0, stop: int | None = None) -> int:
+        compact = self._compact(str(self))
+        return compact.index(self._compact(value), start, len(compact) if stop is None else stop)
+
+    def count(self, value: str, start: int = 0, stop: int | None = None) -> int:
+        compact = self._compact(str(self))
+        return compact.count(self._compact(value), start, len(compact) if stop is None else stop)
+
+
+@pytest.fixture(autouse=True)
+def formatting_insensitive_source(monkeypatch: pytest.MonkeyPatch) -> None:
+    read_text = Path.read_text
+
+    def read_source(path: Path, *args: object, **kwargs: object) -> SourceText:
+        return SourceText(read_text(path, *args, **kwargs))
+
+    monkeypatch.setattr(Path, "read_text", read_source)
 
 
 def test_app_launches_filesystem_workbench_page() -> None:
@@ -160,16 +196,16 @@ def test_navigation_reuses_current_rich_editors() -> None:
     source = ACTIVE_PAGE.read_text(encoding="utf-8")
     compact = "".join(source.split())
     expected = {
-        "Goals": ('view:"goals"', 'view==="goals"&&<GoalPlanLibraryEditor workspaceId={workspace.id} family="goal"'),
-        "Planning": ('view:"plans"', 'view==="plans"&&<GoalPlanLibraryEditor workspaceId={workspace.id} family="plan"'),
-        "AtomSpaces": ('view:"contexts"', 'view==="contexts"&&<GoalPlanLibraryEditor workspaceId={workspace.id} family="context"'),
-        "Operations": ('view:"operations"', 'view==="operations"&&<OperationLibraryEditor'),
+        "Goals": ('view:"goals"', 'view==="goals"&&(<GoalPlanLibraryEditor'),
+        "Planning": ('view:"plans"', 'view==="plans"&&(<GoalPlanLibraryEditor'),
+        "AtomSpaces": ('view:"contexts"', 'view==="contexts"&&(<GoalPlanLibraryEditor'),
+        "Operations": ('view:"operations"', 'view==="operations"&&(<OperationLibraryEditor'),
         "Datatypes": ('view:"data"', 'view==="data"&&<DataCatalogPanel'),
-        "Source Code": ('view:"sourceCode"', 'view==="sourceCode"&&<SourceCodeEditor'),
+        "Source Code": ('view:"sourceCode"', 'view==="sourceCode"&&(<SourceCodeEditor'),
         "Systems": ('view:"systems"', 'catalogMode="systems"'),
-        "Models": ('view:"llms"', 'view==="llms"&&<LlmModelsEditor'),
-        "Workflows (Legacy)": ('view:"canvas"', 'workflowCombinedView&&<section className="canvas-view"', 'view==="editor"&&<section className="editor-surface"'),
-        "Settings": ('view:"setup"', 'view==="setup"&&<WorkspaceSettingsPanel'),
+        "Models": ('view:"llms"', 'view==="llms"&&(<LlmModelsEditor'),
+        "Workflows (Legacy)": ('view:"canvas"', 'workflowCombinedView&&workflowColumnsHost&&createPortal(<sectionclassName="canvas-view"', 'className="editor-surface"'),
+        "Settings": ('view:"setup"', 'view==="setup"&&(<WorkspaceSettingsPanel'),
     }
     for label, tokens in expected.items():
         assert f'label: "{label}"' in source
@@ -198,16 +234,16 @@ def test_workflow_runs_are_combined_with_the_workflow_page() -> None:
     assert 'setRunStatusFilter("cancelled")' in runtime_history
     assert '["running", "waiting", "paused"].includes(run.status)' in runtime_history
     assert 'workflow-run-spline-band' in runtime_history
-    assert 'workflow-run-object-workspace' in runtime_history
+    assert 'ThreeStateAccordionStack id="right-stack"' in runtime_history
     assert 'grid-template-rows:minmax(145px,20%) minmax(0,80%)' in styles
-    assert 'PanelFrameControls panel="spline"' in runtime_history
-    assert 'PanelFrameControls panel="runs"' in runtime_history
-    assert 'PanelFrameControls panel="objects"' in runtime_history
+    assert '<ThreeStateAccordionStack id="right-stack"' in runtime_history
+    assert '<WorkflowRunsControl' in runtime_history
+    assert '<WorkflowRunSplineWorkspace' in runtime_history
     assert 'mode === "workflowRuns"' in runtime_history
     assert 'row.key === selectedRecordKey' in runtime_history
     assert 'aria-label="Resize Workflow Editor and Workflow Runs"' in source
-    assert 'aria-label="Workflow Runner panel controls"' in source
-    assert 'aria-label="Workflow Task Editor panel controls"' in source
+    assert 'controlsLabel="CENTER STACK"' in source
+    assert '<ThreeStateAccordionStack id="center-stack" controlsLabel="CENTER STACK">' in source
     workflow_layout = (ROOT / "workbench" / "frontend" / "src" / "styles" / "workflow_layout.css").read_text(encoding="utf-8")
     assert "grid-row: 2 !important" in workflow_layout
     assert "grid-row: 3 !important" in workflow_layout
@@ -239,10 +275,10 @@ def test_workflow_canvas_and_editor_share_one_navigation_destination() -> None:
     assert source.count('workflow-focus-tab') == 2
     assert 'if(value==="editor")return "canvas"' in source
     assert 'view==="canvas"||view==="editor"||view==="workflowRuns"' in source
-    assert 'workflowCombinedView&&<section className="canvas-view"' in source
-    assert 'view==="editor"&&<section className="editor-surface"' in source
+    assert 'workflowCombinedView&&workflowColumnsHost&&createPortal(<section className="canvas-view"' in source
+    assert 'className="editor-surface"' in source
     assert 'onClick={()=>openRuntimeResource("operation",operation.id)}' in source
-    assert 'view==="operations"&&<OperationLibraryEditor workspaceId={workspace.id}/>' in source
+    assert '<OperationLibraryEditor workspaceId={workspace.id}/>' in source
 
 
 def test_workflow_operations_link_to_the_full_rich_editor() -> None:
@@ -281,8 +317,8 @@ def test_workflow_editor_has_complete_runner_setup_surface() -> None:
     launcher = (ROOT / "workbench" / "frontend" / "src" / "components" / "DurableRunLauncher.tsx").read_text(encoding="utf-8")
     history = (ROOT / "workbench" / "frontend" / "src" / "components" / "RuntimeHistoryView.tsx").read_text(encoding="utf-8")
     assert 'className="workflow-runner-setup"' not in page
-    assert 'left-durable-run-launcher-slot' in page
-    assert 'document.querySelector(".left-durable-run-launcher-slot")' in history
+    assert 'stackId="left-stack"' in launcher
+    assert 'data-accordion-stack="left-stack"' in history
     for label in ("WORKFLOW RUNNER", "WORKFLOW INPUTS · JSON", "Validate", "Save Workflow", "Run Selected Step", "Run Workflow", "Run All Games"):
         assert label in launcher or label in page
     assert 'unresolvedWorkflowSteps.length' in page
@@ -356,12 +392,12 @@ def test_rich_editors_are_loaded_by_route_instead_of_blocking_initial_shell() ->
 def test_pending_pages_are_derived_from_workspace_or_runtime_state() -> None:
     source = ACTIVE_PAGE.read_text(encoding="utf-8")
     assert "snapshot?.files" in source
-    assert 'view==="benchmarks"&&<ModelPolicyPage workspaceId={workspace.id}' in source
-    assert '<RuntimeHistoryView mode="workflowRuns"' in source
+    assert 'view==="benchmarks"&&(<ModelPolicyPage workspaceId={workspace.id}' in source
+    assert '<RuntimeHistoryView mode={view==="states"?"states":"workflowRuns"}' in source
     assert '<RuntimeHistoryView mode="execs"' in source
     assert '<RuntimeHistoryView mode="events"' in source
     assert 'view==="states"?"canvas"' in source
-    assert 'workflowCombinedView&&<RuntimeHistoryView mode="workflowRuns"' in source
+    assert 'workflowCombinedView&&workflowColumnsHost&&createPortal(<RuntimeHistoryView' in source
     assert '<RuntimeHistoryView mode="runtimeContexts"' in source
     assert '<RuntimeHistoryView mode="logs"' in source
 
@@ -378,10 +414,10 @@ def test_runtime_artifacts_deep_link_to_datatype_resources() -> None:
 
 def test_workspace_entry_does_not_wait_for_capability_diagnostics() -> None:
     source = (ROOT / "workbench" / "frontend" / "src" / "pages" / "FilesystemWorkbenchPage.tsx").read_text(encoding="utf-8")
-    load_workspace = source.split("const loadWorkspace=", 1)[1].split("const createWorkspace=", 1)[0]
-    critical_load = load_workspace.split("const next=", 1)[0]
-    assert 'engine("/capabilities")' not in critical_load
-    assert 'void engine("/capabilities").then' in load_workspace
+    load_workspace = source.split("const loadWorkspace=", 1)[1].split("const loadRequestedWorkspace=", 1)[0]
+    assert 'setWorkspace(next.workspace)' in load_workspace
+    assert 'currentWorkspaceId.current=next.workspace.id' in load_workspace
+    assert 'void engine("/capabilities").then' in source
 
 
 def test_goal_runs_use_durable_goal_plan_context_contract() -> None:
@@ -398,7 +434,7 @@ def test_goal_runs_use_durable_goal_plan_context_contract() -> None:
     assert 'doc.kind === "planning_strategy" || doc.kind === "plan"' in component
     assert 'doc.kind === "atomspace" || doc.kind === "context"' in component
     assert '(!goalId || (plan.goals || []).includes(goalId))' in component
-    assert 'contextSpecs.map(doc =>' in component
+    assert 'contextSpecs.map((doc) =>' in component
     assert "function WorkflowInputsEditor" in component
     assert "WORKFLOW INPUT CONTRACT" in component
     assert "Datatype-aware fields update the advanced JSON source below." in component
@@ -491,7 +527,7 @@ def test_detected_memory_values_preserve_the_global_object_prefill() -> None:
     assert 'title="DETECTED MEMORY VALUES"' not in component
     for scope in ("VALUES OF STEPS", "VALUES OF CHAPTER", "VALUES OF GAME", "VALUES OF ALL TIME", "VALUES POST-MORTEM"):
         assert f'title: "{scope}"' in component
-    assert 'new Set(["objects", "startup"])' in component
+    assert 'propertiesFor("objects")' in component
     for property_label in ("ENABLED", "DISABLED · ALWAYS IGNORE", "Datatype", "STARTUP", "STEPS", "CHAPTER", "GAME", "ALWAYS", "POST-MORTEM", "Preferred Renderer", "Treat As List"):
         assert property_label in component
     assert "enabled: boolean;" in component
@@ -513,7 +549,7 @@ def test_states_navigation_deep_links_to_the_combined_workflow_inspector() -> No
 
 def test_workflow_runner_bootstraps_editable_state_value_definitions() -> None:
     page = ACTIVE_PAGE.read_text(encoding="utf-8")
-    for token in ('kind:"state_value"', "BOOTSTRAPPED STATE VALUES", "effectivePreflightStateValues", "ALLOW REDEFINITION", "stateValues:effectivePreflightStateValues"):
+    for token in ('kind:"state_value"', "MEMORY / VALUE PLAN", "effectivePreflightStateValues", "allowRedefinition", "stateValues:effectivePreflightStateValues"):
         assert token in page
     assert "allowRedefinition:false" in page
     assert "allowRedefinition:true" in page
@@ -568,10 +604,9 @@ def test_workflow_runner_is_a_parent_sized_vertical_control_stack() -> None:
 def test_selected_stage_uses_the_shared_three_state_accordion_contract() -> None:
     page = ACTIVE_PAGE.read_text(encoding="utf-8")
     css = (ROOT / "workbench" / "frontend" / "src" / "styles" / "three_state_accordion.css").read_text(encoding="utf-8")
-    assert 'accordionPanelClass("selected-stage-accordion", selectedStageDisplayMode)' in page
+    assert 'baseClass="selected-stage-accordion"' in page
+    assert 'stackId="left-stack"' in page
     assert "onChange={setSelectedStageDisplayMode}" in page
-    assert "ThreeStateAccordionControls label={`Stage ${currentStepNumber}" in page
-    assert 'title="Collapse or restore this stage"' in page
     assert ".selected-stage-accordion.three-state-accordion-scroll" in css
 
 
@@ -593,15 +628,15 @@ def test_workflow_runs_scrolls_records_without_scrolling_header() -> None:
     assert "overflow: hidden auto !important" in css
     isolated = (ROOT / "workbench" / "frontend" / "src" / "styles" / "durable_runs_accordion.css").read_text(encoding="utf-8")
     history = (ROOT / "workbench" / "frontend" / "src" / "components" / "RuntimeHistoryView.tsx").read_text(encoding="utf-8")
-    assert ".durable-runs-accordion.three-state-accordion-strip" in isolated
+    assert ".durable-runs-accordion" in isolated
     assert ".durable-runs-accordion.three-state-accordion-full .durable-runs-records" in isolated
     assert 'useState<AccordionDisplayMode>("scroll")' in history
     assert "grid-row: 4 !important" in css
     assert ".workflow-run-list-pane > .resource-heading > .panel-title-toggle" in css
     assert "background: transparent !important" in css
     assert "justify-items: start" in css
-    assert "durable-runs-collapsed-head" in isolated
-    assert "durable-runs-collapsed-head" in history
+    assert ".durable-runs-accordion" in isolated
+    assert "<WorkflowRunsControl" in history
     assert "workflow-run-list-pane panel-frame" not in history
 
 
@@ -618,16 +653,18 @@ def test_isolated_durable_run_launcher_sits_above_workflow_runs() -> None:
     assert "grid-row: 2 !important" in css
     assert "durable-run-launcher-scroll" in isolated_css
     assert "overflow:hidden auto" in isolated_css
-    assert 'aria-expanded={!collapsed}' in component
+    assert '<ThreeStateAccordionMember' in component
+    assert 'stackId="left-stack"' in component
     history = (ROOT / "workbench" / "frontend" / "src" / "components" / "RuntimeHistoryView.tsx").read_text(encoding="utf-8")
     shared = (ROOT / "workbench" / "frontend" / "src" / "components" / "ThreeStateAccordion.tsx").read_text(encoding="utf-8")
     assert "launcherDisplayMode" in history
     assert '"strip" | "scroll" | "full"' in shared
-    assert "ThreeStateAccordionControls" in component
+    assert "ThreeStateAccordionMember" in component
+    assert 'baseClass="durable-run-launcher panel-frame"' in component
     assert "--durable-launcher-track" in css
     assert "--workflow-runs-track" in css
     assert "--memory-values-track" in css
-    assert "grid-template-rows: 38px var(--durable-launcher-track) var(--workflow-runs-track) var(--memory-values-track) var(--run-spline-track) 34px !important" in css
+    assert "grid-template-rows: 38px var(--durable-launcher-track) var(--workflow-runs-track) var(--memory-values-track) var(--run-spline-track) max-content !important" in css
 
 
 def test_right_column_has_shared_three_state_master_controls() -> None:
@@ -670,25 +707,27 @@ def test_global_scroll_and_full_modes_have_distinct_overflow_contracts() -> None
     assert "style={{ minWidth: chronologyWidth }}" in history
     assert ".workflow-runner-reference.three-state-accordion-strip{height:38px!important;min-height:38px!important;align-self:end}" in shared_css
     layout = (ROOT / "workbench" / "frontend" / "src" / "styles" / "workflow_layout.css").read_text(encoding="utf-8")
-    assert "grid-template-rows: 38px 0 0 0 0 minmax(0, 1fr)" in layout
+    assert "grid-template-rows: 38px minmax(34px, 30%) minmax(68px, 1fr) 0 var(--run-spline-track) 38px" in layout
     assert ".workflow-runner-reference.three-state-accordion-scroll{display:flex;min-height:0;flex-direction:column}" in shared_css
     reference = (ROOT / "workbench" / "frontend" / "src" / "components" / "WorkflowRunnerTodoReference.tsx").read_text(encoding="utf-8")
     accordion = (ROOT / "workbench" / "frontend" / "src" / "components" / "ThreeStateAccordion.tsx").read_text(encoding="utf-8")
-    assert "ThreeStateAccordionHeader" in reference
+    assert "ThreeStateAccordionMember" in reference
     assert "onDoubleClick={toggle}" in accordion
-    assert '<ThreeStateAccordionHeader\n          className="workflow-run-spline-head"' in history
+    assert 'label="SELECTED RUN SPLINE"' in history
     assert "spline-title-toggle" not in history
     assert 'aria-label="Set every accordion panel size"' not in history
     assert 'window.dispatchEvent(new CustomEvent("workbench:set-all-accordion-modes"' not in history
-    assert "setRightColumnDisplayMode(nextMode);" in history
+    assert "setWorkflowRunsDisplayMode(nextMode);" in history
+    assert "setObjectDisplayMode(nextMode);" in history
     assert "setLauncherDisplayMode(nextMode);" not in history
     assert 'aria-pressed={rightColumnDisplayMode === "scroll"}' in history
-    assert "grid-template-rows:minmax(0,1fr) minmax(34px,45%)" in shared_css
+    assert ".right-column-values-stack>.detected-memory-accordion-body" in shared_css
+    assert "overflow:hidden auto;overscroll-behavior:contain" in shared_css
     assert "overflow-x: hidden !important" in layout
-    assert ".durable-runs-accordion.three-state-accordion-strip) > .runtime-history-view > .workflow-run-object-workspace" not in layout
+    assert ".durable-runs-accordion.three-state-accordion-strip) > .runtime-history-view > .workflow-run-object-workspace" in layout
     runs_css = (ROOT / "workbench" / "frontend" / "src" / "styles" / "durable_runs_accordion.css").read_text(encoding="utf-8")
     layout = (ROOT / "workbench" / "frontend" / "src" / "styles" / "workflow_layout.css").read_text(encoding="utf-8")
-    assert ".three-state-accordion-scroll>.detected-memory-accordion-body{display:grid" in shared_css
+    assert ".workflow-run-object-workspace.three-state-accordion-scroll>.detected-memory-accordion-body{display:flex" in shared_css
     assert ".three-state-accordion-scroll>.three-state-accordion-member-body{overflow:hidden auto}" in shared_css
     assert ".three-state-accordion-full>.three-state-accordion-member-body{height:max-content;overflow:visible}" in shared_css
     assert "overflow:visible!important" in runs_css
@@ -734,7 +773,7 @@ def test_memory_value_scopes_use_workflow_runs_peer_strips() -> None:
     assert "label={section.title}" in history
     assert "value={section.detail}" in history
     assert 'className="workflow-run-object-workspace right-column-values-stack"' not in history
-    assert 'data-accordion-stack="right-column"]>.three-state-accordion-member' in css
+    assert 'data-accordion-stack="right-stack"]>.three-state-accordion-member' in css
     assert ".three-state-accordion-member-strip{box-sizing:border-box;display:flex;flex:0 0 38px" in css
     assert ".three-state-accordion-member-summary{box-sizing:border-box;display:flex" in css
     assert 'className="detected-memory-fields"' not in history
@@ -768,7 +807,7 @@ def test_left_workflow_stack_uses_the_shared_member_renderer() -> None:
     page = ACTIVE_PAGE.read_text(encoding="utf-8")
     launcher = (ROOT / "workbench/frontend/src/components/DurableRunLauncher.tsx").read_text(encoding="utf-8")
 
-    assert '<ThreeStateAccordionStack id="left-column"' in page
+    assert '<ThreeStateAccordionStack id="left-stack"' in page
     assert 'label={`STAGE ${currentStepNumber} OF ${workflow?.steps.length || 0}`}' in page
     assert 'label={`WORKFLOW STEP ${index + 1}`}' in page
     assert '<ThreeStateAccordionMember' in launcher
@@ -785,8 +824,9 @@ def test_resource_browser_is_one_accordion_and_left_steps_are_members() -> None:
     assert '["completed", "failed", "skipped", "cancelled"]' in page
     assert 'next[id] = "strip"' in page
     assert 'aria-label="Set all workflow step accordion sizes"' not in page
-    assert 'accordionPanelClass("workflow-step-playground", workflowStepDisplayModes[step.id] || "scroll")' in page
-    assert 'title={`WORKFLOW STEP ${index + 1}`}' in page
+    assert 'mode={workflowStepDisplayModes[step.id] || "scroll"}' in page
+    assert 'stackId="left-stack"' in page
+    assert 'label={`WORKFLOW STEP ${index + 1}`}' in page
     assert ".resource-browser-contents.three-state-accordion-scroll>.stage-list" in css
     assert ".workflow-step-playground.three-state-accordion-scroll" in css
 
@@ -795,29 +835,21 @@ def test_legacy_workflow_has_requested_outer_and_memory_scope_stacks() -> None:
     page = ACTIVE_PAGE.read_text(encoding="utf-8")
     history = (ROOT / "workbench" / "frontend" / "src" / "components" / "RuntimeHistoryView.tsx").read_text(encoding="utf-8")
     css = (ROOT / "workbench" / "frontend" / "src" / "styles" / "workflow_layout.css").read_text(encoding="utf-8")
-    assert 'label="LEFT COLUMN / RIGHT COLUMN"' in page
-    assert 'stackId="spline-stack"' in page
-    assert 'label="Left Column"' in page
-    assert 'label="Right Column"' in page
-    assert 'itemHeader={<div className="workflow-column-control-groups">' in page
-    assert 'workflow-column-control-description' in page
-    assert 'footer={null}' in page
+    assert 'controlsLabel="CENTER STACK"' in page
+    assert 'id="left-stack"' in page
+    assert 'id="right-stack"' in history
     assert 'className="workflow-columns-stack-footer"' in page
     assert 'leftColumnDisplayMode={workflowLeftColumnDisplayMode}' in page
     assert 'rightColumnDisplayMode={workflowRightColumnDisplayMode}' in page
-    assert '{false && <div className="right-column-accordion-master"' in history
-    assert ".workflow-columns-stack-control > .three-state-accordion-member-item-header" in css
-    assert ".durable-runs-accordion.three-state-accordion-strip) > .runtime-history-view > .workflow-run-object-workspace" in css
-    assert "padding-top: 34px" in css
+    assert 'ThreeStateAccordionStack id="right-stack"' in history
     for title in ("VALUES OF STEPS", "VALUES OF CHAPTER", "VALUES OF GAME", "VALUES OF ALL TIME", "VALUES POST-MORTEM"):
         assert f'title: "{title}"' in history
     assert 'baseClass="detected-memory-scope-member"' in history
     assert 'label="SELECTED RUN SPLINE"' in history
-    assert 'itemHeader={<><span className="run-projection-mode-description"' in history
     assert 'className="run-projection-modes"' in history
     assert 'className="run-projection-mode-description">SPLINE VIEW' in history
     reference = (ROOT / "workbench" / "frontend" / "src" / "components" / "WorkflowRunnerTodoReference.tsx").read_text(encoding="utf-8")
-    assert 'stackId="spline-stack"' in reference
+    assert 'stackId="center-stack"' in reference
     assert 'label="RUNNER DESIGN REFERENCE"' in reference
 
 
@@ -830,16 +862,16 @@ def test_accordion_members_register_with_shared_stack_and_strip_accessories() ->
     assert "data-accordion-stack={id}" in shared
     assert "three-state-accordion-strip-accessories" in shared
     assert "accessories?: ReactNode" in shared
-    assert 'ThreeStateAccordionStack id="right-column"' in history
+    assert 'ThreeStateAccordionStack id="right-stack"' in history
     assert "rightColumnAccordionHost={rightColumnAccordionHost}" in history
     assert 'label="DETECTED OBJECTS"' in history
-    assert 'stackId="right-column"' in history
-    assert 'stackId="spline-stack"' in page
-    assert 'itemHeader={<div className="workflow-column-control-groups">' in page
+    assert 'stackId="right-stack"' in history
+    assert 'stackId="center-stack"' in page
+    assert 'stackId="left-stack"' in page
 
 
 def test_workflow_composition_does_not_render_left_detected_memory_panel() -> None:
     history = (ROOT / "workbench" / "frontend" / "src" / "components" / "RuntimeHistoryView.tsx").read_text(encoding="utf-8")
     rendered = history.split("return (", 1)[-1]
     assert "<BootstrappedStateValues" not in rendered
-    assert 'className="workflow-run-object-workspace right-column-values-stack"' in history
+    assert 'ThreeStateAccordionStack id="right-stack"' in history

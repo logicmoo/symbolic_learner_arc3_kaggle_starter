@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from workflow_runner_todo_api import (
     get_workflow_runner_chronology_mockup,
     get_workflow_runner_human_input_mockup,
@@ -11,6 +13,40 @@ from workflow_runner_todo_api import (
 
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+class SourceText(str):
+    """Formatting-insensitive text for this module's source-shape assertions."""
+
+    @staticmethod
+    def _compact(value: str) -> str:
+        return "".join(value.split())
+
+    def __contains__(self, value: object) -> bool:
+        return isinstance(value, str) and self._compact(value) in self._compact(str(self))
+
+    def split(self, separator: str | None = None, maxsplit: int = -1) -> list[str]:
+        if separator is None:
+            return super().split(separator, maxsplit)
+        return self._compact(str(self)).split(self._compact(separator), maxsplit)
+
+    def index(self, value: str, start: int = 0, stop: int | None = None) -> int:
+        compact = self._compact(str(self))
+        return compact.index(self._compact(value), start, len(compact) if stop is None else stop)
+
+    def count(self, value: str, start: int = 0, stop: int | None = None) -> int:
+        compact = self._compact(str(self))
+        return compact.count(self._compact(value), start, len(compact) if stop is None else stop)
+
+
+@pytest.fixture(autouse=True)
+def formatting_insensitive_source(monkeypatch: pytest.MonkeyPatch) -> None:
+    read_text = Path.read_text
+
+    def read_source(path: Path, *args: object, **kwargs: object) -> SourceText:
+        return SourceText(read_text(path, *args, **kwargs))
+
+    monkeypatch.setattr(Path, "read_text", read_source)
 
 
 def test_workflow_runner_reference_is_read_from_checked_in_files() -> None:
@@ -28,9 +64,9 @@ def test_workflow_runner_reference_is_read_from_checked_in_files() -> None:
 
 def test_workflow_runs_page_displays_reference_without_replacing_history() -> None:
     source = (ROOT / "workbench" / "frontend" / "src" / "components" / "RuntimeHistoryView.tsx").read_text(encoding="utf-8")
-    assert 'mode === "workflowRuns" && <Suspense' in source
-    assert '<WorkflowRunnerTodoReference /></Suspense>' in source
-    assert '<WorkflowRunProjection run={selectedRun} workflow={frozenWorkflow}' in source
+    assert 'mode === "workflowRuns" && showDesignReference && (' in source
+    assert '<WorkflowRunnerTodoReference displayMode={referenceDisplayMode} onDisplayModeChange={setReferenceDisplayMode}/></Suspense>' in source
+    assert '<WorkflowRunSplineWorkspace run={selectedRun} workflow={frozenWorkflow}' in source
     assert '"topology" | "chronology"' in source
     assert "/api/engine/workflows/" in source
     assert "run.events.map" in source
@@ -57,8 +93,9 @@ def test_workflow_runs_page_displays_reference_without_replacing_history() -> No
 
 def test_workflow_runner_reference_is_collapsed_after_real_projection_exists() -> None:
     source = (ROOT / "workbench" / "frontend" / "src" / "components" / "WorkflowRunnerTodoReference.tsx").read_text(encoding="utf-8")
-    assert '<details className="workflow-runner-reference">' in source
-    assert "Mockups and remaining experience TODO" in source
+    assert '<ThreeStateAccordionMember' in source
+    assert 'stackId="center-stack"' in source
+    assert 'value="Mockups and TODO"' in source
 
 
 def test_goal_run_human_pause_uses_the_frozen_step_form_contract() -> None:
