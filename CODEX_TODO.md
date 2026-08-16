@@ -813,3 +813,11 @@ Preserve the canonical checkout and its `codex/workbench-navigation-v2` branch.
   explicit correspondences. Cover movement, recolor, resize, orientation,
   reshape, appearance/disappearance, one-to-many split, and many-to-one merge
   without treating advisory proposals as authoritative correspondence.
+- [x] Extend generated `object_registry.pl` files through a managed,
+  append-only `semantic_identity_decisions.pl` sidecar retained across manual
+  and GPT registry rewrites. Only friendly registry IDs are accepted; SWI-Prolog
+  loading and accepted/reversed history queries are verified.
+- [x] Add `RegistryCorrespondenceAuthority`: explicit registry selection and
+  attributable evidence are mandatory even for a perfect match; acceptance
+  calibrates through `SingleWriter`, preserves rivals and property explanations,
+  emits a recognition account, and records encounter/decision/evidence history.

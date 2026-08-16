@@ -99,8 +99,8 @@ Keep the shared records in `python/object_memory/models.py`; do not create anoth
 - [ ] Map provider-proposed identities to persistent semantic identities without discarding provenance.
 - [ ] Match objects across parent/current states.
 - [ ] Match objects across repeated encounters and examples.
-- [ ] Preserve multiple competing match proposals.
-- [ ] Record matched and changed properties plus supporting and contradicting evidence.
+- [x] Preserve multiple competing match proposals.
+- [x] Record matched and changed properties plus supporting and contradicting evidence.
 - [x] Route identity merge and split decisions through `SingleWriter` or authoritative Prolog logic.
 - [ ] Prevent duplicate durable storage when an existing object is recognized again.
 - [x] Keep false merges and false splits reversible through evidence and provenance.

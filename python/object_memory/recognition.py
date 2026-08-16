@@ -3,12 +3,15 @@ from __future__ import annotations
 from typing import Mapping
 
 from .models import (
+    EvidencePolarity,
+    EvidenceRecord,
     InstanceParameters,
     MatchProposal,
     ObjectChange,
     ProvenanceRef,
     RecognitionAccount,
 )
+from .memory import SingleWriter
 
 
 class InstanceMatcher:
@@ -211,4 +214,97 @@ class ChangeDetector:
                     item.change_id,
                 ),
             )
+        )
+
+
+class RegistryCorrespondenceAuthority:
+    """Apply an explicit registry selection only when attributable evidence exists."""
+
+    def __init__(self, writer: SingleWriter, action_tree_store: object) -> None:
+        self.writer = writer
+        self.action_tree_store = action_tree_store
+
+    def accept(
+        self,
+        *,
+        candidate_id: str,
+        selected_identity_id: str,
+        proposals: tuple[MatchProposal, ...],
+        evidence: tuple[EvidenceRecord, ...],
+        encounter_id: str,
+        decision_id: str,
+        decision_source: str,
+    ) -> RecognitionAccount:
+        selected = next(
+            (
+                proposal
+                for proposal in proposals
+                if proposal.stored_identity_id == selected_identity_id
+            ),
+            None,
+        )
+        if selected is None:
+            raise ValueError("selected identity has no correspondence proposal")
+        if not evidence:
+            raise ValueError("registry correspondence requires attributable evidence")
+        registry = self.action_tree_store.registry_identities()
+        if selected_identity_id not in registry:
+            raise ValueError("selected identity is not a friendly registry identity")
+        for item in evidence:
+            if item.subject_id != selected_identity_id:
+                raise ValueError("correspondence evidence must target the selected identity")
+            self.writer.apply_evidence(selected_identity_id, item)
+        atom = self.writer.memory.get(selected_identity_id)
+        if atom is None:
+            raise KeyError(selected_identity_id)
+        supporting = tuple(
+            item.evidence_id
+            for item in evidence
+            if item.polarity is EvidencePolarity.SUPPORTS
+        )
+        contradicting = tuple(
+            item.evidence_id
+            for item in evidence
+            if item.polarity is EvidencePolarity.CONTRADICTS
+        )
+        account = RecognitionAccount.create(
+            candidate_id=candidate_id,
+            stored_identity_id=selected_identity_id,
+            matched_properties=selected.matched_properties,
+            changed_properties=selected.changed_properties,
+            allowed_transformations=selected.allowed_transformations,
+            supporting_evidence_ids=supporting,
+            contradicting_evidence_ids=contradicting,
+            rival_proposal_ids=tuple(
+                item.proposal_id for item in proposals if item is not selected
+            ),
+            calibrated_confidence=atom.confidence,
+            decision_source=decision_source,
+            provenance=selected.provenance,
+        )
+        self.action_tree_store.record_semantic_identity_decision(
+            identity_id=selected_identity_id,
+            encounter_id=encounter_id,
+            decision_id=decision_id,
+            status="accepted",
+            evidence_ids=tuple(item.evidence_id for item in evidence),
+        )
+        return account
+
+    def reverse(
+        self,
+        *,
+        identity_id: str,
+        encounter_id: str,
+        decision_id: str,
+        evidence_ids: tuple[str, ...],
+    ) -> None:
+        if not evidence_ids:
+            raise ValueError("reversal requires attributable evidence")
+        self.action_tree_store.record_semantic_identity_decision(
+            identity_id=identity_id,
+            encounter_id=encounter_id,
+            decision_id=decision_id,
+            status="reversed",
+            evidence_ids=evidence_ids,
         )

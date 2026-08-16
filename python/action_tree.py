@@ -156,6 +156,10 @@ class ActionTreeStore:
     def object_registry_path(self) -> Path:
         return self.level_root / "object_registry.pl"
 
+    @property
+    def semantic_identity_decisions_path(self) -> Path:
+        return self.level_root / "semantic_identity_decisions.pl"
+
     def registry_text(self) -> str:
         path = self.object_registry_path
         if path.exists() and path.stat().st_size:
@@ -395,6 +399,22 @@ class ActionTreeStore:
     def registry_identities(self) -> dict[str, str]:
         return self.identity_facts(self.registry_text())
 
+    def write_registry(self, registry: Mapping[str, str]) -> Path:
+        lines = [
+            "% Canonical friendly object identities for this entire ARC3 level.",
+            "% Names are created once and reused from the beginning to the end.",
+        ]
+        if self.semantic_identity_decisions_path.exists():
+            lines.extend(
+                [
+                    "% Phase 2 decisions extend this registry without replacing identities.",
+                    ":- ensure_loaded('semantic_identity_decisions.pl').",
+                ]
+            )
+        lines.extend(["", *[registry[name] for name in sorted(registry)]])
+        self.object_registry_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        return self.object_registry_path
+
     def update_registry_from_objects(self, node: StateNode) -> Path:
         """Merge only newly declared identities; state files remain identity-light."""
         if not node.objects_path.exists() or not node.objects_path.stat().st_size:
@@ -416,18 +436,46 @@ class ActionTreeStore:
                 "No canonical identities are available for this level."
             )
 
-        lines = [
-            "% Canonical friendly object identities for this entire ARC3 level.",
-            "% Names are created once and reused from the beginning to the end.",
-            "",
-        ]
-        lines.extend(registry[name] for name in sorted(registry))
-        self.object_registry_path.write_text(
-            "\n".join(lines) + "\n",
-            encoding="utf-8",
-        )
+        self.write_registry(registry)
         self.refresh_readme(node)
         return self.object_registry_path
+
+    def record_semantic_identity_decision(
+        self,
+        *,
+        identity_id: str,
+        encounter_id: str,
+        decision_id: str,
+        status: str,
+        evidence_ids: tuple[str, ...] = (),
+    ) -> Path:
+        """Append authoritative Phase 2 history for an existing friendly identity."""
+
+        registry = self.registry_identities()
+        if identity_id not in registry:
+            raise ValueError(
+                f"Semantic decision identity is not in object_registry.pl: {identity_id!r}"
+            )
+        if status not in {"accepted", "rejected", "reversed", "demoted", "tombstoned"}:
+            raise ValueError(f"Unsupported semantic identity decision status: {status!r}")
+        quoted_encounter = json.dumps(encounter_id, ensure_ascii=False)
+        quoted_decision = json.dumps(decision_id, ensure_ascii=False)
+        quoted_evidence = ", ".join(json.dumps(item, ensure_ascii=False) for item in evidence_ids)
+        fact = (
+            f"semantic_identity_decision({identity_id}, {quoted_encounter}, "
+            f"{quoted_decision}, {status}, [{quoted_evidence}])."
+        )
+        path = self.semantic_identity_decisions_path
+        existing = path.read_text(encoding="utf-8") if path.exists() else ""
+        if fact not in existing.splitlines():
+            if not existing:
+                existing = (
+                    "% Append-only Phase 2 identity decisions linked to friendly registry IDs.\n"
+                    ":- dynamic semantic_identity_decision/5.\n\n"
+                )
+            path.write_text(existing.rstrip() + "\n" + fact + "\n", encoding="utf-8")
+        self.write_registry(registry)
+        return path
 
     def link_semantic_record(
         self,

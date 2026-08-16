@@ -315,13 +315,7 @@ class GptArcAnalyzer:
             registry.setdefault(name, f"object_identity({name}, {object_type}, '{label}').")
         if not registry:
             raise RuntimeError("Combined GPT analysis returned no friendly object identities")
-        lines = [
-            "% Canonical friendly object identities for this entire ARC3 level.",
-            "% Names are stable across every action-tree branch.",
-            "",
-            *[registry[name] for name in sorted(registry)],
-        ]
-        store.object_registry_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        store.write_registry(registry)
 
     def _normalize_objects(self, store: ActionTreeStore, node: StateNode, source: str) -> str:
         text = _plain_prolog(source)
@@ -333,13 +327,7 @@ class GptArcAnalyzer:
         for name, fact in store.new_identity_facts(text).items():
             registry.setdefault(name, fact)
         if registry:
-            lines = [
-                "% Canonical friendly object identities for this entire ARC3 level.",
-                "% Names are stable across every action-tree branch.",
-                "",
-                *[registry[name] for name in sorted(registry)],
-            ]
-            store.object_registry_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+            store.write_registry(registry)
         body = []
         for line in text.splitlines():
             if store.FRIENDLY_ID_RE.match(line) or store.NEW_FRIENDLY_ID_RE.match(line) or store.REGISTRY_LOAD_RE.match(line):

@@ -158,12 +158,12 @@ Phase 2 implements the semantic object layer behind the Phase 1 debugger. It use
 ## Persistent identity and correspondence
 
 - [ ] **Partial** Extend `object_registry.pl` into persistent identities across examples, encounters, and transitions while preserving Phase 1 provenance.  
-  Existing evidence: readable state-transition identities plus `SingleWriter` lifecycle governance for explicit merge/split decisions, active/demoted/tombstoned states, provenance-preserving snapshots, and reversible false decisions.
-  Remaining: synchronize these semantic decisions with each live action tree's generated `object_registry.pl` and govern identities across encounters.
+  Existing evidence: readable state-transition identities, lifecycle governance, and a managed append-only `semantic_identity_decisions.pl` extension loaded by every registry rewrite. Only canonical friendly IDs are accepted; encounter, decision, evidence, accepted/reversed status, and live SWI-Prolog queries are covered.
+  Remaining: automatically propose and authorize identity decisions from consecutive live encounters and carry registry state across examples.
 
 - [ ] **Partial** Match corresponding objects between states and repeated encounters while retaining competing proposals.  
-  Existing evidence: frozen proposal/account/evidence/decision contracts plus `InstanceMatcher`, which deterministically explains matched/changed normalized properties, identifies allowed transformations, retains and ranks every rival, and produces unresolved or explicitly selected recognition accounts.
-  Remaining: feed stored instances from real encounter history, add topology/Turtle evidence, and route selection through registry-backed authority.
+  Existing evidence: deterministic proposals retain every rival and explain matched/changed properties; `RegistryCorrespondenceAuthority` requires explicit friendly-ID selection plus attributable evidence, calibrates through `SingleWriter`, creates a recognition account, and records Prolog decision history. Perfect similarity alone is rejected.
+  Remaining: feed stored instances automatically from live encounter history and add topology/Turtle evidence generation.
 
 - [ ] **Open** Recognize recurring objects under supported translation, rotation, scale, reflection, recoloring, noise, and partial visibility.
 
