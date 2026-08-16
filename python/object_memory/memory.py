@@ -1,9 +1,74 @@
 from __future__ import annotations
 
 from dataclasses import replace
+from hashlib import sha256
+import json
 from typing import Any
 
-from .models import CommittedAtom, ResidualCandidate, ResidualDisposition
+from .models import (
+    CommittedAtom,
+    EncounterRecord,
+    ResidualCandidate,
+    ResidualDisposition,
+)
+
+
+class EncounterLog:
+    """Append-only semantic encounters with deterministic, idempotent replay.
+
+    Phase 1 remains the owner of action-tree history. This log only records the
+    Phase 2 semantic encounters linked to those immutable node references.
+    """
+
+    def __init__(self) -> None:
+        self._ordered: list[EncounterRecord] = []
+        self._by_id: dict[str, EncounterRecord] = {}
+
+    def append(self, encounter: EncounterRecord) -> EncounterRecord:
+        existing = self._by_id.get(encounter.encounter_id)
+        if existing is not None:
+            if existing != encounter:
+                raise ValueError(
+                    f"Encounter identity conflict for {encounter.encounter_id!r}"
+                )
+            return existing
+        if (
+            encounter.previous_encounter_id is not None
+            and encounter.previous_encounter_id not in self._by_id
+        ):
+            raise ValueError(
+                "previous encounter must already exist in this append-only log: "
+                f"{encounter.previous_encounter_id!r}"
+            )
+        self._ordered.append(encounter)
+        self._by_id[encounter.encounter_id] = encounter
+        return encounter
+
+    def get(self, encounter_id: str) -> EncounterRecord | None:
+        return self._by_id.get(encounter_id)
+
+    def records(self) -> tuple[EncounterRecord, ...]:
+        return tuple(self._ordered)
+
+    def for_object(self, object_identity_id: str) -> tuple[EncounterRecord, ...]:
+        return tuple(
+            record
+            for record in self._ordered
+            if record.object_identity_id == object_identity_id
+        )
+
+    def replay(self, encounters: tuple[EncounterRecord, ...]) -> "EncounterLog":
+        for encounter in encounters:
+            self.append(encounter)
+        return self
+
+    def deterministic_hash(self) -> str:
+        encoded = json.dumps(
+            [record.encounter_id for record in self._ordered],
+            ensure_ascii=False,
+            separators=(",", ":"),
+        ).encode("utf-8")
+        return sha256(encoded).hexdigest()
 
 
 class ResidualGate:

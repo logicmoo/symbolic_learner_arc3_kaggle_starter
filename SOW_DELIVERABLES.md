@@ -204,8 +204,8 @@ Phase 2 implements the semantic object layer behind the Phase 1 debugger. It use
   Remaining: durable `SymbolicStore`, `ArtifactIndex`, and lifecycle governance.
 
 - [ ] **Partial** Associate semantic encounters and memory updates with the history already preserved by Phase 1.  
-  Existing evidence: deterministic debugger history plus the versioned `EncounterRecord` contract with an explicit Phase 1 action-tree-node reference and deterministic encounter identifier.
-  Remaining: semantic `EncounterLog` and stable links.
+  Existing evidence: deterministic debugger history plus the versioned `EncounterRecord` contract with an explicit Phase 1 action-tree-node reference and deterministic encounter identifier; the append-only `EncounterLog` enforces prior-link order, idempotent replay, conflict rejection, and stable history hashing.
+  Remaining: connect automatic semantic encounter creation to live Phase 1 transitions.
 
 - [ ] **Open** Support deterministic semantic-memory replay and reproducible updates from the debugger’s recorded history.
 

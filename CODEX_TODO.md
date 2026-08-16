@@ -756,3 +756,6 @@ Preserve the canonical checkout and its `codex/workbench-navigation-v2` branch.
 - [x] Add focused tests for Phase 1 node linkage, artifact/provenance layering,
   Turtle references, positive/negative evidence, rivals, reversible identity
   decisions, immutability, schema versions, and deterministic identifiers.
+- [x] Add an append-only semantic `EncounterLog` with Phase 1 node-linked
+  records, required prior-history ordering, idempotent replay, conflict
+  rejection, per-object history lookup, and deterministic log hashing.

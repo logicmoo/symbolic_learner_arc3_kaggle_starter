@@ -57,7 +57,7 @@ from .models import (
     TurtleProgramRef,
     deterministic_identifier,
 )
-from .memory import ResidualGate, SingleWriter, SymbolicMemory
+from .memory import EncounterLog, ResidualGate, SingleWriter, SymbolicMemory
 from .prediction import PredictionLedger, RuleStore
 from .providers import ArtifactProvider, GptArtifactProvider, PrologProvider, PythonProvider
 
@@ -68,6 +68,7 @@ __all__ = [
     "CellLogoForm",
     "CommittedAtom",
     "EncounterRecord",
+    "EncounterLog",
     "EvidencePolarity",
     "EvidenceRecord",
     "ExecutionMode",
