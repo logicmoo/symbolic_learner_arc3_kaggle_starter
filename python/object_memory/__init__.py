@@ -5,7 +5,7 @@ Arc3Runner, ActionTreeStore, GptArcAnalyzer, SWIPrologBridge, or the generated
 Prolog artifact contracts.
 """
 
-from .adapters import GridAdapter, PerceptionAdapter
+from .adapters import GridAdapter, GridPerceptionBatch, PerceptionAdapter
 from .forms import CellLogoForm, FitResult, GenerativeForm
 from .integration import (
     GameObjectLearnerPayload,
@@ -81,6 +81,7 @@ __all__ = [
     "GenerativeForm",
     "GptArtifactProvider",
     "GridAdapter",
+    "GridPerceptionBatch",
     "IntegrationError",
     "IntegrationValidator",
     "IdentityDecision",

@@ -759,3 +759,8 @@ Preserve the canonical checkout and its `codex/workbench-navigation-v2` branch.
 - [x] Add an append-only semantic `EncounterLog` with Phase 1 node-linked
   records, required prior-history ordering, idempotent replay, conflict
   rejection, per-object history lookup, and deterministic log hashing.
+- [x] Wrap the established deterministic `analyze_grid` implementation behind
+  `GridAdapter`. Preserve the exact source-grid hash, artifact URI, dimensions,
+  coordinate contract, action-tree node, extractor provenance, candidate IDs,
+  regions, and Turtle details while keeping provider intermediates outside the
+  persistent observation record.

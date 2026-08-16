@@ -70,12 +70,12 @@ Keep the shared records in `python/object_memory/models.py`; do not create anoth
 
 ## Connect perception providers
 
-- [ ] Inspect the current symbolic grid-object extraction code.
-- [ ] Wrap it behind `GridAdapter` rather than rewriting it.
+- [x] Inspect the current symbolic grid-object extraction code.
+- [x] Wrap it behind `GridAdapter` rather than rewriting it.
 - [ ] Normalize components, geometry, properties, relationships, topology, holes, enclosures, bars, lines, and compound objects.
-- [ ] Preserve exact logical-grid coordinates and source artifact references.
+- [x] Preserve exact logical-grid coordinates and source artifact references.
 - [ ] Add pluggable image and simple-video adapters behind the same normalized contracts.
-- [ ] Keep provider-specific intermediate data out of persistent object records unless referenced through provenance.
+- [x] Keep provider-specific intermediate data out of persistent object records unless referenced through provenance.
 - [ ] Add fixtures for irregular geometry, topology, holes, enclosure, line thickness, and disconnected strokes.
 
 ## Store one Turtle program per recognized grid object
