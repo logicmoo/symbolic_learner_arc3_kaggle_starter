@@ -144,6 +144,34 @@ def _shape(component: Component) -> str:
 def _turtle(component: Component) -> str:
     cells = set(component.cells)
     lines = [f"object({component.object_id}).", f"turtle({component.object_id}, ["]
+    filled_rectangle = len(cells) == component.width * component.height
+    if filled_rectangle and component.width <= 4 and component.height >= component.width:
+        center_x = component.min_x + component.width // 2
+        lines.extend([
+            "    penup,",
+            f"    set_pos({center_x}, {component.min_y}),",
+            f"    setcolor({COLOR_NAMES.get(component.color, component.color)}),",
+            f"    pen_width({component.width}),",
+            "    rot(90),",
+            "    pendown,",
+            "    set_cell,",
+            f"    fwd({component.height - 1})",
+            "]).",
+        ])
+        return "\n".join(lines)
+    if filled_rectangle and component.height <= 4:
+        center_y = component.min_y + component.height // 2
+        lines.extend([
+            "    penup,",
+            f"    set_pos({component.min_x}, {center_y}),",
+            f"    setcolor({COLOR_NAMES.get(component.color, component.color)}),",
+            f"    pen_width({component.height}),",
+            "    pendown,",
+            "    set_cell,",
+            f"    fwd({component.width - 1})",
+            "]).",
+        ])
+        return "\n".join(lines)
     first = True
     for y in range(component.min_y, component.max_y + 1):
         runs: list[tuple[int, int]] = []

@@ -51,3 +51,22 @@ def test_cell_logo_fit_and_distance_use_regenerated_cells() -> None:
     assert 0.0 < missing_cell.residual < 1.0
     assert blue_form.distance(blue_form) == 0.0
     assert blue_form.distance(red_form) > 0.0
+
+
+def test_thick_rectangle_uses_pen_width_instead_of_row_enumeration() -> None:
+    grid = [
+        [0, 5, 5, 5, 0],
+        [0, 5, 5, 5, 0],
+        [0, 5, 5, 5, 0],
+        [0, 5, 5, 5, 0],
+        [0, 5, 5, 5, 0],
+    ]
+    item = analyze_grid(grid)["objects"][0]
+
+    assert "pen_width(3)" in item["turtleProgram"]
+    assert item["turtleProgram"].count("set_pos(") == 1
+    assert "rot(90)" in item["turtleProgram"]
+    rendered = CellLogoForm(item["turtleProgram"], swi_bridge=_bridge()).render()
+    assert {tuple(cell) for cell in rendered["cells"]} == {
+        tuple(cell) for cell in item["cells"]
+    }

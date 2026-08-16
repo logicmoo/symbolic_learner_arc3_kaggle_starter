@@ -774,3 +774,7 @@ Preserve the canonical checkout and its `codex/workbench-navigation-v2` branch.
   declare pen width, and preserve one-cell/disconnected objects; calculate
   regenerated-cell fit, distance, residual, and description length. Live
   SWI-Prolog 10.1.7 validation passed alongside the canonical DSL tests.
+- [x] Generate supported thick rectangular objects as a single rotated Turtle
+  movement with canonical `pen_width(1..4)`, not adjacent row enumeration. An
+  exact-regeneration regression test requires one `set_pos`, explicit rotation,
+  pen width, and equality with the source cells.

@@ -177,7 +177,9 @@ Phase 2 implements the semantic object layer behind the Phase 1 debugger. It use
   Existing evidence: `GenerativeForm`, `CellLogoForm`, Turtle artifacts, Turtle DSL, and normalized versioned `TurtleProgramRef`/`ArtifactRef` contracts.
   Remaining: persistent one-program-per-object storage and normalized references.
 
-- [ ] **Open** Require the Turtle program to redraw the object through movement, rotation, pen state, and pen width rather than filled coordinate boxes.
+- [ ] **Partial** Require the Turtle program to redraw the object through movement, rotation, pen state, and pen width rather than filled coordinate boxes.
+  Existing evidence: extracted programs use `set_pos`, `rot`, `fwd`, `penup`/`pendown`, and canonical `pen_width`; supported thick rectangles render as one width-aware stroke and a regression test rejects row-by-row box filling.
+  Remaining: extend stroke optimization beyond exactly representable width-1-through-4 rectangles and line forms.
 
 - [ ] **Partial** Execute the stored Turtle program to regenerate the object and compare it with the source observation.  
   Existing evidence: `CellLogoForm` now executes extracted programs through `SWIPrologBridge` and the canonical `prolog/turtle_dsl.pl`; regenerated-cell fit, distance, normalized residual, and description-length metrics have live SWI-Prolog coverage.

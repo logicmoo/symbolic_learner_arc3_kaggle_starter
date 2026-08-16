@@ -81,9 +81,9 @@ Keep the shared records in `python/object_memory/models.py`; do not create anoth
 ## Store one Turtle program per recognized grid object
 
 - [ ] Make each recognized grid object store or reference a Turtle program that redraws that object.
-- [ ] Use forward movement and rotation rather than coordinate-box enumeration.
-- [ ] Use pen-up and pen-down state for disconnected strokes and repositioning.
-- [ ] Use pen width for thick lines rather than drawing adjacent filled rectangles.
+- [x] Use forward movement and rotation rather than coordinate-box enumeration.
+- [x] Use pen-up and pen-down state for stroke positioning and repositioning.
+- [x] Use pen width for supported thick lines rather than drawing adjacent filled rectangles.
 - [ ] Preserve supported color or drawing-state changes.
 - [x] Connect `CellLogoForm.render()` to `prolog/turtle_dsl.pl` through `SWIPrologBridge`.
 - [x] Define normalized Turtle-program storage and artifact references.
@@ -91,7 +91,7 @@ Keep the shared records in `python/object_memory/models.py`; do not create anoth
 - [x] Compare regenerated cells with the source object.
 - [ ] Preserve holes, disconnected strokes, topology, and line thickness.
 - [ ] Retain competing Turtle programs with their fit scores and provenance when the representation is ambiguous.
-- [ ] Add tests rejecting box-filling shortcuts for shapes that should use movement and pen width.
+- [x] Add tests rejecting box-filling shortcuts for shapes that should use movement and pen width.
 
 ## Extend `object_registry.pl` into persistent identity
 
