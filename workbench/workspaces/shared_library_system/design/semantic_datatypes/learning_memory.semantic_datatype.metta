@@ -11,7 +11,7 @@
   (id recognizable_memory)
   (label "Recognizable Memory")
   (description "Evidence promoted into a stable, reviewable memory that can be recognized again.")
-  (children ([] contextual_memory agent_interaction_memory))
+  (children ([] contextual_memory agent_interaction_memory symbolic_execution_report))
   (parents ([] information))
 )
 (
@@ -27,7 +27,7 @@
   (id agent_exchange)
   (label "Agent Exchange")
   (description "One provenance-bearing observation, request, message, or response exchanged by agents.")
-  (children ([] microatom_set))
+  (children ([] microatom_set agent_interaction_memory))
   (parents ([] information))
 )
 (
@@ -67,7 +67,7 @@
   (id symbolic_coverage_assessment)
   (label "Symbolic Coverage Assessment")
   (description "Validation evidence and an adequacy decision for a symbolic program candidate.")
-  (children ([]))
+  (children ([] memory_grounding_evidence))
   (parents ([] information))
 )
 (
@@ -83,7 +83,7 @@
   (id weaker_model_control)
   (label "Weaker-Model Control")
   (description "A same-task result from a deliberately weaker model used to control for model priors.")
-  (children ([]))
+  (children ([] memory_grounding_evidence))
   (parents ([] information))
 )
 (

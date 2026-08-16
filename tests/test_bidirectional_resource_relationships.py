@@ -20,13 +20,17 @@ def test_all_variant_relationships_are_plural_and_bidirectional() -> None:
     resources = get_filesystem_provider()
     for path in resources.rglob(WORKSPACES, "*.metta"):
         try:
-            document = resources.read_json(path.with_suffix(".json"))
+            loaded = resources.read_json_documents(path.with_suffix(".json"))
         except (OSError, ValueError):
             continue
-        if isinstance(document, dict) and document.get("kind") and document.get("id"):
-            documents.append(document)
+        documents.extend(
+            document for document in loaded
+            if isinstance(document, dict) and document.get("kind") and document.get("id")
+        )
 
-    by_id = {document["id"]: document for document in documents}
+    by_id: dict[str, list[dict]] = {}
+    for document in documents:
+        by_id.setdefault(document["id"], []).append(document)
     checked = 0
     for child in documents:
         parent_ids = child.get("parents")
@@ -34,7 +38,6 @@ def test_all_variant_relationships_are_plural_and_bidirectional() -> None:
             continue
         assert isinstance(parent_ids, list) and parent_ids, f"{child['id']}.parents must be a non-empty array"
         for parent_id in parent_ids:
-            parent = by_id[parent_id]
             expected_parent_kind = FAMILIES.get(child.get("kind"), child.get("kind"))
             allowed_parent_kinds = {expected_parent_kind}
             if child.get("kind") == "semantic_datatype":
@@ -44,7 +47,11 @@ def test_all_variant_relationships_are_plural_and_bidirectional() -> None:
                 # model presets inherit another model. Both links remain explicit
                 # and bidirectional in the unified model catalog.
                 allowed_parent_kinds.add("backend")
-            assert parent["kind"] in allowed_parent_kinds
+            parent = next(
+                (candidate for candidate in by_id[parent_id] if candidate.get("kind") in allowed_parent_kinds),
+                None,
+            )
+            assert parent is not None, f"{parent_id} has no parent resource of kind {sorted(allowed_parent_kinds)}"
             backlinks = parent.get("children")
             assert isinstance(backlinks, list), f"{parent_id}.children must be an array"
             assert child["id"] in backlinks, f"{parent_id}.children is missing {child['id']}"
@@ -54,7 +61,10 @@ def test_all_variant_relationships_are_plural_and_bidirectional() -> None:
         child_ids = parent.get("children", [])
         assert isinstance(child_ids, list), f"{parent['id']}.children must be an array"
         for child_id in child_ids:
-            child = by_id[child_id]
-            assert parent["id"] in child["parents"], f"{child_id}.parents is missing {parent['id']}"
+            matching_children = [
+                child for child in by_id[child_id]
+                if parent["id"] in (child.get("parents") or [])
+            ]
+            assert matching_children, f"{child_id}.parents is missing {parent['id']}"
 
     assert checked >= 45

@@ -42,6 +42,7 @@
     object_representation_bundle
     observation
     observation_collection
+    boolean
     number
     program
     provenance_record
@@ -59,10 +60,20 @@
     simulation_result
     suggested_experiment
     text
+    string
     world_analysis_state
     world_dynamics
     world_model
     world_state
+    visual_example_set
+    recognizable_memory
+    agent_exchange
+    llm_reasoning_trace
+    atomese_program
+    symbolic_coverage_assessment
+    symbolic_execution_report
+    weaker_model_control
+    memory_grounding_evidence
   ))
   (preferredChild json_object)
 )

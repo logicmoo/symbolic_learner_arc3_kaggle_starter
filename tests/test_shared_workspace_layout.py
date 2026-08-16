@@ -16,6 +16,7 @@ KIND_DIRECTORIES = {
     "concrete_datatype": "concrete_datatypes",
     "goal": "goals",
     "manifest": "manifests",
+    "managed_service": "services",
     "model": "models",
     "operation": "operations",
     "planning_strategy": "planning_strategies",
@@ -58,7 +59,7 @@ def test_shared_runtime_contains_no_design_documents() -> None:
 def test_every_workspace_uses_lifecycle_first_resource_directories() -> None:
     allowed = {"design", "runtime", "policies", "docs"}
     for workspace in WORKSPACES.iterdir():
-        if not workspace.is_dir():
+        if not workspace.is_dir() or workspace.name.startswith("."):
             continue
         assert {path.name for path in workspace.iterdir() if path.is_dir()} <= allowed, workspace.name
         for path in (workspace / "design").rglob("*.metta") if (workspace / "design").is_dir() else []:
