@@ -101,14 +101,16 @@ def test_goal_plan_and_context_pages_load_their_shared_right_panel_docs() -> Non
     components = ROOT / "workbench" / "frontend" / "src" / "components"
     help_source = (components / "HelpDocumentTabs.tsx").read_text(encoding="utf-8")
     page_source = (ROOT / "workbench" / "frontend" / "src" / "pages" / "FilesystemWorkbenchPage.tsx").read_text(encoding="utf-8")
-    assert '{id:"goals",label:"Goals",path:"docs/goals.md"}' in help_source
-    assert '{id:"plans",label:"Planning",path:"docs/plans.md"}' in help_source
-    assert '{id:"contexts",label:"AtomSpaces",path:"docs/contexts.md"}' in help_source
+    help_compact = "".join(help_source.split())
+    page_compact = "".join(page_source.split())
+    assert '{id:"goals",label:"Goals",path:"docs/goals.md"}' in help_compact
+    assert '{id:"plans",label:"Planning",path:"docs/plans.md"}' in help_compact
+    assert '{id:"contexts",label:"AtomSpaces",path:"docs/contexts.md"}' in help_compact
     assert 'ReactMarkdown' in help_source
     assert 'remarkGfm' in help_source
     assert '<pre className="mini-code relationship-markdown">' not in help_source
-    assert 'view==="goals"?"goals":view==="plans"?"plans"' in page_source
-    assert 'view==="goals"||view==="plans"' in page_source
+    assert 'view==="goals"?"goals":view==="plans"?"plans"' in page_compact
+    assert 'view==="goals"||view==="plans"' in page_compact
     assert (ROOT / "workbench" / "workspaces" / "shared_library_system" / "docs" / "goals.md").is_file()
     assert (ROOT / "workbench" / "workspaces" / "shared_library_system" / "docs" / "plans.md").is_file()
     assert (ROOT / "workbench" / "workspaces" / "shared_library_system" / "docs" / "contexts.md").is_file()
@@ -117,10 +119,11 @@ def test_goal_plan_and_context_pages_load_their_shared_right_panel_docs() -> Non
 def test_pddl_vocabulary_maps_plans_to_workflows() -> None:
     docs = (ROOT / "workbench" / "workspaces" / "shared_library_system" / "docs" / "plans.md").read_text(encoding="utf-8")
     page = (ROOT / "workbench" / "frontend" / "src" / "pages" / "FilesystemWorkbenchPage.tsx").read_text(encoding="utf-8")
+    compact = "".join(page.split())
     assert "| Plan | Workflow |" in docs
     assert "| Ground action | Workflow step |" in docs
-    assert 'label:"Planning"' in page
-    assert 'label:"Workflows"' in page
+    assert 'label:"Planning"' in compact
+    assert 'label:"Workflows(Legacy)"' in compact
     assert "planProvenance" in page
     assert "PDDL DOMAIN" in page
     assert "ORIGINAL GROUNDED PLAN" in page

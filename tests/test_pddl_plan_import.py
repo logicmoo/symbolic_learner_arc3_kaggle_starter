@@ -67,7 +67,9 @@ def test_temporal_pddl_plan_rejects_out_of_order_start_times() -> None:
 def test_active_workflow_editor_exposes_unsaved_pddl_conversion() -> None:
     page = (ROOT / "workbench" / "frontend" / "src" / "pages" / "FilesystemWorkbenchPage.tsx").read_text(encoding="utf-8")
     panel = (ROOT / "workbench" / "frontend" / "src" / "components" / "PddlPlanImportPanel.tsx").read_text(encoding="utf-8")
-    assert 'workflow&&<PddlPlanImportPanel workspaceId={workspace.id}' in page
+    compact = "".join(page.split())
+    assert 'view==="editor"&&workflow&&(' in compact
+    assert '<PddlPlanImportPanelworkspaceId={workspace.id}' in compact
     assert "/api/engine/workflows/import-pddl-plan" in panel
     assert "/snapshot" in panel
     assert "ACTION TO OPERATION MAP" in panel

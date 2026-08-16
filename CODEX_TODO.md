@@ -32,7 +32,8 @@ values here.
 - Canonical checkout: `C:\snet\PeTTa\repos\symbolic_learner_workbench`
 - Active branch: `codex/workbench-navigation-v2`
 - Remote branch: not configured for the current local branch
-- Latest validated commit: `064d537` (`Use the root Python environment for Workbench`)
+- Latest validated commit before this ledger update: `f350441b`
+  (`Keep launch resource selectors above dotenv defaults`)
 - Python environment: one repository-root `.venv` containing all optional
   ARC3, workbench, test, notebook, and integration dependencies
 - Frontend dependencies: `workbench/frontend/node_modules`
@@ -40,6 +41,17 @@ values here.
   never copy its secrets into this ledger
 
 ## Completed and validated
+
+- [x] Restore the complete repository validation baseline after the navigation,
+  resource hierarchy, and runtime-discovery changes. UI contract tests now
+  normalize formatting locally instead of coupling behavior checks to Prettier
+  whitespace; controlled tree branches assert their three-state display mode;
+  the Documentation resizer and current legacy Workflow label are asserted by
+  their live UI names; generated count-to-ten guides link back to the repository
+  README; and temporary pytest trees are excluded from maintained-document
+  discovery. Validation on 2026-08-17: `460 passed` using an external
+  `--basetemp`; frontend `npm run build` passed (with only Vite's existing
+  large-chunk advisory).
 
 - [x] Extend the English Workflow Generation Order composer inside its existing
   `ThreeStateAccordionStack`: `[+group]` now creates and selects a simultaneous

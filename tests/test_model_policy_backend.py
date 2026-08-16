@@ -123,7 +123,7 @@ def test_collapsed_artifact_branches_do_not_mount_hidden_children() -> None:
     editor = (ROOT / "workbench" / "frontend" / "src" / "components" / "UniversalArtifactEditor.tsx").read_text(encoding="utf-8")
     assert "initialCollapsed = false" in source
     assert "useState(initialCollapsed)" in source
-    assert "hasChildren && !collapsed" in source
+    assert 'hasChildren && (controlled ? displayMode !== "strip" : !collapsed)' in source
     assert 'if(value.trim())commandTree("expand")' in editor
 
 

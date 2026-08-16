@@ -59,14 +59,15 @@ def test_create_workspace_can_copy_another_workspace(tmp_path: Path, monkeypatch
 
 def test_workspace_picker_explains_template_and_library_roles() -> None:
     source = (Path(__file__).resolve().parents[1] / "workbench" / "frontend" / "src" / "pages" / "FilesystemWorkbenchPage.tsx").read_text(encoding="utf-8")
+    compact = "".join(source.split())
     assert "Create A New Workspace" in source
     assert "Create Workspace" in source
     assert 'setNewWorkspaceTemplateId("default")' in source
     assert "Workspace template" in source
-    assert 'request("/api/workspaces",{method:"POST"' in source
+    assert 'request("/api/workspaces",{method:"POST"' in compact
     assert "EDITABLE STARTER TEMPLATE" in source
     assert "Default is preselected" in source
-    assert "independent copy" in source
+    assert "independentcopy" in compact
 
 
 def test_visual_learning_projects_are_disk_backed_and_chooser_discoverable(monkeypatch) -> None:

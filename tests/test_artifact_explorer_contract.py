@@ -7,10 +7,11 @@ ACTIVE_PAGE = ROOT / "workbench" / "frontend" / "src" / "pages" / "FilesystemWor
 
 def test_artifact_explorer_uses_durable_engine_artifact_fields():
     source = ACTIVE_PAGE.read_text(encoding="utf-8")
+    compact = "".join(source.split())
 
-    assert "payload?:unknown" in source
-    assert "contentHash?:string" in source
-    assert "provenance?:Record<string,unknown>" in source
+    assert "payload?:unknown" in compact
+    assert "contentHash?:string" in compact
+    assert "provenance?:Record<string,unknown>" in compact
     assert "selectedArtifact.payload" in source
     assert "selectedArtifact.contentHash" in source
     assert "selectedArtifact.provenance" in source

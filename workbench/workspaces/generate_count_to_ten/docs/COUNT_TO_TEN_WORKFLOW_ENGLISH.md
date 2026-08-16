@@ -1,5 +1,7 @@
 # Count to Ten — Workflow Generation Test
 
+[← Back to top-level README](../../../../README.md)
+
 ## Purpose
 
 This project is a deliberately small acceptance test for generating a semantic workflow from an English resource. Its complete domain is counting integers from one through ten.

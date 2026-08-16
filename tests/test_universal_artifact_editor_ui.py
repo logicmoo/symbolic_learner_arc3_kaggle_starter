@@ -126,7 +126,7 @@ def test_operation_playground_exposes_typed_inputs_variant_switching_and_results
         assert token in source
     assert "OPERATION PLAYGROUND" not in source
     assert "Inspect inputs, choose an implementation" not in source
-    operation = source.index('<span>OPERATION</span>')
+    operation = source.index('<span>OPERATION <a')
     run_with = source.index('<span>RUN WITH', operation)
     defaults = source.index('<span>OPERATION DEFAULTS</span>', operation)
     run_with = source.index('<span>RUN WITH · WORKFLOW CASCADE</span>', defaults)

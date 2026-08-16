@@ -37,6 +37,7 @@ def _maintained_markdown() -> tuple[Path, ...]:
         ".codex",
         ".venv",
         ".llm_responses",
+        ".tmp",
         "vendor",
         "action_trees",
         "reference",
@@ -47,6 +48,7 @@ def _maintained_markdown() -> tuple[Path, ...]:
         path
         for path in ROOT.rglob("*.md")
         if not excluded.intersection(path.relative_to(ROOT).parts)
+        and not any(part.startswith(".pytest") for part in path.relative_to(ROOT).parts)
     )
 
 

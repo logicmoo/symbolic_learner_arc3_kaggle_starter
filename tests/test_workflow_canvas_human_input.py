@@ -9,11 +9,12 @@ HISTORY = ROOT / "workbench" / "frontend" / "src" / "components" / "RuntimeHisto
 def test_active_workflow_canvas_reuses_typed_human_input_form_and_drafts():
     page = PAGE.read_text(encoding="utf-8")
     history = HISTORY.read_text(encoding="utf-8")
+    compact = "".join(page.split())
 
     assert "export function HumanInputForm" in history
-    assert "<HumanInputForm step={selectedStep}" in page
+    assert "<HumanInputFormstep={selectedStep}" in compact
     assert "humanDraftStatus" in page
     assert "/draft`" in page
-    assert 'method:"PUT",body:JSON.stringify(humanValues)' in page
-    assert 'body:JSON.stringify(humanValues)' in page
+    assert 'method:"PUT",body:JSON.stringify(humanValues)' in compact
+    assert 'body:JSON.stringify(humanValues)' in compact
     assert 'value={humanValues}' not in page

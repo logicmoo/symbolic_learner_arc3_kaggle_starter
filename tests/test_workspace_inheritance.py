@@ -92,5 +92,6 @@ def test_settings_validation_rejects_cycles(tmp_path: Path, monkeypatch) -> None
 
 def test_active_workflow_editor_opens_inherited_documents_from_snapshot() -> None:
     source = (Path(__file__).resolve().parents[1] / "workbench" / "frontend" / "src" / "pages" / "FilesystemWorkbenchPage.tsx").read_text(encoding="utf-8")
-    assert 'row.workspaceId!==workspace.id' in source
-    assert 'setWorkflowSource(JSON.stringify(inherited.document,null,2))' in source
+    compact = "".join(source.split())
+    assert 'row.workspaceId!==workspace.id' in compact
+    assert 'setWorkflowSource(JSON.stringify(inherited.document,null,2))' in compact

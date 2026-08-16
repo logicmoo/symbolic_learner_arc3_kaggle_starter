@@ -39,7 +39,9 @@ def test_workspace_policy_overrides_shared_id(tmp_path: Path) -> None:
 def test_design_policy_navigation_uses_rich_editor() -> None:
     page = (ROOT / "workbench" / "frontend" / "src" / "pages" / "FilesystemWorkbenchPage.tsx").read_text(encoding="utf-8")
     editor = (ROOT / "workbench" / "frontend" / "src" / "components" / "PolicyLibraryEditor.tsx").read_text(encoding="utf-8")
-    assert 'label:"Policies",view:"policies"' in page
-    assert 'view==="policies"&&<PolicyLibraryEditor' in page
+    compact = "".join(page.split())
+    assert 'label:"Policies",view:"policies"' in compact
+    assert 'view==="policies"&&(' in compact
+    assert '<PolicyLibraryEditorworkspaceId={workspace.id}' in compact
     for token in ("HierarchyResourceEditor", "Split view", "ResourceSourceEditor", "ENABLED", "/policies"):
         assert token in editor

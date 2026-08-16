@@ -1,5 +1,7 @@
 # Count from one to ten
 
+[← Back to top-level README](../../../../README.md)
+
 Create a bounded semantic workflow that counts from 1 through 10 inclusive and returns the ordered values.
 
 Initialize a workflow-scoped AtomSpace memory cell named `current_count` to 1 and an ordered `collected_values` cell to an empty list. For each iteration, read `current_count`, append that number to `collected_values`, and retain evidence linking the produced number to its iteration.
