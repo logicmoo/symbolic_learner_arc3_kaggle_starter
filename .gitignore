@@ -247,6 +247,8 @@ runtime/
 node_modules/
 workbench/data/
 workbench/workspaces/*/runtime/.credentials
+# Accidental legacy launch root; canonical project lives under workbench/workspaces/.
+workbench/arc3_random_player/
 *.tsbuildinfo
 
 # Vendored framework + downloaded game source + agent recordings
