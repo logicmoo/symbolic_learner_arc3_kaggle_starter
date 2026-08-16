@@ -98,6 +98,10 @@ class StateNode:
     def differences_path(self) -> Path:
         return self.path / "differences.pl"
 
+    @property
+    def semantic_records_path(self) -> Path:
+        return self.path / "semantic_records.json"
+
 
 class ActionTreeStore:
     """Filesystem-backed deterministic action tree.
@@ -425,6 +429,53 @@ class ActionTreeStore:
         self.refresh_readme(node)
         return self.object_registry_path
 
+    def link_semantic_record(
+        self,
+        node: StateNode,
+        *,
+        record_type: str,
+        record_id: str,
+        artifact_path: str | Path,
+        schema_version: str,
+        deterministic_hash: str,
+    ) -> Path:
+        """Link a Phase 2/3 record to a node without embedding it in state.json."""
+
+        artifact = Path(artifact_path).resolve()
+        if not artifact.exists() or not artifact.is_file():
+            raise FileNotFoundError(artifact)
+        key = f"{record_type}:{record_id}"
+        records: dict[str, dict[str, str]] = {}
+        if node.semantic_records_path.exists():
+            loaded = json.loads(node.semantic_records_path.read_text(encoding="utf-8"))
+            records = {
+                str(item["key"]): dict(item)
+                for item in loaded.get("records", ())
+                if isinstance(item, Mapping) and item.get("key")
+            }
+        entry = {
+            "key": key,
+            "record_type": record_type,
+            "record_id": record_id,
+            "schema_version": schema_version,
+            "deterministic_hash": deterministic_hash,
+            "artifact": _rel_link(node.path, artifact),
+        }
+        existing = records.get(key)
+        if existing is not None and existing != entry:
+            raise RuntimeError(f"Semantic record link conflict for {key}")
+        records[key] = entry
+        payload = {
+            "schema_version": "1.0.0",
+            "records": [records[item] for item in sorted(records)],
+        }
+        node.semantic_records_path.write_text(
+            json.dumps(payload, indent=2, ensure_ascii=False) + "\n",
+            encoding="utf-8",
+        )
+        self.refresh_readme(node)
+        return node.semantic_records_path
+
     def refresh_readme(self, node: StateNode) -> Path:
         metadata = self.metadata(node)
         parent = self.parent_node(node)
@@ -533,6 +584,21 @@ class ActionTreeStore:
             if artifact.resolve() == self.object_registry_path.resolve():
                 continue
             lines.append(f"- [{artifact.name}]({_rel_link(node.path, artifact)})")
+
+        if node.semantic_records_path.exists():
+            semantic_payload = json.loads(
+                node.semantic_records_path.read_text(encoding="utf-8")
+            )
+            semantic_records = semantic_payload.get("records") or []
+            if semantic_records:
+                lines.extend(["", "## Semantic records", ""])
+                for record in semantic_records:
+                    lines.append(
+                        f"- **{record['record_type']}** `{record['record_id']}` "
+                        f"(schema `{record['schema_version']}`, hash "
+                        f"`{record['deterministic_hash']}`) — "
+                        f"[open record]({record['artifact']})"
+                    )
 
         lines.extend(["", "## Embedded files", ""])
 

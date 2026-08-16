@@ -44,7 +44,7 @@ These are maintenance and extension operations, not missing Phase 1 SOW delivera
 - [ ] Add stronger cache compatibility checks where useful without changing the delivered inspection behavior.
 - [ ] Keep restored transcript provenance and `object_registry.pl` identity provenance visible in node READMEs.
 - [ ] Add optional native Windows smoke coverage for launch-path resolution and one recorded ARC3 node.
-- [ ] Keep Phase 2 semantic records and Phase 3 prediction records linked from nodes rather than embedded into `Arc3Runner`.
+- [x] Keep Phase 2 semantic records and Phase 3 prediction records linked from nodes rather than embedded into `Arc3Runner`.
 
 ---
 

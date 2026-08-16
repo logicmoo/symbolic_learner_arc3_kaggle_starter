@@ -787,3 +787,7 @@ Preserve the canonical checkout and its `codex/workbench-navigation-v2` branch.
   lifecycle states, prior-state snapshots, and reversible false-merge and
   false-split behavior. Keep generated Phase 1 `object_registry.pl` files as
   the eventual synchronization target rather than creating a second registry.
+- [x] Add generic action-tree semantic-record linkage. Each node can maintain
+  a deterministic, conflict-checked `semantic_records.json` manifest and
+  GitHub-browsable README links while keeping Phase 2/3 payloads external to
+  Phase 1 `state.json` and `Arc3Runner`.
