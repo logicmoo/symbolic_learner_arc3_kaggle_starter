@@ -791,3 +791,7 @@ Preserve the canonical checkout and its `codex/workbench-navigation-v2` branch.
   a deterministic, conflict-checked `semantic_records.json` manifest and
   GitHub-browsable README links while keeping Phase 2/3 payloads external to
   Phase 1 `state.json` and `Arc3Runner`.
+- [x] Add an optional external post-capture observer seam to `Arc3Runner`.
+  Observers receive current/previous nodes and action context after durable
+  Phase 1 capture; failures are isolated so semantic services cannot interrupt
+  gameplay or suppress other observers.

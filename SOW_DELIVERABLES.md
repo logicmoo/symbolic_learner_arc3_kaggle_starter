@@ -210,8 +210,8 @@ Phase 2 implements the semantic object layer behind the Phase 1 debugger. It use
   Remaining: durable Prolog or AtomSpace backend implementation and lifecycle governance.
 
 - [ ] **Partial** Associate semantic encounters and memory updates with the history already preserved by Phase 1.  
-  Existing evidence: deterministic debugger history plus the versioned `EncounterRecord` contract and append-only `EncounterLog`; action-tree nodes now maintain an idempotent `semantic_records.json` manifest and README links to external versioned records without embedding them in `state.json` or `Arc3Runner`.
-  Remaining: connect automatic semantic encounter creation and linking to live Phase 1 transitions.
+  Existing evidence: deterministic debugger history plus the versioned `EncounterRecord` contract and append-only `EncounterLog`; action-tree nodes maintain external semantic manifests/README links; `Arc3Runner` exposes an isolated post-capture observer seam carrying current/previous nodes and action context without owning semantic state.
+  Remaining: implement and configure the Phase 2 observer that creates and links semantic encounters.
 
 - [ ] **Open** Support deterministic semantic-memory replay and reproducible updates from the debugger’s recorded history.
 

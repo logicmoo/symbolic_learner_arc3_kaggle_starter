@@ -7,7 +7,7 @@ import os
 from dataclasses import asdict, dataclass, is_dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Any, Mapping, Sequence
+from typing import Any, Iterable, Mapping, Sequence
 
 import arc_agi
 
@@ -89,10 +89,12 @@ class Arc3Runner:
         arc_api_key: str | None = None,
         capture_terminal: bool = False,
         tree_root: str | Path | None = None,
+        capture_observers: Iterable[Any] = (),
     ) -> None:
         self.game_id = game_id
         self.render_mode = render_mode
         self.capture_terminal = capture_terminal
+        self.capture_observers = tuple(capture_observers)
         self.prompts_root = prompts_root()
         self.environment_files = self.prompts_root  # compatibility alias
         self.tree_root = (
@@ -578,6 +580,12 @@ class Arc3Runner:
                 self._current_png(),
                 self._state_payload(),
             )
+            self._notify_state_captured(
+                self.current_node,
+                previous_node=None,
+                action=None,
+                data={},
+            )
         except Exception as exc:
             self.current_node = None
             print(f"warning: frame capture unavailable: {exc}")
@@ -605,10 +613,49 @@ class Arc3Runner:
                     self._state_payload(),
                 )
             self.current_node = node
+            self._notify_state_captured(
+                node,
+                previous_node=parent,
+                action=action,
+                data=data,
+            )
             return node
         except Exception as exc:
             print(f"warning: unable to store action-tree frame: {exc}")
             return None
+
+    def _notify_state_captured(
+        self,
+        node: StateNode,
+        *,
+        previous_node: StateNode | None,
+        action: str | None,
+        data: Mapping[str, Any],
+    ) -> None:
+        """Notify optional external services after Phase 1 capture completes."""
+
+        for observer in self.capture_observers:
+            callback = getattr(observer, "on_state_captured", None)
+            if not callable(callback):
+                print(
+                    "warning: capture observer has no on_state_captured callback: "
+                    f"{type(observer).__name__}"
+                )
+                continue
+            try:
+                callback(
+                    runner=self,
+                    store=self.tree_store,
+                    node=node,
+                    previous_node=previous_node,
+                    action=action,
+                    data=dict(data),
+                )
+            except Exception as exc:
+                print(
+                    "warning: capture observer failed "
+                    f"({type(observer).__name__}): {exc}"
+                )
 
     def _require_node(self) -> tuple[ActionTreeStore, StateNode]:
         if self.tree_store is None or self.current_node is None:
