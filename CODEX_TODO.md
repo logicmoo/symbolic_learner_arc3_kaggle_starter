@@ -800,3 +800,8 @@ Preserve the canonical checkout and its `codex/workbench-navigation-v2` branch.
   per-candidate Turtle artifacts, previous-encounter chains, semantic-store
   entries, action-tree manifests, and README links while retaining candidate
   status until registry-backed recognition commits durable identity.
+- [x] Enrich the established grid extractor with normalized geometry/topology:
+  exact bounds and boundary cells, enclosed hole regions, connected-component
+  count, line thickness, and pairwise spatial relations. Cover hollow,
+  irregular, thick, and disconnected fixtures without changing the adapter
+  boundary.

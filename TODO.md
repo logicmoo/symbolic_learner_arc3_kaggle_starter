@@ -76,7 +76,7 @@ Keep the shared records in `python/object_memory/models.py`; do not create anoth
 - [x] Preserve exact logical-grid coordinates and source artifact references.
 - [ ] Add pluggable image and simple-video adapters behind the same normalized contracts.
 - [x] Keep provider-specific intermediate data out of persistent object records unless referenced through provenance.
-- [ ] Add fixtures for irregular geometry, topology, holes, enclosure, line thickness, and disconnected strokes.
+- [x] Add fixtures for irregular geometry, topology, holes, enclosure, line thickness, and disconnected strokes.
 
 ## Store one Turtle program per recognized grid object
 

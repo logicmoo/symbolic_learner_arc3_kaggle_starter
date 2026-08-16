@@ -152,8 +152,8 @@ Phase 2 implements the semantic object layer behind the Phase 1 debugger. It use
 - [ ] **Open** Implement pluggable perception providers for image and simple-video inputs.
 
 - [ ] **Partial** Extract objects and represent geometry, structure, properties, relationships, position, orientation, scale, and appearance.  
-  Existing evidence: frozen, versioned `Observation`, `InstanceParameters`, `ArtifactRef`, `ProvenanceRef`, and Turtle-reference contracts in [`python/object_memory/models.py`](python/object_memory/models.py), with deterministic-ID coverage in [`tests/test_phase2_semantic_records.py`](tests/test_phase2_semantic_records.py).
-  Remaining: deterministic extraction into those normalized persistent records.
+  Existing evidence: frozen versioned contracts plus deterministic grid extraction of cells, exact bounds, boundary geometry, shape/color/appearance, hole regions, connected topology, line thickness, and pairwise spatial relationships; semantic capture persists normalized instance position/scale/appearance and source provenance.
+  Remaining: compound-object structure, orientation inference, richer relations, and normalization for raster/video adapters.
 
 ## Persistent identity and correspondence
 

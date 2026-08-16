@@ -141,6 +141,76 @@ def _shape(component: Component) -> str:
     return "irregular"
 
 
+def _hole_regions(component: Component) -> list[list[tuple[int, int]]]:
+    occupied = set(component.cells)
+    empty = {
+        (x, y)
+        for y in range(component.min_y, component.max_y + 1)
+        for x in range(component.min_x, component.max_x + 1)
+        if (x, y) not in occupied
+    }
+    outside: set[tuple[int, int]] = set()
+    queue = deque(
+        cell
+        for cell in empty
+        if cell[0] in (component.min_x, component.max_x)
+        or cell[1] in (component.min_y, component.max_y)
+    )
+    outside.update(queue)
+    while queue:
+        x, y = queue.popleft()
+        for neighbor in ((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)):
+            if neighbor in empty and neighbor not in outside:
+                outside.add(neighbor)
+                queue.append(neighbor)
+    remaining = empty - outside
+    regions: list[list[tuple[int, int]]] = []
+    while remaining:
+        start = min(remaining, key=lambda item: (item[1], item[0]))
+        region: list[tuple[int, int]] = []
+        queue = deque([start])
+        remaining.remove(start)
+        while queue:
+            cell = queue.popleft()
+            region.append(cell)
+            x, y = cell
+            for neighbor in ((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)):
+                if neighbor in remaining:
+                    remaining.remove(neighbor)
+                    queue.append(neighbor)
+        regions.append(sorted(region, key=lambda item: (item[1], item[0])))
+    return regions
+
+
+def _boundary_cells(component: Component) -> list[tuple[int, int]]:
+    occupied = set(component.cells)
+    return [
+        cell
+        for cell in component.cells
+        if any(
+            (cell[0] + dx, cell[1] + dy) not in occupied
+            for dx, dy in ((-1, 0), (1, 0), (0, -1), (0, 1))
+        )
+    ]
+
+
+def _relationships(left: Component, right: Component) -> list[str]:
+    result: list[str] = []
+    if left.max_x < right.min_x:
+        result.append("left_of")
+    if left.min_x > right.max_x:
+        result.append("right_of")
+    if left.max_y < right.min_y:
+        result.append("above")
+    if left.min_y > right.max_y:
+        result.append("below")
+    horizontal_gap = max(right.min_x - left.max_x - 1, left.min_x - right.max_x - 1, 0)
+    vertical_gap = max(right.min_y - left.max_y - 1, left.min_y - right.max_y - 1, 0)
+    if horizontal_gap == 0 and vertical_gap == 0:
+        result.append("adjacent_bounds")
+    return result
+
+
 def _turtle(component: Component) -> str:
     cells = set(component.cells)
     lines = [f"object({component.object_id}).", f"turtle({component.object_id}, ["]
@@ -209,6 +279,12 @@ def analyze_grid(value: Any = None) -> dict[str, Any]:
         shape = _shape(component)
         color_name = COLOR_NAMES.get(component.color, f"color_{component.color}")
         bounds = [component.min_x, component.min_y, component.width, component.height]
+        holes = _hole_regions(component)
+        boundary = _boundary_cells(component)
+        filled_rectangle = len(component.cells) == component.width * component.height
+        line_thickness = (
+            min(component.width, component.height) if filled_rectangle else 1
+        )
         facts = [
             f"object({component.object_id}).",
             f"color({component.object_id}, {color_name}).",
@@ -226,9 +302,35 @@ def analyze_grid(value: Any = None) -> dict[str, Any]:
             "bounds": bounds,
             "shape": shape,
             "pixelCount": len(component.cells),
+            "geometry": {
+                "minX": component.min_x,
+                "minY": component.min_y,
+                "maxX": component.max_x,
+                "maxY": component.max_y,
+                "width": component.width,
+                "height": component.height,
+                "boundaryCells": [list(cell) for cell in boundary],
+            },
+            "topology": {
+                "connectedComponents": 1,
+                "holeCount": len(holes),
+                "holes": [[list(cell) for cell in region] for region in holes],
+            },
+            "lineThickness": line_thickness,
+            "relationships": [],
             "facts": "\n".join(facts),
             "turtleProgram": _turtle(component),
         })
+
+    by_id = {component.object_id: component for component in components}
+    for obj in objects:
+        source_component = by_id[obj["id"]]
+        obj["relationships"] = [
+            {"target": target.object_id, "relation": relation}
+            for target in components
+            if target.object_id != source_component.object_id
+            for relation in _relationships(source_component, target)
+        ]
 
     reconstruction = [[0 for _ in row] for row in grid]
     for obj in objects:
