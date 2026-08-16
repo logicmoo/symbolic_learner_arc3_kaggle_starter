@@ -116,10 +116,10 @@ Keep the shared records in `python/object_memory/models.py`; do not create anoth
 
 ## Implement evidence and calibrated confidence
 
-- [ ] Accumulate positive and negative recognition evidence across repeated encounters.
-- [ ] Calibrate confidence for object identity, correspondence, and competing interpretations.
+- [x] Accumulate attributable positive and negative recognition evidence through `SingleWriter`.
+- [x] Derive calibrated object-identity confidence reproducibly from accumulated signed evidence.
 - [ ] Prevent similarity scores from being treated directly as committed confidence.
-- [ ] Make confidence updates reproducible and attributable to evidence records.
+- [x] Make confidence updates reproducible and attributable to evidence records.
 - [ ] Preserve confidence history when identities are merged, split, demoted, or tombstoned.
 - [ ] Show recognition accounts, evidence, rivals, and confidence through the Phase 1 README inspection surface.
 

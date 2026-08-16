@@ -778,3 +778,7 @@ Preserve the canonical checkout and its `codex/workbench-navigation-v2` branch.
   movement with canonical `pen_width(1..4)`, not adjacent row enumeration. An
   exact-regeneration regression test requires one `set_pos`, explicit rotation,
   pen width, and equality with the source cells.
+- [x] Add `SingleWriter.apply_evidence` as the calibrated path for object
+  confidence. It validates evidence subjects, deduplicates deterministic IDs,
+  preserves source provenance, accumulates positive and negative weights, and
+  derives the same confidence and attribution regardless of arrival order.

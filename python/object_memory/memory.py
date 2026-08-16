@@ -8,6 +8,8 @@ from typing import Any
 from .models import (
     CommittedAtom,
     EncounterRecord,
+    EvidencePolarity,
+    EvidenceRecord,
     ResidualCandidate,
     ResidualDisposition,
 )
@@ -90,6 +92,7 @@ class SymbolicMemory:
     def __init__(self) -> None:
         self._atoms: dict[str, CommittedAtom] = {}
         self._events: list[dict[str, Any]] = []
+        self._evidence: dict[str, dict[str, EvidenceRecord]] = {}
 
     def get(self, handle: str) -> CommittedAtom | None:
         return self._atoms.get(handle)
@@ -99,6 +102,12 @@ class SymbolicMemory:
 
     def events(self) -> tuple[dict[str, Any], ...]:
         return tuple(self._events)
+
+    def evidence_for(self, handle: str) -> tuple[EvidenceRecord, ...]:
+        return tuple(
+            self._evidence.get(handle, {})[evidence_id]
+            for evidence_id in sorted(self._evidence.get(handle, {}))
+        )
 
 
 class SingleWriter:
@@ -139,6 +148,7 @@ class SingleWriter:
         return committed
 
     def accrue_evidence(self, handle: str, confidence: float, evidence: str) -> CommittedAtom:
+        """Compatibility path for legacy callers with pre-calibrated evidence."""
         if not 0.0 <= confidence < 1.0:
             raise ValueError("confidence must be in [0, 1)")
         atom = self.memory._atoms[handle]
@@ -149,6 +159,56 @@ class SingleWriter:
         )
         self.memory._atoms[handle] = updated
         self.memory._events.append({"event": "evidence", "handle": handle, "evidence": evidence})
+        return updated
+
+    def apply_evidence(self, handle: str, evidence: EvidenceRecord) -> CommittedAtom:
+        """Derive calibrated confidence from attributable signed evidence."""
+
+        if evidence.subject_id != handle:
+            raise ValueError(
+                f"Evidence subject {evidence.subject_id!r} does not match {handle!r}"
+            )
+        atom = self.memory._atoms[handle]
+        records = self.memory._evidence.setdefault(handle, {})
+        existing = records.get(evidence.evidence_id)
+        if existing is not None and existing != evidence:
+            raise ValueError(f"Evidence identity conflict for {evidence.evidence_id!r}")
+        if existing is not None:
+            return atom
+        prior_evidence_ids = set(records)
+        records[evidence.evidence_id] = evidence
+        support = sum(
+            item.weight
+            for item in records.values()
+            if item.polarity is EvidencePolarity.SUPPORTS
+        )
+        contradiction = sum(
+            item.weight
+            for item in records.values()
+            if item.polarity is EvidencePolarity.CONTRADICTS
+        )
+        confidence = support / (support + contradiction + 1.0)
+        evidence_ids = tuple(sorted(records))
+        base_provenance = tuple(
+            item for item in atom.provenance if item not in prior_evidence_ids
+        )
+        updated = replace(
+            atom,
+            confidence=confidence,
+            provenance=(*base_provenance, *evidence_ids),
+        )
+        self.memory._atoms[handle] = updated
+        self.memory._events.append(
+            {
+                "event": "evidence_calibrated",
+                "handle": handle,
+                "evidence_id": evidence.evidence_id,
+                "polarity": evidence.polarity.value,
+                "support_weight": support,
+                "contradiction_weight": contradiction,
+                "confidence": confidence,
+            }
+        )
         return updated
 
     def tombstone(self, handle: str, reason: str) -> CommittedAtom:

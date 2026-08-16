@@ -194,10 +194,12 @@ Phase 2 implements the semantic object layer behind the Phase 1 debugger. It use
 - [ ] **Open** Prevent duplicate persistent storage when an existing object is recognized again.
 
 - [ ] **Partial** Accumulate positive and negative recognition evidence and provenance across the encounter history preserved by Phase 1.  
-  Existing evidence: `SingleWriter`, frozen positive/negative `EvidenceRecord` and `ProvenanceRef` contracts, deterministic evidence identifiers, action-tree provenance, and focused tests.
-  Remaining: durable encounter-linked recognition evidence.
+  Existing evidence: `SingleWriter` accepts frozen positive/negative `EvidenceRecord` values, checks their subject, deduplicates stable evidence IDs, preserves base provenance, and derives confidence from signed weights independently of arrival order.
+  Remaining: durable encounter-linked recognition evidence and domain calibration against fixtures.
 
-- [ ] **Open** Refine and calibrate confidence for object identity, correspondence, and competing interpretations.
+- [ ] **Partial** Refine and calibrate confidence for object identity, correspondence, and competing interpretations.
+  Existing evidence: deterministic Laplace-style confidence derived from attributable supporting and contradicting evidence, with event history and order-independence tests.
+  Remaining: correspondence/rival interpretation calibration, empirical calibration curves, and lifecycle-history preservation.
 
 ## Persistent symbolic memory and replay
 
