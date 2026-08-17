@@ -19,6 +19,7 @@ from .benchmark import (
     PerceptionBenchmarkResult,
     PerceptionBenchmarkRunner,
     PerceptionFixture,
+    ProviderAblationRunner,
     RasterPerturbationGenerator,
 )
 from .forms import CellLogoForm, FitResult, GenerativeForm
@@ -107,6 +108,7 @@ from .recognition import (
 )
 from .replay import ActionTreeSemanticReplay, PrologSemanticBackend, SemanticRecordCodec
 from .sprite import AlphaContourProvider, SpriteAdapter
+from .transcript import TranscriptComparison, TranscriptScorer
 from .store import ArtifactIndex, InMemorySemanticBackend, SemanticStoreBackend, SymbolicStore
 
 __all__ = [
@@ -158,6 +160,7 @@ __all__ = [
     "PerceptionBenchmarkResult",
     "PerceptionBenchmarkRunner",
     "PerceptionFixture",
+    "ProviderAblationRunner",
     "SimpleVideoAdapter",
     "PartialVisibilityCompletion",
     "Phase2LearnerPayloadBuilder",
@@ -208,6 +211,8 @@ __all__ = [
     "TransitionAnalyzer",
     "TransitionRecord",
     "TransitionRule",
+    "TranscriptComparison",
+    "TranscriptScorer",
     "UnsupportedProviderCapability",
     "TurtleProgramRef",
     "TurtleReconstructionEvidenceBuilder",

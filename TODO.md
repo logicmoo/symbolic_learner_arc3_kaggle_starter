@@ -270,8 +270,8 @@ Architecture: [Environment progression](SOW_PHASE_ARCHITECTURE.md#environment-pr
 - [x] Partial-occlusion completion datasets.
 - [x] Benchmark runner.
 - [x] Perturbation generator.
-- [ ] Provider/mode ablation runner.
-- [ ] Transcript comparison and scoring tools.
+- [x] Provider/mode ablation runner.
+- [x] Transcript comparison and scoring tools.
 - [ ] Acceptance report generator.
 
 # Completion procedure

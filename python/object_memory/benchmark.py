@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from random import Random
-from typing import Any, Iterable
+from typing import Any, Iterable, Mapping
 
 from PIL import Image
 
@@ -111,3 +111,21 @@ class PerceptionBenchmarkRunner:
                 )
             )
         return tuple(results)
+
+
+class ProviderAblationRunner:
+    """Run identical fixtures across named provider/mode adapter variants."""
+
+    def __init__(self, adapters: Mapping[str, ImageAdapter]) -> None:
+        if not adapters:
+            raise ValueError("at least one provider/mode adapter is required")
+        self.adapters = dict(adapters)
+
+    def run(
+        self, fixtures: Iterable[PerceptionFixture]
+    ) -> Mapping[str, tuple[PerceptionBenchmarkResult, ...]]:
+        materialized = tuple(fixtures)
+        return {
+            name: PerceptionBenchmarkRunner(adapter).run(materialized)
+            for name, adapter in sorted(self.adapters.items())
+        }
