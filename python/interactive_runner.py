@@ -374,7 +374,10 @@ def build_keymap(runner: Arc3Runner) -> tuple[dict[str, Any], list[dict[str, Any
         assigned.add(id(action))
 
     fallback = iter(FALLBACK_ACTION_KEYS)
-    reserved = {"g", "p", "r", "R", "l", "L", "a", "h", "s", "q", "w", "e", "v", "x", "c", "?", "."}
+    reserved = {
+        "r", "R", "l", "L", "a", "h", "s", "q", "w", "e", "v", "x", "c", "?", ".",
+        *CONTROL_MODE_KEYS,
+    }
     for action in runner.action_space:
         if id(action) in assigned:
             continue
@@ -407,7 +410,11 @@ def print_controls(runner: Arc3Runner, rows: list[dict[str, Any]]) -> None:
     print("Game: " + "  ".join(f"({row['key']}) {action_name(row['action'])}" for row in rows))
     print("Select: (Shift+←/→) Game  (Shift+↑/↓) Level")
     print("Steps: (Ctrl+←/→) Prev/Next  (Ctrl+↑/↓) First/Latest")
-    print("Mode: (g) GPT  (p) Prolog  (1-6) Mode Command")
+    modes = "  ".join(
+        f"({key}) {CONTROL_MODES[mode]['title']}"
+        for key, mode in CONTROL_MODE_KEYS.items()
+    )
+    print(f"Mode: {modes}  (digit) Mode Command")
     print("Reset: (r) Reset Level  (R) Restart Game")
     print("Info: (L) Games/Levels  (l) Current  (a) Actions  (h) History  (s) Score  (?) Help")
     print("Run: (Enter) Redraw  (x) Pause  (.) Step  (v) Replay")
@@ -435,40 +442,89 @@ def show_history(runner: Arc3Runner, cursor: int | None = None) -> None:
 
 
 
-CONTROL_MODES = {
-    "gpt": {
-        "title": "GPT",
-        1: "Print/Edit GPT prompts",
-        2: "Demo analysis (low image / low reasoning / 12k tokens)",
-        3: "Deep analysis (high current image / medium reasoning / 22k tokens)",
-        4: "Extreme analysis (high both images / high reasoning / 32k tokens)",
-        5: "Recompute turtle_from_diff.pl",
-        6: "Recompute similarities.pl",
-    },
-    "prolog": {
-        "title": "Prolog",
-        1: "Print/Edit Prolog description",
-        2: "Full state analysis → all .pl artifacts",
-        3: "Recompute differences.pl",
-        4: "Recompute turtle_from_image.pl",
-        5: "Recompute turtle_from_diff.pl",
-        6: "Recompute similarities.pl",
-    },
-}
+CONTROL_MODES: dict[str, dict[str | int, str]] = {}
+CONTROL_MODE_KEYS: dict[str, str] = {}
+CONTROL_MODE_HANDLERS: dict[tuple[str, int], Any] = {}
+
+
+def register_control_mode(mode: str, *, title: str, key: str) -> None:
+    """Register an extensible debugger service without editing the input loop."""
+
+    if len(key) != 1:
+        raise ValueError("control-mode selector must be one key")
+    existing = CONTROL_MODE_KEYS.get(key)
+    if existing is not None and existing != mode:
+        raise ValueError(f"control-mode key {key!r} is already registered by {existing!r}")
+    menu = CONTROL_MODES.setdefault(mode, {})
+    menu["title"] = title
+    CONTROL_MODE_KEYS[key] = mode
+
+
+def register_control_command(
+    mode: str,
+    command_number: int,
+    label: str,
+    handler: Any | None = None,
+) -> None:
+    if mode not in CONTROL_MODES:
+        raise KeyError(f"unknown control mode: {mode!r}")
+    if not 0 <= command_number <= 9:
+        raise ValueError("control command must use a single digit from 0 through 9")
+    CONTROL_MODES[mode][command_number] = label
+    if handler is not None:
+        CONTROL_MODE_HANDLERS[(mode, command_number)] = handler
+
+
+register_control_mode("gpt", title="GPT", key="g")
+for _number, _label in enumerate(
+    (
+        "Print/Edit GPT prompts",
+        "Demo analysis (low image / low reasoning / 12k tokens)",
+        "Deep analysis (high current image / medium reasoning / 22k tokens)",
+        "Extreme analysis (high both images / high reasoning / 32k tokens)",
+        "Recompute turtle_from_diff.pl",
+        "Recompute similarities.pl",
+    ),
+    start=1,
+):
+    register_control_command("gpt", _number, _label)
+
+register_control_mode("prolog", title="Prolog", key="p")
+for _number, _label in enumerate(
+    (
+        "Print/Edit Prolog description",
+        "Full state analysis → all .pl artifacts",
+        "Recompute differences.pl",
+        "Recompute turtle_from_image.pl",
+        "Recompute turtle_from_diff.pl",
+        "Recompute similarities.pl",
+    ),
+    start=1,
+):
+    register_control_command("prolog", _number, _label)
 
 
 def print_mode_menu(mode: str) -> None:
     menu = CONTROL_MODES[mode]
-    print(f"\n{menu['title']} MODE: " + "  ".join(f"({n}) {menu[n]}" for n in range(1, 7)))
+    command_numbers = sorted(key for key in menu if isinstance(key, int))
+    print(
+        f"\n{menu['title']} MODE: "
+        + "  ".join(f"({number}) {menu[number]}" for number in command_numbers)
+    )
 
 
 def dispatch_control_mode(runner: Arc3Runner, mode: str, command_number: int) -> None:
+    handler = CONTROL_MODE_HANDLERS.get((mode, command_number))
+    if callable(handler):
+        handler(runner)
+        return
     method_name = f"{mode}_command_{command_number}"
     method = getattr(runner, method_name, None)
     if callable(method):
         method()
         return
-    print(f"Not implemented yet: [{mode.upper()}] {CONTROL_MODES[mode][command_number]}")
+    label = CONTROL_MODES.get(mode, {}).get(command_number, "unregistered command")
+    print(f"Not implemented yet: [{mode.upper()}] {label}")
 
 
 def main() -> None:
@@ -533,19 +589,26 @@ def main() -> None:
                 print_controls(runner, action_rows)
                 continue
 
-            if key == "g":
-                active_control_mode = "gpt"
+            if key in CONTROL_MODE_KEYS:
+                active_control_mode = CONTROL_MODE_KEYS[key]
                 print_mode_menu(active_control_mode)
                 continue
-            if key == "p":
-                active_control_mode = "prolog"
-                print_mode_menu(active_control_mode)
-                continue
-            if key in {"1", "2", "3", "4", "5", "6"}:
+            if key.isdigit():
                 if active_control_mode is None:
-                    print("Select mode first: (g) GPT or (p) Prolog")
+                    choices = " or ".join(
+                        f"({selector}) {CONTROL_MODES[mode]['title']}"
+                        for selector, mode in CONTROL_MODE_KEYS.items()
+                    )
+                    print(f"Select mode first: {choices}")
                     continue
-                dispatch_control_mode(runner, active_control_mode, int(key))
+                command_number = int(key)
+                if command_number not in CONTROL_MODES[active_control_mode]:
+                    print(
+                        f"No command ({command_number}) registered for "
+                        f"{CONTROL_MODES[active_control_mode]['title']} mode"
+                    )
+                    continue
+                dispatch_control_mode(runner, active_control_mode, command_number)
                 continue
             if key == "\x1b":
                 active_control_mode = None
