@@ -146,7 +146,7 @@ Keep the shared records in `python/object_memory/models.py`; do not create anoth
 - [ ] Modest degradation and partial-occlusion recognition.
 - [ ] Positive and negative evidence accumulation.
 - [ ] Confidence calibration and reproducibility.
-- [ ] Deterministic semantic-memory replay over Phase 1 history.
+- [x] Deterministic semantic-memory replay over exact records linked from Phase 1 action-tree manifests, including predecessor-ordered encounter chains.
 
 ## Phase 2 demonstration workflow
 

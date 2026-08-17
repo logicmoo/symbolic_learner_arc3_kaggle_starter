@@ -840,3 +840,7 @@ Preserve the canonical checkout and its `codex/workbench-navigation-v2` branch.
   link evidence beside proposals/accounts, then summarize candidates, selected
   identity, advisory similarity, polarity, confidence, decision source, and
   rivals in each action-tree node README.
+- [x] Replay semantic state directly from Phase 1 action-tree manifests. Decode
+  exact nested records, deduplicate repeated links, restore encounter chains in
+  predecessor order, and reject missing or cyclic history rather than silently
+  producing a partial store.

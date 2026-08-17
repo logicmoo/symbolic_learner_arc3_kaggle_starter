@@ -70,10 +70,12 @@ from .recognition import (
     RegistryCorrespondenceAuthority,
     TurtleReconstructionEvidenceBuilder,
 )
+from .replay import ActionTreeSemanticReplay, SemanticRecordCodec
 from .store import ArtifactIndex, InMemorySemanticBackend, SemanticStoreBackend, SymbolicStore
 
 __all__ = [
     "ArtifactProvider",
+    "ActionTreeSemanticReplay",
     "ArtifactRef",
     "ArtifactIndex",
     "CandidateObject",
@@ -133,6 +135,7 @@ __all__ = [
     "RuleStore",
     "SingleWriter",
     "SemanticStoreBackend",
+    "SemanticRecordCodec",
     "SemanticGridCaptureObserver",
     "SplitDecision",
     "SymbolicMemory",

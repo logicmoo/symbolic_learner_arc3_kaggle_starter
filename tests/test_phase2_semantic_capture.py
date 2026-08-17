@@ -4,6 +4,7 @@ from types import SimpleNamespace
 
 from action_tree import ActionTreeStore
 from object_memory import (
+    ActionTreeSemanticReplay,
     EncounterRecord,
     GridAdapter,
     InMemorySemanticBackend,
@@ -53,6 +54,14 @@ def test_semantic_capture_persists_and_links_observations_encounters_and_turtles
     assert encounters[2].previous_encounter_id == encounters[0].encounter_id
     assert encounters[3].previous_encounter_id == encounters[1].encounter_id
     assert "## Semantic records" in child.readme_path.read_text(encoding="utf-8")
+    replayed = ActionTreeSemanticReplay().replay(
+        tree.level_root,
+        SymbolicStore(InMemorySemanticBackend()),
+    )
+    assert len(replayed.encounters.records()) == 4
+    assert replayed.encounters.get(encounters[2].encounter_id).previous_encounter_id == (
+        encounters[0].encounter_id
+    )
 
 
 def test_semantic_capture_links_unresolved_proposals_against_known_history(tmp_path: Path) -> None:
@@ -100,3 +109,16 @@ def test_semantic_capture_links_unresolved_proposals_against_known_history(tmp_p
     assert "advisory similarity" in readme
     assert "evidence record(s)" in readme
     assert "rival(s)" in readme
+
+    replayed = ActionTreeSemanticReplay().replay(
+        tree.level_root,
+        SymbolicStore(InMemorySemanticBackend()),
+    )
+    assert len(replayed.values("observations")) == 1
+    assert len(replayed.values("encounters")) == 2
+    assert len(replayed.values("match_proposals")) == 2
+    assert len(replayed.values("recognition_accounts")) == 2
+    assert len(replayed.values("evidence")) == record_types.count("evidence")
+    assert replayed.encounters.deterministic_hash() == SymbolicStore(
+        InMemorySemanticBackend()
+    ).replay(replayed.snapshot()).encounters.deterministic_hash()

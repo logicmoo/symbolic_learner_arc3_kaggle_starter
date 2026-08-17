@@ -216,8 +216,8 @@ Phase 2 implements the semantic object layer behind the Phase 1 debugger. It use
   Remaining: configure observer enablement in additional runner entry points and connect unresolved candidate proposals to explicit registry authorization controls.
 
 - [ ] **Partial** Support deterministic semantic-memory replay and reproducible updates from the debugger’s recorded history.
-  Existing evidence: complete `SymbolicStore` snapshots deterministically restore artifacts, Turtle references, atoms, observations, encounters, proposals, recognition accounts, and evidence; repeated replay is idempotent and encounter hashes remain stable.
-  Remaining: derive snapshots directly from a recorded Phase 1 tree and a durable starting backend.
+  Existing evidence: complete `SymbolicStore` snapshots deterministically restore artifacts, Turtle references, atoms, observations, encounters, proposals, recognition accounts, and evidence; repeated replay is idempotent and encounter hashes remain stable. `ActionTreeSemanticReplay` rebuilds a fresh store directly from exact records linked by Phase 1 `semantic_records.json` manifests, restores encounter chains in predecessor order, deduplicates repeated links, and rejects missing/cyclic history.
+  Remaining: persist the reconstructed state through a durable Prolog or AtomSpace backend.
 
 - [ ] **Open** Demonstrate recognition and reconstruction under modest degradation and partial occlusion.
 
