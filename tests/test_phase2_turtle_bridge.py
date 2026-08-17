@@ -72,6 +72,19 @@ def test_thick_rectangle_uses_pen_width_instead_of_row_enumeration() -> None:
     }
 
 
+def test_wide_rectangle_uses_one_exact_width_aware_stroke() -> None:
+    grid = [[7] * 6 for _ in range(8)]
+    item = analyze_grid(grid)["objects"][0]
+
+    assert "pen_width(6)" in item["turtleProgram"]
+    assert item["turtleProgram"].count("set_pos(") == 1
+    assert item["turtleProgram"].count("fwd(") == 1
+    rendered = CellLogoForm(item["turtleProgram"], swi_bridge=_bridge()).render()
+    assert {tuple(cell) for cell in rendered["cells"]} == {
+        tuple(cell) for cell in item["cells"]
+    }
+
+
 def test_hollow_object_preserves_hole_and_exact_topology() -> None:
     grid = [
         [0, 0, 0, 0, 0],
@@ -87,6 +100,9 @@ def test_hollow_object_preserves_hole_and_exact_topology() -> None:
     assert item["topology"]["connectedComponents"] == 1
     assert item["topology"]["holeCount"] == 1
     assert item["topology"]["holes"] == [[[2, 2]]]
+    assert item["turtleProgram"].count("set_pos(") == 1
+    assert item["turtleProgram"].count("penup") == 1
+    assert "rot(" in item["turtleProgram"]
     assert (2, 2) not in {tuple(cell) for cell in rendered["cells"]}
     assert {tuple(cell) for cell in rendered["cells"]} == {
         tuple(cell) for cell in item["cells"]

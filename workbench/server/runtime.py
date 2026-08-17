@@ -215,7 +215,7 @@ def _turtle(component: Component) -> str:
     cells = set(component.cells)
     lines = [f"object({component.object_id}).", f"turtle({component.object_id}, ["]
     filled_rectangle = len(cells) == component.width * component.height
-    if filled_rectangle and component.width <= 4 and component.height >= component.width:
+    if filled_rectangle and component.height >= component.width:
         center_x = component.min_x + component.width // 2
         lines.extend([
             "    penup,",
@@ -229,7 +229,7 @@ def _turtle(component: Component) -> str:
             "]).",
         ])
         return "\n".join(lines)
-    if filled_rectangle and component.height <= 4:
+    if filled_rectangle:
         center_y = component.min_y + component.height // 2
         lines.extend([
             "    penup,",
@@ -242,29 +242,48 @@ def _turtle(component: Component) -> str:
             "]).",
         ])
         return "\n".join(lines)
-    first = True
-    for y in range(component.min_y, component.max_y + 1):
-        runs: list[tuple[int, int]] = []
-        start = None
-        for x in range(component.min_x, component.max_x + 2):
-            if (x, y) in cells and start is None:
-                start = x
-            if start is not None and (x, y) not in cells:
-                runs.append((start, x - 1))
-                start = None
-        for start_x, end_x in runs:
-            if not first:
-                lines[-1] += ","
-            lines.extend([
-                "    penup,",
-                f"    set_pos({start_x}, {y}),",
-                f"    setcolor({COLOR_NAMES.get(component.color, component.color)}),",
-                "    pendown,",
-                "    pen_width(1),",
-                "    set_cell,",
-                f"    fwd({end_x - start_x})",
-            ])
-            first = False
+    start = min(cells, key=lambda cell: (cell[1], cell[0]))
+    walk = [start]
+    visited = {start}
+
+    def traverse(cell: tuple[int, int]) -> None:
+        x, y = cell
+        neighbors = sorted(
+            cells.intersection(
+                {(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)}
+            ),
+            key=lambda item: (item[1], item[0]),
+        )
+        for neighbor in neighbors:
+            if neighbor in visited:
+                continue
+            visited.add(neighbor)
+            walk.append(neighbor)
+            traverse(neighbor)
+            walk.append(cell)
+
+    traverse(start)
+    instructions = [
+        "penup",
+        f"set_pos({start[0]}, {start[1]})",
+        f"setcolor({COLOR_NAMES.get(component.color, component.color)})",
+        "pen_width(1)",
+        "pendown",
+        "set_cell",
+    ]
+    directions = {(1, 0): 0, (0, 1): 1, (-1, 0): 2, (0, -1): 3}
+    direction = 0
+    for previous, current in zip(walk, walk[1:]):
+        desired = directions[(current[0] - previous[0], current[1] - previous[1])]
+        turns = (desired - direction) % 4
+        if turns:
+            instructions.append(f"rot({turns * 90})")
+        instructions.append("fwd(1)")
+        direction = desired
+    lines.extend(
+        f"    {instruction}{',' if index < len(instructions) - 1 else ''}"
+        for index, instruction in enumerate(instructions)
+    )
     lines.append("]).")
     return "\n".join(lines)
 

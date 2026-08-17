@@ -14,8 +14,8 @@ execute_instruction(penup, State0, State) :-
 execute_instruction(pendown, State0, State) :-
     State = State0.put(pen, down).
 
-% Canonical pen-width instruction. Widths above four cells are deliberately
-% rejected so generated ARC programs stay inspectable and line-oriented.
+% Canonical positive integer pen width. Generators choose a width-aware stroke
+% only when its raster footprint is exactly the intended object.
 execute_instruction(pen_width(Width), State0, State) :-
     valid_pen_width(Width),
     State = State0.put(pen_width, Width).
@@ -50,7 +50,7 @@ execute_instruction(set_cell, State0, State) :-
 
 valid_pen_width(Width) :-
     integer(Width),
-    between(1, 4, Width).
+    Width >= 1.
 
 move_forward(0, State, State) :-
     !.

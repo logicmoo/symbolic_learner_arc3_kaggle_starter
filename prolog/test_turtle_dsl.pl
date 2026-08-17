@@ -56,8 +56,9 @@ test(width_zero_is_rejected, [fail]) :-
     initial_state(State0),
     execute_instruction(pen_width(0), State0, _).
 
-test(width_five_is_rejected, [fail]) :-
+test(width_five_is_supported) :-
     initial_state(State0),
-    execute_instruction(pen_width(5), State0, _).
+    execute_instruction(pen_width(5), State0, State),
+    assertion(State.pen_width == 5).
 
 :- end_tests(turtle_dsl_pen_width).
