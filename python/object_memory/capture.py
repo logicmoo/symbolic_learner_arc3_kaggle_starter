@@ -13,6 +13,7 @@ from swipl_bridge import SWIPrologBridge
 from .adapters import GridAdapter
 from .forms import CellLogoForm, FitResult
 from .integration import Phase2LearnerPayloadBuilder
+from .learning import OutcomeChannel, PredictionEvaluator, PredictionGrade, RuleExecutor
 from .memory import SingleWriter
 from .models import (
     ArtifactRef,
@@ -22,6 +23,7 @@ from .models import (
     ProvenanceRef,
     RecognitionAccount,
     TurtleProgramRef,
+    deterministic_identifier,
 )
 from .recognition import (
     EncounterChangeSession,
@@ -43,9 +45,34 @@ def standard_semantic_grid_observer(
     from .memory import SymbolicMemory
     from .providers import PythonProvider
 
+    semantic_store = SymbolicStore(InMemorySemanticBackend())
+    if learner_plugin is None:
+        from .integration import (
+            PipelineGameObjectLearnerPlugin,
+            phase2_rule_inducer,
+            phase2_rule_ranker,
+            phase2_transformation_learner,
+            phase2_transition_analyzer,
+        )
+        from .learning import GameLearningPipeline
+        from .prediction import PredictionLedger, RuleStore
+
+        learner_plugin = PipelineGameObjectLearnerPlugin(
+            GameLearningPipeline(
+                phase2_transition_analyzer(),
+                phase2_transformation_learner(),
+                phase2_rule_inducer(),
+                phase2_rule_ranker(),
+                RuleStore(),
+                PredictionLedger(),
+                semantic_store,
+            )
+        )
+
     return SemanticGridCaptureObserver(
         GridAdapter(analyze_grid, PythonProvider({})),
         grid_selector=lambda runner: runner.current_grid(),
+        symbolic_store=semantic_store,
         identity_writer=SingleWriter(SymbolicMemory()),
         learner_plugin=learner_plugin,
     )
@@ -84,6 +111,10 @@ class SemanticGridCaptureObserver:
         self.identity_writer = identity_writer
         self.learner_plugin = learner_plugin
         self.learner_results: list[Any] = []
+        self._pending_prediction: tuple[str, Any] | None = None
+        pipeline = getattr(learner_plugin, "pipeline", None)
+        if pipeline is not None and pipeline.semantic_store is None:
+            pipeline.semantic_store = self.symbolic_store
         if turtle_form_factory is None:
             bridge = SWIPrologBridge(PROJECT_ROOT / "prolog" / "arc3_agent.pl")
             turtle_form_factory = lambda source: CellLogoForm(source, swi_bridge=bridge)
@@ -321,6 +352,69 @@ class SemanticGridCaptureObserver:
             raise RuntimeError(f"Semantic record conflict at {path}")
         path.write_text(source, encoding="utf-8")
         return path
+
+    @staticmethod
+    def _action_key(value: Any) -> str:
+        if isinstance(value, Mapping):
+            value = value.get("action", value.get("event", value))
+        return str(value).strip().upper()
+
+    def before_action(
+        self,
+        *,
+        runner: Any,
+        store: Any,
+        node: Any,
+        action: str,
+        data: Mapping[str, Any],
+    ) -> None:
+        """Record a learned-rule prediction before Arc3Runner observes the outcome."""
+
+        del runner
+        pipeline = getattr(self.learner_plugin, "pipeline", None)
+        if (
+            pipeline is None
+            or pipeline.semantic_store is None
+            or self._pending_prediction is not None
+        ):
+            return
+        action_key = self._action_key(action)
+        candidates = tuple(
+            rule
+            for rule in pipeline.rule_store.rules()
+            if rule.predicted_effects
+            and self._action_key(rule.action_or_event) == action_key
+        )
+        if not candidates:
+            return
+        selected = pipeline.rule_ranker.rank(candidates)[0]
+        created_sequence = len(self.symbolic_store.encounters.records()) + len(
+            pipeline.prediction_ledger.records()
+        ) + 1
+        prediction_id = deterministic_identifier(
+            "prediction",
+            {
+                "rule_id": selected.rule_id,
+                "source_state_id": self._latest_observation_id or str(node.path),
+                "action": action,
+                "data": dict(data),
+                "created_sequence": created_sequence,
+            },
+        )
+        predicted, _record = pipeline.predict(
+            prediction_id=prediction_id,
+            rule_id=selected.rule_id,
+            source_state_id=self._latest_observation_id or str(node.path),
+            state={"action": action, "data": dict(data)},
+            created_sequence=created_sequence,
+            executor=RuleExecutor(
+                pipeline.rule_store,
+                checker=lambda _rule, _state: True,
+                executor=lambda rule, _state: rule.predicted_effects[0],
+            ),
+        )
+        self._pending_prediction = (prediction_id, predicted)
+        store.link_prediction_history(node, pipeline.semantic_store, prediction_id)
 
     def on_state_captured(
         self,
@@ -617,6 +711,32 @@ class SemanticGridCaptureObserver:
                     current_payload,
                 )
             self.learner_results.append(result)
+            pending_prediction = self._pending_prediction
+            learning_value = getattr(result, "value", None)
+            learning_step = getattr(learning_value, "learning_step", None)
+            if pending_prediction is not None and learning_step is not None:
+                prediction_id, predicted = pending_prediction
+                observed_changes = list(learning_step.transition.changes)
+                pipeline = getattr(self.learner_plugin, "pipeline", None)
+                if pipeline is not None:
+                    pipeline.grade_prediction(
+                        prediction_id=prediction_id,
+                        outcome_sequence=len(self.symbolic_store.encounters.records()),
+                        outcome_channel=OutcomeChannel(lambda: observed_changes),
+                        evaluator=PredictionEvaluator(
+                            lambda expected, observed: PredictionGrade(
+                                1.0 if expected in observed else 0.0,
+                                evidence=(
+                                    "independent_arc3_transition",
+                                    *tuple(str(item) for item in observed),
+                                ),
+                            )
+                        ),
+                    )
+                    store.link_prediction_history(
+                        node, pipeline.semantic_store, prediction_id
+                    )
+                    self._pending_prediction = None
             result_payload = _jsonable(result)
             encoded = json.dumps(
                 result_payload,

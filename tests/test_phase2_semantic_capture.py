@@ -7,14 +7,23 @@ from object_memory import (
     ActionTreeSemanticReplay,
     EncounterRecord,
     EvidencePolarity,
+    GameLearningPipeline,
     GridAdapter,
     InMemorySemanticBackend,
     InstanceParameters,
+    PipelineGameObjectLearnerPlugin,
+    PredictionLedger,
     PythonProvider,
     SemanticGridCaptureObserver,
     SingleWriter,
+    RuleStore,
     SymbolicStore,
     SymbolicMemory,
+    TransitionRule,
+    phase2_rule_inducer,
+    phase2_rule_ranker,
+    phase2_transformation_learner,
+    phase2_transition_analyzer,
 )
 from workbench.server.runtime import DEFAULT_GRID, analyze_grid
 
@@ -418,3 +427,93 @@ def test_semantic_capture_hands_real_state_and_transition_to_learner(
     assert "1 assumption(s), 1 critique(s)" in readme
     assert "rule for action/event `RIGHT`" in readme
     assert "1 rival(s), 1 supporting and 0 contradicting" in readme
+
+
+def test_live_semantic_observer_predicts_before_action_and_grades_after_capture(
+    tmp_path: Path,
+) -> None:
+    tree = ActionTreeStore(tmp_path / "tree", "game", 1)
+    initial = tree.create_initial(b"initial", {"state": "active"})
+    semantic = SymbolicStore(InMemorySemanticBackend())
+    rules = RuleStore()
+    rules.store(
+        TransitionRule(
+            "rule-right",
+            (),
+            {"action": "RIGHT"},
+            ("moved",),
+            bootstrap_probability=0.5,
+        )
+    )
+    pipeline = GameLearningPipeline(
+        phase2_transition_analyzer(),
+        phase2_transformation_learner(),
+        phase2_rule_inducer(),
+        phase2_rule_ranker(),
+        rules,
+        PredictionLedger(),
+        semantic,
+    )
+    observer = SemanticGridCaptureObserver(
+        GridAdapter(analyze_grid, PythonProvider({})),
+        grid_selector=lambda runner: runner.grid,
+        symbolic_store=semantic,
+        learner_plugin=PipelineGameObjectLearnerPlugin(pipeline),
+    )
+    runner = SimpleNamespace(grid=DEFAULT_GRID)
+    observer.on_state_captured(
+        runner=runner,
+        store=tree,
+        node=initial,
+        previous_node=None,
+        action=None,
+        data={},
+    )
+    observer.before_action(
+        runner=runner,
+        store=tree,
+        node=initial,
+        action="RIGHT",
+        data={},
+    )
+    initial_manifest = json.loads(
+        initial.semantic_records_path.read_text(encoding="utf-8")
+    )
+    assert [
+        item["record_type"] for item in initial_manifest["records"]
+    ].count("prediction") == 1
+    assert not any(
+        item["record_type"] == "prediction_grade"
+        for item in initial_manifest["records"]
+    )
+
+    child = tree.create_transition(
+        initial, "RIGHT", {}, b"child", {"state": "active"}
+    )
+    observer.on_state_captured(
+        runner=runner,
+        store=tree,
+        node=child,
+        previous_node=initial,
+        action="RIGHT",
+        data={},
+    )
+    child_manifest = json.loads(
+        child.semantic_records_path.read_text(encoding="utf-8")
+    )
+    child_types = [item["record_type"] for item in child_manifest["records"]]
+    assert child_types.count("prediction") == 1
+    assert child_types.count("prediction_grade") == 1
+    assert child_types.count("evidence") >= 1
+    prediction = semantic.values("predictions")[0]
+    grade = semantic.get("prediction_grades", prediction.prediction_id)
+    assert prediction.outcome_sequence is None
+    assert grade.outcome_sequence > prediction.created_sequence
+    assert grade.evidence[0] == "independent_arc3_transition"
+    readme = child.readme_path.read_text(encoding="utf-8")
+    assert "independently observed outcome" in readme
+    replayed = ActionTreeSemanticReplay().replay(
+        tree.level_root, SymbolicStore(InMemorySemanticBackend())
+    )
+    assert replayed.get("predictions", prediction.prediction_id) == prediction
+    assert replayed.get("prediction_grades", prediction.prediction_id) == grade

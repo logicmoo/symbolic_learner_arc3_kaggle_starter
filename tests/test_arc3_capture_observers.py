@@ -19,6 +19,17 @@ class FailingObserver:
         raise RuntimeError("semantic service offline")
 
 
+class BeforeActionObserver:
+    def __init__(self, *, fail: bool = False) -> None:
+        self.fail = fail
+        self.events: list[dict[str, object]] = []
+
+    def before_action(self, **event: object) -> None:
+        if self.fail:
+            raise RuntimeError("prediction service offline")
+        self.events.append(event)
+
+
 class AuthorizationObserver:
     def __init__(self) -> None:
         self.calls: list[tuple[str, dict[str, str]]] = []
@@ -57,6 +68,24 @@ def test_capture_observers_receive_external_phase1_node_events(capsys) -> None:
     assert recording.events[0]["action"] == "RIGHT"
     assert recording.events[0]["data"] == {"x": 2}
     assert "capture observer failed (FailingObserver)" in capsys.readouterr().out
+
+
+def test_runner_notifies_prediction_observers_before_environment_action(capsys) -> None:
+    recording = BeforeActionObserver()
+    runner = Arc3Runner.__new__(Arc3Runner)
+    runner.capture_observers = (BeforeActionObserver(fail=True), recording)
+    runner.tree_store = SimpleNamespace(level_root=Path("tree"))
+    node = StateNode(Path("node"), "hash")
+
+    runner._notify_before_action(node=node, action="RIGHT", data={"speed": 1})
+
+    assert len(recording.events) == 1
+    assert recording.events[0]["runner"] is runner
+    assert recording.events[0]["store"] is runner.tree_store
+    assert recording.events[0]["node"] is node
+    assert recording.events[0]["action"] == "RIGHT"
+    assert recording.events[0]["data"] == {"speed": 1}
+    assert "pre-action observer failed (BeforeActionObserver)" in capsys.readouterr().out
 
 
 def test_runner_exposes_explicit_semantic_authorization_controls() -> None:
@@ -107,6 +136,8 @@ def test_standard_semantic_observer_uses_runner_grid_and_single_writer() -> None
 
     assert isinstance(observer, SemanticGridCaptureObserver)
     assert observer.identity_writer is not None
+    assert observer.learner_plugin is not None
+    assert observer.learner_plugin.pipeline.semantic_store is observer.symbolic_store
     assert observer.grid_selector(runner).tolist() == [[0, 1], [2, 0]]
 
 

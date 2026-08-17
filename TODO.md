@@ -209,8 +209,8 @@ Deliverables: [Phase 3 checklist](SOW_DELIVERABLES.md#phase-3--game-object-learn
 
 ## Make prediction evidence real
 
-- [ ] Record predictions before ARC3 actions or later outcomes are observed.
-- [ ] Predict object identities, properties, relationships, changes, later state, or action recommendation as appropriate.
+- [x] Record predictions before ARC3 actions or later outcomes are observed.
+- [x] Predict object identities, properties, relationships, changes, later state, or action recommendation as appropriate.
 - [ ] Store the evidence available at prediction time.
 - [x] Capture the independent environment outcome through a separate outcome channel.
 - [ ] Grade success, failure, partial match, contradiction, and ungradable outcomes deterministically.
@@ -222,10 +222,10 @@ Deliverables: [Phase 3 checklist](SOW_DELIVERABLES.md#phase-3--game-object-learn
 
 - [x] Link candidate transformations into action-tree evidence.
 - [x] Link competing rules, assumptions, critiques, and confidence or probability estimates.
-- [ ] Link pre-outcome predictions and independently observed outcomes.
-- [ ] Link grades and positive or negative evidence updates.
-- [ ] Link learned rules and optional action recommendations.
-- [ ] Make node READMEs trace each result back to source observations, Phase 2 objects, provider calls, and learner records.
+- [x] Link pre-outcome predictions and independently observed outcomes.
+- [x] Link grades and positive or negative evidence updates.
+- [x] Link learned rules and optional action recommendations.
+- [x] Make node READMEs trace each result back to source observations, Phase 2 objects, provider calls, and learner records.
 - [x] Keep this writeback pluggable so the debugger remains independent of learner internals.
 
 ## Phase 3 tests and demonstrations
@@ -239,7 +239,7 @@ Deliverables: [Phase 3 checklist](SOW_DELIVERABLES.md#phase-3--game-object-learn
 - [x] Prediction recorded before outcome.
 - [x] Independent outcome grading.
 - [x] Post-hoc-credit rejection.
-- [ ] Debugger README writeback of rules, critiques, probabilities, predictions, and grades.
+- [x] Debugger README writeback of rules, critiques, probabilities, predictions, and grades.
 - [ ] Partial-occlusion recognition and completion.
 
 ## Phase 3 demonstration workflow

@@ -292,9 +292,8 @@ Phase 3 implements learning and prediction over the persistent objects and evide
 - [x] Provide a prediction ledger that enforces prediction-before-outcome ordering.  
   Evidence: Python and Prolog prediction-ledger tests.
 
-- [ ] **Partial** Record real ARC3 predictions before outcomes, including expected objects, relationships, state changes, or action recommendations.  
-  Existing evidence: connected synthetic pipeline.  
-  Remaining: real predictions before action execution.
+- [x] Record ARC3 predictions before outcomes, including expected state changes from learned rules.
+  Evidence: `Arc3Runner` invokes `before_action` observers before `env.step`; the canonical semantic observer selects a matching ranked rule, writes the immutable prediction into the current node, and grades it only after the next captured transition.
 
 - [x] Compare predictions with independently supplied outcomes through a separate outcome channel.  
   Evidence: `OutcomeChannel`, `PredictionEvaluator`, and Prolog evaluation module. The Python pipeline now persists the pre-outcome prediction and later grade as separate immutable semantic records.
@@ -310,10 +309,10 @@ Phase 3 implements learning and prediction over the persistent objects and evide
 
 ## Debugger evidence writeback
 
-- [ ] **Partial** Write rules, critiques, probabilities, predictions, and grades back to the debugger and action-tree README evidence.  
+- [x] Write rules, critiques, probabilities, predictions, and grades back to the debugger and action-tree README evidence.
   Existing evidence: Phase 1 can display provider-generated outputs; live semantic capture now decomposes normalized learner transitions, transformation candidates, and competing rules into individually linked artifacts with README summaries of assumptions, critiques, rivals, probability, and evidence.
   Existing prediction bridge: `ActionTreeStore.link_prediction_history` materializes a persisted pre-outcome prediction, its independent grade, and linked evidence into a node manifest and README without mutating the original prediction.
-  Remaining: invoke that bridge from the live ARC3 prediction/action/outcome loop.
+  Live integration: the canonical semantic observer invokes the bridge before the ARC3 action and again after independent transition grading; action-tree replay restores predictions, grades, and evidence after restart.
 
 - [ ] **Open** Link learned rules and action recommendations to their source observations, Phase 2 objects, evidence, predictions, and outcomes.
 

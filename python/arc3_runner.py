@@ -228,6 +228,11 @@ class Arc3Runner:
 
         parent_node = self.current_node
         previous_state_name = self.state_name()
+        self._notify_before_action(
+            node=parent_node,
+            action=action_name(resolved),
+            data=payload,
+        )
         stream = io.StringIO()
         manager = (
             contextlib.redirect_stdout(stream)
@@ -658,6 +663,35 @@ class Arc3Runner:
             except Exception as exc:
                 print(
                     "warning: capture observer failed "
+                    f"({type(observer).__name__}): {exc}"
+                )
+
+    def _notify_before_action(
+        self,
+        *,
+        node: StateNode | None,
+        action: str,
+        data: Mapping[str, Any],
+    ) -> None:
+        """Let optional learners record predictions before the environment step."""
+
+        if node is None or self.tree_store is None:
+            return
+        for observer in self.capture_observers:
+            callback = getattr(observer, "before_action", None)
+            if not callable(callback):
+                continue
+            try:
+                callback(
+                    runner=self,
+                    store=self.tree_store,
+                    node=node,
+                    action=action,
+                    data=dict(data),
+                )
+            except Exception as exc:
+                print(
+                    "warning: pre-action observer failed "
                     f"({type(observer).__name__}): {exc}"
                 )
 

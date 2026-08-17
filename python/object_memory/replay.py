@@ -380,6 +380,8 @@ class ActionTreeSemanticReplay:
         "evidence",
         "object_change",
         "residual",
+        "prediction",
+        "prediction_grade",
     )
 
     def replay(self, action_tree_root: Path, store: SymbolicStore) -> SymbolicStore:
@@ -404,6 +406,8 @@ class ActionTreeSemanticReplay:
             "evidence": store.put_evidence,
             "object_change": store.put_object_change,
             "residual": store.put_residual,
+            "prediction": store.put_prediction,
+            "prediction_grade": store.put_prediction_grade,
         }
         for record_type in self.ORDER:
             if record_type == "encounter":
