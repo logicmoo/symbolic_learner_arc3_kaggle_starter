@@ -485,6 +485,9 @@ def test_goal_runs_use_durable_goal_plan_context_contract() -> None:
     assert "WORKFLOW INPUT CONTRACT" in component
     assert "Datatype-aware fields update the advanced JSON source below." in component
     assert "ADVANCED WORKFLOW INPUTS (JSON)" in component
+    assert all(label in component for label in ("GOAL INTERPRETATION", "STRATEGY ALTERNATIVE", "ATOMSPACE", "ATOMSPACE ALTERNATIVE"))
+    assert "GOAL VARIANT" not in component and "CONTEXT VARIANT" not in component
+    assert 'execs: "Executions"' in component
 
 
 def test_atomspace_editor_uses_atomspace_language_for_new_resources() -> None:

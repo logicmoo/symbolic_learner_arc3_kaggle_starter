@@ -2436,7 +2436,7 @@ function RuntimeRecordInspector({
                 onOpenResource("context", context.contextVariantId!)
               }
             >
-              Resolved variant · {context.contextVariantId}
+              Resolved alternative · {context.contextVariantId}
             </button>
           )}
         </div>
@@ -3200,10 +3200,10 @@ export function RuntimeHistoryView({
   const title = {
     goalRuns: "Goal Runs",
     workflowRuns: "Workflow Runs",
-    execs: "Execs",
+    execs: "Executions",
     events: "Events",
     states: "States",
-    runtimeContexts: "Contexts",
+    runtimeContexts: "Runtime Contexts",
     logs: "Logs",
   }[mode];
 
@@ -3215,8 +3215,8 @@ export function RuntimeHistoryView({
             <span>DURABLE RUNTIME</span>
             <h1>Goal Runs</h1>
             <p>
-              Goals, planning strategies, contexts, executable workflows/plans,
-              and their runs are linked in persistent records.
+              Goals, planning strategies, AtomSpace bindings, executable
+              Workflows, and their runs are linked in persistent records.
             </p>
           </div>
           <button onClick={refresh}>Refresh</button>
@@ -3242,7 +3242,7 @@ export function RuntimeHistoryView({
             </select>
           </label>
           <label>
-            <span>GOAL VARIANT</span>
+            <span>GOAL INTERPRETATION</span>
             <select
               value={goalVariantId}
               onChange={(event) => setGoalVariantId(event.target.value)}
@@ -3271,11 +3271,11 @@ export function RuntimeHistoryView({
             <small>
               {availablePlanSpecs.length
                 ? "Only strategies resolving to a workflow in this workspace are runnable."
-                : "No strategy variant names a workflow available in this workspace."}
+                : "No strategy alternative names a workflow available in this workspace."}
             </small>
           </label>
           <label>
-            <span>STRATEGY VARIANT</span>
+            <span>STRATEGY ALTERNATIVE</span>
             <select
               value={planVariantId}
               onChange={(event) => setPlanVariantId(event.target.value)}
@@ -3288,7 +3288,7 @@ export function RuntimeHistoryView({
             </select>
           </label>
           <label>
-            <span>CONTEXT</span>
+            <span>ATOMSPACE</span>
             <select
               value={contextId}
               onChange={(event) => setContextId(event.target.value)}
@@ -3302,7 +3302,7 @@ export function RuntimeHistoryView({
             </select>
           </label>
           <label>
-            <span>CONTEXT VARIANT</span>
+            <span>ATOMSPACE ALTERNATIVE</span>
             <select
               value={contextVariantId}
               disabled={!contextId}
@@ -3348,7 +3348,7 @@ export function RuntimeHistoryView({
         <div className="resource-table">
           <div className="resource-row resource-head">
             <span>Goal</span>
-            <span>Strategy variant</span>
+            <span>Strategy alternative</span>
             <span>Status</span>
             <span>Workflow/plan run</span>
             <span>Created</span>

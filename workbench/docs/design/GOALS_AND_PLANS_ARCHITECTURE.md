@@ -24,7 +24,7 @@ Resource relationships are:
 - `planning_strategy` → child `planning_strategy` resources linked through `parents`
 - legacy plan and explicit variant kinds are accepted only as read-compatible aliases
 - a strategy variant may select or generate a `workflow`
-- Goal Runs reference the selected Goal variant, Strategy variant, Context, Workflow, and Workflow Run
+- Goal Runs reference the selected Goal interpretation, Planning Strategy alternative, resolved runtime Context, Workflow, and Workflow Run
 
 ## PDDL-facing contract
 
@@ -36,4 +36,4 @@ Workflow Studio records a `planProvenance` map without changing the executable k
 
 ## Editor and runtime boundary
 
-Goals and Planning Strategies retain hierarchical specifications, alternatives, preferred selection, tabs, comparison, raw source editing, filesystem save, and workspace inheritance. Runtime records preserve resolved IDs and frozen Workflow versions. Events, States, Execs, and Logs remain append-oriented execution evidence.
+Goals and Planning Strategies retain hierarchical specifications, alternatives, preferred selection, tabs, comparison, raw source editing, filesystem save, and workspace inheritance. Runtime records preserve resolved IDs and frozen Workflow versions. Executions, Events, States, and Logs remain append-oriented execution evidence.
