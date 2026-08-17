@@ -5,6 +5,8 @@ import os
 import time
 from pathlib import Path
 
+import pytest
+
 from action_tree import ActionTreeStore
 from llm_readme_patch import install_llm_readme_patch
 from llm_transcripts import (
@@ -148,6 +150,49 @@ def test_restore_transcript_rewrites_latest_artifacts_and_provenance(
     assert "`system_contract, object_analysis`" in readme
     assert str(node.path) in readme
     assert "**Restored transcript:**" in readme
+
+
+def test_restore_rejects_incompatible_or_tampered_transcripts_before_writing(
+    tmp_path: Path,
+) -> None:
+    store, node = _store_and_node(tmp_path)
+    destination = node.path / "objects.pl"
+    destination.write_text("keep_me.\n", encoding="utf-8")
+
+    incompatible_path = node.path / "llm_adapter_incompatible.md"
+    incompatible = _run(
+        incompatible_path,
+        provider="openai",
+        model="future-model",
+        level=4,
+        tokens=32000,
+    )
+    incompatible.metadata["transcript_version"] = 2
+    save_transcript(incompatible, artifacts={"objects.pl": "future_object.\n"})
+    with pytest.raises(RuntimeError, match="Unsupported transcript version"):
+        restore_transcript(store, node, incompatible_path)
+    assert destination.read_text(encoding="utf-8") == "keep_me.\n"
+
+    tampered_path = node.path / "llm_adapter_tampered.md"
+    save_transcript(
+        _run(
+            tampered_path,
+            provider="openai",
+            model="model",
+            level=4,
+            tokens=32000,
+        ),
+        artifacts={"objects.pl": "trusted_object.\n"},
+    )
+    tampered_path.write_text(
+        tampered_path.read_text(encoding="utf-8").replace(
+            "trusted_object.", "altered_object."
+        ),
+        encoding="utf-8",
+    )
+    with pytest.raises(RuntimeError, match="failed SHA-256 verification"):
+        restore_transcript(store, node, tampered_path)
+    assert destination.read_text(encoding="utf-8") == "keep_me.\n"
 
 
 def test_readme_links_all_transcripts_but_embeds_only_latest_artifacts(

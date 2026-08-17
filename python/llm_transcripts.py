@@ -683,7 +683,29 @@ def _extract_artifacts(text: str) -> dict[str, str]:
         except StopIteration as error:
             raise RuntimeError(f"Transcript artifact {name} has no closing fence") from error
         content = "\n".join(section[fence_index + 1 : close_index])
-        result[name] = content + ("" if content.endswith("\n") else "\n")
+        content = content + ("" if content.endswith("\n") else "\n")
+        expected_hash = next(
+            (
+                match.group(1)
+                for prior_line in reversed(lines[max(0, index - 6) : index])
+                if (
+                    match := re.fullmatch(
+                        r"- \*\*SHA-256:\*\* `([0-9a-f]{64})`",
+                        prior_line.strip(),
+                    )
+                )
+            ),
+            None,
+        )
+        if expected_hash is None:
+            raise RuntimeError(f"Transcript artifact {name} has no SHA-256 record")
+        actual_hash = _sha256_text(content)
+        if actual_hash != expected_hash:
+            raise RuntimeError(
+                f"Transcript artifact {name} failed SHA-256 verification: "
+                f"expected {expected_hash}, received {actual_hash}"
+            )
+        result[name] = content
         index = end_index + 1
     return result
 
@@ -692,6 +714,12 @@ def restore_transcript(store: Any, node: Any, path: str | Path) -> list[Path]:
     transcript = Path(path).resolve()
     if transcript.parent != Path(node.path).resolve():
         raise RuntimeError("Only transcripts belonging to the current state node may be restored")
+    metadata = transcript_metadata(transcript)
+    version = metadata.get("transcript_version")
+    if version != TRANSCRIPT_VERSION:
+        raise RuntimeError(
+            f"Unsupported transcript version {version!r}; expected {TRANSCRIPT_VERSION}"
+        )
     text = transcript.read_text(encoding="utf-8")
     artifacts = _extract_artifacts(text)
     if not artifacts:
@@ -703,8 +731,8 @@ def restore_transcript(store: Any, node: Any, path: str | Path) -> list[Path]:
         destination.write_text(content, encoding="utf-8")
         restored.append(destination)
 
-    metadata = transcript_metadata(transcript)
     provenance = {
+        "cache_contract_version": 1,
         "provider_id": metadata.get("provider_id"),
         "label": metadata.get("provider_label"),
         "adapter": metadata.get("adapter"),

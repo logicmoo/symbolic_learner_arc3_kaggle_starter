@@ -247,10 +247,15 @@ class MultiLlmArc3Runner(Arc3Runner):
             value = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
             return False
+        prompt_sections = list(self.llm_router().prompt_section_names(provider))
         return (
-            value.get("provider_id") == provider.provider_id
+            value.get("cache_contract_version") == 1
+            and value.get("provider_id") == provider.provider_id
+            and value.get("adapter") == provider.adapter
             and value.get("model") == provider.resolved_model()
             and value.get("base_url") == provider.resolved_base_url()
+            and (value.get("prompt_sections") or value.get("prompt_text") or [])
+            == prompt_sections
         )
 
     def _write_provider_provenance(
@@ -261,6 +266,7 @@ class MultiLlmArc3Runner(Arc3Runner):
         analysis_level: int,
     ) -> None:
         payload = {
+            "cache_contract_version": 1,
             "provider_id": provider.provider_id,
             "label": provider.label,
             "adapter": provider.adapter,
