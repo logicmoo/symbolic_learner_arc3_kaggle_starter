@@ -18,6 +18,7 @@ Use the tabs above to move between the workbench's shared documentation from any
 - [Operations](operations.md)
 - [Prompts](prompts.md)
 - [Data](data.md)
+- [Artifacts](artifacts.md)
 - [Datatype guide](../../../docs/DATATYPES_MANIFEST_EXPLAINED.md)
 - [AtomSpaces](contexts.md)
 

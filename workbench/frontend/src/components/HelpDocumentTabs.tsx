@@ -14,6 +14,7 @@ const docTabs:HelpTab[]=[
  {id:"workflows",label:"Workflows",path:"docs/workflows.md"},
  {id:"contexts",label:"AtomSpaces",path:"docs/contexts.md"},
  {id:"data",label:"Data",path:"docs/data.md"},
+ {id:"artifacts",label:"Artifacts",path:"docs/artifacts.md"},
  {id:"datatypeGuide",label:"Datatype Guide",repositoryPath:"docs/DATATYPES_MANIFEST_EXPLAINED.md"},
  {id:"llms",label:"LLMs",path:"docs/llm_catalog.md"},
  {id:"systems",label:"Systems",path:"docs/systems.md"},

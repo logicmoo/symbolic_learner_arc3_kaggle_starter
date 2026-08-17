@@ -58,3 +58,5 @@ def test_knowledge_data_page_imports_selects_and_previews_workspace_values() -> 
     assert "/asset?path=" in page
     assert '^(knowledge|data|datasets|images|inputs|examples)' in page
     assert "onChanged={refreshSnapshot}" in shell
+    assert 'view === "knowledgeData"' in shell and '? "data"' in shell
+    assert 'view === "data"' in shell and '? "datatypeGuide"' in shell

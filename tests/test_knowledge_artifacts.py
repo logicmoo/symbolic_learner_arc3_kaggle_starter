@@ -17,3 +17,5 @@ def test_knowledge_artifacts_are_separate_from_the_active_run_explorer() -> None
     assert "The Workflow Artifact Explorer remains scoped to the active run" in explorer
     assert "artifacts?|outputs?" in explorer
     assert "/asset?path=" in explorer
+    assert 'view === "knowledgeArtifacts"' in page and '? "artifacts"' in page
+    assert (ROOT / "workbench" / "workspaces" / "shared_library_system" / "docs" / "artifacts.md").is_file()
