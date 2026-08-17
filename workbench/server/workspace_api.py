@@ -5,6 +5,8 @@ import os
 import re
 import shutil
 import time
+import base64
+import binascii
 from collections import Counter
 from threading import RLock
 from pathlib import Path
@@ -832,6 +834,46 @@ def read_workspace_asset(workspace_id: str, path: str = Query(...)) -> FileRespo
         if not target.is_file():
             raise ValueError("asset not found")
         return FileResponse(target)
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+    except (OSError, ValueError) as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+
+@router.post("/{workspace_id}/data/import")
+def import_workspace_data(workspace_id: str, body: dict[str, Any] = Body(...)) -> dict[str, Any]:
+    """Import binary knowledge values without bypassing the filesystem provider."""
+    try:
+        workspace = _resolve_workspace(workspace_id)
+        root = Path(workspace["root"])
+        directory = str(body.get("directory") or "knowledge/data/imports").strip().replace("\\", "/").strip("/")
+        if not directory or directory.startswith(("design/", "runtime/")):
+            raise ValueError("data directory must be under workspace knowledge storage")
+        items = body.get("files")
+        if not isinstance(items, list) or not items:
+            raise ValueError("files must contain at least one upload")
+        if len(items) > 100:
+            raise ValueError("at most 100 files may be imported at once")
+        resources = get_filesystem_provider()
+        imported: list[dict[str, Any]] = []
+        for item in items:
+            if not isinstance(item, dict):
+                raise ValueError("each upload must be an object")
+            name = Path(str(item.get("name") or "")).name
+            if not name or name in {".", ".."}:
+                raise ValueError("each upload requires a safe filename")
+            encoded = str(item.get("base64") or "")
+            try:
+                content = base64.b64decode(encoded, validate=True)
+            except (ValueError, binascii.Error) as error:
+                raise ValueError(f"invalid base64 for {name}") from error
+            if len(content) > 25 * 1024 * 1024:
+                raise ValueError(f"{name} exceeds the 25 MiB import limit")
+            target = _safe_child(root, f"{directory}/{name}")
+            resources.write_bytes(target, content)
+            imported.append(_file_record(root, target))
+        invalidate_workspace_discovery()
+        return {"files": imported, "directory": directory}
     except KeyError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error
     except (OSError, ValueError) as error:

@@ -3042,7 +3042,7 @@ export function FilesystemWorkbenchPage() {
             )}
             {view === "data" && <DataCatalogPanel workspaceId={workspace.id} />}
             {view === "knowledgeData" && (
-              <KnowledgeDataExplorer files={snapshot?.files || []} />
+              <KnowledgeDataExplorer workspaceId={workspace.id} files={snapshot?.files || []} onChanged={refreshSnapshot} />
             )}
             {view === "artifacts" && (
               <section className="artifact-view">

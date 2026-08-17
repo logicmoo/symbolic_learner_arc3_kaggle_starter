@@ -158,6 +158,12 @@ class FilesystemProvider:
         self._record("read", path)
         return path.read_bytes()
 
+    def write_bytes(self, path: Path, content: bytes) -> None:
+        self._invalidate(path)
+        self._record("write", path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(content)
+
     def read_json(self, path: Path) -> Any:
         documents = self.read_json_documents(path)
         return documents[0] if len(documents) == 1 else documents
