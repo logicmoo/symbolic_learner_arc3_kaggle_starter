@@ -212,10 +212,10 @@ Deliverables: [Phase 3 checklist](SOW_DELIVERABLES.md#phase-3--game-object-learn
 - [ ] Record predictions before ARC3 actions or later outcomes are observed.
 - [ ] Predict object identities, properties, relationships, changes, later state, or action recommendation as appropriate.
 - [ ] Store the evidence available at prediction time.
-- [ ] Capture the independent environment outcome through a separate outcome channel.
+- [x] Capture the independent environment outcome through a separate outcome channel.
 - [ ] Grade success, failure, partial match, contradiction, and ungradable outcomes deterministically.
 - [ ] Update positive and negative rule evidence, probability, and ranking from prediction results. Probability and ranking now update; normalized positive/negative evidence records remain.
-- [ ] Prove that post-hoc explanations receive no prediction credit.
+- [x] Prove that post-hoc explanations receive no prediction credit.
 - [x] Preserve the original prediction, outcome, grade, and update history.
 
 ## Write learner evidence back to the debugger
@@ -236,9 +236,9 @@ Deliverables: [Phase 3 checklist](SOW_DELIVERABLES.md#phase-3--game-object-learn
 - [ ] Rival interpretations with assumptions, critiques, positive evidence, and negative evidence.
 - [ ] Learned transformation applied to a new case.
 - [x] Rule ranking and confidence refinement from prediction history.
-- [ ] Prediction recorded before outcome.
-- [ ] Independent outcome grading.
-- [ ] Post-hoc-credit rejection.
+- [x] Prediction recorded before outcome.
+- [x] Independent outcome grading.
+- [x] Post-hoc-credit rejection.
 - [ ] Debugger README writeback of rules, critiques, probabilities, predictions, and grades.
 - [ ] Partial-occlusion recognition and completion.
 

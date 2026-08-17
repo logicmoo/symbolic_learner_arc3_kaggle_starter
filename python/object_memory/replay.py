@@ -19,6 +19,8 @@ from .models import (
     MatchProposal,
     Observation,
     ObjectChange,
+    PredictionGradeRecord,
+    PredictionRecord,
     ProvenanceRef,
     RecognitionAccount,
     ResidualCandidate,
@@ -236,6 +238,26 @@ class SemanticRecordCodec:
                 prediction_gain=float(value.get("prediction_gain", 0.0)),
                 provenance=tuple(value.get("provenance") or ()),
             )
+        if record_type == "prediction":
+            return PredictionRecord(
+                prediction_id=str(value["prediction_id"]),
+                rule_id=str(value["rule_id"]),
+                source_state_id=str(value["source_state_id"]),
+                predicted_effects=tuple(value.get("predicted_effects") or ()),
+                created_sequence=int(value["created_sequence"]),
+            )
+        if record_type == "prediction_grade":
+            return PredictionGradeRecord(
+                prediction_id=str(value["prediction_id"]),
+                rule_id=str(value["rule_id"]),
+                outcome_sequence=int(value["outcome_sequence"]),
+                outcome=value.get("outcome"),
+                grade=float(value["grade"]),
+                evidence=tuple(value.get("evidence") or ()),
+                prior_probability=value.get("prior_probability"),
+                calibrated_probability=value.get("calibrated_probability"),
+                schema_version=str(value.get("schema_version", "1.0.0")),
+            )
         raise ValueError(f"unsupported semantic record type: {record_type!r}")
 
     @staticmethod
@@ -248,6 +270,8 @@ class SemanticRecordCodec:
             "evidence": "evidence",
             "object_changes": "object_change",
             "residuals": "residual",
+            "predictions": "prediction",
+            "prediction_grades": "prediction_grade",
         }
         if namespace in record_types:
             return SemanticRecordCodec.decode(record_types[namespace], value)

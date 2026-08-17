@@ -13,6 +13,8 @@ from .models import (
     MatchProposal,
     Observation,
     ObjectChange,
+    PredictionGradeRecord,
+    PredictionRecord,
     RecognitionAccount,
     ResidualCandidate,
     TurtleProgramRef,
@@ -136,6 +138,18 @@ class SymbolicStore:
         record_id = f"{value.handle}:{value.sequence:020d}"
         return self.backend.write_once("confidence_history", record_id, value)
 
+    def put_prediction(self, value: PredictionRecord) -> PredictionRecord:
+        if value.outcome_sequence is not None or value.grade is not None:
+            raise ValueError("prediction records must be written before outcomes")
+        return self.backend.write_once("predictions", value.prediction_id, value)
+
+    def put_prediction_grade(
+        self, value: PredictionGradeRecord
+    ) -> PredictionGradeRecord:
+        if self.get("predictions", value.prediction_id) is None:
+            raise ValueError("prediction grade requires a stored prior prediction")
+        return self.backend.write_once("prediction_grades", value.prediction_id, value)
+
     def get(self, namespace: str, record_id: str) -> Any | None:
         return self.backend.get(namespace, record_id)
 
@@ -154,6 +168,8 @@ class SymbolicStore:
         "object_changes",
         "residuals",
         "confidence_history",
+        "predictions",
+        "prediction_grades",
     )
 
     def snapshot(self) -> dict[str, tuple[Any, ...]]:
@@ -180,6 +196,8 @@ class SymbolicStore:
             "object_changes": self.put_object_change,
             "residuals": self.put_residual,
             "confidence_history": self.put_confidence_history,
+            "predictions": self.put_prediction,
+            "prediction_grades": self.put_prediction_grade,
         }
         for namespace in self.SNAPSHOT_NAMESPACES:
             if namespace == "encounters":

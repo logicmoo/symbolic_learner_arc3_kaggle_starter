@@ -16,6 +16,7 @@ from object_memory import (  # noqa: E402
     GptArtifactProvider,
     IntegrationError,
     IntegrationValidator,
+    InMemorySemanticBackend,
     OutcomeChannel,
     PipelineGameObjectLearnerPlugin,
     PredictionEvaluator,
@@ -33,6 +34,7 @@ from object_memory import (  # noqa: E402
     RuleStore,
     SingleWriter,
     SymbolicMemory,
+    SymbolicStore,
     TransformationCandidate,
     TransformationLearner,
     TransitionAnalyzer,
@@ -145,6 +147,7 @@ def test_prediction_must_precede_outcome() -> None:
 def test_phase3_pipeline_learns_predicts_and_grades() -> None:
     rule_store = RuleStore()
     ledger = PredictionLedger()
+    semantic_store = SymbolicStore(InMemorySemanticBackend())
     pipeline = GameLearningPipeline(
         TransitionAnalyzer(
             lambda before, action, after: TransitionRecord(
@@ -176,6 +179,7 @@ def test_phase3_pipeline_learns_predicts_and_grades() -> None:
         RuleRanker(lambda rule: float(len(rule.predicted_effects))),
         rule_store,
         ledger,
+        semantic_store,
     )
     plugin = PipelineGameObjectLearnerPlugin(pipeline)
     before = GameObjectLearnerPayload("state-1", ({"id": "player", "x": 1},))
@@ -217,6 +221,20 @@ def test_phase3_pipeline_learns_predicts_and_grades() -> None:
     assert refined.prediction_history == ("prediction-1",)
     assert refined.calibrated_probability == 2.0 / 3.0
     assert refined.probability_source == "verified_prediction_history"
+    persisted_prediction = semantic_store.get("predictions", "prediction-1")
+    persisted_grade = semantic_store.get("prediction_grades", "prediction-1")
+    assert persisted_prediction.outcome_sequence is None
+    assert persisted_prediction.grade is None
+    assert persisted_grade.outcome == predicted
+    assert persisted_grade.grade == 1.0
+    assert persisted_grade.evidence == ("independent_outcome",)
+    assert persisted_grade.calibrated_probability == 2.0 / 3.0
+
+    replayed = SymbolicStore(InMemorySemanticBackend()).replay(
+        semantic_store.snapshot()
+    )
+    assert replayed.get("predictions", "prediction-1") == persisted_prediction
+    assert replayed.get("prediction_grades", "prediction-1") == persisted_grade
 
     for duplicate_or_invalid in (
         {"prediction_id": "prediction-1", "grade": 1.0},

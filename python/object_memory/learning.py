@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Callable, Iterable, Mapping, Sequence
 
-from .models import PredictionRecord, TransitionRule
+from .models import PredictionGradeRecord, PredictionRecord, TransitionRule
 from .prediction import PredictionLedger, RuleStore
 
 
@@ -159,6 +159,7 @@ class GameLearningPipeline:
         rule_ranker: RuleRanker,
         rule_store: RuleStore,
         prediction_ledger: PredictionLedger,
+        semantic_store: Any | None = None,
     ) -> None:
         self.transition_analyzer = transition_analyzer
         self.transformation_learner = transformation_learner
@@ -166,6 +167,7 @@ class GameLearningPipeline:
         self.rule_ranker = rule_ranker
         self.rule_store = rule_store
         self.prediction_ledger = prediction_ledger
+        self.semantic_store = semantic_store
 
     def learn_transition(
         self,
@@ -198,7 +200,10 @@ class GameLearningPipeline:
             predicted_effects=(predicted_state,),
             created_sequence=created_sequence,
         )
-        return predicted_state, self.prediction_ledger.record(record)
+        stored = self.prediction_ledger.record(record)
+        if self.semantic_store is not None:
+            self.semantic_store.put_prediction(stored)
+        return predicted_state, stored
 
     def grade_prediction(
         self,
@@ -218,9 +223,23 @@ class GameLearningPipeline:
             outcome=observed,
             grade=grade.score,
         )
-        self.rule_store.record_prediction_grade(
+        prior_probability = self.rule_store.get(prediction.rule_id).calibrated_probability
+        refined = self.rule_store.record_prediction_grade(
             prediction.rule_id,
             prediction_id=prediction_id,
             grade=grade.score,
         )
+        if self.semantic_store is not None:
+            self.semantic_store.put_prediction_grade(
+                PredictionGradeRecord(
+                    prediction_id=prediction_id,
+                    rule_id=prediction.rule_id,
+                    outcome_sequence=outcome_sequence,
+                    outcome=observed,
+                    grade=grade.score,
+                    evidence=grade.evidence,
+                    prior_probability=prior_probability,
+                    calibrated_probability=refined.calibrated_probability,
+                )
+            )
         return closed

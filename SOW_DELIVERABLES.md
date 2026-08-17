@@ -297,7 +297,7 @@ Phase 3 implements learning and prediction over the persistent objects and evide
   Remaining: real predictions before action execution.
 
 - [x] Compare predictions with independently supplied outcomes through a separate outcome channel.  
-  Evidence: `OutcomeChannel`, `PredictionEvaluator`, and Prolog evaluation module.
+  Evidence: `OutcomeChannel`, `PredictionEvaluator`, and Prolog evaluation module. The Python pipeline now persists the pre-outcome prediction and later grade as separate immutable semantic records.
 
 - [x] Update positive and negative rule evidence from prediction success or failure through grading records.  
   Evidence: connected Python and Prolog tests.

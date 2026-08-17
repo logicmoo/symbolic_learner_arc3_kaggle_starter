@@ -571,6 +571,21 @@ class PredictionRecord:
     grade: float | None = None
 
 
+@dataclass(frozen=True)
+class PredictionGradeRecord:
+    """Immutable outcome and grade linked to an earlier prediction."""
+
+    prediction_id: str
+    rule_id: str
+    outcome_sequence: int
+    outcome: Any
+    grade: float
+    evidence: tuple[str, ...] = ()
+    prior_probability: float | None = None
+    calibrated_probability: float | None = None
+    schema_version: str = "1.0.0"
+
+
 class ArtifactProviderProtocol:
     def get_candidate_part(self, candidate: CandidateObject, name: str) -> NormalizedResult:
         raise NotImplementedError
