@@ -864,3 +864,7 @@ Preserve the canonical checkout and its `codex/workbench-navigation-v2` branch.
   stable candidates across consecutive observations, persist correspondence
   proposals and evidence-linked `ObjectChange` records, link readable summaries
   into the action tree, and retain them through disk and Prolog replay.
+- [x] Separate explained transformations from potentially new structure.
+  Preserve unexplained property changes as deterministic provisional residuals,
+  persist and inspect them in live action trees, and round-trip them through
+  semantic snapshots and the SWI-Prolog backend.

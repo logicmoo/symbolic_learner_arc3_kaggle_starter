@@ -21,6 +21,8 @@ from .models import (
     ObjectChange,
     ProvenanceRef,
     RecognitionAccount,
+    ResidualCandidate,
+    ResidualDisposition,
     TurtleProgramRef,
 )
 from .store import SymbolicStore
@@ -195,6 +197,17 @@ class SemanticRecordCodec:
                 provenance=tuple(_provenance(item) for item in value.get("provenance") or ()),
                 schema_version=str(value.get("schema_version", "2.0.0")),
             )
+        if record_type == "residual":
+            return ResidualCandidate(
+                residual_id=str(value["residual_id"]),
+                source_candidate_id=str(value["source_candidate_id"]),
+                disposition=ResidualDisposition(str(value["disposition"])),
+                residual_length=float(value["residual_length"]),
+                structured=bool(value.get("structured", False)),
+                recurrence_count=int(value.get("recurrence_count", 0)),
+                prediction_gain=float(value.get("prediction_gain", 0.0)),
+                provenance=tuple(value.get("provenance") or ()),
+            )
         raise ValueError(f"unsupported semantic record type: {record_type!r}")
 
     @staticmethod
@@ -206,6 +219,7 @@ class SemanticRecordCodec:
             "recognition_accounts": "recognition_account",
             "evidence": "evidence",
             "object_changes": "object_change",
+            "residuals": "residual",
         }
         if namespace in record_types:
             return SemanticRecordCodec.decode(record_types[namespace], value)
@@ -312,6 +326,7 @@ class ActionTreeSemanticReplay:
         "recognition_account",
         "evidence",
         "object_change",
+        "residual",
     )
 
     def replay(self, action_tree_root: Path, store: SymbolicStore) -> SymbolicStore:
@@ -335,6 +350,7 @@ class ActionTreeSemanticReplay:
             "recognition_account": store.put_recognition,
             "evidence": store.put_evidence,
             "object_change": store.put_object_change,
+            "residual": store.put_residual,
         }
         for record_type in self.ORDER:
             if record_type == "encounter":

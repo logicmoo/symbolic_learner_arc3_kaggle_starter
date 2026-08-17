@@ -12,6 +12,8 @@ from .models import (
     ObjectChange,
     ProvenanceRef,
     RecognitionAccount,
+    ResidualCandidate,
+    ResidualDisposition,
 )
 from .memory import SingleWriter
 from .store import SymbolicStore
@@ -312,7 +314,11 @@ class EncounterChangeSession:
         self,
         previous_observation_id: str,
         current_observation_id: str,
-    ) -> tuple[tuple[MatchProposal, ...], tuple[ObjectChange, ...]]:
+    ) -> tuple[
+        tuple[MatchProposal, ...],
+        tuple[ObjectChange, ...],
+        tuple[ResidualCandidate, ...],
+    ]:
         previous = {
             item.candidate_identity_id: item
             for item in self.store.encounters.records()
@@ -362,7 +368,44 @@ class EncounterChangeSession:
         )
         for change in changes:
             self.store.put_object_change(change)
-        return tuple(proposals), changes
+        residuals = tuple(
+            residual
+            for proposal in proposals
+            for residual in ResidualAnalyzer().from_proposal(proposal)
+        )
+        for residual in residuals:
+            self.store.put_residual(residual)
+        return tuple(proposals), changes, residuals
+
+
+class ResidualAnalyzer:
+    """Separate unexplained proposal structure from recognized transformations."""
+
+    def from_proposal(self, proposal: MatchProposal) -> tuple[ResidualCandidate, ...]:
+        allowed = set(proposal.allowed_transformations)
+        residuals: list[ResidualCandidate] = []
+        for field, change in sorted(proposal.changed_properties.items()):
+            transformation = InstanceMatcher.change_transformation(field)
+            if (
+                transformation == "appearance_change"
+                and isinstance(change, Mapping)
+                and change.get("to") is None
+                and "partial_visibility" in allowed
+            ):
+                transformation = "partial_visibility"
+            if transformation in allowed:
+                continue
+            residuals.append(
+                ResidualCandidate.create(
+                    source_candidate_id=proposal.candidate_id,
+                    disposition=ResidualDisposition.PROVISIONAL,
+                    residual_length=1.0,
+                    structured=True,
+                    recurrence_count=1,
+                    provenance=(proposal.proposal_id, f"field:{field}"),
+                )
+            )
+        return tuple(residuals)
 
 
 class TurtleReconstructionEvidenceBuilder:

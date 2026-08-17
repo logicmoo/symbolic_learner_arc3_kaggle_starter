@@ -681,6 +681,13 @@ class ActionTreeStore:
                             f"to `{', '.join(detail.get('after_candidate_ids') or ()) or 'none'}`; "
                             f"{len(detail.get('evidence_ids') or [])} evidence record(s)"
                         )
+                    elif record["record_type"] == "residual":
+                        lines.append(
+                            f"  - `{detail.get('disposition')}` residual from "
+                            f"`{detail.get('source_candidate_id')}`; length "
+                            f"`{detail.get('residual_length')}`; provenance "
+                            f"`{', '.join(detail.get('provenance') or ())}`"
+                        )
 
         lines.extend(["", "## Embedded files", ""])
 

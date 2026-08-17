@@ -70,6 +70,7 @@ from .recognition import (
     InstanceMatcher,
     RecognitionSession,
     RegistryCorrespondenceAuthority,
+    ResidualAnalyzer,
     TurtleReconstructionEvidenceBuilder,
 )
 from .replay import ActionTreeSemanticReplay, PrologSemanticBackend, SemanticRecordCodec
@@ -127,6 +128,7 @@ __all__ = [
     "PrologSemanticBackend",
     "PythonProvider",
     "ResidualCandidate",
+    "ResidualAnalyzer",
     "ResidualDisposition",
     "ResidualGate",
     "RecognitionAccount",

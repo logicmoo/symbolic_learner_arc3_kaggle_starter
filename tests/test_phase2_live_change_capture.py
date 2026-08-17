@@ -55,8 +55,12 @@ def test_live_capture_persists_evidence_backed_transition_changes(tmp_path: Path
     changes = observer.symbolic_store.values("object_changes")
     assert {item.kind for item in changes} >= {"moved"}
     assert all(item.evidence_ids for item in changes if item.kind == "moved")
+    residuals = observer.symbolic_store.values("residuals")
+    assert residuals
+    assert record_types.count("residual") == len(residuals)
     readme = child.readme_path.read_text(encoding="utf-8")
     assert "`moved` from" in readme
+    assert "`provisional` residual" in readme
 
     replayed = ActionTreeSemanticReplay().replay(
         tree.level_root,
@@ -65,3 +69,4 @@ def test_live_capture_persists_evidence_backed_transition_changes(tmp_path: Path
     assert {item.change_id: item for item in replayed.values("object_changes")} == {
         item.change_id: item for item in changes
     }
+    assert replayed.values("residuals") == residuals

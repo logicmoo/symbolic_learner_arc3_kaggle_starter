@@ -488,6 +488,30 @@ class ResidualCandidate:
     prediction_gain: float = 0.0
     provenance: tuple[str, ...] = ()
 
+    @classmethod
+    def create(
+        cls,
+        *,
+        source_candidate_id: str,
+        disposition: ResidualDisposition,
+        residual_length: float,
+        provenance: tuple[str, ...] = (),
+        **values: Any,
+    ) -> "ResidualCandidate":
+        identity = {
+            "source_candidate_id": source_candidate_id,
+            "residual_length": residual_length,
+            "provenance": provenance,
+        }
+        return cls(
+            residual_id=deterministic_identifier("residual", identity),
+            source_candidate_id=source_candidate_id,
+            disposition=disposition,
+            residual_length=residual_length,
+            provenance=provenance,
+            **values,
+        )
+
 
 @dataclass(frozen=True)
 class CommittedAtom:

@@ -181,7 +181,7 @@ class SemanticGridCaptureObserver:
                         deterministic_hash=account.account_id.rsplit("-", 1)[-1],
                     )
         if self._latest_observation_id is not None:
-            proposals, changes = self.changes.detect(
+            proposals, changes, residuals = self.changes.detect(
                 self._latest_observation_id,
                 batch.observation.observation_id,
             )
@@ -226,5 +226,18 @@ class SemanticGridCaptureObserver:
                     artifact_path=change_path,
                     schema_version=change.schema_version,
                     deterministic_hash=change.change_id.rsplit("-", 1)[-1],
+                )
+            for residual in residuals:
+                residual_path = self._write_record(
+                    semantic_dir / f"{residual.residual_id}.residual.json",
+                    residual,
+                )
+                store.link_semantic_record(
+                    node,
+                    record_type="residual",
+                    record_id=residual.residual_id,
+                    artifact_path=residual_path,
+                    schema_version="2.0.0",
+                    deterministic_hash=residual.residual_id.rsplit("-", 1)[-1],
                 )
         self._latest_observation_id = batch.observation.observation_id

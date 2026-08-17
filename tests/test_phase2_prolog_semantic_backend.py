@@ -12,6 +12,8 @@ from object_memory import (
     Observation,
     ObjectChange,
     PrologSemanticBackend,
+    ResidualCandidate,
+    ResidualDisposition,
     SymbolicStore,
     TurtleProgramRef,
 )
@@ -69,6 +71,15 @@ def test_prolog_semantic_backend_round_trips_and_hydrates(tmp_path: Path) -> Non
             evidence_ids=("ev-1",),
         )
     )
+    residual = store.put_residual(
+        ResidualCandidate.create(
+            source_candidate_id="candidate-red",
+            disposition=ResidualDisposition.PROVISIONAL,
+            residual_length=1.0,
+            structured=True,
+            provenance=("proposal-red", "field:appearance.shape"),
+        )
+    )
 
     loaded = SymbolicStore(PrologSemanticBackend(path)).hydrate()
 
@@ -78,6 +89,7 @@ def test_prolog_semantic_backend_round_trips_and_hydrates(tmp_path: Path) -> Non
     assert loaded.get("atoms", atom.handle) == atom
     assert loaded.values("confidence_history") == (confidence_record,)
     assert loaded.values("object_changes") == (change,)
+    assert loaded.values("residuals") == (residual,)
     assert loaded.snapshot() == store.snapshot()
     source = path.read_text(encoding="utf-8")
     assert ":- dynamic semantic_record/3." in source
