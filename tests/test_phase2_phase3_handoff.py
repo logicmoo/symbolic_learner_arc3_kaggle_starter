@@ -4,6 +4,8 @@ from object_memory import (
     EvidencePolarity,
     EvidenceRecord,
     GameObjectLearnerPayload,
+    IntegrationError,
+    IntegrationValidator,
     InMemorySemanticBackend,
     InstanceParameters,
     MatchProposal,
@@ -93,12 +95,56 @@ def test_real_phase2_records_build_a_versioned_serializable_learner_payload() ->
     assert payload.objects[0]["changed_properties"] == {"action": "RIGHT"}
     assert payload.evidence[0]["evidence_id"] == evidence.evidence_id
     assert payload.provenance == ("frame-1",)
+    assert payload.identity_ids == ("known-blue",)
+
+
+def test_learner_payload_rejects_dangling_identity_candidate_and_provenance_refs() -> None:
+    base = dict(
+        state_id="state",
+        objects=(
+            {
+                "id": "candidate-blue",
+                "candidate_identity_id": "candidate-blue",
+                "object_identity_id": "known-blue",
+                "provenance": [
+                    {"source_id": "frame-1", "provider": "grid_adapter"}
+                ],
+            },
+        ),
+        identity_ids=("known-blue",),
+        provenance=("frame-1",),
+    )
+    assert IntegrationValidator().validate(GameObjectLearnerPayload(**base))
+
+    invalid_payloads = (
+        GameObjectLearnerPayload(**{**base, "identity_ids": ()}),
+        GameObjectLearnerPayload(
+            **{
+                **base,
+                "correspondences": (
+                    {
+                        "candidate_id": "candidate-missing",
+                        "stored_identity_id": "known-blue",
+                    },
+                ),
+            }
+        ),
+        GameObjectLearnerPayload(**{**base, "provenance": ()}),
+    )
+    for payload in invalid_payloads:
+        try:
+            IntegrationValidator().validate(payload)
+        except IntegrationError:
+            pass
+        else:
+            raise AssertionError("dangling learner reference must be rejected")
 
 
 def test_real_phase2_change_becomes_an_evidence_linked_transformation_candidate() -> None:
     before = GameObjectLearnerPayload(
         state_id="before",
         objects=({"id": "known-blue"},),
+        identity_ids=("known-blue",),
         provenance=("frame-before",),
     )
     change = ObjectChange.create(
@@ -110,8 +156,10 @@ def test_real_phase2_change_becomes_an_evidence_linked_transformation_candidate(
     )
     after = GameObjectLearnerPayload(
         state_id="after",
-        objects=({"id": "candidate-blue"},),
+        objects=({"id": "candidate-blue", "candidate_identity_id": "candidate-blue"},),
         transitions=(change.__dict__,),
+        identity_ids=("known-blue",),
+        evidence=({"evidence_id": "evidence-moved"},),
         provenance=("frame-after",),
     )
 
@@ -130,11 +178,11 @@ def test_real_phase2_change_becomes_an_evidence_linked_transformation_candidate(
 
 def test_real_transformation_candidates_induce_explicitly_rival_bootstrap_rules() -> None:
     transition = phase2_transition_analyzer().analyze(
-        GameObjectLearnerPayload("before", ({"id": "blue"},)),
+        GameObjectLearnerPayload("before", ({"id": "blue"},), identity_ids=("blue",)),
         "RIGHT",
         GameObjectLearnerPayload(
             "after",
-            ({"id": "candidate-blue"},),
+            ({"id": "candidate-blue", "candidate_identity_id": "candidate-blue"},),
             transitions=(
                 {
                     "kind": "moved",
@@ -148,6 +196,11 @@ def test_real_transformation_candidates_induce_explicitly_rival_bootstrap_rules(
                     "after_candidate_ids": ["candidate-blue"],
                     "evidence_ids": ["evidence-relation"],
                 },
+            ),
+            identity_ids=("blue",),
+            evidence=(
+                {"evidence_id": "evidence-move"},
+                {"evidence_id": "evidence-relation"},
             ),
         ),
     )
@@ -176,7 +229,7 @@ def test_verified_prediction_history_outranks_bootstrap_without_rewriting_identi
     rules = phase2_rule_inducer().induce(
         phase2_transformation_learner().learn(
             phase2_transition_analyzer().analyze(
-                GameObjectLearnerPayload("before", ({"id": "blue"},)),
+                GameObjectLearnerPayload("before", ({"id": "blue"},), identity_ids=("blue",)),
                 "RIGHT",
                 GameObjectLearnerPayload(
                     "after",
@@ -184,6 +237,10 @@ def test_verified_prediction_history_outranks_bootstrap_without_rewriting_identi
                     transitions=(
                         {"kind": "moved", "evidence_ids": ["move-evidence"]},
                         {"kind": "recolored", "evidence_ids": ["color-evidence"]},
+                    ),
+                    evidence=(
+                        {"evidence_id": "move-evidence"},
+                        {"evidence_id": "color-evidence"},
                     ),
                 ),
             )

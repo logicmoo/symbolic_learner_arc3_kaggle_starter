@@ -45,6 +45,7 @@ class GameObjectLearnerPayload:
     provenance: tuple[str, ...] = ()
     observation_id: str | None = None
     encounter_ids: tuple[str, ...] = ()
+    identity_ids: tuple[str, ...] = ()
     artifacts: tuple[Mapping[str, Any], ...] = ()
     evidence: tuple[Mapping[str, Any], ...] = ()
     schema_version: str = GAME_OBJECT_LEARNER_SCHEMA_VERSION
@@ -64,6 +65,7 @@ class GameObjectLearnerPayload:
             provenance=tuple(str(item) for item in value.get("provenance") or ()),
             observation_id=value.get("observation_id"),
             encounter_ids=tuple(str(item) for item in value.get("encounter_ids") or ()),
+            identity_ids=tuple(str(item) for item in value.get("identity_ids") or ()),
             artifacts=tuple(dict(item) for item in value.get("artifacts") or ()),
             evidence=tuple(dict(item) for item in value.get("evidence") or ()),
             schema_version=str(
@@ -112,9 +114,31 @@ class IntegrationValidator:
                 raise IntegrationError(f"duplicate object id: {object_id}")
             seen.add(object_id)
         encounter_ids = set(payload.encounter_ids)
+        identity_ids = set(payload.identity_ids)
         evidence_ids = {str(item.get("evidence_id")) for item in payload.evidence}
         artifact_ids = {str(item.get("artifact_id")) for item in payload.artifacts}
+        candidate_ids: set[str] = set()
+        referenced_provenance_ids: set[str] = set()
+
+        def collect_provenance(values: Any) -> None:
+            if isinstance(values, Mapping):
+                if "source_id" in values and "provider" in values:
+                    referenced_provenance_ids.add(str(values["source_id"]))
+                for nested in values.values():
+                    collect_provenance(nested)
+            elif isinstance(values, (tuple, list)):
+                for nested in values:
+                    collect_provenance(nested)
+
         for item in payload.objects:
+            candidate_id = item.get("candidate_identity_id")
+            if candidate_id is not None:
+                candidate_ids.add(str(candidate_id))
+            identity_id = item.get("object_identity_id")
+            if identity_id is not None and str(identity_id) not in identity_ids:
+                raise IntegrationError(
+                    f"object references missing registry identity: {identity_id}"
+                )
             encounter_id = item.get("encounter_id")
             if encounter_id is not None and str(encounter_id) not in encounter_ids:
                 raise IntegrationError(
@@ -130,12 +154,53 @@ class IntegrationValidator:
                     raise IntegrationError(
                         f"object references missing Turtle artifact: {artifact_id}"
                     )
+            collect_provenance(item.get("provenance") or ())
         for item in payload.correspondences:
+            candidate_id = str(item.get("candidate_id"))
+            if candidate_id not in candidate_ids:
+                raise IntegrationError(
+                    f"correspondence references missing candidate: {candidate_id}"
+                )
+            stored_identity_id = item.get("stored_identity_id")
+            if (
+                stored_identity_id is not None
+                and str(stored_identity_id) not in identity_ids
+            ):
+                raise IntegrationError(
+                    "correspondence references missing registry identity: "
+                    f"{stored_identity_id}"
+                )
             for evidence_id in item.get("evidence_ids") or ():
                 if str(evidence_id) not in evidence_ids:
                     raise IntegrationError(
                         f"correspondence references missing evidence: {evidence_id}"
                     )
+            collect_provenance(item.get("provenance") or ())
+        for item in payload.transitions:
+            for identity_id in item.get("before_identity_ids") or ():
+                if str(identity_id) not in identity_ids:
+                    raise IntegrationError(
+                        f"transition references missing registry identity: {identity_id}"
+                    )
+            for candidate_id in item.get("after_candidate_ids") or ():
+                if str(candidate_id) not in candidate_ids:
+                    raise IntegrationError(
+                        f"transition references missing candidate: {candidate_id}"
+                    )
+            for evidence_id in item.get("evidence_ids") or ():
+                if str(evidence_id) not in evidence_ids:
+                    raise IntegrationError(
+                        f"transition references missing evidence: {evidence_id}"
+                    )
+            collect_provenance(item.get("provenance") or ())
+        collect_provenance(payload.artifacts)
+        collect_provenance(payload.evidence)
+        missing_provenance = referenced_provenance_ids.difference(payload.provenance)
+        if missing_provenance:
+            raise IntegrationError(
+                "records reference missing provenance sources: "
+                f"{sorted(missing_provenance)}"
+            )
         return payload
 
 
@@ -168,6 +233,11 @@ class Phase2LearnerPayloadBuilder:
             item
             for item in self.store.values("match_proposals")
             if item.candidate_id in candidate_ids
+        )
+        identity_ids.update(
+            item.stored_identity_id
+            for item in proposals
+            if item.stored_identity_id is not None
         )
         changes = tuple(
             item
@@ -226,6 +296,7 @@ class Phase2LearnerPayloadBuilder:
             state_id=observation_id,
             observation_id=observation_id,
             encounter_ids=tuple(item.encounter_id for item in encounters),
+            identity_ids=tuple(sorted(identity_ids)),
             objects=objects,
             correspondences=tuple(_plain(item) for item in proposals),
             transitions=tuple(_plain(item) for item in changes),
