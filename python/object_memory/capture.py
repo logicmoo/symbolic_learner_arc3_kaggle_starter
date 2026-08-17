@@ -27,6 +27,7 @@ from .recognition import (
     RegistryCorrespondenceAuthority,
     TurtleReconstructionEvidenceBuilder,
 )
+from .replay import ActionTreeSemanticReplay
 from .store import InMemorySemanticBackend, SymbolicStore
 
 
@@ -81,10 +82,41 @@ class SemanticGridCaptureObserver:
         self.turtle_form_factory = turtle_form_factory
         self._latest_by_candidate: dict[str, str] = {}
         self._latest_observation_id: str | None = None
+        self._loaded_level_roots: set[Path] = set()
         self._pending_authorizations: dict[
             str,
             tuple[Any, Any, str, tuple[str, ...]],
         ] = {}
+
+    def _load_level_history(self, store: Any) -> None:
+        """Replay one level once and restore the observer's encounter cursors."""
+
+        level_root = store.level_root.resolve()
+        if level_root in self._loaded_level_roots:
+            return
+        ActionTreeSemanticReplay().replay(level_root, self.symbolic_store)
+        encounters = tuple(
+            encounter
+            for encounter in self.symbolic_store.encounters.records()
+            if Path(encounter.action_tree_node).resolve().is_relative_to(level_root)
+        )
+        referenced = {
+            encounter.previous_encounter_id
+            for encounter in encounters
+            if encounter.previous_encounter_id is not None
+        }
+        terminals = tuple(
+            encounter for encounter in encounters if encounter.encounter_id not in referenced
+        )
+        for encounter in terminals:
+            if encounter.candidate_identity_id is not None:
+                self._latest_by_candidate[encounter.candidate_identity_id] = (
+                    encounter.encounter_id
+                )
+        if terminals:
+            latest = max(terminals, key=lambda item: item.action_tree_node)
+            self._latest_observation_id = latest.observation_id
+        self._loaded_level_roots.add(level_root)
 
     def authorization_options(self) -> dict[str, tuple[str, ...]]:
         """Return explicit friendly-identity choices for unresolved candidates."""
@@ -257,6 +289,7 @@ class SemanticGridCaptureObserver:
         data: Mapping[str, Any],
     ) -> None:
         del previous_node
+        self._load_level_history(store)
         relative_node = node.path.resolve().relative_to(store.level_root.resolve()).as_posix()
         source_id = f"{store.game_id}:{store.level}:{relative_node or 'initial'}"
         batch = self.adapter.normalize(

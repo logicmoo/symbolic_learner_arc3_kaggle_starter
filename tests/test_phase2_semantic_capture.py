@@ -84,6 +84,55 @@ def test_semantic_capture_persists_and_links_observations_encounters_and_turtles
     )
 
 
+def test_semantic_capture_replays_level_history_after_observer_restart(tmp_path: Path) -> None:
+    tree = ActionTreeStore(tmp_path / "tree", "game", 1)
+    initial = tree.create_initial(b"initial", {"state": "active"})
+    runner = SimpleNamespace(grid=DEFAULT_GRID)
+    first_observer = SemanticGridCaptureObserver(
+        GridAdapter(analyze_grid, PythonProvider({})),
+        grid_selector=lambda active_runner: active_runner.grid,
+    )
+    first_observer.on_state_captured(
+        runner=runner,
+        store=tree,
+        node=initial,
+        previous_node=None,
+        action=None,
+        data={},
+    )
+    initial_encounters = first_observer.symbolic_store.encounters.records()
+    initial_by_candidate = {
+        encounter.candidate_identity_id: encounter.encounter_id
+        for encounter in initial_encounters
+    }
+
+    child = tree.create_transition(initial, "RIGHT", {}, b"child", {"state": "active"})
+    restarted_observer = SemanticGridCaptureObserver(
+        GridAdapter(analyze_grid, PythonProvider({})),
+        grid_selector=lambda active_runner: active_runner.grid,
+    )
+    restarted_observer.on_state_captured(
+        runner=runner,
+        store=tree,
+        node=child,
+        previous_node=initial,
+        action="RIGHT",
+        data={},
+    )
+
+    encounters = restarted_observer.symbolic_store.encounters.records()
+    assert len(encounters) == 4
+    later = encounters[2:]
+    assert {
+        encounter.previous_encounter_id for encounter in later
+    } == set(initial_by_candidate.values())
+    assert all(
+        encounter.previous_encounter_id
+        == initial_by_candidate[encounter.candidate_identity_id]
+        for encounter in later
+    )
+
+
 def test_semantic_capture_links_unresolved_proposals_against_known_history(tmp_path: Path) -> None:
     tree = ActionTreeStore(tmp_path / "tree", "game", 1)
     initial = tree.create_initial(b"initial", {"state": "active"})
