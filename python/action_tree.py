@@ -4,7 +4,8 @@ import hashlib
 import json
 import os
 import re
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass, is_dataclass
+from enum import Enum
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -23,6 +24,18 @@ def _game_slug(game_id: str) -> str:
 
 def _rel_link(source_dir: Path, target: Path) -> str:
     return Path(os.path.relpath(target, source_dir)).as_posix()
+
+
+def _jsonable(value: Any) -> Any:
+    if is_dataclass(value):
+        return _jsonable(asdict(value))
+    if isinstance(value, Enum):
+        return value.value
+    if isinstance(value, Mapping):
+        return {str(key): _jsonable(item) for key, item in value.items()}
+    if isinstance(value, (tuple, list)):
+        return [_jsonable(item) for item in value]
+    return value
 
 
 def _alternate_directory(path: Path) -> Path:
@@ -524,6 +537,60 @@ class ActionTreeStore:
         self.refresh_readme(node)
         return node.semantic_records_path
 
+    def link_prediction_history(
+        self,
+        node: StateNode,
+        semantic_store: Any,
+        prediction_id: str,
+    ) -> Path:
+        """Materialize one prediction-before-outcome audit trail in this node."""
+
+        prediction = semantic_store.get("predictions", prediction_id)
+        if prediction is None:
+            raise KeyError(f"Unknown persisted prediction: {prediction_id}")
+        grade = semantic_store.get("prediction_grades", prediction_id)
+        records: list[tuple[str, str, Any]] = [
+            ("prediction", prediction_id, prediction)
+        ]
+        if grade is not None:
+            records.append(("prediction_grade", prediction_id, grade))
+            for evidence_id in grade.evidence_record_ids:
+                evidence = semantic_store.get("evidence", evidence_id)
+                if evidence is None:
+                    raise ValueError(
+                        f"Prediction grade references missing evidence: {evidence_id}"
+                    )
+                records.append(("evidence", evidence_id, evidence))
+
+        semantic_dir = node.path / "semantic"
+        semantic_dir.mkdir(parents=True, exist_ok=True)
+        for record_type, record_id, value in records:
+            encoded = json.dumps(
+                _jsonable(value),
+                indent=2,
+                ensure_ascii=False,
+                sort_keys=True,
+            ) + "\n"
+            record_hash = hashlib.sha256(encoded.encode("utf-8")).hexdigest()
+            artifact_path = semantic_dir / (
+                f"{record_type}-{_slug(record_id)}-{record_hash[:12]}.json"
+            )
+            if (
+                artifact_path.exists()
+                and artifact_path.read_text(encoding="utf-8") != encoded
+            ):
+                raise RuntimeError(f"Prediction history conflict at {artifact_path}")
+            artifact_path.write_text(encoded, encoding="utf-8")
+            self.link_semantic_record(
+                node,
+                record_type=record_type,
+                record_id=record_id,
+                artifact_path=artifact_path,
+                schema_version=str(getattr(value, "schema_version", "1.0.0")),
+                deterministic_hash=record_hash,
+            )
+        return node.semantic_records_path
+
     def refresh_readme(self, node: StateNode) -> Path:
         metadata = self.metadata(node)
         parent = self.parent_node(node)
@@ -713,6 +780,22 @@ class ActionTreeStore:
                             f"{len(detail.get('supporting_evidence_ids') or [])} supporting and "
                             f"{len(detail.get('contradicting_evidence_ids') or [])} contradicting "
                             "evidence record(s)"
+                        )
+                    elif record["record_type"] == "prediction":
+                        lines.append(
+                            f"  - predicted before outcome at sequence "
+                            f"`{detail.get('created_sequence')}` from state "
+                            f"`{detail.get('source_state_id')}` using rule "
+                            f"`{detail.get('rule_id')}`; outcome fields remain empty"
+                        )
+                    elif record["record_type"] == "prediction_grade":
+                        lines.append(
+                            f"  - independently observed outcome at sequence "
+                            f"`{detail.get('outcome_sequence')}` received grade "
+                            f"`{detail.get('grade')}`; calibrated probability "
+                            f"`{detail.get('prior_probability')}` → "
+                            f"`{detail.get('calibrated_probability')}`; "
+                            f"{len(detail.get('evidence_record_ids') or [])} evidence update(s)"
                         )
 
         lines.extend(["", "## Embedded files", ""])
