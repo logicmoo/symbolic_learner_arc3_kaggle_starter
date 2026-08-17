@@ -847,6 +847,9 @@ class RegistryCorrespondenceAuthority:
             raise ValueError("selected identity is not a friendly registry identity")
         if self.writer.memory.get(selected_identity_id) is None:
             raise KeyError(selected_identity_id)
+        prior_atom = self.writer.memory.get(selected_identity_id)
+        assert prior_atom is not None
+        decision_confidence = prior_atom.confidence
         for item in evidence:
             if item.subject_id != selected_identity_id:
                 raise ValueError("correspondence evidence must target the selected identity")
@@ -875,6 +878,8 @@ class RegistryCorrespondenceAuthority:
                 item.proposal_id for item in proposals if item is not selected
             ),
             calibrated_confidence=atom.confidence,
+            decision_confidence=decision_confidence,
+            decision_outcome=True,
             decision_source=decision_source,
             provenance=selected.provenance,
         )
@@ -917,10 +922,13 @@ class RegistryCorrespondenceAuthority:
             status="rejected",
             evidence_ids=evidence_ids,
         )
+        atom = self.writer.memory.get(selected_identity_id) if self.writer else None
         return RecognitionAccount.create(
             candidate_id=candidate_id,
             stored_identity_id=None,
             rival_proposal_ids=tuple(item.proposal_id for item in proposals),
+            decision_confidence=atom.confidence if atom is not None else 0.0,
+            decision_outcome=False,
             decision_source=decision_source,
             provenance=selected.provenance,
         )

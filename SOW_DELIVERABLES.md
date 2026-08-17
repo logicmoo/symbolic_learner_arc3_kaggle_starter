@@ -201,8 +201,8 @@ Phase 2 implements the semantic object layer behind the Phase 1 debugger. It use
   Remaining: domain calibration against representative fixtures.
 
 - [ ] **Partial** Refine and calibrate confidence for object identity, correspondence, and competing interpretations.
-  Existing evidence: deterministic Laplace-style confidence derived from attributable supporting and contradicting evidence, with event history and order-independence tests. Typed confidence-history records preserve every evidence and lifecycle transition across merge, split, demotion, tombstoning, and reversal; snapshots and the durable Prolog backend retain them across reloads.
-  Remaining: correspondence/rival interpretation calibration and empirical calibration curves.
+  Existing evidence: deterministic Laplace-style confidence is derived from attributable supporting and contradicting evidence, with event history and order-independence tests. Authority decisions now preserve pre-decision confidence separately from the later accepted/rejected outcome, avoiding post-outcome leakage. `RecognitionCalibrator` computes scoped reliability bins, acceptance rates, and Brier error only from resolved decisions; unresolved proposals are excluded. Typed confidence-history and decision-calibration fields survive snapshots and durable replay.
+  Remaining: learn and validate an optional recalibration policy from representative domain/provider datasets; rival proposal scores remain advisory rather than calibrated probabilities.
 
 ## Persistent symbolic memory and replay
 

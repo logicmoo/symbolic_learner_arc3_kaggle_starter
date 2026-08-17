@@ -17,6 +17,11 @@ from .adapters import (
 from .acceptance import AcceptanceReport, build_acceptance_report, write_acceptance_report
 from .capture import SemanticGridCaptureObserver, standard_semantic_grid_observer
 from .catalog import IdentityCatalogEntry, SemanticIdentityCatalog
+from .calibration import (
+    RecognitionCalibrationReport,
+    RecognitionCalibrator,
+    ReliabilityBin,
+)
 from .benchmark import (
     PerceptionBenchmarkResult,
     PerceptionBenchmarkRunner,
@@ -200,7 +205,10 @@ __all__ = [
     "ResidualAnalyzer",
     "ResidualDisposition",
     "ResidualGate",
+    "ReliabilityBin",
     "RecognitionAccount",
+    "RecognitionCalibrationReport",
+    "RecognitionCalibrator",
     "RecognitionSession",
     "RasterPerturbationGenerator",
     "RegistryCorrespondenceAuthority",

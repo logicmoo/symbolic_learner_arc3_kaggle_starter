@@ -86,6 +86,8 @@ def test_registry_authority_calibrates_accounts_and_records_prolog_history(tmp_p
 
     assert account.stored_identity_id == "red_ball"
     assert account.calibrated_confidence == pytest.approx(0.75)
+    assert account.decision_confidence == 0.0
+    assert account.decision_outcome is True
     assert account.supporting_evidence_ids == (evidence.evidence_id,)
     history = store.semantic_identity_decisions_path.read_text(encoding="utf-8")
     assert "accepted" in history and "reversed" in history
@@ -106,6 +108,8 @@ def test_registry_authority_records_explicit_rejection_without_calibration(tmp_p
     )
 
     assert account.stored_identity_id is None
+    assert account.decision_confidence == 0.0
+    assert account.decision_outcome is False
     assert account.decision_source == "explicit_registry_rejection"
     assert writer.memory.evidence_for("red_ball") == ()
     history = store.semantic_identity_decisions_path.read_text(encoding="utf-8")

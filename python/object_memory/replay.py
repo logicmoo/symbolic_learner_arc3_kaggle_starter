@@ -209,6 +209,12 @@ class SemanticRecordCodec:
                 contradicting_evidence_ids=tuple(value.get("contradicting_evidence_ids") or ()),
                 rival_proposal_ids=tuple(value.get("rival_proposal_ids") or ()),
                 calibrated_confidence=float(value.get("calibrated_confidence", 0.0)),
+                decision_confidence=(
+                    float(value["decision_confidence"])
+                    if value.get("decision_confidence") is not None
+                    else None
+                ),
+                decision_outcome=value.get("decision_outcome"),
                 decision_source=str(value.get("decision_source", "unresolved")),
                 provenance=tuple(_provenance(item) for item in value.get("provenance") or ()),
                 schema_version=str(value.get("schema_version", "2.0.0")),

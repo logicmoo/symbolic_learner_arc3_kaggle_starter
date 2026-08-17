@@ -339,6 +339,8 @@ class RecognitionAccount:
     contradicting_evidence_ids: tuple[str, ...] = ()
     rival_proposal_ids: tuple[str, ...] = ()
     calibrated_confidence: float = 0.0
+    decision_confidence: float | None = None
+    decision_outcome: bool | None = None
     decision_source: str = "unresolved"
     provenance: tuple[ProvenanceRef, ...] = ()
     schema_version: str = PHASE2_SCHEMA_VERSION
