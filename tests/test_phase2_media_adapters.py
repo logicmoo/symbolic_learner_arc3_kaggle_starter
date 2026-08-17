@@ -2,7 +2,12 @@ from io import BytesIO
 
 from PIL import Image
 
-from object_memory import ImageAdapter, PythonProvider, SimpleVideoAdapter
+from object_memory import (
+    ImageAdapter,
+    LearnedPartRoleProvider,
+    PythonProvider,
+    SimpleVideoAdapter,
+)
 
 
 def _extract(image: Image.Image):
@@ -151,6 +156,50 @@ def test_image_adapter_rejects_part_role_for_unknown_component() -> None:
         assert "unknown structural component" in str(error)
     else:
         raise AssertionError("invalid semantic part role was accepted")
+
+
+def test_image_adapter_learns_semantic_part_roles_from_labeled_examples() -> None:
+    def extract(_image: Image.Image):
+        return {
+            "objects": [
+                {
+                    "id": "learned-tool",
+                    "bounds": [0, 0, 8, 3],
+                    "cells": [
+                        [0, 0], [1, 0], [2, 0], [0, 1], [1, 1], [2, 1],
+                        [7, 2],
+                    ],
+                }
+            ]
+        }
+
+    learned_roles = LearnedPartRoleProvider(
+        (
+            {
+                "role": "body",
+                "cells": [[0, 0], [1, 0], [2, 0], [0, 1], [1, 1], [2, 1]],
+            },
+            {
+                "role": "marker",
+                "cells": [[0, 0]],
+                "properties": {"meaning": "tip"},
+            },
+        )
+    )
+    adapter = ImageAdapter(extract, PythonProvider({}), learned_roles)
+    adapter.normalize(
+        observation_id="learned-roles",
+        image=Image.new("RGB", (8, 3)),
+        action_tree_node="nodes/learned-roles",
+        artifact_uri="nodes/learned-roles/image.png",
+    )
+
+    roles = adapter.candidate_detail("learned-tool")["normalizedStructure"]["topology"]["part_roles"]
+    assert tuple(item["role"] for item in roles) == ("body", "marker")
+    assert roles[1]["properties"] == {
+        "meaning": "tip",
+        "inference": "learned_nearest_example",
+    }
 
 
 def test_image_adapter_infers_pairwise_raster_relationships() -> None:

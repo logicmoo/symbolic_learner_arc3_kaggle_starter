@@ -13,6 +13,71 @@ from PIL import Image
 from .models import ArtifactRef, CandidateObject, Observation, ProvenanceRef
 
 
+class LearnedPartRoleProvider:
+    """Infer semantic component roles from labeled structural examples.
+
+    The provider deliberately learns only the label boundary. Component
+    extraction and role-reference validation remain deterministic adapter
+    responsibilities.
+    """
+
+    def __init__(self, examples: Iterable[Mapping[str, Any]]) -> None:
+        learned: list[tuple[str, tuple[float, ...], Mapping[str, Any]]] = []
+        for example in examples:
+            role = str(example.get("role") or "").strip()
+            cells = _normalized_cells(example.get("cells"))
+            if not role or not cells:
+                raise ValueError("learned part-role examples require role and cells")
+            learned.append(
+                (role, self._features(cells), dict(example.get("properties") or {}))
+            )
+        if not learned:
+            raise ValueError("learned part-role provider requires labeled examples")
+        self._examples = tuple(learned)
+
+    @staticmethod
+    def _features(cells: tuple[tuple[int, int], ...]) -> tuple[float, ...]:
+        xs = [cell[0] for cell in cells]
+        ys = [cell[1] for cell in cells]
+        width = max(xs) - min(xs) + 1
+        height = max(ys) - min(ys) + 1
+        area = width * height
+        return (
+            float(len(cells)),
+            float(width),
+            float(height),
+            len(cells) / area,
+            width / height,
+        )
+
+    def infer_part_roles(
+        self,
+        _item: Mapping[str, Any],
+        components: tuple[tuple[tuple[int, int], ...], ...],
+    ) -> tuple[Mapping[str, Any], ...]:
+        roles = []
+        for index, component in enumerate(components):
+            features = self._features(component)
+            role, _example, properties = min(
+                self._examples,
+                key=lambda example: (
+                    sum(
+                        abs(current - learned) / max(1.0, abs(learned))
+                        for current, learned in zip(features, example[1])
+                    ),
+                    example[0],
+                ),
+            )
+            roles.append(
+                {
+                    "role": role,
+                    "component": index,
+                    "properties": {**properties, "inference": "learned_nearest_example"},
+                }
+            )
+        return tuple(roles)
+
+
 def _normalized_cells(value: Any) -> tuple[tuple[int, int], ...]:
     cells = value if isinstance(value, (list, tuple, set)) else ()
     return tuple(sorted({(int(cell[0]), int(cell[1])) for cell in cells}))
@@ -137,7 +202,9 @@ def _normalized_part_roles(
     )
 
 
-def normalize_grid_structure(item: Mapping[str, Any]) -> Mapping[str, Any]:
+def normalize_grid_structure(
+    item: Mapping[str, Any], role_provider: Any | None = None
+) -> Mapping[str, Any]:
     """Normalize extractor-specific grid structure into one semantic contract."""
 
     cells = _normalized_cells(item.get("cells"))
@@ -151,12 +218,14 @@ def normalize_grid_structure(item: Mapping[str, Any]) -> Mapping[str, Any]:
     topology = item.get("topology") if isinstance(item.get("topology"), Mapping) else {}
     holes = tuple(relative(_normalized_cells(hole)) for hole in topology.get("holes") or ())
     normalized_components = tuple(relative(component) for component in components)
-    part_roles = _normalized_part_roles(
+    supplied_roles = (
         item.get("partRoles")
         or topology.get("part_roles")
-        or topology.get("partRoles"),
-        normalized_components,
+        or topology.get("partRoles")
     )
+    if not supplied_roles and role_provider is not None and normalized_components:
+        supplied_roles = role_provider.infer_part_roles(item, normalized_components)
+    part_roles = _normalized_part_roles(supplied_roles, normalized_components)
     relationships = tuple(
         {
             "target": str(value.get("target")),
@@ -205,7 +274,9 @@ def normalize_grid_structure(item: Mapping[str, Any]) -> Mapping[str, Any]:
     }
 
 
-def normalize_image_structure(item: Mapping[str, Any]) -> Mapping[str, Any]:
+def normalize_image_structure(
+    item: Mapping[str, Any], role_provider: Any | None = None
+) -> Mapping[str, Any]:
     """Preserve provider raster semantics in the shared normalized contract."""
 
     bounds = tuple(int(value) for value in item.get("bounds") or item.get("bbox") or ())
@@ -248,6 +319,8 @@ def normalize_image_structure(item: Mapping[str, Any]) -> Mapping[str, Any]:
         if isinstance(value, Mapping)
     )
     normalized_components = tuple(relative(component) for component in components)
+    if not supplied_part_roles and role_provider is not None and normalized_components:
+        supplied_part_roles = role_provider.infer_part_roles(item, normalized_components)
     part_roles = _normalized_part_roles(
         supplied_part_roles,
         normalized_components,
@@ -353,9 +426,10 @@ class PerceptionAdapter(ABC):
 class GridAdapter(PerceptionAdapter):
     """Thin adapter around an existing grid object extractor."""
 
-    def __init__(self, extractor: Any, provider: Any) -> None:
+    def __init__(self, extractor: Any, provider: Any, role_provider: Any | None = None) -> None:
         self.extractor = extractor
         self.provider = provider
+        self.role_provider = role_provider
         self._details: dict[str, Mapping[str, Any]] = {}
 
     def normalize(
@@ -397,7 +471,7 @@ class GridAdapter(PerceptionAdapter):
             candidate_id = str(item.get("candidate_id") or item.get("id") or f"candidate_{index}")
             details[candidate_id] = {
                 **item,
-                "normalizedStructure": normalize_grid_structure(item),
+                "normalizedStructure": normalize_grid_structure(item, self.role_provider),
             }
             candidates.append(
                 CandidateObject(
@@ -468,9 +542,10 @@ def _load_image(value: Any) -> tuple[Image.Image, bytes | None, str | None]:
 class ImageAdapter(PerceptionAdapter):
     """Normalize raster extractor output without prescribing segmentation."""
 
-    def __init__(self, extractor: Any, provider: Any) -> None:
+    def __init__(self, extractor: Any, provider: Any, role_provider: Any | None = None) -> None:
         self.extractor = extractor
         self.provider = provider
+        self.role_provider = role_provider
         self._details: dict[str, Mapping[str, Any]] = {}
 
     def normalize(
@@ -517,7 +592,7 @@ class ImageAdapter(PerceptionAdapter):
             )
             details[candidate_id] = {
                 **item,
-                "normalizedStructure": normalize_image_structure(item),
+                "normalizedStructure": normalize_image_structure(item, self.role_provider),
             }
             bounded_objects.append(
                 (
