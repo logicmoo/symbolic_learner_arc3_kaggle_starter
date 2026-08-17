@@ -31,6 +31,8 @@ class RuleStore:
         *,
         prediction_id: str,
         grade: float,
+        supporting_evidence_ids: tuple[str, ...] = (),
+        contradicting_evidence_ids: tuple[str, ...] = (),
     ) -> TransitionRule:
         """Refine one rule only from an independently graded prior prediction."""
 
@@ -49,6 +51,14 @@ class RuleStore:
             prediction_successes=rule.prediction_successes + int(grade == 1.0),
             prediction_score_total=score_total,
             prediction_history=(*rule.prediction_history, prediction_id),
+            supporting_evidence_ids=tuple(
+                dict.fromkeys((*rule.supporting_evidence_ids, *supporting_evidence_ids))
+            ),
+            contradicting_evidence_ids=tuple(
+                dict.fromkeys(
+                    (*rule.contradicting_evidence_ids, *contradicting_evidence_ids)
+                )
+            ),
         )
         self._rules[rule_id] = updated
         return updated

@@ -581,6 +581,7 @@ class PredictionGradeRecord:
     outcome: Any
     grade: float
     evidence: tuple[str, ...] = ()
+    evidence_record_ids: tuple[str, ...] = ()
     prior_probability: float | None = None
     calibrated_probability: float | None = None
     schema_version: str = "1.0.0"

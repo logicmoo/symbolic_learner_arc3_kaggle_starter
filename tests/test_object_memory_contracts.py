@@ -221,6 +221,8 @@ def test_phase3_pipeline_learns_predicts_and_grades() -> None:
     assert refined.prediction_history == ("prediction-1",)
     assert refined.calibrated_probability == 2.0 / 3.0
     assert refined.probability_source == "verified_prediction_history"
+    assert len(refined.supporting_evidence_ids) == 1
+    assert refined.contradicting_evidence_ids == ()
     persisted_prediction = semantic_store.get("predictions", "prediction-1")
     persisted_grade = semantic_store.get("prediction_grades", "prediction-1")
     assert persisted_prediction.outcome_sequence is None
@@ -228,13 +230,49 @@ def test_phase3_pipeline_learns_predicts_and_grades() -> None:
     assert persisted_grade.outcome == predicted
     assert persisted_grade.grade == 1.0
     assert persisted_grade.evidence == ("independent_outcome",)
+    assert persisted_grade.evidence_record_ids == refined.supporting_evidence_ids
     assert persisted_grade.calibrated_probability == 2.0 / 3.0
+    persisted_evidence = semantic_store.get(
+        "evidence", persisted_grade.evidence_record_ids[0]
+    )
+    assert persisted_evidence.subject_id == "rule-move-right"
+    assert persisted_evidence.polarity.value == "supports"
+    assert persisted_evidence.weight == 1.0
 
     replayed = SymbolicStore(InMemorySemanticBackend()).replay(
         semantic_store.snapshot()
     )
     assert replayed.get("predictions", "prediction-1") == persisted_prediction
     assert replayed.get("prediction_grades", "prediction-1") == persisted_grade
+
+    _predicted_again, _ = pipeline.predict(
+        prediction_id="prediction-2",
+        rule_id="rule-move-right",
+        source_state_id="state-3",
+        state={"player_present": True},
+        created_sequence=22,
+        executor=executor,
+    )
+    pipeline.grade_prediction(
+        prediction_id="prediction-2",
+        outcome_sequence=23,
+        outcome_channel=OutcomeChannel(lambda: {"effect": "did-not-move"}),
+        evaluator=PredictionEvaluator(
+            lambda expected, observed: PredictionGrade(
+                1.0 if expected == observed else 0.0,
+                evidence=("independent_contradiction",),
+            )
+        ),
+    )
+    contradicted = rule_store.get("rule-move-right")
+    assert contradicted.prediction_attempts == 2
+    assert contradicted.calibrated_probability == 0.5
+    assert len(contradicted.contradicting_evidence_ids) == 1
+    negative = semantic_store.get(
+        "evidence", contradicted.contradicting_evidence_ids[0]
+    )
+    assert negative.polarity.value == "contradicts"
+    assert negative.weight == 1.0
 
     for duplicate_or_invalid in (
         {"prediction_id": "prediction-1", "grade": 1.0},

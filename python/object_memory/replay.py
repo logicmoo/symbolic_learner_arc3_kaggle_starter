@@ -254,6 +254,7 @@ class SemanticRecordCodec:
                 outcome=value.get("outcome"),
                 grade=float(value["grade"]),
                 evidence=tuple(value.get("evidence") or ()),
+                evidence_record_ids=tuple(value.get("evidence_record_ids") or ()),
                 prior_probability=value.get("prior_probability"),
                 calibrated_probability=value.get("calibrated_probability"),
                 schema_version=str(value.get("schema_version", "1.0.0")),

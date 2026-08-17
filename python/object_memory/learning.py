@@ -3,7 +3,14 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Callable, Iterable, Mapping, Sequence
 
-from .models import PredictionGradeRecord, PredictionRecord, TransitionRule
+from .models import (
+    EvidencePolarity,
+    EvidenceRecord,
+    PredictionGradeRecord,
+    PredictionRecord,
+    ProvenanceRef,
+    TransitionRule,
+)
 from .prediction import PredictionLedger, RuleStore
 
 
@@ -224,12 +231,61 @@ class GameLearningPipeline:
             grade=grade.score,
         )
         prior_probability = self.rule_store.get(prediction.rule_id).calibrated_probability
+        evidence_records: list[EvidenceRecord] = []
+        source = ProvenanceRef.create(
+            source_id=prediction_id,
+            provider="prediction_evaluator",
+            sequence=outcome_sequence,
+            metadata={"evaluator_evidence": list(grade.evidence)},
+        )
+        evidence_detail = {
+            "prediction_id": prediction_id,
+            "expected": predicted,
+            "observed": observed,
+            "grade": grade.score,
+        }
+        if grade.score > 0.0:
+            evidence_records.append(
+                EvidenceRecord.create(
+                    subject_id=prediction.rule_id,
+                    polarity=EvidencePolarity.SUPPORTS,
+                    source=source,
+                    weight=grade.score,
+                    detail=evidence_detail,
+                    created_sequence=outcome_sequence,
+                )
+            )
+        if grade.score < 1.0:
+            evidence_records.append(
+                EvidenceRecord.create(
+                    subject_id=prediction.rule_id,
+                    polarity=EvidencePolarity.CONTRADICTS,
+                    source=source,
+                    weight=1.0 - grade.score,
+                    detail=evidence_detail,
+                    created_sequence=outcome_sequence,
+                )
+            )
+        supporting_ids = tuple(
+            record.evidence_id
+            for record in evidence_records
+            if record.polarity is EvidencePolarity.SUPPORTS
+        )
+        contradicting_ids = tuple(
+            record.evidence_id
+            for record in evidence_records
+            if record.polarity is EvidencePolarity.CONTRADICTS
+        )
         refined = self.rule_store.record_prediction_grade(
             prediction.rule_id,
             prediction_id=prediction_id,
             grade=grade.score,
+            supporting_evidence_ids=supporting_ids,
+            contradicting_evidence_ids=contradicting_ids,
         )
         if self.semantic_store is not None:
+            for evidence_record in evidence_records:
+                self.semantic_store.put_evidence(evidence_record)
             self.semantic_store.put_prediction_grade(
                 PredictionGradeRecord(
                     prediction_id=prediction_id,
@@ -238,6 +294,9 @@ class GameLearningPipeline:
                     outcome=observed,
                     grade=grade.score,
                     evidence=grade.evidence,
+                    evidence_record_ids=tuple(
+                        record.evidence_id for record in evidence_records
+                    ),
                     prior_probability=prior_probability,
                     calibrated_probability=refined.calibrated_probability,
                 )
