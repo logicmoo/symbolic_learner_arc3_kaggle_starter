@@ -1,5 +1,8 @@
+import pytest
+
 from object_memory import (
     ArtifactRef,
+    CommittedAtom,
     EncounterRecord,
     EvidencePolarity,
     EvidenceRecord,
@@ -80,6 +83,7 @@ def test_real_phase2_records_build_a_versioned_serializable_learner_payload() ->
             provenance=(source,),
         )
     )
+    store.put_atom(CommittedAtom("known-blue", "object", {"label": "Known blue"}))
 
     payload = Phase2LearnerPayloadBuilder(store).for_observation(
         observation.observation_id
@@ -142,6 +146,30 @@ def test_learner_payload_rejects_dangling_identity_candidate_and_provenance_refs
             pass
         else:
             raise AssertionError("dangling learner reference must be rejected")
+
+
+def test_learner_payload_strictly_validates_durable_identity_and_provenance() -> None:
+    payload = GameObjectLearnerPayload(
+        state_id="state",
+        objects=({"id": "known-blue", "object_identity_id": "known-blue"},),
+        identity_ids=("known-blue",),
+        provenance=("frame-1",),
+    )
+    assert IntegrationValidator(
+        registry_identity_ids={"known-blue"},
+        provenance_source_ids={"frame-1"},
+    ).validate(payload) == payload
+
+    with pytest.raises(IntegrationError, match="absent from durable memory"):
+        IntegrationValidator(
+            registry_identity_ids=set(),
+            provenance_source_ids={"frame-1"},
+        ).validate(payload)
+    with pytest.raises(IntegrationError, match="provenance sources"):
+        IntegrationValidator(
+            registry_identity_ids={"known-blue"},
+            provenance_source_ids=set(),
+        ).validate(payload)
 
 
 def test_real_phase2_change_becomes_an_evidence_linked_transformation_candidate() -> None:

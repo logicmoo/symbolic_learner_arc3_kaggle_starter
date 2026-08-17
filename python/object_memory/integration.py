@@ -112,8 +112,20 @@ class GameObjectLearnerSchema:
 
 
 class IntegrationValidator:
-    def __init__(self, schema: GameObjectLearnerSchema | None = None) -> None:
+    def __init__(
+        self,
+        schema: GameObjectLearnerSchema | None = None,
+        *,
+        registry_identity_ids: set[str] | frozenset[str] | None = None,
+        provenance_source_ids: set[str] | frozenset[str] | None = None,
+    ) -> None:
         self.schema = schema or GameObjectLearnerSchema()
+        self.registry_identity_ids = (
+            None if registry_identity_ids is None else frozenset(registry_identity_ids)
+        )
+        self.provenance_source_ids = (
+            None if provenance_source_ids is None else frozenset(provenance_source_ids)
+        )
 
     def validate(self, payload: GameObjectLearnerPayload) -> GameObjectLearnerPayload:
         if not payload.state_id:
@@ -219,6 +231,22 @@ class IntegrationValidator:
                 "records reference missing provenance sources: "
                 f"{sorted(missing_provenance)}"
             )
+        if self.registry_identity_ids is not None:
+            missing_identities = identity_ids.difference(self.registry_identity_ids)
+            if missing_identities:
+                raise IntegrationError(
+                    "payload registry identities are absent from durable memory: "
+                    f"{sorted(missing_identities)}"
+                )
+        if self.provenance_source_ids is not None:
+            missing_sources = set(payload.provenance).difference(
+                self.provenance_source_ids
+            )
+            if missing_sources:
+                raise IntegrationError(
+                    "payload provenance sources are absent from durable memory: "
+                    f"{sorted(missing_sources)}"
+                )
         return payload
 
 
@@ -332,7 +360,37 @@ class Phase2LearnerPayloadBuilder:
                 )
             ),
         )
-        return IntegrationValidator().validate(payload)
+        durable_identity_ids = {
+            item.handle for item in self.store.values("atoms")
+        }
+        durable_identity_ids.update(
+            item.object_identity_id
+            for item in self.store.encounters.records()
+            if item.object_identity_id is not None
+        )
+        durable_identity_ids.update(
+            item.candidate_identity_id
+            for item in self.store.encounters.records()
+            if item.candidate_identity_id is not None
+        )
+        durable_provenance_ids: set[str] = set()
+
+        def collect_durable_provenance(value: Any) -> None:
+            if isinstance(value, Mapping):
+                if "source_id" in value and "provider" in value:
+                    durable_provenance_ids.add(str(value["source_id"]))
+                for nested in value.values():
+                    collect_durable_provenance(nested)
+            elif isinstance(value, (tuple, list)):
+                for nested in value:
+                    collect_durable_provenance(nested)
+
+        for values in self.store.snapshot().values():
+            collect_durable_provenance(_plain(values))
+        return IntegrationValidator(
+            registry_identity_ids=durable_identity_ids,
+            provenance_source_ids=durable_provenance_ids,
+        ).validate(payload)
 
 
 def phase2_transition_analyzer() -> TransitionAnalyzer:
