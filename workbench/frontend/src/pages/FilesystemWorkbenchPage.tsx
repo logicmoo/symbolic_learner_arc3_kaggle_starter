@@ -3633,8 +3633,10 @@ export function FilesystemWorkbenchPage() {
                                     ? "benchmarks"
                                 : view === "contexts"
                                   ? "contexts"
-                                  : view === "sourceCode" || view === "prompts"
-                                    ? "prompts"
+                                  : view === "sourceCode"
+                                    ? "sourceCode"
+                                    : view === "prompts"
+                                      ? "prompts"
                                     : "overview"
                 }
                 context={

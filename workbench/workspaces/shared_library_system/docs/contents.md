@@ -28,6 +28,7 @@ Use the tabs above to move between the workbench's shared documentation from any
 - [Models, model presets, operations, and prompts](models_profiles_operations_prompts.md)
 - [LLMs](llm_catalog.md)
 - [Systems](systems.md)
+- [Source Code](source_code.md)
 - [Policies](policies.md)
 - [Benchmarks](benchmarks.md)
 - [Legacy LLM migration](legacy_llm_migration.md)

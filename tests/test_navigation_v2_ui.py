@@ -366,7 +366,7 @@ def test_systems_are_separate_from_model_backends() -> None:
     assert "Agent Mailbox" in documentation
     assert "OmegaClaw is the local autonomous agent runtime" in documentation
     assert "OmegaClaw is not the Symbolic Learner Workbench" in documentation
-    assert 'view==="sourceCode"||view==="prompts"?"prompts"' in page
+    assert 'view==="sourceCode"?"sourceCode":view==="prompts"?"prompts"' in page
     assert '"systems": _load_systems(workspace)' in api
     for system_id in ("python", "prolog", "metta", "llm", "omegaclaw", "codex", "mailbox"):
         assert (ROOT / "workbench" / "workspaces" / "shared_library_system" / "design" / "systems" / f"{system_id}.system.metta").is_file()
@@ -435,6 +435,17 @@ def test_benchmarks_route_uses_a_distinct_filesystem_backed_catalog_view() -> No
     assert 'view === "benchmarks"' in page and '? "benchmarks"' in page
     help_tabs = (ROOT / "workbench" / "frontend" / "src" / "components" / "HelpDocumentTabs.tsx").read_text(encoding="utf-8")
     assert 'id:"benchmarks",label:"Benchmarks",path:"docs/benchmarks.md"' in help_tabs
+
+
+def test_source_code_has_dedicated_help_and_atomspace_paths_are_current() -> None:
+    help_tabs = (ROOT / "workbench" / "frontend" / "src" / "components" / "HelpDocumentTabs.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "workbench" / "frontend" / "src" / "pages" / "FilesystemWorkbenchPage.tsx").read_text(encoding="utf-8")
+    source_code = (ROOT / "workbench" / "workspaces" / "shared_library_system" / "docs" / "source_code.md").read_text(encoding="utf-8")
+    atomspaces = (ROOT / "workbench" / "workspaces" / "shared_library_system" / "docs" / "contexts.md").read_text(encoding="utf-8")
+    assert 'id:"sourceCode",label:"Source Code",path:"docs/source_code.md"' in help_tabs
+    assert 'view === "sourceCode"' in page and '? "sourceCode"' in page
+    assert all(language in source_code for language in ("Prolog", "MeTTa", "Python"))
+    assert "`design/atomspaces/`" in atomspaces
 
 
 def test_runtime_artifacts_deep_link_to_datatype_resources() -> None:

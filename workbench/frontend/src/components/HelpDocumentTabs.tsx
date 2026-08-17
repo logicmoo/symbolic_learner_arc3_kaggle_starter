@@ -18,6 +18,7 @@ const docTabs:HelpTab[]=[
  {id:"datatypeGuide",label:"Datatype Guide",repositoryPath:"docs/DATATYPES_MANIFEST_EXPLAINED.md"},
  {id:"llms",label:"LLMs",path:"docs/llm_catalog.md"},
  {id:"systems",label:"Systems",path:"docs/systems.md"},
+ {id:"sourceCode",label:"Source Code",path:"docs/source_code.md"},
  {id:"operations",label:"Operations",path:"docs/operations.md"},
  {id:"policies",label:"Policies",path:"docs/policies.md"},
  {id:"benchmarks",label:"Benchmarks",path:"docs/benchmarks.md"},
