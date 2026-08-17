@@ -608,6 +608,7 @@ export function FilesystemWorkbenchPage() {
     url.searchParams.set("view", next === "canvas" ? "workflows" : next);
     url.searchParams.delete("menu");
     url.searchParams.delete("resource");
+    if (next !== "sourceCode") url.searchParams.delete("sourceLanguage");
     if (next !== "states") url.searchParams.delete("state");
     window.history.replaceState(
       null,

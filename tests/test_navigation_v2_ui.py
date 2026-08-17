@@ -223,6 +223,8 @@ def test_source_code_language_tabs_are_deep_linkable() -> None:
     assert 'url.searchParams.delete("sourceLanguage")' in source
     assert 'window.history.pushState({},"",url)' in compact
     assert 'window.addEventListener("popstate",restore)' in compact
+    page = ACTIVE_PAGE.read_text(encoding="utf-8")
+    assert 'if (next !== "sourceCode") url.searchParams.delete("sourceLanguage")' in page
 
 
 def test_workflow_variants_are_internal_modes_not_left_navigation_items() -> None:
