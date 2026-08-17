@@ -72,6 +72,7 @@ type WorkflowStep = {
   dependsOn?: string[];
   inputs?: unknown;
   outputs?: unknown;
+  while?: WorkflowWhile | WorkflowWhile[];
   form?: Record<
     string,
     {
@@ -84,6 +85,13 @@ type WorkflowStep = {
       sensitive?: boolean;
     }
   >;
+};
+type WorkflowWhile = {
+  condition?: unknown;
+  operator?: "truthy" | "not_empty" | "equals" | "less_than" | string;
+  conditionPort?: unknown;
+  maxIterations: number;
+  targetStepId?: string;
 };
 type FrozenWorkflow = {
   id: string;
@@ -701,6 +709,24 @@ function WorkflowRunSplineWorkspace({
   const repeatedWrites = new Map<string, number[]>();
   steps.forEach((step, index) => Object.values(step.outputs && typeof step.outputs === "object" ? step.outputs as Record<string, unknown> : {}).forEach((binding) => { const name=String(binding||"");if(name)repeatedWrites.set(name,[...(repeatedWrites.get(name)||[]),index]); }));
   const captureLoopEdges=[...repeatedWrites].flatMap(([markerName,indices])=>indices.length<2?[]:indices.flatMap((start,iteration)=>{const end=(indices[iteration+1]??steps.length)-1;return end>start?[{id:`${markerName}:${iteration+1}`,markerName,iteration:iteration+1,startStepId:steps[start].id,endStepId:steps[end].id}]:[]}));
+  const declaredWhileEdges = steps.flatMap((step) => {
+    const loops = step.while ? (Array.isArray(step.while) ? step.while : [step.while]) : [];
+    return loops.map((loop, loopIndex) => {
+      const executedIterations = run.events.filter((event) => {
+        if (event.kind !== "loop.iteration" || event.stepId !== step.id || !event.payload || typeof event.payload !== "object") return false;
+        return Number((event.payload as Record<string, unknown>).loopIndex) === loopIndex;
+      }).length;
+      return {
+        id: `${step.id}:${loopIndex}`,
+        controllerStepId: step.id,
+        targetStepId: loop.targetStepId || step.id,
+        loopIndex,
+        executedIterations,
+        maxIterations: Number(loop.maxIterations || 0),
+        operator: loop.operator || "truthy",
+      };
+    });
+  });
   const chronologyWidth = Math.max(760, run.events.length * 120 + 80);
   const focalStepId =
     memoryStepId ||
@@ -909,6 +935,15 @@ function WorkflowRunSplineWorkspace({
                 }),
               )}
               {captureLoopEdges.map((edge) => { const start=positions.get(edge.startStepId),end=positions.get(edge.endStepId);if(!start||!end)return null;const top=12+Math.min(edge.iteration*5,22);return <g key={edge.id}><path className="run-topology-loop-edge" d={`M${end.x},${end.y-28} C${end.x},${top} ${start.x},${top} ${start.x},${start.y-28}`} markerEnd={`url(#spline-arrow-${run.id})`}/><text className="run-topology-loop-label" x={(start.x+end.x)/2} y={top-3} textAnchor="middle">{edge.markerName} · {edge.iteration}</text></g>;})}
+              {declaredWhileEdges.map((edge) => {
+                const controller = positions.get(edge.controllerStepId), target = positions.get(edge.targetStepId);
+                if (!controller || !target) return null;
+                const lift = 52 + edge.loopIndex * 17, middle = (controller.x + target.x) / 2;
+                const path = edge.controllerStepId === edge.targetStepId
+                  ? `M${controller.x + 32},${controller.y - 27} C${controller.x + 68},${controller.y - lift} ${controller.x - 68},${controller.y - lift} ${controller.x - 32},${controller.y - 27}`
+                  : `M${controller.x},${controller.y - 29} C${middle},${controller.y - lift} ${middle},${target.y - lift} ${target.x},${target.y - 29}`;
+                return <g key={`declared-while:${edge.id}`}><path className="run-topology-loop-edge declared" d={path} markerEnd={`url(#spline-arrow-${run.id})`}/><text className="run-topology-loop-label declared" x={middle} y={Math.min(controller.y,target.y)-lift+14} textAnchor="middle">WHILE · {edge.executedIterations}/{edge.maxIterations}</text><title>{`While ${edge.operator}; return to ${edge.targetStepId}; ${edge.executedIterations} persisted iterations of ${edge.maxIterations}`}</title></g>;
+              })}
               {steps.map((step, index) => {
                 const point = positions.get(step.id)!;
                 const status =
