@@ -14,7 +14,7 @@ from workflow_engine import OperationRegistry, OperationSpec, WorkflowEngine, no
 class AdvancedWorkflowEngine(WorkflowEngine):
     """Feature-complete local workflow engine layered on the durable core.
 
-    Adds dependency-graph scheduling, conditions, bounded foreach loops,
+    Adds dependency-graph scheduling, conditions, bounded foreach/while loops,
     timeouts, delayed retries, compensation, operation logs, child-run propagation,
     recovery, replay, subprocess and HTTP operation implementations.
     """
@@ -115,6 +115,7 @@ class AdvancedWorkflowEngine(WorkflowEngine):
     def validate(self, document: dict[str, Any]) -> list[str]:
         errors = super().validate(document)
         steps = document.get('steps') or []
+        step_order = [str(step.get('id')) for step in steps if step.get('id')]
         ids = {str(step.get('id')) for step in steps if step.get('id')}
         graph: dict[str, set[str]] = {}
         for step in steps:
@@ -127,6 +128,19 @@ class AdvancedWorkflowEngine(WorkflowEngine):
             loop = step.get('foreach')
             if loop and int(loop.get('maxItems', 1000)) <= 0:
                 errors.append(f'{sid}.foreach.maxItems must be positive')
+            loops = step.get('while') or []
+            loops = loops if isinstance(loops, list) else [loops]
+            for index, loop in enumerate(loops):
+                if not isinstance(loop, dict):
+                    errors.append(f'{sid}.while[{index}] must be an object')
+                    continue
+                if int(loop.get('maxIterations', 0) or 0) <= 0:
+                    errors.append(f'{sid}.while[{index}].maxIterations must be positive')
+                target = str(loop.get('targetStepId') or sid)
+                if target not in ids:
+                    errors.append(f'{sid}.while[{index}] targets unknown step: {target}')
+                elif step_order.index(target) > step_order.index(sid):
+                    errors.append(f'{sid}.while[{index}] targetStepId must not follow its controller')
             if step.get('timeoutSeconds') is not None and float(step['timeoutSeconds']) <= 0:
                 errors.append(f'{sid}.timeoutSeconds must be positive')
         visiting: set[str] = set(); visited: set[str] = set()
@@ -170,6 +184,65 @@ class AdvancedWorkflowEngine(WorkflowEngine):
                     inferred.add(parts[1])
         return explicit | inferred
 
+    def _loop_condition_true(self, run_id: str, loop: dict[str, Any]) -> bool:
+        value = self._resolve(run_id, loop.get('condition'))
+        compare_to = self._resolve(run_id, loop.get('conditionPort'))
+        operator = str(loop.get('operator') or 'truthy')
+        if operator == 'truthy':
+            return bool(value)
+        if operator == 'not_empty':
+            return value is not None and bool(value)
+        if operator == 'equals':
+            return value == compare_to
+        if operator == 'less_than':
+            return value < compare_to
+        raise ValueError(f'unsupported while operator: {operator}')
+
+    def _loop_iteration_count(self, run_id: str, step_id: str, loop_index: int) -> int:
+        with self._db() as db:
+            rows = db.execute(
+                "SELECT payload FROM wf_events WHERE run_id=? AND step_id=? AND kind='loop.iteration'",
+                (run_id, step_id),
+            ).fetchall()
+        return sum(1 for row in rows if json.loads(row['payload']).get('loopIndex') == loop_index)
+
+    def _apply_step_loops(self, run_id: str, workflow: dict[str, Any], step: dict[str, Any]) -> bool:
+        loops = step.get('while') or []
+        loops = loops if isinstance(loops, list) else [loops]
+        step_ids = [str(item['id']) for item in workflow.get('steps', [])]
+        controller_index = step_ids.index(str(step['id']))
+        for loop_index, loop in enumerate(loops):
+            if not self._loop_condition_true(run_id, loop):
+                continue
+            iteration = self._loop_iteration_count(run_id, str(step['id']), loop_index)
+            maximum = int(loop['maxIterations'])
+            # ``iteration`` counts completed backward jumps. The controller
+            # execution that just finished is the next bounded iteration.
+            if iteration + 1 >= maximum:
+                raise RuntimeError(f"while loop {step['id']}[{loop_index}] exceeded maxIterations={maximum}")
+            target = str(loop.get('targetStepId') or step['id'])
+            target_index = step_ids.index(target)
+            region = step_ids[target_index:controller_index + 1]
+            with self._db() as db:
+                placeholders = ','.join('?' for _ in region)
+                db.execute(
+                    f'''UPDATE wf_steps SET status='pending',child_run_id=NULL,error=NULL,
+                        started_at=NULL,finished_at=NULL WHERE run_id=? AND step_id IN ({placeholders})''',
+                    (run_id, *region),
+                )
+            condition_value = self._resolve(run_id, loop.get('condition'))
+            self._event(run_id, str(step['id']), 'loop.iteration', {
+                'loopIndex': loop_index,
+                'iteration': iteration + 1,
+                'maxIterations': maximum,
+                'targetStepId': target,
+                'condition': condition_value,
+                'resetStepIds': region,
+            })
+            self._log(run_id, str(step['id']), 'system', f'while iteration {iteration + 1}/{maximum}; returning to {target}')
+            return True
+        return False
+
     def _ready_steps(self, run: dict[str, Any], workflow: dict[str, Any]) -> list[dict[str, Any]]:
         states = {item['stepId']: item['status'] for item in run['steps']}
         ready: list[dict[str, Any]] = []
@@ -210,6 +283,9 @@ class AdvancedWorkflowEngine(WorkflowEngine):
                 current = self.get_run(run_id)
                 if current['status'] in {'waiting', 'paused', 'failed', 'cancelled', 'compensating'}:
                     return
+                state = next(item for item in current['steps'] if item['stepId'] == step['id'])
+                if state['status'] == 'pending':
+                    break
 
     def _execute_advanced_step(self, run_id: str, step: dict[str, Any]) -> None:
         sid = step['id']
@@ -274,6 +350,8 @@ class AdvancedWorkflowEngine(WorkflowEngine):
                 db.execute('UPDATE wf_steps SET status=?,finished_at=? WHERE run_id=? AND step_id=?', ('completed', now(), run_id, sid))
             self._event(run_id, sid, 'step.completed', {'outputs': list((step.get('outputs') or {}).values())})
             self._log(run_id, sid, 'system', 'step execution completed')
+            workflow = self.get_workflow(self.get_run(run_id)['workflowId'], self.get_run(run_id)['workflowVersion'])
+            self._apply_step_loops(run_id, workflow, step)
         except Exception as exc:
             self._handle_failure(run_id, step, exc)
 

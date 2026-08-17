@@ -272,7 +272,12 @@ class WorkflowEngine:
     def _binding_name(binding: Any) -> str | None:
         if not isinstance(binding, str) or not binding.startswith('$'):
             return None
-        return binding.lstrip('$').split('.')[-1]
+        parts = binding.lstrip('$').split('.')
+        if parts[0] == 'steps' and len(parts) >= 3:
+            return parts[2]
+        if parts[0] in {'workflow', 'inputs', 'slots', 'artifacts', 'outputs'} and len(parts) >= 2:
+            return parts[1]
+        return parts[0]
 
     def validate(self, document: dict[str, Any]) -> list[str]:
         document = self._normalize_workflow(document)
@@ -409,22 +414,61 @@ class WorkflowEngine:
     def _resolve(self, run_id: str, binding: Any) -> Any:
         if not isinstance(binding, str) or not binding.startswith('$'):
             return binding
-        name = binding.lstrip('$').split('.')[-1]
+        parts = binding.lstrip('$').split('.')
+        if parts[0] == 'steps' and len(parts) >= 3:
+            parts = parts[2:]
+        elif parts[0] in {'workflow', 'inputs', 'slots', 'artifacts', 'outputs'} and len(parts) >= 2:
+            parts = parts[1:]
+        name = parts[0]
         with self._db() as db:
             row = db.execute('SELECT payload FROM wf_artifacts WHERE run_id=? AND name=? ORDER BY created_at DESC LIMIT 1', (run_id, name)).fetchone()
-        if not row: raise ValueError(f'unresolved binding: {binding}')
-        return json.loads(row['payload'])
+            if not row and len(parts) > 1:
+                # Compatibility with the original last-segment lookup used by
+                # early workflow documents.
+                row = db.execute('SELECT payload FROM wf_artifacts WHERE run_id=? AND name=? ORDER BY created_at DESC LIMIT 1', (run_id, parts[-1])).fetchone()
+                if row:
+                    parts = parts[-1:]
+        if not row:
+            raise ValueError(f'unresolved binding: {binding}')
+        value = json.loads(row['payload'])
+        for part in parts[1:]:
+            if isinstance(value, dict) and part in value:
+                value = value[part]
+            elif isinstance(value, list) and part.isdigit() and int(part) < len(value):
+                value = value[int(part)]
+            else:
+                raise ValueError(f'unresolved binding path: {binding}')
+        return value
 
     def _resolve_public(self, run_id: str, binding: Any) -> Any:
         if not isinstance(binding, str) or not binding.startswith('$'):
             return binding
-        name = binding.lstrip('$').split('.')[-1]
+        parts = binding.lstrip('$').split('.')
+        if parts[0] == 'steps' and len(parts) >= 3:
+            parts = parts[2:]
+        elif parts[0] in {'workflow', 'inputs', 'slots', 'artifacts', 'outputs'} and len(parts) >= 2:
+            parts = parts[1:]
+        name = parts[0]
         with self._db() as db:
             row = db.execute('SELECT payload,provenance FROM wf_artifacts WHERE run_id=? AND name=? ORDER BY created_at DESC LIMIT 1', (run_id, name)).fetchone()
+            if not row and len(parts) > 1:
+                row = db.execute('SELECT payload,provenance FROM wf_artifacts WHERE run_id=? AND name=? ORDER BY created_at DESC LIMIT 1', (run_id, parts[-1])).fetchone()
+                if row:
+                    parts = parts[-1:]
         if not row:
             raise ValueError(f'unresolved binding: {binding}')
         provenance = json.loads(row['provenance'])
-        return '[REDACTED]' if provenance.get('sensitive') else json.loads(row['payload'])
+        if provenance.get('sensitive'):
+            return '[REDACTED]'
+        value = json.loads(row['payload'])
+        for part in parts[1:]:
+            if isinstance(value, dict) and part in value:
+                value = value[part]
+            elif isinstance(value, list) and part.isdigit() and int(part) < len(value):
+                value = value[int(part)]
+            else:
+                raise ValueError(f'unresolved binding path: {binding}')
+        return value
 
     def advance(self, run_id: str) -> None:
         run = self.get_run(run_id)

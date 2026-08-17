@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from advanced_workflow_engine import AdvancedWorkflowEngine
+from workflow_engine import OperationSpec
 
 
 def engine(tmp_path: Path) -> AdvancedWorkflowEngine:
@@ -44,6 +45,96 @@ def test_foreach_aggregates_outputs(tmp_path: Path) -> None:
     run = runtime.start('foreach', {'items': [1, 2, 3]})
     assert run['status'] == 'completed'
     assert run['outputs']['values'] == [1, 2, 3]
+
+
+def test_bounded_while_reexecutes_region_until_nested_condition_changes(tmp_path: Path) -> None:
+    runtime = engine(tmp_path)
+    runtime.registry.register(OperationSpec(
+        'test.increment',
+        {'value': 'Number'},
+        {'result': 'Object'},
+        lambda inputs, _parameters: {'result': {'count': inputs['value'] + 1}},
+    ))
+    runtime.save_workflow({
+        'id': 'bounded-while',
+        'inputs': {'state': 'Object'},
+        'outputs': {'count': '$state.count'},
+        'steps': [{
+            'id': 'increment',
+            'kind': 'operation',
+            'implementation': 'test.increment',
+            'inputs': {'value': '$state.count'},
+            'outputs': {'result': 'state'},
+            'while': {
+                'condition': '$state.count',
+                'operator': 'less_than',
+                'conditionPort': 3,
+                'maxIterations': 5,
+                'targetStepId': 'increment',
+            },
+        }],
+    })
+    # Seed the same structured value shape consumed by subsequent iterations.
+    run = runtime.start('bounded-while', {'state': {'count': 0}})
+
+    assert run['status'] == 'completed'
+    assert run['outputs'] == {'count': 3}
+    iterations = [event for event in run['events'] if event['kind'] == 'loop.iteration']
+    assert [event['payload']['iteration'] for event in iterations] == [1, 2]
+    assert next(step for step in run['steps'] if step['stepId'] == 'increment')['attempt'] == 3
+
+
+def test_bounded_while_fails_when_condition_outlives_iteration_limit(tmp_path: Path) -> None:
+    runtime = engine(tmp_path)
+    runtime.save_workflow({
+        'id': 'bounded-while-limit',
+        'outputs': {},
+        'steps': [{
+            'id': 'again',
+            'kind': 'operation',
+            'implementation': 'core.constant',
+            'parameters': {'value': True},
+            'outputs': {'value': 'again'},
+            'while': {
+                'condition': '$again',
+                'operator': 'truthy',
+                'maxIterations': 2,
+            },
+        }],
+    })
+
+    run = runtime.start('bounded-while-limit', {})
+
+    assert run['status'] == 'failed'
+    assert 'exceeded maxIterations=2' in run['error']
+    assert next(step for step in run['steps'] if step['stepId'] == 'again')['attempt'] == 2
+
+
+def test_while_validation_requires_positive_bound_and_backward_target(tmp_path: Path) -> None:
+    runtime = engine(tmp_path)
+    errors = runtime.validate({
+        'id': 'invalid-while',
+        'steps': [
+            {
+                'id': 'controller',
+                'kind': 'operation',
+                'implementation': 'core.constant',
+                'parameters': {'value': True},
+                'outputs': {'value': 'value'},
+                'while': {'condition': '$value', 'maxIterations': 0, 'targetStepId': 'later'},
+            },
+            {
+                'id': 'later',
+                'kind': 'operation',
+                'implementation': 'core.constant',
+                'parameters': {'value': False},
+                'outputs': {'value': 'later'},
+            },
+        ],
+    })
+
+    assert 'controller.while[0].maxIterations must be positive' in errors
+    assert 'controller.while[0] targetStepId must not follow its controller' in errors
 
 
 def test_human_wait_resume_and_logs(tmp_path: Path) -> None:

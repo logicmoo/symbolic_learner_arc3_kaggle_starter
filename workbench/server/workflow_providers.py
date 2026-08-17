@@ -58,7 +58,7 @@ def probe_capabilities(registry: OperationRegistry) -> dict[str, dict[str, str]]
         "conditions": CapabilityStatus("implemented", "Backend evaluates persisted step conditions"),
         "foreachFanOut": CapabilityStatus("implemented", "Bounded foreach execution with aggregated outputs"),
         "fanIn": CapabilityStatus("implemented", "Dependency joins and merged downstream inputs"),
-        "boundedLoops": CapabilityStatus("partial", "Bounded foreach is implemented; general while/until loops are not"),
+        "boundedLoops": CapabilityStatus("implemented", "Bounded foreach and backward while regions are executed with persisted iteration events"),
         "timeouts": CapabilityStatus("implemented", "Step execution timeout is enforced"),
         "retries": CapabilityStatus("implemented", "Persisted attempts and retry events"),
         "retryBackoff": CapabilityStatus("implemented", "Delay and exponential backoff policies"),

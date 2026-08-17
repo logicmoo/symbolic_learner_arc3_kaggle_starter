@@ -16,7 +16,7 @@ def test_capabilities_use_status_objects() -> None:
     capabilities = probe_capabilities(registry)
     assert capabilities
     assert all(value['status'] in {'implemented', 'partial', 'unavailable', 'failed'} for value in capabilities.values())
-    assert capabilities['boundedLoops']['status'] == 'partial'
+    assert capabilities['boundedLoops']['status'] == 'implemented'
     assert capabilities['typedArtifacts']['status'] == 'partial'
 
 
