@@ -283,9 +283,14 @@ Phase 3 implements learning and prediction over the persistent objects and evide
 - [x] Rank and refine competing rules using simplicity, coverage, contradiction, applicability, and prediction history.
   Evidence: the canonical ranker orders rivals by calibrated probability, verified prediction success, applicability precision, coverage, supporting/contradicting evidence, simplicity, and only then a small bootstrap tie-breaker. Live ARC3 outcomes now feed prediction history, normalized evidence, and calibration.
 
-- [ ] **Partial** Apply learned transformations and rules to previously unseen cases.  
-  Existing evidence: rule execution contracts.  
-  Remaining: unseen-case demonstration from learned real examples.
+- [x] Apply learned transformations and rules to previously unseen cases.
+  Evidence: the canonical Phase 2 executor checks the learned action condition,
+  applies observed numeric deltas relative to a new object's current values,
+  applies categorical target values without mutating the input, and rejects
+  structurally inapplicable states. An end-to-end test learns a RIGHT
+  translation from a known object at `[1, 1]`, applies the induced rule to an
+  unseen red object at `[7, 4]`, obtains `[8, 4]`, and records that predicted
+  state through the append-only prediction ledger before any outcome exists.
 
 ## Prediction and independent outcome grading
 

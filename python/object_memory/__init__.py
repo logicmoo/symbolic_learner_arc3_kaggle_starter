@@ -21,6 +21,7 @@ from .integration import (
     phase2_transformation_learner,
     phase2_transition_analyzer,
     phase2_rule_inducer,
+    phase2_rule_executor,
     phase2_rule_ranker,
 )
 from .learning import (
@@ -130,6 +131,7 @@ __all__ = [
     "phase2_transformation_learner",
     "phase2_transition_analyzer",
     "phase2_rule_inducer",
+    "phase2_rule_executor",
     "phase2_rule_ranker",
     "PipelineGameObjectLearnerPlugin",
     "PredictionEvaluator",

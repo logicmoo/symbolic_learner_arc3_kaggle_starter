@@ -3,6 +3,7 @@ from object_memory import (
     EncounterRecord,
     EvidencePolarity,
     EvidenceRecord,
+    GameLearningPipeline,
     GameObjectLearnerPayload,
     IntegrationError,
     IntegrationValidator,
@@ -12,11 +13,14 @@ from object_memory import (
     Observation,
     ObjectChange,
     Phase2LearnerPayloadBuilder,
+    PredictionLedger,
     ProvenanceRef,
     phase2_transformation_learner,
     phase2_transition_analyzer,
     phase2_rule_inducer,
+    phase2_rule_executor,
     phase2_rule_ranker,
+    RuleStore,
     SymbolicStore,
     TurtleProgramRef,
 )
@@ -263,3 +267,59 @@ def test_verified_prediction_history_outranks_bootstrap_without_rewriting_identi
     assert updated.calibrated_probability == 2.0 / 3.0
     assert updated.probability_source == "verified_prediction_history"
     assert ranked[0].rule_id == original_id
+
+
+def test_learned_translation_applies_relative_delta_to_an_unseen_object() -> None:
+    transition = phase2_transition_analyzer().analyze(
+        GameObjectLearnerPayload("before", ({"id": "known", "position": [1, 1]},)),
+        "RIGHT",
+        GameObjectLearnerPayload(
+            "after",
+            ({"id": "known-after", "position": [2, 1]},),
+            transitions=(
+                {
+                    "kind": "moved",
+                    "properties": {"position": {"from": [1, 1], "to": [2, 1]}},
+                    "evidence_ids": ["move-evidence"],
+                },
+            ),
+            evidence=({"evidence_id": "move-evidence"},),
+        ),
+    )
+    rule = phase2_rule_inducer().induce(
+        phase2_transformation_learner().learn(transition)
+    )[0]
+    store = RuleStore()
+    store.store(rule)
+    unseen = {"id": "previously-unseen-red", "position": [7, 4], "color": "red"}
+
+    executor = phase2_rule_executor(store, "RIGHT")
+    assert executor.applicable(rule.rule_id, unseen)
+    assert executor.apply(rule.rule_id, unseen) == {
+        "id": "previously-unseen-red",
+        "position": [8, 4],
+        "color": "red",
+    }
+    assert unseen["position"] == [7, 4]
+    assert not phase2_rule_executor(store, "LEFT").applicable(rule.rule_id, unseen)
+
+    ledger = PredictionLedger()
+    pipeline = GameLearningPipeline(
+        phase2_transition_analyzer(),
+        phase2_transformation_learner(),
+        phase2_rule_inducer(),
+        phase2_rule_ranker(),
+        store,
+        ledger,
+    )
+    predicted, record = pipeline.predict(
+        prediction_id="prediction-unseen-red",
+        rule_id=rule.rule_id,
+        source_state_id="unseen-state",
+        state=unseen,
+        created_sequence=10,
+        executor=executor,
+    )
+    assert predicted["position"] == [8, 4]
+    assert record.predicted_effects == (predicted,)
+    assert ledger.get(record.prediction_id) == record

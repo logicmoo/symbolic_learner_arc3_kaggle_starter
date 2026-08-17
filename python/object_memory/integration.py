@@ -15,9 +15,11 @@ from .learning import (
     TransitionAnalyzer,
     TransitionRecord,
     RuleInducer,
+    RuleExecutor,
     RuleRanker,
 )
 from .models import ExecutionMode, NormalizedResult, TransitionRule
+from .prediction import RuleStore
 from .store import SymbolicStore
 
 
@@ -441,6 +443,76 @@ def phase2_rule_ranker() -> RuleRanker:
         )
 
     return RuleRanker(score)
+
+
+def phase2_rule_executor(
+    store: RuleStore,
+    action_or_event: Any,
+) -> RuleExecutor:
+    """Apply an induced object transformation relative to a new object state.
+
+    Numeric ``from``/``to`` observations describe a delta, not an absolute
+    destination.  This lets a translation learned at one location operate on
+    an unseen object at another location.  Non-numeric changes use their
+    observed ``to`` value.  The caller still has to supply the action/event
+    that selects the rule; execution never silently ignores that condition.
+    """
+
+    def numeric_delta(before: Any, after: Any, current: Any) -> Any | None:
+        if all(
+            isinstance(item, (int, float)) and not isinstance(item, bool)
+            for item in (before, after, current)
+        ):
+            return current + (after - before)
+        if all(isinstance(item, (tuple, list)) for item in (before, after, current)):
+            if not (len(before) == len(after) == len(current)):
+                return None
+            values = [
+                numeric_delta(old, new, present)
+                for old, new, present in zip(before, after, current)
+            ]
+            if any(item is None for item in values):
+                return None
+            return tuple(values) if isinstance(current, tuple) else values
+        return None
+
+    def effect_properties(rule: TransitionRule) -> tuple[Mapping[str, Any], ...]:
+        return tuple(
+            effect.get("properties")
+            for effect in rule.predicted_effects
+            if isinstance(effect, Mapping)
+            and isinstance(effect.get("properties"), Mapping)
+        )
+
+    def checker(rule: TransitionRule, state: Any) -> bool:
+        if _plain(rule.action_or_event) != _plain(action_or_event):
+            return False
+        if not isinstance(state, Mapping):
+            return False
+        properties = effect_properties(rule)
+        return bool(properties) and all(
+            field in state for group in properties for field in group
+        )
+
+    def execute(rule: TransitionRule, state: Any) -> dict[str, Any]:
+        result = {str(key): _plain(value) for key, value in state.items()}
+        for properties in effect_properties(rule):
+            for field, specification in properties.items():
+                if not isinstance(specification, Mapping) or "to" not in specification:
+                    continue
+                replacement = _plain(specification["to"])
+                if "from" in specification:
+                    relative = numeric_delta(
+                        specification["from"],
+                        specification["to"],
+                        result[field],
+                    )
+                    if relative is not None:
+                        replacement = relative
+                result[str(field)] = replacement
+        return result
+
+    return RuleExecutor(store, checker, execute)
 
 
 class GameObjectLearnerPlugin(ABC):
