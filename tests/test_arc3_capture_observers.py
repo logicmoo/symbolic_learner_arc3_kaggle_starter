@@ -110,6 +110,14 @@ def test_standard_semantic_observer_uses_runner_grid_and_single_writer() -> None
     assert observer.grid_selector(runner).tolist() == [[0, 1], [2, 0]]
 
 
+def test_standard_semantic_observer_accepts_a_learner_plugin() -> None:
+    plugin = object()
+
+    observer = standard_semantic_grid_observer(learner_plugin=plugin)
+
+    assert observer.learner_plugin is plugin
+
+
 def test_canonical_runners_enable_semantic_capture_with_an_explicit_opt_out() -> None:
     root = Path(__file__).resolve().parents[1]
     interactive = (root / "python" / "interactive_runner.py").read_text(encoding="utf-8")

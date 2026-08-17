@@ -321,3 +321,65 @@ def test_semantic_capture_rehydrates_calibrated_identity_after_restart(
     assert {
         item.evidence_id for item in restarted_memory.evidence_for("known_shape")
     } == set(account.supporting_evidence_ids + account.contradicting_evidence_ids)
+
+
+def test_semantic_capture_hands_real_state_and_transition_to_learner(
+    tmp_path: Path,
+) -> None:
+    class RecordingLearner:
+        def __init__(self) -> None:
+            self.states = []
+            self.transitions = []
+
+        def consume_state(self, payload):
+            self.states.append(payload)
+            return {"kind": "state", "state_id": payload.state_id}
+
+        def consume_transition(self, before, action, after):
+            self.transitions.append((before, action, after))
+            return {
+                "kind": "transition",
+                "before": before.state_id,
+                "after": after.state_id,
+            }
+
+    tree = ActionTreeStore(tmp_path / "tree", "game", 1)
+    initial = tree.create_initial(b"initial", {"state": "active"})
+    learner = RecordingLearner()
+    observer = SemanticGridCaptureObserver(
+        GridAdapter(analyze_grid, PythonProvider({})),
+        grid_selector=lambda runner: runner.grid,
+        learner_plugin=learner,
+    )
+    runner = SimpleNamespace(grid=DEFAULT_GRID)
+    observer.on_state_captured(
+        runner=runner,
+        store=tree,
+        node=initial,
+        previous_node=None,
+        action=None,
+        data={},
+    )
+    child = tree.create_transition(initial, "RIGHT", {}, b"child", {"state": "active"})
+    observer.on_state_captured(
+        runner=runner,
+        store=tree,
+        node=child,
+        previous_node=initial,
+        action="RIGHT",
+        data={"speed": 1},
+    )
+
+    assert len(learner.states) == 1
+    assert len(learner.transitions) == 1
+    before, action, after = learner.transitions[0]
+    assert before.observation_id == learner.states[0].observation_id
+    assert action == {"action": "RIGHT", "data": {"speed": 1}}
+    assert after.observation_id != before.observation_id
+    assert after.objects and after.artifacts
+    manifest = json.loads(child.semantic_records_path.read_text(encoding="utf-8"))
+    learner_links = [
+        item for item in manifest["records"] if item["record_type"] == "learner_result"
+    ]
+    assert len(learner_links) == 1
+    assert (child.path / learner_links[0]["artifact"]).is_file()

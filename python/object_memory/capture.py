@@ -12,6 +12,7 @@ from swipl_bridge import SWIPrologBridge
 
 from .adapters import GridAdapter
 from .forms import CellLogoForm, FitResult
+from .integration import Phase2LearnerPayloadBuilder
 from .memory import SingleWriter
 from .models import (
     ArtifactRef,
@@ -32,7 +33,9 @@ from .replay import ActionTreeSemanticReplay
 from .store import InMemorySemanticBackend, SymbolicStore
 
 
-def standard_semantic_grid_observer() -> "SemanticGridCaptureObserver":
+def standard_semantic_grid_observer(
+    *, learner_plugin: Any | None = None
+) -> "SemanticGridCaptureObserver":
     """Compose the canonical live grid observer without coupling it to Phase 1."""
 
     from workbench.server.runtime import analyze_grid
@@ -44,6 +47,7 @@ def standard_semantic_grid_observer() -> "SemanticGridCaptureObserver":
         GridAdapter(analyze_grid, PythonProvider({})),
         grid_selector=lambda runner: runner.current_grid(),
         identity_writer=SingleWriter(SymbolicMemory()),
+        learner_plugin=learner_plugin,
     )
 
 
@@ -69,6 +73,7 @@ class SemanticGridCaptureObserver:
         symbolic_store: SymbolicStore | None = None,
         turtle_form_factory: Callable[[str], CellLogoForm] | None = None,
         identity_writer: SingleWriter | None = None,
+        learner_plugin: Any | None = None,
     ) -> None:
         self.adapter = adapter
         self.grid_selector = grid_selector
@@ -77,6 +82,8 @@ class SemanticGridCaptureObserver:
         self.changes = EncounterChangeSession(self.symbolic_store)
         self.turtle_evidence = TurtleReconstructionEvidenceBuilder()
         self.identity_writer = identity_writer
+        self.learner_plugin = learner_plugin
+        self.learner_results: list[Any] = []
         if turtle_form_factory is None:
             bridge = SWIPrologBridge(PROJECT_ROOT / "prolog" / "arc3_agent.pl")
             turtle_form_factory = lambda source: CellLogoForm(source, swi_bridge=bridge)
@@ -327,6 +334,7 @@ class SemanticGridCaptureObserver:
     ) -> None:
         del previous_node
         self._load_level_history(store)
+        previous_observation_id = self._latest_observation_id
         relative_node = node.path.resolve().relative_to(store.level_root.resolve()).as_posix()
         source_id = f"{store.game_id}:{store.level}:{relative_node or 'initial'}"
         batch = self.adapter.normalize(
@@ -537,9 +545,9 @@ class SemanticGridCaptureObserver:
                         schema_version=account.schema_version,
                         deterministic_hash=account.account_id.rsplit("-", 1)[-1],
                     )
-        if self._latest_observation_id is not None:
+        if previous_observation_id is not None:
             proposals, changes, residuals = self.changes.detect(
-                self._latest_observation_id,
+                previous_observation_id,
                 batch.observation.observation_id,
             )
             for proposal in proposals:
@@ -597,4 +605,35 @@ class SemanticGridCaptureObserver:
                     schema_version="2.0.0",
                     deterministic_hash=residual.residual_id.rsplit("-", 1)[-1],
                 )
+        if self.learner_plugin is not None:
+            builder = Phase2LearnerPayloadBuilder(self.symbolic_store)
+            current_payload = builder.for_observation(batch.observation.observation_id)
+            if previous_observation_id is None:
+                result = self.learner_plugin.consume_state(current_payload)
+            else:
+                result = self.learner_plugin.consume_transition(
+                    builder.for_observation(previous_observation_id),
+                    {"action": action, "data": dict(data)},
+                    current_payload,
+                )
+            self.learner_results.append(result)
+            encoded = json.dumps(
+                _jsonable(result),
+                indent=2,
+                ensure_ascii=False,
+                sort_keys=True,
+            ) + "\n"
+            result_hash = sha256(encoded.encode("utf-8")).hexdigest()
+            result_path = semantic_dir / f"learner-result-{result_hash[:16]}.json"
+            if result_path.exists() and result_path.read_text(encoding="utf-8") != encoded:
+                raise RuntimeError(f"Learner result conflict at {result_path}")
+            result_path.write_text(encoded, encoding="utf-8")
+            store.link_semantic_record(
+                node,
+                record_type="learner_result",
+                record_id=f"learner-result-{result_hash}",
+                artifact_path=result_path,
+                schema_version="1.0.0",
+                deterministic_hash=result_hash,
+            )
         self._latest_observation_id = batch.observation.observation_id

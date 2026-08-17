@@ -270,7 +270,7 @@ Phase 3 implements learning and prediction over the persistent objects and evide
   Evidence: `IntegrationValidator`, `IntegrationError`.
 
 - [ ] **Partial** Add integration tests and example workflows.
-  Existing evidence: synthetic Python and Prolog pipeline tests plus a real semantic-store-to-learner handoff test covering serialization and linked relationships, correspondence, evidence, action, Turtle artifact, encounter, and provenance data. Remaining: connect the live `Arc3Runner` transition callback to a learner plugin.
+  Existing evidence: synthetic Python and Prolog pipeline tests plus a real semantic-store-to-learner handoff test covering serialization and linked relationships, correspondence, evidence, action, Turtle artifact, encounter, and provenance data. `SemanticGridCaptureObserver` optionally sends its first real payload to `consume_state`, sends subsequent before/action/after payloads to `consume_transition` after change detection, and links each normalized learner result into the current action-tree node. The standard runner composition accepts the plugin without coupling `Arc3Runner` to learner internals. Remaining: a real rule-learning demonstration over ARC3 transitions.
 
 ## Transformations, rules, critiques, and ranking
 
