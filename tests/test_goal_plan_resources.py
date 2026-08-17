@@ -92,7 +92,7 @@ def test_goal_run_api_accepts_atomspace_context_kind(monkeypatch, tmp_path: Path
 
 def test_goal_plan_editor_preserves_rich_hierarchy_features() -> None:
     source = (ROOT / "workbench" / "frontend" / "src" / "components" / "GoalPlanLibraryEditor.tsx").read_text(encoding="utf-8")
-    for token in ("HierarchyResourceEditor", "PREFERRED VARIANT", "Split view", "+ Alternative", "+ Abstract", "ResourceSourceEditor", "preferredChild"):
+    for token in ("HierarchyResourceEditor", "PREFERRED ALTERNATIVE", "Split view", "+ Alternative", "+ Abstract", "ResourceSourceEditor", "preferredChild"):
         assert token in source
     assert 'const endpoint = family === "plan" ? "plans" : directory' in source
 
@@ -128,3 +128,10 @@ def test_pddl_vocabulary_maps_plans_to_workflows() -> None:
     assert "PDDL DOMAIN" in page
     assert "ORIGINAL GROUNDED PLAN" in page
     assert "same Workflow" in docs
+
+
+def test_same_kind_goal_plan_and_atomspace_children_are_labeled_alternatives() -> None:
+    editor = (ROOT / "workbench" / "frontend" / "src" / "components" / "GoalPlanLibraryEditor.tsx").read_text(encoding="utf-8")
+    assert "PREFERRED ALTERNATIVE" in editor
+    assert "ALTERNATIVE`" in editor
+    assert "variants · shared inheritance" not in editor
