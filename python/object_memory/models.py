@@ -235,9 +235,15 @@ class MatchProposal:
     similarity: float | None = None
     retrieval_score: float | None = None
     retrieval_source: str | None = None
+    probability: float | None = None
+    probability_source: str | None = None
     evidence_ids: tuple[str, ...] = ()
     provenance: tuple[ProvenanceRef, ...] = ()
     schema_version: str = PHASE2_SCHEMA_VERSION
+
+    def __post_init__(self) -> None:
+        if self.probability is not None and not 0.0 <= self.probability <= 1.0:
+            raise ValueError("proposal probability must be in [0, 1]")
 
     @classmethod
     def create(

@@ -273,6 +273,8 @@ class SemanticRecordCodec:
                 similarity=value.get("similarity"),
                 retrieval_score=value.get("retrieval_score"),
                 retrieval_source=value.get("retrieval_source"),
+                probability=value.get("probability"),
+                probability_source=value.get("probability_source"),
                 evidence_ids=tuple(value.get("evidence_ids") or ()),
                 provenance=tuple(_provenance(item) for item in value.get("provenance") or ()),
                 schema_version=str(value.get("schema_version", "2.0.0")),

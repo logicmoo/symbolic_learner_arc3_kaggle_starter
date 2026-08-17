@@ -1,4 +1,14 @@
-from object_memory import InstanceMatcher, InstanceParameters
+from dataclasses import asdict
+
+import pytest
+
+from object_memory import (
+    InstanceMatcher,
+    InstanceParameters,
+    RecognitionAccount,
+    RecognitionCalibrator,
+    SemanticRecordCodec,
+)
 
 
 def _instance(
@@ -98,6 +108,8 @@ def test_all_rival_proposals_are_retained_in_deterministic_advisory_order() -> N
         "object-square",
         "object-wrong-shape",
     )
+    assert sum(item.probability for item in proposals) == pytest.approx(1.0)
+    assert proposals[0].probability > proposals[1].probability
     account = matcher.recognition_account(
         candidate_id="candidate-1",
         proposals=proposals,
@@ -158,3 +170,40 @@ def test_embedding_retrieval_is_advisory_and_never_becomes_evidence() -> None:
     assert unresolved.calibrated_confidence == 0.0
     assert unresolved.supporting_evidence_ids == ()
     assert unresolved.contradicting_evidence_ids == ()
+
+
+def test_scoped_policy_calibrates_and_normalizes_complete_rival_set() -> None:
+    def account(confidence: float, outcome: bool, candidate: str) -> RecognitionAccount:
+        return RecognitionAccount.create(
+            candidate_id=candidate,
+            stored_identity_id="known" if outcome else None,
+            decision_confidence=confidence,
+            decision_outcome=outcome,
+            decision_source="fixture_authority",
+        )
+
+    policy = RecognitionCalibrator().fit(
+        (
+            account(0.2, False, "low-a"),
+            account(0.4, False, "low-b"),
+            account(0.8, True, "high-a"),
+            account(1.0, True, "high-b"),
+        ),
+        scope="grid/exact-v1",
+    )
+    proposals = InstanceMatcher().proposals(
+        candidate_id="candidate",
+        current=_instance(),
+        stored={
+            "exact": _instance(),
+            "different": _instance(shape="triangle", color="blue"),
+        },
+        calibration_policy=policy,
+    )
+
+    assert sum(item.probability for item in proposals) == pytest.approx(1.0)
+    assert proposals[0].stored_identity_id == "exact"
+    assert proposals[0].probability == 1.0
+    assert proposals[1].probability == 0.0
+    assert all(item.probability_source == "isotonic:grid/exact-v1" for item in proposals)
+    assert SemanticRecordCodec.decode("match_proposal", asdict(proposals[0])) == proposals[0]

@@ -17,6 +17,7 @@ from .models import (
 )
 from .memory import ResidualGate, SingleWriter
 from .store import SymbolicStore
+from .calibration import RecognitionCalibrationPolicy
 
 
 @dataclass(frozen=True)
@@ -140,6 +141,7 @@ class InstanceMatcher:
         provenance: tuple[ProvenanceRef, ...] = (),
         retrieval_scores: Mapping[str, float] | None = None,
         retrieval_source: str | None = None,
+        calibration_policy: RecognitionCalibrationPolicy | None = None,
     ) -> tuple[MatchProposal, ...]:
         proposals = []
         for identity_id, instance in stored.items():
@@ -174,11 +176,41 @@ class InstanceMatcher:
                     ).proposal_id,
                 )
             proposals.append(proposal)
+        scores = []
+        for proposal in proposals:
+            raw = float(proposal.similarity or 0.0)
+            if proposal.retrieval_score is not None:
+                raw = (raw + proposal.retrieval_score) / 2.0
+            scores.append(
+                calibration_policy.calibrate(raw)
+                if calibration_policy is not None
+                else raw
+            )
+        total = sum(scores)
+        probabilities = (
+            tuple(score / total for score in scores)
+            if total > 0.0
+            else tuple(1.0 / len(scores) for _item in scores)
+        )
+        probability_source = (
+            f"isotonic:{calibration_policy.scope}"
+            if calibration_policy is not None
+            else "normalized_similarity_retrieval"
+        )
+        proposals = [
+            replace(
+                proposal,
+                probability=probability,
+                probability_source=probability_source,
+            )
+            for proposal, probability in zip(proposals, probabilities)
+        ]
         return tuple(
             sorted(
                 proposals,
                 key=lambda item: (
                     -(item.similarity if item.similarity is not None else -1.0),
+                    -(item.probability if item.probability is not None else -1.0),
                     -(item.retrieval_score if item.retrieval_score is not None else -1.0),
                     item.stored_identity_id,
                 ),
