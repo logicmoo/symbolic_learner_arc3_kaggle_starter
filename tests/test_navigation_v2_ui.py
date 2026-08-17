@@ -215,6 +215,16 @@ def test_navigation_reuses_current_rich_editors() -> None:
             assert token.replace(" ", "") in compact
 
 
+def test_source_code_language_tabs_are_deep_linkable() -> None:
+    source = (ROOT / "workbench/frontend/src/components/SourceCodeEditor.tsx").read_text(encoding="utf-8")
+    compact = "".join(source.split())
+    assert 'get("sourceLanguage")' in source
+    assert 'url.searchParams.set("sourceLanguage",next)' in source
+    assert 'url.searchParams.delete("sourceLanguage")' in source
+    assert 'window.history.pushState({},"",url)' in compact
+    assert 'window.addEventListener("popstate",restore)' in compact
+
+
 def test_workflow_variants_are_internal_modes_not_left_navigation_items() -> None:
     source = ACTIVE_PAGE.read_text(encoding="utf-8")
     compact = "".join(source.split())
