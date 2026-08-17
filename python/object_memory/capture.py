@@ -15,6 +15,7 @@ from .forms import CellLogoForm, FitResult
 from .memory import SingleWriter
 from .models import (
     ArtifactRef,
+    CommittedAtom,
     EncounterRecord,
     InstanceParameters,
     ProvenanceRef,
@@ -188,6 +189,16 @@ class SemanticGridCaptureObserver:
         )
         if selected is None:
             raise ValueError("selected identity has no pending correspondence proposal")
+        if selected_identity_id not in tree_store.registry_identities():
+            raise ValueError("selected identity is not a friendly registry identity")
+        if self.identity_writer.memory.get(selected_identity_id) is None:
+            self.identity_writer.commit(
+                CommittedAtom(
+                    selected_identity_id,
+                    "object",
+                    {"authority": "action_tree_registry"},
+                )
+            )
         evidence = tuple(
             item
             for evidence_id in selected.evidence_ids

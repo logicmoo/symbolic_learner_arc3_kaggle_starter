@@ -5,7 +5,6 @@ from types import SimpleNamespace
 from action_tree import ActionTreeStore
 from object_memory import (
     ActionTreeSemanticReplay,
-    CommittedAtom,
     EncounterRecord,
     EvidencePolarity,
     GridAdapter,
@@ -215,7 +214,6 @@ def test_live_capture_exposes_and_persists_explicit_registry_authorization(tmp_p
     )
     memory = SymbolicMemory()
     writer = SingleWriter(memory)
-    writer.commit(CommittedAtom("known_shape", "object", {}))
     observer = SemanticGridCaptureObserver(
         GridAdapter(analyze_grid, PythonProvider({})),
         grid_selector=lambda runner: runner.grid,
@@ -240,6 +238,9 @@ def test_live_capture_exposes_and_persists_explicit_registry_authorization(tmp_p
     )
     assert account.stored_identity_id == "known_shape"
     assert account.decision_source == "explicit_registry_selection"
+    assert memory.get("known_shape").payload == {
+        "authority": "action_tree_registry"
+    }
     assert "obj_blue_1" not in observer.authorization_options()
     assert memory.evidence_for("known_shape")
     history = tree.semantic_identity_decisions_path.read_text(encoding="utf-8")
