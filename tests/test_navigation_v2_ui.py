@@ -455,6 +455,18 @@ def test_operations_use_one_categorized_hierarchy_renderer() -> None:
     assert "same-kind parent is a concrete implementation alternative" in editor
 
 
+def test_operations_are_capabilities_and_runtime_attempts_are_executions() -> None:
+    guide = (ROOT / "workbench" / "workspaces" / "shared_library_system" / "docs" / "operations.md").read_text(encoding="utf-8")
+    architecture = ROOT / "workbench" / "docs" / "design" / "OPERATIONS_AND_EXECUTIONS.md"
+    assert "durable capability specification" in guide
+    assert "durable delayed task" not in guide
+    assert architecture.is_file()
+    content = architecture.read_text(encoding="utf-8")
+    assert "An Execution is one runtime attempt" in content
+    assert "Codex task or thread is a separate collaboration record" in content
+    assert not (ROOT / "workbench" / "docs" / "design" / "OPERATIONS_AS_DELAYED_AGENT_TASKS.md").exists()
+
+
 def test_runtime_artifacts_deep_link_to_datatype_resources() -> None:
     page = ACTIVE_PAGE.read_text(encoding="utf-8")
     data_editor = (ROOT / "workbench" / "frontend" / "src" / "components" / "DataCatalogPanel.tsx").read_text(encoding="utf-8")
