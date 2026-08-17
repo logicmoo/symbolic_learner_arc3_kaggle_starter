@@ -38,6 +38,22 @@ def _plain(value: Any) -> Any:
     return value
 
 
+def _numeric_difference(before: Any, after: Any) -> Any | None:
+    if all(
+        isinstance(item, (int, float)) and not isinstance(item, bool)
+        for item in (before, after)
+    ):
+        return after - before
+    if isinstance(before, (tuple, list)) and isinstance(after, (tuple, list)):
+        if len(before) != len(after):
+            return None
+        values = [_numeric_difference(old, new) for old, new in zip(before, after)]
+        if any(item is None for item in values):
+            return None
+        return values
+    return None
+
+
 @dataclass(frozen=True)
 class GameObjectLearnerPayload:
     state_id: str
@@ -341,26 +357,67 @@ def phase2_transition_analyzer() -> TransitionAnalyzer:
 
 
 def phase2_transformation_learner() -> TransformationLearner:
-    """Convert every persisted direct change into an evidence-linked candidate."""
+    """Convert direct changes into evidence-linked competing interpretations."""
 
     def learn(transition: TransitionRecord):
         for change in transition.changes:
             plain = _plain(change)
-            encoded = json.dumps(
-                plain, ensure_ascii=False, sort_keys=True, separators=(",", ":")
-            ).encode("utf-8")
-            yield TransformationCandidate(
-                candidate_id=f"transformation-{sha256(encoded).hexdigest()}",
-                transformation=plain,
-                evidence=tuple(str(item) for item in plain.get("evidence_ids") or ()),
-                score=1.0,
-                source_state_id=transition.before_state_id,
-                target_state_id=transition.after_state_id,
-                action_or_event=transition.action_or_event,
-                assumptions=("observed_transition_is_representative",),
-                critiques=("requires_unseen_case_validation",),
-                provenance=transition.provenance,
-            )
+            interpretations = [
+                (
+                    {**plain, "interpretation": "absolute_target"},
+                    ("observed_transition_is_representative",),
+                    ("may_overfit_observed_coordinates",),
+                )
+            ]
+            deltas = {
+                str(field): difference
+                for field, specification in (plain.get("properties") or {}).items()
+                if isinstance(specification, Mapping)
+                and "from" in specification
+                and "to" in specification
+                and (
+                    difference := _numeric_difference(
+                        specification["from"], specification["to"]
+                    )
+                )
+                is not None
+            }
+            if deltas:
+                interpretations.append(
+                    (
+                        {
+                            **plain,
+                            "interpretation": "relative_delta",
+                            "deltas": deltas,
+                        },
+                        (
+                            "observed_transition_is_representative",
+                            "numeric_change_is_relative",
+                        ),
+                        ("relative_generalization_requires_validation",),
+                    )
+                )
+            for interpretation, assumptions, critiques in interpretations:
+                encoded = json.dumps(
+                    interpretation,
+                    ensure_ascii=False,
+                    sort_keys=True,
+                    separators=(",", ":"),
+                ).encode("utf-8")
+                yield TransformationCandidate(
+                    candidate_id=f"transformation-{sha256(encoded).hexdigest()}",
+                    transformation=interpretation,
+                    evidence=tuple(
+                        str(item) for item in plain.get("evidence_ids") or ()
+                    ),
+                    score=1.0,
+                    source_state_id=transition.before_state_id,
+                    target_state_id=transition.after_state_id,
+                    action_or_event=transition.action_or_event,
+                    assumptions=assumptions,
+                    critiques=critiques,
+                    provenance=transition.provenance,
+                )
 
     return TransformationLearner(learn)
 
@@ -476,9 +533,11 @@ def phase2_rule_executor(
             return tuple(values) if isinstance(current, tuple) else values
         return None
 
-    def effect_properties(rule: TransitionRule) -> tuple[Mapping[str, Any], ...]:
+    def effect_properties(
+        rule: TransitionRule,
+    ) -> tuple[tuple[Mapping[str, Any], Mapping[str, Any]], ...]:
         return tuple(
-            effect.get("properties")
+            (effect, effect["properties"])
             for effect in rule.predicted_effects
             if isinstance(effect, Mapping)
             and isinstance(effect.get("properties"), Mapping)
@@ -491,17 +550,20 @@ def phase2_rule_executor(
             return False
         properties = effect_properties(rule)
         return bool(properties) and all(
-            field in state for group in properties for field in group
+            field in state for _effect, group in properties for field in group
         )
 
     def execute(rule: TransitionRule, state: Any) -> dict[str, Any]:
         result = {str(key): _plain(value) for key, value in state.items()}
-        for properties in effect_properties(rule):
+        for effect, properties in effect_properties(rule):
             for field, specification in properties.items():
                 if not isinstance(specification, Mapping) or "to" not in specification:
                     continue
                 replacement = _plain(specification["to"])
-                if "from" in specification:
+                if (
+                    effect.get("interpretation") != "absolute_target"
+                    and "from" in specification
+                ):
                     relative = numeric_delta(
                         specification["from"],
                         specification["to"],

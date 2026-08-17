@@ -174,10 +174,14 @@ def test_real_phase2_change_becomes_an_evidence_linked_transformation_candidate(
     assert transition.after_state_id == "after"
     assert transition.action_or_event == "RIGHT"
     assert transition.provenance == ("frame-before", "frame-after")
-    assert len(candidates) == 1
-    assert candidates[0].transformation["kind"] == "moved"
-    assert candidates[0].evidence == ("evidence-moved",)
-    assert candidates[0].candidate_id.startswith("transformation-")
+    assert len(candidates) == 2
+    assert {item.transformation["interpretation"] for item in candidates} == {
+        "absolute_target",
+        "relative_delta",
+    }
+    assert all(item.transformation["kind"] == "moved" for item in candidates)
+    assert all(item.evidence == ("evidence-moved",) for item in candidates)
+    assert all(item.candidate_id.startswith("transformation-") for item in candidates)
 
 
 def test_real_transformation_candidates_induce_explicitly_rival_bootstrap_rules() -> None:
@@ -286,9 +290,16 @@ def test_learned_translation_applies_relative_delta_to_an_unseen_object() -> Non
             evidence=({"evidence_id": "move-evidence"},),
         ),
     )
-    rule = phase2_rule_inducer().induce(
+    rules = phase2_rule_inducer().induce(
         phase2_transformation_learner().learn(transition)
-    )[0]
+    )
+    assert len(rules) == 2
+    assert all(item.rival_rule_ids for item in rules)
+    rule = next(
+        item
+        for item in rules
+        if item.predicted_effects[0]["interpretation"] == "relative_delta"
+    )
     store = RuleStore()
     store.store(rule)
     unseen = {"id": "previously-unseen-red", "position": [7, 4], "color": "red"}
@@ -302,6 +313,14 @@ def test_learned_translation_applies_relative_delta_to_an_unseen_object() -> Non
     }
     assert unseen["position"] == [7, 4]
     assert not phase2_rule_executor(store, "LEFT").applicable(rule.rule_id, unseen)
+
+    absolute_rule = next(
+        item
+        for item in rules
+        if item.predicted_effects[0]["interpretation"] == "absolute_target"
+    )
+    store.store(absolute_rule)
+    assert executor.apply(absolute_rule.rule_id, unseen)["position"] == [2, 1]
 
     ledger = PredictionLedger()
     pipeline = GameLearningPipeline(
