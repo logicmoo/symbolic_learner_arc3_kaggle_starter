@@ -54,6 +54,32 @@ def _numeric_difference(before: Any, after: Any) -> Any | None:
     return None
 
 
+def _numeric_ratio(before: Any, after: Any) -> Any | None:
+    if all(
+        isinstance(item, (int, float)) and not isinstance(item, bool)
+        for item in (before, after)
+    ):
+        return None if before == 0 else after / before
+    if isinstance(before, (tuple, list)) and isinstance(after, (tuple, list)):
+        if len(before) != len(after):
+            return None
+        values = [_numeric_ratio(old, new) for old, new in zip(before, after)]
+        if any(item is None for item in values):
+            return None
+        return values
+    return None
+
+
+def _set_edit(before: Any, after: Any) -> Mapping[str, Any] | None:
+    if not isinstance(before, (tuple, list)) or not isinstance(after, (tuple, list)):
+        return None
+    if not all(isinstance(item, str) for item in (*before, *after)):
+        return None
+    removed = [item for item in before if item not in after]
+    added = [item for item in after if item not in before]
+    return {"remove": removed, "add": added} if removed or added else None
+
+
 @dataclass(frozen=True)
 class GameObjectLearnerPayload:
     state_id: str
@@ -455,6 +481,57 @@ def phase2_transformation_learner() -> TransformationLearner:
                         ("relative_generalization_requires_validation",),
                     )
                 )
+            if str(plain.get("kind", "")).lower() in {"scaled", "resized", "scale_changed"}:
+                factors = {
+                    str(field): ratio
+                    for field, specification in (plain.get("properties") or {}).items()
+                    if isinstance(specification, Mapping)
+                    and "from" in specification
+                    and "to" in specification
+                    and (ratio := _numeric_ratio(specification["from"], specification["to"]))
+                    is not None
+                }
+                if factors:
+                    interpretations.append(
+                        (
+                            {**plain, "interpretation": "multiplicative_scale", "factors": factors},
+                            ("numeric_change_is_proportional",),
+                            ("scale_factor_requires_validation",),
+                        )
+                    )
+            toggles = tuple(
+                str(field)
+                for field, specification in (plain.get("properties") or {}).items()
+                if isinstance(specification, Mapping)
+                and isinstance(specification.get("from"), bool)
+                and isinstance(specification.get("to"), bool)
+                and specification["from"] is not specification["to"]
+            )
+            if toggles:
+                interpretations.append(
+                    (
+                        {**plain, "interpretation": "boolean_toggle", "toggle_fields": toggles},
+                        ("boolean_change_is_a_toggle",),
+                        ("toggle_generalization_requires_validation",),
+                    )
+                )
+            edits = {
+                str(field): edit
+                for field, specification in (plain.get("properties") or {}).items()
+                if isinstance(specification, Mapping)
+                and "from" in specification
+                and "to" in specification
+                and (edit := _set_edit(specification["from"], specification["to"]))
+                is not None
+            }
+            if edits:
+                interpretations.append(
+                    (
+                        {**plain, "interpretation": "set_edit", "set_edits": edits},
+                        ("collection_change_is_membership_based",),
+                        ("ordering_semantics_are_not_preserved",),
+                    )
+                )
             for interpretation, assumptions, critiques in interpretations:
                 encoded = json.dumps(
                     interpretation,
@@ -591,6 +668,21 @@ def phase2_rule_executor(
             return tuple(values) if isinstance(current, tuple) else values
         return None
 
+    def numeric_scale(factor: Any, current: Any) -> Any | None:
+        if all(
+            isinstance(item, (int, float)) and not isinstance(item, bool)
+            for item in (factor, current)
+        ):
+            return current * factor
+        if isinstance(factor, (tuple, list)) and isinstance(current, (tuple, list)):
+            if len(factor) != len(current):
+                return None
+            values = [numeric_scale(scale, value) for scale, value in zip(factor, current)]
+            if any(item is None for item in values):
+                return None
+            return tuple(values) if isinstance(current, tuple) else values
+        return None
+
     def effect_properties(
         rule: TransitionRule,
     ) -> tuple[tuple[Mapping[str, Any], Mapping[str, Any]], ...]:
@@ -618,10 +710,8 @@ def phase2_rule_executor(
                 if not isinstance(specification, Mapping) or "to" not in specification:
                     continue
                 replacement = _plain(specification["to"])
-                if (
-                    effect.get("interpretation") != "absolute_target"
-                    and "from" in specification
-                ):
+                interpretation = effect.get("interpretation")
+                if interpretation == "relative_delta" and "from" in specification:
                     relative = numeric_delta(
                         specification["from"],
                         specification["to"],
@@ -629,6 +719,30 @@ def phase2_rule_executor(
                     )
                     if relative is not None:
                         replacement = relative
+                elif interpretation == "multiplicative_scale":
+                    scaled = numeric_scale(
+                        (effect.get("factors") or {}).get(field), result[field]
+                    )
+                    if scaled is not None:
+                        replacement = scaled
+                elif interpretation == "boolean_toggle" and field in (
+                    effect.get("toggle_fields") or ()
+                ):
+                    replacement = not bool(result[field])
+                elif interpretation == "set_edit":
+                    edit = (effect.get("set_edits") or {}).get(field)
+                    if isinstance(edit, Mapping) and isinstance(result[field], (tuple, list)):
+                        values = [
+                            item
+                            for item in result[field]
+                            if item not in (edit.get("remove") or ())
+                        ]
+                        values.extend(
+                            item
+                            for item in edit.get("add") or ()
+                            if item not in values
+                        )
+                        replacement = tuple(values) if isinstance(result[field], tuple) else values
                 result[str(field)] = replacement
         return result
 

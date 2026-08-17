@@ -26,6 +26,7 @@ from object_memory import (
     RuleStore,
     SymbolicStore,
     TurtleProgramRef,
+    TransitionRecord,
 )
 
 
@@ -370,3 +371,52 @@ def test_learned_translation_applies_relative_delta_to_an_unseen_object() -> Non
     assert predicted["position"] == [8, 4]
     assert record.predicted_effects == (predicted,)
     assert ledger.get(record.prediction_id) == record
+
+
+def test_domain_generalizations_scale_toggle_and_edit_unseen_state() -> None:
+    transition = TransitionRecord(
+        before_state_id="before",
+        action_or_event="TRANSFORM",
+        after_state_id="after",
+        changes=(
+            {
+                "kind": "scaled",
+                "properties": {
+                    "size": {"from": [2, 4], "to": [4, 2]},
+                    "visible": {"from": True, "to": False},
+                    "tags": {"from": ["old", "keep"], "to": ["keep", "new"]},
+                },
+                "evidence_ids": ["transform-evidence"],
+            },
+        ),
+    )
+    candidates = phase2_transformation_learner().learn(transition)
+    by_kind = {item.transformation["interpretation"]: item for item in candidates}
+    assert {
+        "absolute_target",
+        "relative_delta",
+        "multiplicative_scale",
+        "boolean_toggle",
+        "set_edit",
+    } <= set(by_kind)
+
+    rules = phase2_rule_inducer().induce(candidates)
+    store = RuleStore()
+    for rule in rules:
+        store.store(rule)
+    executor = phase2_rule_executor(store, "TRANSFORM")
+    unseen = {"size": [3, 10], "visible": False, "tags": ["old", "other"]}
+
+    rule_by_kind = {
+        rule.predicted_effects[0]["interpretation"]: rule for rule in rules
+    }
+    assert executor.apply(
+        rule_by_kind["multiplicative_scale"].rule_id, unseen
+    )["size"] == [6.0, 5.0]
+    assert executor.apply(
+        rule_by_kind["boolean_toggle"].rule_id, unseen
+    )["visible"] is True
+    assert executor.apply(rule_by_kind["set_edit"].rule_id, unseen)["tags"] == [
+        "other",
+        "new",
+    ]
