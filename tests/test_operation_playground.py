@@ -32,6 +32,8 @@ def test_resource_tool_operations_use_declared_semantic_datatypes() -> None:
         "atomspace_query": ("AtomSpace", "AtomSpaceQueryResult"),
         "atomspace_assert": ("AtomSpace", "AtomSpaceChange"),
         "atomspace_retract": ("AtomSpace", "AtomSpaceChange"),
+        "system_inspect": ("SystemContract", "SystemInspection"),
+        "system_check_readiness": ("SystemContract", "SystemReadiness"),
         "policy_evaluate": ("Policy", "PolicyDecision"),
         "category_resolve_matches": ("ArtifactCategory", "CategoryMatchSet"),
     }
@@ -105,6 +107,25 @@ def test_resource_tool_operations_execute_real_filesystem_resources() -> None:
     assert asserted["outputs"]["result"]["event"] == "atomspace.changed"
     retracted = invoke_operation("shared_library_system", "atomspace_retract", {"inputs": {"resource": atomspace}})
     assert retracted["outputs"]["result"]["event"] == "atomspace.changed"
+
+
+def test_system_resource_tools_inspect_and_check_readiness_without_execution() -> None:
+    system = {
+        "kind": "system",
+        "id": "test_runtime",
+        "label": "Test Runtime",
+        "provider": "python",
+        "systemType": "runtime",
+        "enabled": True,
+        "capabilities": ["python.callable"],
+        "configuration": {"executable": "python", "timeoutSeconds": 30},
+    }
+    inspected = invoke_operation("shared_library_system", "system_inspect", {"inputs": {"resource": system}})
+    assert inspected["outputs"]["result"]["capabilities"] == ["python.callable"]
+    assert inspected["outputs"]["result"]["configurationKeys"] == ["executable", "timeoutSeconds"]
+    readiness = invoke_operation("shared_library_system", "system_check_readiness", {"inputs": {"resource": system}})
+    assert readiness["outputs"]["result"]["ready"] is True
+    assert readiness["outputs"]["result"]["connectionDeclared"] is True
 
 
 def test_python_provider_captures_stdout_and_stderr(monkeypatch: pytest.MonkeyPatch) -> None:

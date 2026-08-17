@@ -562,6 +562,21 @@ def _resource_tool(inputs: dict[str, Any], parameters: dict[str, Any]) -> dict[s
         return {"result": {**identity, "asserted": resource.get("assert") or resource.get("atoms") or [], "event": "atomspace.changed", "persisted": False}}
     if action == "atomspace.retract":
         return {"result": {**identity, "retracted": resource.get("retract") or [], "event": "atomspace.changed", "persisted": False}}
+    if action == "system.inspect":
+        configuration = resource.get("configuration") if isinstance(resource.get("configuration"), dict) else {}
+        return {"result": {**identity, "systemType": resource.get("systemType") or "unspecified", "provider": resource.get("provider"), "enabled": resource.get("enabled", True), "capabilities": resource.get("capabilities") or [], "configurationKeys": sorted(configuration)}}
+    if action == "system.check_readiness":
+        configuration = resource.get("configuration") if isinstance(resource.get("configuration"), dict) else {}
+        reasons: list[str] = []
+        if resource.get("enabled", True) is False:
+            reasons.append("system is disabled")
+        if not resource.get("provider"):
+            reasons.append("provider is not declared")
+        if not resource.get("capabilities"):
+            reasons.append("no capabilities are declared")
+        connection_fields = ("executable", "baseUrl", "healthUrl", "adapterScript", "endpoint", "command")
+        connection = next((configuration.get(name) for name in connection_fields if configuration.get(name)), None)
+        return {"result": {**identity, "ready": not reasons, "reasons": reasons, "systemType": resource.get("systemType") or "unspecified", "provider": resource.get("provider"), "connectionDeclared": connection is not None, "configurationKeys": sorted(configuration)}}
     if action == "policy.evaluate":
         return {"result": {**identity, "effective": resource.get("enabled", True), "rules": resource.get("rules") or resource.get("where") or resource.get("query") or {}}}
     if action == "policy.explain":

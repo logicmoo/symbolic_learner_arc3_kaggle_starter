@@ -52,5 +52,11 @@ configuration. Save edits to the filesystem before invoking it. The run panel
 must use the selected resource's declared adapter and capabilities; it must not
 invent provider data or silently reinterpret a system as a model backend.
 
+The universal runner offers **Inspect System**, **Check System Readiness**, and
+**Validate Resource**. Inspection exposes only provider, type, capabilities,
+enablement, and configuration field names. Readiness verifies the declarative
+contract without starting a process or exposing secret values. Actual execution
+is performed only through an explicitly declared Operation and adapter.
+
 See also [Models and model presets](llm_catalog.md) and the
 [universal artifact editor](universal_artifact_editor.md).

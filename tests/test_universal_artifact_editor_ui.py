@@ -30,7 +30,7 @@ def test_design_resource_editors_share_the_universal_execution_runner() -> None:
         source = _text(component)
         assert 'from "./ResourceExecutionPlayground"' in source
         assert "<ResourceExecutionPlayground" in source
-    for operation_id in ("datatype_sample", "prompt_render", "goal_evaluate", "planning_strategy_generate", "atomspace_query", "atomspace_assert", "atomspace_retract", "policy_evaluate", "category_preview"):
+    for operation_id in ("datatype_sample", "prompt_render", "goal_evaluate", "planning_strategy_generate", "atomspace_query", "atomspace_assert", "atomspace_retract", "system_inspect", "system_check_readiness", "policy_evaluate", "category_preview"):
         assert operation_id in runner
     assert "OPERATION · ONE-OFF" in runner
     assert "MODEL · ONE-OFF" in runner

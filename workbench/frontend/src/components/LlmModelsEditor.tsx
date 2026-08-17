@@ -315,7 +315,7 @@ export function LlmModelsEditor({workspaceId,catalogMode="models"}:{workspaceId:
      )}
 
      {system && document && resourceEnabled && (
-      <ResourceExecutionPlayground workspaceId={workspaceId} resource={document} operationIds={["resource_validate"]}/>
+      <ResourceExecutionPlayground workspaceId={workspaceId} resource={document}/>
      )}
 
      {exampleFor(document) && (

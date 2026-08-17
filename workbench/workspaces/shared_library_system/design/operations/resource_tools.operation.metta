@@ -147,6 +147,18 @@
   (inputs ((resource AtomSpace))) (outputs ((result AtomSpaceChange))) (parameters ((action atomspace.retract)))
 )
 (
+  (kind operation) (id system_inspect) (label "Inspect System")
+  (description "Inspect a callable System's type, provider, capabilities, enablement, and non-secret configuration shape.")
+  (categories ([] systems/inspection filtered/resource-tools)) (implementation resource.tool)
+  (inputs ((resource SystemContract))) (outputs ((result SystemInspection))) (parameters ((action system.inspect)))
+)
+(
+  (kind operation) (id system_check_readiness) (label "Check System Readiness")
+  (description "Check whether a System is enabled and declares the provider and capabilities required for execution without launching it.")
+  (categories ([] systems/readiness filtered/resource-tools)) (implementation resource.tool)
+  (inputs ((resource SystemContract))) (outputs ((result SystemReadiness))) (parameters ((action system.check_readiness)))
+)
+(
   (kind operation) (id policy_explain) (label "Explain Policy Decision")
   (description "Explain the inheritance and decision inputs behind a Policy's effective state.")
   (categories ([] policies/explanation filtered/resource-tools)) (implementation resource.tool)
