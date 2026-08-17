@@ -111,6 +111,28 @@ Evaluate a condition and choose either `targetStepId` or `elseStepId`. Both targ
 
 Create a loop frame, evaluate the condition before each iteration, enter at `targetStepId` while it matches, and leave through `exitStepId` otherwise. `maxIterations` is mandatory. The frame declares retained, reset, accumulated, and exported values.
 
+The current executable workflow encoding places a `while` object (or ordered
+array of objects) on the step that controls the backward edge. After that step
+produces its outputs, the engine resolves `condition` against the newest
+artifact values. A matching condition resets the contiguous region from
+`targetStepId` through the controller to `pending`; the scheduler then
+reevaluates dependencies and executes that region again. A false condition
+leaves the region through its normal downstream dependencies. Every backward
+jump emits a durable `loop.iteration` event containing the loop index,
+iteration number, bound, condition value, target, and reset step IDs.
+
+Supported controller operators are `truthy`, `not_empty`, `equals`, and
+`less_than`. `conditionPort` supplies the comparison value for `equals` and
+`less_than`; it may itself be an artifact binding. `targetStepId` defaults to
+the controller, which repeats only that step. Targets after the controller,
+missing targets, and non-positive bounds fail validation. If the condition is
+still true after `maxIterations` executions, the run fails explicitly instead
+of silently leaving or continuing the loop.
+
+Bindings may address nested data, for example `$assessment.frame_changed`,
+`$game.game_id`, or `$state.history.0`. Namespace forms such as
+`$workflow.input`, `$slots.output`, and `$steps.stepId.output` remain supported.
+
 ### `control.for_each`
 
 Snapshot the input collection, create a loop frame, bind one item and index per iteration, and enter at `targetStepId`. `maxItems` is mandatory. Mutation of the source collection does not alter the snapshot unless an explicit live-collection mode is added later.
