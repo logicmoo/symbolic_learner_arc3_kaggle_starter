@@ -80,23 +80,23 @@ Keep the shared records in `python/object_memory/models.py`; do not create anoth
 
 ## Store one Turtle program per recognized grid object
 
-- [ ] Make each recognized grid object store or reference a Turtle program that redraws that object.
+- [x] Make each recognized grid object store or reference a Turtle program that redraws that object.
 - [x] Use forward movement and rotation rather than coordinate-box enumeration.
 - [x] Use pen-up and pen-down state for stroke positioning and repositioning.
 - [x] Use pen width for supported thick lines rather than drawing adjacent filled rectangles.
-- [ ] Preserve supported color or drawing-state changes.
+- [x] Preserve supported color or drawing-state changes.
 - [x] Connect `CellLogoForm.render()` to `prolog/turtle_dsl.pl` through `SWIPrologBridge`.
 - [x] Define normalized Turtle-program storage and artifact references.
 - [x] Implement `fit`, `distance`, residual measurement, and description length.
 - [x] Compare regenerated cells with the source object.
-- [ ] Preserve holes, disconnected strokes, topology, and line thickness.
+- [x] Preserve holes, disconnected strokes, topology, and line thickness.
 - [ ] Retain competing Turtle programs with their fit scores and provenance when the representation is ambiguous.
 - [x] Add tests rejecting box-filling shortcuts for shapes that should use movement and pen width.
 
 ## Extend `object_registry.pl` into persistent identity
 
-- [ ] Reuse the readable identities maintained by the Phase 1 debugger.
-- [ ] Map provider-proposed identities to persistent semantic identities without discarding provenance.
+- [x] Reuse the readable identities maintained by the Phase 1 debugger.
+- [x] Map provider-proposed identities to persistent semantic identities without discarding provenance.
 - [x] Match stable candidates across consecutive parent/current observations and persist their correspondence proposals and signed evidence.
 - [x] Match objects across repeated encounters and examples through unresolved, persisted proposals over the latest known instance for every durable identity.
 - [x] Preserve multiple competing match proposals.

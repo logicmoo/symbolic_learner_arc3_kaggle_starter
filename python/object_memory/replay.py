@@ -100,6 +100,9 @@ def _instance(value: Mapping[str, Any]) -> InstanceParameters:
         noise_score=float(value.get("noise_score", 0.0)),
         geometry=geometry,
         topology=topology,
+        relationships=tuple(
+            dict(item) for item in value.get("relationships") or ()
+        ),
         schema_version=str(value.get("schema_version", "2.0.0")),
     )
 
@@ -118,7 +121,8 @@ def _changed_properties(value: Mapping[str, Any]) -> dict[str, Any]:
             restored[field] = {
                 key: (
                     tuplify(item)
-                    if field in {"position", "scale", "geometry", "topology"}
+                    if field
+                    in {"position", "scale", "geometry", "topology", "relationships"}
                     else item
                 )
                 for key, item in change.items()

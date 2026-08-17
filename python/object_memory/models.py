@@ -137,6 +137,7 @@ class InstanceParameters:
     noise_score: float = 0.0
     geometry: Mapping[str, Any] = field(default_factory=dict)
     topology: Mapping[str, Any] = field(default_factory=dict)
+    relationships: tuple[Mapping[str, Any], ...] = ()
     schema_version: str = PHASE2_SCHEMA_VERSION
 
 

@@ -152,7 +152,7 @@ Phase 2 implements the semantic object layer behind the Phase 1 debugger. It use
 - [ ] **Open** Implement pluggable perception providers for image and simple-video inputs.
 
 - [ ] **Partial** Extract objects and represent geometry, structure, properties, relationships, position, orientation, scale, and appearance.  
-  Existing evidence: frozen versioned contracts plus deterministic grid extraction of cells, exact bounds, boundary geometry, shape/color/appearance, hole regions, connected topology, line thickness, and pairwise spatial relationships; semantic capture persists normalized instance position/scale/appearance and source provenance.
+  Existing evidence: frozen versioned contracts plus deterministic grid extraction of cells, exact bounds, boundary geometry, shape/color/appearance, hole regions, connected topology, line thickness, and pairwise spatial relationships; semantic capture persists normalized instance position/scale/appearance, geometry, topology, source provenance, and canonical relationship records. Relationship equality and change participate in correspondence evidence and survive snapshot, Prolog, and action-tree replay.
   Remaining: compound-object structure, orientation inference, richer relations, and normalization for raster/video adapters.
 
 ## Persistent identity and correspondence
@@ -175,9 +175,8 @@ Phase 2 implements the semantic object layer behind the Phase 1 debugger. It use
 
 ## Per-object Turtle programs and regeneration
 
-- [ ] **Partial** Store every recognized grid object with a Turtle program.  
-  Existing evidence: `GenerativeForm`, `CellLogoForm`, Turtle artifacts, Turtle DSL, and normalized versioned `TurtleProgramRef`/`ArtifactRef` contracts.
-  Remaining: persistent one-program-per-object storage and normalized references.
+- [x] Store every recognized grid object with a Turtle program.
+  Evidence: live semantic capture persists one normalized, versioned `TurtleProgramRef` and exact Turtle source artifact for every extracted candidate, links both through its encounter and action-tree manifest, and restores them during deterministic replay. The Phase 2 demonstration asserts four programs for four captured encounters.
 
 - [ ] **Partial** Require the Turtle program to redraw the object through movement, rotation, pen state, and pen width rather than filled coordinate boxes.
   Existing evidence: extracted programs use `set_pos`, `rot`, `fwd`, `penup`/`pendown`, and canonical `pen_width`; supported thick rectangles render as one width-aware stroke and a regression test rejects row-by-row box filling.

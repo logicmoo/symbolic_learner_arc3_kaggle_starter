@@ -32,6 +32,7 @@ def _hollow(position: tuple[float, float]) -> InstanceParameters:
             "hole_count": 1,
             "holes": (((1.0, 1.0),),),
         },
+        relationships=({"target": "marker", "relation": "left_of"},),
     )
 
 
@@ -50,6 +51,8 @@ def test_translated_hollow_object_retains_geometry_and_topology_evidence() -> No
     assert "translation" in proposal.allowed_transformations
     assert "geometry" in proposal.matched_properties
     assert "topology" in proposal.matched_properties
+    assert "relationships" in proposal.matched_properties
     by_property = {item.detail["property"]: item for item in evidence}
     assert by_property["geometry"].polarity is EvidencePolarity.SUPPORTS
     assert by_property["topology"].polarity is EvidencePolarity.SUPPORTS
+    assert by_property["relationships"].polarity is EvidencePolarity.SUPPORTS

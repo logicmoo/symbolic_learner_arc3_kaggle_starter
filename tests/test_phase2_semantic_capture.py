@@ -61,6 +61,12 @@ def test_semantic_capture_persists_and_links_observations_encounters_and_turtles
     assert all(encounter.turtle_programs[0].fit_score == 1.0 for encounter in encounters)
     assert all(encounter.turtle_programs[0].residual_score == 0.0 for encounter in encounters)
     assert all(encounter.turtle_programs[0].description_length > 0 for encounter in encounters)
+    assert encounters[0].instance.relationships == (
+        {"target": "obj_red_1", "relation": "left_of"},
+    )
+    assert encounters[1].instance.relationships == (
+        {"target": "obj_blue_1", "relation": "right_of"},
+    )
     turtle_evidence = tuple(
         record
         for record in observer.symbolic_store.values("evidence")
@@ -80,6 +86,9 @@ def test_semantic_capture_persists_and_links_observations_encounters_and_turtles
     assert len(replayed.values("evidence")) == len(observer.symbolic_store.values("evidence"))
     assert replayed.encounters.get(encounters[2].encounter_id).previous_encounter_id == (
         encounters[0].encounter_id
+    )
+    assert replayed.encounters.get(encounters[0].encounter_id).instance.relationships == (
+        {"target": "obj_red_1", "relation": "left_of"},
     )
 
 

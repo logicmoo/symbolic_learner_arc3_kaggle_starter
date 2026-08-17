@@ -42,6 +42,8 @@ class InstanceMatcher:
             return "geometry_change"
         if field == "topology":
             return "topology_change"
+        if field == "relationships":
+            return "relationship_change"
         return "appearance_change"
 
     def compare(
@@ -77,6 +79,13 @@ class InstanceMatcher:
             compare_field("geometry", stored.geometry, current.geometry, "geometry_change")
         if stored.topology or current.topology:
             compare_field("topology", stored.topology, current.topology, "topology_change")
+        if stored.relationships or current.relationships:
+            compare_field(
+                "relationships",
+                stored.relationships,
+                current.relationships,
+                "relationship_change",
+            )
         appearance_keys = sorted({*stored.appearance, *current.appearance})
         for key in appearance_keys:
             before = stored.appearance.get(key)

@@ -434,6 +434,19 @@ class SemanticGridCaptureObserver:
                     supported_transformations=("translation", "recolor"),
                     geometry=normalized_geometry,
                     topology=normalized_topology,
+                    relationships=tuple(
+                        {
+                            "target": str(item.get("target")),
+                            "relation": str(item.get("relation")),
+                        }
+                        for item in sorted(
+                            details.get("relationships") or (),
+                            key=lambda value: (
+                                str(value.get("relation")),
+                                str(value.get("target")),
+                            ),
+                        )
+                    ),
                 ),
                 turtle_programs=(turtle_ref,),
                 evidence_ids=(
