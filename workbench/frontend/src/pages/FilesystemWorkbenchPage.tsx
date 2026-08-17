@@ -3308,6 +3308,7 @@ export function FilesystemWorkbenchPage() {
               <ModelPolicyPage
                 workspaceId={workspace.id}
                 onOpenModels={() => setView("llms")}
+                mode="benchmarks"
               />
             )}
             {view === "contexts" && (

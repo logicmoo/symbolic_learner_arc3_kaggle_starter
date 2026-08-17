@@ -423,6 +423,17 @@ def test_pending_pages_are_derived_from_workspace_or_runtime_state() -> None:
     assert '<RuntimeHistoryView mode="logs"' in source
 
 
+def test_benchmarks_route_uses_a_distinct_filesystem_backed_catalog_view() -> None:
+    page = ACTIVE_PAGE.read_text(encoding="utf-8")
+    policy = (ROOT / "workbench" / "frontend" / "src" / "components" / "ModelPolicyPage.tsx").read_text(encoding="utf-8")
+    styles = (ROOT / "workbench" / "frontend" / "src" / "styles" / "benchmark_catalog.css").read_text(encoding="utf-8")
+    assert 'mode="benchmarks"' in page
+    assert '"Benchmark Definitions & Results"' in policy
+    assert '"SYSTEM · FILESYSTEM BENCHMARKS"' in policy
+    assert ".benchmark-catalog-page .vendor-card" in styles
+    assert ".benchmark-catalog-page .matrix-card" in styles
+
+
 def test_runtime_artifacts_deep_link_to_datatype_resources() -> None:
     page = ACTIVE_PAGE.read_text(encoding="utf-8")
     data_editor = (ROOT / "workbench" / "frontend" / "src" / "components" / "DataCatalogPanel.tsx").read_text(encoding="utf-8")

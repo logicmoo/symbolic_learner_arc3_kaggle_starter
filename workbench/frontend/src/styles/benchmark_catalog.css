@@ -1,0 +1,27 @@
+/* Benchmarks reuses the authoritative Model Policy registry while presenting
+   only benchmark configuration and durable result surfaces. */
+.benchmark-catalog-page .policy-selection-actions,
+.benchmark-catalog-page .policy-backend-creator,
+.benchmark-catalog-page .policy-model-discovery,
+.benchmark-catalog-page .vendor-card,
+.benchmark-catalog-page .models-card,
+.benchmark-catalog-page .summary-card {
+  display: none;
+}
+
+.benchmark-catalog-page .policy-dashboard {
+  grid-template-columns: minmax(240px, 0.34fr) minmax(620px, 1fr);
+}
+
+.benchmark-catalog-page .profiles-card {
+  grid-column: 1;
+}
+
+.benchmark-catalog-page .matrix-card,
+.benchmark-catalog-page .history-card {
+  grid-column: 2;
+}
+
+.benchmark-catalog-page .rules-card {
+  grid-column: 1 / span 2;
+}
