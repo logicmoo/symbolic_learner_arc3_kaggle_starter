@@ -48,9 +48,10 @@ def test_app_launches_filesystem_workbench_page() -> None:
     assert "return <FilesystemWorkbenchPage />" in source
 
 
-def test_removed_workflow_v2_route_redirects_to_the_legacy_workflow_page() -> None:
+def test_removed_workflow_v2_route_redirects_to_the_active_workflow_page() -> None:
     source = ACTIVE_PAGE.read_text(encoding="utf-8")
-    assert 'label: "Workflows (Legacy)"' in source
+    assert 'label: "Workflows"' in source
+    assert 'label: "Workflows (Legacy)"' not in source
     assert 'label: "Workflows (New)"' not in source
     assert 'return "workflowV2"' not in source
     assert 'return "canvas"' in source
@@ -68,7 +69,7 @@ def test_navigation_v2_has_required_groups_and_labels() -> None:
         "Goals",
         "Overview",
         "Planning",
-        "Workflows (Legacy)",
+        "Workflows",
         "Operations",
         "Source Code",
         "Systems",
@@ -204,13 +205,27 @@ def test_navigation_reuses_current_rich_editors() -> None:
         "Source Code": ('view:"sourceCode"', 'view==="sourceCode"&&(<SourceCodeEditor'),
         "Systems": ('view:"systems"', 'catalogMode="systems"'),
         "Models": ('view:"llms"', 'view==="llms"&&(<LlmModelsEditor'),
-        "Workflows (Legacy)": ('view:"canvas"', 'workflowCombinedView&&workflowColumnsHost&&createPortal(<sectionclassName="canvas-view"', 'className="editor-surface"'),
+        "Workflows": ('view:"canvas"', 'workflowCombinedView&&workflowColumnsHost&&createPortal(<sectionclassName="canvas-view"', 'className="editor-surface"'),
         "Settings": ('view:"setup"', 'view==="setup"&&(<WorkspaceSettingsPanel'),
     }
     for label, tokens in expected.items():
         assert f'label: "{label}"' in source
         for token in tokens:
             assert token.replace(" ", "") in compact
+
+
+def test_workflow_variants_are_internal_modes_not_left_navigation_items() -> None:
+    source = ACTIVE_PAGE.read_text(encoding="utf-8")
+    compact = "".join(source.split())
+    workspace_navigation = compact.split('group:"WORKSPACE"', 1)[1].split("],", 1)[0]
+    assert 'label:"Workflows",view:"canvas"' in workspace_navigation
+    assert 'label:"EnglishWorkflow"' not in workspace_navigation
+    assert 'label:"VisualImageDiff"' not in workspace_navigation
+    assert '>\n              English Generation\n            </button>' in source
+    assert '>\n              Visual Image Diff\n            </button>' in source
+    assert 'view === "englishWorkflow"' in source
+    assert 'view === "visualImageDiff"' in source
+    assert 'view==="englishWorkflow"||view==="visualImageDiff"' in compact.split("constnavSelected", 1)[1].split(";", 1)[0]
 
 
 def test_workflow_runs_are_combined_with_the_workflow_page() -> None:

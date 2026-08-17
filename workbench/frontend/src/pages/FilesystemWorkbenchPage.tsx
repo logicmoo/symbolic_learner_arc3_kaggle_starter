@@ -463,9 +463,7 @@ export const NAVIGATION_V2: Array<{
       { label: "Overview", view: "overview", glyph: "⌂" },
       { label: "Goals", view: "goals", glyph: "◎" },
       { label: "Planning", view: "plans", glyph: "◇" },
-      { label: "Workflows (Legacy)", view: "canvas", glyph: "⌘" },
-      { label: "English Workflow", view: "englishWorkflow", glyph: "✧" },
-      { label: "Visual Image Diff", view: "visualImageDiff", glyph: "◩" },
+      { label: "Workflows", view: "canvas", glyph: "⌘" },
     ],
   },
   {
@@ -2201,7 +2199,11 @@ export function FilesystemWorkbenchPage() {
         : `${NAVIGATION_V2.flatMap((section) => section.items).find((item) => item.view === view)?.label || "Workspace"} resources`;
   const navSelected = (target: View) =>
     target === "canvas"
-      ? view === "canvas" || view === "editor" || view === "workflowRuns"
+      ? view === "canvas" ||
+        view === "editor" ||
+        view === "workflowRuns" ||
+        view === "englishWorkflow" ||
+        view === "visualImageDiff"
       : target === view;
   const returnToBreadcrumb = (entry: BreadcrumbEntry, index: number) => {
     breadcrumbNavigation.current = true;
@@ -2487,6 +2489,18 @@ export function FilesystemWorkbenchPage() {
               }}
             >
               Workflow Runs
+            </button>
+            <button
+              className={view === "englishWorkflow" ? "active" : ""}
+              onClick={() => setView("englishWorkflow")}
+            >
+              English Generation
+            </button>
+            <button
+              className={view === "visualImageDiff" ? "active" : ""}
+              onClick={() => setView("visualImageDiff")}
+            >
+              Visual Image Diff
             </button>
             <button
               className={view === "artifacts" ? "active" : ""}
