@@ -51,6 +51,17 @@ def test_model_policy_embeds_real_backend_creation_and_discovery() -> None:
     assert ">Create Backend</button>" in page
 
 
+def test_model_policy_history_supports_result_aggregation() -> None:
+    page = (ROOT / "workbench" / "frontend" / "src" / "components" / "ModelPolicyPage.tsx").read_text(encoding="utf-8")
+
+    assert 'aria-label="Performance history aggregation"' in page
+    assert 'value="chronological">Every result' in page
+    assert 'value="latest">Latest per series' in page
+    assert 'value="average">Average per series' in page
+    assert 'historyAggregation==="latest"' in page
+    assert "points.reduce((sum,point)=>sum+point.value,0)/points.length" in page
+
+
 def test_shared_policy_examples_form_a_resolvable_reference_graph() -> None:
     shared = ROOT / "workbench" / "workspaces" / "shared_library_system"
     paths = [

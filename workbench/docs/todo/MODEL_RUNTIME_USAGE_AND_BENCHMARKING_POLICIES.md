@@ -11,14 +11,15 @@ The active page is backed by real workspace resources and the model-policy API. 
 Backend creation and discovery are now also embedded on Model Policy: the page
 can create an OpenAI-compatible backend resource, pull its live model catalog,
 select new/changed or all available models, and overwrite-import the selected
-resources into the shared model library. The full Models editor remains linked
-for inheritance and preset work.
+resources into the shared model library. Performance history can show every
+persisted result, the latest result per model/preset series, or an average per
+series. The full Models editor remains linked for inheritance and preset work.
 
 Remaining work is intentionally narrower:
 
 - refine multi-column sorting if future catalog usage reveals additional ordering needs (Shift+click already composes sort keys);
 - optionally remove legacy read compatibility for the former benchmark-policy `promptProfiles` field after existing workspaces have migrated to `modelPresets`;
-- optionally add comparison overlays or aggregation controls beyond the current persisted-result time-series chart and exact chronological result rows.
+- optionally add comparison overlays beyond the current persisted-result time-series chart, exact chronological rows, and latest/average aggregation controls.
 
 The requirements below remain the acceptance specification. Existing completed behavior must not be replaced with mock data.
 
