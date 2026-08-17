@@ -22,6 +22,16 @@ Selecting an image shows a preview and metadata. **Open original** serves the
 persisted workspace asset directly. Legacy value folders such as `data/`,
 `datasets/`, `images/`, `inputs/`, and `examples/` remain visible.
 
+## Run a selected value
+
+Selecting any value also opens the **Universal Execution Runner**. The
+Workbench loads text and JSON as structured values and images as data URLs
+through the workspace asset provider. **Inspect Data Value** reports its
+semantic type, media type, size, workspace path, and whether its content was
+loaded. Choose **Validate Resource** from the Operation selector to check the
+common resource contract instead. **Run Default** always invokes the first
+compatible Data operation; **Run Selected** invokes the one-off selection.
+
 Data and Artifacts are related but distinct:
 
 ```text
