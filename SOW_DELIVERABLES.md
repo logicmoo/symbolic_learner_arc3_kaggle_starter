@@ -179,8 +179,8 @@ Phase 2 implements the semantic object layer behind the Phase 1 debugger. It use
 - [x] Require the Turtle program to redraw the object through movement, rotation, pen state, and pen width rather than filled coordinate boxes.
   Evidence: extracted programs use `set_pos`, `rot`, `fwd`, `penup`/`pendown`, and canonical `pen_width`; every filled axis-aligned rectangle, including widths above four cells, renders as one width-aware stroke when that footprint is exact. Non-rectangular connected components use one deterministic spanning-tree Turtle walk: the pen remains down while rotations, forward movement, and safe backtracking visit every occupied cell. Hollow-object coverage proves the walk preserves holes with one initial position and no row-by-row teleportation, and live SWI-Prolog regeneration remains exact.
 
-- [ ] **Partial** Execute the stored Turtle program to regenerate the object and compare it with the source observation.  
-  Existing evidence: `CellLogoForm` now executes extracted programs through `SWIPrologBridge` and the canonical `prolog/turtle_dsl.pl`; regenerated-cell fit, distance, normalized residual, and description-length metrics have live SWI-Prolog coverage.
+- [x] Execute the stored Turtle program to regenerate the object and compare it with the source observation.
+  Evidence: `CellLogoForm` executes extracted programs through `SWIPrologBridge` and the canonical `prolog/turtle_dsl.pl`; regenerated-cell fit, distance, normalized residual, and description-length metrics have live SWI-Prolog coverage.
   `TurtleReconstructionEvidenceBuilder` now converts exact fit or residual measurements into attributable signed evidence without hiding the measured residual. Live semantic capture invokes the real SWI-Prolog renderer for every candidate, persists the metrics on its Turtle reference, attaches evidence to the encounter, links the evidence artifact into the action tree, and restores it during replay.
 
 - [x] Preserve exact holes, disconnected strokes, topology, and supported thickness through the stored Turtle program.
@@ -200,8 +200,8 @@ Phase 2 implements the semantic object layer behind the Phase 1 debugger. It use
   Remaining: domain calibration against representative fixtures.
 
 - [ ] **Partial** Refine and calibrate confidence for object identity, correspondence, and competing interpretations.
-  Existing evidence: deterministic Laplace-style confidence is derived from attributable supporting and contradicting evidence, with event history and order-independence tests. Authority decisions now preserve pre-decision confidence separately from the later accepted/rejected outcome, avoiding post-outcome leakage. `RecognitionCalibrator` computes scoped reliability bins, acceptance rates, and Brier error only from resolved decisions; unresolved proposals are excluded. Typed confidence-history and decision-calibration fields survive snapshots and durable replay.
-  Remaining: learn and validate an optional recalibration policy from representative domain/provider datasets; rival proposal scores remain advisory rather than calibrated probabilities.
+  Existing evidence: deterministic Laplace-style confidence is derived from attributable supporting and contradicting evidence, with event history and order-independence tests. Authority decisions preserve pre-decision confidence separately from the later accepted/rejected outcome, avoiding post-outcome leakage. `RecognitionCalibrator` computes scoped reliability bins, acceptance rates, and Brier error only from resolved decisions; unresolved proposals are excluded. It now fits a deterministic pool-adjacent-violators isotonic policy from labeled authority outcomes, validates improvement on held-out fixtures, serializes the scoped mapping, and reloads it as a first-class AtomSpace semantic record. Typed confidence-history and decision-calibration fields survive snapshots and durable replay.
+  Remaining: rival proposal scores remain advisory rather than normalized and calibrated probabilities.
 
 ## Persistent symbolic memory and replay
 

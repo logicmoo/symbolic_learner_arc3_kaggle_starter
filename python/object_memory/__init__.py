@@ -19,7 +19,9 @@ from .acceptance import AcceptanceReport, build_acceptance_report, write_accepta
 from .capture import SemanticGridCaptureObserver, standard_semantic_grid_observer
 from .catalog import IdentityCatalogEntry, SemanticIdentityCatalog
 from .calibration import (
+    CalibrationPoint,
     RecognitionCalibrationReport,
+    RecognitionCalibrationPolicy,
     RecognitionCalibrator,
     ReliabilityBin,
 )
@@ -146,6 +148,7 @@ __all__ = [
     "ArtifactRef",
     "ArtifactIndex",
     "CandidateObject",
+    "CalibrationPoint",
     "ChangeDetector",
     "CellLogoForm",
     "CommittedAtom",
@@ -222,6 +225,7 @@ __all__ = [
     "ReliabilityBin",
     "RecognitionAccount",
     "RecognitionCalibrationReport",
+    "RecognitionCalibrationPolicy",
     "RecognitionCalibrator",
     "RecognitionSession",
     "RasterPerturbationGenerator",

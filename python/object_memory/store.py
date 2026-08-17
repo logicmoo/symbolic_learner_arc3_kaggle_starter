@@ -4,6 +4,7 @@ from collections import defaultdict
 from typing import Any, Protocol
 
 from .memory import EncounterLog
+from .calibration import RecognitionCalibrationPolicy
 from .models import (
     ActionRecommendation,
     ArtifactRef,
@@ -148,6 +149,13 @@ class SymbolicStore:
             "identity_checkpoints", value.checkpoint_id, value
         )
 
+    def put_recognition_calibration(
+        self, value: RecognitionCalibrationPolicy
+    ) -> RecognitionCalibrationPolicy:
+        return self.backend.write_once(
+            "recognition_calibrations", value.scope, value
+        )
+
     def restore_identity_memory(self) -> "SymbolicMemory":
         """Restore the newest complete identity state stored by a SingleWriter."""
 
@@ -202,6 +210,7 @@ class SymbolicStore:
         "transition_rules",
         "confidence_history",
         "identity_checkpoints",
+        "recognition_calibrations",
         "predictions",
         "action_recommendations",
         "prediction_grades",
@@ -234,6 +243,7 @@ class SymbolicStore:
             "action_recommendations": self.put_action_recommendation,
             "confidence_history": self.put_confidence_history,
             "identity_checkpoints": self.put_identity_checkpoint,
+            "recognition_calibrations": self.put_recognition_calibration,
             "predictions": self.put_prediction,
             "prediction_grades": self.put_prediction_grade,
         }

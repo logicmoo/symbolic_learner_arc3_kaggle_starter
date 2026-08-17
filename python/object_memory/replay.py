@@ -34,6 +34,7 @@ from .models import (
     TransitionRule,
 )
 from .store import SymbolicStore
+from .calibration import RecognitionCalibrationPolicy
 
 
 def _jsonable(value: Any) -> Any:
@@ -440,6 +441,8 @@ class SemanticRecordCodec:
             return _confidence(value)
         if namespace == "identity_checkpoints":
             return _identity_checkpoint(value)
+        if namespace == "recognition_calibrations":
+            return RecognitionCalibrationPolicy.from_dict(value)
         raise ValueError(f"unsupported semantic namespace: {namespace!r}")
 
 
