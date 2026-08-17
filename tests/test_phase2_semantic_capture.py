@@ -21,6 +21,7 @@ from object_memory import (
     SymbolicMemory,
     TransitionRule,
     phase2_rule_inducer,
+    phase2_rule_executor,
     phase2_rule_ranker,
     phase2_transformation_learner,
     phase2_transition_analyzer,
@@ -427,6 +428,92 @@ def test_semantic_capture_hands_real_state_and_transition_to_learner(
     assert "1 assumption(s), 1 critique(s)" in readme
     assert "rule for action/event `RIGHT`" in readme
     assert "1 rival(s), 1 supporting and 0 contradicting" in readme
+
+
+def test_real_arc3_grid_transition_learns_rule_and_predicts_unseen_position(
+    tmp_path: Path,
+) -> None:
+    tree = ActionTreeStore(tmp_path / "tree", "game", 1)
+    initial = tree.create_initial(b"initial", {"state": "active"})
+    semantic = SymbolicStore(InMemorySemanticBackend())
+    rules = RuleStore()
+    ledger = PredictionLedger()
+    pipeline = GameLearningPipeline(
+        phase2_transition_analyzer(),
+        phase2_transformation_learner(),
+        phase2_rule_inducer(),
+        phase2_rule_ranker(),
+        rules,
+        ledger,
+        semantic,
+    )
+    observer = SemanticGridCaptureObserver(
+        GridAdapter(analyze_grid, PythonProvider({})),
+        grid_selector=lambda runner: runner.grid,
+        symbolic_store=semantic,
+        learner_plugin=PipelineGameObjectLearnerPlugin(pipeline),
+    )
+    runner = SimpleNamespace(grid=[row[:] for row in DEFAULT_GRID])
+    observer.on_state_captured(
+        runner=runner,
+        store=tree,
+        node=initial,
+        previous_node=None,
+        action=None,
+        data={},
+    )
+
+    moved = [row[:] for row in DEFAULT_GRID]
+    blue_cells = [
+        (x, y)
+        for y, row in enumerate(DEFAULT_GRID)
+        for x, value in enumerate(row)
+        if value == 1
+    ]
+    for x, y in blue_cells:
+        moved[y][x] = 0
+    for x, y in blue_cells:
+        moved[y][x + 1] = 1
+    runner.grid = moved
+    child = tree.create_transition(initial, "RIGHT", {}, b"child", {"state": "active"})
+    observer.on_state_captured(
+        runner=runner,
+        store=tree,
+        node=child,
+        previous_node=initial,
+        action="RIGHT",
+        data={},
+    )
+
+    relative_rule = next(
+        rule
+        for rule in rules.rules()
+        for effect in rule.predicted_effects
+        if isinstance(effect, dict)
+        and effect.get("interpretation") == "relative_delta"
+        and "position" in effect.get("properties", {})
+    )
+    unseen = {"id": "unseen-shape", "position": (11.0, 6.0), "color": "green"}
+    executor = phase2_rule_executor(
+        rules, {"action": "RIGHT", "data": {}}
+    )
+    predicted, prediction = pipeline.predict(
+        prediction_id="real-arc3-unseen-position",
+        rule_id=relative_rule.rule_id,
+        source_state_id="unseen-grid-state",
+        state=unseen,
+        created_sequence=100,
+        executor=executor,
+    )
+
+    assert predicted["position"] == [12.0, 6.0]
+    assert unseen["position"] == (11.0, 6.0)
+    assert prediction.available_evidence_ids
+    assert ledger.get(prediction.prediction_id) == prediction
+    manifest = json.loads(child.semantic_records_path.read_text(encoding="utf-8"))
+    assert any(
+        item["record_type"] == "transition_rule" for item in manifest["records"]
+    )
 
 
 def test_live_semantic_observer_predicts_before_action_and_grades_after_capture(

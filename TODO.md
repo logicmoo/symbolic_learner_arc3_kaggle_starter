@@ -184,7 +184,7 @@ Deliverables: [Phase 3 checklist](SOW_DELIVERABLES.md#phase-3--game-object-learn
 - [x] Include competing object and correspondence interpretations where relevant.
 - [x] Exclude debugger implementation objects such as `StateNode`, terminal controls, and adapter instances.
 - [x] Add structured validation errors and serialization compatibility tests.
-- [ ] Validate source, Turtle-program, identity, evidence, and provenance references.
+- [x] Validate source, Turtle-program, identity, evidence, and provenance references.
 
 ## Connect real Phase 2 transitions
 
@@ -193,8 +193,8 @@ Deliverables: [Phase 3 checklist](SOW_DELIVERABLES.md#phase-3--game-object-learn
 - [ ] Connect Prolog providers to registry, objects, differences, similarities, rules, transcripts, and evidence.
 - [x] Analyze actual before/action/after object transitions.
 - [x] Generate candidate object-level transformations from real deltas.
-- [ ] Preserve competing transformation interpretations.
-- [ ] Apply transformations to previously unseen cases.
+- [x] Preserve competing transformation interpretations.
+- [x] Apply transformations to previously unseen cases.
 
 ## Learn, critique, and rank competing rules
 
@@ -233,8 +233,8 @@ Deliverables: [Phase 3 checklist](SOW_DELIVERABLES.md#phase-3--game-object-learn
 - [x] Payload validation and structured errors.
 - [x] Real Phase 2-to-Phase 3 handoff.
 - [x] Candidate transformation induction from actual object deltas.
-- [ ] Rival interpretations with assumptions, critiques, positive evidence, and negative evidence.
-- [ ] Learned transformation applied to a new case.
+- [x] Rival interpretations with assumptions, critiques, positive evidence, and negative evidence.
+- [x] Learned transformation applied to a new case.
 - [x] Rule ranking and confidence refinement from prediction history.
 - [x] Prediction recorded before outcome.
 - [x] Independent outcome grading.
