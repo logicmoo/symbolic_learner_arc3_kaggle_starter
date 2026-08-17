@@ -55,6 +55,12 @@
     relationship
     resource
     resource_validation
+    system_contract
+    system_inspection
+    data_value
+    data_inspection
+    artifact
+    artifact_inspection
     rule_set
     simulation_request
     simulation_result
