@@ -353,6 +353,11 @@ class ActionTreeStore:
     )
     OPAQUE_ID_RE = re.compile(r"^(?:obj(?:ect)?|item|thing|shape)_?\d+$", re.IGNORECASE)
     OPAQUE_TOKEN_RE = re.compile(r"\b(?:obj(?:ect)?|item|thing|shape)_?\d+\b", re.IGNORECASE)
+    SEMANTIC_DECISION_RE = re.compile(
+        r"^\s*semantic_identity_decision\(\s*([a-z][a-zA-Z0-9_]*)\s*,\s*"
+        r"(\"(?:\\.|[^\"])*\")\s*,\s*(\"(?:\\.|[^\"])*\")\s*,\s*"
+        r"([a-z_]+)\s*,"
+    )
 
     def identity_facts(self, source: str) -> dict[str, str]:
         """Extract canonical object_identity/3 declarations."""
@@ -411,6 +416,26 @@ class ActionTreeStore:
 
     def registry_identities(self) -> dict[str, str]:
         return self.identity_facts(self.registry_text())
+
+    def registry_decisions(self) -> tuple[dict[str, str], ...]:
+        path = self.semantic_identity_decisions_path
+        if not path.exists():
+            return ()
+        decisions: list[dict[str, str]] = []
+        for line in path.read_text(encoding="utf-8").splitlines():
+            match = self.SEMANTIC_DECISION_RE.match(line)
+            if match is None:
+                continue
+            identity_id, encounter, decision, status = match.groups()
+            decisions.append(
+                {
+                    "identity_id": identity_id,
+                    "encounter_id": str(json.loads(encounter)),
+                    "decision_id": str(json.loads(decision)),
+                    "status": status,
+                }
+            )
+        return tuple(decisions)
 
     def write_registry(self, registry: Mapping[str, str]) -> Path:
         lines = [
@@ -679,6 +704,31 @@ class ActionTreeStore:
 
         registry_count = len(self.registry_identities())
         registry_link = _rel_link(node.path, self.object_registry_path)
+        registry_decisions = self.registry_decisions()
+        decision_link = _rel_link(node.path, self.semantic_identity_decisions_path)
+
+        lines.extend(
+            [
+                "",
+                "## Identity registry provenance",
+                "",
+                f"- **Canonical identities:** `{registry_count}` in "
+                f"[`object_registry.pl`]({registry_link})",
+            ]
+        )
+        if registry_decisions:
+            lines.append(
+                f"- **Semantic decision history:** `{len(registry_decisions)}` in "
+                f"[`semantic_identity_decisions.pl`]({decision_link})"
+            )
+            for decision in registry_decisions:
+                lines.append(
+                    f"  - `{decision['identity_id']}` → `{decision['status']}` from "
+                    f"encounter `{decision['encounter_id']}` via decision "
+                    f"`{decision['decision_id']}`"
+                )
+        else:
+            lines.append("- **Semantic decision history:** `none recorded`")
 
         lines.extend(
             [

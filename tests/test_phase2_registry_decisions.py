@@ -18,7 +18,7 @@ def _store_with_identity(tmp_path: Path) -> tuple[ActionTreeStore, object]:
 
 
 def test_semantic_decisions_extend_friendly_registry_with_append_only_provenance(tmp_path: Path) -> None:
-    store, _node = _store_with_identity(tmp_path)
+    store, node = _store_with_identity(tmp_path)
     values = dict(
         identity_id="red_ball",
         encounter_id="encounter-1",
@@ -37,6 +37,13 @@ def test_semantic_decisions_extend_friendly_registry_with_append_only_provenance
     registry = store.object_registry_path.read_text(encoding="utf-8")
     assert ":- ensure_loaded('semantic_identity_decisions.pl')." in registry
     assert "object_identity(red_ball, object, 'red ball')." in registry
+    store.refresh_readme(node)
+    readme = node.readme_path.read_text(encoding="utf-8")
+    assert "## Identity registry provenance" in readme
+    assert "**Canonical identities:** `1`" in readme
+    assert "**Semantic decision history:** `2`" in readme
+    assert "`red_ball` → `accepted`" in readme
+    assert "encounter `encounter-1` via decision `decision-1`" in readme
     result = subprocess.run(
         [
             "swipl",
