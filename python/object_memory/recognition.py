@@ -174,10 +174,19 @@ class RecognitionSession:
         self.matcher = matcher or InstanceMatcher()
 
     def latest_known_instances(self) -> dict[str, InstanceParameters]:
+        resolved_candidates = {
+            account.candidate_id: account.stored_identity_id
+            for account in self.store.values("recognition_accounts")
+            if account.stored_identity_id is not None
+            and account.decision_source != "unresolved"
+        }
         latest: dict[str, InstanceParameters] = {}
         for encounter in self.store.encounters.records():
-            if encounter.object_identity_id is not None:
-                previous = latest.get(encounter.object_identity_id)
+            identity_id = encounter.object_identity_id
+            if identity_id is None and encounter.candidate_identity_id is not None:
+                identity_id = resolved_candidates.get(encounter.candidate_identity_id)
+            if identity_id is not None:
+                previous = latest.get(identity_id)
                 current = encounter.instance
                 if previous is not None and (
                     current.visibility < previous.visibility
@@ -195,7 +204,7 @@ class RecognitionSession:
                             )
                         ),
                     )
-                latest[encounter.object_identity_id] = current
+                latest[identity_id] = current
         return latest
 
     def propose(self, encounter_id: str) -> tuple[MatchProposal, ...]:

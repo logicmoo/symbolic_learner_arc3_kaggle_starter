@@ -2,6 +2,7 @@ from python.object_memory import (
     EncounterRecord,
     InMemorySemanticBackend,
     InstanceParameters,
+    RecognitionAccount,
     RecognitionSession,
     SymbolicStore,
 )
@@ -78,6 +79,44 @@ def test_recognition_session_uses_latest_instance_per_known_identity() -> None:
 
     assert proposal.stored_identity_id == "red_ball"
     assert proposal.similarity == 1.0
+
+
+def test_recognition_session_reuses_an_explicitly_accepted_candidate() -> None:
+    store = SymbolicStore(InMemorySemanticBackend())
+    accepted = store.put_encounter(
+        EncounterRecord.create(
+            observation_id="accepted-observation",
+            action_tree_node="accepted-node",
+            candidate_identity_id="candidate-red",
+            instance=InstanceParameters(
+                position=(2.0, 1.0), appearance={"color": "red"}
+            ),
+        )
+    )
+    store.put_recognition(
+        RecognitionAccount.create(
+            candidate_id="candidate-red",
+            stored_identity_id="red_ball",
+            decision_source="explicit_authorization",
+        )
+    )
+    later = store.put_encounter(
+        EncounterRecord.create(
+            observation_id="later-observation",
+            action_tree_node="later-node",
+            candidate_identity_id="candidate-later",
+            instance=InstanceParameters(
+                position=(2.0, 1.0), appearance={"color": "red"}
+            ),
+            previous_encounter_id=accepted.encounter_id,
+        )
+    )
+
+    proposal = RecognitionSession(store).propose(later.encounter_id)[0]
+
+    assert proposal.stored_identity_id == "red_ball"
+    assert proposal.similarity == 1.0
+    assert accepted.object_identity_id is None
 
 
 def test_recognition_session_rejects_non_candidate_encounters() -> None:
