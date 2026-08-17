@@ -37,12 +37,12 @@ Workflow binding.
 Operations with no inputs, such as a server-discovery step, show **No inputs to
 populate** in the band instead of presenting irrelevant actions.
 
-## Operations as durable tasks
+## Operations and durable executions
 
-The delayed-task lifecycle is documented on [Operations](operations.md). In the
-designer, lifecycle state appears where it is actionable: step status, results,
-errors, execution evidence, events, and logs. It is not repeated as a decorative
-banner inside every playground.
+An Operation is a reusable capability, while an Execution is a durable runtime
+attempt to invoke it. In the designer, execution state appears where it is
+actionable: step status, results, errors, evidence, events, and logs. A Codex
+task or thread is separate from both the Operation contract and its Execution.
 
 ## Dataflow bindings
 

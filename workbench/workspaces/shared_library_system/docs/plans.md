@@ -19,11 +19,11 @@ Planning guidance is serialized only as `planning_strategy`. A strategy with a s
 
 ## Filesystem convention
 
-- Strategy specifications use `planning_strategies/<id>.planning_strategy.metta`.
-- Alternatives use `planning_strategies/<id>.<name>.planning_strategy.metta`.
+- Strategy specifications use `design/planning_strategies/<id>.planning_strategy.metta`.
+- Alternatives use `design/planning_strategies/<id>.<name>.planning_strategy.metta`.
 - Every alternative declares `parents`; the strategy lists the alternative in `children`.
 - A strategy variant may select an existing Workflow or configure a planner that produces one.
-- `preferredChild` identifies the preferred strategy variant.
+- `preferredChild` identifies the preferred strategy alternative.
 
 Shared strategies are inherited by project workspaces. Workspace resources with the same semantic ID override Shared records.
 
