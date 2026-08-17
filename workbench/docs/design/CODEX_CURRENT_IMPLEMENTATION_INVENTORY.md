@@ -84,21 +84,26 @@ The active shell and grouped navigation live in `FilesystemWorkbenchPage.tsx`; `
 
 Before and after Navigation V2:
 
-- [ ] `App.tsx` still launches the page containing `OperationLibraryEditor`.
-- [ ] Operations opens the existing `OperationLibraryEditor`, not a replacement.
-- [ ] Abstract operations remain parents and implementations remain children.
-- [ ] Default implementation selection edits the abstract operation document.
-- [ ] Python, SWI-Prolog, MeTTa, model/preset dispatch, and prompt-composition panels remain available.
-- [ ] Persistent tabs open, activate, show dirty state, close, and retain unsaved drafts.
-- [ ] Split comparison works and returns to single-pane mode.
-- [ ] Raw MeTTa/JSON source edits and rich controls update only the intended resource.
-- [ ] Saving inherited resources creates/updates the correct workspace override; shared resources remain protected.
-- [ ] Save followed by snapshot reload preserves changes.
-- [ ] `OperationPlayground` resolves a real implementation, accepts typed input, switches variants, runs, and shows outputs/prompts/timing.
-- [ ] Right-side documentation remains visible and filesystem-backed.
-- [ ] Horizontal and vertical scrolling expose all editor content.
-- [ ] Existing universal-editor and operation-playground tests pass, with no historical commit identifier used as the baseline.
-- [ ] Frontend build succeeds and the running application works after restart.
+- [x] `App.tsx` still launches the page containing `OperationLibraryEditor`.
+- [x] Operations opens the existing `OperationLibraryEditor`, not a replacement.
+- [x] Abstract operations remain parents and implementations remain children.
+- [x] Default implementation selection edits the abstract operation document.
+- [x] Python, SWI-Prolog, MeTTa, model/preset dispatch, and prompt-composition panels remain available.
+- [x] Persistent tabs open, activate, show dirty state, close, and retain unsaved drafts.
+- [x] Split comparison works and returns to single-pane mode.
+- [x] Raw MeTTa/JSON source edits and rich controls update only the intended resource.
+- [x] Saving inherited resources creates/updates the correct workspace override; shared resources remain protected.
+- [x] Save followed by snapshot reload preserves changes.
+- [x] `OperationPlayground` resolves a real implementation, accepts typed input, switches variants, runs, and shows outputs/prompts/timing.
+- [x] Right-side documentation remains visible and filesystem-backed.
+- [x] Horizontal and vertical scrolling expose all editor content.
+- [x] Existing universal-editor and operation-playground tests pass, with no historical commit identifier used as the baseline.
+- [x] Frontend build succeeds and the running application works after restart.
+
+Acceptance was rechecked on 2026-08-17 with 126 focused navigation,
+universal-editor, playground, inheritance, and Markdown-navigation tests. The
+production frontend build passed, and the restarted live application exposed
+the grouped Navigation V2 shell and filesystem-backed editor routes.
 
 ## Review Gate
 
