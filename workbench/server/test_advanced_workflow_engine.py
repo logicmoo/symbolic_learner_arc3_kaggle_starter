@@ -137,6 +137,29 @@ def test_while_validation_requires_positive_bound_and_backward_target(tmp_path: 
     assert 'controller.while[0] targetStepId must not follow its controller' in errors
 
 
+def test_while_validation_reports_bad_operator_binding_and_bound_without_crashing(tmp_path: Path) -> None:
+    runtime = engine(tmp_path)
+    errors = runtime.validate({
+        'id': 'malformed-while',
+        'steps': [{
+            'id': 'controller',
+            'kind': 'operation',
+            'implementation': 'core.constant',
+            'parameters': {'value': True},
+            'outputs': {'value': 'available'},
+            'while': {
+                'condition': '$missing.value',
+                'operator': 'approximately',
+                'maxIterations': 'many',
+            },
+        }],
+    })
+
+    assert 'controller.while[0].maxIterations must be an integer' in errors
+    assert 'controller.while[0] has unsupported operator: approximately' in errors
+    assert 'controller.while[0].condition references unavailable artifact $missing' in errors
+
+
 def test_human_wait_resume_and_logs(tmp_path: Path) -> None:
     runtime = engine(tmp_path)
     runtime.save_workflow({

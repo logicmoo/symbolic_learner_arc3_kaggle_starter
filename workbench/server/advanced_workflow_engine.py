@@ -117,6 +117,7 @@ class AdvancedWorkflowEngine(WorkflowEngine):
         steps = document.get('steps') or []
         step_order = [str(step.get('id')) for step in steps if step.get('id')]
         ids = {str(step.get('id')) for step in steps if step.get('id')}
+        available = set(map(str, (document.get('inputs') or {}).keys()))
         graph: dict[str, set[str]] = {}
         for step in steps:
             sid = str(step.get('id') or '')
@@ -126,16 +127,31 @@ class AdvancedWorkflowEngine(WorkflowEngine):
                 errors.append(f'{sid} depends on unknown steps: {missing}')
             graph[sid] = deps
             loop = step.get('foreach')
-            if loop and int(loop.get('maxItems', 1000)) <= 0:
-                errors.append(f'{sid}.foreach.maxItems must be positive')
+            if loop:
+                try:
+                    if int(loop.get('maxItems', 1000)) <= 0:
+                        errors.append(f'{sid}.foreach.maxItems must be positive')
+                except (TypeError, ValueError):
+                    errors.append(f'{sid}.foreach.maxItems must be an integer')
+            available.update(str(name) for name in (step.get('outputs') or {}).values())
             loops = step.get('while') or []
             loops = loops if isinstance(loops, list) else [loops]
             for index, loop in enumerate(loops):
                 if not isinstance(loop, dict):
                     errors.append(f'{sid}.while[{index}] must be an object')
                     continue
-                if int(loop.get('maxIterations', 0) or 0) <= 0:
-                    errors.append(f'{sid}.while[{index}].maxIterations must be positive')
+                try:
+                    if int(loop.get('maxIterations', 0) or 0) <= 0:
+                        errors.append(f'{sid}.while[{index}].maxIterations must be positive')
+                except (TypeError, ValueError):
+                    errors.append(f'{sid}.while[{index}].maxIterations must be an integer')
+                operator = str(loop.get('operator') or 'truthy')
+                if operator not in {'truthy', 'not_empty', 'equals', 'less_than'}:
+                    errors.append(f'{sid}.while[{index}] has unsupported operator: {operator}')
+                for field in ('condition', 'conditionPort'):
+                    binding_name = self._binding_name(loop.get(field))
+                    if binding_name and binding_name not in available:
+                        errors.append(f'{sid}.while[{index}].{field} references unavailable artifact ${binding_name}')
                 target = str(loop.get('targetStepId') or sid)
                 if target not in ids:
                     errors.append(f'{sid}.while[{index}] targets unknown step: {target}')
