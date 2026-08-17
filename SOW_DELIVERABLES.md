@@ -220,7 +220,16 @@ Phase 2 implements the semantic object layer behind the Phase 1 debugger. It use
   Existing evidence: complete `SymbolicStore` snapshots deterministically restore artifacts, Turtle references, atoms, observations, encounters, proposals, recognition accounts, and evidence; repeated replay is idempotent and encounter hashes remain stable. `ActionTreeSemanticReplay` rebuilds a fresh store directly from exact records linked by Phase 1 `semantic_records.json` manifests, restores encounter chains in predecessor order, deduplicates repeated links, and rejects missing/cyclic history. A newly composed live observer replays its level once before capture and restores terminal candidate/observation cursors, so post-restart encounters continue the durable history rather than starting a disconnected memory.
   Recorded trees can now replay directly into the durable Prolog backend and hydrate after process restart. Remaining: an equivalent AtomSpace backend.
 
-- [ ] **Open** Demonstrate recognition and reconstruction under modest degradation and partial occlusion.
+- [x] Demonstrate recognition and reconstruction under modest degradation and partial occlusion.
+  Evidence: degraded normalized encounters explicitly carry visibility, noise,
+  reflection, and supported-transformation metadata. Correspondence produces
+  property-attributable support for missing occluded fields, and
+  `RecognitionSession.complete_partial` reconstructs only from a selected
+  durable identity's best prior complete form. The completion retains the
+  current position and visible properties, restores missing appearance/
+  geometry/topology where justified, resets reconstruction visibility/noise,
+  reports every inferred field separately, and persists its proposal and
+  evidence without rewriting the observed encounter.
 
 ## Phase 2 tests and documentation
 
@@ -329,7 +338,12 @@ Phase 3 implements learning and prediction over the persistent objects and evide
 
 ## Environment and acceptance demonstrations
 
-- [ ] **Open** Demonstrate recognition and completion of partly occluded objects.
+- [x] Demonstrate recognition and completion of partly occluded objects.
+  Evidence: the degradation fixture matches a 40%-visible noisy blue hook to
+  its complete durable identity, preserves the complete stored form, then
+  produces an evidence-linked completed instance at the newly observed
+  position. The result explicitly identifies `appearance.shape` and
+  `appearance.texture` as inferred rather than observed.
 
 - [ ] **Open** Demonstrate the approved environment progression:
   - ARC-style grids;

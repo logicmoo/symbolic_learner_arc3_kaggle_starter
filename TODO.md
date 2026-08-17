@@ -240,7 +240,7 @@ Deliverables: [Phase 3 checklist](SOW_DELIVERABLES.md#phase-3--game-object-learn
 - [x] Independent outcome grading.
 - [x] Post-hoc-credit rejection.
 - [x] Debugger README writeback of rules, critiques, probabilities, predictions, and grades.
-- [ ] Partial-occlusion recognition and completion.
+- [x] Partial-occlusion recognition and completion.
 
 ## Phase 3 demonstration workflow
 

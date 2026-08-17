@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import replace
+from dataclasses import dataclass, replace
 from typing import Mapping
 
 from .forms import FitResult
@@ -17,6 +17,19 @@ from .models import (
 )
 from .memory import ResidualGate, SingleWriter
 from .store import SymbolicStore
+
+
+@dataclass(frozen=True)
+class PartialVisibilityCompletion:
+    """A reconstructed instance that keeps inferred and observed data distinct."""
+
+    candidate_id: str
+    stored_identity_id: str
+    observed: InstanceParameters
+    completed: InstanceParameters
+    inferred_fields: tuple[str, ...]
+    proposal_id: str
+    evidence_ids: tuple[str, ...] = ()
 
 
 class InstanceMatcher:
@@ -215,6 +228,102 @@ class RecognitionSession:
                     )
                 latest[identity_id] = current
         return latest
+
+    def complete_partial(
+        self,
+        encounter_id: str,
+        stored_identity_id: str,
+    ) -> PartialVisibilityCompletion:
+        """Complete an occluded encounter from one prior durable identity form."""
+
+        encounter = self.store.encounters.get(encounter_id)
+        if encounter is None:
+            raise KeyError(encounter_id)
+        history = tuple(
+            item
+            for item in self.store.encounters.records()
+            if item.encounter_id != encounter_id
+            and item.object_identity_id == stored_identity_id
+        )
+        if not history:
+            raise ValueError(
+                f"No prior form exists for identity {stored_identity_id!r}"
+            )
+        stored = max(
+            history,
+            key=lambda item: (
+                item.instance.visibility,
+                -item.instance.noise_score,
+                len(item.instance.appearance),
+                len(item.instance.geometry),
+                len(item.instance.topology),
+            ),
+        ).instance
+        observed = encounter.instance
+        candidate_id = encounter.candidate_identity_id or f"completion:{encounter_id}"
+        proposal = self.matcher.compare(
+            candidate_id=candidate_id,
+            current=observed,
+            stored_identity_id=stored_identity_id,
+            stored=stored,
+            provenance=encounter.provenance,
+        )
+        if "partial_visibility" not in proposal.allowed_transformations:
+            raise ValueError("Encounter does not declare a supported partial visibility change")
+        source = (
+            encounter.provenance[0]
+            if encounter.provenance
+            else ProvenanceRef(encounter_id, "partial_visibility_completion")
+        )
+        evidence = CorrespondenceEvidenceBuilder().build(proposal, source=source)
+        for item in evidence:
+            self.store.put_evidence(item)
+        proposal = replace(
+            proposal,
+            evidence_ids=tuple(item.evidence_id for item in evidence),
+        )
+        self.store.put_match_proposal(proposal)
+
+        appearance = {**stored.appearance, **observed.appearance}
+        inferred_values = [
+            f"appearance.{key}"
+            for key in stored.appearance
+            if key not in observed.appearance
+        ]
+        if stored.geometry and observed.visibility < 1.0:
+            inferred_values.append("geometry")
+        if stored.topology and observed.visibility < 1.0:
+            inferred_values.append("topology")
+        if stored.relationships and not observed.relationships:
+            inferred_values.append("relationships")
+        inferred = tuple(sorted(inferred_values))
+        completed = replace(
+            stored,
+            position=observed.position or stored.position,
+            orientation=observed.orientation or stored.orientation,
+            scale=observed.scale or stored.scale,
+            reflection=observed.reflection or stored.reflection,
+            appearance=appearance,
+            geometry=(stored.geometry if observed.visibility < 1.0 else observed.geometry),
+            topology=(stored.topology if observed.visibility < 1.0 else observed.topology),
+            relationships=observed.relationships or stored.relationships,
+            supported_transformations=tuple(
+                dict.fromkeys(
+                    (*stored.supported_transformations, *observed.supported_transformations)
+                )
+            ),
+            visibility=1.0,
+            noise_score=0.0,
+        )
+        return PartialVisibilityCompletion(
+            candidate_id=candidate_id,
+            stored_identity_id=stored_identity_id,
+            observed=observed,
+            completed=completed,
+            inferred_fields=inferred,
+            proposal_id=proposal.proposal_id,
+            evidence_ids=proposal.evidence_ids,
+        )
 
     def propose(self, encounter_id: str) -> tuple[MatchProposal, ...]:
         encounter = self.store.encounters.get(encounter_id)

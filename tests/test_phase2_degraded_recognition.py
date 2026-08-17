@@ -61,7 +61,7 @@ def test_partial_encounter_does_not_replace_complete_stored_form() -> None:
             instance=complete,
         )
     )
-    store.put_encounter(
+    partial = store.put_encounter(
         EncounterRecord.create(
             observation_id="partial",
             action_tree_node="node-partial",
@@ -87,3 +87,22 @@ def test_partial_encounter_does_not_replace_complete_stored_form() -> None:
         "partial_visibility",
         "noise",
     }
+
+    completion = RecognitionSession(store).complete_partial(
+        partial.encounter_id, "blue_hook"
+    )
+    assert completion.observed.appearance == {"color": "blue"}
+    assert completion.completed.position == (4.0, 2.0)
+    assert completion.completed.appearance == complete.appearance
+    assert completion.completed.visibility == 1.0
+    assert completion.completed.noise_score == 0.0
+    assert completion.inferred_fields == (
+        "appearance.shape",
+        "appearance.texture",
+    )
+    assert completion.evidence_ids
+    assert store.get("match_proposals", completion.proposal_id) is not None
+    assert all(
+        store.get("evidence", evidence_id) is not None
+        for evidence_id in completion.evidence_ids
+    )
