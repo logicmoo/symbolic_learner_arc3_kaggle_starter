@@ -674,6 +674,13 @@ class ActionTreeStore:
                             f"{evidence_detail.get('assessment', 'unspecified')} "
                             f"on `{evidence_detail.get('property', 'representation')}`"
                         )
+                    elif record["record_type"] == "object_change":
+                        lines.append(
+                            f"  - `{detail.get('kind')}` from "
+                            f"`{', '.join(detail.get('before_identity_ids') or ()) or 'none'}` "
+                            f"to `{', '.join(detail.get('after_candidate_ids') or ()) or 'none'}`; "
+                            f"{len(detail.get('evidence_ids') or [])} evidence record(s)"
+                        )
 
         lines.extend(["", "## Embedded files", ""])
 

@@ -301,6 +301,70 @@ class CorrespondenceEvidenceBuilder:
         return tuple(evidence)
 
 
+class EncounterChangeSession:
+    """Persist correspondences, evidence, and changes across two observations."""
+
+    def __init__(self, store: SymbolicStore, matcher: InstanceMatcher | None = None) -> None:
+        self.store = store
+        self.matcher = matcher or InstanceMatcher()
+
+    def detect(
+        self,
+        previous_observation_id: str,
+        current_observation_id: str,
+    ) -> tuple[tuple[MatchProposal, ...], tuple[ObjectChange, ...]]:
+        previous = {
+            item.candidate_identity_id: item
+            for item in self.store.encounters.records()
+            if item.observation_id == previous_observation_id
+            and item.candidate_identity_id is not None
+        }
+        current = {
+            item.candidate_identity_id: item
+            for item in self.store.encounters.records()
+            if item.observation_id == current_observation_id
+            and item.candidate_identity_id is not None
+        }
+        proposals: list[MatchProposal] = []
+        correspondence: dict[str, tuple[str, ...]] = {}
+        for candidate_id in sorted(set(previous) & set(current)):
+            proposal = self.matcher.compare(
+                candidate_id=candidate_id,
+                current=current[candidate_id].instance,
+                stored_identity_id=candidate_id,
+                stored=previous[candidate_id].instance,
+                provenance=current[candidate_id].provenance,
+            )
+            source = (
+                current[candidate_id].provenance[0]
+                if current[candidate_id].provenance
+                else ProvenanceRef(current[candidate_id].encounter_id, "transition_matcher")
+            )
+            evidence = CorrespondenceEvidenceBuilder().build(proposal, source=source)
+            for item in evidence:
+                self.store.put_evidence(item)
+            proposal = replace(
+                proposal,
+                evidence_ids=tuple(item.evidence_id for item in evidence),
+            )
+            self.store.put_match_proposal(proposal)
+            proposals.append(proposal)
+            correspondence[candidate_id] = (candidate_id,)
+        proposal_by_candidate = {item.candidate_id: item for item in proposals}
+        changes = ChangeDetector().detect(
+            proposals=proposal_by_candidate,
+            correspondence=correspondence,
+            before_identity_ids=tuple(sorted(previous)),
+            after_candidate_ids=tuple(sorted(current)),
+            provenance=tuple(
+                item for encounter in current.values() for item in encounter.provenance
+            ),
+        )
+        for change in changes:
+            self.store.put_object_change(change)
+        return tuple(proposals), changes
+
+
 class TurtleReconstructionEvidenceBuilder:
     """Represent an exact or residual Turtle reconstruction fit as signed evidence."""
 
@@ -392,6 +456,7 @@ class ChangeDetector:
                         before_identity_ids=identities,
                         after_candidate_ids=(candidate_id,),
                         properties={field: value},
+                        evidence_ids=proposal.evidence_ids,
                         provenance=provenance,
                     )
                 )

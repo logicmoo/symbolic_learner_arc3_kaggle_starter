@@ -367,6 +367,7 @@ class ObjectChange:
     before_identity_ids: tuple[str, ...] = ()
     after_candidate_ids: tuple[str, ...] = ()
     properties: Mapping[str, Any] = field(default_factory=dict)
+    evidence_ids: tuple[str, ...] = ()
     provenance: tuple[ProvenanceRef, ...] = ()
     schema_version: str = PHASE2_SCHEMA_VERSION
 
@@ -378,6 +379,7 @@ class ObjectChange:
         before_identity_ids: tuple[str, ...] = (),
         after_candidate_ids: tuple[str, ...] = (),
         properties: Mapping[str, Any] | None = None,
+        evidence_ids: tuple[str, ...] = (),
         provenance: tuple[ProvenanceRef, ...] = (),
     ) -> "ObjectChange":
         identity = {
@@ -392,6 +394,7 @@ class ObjectChange:
             before_identity_ids=before_identity_ids,
             after_candidate_ids=after_candidate_ids,
             properties=properties or {},
+            evidence_ids=evidence_ids,
             provenance=provenance,
         )
 

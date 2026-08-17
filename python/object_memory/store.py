@@ -12,6 +12,7 @@ from .models import (
     EvidenceRecord,
     MatchProposal,
     Observation,
+    ObjectChange,
     RecognitionAccount,
     TurtleProgramRef,
 )
@@ -108,6 +109,9 @@ class SymbolicStore:
     def put_evidence(self, value: EvidenceRecord) -> EvidenceRecord:
         return self.backend.write_once("evidence", value.evidence_id, value)
 
+    def put_object_change(self, value: ObjectChange) -> ObjectChange:
+        return self.backend.write_once("object_changes", value.change_id, value)
+
     def put_artifact(self, value: ArtifactRef) -> ArtifactRef:
         stored = self.backend.write_once("artifacts", value.artifact_id, value)
         self.artifacts.register(stored)
@@ -143,6 +147,7 @@ class SymbolicStore:
         "match_proposals",
         "recognition_accounts",
         "evidence",
+        "object_changes",
         "confidence_history",
     )
 
@@ -167,6 +172,7 @@ class SymbolicStore:
             "match_proposals": self.put_match_proposal,
             "recognition_accounts": self.put_recognition,
             "evidence": self.put_evidence,
+            "object_changes": self.put_object_change,
             "confidence_history": self.put_confidence_history,
         }
         for namespace in self.SNAPSHOT_NAMESPACES:

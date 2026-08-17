@@ -860,3 +860,7 @@ Preserve the canonical checkout and its `codex/workbench-navigation-v2` branch.
   noise instance parameters; explain declared degradation with signed evidence;
   and retain the best complete stored form when a later encounter is partial or
   noisier while still updating its position and supported transformations.
+- [x] Connect live parent/current captures to semantic change history. Match
+  stable candidates across consecutive observations, persist correspondence
+  proposals and evidence-linked `ObjectChange` records, link readable summaries
+  into the action tree, and retain them through disk and Prolog replay.

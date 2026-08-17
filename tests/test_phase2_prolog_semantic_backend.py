@@ -10,6 +10,7 @@ from object_memory import (
     ConfidenceHistoryRecord,
     EncounterRecord,
     Observation,
+    ObjectChange,
     PrologSemanticBackend,
     SymbolicStore,
     TurtleProgramRef,
@@ -59,6 +60,15 @@ def test_prolog_semantic_backend_round_trips_and_hydrates(tmp_path: Path) -> Non
     confidence_record = store.put_confidence_history(
         ConfidenceHistoryRecord(0, "red_ball", 0.75, "active", "evidence", "ev-1")
     )
+    change = store.put_object_change(
+        ObjectChange.create(
+            kind="moved",
+            before_identity_ids=("red_ball",),
+            after_candidate_ids=("candidate-red",),
+            properties={"position": {"from": (1.0, 1.0), "to": (2.0, 1.0)}},
+            evidence_ids=("ev-1",),
+        )
+    )
 
     loaded = SymbolicStore(PrologSemanticBackend(path)).hydrate()
 
@@ -67,6 +77,7 @@ def test_prolog_semantic_backend_round_trips_and_hydrates(tmp_path: Path) -> Non
     assert loaded.artifacts.get(artifact.artifact_id) == artifact
     assert loaded.get("atoms", atom.handle) == atom
     assert loaded.values("confidence_history") == (confidence_record,)
+    assert loaded.values("object_changes") == (change,)
     assert loaded.snapshot() == store.snapshot()
     source = path.read_text(encoding="utf-8")
     assert ":- dynamic semantic_record/3." in source

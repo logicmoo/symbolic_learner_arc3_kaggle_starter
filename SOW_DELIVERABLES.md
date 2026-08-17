@@ -170,8 +170,8 @@ Phase 2 implements the semantic object layer behind the Phase 1 debugger. It use
   Existing partial evidence: correspondence proposals explicitly recognize declared translation, rotation, scale, reflection, recoloring, noise, and partial-visibility changes. Missing properties under declared partial visibility produce support rather than false contradiction, and incomplete/noisier encounters cannot replace the best complete stored form. Real degraded fixtures and domain-specific deformation remain open.
 
 - [ ] **Partial** Detect movement, recoloring, resizing, addition, removal, splitting, merging, and structural change.  
-  Existing evidence: provider difference artifacts and transition contracts plus deterministic `ObjectChange` records and `ChangeDetector` coverage for moved, recolored, resized, reoriented, reshaped, appeared, disappeared, one-to-many split, and many-to-one merge cases.
-  Remaining: connect detection to live before/after semantic encounters and persist evidence-backed changes.
+  Existing evidence: provider difference artifacts and transition contracts plus deterministic `ObjectChange` records and `ChangeDetector` coverage for moved, recolored, resized, reoriented, reshaped, appeared, disappeared, one-to-many split, and many-to-one merge cases. `EncounterChangeSession` now compares consecutive live observations, persists correspondence proposals and signed evidence, stores evidence-linked changes, and the capture observer links them into the current action-tree node and README. Action-tree and Prolog replay retain the exact changes.
+  Remaining: infer split/merge correspondence automatically when candidate IDs diverge rather than requiring explicit correspondence input.
 
 ## Per-object Turtle programs and regeneration
 
@@ -208,7 +208,7 @@ Phase 2 implements the semantic object layer behind the Phase 1 debugger. It use
 ## Persistent symbolic memory and replay
 
 - [ ] **Partial** Maintain persistent symbolic memory for recognized objects, observations, Turtle programs, and associated artifacts.  
-  Existing evidence: `SymbolicMemory`, a backend-neutral `SymbolicStore` facade with write-once exact identity, a replaceable `SemanticStoreBackend` boundary, observation/encounter/Turtle composition, and an `ArtifactIndex` populated by stable identifier and semantic type. Repeat identity commits return the existing calibrated object and conflicting payloads fail instead of overwriting durable memory. Exact snapshots replay every semantic namespace, including confidence history, in dependency order and rebuild encounter/artifact indexes idempotently. `PrologSemanticBackend` durably stores typed contracts as inspectable `semantic_record/3` facts, safely round-trips nested JSON/unicode, loads in live SWI-Prolog, and hydrates fresh facade indexes.
+  Existing evidence: `SymbolicMemory`, a backend-neutral `SymbolicStore` facade with write-once exact identity, a replaceable `SemanticStoreBackend` boundary, observation/encounter/Turtle/change composition, and an `ArtifactIndex` populated by stable identifier and semantic type. Repeat identity commits return the existing calibrated object and conflicting payloads fail instead of overwriting durable memory. Exact snapshots replay every semantic namespace, including confidence and object-change history, in dependency order and rebuild encounter/artifact indexes idempotently. `PrologSemanticBackend` durably stores typed contracts as inspectable `semantic_record/3` facts, safely round-trips nested JSON/unicode, loads in live SWI-Prolog, and hydrates fresh facade indexes.
   Remaining: AtomSpace backend implementation and complete lifecycle governance across durable reloads.
 
 - [ ] **Partial** Associate semantic encounters and memory updates with the history already preserved by Phase 1.  

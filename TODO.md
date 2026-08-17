@@ -97,7 +97,7 @@ Keep the shared records in `python/object_memory/models.py`; do not create anoth
 
 - [ ] Reuse the readable identities maintained by the Phase 1 debugger.
 - [ ] Map provider-proposed identities to persistent semantic identities without discarding provenance.
-- [ ] Match objects across parent/current states.
+- [x] Match stable candidates across consecutive parent/current observations and persist their correspondence proposals and signed evidence.
 - [x] Match objects across repeated encounters and examples through unresolved, persisted proposals over the latest known instance for every durable identity.
 - [x] Preserve multiple competing match proposals.
 - [x] Record matched and changed properties plus supporting and contradicting evidence.
@@ -131,7 +131,7 @@ Keep the shared records in `python/object_memory/models.py`; do not create anoth
 - [x] Implement `ArtifactIndex` for exact artifact lookup by stable identifier and semantic artifact type; populate it as observations, encounters, and Turtle programs enter `SymbolicStore`.
 - [x] Add active, demoted, and tombstoned lifecycle states.
 - [x] Preserve provenance when identities are merged, split, demoted, or tombstoned.
-- [ ] Store recognized objects, observations, Turtle programs, recognition accounts, confidence, and associated artifacts.
+- [x] Store observations, encounters, Turtle programs, proposals, recognition accounts, signed evidence, object changes, confidence history, atoms, and associated artifacts through the semantic-store boundary.
 
 ## Phase 2 tests and demonstrations
 

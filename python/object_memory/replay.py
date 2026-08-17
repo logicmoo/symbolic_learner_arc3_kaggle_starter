@@ -18,6 +18,7 @@ from .models import (
     InstanceParameters,
     MatchProposal,
     Observation,
+    ObjectChange,
     ProvenanceRef,
     RecognitionAccount,
     TurtleProgramRef,
@@ -88,6 +89,19 @@ def _instance(value: Mapping[str, Any]) -> InstanceParameters:
     )
 
 
+def _changed_properties(value: Mapping[str, Any]) -> dict[str, Any]:
+    restored: dict[str, Any] = {}
+    for field, change in value.items():
+        if isinstance(change, Mapping) and {"from", "to"}.issubset(change):
+            restored[field] = {
+                key: tuple(item) if isinstance(item, list) else item
+                for key, item in change.items()
+            }
+        else:
+            restored[field] = change
+    return restored
+
+
 class SemanticRecordCodec:
     """Decode exact JSON artifacts emitted by the semantic capture observer."""
 
@@ -114,7 +128,7 @@ class SemanticRecordCodec:
                 candidate_identity_id=value.get("candidate_identity_id"),
                 instance=_instance(value.get("instance") or {}),
                 matched_properties=tuple(value.get("matched_properties") or ()),
-                changed_properties=dict(value.get("changed_properties") or {}),
+                changed_properties=_changed_properties(value.get("changed_properties") or {}),
                 turtle_programs=tuple(_turtle(item) for item in value.get("turtle_programs") or ()),
                 reconstruction_artifacts=tuple(
                     _artifact(item) for item in value.get("reconstruction_artifacts") or ()
@@ -134,7 +148,7 @@ class SemanticRecordCodec:
                 candidate_id=str(value["candidate_id"]),
                 stored_identity_id=str(value["stored_identity_id"]),
                 matched_properties=tuple(value.get("matched_properties") or ()),
-                changed_properties=dict(value.get("changed_properties") or {}),
+                changed_properties=_changed_properties(value.get("changed_properties") or {}),
                 allowed_transformations=tuple(value.get("allowed_transformations") or ()),
                 similarity=value.get("similarity"),
                 evidence_ids=tuple(value.get("evidence_ids") or ()),
@@ -147,7 +161,7 @@ class SemanticRecordCodec:
                 candidate_id=str(value["candidate_id"]),
                 stored_identity_id=value.get("stored_identity_id"),
                 matched_properties=tuple(value.get("matched_properties") or ()),
-                changed_properties=dict(value.get("changed_properties") or {}),
+                changed_properties=_changed_properties(value.get("changed_properties") or {}),
                 allowed_transformations=tuple(value.get("allowed_transformations") or ()),
                 turtle_reconstruction_fit=value.get("turtle_reconstruction_fit"),
                 residual_score=value.get("residual_score"),
@@ -170,6 +184,17 @@ class SemanticRecordCodec:
                 created_sequence=int(value.get("created_sequence", 0)),
                 schema_version=str(value.get("schema_version", "2.0.0")),
             )
+        if record_type == "object_change":
+            return ObjectChange(
+                change_id=str(value["change_id"]),
+                kind=str(value["kind"]),
+                before_identity_ids=tuple(value.get("before_identity_ids") or ()),
+                after_candidate_ids=tuple(value.get("after_candidate_ids") or ()),
+                properties=_changed_properties(value.get("properties") or {}),
+                evidence_ids=tuple(value.get("evidence_ids") or ()),
+                provenance=tuple(_provenance(item) for item in value.get("provenance") or ()),
+                schema_version=str(value.get("schema_version", "2.0.0")),
+            )
         raise ValueError(f"unsupported semantic record type: {record_type!r}")
 
     @staticmethod
@@ -180,6 +205,7 @@ class SemanticRecordCodec:
             "match_proposals": "match_proposal",
             "recognition_accounts": "recognition_account",
             "evidence": "evidence",
+            "object_changes": "object_change",
         }
         if namespace in record_types:
             return SemanticRecordCodec.decode(record_types[namespace], value)
@@ -279,7 +305,14 @@ class PrologSemanticBackend:
 class ActionTreeSemanticReplay:
     """Rebuild a semantic store from the exact records linked by an action tree."""
 
-    ORDER = ("observation", "encounter", "match_proposal", "recognition_account", "evidence")
+    ORDER = (
+        "observation",
+        "encounter",
+        "match_proposal",
+        "recognition_account",
+        "evidence",
+        "object_change",
+    )
 
     def replay(self, action_tree_root: Path, store: SymbolicStore) -> SymbolicStore:
         records: dict[tuple[str, str], tuple[Path, Mapping[str, Any]]] = {}
@@ -301,6 +334,7 @@ class ActionTreeSemanticReplay:
             "match_proposal": store.put_match_proposal,
             "recognition_account": store.put_recognition,
             "evidence": store.put_evidence,
+            "object_change": store.put_object_change,
         }
         for record_type in self.ORDER:
             if record_type == "encounter":

@@ -66,6 +66,7 @@ from .providers import ArtifactProvider, GptArtifactProvider, PrologProvider, Py
 from .recognition import (
     ChangeDetector,
     CorrespondenceEvidenceBuilder,
+    EncounterChangeSession,
     InstanceMatcher,
     RecognitionSession,
     RegistryCorrespondenceAuthority,
@@ -87,6 +88,7 @@ __all__ = [
     "CorrespondenceEvidenceBuilder",
     "EncounterRecord",
     "EncounterLog",
+    "EncounterChangeSession",
     "EvidencePolarity",
     "EvidenceRecord",
     "ExecutionMode",

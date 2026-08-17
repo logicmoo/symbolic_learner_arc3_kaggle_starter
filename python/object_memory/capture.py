@@ -9,7 +9,7 @@ from typing import Any, Callable, Mapping
 
 from .adapters import GridAdapter
 from .models import ArtifactRef, EncounterRecord, InstanceParameters, TurtleProgramRef
-from .recognition import RecognitionSession
+from .recognition import EncounterChangeSession, RecognitionSession
 from .store import InMemorySemanticBackend, SymbolicStore
 
 
@@ -38,7 +38,9 @@ class SemanticGridCaptureObserver:
         self.grid_selector = grid_selector
         self.symbolic_store = symbolic_store or SymbolicStore(InMemorySemanticBackend())
         self.recognition = RecognitionSession(self.symbolic_store)
+        self.changes = EncounterChangeSession(self.symbolic_store)
         self._latest_by_candidate: dict[str, str] = {}
+        self._latest_observation_id: str | None = None
 
     @staticmethod
     def _write_record(path: Path, value: Any) -> Path:
@@ -178,3 +180,51 @@ class SemanticGridCaptureObserver:
                         schema_version=account.schema_version,
                         deterministic_hash=account.account_id.rsplit("-", 1)[-1],
                     )
+        if self._latest_observation_id is not None:
+            proposals, changes = self.changes.detect(
+                self._latest_observation_id,
+                batch.observation.observation_id,
+            )
+            for proposal in proposals:
+                proposal_path = self._write_record(
+                    semantic_dir / f"{proposal.proposal_id}.match-proposal.json",
+                    proposal,
+                )
+                store.link_semantic_record(
+                    node,
+                    record_type="match_proposal",
+                    record_id=proposal.proposal_id,
+                    artifact_path=proposal_path,
+                    schema_version=proposal.schema_version,
+                    deterministic_hash=proposal.proposal_id.rsplit("-", 1)[-1],
+                )
+                for evidence_id in proposal.evidence_ids:
+                    evidence = self.symbolic_store.get("evidence", evidence_id)
+                    if evidence is None:
+                        continue
+                    evidence_path = self._write_record(
+                        semantic_dir / f"{evidence.evidence_id}.evidence.json",
+                        evidence,
+                    )
+                    store.link_semantic_record(
+                        node,
+                        record_type="evidence",
+                        record_id=evidence.evidence_id,
+                        artifact_path=evidence_path,
+                        schema_version=evidence.schema_version,
+                        deterministic_hash=evidence.evidence_id.rsplit("-", 1)[-1],
+                    )
+            for change in changes:
+                change_path = self._write_record(
+                    semantic_dir / f"{change.change_id}.object-change.json",
+                    change,
+                )
+                store.link_semantic_record(
+                    node,
+                    record_type="object_change",
+                    record_id=change.change_id,
+                    artifact_path=change_path,
+                    schema_version=change.schema_version,
+                    deterministic_hash=change.change_id.rsplit("-", 1)[-1],
+                )
+        self._latest_observation_id = batch.observation.observation_id
