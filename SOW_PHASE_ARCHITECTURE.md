@@ -167,7 +167,7 @@ Later integration work:
 
 `StepRecord` remains the lightweight execution-history record used by the debugger. It captures enough information to reproduce and inspect the action sequence.
 
-Phase 2 may associate semantic encounters and persistent object identities with this history. Phase 3 may associate predictions and outcomes with it. Neither extension should turn `StepRecord` into the semantic memory or rule database.
+Phase 2 may associate semantic encounters and persistent object identities with this history. Phase 3 may associate predictions and outcomes with it. Neither extension should turn `StepRecord` into the semantic memory or rule database. `SymbolicStore` keeps that memory behind one exact-record boundary; its Prolog backend stores `semantic_record/3` facts and its AtomSpace backend stores equivalent queryable MeTTa `(semantic_record ...)` Atoms through a replaceable transport.
 
 ## `ActionTreeStore`
 

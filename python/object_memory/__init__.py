@@ -121,13 +121,22 @@ from .recognition import (
     ResidualAnalyzer,
     TurtleReconstructionEvidenceBuilder,
 )
-from .replay import ActionTreeSemanticReplay, PrologSemanticBackend, SemanticRecordCodec
+from .replay import (
+    ActionTreeSemanticReplay,
+    AtomSpaceSemanticBackend,
+    AtomSpaceTransport,
+    MettaFileAtomSpaceTransport,
+    PrologSemanticBackend,
+    SemanticRecordCodec,
+)
 from .sprite import AlphaContourProvider, SpriteAdapter
 from .transcript import TranscriptComparison, TranscriptScorer
 from .store import ArtifactIndex, InMemorySemanticBackend, SemanticStoreBackend, SymbolicStore
 
 __all__ = [
     "ArtifactProvider",
+    "AtomSpaceSemanticBackend",
+    "AtomSpaceTransport",
     "ActionRecommendation",
     "AcceptanceReport",
     "AlphaContourProvider",
@@ -169,6 +178,7 @@ __all__ = [
     "InMemorySemanticBackend",
     "LearningStepResult",
     "MatchProposal",
+    "MettaFileAtomSpaceTransport",
     "MergeDecision",
     "NormalizedResult",
     "Observation",

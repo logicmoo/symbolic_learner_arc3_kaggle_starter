@@ -6,7 +6,7 @@ from dataclasses import asdict, is_dataclass
 from enum import Enum
 from pathlib import Path
 import re
-from typing import Any, Mapping
+from typing import Any, Iterable, Mapping, Protocol
 
 from .models import (
     ActionRecommendation,
@@ -432,6 +432,140 @@ class PrologSemanticBackend:
             return existing
         self._records[namespace][record_id] = value
         self._flush()
+        return value
+
+    def get(self, namespace: str, record_id: str) -> Any | None:
+        return self._records.get(namespace, {}).get(record_id)
+
+    def values(self, namespace: str) -> tuple[Any, ...]:
+        records = self._records.get(namespace, {})
+        return tuple(records[item] for item in sorted(records))
+
+
+class AtomSpaceTransport(Protocol):
+    """Transport boundary for a MeTTa/OpenCog AtomSpace implementation."""
+
+    def query(self, head: str) -> Iterable[str]: ...
+
+    def assert_expression(self, expression: str) -> None: ...
+
+
+class MettaFileAtomSpaceTransport:
+    """Durable AtomSpace transport using an inspectable MeTTa expression file.
+
+    The transport deliberately knows nothing about Phase 2 record types. A future
+    Hyperon, OpenCog, or remote MeTTa transport only needs to provide the same two
+    operations; ``AtomSpaceSemanticBackend`` retains all identity and codec rules.
+    """
+
+    HEADER = "; Durable Phase 2 semantic-record AtomSpace."
+
+    def __init__(self, path: Path) -> None:
+        self.path = path
+
+    def query(self, head: str) -> tuple[str, ...]:
+        if not self.path.exists():
+            return ()
+        prefix = f"({head} "
+        return tuple(
+            line.strip()
+            for line in self.path.read_text(encoding="utf-8").splitlines()
+            if line.strip().startswith(prefix)
+        )
+
+    def assert_expression(self, expression: str) -> None:
+        existing = list(self.query("semantic_record"))
+        if expression in existing:
+            return
+        existing.append(expression)
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        temporary = self.path.with_suffix(self.path.suffix + ".tmp")
+        temporary.write_text(
+            self.HEADER + "\n\n" + "\n".join(sorted(existing)) + "\n",
+            encoding="utf-8",
+        )
+        temporary.replace(self.path)
+
+
+class AtomSpaceSemanticBackend:
+    """Exact semantic records stored as queryable ``semantic_record`` Atoms."""
+
+    HEAD = "semantic_record"
+
+    def __init__(
+        self,
+        transport: AtomSpaceTransport | None = None,
+        *,
+        path: Path | None = None,
+    ) -> None:
+        if transport is None:
+            if path is None:
+                raise ValueError("an AtomSpace transport or MeTTa path is required")
+            transport = MettaFileAtomSpaceTransport(path)
+        elif path is not None:
+            raise ValueError("provide an AtomSpace transport or path, not both")
+        self.transport = transport
+        self._records: dict[str, dict[str, Any]] = defaultdict(dict)
+        self._load()
+
+    @staticmethod
+    def _expression(namespace: str, record_id: str, value: Any) -> str:
+        payload = json.dumps(
+            _jsonable(value),
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        return "(" + " ".join(
+            (
+                AtomSpaceSemanticBackend.HEAD,
+                json.dumps(namespace, ensure_ascii=False),
+                json.dumps(record_id, ensure_ascii=False),
+                json.dumps(payload, ensure_ascii=False),
+            )
+        ) + ")"
+
+    @staticmethod
+    def _parse_expression(expression: str) -> tuple[str, str, Mapping[str, Any]]:
+        source = expression.strip()
+        prefix = f"({AtomSpaceSemanticBackend.HEAD}"
+        if not source.startswith(prefix) or not source.endswith(")"):
+            raise ValueError(f"invalid semantic-record Atom: {expression!r}")
+        body = source[len(prefix):-1]
+        decoder = json.JSONDecoder()
+        values: list[Any] = []
+        position = 0
+        while position < len(body):
+            while position < len(body) and body[position].isspace():
+                position += 1
+            if position >= len(body):
+                break
+            value, position = decoder.raw_decode(body, position)
+            values.append(value)
+        if len(values) != 3 or not all(isinstance(item, str) for item in values):
+            raise ValueError(f"semantic-record Atom must contain three strings: {expression!r}")
+        payload = json.loads(values[2])
+        if not isinstance(payload, Mapping):
+            raise ValueError("semantic-record Atom payload must decode to a map")
+        return values[0], values[1], payload
+
+    def _load(self) -> None:
+        for expression in self.transport.query(self.HEAD):
+            namespace, record_id, payload = self._parse_expression(expression)
+            decoded = SemanticRecordCodec.decode_namespace(namespace, payload)
+            existing = self._records[namespace].get(record_id)
+            if existing is not None and existing != decoded:
+                raise ValueError(f"Semantic identity conflict for {namespace}/{record_id}")
+            self._records[namespace][record_id] = decoded
+
+    def write_once(self, namespace: str, record_id: str, value: Any) -> Any:
+        existing = self._records[namespace].get(record_id)
+        if existing is not None:
+            if existing != value:
+                raise ValueError(f"Semantic identity conflict for {namespace}/{record_id}")
+            return existing
+        self.transport.assert_expression(self._expression(namespace, record_id, value))
+        self._records[namespace][record_id] = value
         return value
 
     def get(self, namespace: str, record_id: str) -> Any | None:

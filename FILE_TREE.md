@@ -195,6 +195,7 @@ The other files under `workbench/frontend/src/pages/` and older shell-oriented c
 ## Shared Python object-memory and learner contracts
 
 - [`python/object_memory/__init__.py`](python/object_memory/__init__.py) — public exports for shared Phase 2 and connected Phase 3 contracts.
+- [`python/object_memory/replay.py`](python/object_memory/replay.py) — exact semantic codecs, durable Prolog facts, queryable MeTTa AtomSpace records, and action-tree replay.
 - [`python/object_memory/models.py`](python/object_memory/models.py) — backend-neutral execution mode, normalized result, object, residual, atom, rule, evidence, confidence, and prediction records.
 - [`python/object_memory/providers.py`](python/object_memory/providers.py) — one provider interface with PROLOG, GPT-artifact, and deterministic PYTHON implementations.
 - [`python/object_memory/forms.py`](python/object_memory/forms.py) — `GenerativeForm` and `CellLogoForm`; Phase 2 extends these into one regenerating Turtle program per object using movement, rotation, pen state, and pen width rather than box filling.
