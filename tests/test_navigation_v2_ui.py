@@ -432,6 +432,9 @@ def test_benchmarks_route_uses_a_distinct_filesystem_backed_catalog_view() -> No
     assert '"SYSTEM · FILESYSTEM BENCHMARKS"' in policy
     assert ".benchmark-catalog-page .vendor-card" in styles
     assert ".benchmark-catalog-page .matrix-card" in styles
+    assert 'view === "benchmarks"' in page and '? "benchmarks"' in page
+    help_tabs = (ROOT / "workbench" / "frontend" / "src" / "components" / "HelpDocumentTabs.tsx").read_text(encoding="utf-8")
+    assert 'id:"benchmarks",label:"Benchmarks",path:"docs/benchmarks.md"' in help_tabs
 
 
 def test_runtime_artifacts_deep_link_to_datatype_resources() -> None:

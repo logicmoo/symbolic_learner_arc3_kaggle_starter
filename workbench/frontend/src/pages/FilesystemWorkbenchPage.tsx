@@ -3627,6 +3627,10 @@ export function FilesystemWorkbenchPage() {
                               ? "operations"
                               : view === "policies"
                                 ? "policies"
+                                : view === "modelPolicy"
+                                  ? "policies"
+                                  : view === "benchmarks"
+                                    ? "benchmarks"
                                 : view === "contexts"
                                   ? "contexts"
                                   : view === "sourceCode" || view === "prompts"
@@ -3655,7 +3659,7 @@ export function FilesystemWorkbenchPage() {
                       : view === "contexts"
                         ? JSON.stringify(
                             {
-                              contextResources: snapshot?.contexts?.length || 0,
+                              atomspaceResources: snapshot?.contexts?.length || 0,
                               workspace: workspace.id,
                             },
                             null,

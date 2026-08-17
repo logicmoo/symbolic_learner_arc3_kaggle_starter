@@ -78,3 +78,27 @@ def test_lightweight_workspace_chooser_skips_catalog_resolution(tmp_path: Path, 
     summary = workspace_api._workspace_from_directory(tmp_path, include_counts=False)
     assert summary["label"] == "Demo"
     assert summary["countsAvailable"] is False
+
+
+def test_direct_workspace_file_resolution_skips_catalog_counts(tmp_path: Path, monkeypatch) -> None:
+    root = tmp_path / "demo"
+    root.mkdir()
+    calls: list[bool] = []
+    monkeypatch.setattr(workspace_api, "_workspace_roots", lambda: [tmp_path])
+    original = workspace_api._workspace_from_directory
+
+    def capture(path: Path, *, include_counts: bool = True):
+        calls.append(include_counts)
+        return original(path, include_counts=include_counts)
+
+    monkeypatch.setattr(workspace_api, "_workspace_from_directory", capture)
+    resolved = workspace_api._resolve_workspace_without_counts("demo")
+    assert resolved["root"] == str(root.resolve())
+    assert calls == [False]
+
+
+def test_workspace_file_endpoint_uses_lightweight_resolution() -> None:
+    source = (ROOT / "workbench" / "server" / "workspace_api.py").read_text(encoding="utf-8")
+    endpoint = source.split("def read_workspace_file", 1)[1].split("@router.get", 1)[0]
+    assert "_resolve_workspace_without_counts(workspace_id)" in endpoint
+    assert "_resolve_workspace(workspace_id)" not in endpoint

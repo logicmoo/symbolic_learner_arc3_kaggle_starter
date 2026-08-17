@@ -262,6 +262,26 @@ def _resolve_workspace(workspace_id: str) -> dict[str, Any]:
     raise KeyError("workspace not found")
 
 
+def _resolve_workspace_without_counts(workspace_id: str) -> dict[str, Any]:
+    """Resolve a workspace for direct file access without catalog enumeration.
+
+    Reading one Markdown or source file must not parse every model, prompt,
+    operation, datatype, and runtime record merely to recover the workspace
+    root. Detailed discovery remains available to endpoints that display those
+    counts.
+    """
+    if re.fullmatch(r"[A-Za-z0-9_.-]+", workspace_id):
+        resources = get_filesystem_provider()
+        for container in _workspace_roots():
+            candidate = container / workspace_id
+            if resources.is_dir(candidate):
+                return _workspace_from_directory(candidate, include_counts=False)
+    for workspace in discover_workspaces(include_counts=False):
+        if workspace["id"] == workspace_id or workspace["root"] == workspace_id:
+            return workspace
+    raise KeyError("workspace not found")
+
+
 def _normalize_include_specs(workspace: dict[str, Any], raw: Any) -> list[dict[str, Any]]:
     if workspace["id"] == SHARED_WORKSPACE_ID:
         return []
@@ -807,7 +827,7 @@ def workspace_snapshot(workspace_id: str, scope: str = Query(default="full", pat
 @router.get("/{workspace_id}/file")
 def read_workspace_file(workspace_id: str, path: str = Query(...)) -> dict[str, Any]:
     try:
-        workspace = _resolve_workspace(workspace_id)
+        workspace = _resolve_workspace_without_counts(workspace_id)
         root = Path(workspace["root"])
         target = _safe_child(root, path)
         resources = get_filesystem_provider()

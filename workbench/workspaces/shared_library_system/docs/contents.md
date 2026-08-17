@@ -29,6 +29,7 @@ Use the tabs above to move between the workbench's shared documentation from any
 - [LLMs](llm_catalog.md)
 - [Systems](systems.md)
 - [Policies](policies.md)
+- [Benchmarks](benchmarks.md)
 - [Legacy LLM migration](legacy_llm_migration.md)
 
 ## Repository explorer
