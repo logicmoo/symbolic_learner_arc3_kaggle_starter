@@ -1,11 +1,16 @@
 from __future__ import annotations
 
 import json
+from collections import defaultdict
+from dataclasses import asdict, is_dataclass
+from enum import Enum
 from pathlib import Path
+import re
 from typing import Any, Mapping
 
 from .models import (
     ArtifactRef,
+    CommittedAtom,
     EncounterRecord,
     EvidencePolarity,
     EvidenceRecord,
@@ -17,6 +22,18 @@ from .models import (
     TurtleProgramRef,
 )
 from .store import SymbolicStore
+
+
+def _jsonable(value: Any) -> Any:
+    if is_dataclass(value):
+        return _jsonable(asdict(value))
+    if isinstance(value, Enum):
+        return value.value
+    if isinstance(value, Mapping):
+        return {str(key): _jsonable(item) for key, item in value.items()}
+    if isinstance(value, (tuple, list)):
+        return [_jsonable(item) for item in value]
+    return value
 
 
 def _provenance(value: Mapping[str, Any]) -> ProvenanceRef:
@@ -150,6 +167,100 @@ class SemanticRecordCodec:
                 schema_version=str(value.get("schema_version", "2.0.0")),
             )
         raise ValueError(f"unsupported semantic record type: {record_type!r}")
+
+    @staticmethod
+    def decode_namespace(namespace: str, value: Mapping[str, Any]) -> Any:
+        record_types = {
+            "observations": "observation",
+            "encounters": "encounter",
+            "match_proposals": "match_proposal",
+            "recognition_accounts": "recognition_account",
+            "evidence": "evidence",
+        }
+        if namespace in record_types:
+            return SemanticRecordCodec.decode(record_types[namespace], value)
+        if namespace == "artifacts":
+            return _artifact(value)
+        if namespace == "turtle_programs":
+            return _turtle(value)
+        if namespace == "atoms":
+            return CommittedAtom(
+                handle=str(value["handle"]),
+                atom_type=str(value["atom_type"]),
+                payload=dict(value.get("payload") or {}),
+                confidence=float(value.get("confidence", 0.0)),
+                provenance=tuple(value.get("provenance") or ()),
+                lifecycle_state=str(value.get("lifecycle_state", "active")),
+            )
+        raise ValueError(f"unsupported semantic namespace: {namespace!r}")
+
+
+class PrologSemanticBackend:
+    """Durable exact-record backend represented as inspectable SWI-Prolog facts."""
+
+    FACT = re.compile(r"^semantic_record\((.+?), (.+?), (.+)\)\.$")
+
+    def __init__(self, path: Path) -> None:
+        self.path = path
+        self._records: dict[str, dict[str, Any]] = defaultdict(dict)
+        self._load()
+
+    def _load(self) -> None:
+        if not self.path.exists():
+            return
+        for line in self.path.read_text(encoding="utf-8").splitlines():
+            match = self.FACT.match(line.strip())
+            if match is None:
+                continue
+            namespace = json.loads(match.group(1))
+            record_id = json.loads(match.group(2))
+            payload_source = json.loads(match.group(3))
+            payload = json.loads(payload_source)
+            self._records[str(namespace)][str(record_id)] = (
+                SemanticRecordCodec.decode_namespace(str(namespace), payload)
+            )
+
+    def _flush(self) -> None:
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        lines = [
+            "% Durable Phase 2 semantic records. JSON payloads preserve exact contracts.",
+            ":- dynamic semantic_record/3.",
+            "",
+        ]
+        for namespace in sorted(self._records):
+            for record_id in sorted(self._records[namespace]):
+                payload = json.dumps(
+                    _jsonable(self._records[namespace][record_id]),
+                    ensure_ascii=False,
+                    sort_keys=True,
+                    separators=(",", ":"),
+                )
+                lines.append(
+                    "semantic_record("
+                    f"{json.dumps(namespace, ensure_ascii=False)}, "
+                    f"{json.dumps(record_id, ensure_ascii=False)}, "
+                    f"{json.dumps(payload, ensure_ascii=False)})."
+                )
+        temporary = self.path.with_suffix(self.path.suffix + ".tmp")
+        temporary.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        temporary.replace(self.path)
+
+    def write_once(self, namespace: str, record_id: str, value: Any) -> Any:
+        existing = self._records[namespace].get(record_id)
+        if existing is not None:
+            if existing != value:
+                raise ValueError(f"Semantic identity conflict for {namespace}/{record_id}")
+            return existing
+        self._records[namespace][record_id] = value
+        self._flush()
+        return value
+
+    def get(self, namespace: str, record_id: str) -> Any | None:
+        return self._records.get(namespace, {}).get(record_id)
+
+    def values(self, namespace: str) -> tuple[Any, ...]:
+        records = self._records.get(namespace, {})
+        return tuple(records[item] for item in sorted(records))
 
 
 class ActionTreeSemanticReplay:

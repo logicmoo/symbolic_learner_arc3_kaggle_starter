@@ -208,8 +208,8 @@ Phase 2 implements the semantic object layer behind the Phase 1 debugger. It use
 ## Persistent symbolic memory and replay
 
 - [ ] **Partial** Maintain persistent symbolic memory for recognized objects, observations, Turtle programs, and associated artifacts.  
-  Existing evidence: `SymbolicMemory`, a backend-neutral `SymbolicStore` facade with write-once exact identity, a replaceable `SemanticStoreBackend` boundary, observation/encounter/Turtle composition, and an `ArtifactIndex` populated by stable identifier and semantic type. Exact snapshots replay every semantic namespace in dependency order and rebuild encounter/artifact indexes idempotently.
-  Remaining: durable Prolog or AtomSpace backend implementation and lifecycle governance.
+  Existing evidence: `SymbolicMemory`, a backend-neutral `SymbolicStore` facade with write-once exact identity, a replaceable `SemanticStoreBackend` boundary, observation/encounter/Turtle composition, and an `ArtifactIndex` populated by stable identifier and semantic type. Exact snapshots replay every semantic namespace in dependency order and rebuild encounter/artifact indexes idempotently. `PrologSemanticBackend` durably stores typed contracts as inspectable `semantic_record/3` facts, safely round-trips nested JSON/unicode, loads in live SWI-Prolog, and hydrates fresh facade indexes.
+  Remaining: AtomSpace backend implementation and complete lifecycle governance across durable reloads.
 
 - [ ] **Partial** Associate semantic encounters and memory updates with the history already preserved by Phase 1.  
   Existing evidence: deterministic debugger history, versioned records, append-only `EncounterLog`, external manifests/README links, and the isolated runner observer seam; `SemanticGridCaptureObserver` now normalizes captured grids, persists observation/encounter/Turtle/proposal/account/evidence artifacts, chains repeated candidates, composes `SymbolicStore`, and links records to nodes. Node READMEs summarize unresolved proposals, advisory similarity, evidence polarity, selected identity, decision source, confidence, and rivals with links to exact records.
@@ -217,7 +217,7 @@ Phase 2 implements the semantic object layer behind the Phase 1 debugger. It use
 
 - [ ] **Partial** Support deterministic semantic-memory replay and reproducible updates from the debugger’s recorded history.
   Existing evidence: complete `SymbolicStore` snapshots deterministically restore artifacts, Turtle references, atoms, observations, encounters, proposals, recognition accounts, and evidence; repeated replay is idempotent and encounter hashes remain stable. `ActionTreeSemanticReplay` rebuilds a fresh store directly from exact records linked by Phase 1 `semantic_records.json` manifests, restores encounter chains in predecessor order, deduplicates repeated links, and rejects missing/cyclic history.
-  Remaining: persist the reconstructed state through a durable Prolog or AtomSpace backend.
+  Recorded trees can now replay directly into the durable Prolog backend and hydrate after process restart. Remaining: an equivalent AtomSpace backend.
 
 - [ ] **Open** Demonstrate recognition and reconstruction under modest degradation and partial occlusion.
 

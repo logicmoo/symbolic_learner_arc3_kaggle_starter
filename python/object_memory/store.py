@@ -161,6 +161,26 @@ class SymbolicStore:
             "evidence": self.put_evidence,
         }
         for namespace in self.SNAPSHOT_NAMESPACES:
+            if namespace == "encounters":
+                pending = {item.encounter_id: item for item in snapshot.get(namespace, ())}
+                while pending:
+                    ready = [
+                        record_id
+                        for record_id, encounter in pending.items()
+                        if encounter.previous_encounter_id is None
+                        or self.encounters.get(encounter.previous_encounter_id) is not None
+                    ]
+                    if not ready:
+                        raise ValueError(
+                            "semantic snapshot encounters have missing or cyclic predecessors"
+                        )
+                    for record_id in ready:
+                        self.put_encounter(pending.pop(record_id))
+                continue
             for value in snapshot.get(namespace, ()):
                 writers[namespace](value)
         return self
+
+    def hydrate(self) -> "SymbolicStore":
+        """Populate facade indexes from records already present in the backend."""
+        return self.replay(self.snapshot())

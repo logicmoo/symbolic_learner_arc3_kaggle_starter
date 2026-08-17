@@ -844,3 +844,11 @@ Preserve the canonical checkout and its `codex/workbench-navigation-v2` branch.
   exact nested records, deduplicate repeated links, restore encounter chains in
   predecessor order, and reject missing or cyclic history rather than silently
   producing a partial store.
+- [x] Make each named English Workflow Generation Order title a quick-call
+  control. Section titles now run only their existing configured generation
+  step; `[group]` runs only its nested batch, while the Prompt-discovered `+`
+  controls remain the sole way to append another occurrence.
+- [x] Add a durable SWI-Prolog `SemanticStoreBackend`. Persist exact typed
+  records as inspectable `semantic_record/3` facts, atomically rewrite the
+  store, round-trip nested/unicode payloads, hydrate facade indexes after a
+  restart, and verify the generated store with live SWI-Prolog.

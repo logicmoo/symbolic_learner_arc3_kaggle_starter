@@ -70,7 +70,7 @@ from .recognition import (
     RegistryCorrespondenceAuthority,
     TurtleReconstructionEvidenceBuilder,
 )
-from .replay import ActionTreeSemanticReplay, SemanticRecordCodec
+from .replay import ActionTreeSemanticReplay, PrologSemanticBackend, SemanticRecordCodec
 from .store import ArtifactIndex, InMemorySemanticBackend, SemanticStoreBackend, SymbolicStore
 
 __all__ = [
@@ -120,6 +120,7 @@ __all__ = [
     "PHASE2_SCHEMA_VERSION",
     "ProvenanceRef",
     "PrologProvider",
+    "PrologSemanticBackend",
     "PythonProvider",
     "ResidualCandidate",
     "ResidualDisposition",
