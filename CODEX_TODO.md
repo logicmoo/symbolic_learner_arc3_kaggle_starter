@@ -32,8 +32,8 @@ values here.
 - Canonical checkout: `C:\snet\PeTTa\repos\symbolic_learner_workbench`
 - Active branch: `codex/workbench-navigation-v2`
 - Remote branch: not configured for the current local branch
-- Latest validated commit before this ledger update: `f350441b`
-  (`Keep launch resource selectors above dotenv defaults`)
+- Latest validated commit before this ledger update: `24ff5a79`
+  (`Add model policy history aggregation`)
 - Python environment: one repository-root `.venv` containing all optional
   ARC3, workbench, test, notebook, and integration dependencies
 - Frontend dependencies: `workbench/frontend/node_modules`
@@ -41,6 +41,26 @@ values here.
   never copy its secrets into this ledger
 
 ## Completed and validated
+
+- [x] Reorganize the active Workbench around the human/AI blackboard model:
+  Workspace owns Overview, Goals, Planning, and Workflows; Capabilities owns
+  Operations, Source Code, Systems, Models, Datatypes, and Policies; Knowledge
+  owns Data, AtomSpaces, and Artifacts; Runtime owns Goal Runs, Executions,
+  Events, States, and Logs; System owns Model Policy, Benchmarks, Processes,
+  and Settings. Source Code reuses the Prompt editor and language-filtered
+  Operation implementation editors for Prolog, MeTTa, and Python. Systems
+  configures callable runtimes and agents separately from model backends, while
+  Models retains backends, models, and presets. Data and AtomSpaces are
+  knowledge surfaces rather than design-time datatype definitions. The active
+  rich editors, documentation panel, deep links, and legacy route aliases are
+  preserved. Navigation, Source Code, policy, and Systems contract validation:
+  58 passed; frontend production build passed on 2026-08-17.
+
+- [x] Add selectable Model Policy performance-history aggregation. The chart
+  can display every persisted result, the latest point per model/preset series,
+  or an average per series without changing the exact chronological result
+  rows. Model-policy focused validation: 44 passed; frontend production build
+  passed on 2026-08-17.
 
 - [x] Make the Visual Image Diff structural columns adjustable without moving
   any content outside its existing `ThreeStateAccordionStack`. The default
@@ -995,3 +1015,18 @@ Preserve the canonical checkout and its `codex/workbench-navigation-v2` branch.
   scroll to strip cycling, and screenshot inspection passed on 2026-08-17.
   Full repository validation after the compact-strip refinement: 582 passed
   in 80.52s using an external Windows base-temp directory.
+- [x] Make each expanded Visual Image Diff transaction a real Workflow Item +
+  Operation debugger inside its existing `ThreeStateAccordionMember`. The
+  debugger uses the shared rich `OperationPlayground`, retains Run/Edit
+  Workflow Step tabs, and lists the exact filesystem Prompt resources used by
+  the selected Prompt implementation. Replace the Prolog group's incorrect
+  Turtle-renderer binding with the semantic `symbolic.get_prolog_evidence`
+  Operation. Its default `prompted_llm` child binds the existing cherry-pick
+  Prompt, while its `python` child deterministically collects all seven Prolog
+  artifacts and asks SWI-Prolog to load-check them when available, with no
+  Prompt or LLM call. The workflow keeps the semantic Operation stable and
+  persists only the selected implementation override. Live browser verification
+  confirmed both choices in the rich cascade selector and confirmed that the
+  Python route visibly changes to `NON-PROMPT OPERATION DEBUGGER`. Focused UI,
+  navigation, editor, and provider validation: 123 passed; frontend production
+  build passed on 2026-08-17.
