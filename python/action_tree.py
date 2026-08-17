@@ -792,6 +792,18 @@ class ActionTreeStore:
                             f"{len(detail.get('available_evidence_ids') or [])} available "
                             "evidence record(s); outcome fields remain empty"
                         )
+                    elif record["record_type"] == "action_recommendation":
+                        lines.append(
+                            f"  - recommended `{detail.get('recommended_action')}` using rule "
+                            f"`{detail.get('rule_id')}` at probability "
+                            f"`{detail.get('probability')}` from "
+                            f"`{detail.get('probability_source', 'bootstrap')}`; attempted "
+                            f"`{detail.get('attempted_action')}`; "
+                            f"{len(detail.get('rival_rule_ids') or [])} rival(s), "
+                            f"{len(detail.get('available_evidence_ids') or [])} available "
+                            "evidence record(s); prediction link "
+                            f"`{detail.get('prediction_id') or 'none'}`"
+                        )
                     elif record["record_type"] == "prediction_grade":
                         lines.append(
                             f"  - independently observed outcome at sequence "

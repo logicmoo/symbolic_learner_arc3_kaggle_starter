@@ -5,6 +5,7 @@ from typing import Any, Protocol
 
 from .memory import EncounterLog
 from .models import (
+    ActionRecommendation,
     ArtifactRef,
     CommittedAtom,
     ConfidenceHistoryRecord,
@@ -147,6 +148,13 @@ class SymbolicStore:
     def put_transition_rule(self, value: TransitionRule) -> TransitionRule:
         return self.backend.write_once("transition_rules", value.rule_id, value)
 
+    def put_action_recommendation(
+        self, value: ActionRecommendation
+    ) -> ActionRecommendation:
+        return self.backend.write_once(
+            "action_recommendations", value.recommendation_id, value
+        )
+
     def put_prediction_grade(
         self, value: PredictionGradeRecord
     ) -> PredictionGradeRecord:
@@ -174,6 +182,7 @@ class SymbolicStore:
         "transition_rules",
         "confidence_history",
         "predictions",
+        "action_recommendations",
         "prediction_grades",
     )
 
@@ -201,6 +210,7 @@ class SymbolicStore:
             "object_changes": self.put_object_change,
             "residuals": self.put_residual,
             "transition_rules": self.put_transition_rule,
+            "action_recommendations": self.put_action_recommendation,
             "confidence_history": self.put_confidence_history,
             "predictions": self.put_prediction,
             "prediction_grades": self.put_prediction_grade,

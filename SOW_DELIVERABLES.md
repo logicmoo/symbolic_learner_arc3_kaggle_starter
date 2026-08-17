@@ -334,7 +334,8 @@ Phase 3 implements learning and prediction over the persistent objects and evide
   Existing prediction bridge: `ActionTreeStore.link_prediction_history` materializes a persisted pre-outcome prediction, its independent grade, and linked evidence into a node manifest and README without mutating the original prediction.
   Live integration: the canonical semantic observer invokes the bridge before the ARC3 action and again after independent transition grading; action-tree replay restores predictions, grades, and evidence after restart.
 
-- [ ] **Open** Link learned rules and action recommendations to their source observations, Phase 2 objects, evidence, predictions, and outcomes.
+- [x] Link learned rules and action recommendations to their source observations, Phase 2 objects, evidence, predictions, and outcomes.
+  Evidence: immutable `ActionRecommendation` records rank every learned rule independently of the attempted action and retain the selected rule, source state, attempted and recommended actions, rivals, assumptions, critiques, available evidence, and probability provenance. A recommendation links a prediction only when that prediction used the recommended rule; the independently persisted prediction grade then links the later outcome without rewriting either record. Live capture writes recommendations into action-tree manifests and README summaries, and both filesystem and Prolog semantic replay restore them after restart.
 
 ## Environment and acceptance demonstrations
 

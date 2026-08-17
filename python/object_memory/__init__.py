@@ -42,6 +42,7 @@ from .learning import (
     TransitionRecord,
 )
 from .models import (
+    ActionRecommendation,
     ArtifactRef,
     CandidateObject,
     CommittedAtom,
@@ -88,6 +89,7 @@ from .store import ArtifactIndex, InMemorySemanticBackend, SemanticStoreBackend,
 
 __all__ = [
     "ArtifactProvider",
+    "ActionRecommendation",
     "ActionTreeSemanticReplay",
     "ArtifactRef",
     "ArtifactIndex",

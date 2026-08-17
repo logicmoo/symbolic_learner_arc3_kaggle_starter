@@ -367,6 +367,66 @@ def test_phase3_pipeline_learns_predicts_and_grades() -> None:
             raise AssertionError("invalid prediction feedback must be rejected")
 
 
+def test_action_recommendation_is_ranked_independently_of_attempted_action() -> None:
+    rule_store = RuleStore()
+    left = rule_store.store(
+        TransitionRule(
+            "rule-left",
+            (),
+            {"action": "LEFT"},
+            ("moved-left",),
+            supporting_evidence_ids=("evidence-left",),
+            bootstrap_probability=0.9,
+        )
+    )
+    right = rule_store.store(
+        TransitionRule(
+            "rule-right",
+            (),
+            {"action": "RIGHT"},
+            ("moved-right",),
+            bootstrap_probability=0.2,
+        )
+    )
+    ledger = PredictionLedger()
+    semantic_store = SymbolicStore(InMemorySemanticBackend())
+    pipeline = GameLearningPipeline(
+        TransitionAnalyzer(lambda before, action, after: None),
+        TransformationLearner(lambda transition: ()),
+        RuleInducer(lambda candidates: ()),
+        RuleRanker(lambda rule: rule.bootstrap_probability),
+        rule_store,
+        ledger,
+        semantic_store,
+    )
+    ledger.record(
+        PredictionRecord(
+            "prediction-right",
+            right.rule_id,
+            "state-1",
+            right.predicted_effects,
+            4,
+        )
+    )
+
+    recommendation = pipeline.recommend_action(
+        source_state_id="state-1",
+        attempted_action={"action": "RIGHT"},
+        created_sequence=4,
+        prediction_id="prediction-right",
+    )
+
+    assert recommendation.rule_id == left.rule_id
+    assert recommendation.recommended_action == {"action": "LEFT"}
+    assert recommendation.attempted_action == {"action": "RIGHT"}
+    assert recommendation.rival_rule_ids == (right.rule_id,)
+    assert recommendation.available_evidence_ids == ("evidence-left",)
+    assert recommendation.prediction_id is None
+    assert semantic_store.get(
+        "action_recommendations", recommendation.recommendation_id
+    ) == recommendation
+
+
 def test_integration_validator_rejects_duplicate_object_identities() -> None:
     validator = IntegrationValidator()
     payload = GameObjectLearnerPayload(

@@ -5,6 +5,7 @@ from enum import Enum
 from typing import Any, Callable, Iterable, Mapping, Sequence
 
 from .models import (
+    ActionRecommendation,
     EvidencePolarity,
     EvidenceRecord,
     PredictionGradeRecord,
@@ -228,6 +229,56 @@ class GameLearningPipeline:
             if self.semantic_store is not None:
                 self.semantic_store.put_transition_rule(rule)
         return LearningStepResult(transition, candidates, rules)
+
+    def recommend_action(
+        self,
+        *,
+        source_state_id: str,
+        attempted_action: Any,
+        created_sequence: int,
+        prediction_id: str | None = None,
+    ) -> ActionRecommendation | None:
+        """Rank all learned actions independently of the action being attempted."""
+
+        ranked = self.rule_ranker.rank(
+            rule for rule in self.rule_store.rules() if rule.predicted_effects
+        )
+        if not ranked:
+            return None
+        selected = ranked[0]
+        linked_prediction_id = None
+        if prediction_id is not None:
+            prediction = self.prediction_ledger.get(prediction_id)
+            if prediction.rule_id == selected.rule_id:
+                linked_prediction_id = prediction_id
+        record = ActionRecommendation.create(
+            rule_id=selected.rule_id,
+            source_state_id=source_state_id,
+            recommended_action=selected.action_or_event,
+            attempted_action=attempted_action,
+            created_sequence=created_sequence,
+            rival_rule_ids=tuple(rule.rule_id for rule in ranked[1:]),
+            available_evidence_ids=tuple(
+                dict.fromkeys(
+                    (
+                        *selected.supporting_evidence_ids,
+                        *selected.contradicting_evidence_ids,
+                    )
+                )
+            ),
+            assumptions=selected.assumptions,
+            critiques=selected.critiques,
+            probability=(
+                selected.calibrated_probability
+                if selected.calibrated_probability is not None
+                else selected.bootstrap_probability
+            ),
+            probability_source=selected.probability_source,
+            prediction_id=linked_prediction_id,
+        )
+        if self.semantic_store is not None:
+            self.semantic_store.put_action_recommendation(record)
+        return record
 
     def predict(
         self,

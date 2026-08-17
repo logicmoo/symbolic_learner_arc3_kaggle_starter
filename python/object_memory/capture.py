@@ -384,43 +384,75 @@ class SemanticGridCaptureObserver:
             or self._pending_prediction is not None
         ):
             return
-        action_key = self._action_key(action)
-        candidates = tuple(
+        rules = tuple(
             rule
             for rule in pipeline.rule_store.rules()
             if rule.predicted_effects
-            and self._action_key(rule.action_or_event) == action_key
         )
-        if not candidates:
+        if not rules:
             return
-        selected = pipeline.rule_ranker.rank(candidates)[0]
+        action_key = self._action_key(action)
+        candidates = tuple(
+            rule
+            for rule in rules
+            if self._action_key(rule.action_or_event) == action_key
+        )
         created_sequence = len(self.symbolic_store.encounters.records()) + len(
             pipeline.prediction_ledger.records()
         ) + 1
-        prediction_id = deterministic_identifier(
-            "prediction",
-            {
-                "rule_id": selected.rule_id,
-                "source_state_id": self._latest_observation_id or str(node.path),
-                "action": action,
-                "data": dict(data),
-                "created_sequence": created_sequence,
-            },
-        )
-        predicted, _record = pipeline.predict(
-            prediction_id=prediction_id,
-            rule_id=selected.rule_id,
-            source_state_id=self._latest_observation_id or str(node.path),
-            state={"action": action, "data": dict(data)},
+        source_state_id = self._latest_observation_id or str(node.path)
+        prediction_id = None
+        if candidates:
+            selected = pipeline.rule_ranker.rank(candidates)[0]
+            prediction_id = deterministic_identifier(
+                "prediction",
+                {
+                    "rule_id": selected.rule_id,
+                    "source_state_id": source_state_id,
+                    "action": action,
+                    "data": dict(data),
+                    "created_sequence": created_sequence,
+                },
+            )
+            predicted, _record = pipeline.predict(
+                prediction_id=prediction_id,
+                rule_id=selected.rule_id,
+                source_state_id=source_state_id,
+                state={"action": action, "data": dict(data)},
+                created_sequence=created_sequence,
+                executor=RuleExecutor(
+                    pipeline.rule_store,
+                    checker=lambda _rule, _state: True,
+                    executor=lambda rule, _state: rule.predicted_effects[0],
+                ),
+            )
+            self._pending_prediction = (prediction_id, predicted)
+
+        recommendation = pipeline.recommend_action(
+            source_state_id=source_state_id,
+            attempted_action={"action": action, "data": dict(data)},
             created_sequence=created_sequence,
-            executor=RuleExecutor(
-                pipeline.rule_store,
-                checker=lambda _rule, _state: True,
-                executor=lambda rule, _state: rule.predicted_effects[0],
-            ),
+            prediction_id=prediction_id,
         )
-        self._pending_prediction = (prediction_id, predicted)
-        store.link_prediction_history(node, pipeline.semantic_store, prediction_id)
+        if recommendation is not None:
+            recommendation_path = self._write_record(
+                node.path
+                / "semantic"
+                / f"{recommendation.recommendation_id}.action_recommendation.json",
+                recommendation,
+            )
+            store.link_semantic_record(
+                node,
+                record_type="action_recommendation",
+                record_id=recommendation.recommendation_id,
+                artifact_path=recommendation_path,
+                schema_version=recommendation.schema_version,
+                deterministic_hash=sha256(
+                    recommendation_path.read_bytes()
+                ).hexdigest(),
+            )
+        if prediction_id is not None:
+            store.link_prediction_history(node, pipeline.semantic_store, prediction_id)
 
     def on_state_captured(
         self,

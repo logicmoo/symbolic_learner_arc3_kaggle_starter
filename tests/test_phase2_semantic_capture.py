@@ -569,6 +569,9 @@ def test_live_semantic_observer_predicts_before_action_and_grades_after_capture(
     assert [
         item["record_type"] for item in initial_manifest["records"]
     ].count("prediction") == 1
+    assert [
+        item["record_type"] for item in initial_manifest["records"]
+    ].count("action_recommendation") == 1
     assert not any(
         item["record_type"] == "prediction_grade"
         for item in initial_manifest["records"]
@@ -593,14 +596,23 @@ def test_live_semantic_observer_predicts_before_action_and_grades_after_capture(
     assert child_types.count("prediction_grade") == 1
     assert child_types.count("evidence") >= 1
     prediction = semantic.values("predictions")[0]
+    recommendation = semantic.values("action_recommendations")[0]
     grade = semantic.get("prediction_grades", prediction.prediction_id)
+    assert recommendation.prediction_id == prediction.prediction_id
+    assert recommendation.source_state_id == prediction.source_state_id
     assert prediction.outcome_sequence is None
     assert grade.outcome_sequence > prediction.created_sequence
     assert grade.evidence[0] == "independent_arc3_transition"
     readme = child.readme_path.read_text(encoding="utf-8")
     assert "independently observed outcome" in readme
+    initial_readme = initial.readme_path.read_text(encoding="utf-8")
+    assert "recommended" in initial_readme
+    assert prediction.prediction_id in initial_readme
     replayed = ActionTreeSemanticReplay().replay(
         tree.level_root, SymbolicStore(InMemorySemanticBackend())
     )
     assert replayed.get("predictions", prediction.prediction_id) == prediction
     assert replayed.get("prediction_grades", prediction.prediction_id) == grade
+    assert replayed.get(
+        "action_recommendations", recommendation.recommendation_id
+    ) == recommendation

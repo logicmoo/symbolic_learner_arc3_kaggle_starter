@@ -560,6 +560,41 @@ class TransitionRule:
 
 
 @dataclass(frozen=True)
+class ActionRecommendation:
+    recommendation_id: str
+    rule_id: str
+    source_state_id: str
+    recommended_action: Any
+    attempted_action: Any
+    created_sequence: int
+    rival_rule_ids: tuple[str, ...] = ()
+    available_evidence_ids: tuple[str, ...] = ()
+    assumptions: tuple[str, ...] = ()
+    critiques: tuple[str, ...] = ()
+    probability: float | None = None
+    probability_source: str = "bootstrap"
+    prediction_id: str | None = None
+    schema_version: str = "1.0.0"
+
+    @classmethod
+    def create(cls, **values: Any) -> "ActionRecommendation":
+        identity = {
+            "rule_id": values["rule_id"],
+            "source_state_id": values["source_state_id"],
+            "recommended_action": values["recommended_action"],
+            "attempted_action": values["attempted_action"],
+            "created_sequence": values["created_sequence"],
+            "prediction_id": values.get("prediction_id"),
+        }
+        return cls(
+            recommendation_id=deterministic_identifier(
+                "action-recommendation", identity
+            ),
+            **values,
+        )
+
+
+@dataclass(frozen=True)
 class PredictionRecord:
     prediction_id: str
     rule_id: str

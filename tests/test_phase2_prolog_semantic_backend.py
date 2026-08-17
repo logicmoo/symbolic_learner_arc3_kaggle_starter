@@ -5,6 +5,7 @@ import subprocess
 import pytest
 
 from object_memory import (
+    ActionRecommendation,
     ArtifactRef,
     CommittedAtom,
     ConfidenceHistoryRecord,
@@ -93,6 +94,17 @@ def test_prolog_semantic_backend_round_trips_and_hydrates(tmp_path: Path) -> Non
             bootstrap_probability=0.5,
         )
     )
+    recommendation = store.put_action_recommendation(
+        ActionRecommendation.create(
+            rule_id=rule.rule_id,
+            source_state_id=observation.observation_id,
+            recommended_action=rule.action_or_event,
+            attempted_action={"action": "RIGHT"},
+            created_sequence=3,
+            available_evidence_ids=("ev-1",),
+            probability=0.5,
+        )
+    )
 
     loaded = SymbolicStore(PrologSemanticBackend(path)).hydrate()
 
@@ -104,6 +116,7 @@ def test_prolog_semantic_backend_round_trips_and_hydrates(tmp_path: Path) -> Non
     assert loaded.values("object_changes") == (change,)
     assert loaded.values("residuals") == (residual,)
     assert loaded.values("transition_rules") == (rule,)
+    assert loaded.values("action_recommendations") == (recommendation,)
     assert loaded.snapshot() == store.snapshot()
     source = path.read_text(encoding="utf-8")
     assert ":- dynamic semantic_record/3." in source

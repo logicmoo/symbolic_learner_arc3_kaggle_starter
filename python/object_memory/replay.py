@@ -9,6 +9,7 @@ import re
 from typing import Any, Mapping
 
 from .models import (
+    ActionRecommendation,
     ArtifactRef,
     CommittedAtom,
     ConfidenceHistoryRecord,
@@ -298,6 +299,25 @@ class SemanticRecordCodec:
                 prediction_score_total=float(value.get("prediction_score_total", 0.0)),
                 prediction_history=tuple(value.get("prediction_history") or ()),
             )
+        if record_type == "action_recommendation":
+            return ActionRecommendation(
+                recommendation_id=str(value["recommendation_id"]),
+                rule_id=str(value["rule_id"]),
+                source_state_id=str(value["source_state_id"]),
+                recommended_action=value.get("recommended_action"),
+                attempted_action=value.get("attempted_action"),
+                created_sequence=int(value["created_sequence"]),
+                rival_rule_ids=tuple(value.get("rival_rule_ids") or ()),
+                available_evidence_ids=tuple(
+                    value.get("available_evidence_ids") or ()
+                ),
+                assumptions=tuple(value.get("assumptions") or ()),
+                critiques=tuple(value.get("critiques") or ()),
+                probability=value.get("probability"),
+                probability_source=str(value.get("probability_source", "bootstrap")),
+                prediction_id=value.get("prediction_id"),
+                schema_version=str(value.get("schema_version", "1.0.0")),
+            )
         raise ValueError(f"unsupported semantic record type: {record_type!r}")
 
     @staticmethod
@@ -313,6 +333,7 @@ class SemanticRecordCodec:
             "predictions": "prediction",
             "prediction_grades": "prediction_grade",
             "transition_rules": "transition_rule",
+            "action_recommendations": "action_recommendation",
         }
         if namespace in record_types:
             return SemanticRecordCodec.decode(record_types[namespace], value)
@@ -421,6 +442,7 @@ class ActionTreeSemanticReplay:
         "object_change",
         "residual",
         "prediction",
+        "action_recommendation",
         "prediction_grade",
     )
 
@@ -447,6 +469,7 @@ class ActionTreeSemanticReplay:
             "object_change": store.put_object_change,
             "residual": store.put_residual,
             "prediction": store.put_prediction,
+            "action_recommendation": store.put_action_recommendation,
             "prediction_grade": store.put_prediction_grade,
         }
         for record_type in self.ORDER:
