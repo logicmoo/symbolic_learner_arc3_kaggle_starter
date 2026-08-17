@@ -149,7 +149,8 @@ Phase 2 implements the semantic object layer behind the Phase 1 debugger. It use
   Existing evidence: `CandidateObject`, `PerceptionAdapter`, and `GridAdapter`; the grid adapter wraps the existing `workbench.server.runtime.analyze_grid` extractor and emits normalized `Observation`, artifact/provenance, and candidate contracts without duplicating extraction logic. `ImageAdapter` accepts Pillow images, encoded bytes, or paths with injected segmentation providers, while `SimpleVideoAdapter` sends ordered decoded frames through the same image contract without imposing an OpenCV dependency.
   Remaining: broaden normalized topology/relationship coverage and connect the adapter to live semantic encounter creation.
 
-- [ ] **Open** Implement pluggable perception providers for image and simple-video inputs.
+- [ ] **Partial** Implement pluggable perception providers for image and simple-video inputs.
+  Existing evidence: normalized raster and ordered-frame adapters accept injected providers; a deterministic alpha-contour provider extracts disconnected transparent sprites with exact bounds, colors, topology, and pixel-boundary vectors. Production video decoding and additional learned image providers remain environment-specific follow-up work.
 
 - [ ] **Partial** Extract objects and represent geometry, structure, properties, relationships, position, orientation, scale, and appearance.  
   Existing evidence: frozen versioned contracts plus deterministic grid extraction of cells, exact bounds, boundary geometry, shape/color/appearance, hole and enclosure regions, connected components, compound parts, horizontal and vertical bars, line thickness, and pairwise spatial relationships; semantic capture persists normalized instance position/scale/appearance, geometry, topology, source provenance, and canonical relationship records. Relationship equality and change participate in correspondence evidence and survive snapshot, Prolog, and action-tree replay.

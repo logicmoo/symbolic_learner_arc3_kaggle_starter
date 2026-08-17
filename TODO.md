@@ -143,7 +143,7 @@ Keep the shared records in `python/object_memory/models.py`; do not create anoth
 - [x] Duplicate-prevention test.
 - [x] False-merge and false-split tests.
 - [x] Translation, rotation, reflection, recolor, scale, noise, and partial-visibility fixtures.
-- [ ] Modest degradation and partial-occlusion recognition.
+- [x] Modest degradation and partial-occlusion recognition.
 - [x] Positive and negative evidence accumulation.
 - [x] Confidence calibration and reproducibility.
 - [x] Deterministic semantic-memory replay over exact records linked from Phase 1 action-tree manifests, including predecessor-ordered encounter chains.
@@ -265,7 +265,7 @@ Architecture: [Environment progression](SOW_PHASE_ARCHITECTURE.md#environment-pr
 
 - [ ] Rendered arcade fixtures.
 - [ ] Fixed-camera physics fixtures.
-- [ ] `SpriteAdapter` and contour/vector providers.
+- [x] `SpriteAdapter` and contour/vector providers.
 - [ ] Top-down manipulation fixtures.
 - [ ] Partial-occlusion completion datasets.
 - [ ] Benchmark runner.

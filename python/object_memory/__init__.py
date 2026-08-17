@@ -100,11 +100,13 @@ from .recognition import (
     TurtleReconstructionEvidenceBuilder,
 )
 from .replay import ActionTreeSemanticReplay, PrologSemanticBackend, SemanticRecordCodec
+from .sprite import AlphaContourProvider, SpriteAdapter
 from .store import ArtifactIndex, InMemorySemanticBackend, SemanticStoreBackend, SymbolicStore
 
 __all__ = [
     "ArtifactProvider",
     "ActionRecommendation",
+    "AlphaContourProvider",
     "ActionTreeSemanticReplay",
     "ArtifactRef",
     "ArtifactIndex",
@@ -183,6 +185,7 @@ __all__ = [
     "RuleRivalSet",
     "RuleStore",
     "SingleWriter",
+    "SpriteAdapter",
     "SemanticStoreBackend",
     "SemanticRecordCodec",
     "SemanticGridCaptureObserver",
