@@ -111,6 +111,7 @@ from .recognition import (
     PartialVisibilityCompletion,
     RecognitionSession,
     RegistryCorrespondenceAuthority,
+    StructuralCorrespondenceInferer,
     ResidualAnalyzer,
     TurtleReconstructionEvidenceBuilder,
 )
@@ -215,6 +216,7 @@ __all__ = [
     "standard_semantic_grid_observer",
     "SplitDecision",
     "SymbolicMemory",
+    "StructuralCorrespondenceInferer",
     "SymbolicStore",
     "TransformationCandidate",
     "TransformationLearner",

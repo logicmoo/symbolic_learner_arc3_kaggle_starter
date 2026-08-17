@@ -501,32 +501,45 @@ class EncounterChangeSession:
             if item.observation_id == current_observation_id
             and item.candidate_identity_id is not None
         }
+        correspondence = StructuralCorrespondenceInferer().infer(previous, current)
         proposals: list[MatchProposal] = []
-        correspondence: dict[str, tuple[str, ...]] = {}
-        for candidate_id in sorted(set(previous) & set(current)):
-            proposal = self.matcher.compare(
-                candidate_id=candidate_id,
-                current=current[candidate_id].instance,
-                stored_identity_id=candidate_id,
-                stored=previous[candidate_id].instance,
-                provenance=current[candidate_id].provenance,
+        proposal_by_candidate: dict[str, MatchProposal] = {}
+        property_proposals: list[MatchProposal] = []
+        identity_use_count = {
+            identity_id: sum(
+                identity_id in identities for identities in correspondence.values()
             )
-            source = (
-                current[candidate_id].provenance[0]
-                if current[candidate_id].provenance
-                else ProvenanceRef(current[candidate_id].encounter_id, "transition_matcher")
-            )
-            evidence = CorrespondenceEvidenceBuilder().build(proposal, source=source)
-            for item in evidence:
-                self.store.put_evidence(item)
-            proposal = replace(
-                proposal,
-                evidence_ids=tuple(item.evidence_id for item in evidence),
-            )
-            self.store.put_match_proposal(proposal)
-            proposals.append(proposal)
-            correspondence[candidate_id] = (candidate_id,)
-        proposal_by_candidate = {item.candidate_id: item for item in proposals}
+            for identities in correspondence.values()
+            for identity_id in identities
+        }
+        for candidate_id, identity_ids in sorted(correspondence.items()):
+            for identity_id in identity_ids:
+                proposal = self.matcher.compare(
+                    candidate_id=candidate_id,
+                    current=current[candidate_id].instance,
+                    stored_identity_id=identity_id,
+                    stored=previous[identity_id].instance,
+                    provenance=current[candidate_id].provenance,
+                )
+                source = (
+                    current[candidate_id].provenance[0]
+                    if current[candidate_id].provenance
+                    else ProvenanceRef(
+                        current[candidate_id].encounter_id, "transition_matcher"
+                    )
+                )
+                evidence = CorrespondenceEvidenceBuilder().build(proposal, source=source)
+                for item in evidence:
+                    self.store.put_evidence(item)
+                proposal = replace(
+                    proposal,
+                    evidence_ids=tuple(item.evidence_id for item in evidence),
+                )
+                self.store.put_match_proposal(proposal)
+                proposals.append(proposal)
+                if len(identity_ids) == 1 and identity_use_count[identity_id] == 1:
+                    proposal_by_candidate[candidate_id] = proposal
+                    property_proposals.append(proposal)
         changes = ChangeDetector().detect(
             proposals=proposal_by_candidate,
             correspondence=correspondence,
@@ -540,12 +553,99 @@ class EncounterChangeSession:
             self.store.put_object_change(change)
         residuals = tuple(
             residual
-            for proposal in proposals
+            for proposal in property_proposals
             for residual in self.residual_analyzer.from_proposal(proposal)
         )
         for residual in residuals:
             self.store.put_residual(residual)
         return tuple(proposals), changes, residuals
+
+
+class StructuralCorrespondenceInferer:
+    """Infer only exact one-to-one, split, or merge cell-set correspondences."""
+
+    @staticmethod
+    def _absolute_cells(encounter: Any) -> frozenset[tuple[float, float]]:
+        instance = encounter.instance
+        cells = instance.geometry.get("cells") or instance.geometry.get(
+            "boundary_cells"
+        )
+        if not cells:
+            return frozenset()
+        x = float(instance.position[0]) if len(instance.position) > 0 else 0.0
+        y = float(instance.position[1]) if len(instance.position) > 1 else 0.0
+        return frozenset(
+            (round(x + float(cell[0]), 9), round(y + float(cell[1]), 9))
+            for cell in cells
+        )
+
+    @staticmethod
+    def _disjoint(groups: list[frozenset[tuple[float, float]]]) -> bool:
+        combined: set[tuple[float, float]] = set()
+        for group in groups:
+            if combined.intersection(group):
+                return False
+            combined.update(group)
+        return True
+
+    def infer(
+        self, previous: Mapping[str, Any], current: Mapping[str, Any]
+    ) -> dict[str, tuple[str, ...]]:
+        correspondence = {
+            candidate_id: (candidate_id,)
+            for candidate_id in sorted(set(previous) & set(current))
+        }
+        unmatched_previous = set(previous) - set(correspondence)
+        unmatched_current = set(current) - set(correspondence)
+        previous_cells = {
+            item_id: self._absolute_cells(encounter)
+            for item_id, encounter in previous.items()
+        }
+        current_cells = {
+            item_id: self._absolute_cells(encounter)
+            for item_id, encounter in current.items()
+        }
+
+        for candidate_id in sorted(tuple(unmatched_current)):
+            target = current_cells[candidate_id]
+            parts = [
+                identity_id
+                for identity_id in sorted(unmatched_previous)
+                if previous_cells[identity_id]
+                and previous_cells[identity_id].issubset(target)
+            ]
+            groups = [previous_cells[item_id] for item_id in parts]
+            if len(parts) > 1 and self._disjoint(groups) and frozenset().union(*groups) == target:
+                correspondence[candidate_id] = tuple(parts)
+                unmatched_current.remove(candidate_id)
+                unmatched_previous.difference_update(parts)
+
+        for identity_id in sorted(tuple(unmatched_previous)):
+            target = previous_cells[identity_id]
+            parts = [
+                candidate_id
+                for candidate_id in sorted(unmatched_current)
+                if current_cells[candidate_id]
+                and current_cells[candidate_id].issubset(target)
+            ]
+            groups = [current_cells[item_id] for item_id in parts]
+            if len(parts) > 1 and self._disjoint(groups) and frozenset().union(*groups) == target:
+                for candidate_id in parts:
+                    correspondence[candidate_id] = (identity_id,)
+                unmatched_current.difference_update(parts)
+                unmatched_previous.remove(identity_id)
+
+        for candidate_id in sorted(tuple(unmatched_current)):
+            exact = [
+                identity_id
+                for identity_id in sorted(unmatched_previous)
+                if current_cells[candidate_id]
+                and current_cells[candidate_id] == previous_cells[identity_id]
+            ]
+            if len(exact) == 1:
+                correspondence[candidate_id] = (exact[0],)
+                unmatched_previous.remove(exact[0])
+        return correspondence
 
 
 class ResidualAnalyzer:
@@ -618,7 +718,7 @@ class TurtleReconstructionEvidenceBuilder:
 
 
 class ChangeDetector:
-    """Classify explicit before/after correspondences into semantic changes."""
+    """Classify resolved before/after correspondences into semantic changes."""
 
     PROPERTY_KINDS = {
         "position": "moved",
