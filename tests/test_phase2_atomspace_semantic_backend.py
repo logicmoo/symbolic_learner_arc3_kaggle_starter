@@ -1,9 +1,11 @@
+import json
 from pathlib import Path
 
 import pytest
 
 from object_memory import (
     ArtifactRef,
+    ActionTreeSemanticReplay,
     AtomSpaceSemanticBackend,
     CommittedAtom,
     EncounterRecord,
@@ -105,3 +107,52 @@ def test_metta_file_transport_deduplicates_exact_atoms(tmp_path: Path) -> None:
     transport.assert_expression(expression)
 
     assert transport.query("semantic_record") == (expression,)
+
+
+def test_action_tree_replays_into_atomspace_and_reloads_indexes(tmp_path: Path) -> None:
+    tree = tmp_path / "tree"
+    node = tree / "node"
+    node.mkdir(parents=True)
+    artifact = node / "observation.json"
+    artifact.write_text(
+        json.dumps(
+            {
+                "observation_id": "observation-one",
+                "source_modality": "logical_grid",
+                "artifacts": [
+                    {
+                        "artifact_id": "grid-one",
+                        "artifact_type": "logical_grid",
+                        "uri": "node/grid.json",
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    (node / "semantic_records.json").write_text(
+        json.dumps(
+            {
+                "records": [
+                    {
+                        "record_type": "observation",
+                        "record_id": "observation-one",
+                        "artifact": "observation.json",
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    atomspace_path = tmp_path / "semantic_memory.metta"
+
+    replayed = ActionTreeSemanticReplay().replay(
+        tree, SymbolicStore(AtomSpaceSemanticBackend(path=atomspace_path))
+    )
+    reloaded = SymbolicStore(
+        AtomSpaceSemanticBackend(path=atomspace_path)
+    ).hydrate()
+
+    assert reloaded.snapshot() == replayed.snapshot()
+    assert reloaded.get("observations", "observation-one") is not None
+    assert reloaded.artifacts.get("grid-one") is not None
