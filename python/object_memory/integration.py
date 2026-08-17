@@ -14,8 +14,10 @@ from .learning import (
     TransformationLearner,
     TransitionAnalyzer,
     TransitionRecord,
+    RuleInducer,
+    RuleRanker,
 )
-from .models import ExecutionMode, NormalizedResult
+from .models import ExecutionMode, NormalizedResult, TransitionRule
 from .store import SymbolicStore
 
 
@@ -279,9 +281,95 @@ def phase2_transformation_learner() -> TransformationLearner:
                 transformation=plain,
                 evidence=tuple(str(item) for item in plain.get("evidence_ids") or ()),
                 score=1.0,
+                source_state_id=transition.before_state_id,
+                target_state_id=transition.after_state_id,
+                action_or_event=transition.action_or_event,
+                assumptions=("observed_transition_is_representative",),
+                critiques=("requires_unseen_case_validation",),
+                provenance=transition.provenance,
             )
 
     return TransformationLearner(learn)
+
+
+def phase2_rule_inducer() -> RuleInducer:
+    """Induce inspectable rival rules without treating one observation as proof."""
+
+    def rule_identity(candidate: TransformationCandidate) -> str:
+        value = {
+            "action_or_event": _plain(candidate.action_or_event),
+            "transformation": _plain(candidate.transformation),
+            "assumptions": candidate.assumptions,
+        }
+        encoded = json.dumps(
+            value, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+        ).encode("utf-8")
+        return f"rule-{sha256(encoded).hexdigest()}"
+
+    def induce(candidates):
+        rule_ids = tuple(rule_identity(candidate) for candidate in candidates)
+        for candidate, rule_id in zip(candidates, rule_ids):
+            change = candidate.transformation
+            before_identities = tuple(
+                str(item) for item in change.get("before_identity_ids") or ()
+            )
+            assumptions = tuple(
+                dict.fromkeys(
+                    (
+                        *candidate.assumptions,
+                        *(f"identity_present:{item}" for item in before_identities),
+                    )
+                )
+            )
+            critiques = list(candidate.critiques)
+            if not candidate.evidence:
+                critiques.append("missing_attributable_evidence")
+            critiques.append("single_observation_bootstrap")
+            critiques.append("contradiction_check_pending")
+            yield TransitionRule(
+                rule_id=rule_id,
+                preconditions=before_identities,
+                action_or_event=candidate.action_or_event,
+                predicted_effects=(change,),
+                provenance=candidate.provenance,
+                assumptions=assumptions,
+                critiques=tuple(dict.fromkeys(critiques)),
+                supporting_evidence_ids=tuple(str(item) for item in candidate.evidence),
+                rival_rule_ids=tuple(item for item in rule_ids if item != rule_id),
+                bootstrap_probability=0.5 if candidate.evidence else 0.25,
+                probability_source="bootstrap",
+                coverage=1.0,
+            )
+
+    return RuleInducer(induce)
+
+
+def phase2_rule_ranker() -> RuleRanker:
+    """Rank by verified history first, then evidence and explicit simplicity."""
+
+    def score(rule: TransitionRule) -> float:
+        verified = rule.calibrated_probability or 0.0
+        prediction_rate = (
+            rule.prediction_successes / rule.prediction_attempts
+            if rule.prediction_attempts
+            else 0.0
+        )
+        simplicity = 1.0 / (
+            1.0 + len(rule.preconditions) + len(rule.predicted_effects)
+        )
+        applicability = rule.applicability_precision or 0.0
+        return (
+            verified * 8.0
+            + prediction_rate * 4.0
+            + rule.coverage
+            + applicability * 2.0
+            + len(rule.supporting_evidence_ids) * 0.25
+            - len(rule.contradicting_evidence_ids) * 0.5
+            + simplicity
+            + rule.bootstrap_probability * 0.1
+        )
+
+    return RuleRanker(score)
 
 
 class GameObjectLearnerPlugin(ABC):

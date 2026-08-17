@@ -278,12 +278,10 @@ Phase 3 implements learning and prediction over the persistent objects and evide
   Existing evidence: `TransitionAnalyzer`, `TransformationLearner`, and Prolog equivalents plus canonical Phase 2 adapters. The analyzer validates real before/after payloads and preserves action and provenance; the learner converts every persisted direct object change into a deterministic candidate retaining its exact properties and evidence IDs. Remaining: infer additional competing transformations beyond directly recorded changes and evaluate quality.
 
 - [ ] **Partial** Induce multiple candidate rules with assumptions, critiques, confidence estimates, and supporting or contradicting evidence.  
-  Existing evidence: rule, rival, and evidence structures.  
-  Remaining: real induction, critique, and confidence refinement.
+  Existing evidence: canonical Phase 2 induction creates one deterministic rule per real transformation candidate, retains all alternatives as mutual rivals, records identity-presence and representativeness assumptions, flags missing evidence and single-observation/unseen-case limitations, and carries exact evidence and provenance. Bootstrap probability is explicitly labeled and remains separate from calibrated probability. Remaining: accumulate contradicting rule evidence and refine calibrated probability from outcomes.
 
 - [ ] **Partial** Rank and refine competing rules using simplicity, coverage, contradiction, applicability, and prediction history.  
-  Existing evidence: `RuleRanker` contracts.  
-  Remaining: real evidence and prediction-history integration.
+  Existing evidence: the canonical ranker orders rivals by calibrated probability, verified prediction success, applicability precision, coverage, supporting/contradicting evidence, simplicity, and only then a small bootstrap tie-breaker. Remaining: feed real prediction outcomes into these metrics and calibration.
 
 - [ ] **Partial** Apply learned transformations and rules to previously unseen cases.  
   Existing evidence: rule execution contracts.  

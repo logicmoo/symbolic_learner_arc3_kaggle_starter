@@ -13,6 +13,8 @@ from object_memory import (
     ProvenanceRef,
     phase2_transformation_learner,
     phase2_transition_analyzer,
+    phase2_rule_inducer,
+    phase2_rule_ranker,
     SymbolicStore,
     TurtleProgramRef,
 )
@@ -124,3 +126,47 @@ def test_real_phase2_change_becomes_an_evidence_linked_transformation_candidate(
     assert candidates[0].transformation["kind"] == "moved"
     assert candidates[0].evidence == ("evidence-moved",)
     assert candidates[0].candidate_id.startswith("transformation-")
+
+
+def test_real_transformation_candidates_induce_explicitly_rival_bootstrap_rules() -> None:
+    transition = phase2_transition_analyzer().analyze(
+        GameObjectLearnerPayload("before", ({"id": "blue"},)),
+        "RIGHT",
+        GameObjectLearnerPayload(
+            "after",
+            ({"id": "candidate-blue"},),
+            transitions=(
+                {
+                    "kind": "moved",
+                    "before_identity_ids": ["blue"],
+                    "after_candidate_ids": ["candidate-blue"],
+                    "evidence_ids": ["evidence-move"],
+                },
+                {
+                    "kind": "relationship_changed",
+                    "before_identity_ids": ["blue"],
+                    "after_candidate_ids": ["candidate-blue"],
+                    "evidence_ids": ["evidence-relation"],
+                },
+            ),
+        ),
+    )
+    candidates = phase2_transformation_learner().learn(transition)
+
+    rules = phase2_rule_inducer().induce(candidates)
+    ranked = phase2_rule_ranker().rank(rules)
+
+    assert len(rules) == 2
+    assert {rule.predicted_effects[0]["kind"] for rule in rules} == {
+        "moved",
+        "relationship_changed",
+    }
+    assert all(rule.rival_rule_ids for rule in rules)
+    assert all("identity_present:blue" in rule.assumptions for rule in rules)
+    assert all("single_observation_bootstrap" in rule.critiques for rule in rules)
+    assert all("contradiction_check_pending" in rule.critiques for rule in rules)
+    assert all(rule.supporting_evidence_ids for rule in rules)
+    assert all(rule.probability_source == "bootstrap" for rule in rules)
+    assert all(rule.coverage == 1.0 for rule in rules)
+    assert all(rule.calibrated_probability is None for rule in rules)
+    assert {rule.rule_id for rule in ranked} == {rule.rule_id for rule in rules}

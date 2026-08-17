@@ -20,6 +20,8 @@ from .integration import (
     PipelineGameObjectLearnerPlugin,
     phase2_transformation_learner,
     phase2_transition_analyzer,
+    phase2_rule_inducer,
+    phase2_rule_ranker,
 )
 from .learning import (
     GameLearningPipeline,
@@ -125,6 +127,8 @@ __all__ = [
     "Phase2LearnerPayloadBuilder",
     "phase2_transformation_learner",
     "phase2_transition_analyzer",
+    "phase2_rule_inducer",
+    "phase2_rule_ranker",
     "PipelineGameObjectLearnerPlugin",
     "PredictionEvaluator",
     "PredictionGrade",

@@ -22,6 +22,12 @@ class TransformationCandidate:
     transformation: Any
     evidence: tuple[Any, ...] = ()
     score: float = 0.0
+    source_state_id: str | None = None
+    target_state_id: str | None = None
+    action_or_event: Any = None
+    assumptions: tuple[str, ...] = ()
+    critiques: tuple[str, ...] = ()
+    provenance: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)

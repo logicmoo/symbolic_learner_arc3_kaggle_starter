@@ -198,14 +198,14 @@ Deliverables: [Phase 3 checklist](SOW_DELIVERABLES.md#phase-3--game-object-learn
 
 ## Learn, critique, and rank competing rules
 
-- [ ] Induce multiple candidate rules with explicit assumptions.
-- [ ] Generate critiques identifying missing evidence, contradictions, and overgeneralization.
+- [x] Induce multiple candidate rules with explicit assumptions.
+- [x] Generate critiques identifying missing evidence, contradictions, and overgeneralization.
 - [ ] Attach supporting and contradicting evidence.
-- [ ] Maintain rival rule sets rather than selecting one explanation too early.
-- [ ] Rank rules using simplicity, coverage, contradiction, applicability precision, and prediction history.
+- [x] Maintain rival rule sets rather than selecting one explanation too early.
+- [x] Rank rules using simplicity, coverage, contradiction, applicability precision, and prediction history.
 - [ ] Refine calibrated rule confidence or probability from actual prediction results.
-- [ ] Keep bootstrap probabilities displayed by Phase 1 separate from verified Phase 3 probability updates.
-- [ ] Store rule identity, assumptions, critiques, probability, evidence, and provenance.
+- [x] Keep bootstrap probabilities displayed by Phase 1 separate from verified Phase 3 probability updates.
+- [x] Store rule identity, assumptions, critiques, probability, evidence, and provenance.
 
 ## Make prediction evidence real
 

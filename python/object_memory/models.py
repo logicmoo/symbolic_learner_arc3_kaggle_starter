@@ -543,6 +543,18 @@ class TransitionRule:
     action_or_event: Any
     predicted_effects: tuple[Any, ...]
     provenance: tuple[str, ...] = ()
+    assumptions: tuple[str, ...] = ()
+    critiques: tuple[str, ...] = ()
+    supporting_evidence_ids: tuple[str, ...] = ()
+    contradicting_evidence_ids: tuple[str, ...] = ()
+    rival_rule_ids: tuple[str, ...] = ()
+    bootstrap_probability: float = 0.0
+    calibrated_probability: float | None = None
+    probability_source: str = "bootstrap"
+    coverage: float = 0.0
+    applicability_precision: float | None = None
+    prediction_attempts: int = 0
+    prediction_successes: int = 0
 
 
 @dataclass(frozen=True)
