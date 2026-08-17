@@ -7,6 +7,7 @@ from object_memory import (
     ActionTreeSemanticReplay,
     EncounterRecord,
     EvidencePolarity,
+    FitResult,
     GameLearningPipeline,
     GridAdapter,
     InMemorySemanticBackend,
@@ -100,6 +101,61 @@ def test_semantic_capture_persists_and_links_observations_encounters_and_turtles
     assert replayed.encounters.get(encounters[0].encounter_id).instance.relationships == (
         {"target": "obj_red_1", "relation": "left_of"},
     )
+
+
+def test_semantic_capture_retains_competing_turtle_programs(tmp_path: Path) -> None:
+    def ambiguous_extractor(grid):
+        extracted = analyze_grid(grid)
+        first = extracted["objects"][0]
+        canonical = first.pop("turtleProgram")
+        first["turtlePrograms"] = [
+            {"source": canonical, "entrypoint": "canonical"},
+            {"source": f"% rival interpretation\n{canonical}", "entrypoint": "rival"},
+        ]
+        return extracted
+
+    def form(source: str):
+        residual = 0.25 if source.startswith("% rival") else 0.0
+        return SimpleNamespace(
+            fit_instance=lambda _candidate: FitResult(
+                {
+                    "description_length": len(source.encode("utf-8")),
+                },
+                residual=residual,
+            )
+        )
+
+    tree = ActionTreeStore(tmp_path / "tree", "game", 1)
+    initial = tree.create_initial(b"initial", {"state": "active"})
+    observer = SemanticGridCaptureObserver(
+        GridAdapter(ambiguous_extractor, PythonProvider({})),
+        grid_selector=lambda runner: runner.grid,
+        turtle_form_factory=form,
+    )
+    observer.on_state_captured(
+        runner=SimpleNamespace(grid=DEFAULT_GRID),
+        store=tree,
+        node=initial,
+        previous_node=None,
+        action=None,
+        data={},
+    )
+
+    encounters = observer.symbolic_store.encounters.records()
+    ambiguous = next(item for item in encounters if len(item.turtle_programs) == 2)
+    assert tuple(item.entrypoint for item in ambiguous.turtle_programs) == (
+        "canonical",
+        "rival",
+    )
+    assert tuple(item.fit_score for item in ambiguous.turtle_programs) == (1.0, 0.75)
+    assert len(ambiguous.evidence_ids) == 2
+    assert len(tuple((initial.path / "semantic").glob("*.turtle.pl"))) == 3
+    replayed = ActionTreeSemanticReplay().replay(
+        tree.level_root,
+        SymbolicStore(InMemorySemanticBackend()),
+    )
+    assert replayed.encounters.get(ambiguous.encounter_id) == ambiguous
+    assert len(replayed.values("turtle_programs")) == 3
 
 
 def test_semantic_capture_replays_level_history_after_observer_restart(tmp_path: Path) -> None:

@@ -351,6 +351,31 @@ class SemanticGridCaptureObserver:
             return None
 
     @staticmethod
+    def _turtle_candidates(details: Mapping[str, Any]) -> tuple[tuple[str, str | None], ...]:
+        """Normalize one or many extractor-proposed Turtle interpretations."""
+
+        raw = details.get("turtlePrograms")
+        if raw is None:
+            raw = (details.get("turtleProgram"),)
+        elif isinstance(raw, (str, Mapping)):
+            raw = (raw,)
+        candidates: list[tuple[str, str | None]] = []
+        seen: set[tuple[str, str | None]] = set()
+        for item in raw or ():
+            if isinstance(item, Mapping):
+                source = str(item.get("source") or item.get("program") or "")
+                entrypoint = item.get("entrypoint") or item.get("name")
+                entrypoint = str(entrypoint) if entrypoint is not None else None
+            else:
+                source = str(item or "")
+                entrypoint = None
+            candidate = (source, entrypoint)
+            if source and candidate not in seen:
+                seen.add(candidate)
+                candidates.append(candidate)
+        return tuple(candidates)
+
+    @staticmethod
     def _write_record(path: Path, value: Any) -> Path:
         path.parent.mkdir(parents=True, exist_ok=True)
         source = json.dumps(_jsonable(value), indent=2, ensure_ascii=False, sort_keys=True) + "\n"
@@ -492,37 +517,63 @@ class SemanticGridCaptureObserver:
 
         for candidate in batch.candidates:
             details = batch.extractor_details[candidate.candidate_id]
-            turtle_path = semantic_dir / f"{candidate.candidate_id}.turtle.pl"
-            turtle_source = str(details.get("turtleProgram") or "")
-            turtle_path.parent.mkdir(parents=True, exist_ok=True)
-            if turtle_path.exists() and turtle_path.read_text(encoding="utf-8") != turtle_source:
-                raise RuntimeError(f"Turtle artifact conflict at {turtle_path}")
-            turtle_path.write_text(turtle_source, encoding="utf-8")
-            turtle_artifact = ArtifactRef.create(
-                artifact_type="turtle_program",
-                uri=str(turtle_path),
-                content_hash=f"sha256:{sha256(turtle_source.encode('utf-8')).hexdigest()}",
-                provenance=batch.observation.provenance,
-            )
-            turtle_fit = self._fit_turtle(turtle_source, details)
-            turtle_ref = TurtleProgramRef(
-                turtle_artifact,
-                fit_score=(1.0 - turtle_fit.residual) if turtle_fit is not None else None,
-                distance=turtle_fit.residual if turtle_fit is not None else None,
-                residual_score=turtle_fit.residual if turtle_fit is not None else None,
-                description_length=(
-                    float(
-                        turtle_fit.parameters.get(
-                            "description_length",
-                            len(turtle_source.encode("utf-8")),
-                        )
+            turtle_refs: list[TurtleProgramRef] = []
+            turtle_evidence_ids: list[str] = []
+            for turtle_index, (turtle_source, entrypoint) in enumerate(
+                self._turtle_candidates(details),
+                start=1,
+            ):
+                turtle_name = (
+                    f"{candidate.candidate_id}.turtle.pl"
+                    if turtle_index == 1
+                    else f"{candidate.candidate_id}.{turtle_index}.turtle.pl"
+                )
+                turtle_path = semantic_dir / turtle_name
+                turtle_path.parent.mkdir(parents=True, exist_ok=True)
+                if (
+                    turtle_path.exists()
+                    and turtle_path.read_text(encoding="utf-8") != turtle_source
+                ):
+                    raise RuntimeError(f"Turtle artifact conflict at {turtle_path}")
+                turtle_path.write_text(turtle_source, encoding="utf-8")
+                turtle_artifact = ArtifactRef.create(
+                    artifact_type="turtle_program",
+                    uri=str(turtle_path),
+                    content_hash=(
+                        f"sha256:{sha256(turtle_source.encode('utf-8')).hexdigest()}"
+                    ),
+                    provenance=batch.observation.provenance,
+                )
+                turtle_fit = self._fit_turtle(turtle_source, details)
+                turtle_refs.append(
+                    TurtleProgramRef(
+                        turtle_artifact,
+                        entrypoint=entrypoint,
+                        fit_score=(
+                            (1.0 - turtle_fit.residual)
+                            if turtle_fit is not None
+                            else None
+                        ),
+                        distance=(
+                            turtle_fit.residual if turtle_fit is not None else None
+                        ),
+                        residual_score=(
+                            turtle_fit.residual if turtle_fit is not None else None
+                        ),
+                        description_length=(
+                            float(
+                                turtle_fit.parameters.get(
+                                    "description_length",
+                                    len(turtle_source.encode("utf-8")),
+                                )
+                            )
+                            if turtle_fit is not None
+                            else None
+                        ),
                     )
-                    if turtle_fit is not None
-                    else None
-                ),
-            )
-            turtle_evidence = None
-            if turtle_fit is not None:
+                )
+                if turtle_fit is None:
+                    continue
                 turtle_evidence = self.turtle_evidence.build(
                     identity_id=candidate.candidate_id,
                     fit=turtle_fit,
@@ -536,6 +587,7 @@ class SemanticGridCaptureObserver:
                     artifact_id=turtle_artifact.artifact_id,
                 )
                 self.symbolic_store.put_evidence(turtle_evidence)
+                turtle_evidence_ids.append(turtle_evidence.evidence_id)
             bounds = tuple(details.get("bounds") or (0, 0, 1, 1))
             origin_x, origin_y = float(bounds[0]), float(bounds[1])
             geometry = details.get("geometry") or {}
@@ -588,10 +640,8 @@ class SemanticGridCaptureObserver:
                         )
                     ),
                 ),
-                turtle_programs=(turtle_ref,),
-                evidence_ids=(
-                    (turtle_evidence.evidence_id,) if turtle_evidence is not None else ()
-                ),
+                turtle_programs=tuple(turtle_refs),
+                evidence_ids=tuple(turtle_evidence_ids),
                 previous_encounter_id=self._latest_by_candidate.get(candidate.candidate_id),
                 matched_properties=tuple(
                     item for item in ("color", "shape") if details.get(item if item != "color" else "colorName") is not None

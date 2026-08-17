@@ -176,7 +176,7 @@ Phase 2 implements the semantic object layer behind the Phase 1 debugger. It use
 ## Per-object Turtle programs and regeneration
 
 - [x] Store every recognized grid object with a Turtle program.
-  Evidence: live semantic capture persists one normalized, versioned `TurtleProgramRef` and exact Turtle source artifact for every extracted candidate, links both through its encounter and action-tree manifest, and restores them during deterministic replay. The Phase 2 demonstration asserts four programs for four captured encounters.
+  Evidence: live semantic capture persists one or more normalized, versioned `TurtleProgramRef` values and exact Turtle source artifacts for every extracted candidate, links them through its encounter and action-tree manifest, and restores them during deterministic replay. When an extractor supplies ambiguous `turtlePrograms`, every distinct interpretation retains its entrypoint, provenance, fit, distance, residual, description length, and separately attributable reconstruction evidence rather than being collapsed to the first program. The Phase 2 demonstration asserts four programs for four captured encounters, and ambiguity coverage verifies two rival programs survive action-tree replay.
 
 - [ ] **Partial** Require the Turtle program to redraw the object through movement, rotation, pen state, and pen width rather than filled coordinate boxes.
   Existing evidence: extracted programs use `set_pos`, `rot`, `fwd`, `penup`/`pendown`, and canonical `pen_width`; supported thick rectangles render as one width-aware stroke and a regression test rejects row-by-row box filling.

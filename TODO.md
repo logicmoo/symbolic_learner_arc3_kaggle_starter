@@ -90,7 +90,7 @@ Keep the shared records in `python/object_memory/models.py`; do not create anoth
 - [x] Implement `fit`, `distance`, residual measurement, and description length.
 - [x] Compare regenerated cells with the source object.
 - [x] Preserve holes, disconnected strokes, topology, and line thickness.
-- [ ] Retain competing Turtle programs with their fit scores and provenance when the representation is ambiguous.
+- [x] Retain competing Turtle programs with their fit scores and provenance when the representation is ambiguous.
 - [x] Add tests rejecting box-filling shortcuts for shapes that should use movement and pen width.
 
 ## Extend `object_registry.pl` into persistent identity
