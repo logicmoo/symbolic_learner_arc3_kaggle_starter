@@ -105,6 +105,10 @@ universal-editor, playground, inheritance, and Markdown-navigation tests. The
 production frontend build passed, and the restarted live application exposed
 the grouped Navigation V2 shell and filesystem-backed editor routes.
 
+After adding filesystem-backed Data and Artifact runners, the complete Python
+suite was rechecked on 2026-08-17: 644 tests passed. The production frontend
+build also passed with the active Knowledge pages and runner components.
+
 ## Review Gate
 
 Navigation V2 is active. Future changes must preserve the current rich editors, filesystem-backed data, grouped purpose model, and compatibility reads for legacy workspaces.
