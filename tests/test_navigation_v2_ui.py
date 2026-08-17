@@ -99,6 +99,7 @@ def test_navigation_v2_has_required_groups_and_labels() -> None:
     assert "current.slice(0,viewTrailIndex+1)" in source
     assert 'window.addEventListener("workbench:navigation"' in source
     assert "BreadcrumbEntry" in source
+    assert 'label: "Artifacts", view: "knowledgeArtifacts"' in source
 
 
 def test_navigation_views_are_deep_linkable_for_visual_acceptance() -> None:

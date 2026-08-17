@@ -112,6 +112,11 @@ const KnowledgeDataExplorer = lazy(() =>
     default: module.KnowledgeDataExplorer,
   })),
 );
+const KnowledgeArtifactExplorer = lazy(() =>
+  import("../components/KnowledgeArtifactExplorer").then((module) => ({
+    default: module.KnowledgeArtifactExplorer,
+  })),
+);
 const HelpDocumentTabs = lazy(() =>
   import("../components/HelpDocumentTabs").then((module) => ({
     default: module.HelpDocumentTabs,
@@ -328,6 +333,7 @@ type View =
   | "editor"
   | "data"
   | "knowledgeData"
+  | "knowledgeArtifacts"
   | "artifacts"
   | "evidence"
   | "operations"
@@ -361,6 +367,7 @@ const WORKBENCH_VIEWS: Set<View> = new Set([
   "editor",
   "data",
   "knowledgeData",
+  "knowledgeArtifacts",
   "artifacts",
   "evidence",
   "operations",
@@ -482,7 +489,7 @@ export const NAVIGATION_V2: Array<{
     items: [
       { label: "Data", view: "knowledgeData", glyph: "◫" },
       { label: "AtomSpaces", view: "contexts", glyph: "⚛" },
-      { label: "Artifacts", view: "artifacts", glyph: "▣" },
+      { label: "Artifacts", view: "knowledgeArtifacts", glyph: "▣" },
     ],
   },
   {
@@ -2155,6 +2162,7 @@ export function FilesystemWorkbenchPage() {
     view === "systems" ||
     view === "operations" ||
     view === "sourceCode" ||
+    view === "knowledgeArtifacts" ||
     view === "prompts" ||
     view === "policies" ||
     view === "contexts";
@@ -3043,6 +3051,9 @@ export function FilesystemWorkbenchPage() {
             {view === "data" && <DataCatalogPanel workspaceId={workspace.id} />}
             {view === "knowledgeData" && (
               <KnowledgeDataExplorer workspaceId={workspace.id} files={snapshot?.files || []} onChanged={refreshSnapshot} />
+            )}
+            {view === "knowledgeArtifacts" && (
+              <KnowledgeArtifactExplorer workspaceId={workspace.id} files={snapshot?.files || []} />
             )}
             {view === "artifacts" && (
               <section className="artifact-view">
