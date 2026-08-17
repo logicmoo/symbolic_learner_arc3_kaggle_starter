@@ -8,8 +8,11 @@ from object_memory import (
     InstanceParameters,
     MatchProposal,
     Observation,
+    ObjectChange,
     Phase2LearnerPayloadBuilder,
     ProvenanceRef,
+    phase2_transformation_learner,
+    phase2_transition_analyzer,
     SymbolicStore,
     TurtleProgramRef,
 )
@@ -88,3 +91,36 @@ def test_real_phase2_records_build_a_versioned_serializable_learner_payload() ->
     assert payload.objects[0]["changed_properties"] == {"action": "RIGHT"}
     assert payload.evidence[0]["evidence_id"] == evidence.evidence_id
     assert payload.provenance == ("frame-1",)
+
+
+def test_real_phase2_change_becomes_an_evidence_linked_transformation_candidate() -> None:
+    before = GameObjectLearnerPayload(
+        state_id="before",
+        objects=({"id": "known-blue"},),
+        provenance=("frame-before",),
+    )
+    change = ObjectChange.create(
+        kind="moved",
+        before_identity_ids=("known-blue",),
+        after_candidate_ids=("candidate-blue",),
+        properties={"position": {"from": [1, 1], "to": [2, 1]}},
+        evidence_ids=("evidence-moved",),
+    )
+    after = GameObjectLearnerPayload(
+        state_id="after",
+        objects=({"id": "candidate-blue"},),
+        transitions=(change.__dict__,),
+        provenance=("frame-after",),
+    )
+
+    transition = phase2_transition_analyzer().analyze(before, "RIGHT", after)
+    candidates = phase2_transformation_learner().learn(transition)
+
+    assert transition.before_state_id == "before"
+    assert transition.after_state_id == "after"
+    assert transition.action_or_event == "RIGHT"
+    assert transition.provenance == ("frame-before", "frame-after")
+    assert len(candidates) == 1
+    assert candidates[0].transformation["kind"] == "moved"
+    assert candidates[0].evidence == ("evidence-moved",)
+    assert candidates[0].candidate_id.startswith("transformation-")

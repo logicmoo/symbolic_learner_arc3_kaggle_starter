@@ -3,9 +3,18 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import asdict, dataclass, is_dataclass
 from enum import Enum
+from hashlib import sha256
+import json
 from typing import Any, Mapping
 
-from .learning import GameLearningPipeline, LearningStepResult
+from .learning import (
+    GameLearningPipeline,
+    LearningStepResult,
+    TransformationCandidate,
+    TransformationLearner,
+    TransitionAnalyzer,
+    TransitionRecord,
+)
 from .models import ExecutionMode, NormalizedResult
 from .store import SymbolicStore
 
@@ -233,6 +242,46 @@ class Phase2LearnerPayloadBuilder:
             ),
         )
         return IntegrationValidator().validate(payload)
+
+
+def phase2_transition_analyzer() -> TransitionAnalyzer:
+    """Analyze one real handoff using the direct Phase 2 change records."""
+
+    def analyze(
+        before: GameObjectLearnerPayload,
+        action_or_event: Any,
+        after: GameObjectLearnerPayload,
+    ) -> TransitionRecord:
+        IntegrationValidator().validate(before)
+        IntegrationValidator().validate(after)
+        return TransitionRecord(
+            before_state_id=before.state_id,
+            action_or_event=_plain(action_or_event),
+            after_state_id=after.state_id,
+            changes=after.transitions,
+            provenance=tuple(dict.fromkeys((*before.provenance, *after.provenance))),
+        )
+
+    return TransitionAnalyzer(analyze)
+
+
+def phase2_transformation_learner() -> TransformationLearner:
+    """Convert every persisted direct change into an evidence-linked candidate."""
+
+    def learn(transition: TransitionRecord):
+        for change in transition.changes:
+            plain = _plain(change)
+            encoded = json.dumps(
+                plain, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+            ).encode("utf-8")
+            yield TransformationCandidate(
+                candidate_id=f"transformation-{sha256(encoded).hexdigest()}",
+                transformation=plain,
+                evidence=tuple(str(item) for item in plain.get("evidence_ids") or ()),
+                score=1.0,
+            )
+
+    return TransformationLearner(learn)
 
 
 class GameObjectLearnerPlugin(ABC):

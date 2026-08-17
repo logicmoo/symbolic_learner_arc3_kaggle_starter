@@ -275,8 +275,7 @@ Phase 3 implements learning and prediction over the persistent objects and evide
 ## Transformations, rules, critiques, and ranking
 
 - [ ] **Partial** Analyze observed transitions and infer candidate object-level transformations.  
-  Existing evidence: `TransitionAnalyzer`, `TransformationLearner`, and Prolog equivalents.  
-  Remaining: real object-transition inputs and quality evaluation.
+  Existing evidence: `TransitionAnalyzer`, `TransformationLearner`, and Prolog equivalents plus canonical Phase 2 adapters. The analyzer validates real before/after payloads and preserves action and provenance; the learner converts every persisted direct object change into a deterministic candidate retaining its exact properties and evidence IDs. Remaining: infer additional competing transformations beyond directly recorded changes and evaluate quality.
 
 - [ ] **Partial** Induce multiple candidate rules with assumptions, critiques, confidence estimates, and supporting or contradicting evidence.  
   Existing evidence: rule, rival, and evidence structures.  

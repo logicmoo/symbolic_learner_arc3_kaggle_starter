@@ -191,8 +191,8 @@ Deliverables: [Phase 3 checklist](SOW_DELIVERABLES.md#phase-3--game-object-learn
 - [x] Build learner payloads from real Phase 2 objects, correspondences, and semantic encounters.
 - [x] Connect `Arc3Runner` transitions to `PipelineGameObjectLearnerPlugin` through normalized payloads.
 - [ ] Connect Prolog providers to registry, objects, differences, similarities, rules, transcripts, and evidence.
-- [ ] Analyze actual before/action/after object transitions.
-- [ ] Generate candidate object-level transformations from real deltas.
+- [x] Analyze actual before/action/after object transitions.
+- [x] Generate candidate object-level transformations from real deltas.
 - [ ] Preserve competing transformation interpretations.
 - [ ] Apply transformations to previously unseen cases.
 
@@ -232,7 +232,7 @@ Deliverables: [Phase 3 checklist](SOW_DELIVERABLES.md#phase-3--game-object-learn
 
 - [x] Payload validation and structured errors.
 - [x] Real Phase 2-to-Phase 3 handoff.
-- [ ] Candidate transformation induction from actual object deltas.
+- [x] Candidate transformation induction from actual object deltas.
 - [ ] Rival interpretations with assumptions, critiques, positive evidence, and negative evidence.
 - [ ] Learned transformation applied to a new case.
 - [ ] Rule ranking and confidence refinement from prediction history.
