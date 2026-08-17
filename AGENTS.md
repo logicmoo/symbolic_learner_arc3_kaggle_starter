@@ -33,7 +33,7 @@ The workbench edits semantic specifications and interchangeable variants:
 
 \- Goals and interpretations
 
-\- Plans and plan strategies
+\- Planning strategies and executable workflows
 
 \- Workflows
 
@@ -41,9 +41,9 @@ The workbench edits semantic specifications and interchangeable variants:
 
 \- Datatypes and representations
 
-\- Prompts and prompt implementations
+\- Source code: prompts, Prolog, MeTTa, and Python bindings
 
-\- Models, profiles, and backends
+\- Models, model presets, and backends
 
 \- AtomSpaces and knowledge representations
 

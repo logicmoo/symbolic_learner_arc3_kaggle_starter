@@ -12,29 +12,34 @@ The backend is FastAPI, launched from `workbench/server/app.py`. The active page
 
 | Navigation V2 item | Current backing component/data | Status |
 | --- | --- | --- |
-| Goals | `GoalPlanLibraryEditor`, `/api/workspaces/{id}/goals`, shared goal variants | Real, reuse |
-| Plans | `GoalPlanLibraryEditor`, `/api/workspaces/{id}/plans`, shared plan variants | Real, reuse |
+| Overview | `WorkspaceOverview` and workspace inclusion/configuration APIs | Real, reuse |
+| Goals | `GoalPlanLibraryEditor`, `/api/workspaces/{id}/goals`, shared same-kind alternatives | Real, reuse |
+| Planning | `GoalPlanLibraryEditor`, `/api/workspaces/{id}/plans`, shared planning strategies | Real, reuse |
 | Workflows | Active canvas and raw workflow editor in `FilesystemWorkbenchPage` | Real, reuse |
 | Operations | `OperationLibraryEditor` and `OperationPlayground` | Real, relabel Operations |
+| Source Code | `PromptLibraryEditor` plus language-filtered `OperationLibraryEditor` tabs | Real, reuse |
+| Systems | `LlmModelsEditor` in systems catalog mode | Real, reuse |
 | Datatypes | `DataCatalogPanel` | Real, relabel Data |
-| Prompts | `PromptLibraryEditor` | Real, reuse |
 | Models | `LlmModelsEditor` | Real, reuse |
+| Policies | `PolicyLibraryEditor` | Real, reuse |
+| Data | `KnowledgeDataExplorer` over real workspace files | Real |
+| AtomSpaces | `GoalPlanLibraryEditor`, AtomSpace API, shared alternatives | Real, reuse |
+| Artifacts | Persisted/imported workflow artifacts | Real |
 | Goal Runs | `/api/goal-runs` plus `RuntimeHistoryView` | Durable and real |
-| Workflow Runs | `/api/engine/runs` persistent history | Durable and real |
-| Execs | Persisted step attempts plus operation playground invocations | Real |
+| Executions | `/api/engine/runs`, persisted step attempts, and playground invocations | Durable and real |
 | Events | Ordered events across durable engine runs | Real |
 | States | Persisted workflow artifacts and payloads | Real |
 | Logs | Persisted operation streams across runs | Real |
 | Model Policy | Filesystem policy/registry/health API and editor | Real |
 | Benchmarks | Executable policies, jobs, and persisted results | Real |
-| Contexts | `GoalPlanLibraryEditor`, context API, shared context variants | Real, reuse |
-| Settings | Active workspace Setup view in `FilesystemWorkbenchPage` | Real, reuse |
+| Processes | `WorkspaceSettingsPanel` managed-service/process mode | Real |
+| Settings | `WorkspaceSettingsPanel` system/workspace setup | Real, reuse |
 
 ## Active Editors and Baseline Features
 
 `OperationLibraryEditor`, `DataCatalogPanel`, `PromptLibraryEditor`, and `LlmModelsEditor` use `HierarchyResourceEditor`, a compatibility export of `UniversalArtifactEditor`. The shared shell provides hierarchy chrome, persistent closeable tabs, dirty markers, split comparison, common inspector space, variant controls, and bottom docks.
 
-The Operations editor additionally has abstract operation/implementation hierarchy, default implementation selection, Python, SWI-Prolog, MeTTa, and model/profile dispatch panels, prompt composition, raw JSON, filesystem save, and the typed `OperationPlayground`. Datatypes provides representation selection, conversions, and usage. Prompts provides preferred implementations. Models provides backend/model/profile inheritance, resolved settings, rich configuration, and raw JSON. The active right pane loads real shared Markdown through `HelpDocumentTabs` for these families.
+The Operations editor additionally has abstract operation/implementation hierarchy, default implementation selection, Python, SWI-Prolog, MeTTa, and model/preset dispatch panels, prompt composition, raw JSON, filesystem save, and the typed `OperationPlayground`. Datatypes provides representation selection, conversions, and usage. Source Code provides prompt alternatives plus Prolog, MeTTa, and Python implementation views. Models provides backend/model/preset inheritance, resolved settings, rich configuration, and raw JSON. The active right pane loads real shared Markdown through `HelpDocumentTabs` for these families.
 
 ## Real, Obsolete, and Mock Pages
 
@@ -67,20 +72,13 @@ The app also exposes health, analysis, SQLite-backed legacy run/event/operation 
 
 ## Filesystem Resource Kinds
 
-Existing first-class loaders cover `workflow`, `goal`, `goal_variant`, `plan`, `plan_variant`, `context`, `context_variant`, `operation`, `operation_implementation`, `semantic_datatype`, `representation_datatype`, `concrete_datatype`, `prompt`, `prompt_implementation`, `backend`, `model`, `profile`, model-policy resources, and benchmark resources. Workspaces also contain catalog/config/Markdown files that appear in the editable-file inventory but are not all first-class semantic loaders.
+Canonical first-class resources include `workflow`, `goal`, `planning_strategy`, `atomspace`, `operation`, `semantic_datatype`, `representation_datatype`, `concrete_datatype`, `prompt`, `prompt_profile`, `backend`, `model`, `system`, model-policy resources, and benchmark resources. Same-family variants normally keep the same kind and become implicit alternatives through `parents`. Loaders still accept legacy variant kinds and directories such as `operation_implementation`, `prompt_implementation`, `goal_variant`, `plan_variant`, `context_variant`, and `profile` so older workspaces remain readable; new saves use the lifecycle-first canonical directories.
 
-Shared inheritance plus workspace override resolution exists for Goals, Plans, Contexts, Operations, Datatypes, Prompts, backends, models, profiles, and policies. Goal Runs and workflow evidence are deliberately SQLite runtime records; artifact records serve as durable workflow state snapshots. AtomSpace semantics are represented by the datatype and Context resources rather than a separate mock catalog.
+Shared inheritance plus workspace override resolution exists for Goals, Planning Strategies, AtomSpaces, Operations, Datatypes, Source Code, Systems, Models/Presets, and Policies. Goal Runs and execution evidence are deliberately SQLite runtime records; artifact records serve as durable workflow state snapshots.
 
-## Exact Navigation V2 Change Surface
+## Navigation V2 Implementation Surface
 
-Operation 2 should remain narrowly scoped to:
-
-1. `workbench/frontend/src/pages/FilesystemWorkbenchPage.tsx` — replace the flat `View`/`nav` contract with grouped Design, Runtime, and System navigation; map existing components without editing their internals; add real pending/resource views.
-2. `workbench/frontend/src/styles/workbench.css` and, only if required by the active shell, `workspace_backed.css` — style grouped navigation and overflow while preserving current editor CSS.
-3. A focused Python source-regression test under `tests/` — assert all Navigation V2 labels and their component/view mappings.
-4. `tests/test_universal_artifact_editor_ui.py` and `workbench/frontend/src/components/UniversalArtifactEditor.tsx` — remove the stale historical commit-name assertion/constant and express the baseline as current behavior. This is regression-test semantics, not an editor redesign.
-
-`App.tsx` needs no change unless the active entrypoint itself changes; Navigation V2 should not change it. No backend file is required merely to establish the shell because the active snapshot and engine APIs can support real status/TODO views.
+The active shell and grouped navigation live in `FilesystemWorkbenchPage.tsx`; `App.tsx` remains the unchanged entrypoint. Purpose-specific wrappers such as `SourceCodeEditor`, `KnowledgeDataExplorer`, and the systems catalog mode compose existing rich editors rather than replacing them. `tests/test_navigation_v2_ui.py` protects labels, deep links, and component mappings, while the existing universal-editor and playground suites protect editor behavior.
 
 ## Current Rich Operations Regression Checklist
 
@@ -90,7 +88,7 @@ Before and after Navigation V2:
 - [ ] Operations opens the existing `OperationLibraryEditor`, not a replacement.
 - [ ] Abstract operations remain parents and implementations remain children.
 - [ ] Default implementation selection edits the abstract operation document.
-- [ ] Python, SWI-Prolog, MeTTa, model/profile dispatch, and prompt-composition panels remain available.
+- [ ] Python, SWI-Prolog, MeTTa, model/preset dispatch, and prompt-composition panels remain available.
 - [ ] Persistent tabs open, activate, show dirty state, close, and retain unsaved drafts.
 - [ ] Split comparison works and returns to single-pane mode.
 - [ ] Raw JSON edits and rich controls update the intended document.
@@ -104,4 +102,4 @@ Before and after Navigation V2:
 
 ## Review Gate
 
-Do not implement Navigation V2 until this inventory is reviewed. The next change must alter the active shell only, preserve all current rich editors, and avoid normalization, broad renames, or unrelated cleanup.
+Navigation V2 is active. Future changes must preserve the current rich editors, filesystem-backed data, grouped purpose model, and compatibility reads for legacy workspaces.

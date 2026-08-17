@@ -110,12 +110,12 @@ The other files under `workbench/frontend/src/pages/` and older shell-oriented c
 - `workbench/workspaces/shared_library_system/design/semantic_datatypes/*.semantic_datatype.metta` — abstract meanings such as Image, Entity, Observation, AtomSpace, Goal, Event, and World Model.
 - `workbench/workspaces/shared_library_system/design/representation_datatypes/*.representation_datatype.metta` — interchangeable structures such as bitmap, scene graph, object list, symbolic facts, Turtle program, and natural language.
 - `workbench/workspaces/shared_library_system/design/concrete_datatypes/*.concrete_datatype.metta` — exact encodings such as PNG, JPEG, JSON, UTF-8 text, Prolog, NumPy, and SVG.
-- `workbench/workspaces/shared_library_system/design/operations/*.operation.metta` and `design/operation_implementations/*.operation_implementation.metta` — abstract executable contracts and replaceable implementations.
-- `workbench/workspaces/shared_library_system/design/prompts/*.prompt.metta` and `design/prompt_implementations/*.prompt_implementation.metta` — semantic prompt contracts and model/modal variants.
-- `workbench/workspaces/shared_library_system/design/backends`, `design/models`, and `design/profiles` — provider transport, model identity, and reasoning/runtime profile layers.
-- `workbench/workspaces/shared_library_system/design/goals` and `design/goal_variants` — desired-outcome specifications and interpretations.
-- `workbench/workspaces/shared_library_system/design/plans` and `design/plan_variants` — reusable plan specifications and strategies.
-- `workbench/workspaces/shared_library_system/design/atomspaces` and `design/atomspace_variants` — AtomSpace declarations and concrete alternatives.
+- `workbench/workspaces/shared_library_system/design/operations/*.operation.metta` — abstract executable contracts and same-kind implementation children, distinguished by their `parents` relationships and implementation metadata.
+- `workbench/workspaces/shared_library_system/design/prompts/*.prompt.metta` — semantic prompt contracts, same-kind alternatives, and prompt-profile composition resources maintained together as source code.
+- `workbench/workspaces/shared_library_system/design/backends` and `design/models` — provider transports, model identities, and same-kind model presets; the loader retains read-only compatibility with legacy `profiles` directories.
+- `workbench/workspaces/shared_library_system/design/goals` — desired-outcome specifications and same-kind interpretations.
+- `workbench/workspaces/shared_library_system/design/planning_strategies` — human, PDDL, LLM, or rule planning strategies and their same-kind alternatives.
+- `workbench/workspaces/shared_library_system/design/atomspaces` — AtomSpace declarations and same-kind alternatives.
 - `workbench/workspaces/shared_library_system/runtime/` — generated goal runs, workflow runs, execs, events, states, resolved contexts, and logs; normally empty in the system shared library.
 - `workbench/workspaces/shared_library_system/policies/*.metta` — model runtime policies, vendor policy, eligibility entries, health observations, ping jobs/events, benchmark policies, and benchmark results.
 - [`workbench/workspaces/shared_library_arc3/docs/README.md`](workbench/workspaces/shared_library_arc3/docs/README.md) — ARC3 shared-library purpose; its `design/workflows/`, `design/operations/`, and `design/prompts/` extend the system shared library.

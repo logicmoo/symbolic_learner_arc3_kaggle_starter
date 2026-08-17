@@ -373,7 +373,7 @@ Input game state
 - [x] Phase 1 debugger and inspection deliverables are identified separately from later semantic and learning quality.
 - [x] Every checked Phase 2 and Phase 3 deliverable has reproducible implementation, tests, and demonstration evidence.
 - [x] Every partial deliverable is completed or explicitly deferred with written rationale.
-- [ ] Architecture, TODO, deliverables, file tree, debugger, provider, and Kaggle documentation agree.
+- [x] Architecture, TODO, deliverables, file tree, debugger, provider, and Kaggle documentation agree. The living implementation inventory and file tree now use the active purpose-based navigation, lifecycle-first workspace layout, same-kind implicit alternatives, model-preset terminology, and explicit legacy-read compatibility.
 - [x] Protected Kaggle files remain unchanged in name and purpose.
 - [x] Exact-grid identity, Turtle regeneration, memory replay, and prediction ordering are deterministic before raster/occlusion environments are accepted.
 - [x] Final acceptance evidence links repository commits, tests, action-tree artifacts, Turtle programs, transcripts, predictions, outcomes, and demonstrations. The fail-closed report records the exact commit and regression result, object-memory/action-tree summary, encounter and Turtle counts, replay hash, environment summary, prediction/rule identifiers, independent grade evidence, calibrated probability source, and replay status.
