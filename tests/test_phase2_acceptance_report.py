@@ -10,6 +10,12 @@ def _summaries():
             "exact_reconstructions": 4,
             "replay_hash": "sha256:replay",
             "object_changes": ["moved"],
+            "action_tree": "runtime/action_trees/phase2_demo/level_1",
+            "observations": 2,
+            "encounters": 4,
+            "turtle_programs": 4,
+            "evidence_records": 52,
+            "resolved_accounts": 2,
             "summary": "runtime/object-summary.json",
         },
         {
@@ -30,6 +36,9 @@ def _summaries():
             "probability_source": "verified_prediction_history",
             "replayed_prediction": True,
             "replayed_grade": True,
+            "prediction_id": "prediction-demo",
+            "grade_evidence": ["independent_outcome"],
+            "calibrated_probability": 2 / 3,
             "summary": "runtime/phase3-summary.json",
         },
     )
@@ -52,6 +61,10 @@ def test_acceptance_report_requires_and_renders_all_evidence(tmp_path) -> None:
     markdown = markdown_path.read_text(encoding="utf-8")
     assert "**ACCEPTED**" in markdown
     assert "`fixed_camera_physics`" in markdown
+    assert "`action_tree`: `runtime/action_trees/phase2_demo/level_1`" in markdown
+    assert "`prediction_id`: `prediction-demo`" in markdown
+    assert report.evidence["turtle_programs"] == 4
+    assert report.evidence["grade_evidence"] == ["independent_outcome"]
 
 
 def test_acceptance_report_rejects_missing_environment_evidence() -> None:

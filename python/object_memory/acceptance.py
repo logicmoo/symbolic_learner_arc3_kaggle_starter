@@ -54,6 +54,8 @@ def build_acceptance_report(
     environments = environment_progression.get("environments") or {}
     checks = {
         "stable_identity": bool(object_memory.get("recognized_identity")),
+        "action_tree_evidence": bool(object_memory.get("action_tree")),
+        "encounter_history": int(object_memory.get("encounters", 0)) > 0,
         "exact_reconstruction": int(object_memory.get("exact_reconstructions", 0)) > 0,
         "deterministic_replay": bool(object_memory.get("replay_hash")),
         "phase3_transition_analysis": bool(phase3_learning.get("transition_changes")),
@@ -62,8 +64,10 @@ def build_acceptance_report(
             "prediction_recorded_before_outcome"
         )
         is True,
+        "prediction_record": bool(phase3_learning.get("prediction_id")),
         "independent_prediction_grade": phase3_learning.get("independent_grade")
         == 1.0,
+        "grade_evidence": bool(phase3_learning.get("grade_evidence")),
         "calibrated_rule_update": phase3_learning.get("probability_source")
         == "verified_prediction_history",
         "phase3_replay": phase3_learning.get("replayed_prediction") is True
@@ -85,7 +89,24 @@ def build_acceptance_report(
         "phase3_summary": phase3_learning.get("summary", "provided mapping"),
         "replay_hash": object_memory.get("replay_hash"),
         "recognized_identity": object_memory.get("recognized_identity"),
+        "action_tree": object_memory.get("action_tree"),
+        "observations": object_memory.get("observations"),
+        "encounters": object_memory.get("encounters"),
+        "turtle_programs": object_memory.get("turtle_programs"),
+        "exact_reconstructions": object_memory.get("exact_reconstructions"),
+        "evidence_records": object_memory.get("evidence_records"),
+        "resolved_accounts": object_memory.get("resolved_accounts"),
+        "object_changes": object_memory.get("object_changes"),
         "environment_fixtures": environment_progression.get("fixtures"),
+        "prediction_id": phase3_learning.get("prediction_id"),
+        "transition_changes": phase3_learning.get("transition_changes"),
+        "rules": phase3_learning.get("rules"),
+        "grade_evidence": phase3_learning.get("grade_evidence"),
+        "independent_grade": phase3_learning.get("independent_grade"),
+        "calibrated_probability": phase3_learning.get("calibrated_probability"),
+        "probability_source": phase3_learning.get("probability_source"),
+        "replayed_prediction": phase3_learning.get("replayed_prediction"),
+        "replayed_grade": phase3_learning.get("replayed_grade"),
     }
     return AcceptanceReport(all(checks.values()), checks, evidence)
 
