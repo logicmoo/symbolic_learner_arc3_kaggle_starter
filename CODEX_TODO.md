@@ -845,6 +845,11 @@ Preserve the canonical checkout and its `codex/workbench-navigation-v2` branch.
   observer internals. Acceptance requires proposal-linked evidence and the
   `SingleWriter`, while rejection records append-only history without changing
   confidence. Both persist a resolved account beside the originating node.
+- [x] Enable semantic capture in the canonical interactive and Prolog-controlled
+  ARC3 runners. A shared composition factory binds the established grid
+  extractor, runner grid accessor, SWI-backed observer, semantic store, and
+  single identity writer; both entry points provide an explicit
+  `--no-semantic-capture` opt-out instead of silently omitting object memory.
 - [x] Add complete deterministic semantic-store snapshots and replay. Restore
   all exact record namespaces in dependency order, rebuild encounter/artifact
   indexes, reject unknown namespaces, and make repeated replay idempotent.

@@ -562,12 +562,16 @@ class Arc3Runner:
         }
 
     def _current_png(self) -> bytes:
-        frame = extract_latest_frame(
+        return frame_to_png_bytes(self.current_grid())
+
+    def current_grid(self) -> Any:
+        """Return the newest logical grid used by capture observers."""
+
+        return extract_latest_frame(
             self.current_observation,
             getattr(self.env, "observation_space", None),
             self.env,
         )
-        return frame_to_png_bytes(frame)
 
     def _start_action_tree(self) -> None:
         self.tree_store = ActionTreeStore(

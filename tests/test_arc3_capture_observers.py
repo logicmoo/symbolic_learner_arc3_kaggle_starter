@@ -3,6 +3,7 @@ from types import SimpleNamespace
 
 from action_tree import StateNode
 from arc3_runner import Arc3Runner
+from object_memory import SemanticGridCaptureObserver, standard_semantic_grid_observer
 
 
 class RecordingObserver:
@@ -96,3 +97,25 @@ def test_runner_exposes_explicit_semantic_authorization_controls() -> None:
             },
         ),
     ]
+
+
+def test_standard_semantic_observer_uses_runner_grid_and_single_writer() -> None:
+    observer = standard_semantic_grid_observer()
+    runner = Arc3Runner.__new__(Arc3Runner)
+    runner.current_observation = {"grid": [[0, 1], [2, 0]]}
+    runner.env = SimpleNamespace(observation_space=None)
+
+    assert isinstance(observer, SemanticGridCaptureObserver)
+    assert observer.identity_writer is not None
+    assert observer.grid_selector(runner).tolist() == [[0, 1], [2, 0]]
+
+
+def test_canonical_runners_enable_semantic_capture_with_an_explicit_opt_out() -> None:
+    root = Path(__file__).resolve().parents[1]
+    interactive = (root / "python" / "interactive_runner.py").read_text(encoding="utf-8")
+    prolog = (root / "scripts" / "prolog_controlled_runner.py").read_text(encoding="utf-8")
+
+    for source in (interactive, prolog):
+        assert "standard_semantic_grid_observer" in source
+        assert "--no-semantic-capture" in source
+        assert "capture_observers=observers" in source

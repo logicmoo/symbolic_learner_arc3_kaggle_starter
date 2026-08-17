@@ -13,6 +13,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT / "python"))
 
 from arc3_runner import Arc3Runner, action_name, is_complex_action
+from object_memory import standard_semantic_grid_observer
 from project_paths import exports_root, histories_root
 
 
@@ -474,9 +475,19 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Single-key ARC3 debugger runner")
     parser.add_argument("game_id", nargs="?", default="ls20")
     parser.add_argument("--render-mode", default="terminal")
+    parser.add_argument(
+        "--no-semantic-capture",
+        action="store_true",
+        help="Disable normalized object-memory records for this debugger session.",
+    )
     args = parser.parse_args()
 
-    runner = Arc3Runner(args.game_id, render_mode=args.render_mode)
+    observers = () if args.no_semantic_capture else (standard_semantic_grid_observer(),)
+    runner = Arc3Runner(
+        args.game_id,
+        render_mode=args.render_mode,
+        capture_observers=observers,
+    )
     games = runner.available_games()
     selected_game = next(
         (

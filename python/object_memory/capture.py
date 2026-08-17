@@ -30,6 +30,21 @@ from .recognition import (
 from .store import InMemorySemanticBackend, SymbolicStore
 
 
+def standard_semantic_grid_observer() -> "SemanticGridCaptureObserver":
+    """Compose the canonical live grid observer without coupling it to Phase 1."""
+
+    from workbench.server.runtime import analyze_grid
+
+    from .memory import SymbolicMemory
+    from .providers import PythonProvider
+
+    return SemanticGridCaptureObserver(
+        GridAdapter(analyze_grid, PythonProvider({})),
+        grid_selector=lambda runner: runner.current_grid(),
+        identity_writer=SingleWriter(SymbolicMemory()),
+    )
+
+
 def _jsonable(value: Any) -> Any:
     if is_dataclass(value):
         return _jsonable(asdict(value))
