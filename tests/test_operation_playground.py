@@ -34,6 +34,8 @@ def test_resource_tool_operations_use_declared_semantic_datatypes() -> None:
         "atomspace_retract": ("AtomSpace", "AtomSpaceChange"),
         "system_inspect": ("SystemContract", "SystemInspection"),
         "system_check_readiness": ("SystemContract", "SystemReadiness"),
+        "data_inspect": ("DataValue", "DataInspection"),
+        "artifact_inspect": ("Artifact", "ArtifactInspection"),
         "policy_evaluate": ("Policy", "PolicyDecision"),
         "category_resolve_matches": ("ArtifactCategory", "CategoryMatchSet"),
     }
@@ -126,6 +128,43 @@ def test_system_resource_tools_inspect_and_check_readiness_without_execution() -
     readiness = invoke_operation("shared_library_system", "system_check_readiness", {"inputs": {"resource": system}})
     assert readiness["outputs"]["result"]["ready"] is True
     assert readiness["outputs"]["result"]["connectionDeclared"] is True
+
+
+def test_knowledge_file_resource_tools_inspect_loaded_values() -> None:
+    data = {
+        "kind": "data",
+        "id": "knowledge/data/examples/example.json",
+        "label": "example.json",
+        "workspacePath": "knowledge/data/examples/example.json",
+        "format": ".json",
+        "mediaType": "application/json",
+        "size": 21,
+        "value": {"example": True},
+        "valueEncoding": "text",
+    }
+    inspected_data = invoke_operation(
+        "shared_library_system", "data_inspect", {"inputs": {"resource": data}}
+    )["outputs"]["result"]
+    assert inspected_data["workspacePath"] == data["workspacePath"]
+    assert inspected_data["valueType"] == "dict"
+    assert inspected_data["hasValue"] is True
+
+    artifact = {
+        **data,
+        "kind": "artifact",
+        "id": "runtime/artifacts/result.png",
+        "workspacePath": "runtime/artifacts/result.png",
+        "format": ".png",
+        "mediaType": "image/png",
+        "value": "data:image/png;base64,AA==",
+        "valueEncoding": "data-url",
+    }
+    inspected_artifact = invoke_operation(
+        "shared_library_system", "artifact_inspect", {"inputs": {"resource": artifact}}
+    )["outputs"]["result"]
+    assert inspected_artifact["storage"] == "runtime"
+    assert inspected_artifact["valueType"] == "str"
+    assert inspected_artifact["valueEncoding"] == "data-url"
 
 
 def test_python_provider_captures_stdout_and_stderr(monkeypatch: pytest.MonkeyPatch) -> None:

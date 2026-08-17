@@ -159,6 +159,18 @@
   (inputs ((resource SystemContract))) (outputs ((result SystemReadiness))) (parameters ((action system.check_readiness)))
 )
 (
+  (kind operation) (id data_inspect) (label "Inspect Data Value")
+  (description "Inspect the type, media format, size, provider path, and loaded-value state of selected workspace Data.")
+  (categories ([] knowledge/data filtered/resource-tools)) (implementation resource.tool)
+  (inputs ((resource DataValue))) (outputs ((result DataInspection))) (parameters ((action data.inspect)))
+)
+(
+  (kind operation) (id artifact_inspect) (label "Inspect Persisted Artifact")
+  (description "Inspect the type, media format, size, storage lifecycle, and loaded-value state of a persisted Artifact.")
+  (categories ([] knowledge/artifacts filtered/resource-tools)) (implementation resource.tool)
+  (inputs ((resource Artifact))) (outputs ((result ArtifactInspection))) (parameters ((action artifact.inspect)))
+)
+(
   (kind operation) (id policy_explain) (label "Explain Policy Decision")
   (description "Explain the inheritance and decision inputs behind a Policy's effective state.")
   (categories ([] policies/explanation filtered/resource-tools)) (implementation resource.tool)

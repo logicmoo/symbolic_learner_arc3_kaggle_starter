@@ -577,6 +577,12 @@ def _resource_tool(inputs: dict[str, Any], parameters: dict[str, Any]) -> dict[s
         connection_fields = ("executable", "baseUrl", "healthUrl", "adapterScript", "endpoint", "command")
         connection = next((configuration.get(name) for name in connection_fields if configuration.get(name)), None)
         return {"result": {**identity, "ready": not reasons, "reasons": reasons, "systemType": resource.get("systemType") or "unspecified", "provider": resource.get("provider"), "connectionDeclared": connection is not None, "configurationKeys": sorted(configuration)}}
+    if action == "data.inspect":
+        value = resource.get("value")
+        return {"result": {**identity, "workspacePath": resource.get("workspacePath"), "format": resource.get("format"), "mediaType": resource.get("mediaType"), "size": resource.get("size"), "valueType": type(value).__name__ if "value" in resource else "omitted", "hasValue": "value" in resource, "valueEncoding": resource.get("valueEncoding"), "contentOmitted": resource.get("contentOmitted", False)}}
+    if action == "artifact.inspect":
+        value = resource.get("value")
+        return {"result": {**identity, "workspacePath": resource.get("workspacePath"), "format": resource.get("format"), "mediaType": resource.get("mediaType"), "size": resource.get("size"), "valueType": type(value).__name__ if "value" in resource else "omitted", "hasValue": "value" in resource, "valueEncoding": resource.get("valueEncoding"), "storage": "runtime" if str(resource.get("workspacePath") or "").startswith("runtime/") else "knowledge", "contentOmitted": resource.get("contentOmitted", False)}}
     if action == "policy.evaluate":
         return {"result": {**identity, "effective": resource.get("enabled", True), "rules": resource.get("rules") or resource.get("where") or resource.get("query") or {}}}
     if action == "policy.explain":
