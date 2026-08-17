@@ -36,7 +36,7 @@ summaries and generate the final evidence report:
   --object-memory-summary runtime\phase2_object_memory_demo\phase2_demo_summary.json `
   --environment-summary runtime\phase2_environment_progression\environment_progression_summary.json `
   --phase3-summary runtime\phase3_learning_demo\phase3_learning_summary.json `
-  --test-result "510 passed" `
+  --test-result "513 passed" `
   --commit $(git rev-parse HEAD) `
   --output runtime\phase2_acceptance
 ```
