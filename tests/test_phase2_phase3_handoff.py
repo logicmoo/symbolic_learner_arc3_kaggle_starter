@@ -464,3 +464,101 @@ def test_relationship_edit_generalizes_attachment_to_unseen_state() -> None:
         {"relation": "left_of", "target": "marker"},
         {"relation": "attached_to", "target": "anchor"},
     ]
+
+
+def test_object_relative_motion_uses_the_unseen_reference_position() -> None:
+    transition = TransitionRecord(
+        before_state_id="before",
+        action_or_event="DOCK",
+        after_state_id="after",
+        changes=(
+            {
+                "kind": "moved",
+                "properties": {
+                    "position": {"from": [1, 1], "to": [4, 3]},
+                    "reference_position": {"from": [5, 1], "to": [7, 3]},
+                },
+                "evidence_ids": ["dock-evidence"],
+            },
+        ),
+    )
+    rules = phase2_rule_inducer().induce(
+        phase2_transformation_learner().learn(transition)
+    )
+    relative = next(
+        rule
+        for rule in rules
+        if rule.predicted_effects[0]["interpretation"] == "object_relative_position"
+    )
+    store = RuleStore()
+    store.store(relative)
+
+    result = phase2_rule_executor(store, "DOCK").apply(
+        relative.rule_id,
+        {"position": [20, 20], "reference_position": [100, 50], "color": "blue"},
+    )
+
+    assert result == {
+        "position": [97, 50],
+        "reference_position": [100, 50],
+        "color": "blue",
+    }
+    assert relative.predicted_effects[0]["offset"] == [-3, 0]
+
+
+def test_topology_rewrite_preserves_unobserved_structure_on_unseen_state() -> None:
+    transition = TransitionRecord(
+        before_state_id="before",
+        action_or_event="OPEN",
+        after_state_id="after",
+        changes=(
+            {
+                "kind": "topology_changed",
+                "properties": {
+                    "topology": {
+                        "from": {
+                            "holes": 0,
+                            "components": 1,
+                            "boundary": {"closed": True, "segments": 4},
+                        },
+                        "to": {
+                            "holes": 1,
+                            "components": 1,
+                            "boundary": {"closed": False, "segments": 4},
+                        },
+                    }
+                },
+                "evidence_ids": ["topology-evidence"],
+            },
+        ),
+    )
+    rules = phase2_rule_inducer().induce(
+        phase2_transformation_learner().learn(transition)
+    )
+    rewrite = next(
+        rule
+        for rule in rules
+        if rule.predicted_effects[0]["interpretation"]
+        == "structural_topology_rewrite"
+    )
+    store = RuleStore()
+    store.store(rewrite)
+
+    result = phase2_rule_executor(store, "OPEN").apply(
+        rewrite.rule_id,
+        {
+            "topology": {
+                "holes": 3,
+                "components": 9,
+                "boundary": {"closed": True, "segments": 12, "material": "stone"},
+                "symmetry": "vertical",
+            }
+        },
+    )
+
+    assert result["topology"] == {
+        "holes": 1,
+        "components": 9,
+        "boundary": {"closed": False, "segments": 12, "material": "stone"},
+        "symmetry": "vertical",
+    }

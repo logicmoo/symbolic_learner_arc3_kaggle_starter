@@ -98,6 +98,59 @@ def _relationship_edit(before: Any, after: Any) -> Mapping[str, Any] | None:
     return {"remove": removed, "add": added} if removed or added else None
 
 
+def _mapping_edit(before: Any, after: Any) -> Mapping[str, Any] | None:
+    """Describe a structural mapping rewrite without replacing unrelated keys."""
+
+    if not isinstance(before, Mapping) or not isinstance(after, Mapping):
+        return None
+    removed = sorted(str(key) for key in before.keys() - after.keys())
+    added_or_replaced: dict[str, Any] = {}
+    nested: dict[str, Mapping[str, Any]] = {}
+    for key in sorted(after):
+        name = str(key)
+        if key not in before:
+            added_or_replaced[name] = _plain(after[key])
+            continue
+        if before[key] == after[key]:
+            continue
+        child = _mapping_edit(before[key], after[key])
+        if child is None:
+            added_or_replaced[name] = _plain(after[key])
+        else:
+            nested[name] = child
+    if not (removed or added_or_replaced or nested):
+        return None
+    return {"remove": removed, "set": added_or_replaced, "update": nested}
+
+
+def _numeric_sum(left: Any, right: Any) -> Any | None:
+    if all(
+        isinstance(item, (int, float)) and not isinstance(item, bool)
+        for item in (left, right)
+    ):
+        return left + right
+    if isinstance(left, (tuple, list)) and isinstance(right, (tuple, list)):
+        if len(left) != len(right):
+            return None
+        values = [_numeric_sum(a, b) for a, b in zip(left, right)]
+        if any(item is None for item in values):
+            return None
+        return tuple(values) if isinstance(left, tuple) else values
+    return None
+
+
+def _apply_mapping_edit(current: Mapping[str, Any], edit: Mapping[str, Any]) -> dict[str, Any]:
+    result = {str(key): _plain(value) for key, value in current.items()}
+    for key in edit.get("remove") or ():
+        result.pop(str(key), None)
+    result.update({str(key): _plain(value) for key, value in (edit.get("set") or {}).items()})
+    for key, child in (edit.get("update") or {}).items():
+        name = str(key)
+        if isinstance(child, Mapping) and isinstance(result.get(name), Mapping):
+            result[name] = _apply_mapping_edit(result[name], child)
+    return result
+
+
 @dataclass(frozen=True)
 class GameObjectLearnerPayload:
     state_id: str
@@ -499,6 +552,31 @@ def phase2_transformation_learner() -> TransformationLearner:
                         ("relative_generalization_requires_validation",),
                     )
                 )
+            properties = plain.get("properties") or {}
+            position_change = properties.get("position")
+            if isinstance(position_change, Mapping) and "to" in position_change:
+                for reference_field in ("reference_position", "anchor_position"):
+                    reference_change = properties.get(reference_field)
+                    if not isinstance(reference_change, Mapping) or "to" not in reference_change:
+                        continue
+                    offset = _numeric_difference(
+                        reference_change["to"], position_change["to"]
+                    )
+                    if offset is not None:
+                        interpretations.append(
+                            (
+                                {
+                                    **plain,
+                                    "interpretation": "object_relative_position",
+                                    "target_field": "position",
+                                    "reference_field": reference_field,
+                                    "offset": offset,
+                                },
+                                ("reference_identity_is_stable",),
+                                ("reference_position_requires_identity_validation",),
+                            )
+                        )
+                        break
             if str(plain.get("kind", "")).lower() in {"scaled", "resized", "scale_changed"}:
                 factors = {
                     str(field): ratio
@@ -573,6 +651,32 @@ def phase2_transformation_learner() -> TransformationLearner:
                         },
                         ("relationship_change_is_symbolic",),
                         ("relationship_targets_require_identity_validation",),
+                    )
+                )
+            topology_edits = {
+                str(field): edit
+                for field, specification in properties.items()
+                if "topology" in str(field).lower()
+                and isinstance(specification, Mapping)
+                and "from" in specification
+                and "to" in specification
+                and (
+                    edit := _mapping_edit(
+                        specification["from"], specification["to"]
+                    )
+                )
+                is not None
+            }
+            if topology_edits:
+                interpretations.append(
+                    (
+                        {
+                            **plain,
+                            "interpretation": "structural_topology_rewrite",
+                            "topology_edits": topology_edits,
+                        },
+                        ("topology_change_is_structural",),
+                        ("unobserved_topology_keys_are_preserved",),
                     )
                 )
             for interpretation, assumptions, critiques in interpretations:
@@ -814,6 +918,19 @@ def phase2_rule_executor(
                             if plain_item not in values:
                                 values.append(plain_item)
                         replacement = tuple(values) if isinstance(result[field], tuple) else values
+                elif interpretation == "object_relative_position":
+                    target_field = str(effect.get("target_field") or field)
+                    reference_field = str(effect.get("reference_field") or "")
+                    if field != target_field:
+                        continue
+                    if reference_field in result:
+                        relative = _numeric_sum(result[reference_field], effect.get("offset"))
+                        if relative is not None:
+                            replacement = relative
+                elif interpretation == "structural_topology_rewrite":
+                    edit = (effect.get("topology_edits") or {}).get(field)
+                    if isinstance(edit, Mapping) and isinstance(result[field], Mapping):
+                        replacement = _apply_mapping_edit(result[field], edit)
                 result[str(field)] = replacement
         return result
 
