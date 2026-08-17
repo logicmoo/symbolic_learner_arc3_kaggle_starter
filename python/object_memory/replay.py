@@ -26,6 +26,7 @@ from .models import (
     ResidualCandidate,
     ResidualDisposition,
     TurtleProgramRef,
+    TransitionRule,
 )
 from .store import SymbolicStore
 
@@ -271,6 +272,32 @@ class SemanticRecordCodec:
                 calibrated_probability=value.get("calibrated_probability"),
                 schema_version=str(value.get("schema_version", "1.0.0")),
             )
+        if record_type == "transition_rule":
+            return TransitionRule(
+                rule_id=str(value["rule_id"]),
+                preconditions=tuple(value.get("preconditions") or ()),
+                action_or_event=value.get("action_or_event"),
+                predicted_effects=tuple(value.get("predicted_effects") or ()),
+                provenance=tuple(value.get("provenance") or ()),
+                assumptions=tuple(value.get("assumptions") or ()),
+                critiques=tuple(value.get("critiques") or ()),
+                supporting_evidence_ids=tuple(
+                    value.get("supporting_evidence_ids") or ()
+                ),
+                contradicting_evidence_ids=tuple(
+                    value.get("contradicting_evidence_ids") or ()
+                ),
+                rival_rule_ids=tuple(value.get("rival_rule_ids") or ()),
+                bootstrap_probability=float(value.get("bootstrap_probability", 0.0)),
+                calibrated_probability=value.get("calibrated_probability"),
+                probability_source=str(value.get("probability_source", "bootstrap")),
+                coverage=float(value.get("coverage", 0.0)),
+                applicability_precision=value.get("applicability_precision"),
+                prediction_attempts=int(value.get("prediction_attempts", 0)),
+                prediction_successes=int(value.get("prediction_successes", 0)),
+                prediction_score_total=float(value.get("prediction_score_total", 0.0)),
+                prediction_history=tuple(value.get("prediction_history") or ()),
+            )
         raise ValueError(f"unsupported semantic record type: {record_type!r}")
 
     @staticmethod
@@ -285,6 +312,7 @@ class SemanticRecordCodec:
             "residuals": "residual",
             "predictions": "prediction",
             "prediction_grades": "prediction_grade",
+            "transition_rules": "transition_rule",
         }
         if namespace in record_types:
             return SemanticRecordCodec.decode(record_types[namespace], value)

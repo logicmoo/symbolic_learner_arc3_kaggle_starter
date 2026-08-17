@@ -131,6 +131,24 @@ def test_rule_store_uses_caller_supplied_domain_execution() -> None:
     assert result == {"x": 2, "effect": "moved"}
 
 
+def test_prolog_provider_exposes_every_normalized_learner_record_family() -> None:
+    calls = []
+    provider = PrologProvider(
+        lambda predicate, payload: calls.append((predicate, payload)) or [payload]
+    )
+
+    for family, namespace in provider.SEMANTIC_NAMESPACES.items():
+        result = provider.get_semantic_records(family, {"source": "fixture"})
+        assert result.metadata["payload"] == {
+            "namespace": namespace,
+            "filters": {"source": "fixture"},
+        }
+        assert result.source_refs == (f"prolog:semantic_record/3:{namespace}",)
+    assert [predicate for predicate, _payload in calls] == [
+        "semantic_records"
+    ] * len(provider.SEMANTIC_NAMESPACES)
+
+
 def test_prediction_must_precede_outcome() -> None:
     ledger = PredictionLedger()
     ledger.record(PredictionRecord("p1", "rule-1", "state-1", ("move",), 10))

@@ -225,6 +225,8 @@ class GameLearningPipeline:
         rules = self.rule_ranker.rank(self.rule_inducer.induce(candidates))
         for rule in rules:
             self.rule_store.store(rule)
+            if self.semantic_store is not None:
+                self.semantic_store.put_transition_rule(rule)
         return LearningStepResult(transition, candidates, rules)
 
     def predict(

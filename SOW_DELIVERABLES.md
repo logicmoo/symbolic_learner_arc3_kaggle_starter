@@ -264,7 +264,13 @@ Phase 3 implements learning and prediction over the persistent objects and evide
   Existing evidence: the real Phase 2 payload builder includes observation/encounter IDs, normalized instances and relationships, stable/candidate identities, action-bearing changed properties, Turtle and source artifacts, competing proposals, direct changes, evidence, confidence, and provenance. Validation enforces encounter, Turtle-artifact, and evidence referential integrity. Remaining: validate registry identity and all provenance source references against durable stores.
 
 - [x] Keep the learner independent of debugger and perception internals while returning normalized artifacts the debugger can display.  
-  Evidence: plugin and normalized payload/result boundaries.
+  Evidence: plugin and normalized payload/result boundaries. `PrologProvider`
+  exposes explicit registry, object, difference, similarity, rule, transcript,
+  and evidence families through the shared `semantic_record/3` query contract.
+  `TransitionRule` is now a first-class `SymbolicStore` namespace alongside
+  the previously durable atoms, encounters, proposals, changes, evidence,
+  predictions, and grades; learning persists induced rules through either the
+  in-memory or reloadable Prolog backend.
 
 - [x] Add interface validation and structured errors.  
   Evidence: `IntegrationValidator`, `IntegrationError`.

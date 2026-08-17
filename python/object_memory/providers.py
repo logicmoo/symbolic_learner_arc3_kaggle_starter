@@ -67,6 +67,15 @@ class PrologProvider(ArtifactProvider):
     """Delegates symbolic queries to SWI-Prolog through an injected query function."""
 
     mode = ExecutionMode.PROLOG
+    SEMANTIC_NAMESPACES = {
+        "registry": "atoms",
+        "objects": "encounters",
+        "differences": "object_changes",
+        "similarities": "match_proposals",
+        "rules": "transition_rules",
+        "transcripts": "predictions",
+        "evidence": "evidence",
+    }
 
     def __init__(self, query: Callable[[str, Mapping[str, Any]], Any]) -> None:
         self._query = query
@@ -91,4 +100,27 @@ class PrologProvider(ArtifactProvider):
             mode=self.mode,
             source_refs=(f"prolog:{predicate}",),
             metadata={"query": predicate, "payload": json.loads(json.dumps(payload))},
+        )
+
+    def get_semantic_records(
+        self,
+        name: str,
+        filters: Mapping[str, Any] | None = None,
+    ) -> NormalizedResult:
+        """Query one normalized semantic namespace through the Prolog adapter."""
+
+        try:
+            namespace = self.SEMANTIC_NAMESPACES[name]
+        except KeyError as exc:
+            raise KeyError(f"Unknown semantic Prolog record family {name!r}") from exc
+        payload = {
+            "namespace": namespace,
+            "filters": json.loads(json.dumps(dict(filters or {}))),
+        }
+        value = self._query("semantic_records", payload)
+        return NormalizedResult(
+            value=value,
+            mode=self.mode,
+            source_refs=(f"prolog:semantic_record/3:{namespace}",),
+            metadata={"query": "semantic_records", "payload": payload},
         )

@@ -16,6 +16,7 @@ from object_memory import (
     ResidualDisposition,
     SymbolicStore,
     TurtleProgramRef,
+    TransitionRule,
 )
 
 
@@ -80,6 +81,18 @@ def test_prolog_semantic_backend_round_trips_and_hydrates(tmp_path: Path) -> Non
             provenance=("proposal-red", "field:appearance.shape"),
         )
     )
+    rule = store.put_transition_rule(
+        TransitionRule(
+            "rule-red-right",
+            ("red_ball",),
+            {"action": "RIGHT"},
+            ({"kind": "moved", "delta": [1, 0]},),
+            assumptions=("identity remains stable",),
+            critiques=("one observation",),
+            supporting_evidence_ids=("ev-1",),
+            bootstrap_probability=0.5,
+        )
+    )
 
     loaded = SymbolicStore(PrologSemanticBackend(path)).hydrate()
 
@@ -90,6 +103,7 @@ def test_prolog_semantic_backend_round_trips_and_hydrates(tmp_path: Path) -> Non
     assert loaded.values("confidence_history") == (confidence_record,)
     assert loaded.values("object_changes") == (change,)
     assert loaded.values("residuals") == (residual,)
+    assert loaded.values("transition_rules") == (rule,)
     assert loaded.snapshot() == store.snapshot()
     source = path.read_text(encoding="utf-8")
     assert ":- dynamic semantic_record/3." in source

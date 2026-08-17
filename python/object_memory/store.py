@@ -18,6 +18,7 @@ from .models import (
     RecognitionAccount,
     ResidualCandidate,
     TurtleProgramRef,
+    TransitionRule,
 )
 
 
@@ -143,6 +144,9 @@ class SymbolicStore:
             raise ValueError("prediction records must be written before outcomes")
         return self.backend.write_once("predictions", value.prediction_id, value)
 
+    def put_transition_rule(self, value: TransitionRule) -> TransitionRule:
+        return self.backend.write_once("transition_rules", value.rule_id, value)
+
     def put_prediction_grade(
         self, value: PredictionGradeRecord
     ) -> PredictionGradeRecord:
@@ -167,6 +171,7 @@ class SymbolicStore:
         "evidence",
         "object_changes",
         "residuals",
+        "transition_rules",
         "confidence_history",
         "predictions",
         "prediction_grades",
@@ -195,6 +200,7 @@ class SymbolicStore:
             "evidence": self.put_evidence,
             "object_changes": self.put_object_change,
             "residuals": self.put_residual,
+            "transition_rules": self.put_transition_rule,
             "confidence_history": self.put_confidence_history,
             "predictions": self.put_prediction,
             "prediction_grades": self.put_prediction_grade,
