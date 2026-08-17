@@ -1,4 +1,4 @@
-﻿[â† Back to top-level README](../../../../README.md)
+[← Back to top-level README](../../../../README.md)
 
 # MeTTa Resource Kind Convention
 
