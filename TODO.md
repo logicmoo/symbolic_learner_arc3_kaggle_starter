@@ -272,7 +272,7 @@ Architecture: [Environment progression](SOW_PHASE_ARCHITECTURE.md#environment-pr
 - [x] Perturbation generator.
 - [x] Provider/mode ablation runner.
 - [x] Transcript comparison and scoring tools.
-- [ ] Acceptance report generator.
+- [x] Acceptance report generator.
 
 # Completion procedure
 

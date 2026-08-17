@@ -370,7 +370,8 @@ Input game state
     → updated evidence, learned rule, or action recommendation
 ```
 
-- [ ] **Open** Provide reproducible integration commands, example scripts, acceptance-test results, and developer notes.
+- [x] Provide reproducible integration commands, example scripts, acceptance-test results, and developer notes.
+  Evidence: the object-memory and environment-progression demonstrations emit deterministic machine-readable summaries. `scripts/generate_phase2_acceptance_report.py` verifies those summaries together with an explicit regression result and repository commit, fails closed when evidence is missing, and writes JSON plus Markdown reports. Commands and scope are documented in [Phase 2 object-memory demonstration](workbench/docs/design/PHASE2_OBJECT_MEMORY_DEMONSTRATION.md) and [Phase 2 environment progression](workbench/docs/design/PHASE2_ENVIRONMENT_PROGRESSION.md).
 
 ---
 

@@ -21,6 +21,22 @@ The generated `environment_progression_summary.json` records every expected and
 detected object count, degradation type, per-fixture score, and the aggregate
 acceptance result. Re-running the command produces the same ordered results.
 
+After also running `scripts\phase2_object_memory_demo.py`, verify both summaries
+and generate the final evidence report:
+
+```powershell
+.\.venv\Scripts\python.exe scripts\generate_phase2_acceptance_report.py `
+  --object-memory-summary runtime\phase2_object_memory_demo\phase2_demo_summary.json `
+  --environment-summary runtime\phase2_environment_progression\environment_progression_summary.json `
+  --test-result "504 passed" `
+  --commit $(git rev-parse HEAD) `
+  --output runtime\phase2_acceptance
+```
+
+The generator exits unsuccessfully if required identity, reconstruction, replay,
+environment, test, or commit evidence is missing. Its JSON output is suitable
+for automation; its Markdown output is the corresponding human-readable audit.
+
 These fixtures prove contract integration and deterministic baseline extraction.
 They do not claim production recognition quality for arbitrary photographic or
 game-engine inputs; additional perception providers can be compared with the

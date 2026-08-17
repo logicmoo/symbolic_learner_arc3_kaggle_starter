@@ -14,6 +14,7 @@ from .adapters import (
     SimpleVideoAdapter,
     normalize_grid_structure,
 )
+from .acceptance import AcceptanceReport, build_acceptance_report, write_acceptance_report
 from .capture import SemanticGridCaptureObserver, standard_semantic_grid_observer
 from .benchmark import (
     PerceptionBenchmarkResult,
@@ -121,6 +122,7 @@ from .store import ArtifactIndex, InMemorySemanticBackend, SemanticStoreBackend,
 __all__ = [
     "ArtifactProvider",
     "ActionRecommendation",
+    "AcceptanceReport",
     "AlphaContourProvider",
     "ActionTreeSemanticReplay",
     "ArtifactRef",
@@ -225,8 +227,10 @@ __all__ = [
     "TurtleProgramRef",
     "TurtleReconstructionEvidenceBuilder",
     "deterministic_identifier",
+    "build_acceptance_report",
     "environment_progression_fixtures",
     "fixed_camera_physics_fixtures",
     "rendered_arcade_fixtures",
     "top_down_manipulation_fixtures",
+    "write_acceptance_report",
 ]
