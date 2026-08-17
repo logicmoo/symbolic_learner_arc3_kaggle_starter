@@ -589,29 +589,9 @@ class SemanticGridCaptureObserver:
                 self.symbolic_store.put_evidence(turtle_evidence)
                 turtle_evidence_ids.append(turtle_evidence.evidence_id)
             bounds = tuple(details.get("bounds") or (0, 0, 1, 1))
-            origin_x, origin_y = float(bounds[0]), float(bounds[1])
-            geometry = details.get("geometry") or {}
-            topology = details.get("topology") or {}
-            normalized_geometry = {
-                "width": geometry.get("width"),
-                "height": geometry.get("height"),
-                "boundary_cells": tuple(
-                    (float(cell[0]) - origin_x, float(cell[1]) - origin_y)
-                    for cell in geometry.get("boundaryCells") or ()
-                ),
-                "line_thickness": details.get("lineThickness"),
-            }
-            normalized_topology = {
-                "connected_components": topology.get("connectedComponents"),
-                "hole_count": topology.get("holeCount"),
-                "holes": tuple(
-                    tuple(
-                        (float(cell[0]) - origin_x, float(cell[1]) - origin_y)
-                        for cell in hole
-                    )
-                    for hole in topology.get("holes") or ()
-                ),
-            }
+            normalized_structure = details.get("normalizedStructure") or {}
+            normalized_geometry = normalized_structure.get("geometry") or {}
+            normalized_topology = normalized_structure.get("topology") or {}
             encounter = EncounterRecord.create(
                 observation_id=batch.observation.observation_id,
                 action_tree_node=str(node.path),
@@ -627,17 +607,7 @@ class SemanticGridCaptureObserver:
                     geometry=normalized_geometry,
                     topology=normalized_topology,
                     relationships=tuple(
-                        {
-                            "target": str(item.get("target")),
-                            "relation": str(item.get("relation")),
-                        }
-                        for item in sorted(
-                            details.get("relationships") or (),
-                            key=lambda value: (
-                                str(value.get("relation")),
-                                str(value.get("target")),
-                            ),
-                        )
+                        normalized_structure.get("relationships") or ()
                     ),
                 ),
                 turtle_programs=tuple(turtle_refs),

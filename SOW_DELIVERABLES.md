@@ -152,7 +152,7 @@ Phase 2 implements the semantic object layer behind the Phase 1 debugger. It use
 - [ ] **Open** Implement pluggable perception providers for image and simple-video inputs.
 
 - [ ] **Partial** Extract objects and represent geometry, structure, properties, relationships, position, orientation, scale, and appearance.  
-  Existing evidence: frozen versioned contracts plus deterministic grid extraction of cells, exact bounds, boundary geometry, shape/color/appearance, hole regions, connected topology, line thickness, and pairwise spatial relationships; semantic capture persists normalized instance position/scale/appearance, geometry, topology, source provenance, and canonical relationship records. Relationship equality and change participate in correspondence evidence and survive snapshot, Prolog, and action-tree replay.
+  Existing evidence: frozen versioned contracts plus deterministic grid extraction of cells, exact bounds, boundary geometry, shape/color/appearance, hole and enclosure regions, connected components, compound parts, horizontal and vertical bars, line thickness, and pairwise spatial relationships; semantic capture persists normalized instance position/scale/appearance, geometry, topology, source provenance, and canonical relationship records. Relationship equality and change participate in correspondence evidence and survive snapshot, Prolog, and action-tree replay.
   Remaining: compound-object structure, orientation inference, richer relations, and normalization for raster/video adapters.
 
 ## Persistent identity and correspondence

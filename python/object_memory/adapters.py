@@ -7,6 +7,123 @@ from typing import Any, Iterable, Mapping
 from .models import ArtifactRef, CandidateObject, Observation, ProvenanceRef
 
 
+def _normalized_cells(value: Any) -> tuple[tuple[int, int], ...]:
+    cells = value if isinstance(value, (list, tuple, set)) else ()
+    return tuple(sorted({(int(cell[0]), int(cell[1])) for cell in cells}))
+
+
+def _connected_components(
+    cells: tuple[tuple[int, int], ...],
+) -> tuple[tuple[tuple[int, int], ...], ...]:
+    remaining = set(cells)
+    components: list[tuple[tuple[int, int], ...]] = []
+    while remaining:
+        pending = [min(remaining)]
+        remaining.remove(pending[0])
+        component: set[tuple[int, int]] = set()
+        while pending:
+            cell = pending.pop()
+            component.add(cell)
+            x, y = cell
+            for neighbor in ((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)):
+                if neighbor in remaining:
+                    remaining.remove(neighbor)
+                    pending.append(neighbor)
+        components.append(tuple(sorted(component)))
+    return tuple(sorted(components, key=lambda item: (item[0], len(item))))
+
+
+def _axis_runs(
+    cells: tuple[tuple[int, int], ...], *, horizontal: bool
+) -> tuple[tuple[tuple[int, int], ...], ...]:
+    groups: dict[int, list[int]] = {}
+    for x, y in cells:
+        fixed, varying = (y, x) if horizontal else (x, y)
+        groups.setdefault(fixed, []).append(varying)
+    runs: list[tuple[tuple[int, int], ...]] = []
+    for fixed, values in sorted(groups.items()):
+        current: list[int] = []
+        for value in sorted(set(values)):
+            if current and value != current[-1] + 1:
+                if len(current) >= 2:
+                    runs.append(
+                        tuple(
+                            (item, fixed) if horizontal else (fixed, item)
+                            for item in current
+                        )
+                    )
+                current = []
+            current.append(value)
+        if len(current) >= 2:
+            runs.append(
+                tuple(
+                    (item, fixed) if horizontal else (fixed, item)
+                    for item in current
+                )
+            )
+    return tuple(runs)
+
+
+def normalize_grid_structure(item: Mapping[str, Any]) -> Mapping[str, Any]:
+    """Normalize extractor-specific grid structure into one semantic contract."""
+
+    cells = _normalized_cells(item.get("cells"))
+    components = _connected_components(cells)
+    bounds = tuple(int(value) for value in item.get("bounds") or (0, 0, 0, 0))
+    origin_x, origin_y = bounds[:2]
+
+    def relative(group):
+        return tuple((x - origin_x, y - origin_y) for x, y in group)
+
+    topology = item.get("topology") if isinstance(item.get("topology"), Mapping) else {}
+    holes = tuple(relative(_normalized_cells(hole)) for hole in topology.get("holes") or ())
+    normalized_components = tuple(relative(component) for component in components)
+    relationships = tuple(
+        {
+            "target": str(value.get("target")),
+            "relation": str(value.get("relation")),
+        }
+        for value in sorted(
+            (item.get("relationships") or ()),
+            key=lambda value: (str(value.get("relation")), str(value.get("target"))),
+        )
+        if isinstance(value, Mapping)
+    )
+    geometry = item.get("geometry") if isinstance(item.get("geometry"), Mapping) else {}
+    return {
+        "geometry": {
+            "cells": relative(cells),
+            "width": geometry.get("width", bounds[2] if len(bounds) > 2 else 0),
+            "height": geometry.get("height", bounds[3] if len(bounds) > 3 else 0),
+            "boundary_cells": relative(
+                _normalized_cells(geometry.get("boundaryCells") or cells)
+            ),
+            "horizontal_bars": tuple(
+                relative(run) for run in _axis_runs(cells, horizontal=True)
+            ),
+            "vertical_bars": tuple(
+                relative(run) for run in _axis_runs(cells, horizontal=False)
+            ),
+            "line_thickness": item.get("lineThickness"),
+        },
+        "topology": {
+            "connected_components": len(components),
+            "components": normalized_components,
+            "hole_count": len(holes),
+            "holes": holes,
+            "enclosures": holes,
+            "compound": len(components) > 1,
+            "compound_parts": normalized_components if len(components) > 1 else (),
+        },
+        "properties": {
+            "color": item.get("colorName"),
+            "shape": item.get("shape"),
+            "pixel_count": item.get("pixelCount", len(cells)),
+        },
+        "relationships": relationships,
+    }
+
+
 @dataclass(frozen=True)
 class GridPerceptionBatch:
     observation: Observation
@@ -67,7 +184,10 @@ class GridAdapter(PerceptionAdapter):
             if not isinstance(item, Mapping):
                 raise TypeError("grid extractor object entries must be mappings")
             candidate_id = str(item.get("candidate_id") or item.get("id") or f"candidate_{index}")
-            details[candidate_id] = item
+            details[candidate_id] = {
+                **item,
+                "normalizedStructure": normalize_grid_structure(item),
+            }
             candidates.append(
                 CandidateObject(
                     candidate_id=candidate_id,

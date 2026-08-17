@@ -5,7 +5,12 @@ Arc3Runner, ActionTreeStore, GptArcAnalyzer, SWIPrologBridge, or the generated
 Prolog artifact contracts.
 """
 
-from .adapters import GridAdapter, GridPerceptionBatch, PerceptionAdapter
+from .adapters import (
+    GridAdapter,
+    GridPerceptionBatch,
+    PerceptionAdapter,
+    normalize_grid_structure,
+)
 from .capture import SemanticGridCaptureObserver, standard_semantic_grid_observer
 from .forms import CellLogoForm, FitResult, GenerativeForm
 from .integration import (
@@ -141,6 +146,7 @@ __all__ = [
     "Phase2LearnerPayloadBuilder",
     "phase2_transformation_learner",
     "phase2_transition_analyzer",
+    "normalize_grid_structure",
     "phase2_rule_inducer",
     "phase2_rule_executor",
     "phase2_rule_ranker",

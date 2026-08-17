@@ -1,4 +1,9 @@
-from object_memory import GridAdapter, PHASE2_SCHEMA_VERSION, PythonProvider
+from object_memory import (
+    GridAdapter,
+    PHASE2_SCHEMA_VERSION,
+    PythonProvider,
+    normalize_grid_structure,
+)
 from workbench.server.runtime import DEFAULT_GRID, analyze_grid
 
 
@@ -42,3 +47,49 @@ def test_grid_adapter_generic_entrypoint_accepts_phase1_observation_envelope() -
     assert len(candidates) == 2
     assert all(item.observation_id == "observation-8" for item in candidates)
     assert all("nodes/00008" in item.provenance for item in candidates)
+
+
+def test_grid_structure_normalizes_enclosures_bars_and_compound_parts() -> None:
+    normalized = normalize_grid_structure(
+        {
+            "cells": [[4, 5], [5, 5], [4, 6], [8, 8]],
+            "bounds": [4, 5, 5, 4],
+            "geometry": {
+                "width": 5,
+                "height": 4,
+                "boundaryCells": [[4, 5], [5, 5], [4, 6], [8, 8]],
+            },
+            "topology": {
+                "connectedComponents": 2,
+                "holeCount": 1,
+                "holes": [[[5, 6]]],
+            },
+            "colorName": "blue",
+            "shape": "compound",
+            "pixelCount": 4,
+            "lineThickness": 1,
+            "relationships": [{"target": "marker", "relation": "left_of"}],
+        }
+    )
+
+    assert normalized["geometry"]["cells"] == (
+        (0, 0),
+        (0, 1),
+        (1, 0),
+        (4, 3),
+    )
+    assert normalized["geometry"]["horizontal_bars"] == (((0, 0), (1, 0)),)
+    assert normalized["geometry"]["vertical_bars"] == (((0, 0), (0, 1)),)
+    assert normalized["topology"]["connected_components"] == 2
+    assert normalized["topology"]["compound"] is True
+    assert len(normalized["topology"]["compound_parts"]) == 2
+    assert normalized["topology"]["holes"] == (((1, 1),),)
+    assert normalized["topology"]["enclosures"] == (((1, 1),),)
+    assert normalized["properties"] == {
+        "color": "blue",
+        "shape": "compound",
+        "pixel_count": 4,
+    }
+    assert normalized["relationships"] == (
+        {"target": "marker", "relation": "left_of"},
+    )

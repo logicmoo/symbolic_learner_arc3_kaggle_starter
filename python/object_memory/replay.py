@@ -82,17 +82,21 @@ def _turtle(value: Mapping[str, Any]) -> TurtleProgramRef:
 
 
 def _instance(value: Mapping[str, Any]) -> InstanceParameters:
+    def tuples(item: Any) -> Any:
+        if isinstance(item, list):
+            return tuple(tuples(value) for value in item)
+        if isinstance(item, Mapping):
+            return {key: tuples(value) for key, value in item.items()}
+        return item
+
     geometry = dict(value.get("geometry") or {})
-    if "boundary_cells" in geometry:
-        geometry["boundary_cells"] = tuple(
-            tuple(cell) for cell in geometry.get("boundary_cells") or ()
-        )
+    for field in ("cells", "boundary_cells", "horizontal_bars", "vertical_bars"):
+        if field in geometry:
+            geometry[field] = tuples(geometry[field])
     topology = dict(value.get("topology") or {})
-    if "holes" in topology:
-        topology["holes"] = tuple(
-            tuple(tuple(cell) for cell in hole)
-            for hole in topology.get("holes") or ()
-        )
+    for field in ("components", "holes", "enclosures", "compound_parts"):
+        if field in topology:
+            topology[field] = tuples(topology[field])
     return InstanceParameters(
         position=tuple(value.get("position") or ()),
         orientation=value.get("orientation"),
