@@ -3,6 +3,12 @@
   (id vision_observe_choose_record)
   (label "Observe, Choose, and Record")
   (description "Carry a visual observation through a human action choice into a persisted action record.")
+  (generation (
+    (operation workflow.populate_from_english)
+    (englishDescriptionPath docs/WORKFLOW_DESCRIPTION.md)
+    (operationCategories ([] workflow-language))
+    (preflightRequired true)
+  ))
   (inputs (
     (observation Object)
   ))

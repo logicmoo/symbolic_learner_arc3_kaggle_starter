@@ -3,6 +3,12 @@
   (id examples_to_visual_memory)
   (label "Examples to Visual Memory")
   (description "Capture a set of visual examples, normalize it into a stable learning batch, obtain a review decision, and publish a durable memory-silo record.")
+  (generation (
+    (operation workflow.populate_from_english)
+    (englishDescriptionPath docs/WORKFLOW_DESCRIPTION.md)
+    (operationCategories ([] workflow-language))
+    (preflightRequired true)
+  ))
   (inputs (
     (examples Array)
   ))

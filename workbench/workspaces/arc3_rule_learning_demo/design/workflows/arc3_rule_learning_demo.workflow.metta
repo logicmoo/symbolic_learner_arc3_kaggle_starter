@@ -3,6 +3,12 @@
   (id arc3_rule_learning_demo)
   (label "Learn and Test an ARC3 Transformation Rule")
   (description "Capture a real before/action/after example, preserve rival rules, predict an unseen case before its outcome, and grade that prediction independently.")
+  (generation (
+    (operation workflow.populate_from_english)
+    (englishDescriptionPath docs/WORKFLOW_DESCRIPTION.md)
+    (operationCategories ([] workflow-language))
+    (preflightRequired true)
+  ))
   (inputs (
     (before Image)
     (after Image)

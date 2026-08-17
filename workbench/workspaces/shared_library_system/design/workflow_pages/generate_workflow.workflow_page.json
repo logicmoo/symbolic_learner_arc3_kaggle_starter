@@ -1,0 +1,171 @@
+{
+  "kind": "workflow_page",
+  "id": "workbench.generate_workflow",
+  "label": "Generate Workflow",
+  "description": "Create or revise a filesystem Workflow from an editable English specification using the effective resource catalogs.",
+  "glyph": "✧",
+  "menuPlacement": "first",
+  "order": 10,
+  "routeView": "englishWorkflow",
+  "renderer": "workflow_generation_runtime",
+  "layout": {
+    "kind": "three_column_accordion",
+    "columns": [
+      {
+        "id": "left",
+        "label": "DATA AND RESULTS",
+        "role": "data",
+        "members": [
+          {
+            "id": "workflow_preview",
+            "label": "Workflow Draft Preview",
+            "component": "WorkflowResourceEditor",
+            "mode": "candidate",
+            "initialDisplayMode": "scroll",
+            "inputs": { "workflow": "generated_workflow", "previousWorkflow": "existing_workflow", "validation": "workflow_validation" },
+            "outputs": { "workflow": "reviewed_workflow" },
+            "options": { "showStepOrder": true, "showOperationBindings": true, "showUnresolvedOperations": true, "allowRawJson": true, "allowRawMetta": true, "saveDirectly": false }
+          },
+          {
+            "id": "task_summary",
+            "label": "Task Summary",
+            "component": "GenerationContractSection",
+            "mode": "summary",
+            "initialDisplayMode": "scroll",
+            "binding": "generation_contract.summary",
+            "options": { "section": "summary", "emptyState": "Waiting for analysis", "readOnly": true }
+          },
+          {
+            "id": "required_memory",
+            "label": "Required Memory",
+            "component": "MemoryValuesPlanner",
+            "mode": "contract",
+            "initialDisplayMode": "scroll",
+            "inputs": { "candidates": "generation_contract.memory", "existingPlan": "memory_values_plan", "generatedPlan": "new_memory_values_plan" },
+            "outputs": { "plan": "memory_values_plan" },
+            "options": { "combineWithExistingPlan": true, "showDatatype": true, "showScope": true }
+          },
+          {
+            "id": "acceptance_checklist",
+            "label": "Acceptance Checklist",
+            "component": "AcceptanceChecklist",
+            "mode": "validation",
+            "initialDisplayMode": "scroll",
+            "inputs": { "items": "generation_contract.checklist", "validation": "workflow_validation" }
+          },
+          {
+            "id": "output_requirements",
+            "label": "Output Requirements",
+            "component": "GenerationContractSection",
+            "mode": "list",
+            "initialDisplayMode": "scroll",
+            "binding": "generation_contract.outputs",
+            "options": { "section": "outputs", "emptyState": "Waiting for analysis", "readOnly": true }
+          },
+          {
+            "id": "validation_rules",
+            "label": "Validation Rules",
+            "component": "GenerationContractSection",
+            "mode": "list",
+            "initialDisplayMode": "scroll",
+            "binding": "generation_contract.rules",
+            "options": { "section": "rules", "emptyState": "Waiting for analysis", "readOnly": true }
+          },
+          {
+            "id": "generation_order",
+            "label": "Generation Order History",
+            "component": "GenerationOrderHistory",
+            "mode": "history",
+            "initialDisplayMode": "strip",
+            "inputs": { "generationSteps": "generation_steps", "orderUsed": "generation_order_used" },
+            "outputs": { "persistedOrder": "persisted_generation_order" }
+          },
+          {
+            "id": "order_trials",
+            "label": "Order Trials",
+            "component": "GenerationOrderTrials",
+            "mode": "comparison",
+            "initialDisplayMode": "strip",
+            "inputs": { "trials": "generation_order_trials" }
+          },
+          {
+            "id": "english_specification",
+            "label": "English Specification",
+            "component": "LoadTextDocuments",
+            "mode": "editor",
+            "initialDisplayMode": "scroll",
+            "options": { "defaultFilter": ".md|.txt", "filterEditable": true, "documentSelectable": true, "editable": true, "preferredPathBinding": "workflow.generation.englishDescriptionPath" },
+            "outputs": { "content": "english_specification", "selectedPath": "english_specification_path", "availableDocuments": "english_specification_documents" }
+          },
+          {
+            "id": "existing_workflow",
+            "label": "Existing Workflow",
+            "component": "WorkflowResourceEditor",
+            "mode": "loaded",
+            "initialDisplayMode": "strip",
+            "inputs": { "workflow": "active_workflow" },
+            "outputs": { "workflow": "existing_workflow" }
+          }
+        ]
+      },
+      {
+        "id": "center",
+        "label": "AUTHORING",
+        "role": "authoring",
+        "members": [
+          {
+            "id": "generation_composer",
+            "label": "Generate Workflow",
+            "component": "WorkflowGenerationComposer",
+            "mode": "authoring",
+            "initialDisplayMode": "scroll",
+            "operation": "workflow.analyze_generation_contract",
+            "inputs": { "englishSpecification": "english_specification", "existingWorkflow": "existing_workflow", "existingMemoryValuesPlan": "memory_values_plan", "effectiveOperationCatalog": "effective_operation_catalog", "effectiveDatatypeCatalog": "effective_datatype_catalog", "effectiveWorkflowCatalog": "effective_workflow_catalog", "effectivePromptCatalog": "effective_prompt_catalog", "workflowSchema": "workflow_schema" },
+            "outputs": { "generationSteps": "generation_steps", "generationContract": "generation_contract", "workflow": "generated_workflow", "memoryValuesPlan": "new_memory_values_plan", "orderTrials": "generation_order_trials" },
+            "options": { "modelSelection": "effective_model_catalog", "modelOptionLabel": "backend_and_model", "outputFormats": ["json", "metta"], "defaultOutputFormat": "json", "promptApplicability": "english_to_workbench.contract_section", "allowGroups": true, "allowRepeatedSections": true, "allowPerStepPromptOverride": true, "allowPerStepModelOverride": true }
+          },
+          {
+            "id": "validate_workflow",
+            "label": "Validate Workflow",
+            "component": "WorkflowValidationControls",
+            "mode": "validation",
+            "initialDisplayMode": "strip",
+            "inputs": { "workflow": "reviewed_workflow", "rules": "workflow_validation_rules" },
+            "outputs": { "validation": "workflow_validation" }
+          },
+          {
+            "id": "apply_workflow",
+            "label": "Apply to Workflow",
+            "component": "WorkflowApplyControls",
+            "mode": "commit",
+            "initialDisplayMode": "strip",
+            "inputs": { "workflow": "reviewed_workflow", "validation": "workflow_validation", "targetPath": "active_workflow_path" },
+            "outputs": { "workflow": "applied_workflow", "path": "applied_workflow_path" },
+            "options": { "requireGeneratedDraft": true, "requireBackendValidation": true, "blockExperimentalTrial": true, "preservePreviousWorkflowUntilApply": true, "writeFilesystemResource": true }
+          }
+        ]
+      },
+      {
+        "id": "right",
+        "label": "SOURCE DETAILS",
+        "role": "details",
+        "members": [
+          {
+            "id": "generate_workflow_page_source",
+            "label": "Current Page Specification",
+            "component": "ResourceSourceEditor",
+            "initialDisplayMode": "strip",
+            "resource": { "kind": "workflow_page", "id": "workbench.generate_workflow" },
+            "options": { "format": "json", "editable": true, "validateBeforeApply": true, "applyOnSave": true },
+            "outputs": { "source": "generate_workflow_page_source", "validation": "generate_workflow_page_validation" }
+          },
+          { "id": "selected_prompt", "label": "Selected Prompt", "component": "PromptResourceDetail", "initialDisplayMode": "scroll", "inputs": { "prompt": "selected_prompt" } },
+          { "id": "selected_operation", "label": "Selected Operation", "component": "OperationResourceDetail", "initialDisplayMode": "scroll", "inputs": { "operation": "selected_operation" } },
+          { "id": "selected_model", "label": "Selected Model", "component": "ModelResourceDetail", "initialDisplayMode": "strip", "inputs": { "model": "selected_model" } },
+          { "id": "workflow_schema", "label": "Workflow Schema", "component": "WorkflowSchemaInspector", "initialDisplayMode": "strip", "inputs": { "schema": "workflow_schema" } },
+          { "id": "invocation_validation", "label": "Invocation and Validation Details", "component": "WorkflowInvocationInspector", "initialDisplayMode": "strip", "inputs": { "events": "generation_steps", "validation": "workflow_validation" } }
+        ]
+      }
+    ]
+  }
+}

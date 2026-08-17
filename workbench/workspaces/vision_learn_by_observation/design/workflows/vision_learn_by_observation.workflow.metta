@@ -3,6 +3,12 @@
   (id vision_learn_by_observation)
   (label "Learn a Visual World by Observation")
   (description "Bind a visual world, capture before and after states, observe an action, explain the transition, and decide whether to continue.")
+  (generation (
+    (operation workflow.populate_from_english)
+    (englishDescriptionPath docs/WORKFLOW_DESCRIPTION.md)
+    (operationCategories ([] workflow-language))
+    (preflightRequired true)
+  ))
   (inputs (
     (world Object)
     (observation Object)

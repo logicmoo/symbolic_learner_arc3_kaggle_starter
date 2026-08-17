@@ -381,6 +381,105 @@ def _load_workflows(workspace: dict[str, Any]) -> list[dict[str, Any]]:
     return _with_artifact_categories(workspace, records, "workflows")
 
 
+def _load_workflow_pages(workspace: dict[str, Any]) -> list[dict[str, Any]]:
+    """Load effective, filesystem-backed workflow page definitions.
+
+    Page definitions are deliberately separate from executable Workflows. They
+    describe which rich workbench surface presents a Workflow and how its
+    three accordion columns are named and populated.
+    """
+    root = Path(workspace["root"])
+    combined: dict[str, dict[str, Any]] = {}
+    for layer in effective_workspace_layers(root, root.parent):
+        directory = layer / "design" / "workflow_pages"
+        for record in _load_documents(layer, directory, layer_source(layer, root), "workflow_page"):
+            document = record.get("document") or {}
+            combined[str(document.get("id") or record["path"])] = record
+    return sorted(
+        combined.values(),
+        key=lambda record: (
+            {"first": 0, "middle": 1, "last": 2}.get(
+                str((record.get("document") or {}).get("menuPlacement") or "middle").lower(),
+                1,
+            ),
+            int((record.get("document") or {}).get("order") or 1000),
+            str((record.get("document") or {}).get("label") or record["path"]).lower(),
+        ),
+    )
+
+
+def _effective_text_documents(workspace: dict[str, Any]) -> list[dict[str, Any]]:
+    """List editable text documents across the effective workspace layers."""
+    root = Path(workspace["root"])
+    combined: dict[str, dict[str, Any]] = {}
+    resources = get_filesystem_provider()
+    for layer in effective_workspace_layers(root, root.parent):
+        for path in resources.rglob(layer, "*", ignored_names=IGNORED_DIRECTORIES):
+            if any(part in IGNORED_DIRECTORIES for part in path.parts):
+                continue
+            if not resources.is_file(path) or path.suffix.lower() not in TEXT_SUFFIXES:
+                continue
+            record = _file_record(layer, path)
+            record.update({
+                "source": layer_source(layer, root),
+                "workspaceId": layer.name,
+            })
+            combined[record["path"]] = record
+    return sorted(combined.values(), key=lambda record: str(record["path"]).lower())
+
+
+def _validate_workflow_page_definition(document: Any, expected_id: str) -> dict[str, Any]:
+    if not isinstance(document, dict):
+        raise ValueError("workflow page source must contain one JSON object")
+    if document.get("kind") != "workflow_page":
+        raise ValueError("workflow page kind must be workflow_page")
+    if str(document.get("id") or "") != expected_id:
+        raise ValueError(f"workflow page id must remain {expected_id}")
+    if not str(document.get("label") or "").strip():
+        raise ValueError("workflow page label is required")
+    if not str(document.get("routeView") or "").strip():
+        raise ValueError("workflow page routeView is required")
+    if not str(document.get("renderer") or "").strip():
+        raise ValueError("workflow page renderer is required")
+    menu_placement = str(document.get("menuPlacement") or "middle").lower()
+    if menu_placement not in {"first", "middle", "last"}:
+        raise ValueError("workflow page menuPlacement must be first, middle, or last")
+    layout = document.get("layout")
+    if not isinstance(layout, dict) or layout.get("kind") != "three_column_accordion":
+        raise ValueError("workflow page layout must be three_column_accordion")
+    columns = layout.get("columns")
+    if not isinstance(columns, list):
+        raise ValueError("workflow page layout.columns must be an array")
+    by_id = {
+        str(column.get("id") or ""): column
+        for column in columns
+        if isinstance(column, dict)
+    }
+    for column_id in ("left", "center", "right"):
+        column = by_id.get(column_id)
+        if not column:
+            raise ValueError(f"workflow page must declare the {column_id} column")
+        if not isinstance(column.get("members"), list):
+            raise ValueError(f"workflow page {column_id} column members must be an array")
+    members = [
+        member
+        for column in by_id.values()
+        for member in column.get("members", [])
+        if isinstance(member, dict)
+    ]
+    has_source_editor = any(
+        member.get("component") == "ResourceSourceEditor"
+        and (member.get("resource") or {}).get("kind") == "workflow_page"
+        and (member.get("resource") or {}).get("id") == expected_id
+        for member in members
+    )
+    if not has_source_editor:
+        raise ValueError(
+            "three-column workflow page must expose its own workflow_page JSON through a ResourceSourceEditor member"
+        )
+    return document
+
+
 def _load_artifact_categories(workspace: dict[str, Any]) -> list[dict[str, Any]]:
     return load_workspace_artifact_categories(Path(workspace["root"]))
 
@@ -779,6 +878,121 @@ def workspace_contexts(workspace_id: str) -> dict[str, Any]:
         raise HTTPException(status_code=404, detail=str(error)) from error
 
 
+@router.get("/{workspace_id}/text-documents")
+def workspace_text_documents(workspace_id: str) -> dict[str, Any]:
+    try:
+        workspace = _resolve_workspace_without_counts(workspace_id)
+        return {"documents": _effective_text_documents(workspace)}
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+    except (OSError, ValueError) as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+
+@router.get("/{workspace_id}/text-document")
+def read_effective_text_document(
+    workspace_id: str,
+    path: str = Query(...),
+    source_workspace_id: str = Query(default="", alias="sourceWorkspaceId"),
+) -> dict[str, Any]:
+    try:
+        workspace = _resolve_workspace_without_counts(workspace_id)
+        root = Path(workspace["root"])
+        layers = effective_workspace_layers(root, root.parent)
+        if source_workspace_id:
+            layer = next((candidate for candidate in layers if candidate.name == source_workspace_id), None)
+            if layer is None:
+                raise ValueError("text document source is not visible to this workspace")
+        else:
+            layer = next(
+                (
+                    candidate
+                    for candidate in reversed(layers)
+                    if get_filesystem_provider().is_file(_safe_child(candidate, path))
+                ),
+                root,
+            )
+        target = _safe_child(layer, path)
+        resources = get_filesystem_provider()
+        if not resources.is_file(target):
+            raise ValueError("text document not found")
+        if target.suffix.lower() not in TEXT_SUFFIXES:
+            raise ValueError("file type is not editable text")
+        record = _file_record(layer, target)
+        record.update({"source": layer_source(layer, root), "workspaceId": layer.name})
+        return {"document": {**record, "content": resources.read_text(target)}}
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+    except (OSError, ValueError) as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+
+@router.get("/{workspace_id}/workflow-pages/{page_id}/source")
+def read_workflow_page_source(workspace_id: str, page_id: str) -> dict[str, Any]:
+    try:
+        workspace = _resolve_workspace_without_counts(workspace_id)
+        record = next(
+            (
+                item
+                for item in _load_workflow_pages(workspace)
+                if str((item.get("document") or {}).get("id") or "") == page_id
+            ),
+            None,
+        )
+        if record is None:
+            raise ValueError("workflow page definition not found")
+        return {
+            "workflowPage": record,
+            "content": json.dumps(record["document"], indent=2, ensure_ascii=False) + "\n",
+        }
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+    except (OSError, ValueError) as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+
+@router.put("/{workspace_id}/workflow-pages/{page_id}/source")
+def write_workflow_page_source(
+    workspace_id: str,
+    page_id: str,
+    body: dict[str, Any] = Body(...),
+) -> dict[str, Any]:
+    try:
+        workspace = _resolve_workspace(workspace_id)
+        root = Path(workspace["root"])
+        content = str(body.get("content") or "")
+        document = _validate_workflow_page_definition(json.loads(content), page_id)
+        workspace_record = next(
+            (
+                item
+                for item in _load_workflow_pages(workspace)
+                if item.get("source") == "workspace"
+                and str((item.get("document") or {}).get("id") or "") == page_id
+            ),
+            None,
+        )
+        filename = f"{re.sub(r'[^A-Za-z0-9_-]+', '_', page_id).strip('_')}.workflow_page.json"
+        target = _safe_child(
+            root,
+            str(workspace_record.get("path")) if workspace_record else f"design/workflow_pages/{filename}",
+        )
+        resources = get_filesystem_provider()
+        resources.make_directory(target.parent)
+        normalized = json.dumps(document, indent=2, ensure_ascii=False) + "\n"
+        resources.write_text(target, normalized)
+        invalidate_workspace_discovery()
+        refreshed = next(
+            item
+            for item in _load_workflow_pages(workspace)
+            if str((item.get("document") or {}).get("id") or "") == page_id
+        )
+        return {"workflowPage": refreshed, "content": normalized, "createdOverride": workspace_record is None}
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+    except (OSError, ValueError, json.JSONDecodeError, StopIteration) as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+
 @router.get("/{workspace_id}/snapshot")
 def workspace_snapshot(workspace_id: str, scope: str = Query(default="full", pattern="^(full|shell)$")) -> dict[str, Any]:
     try:
@@ -798,6 +1012,7 @@ def workspace_snapshot(workspace_id: str, scope: str = Query(default="full", pat
     shell = {
         "workspace": workspace,
         "workflows": _load_workflows(workspace),
+        "workflowPages": _load_workflow_pages(workspace),
         "goals": _load_symbolic_family(workspace, "goal"),
         "plans": _load_symbolic_family(workspace, "plan"),
         "contexts": _load_symbolic_family(workspace, "context"),

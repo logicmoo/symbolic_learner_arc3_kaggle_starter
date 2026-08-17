@@ -3,6 +3,12 @@
   (id atom_ant_symbolic_reasoning)
   (label "Atom.Ant Symbolic Reasoning Loop")
   (description "Run LLM-style reasoning, generate Atomese, assess symbolic coverage, try a bounded sequence of repairs until an adequate candidate is found, then execute and report.")
+  (generation (
+    (operation workflow.populate_from_english)
+    (englishDescriptionPath docs/WORKFLOW_DESCRIPTION.md)
+    (operationCategories ([] workflow-language))
+    (preflightRequired true)
+  ))
   (inputs (
     (request Any)
     (repair_candidates Array)

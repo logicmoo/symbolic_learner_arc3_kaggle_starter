@@ -3,6 +3,12 @@
   (id image_to_recognizable_arc3_memory)
   (label "Image Perception to Recognizable Memory and ARC3")
   (description "Carry image evidence through perception and recognizable-memory staging, then bind the result to ARC3 context without discarding provenance.")
+  (generation (
+    (operation workflow.populate_from_english)
+    (englishDescriptionPath docs/WORKFLOW_DESCRIPTION.md)
+    (operationCategories ([] workflow-language))
+    (preflightRequired true)
+  ))
   (inputs (
     (image Image)
     (arc3_context Object)

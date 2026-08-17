@@ -50,7 +50,7 @@ def test_app_launches_filesystem_workbench_page() -> None:
 
 def test_removed_workflow_v2_route_redirects_to_the_active_workflow_page() -> None:
     source = ACTIVE_PAGE.read_text(encoding="utf-8")
-    assert 'label: "Workflows"' in source
+    assert 'group: "WORKFLOWS"' in source
     assert 'label: "Workflows (Legacy)"' not in source
     assert 'label: "Workflows (New)"' not in source
     assert 'return "workflowV2"' not in source
@@ -63,13 +63,12 @@ def test_removed_workflow_v2_route_redirects_to_the_active_workflow_page() -> No
 def test_navigation_v2_has_required_groups_and_labels() -> None:
     source = ACTIVE_PAGE.read_text(encoding="utf-8")
     compact = "".join(source.split())
-    for group in ("WORKSPACE", "CAPABILITIES", "KNOWLEDGE", "RUNTIME", "SYSTEM"):
+    for group in ("WORKSPACE", "WORKFLOWS", "CAPABILITIES", "KNOWLEDGE", "RUNTIME", "SYSTEM"):
         assert f'group: "{group}"' in source
     for label in (
         "Goals",
         "Overview",
         "Planning",
-        "Workflows",
         "Operations",
         "Source Code",
         "Systems",
@@ -90,6 +89,12 @@ def test_navigation_v2_has_required_groups_and_labels() -> None:
         "Settings",
     ):
         assert f'label: "{label}"' in source
+    assert 'label: "Workflow Resources", view: "canvas"' in source
+    assert 'group: "WORKFLOWS"' in source
+    assert 'workflowNavigationEntries.map' in source
+    assert 'data-workflow-page-placement={entry.menuPlacement}' in source
+    assert 'workflowPageMenuPlacementRank(left.menuPlacement)' in source
+    assert '[workflowPageDefinitions]' in source
     assert "page-breadcrumb-trail" in source
     assert "Visited workbench pages" in source
     assert "returnToBreadcrumb" in source
@@ -206,13 +211,16 @@ def test_navigation_reuses_current_rich_editors() -> None:
         "Source Code": ('view:"sourceCode"', 'view==="sourceCode"&&(<SourceCodeEditor'),
         "Systems": ('view:"systems"', 'catalogMode="systems"'),
         "Models": ('view:"llms"', 'view==="llms"&&(<LlmModelsEditor'),
-        "Workflows": ('view:"canvas"', 'workflowCombinedView&&workflowColumnsHost&&createPortal(<sectionclassName="canvas-view"', 'className="editor-surface"'),
         "Settings": ('view:"setup"', 'view==="setup"&&(<WorkspaceSettingsPanel'),
     }
     for label, tokens in expected.items():
         assert f'label: "{label}"' in source
         for token in tokens:
             assert token.replace(" ", "") in compact
+    assert 'label: "Workflow Resources", view: "canvas"' in source
+    assert 'setView("canvas")' in source
+    assert 'workflowCombinedView&&workflowColumnsHost&&createPortal(<sectionclassName="canvas-view"' in compact
+    assert 'className="editor-surface"' in compact
 
 
 def test_source_code_language_tabs_are_deep_linkable() -> None:
@@ -227,18 +235,21 @@ def test_source_code_language_tabs_are_deep_linkable() -> None:
     assert 'if (next !== "sourceCode") url.searchParams.delete("sourceLanguage")' in page
 
 
-def test_workflow_variants_are_internal_modes_not_left_navigation_items() -> None:
+def test_workflow_authoring_pages_are_first_class_left_navigation_items() -> None:
     source = ACTIVE_PAGE.read_text(encoding="utf-8")
     compact = "".join(source.split())
-    workspace_navigation = compact.split('group:"WORKSPACE"', 1)[1].split("],", 1)[0]
-    assert 'label:"Workflows",view:"canvas"' in workspace_navigation
-    assert 'label:"EnglishWorkflow"' not in workspace_navigation
-    assert 'label:"VisualImageDiff"' not in workspace_navigation
-    assert '>\n              English Generation\n            </button>' in source
-    assert '>\n              Visual Image Diff\n            </button>' in source
-    assert 'view === "englishWorkflow"' in source
-    assert 'view === "visualImageDiff"' in source
-    assert 'view==="englishWorkflow"||view==="visualImageDiff"' in compact.split("constnavSelected", 1)[1].split(";", 1)[0]
+    assert 'group:"WORKFLOWS",items:[]' in compact
+    assert 'snapshot?.workflowPages' in source
+    assert 'workflowNavigationEntries.map' in source
+    assert 'data-workflow-page-resource={entry.id}' in source
+    assert 'data-workflow-page-placement={entry.menuPlacement}' in source
+    assert 'workflowPageDefinitions.map' in source
+    assert '<WorkflowPageHost' in source
+    assert 'workflow_generation_runtime' in source
+    assert 'visual_image_diff:' in source
+    nav_selection = compact.split("constnavSelected", 1)[1].split(";", 1)[0]
+    assert 'view==="englishWorkflow"' not in nav_selection
+    assert 'view==="visualImageDiff"' not in nav_selection
 
 
 def test_workflow_runs_are_combined_with_the_workflow_page() -> None:

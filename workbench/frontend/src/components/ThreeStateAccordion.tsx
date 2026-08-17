@@ -280,9 +280,9 @@ export function ThreeStateAccordionMember({
         {accessories && <div className="three-state-accordion-strip-accessories">{accessories}</div>}
         <ThreeStateAccordionControls label={label} mode={effectiveMode} onChange={changeMode} />
       </div>
-      <header className="three-state-accordion-member-item-header">
+      {itemHeader !== null && <header className="three-state-accordion-member-item-header">
         {itemHeader ?? <><b>{value || label}</b>{detail && <small>{detail}</small>}</>}
-      </header>
+      </header>}
       <div className="three-state-accordion-member-body">{children}</div>
       {footer !== null && <footer className="three-state-accordion-member-footer">
         {footer ?? <><b>{value || label}</b>{detail && <span>{detail}</span>}</>}

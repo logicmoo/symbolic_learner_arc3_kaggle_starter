@@ -23,6 +23,42 @@ def test_libraries_have_no_runnable_workflows_and_apps_have_at_most_one() -> Non
             assert len(list(workspace.glob("design/workflows/*.workflow.metta"))) <= 1, workspace
 
 
+def test_current_project_workflows_have_bound_english_descriptions() -> None:
+    provider = get_filesystem_provider()
+    described_workspaces = {
+        "arc3_random_player",
+        "arc3_rule_learning_demo",
+        "atom_ant",
+        "generate_count_to_ten",
+        "image_perception_to_recognizable_memory_and_arc3",
+        "omegaclaw_microatomspacing",
+        "review_with_approval",
+        "tic_tac_toe_learner",
+        "titlecase_demo",
+        "vision_learn_by_observation",
+        "vision_observe_choose_record",
+        "visual_learning_from_examples",
+        "workflow_engine_tour",
+    }
+
+    for workspace_id in described_workspaces:
+        workflow_paths = list((WORKSPACES / workspace_id).glob("design/workflows/*.workflow.metta"))
+        assert len(workflow_paths) == 1, workspace_id
+        workflow_path = workflow_paths[0]
+        documents = provider.read_json_documents(workflow_path)
+        assert len(documents) == 1, workflow_path
+
+        generation = documents[0].get("generation")
+        assert isinstance(generation, dict), workflow_path
+        assert generation.get("operation") == "workflow.populate_from_english", workflow_path
+
+        relative_path = generation.get("englishDescriptionPath")
+        assert isinstance(relative_path, str) and relative_path.endswith(".md"), workflow_path
+        description_path = workflow_path.parents[2] / relative_path
+        assert description_path.is_file(), description_path
+        assert len(description_path.read_text(encoding="utf-8").strip()) >= 200, description_path
+
+
 def test_visual_learning_workflow_owns_an_application_workspace() -> None:
     assert (WORKSPACES / "vision_learn_by_observation" / "design" / "workflows" / "vision_learn_by_observation.workflow.metta").is_file()
     assert not (WORKSPACES / "default" / "design" / "workflows" / "vision_learn_by_observation.workflow.metta").exists()

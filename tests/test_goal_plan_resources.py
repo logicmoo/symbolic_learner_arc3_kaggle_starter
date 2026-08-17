@@ -123,7 +123,10 @@ def test_pddl_vocabulary_maps_plans_to_workflows() -> None:
     assert "| Plan | Workflow |" in docs
     assert "| Ground action | Workflow step |" in docs
     assert 'label:"Planning"' in compact
-    assert 'label:"Workflows",view:"canvas"' in compact
+    assert 'group:"WORKFLOWS",items:[]' in compact
+    assert 'label:"WorkflowResources",view:"canvas"' in compact
+    assert 'data-workflow-page-resource={entry.id}' in compact
+    assert 'data-workflow-page-placement={entry.menuPlacement}' in compact
     assert "planProvenance" in page
     assert "PDDL DOMAIN" in page
     assert "ORIGINAL GROUNDED PLAN" in page

@@ -1029,4 +1029,99 @@ Preserve the canonical checkout and its `codex/workbench-navigation-v2` branch.
   confirmed both choices in the rich cascade selector and confirmed that the
   Python route visibly changes to `NON-PROMPT OPERATION DEBUGGER`. Focused UI,
   navigation, editor, and provider validation: 123 passed; frontend production
-  build passed on 2026-08-17.
+  build passed; full repository validation: 618 passed in 76.83s on
+  2026-08-17.
+- [x] Restore English Workflow as a first-class page and bind every one of the
+  13 current project workflows to a real editable English description. Eleven
+  missing `docs/WORKFLOW_DESCRIPTION.md` companions were derived from their
+  filesystem workflow resources; the existing ARC3 and count-to-ten documents
+  were retained. Entering English Workflow now refreshes a missing in-memory
+  description binding from the shell snapshot, so descriptions added after a
+  workspace was opened appear without making descriptions a catalog admission
+  requirement. A behavior regression proves a workflow with no generation
+  metadata still joins the workflow catalog. Live browser verification showed
+  the complete editable Review with Approval document. Focused English,
+  navigation, workflow-resource, and shell-snapshot validation: 81 passed;
+  frontend production build and `git diff --check` passed. Full repository
+  validation reached 636 passed with one unrelated pre-existing datatype
+  backlink failure (`information.children` is missing `system_contract`) on
+  2026-08-17.
+- [x] Make the eleven Visual Image Diff pipeline Prompts model-provider
+  neutral. Removed embedded OpenAI, Groq, and OpenRouter profile IDs from the
+  Objects, Changes, and Rules stage contracts and removed the four legacy
+  OpenRouter defaults from the five-group workspace manifest. Each Prompt row
+  now inherits the page's selected workbench backend/model unless the user
+  explicitly chooses a row override. Focused Visual Image Diff validation:
+  13 passed; `git diff --check` passed; live browser verification confirmed
+  all eleven Prompt steps loaded with no provider-profile strings and the
+  current `ASICloud · asi1` selection on 2026-08-17.
+- [x] Match the approved Visual Image Diff SUBACCORDION UIX framing. Every
+  group keeps one permanent compact strip with its ordinal, `[group]` title,
+  `visible`/`peers`/`updates`, group type, backend + model, left/remove/right,
+  and native `-`/`*`/`+` sizing controls. Its only expanded item-header row is
+  `SELECTED`, `COPY`, `SHUFFLE`, and `CLEAR`. The expanded body contains only
+  the nested compact Prompt strips; the duplicate play row, flags, selectors,
+  movement controls, and transaction label were removed. The attached footer
+  identifies the resolved Workflow Item + Prompt or non-Prompt Operation and
+  exposes `INPUT / OUTPUT` plus `RUN GROUP`; `INPUT / OUTPUT` lazily opens the
+  existing rich Operation playground rather than duplicating it in the body.
+  Focused Visual Image Diff validation: 14 passed; frontend production build
+  and `git diff --check` passed. Live browser verification confirmed the full
+  compact strip, exact four-button header, six nested compact Object prompts,
+  zero duplicate body control rows, and a real six-field playground opened
+  from the footer on 2026-08-17.
+- [x] Keep the original Visual Diff composer and SUBACCORDION UIX synchronized
+  through one shared Workflow Item + Operation playground renderer. The
+  original composer now exposes the selected group's rich playground while the
+  UIX keeps one playground per expandable group; both write workflow-step and
+  implementation changes to the same live composition state. Focused Visual
+  Image Diff validation: 14 passed; frontend production build passed; live
+  browser verification confirmed both presentations resolved the Objects route
+  to `vision.extract_scene_objects.automatic_llm` and selected
+  `asicloud-asi1` on 2026-08-17.
+- [x] Make the Visual Image Diff columns a real data-authoring-source flow.
+  `LEFT STACK · DATA` begins with `RESOURCE OUTPUTS` as its declaration/index,
+  followed by the filesystem image sequence and transition context; the same
+  member also accumulates real playground outputs. `CENTER STACK ·
+  AUTHORING` retains both composer presentations and the shared rich Operation
+  playground. `RIGHT STACK · SOURCE DETAILS` is limited to the selected Prompt
+  resource and the composed group Prompt. Opening a center playground now
+  resolves its declared inputs from the left-side data aliases (including
+  current/previous images, image collections, manifests, and sequence context),
+  and successful executions merge their outputs back into the left stack for
+  later steps. Live browser verification confirmed the three stack roles and
+  prefilled current/previous filesystem asset URLs. Focused Visual Image Diff
+  validation: 16 passed; frontend production build passed. Repository-wide
+  validation reached 643 passed; all five temp-location-sensitive failures
+  passed when rerun with an external base-temp, leaving only the unrelated
+  pre-existing `fan_out_and_merge` editable-workflow `version` violation on
+  2026-08-18.
+- [x] Make filesystem `workflow_page` resources the sole source of the
+  WORKFLOWS submenu and expose raw executable Workflow resources separately
+  under CAPABILITIES as `Workflow Resources`, backed by the existing rich
+  Workflow Editor. Effective workspace plus inherited page specifications are
+  enumerated on workspace load and ordered by `menuPlacement` (`first`,
+  `middle`, `last`), then numeric `order`, then label. The shared `Generate
+  Workflow` page is first and ARC3 `Visual Sequencing` is middle. Every
+  three-column page specification is now required to include a minimized
+  `CURRENT PAGE SPECIFICATION` `ResourceSourceEditor` bound to its own
+  filesystem `workflow_page` JSON; English Workflow and Visual Sequencing both
+  expose and save that resolved source through the shared editor. Live browser
+  verification confirmed the ordered page-resource menu, the separate rich
+  Workflow Resources route, and editable source JSON on both three-column
+  pages. Focused workflow-page/navigation validation: 106 passed; runtime
+  discovery validation with an external base-temp: 13 passed; frontend
+  production build and `git diff --check` passed. Full repository validation:
+  653 passed with only the unrelated pre-existing `fan_out_and_merge`
+  editable-workflow `version` violation remaining on 2026-08-18.
+- [x] Softcode the shared `Generate Workflow` page entirely from its filesystem
+  `workflow_page` specification and remove the dedicated
+  `EnglishWorkflowPage` layout. `WorkflowPageHost` now enumerates native
+  `ThreeStateAccordionStack` columns and members through a runtime component
+  registry. The resolved page declares 10 LEFT data/result members, 3 CENTER
+  authoring members, and 6 RIGHT source/detail members; former center outputs
+  such as Workflow Draft Preview and contract results now live in LEFT. Live
+  browser verification confirmed every declared member, real filesystem text
+  loading, model-backed authoring controls, and the editable Current Page
+  Specification. Focused workflow-page/navigation validation: 80 passed;
+  frontend production build and `git diff --check` passed on 2026-08-18.

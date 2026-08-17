@@ -220,10 +220,10 @@
   (classificationId visual_image_diff.000.pipeline.030.objects)
   (produces ([] scene_objects object_manifest turtle_programs objects_pl turtle_from_image_pl))
   (label "Pipeline — Extract Individual Objects")
-  (description "Use the requested vision model profile to extract objects and Turtle programs.")
+  (description "Use the workbench-selected vision model to extract objects and Turtle programs.")
   (targets ([] vision workflow-generation))
   (text ([]
-    "Preserve this workflow-stage contract exactly: {\"id\":\"objects\",\"task\":\"extract_individual_objects\",\"implementation\":\"vision_llm\",\"profile\":\"openai-gpt-5.6-light\",\"inputs\":{\"images\":\"normalized_images\"},\"outputs\":{\"objects\":\"scene_objects\",\"object_manifest\":\"object_manifest\",\"turtle\":\"turtle_programs\"}}."
+    "Preserve this workflow-stage contract exactly: {\"id\":\"objects\",\"task\":\"extract_individual_objects\",\"implementation\":\"vision_llm\",\"inputs\":{\"images\":\"normalized_images\"},\"outputs\":{\"objects\":\"scene_objects\",\"object_manifest\":\"object_manifest\",\"turtle\":\"turtle_programs\"}}. The workbench supplies the selected backend and model; do not assume a provider-specific profile."
     "Merged alias contract: {\"id\":\"extract_scene_objects\",\"kind\":\"llm_artifacts\",\"requires_vision\":true,\"include_parent_image\":true,\"include_current_image\":true,\"output_keys\":[\"objects_pl\",\"turtle_from_image_pl\"],\"input_files\":[\"object_registry.pl\"],\"combine_safe\":true}. This is the same object-extraction stage, not another stage."
     "Reuse established friendly identities from object_registry.pl and propose only genuinely new friendly identities. Extract meaningful connected objects, topology, holes, enclosures, exact logical geometry, and supported spatial relations without treating every cell as a separate object. Generate faithful motion-based Turtle programs using penup, pendown, set_pos/2, setcolor/1, pen_width/1, fwd/1, rot/1, and set_cell; preserve holes and do not use rect/4 or direct block commands."
   ))
@@ -284,10 +284,10 @@
   (classificationId visual_image_diff.000.pipeline.070.compare)
   (produces ([] transition_evidence differences_pl similarities_pl turtle_from_diff_pl))
   (label "Pipeline — Compare Scene Objects")
-  (description "Compare source, normalized, and object manifests with the requested symbolic profile.")
+  (description "Compare source, normalized, and object manifests with the workbench-selected model.")
   (targets ([] vision workflow-generation))
   (text ([]
-    "Preserve this workflow-stage contract exactly: {\"id\":\"compare\",\"task\":\"compare_scene_objects\",\"implementation\":\"symbolic_llm\",\"profile\":\"groq-qwen-3.6-27b-deep\",\"inputs\":{\"before\":\"source_manifest\",\"after\":\"normalized_manifest\",\"objects\":\"object_manifest\"},\"outputs\":{\"transition\":\"transition_evidence\"}}."
+    "Preserve this workflow-stage contract exactly: {\"id\":\"compare\",\"task\":\"compare_scene_objects\",\"implementation\":\"symbolic_llm\",\"inputs\":{\"before\":\"source_manifest\",\"after\":\"normalized_manifest\",\"objects\":\"object_manifest\"},\"outputs\":{\"transition\":\"transition_evidence\"}}. The workbench supplies the selected backend and model; do not assume a provider-specific profile."
     "Merged alias contract: {\"id\":\"explain_object_changes\",\"kind\":\"llm_artifacts\",\"requires_vision\":false,\"include_parent_image\":false,\"include_current_image\":false,\"output_keys\":[\"differences_pl\",\"similarities_pl\",\"turtle_from_diff_pl\"],\"input_files\":[\"object_registry.pl\",\"objects.pl\",\"turtle_from_image.pl\",\"differences.pl\",\"similarities.pl\",\"turtle_from_diff.pl\"],\"combine_safe\":true}. This is the symbolic comparison stage, not another stage."
     "Use the symbolic object and Turtle files to explain exact parent-to-current changes, supported persistent-object correspondences, and a minimal executable changed-cell Turtle patch. Keep direct observations separate from rule hypotheses. When no parent exists, emit empty differences, similarities, and Turtle-diff resources."
   ))
@@ -304,7 +304,7 @@
   (description "Induce rules from transition evidence and the synchronized object manifest.")
   (targets ([] vision workflow-generation))
   (text ([]
-    "Preserve this workflow-stage contract exactly: {\"id\":\"rules\",\"task\":\"induce_transition_rules\",\"implementation\":\"rule_llm\",\"profile\":\"openrouter-north-mini-code-rules\",\"inputs\":{\"transition\":\"transition_evidence\",\"objects\":\"object_manifest\"},\"outputs\":{\"rules\":\"rule_set\"}}."
+    "Preserve this workflow-stage contract exactly: {\"id\":\"rules\",\"task\":\"induce_transition_rules\",\"implementation\":\"rule_llm\",\"inputs\":{\"transition\":\"transition_evidence\",\"objects\":\"object_manifest\"},\"outputs\":{\"rules\":\"rule_set\"}}. The workbench supplies the selected backend and model; do not assume a provider-specific profile."
     "Merged alias contract: {\"id\":\"induce_rules_from_prolog\",\"kind\":\"llm_artifacts\",\"requires_vision\":false,\"include_parent_image\":false,\"include_current_image\":false,\"output_keys\":[\"rules_pl\"],\"input_files\":[\"object_registry.pl\",\"objects.pl\",\"differences.pl\",\"similarities.pl\",\"turtle_from_image.pl\",\"turtle_from_diff.pl\",\"rules.pl\"],\"combine_safe\":false}. This is the same conservative rule-induction stage. Separate observed rules, hypotheses, supporting evidence, contradictions, and confidence."
   ))
 )

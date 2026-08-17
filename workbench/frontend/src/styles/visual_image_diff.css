@@ -233,6 +233,36 @@
   font: 9px/1.5 ui-monospace, monospace;
 }
 
+.visual-image-workflow-data {
+  display: grid;
+  gap: 7px;
+  margin-top: 9px;
+}
+
+.visual-image-workflow-data h3,
+.visual-image-workflow-data b {
+  margin: 0;
+  color: var(--cyan);
+  font: 700 8px ui-monospace, monospace;
+}
+
+.visual-image-workflow-data > div {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  padding: 7px;
+  border: 1px solid #234a54;
+  background: #07161d;
+}
+
+.visual-image-workflow-data pre {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: #d6e4e8;
+  font: 8px/1.45 ui-monospace, monospace;
+}
+
 .visual-image-diff-prompt-inspector section {
   display: grid;
   gap: 10px;
@@ -290,6 +320,67 @@
   gap: 8px;
 }
 
+.visual-image-diff-operation-surface,
+.visual-image-diff-operation-binding,
+.visual-image-diff-prompt-debug-bindings {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.visual-image-diff-operation-surface {
+  margin-top: 8px;
+  border: 1px solid #28616a;
+  background: #07171d;
+}
+
+.visual-image-diff-operation-binding,
+.visual-image-diff-prompt-debug-bindings {
+  padding: 8px;
+  border-bottom: 1px solid #244954;
+}
+
+.visual-image-diff-operation-binding > span,
+.visual-image-diff-prompt-debug-bindings > span {
+  color: var(--cyan);
+  font: 700 8px ui-monospace, monospace;
+  letter-spacing: .08em;
+}
+
+.visual-image-diff-operation-binding code {
+  color: #9bb1b8;
+  font: 8px/1.45 ui-monospace, monospace;
+  overflow-wrap: anywhere;
+}
+
+.visual-image-diff-prompt-debug-bindings button {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #285963;
+  background: #09212a;
+  color: #d8e5e8;
+  text-align: left;
+  font: 700 9px ui-monospace, monospace;
+}
+
+.visual-image-diff-prompt-debug-bindings button:hover,
+.visual-image-diff-prompt-debug-bindings button:focus-visible {
+  border-color: var(--cyan);
+}
+
+.visual-image-diff-prompt-debug-bindings small {
+  color: #7f9ba3;
+  font: 8px ui-monospace, monospace;
+}
+
+.visual-image-diff-prompt-debug-bindings p {
+  margin: 0;
+  color: #b7c8cd;
+  font: 9px/1.5 ui-monospace, monospace;
+}
+
 .visual-image-diff-uix-pipeline-stack,
 .visual-image-diff-uix-nested-stack {
   display: grid;
@@ -325,6 +416,95 @@
 .visual-image-diff-subaccordion-item.inspected {
   border-color: #66f2e4;
   box-shadow: inset 3px 0 #66f2e4;
+}
+
+.three-state-accordion-member-custom-summary > .visual-image-diff-subaccordion-header-actions {
+  width: 100%;
+  height: 100%;
+  align-items: stretch;
+  padding: 3px 4px;
+}
+
+.three-state-accordion-member-custom-summary > .visual-image-diff-subaccordion-header-actions button {
+  min-width: 0;
+  border: 1px solid #2b6872;
+  background: #081c23;
+  color: #8edbd7;
+  padding: 6px;
+  font: 700 8px ui-monospace, monospace;
+}
+
+.visual-image-diff-subaccordion-item > .three-state-accordion-member-footer {
+  display: grid;
+  flex-basis: max-content;
+  height: max-content;
+  min-height: 0;
+  align-items: stretch;
+  padding: 0;
+}
+
+.visual-image-diff-subaccordion-group-body {
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  padding: 7px;
+}
+
+.visual-image-diff-playground-footer {
+  display: grid;
+  min-width: 0;
+  background: #07171d;
+}
+
+.visual-image-diff-playground-footer-line {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(94px, auto) minmax(82px, auto);
+  min-width: 0;
+  align-items: stretch;
+  gap: 5px;
+  padding: 6px;
+}
+
+.visual-image-diff-playground-footer-line > .visual-image-diff-operation-binding {
+  width: 100%;
+  grid-template-columns: minmax(150px, auto) minmax(150px, .75fr) minmax(190px, 1fr);
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border: 1px solid #285963;
+  border-bottom: 0;
+}
+
+.visual-image-diff-playground-footer-line > button {
+  min-width: 0;
+  border: 1px solid #2b6872;
+  background: #081c23;
+  color: #8edbd7;
+  padding: 6px 10px;
+  font: 700 8px ui-monospace, monospace;
+}
+
+.visual-image-diff-playground-footer-line > button:last-child {
+  border-color: #168b82;
+  color: #80fff2;
+}
+
+.visual-image-diff-playground-footer-line > button:hover,
+.visual-image-diff-playground-footer-line > button:focus-visible {
+  border-color: var(--cyan);
+  background: #12302f;
+}
+
+.visual-image-diff-playground-footer-line > button:disabled {
+  cursor: not-allowed;
+  opacity: .42;
+}
+
+.visual-image-diff-playground-footer > .visual-image-diff-operation-surface {
+  margin: 0;
+  border-right: 0;
+  border-bottom: 0;
+  border-left: 0;
 }
 
 .visual-image-diff-subaccordion-strip-control {
@@ -385,49 +565,19 @@
   white-space: nowrap;
 }
 
-.visual-image-diff-subaccordion-item-controls {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 7px;
-  min-width: 0;
-}
+@container visual-diff-composer (max-width: 820px) {
+  .visual-image-diff-playground-footer-line {
+    grid-template-columns: minmax(0, 1fr) repeat(2, minmax(90px, auto));
+  }
 
-.visual-image-diff-subaccordion-item-controls > select {
-  min-width: 0;
-  border: 1px solid #31535e;
-  background: #071820;
-  color: #b7c9cf;
-  padding: 6px;
-  font: 8px ui-monospace, monospace;
-}
+  .visual-image-diff-playground-footer-line > .visual-image-diff-operation-binding {
+    grid-column: 1 / -1;
+    grid-template-columns: minmax(130px, auto) minmax(130px, .75fr) minmax(160px, 1fr);
+  }
 
-.visual-image-diff-subaccordion-item-controls > .visual-image-diff-order-title {
-  min-height: 30px;
-  padding: 7px;
-  border: 1px solid #2b6872;
-  background: #0a2028;
-  color: #b9fff8;
-}
-
-.visual-image-diff-subaccordion-order-actions,
-.visual-image-diff-subaccordion-item-controls > .generation-order-group-actions {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 5px;
-}
-
-.visual-image-diff-subaccordion-item-controls > .generation-order-group-actions {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-}
-
-.visual-image-diff-subaccordion-order-actions button,
-.visual-image-diff-subaccordion-item-controls > .generation-order-group-actions button {
-  min-width: 0;
-  border: 1px solid #2b6872;
-  background: #081c23;
-  color: #8edbd7;
-  padding: 6px;
-  font: 700 8px ui-monospace, monospace;
+  .visual-image-diff-playground-footer-line > button:first-of-type {
+    grid-column: 2;
+  }
 }
 
 /* The structural stack owns these tracks. Accordion members remain full-width inside their stack. */

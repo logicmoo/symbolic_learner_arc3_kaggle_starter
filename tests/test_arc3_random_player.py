@@ -511,6 +511,13 @@ def test_random_player_workspace_is_discoverable_and_operation_backed(tmp_path: 
         for record in workspace_api._load_workflows(workspace)
         if record.get("workspaceId") == "arc3_random_player"
     )
+    assert workflow["generation"] == {
+        "operation": "workflow.populate_from_english",
+        "englishSpecificationPrompt": "arc3_random_player.english_workflow_specification",
+        "englishDescriptionPath": "docs/ARC3_RANDOM_PLAYER_WORKFLOW_ENGLISH.md",
+        "operationCategories": ["workflow-language"],
+        "preflightRequired": True,
+    }
     assert [step["operation"] for step in workflow["steps"]] == [
         "echo.value",
         "arc3_random.discover_games",

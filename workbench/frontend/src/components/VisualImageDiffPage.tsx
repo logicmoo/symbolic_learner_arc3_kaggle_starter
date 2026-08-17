@@ -10,6 +10,8 @@ import {
   type OperationDef,
   type OperationImplementationDef,
 } from "./OperationPlayground";
+import type { WorkflowPageDefinition } from "./WorkflowPageHost";
+import { WorkflowPageSourceEditor } from "./WorkflowPageSourceEditor";
 import "../styles/english_workflow.css";
 import "../styles/english_workflow_order.css";
 import "../styles/visual_image_diff.css";
@@ -32,7 +34,7 @@ type PromptGroupDefinition = {
   label: string;
   transaction: string;
   operation: string;
-  implementation: string;
+  implementation?: string;
   profile?: string;
   continueOnError?: boolean;
   prompts: string[];
@@ -115,11 +117,13 @@ type OperationCatalogItem = OperationDef & {
 };
 
 type Props = {
+  pageDefinition: WorkflowPageDefinition;
   workspaceId: string;
   workspaceLabel: string;
   models: ModelChoice[];
   operations: OperationCatalogItem[];
   operationImplementations: OperationCatalogItem[];
+  onPageDefinitionSaved: () => Promise<unknown> | unknown;
 };
 
 const MANIFEST_PATH = "design/visual_image_diffs/default.visual_image_diff.json";
@@ -166,6 +170,25 @@ function resizedPair(first: number, second: number, delta: number, firstMinimum:
 
 const modelOptionLabel = (model: ModelChoice) =>
   `${model.backendLabel || model.backendId || model.id} · ${model.label || model.id}`;
+
+function operationInputValues(operation: OperationCatalogItem, availableData: Record<string, unknown>) {
+  const values: Record<string, unknown> = {};
+  const has = (name: string) => Object.prototype.hasOwnProperty.call(availableData, name);
+  for (const name of Object.keys(operation.inputs || {})) {
+    if (has(name)) {
+      values[name] = availableData[name];
+      continue;
+    }
+    const normalized = name.toLowerCase();
+    const alias = normalized.includes("image")
+      ? normalized.includes("previous") || normalized.includes("parent") || normalized.includes("before") ? "previous_image" : normalized.includes("images") ? "images" : "current_image"
+      : normalized.includes("manifest") ? "source_manifest"
+        : normalized.includes("sequence") || normalized.includes("command") || normalized.includes("context") ? "sequence_context"
+          : "";
+    if (alias && has(alias)) values[name] = availableData[alias];
+  }
+  return values;
+}
 
 async function request(path: string, init?: RequestInit) {
   const response = await fetch(path, {
@@ -281,6 +304,110 @@ function shuffledEntries(entries: PromptCompositionEntry[]) {
   return next;
 }
 
+type VisualImageDiffOperationBinding = {
+  operation?: OperationCatalogItem;
+  variants: Array<OperationCatalogItem & OperationImplementationDef>;
+  selectedImplementation?: OperationCatalogItem & OperationImplementationDef;
+  promptResources: Array<{ step: PromptCompositionEntry; resource: PromptChoice }>;
+  selectedUsesPrompts: boolean;
+};
+
+function resolveVisualImageDiffOperationBinding(
+  entry: PromptCompositionEntry,
+  prompts: PromptChoice[],
+  operations: OperationCatalogItem[],
+  operationImplementations: OperationCatalogItem[],
+): VisualImageDiffOperationBinding {
+  const operation = entry.kind === "group" && entry.operationId
+    ? operations.find((candidate) => candidate.id === entry.operationId)
+    : undefined;
+  const variants = operation
+    ? operationImplementations.filter((candidate): candidate is OperationCatalogItem & OperationImplementationDef => Boolean(candidate.implementation && candidate.parents?.includes(operation.id)))
+    : [];
+  const directImplementation = operation?.implementation && (!entry.implementationId || operation.id === entry.implementationId)
+    ? operation as OperationCatalogItem & OperationImplementationDef
+    : undefined;
+  const selectedImplementation = directImplementation
+    || variants.find((candidate) => candidate.id === entry.implementationId)
+    || variants.find((candidate) => candidate.id === operation?.preferredChild)
+    || variants.find((candidate) => candidate.implementation === "llm.complete");
+  const promptResources = entry.kind === "group" ? promptEntries(entry.steps || []).flatMap((step) => {
+    const resource = prompts.find((candidate) => candidate.id === step.promptId);
+    return resource ? [{ step, resource }] : [];
+  }) : [];
+  return {
+    operation,
+    variants,
+    selectedImplementation,
+    promptResources,
+    selectedUsesPrompts: selectedImplementation?.implementation === "llm.complete",
+  };
+}
+
+function VisualImageDiffPlaygroundHeader({ entry, title, binding }: {
+  entry: PromptCompositionEntry;
+  title: string;
+  binding: VisualImageDiffOperationBinding;
+}) {
+  const { operation, selectedImplementation, selectedUsesPrompts } = binding;
+  return <div className="visual-image-diff-operation-binding">
+    <span>{operation ? selectedUsesPrompts ? "WORKFLOW ITEM + PROMPT PLAYGROUND" : "WORKFLOW ITEM + NON-PROMPT OPERATION PLAYGROUND" : "WORKFLOW ITEM + OPERATION PLAYGROUND"}</span>
+    <b>{operation ? selectedImplementation?.label || operation.label || operation.id : "Operation binding unresolved"}</b>
+    <code>{operation ? `${entry.transactionId} → ${operation.id}${selectedImplementation ? ` → ${selectedImplementation.id}` : ""}` : entry.transactionId || title}</code>
+  </div>;
+}
+
+function VisualImageDiffOperationSurface({ entry, title, workspaceId, prompts, models, operations, operationImplementations, availableData, onInspectPrompt, onWorkflowStep, onImplementation, onInvocationComplete, showHeader = false, binding: suppliedBinding }: {
+  entry: PromptCompositionEntry;
+  title: string;
+  workspaceId: string;
+  prompts: PromptChoice[];
+  models: ModelChoice[];
+  operations: OperationCatalogItem[];
+  operationImplementations: OperationCatalogItem[];
+  availableData: Record<string, unknown>;
+  onInspectPrompt: (promptId: string) => void;
+  onWorkflowStep: (id: string, workflowStep: Record<string, unknown>) => void;
+  onImplementation: (id: string, implementationId: string) => void;
+  onInvocationComplete: (outputs: Record<string, unknown>) => void;
+  showHeader?: boolean;
+  binding?: VisualImageDiffOperationBinding;
+}) {
+  const binding = suppliedBinding || resolveVisualImageDiffOperationBinding(entry, prompts, operations, operationImplementations);
+  const { operation, variants, selectedImplementation, promptResources, selectedUsesPrompts } = binding;
+  if (!operation) return entry.transactionId ? <div className="demo-notice visual-image-diff-operation-unresolved">
+    {showHeader && <VisualImageDiffPlaygroundHeader entry={entry} title={title} binding={binding} />}
+    <b>Operation binding unresolved</b>
+    <span>The filesystem transaction <code>{entry.transactionId}</code> does not declare an Operation resource. Bind an Operation in the Visual Image Diff manifest before running or editing this workflow item.</span>
+  </div> : null;
+  const inputValues = operationInputValues(operation, availableData);
+  return <>
+    {showHeader && <VisualImageDiffPlaygroundHeader entry={entry} title={title} binding={binding} />}
+    <section className="visual-image-diff-operation-surface" aria-label={`${title} workflow item and Operation playground`}>
+      <div className="visual-image-diff-prompt-debug-bindings">
+        <span>{selectedUsesPrompts ? "PROMPT RESOURCES EXECUTED BY THIS VERSION" : "NON-PROMPT IMPLEMENTATION"}</span>
+        {selectedUsesPrompts
+          ? promptResources.map(({ step, resource }) => <button type="button" key={step.id} onClick={() => onInspectPrompt(resource.id)}>{resource.buttonName || resource.label || resource.id}<small>{resource.id}</small></button>)
+          : <p>This selected implementation calls Python and Prolog directly. It makes no Prompt or LLM request. Switch back to the Prompted LLM implementation to execute the nested Prompt resources.</p>}
+      </div>
+      <OperationPlayground
+        key={`${entry.id}:${operation.id}`}
+        workspaceId={workspaceId}
+        operation={operation}
+        variants={variants}
+        models={models.filter((model) => model.enabled !== false).map((model) => ({ id: model.id, label: modelOptionLabel(model), enabled: model.enabled }))}
+        workflowStep={workflowStepFor(entry, operation)}
+        onWorkflowStepChange={(workflowStep) => onWorkflowStep(entry.id, workflowStep)}
+        selectedImplementationVariant={selectedImplementation?.id}
+        onImplementationVariantChange={(implementationId) => onImplementation(entry.id, implementationId)}
+        inputValues={inputValues}
+        expectedInputNames={Object.keys(inputValues)}
+        onInvocationComplete={onInvocationComplete}
+      />
+    </section>
+  </>;
+}
+
 function CompositionOrderItem({ entry, ordinal, index, siblingCount, parentGroupId, selectedGroupId, inspectedPromptId, prompts, models, busy, onRunEntry, onInspectPrompt, onSelectGroup, onShuffleGroup, onCopyGroup, onClearGroup, onPeers, onUpdates, onPrompt, onModel, onRotate, onRemove }: {
   entry: PromptCompositionEntry;
   ordinal: string;
@@ -337,7 +464,7 @@ function CompositionOrderItem({ entry, ordinal, index, siblingCount, parentGroup
   </li>;
 }
 
-function CompositionOrderAccordionItem({ entry, ordinal, index, siblingCount, stackId, parentGroupId, selectedGroupId, inspectedPromptId, workspaceId, prompts, models, operations, operationImplementations, busy, modeFor, onMode, onRunEntry, onInspectPrompt, onSelectGroup, onShuffleGroup, onCopyGroup, onClearGroup, onWorkflowStep, onImplementation, onPeers, onUpdates, onPrompt, onModel, onRotate, onRemove }: {
+function CompositionOrderAccordionItem({ entry, ordinal, index, siblingCount, stackId, parentGroupId, selectedGroupId, inspectedPromptId, workspaceId, prompts, models, operations, operationImplementations, availableData, busy, modeFor, onMode, onRunEntry, onInspectPrompt, onSelectGroup, onShuffleGroup, onCopyGroup, onClearGroup, onWorkflowStep, onImplementation, onInvocationComplete, onPeers, onUpdates, onPrompt, onModel, onRotate, onRemove }: {
   entry: PromptCompositionEntry;
   ordinal: string;
   index: number;
@@ -351,6 +478,7 @@ function CompositionOrderAccordionItem({ entry, ordinal, index, siblingCount, st
   models: ModelChoice[];
   operations: OperationCatalogItem[];
   operationImplementations: OperationCatalogItem[];
+  availableData: Record<string, unknown>;
   busy: boolean;
   modeFor: (entryId: string, fallback?: AccordionDisplayMode) => AccordionDisplayMode;
   onMode: (entryId: string, mode: AccordionDisplayMode) => void;
@@ -362,6 +490,7 @@ function CompositionOrderAccordionItem({ entry, ordinal, index, siblingCount, st
   onClearGroup: (id: string) => void;
   onWorkflowStep: (id: string, workflowStep: Record<string, unknown>) => void;
   onImplementation: (id: string, implementationId: string) => void;
+  onInvocationComplete: (outputs: Record<string, unknown>) => void;
   onPeers: (id: string, value: boolean, parentGroupId?: string) => void;
   onUpdates: (id: string, value: boolean, parentGroupId?: string) => void;
   onPrompt: (id: string, promptId: string, parentGroupId?: string) => void;
@@ -376,15 +505,22 @@ function CompositionOrderAccordionItem({ entry, ordinal, index, siblingCount, st
   const inspected = !isGroup && Boolean(entry.promptId) && inspectedPromptId === entry.promptId;
   const inspect = () => { if (!isGroup && entry.promptId) onInspectPrompt(entry.promptId); };
   const childStackId = `visual-image-diff-uix-group-${entry.id}`;
-  const operation = isGroup && entry.operationId ? operations.find((candidate) => candidate.id === entry.operationId) : undefined;
-  const variants = operation ? operationImplementations.filter((candidate): candidate is OperationCatalogItem & OperationImplementationDef => Boolean(candidate.implementation && candidate.parents?.includes(operation.id))) : [];
-  const selectedImplementation = variants.find((candidate) => candidate.id === entry.implementationId)
-    || variants.find((candidate) => candidate.id === operation?.preferredChild)
-    || variants.find((candidate) => candidate.implementation === "llm.complete");
-  const debugPrompts = isGroup ? promptEntries(entry.steps || []).flatMap((step) => {
-    const resource = prompts.find((candidate) => candidate.id === step.promptId);
-    return resource ? [{ step, resource }] : [];
-  }) : [];
+  const operationBinding = resolveVisualImageDiffOperationBinding(entry, prompts, operations, operationImplementations);
+  const [playgroundOpen, setPlaygroundOpen] = useState(false);
+  const groupHeaderActions = isGroup ? <div className="generation-order-group-actions visual-image-diff-subaccordion-header-actions">
+    <button type="button" className="generation-order-group-picker" aria-label={`Select group ${ordinal} for insertion in subaccordion`} aria-pressed={selected} onClick={() => onSelectGroup(entry.id)}>{selected ? "SELECTED" : "SELECT"}</button>
+    <button type="button" className="generation-order-group-copy" aria-label={`Copy group ${ordinal} in subaccordion`} onClick={() => onCopyGroup(entry.id)}>COPY</button>
+    <button type="button" className="generation-order-group-shuffle" aria-label={`Shuffle group ${ordinal} in subaccordion`} disabled={(entry.steps?.length || 0) < 2} onClick={() => onShuffleGroup(entry.id)}>SHUFFLE</button>
+    <button type="button" className="generation-order-group-clear" aria-label={`Clear group ${ordinal} in subaccordion`} disabled={!entry.steps?.length} onClick={() => onClearGroup(entry.id)}>CLEAR</button>
+  </div> : undefined;
+  const playgroundFooter = isGroup ? <div className="visual-image-diff-playground-footer">
+    <div className="visual-image-diff-playground-footer-line">
+      <VisualImageDiffPlaygroundHeader entry={entry} title={title} binding={operationBinding} />
+      <button type="button" aria-expanded={playgroundOpen} onClick={() => setPlaygroundOpen((current) => !current)}>INPUT / OUTPUT</button>
+      <button type="button" disabled={busy} onClick={() => onRunEntry(entry, ordinal)}>RUN GROUP</button>
+    </div>
+    {playgroundOpen && <VisualImageDiffOperationSurface entry={entry} title={title} workspaceId={workspaceId} prompts={prompts} models={models} operations={operations} operationImplementations={operationImplementations} availableData={availableData} binding={operationBinding} onInspectPrompt={onInspectPrompt} onWorkflowStep={onWorkflowStep} onImplementation={onImplementation} onInvocationComplete={onInvocationComplete} />}
+  </div> : null;
   return <ThreeStateAccordionMember
     stackId={stackId}
     memberKey={entry.id}
@@ -396,6 +532,8 @@ function CompositionOrderAccordionItem({ entry, ordinal, index, siblingCount, st
     onChange={(value) => { onMode(entry.id, value); inspect(); }}
     baseClass={`english-workflow-contract-panel visual-image-diff-subaccordion-item ${selected ? "selected" : ""} ${inspected ? "inspected" : ""}`}
     scrollSize="420px"
+    itemHeader={isGroup ? groupHeaderActions : null}
+    footer={playgroundFooter}
     stripContent={(cycleMode) => <div className={`visual-image-diff-subaccordion-strip-control ${isGroup ? "group" : "prompt"}`} onPointerDown={inspect} onFocusCapture={inspect}>
       <button type="button" className="visual-image-diff-subaccordion-strip-ordinal" aria-label={`Cycle accordion size for ${title} at position ${ordinal}`} title="Cycle this accordion through strip, scrolling, and full states" onClick={cycleMode}>{ordinal}</button>
       <button type="button" className="visual-image-diff-order-title" disabled={busy || (!isGroup && !entry.promptId)} aria-label={`Run ${title} at position ${ordinal} from compact strip`} title="Run only this visual prompt step" onClick={() => onRunEntry(entry, ordinal)}>{title}</button>
@@ -413,62 +551,15 @@ function CompositionOrderAccordionItem({ entry, ordinal, index, siblingCount, st
       <button type="button" aria-label={`Rotate ${title} right at position ${ordinal} in compact strip`} title={index === siblingCount - 1 ? "Wrap from the end to the beginning" : "Move one position right"} onClick={() => onRotate(entry.id, 1, parentGroupId)}>→</button>
     </div>}
   >
-    <div className="visual-image-diff-subaccordion-item-controls" onPointerDown={inspect} onFocusCapture={inspect}>
-      <button type="button" className="visual-image-diff-order-title" disabled={busy || (!isGroup && !entry.promptId)} aria-label={`Run ${title} at position ${ordinal} from subaccordion`} title="Run only this visual prompt step" onClick={() => onRunEntry(entry, ordinal)}>▶ {title}</button>
-      <span className="generation-order-flags">
-        <span>visible</span>
-        <label title="Let later prompt types see this value."><input type="checkbox" aria-label={`Share ${title} with peers at position ${ordinal} in subaccordion`} checked={entry.visibleToPeers} onChange={(event) => onPeers(entry.id, event.target.checked, parentGroupId)} /><span>peers</span></label>
-        <label title="Let a later occurrence of this prompt type see and update its previous value."><input type="checkbox" aria-label={`Share ${title} with updates at position ${ordinal} in subaccordion`} checked={entry.visibleToUpdates} onChange={(event) => onUpdates(entry.id, event.target.checked, parentGroupId)} /><span>updates</span></label>
-      </span>
-      {!isGroup && <select aria-label={`Prompt at position ${ordinal} in subaccordion`} value={entry.promptId || ""} onChange={(event) => { onPrompt(entry.id, event.target.value, parentGroupId); onInspectPrompt(event.target.value); }}><option value="">Select prompt</option>{prompts.map((choice) => <option key={choice.id} value={choice.id}>{choice.buttonName || choice.label || choice.id}</option>)}</select>}
-      <select aria-label={`Model override at position ${ordinal} in subaccordion`} value={entry.modelId || ""} onChange={(event) => onModel(entry.id, event.target.value, parentGroupId)}><option value="">Inherited model</option>{models.filter((model) => model.enabled !== false).map((model) => <option key={model.id} value={model.id}>{modelOptionLabel(model)}</option>)}</select>
-      <div className="visual-image-diff-subaccordion-order-actions">
-        <button type="button" aria-label={`Rotate ${title} left at position ${ordinal} in subaccordion`} title={index === 0 ? "Wrap from the beginning to the end" : "Move one position left"} onClick={() => onRotate(entry.id, -1, parentGroupId)}>←</button>
-        <button type="button" aria-label={`Remove ${title} at position ${ordinal} in subaccordion`} title="Remove this occurrence" onClick={() => onRemove(entry.id, parentGroupId)}>×</button>
-        <button type="button" aria-label={`Rotate ${title} right at position ${ordinal} in subaccordion`} title={index === siblingCount - 1 ? "Wrap from the end to the beginning" : "Move one position right"} onClick={() => onRotate(entry.id, 1, parentGroupId)}>→</button>
-      </div>
-      {isGroup && <>
-        {entry.transactionId && <small className="visual-image-group-transaction">{entry.transactionId}{entry.profileId ? ` · ${entry.profileId}` : ""}{entry.continueOnError ? " · continue on error" : ""}</small>}
-        <div className="generation-order-group-actions">
-          <button type="button" className="generation-order-group-picker" aria-label={`Select group ${ordinal} for insertion in subaccordion`} aria-pressed={selected} onClick={() => onSelectGroup(entry.id)}>{selected ? "SELECTED" : "SELECT"}</button>
-          <button type="button" className="generation-order-group-copy" aria-label={`Copy group ${ordinal} in subaccordion`} onClick={() => onCopyGroup(entry.id)}>COPY</button>
-          <button type="button" className="generation-order-group-shuffle" aria-label={`Shuffle group ${ordinal} in subaccordion`} disabled={(entry.steps?.length || 0) < 2} onClick={() => onShuffleGroup(entry.id)}>SHUFFLE</button>
-          <button type="button" className="generation-order-group-clear" aria-label={`Clear group ${ordinal} in subaccordion`} disabled={!entry.steps?.length} onClick={() => onClearGroup(entry.id)}>CLEAR</button>
-        </div>
-        {operation ? <section className="visual-image-diff-operation-surface" aria-label={`${title} workflow item and Operation debugger`}>
-          <div className="visual-image-diff-operation-binding">
-            <span>WORKFLOW ITEM + OPERATION DEBUGGER</span>
-            <b>{selectedImplementation?.label || operation.label || operation.id}</b>
-            <code>{entry.transactionId} → {operation.id}{selectedImplementation ? ` → ${selectedImplementation.id}` : ""}</code>
-          </div>
-          <div className="visual-image-diff-prompt-debug-bindings">
-            <span>PROMPT RESOURCES EXECUTED BY THIS VERSION</span>
-            {debugPrompts.map(({ step, resource }) => <button type="button" key={step.id} onClick={() => onInspectPrompt(resource.id)}>{resource.buttonName || resource.label || resource.id}<small>{resource.id}</small></button>)}
-          </div>
-          <OperationPlayground
-            key={`${entry.id}:${operation.id}`}
-            workspaceId={workspaceId}
-            operation={operation}
-            variants={variants}
-            models={models.filter((model) => model.enabled !== false).map((model) => ({ id: model.id, label: modelOptionLabel(model), enabled: model.enabled }))}
-            workflowStep={workflowStepFor(entry, operation)}
-            onWorkflowStepChange={(workflowStep) => onWorkflowStep(entry.id, workflowStep)}
-            selectedImplementationVariant={selectedImplementation?.id}
-            onImplementationVariantChange={(implementationId) => onImplementation(entry.id, implementationId)}
-          />
-        </section> : entry.transactionId ? <div className="demo-notice visual-image-diff-operation-unresolved">
-          <b>Operation binding unresolved</b>
-          <span>The filesystem transaction <code>{entry.transactionId}</code> does not declare an Operation resource. Bind an Operation in the Visual Image Diff manifest before running or editing this workflow item.</span>
-        </div> : null}
-        {entry.steps?.length ? <ThreeStateAccordionStack id={childStackId} className="visual-image-diff-uix-nested-stack" controlsLabel={`${ordinal} · NESTED PROMPT STACK`}>
-          {entry.steps.map((child, childIndex) => <CompositionOrderAccordionItem key={child.id} entry={child} ordinal={`${ordinal}.${childIndex + 1}`} index={childIndex} siblingCount={entry.steps?.length || 0} stackId={childStackId} parentGroupId={entry.id} selectedGroupId={selectedGroupId} inspectedPromptId={inspectedPromptId} workspaceId={workspaceId} prompts={prompts} models={models} operations={operations} operationImplementations={operationImplementations} busy={busy} modeFor={modeFor} onMode={onMode} onRunEntry={onRunEntry} onInspectPrompt={onInspectPrompt} onSelectGroup={onSelectGroup} onShuffleGroup={onShuffleGroup} onCopyGroup={onCopyGroup} onClearGroup={onClearGroup} onWorkflowStep={onWorkflowStep} onImplementation={onImplementation} onPeers={onPeers} onUpdates={onUpdates} onPrompt={onPrompt} onModel={onModel} onRotate={onRotate} onRemove={onRemove} />)}
-        </ThreeStateAccordionStack> : <p>Empty simultaneous prompt group. Select it, then use an inline + step button.</p>}
-      </>}
-    </div>
+    {isGroup && <div className="visual-image-diff-subaccordion-group-body">
+      {entry.steps?.length ? <ThreeStateAccordionStack id={childStackId} className="visual-image-diff-uix-nested-stack" controlsLabel={`${ordinal} · NESTED PROMPT STACK`}>
+        {entry.steps.map((child, childIndex) => <CompositionOrderAccordionItem key={child.id} entry={child} ordinal={`${ordinal}.${childIndex + 1}`} index={childIndex} siblingCount={entry.steps?.length || 0} stackId={childStackId} parentGroupId={entry.id} selectedGroupId={selectedGroupId} inspectedPromptId={inspectedPromptId} workspaceId={workspaceId} prompts={prompts} models={models} operations={operations} operationImplementations={operationImplementations} availableData={availableData} busy={busy} modeFor={modeFor} onMode={onMode} onRunEntry={onRunEntry} onInspectPrompt={onInspectPrompt} onSelectGroup={onSelectGroup} onShuffleGroup={onShuffleGroup} onCopyGroup={onCopyGroup} onClearGroup={onClearGroup} onWorkflowStep={onWorkflowStep} onImplementation={onImplementation} onInvocationComplete={onInvocationComplete} onPeers={onPeers} onUpdates={onUpdates} onPrompt={onPrompt} onModel={onModel} onRotate={onRotate} onRemove={onRemove} />)}
+      </ThreeStateAccordionStack> : <p>Empty simultaneous prompt group. Select it, then use an inline + step button.</p>}
+    </div>}
   </ThreeStateAccordionMember>;
 }
 
-export function VisualImageDiffPage({ workspaceId, workspaceLabel, models, operations, operationImplementations }: Props) {
+export function VisualImageDiffPage({ pageDefinition, workspaceId, workspaceLabel, models, operations, operationImplementations, onPageDefinitionSaved }: Props) {
   const [document, setDocument] = useState<VisualImageDiffDocument | null>(null);
   const [prompts, setPrompts] = useState<PromptChoice[]>([]);
   const [profileStepIds, setProfileStepIds] = useState<string[]>([]);
@@ -483,6 +574,7 @@ export function VisualImageDiffPage({ workspaceId, workspaceLabel, models, opera
   const [runError, setRunError] = useState("");
   const [runResult, setRunResult] = useState<ModelInvocation | null>(null);
   const [submittedImageCount, setSubmittedImageCount] = useState(0);
+  const [workflowData, setWorkflowData] = useState<Record<string, unknown>>({});
   const [subaccordionModes, setSubaccordionModes] = useState<Record<string, AccordionDisplayMode>>({});
   const [columnRatios, setColumnRatios] = useState<VisualColumnRatios>(storedVisualColumnRatios);
   const columnsRef = useRef<HTMLDivElement>(null);
@@ -493,6 +585,7 @@ export function VisualImageDiffPage({ workspaceId, workspaceLabel, models, opera
     groupAccordion: "scroll",
     prompt: "scroll",
     composed: "scroll",
+    pageSpecification: "strip",
     context: "scroll",
     outputs: "scroll",
   });
@@ -575,6 +668,7 @@ export function VisualImageDiffPage({ workspaceId, workspaceLabel, models, opera
 
   useEffect(() => {
     let cancelled = false;
+    setWorkflowData({});
     setMessage("Loading filesystem resources…");
     Promise.all([
       request(`/api/workspaces/${encodeURIComponent(workspaceId)}/file?path=${encodeURIComponent(MANIFEST_PATH)}`),
@@ -653,6 +747,51 @@ export function VisualImageDiffPage({ workspaceId, workspaceLabel, models, opera
   const selectedGroup = useMemo(() => generationOrder.find((entry) => entry.kind === "group" && entry.id === selectedGroupId), [generationOrder, selectedGroupId]);
   const runnableEntries = useMemo(() => selectedGroup?.steps || generationOrder, [generationOrder, selectedGroup]);
   const runnablePromptEntries = useMemo(() => promptEntries(runnableEntries), [runnableEntries]);
+  const sequenceImages = useMemo(() => [
+    ...(document?.frames || []).map((frame) => ({
+      id: frame.id,
+      label: frame.label,
+      assetPath: frame.assetPath,
+      source: `/api/workspaces/${encodeURIComponent(workspaceId)}/asset?path=${encodeURIComponent(frame.assetPath)}`,
+    })),
+    ...uploadedImages.map((image) => ({ id: image.id, label: image.label, assetPath: "", source: image.dataUrl })),
+  ], [document?.frames, uploadedImages, workspaceId]);
+  const sequenceContext = useMemo(() => (document?.commands || []).map((command, index) =>
+    `Image ${index + 1} -> ${command.label || command.command} (${command.command}) -> Image ${index + 2}`,
+  ).join("\n"), [document?.commands]);
+  const availableData = useMemo<Record<string, unknown>>(() => {
+    const sources = sequenceImages.map((image) => image.source);
+    const currentImage = sources.at(-1);
+    const previousImage = sources.length > 1 ? sources.at(-2) : currentImage;
+    const manifest = {
+      id: document?.id || "visual_image_diff",
+      frames: sequenceImages,
+      commands: document?.commands || [],
+    };
+    return {
+      ...(sources.length ? {
+        image: currentImage,
+        current_image: currentImage,
+        previous_image: previousImage,
+        parent_image: previousImage,
+        before: previousImage,
+        after: currentImage,
+        images: sources,
+        source_images: sources,
+        image_sequence: sources,
+      } : {}),
+      source_manifest: manifest,
+      manifest,
+      sequence_context: sequenceContext,
+      commands: document?.commands || [],
+      ...workflowData,
+    };
+  }, [document?.commands, document?.id, sequenceContext, sequenceImages, workflowData]);
+
+  const rememberWorkflowOutputs = (nextOutputs: Record<string, unknown>) => {
+    setWorkflowData((current) => ({ ...current, ...nextOutputs }));
+    setMode("outputs", "scroll");
+  };
 
   const updateEntry = (entryId: string, changes: Partial<PromptCompositionEntry>, parentGroupId?: string) => setGenerationOrder((current) => parentGroupId
     ? current.map((entry) => entry.id === parentGroupId ? { ...entry, steps: (entry.steps || []).map((child) => child.id === entryId ? { ...child, ...changes } : child) } : entry)
@@ -753,18 +892,11 @@ export function VisualImageDiffPage({ workspaceId, workspaceLabel, models, opera
       setRunError("The selected group has no prompt resources to run.");
       return;
     }
-    const manifestImages = (document?.frames || []).map((frame) => ({
-      label: frame.label,
-      source: `/api/workspaces/${encodeURIComponent(workspaceId)}/asset?path=${encodeURIComponent(frame.assetPath)}`,
-    }));
-    const imageInputs = [...manifestImages, ...uploadedImages.map((image) => ({ label: image.label, source: image.dataUrl }))];
+    const imageInputs = sequenceImages.map(({ label, source }) => ({ label, source }));
     if (!imageInputs.length) {
       setRunError("Add at least one image before running the visual prompt group.");
       return;
     }
-    const sequenceContext = (document?.commands || []).map((command, index) =>
-      `Image ${index + 1} -> ${command.label || command.command} (${command.command}) -> Image ${index + 2}`,
-    ).join("\n");
     setRunning(true);
     setRunError("");
     setRunResult(null);
@@ -800,7 +932,29 @@ export function VisualImageDiffPage({ workspaceId, workspaceLabel, models, opera
       </header>
 
       <div ref={columnsRef} className="english-workflow-columns visual-image-diff-columns" style={columnGridStyle}>
-        <ThreeStateAccordionStack id="visual-image-diff-left-stack" className="english-workflow-column" controlsLabel="LEFT STACK" freezeControls>
+        <ThreeStateAccordionStack id="visual-image-diff-left-stack" className="english-workflow-column" controlsLabel="LEFT STACK · DATA" freezeControls>
+          <ThreeStateAccordionMember
+            stackId="visual-image-diff-left-stack"
+            label="RESOURCE OUTPUTS"
+            value={Object.keys(workflowData).length ? `${Object.keys(workflowData).length} runtime values` : runResult ? `${submittedImageCount} images · response ready` : `${outputs.length} declared outputs`}
+            detail={Object.keys(workflowData).length ? "Real playground outputs available to later workflow steps" : runResult ? `${runResult.modelId || runModel} · ${runResult.latencyMs ?? 0} ms` : "Union of produces declarations from the active group"}
+            mode={mode("outputs")}
+            onChange={(value) => setMode("outputs", value)}
+            baseClass="english-workflow-contract-panel visual-image-diff-outputs"
+            scrollSize="680px"
+          >
+            <ul>{outputs.map((output) => <li key={output}><code>{output}</code></li>)}</ul>
+            {Object.keys(workflowData).length > 0 && <section className="visual-image-workflow-data" aria-label="Workflow data available to later steps">
+              <h3>WORKFLOW DATA AVAILABLE TO LATER STEPS</h3>
+              {Object.entries(workflowData).map(([name, value]) => <div key={name}><b>{name}</b><pre>{typeof value === "string" ? value : JSON.stringify(value, null, 2)}</pre></div>)}
+            </section>}
+            {running && <div className="visual-image-run-status"><b>Running prompt group</b><span>Preparing and submitting the image sequence…</span></div>}
+            {runError && <div className="visual-image-run-error"><b>Invocation failed</b><span>{runError}</span></div>}
+            {runResult && <div className="visual-image-run-result">
+              <header><b>MODEL RESPONSE</b><span>{runResult.backendId || "resolved backend"} · {runResult.inputTokens ?? 0}/{runResult.outputTokens ?? 0} tokens</span></header>
+              <pre>{runResult.text || JSON.stringify(runResult, null, 2)}</pre>
+            </div>}
+          </ThreeStateAccordionMember>
           <ThreeStateAccordionMember
             stackId="visual-image-diff-left-stack"
             label="IMAGE + COMMAND SEQUENCE"
@@ -838,13 +992,24 @@ export function VisualImageDiffPage({ workspaceId, workspaceLabel, models, opera
               </div>)}
             </div>
           </ThreeStateAccordionMember>
+          <ThreeStateAccordionMember
+            stackId="visual-image-diff-left-stack"
+            label="SEQUENCE CONTEXT"
+            value={`${document?.commands.length || 0} transitions`}
+            detail="Filesystem manifest facts available to authoring and workflow steps"
+            mode={mode("context")}
+            onChange={(value) => setMode("context", value)}
+            baseClass="english-workflow-contract-panel visual-image-diff-context"
+          >
+            <ol>{document?.commands.map((command) => <li key={`${command.fromFrameId}:${command.toFrameId}`}><code>{command.fromFrameId}</code><strong>{command.label || command.command}</strong><code>{command.toFrameId}</code></li>)}</ol>
+          </ThreeStateAccordionMember>
         </ThreeStateAccordionStack>
 
         <div
           className="visual-image-diff-column-divider"
           role="separator"
           aria-orientation="vertical"
-          aria-label="Resize image sequence and generation columns"
+          aria-label="Resize data and authoring columns"
           aria-valuemin={15}
           aria-valuemax={85}
           aria-valuenow={Math.round(columnRatios.left / totalColumnRatio * 100)}
@@ -858,7 +1023,7 @@ export function VisualImageDiffPage({ workspaceId, workspaceLabel, models, opera
           }}
         />
 
-        <ThreeStateAccordionStack id="visual-image-diff-center-stack" className="english-workflow-column" controlsLabel="CENTER STACK" freezeControls>
+        <ThreeStateAccordionStack id="visual-image-diff-center-stack" className="english-workflow-column" controlsLabel="CENTER STACK · AUTHORING" freezeControls>
           <ThreeStateAccordionMember
             stackId="visual-image-diff-center-stack"
             label="GENERATE VISUAL DIFF"
@@ -892,6 +1057,21 @@ export function VisualImageDiffPage({ workspaceId, workspaceLabel, models, opera
                   <button type="button" disabled={running || generationOrder.length < 2} onClick={() => setGenerationOrder((current) => shuffledEntries(current))}>Shuffle order</button>
                   <button type="button" disabled={running || !generationOrder.length} onClick={() => { setGenerationOrder([]); setSelectedGroupId(null); }}>Clear order</button>
                 </div>
+                {selectedGroup && <VisualImageDiffOperationSurface
+                  entry={selectedGroup}
+                  title={selectedGroup.label ? `[group] ${selectedGroup.label}` : "[group]"}
+                  workspaceId={workspaceId}
+                  prompts={prompts}
+                  models={models}
+                  operations={operations}
+                  operationImplementations={operationImplementations}
+                  availableData={availableData}
+                  onInspectPrompt={setInspectedPromptId}
+                  onWorkflowStep={(id, workflowStep) => updateEntry(id, { workflowStep })}
+                  onImplementation={(id, implementationId) => updateEntry(id, { implementationId })}
+                  onInvocationComplete={rememberWorkflowOutputs}
+                  showHeader
+                />}
                 <small>Run follows the selected scope. Any named row title runs that step as a quick call; [group] runs only that group. Prompt, model, peers, and updates routing stays attached to every occurrence.</small>
               </fieldset>
               <button type="button" className="primary" disabled={running || !runnablePromptEntries.length || !runModel} onClick={() => { void runPrompts(); }}>{running ? "Running prompt group…" : selectedGroup ? "▶ Run selected group" : "▶ Run composition"}</button>
@@ -923,7 +1103,7 @@ export function VisualImageDiffPage({ workspaceId, workspaceLabel, models, opera
                   {!prompts.length && <small>No effective Prompt resources declare applicability <code>{STEP_APPLICABILITY}</code>.</small>}
                 </div>
                 <ThreeStateAccordionStack id="visual-image-diff-uix-pipeline-stack" className="visual-image-diff-uix-pipeline-stack" controlsLabel="PIPELINE SUBACCORDION STACK">
-                  {generationOrder.map((entry, index) => <CompositionOrderAccordionItem key={entry.id} entry={entry} ordinal={`${index + 1}`} index={index} siblingCount={generationOrder.length} stackId="visual-image-diff-uix-pipeline-stack" selectedGroupId={selectedGroupId} inspectedPromptId={inspectedPrompt?.id || ""} workspaceId={workspaceId} prompts={prompts} models={models} operations={operations} operationImplementations={operationImplementations} busy={running} modeFor={subaccordionMode} onMode={setSubaccordionMode} onRunEntry={(entry) => { void runPrompts([entry], entry.modelId || runModel); }} onInspectPrompt={setInspectedPromptId} onSelectGroup={(id) => setSelectedGroupId((current) => current === id ? null : id)} onShuffleGroup={shuffleGroup} onCopyGroup={copyGroup} onClearGroup={clearGroup} onWorkflowStep={(id, workflowStep) => updateEntry(id, { workflowStep })} onImplementation={(id, implementationId) => updateEntry(id, { implementationId })} onPeers={(id, value, parentId) => updateEntry(id, { visibleToPeers: value }, parentId)} onUpdates={(id, value, parentId) => updateEntry(id, { visibleToUpdates: value }, parentId)} onPrompt={(id, promptId, parentId) => updateEntry(id, { promptId }, parentId)} onModel={(id, modelId, parentId) => updateEntry(id, { modelId }, parentId)} onRotate={rotateEntry} onRemove={removeEntry} />)}
+                  {generationOrder.map((entry, index) => <CompositionOrderAccordionItem key={entry.id} entry={entry} ordinal={`${index + 1}`} index={index} siblingCount={generationOrder.length} stackId="visual-image-diff-uix-pipeline-stack" selectedGroupId={selectedGroupId} inspectedPromptId={inspectedPrompt?.id || ""} workspaceId={workspaceId} prompts={prompts} models={models} operations={operations} operationImplementations={operationImplementations} availableData={availableData} busy={running} modeFor={subaccordionMode} onMode={setSubaccordionMode} onRunEntry={(entry) => { void runPrompts([entry], entry.modelId || runModel); }} onInspectPrompt={setInspectedPromptId} onSelectGroup={(id) => setSelectedGroupId((current) => current === id ? null : id)} onShuffleGroup={shuffleGroup} onCopyGroup={copyGroup} onClearGroup={clearGroup} onWorkflowStep={(id, workflowStep) => updateEntry(id, { workflowStep })} onImplementation={(id, implementationId) => updateEntry(id, { implementationId })} onInvocationComplete={rememberWorkflowOutputs} onPeers={(id, value, parentId) => updateEntry(id, { visibleToPeers: value }, parentId)} onUpdates={(id, value, parentId) => updateEntry(id, { visibleToUpdates: value }, parentId)} onPrompt={(id, promptId, parentId) => updateEntry(id, { promptId }, parentId)} onModel={(id, modelId, parentId) => updateEntry(id, { modelId }, parentId)} onRotate={rotateEntry} onRemove={removeEntry} />)}
                   {!generationOrder.length && <p className="empty">Use [+group] or an inline + step button to compose the ordered prompt call.</p>}
                 </ThreeStateAccordionStack>
                 <div className="english-workflow-order-actions">
@@ -943,7 +1123,7 @@ export function VisualImageDiffPage({ workspaceId, workspaceLabel, models, opera
           className="visual-image-diff-column-divider"
           role="separator"
           aria-orientation="vertical"
-          aria-label="Resize generation and resource output columns"
+          aria-label="Resize authoring and source detail columns"
           aria-valuemin={15}
           aria-valuemax={85}
           aria-valuenow={Math.round((columnRatios.left + columnRatios.center) / totalColumnRatio * 100)}
@@ -957,7 +1137,19 @@ export function VisualImageDiffPage({ workspaceId, workspaceLabel, models, opera
           }}
         />
 
-        <ThreeStateAccordionStack id="visual-image-diff-right-stack" className="english-workflow-column english-workflow-contract" controlsLabel="RIGHT STACK" freezeControls>
+        <ThreeStateAccordionStack id="visual-image-diff-right-stack" className="english-workflow-column english-workflow-contract" controlsLabel="RIGHT STACK · SOURCE DETAILS" freezeControls>
+          <ThreeStateAccordionMember
+            stackId="visual-image-diff-right-stack"
+            label="CURRENT PAGE SPECIFICATION"
+            value={`${pageDefinition.id}.workflow_page.json`}
+            detail="Resolved three-column page JSON"
+            mode={mode("pageSpecification")}
+            onChange={(value) => setMode("pageSpecification", value)}
+            baseClass="english-workflow-contract-panel visual-image-diff-page-source"
+            scrollSize="520px"
+          >
+            <WorkflowPageSourceEditor workspaceId={workspaceId} pageId={pageDefinition.id} disabled={running} onSaved={onPageDefinitionSaved} />
+          </ThreeStateAccordionMember>
           <ThreeStateAccordionMember
             stackId="visual-image-diff-right-stack"
             label="PROMPT CONTENT"
@@ -990,34 +1182,6 @@ export function VisualImageDiffPage({ workspaceId, workspaceLabel, models, opera
             scrollSize="520px"
           >
             <pre>{composedPrompt || "Add a prompt resource with + STEPS."}</pre>
-          </ThreeStateAccordionMember>
-          <ThreeStateAccordionMember
-            stackId="visual-image-diff-right-stack"
-            label="SEQUENCE CONTEXT"
-            value={`${document?.commands.length || 0} transitions`}
-            detail="Filesystem manifest facts sent with the image series"
-            mode={mode("context")}
-            onChange={(value) => setMode("context", value)}
-            baseClass="english-workflow-contract-panel visual-image-diff-context"
-          >
-            <ol>{document?.commands.map((command) => <li key={`${command.fromFrameId}:${command.toFrameId}`}><code>{command.fromFrameId}</code><strong>{command.label || command.command}</strong><code>{command.toFrameId}</code></li>)}</ol>
-          </ThreeStateAccordionMember>
-          <ThreeStateAccordionMember
-            stackId="visual-image-diff-right-stack"
-            label="RESOURCE OUTPUTS"
-            value={runResult ? `${submittedImageCount} images · response ready` : `${outputs.length} declared outputs`}
-            detail={runResult ? `${runResult.modelId || runModel} · ${runResult.latencyMs ?? 0} ms` : "Union of produces declarations from the active group"}
-            mode={mode("outputs")}
-            onChange={(value) => setMode("outputs", value)}
-            baseClass="english-workflow-contract-panel visual-image-diff-outputs"
-          >
-            <ul>{outputs.map((output) => <li key={output}><code>{output}</code></li>)}</ul>
-            {running && <div className="visual-image-run-status"><b>Running prompt group</b><span>Preparing and submitting the image sequence…</span></div>}
-            {runError && <div className="visual-image-run-error"><b>Invocation failed</b><span>{runError}</span></div>}
-            {runResult && <div className="visual-image-run-result">
-              <header><b>MODEL RESPONSE</b><span>{runResult.backendId || "resolved backend"} · {runResult.inputTokens ?? 0}/{runResult.outputTokens ?? 0} tokens</span></header>
-              <pre>{runResult.text || JSON.stringify(runResult, null, 2)}</pre>
-            </div>}
           </ThreeStateAccordionMember>
         </ThreeStateAccordionStack>
       </div>

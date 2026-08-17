@@ -1,6 +1,12 @@
 (
   (id tic_tac_toe_observe_and_choose)
   (label "Observe board and choose a move")
+  (generation (
+    (operation workflow.populate_from_english)
+    (englishDescriptionPath docs/WORKFLOW_DESCRIPTION.md)
+    (operationCategories ([] workflow-language))
+    (preflightRequired true)
+  ))
   (inputs (
     (board Array)
   ))

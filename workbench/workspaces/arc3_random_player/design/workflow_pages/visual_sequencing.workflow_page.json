@@ -1,0 +1,55 @@
+{
+  "kind": "workflow_page",
+  "id": "arc3.visual_sequencing",
+  "label": "Visual Sequencing",
+  "description": "Compose and run the ARC3 image-sequence comparison Workflow from filesystem images, commands, Prompt resources, Operations, and accumulated outputs.",
+  "glyph": "◩",
+  "menuPlacement": "middle",
+  "order": 30,
+  "routeView": "visualImageDiff",
+  "renderer": "visual_image_diff",
+  "layout": {
+    "kind": "three_column_accordion",
+    "columns": [
+      {
+        "id": "left",
+        "label": "DATA",
+        "members": ["resource_outputs", "image_command_sequence", "sequence_context"]
+      },
+      {
+        "id": "center",
+        "label": "AUTHORING",
+        "members": ["visual_pipeline_composer", "visual_pipeline_subaccordion", "operation_playground"]
+      },
+      {
+        "id": "right",
+        "label": "SOURCE DETAILS",
+        "members": [
+          {
+            "id": "visual_sequencing_page_source",
+            "label": "CURRENT PAGE SPECIFICATION",
+            "component": "ResourceSourceEditor",
+            "initialDisplayMode": "strip",
+            "resource": {
+              "kind": "workflow_page",
+              "id": "arc3.visual_sequencing"
+            },
+            "options": {
+              "format": "json",
+              "editable": true,
+              "validateBeforeApply": true,
+              "applyOnSave": true,
+              "preserveLastValidDefinition": true
+            },
+            "outputs": {
+              "source": "visual_sequencing_page_source",
+              "validation": "visual_sequencing_page_validation"
+            }
+          },
+          "prompt_content",
+          "composed_group_prompt"
+        ]
+      }
+    ]
+  }
+}

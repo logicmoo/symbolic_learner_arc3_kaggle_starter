@@ -30,6 +30,10 @@ import {
   type AccordionDisplayMode,
 } from "../components/ThreeStateAccordion";
 import { DurableRunLauncher } from "../components/DurableRunLauncher";
+import {
+  WorkflowPageHost,
+  type WorkflowPageDefinition,
+} from "../components/WorkflowPageHost";
 import "../styles/workflow_layout.css";
 
 const DataCatalogPanel = lazy(() =>
@@ -97,9 +101,9 @@ const WorkspaceOverview = lazy(() =>
     default: module.WorkspaceOverview,
   })),
 );
-const EnglishWorkflowPage = lazy(() =>
-  import("../components/EnglishWorkflowPage").then((module) => ({
-    default: module.EnglishWorkflowPage,
+const WorkflowGenerationRuntime = lazy(() =>
+  import("../components/WorkflowGenerationRuntime").then((module) => ({
+    default: module.WorkflowGenerationRuntime,
   })),
 );
 const VisualImageDiffPage = lazy(() =>
@@ -278,6 +282,7 @@ type WorkspaceFile = {
 type Snapshot = {
   workspace: Workspace;
   workflows: RecordFile<Workflow>[];
+  workflowPages: RecordFile<WorkflowPageDefinition>[];
   models?: RecordFile<{ id: string; label?: string; enabled?: boolean }>[];
   goals?: RecordFile<Record<string, unknown>>[];
   plans?: RecordFile<Record<string, unknown>>[];
@@ -408,6 +413,11 @@ const viewFromLocation = (): View | null => {
 };
 const workspaceFromLocation = () =>
   new URLSearchParams(window.location.search).get("workspace")?.trim() || null;
+const workflowFromLocation = () =>
+  new URLSearchParams(window.location.search).get("workflow")?.trim() || null;
+const workflowPageMenuPlacementRank = (
+  placement: WorkflowPageDefinition["menuPlacement"],
+) => ({ first: 0, middle: 1, last: 2 })[placement || "middle"];
 type EngineImplementation = { name: string; [key: string]: unknown };
 const WORKBENCH_THEMES = [
   { id: "retro-green", label: "Retro Green" },
@@ -461,7 +471,7 @@ const isWorkbenchTheme = (value: string | null): value is WorkbenchTheme =>
   WORKBENCH_THEMES.some((theme) => theme.id === value);
 
 export const NAVIGATION_V2: Array<{
-  group: "WORKSPACE" | "CAPABILITIES" | "KNOWLEDGE" | "RUNTIME" | "SYSTEM";
+  group: "WORKSPACE" | "WORKFLOWS" | "CAPABILITIES" | "KNOWLEDGE" | "RUNTIME" | "SYSTEM";
   items: Array<{ label: string; view: View; glyph: string }>;
 }> = [
   {
@@ -470,12 +480,16 @@ export const NAVIGATION_V2: Array<{
       { label: "Overview", view: "overview", glyph: "⌂" },
       { label: "Goals", view: "goals", glyph: "◎" },
       { label: "Planning", view: "plans", glyph: "◇" },
-      { label: "Workflows", view: "canvas", glyph: "⌘" },
     ],
+  },
+  {
+    group: "WORKFLOWS",
+    items: [],
   },
   {
     group: "CAPABILITIES",
     items: [
+      { label: "Workflow Resources", view: "canvas", glyph: "⌘" },
       { label: "Operations", view: "operations", glyph: "▦" },
       { label: "Source Code", view: "sourceCode", glyph: "</>" },
       { label: "Systems", view: "systems", glyph: "⚙" },
@@ -520,6 +534,8 @@ const viewLabel = (view: View) =>
   (
     {
       editor: "Workflow Editor",
+      englishWorkflow: "Generate Workflow",
+      visualImageDiff: "Visual Sequencing",
       workflowRuns: "Workflow Runs",
       evidence: "Evidence & provenance",
       checks: "Checks",
@@ -794,6 +810,36 @@ export function FilesystemWorkbenchPage() {
       return null;
     }
   }, [workflowSource]);
+  const workflowPageDefinitions = useMemo(
+    () =>
+      (snapshot?.workflowPages || []).flatMap((record) =>
+        record.document ? [record.document] : [],
+      ),
+    [snapshot?.workflowPages],
+  );
+  const workflowPageForView = workflowPageDefinitions.find(
+    (definition) => definition.routeView === view,
+  );
+  const workflowNavigationEntries = useMemo(
+    () =>
+      workflowPageDefinitions
+        .map((definition) => ({
+          id: definition.id,
+          label: definition.label,
+          glyph: definition.glyph || "✧",
+          menuPlacement: definition.menuPlacement || "middle",
+          order: definition.order ?? 1000,
+          definition,
+        }))
+        .sort(
+          (left, right) =>
+            workflowPageMenuPlacementRank(left.menuPlacement) -
+              workflowPageMenuPlacementRank(right.menuPlacement) ||
+            left.order - right.order ||
+            left.label.localeCompare(right.label),
+        ),
+    [workflowPageDefinitions],
+  );
   const setLeftColumnAccordionMode = (mode: AccordionDisplayMode) => {
     setWorkflowLeftColumnDisplayMode(mode);
     setSelectedStageDisplayMode(mode);
@@ -941,6 +987,42 @@ export function FilesystemWorkbenchPage() {
     return () => { cancelled = true; };
   }, [workspace?.id, workflow?.id, workflow?.generation?.englishDescriptionPath]);
   useEffect(() => {
+    if (
+      view !== "englishWorkflow" ||
+      !workspace ||
+      !workflow ||
+      workflow?.generation?.englishDescriptionPath
+    )
+      return;
+    let cancelled = false;
+    void request(
+      `/api/workspaces/${encodeURIComponent(workspace.id)}/snapshot?scope=shell`,
+    )
+      .then((payload) => {
+        if (cancelled) return;
+        const next = payload as unknown as Snapshot;
+        setWorkspace(next.workspace);
+        setSnapshot(next);
+        const selected =
+          next.workflows.find((row) => row.path === workflowPath) ||
+          next.workflows.find((row) => row.document?.id === workflow.id);
+        if (selected?.document?.generation?.englishDescriptionPath)
+          setWorkflowSource(JSON.stringify(selected.document, null, 2));
+      })
+      .catch((reason) => {
+        if (!cancelled) setError(String(reason));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    view,
+    workspace?.id,
+    workflow?.id,
+    workflow?.generation?.englishDescriptionPath,
+    workflowPath,
+  ]);
+  useEffect(() => {
     if (!run || ["completed", "failed", "cancelled"].includes(run.status))
       return;
     const timer = window.setInterval(
@@ -1016,7 +1098,14 @@ export function FilesystemWorkbenchPage() {
             : [],
         ),
       );
-      const first = next.workflows.find((row) => row.document);
+      const requestedWorkflow = workflowFromLocation();
+      const first =
+        next.workflows.find(
+          (row) =>
+            row.document &&
+            (row.path === requestedWorkflow ||
+              row.document.id === requestedWorkflow),
+        ) || next.workflows.find((row) => row.document);
       const restoredView = viewFromLocation();
       if (first?.document) {
         setWorkflowPath(first.path);
@@ -1124,6 +1213,19 @@ export function FilesystemWorkbenchPage() {
   const openWorkflow = (path: string) =>
     perform(async () => {
       if (!workspace || !path) return;
+      const selectedRecord = snapshot?.workflows.find(
+        (row) => row.path === path,
+      );
+      const url = new URL(window.location.href);
+      url.searchParams.set(
+        "workflow",
+        selectedRecord?.document?.id || path,
+      );
+      window.history.replaceState(
+        null,
+        "",
+        `${url.pathname}${url.search}${url.hash}`,
+      );
       const inherited = snapshot?.workflows.find(
         (row) => row.path === path && row.workspaceId !== workspace.id,
       );
@@ -2210,9 +2312,7 @@ export function FilesystemWorkbenchPage() {
     target === "canvas"
       ? view === "canvas" ||
         view === "editor" ||
-        view === "workflowRuns" ||
-        view === "englishWorkflow" ||
-        view === "visualImageDiff"
+        view === "workflowRuns"
       : target === view;
   const returnToBreadcrumb = (entry: BreadcrumbEntry, index: number) => {
     breadcrumbNavigation.current = true;
@@ -2400,6 +2500,27 @@ export function FilesystemWorkbenchPage() {
           {NAVIGATION_V2.map((section) => (
             <div className="rail-section" key={section.group}>
               <span>{section.group}</span>
+              {section.group === "WORKFLOWS" &&
+                workflowNavigationEntries.map((entry) => {
+                  const target = WORKBENCH_VIEWS.has(
+                    entry.definition.routeView as View,
+                  )
+                    ? (entry.definition.routeView as View)
+                    : null;
+                  return (
+                    <button
+                      key={`workflow-page:${entry.id}`}
+                      data-workflow-page-resource={entry.id}
+                      data-workflow-page-placement={entry.menuPlacement}
+                      className={`rail-icon ${target === view ? "selected" : ""}`}
+                      disabled={!target}
+                      onClick={() => target && setView(target)}
+                    >
+                      <span>{entry.glyph}</span>
+                      <small>{entry.label}</small>
+                    </button>
+                  );
+                })}
               {section.items.map((item) => (
                 <button
                   key={item.label}
@@ -2499,18 +2620,21 @@ export function FilesystemWorkbenchPage() {
             >
               Workflow Runs
             </button>
-            <button
-              className={view === "englishWorkflow" ? "active" : ""}
-              onClick={() => setView("englishWorkflow")}
-            >
-              English Generation
-            </button>
-            <button
-              className={view === "visualImageDiff" ? "active" : ""}
-              onClick={() => setView("visualImageDiff")}
-            >
-              Visual Image Diff
-            </button>
+            {workflowNavigationEntries.map(({ definition }) => {
+              const target = WORKBENCH_VIEWS.has(definition.routeView as View)
+                ? (definition.routeView as View)
+                : null;
+              return target ? (
+                <button
+                  key={definition.id}
+                  data-workflow-page-resource={definition.id}
+                  className={view === target ? "active" : ""}
+                  onClick={() => setView(target)}
+                >
+                  {definition.label}
+                </button>
+              ) : null;
+            })}
             <button
               className={view === "artifacts" ? "active" : ""}
               onClick={() => setView("artifacts")}
@@ -3018,35 +3142,44 @@ export function FilesystemWorkbenchPage() {
                 />
               </div>
             )}
-            {view === "englishWorkflow" && workflow && (
-              <EnglishWorkflowPage
-                workspaceId={workspace.id}
-                workspaceLabel={workspace.label}
-                workflow={workflow}
-                workflowPath={workflowPath}
-                description={workflowEnglishDescription}
-                savedDescription={workflowEnglishDescriptionSaved}
-                onDescriptionChange={setWorkflowEnglishDescription}
-                onSaveDescription={saveWorkflowEnglishDescription}
-                operation={englishWorkflowOperation}
-                operationCatalog={operationLibrary.operations.flatMap((record) => record.document ? [record.document] : [])}
-                models={workflowRunnerModels}
-                memoryValues={effectivePreflightStateValues}
-                onGenerated={acceptEnglishWorkflowOutputs}
-                onApply={saveWorkflow}
-                onOpenWorkflow={() => setView("canvas")}
-              />
-            )}
-            {view === "englishWorkflow" && !workflow && (
-              <div className="studio-empty">This workspace has no Workflow resource to revise from English.</div>
-            )}
-            {view === "visualImageDiff" && (
-              <VisualImageDiffPage
-                workspaceId={workspace.id}
-                workspaceLabel={workspace.label}
-                models={workflowRunnerModels}
-                operations={operationLibrary.operations.flatMap((record) => record.document ? [record.document] : [])}
-                operationImplementations={operationLibrary.operationImplementations.flatMap((record) => record.document ? [record.document] : [])}
+            {workflowPageForView && (
+              workflowPageForView.renderer === "workflow_generation_runtime" ? workflow ? (
+                <WorkflowGenerationRuntime
+                  pageDefinition={workflowPageForView}
+                  workspaceId={workspace.id}
+                  workspaceLabel={workspace.label}
+                  workflow={workflow}
+                  workflowPath={workflowPath}
+                  description={workflowEnglishDescription}
+                  savedDescription={workflowEnglishDescriptionSaved}
+                  onDescriptionChange={setWorkflowEnglishDescription}
+                  onSaveDescription={saveWorkflowEnglishDescription}
+                  operation={englishWorkflowOperation}
+                  operationCatalog={operationLibrary.operations.flatMap((record) => record.document ? [record.document] : [])}
+                  models={workflowRunnerModels}
+                  memoryValues={effectivePreflightStateValues}
+                  onGenerated={acceptEnglishWorkflowOutputs}
+                  onApply={saveWorkflow}
+                  onOpenWorkflow={() => setView("canvas")}
+                  onPageDefinitionSaved={refreshSnapshot}
+                />
+              ) : (
+                <div className="studio-empty">Select or create a Workflow resource for Generate Workflow to revise.</div>
+              ) : <WorkflowPageHost
+                definition={workflowPageForView}
+                renderers={{
+                  visual_image_diff: (
+                    <VisualImageDiffPage
+                      pageDefinition={workflowPageForView}
+                      workspaceId={workspace.id}
+                      workspaceLabel={workspace.label}
+                      models={workflowRunnerModels}
+                      operations={operationLibrary.operations.flatMap((record) => record.document ? [record.document] : [])}
+                      operationImplementations={operationLibrary.operationImplementations.flatMap((record) => record.document ? [record.document] : [])}
+                      onPageDefinitionSaved={refreshSnapshot}
+                    />
+                  ),
+                }}
               />
             )}
             {view === "data" && <DataCatalogPanel workspaceId={workspace.id} />}

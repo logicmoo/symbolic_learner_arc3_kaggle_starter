@@ -1,9 +1,13 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
-  ThreeStateAccordionMember,
-  ThreeStateAccordionStack,
-  type AccordionDisplayMode,
-} from "./ThreeStateAccordion";
+  WorkflowPageHost,
+  type WorkflowPageComponentRegistry,
+  type WorkflowPageDefinition,
+  type WorkflowPageMemberDefinition,
+  type WorkflowPageMemberSurface,
+} from "./WorkflowPageHost";
+import { LoadTextDocuments } from "./LoadTextDocuments";
+import { WorkflowPageSourceEditor } from "./WorkflowPageSourceEditor";
 import "../styles/english_workflow.css";
 import "../styles/english_workflow_order.css";
 
@@ -84,6 +88,7 @@ type MemoryValue = {
 };
 
 type Props = {
+  pageDefinition?: WorkflowPageDefinition;
   workspaceId: string;
   workspaceLabel: string;
   workflow: WorkflowDocument;
@@ -99,6 +104,7 @@ type Props = {
   onGenerated: (outputs: Record<string, unknown>) => void;
   onApply: () => Promise<void> | void;
   onOpenWorkflow: () => void;
+  onPageDefinitionSaved: () => Promise<unknown> | unknown;
 };
 
 type GenerationPhase = "idle" | "analyzed" | "planned" | "generated" | "validated" | "error";
@@ -559,10 +565,6 @@ function plannedMemoryValues(contract: GenerationContract): MemoryValue[] {
   }));
 }
 
-function modeMap(names: string[]) {
-  return Object.fromEntries(names.map((name) => [name, "scroll" as AccordionDisplayMode]));
-}
-
 function GenerationOrderItem({ entry, ordinal, index, siblingCount, parentGroupId, selectedGroupId, busy, prompts, models, onSelectGroup, onRunEntry, onShuffleGroup, onCopyGroup, onClearGroup, onPeers, onUpdates, onPrompt, onModel, onRotate, onRemove }: {
   entry: GenerationOrderEntry;
   ordinal: string;
@@ -604,7 +606,8 @@ function GenerationOrderItem({ entry, ordinal, index, siblingCount, parentGroupI
   </li>;
 }
 
-export function EnglishWorkflowPage({
+export function WorkflowGenerationRuntime({
+  pageDefinition,
   workspaceId,
   workspaceLabel,
   workflow,
@@ -620,6 +623,7 @@ export function EnglishWorkflowPage({
   onGenerated,
   onApply,
   onOpenWorkflow,
+  onPageDefinitionSaved,
 }: Props) {
   const [phase, setPhase] = useState<GenerationPhase>("idle");
   const [selectedModel, setSelectedModel] = useState("");
@@ -640,10 +644,6 @@ export function EnglishWorkflowPage({
   const [validationErrors, setValidationErrors] = useState<string[] | null>(null);
   const [busyAction, setBusyAction] = useState("");
   const [message, setMessage] = useState("");
-  const [modes, setModes] = useState<Record<string, AccordionDisplayMode>>(() => modeMap([
-    "specification", "generator", "trials", "summary", "memory", "checklist", "outputs", "rules",
-  ]));
-  const lineNumberRef = useRef<HTMLPreElement | null>(null);
   const generationOrderPath = workflow.generation?.generationOrderPath || "docs/WORKFLOW_GENERATION_ORDER.txt";
   const contractOperation = operationCatalog.find((candidate) => candidate.id === "workflow.analyze_generation_contract");
   const availableContractSectionPrompts = contractSectionPrompts(promptChoices);
@@ -670,8 +670,6 @@ export function EnglishWorkflowPage({
     codewf: [],
   };
   const displayedValues = plannedValues.length ? plannedValues : memoryValues;
-  const descriptionLines = Math.max(1, description.split(/\r?\n/).length);
-  const setMode = (name: string, mode: AccordionDisplayMode) => setModes((current) => ({ ...current, [name]: mode }));
   const recordGenerationStep = (action: string, outputs: string[], detail: string) => setGenerationSteps((current) => [
     ...current,
     { id: `${Date.now()}:${current.length}`, action, outputs, detail },
@@ -1107,80 +1105,156 @@ export function EnglishWorkflowPage({
     }
   };
 
-  return (
-    <section className="english-workflow-page" aria-label="English Workflow">
-      <header className="english-workflow-titlebar">
-        <div>
-          <span>ENGLISH WORKFLOW</span>
-          <h1>{workflow.label || workflow.id}</h1>
-        </div>
-        <div className="english-workflow-runtime-status">
-          <span>Runtime: Local</span>
-          <i />
-          <b>{operation ? "Authoring Operation Ready" : "Authoring Operation Missing"}</b>
-        </div>
-      </header>
+  const validateDraft = async () => {
+    if (!draft?.steps.length) return;
+    setBusyAction("validate");
+    setMessage("");
+    try {
+      const payload = await request("/api/engine/workflows/validate", {
+        method: "POST",
+        body: JSON.stringify(draft),
+      });
+      const errors = Array.isArray(payload.errors) ? payload.errors.map(String) : [];
+      setValidationErrors(errors);
+      setDraftReadyToApply(errors.length === 0);
+      setPhase(errors.length ? "generated" : "validated");
+      recordGenerationStep("Validate Draft", [
+        errors.length ? `${errors.length} Validation Issues` : "Backend Validation Passed",
+      ], "/api/engine/workflows/validate");
+      setMessage(errors.length ? `Validation found ${errors.length} issues.` : "Backend workflow validation passed.");
+    } catch (reason) {
+      setPhase("error");
+      setMessage(reason instanceof Error ? reason.message : String(reason));
+    } finally {
+      setBusyAction("");
+    }
+  };
 
-      <div className="english-workflow-columns">
-        <ThreeStateAccordionStack id="english-workflow-left-stack" className="english-workflow-column" controlsLabel="ENGLISH SPECIFICATION STACK">
-          <ThreeStateAccordionMember stackId="english-workflow-left-stack" label="ENGLISH SPECIFICATION" value={workflow.generation?.englishDescriptionPath || "No description resource"} mode={modes.specification} onChange={(mode) => setMode("specification", mode)} baseClass="english-workflow-panel english-workflow-specification" scrollSize="calc(100vh - 250px)" footer={<><b>Ln {descriptionLines}</b><span>{description === savedDescription ? "Saved" : "Unsaved changes"}</span></>}>
-            <div className="english-workflow-editor-meta">
-              <code>{workflow.generation?.englishDescriptionPath}</code>
-              <button type="button" disabled={busyAction !== "" || description === savedDescription} onClick={() => void onSaveDescription()}>Save English</button>
-            </div>
-            <div className="english-workflow-editor">
-              <pre ref={lineNumberRef} aria-hidden="true">{Array.from({ length: descriptionLines }, (_, index) => index + 1).join("\n")}</pre>
-              <textarea aria-label="English workflow specification" value={description} onChange={(event) => onDescriptionChange(event.target.value)} onScroll={(event) => { if (lineNumberRef.current) lineNumberRef.current.scrollTop = event.currentTarget.scrollTop; }} spellCheck />
-            </div>
-          </ThreeStateAccordionMember>
-        </ThreeStateAccordionStack>
+  const workflowSteps = (candidate: WorkflowDocument | null, empty: ReactNode) =>
+    candidate?.steps.length ? (
+      <ol className="english-workflow-workflow-steps">
+        {candidate.steps.map((step, index) => <li key={step.id}><span>{index + 1}</span><div><b>{step.label || step.id}</b><code>{step.operation || "unresolved Operation"}</code></div></li>)}
+      </ol>
+    ) : empty;
 
-        <ThreeStateAccordionStack id="english-workflow-center-stack" className="english-workflow-column" controlsLabel="GENERATE WORKFLOW STACK">
-          <ThreeStateAccordionMember stackId="english-workflow-center-stack" label="GENERATE WORKFLOW" value={operation?.id || "Operation unavailable"} detail={`${operationCatalog.length} effective Operations`} mode={modes.generator} onChange={(mode) => setMode("generator", mode)} baseClass="english-workflow-panel english-workflow-generator" scrollSize="calc(100vh - 250px)" footer={<><b>{draft?.steps.length || 0} preview steps</b><span>{phase === "error" ? "Generation error" : phase}</span></>}>
-            <div className="english-workflow-generation-controls">
-              <label><span>SELECTED MODEL</span><select aria-label="English Workflow selected model" value={selectedModel} disabled={busyAction !== ""} onChange={(event) => void changeModel(event.target.value)}><option value="">Use system and Operation resolution</option>{modelChoices.filter((model) => model.enabled !== false).map((model) => <option key={model.id} value={model.id}>{modelOptionLabel(model)}</option>)}</select></label>
-              <label><span>OUTPUT FORMAT</span><select aria-label="English Workflow output format" value={outputFormat} onChange={(event) => setOutputFormat(event.target.value)}><option value="json">Workflow JSON</option><option value="metta">MeTTa workflow resource</option></select></label>
-              <fieldset className="english-workflow-contract-order">
-                <legend>CONTRACT SECTION ORDER · ONE LLM CALL</legend>
-                <div className="english-workflow-output-composer" aria-label="Add outputs to Generation Order">
-                  <div className="english-workflow-output-composer-row" aria-label="Applicable Prompt resource outputs">
-                    {availableContractSectionPrompts.map((prompt) => <button type="button" key={prompt.id} disabled={busyAction !== ""} title={`${prompt.classificationId || "Unclassified"} · ${prompt.label || prompt.id}`} onClick={() => addGenerationOutput(prompt.buttonName, prompt.id)}>+ {prompt.buttonName}</button>)}
-                    <button type="button" className="english-workflow-group-output" disabled={busyAction !== ""} title="Create and select a simultaneous-generation group" onClick={() => addGenerationOutput("group")}>[+group]</button>
-                  </div>
-                  {!availableContractSectionPrompts.length && <small>No effective Prompt resources declare applicability <code>{CONTRACT_SECTION_APPLICABILITY}</code>.</small>}
-                </div>
-                <ol>{generationOrder.map((entry, index) => <GenerationOrderItem key={entry.id} entry={entry} ordinal={`${index + 1}`} index={index} siblingCount={generationOrder.length} selectedGroupId={selectedGroupId} busy={busyAction !== ""} prompts={promptChoices} models={modelChoices} onSelectGroup={(id) => setSelectedGroupId((current) => current === id ? null : id)} onRunEntry={(entry, ordinal) => void analyze([entry], entry.name === "group" ? `Run Group ${ordinal}` : `Quick Call ${entry.name} ${ordinal}`, entry.modelId || selectedModel)} onShuffleGroup={shuffleGenerationGroup} onCopyGroup={copyGenerationGroup} onClearGroup={clearGenerationGroup} onPeers={setGenerationEntryPeers} onUpdates={setGenerationEntryUpdates} onPrompt={setGenerationEntryPrompt} onModel={setGenerationEntryModel} onRotate={rotateGenerationEntry} onRemove={removeGenerationEntry} />)}</ol>
-                <div className="english-workflow-order-actions"><button type="button" disabled={busyAction !== "" || generationOrder.length < 2} onClick={() => setGenerationOrder((current) => shuffledGenerationOrder(current))}>Shuffle order</button><button type="button" disabled={busyAction !== "" || generationOrder.length === 0} onClick={() => { setGenerationOrder([]); setSelectedGroupId(null); }}>Clear order</button></div>
-                <small>Analyze follows the full sequence. Any named row title runs that step as a quick call; [group] runs only that group. Prompt and Model Override routing is saved with every occurrence in <code>{generationOrderPath}</code>.</small>
-              </fieldset>
-              <button type="button" disabled={busyAction !== "" || !description.trim() || !contractOperation || !hasGenerativeStep(generationOrder)} onClick={() => void analyze()}>{busyAction === "analyze" ? "Analyzing and saving…" : "⌕ Analyze & Save"}</button>
-              <button type="button" disabled={busyAction !== "" || !analysisContract} onClick={plan}>▦ Plan Memory &amp; Values</button>
-              <button type="button" className="primary" disabled={busyAction !== "" || !operation || !description.trim() || !analysisContract || !memoryPlanned} onClick={() => void generate()}>{busyAction === "generate" ? "Generating…" : "✦ Generate Draft"}</button>
-            </div>
-            <section className="english-workflow-progress" aria-label="Generation Order">
-              <span>GENERATION ORDER · BUTTON PRESS HISTORY</span>
-              {generationSteps.length ? <ol>{generationSteps.map((step, index) => <li className="complete" key={step.id}><i>{index + 1}</i><div><b>{step.action}</b><span>{step.outputs.join(" · ")}</span><small>{step.detail}</small></div></li>)}</ol> : <p>No generation buttons pressed yet. This list records the actual order and outputs.</p>}
-            </section>
-            <section className="english-workflow-preview">
-              <header><span>PREVIEW: {draft?.steps.length || 0} STEPS</span><button type="button" onClick={onOpenWorkflow}>Open Workflow Editor</button></header>
-              {!includesOutput("workflow") ? <p>Add Workflow or a complete group to Generation Order to display the candidate.</p> : draft?.steps.length ? <ol>{draft.steps.map((step, index) => <li key={step.id}><span>{index + 1}</span><div><b>{step.label || step.id}</b><code>{step.operation || "unresolved Operation"}</code></div></li>)}</ol> : <p>No steps generated yet.</p>}
-            </section>
-            <div className="english-workflow-apply"><button type="button" disabled={busyAction !== "" || !draftReadyToApply || !draft?.steps.length || Boolean(validationErrors?.length)} onClick={() => void apply()}>{busyAction === "apply" ? "Applying…" : "Apply Validated Draft"}</button><small>Experimental contract trials never enable Apply. Only a successfully validated Generate Draft result can be written.</small></div>
-            {message && <div className={phase === "error" ? "english-workflow-message error" : "english-workflow-message"}>{message}</div>}
-          </ThreeStateAccordionMember>
-        </ThreeStateAccordionStack>
-
-        <ThreeStateAccordionStack id="english-workflow-right-stack" className="english-workflow-column english-workflow-contract" controlsLabel="GENERATION CONTRACT STACK">
-          <ThreeStateAccordionMember stackId="english-workflow-right-stack" initialIndex={0} label="ORDER TRIALS" value={contractTrials.length ? `${contractTrials.length} one-call trials` : "No trials yet"} detail="Compare contract and Workflow quality across generation orders" mode={modes.trials} onChange={(mode) => setMode("trials", mode)} baseClass="english-workflow-contract-panel" scrollSize="210px">{contractTrials.length ? <ol className="english-workflow-trials">{contractTrials.map((trial) => <li key={trial.id}><b>{trial.score}/100</b><span>{trial.requestedOrder.join(" → ")}</span><small>{trial.requestedSteps.map(generationStepSummary).join(" · ")} · {trial.checklistCount} checks · {trial.memoryCount} memory · {trial.englishStepCount} English steps · {trial.formalStepCount} formal steps · {trial.libraryOpsCount} library operations · {trial.matchOpsCount} operation matches · {trial.inventedOpsCount} invented operation proposals · {trial.codedOpsCount} implementation proposals · {trial.promptedOpsCount} operation prompt proposals · {trial.libraryDtCount} library datatypes · {trial.matchDtCount} datatype matches · {trial.inventedDtCount} invented datatype proposals · {trial.codedDtCount} datatype representation proposals · {trial.libraryWfCount} library workflows · {trial.matchWfCount} workflow matches · {trial.inventedWfCount} invented workflow proposals · {trial.codedWfCount} workflow build reports · {trial.workflowSteps} workflow steps · {trial.validationIssues} validation issues · {trial.modelId}{trial.returnedOrder.join("|") !== trial.requestedOrder.join("|") ? ` · returned ${trial.returnedOrder.join(" → ")}` : " · order honored"}</small></li>)}</ol> : <p>Use the + output controls to compose Generation Order. Click a named row title for a quick single-step call. Names may repeat, visibility controls choose whether current values are exposed to peers or future updates, and [+group] creates and selects a simultaneous output group.</p>}</ThreeStateAccordionMember>
-          {includesOutput("summary") && <ThreeStateAccordionMember stackId="english-workflow-right-stack" initialIndex={1} label="TASK SUMMARY" value={analysisContract ? "Generated by Analyze" : "Waiting for analysis"} mode={modes.summary} onChange={(mode) => setMode("summary", mode)} baseClass="english-workflow-contract-panel" scrollSize="150px"><p>{contract.summary}</p></ThreeStateAccordionMember>}
-          {includesOutput("memory") && <ThreeStateAccordionMember stackId="english-workflow-right-stack" initialIndex={2} label="REQUIRED MEMORY" value={memoryPlanned ? `${displayedValues.length} planned values` : analysisContract ? `${contract.memory.length} analyzed candidates` : "Waiting for analysis"} mode={modes.memory} onChange={(mode) => setMode("memory", mode)} baseClass="english-workflow-contract-panel" scrollSize="190px">{memoryPlanned ? <ul>{displayedValues.map((value) => <li key={value.id}><code>{value.label || value.id}</code><span>{value.datatype || "Any"}</span></li>)}</ul> : analysisContract ? <ul>{contract.memory.map((value) => <li key={value.name}><code>{value.name}</code><span>{value.datatype}</span></li>)}</ul> : <p>Analyze generates candidate memory in the one-call contract. Plan Memory &amp; Values then turns those candidates into explicit runtime values.</p>}</ThreeStateAccordionMember>}
-          {includesOutput("checklist") && <ThreeStateAccordionMember stackId="english-workflow-right-stack" initialIndex={3} label="ACCEPTANCE CHECKLIST" value={analysisContract ? `${contract.checklist.length} generated checks` : "Waiting for analysis"} mode={modes.checklist} onChange={(mode) => setMode("checklist", mode)} baseClass="english-workflow-contract-panel" scrollSize="260px"><ul className="english-workflow-checklist">{contract.checklist.map((item, index) => <li key={`${index}:${item}`}><input type="checkbox" checked={phase === "validated"} readOnly /><span>{item}</span></li>)}</ul>{validationErrors && <div className={validationErrors.length ? "contract-validation bad" : "contract-validation good"}>{validationErrors.length ? validationErrors.join("\n") : "Backend workflow validation passed."}</div>}</ThreeStateAccordionMember>}
-          {includesOutput("outputs") && <ThreeStateAccordionMember stackId="english-workflow-right-stack" initialIndex={4} label="OUTPUT REQUIREMENTS" value={analysisContract ? `${contract.outputs.length} generated requirements` : "Waiting for analysis"} mode={modes.outputs} onChange={(mode) => setMode("outputs", mode)} baseClass="english-workflow-contract-panel" scrollSize="170px"><ul>{contract.outputs.map((item, index) => <li key={`${index}:${item}`}>{item}</li>)}</ul></ThreeStateAccordionMember>}
-          {includesOutput("rules") && <ThreeStateAccordionMember stackId="english-workflow-right-stack" initialIndex={5} label="VALIDATION RULES" value={analysisContract ? `${contract.rules.length} generated rules` : "Waiting for analysis"} mode={modes.rules} onChange={(mode) => setMode("rules", mode)} baseClass="english-workflow-contract-panel" scrollSize="170px"><ul>{contract.rules.map((item, index) => <li key={`${index}:${item}`}>{item}</li>)}</ul></ThreeStateAccordionMember>}
-        </ThreeStateAccordionStack>
-      </div>
-
-      <footer className="english-workflow-statusbar"><span><i /> Workspace: {workspaceLabel}</span><span>Mode: Build</span><span>Workflow: {workflowPath}</span><span>AtomSpace: default</span></footer>
-    </section>
+  const jsonDetail = (value: unknown) => (
+    <pre className="english-workflow-resource-source">{JSON.stringify(value, null, 2)}</pre>
   );
+
+  const explicitPromptId = generationOrder
+    .flatMap((entry) => [entry, ...(entry.steps || [])])
+    .map((entry) => entry.promptId)
+    .find(Boolean);
+  const selectedPrompt = promptChoices.find((prompt) => prompt.id === explicitPromptId)
+    || availableContractSectionPrompts[0];
+  const selectedModelRecord = modelChoices.find((model) => model.id === selectedModel);
+
+  const composerSurface = (): WorkflowPageMemberSurface => ({
+    value: operation?.id || "Operation unavailable",
+    detail: `${operationCatalog.length} effective Operations`,
+    baseClass: "english-workflow-panel english-workflow-generator",
+    footer: <><b>{draft?.steps.length || 0} preview steps</b><span>{phase === "error" ? "Generation error" : phase}</span></>,
+    content: <div className="english-workflow-generation-controls">
+      <label><span>SELECTED MODEL</span><select aria-label="English Workflow selected model" value={selectedModel} disabled={busyAction !== ""} onChange={(event) => void changeModel(event.target.value)}><option value="">Use system and Operation resolution</option>{modelChoices.filter((model) => model.enabled !== false).map((model) => <option key={model.id} value={model.id}>{modelOptionLabel(model)}</option>)}</select></label>
+      <label><span>OUTPUT FORMAT</span><select aria-label="English Workflow output format" value={outputFormat} onChange={(event) => setOutputFormat(event.target.value)}><option value="json">Workflow JSON</option><option value="metta">MeTTa workflow resource</option></select></label>
+      <fieldset className="english-workflow-contract-order">
+        <legend>CONTRACT SECTION ORDER · ONE LLM CALL</legend>
+        <div className="english-workflow-output-composer" aria-label="Add outputs to Generation Order">
+          <div className="english-workflow-output-composer-row" aria-label="Applicable Prompt resource outputs">
+            {availableContractSectionPrompts.map((prompt) => <button type="button" key={prompt.id} disabled={busyAction !== ""} title={`${prompt.classificationId || "Unclassified"} · ${prompt.label || prompt.id}`} onClick={() => addGenerationOutput(prompt.buttonName, prompt.id)}>+ {prompt.buttonName}</button>)}
+            <button type="button" className="english-workflow-group-output" disabled={busyAction !== ""} title="Create and select a simultaneous-generation group" onClick={() => addGenerationOutput("group")}>[+group]</button>
+          </div>
+          {!availableContractSectionPrompts.length && <small>No effective Prompt resources declare applicability <code>{CONTRACT_SECTION_APPLICABILITY}</code>.</small>}
+        </div>
+        <ol>{generationOrder.map((entry, index) => <GenerationOrderItem key={entry.id} entry={entry} ordinal={`${index + 1}`} index={index} siblingCount={generationOrder.length} selectedGroupId={selectedGroupId} busy={busyAction !== ""} prompts={promptChoices} models={modelChoices} onSelectGroup={(id) => setSelectedGroupId((current) => current === id ? null : id)} onRunEntry={(entry, ordinal) => void analyze([entry], entry.name === "group" ? `Run Group ${ordinal}` : `Quick Call ${entry.name} ${ordinal}`, entry.modelId || selectedModel)} onShuffleGroup={shuffleGenerationGroup} onCopyGroup={copyGenerationGroup} onClearGroup={clearGenerationGroup} onPeers={setGenerationEntryPeers} onUpdates={setGenerationEntryUpdates} onPrompt={setGenerationEntryPrompt} onModel={setGenerationEntryModel} onRotate={rotateGenerationEntry} onRemove={removeGenerationEntry} />)}</ol>
+        <div className="english-workflow-order-actions"><button type="button" disabled={busyAction !== "" || generationOrder.length < 2} onClick={() => setGenerationOrder((current) => shuffledGenerationOrder(current))}>Shuffle order</button><button type="button" disabled={busyAction !== "" || generationOrder.length === 0} onClick={() => { setGenerationOrder([]); setSelectedGroupId(null); }}>Clear order</button></div>
+        <small>Analyze follows the full sequence. Any named row title runs that step as a quick call; [group] runs only that group. Prompt and Model Override routing is saved with every occurrence in <code>{generationOrderPath}</code>.</small>
+      </fieldset>
+      <button type="button" disabled={busyAction !== "" || !description.trim() || !contractOperation || !hasGenerativeStep(generationOrder)} onClick={() => void analyze()}>{busyAction === "analyze" ? "Analyzing and saving…" : "⌕ Analyze & Save"}</button>
+      <button type="button" disabled={busyAction !== "" || !analysisContract} onClick={plan}>▦ Plan Memory &amp; Values</button>
+      <button type="button" className="primary" disabled={busyAction !== "" || !operation || !description.trim() || !analysisContract || !memoryPlanned} onClick={() => void generate()}>{busyAction === "generate" ? "Generating…" : "✦ Generate Draft"}</button>
+      {message && <div className={phase === "error" ? "english-workflow-message error" : "english-workflow-message"}>{message}</div>}
+    </div>,
+  });
+
+  const contractSectionSurface = (member: WorkflowPageMemberDefinition): WorkflowPageMemberSurface => {
+    const section = String(member.options?.section || member.mode || "summary") as "summary" | "outputs" | "rules";
+    const values = section === "summary" ? [contract.summary] : contract[section];
+    return {
+      value: analysisContract ? `${values.length} generated ${section === "summary" ? "summary" : section}` : String(member.options?.emptyState || "Waiting for analysis"),
+      baseClass: "english-workflow-contract-panel",
+      scrollSize: "190px",
+      content: section === "summary" ? <p>{contract.summary}</p> : <ul>{values.map((item, index) => <li key={`${index}:${item}`}>{item}</li>)}</ul>,
+    };
+  };
+
+  const registry: WorkflowPageComponentRegistry = {
+    LoadTextDocuments: () => ({
+      value: workflow.generation?.englishDescriptionPath || "No description resource",
+      baseClass: "english-workflow-panel english-workflow-specification",
+      content: <LoadTextDocuments workspaceId={workspaceId} defaultFilter=".md|.txt" preferredPath={workflow.generation?.englishDescriptionPath || ""} preferredContent={description} savedPreferredContent={savedDescription} disabled={busyAction !== ""} onPreferredContentChange={onDescriptionChange} onSavePreferredContent={onSaveDescription} onActiveDocumentChange={(content, path) => { if (path === workflow.generation?.englishDescriptionPath) onDescriptionChange(content); }} />,
+    }),
+    WorkflowResourceEditor: (member) => member.mode === "candidate" ? ({
+      value: `${draft?.steps.length || 0} draft steps`,
+      detail: validationErrors ? `${validationErrors.length} validation issues` : "Awaiting validation",
+      content: <section className="english-workflow-preview"><header><span>PREVIEW: {draft?.steps.length || 0} STEPS</span><button type="button" onClick={onOpenWorkflow}>Open Workflow Editor</button></header>{!includesOutput("workflow") ? <p>Add Workflow or a complete group to Generation Order to display the candidate.</p> : workflowSteps(draft, <p>No steps generated yet.</p>)}{draft && jsonDetail(draft)}</section>,
+    }) : ({
+      value: `${workflow.steps.length} existing steps`,
+      detail: workflowPath,
+      content: <><button type="button" onClick={onOpenWorkflow}>Open Rich Workflow Editor</button>{workflowSteps(workflow, <p>No existing workflow steps.</p>)}{jsonDetail(workflow)}</>,
+    }),
+    WorkflowGenerationComposer: composerSurface,
+    GenerationOrderHistory: () => ({
+      value: `${generationSteps.length} recorded actions`,
+      content: <section className="english-workflow-progress" aria-label="Generation Order"><span>GENERATION ORDER · BUTTON PRESS HISTORY</span>{generationSteps.length ? <ol>{generationSteps.map((step, index) => <li className="complete" key={step.id}><i>{index + 1}</i><div><b>{step.action}</b><span>{step.outputs.join(" · ")}</span><small>{step.detail}</small></div></li>)}</ol> : <p>No generation buttons pressed yet. This list records the actual order and outputs.</p>}</section>,
+    }),
+    GenerationOrderTrials: () => ({
+      value: contractTrials.length ? `${contractTrials.length} one-call trials` : "No trials yet",
+      detail: "Compare contract and Workflow quality across generation orders",
+      baseClass: "english-workflow-contract-panel",
+      scrollSize: "240px",
+      content: contractTrials.length ? <ol className="english-workflow-trials">{contractTrials.map((trial) => <li key={trial.id}><b>{trial.score}/100</b><span>{trial.requestedOrder.join(" → ")}</span><small>{trial.requestedSteps.map(generationStepSummary).join(" · ")} · {trial.checklistCount} checks · {trial.memoryCount} memory · {trial.workflowSteps} workflow steps · {trial.validationIssues} validation issues · {trial.modelId}</small></li>)}</ol> : <p>No generation order trials have been run.</p>,
+    }),
+    GenerationContractSection: contractSectionSurface,
+    MemoryValuesPlanner: () => ({
+      value: memoryPlanned ? `${displayedValues.length} planned values` : analysisContract ? `${contract.memory.length} analyzed candidates` : "Waiting for analysis",
+      baseClass: "english-workflow-contract-panel",
+      content: memoryPlanned ? <ul>{displayedValues.map((value) => <li key={value.id}><code>{value.label || value.id}</code><span>{value.datatype || "Any"}</span></li>)}</ul> : analysisContract ? <ul>{contract.memory.map((value) => <li key={value.name}><code>{value.name}</code><span>{value.datatype}</span></li>)}</ul> : <p>Analyze creates candidate memory; Plan Memory &amp; Values turns it into explicit runtime values.</p>,
+    }),
+    AcceptanceChecklist: () => ({
+      value: analysisContract ? `${contract.checklist.length} generated checks` : "Waiting for analysis",
+      baseClass: "english-workflow-contract-panel",
+      content: <><ul className="english-workflow-checklist">{contract.checklist.map((item, index) => <li key={`${index}:${item}`}><input type="checkbox" checked={phase === "validated"} readOnly /><span>{item}</span></li>)}</ul>{validationErrors && <div className={validationErrors.length ? "contract-validation bad" : "contract-validation good"}>{validationErrors.length ? validationErrors.join("\n") : "Backend workflow validation passed."}</div>}</>,
+    }),
+    WorkflowValidationControls: () => ({
+      value: validationErrors === null ? "Not validated" : validationErrors.length ? `${validationErrors.length} issues` : "Passed",
+      content: <div className="english-workflow-apply"><button type="button" disabled={busyAction !== "" || !draft?.steps.length} onClick={() => void validateDraft()}>{busyAction === "validate" ? "Validating…" : "Validate Draft"}</button><small>Runs the backend Workflow validator against the current generated draft.</small></div>,
+    }),
+    WorkflowApplyControls: () => ({
+      value: draftReadyToApply ? "Validated draft ready" : "Waiting for validated draft",
+      content: <div className="english-workflow-apply"><button type="button" disabled={busyAction !== "" || !draftReadyToApply || !draft?.steps.length || Boolean(validationErrors?.length)} onClick={() => void apply()}>{busyAction === "apply" ? "Applying…" : "Apply Validated Draft"}</button><small>Experimental contract trials never enable Apply. Only a successfully validated Generate Draft result can be written.</small></div>,
+    }),
+    ResourceSourceEditor: (member) => ({
+      value: `${member.resource?.id || pageDefinition?.id}.workflow_page.json`,
+      detail: "Resolved three-column page JSON",
+      baseClass: "english-workflow-panel english-workflow-page-source",
+      content: pageDefinition ? <WorkflowPageSourceEditor workspaceId={workspaceId} pageId={member.resource?.id || pageDefinition.id} disabled={busyAction !== ""} onSaved={onPageDefinitionSaved} /> : <p>No page specification is loaded.</p>,
+    }),
+    PromptResourceDetail: () => ({ value: selectedPrompt?.id || "No Prompt selected", content: selectedPrompt ? jsonDetail(selectedPrompt) : <p>Select or add a Prompt in Generation Order to inspect it here.</p> }),
+    OperationResourceDetail: () => ({ value: operation?.id || contractOperation?.id || "No Operation selected", content: operation || contractOperation ? <><button type="button" onClick={onOpenWorkflow}>Open canonical rich editors</button>{jsonDetail(operation || contractOperation)}</> : <p>No authoring Operation is available.</p> }),
+    ModelResourceDetail: () => ({ value: selectedModelRecord ? modelOptionLabel(selectedModelRecord) : "Inherited model", content: selectedModelRecord ? jsonDetail(selectedModelRecord) : <p>The system and Operation model-resolution policy will choose the model.</p> }),
+    WorkflowSchemaInspector: () => ({ value: "Workflow + step contract", content: jsonDetail({ kind: "workflow", required: ["id", "steps"], stepRequired: ["id", "label", "kind", "operation", "dependsOn", "inputs", "outputs"], stepOptional: ["parameters", "when", "while", "foreach", "branch", "maxIterations", "metadata"] }) }),
+    WorkflowInvocationInspector: () => ({ value: phase, detail: busyAction || "idle", content: jsonDetail({ phase, busyAction: busyAction || null, message, validationErrors, draftReadyToApply, generationSteps }) }),
+  };
+
+  if (!pageDefinition) return <div className="studio-empty">Generate Workflow requires a filesystem workflow_page specification.</div>;
+
+  return <WorkflowPageHost
+    definition={pageDefinition}
+    componentRegistry={registry}
+    pageClassName="english-workflow-page"
+    header={<header className="english-workflow-titlebar"><div><span>{pageDefinition.label.toUpperCase()}</span><h1>{workflow.label || workflow.id}</h1></div><div className="english-workflow-runtime-status"><span>Runtime: Local</span><i /><b>{operation ? "Authoring Operation Ready" : "Authoring Operation Missing"}</b></div></header>}
+    footer={<footer className="english-workflow-statusbar"><span><i /> Workspace: {workspaceLabel}</span><span>Mode: Build</span><span>Workflow: {workflowPath}</span><span>AtomSpace: default</span></footer>}
+  />;
+
 }

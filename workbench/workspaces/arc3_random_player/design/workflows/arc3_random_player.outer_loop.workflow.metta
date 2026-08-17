@@ -3,6 +3,13 @@
   (id arc3_random_player.outer_loop)
   (label "ARC3 Random Player Outer Loop")
   (description "A reusable learning-tree topology that plays and displays one move at a time, repeating until the user says they have seen enough.")
+  (generation (
+    (operation workflow.populate_from_english)
+    (englishSpecificationPrompt arc3_random_player.english_workflow_specification)
+    (englishDescriptionPath docs/ARC3_RANDOM_PLAYER_WORKFLOW_ENGLISH.md)
+    (operationCategories ([] workflow-language))
+    (preflightRequired true)
+  ))
   (inputs (
     (mode Text)
     (move_limit Number)

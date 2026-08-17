@@ -3,6 +3,12 @@
   (id message_to_microatoms)
   (label "Message to MicroAtoms")
   (description "Capture an OmegaClaw exchange, stage its smallest meaningful facts, review annotations, and persist a provenance-bearing micro-atom record.")
+  (generation (
+    (operation workflow.populate_from_english)
+    (englishDescriptionPath docs/WORKFLOW_DESCRIPTION.md)
+    (operationCategories ([] workflow-language))
+    (preflightRequired true)
+  ))
   (inputs (
     (message Object)
     (conversation_context Object)

@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 
@@ -5,24 +6,32 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_english_workflow_page_uses_real_resources_and_native_accordion_stacks() -> None:
-    page = (ROOT / "workbench" / "frontend" / "src" / "components" / "EnglishWorkflowPage.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "workbench" / "frontend" / "src" / "components" / "WorkflowGenerationRuntime.tsx").read_text(encoding="utf-8")
+    host = (ROOT / "workbench" / "frontend" / "src" / "components" / "WorkflowPageHost.tsx").read_text(encoding="utf-8")
     shell = (ROOT / "workbench" / "frontend" / "src" / "pages" / "FilesystemWorkbenchPage.tsx").read_text(encoding="utf-8")
 
-    assert 'label: "Workflows", view: "canvas"' in shell
-    assert '>\n              English Generation\n            </button>' in shell
-    assert 'view === "englishWorkflow"' in shell
-    assert 'view === "englishWorkflow"' in shell
-    assert page.count("<ThreeStateAccordionStack") == 3
-    assert 'id="english-workflow-left-stack"' in page
-    assert 'id="english-workflow-center-stack"' in page
-    assert 'id="english-workflow-right-stack"' in page
+    definition = (ROOT / "workbench/workspaces/shared_library_system/design/workflow_pages/generate_workflow.workflow_page.json").read_text(encoding="utf-8")
+    assert '"id": "workbench.generate_workflow"' in definition
+    assert '"label": "Generate Workflow"' in definition
+    assert '"menuPlacement": "first"' in definition
+    assert '"renderer": "workflow_generation_runtime"' in definition
+    assert 'snapshot?.workflowPages' in shell
+    assert 'pageDefinition={workflowPageForView}' in shell
+    assert "WorkflowGenerationRuntime" in shell
+    assert "EnglishWorkflowPage" not in shell
+    assert "componentRegistry={registry}" in page
+    assert "<WorkflowPageHost" in page
+    assert "orderedColumns.map" in host
+    assert "column.members.map" in host
+    assert "componentRegistry[member.component]" in host
+    assert "<ThreeStateAccordionStack" in host
     assert "/model-selection" in page
     assert "/operations/${encodeURIComponent(contractOperation.id)}/invoke" in page
     assert "/api/engine/workflows/validate" in page
 
 
 def test_generation_order_is_one_call_audited_and_selectively_revisable() -> None:
-    page = (ROOT / "workbench" / "frontend" / "src" / "components" / "EnglishWorkflowPage.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "workbench" / "frontend" / "src" / "components" / "WorkflowGenerationRuntime.tsx").read_text(encoding="utf-8")
 
     assert '"summary", "memory", "checklist", "outputs", "rules", "englishsteps", "steps", "workflow", "libops", "matchops", "inventops", "codeops", "promptops", "libdt", "matchdt", "inventdt", "codedt", "libwf", "matchwf", "inventwf", "codewf"' in page
     assert 'summary: "workflow.generation.summary"' in page
@@ -114,7 +123,7 @@ def test_generation_order_is_one_call_audited_and_selectively_revisable() -> Non
 
 
 def test_analyze_runs_and_persists_the_composed_generation_sequence() -> None:
-    page = (ROOT / "workbench" / "frontend" / "src" / "components" / "EnglishWorkflowPage.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "workbench" / "frontend" / "src" / "components" / "WorkflowGenerationRuntime.tsx").read_text(encoding="utf-8")
     workflow = (ROOT / "workbench" / "workspaces" / "generate_count_to_ten" / "design" / "workflows" / "generate_count_to_ten.workflow.metta").read_text(encoding="utf-8")
 
     assert 'generationOrderPath || "docs/WORKFLOW_GENERATION_ORDER.txt"' in page
@@ -190,10 +199,87 @@ def test_generation_contract_sections_have_matching_shared_prompts() -> None:
 
 
 def test_experimental_candidate_cannot_be_applied() -> None:
-    page = (ROOT / "workbench" / "frontend" / "src" / "components" / "EnglishWorkflowPage.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "workbench" / "frontend" / "src" / "components" / "WorkflowGenerationRuntime.tsx").read_text(encoding="utf-8")
 
     assert "setDraftReadyToApply(false)" in page
     assert "setDraftReadyToApply(errors.length === 0)" in page
     assert "!draftReadyToApply" in page
     assert "Experimental contract trials never enable Apply" in page
     assert "withoutInventedNamespace" in page
+
+
+def test_english_workflow_entry_refreshes_a_missing_description_binding() -> None:
+    shell = (ROOT / "workbench" / "frontend" / "src" / "pages" / "FilesystemWorkbenchPage.tsx").read_text(encoding="utf-8")
+
+    assert 'view !== "englishWorkflow"' in shell
+    assert "next.workflows.find((row) => row.path === workflowPath)" in shell
+    assert "next.workflows.find((row) => row.document?.id === workflow.id)" in shell
+    assert "setWorkflowSource(JSON.stringify(selected.document, null, 2))" in shell
+
+
+def test_generate_workflow_exposes_the_resolved_page_specification_json() -> None:
+    page = (ROOT / "workbench/frontend/src/components/WorkflowGenerationRuntime.tsx").read_text(encoding="utf-8")
+    definition = (ROOT / "workbench/workspaces/shared_library_system/design/workflow_pages/generate_workflow.workflow_page.json").read_text(encoding="utf-8")
+
+    assert "ResourceSourceEditor: (member)" in page
+    assert "<WorkflowPageSourceEditor" in page
+    assert "pageId={member.resource?.id || pageDefinition.id}" in page
+    assert '"component": "ResourceSourceEditor"' in definition
+    assert '"kind": "workflow_page"' in definition
+    assert '"id": "workbench.generate_workflow"' in definition
+
+
+def test_generate_workflow_page_definition_designs_every_column_member() -> None:
+    definition = json.loads(
+        (
+            ROOT
+            / "workbench/workspaces/shared_library_system/design/workflow_pages/generate_workflow.workflow_page.json"
+        ).read_text(encoding="utf-8")
+    )
+    columns = {column["id"]: column for column in definition["layout"]["columns"]}
+
+    assert list(columns) == ["left", "center", "right"]
+    assert columns["left"]["role"] == "data"
+    assert columns["center"]["role"] == "authoring"
+    assert columns["right"]["role"] == "details"
+
+    members = {
+        column_id: {member["id"]: member for member in column["members"]}
+        for column_id, column in columns.items()
+    }
+    assert all(
+        isinstance(member, dict) and member.get("component")
+        for column in columns.values()
+        for member in column["members"]
+    )
+
+    assert members["left"]["english_specification"]["component"] == "LoadTextDocuments"
+    assert members["left"]["existing_workflow"]["component"] == "WorkflowResourceEditor"
+    assert members["right"]["generate_workflow_page_source"]["initialDisplayMode"] == "strip"
+
+    composer = members["center"]["generation_composer"]
+    assert composer["component"] == "WorkflowGenerationComposer"
+    assert composer["operation"] == "workflow.analyze_generation_contract"
+    assert composer["options"]["modelOptionLabel"] == "backend_and_model"
+    assert composer["inputs"]["effectiveOperationCatalog"] == "effective_operation_catalog"
+    assert composer["inputs"]["effectiveDatatypeCatalog"] == "effective_datatype_catalog"
+    assert composer["inputs"]["effectiveWorkflowCatalog"] == "effective_workflow_catalog"
+    assert composer["inputs"]["effectivePromptCatalog"] == "effective_prompt_catalog"
+    assert members["left"]["workflow_preview"]["options"]["saveDirectly"] is False
+    assert members["center"]["validate_workflow"]["component"] == "WorkflowValidationControls"
+    assert members["center"]["apply_workflow"]["options"]["requireBackendValidation"] is True
+
+    assert members["left"]["order_trials"]["component"] == "GenerationOrderTrials"
+    assert members["left"]["task_summary"]["binding"] == "generation_contract.summary"
+    assert members["left"]["required_memory"]["options"]["combineWithExistingPlan"] is True
+    assert members["left"]["acceptance_checklist"]["inputs"]["validation"] == "workflow_validation"
+    assert members["left"]["output_requirements"]["binding"] == "generation_contract.outputs"
+    assert members["left"]["validation_rules"]["binding"] == "generation_contract.rules"
+    assert [member["component"] for member in columns["right"]["members"]] == [
+        "ResourceSourceEditor",
+        "PromptResourceDetail",
+        "OperationResourceDetail",
+        "ModelResourceDetail",
+        "WorkflowSchemaInspector",
+        "WorkflowInvocationInspector",
+    ]

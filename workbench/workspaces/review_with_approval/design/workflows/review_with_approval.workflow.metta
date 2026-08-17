@@ -2,6 +2,12 @@
   (id review_with_approval)
   (label "Review with approval")
   (description "Copies a payload, pauses for a real human approval, then emits the approved result.")
+  (generation (
+    (operation workflow.populate_from_english)
+    (englishDescriptionPath docs/WORKFLOW_DESCRIPTION.md)
+    (operationCategories ([] workflow-language))
+    (preflightRequired true)
+  ))
   (inputs (
     (payload Any)
   ))
