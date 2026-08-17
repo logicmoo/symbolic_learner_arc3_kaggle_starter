@@ -257,13 +257,11 @@ Phase 3 implements learning and prediction over the persistent objects and evide
 
 ## Stable learner boundary
 
-- [ ] **Partial** Define a stable, versioned data contract from object perception and memory to the Game Object Learner.  
-  Existing evidence: `GameObjectLearnerPayload`, result records, plugin interface.  
-  Remaining: freeze serialized schema and build real Phase 2 payloads.
+- [x] Define a stable, versioned data contract from object perception and memory to the Game Object Learner.
+  Evidence: versioned `GameObjectLearnerPayload`, lossless dictionary serialization, result records, and the plugin interface. `Phase2LearnerPayloadBuilder` derives the contract from exact semantic observations and encounters without leaking debugger objects.
 
-- [ ] **Partial** Provide objects, properties, relationships, correspondences, state differences, actions, encounter history, evidence, confidence, and provenance.  
-  Existing evidence: fields and provider contracts.  
-  Remaining: real data wiring.
+- [ ] **Partial** Provide objects, properties, relationships, correspondences, state differences, actions, encounter history, evidence, confidence, and provenance.
+  Existing evidence: the real Phase 2 payload builder includes observation/encounter IDs, normalized instances and relationships, stable/candidate identities, action-bearing changed properties, Turtle and source artifacts, competing proposals, direct changes, evidence, confidence, and provenance. Validation enforces encounter, Turtle-artifact, and evidence referential integrity. Remaining: validate registry identity and all provenance source references against durable stores.
 
 - [x] Keep the learner independent of debugger and perception internals while returning normalized artifacts the debugger can display.  
   Evidence: plugin and normalized payload/result boundaries.
@@ -271,9 +269,8 @@ Phase 3 implements learning and prediction over the persistent objects and evide
 - [x] Add interface validation and structured errors.  
   Evidence: `IntegrationValidator`, `IntegrationError`.
 
-- [ ] **Partial** Add integration tests and example workflows.  
-  Existing evidence: synthetic Python and Prolog pipeline tests.  
-  Remaining: real ARC3/Phase 2 integration workflow.
+- [ ] **Partial** Add integration tests and example workflows.
+  Existing evidence: synthetic Python and Prolog pipeline tests plus a real semantic-store-to-learner handoff test covering serialization and linked relationships, correspondence, evidence, action, Turtle artifact, encounter, and provenance data. Remaining: connect the live `Arc3Runner` transition callback to a learner plugin.
 
 ## Transformations, rules, critiques, and ranking
 

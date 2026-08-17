@@ -177,18 +177,18 @@ Deliverables: [Phase 3 checklist](SOW_DELIVERABLES.md#phase-3--game-object-learn
 
 ## Freeze the learner boundary
 
-- [ ] Freeze the serialized `GameObjectLearnerPayload` schema and version.
-- [ ] Include semantic observation and encounter IDs.
-- [ ] Include stable identities, properties, relationships, correspondences, and direct differences.
-- [ ] Include action information, Turtle-program references, artifacts, history, evidence, confidence, and provenance.
-- [ ] Include competing object and correspondence interpretations where relevant.
-- [ ] Exclude debugger implementation objects such as `StateNode`, terminal controls, and adapter instances.
-- [ ] Add structured validation errors and serialization compatibility tests.
+- [x] Freeze the serialized `GameObjectLearnerPayload` schema and version.
+- [x] Include semantic observation and encounter IDs.
+- [x] Include stable identities, properties, relationships, correspondences, and direct differences.
+- [x] Include action information, Turtle-program references, artifacts, history, evidence, confidence, and provenance.
+- [x] Include competing object and correspondence interpretations where relevant.
+- [x] Exclude debugger implementation objects such as `StateNode`, terminal controls, and adapter instances.
+- [x] Add structured validation errors and serialization compatibility tests.
 - [ ] Validate source, Turtle-program, identity, evidence, and provenance references.
 
 ## Connect real Phase 2 transitions
 
-- [ ] Build learner payloads from real Phase 2 objects, correspondences, and semantic encounters.
+- [x] Build learner payloads from real Phase 2 objects, correspondences, and semantic encounters.
 - [ ] Connect `Arc3Runner` transitions to `PipelineGameObjectLearnerPlugin` through normalized payloads.
 - [ ] Connect Prolog providers to registry, objects, differences, similarities, rules, transcripts, and evidence.
 - [ ] Analyze actual before/action/after object transitions.
@@ -230,8 +230,8 @@ Deliverables: [Phase 3 checklist](SOW_DELIVERABLES.md#phase-3--game-object-learn
 
 ## Phase 3 tests and demonstrations
 
-- [ ] Payload validation and structured errors.
-- [ ] Real Phase 2-to-Phase 3 handoff.
+- [x] Payload validation and structured errors.
+- [x] Real Phase 2-to-Phase 3 handoff.
 - [ ] Candidate transformation induction from actual object deltas.
 - [ ] Rival interpretations with assumptions, critiques, positive evidence, and negative evidence.
 - [ ] Learned transformation applied to a new case.

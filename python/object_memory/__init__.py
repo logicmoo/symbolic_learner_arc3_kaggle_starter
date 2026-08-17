@@ -9,12 +9,14 @@ from .adapters import GridAdapter, GridPerceptionBatch, PerceptionAdapter
 from .capture import SemanticGridCaptureObserver, standard_semantic_grid_observer
 from .forms import CellLogoForm, FitResult, GenerativeForm
 from .integration import (
+    GAME_OBJECT_LEARNER_SCHEMA_VERSION,
     GameObjectLearnerPayload,
     GameObjectLearnerPlugin,
     GameObjectLearnerResult,
     GameObjectLearnerSchema,
     IntegrationError,
     IntegrationValidator,
+    Phase2LearnerPayloadBuilder,
     PipelineGameObjectLearnerPlugin,
 )
 from .learning import (
@@ -95,6 +97,7 @@ __all__ = [
     "ExecutionMode",
     "FitResult",
     "GameLearningPipeline",
+    "GAME_OBJECT_LEARNER_SCHEMA_VERSION",
     "GameObjectLearnerPayload",
     "GameObjectLearnerPlugin",
     "GameObjectLearnerResult",
@@ -117,6 +120,7 @@ __all__ = [
     "ObjectChange",
     "OutcomeChannel",
     "PerceptionAdapter",
+    "Phase2LearnerPayloadBuilder",
     "PipelineGameObjectLearnerPlugin",
     "PredictionEvaluator",
     "PredictionGrade",
