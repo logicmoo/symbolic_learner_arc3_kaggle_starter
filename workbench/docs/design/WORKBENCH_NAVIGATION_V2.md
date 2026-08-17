@@ -4,30 +4,43 @@
 
 ## Purpose
 
-Navigation V2 organizes the active filesystem-backed workbench by lifecycle without replacing existing editors. `workbench/frontend/src/App.tsx` remains the authority for the active page.
+Navigation V2 organizes the active filesystem-backed workbench by purpose without replacing existing editors. `workbench/frontend/src/App.tsx` remains the authority for the active page.
 
 ## Navigation Contract
 
 | Group | Item | Backing surface |
 | --- | --- | --- |
-| Design | Goals | `GoalPlanLibraryEditor` with goal variants |
-| Design | Plans | `GoalPlanLibraryEditor` with plan variants |
-| Design | Workflows | Existing workflow canvas and source editor |
-| Design | Operations | Existing `OperationLibraryEditor` |
-| Design | Datatypes | Existing `DataCatalogPanel` |
-| Design | AtomSpaces | Hierarchical filesystem AtomSpace declarations and alternatives |
-| Design | Prompts | Existing `PromptLibraryEditor` |
-| Design | Models | Existing `LlmModelsEditor` |
+| Workspace | Overview | Workspace purpose, inheritance, and resource totals |
+| Workspace | Goals | `GoalPlanLibraryEditor` with goal alternatives |
+| Workspace | Planning | Planning strategies used by human, PDDL, LLM, or rule planners |
+| Workspace | Workflows | Executable plans in the existing workflow canvas/editor |
+| Capabilities | Operations | Existing `OperationLibraryEditor` |
+| Capabilities | Source Code | Prompts plus Prolog, MeTTa, and Python implementation source |
+| Capabilities | Systems | Shell, runtime, MCP, and implementation-provider configuration |
+| Capabilities | Models | Existing backend/model/model-preset editor |
+| Capabilities | Datatypes | Existing `DataCatalogPanel` |
+| Capabilities | Policies | Filesystem policy specifications |
+| Knowledge | Data | Workspace-held images, datasets, and other values |
+| Knowledge | AtomSpaces | Hierarchical AtomSpace declarations and alternatives |
+| Knowledge | Artifacts | Produced and imported typed artifacts |
 | Runtime | Goal Runs | Durable Goal/Plan/Context-to-workflow pursuit records |
-| Runtime | Workflow Runs | Persistent workflow-engine history |
-| Runtime | Execs | Step attempts across persistent runs |
+| Runtime | Executions | Workflow runs and operation attempts |
 | Runtime | Events | Durable engine event history |
 | Runtime | States | Persisted workflow artifacts/state values |
-| Runtime | Contexts | Resolved AtomSpace bindings captured for Goal and Workflow Runs |
 | Runtime | Logs | Persistent operation logs |
+| System | Docs | Repository documentation and exposed filesystem files |
 | System | Model Policy | Filesystem registry, policy, health, and eligibility UI |
 | System | Benchmarks | Executable filesystem benchmark definitions/results |
+| System | Processes | Workbench-managed service and process monitor |
 | System | Settings | Existing workspace setup surface |
+
+## System model
+
+The workbench is a blackboard where a human and an AI jointly construct and control a tool-using workflow. Goals state desired outcomes. Planning strategies guide a human, PDDL planner, LLM, or rules engine. The resulting Workflow is the executable plan and its steps invoke Operations.
+
+Operations describe what can be done. Their implementations describe how it is done by binding source code to a configured system: an LLM and Prompt, SWI-Prolog source, MeTTa, Python, a shell, or an MCP service. Models are therefore capability configuration, while Prompts are maintained alongside other implementation source.
+
+Data, AtomSpaces, and Artifacts are shared knowledge rather than design instructions or runtime history. Runtime pages show what actually happened: executions, events, states, and logs.
 
 ## Workspace Composition
 

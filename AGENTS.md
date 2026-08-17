@@ -167,23 +167,39 @@ The new left navigation is:
 
 
 
-DESIGN
+WORKSPACE
+
+\- Overview
 
 \- Goals
 
-\- Plans
+\- Planning
 
 \- Workflows
 
+
+CAPABILITIES
+
 \- Operations
+
+\- Source Code (Prompts, Prolog, MeTTa, and Python)
+
+\- Systems
+
+\- Models (backends, models, and presets)
 
 \- Datatypes
 
+\- Policies
+
+
+KNOWLEDGE
+
+\- Data
+
 \- AtomSpaces
 
-\- Prompts
-
-\- Models
+\- Artifacts
 
 
 
@@ -191,15 +207,11 @@ RUNTIME
 
 \- Goal Runs
 
-\- Workflow Runs
-
-\- Execs
+\- Executions
 
 \- Events
 
 \- States
-
-\- Contexts
 
 \- Logs
 
@@ -210,6 +222,8 @@ SYSTEM
 \- Model Policy
 
 \- Benchmarks
+
+\- Processes
 
 \- Settings
 
@@ -223,9 +237,9 @@ Reuse existing editors rather than duplicating them:
 
 \- Datatypes -> existing three-level DataCatalogPanel editor
 
-\- Prompts -> existing hierarchical prompt editor
+\- Source Code -> prompt editor plus language-filtered Operation implementation editors
 
-\- Models -> existing backend/model/profile editor
+\- Models -> existing backend/model/model-preset editor
 
 \- Workflows -> existing workflow canvas and editor
 
