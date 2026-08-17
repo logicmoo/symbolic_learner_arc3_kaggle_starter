@@ -34,6 +34,7 @@ export function GoalPlanLibraryEditor({ workspaceId, family }: { workspaceId: st
   const specificationDirectory = family === "context" ? "design/atomspaces" : `design/${directory}`;
   const parentKind: BaseKind = family === "goal" ? "goal" : family === "plan" ? "planning_strategy" : "atomspace";
   const familyLabel = family === "goal" ? "Goal" : family === "plan" ? "Planning Strategy" : "AtomSpace";
+  const familyNoun = family === "context" ? "AtomSpace" : family;
   const [payload, setPayload] = useState<Payload | null>(null);
   const [openDocs, setOpenDocs] = useState<OpenDocument[]>([]);
   const [activeKey, setActiveKey] = useState<string | null>(null);
@@ -62,12 +63,12 @@ export function GoalPlanLibraryEditor({ workspaceId, family }: { workspaceId: st
 
   const newSpecification = () => {
     const id = `new_${family}`;
-    const document: Specification = { kind: parentKind, id, label: `New ${familyLabel}`, description: family === "plan" ? "Strategy for selecting, generating, or adapting an executable workflow (a PDDL plan in PDDL terminology)." : `Abstract ${family} specification.`, children: [], ...(family === "goal" ? { successCriteria: [] } : family === "plan" ? { goals: [] } : { bindings: [] }) };
+    const document: Specification = { kind: parentKind, id, label: `New ${familyLabel}`, description: family === "plan" ? "Strategy for selecting, generating, or adapting an executable workflow (a PDDL plan in PDDL terminology)." : `Abstract ${familyNoun} specification.`, children: [], ...(family === "goal" ? { successCriteria: [] } : family === "plan" ? { goals: [] } : { bindings: [] }) };
     open({ path: `${specificationDirectory}/${id}.${parentKind}.json`, source: workspaceId === "shared" ? "shared" : "workspace", workspaceId, document });
   };
   const newVariant = (parent: Specification) => {
     const id = `${parent.id}.alternative`;
-    const document: Variant = { kind: parentKind, id, parents: [parent.id], label: `${parent.label || parent.id} — Alternative`, description: `Concrete ${family} alternative.` };
+    const document: Variant = { kind: parentKind, id, parents: [parent.id], label: `${parent.label || parent.id} — Alternative`, description: `Concrete ${familyNoun} alternative.` };
     open({ path: `${specificationDirectory}/${slug(id)}.${parentKind}.json`, source: workspaceId === "shared" ? "shared" : "workspace", workspaceId, document });
   };
   const saveDoc = (doc: OpenDocument) => perform(async () => {

@@ -473,6 +473,13 @@ def test_goal_runs_use_durable_goal_plan_context_contract() -> None:
     assert "ADVANCED WORKFLOW INPUTS (JSON)" in component
 
 
+def test_atomspace_editor_uses_atomspace_language_for_new_resources() -> None:
+    component = (ROOT / "workbench" / "frontend" / "src" / "components" / "GoalPlanLibraryEditor.tsx").read_text(encoding="utf-8")
+    assert 'family === "context" ? "AtomSpace" : family' in component
+    assert "`Abstract ${familyNoun} specification.`" in component
+    assert "`Concrete ${familyNoun} alternative.`" in component
+
+
 def test_topbar_offers_persistent_workbench_themes() -> None:
     page = ACTIVE_PAGE.read_text(encoding="utf-8")
     styles = (ROOT / "workbench" / "frontend" / "src" / "styles" / "workbench.css").read_text(encoding="utf-8")
