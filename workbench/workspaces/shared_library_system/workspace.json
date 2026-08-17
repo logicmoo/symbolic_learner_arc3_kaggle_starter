@@ -3,6 +3,7 @@
   "id": "shared_library_system",
   "label": "Shared System Library",
   "description": "Editable reusable system resources inherited by ordinary workspaces.",
+  "workspaceType": "library",
   "metadata": {
     "role": "shared-system-library",
     "editable": true,

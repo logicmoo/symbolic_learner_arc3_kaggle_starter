@@ -70,6 +70,20 @@ def test_workspace_picker_explains_template_and_library_roles() -> None:
     assert "independentcopy" in compact
 
 
+def test_canonical_shared_workspaces_are_classified_as_libraries(monkeypatch) -> None:
+    workspaces_root = Path(__file__).resolve().parents[1] / "workbench" / "workspaces"
+    monkeypatch.setattr(workspace_api, "_workspace_roots", lambda: [workspaces_root])
+    workspace_api.invalidate_workspace_discovery()
+
+    discovered = {
+        item["id"]: item
+        for item in workspace_api.discover_workspaces(force=True, include_counts=False)
+    }
+
+    assert discovered["shared_library_system"]["workspaceType"] == "library"
+    assert discovered["shared_library_arc3"]["workspaceType"] == "library"
+
+
 def test_visual_learning_projects_are_disk_backed_and_chooser_discoverable(monkeypatch) -> None:
     workspaces_root = Path(__file__).resolve().parents[1] / "workbench" / "workspaces"
     expected = {
