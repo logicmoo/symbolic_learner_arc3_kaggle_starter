@@ -40,9 +40,10 @@ Workspace paths are lifecycle-first and then kind-specific:
 - `design/goals/`, `design/planning_strategies/`, and `design/atomspaces/`
 - `design/prompts/`
 - `design/backends/` and `design/models/`
+- `knowledge/data/` and `knowledge/artifacts/`
 - `runtime/goal_runs/`, `runtime/workflow_runs/`, `runtime/execs/`, `runtime/events/`, `runtime/states/`, `runtime/contexts/`, and `runtime/logs/`
 
-The reader accepts legacy root-level family directories for existing workspaces. New resources are saved under `design/<plural-kind>/`. Shared normally has no runtime records. `policies/` remains a deliberately mixed family, while `docs/` is outside the JSON resource hierarchy.
+The reader accepts legacy root-level family directories for existing workspaces. New specification resources are saved under `design/<plural-kind>/`. Shared normally has no runtime records. `knowledge/data/` holds imported or authored workspace values, while `knowledge/artifacts/` holds persisted outputs that can be inspected and reused. `policies/` remains a deliberately mixed family, while `docs/` is outside the JSON resource hierarchy.
 
 ## Inheritance and Overrides
 

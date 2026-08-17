@@ -41,7 +41,13 @@ def assert_resource_file_layout(path: Path, root: Path) -> None:
 
 
 def test_shared_uses_lifecycle_first_top_level_directories() -> None:
-    assert {path.name for path in SHARED.iterdir() if path.is_dir()} == {"design", "runtime", "policies", "docs"}
+    assert {path.name for path in SHARED.iterdir() if path.is_dir()} == {
+        "design",
+        "knowledge",
+        "runtime",
+        "policies",
+        "docs",
+    }
 
 
 def test_shared_design_metta_directories_match_declared_kinds() -> None:
@@ -57,7 +63,7 @@ def test_shared_runtime_contains_no_design_documents() -> None:
 
 
 def test_every_workspace_uses_lifecycle_first_resource_directories() -> None:
-    allowed = {"design", "runtime", "policies", "docs"}
+    allowed = {"design", "knowledge", "runtime", "policies", "docs"}
     for workspace in WORKSPACES.iterdir():
         if not workspace.is_dir() or workspace.name.startswith("."):
             continue

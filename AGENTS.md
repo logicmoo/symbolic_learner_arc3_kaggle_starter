@@ -285,6 +285,8 @@ Workspace resources use a lifecycle-first layout:
 
 \- `runtime/<plural-kind>/` for generated runs, execs, events, states, resolved contexts, and logs
 
+\- `knowledge/data/` and `knowledge/artifacts/` for workspace-held input values and persisted outputs
+
 \- `policies/` may remain a mixed policy, observation, job, event, and benchmark family
 
 \- `docs/` contains Markdown and is not a resource-kind directory
