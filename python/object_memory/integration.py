@@ -80,6 +80,24 @@ def _set_edit(before: Any, after: Any) -> Mapping[str, Any] | None:
     return {"remove": removed, "add": added} if removed or added else None
 
 
+def _relationship_edit(before: Any, after: Any) -> Mapping[str, Any] | None:
+    if not isinstance(before, (tuple, list)) or not isinstance(after, (tuple, list)):
+        return None
+    if not all(isinstance(item, Mapping) for item in (*before, *after)):
+        return None
+
+    def key(item: Mapping[str, Any]) -> str:
+        return json.dumps(
+            _plain(item), ensure_ascii=False, sort_keys=True, separators=(",", ":")
+        )
+
+    before_by_key = {key(item): _plain(item) for item in before}
+    after_by_key = {key(item): _plain(item) for item in after}
+    removed = [before_by_key[item] for item in sorted(before_by_key.keys() - after_by_key)]
+    added = [after_by_key[item] for item in sorted(after_by_key.keys() - before_by_key)]
+    return {"remove": removed, "add": added} if removed or added else None
+
+
 @dataclass(frozen=True)
 class GameObjectLearnerPayload:
     state_id: str
@@ -532,6 +550,31 @@ def phase2_transformation_learner() -> TransformationLearner:
                         ("ordering_semantics_are_not_preserved",),
                     )
                 )
+            relationship_edits = {
+                str(field): edit
+                for field, specification in (plain.get("properties") or {}).items()
+                if isinstance(specification, Mapping)
+                and "from" in specification
+                and "to" in specification
+                and (
+                    edit := _relationship_edit(
+                        specification["from"], specification["to"]
+                    )
+                )
+                is not None
+            }
+            if relationship_edits:
+                interpretations.append(
+                    (
+                        {
+                            **plain,
+                            "interpretation": "relationship_edit",
+                            "relationship_edits": relationship_edits,
+                        },
+                        ("relationship_change_is_symbolic",),
+                        ("relationship_targets_require_identity_validation",),
+                    )
+                )
             for interpretation, assumptions, critiques in interpretations:
                 encoded = json.dumps(
                     interpretation,
@@ -742,6 +785,34 @@ def phase2_rule_executor(
                             for item in edit.get("add") or ()
                             if item not in values
                         )
+                        replacement = tuple(values) if isinstance(result[field], tuple) else values
+                elif interpretation == "relationship_edit":
+                    edit = (effect.get("relationship_edits") or {}).get(field)
+                    if isinstance(edit, Mapping) and isinstance(result[field], (tuple, list)):
+                        removed = {
+                            json.dumps(
+                                _plain(item),
+                                ensure_ascii=False,
+                                sort_keys=True,
+                                separators=(",", ":"),
+                            )
+                            for item in edit.get("remove") or ()
+                        }
+                        values = [
+                            _plain(item)
+                            for item in result[field]
+                            if json.dumps(
+                                _plain(item),
+                                ensure_ascii=False,
+                                sort_keys=True,
+                                separators=(",", ":"),
+                            )
+                            not in removed
+                        ]
+                        for item in edit.get("add") or ():
+                            plain_item = _plain(item)
+                            if plain_item not in values:
+                                values.append(plain_item)
                         replacement = tuple(values) if isinstance(result[field], tuple) else values
                 result[str(field)] = replacement
         return result

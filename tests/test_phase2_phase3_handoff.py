@@ -420,3 +420,47 @@ def test_domain_generalizations_scale_toggle_and_edit_unseen_state() -> None:
         "other",
         "new",
     ]
+
+
+def test_relationship_edit_generalizes_attachment_to_unseen_state() -> None:
+    transition = TransitionRecord(
+        before_state_id="before",
+        action_or_event="ATTACH",
+        after_state_id="after",
+        changes=(
+            {
+                "kind": "relationship_changed",
+                "properties": {
+                    "relationships": {
+                        "from": [{"relation": "near", "target": "anchor"}],
+                        "to": [{"relation": "attached_to", "target": "anchor"}],
+                    }
+                },
+                "evidence_ids": ["attachment-evidence"],
+            },
+        ),
+    )
+    rules = phase2_rule_inducer().induce(
+        phase2_transformation_learner().learn(transition)
+    )
+    relationship_rule = next(
+        rule
+        for rule in rules
+        if rule.predicted_effects[0]["interpretation"] == "relationship_edit"
+    )
+    store = RuleStore()
+    store.store(relationship_rule)
+    unseen = {
+        "relationships": [
+            {"relation": "near", "target": "anchor"},
+            {"relation": "left_of", "target": "marker"},
+        ]
+    }
+
+    result = phase2_rule_executor(store, "ATTACH").apply(
+        relationship_rule.rule_id, unseen
+    )
+    assert result["relationships"] == [
+        {"relation": "left_of", "target": "marker"},
+        {"relation": "attached_to", "target": "anchor"},
+    ]
