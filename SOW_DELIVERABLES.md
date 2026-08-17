@@ -191,15 +191,16 @@ Phase 2 implements the semantic object layer behind the Phase 1 debugger. It use
 
 ## Residuals, duplicates, evidence, and confidence
 
-- [ ] **Open** Distinguish recognized or explained content from residual, potentially new object structure.
+- [x] Distinguish recognized or explained content from residual, potentially new object structure.
+  Evidence: `ResidualAnalyzer` excludes declared transformations, emits deterministic structured residuals for unexplained fields, tracks recurrence, and advances repeated structure from provisional to `commit_request` only through `ResidualGate`. Live capture, README inspection, action-tree replay, snapshots, and Prolog persistence retain every occurrence.
 
-- [ ] **Open** Prevent duplicate persistent storage when an existing object is recognized again.
+- [x] Prevent duplicate persistent storage when an existing object is recognized again.
 
-  Existing partial evidence: semantic store writes and merge/split decisions are idempotent by deterministic identity and reject conflicting reuse. Recognition-driven duplicate prevention remains open.
+  Evidence: semantic store writes, identity commits, residual occurrences, and merge/split decisions are idempotent by deterministic identity. Compatible repeat commits return the existing calibrated object, while conflicting reuse fails rather than overwriting memory.
 
 - [ ] **Partial** Accumulate positive and negative recognition evidence and provenance across the encounter history preserved by Phase 1.  
-  Existing evidence: `SingleWriter` accepts frozen positive/negative `EvidenceRecord` values, checks their subject, deduplicates stable evidence IDs, preserves base provenance, and derives confidence from signed weights independently of arrival order.
-  Remaining: durable encounter-linked recognition evidence and domain calibration against fixtures.
+  Existing evidence: `SingleWriter` accepts frozen positive/negative `EvidenceRecord` values, checks their subject, deduplicates stable evidence IDs, preserves base provenance, and derives confidence from signed weights independently of arrival order. Live encounter matching writes property-attributable evidence into node manifests and the durable Prolog backend.
+  Remaining: domain calibration against representative fixtures.
 
 - [ ] **Partial** Refine and calibrate confidence for object identity, correspondence, and competing interpretations.
   Existing evidence: deterministic Laplace-style confidence derived from attributable supporting and contradicting evidence, with event history and order-independence tests. Typed confidence-history records preserve every evidence and lifecycle transition across merge, split, demotion, tombstoning, and reversal; snapshots and the durable Prolog backend retain them across reloads.

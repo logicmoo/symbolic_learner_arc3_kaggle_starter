@@ -15,7 +15,7 @@ from .models import (
     ResidualCandidate,
     ResidualDisposition,
 )
-from .memory import SingleWriter
+from .memory import ResidualGate, SingleWriter
 from .store import SymbolicStore
 
 
@@ -309,6 +309,7 @@ class EncounterChangeSession:
     def __init__(self, store: SymbolicStore, matcher: InstanceMatcher | None = None) -> None:
         self.store = store
         self.matcher = matcher or InstanceMatcher()
+        self.residual_analyzer = ResidualAnalyzer()
 
     def detect(
         self,
@@ -371,7 +372,7 @@ class EncounterChangeSession:
         residuals = tuple(
             residual
             for proposal in proposals
-            for residual in ResidualAnalyzer().from_proposal(proposal)
+            for residual in self.residual_analyzer.from_proposal(proposal)
         )
         for residual in residuals:
             self.store.put_residual(residual)
@@ -380,6 +381,10 @@ class EncounterChangeSession:
 
 class ResidualAnalyzer:
     """Separate unexplained proposal structure from recognized transformations."""
+
+    def __init__(self, gate: ResidualGate | None = None) -> None:
+        self.gate = gate or ResidualGate()
+        self._recurrence: dict[tuple[str, str], int] = {}
 
     def from_proposal(self, proposal: MatchProposal) -> tuple[ResidualCandidate, ...]:
         allowed = set(proposal.allowed_transformations)
@@ -395,16 +400,22 @@ class ResidualAnalyzer:
                 transformation = "partial_visibility"
             if transformation in allowed:
                 continue
-            residuals.append(
-                ResidualCandidate.create(
-                    source_candidate_id=proposal.candidate_id,
-                    disposition=ResidualDisposition.PROVISIONAL,
-                    residual_length=1.0,
-                    structured=True,
-                    recurrence_count=1,
-                    provenance=(proposal.proposal_id, f"field:{field}"),
-                )
+            key = (proposal.candidate_id, field)
+            recurrence = self._recurrence.get(key, 0) + 1
+            self._recurrence[key] = recurrence
+            residual = ResidualCandidate.create(
+                source_candidate_id=proposal.candidate_id,
+                disposition=ResidualDisposition.PROVISIONAL,
+                residual_length=1.0,
+                structured=True,
+                recurrence_count=recurrence,
+                provenance=(
+                    proposal.proposal_id,
+                    f"field:{field}",
+                    f"recurrence:{recurrence}",
+                ),
             )
+            residuals.append(replace(residual, disposition=self.gate.evaluate(residual)))
         return tuple(residuals)
 
 

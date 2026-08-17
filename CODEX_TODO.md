@@ -868,3 +868,13 @@ Preserve the canonical checkout and its `codex/workbench-navigation-v2` branch.
   Preserve unexplained property changes as deterministic provisional residuals,
   persist and inspect them in live action trees, and round-trip them through
   semantic snapshots and the SWI-Prolog backend.
+- [x] Track structured residual recurrence without auto-committing identity.
+  Emit a distinct occurrence record each time, remain provisional initially,
+  and advance repeated unexplained structure to `commit_request` only through
+  the deterministic `ResidualGate`.
+- [x] Add the filesystem-backed `Visual Image Diff` page as three native
+  `ThreeStateAccordionStack` columns. Persist the supplied ACTION4 then
+  ACTION1 (up) image sequence as workspace assets and a sequence manifest;
+  split the former monolithic ARC3 analysis prompt into classified Prompt
+  resources; and initialize the composer from one ordered Prompt Profile group
+  while retaining independent `+ STEPS`, removal, and reordering controls.

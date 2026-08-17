@@ -31,9 +31,20 @@ def test_residual_analyzer_preserves_unexplained_structure() -> None:
         stored=InstanceParameters(appearance={"shape": "circle"}),
     )
 
-    residual = ResidualAnalyzer().from_proposal(proposal)[0]
+    analyzer = ResidualAnalyzer()
+    residual = analyzer.from_proposal(proposal)[0]
 
     assert residual.disposition is ResidualDisposition.PROVISIONAL
     assert residual.structured is True
     assert residual.recurrence_count == 1
-    assert residual.provenance == (proposal.proposal_id, "field:appearance.shape")
+    assert residual.provenance == (
+        proposal.proposal_id,
+        "field:appearance.shape",
+        "recurrence:1",
+    )
+
+    recurring = analyzer.from_proposal(proposal)[0]
+    assert recurring.residual_id != residual.residual_id
+    assert recurring.recurrence_count == 2
+    assert recurring.disposition is ResidualDisposition.COMMIT_REQUEST
+    assert recurring.provenance[-1] == "recurrence:2"
