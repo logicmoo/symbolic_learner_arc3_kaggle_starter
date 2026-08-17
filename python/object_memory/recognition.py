@@ -30,6 +30,12 @@ class InstanceMatcher:
             return "scale"
         if field == "appearance.color":
             return "recolor"
+        if field == "reflection":
+            return "reflection"
+        if field == "visibility":
+            return "partial_visibility"
+        if field == "noise_score":
+            return "noise"
         return "appearance_change"
 
     def compare(
@@ -55,6 +61,12 @@ class InstanceMatcher:
         compare_field("position", stored.position, current.position, "translation")
         compare_field("orientation", stored.orientation, current.orientation, "rotation")
         compare_field("scale", stored.scale, current.scale, "scale")
+        if stored.reflection is not None or current.reflection is not None:
+            compare_field("reflection", stored.reflection, current.reflection, "reflection")
+        if stored.visibility != 1.0 or current.visibility != 1.0:
+            compare_field("visibility", stored.visibility, current.visibility, "partial_visibility")
+        if stored.noise_score != 0.0 or current.noise_score != 0.0:
+            compare_field("noise_score", stored.noise_score, current.noise_score, "noise")
         appearance_keys = sorted({*stored.appearance, *current.appearance})
         for key in appearance_keys:
             before = stored.appearance.get(key)
@@ -64,7 +76,11 @@ class InstanceMatcher:
                 matched.append(field)
             else:
                 changed[field] = {"from": before, "to": after}
-                transformations.append("recolor" if key == "color" else "appearance_change")
+                transformations.append(
+                    "partial_visibility"
+                    if key not in current.appearance and current.visibility < stored.visibility
+                    else ("recolor" if key == "color" else "appearance_change")
+                )
         denominator = len(matched) + len(changed)
         similarity = len(matched) / denominator if denominator else 1.0
         allowed = tuple(
@@ -151,7 +167,25 @@ class RecognitionSession:
         latest: dict[str, InstanceParameters] = {}
         for encounter in self.store.encounters.records():
             if encounter.object_identity_id is not None:
-                latest[encounter.object_identity_id] = encounter.instance
+                previous = latest.get(encounter.object_identity_id)
+                current = encounter.instance
+                if previous is not None and (
+                    current.visibility < previous.visibility
+                    or current.noise_score > previous.noise_score
+                ):
+                    current = replace(
+                        previous,
+                        position=current.position or previous.position,
+                        supported_transformations=tuple(
+                            dict.fromkeys(
+                                (
+                                    *previous.supported_transformations,
+                                    *current.supported_transformations,
+                                )
+                            )
+                        ),
+                    )
+                latest[encounter.object_identity_id] = current
         return latest
 
     def propose(self, encounter_id: str) -> tuple[MatchProposal, ...]:
@@ -233,6 +267,13 @@ class CorrespondenceEvidenceBuilder:
         allowed = set(proposal.allowed_transformations)
         for field, change in sorted(proposal.changed_properties.items()):
             transformation = InstanceMatcher.change_transformation(field)
+            if (
+                transformation == "appearance_change"
+                and isinstance(change, Mapping)
+                and change.get("to") is None
+                and "partial_visibility" in allowed
+            ):
+                transformation = "partial_visibility"
             explained = transformation in allowed
             evidence.append(
                 EvidenceRecord.create(

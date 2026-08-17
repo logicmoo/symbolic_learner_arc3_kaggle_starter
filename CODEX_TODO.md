@@ -856,3 +856,7 @@ Preserve the canonical checkout and its `codex/workbench-navigation-v2` branch.
   history. Repeat compatible commits return the calibrated object, conflicting
   payloads fail, and evidence/lifecycle transitions survive snapshots and
   Prolog reloads through merge, split, demotion, tombstoning, and reversal.
+- [x] Model degraded recognition explicitly. Add reflection, visibility, and
+  noise instance parameters; explain declared degradation with signed evidence;
+  and retain the best complete stored form when a later encounter is partial or
+  noisier while still updating its position and supported transformations.

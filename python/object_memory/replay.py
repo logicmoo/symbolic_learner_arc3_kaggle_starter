@@ -81,6 +81,9 @@ def _instance(value: Mapping[str, Any]) -> InstanceParameters:
         scale=tuple(value.get("scale") or (1.0,)),
         appearance=dict(value.get("appearance") or {}),
         supported_transformations=tuple(value.get("supported_transformations") or ()),
+        reflection=value.get("reflection"),
+        visibility=float(value.get("visibility", 1.0)),
+        noise_score=float(value.get("noise_score", 0.0)),
         schema_version=str(value.get("schema_version", "2.0.0")),
     )
 

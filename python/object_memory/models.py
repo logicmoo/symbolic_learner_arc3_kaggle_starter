@@ -132,6 +132,9 @@ class InstanceParameters:
     scale: tuple[float, ...] = (1.0,)
     appearance: Mapping[str, Any] = field(default_factory=dict)
     supported_transformations: tuple[str, ...] = ()
+    reflection: str | None = None
+    visibility: float = 1.0
+    noise_score: float = 0.0
     schema_version: str = PHASE2_SCHEMA_VERSION
 
 
