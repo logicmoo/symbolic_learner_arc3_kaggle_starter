@@ -448,6 +448,13 @@ def test_source_code_has_dedicated_help_and_atomspace_paths_are_current() -> Non
     assert "`design/atomspaces/`" in atomspaces
 
 
+def test_operations_use_one_categorized_hierarchy_renderer() -> None:
+    editor = (ROOT / "workbench" / "frontend" / "src" / "components" / "OperationLibraryEditor.tsx").read_text(encoding="utf-8")
+    assert editor.count("<CategorizedArtifactTree") == 1
+    assert "(snapshot.operations||[]).map(operation=>" not in editor
+    assert "same-kind parent is a concrete implementation alternative" in editor
+
+
 def test_runtime_artifacts_deep_link_to_datatype_resources() -> None:
     page = ACTIVE_PAGE.read_text(encoding="utf-8")
     data_editor = (ROOT / "workbench" / "frontend" / "src" / "components" / "DataCatalogPanel.tsx").read_text(encoding="utf-8")
