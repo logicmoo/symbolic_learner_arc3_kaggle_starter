@@ -41,6 +41,7 @@ from object_memory import (  # noqa: E402
     TransitionAnalyzer,
     TransitionRecord,
     TransitionRule,
+    UnsupportedProviderCapability,
 )
 
 
@@ -50,6 +51,45 @@ def test_python_provider_delegates_and_normalizes() -> None:
     result = candidate.part("properties")
     assert result.mode is ExecutionMode.PYTHON
     assert result.value == {"id": "ball"}
+
+
+def test_providers_discover_capabilities_and_report_unsupported_requests() -> None:
+    python_provider = PythonProvider(
+        {
+            "properties": lambda candidate: candidate.candidate_id,
+            "rules": lambda _candidate: (),
+        }
+    )
+    assert python_provider.capabilities().candidate_parts == ("properties", "rules")
+    assert python_provider.capabilities().supports_candidate_part("properties")
+    try:
+        python_provider.get_candidate_part(
+            CandidateObject("ball", "obs-1", "grid", python_provider),
+            "differences",
+        )
+    except UnsupportedProviderCapability as exc:
+        assert exc.as_dict() == {
+            "error": "unsupported_provider_capability",
+            "mode": "PYTHON",
+            "capabilityKind": "candidate_part",
+            "requested": "differences",
+            "available": ["properties", "rules"],
+        }
+    else:
+        raise AssertionError("unsupported provider request must be structured")
+
+    prolog_provider = PrologProvider(lambda predicate, _payload: predicate)
+    capabilities = prolog_provider.capabilities()
+    assert capabilities.dynamic_candidate_parts
+    assert capabilities.supports_candidate_part("future_extension")
+    assert "rules" in capabilities.semantic_record_families
+    try:
+        prolog_provider.get_semantic_records("unknown")
+    except UnsupportedProviderCapability as exc:
+        assert exc.capability_kind == "semantic_record_family"
+        assert "registry" in exc.available
+    else:
+        raise AssertionError("unknown semantic family must be structured")
 
 
 def test_three_modes_share_one_normalized_contract() -> None:

@@ -39,7 +39,7 @@ Deliverables: [Completed Phase 1 checklist](SOW_DELIVERABLES.md#phase-1--arc3-de
 These are maintenance and extension operations, not missing Phase 1 SOW deliverables:
 
 - [ ] Keep command registration pluggable so new Phase 2 and Phase 3 services can be added without changing the debugger UI loop.
-- [ ] Add explicit provider capability discovery and structured unsupported-command messages.
+- [x] Add explicit provider capability discovery and structured unsupported-command messages.
 - [ ] Keep provider outputs visibly labeled by provider, model, prompt sections, source node, and generation time.
 - [ ] Add stronger cache compatibility checks where useful without changing the delivered inspection behavior.
 - [ ] Keep restored transcript provenance and `object_registry.pl` identity provenance visible in node READMEs.

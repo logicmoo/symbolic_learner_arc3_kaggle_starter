@@ -72,7 +72,14 @@ from .models import (
 )
 from .memory import EncounterLog, ResidualGate, SingleWriter, SymbolicMemory
 from .prediction import PredictionLedger, RuleStore
-from .providers import ArtifactProvider, GptArtifactProvider, PrologProvider, PythonProvider
+from .providers import (
+    ArtifactProvider,
+    GptArtifactProvider,
+    PrologProvider,
+    ProviderCapabilities,
+    PythonProvider,
+    UnsupportedProviderCapability,
+)
 from .recognition import (
     ChangeDetector,
     CorrespondenceEvidenceBuilder,
@@ -147,6 +154,7 @@ __all__ = [
     "PHASE2_SCHEMA_VERSION",
     "ProvenanceRef",
     "PrologProvider",
+    "ProviderCapabilities",
     "PrologSemanticBackend",
     "PythonProvider",
     "ResidualCandidate",
@@ -175,6 +183,7 @@ __all__ = [
     "TransitionAnalyzer",
     "TransitionRecord",
     "TransitionRule",
+    "UnsupportedProviderCapability",
     "TurtleProgramRef",
     "TurtleReconstructionEvidenceBuilder",
     "deterministic_identifier",
