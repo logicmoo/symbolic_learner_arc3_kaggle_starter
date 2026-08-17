@@ -12,16 +12,19 @@ from swipl_bridge import SWIPrologBridge
 
 from .adapters import GridAdapter
 from .forms import CellLogoForm, FitResult
+from .memory import SingleWriter
 from .models import (
     ArtifactRef,
     EncounterRecord,
     InstanceParameters,
     ProvenanceRef,
+    RecognitionAccount,
     TurtleProgramRef,
 )
 from .recognition import (
     EncounterChangeSession,
     RecognitionSession,
+    RegistryCorrespondenceAuthority,
     TurtleReconstructionEvidenceBuilder,
 )
 from .store import InMemorySemanticBackend, SymbolicStore
@@ -48,6 +51,7 @@ class SemanticGridCaptureObserver:
         grid_selector: Callable[[Any], Any],
         symbolic_store: SymbolicStore | None = None,
         turtle_form_factory: Callable[[str], CellLogoForm] | None = None,
+        identity_writer: SingleWriter | None = None,
     ) -> None:
         self.adapter = adapter
         self.grid_selector = grid_selector
@@ -55,12 +59,159 @@ class SemanticGridCaptureObserver:
         self.recognition = RecognitionSession(self.symbolic_store)
         self.changes = EncounterChangeSession(self.symbolic_store)
         self.turtle_evidence = TurtleReconstructionEvidenceBuilder()
+        self.identity_writer = identity_writer
         if turtle_form_factory is None:
             bridge = SWIPrologBridge(PROJECT_ROOT / "prolog" / "arc3_agent.pl")
             turtle_form_factory = lambda source: CellLogoForm(source, swi_bridge=bridge)
         self.turtle_form_factory = turtle_form_factory
         self._latest_by_candidate: dict[str, str] = {}
         self._latest_observation_id: str | None = None
+        self._pending_authorizations: dict[
+            str,
+            tuple[Any, Any, str, tuple[str, ...]],
+        ] = {}
+
+    def authorization_options(self) -> dict[str, tuple[str, ...]]:
+        """Return explicit friendly-identity choices for unresolved candidates."""
+
+        options: dict[str, tuple[str, ...]] = {}
+        for candidate_id, (tree_store, _, _, proposal_ids) in self._pending_authorizations.items():
+            friendly = tree_store.registry_identities()
+            identities = tuple(
+                proposal.stored_identity_id
+                for proposal_id in proposal_ids
+                if (proposal := self.symbolic_store.get("match_proposals", proposal_id))
+                is not None
+                and proposal.stored_identity_id in friendly
+            )
+            if identities:
+                options[candidate_id] = identities
+        return options
+
+    def _persist_authorization_account(
+        self,
+        *,
+        candidate_id: str,
+        account: RecognitionAccount,
+    ) -> None:
+        tree_store, node, _, _ = self._pending_authorizations[candidate_id]
+        self.symbolic_store.put_recognition(account)
+        path = self._write_record(
+            node.path / "semantic" / f"{account.account_id}.recognition-account.json",
+            account,
+        )
+        tree_store.link_semantic_record(
+            node,
+            record_type="recognition_account",
+            record_id=account.account_id,
+            artifact_path=path,
+            schema_version=account.schema_version,
+            deterministic_hash=account.account_id.rsplit("-", 1)[-1],
+        )
+
+    def authorize_candidate(
+        self,
+        *,
+        candidate_id: str,
+        selected_identity_id: str,
+        decision_id: str,
+        decision_source: str = "explicit_registry_selection",
+    ) -> RecognitionAccount:
+        """Accept one pending proposal through the single identity writer."""
+
+        if self.identity_writer is None:
+            raise RuntimeError("identity writer is required for authorization")
+        pending = self._pending_authorizations.get(candidate_id)
+        if pending is None:
+            raise KeyError(candidate_id)
+        tree_store, _, encounter_id, proposal_ids = pending
+        proposals = tuple(
+            proposal
+            for proposal_id in proposal_ids
+            if (proposal := self.symbolic_store.get("match_proposals", proposal_id))
+            is not None
+        )
+        selected = next(
+            (
+                proposal
+                for proposal in proposals
+                if proposal.stored_identity_id == selected_identity_id
+            ),
+            None,
+        )
+        if selected is None:
+            raise ValueError("selected identity has no pending correspondence proposal")
+        evidence = tuple(
+            item
+            for evidence_id in selected.evidence_ids
+            if (item := self.symbolic_store.get("evidence", evidence_id)) is not None
+        )
+        account = RegistryCorrespondenceAuthority(
+            self.identity_writer,
+            tree_store,
+        ).accept(
+            candidate_id=candidate_id,
+            selected_identity_id=selected_identity_id,
+            proposals=proposals,
+            evidence=evidence,
+            encounter_id=encounter_id,
+            decision_id=decision_id,
+            decision_source=decision_source,
+        )
+        self._persist_authorization_account(candidate_id=candidate_id, account=account)
+        del self._pending_authorizations[candidate_id]
+        return account
+
+    def reject_candidate(
+        self,
+        *,
+        candidate_id: str,
+        selected_identity_id: str,
+        decision_id: str,
+        decision_source: str = "explicit_registry_rejection",
+    ) -> RecognitionAccount:
+        """Reject one pending friendly-identity proposal without calibrating it."""
+
+        pending = self._pending_authorizations.get(candidate_id)
+        if pending is None:
+            raise KeyError(candidate_id)
+        tree_store, _, encounter_id, proposal_ids = pending
+        proposals = tuple(
+            proposal
+            for proposal_id in proposal_ids
+            if (proposal := self.symbolic_store.get("match_proposals", proposal_id))
+            is not None
+        )
+        account = RegistryCorrespondenceAuthority(
+            self.identity_writer,
+            tree_store,
+        ).reject(
+            candidate_id=candidate_id,
+            selected_identity_id=selected_identity_id,
+            proposals=proposals,
+            encounter_id=encounter_id,
+            decision_id=decision_id,
+            decision_source=decision_source,
+        )
+        self._persist_authorization_account(candidate_id=candidate_id, account=account)
+        selected_proposal_id = next(
+            proposal.proposal_id
+            for proposal in proposals
+            if proposal.stored_identity_id == selected_identity_id
+        )
+        remaining = tuple(
+            proposal_id for proposal_id in proposal_ids if proposal_id != selected_proposal_id
+        )
+        if remaining:
+            self._pending_authorizations[candidate_id] = (
+                tree_store,
+                pending[1],
+                encounter_id,
+                remaining,
+            )
+        else:
+            del self._pending_authorizations[candidate_id]
+        return account
 
     def _fit_turtle(self, source: str, candidate: Mapping[str, Any]) -> FitResult | None:
         """Regenerate a captured Turtle program without fabricating failed evidence."""
@@ -239,6 +390,12 @@ class SemanticGridCaptureObserver:
                 )
             if self.recognition.latest_known_instances():
                 proposals = self.recognition.propose(encounter.encounter_id)
+                self._pending_authorizations[candidate.candidate_id] = (
+                    store,
+                    node,
+                    encounter.encounter_id,
+                    tuple(item.proposal_id for item in proposals),
+                )
                 for proposal in proposals:
                     proposal_path = self._write_record(
                         semantic_dir / f"{proposal.proposal_id}.match-proposal.json",

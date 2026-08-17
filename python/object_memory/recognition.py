@@ -552,7 +552,7 @@ class ChangeDetector:
 class RegistryCorrespondenceAuthority:
     """Apply an explicit registry selection only when attributable evidence exists."""
 
-    def __init__(self, writer: SingleWriter, action_tree_store: object) -> None:
+    def __init__(self, writer: SingleWriter | None, action_tree_store: object) -> None:
         self.writer = writer
         self.action_tree_store = action_tree_store
 
@@ -567,6 +567,8 @@ class RegistryCorrespondenceAuthority:
         decision_id: str,
         decision_source: str,
     ) -> RecognitionAccount:
+        if self.writer is None:
+            raise RuntimeError("identity writer is required for authorization")
         selected = next(
             (
                 proposal
@@ -623,6 +625,44 @@ class RegistryCorrespondenceAuthority:
             evidence_ids=tuple(item.evidence_id for item in evidence),
         )
         return account
+
+    def reject(
+        self,
+        *,
+        candidate_id: str,
+        selected_identity_id: str,
+        proposals: tuple[MatchProposal, ...],
+        encounter_id: str,
+        decision_id: str,
+        decision_source: str,
+        evidence_ids: tuple[str, ...] = (),
+    ) -> RecognitionAccount:
+        selected = next(
+            (
+                proposal
+                for proposal in proposals
+                if proposal.stored_identity_id == selected_identity_id
+            ),
+            None,
+        )
+        if selected is None:
+            raise ValueError("selected identity has no correspondence proposal")
+        if selected_identity_id not in self.action_tree_store.registry_identities():
+            raise ValueError("selected identity is not a friendly registry identity")
+        self.action_tree_store.record_semantic_identity_decision(
+            identity_id=selected_identity_id,
+            encounter_id=encounter_id,
+            decision_id=decision_id,
+            status="rejected",
+            evidence_ids=evidence_ids,
+        )
+        return RecognitionAccount.create(
+            candidate_id=candidate_id,
+            stored_identity_id=None,
+            rival_proposal_ids=tuple(item.proposal_id for item in proposals),
+            decision_source=decision_source,
+            provenance=selected.provenance,
+        )
 
     def reverse(
         self,

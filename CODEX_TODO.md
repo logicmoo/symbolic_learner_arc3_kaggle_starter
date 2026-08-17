@@ -839,6 +839,12 @@ Preserve the canonical checkout and its `codex/workbench-navigation-v2` branch.
   reconstruction evidence into the encounter, semantic store, action-tree
   manifest, and deterministic replay. Renderer failures remain infrastructure
   warnings and never become fabricated negative identity evidence.
+- [x] Expose explicit live registry authorization controls. Semantic observers
+  enumerate only pending proposal identities present in the friendly Prolog
+  registry; `Arc3Runner` forwards accept/reject selections without exposing
+  observer internals. Acceptance requires proposal-linked evidence and the
+  `SingleWriter`, while rejection records append-only history without changing
+  confidence. Both persist a resolved account beside the originating node.
 - [x] Add complete deterministic semantic-store snapshots and replay. Restore
   all exact record namespaces in dependency order, rebuild encounter/artifact
   indexes, reject unknown namespaces, and make repeated replay idempotent.

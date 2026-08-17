@@ -5,6 +5,7 @@ from types import SimpleNamespace
 from action_tree import ActionTreeStore
 from object_memory import (
     ActionTreeSemanticReplay,
+    CommittedAtom,
     EncounterRecord,
     EvidencePolarity,
     GridAdapter,
@@ -12,7 +13,9 @@ from object_memory import (
     InstanceParameters,
     PythonProvider,
     SemanticGridCaptureObserver,
+    SingleWriter,
     SymbolicStore,
+    SymbolicMemory,
 )
 from workbench.server.runtime import DEFAULT_GRID, analyze_grid
 
@@ -139,3 +142,63 @@ def test_semantic_capture_links_unresolved_proposals_against_known_history(tmp_p
     assert replayed.encounters.deterministic_hash() == SymbolicStore(
         InMemorySemanticBackend()
     ).replay(replayed.snapshot()).encounters.deterministic_hash()
+
+
+def test_live_capture_exposes_and_persists_explicit_registry_authorization(tmp_path: Path) -> None:
+    tree = ActionTreeStore(tmp_path / "tree", "game", 1)
+    initial = tree.create_initial(b"initial", {"state": "active"})
+    initial.objects_path.write_text(
+        "new_object_identity(known_shape, object, 'known shape').\n",
+        encoding="utf-8",
+    )
+    tree.update_registry_from_objects(initial)
+    semantic_store = SymbolicStore(InMemorySemanticBackend())
+    semantic_store.put_encounter(
+        EncounterRecord.create(
+            observation_id="known-observation",
+            action_tree_node="known-node",
+            object_identity_id="known_shape",
+            instance=InstanceParameters(
+                appearance={"color": "blue", "shape": "rectangle"},
+                supported_transformations=("translation",),
+            ),
+        )
+    )
+    memory = SymbolicMemory()
+    writer = SingleWriter(memory)
+    writer.commit(CommittedAtom("known_shape", "object", {}))
+    observer = SemanticGridCaptureObserver(
+        GridAdapter(analyze_grid, PythonProvider({})),
+        grid_selector=lambda runner: runner.grid,
+        symbolic_store=semantic_store,
+        identity_writer=writer,
+    )
+
+    observer.on_state_captured(
+        runner=SimpleNamespace(grid=DEFAULT_GRID),
+        store=tree,
+        node=initial,
+        previous_node=None,
+        action=None,
+        data={},
+    )
+
+    assert observer.authorization_options()["obj_blue_1"] == ("known_shape",)
+    account = observer.authorize_candidate(
+        candidate_id="obj_blue_1",
+        selected_identity_id="known_shape",
+        decision_id="human-selection-1",
+    )
+    assert account.stored_identity_id == "known_shape"
+    assert account.decision_source == "explicit_registry_selection"
+    assert "obj_blue_1" not in observer.authorization_options()
+    assert memory.evidence_for("known_shape")
+    history = tree.semantic_identity_decisions_path.read_text(encoding="utf-8")
+    assert "human-selection-1" in history and "accepted" in history
+    manifest = json.loads(initial.semantic_records_path.read_text(encoding="utf-8"))
+    assert any(
+        item["record_type"] == "recognition_account"
+        and item["record_id"] == account.account_id
+        for item in manifest["records"]
+    )
+    assert "explicit_registry_selection" in initial.readme_path.read_text(encoding="utf-8")

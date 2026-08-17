@@ -657,6 +657,81 @@ class Arc3Runner:
                     f"({type(observer).__name__}): {exc}"
                 )
 
+    def semantic_authorization_options(self) -> dict[str, tuple[str, ...]]:
+        """Collect explicit friendly-identity choices from semantic observers."""
+
+        combined: dict[str, list[str]] = {}
+        for observer in self.capture_observers:
+            options = getattr(observer, "authorization_options", None)
+            if not callable(options):
+                continue
+            for candidate_id, identities in options().items():
+                target = combined.setdefault(candidate_id, [])
+                target.extend(identity for identity in identities if identity not in target)
+        return {candidate_id: tuple(identities) for candidate_id, identities in combined.items()}
+
+    def _semantic_authorization_observer(
+        self,
+        candidate_id: str,
+        selected_identity_id: str,
+        method_name: str,
+    ) -> Any:
+        matches = []
+        for observer in self.capture_observers:
+            options = getattr(observer, "authorization_options", None)
+            method = getattr(observer, method_name, None)
+            if not callable(options) or not callable(method):
+                continue
+            if selected_identity_id in options().get(candidate_id, ()):
+                matches.append(method)
+        if not matches:
+            raise KeyError((candidate_id, selected_identity_id))
+        if len(matches) > 1:
+            raise RuntimeError(
+                "semantic authorization selection is ambiguous across observers"
+            )
+        return matches[0]
+
+    def authorize_semantic_candidate(
+        self,
+        *,
+        candidate_id: str,
+        selected_identity_id: str,
+        decision_id: str,
+        decision_source: str = "explicit_registry_selection",
+    ) -> Any:
+        method = self._semantic_authorization_observer(
+            candidate_id,
+            selected_identity_id,
+            "authorize_candidate",
+        )
+        return method(
+            candidate_id=candidate_id,
+            selected_identity_id=selected_identity_id,
+            decision_id=decision_id,
+            decision_source=decision_source,
+        )
+
+    def reject_semantic_candidate(
+        self,
+        *,
+        candidate_id: str,
+        selected_identity_id: str,
+        decision_id: str,
+        decision_source: str = "explicit_registry_rejection",
+    ) -> Any:
+        method = self._semantic_authorization_observer(
+            candidate_id,
+            selected_identity_id,
+            "reject_candidate",
+        )
+        return method(
+            candidate_id=candidate_id,
+            selected_identity_id=selected_identity_id,
+            decision_id=decision_id,
+            decision_source=decision_source,
+        )
+
     def _require_node(self) -> tuple[ActionTreeStore, StateNode]:
         if self.tree_store is None or self.current_node is None:
             raise RuntimeError("No captured state node is available")

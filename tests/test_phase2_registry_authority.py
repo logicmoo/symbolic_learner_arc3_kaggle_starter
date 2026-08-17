@@ -90,3 +90,24 @@ def test_registry_authority_calibrates_accounts_and_records_prolog_history(tmp_p
     history = store.semantic_identity_decisions_path.read_text(encoding="utf-8")
     assert "accepted" in history and "reversed" in history
     assert evidence.evidence_id in history
+
+
+def test_registry_authority_records_explicit_rejection_without_calibration(tmp_path: Path) -> None:
+    store, writer, proposals = _fixture(tmp_path)
+    authority = RegistryCorrespondenceAuthority(writer, store)
+
+    account = authority.reject(
+        candidate_id="candidate-red",
+        selected_identity_id="red_ball",
+        proposals=proposals,
+        encounter_id="encounter-1",
+        decision_id="decision-reject-1",
+        decision_source="explicit_registry_rejection",
+    )
+
+    assert account.stored_identity_id is None
+    assert account.decision_source == "explicit_registry_rejection"
+    assert writer.memory.evidence_for("red_ball") == ()
+    history = store.semantic_identity_decisions_path.read_text(encoding="utf-8")
+    assert "decision-reject-1" in history
+    assert "rejected" in history
