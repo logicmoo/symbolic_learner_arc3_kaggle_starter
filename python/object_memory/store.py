@@ -164,9 +164,37 @@ class SymbolicStore:
         checkpoints = self.values("identity_checkpoints")
         memory = SymbolicMemory()
         if checkpoints:
-            latest = max(checkpoints, key=lambda item: (item.sequence, item.checkpoint_id))
+            by_id = {item.checkpoint_id: item for item in checkpoints}
+            parents = {
+                item.parent_checkpoint_id
+                for item in checkpoints
+                if item.parent_checkpoint_id is not None
+            }
+            missing = parents.difference(by_id)
+            if missing:
+                raise ValueError(
+                    f"identity checkpoint chain has missing parents: {sorted(missing)}"
+                )
+            heads = tuple(item for item in checkpoints if item.checkpoint_id not in parents)
+            if len(heads) != 1:
+                raise ValueError(
+                    "concurrent identity checkpoint fork requires explicit reconciliation"
+                )
+            latest = heads[0]
             memory.restore(latest)
         return memory
+
+    def compacted_snapshot(self) -> dict[str, tuple[Any, ...]]:
+        """Export one self-contained checkpoint root plus all other semantic records."""
+
+        snapshot = self.snapshot()
+        checkpoints = snapshot["identity_checkpoints"]
+        if checkpoints:
+            memory = self.restore_identity_memory()
+            snapshot["identity_checkpoints"] = (
+                memory.checkpoints()[-1].as_compaction_root(),
+            )
+        return snapshot
 
     def put_prediction(self, value: PredictionRecord) -> PredictionRecord:
         if value.outcome_sequence is not None or value.grade is not None:

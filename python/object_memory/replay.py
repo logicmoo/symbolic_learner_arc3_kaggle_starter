@@ -138,6 +138,7 @@ def _identity_checkpoint(value: Mapping[str, Any]) -> IdentityMemoryCheckpoint:
         sequence=int(value["sequence"]),
         event=str(value["event"]),
         reference_id=value.get("reference_id"),
+        parent_checkpoint_id=value.get("parent_checkpoint_id"),
         atoms=tuple(_atom(item) for item in value.get("atoms") or ()),
         evidence=tuple(
             SemanticRecordCodec.decode("evidence", item)

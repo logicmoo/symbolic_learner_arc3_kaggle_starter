@@ -140,3 +140,43 @@ def test_atomspace_checkpoint_restores_and_reverses_split_after_reload(tmp_path)
     assert final.get("compound").lifecycle_state == "active"  # type: ignore[union-attr]
     assert final.get("part-a").lifecycle_state == "tombstoned"  # type: ignore[union-attr]
     assert final.get("part-b").lifecycle_state == "tombstoned"  # type: ignore[union-attr]
+
+
+def test_compacted_checkpoint_snapshot_replays_as_a_standalone_root(tmp_path) -> None:
+    store = SymbolicStore(AtomSpaceSemanticBackend(path=tmp_path / "source.metta"))
+    memory = SymbolicMemory()
+    writer = SingleWriter(memory, store.put_identity_checkpoint)
+    writer.commit(CommittedAtom("one", "object", {"value": 1}))
+    writer.demote("one", "fixture")
+
+    compacted = store.compacted_snapshot()
+    target = SymbolicStore(AtomSpaceSemanticBackend(path=tmp_path / "target.metta"))
+    target.replay(compacted)
+    restored = target.restore_identity_memory()
+
+    assert len(compacted["identity_checkpoints"]) == 1
+    assert restored.get("one").lifecycle_state == "demoted"  # type: ignore[union-attr]
+    assert restored.checkpoints()[0].parent_checkpoint_id is None
+    assert restored.checkpoints()[0].event == "checkpoint_compacted"
+
+
+def test_reload_rejects_concurrent_identity_checkpoint_forks(tmp_path) -> None:
+    path = tmp_path / "fork.metta"
+    store = SymbolicStore(AtomSpaceSemanticBackend(path=path))
+    initial = SymbolicMemory()
+    SingleWriter(initial, store.put_identity_checkpoint).commit(
+        CommittedAtom("one", "object", {"value": 1})
+    )
+
+    left = SymbolicStore(AtomSpaceSemanticBackend(path=path)).restore_identity_memory()
+    right = SymbolicStore(AtomSpaceSemanticBackend(path=path)).restore_identity_memory()
+    SingleWriter(left, store.put_identity_checkpoint).demote("one", "left-writer")
+    SingleWriter(right, store.put_identity_checkpoint).tombstone("one", "right-writer")
+
+    reloaded = SymbolicStore(AtomSpaceSemanticBackend(path=path))
+    try:
+        reloaded.restore_identity_memory()
+    except ValueError as error:
+        assert "concurrent identity checkpoint fork" in str(error)
+    else:
+        raise AssertionError("concurrent identity writers were silently reconciled")

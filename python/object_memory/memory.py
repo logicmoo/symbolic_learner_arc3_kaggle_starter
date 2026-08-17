@@ -176,6 +176,11 @@ class SingleWriter:
             sequence=sequence,
             event=event,
             reference_id=reference_id,
+            parent_checkpoint_id=(
+                self.memory._checkpoints[-1].checkpoint_id
+                if self.memory._checkpoints
+                else None
+            ),
             atoms=tuple(self.memory._atoms[key] for key in sorted(self.memory._atoms)),
             evidence=tuple(
                 values[key]

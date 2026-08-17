@@ -339,6 +339,7 @@ class IdentityMemoryCheckpoint:
     sequence: int
     event: str
     reference_id: str | None
+    parent_checkpoint_id: str | None
     atoms: tuple[CommittedAtom, ...]
     evidence: tuple[EvidenceRecord, ...]
     merge_decisions: tuple[MergeDecision, ...]
@@ -356,6 +357,7 @@ class IdentityMemoryCheckpoint:
         sequence: int,
         event: str,
         reference_id: str | None,
+        parent_checkpoint_id: str | None,
         atoms: tuple[CommittedAtom, ...],
         evidence: tuple[EvidenceRecord, ...],
         merge_decisions: tuple[MergeDecision, ...],
@@ -367,6 +369,7 @@ class IdentityMemoryCheckpoint:
             "sequence": sequence,
             "event": event,
             "reference_id": reference_id,
+            "parent_checkpoint_id": parent_checkpoint_id,
             "atoms": atoms,
             "decisions": tuple(
                 sorted(
@@ -382,12 +385,29 @@ class IdentityMemoryCheckpoint:
             sequence=sequence,
             event=event,
             reference_id=reference_id,
+            parent_checkpoint_id=parent_checkpoint_id,
             atoms=atoms,
             evidence=evidence,
             merge_decisions=merge_decisions,
             split_decisions=split_decisions,
             decision_snapshots=decision_snapshots,
             confidence_history=confidence_history,
+        )
+
+    def as_compaction_root(self) -> "IdentityMemoryCheckpoint":
+        """Create a standalone root retaining the exact current writer state."""
+
+        return self.create(
+            sequence=0,
+            event="checkpoint_compacted",
+            reference_id=self.checkpoint_id,
+            parent_checkpoint_id=None,
+            atoms=self.atoms,
+            evidence=self.evidence,
+            merge_decisions=self.merge_decisions,
+            split_decisions=self.split_decisions,
+            decision_snapshots=self.decision_snapshots,
+            confidence_history=self.confidence_history,
         )
 
 
