@@ -96,6 +96,7 @@ class SemanticGridCaptureObserver:
         if level_root in self._loaded_level_roots:
             return
         ActionTreeSemanticReplay().replay(level_root, self.symbolic_store)
+        self._rehydrate_identity_writer()
         encounters = tuple(
             encounter
             for encounter in self.symbolic_store.encounters.records()
@@ -118,6 +119,31 @@ class SemanticGridCaptureObserver:
             latest = max(terminals, key=lambda item: item.action_tree_node)
             self._latest_observation_id = latest.observation_id
         self._loaded_level_roots.add(level_root)
+
+    def _rehydrate_identity_writer(self) -> None:
+        """Rebuild calibrated identity state from resolved, replayed accounts."""
+
+        if self.identity_writer is None:
+            return
+        for account in self.symbolic_store.values("recognition_accounts"):
+            identity_id = account.stored_identity_id
+            if identity_id is None or account.decision_source == "unresolved":
+                continue
+            if self.identity_writer.memory.get(identity_id) is None:
+                self.identity_writer.commit(
+                    CommittedAtom(
+                        identity_id,
+                        "object",
+                        {"authority": "action_tree_registry"},
+                    )
+                )
+            for evidence_id in (
+                *account.supporting_evidence_ids,
+                *account.contradicting_evidence_ids,
+            ):
+                evidence = self.symbolic_store.get("evidence", evidence_id)
+                if evidence is not None:
+                    self.identity_writer.apply_evidence(identity_id, evidence)
 
     def authorization_options(self) -> dict[str, tuple[str, ...]]:
         """Return explicit friendly-identity choices for unresolved candidates."""

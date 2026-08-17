@@ -252,3 +252,63 @@ def test_live_capture_exposes_and_persists_explicit_registry_authorization(tmp_p
         for item in manifest["records"]
     )
     assert "explicit_registry_selection" in initial.readme_path.read_text(encoding="utf-8")
+
+
+def test_semantic_capture_rehydrates_calibrated_identity_after_restart(
+    tmp_path: Path,
+) -> None:
+    tree = ActionTreeStore(tmp_path / "tree", "game", 1)
+    initial = tree.create_initial(b"initial", {"state": "active"})
+    initial.objects_path.write_text(
+        "new_object_identity(known_shape, object, 'known shape').\n",
+        encoding="utf-8",
+    )
+    tree.update_registry_from_objects(initial)
+    semantic_store = SymbolicStore(InMemorySemanticBackend())
+    semantic_store.put_encounter(
+        EncounterRecord.create(
+            observation_id="known-observation",
+            action_tree_node="known-node",
+            object_identity_id="known_shape",
+            instance=InstanceParameters(
+                appearance={"color": "blue", "shape": "rectangle"},
+                supported_transformations=("translation",),
+            ),
+        )
+    )
+    first_memory = SymbolicMemory()
+    first = SemanticGridCaptureObserver(
+        GridAdapter(analyze_grid, PythonProvider({})),
+        grid_selector=lambda runner: runner.grid,
+        symbolic_store=semantic_store,
+        identity_writer=SingleWriter(first_memory),
+    )
+    first.on_state_captured(
+        runner=SimpleNamespace(grid=DEFAULT_GRID),
+        store=tree,
+        node=initial,
+        previous_node=None,
+        action=None,
+        data={},
+    )
+    account = first.authorize_candidate(
+        candidate_id="obj_blue_1",
+        selected_identity_id="known_shape",
+        decision_id="before-restart",
+    )
+    assert account.calibrated_confidence > 0.0
+
+    restarted_memory = SymbolicMemory()
+    restarted = SemanticGridCaptureObserver(
+        GridAdapter(analyze_grid, PythonProvider({})),
+        grid_selector=lambda runner: runner.grid,
+        identity_writer=SingleWriter(restarted_memory),
+    )
+    restarted._load_level_history(tree)
+
+    restored = restarted_memory.get("known_shape")
+    assert restored is not None
+    assert restored.confidence == account.calibrated_confidence
+    assert {
+        item.evidence_id for item in restarted_memory.evidence_for("known_shape")
+    } == set(account.supporting_evidence_ids + account.contradicting_evidence_ids)
