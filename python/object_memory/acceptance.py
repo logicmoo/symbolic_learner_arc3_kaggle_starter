@@ -47,6 +47,7 @@ def build_acceptance_report(
     *,
     object_memory: Mapping[str, Any],
     environment_progression: Mapping[str, Any],
+    phase3_learning: Mapping[str, Any],
     test_result: str,
     commit: str,
 ) -> AcceptanceReport:
@@ -55,7 +56,18 @@ def build_acceptance_report(
         "stable_identity": bool(object_memory.get("recognized_identity")),
         "exact_reconstruction": int(object_memory.get("exact_reconstructions", 0)) > 0,
         "deterministic_replay": bool(object_memory.get("replay_hash")),
-        "prediction_or_change_evidence": bool(object_memory.get("object_changes")),
+        "phase3_transition_analysis": bool(phase3_learning.get("transition_changes")),
+        "phase3_competing_rules": bool(phase3_learning.get("rules")),
+        "prediction_before_outcome": phase3_learning.get(
+            "prediction_recorded_before_outcome"
+        )
+        is True,
+        "independent_prediction_grade": phase3_learning.get("independent_grade")
+        == 1.0,
+        "calibrated_rule_update": phase3_learning.get("probability_source")
+        == "verified_prediction_history",
+        "phase3_replay": phase3_learning.get("replayed_prediction") is True
+        and phase3_learning.get("replayed_grade") is True,
         "rendered_arcade": int(environments.get("rendered_arcade", 0)) > 0,
         "fixed_camera_physics": int(environments.get("fixed_camera_physics", 0)) > 0,
         "top_down_manipulation": int(environments.get("top_down_manipulation", 0)) > 0,
@@ -70,6 +82,7 @@ def build_acceptance_report(
         "environment_summary": environment_progression.get(
             "summary", "provided mapping"
         ),
+        "phase3_summary": phase3_learning.get("summary", "provided mapping"),
         "replay_hash": object_memory.get("replay_hash"),
         "recognized_identity": object_memory.get("recognized_identity"),
         "environment_fixtures": environment_progression.get("fixtures"),

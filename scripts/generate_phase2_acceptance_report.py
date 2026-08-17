@@ -20,17 +20,21 @@ def main() -> None:
     )
     parser.add_argument("--object-memory-summary", type=Path, required=True)
     parser.add_argument("--environment-summary", type=Path, required=True)
+    parser.add_argument("--phase3-summary", type=Path, required=True)
     parser.add_argument("--test-result", required=True)
     parser.add_argument("--commit", required=True)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     object_memory = json.loads(args.object_memory_summary.read_text(encoding="utf-8"))
     environment = json.loads(args.environment_summary.read_text(encoding="utf-8"))
+    phase3 = json.loads(args.phase3_summary.read_text(encoding="utf-8"))
     object_memory["summary"] = str(args.object_memory_summary.resolve())
     environment["summary"] = str(args.environment_summary.resolve())
+    phase3["summary"] = str(args.phase3_summary.resolve())
     report = build_acceptance_report(
         object_memory=object_memory,
         environment_progression=environment,
+        phase3_learning=phase3,
         test_result=args.test_result,
         commit=args.commit,
     )

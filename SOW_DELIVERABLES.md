@@ -355,7 +355,7 @@ Phase 3 implements learning and prediction over the persistent objects and evide
   - top-down manipulation with partial occlusion.
   Evidence: `scripts/phase2_environment_progression_demo.py` runs seven deterministic fixtures through the normalized raster contracts and emits a machine-readable acceptance summary. It covers a rendered multi-sprite arcade frame, a three-frame fixed-camera motion sequence, and clean/noisy/partly occluded top-down manipulation scenes. See [Phase 2 environment progression](workbench/docs/design/PHASE2_ENVIRONMENT_PROGRESSION.md).
 
-- [ ] **Open** Demonstrate the complete Phase 3 workflow:
+- [x] Demonstrate the complete Phase 3 workflow:
 
 ```text
 Input game state
@@ -369,6 +369,7 @@ Input game state
     → independent evaluation
     → updated evidence, learned rule, or action recommendation
 ```
+  Evidence: `scripts/phase3_learning_demo.py` executes transition analysis, candidate transformation learning, rule induction with assumptions and critiques, a persisted pre-outcome prediction, independent outcome grading, evidence-backed probability calibration, and deterministic semantic replay. Its machine-readable summary is required by the fail-closed Phase 2 acceptance report generator.
 
 - [x] Provide reproducible integration commands, example scripts, acceptance-test results, and developer notes.
   Evidence: the object-memory and environment-progression demonstrations emit deterministic machine-readable summaries. `scripts/generate_phase2_acceptance_report.py` verifies those summaries together with an explicit regression result and repository commit, fails closed when evidence is missing, and writes JSON plus Markdown reports. Commands and scope are documented in [Phase 2 object-memory demonstration](workbench/docs/design/PHASE2_OBJECT_MEMORY_DEMONSTRATION.md) and [Phase 2 environment progression](workbench/docs/design/PHASE2_ENVIRONMENT_PROGRESSION.md).

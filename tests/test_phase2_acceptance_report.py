@@ -22,14 +22,25 @@ def _summaries():
             },
             "summary": "runtime/environment-summary.json",
         },
+        {
+            "transition_changes": ["moved_right"],
+            "rules": ["rule-move-right"],
+            "prediction_recorded_before_outcome": True,
+            "independent_grade": 1.0,
+            "probability_source": "verified_prediction_history",
+            "replayed_prediction": True,
+            "replayed_grade": True,
+            "summary": "runtime/phase3-summary.json",
+        },
     )
 
 
 def test_acceptance_report_requires_and_renders_all_evidence(tmp_path) -> None:
-    object_memory, environment = _summaries()
+    object_memory, environment, phase3 = _summaries()
     report = build_acceptance_report(
         object_memory=object_memory,
         environment_progression=environment,
+        phase3_learning=phase3,
         test_result="502 passed",
         commit="dfe4a7de",
     )
@@ -44,12 +55,13 @@ def test_acceptance_report_requires_and_renders_all_evidence(tmp_path) -> None:
 
 
 def test_acceptance_report_rejects_missing_environment_evidence() -> None:
-    object_memory, environment = _summaries()
+    object_memory, environment, phase3 = _summaries()
     environment["environments"]["top_down_manipulation"] = 0
 
     report = build_acceptance_report(
         object_memory=object_memory,
         environment_progression=environment,
+        phase3_learning=phase3,
         test_result="502 passed",
         commit="dfe4a7de",
     )
