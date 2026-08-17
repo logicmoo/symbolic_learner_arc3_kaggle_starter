@@ -268,6 +268,8 @@ class MultiLlmArc3Runner(Arc3Runner):
             "base_url": provider.resolved_base_url(),
             "analysis_level": analysis_level,
             "prompt_text": list(self.llm_router().prompt_section_names(provider)),
+            "prompt_sections": list(self.llm_router().prompt_section_names(provider)),
+            "source_node": str(node.path),
             "generated_at": datetime.now(timezone.utc).isoformat(),
         }
         self._provenance_path(node).write_text(

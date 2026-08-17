@@ -645,6 +645,38 @@ class ActionTreeStore:
                 f"- **Action data:** `{json.dumps(action_data, ensure_ascii=False)}`"
             )
 
+        provider_path = node.path / "llm_provider.json"
+        if provider_path.exists():
+            try:
+                provider = json.loads(provider_path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                provider = {}
+            if provider:
+                prompt_sections = (
+                    provider.get("prompt_sections")
+                    or provider.get("prompt_text")
+                    or ()
+                )
+                lines.extend(
+                    [
+                        "",
+                        "## LLM provider output",
+                        "",
+                        f"- **Provider:** `{provider.get('label') or provider.get('provider_id') or 'unknown'}` "
+                        f"(`{provider.get('provider_id') or 'unknown'}`)",
+                        f"- **Model:** `{provider.get('model') or 'unknown'}`",
+                        f"- **Prompt sections:** `{', '.join(str(item) for item in prompt_sections) or 'none recorded'}`",
+                        f"- **Source node:** `{provider.get('source_node') or node.path}`",
+                        f"- **Generated:** `{provider.get('generated_at') or 'unknown'}`",
+                    ]
+                )
+                if provider.get("restored_from_transcript"):
+                    lines.append(
+                        "- **Restored transcript:** "
+                        f"`{provider['restored_from_transcript']}` at "
+                        f"`{provider.get('restored_at') or 'unknown'}`"
+                    )
+
         registry_count = len(self.registry_identities())
         registry_link = _rel_link(node.path, self.object_registry_path)
 

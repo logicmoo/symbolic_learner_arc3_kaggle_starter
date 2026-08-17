@@ -218,6 +218,11 @@ def begin_transcript(router: Any, request: Mapping[str, Any]) -> LlmTranscriptRu
         "action_data": _jsonable(state.get("action_data") or {}),
         "action_path": _jsonable(state.get("action_path") or []),
         "image_hash": state.get("image_hash") or getattr(node, "image_hash", None),
+        "prompt_sections": (
+            list(runner.llm_router().prompt_section_names(spec))
+            if runner is not None and hasattr(runner, "llm_router")
+            else []
+        ),
     }
     run = LlmTranscriptRun(
         path=directory / filename,
@@ -706,6 +711,8 @@ def restore_transcript(store: Any, node: Any, path: str | Path) -> list[Path]:
         "model": metadata.get("model"),
         "base_url": metadata.get("base_url"),
         "analysis_level": metadata.get("analysis_level"),
+        "prompt_sections": metadata.get("prompt_sections") or [],
+        "source_node": metadata.get("node_path"),
         "generated_at": metadata.get("completed_at") or metadata.get("started_at"),
         "restored_from_transcript": transcript.name,
         "restored_at": datetime.now(timezone.utc).isoformat(),

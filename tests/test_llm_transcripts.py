@@ -53,6 +53,8 @@ def _run(path: Path, *, provider: str, model: str, level: int, tokens: int):
             "action_data": {},
             "action_path": [],
             "image_hash": "abc123",
+            "node_path": str(path.parent),
+            "prompt_sections": ["system_contract", "object_analysis"],
         },
         request_input=[
             {
@@ -135,8 +137,17 @@ def test_restore_transcript_rewrites_latest_artifacts_and_provenance(
     provenance = json.loads((node.path / "llm_provider.json").read_text(encoding="utf-8"))
     assert provenance["model"] == "old-model"
     assert provenance["analysis_level"] == 2
+    assert provenance["prompt_sections"] == ["system_contract", "object_analysis"]
+    assert provenance["source_node"] == str(node.path)
     assert provenance["restored_from_transcript"] == path.name
     assert node.path / "objects.pl" in restored
+    readme = node.readme_path.read_text(encoding="utf-8")
+    assert "## LLM provider output" in readme
+    assert "`Unsloth` (`unsloth`)" in readme
+    assert "`old-model`" in readme
+    assert "`system_contract, object_analysis`" in readme
+    assert str(node.path) in readme
+    assert "**Restored transcript:**" in readme
 
 
 def test_readme_links_all_transcripts_but_embeds_only_latest_artifacts(
