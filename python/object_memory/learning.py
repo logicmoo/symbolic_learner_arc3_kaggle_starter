@@ -200,12 +200,29 @@ class GameLearningPipeline:
         executor: RuleExecutor,
     ) -> tuple[Any, PredictionRecord]:
         predicted_state = executor.apply(rule_id, state)
+        rule = self.rule_store.get(rule_id)
         record = PredictionRecord(
             prediction_id=prediction_id,
             rule_id=rule_id,
             source_state_id=source_state_id,
             predicted_effects=(predicted_state,),
             created_sequence=created_sequence,
+            available_evidence_ids=tuple(
+                dict.fromkeys(
+                    (
+                        *rule.supporting_evidence_ids,
+                        *rule.contradicting_evidence_ids,
+                    )
+                )
+            ),
+            rule_assumptions=rule.assumptions,
+            rule_critiques=rule.critiques,
+            rule_probability=(
+                rule.calibrated_probability
+                if rule.calibrated_probability is not None
+                else rule.bootstrap_probability
+            ),
+            rule_probability_source=rule.probability_source,
         )
         stored = self.prediction_ledger.record(record)
         if self.semantic_store is not None:

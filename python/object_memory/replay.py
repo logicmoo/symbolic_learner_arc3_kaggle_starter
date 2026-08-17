@@ -245,6 +245,15 @@ class SemanticRecordCodec:
                 source_state_id=str(value["source_state_id"]),
                 predicted_effects=tuple(value.get("predicted_effects") or ()),
                 created_sequence=int(value["created_sequence"]),
+                available_evidence_ids=tuple(
+                    value.get("available_evidence_ids") or ()
+                ),
+                rule_assumptions=tuple(value.get("rule_assumptions") or ()),
+                rule_critiques=tuple(value.get("rule_critiques") or ()),
+                rule_probability=value.get("rule_probability"),
+                rule_probability_source=str(
+                    value.get("rule_probability_source", "bootstrap")
+                ),
             )
         if record_type == "prediction_grade":
             return PredictionGradeRecord(

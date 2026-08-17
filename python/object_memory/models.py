@@ -566,6 +566,11 @@ class PredictionRecord:
     source_state_id: str
     predicted_effects: tuple[Any, ...]
     created_sequence: int
+    available_evidence_ids: tuple[str, ...] = ()
+    rule_assumptions: tuple[str, ...] = ()
+    rule_critiques: tuple[str, ...] = ()
+    rule_probability: float | None = None
+    rule_probability_source: str = "bootstrap"
     outcome_sequence: int | None = None
     outcome: Any = None
     grade: float | None = None

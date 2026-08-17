@@ -80,6 +80,11 @@ def test_action_tree_materializes_prediction_grade_and_evidence_history(
             "state-before",
             ({"effect": "move-right"},),
             10,
+            available_evidence_ids=("evidence-before",),
+            rule_assumptions=("stable identity",),
+            rule_critiques=("single observation",),
+            rule_probability=0.4,
+            rule_probability_source="bootstrap",
         )
     )
     evidence = semantic.put_evidence(
@@ -121,6 +126,8 @@ def test_action_tree_materializes_prediction_grade_and_evidence_history(
     readme = node.readme_path.read_text(encoding="utf-8")
     assert "predicted before outcome at sequence `10`" in readme
     assert "outcome fields remain empty" in readme
+    assert "probability `0.4` from `bootstrap`" in readme
+    assert "1 available evidence record(s)" in readme
     assert "independently observed outcome at sequence `11`" in readme
     assert "`None` → `0.6666666666666666`" in readme
     assert "1 evidence update(s)" in readme

@@ -786,7 +786,11 @@ class ActionTreeStore:
                             f"  - predicted before outcome at sequence "
                             f"`{detail.get('created_sequence')}` from state "
                             f"`{detail.get('source_state_id')}` using rule "
-                            f"`{detail.get('rule_id')}`; outcome fields remain empty"
+                            f"`{detail.get('rule_id')}` at probability "
+                            f"`{detail.get('rule_probability')}` from "
+                            f"`{detail.get('rule_probability_source', 'bootstrap')}` with "
+                            f"{len(detail.get('available_evidence_ids') or [])} available "
+                            "evidence record(s); outcome fields remain empty"
                         )
                     elif record["record_type"] == "prediction_grade":
                         lines.append(

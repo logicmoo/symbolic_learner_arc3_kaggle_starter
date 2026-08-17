@@ -173,6 +173,10 @@ def test_phase3_pipeline_learns_predicts_and_grades() -> None:
                     ("player_present",),
                     "right",
                     (candidates[0].transformation,),
+                    assumptions=("player identity is stable",),
+                    critiques=("single observation",),
+                    supporting_evidence_ids=("learning-evidence",),
+                    bootstrap_probability=0.4,
                 ),
             )
         ),
@@ -203,6 +207,11 @@ def test_phase3_pipeline_learns_predicts_and_grades() -> None:
         executor=executor,
     )
     assert record.outcome_sequence is None
+    assert record.available_evidence_ids == ("learning-evidence",)
+    assert record.rule_assumptions == ("player identity is stable",)
+    assert record.rule_critiques == ("single observation",)
+    assert record.rule_probability == 0.4
+    assert record.rule_probability_source == "bootstrap"
     closed = pipeline.grade_prediction(
         prediction_id="prediction-1",
         outcome_sequence=21,
@@ -221,7 +230,8 @@ def test_phase3_pipeline_learns_predicts_and_grades() -> None:
     assert refined.prediction_history == ("prediction-1",)
     assert refined.calibrated_probability == 2.0 / 3.0
     assert refined.probability_source == "verified_prediction_history"
-    assert len(refined.supporting_evidence_ids) == 1
+    assert len(refined.supporting_evidence_ids) == 2
+    assert refined.supporting_evidence_ids[0] == "learning-evidence"
     assert refined.contradicting_evidence_ids == ()
     persisted_prediction = semantic_store.get("predictions", "prediction-1")
     persisted_grade = semantic_store.get("prediction_grades", "prediction-1")
@@ -230,7 +240,7 @@ def test_phase3_pipeline_learns_predicts_and_grades() -> None:
     assert persisted_grade.outcome == predicted
     assert persisted_grade.grade == 1.0
     assert persisted_grade.evidence == ("independent_outcome",)
-    assert persisted_grade.evidence_record_ids == refined.supporting_evidence_ids
+    assert persisted_grade.evidence_record_ids == refined.supporting_evidence_ids[1:]
     assert persisted_grade.calibrated_probability == 2.0 / 3.0
     persisted_evidence = semantic_store.get(
         "evidence", persisted_grade.evidence_record_ids[0]

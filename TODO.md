@@ -200,7 +200,7 @@ Deliverables: [Phase 3 checklist](SOW_DELIVERABLES.md#phase-3--game-object-learn
 
 - [x] Induce multiple candidate rules with explicit assumptions.
 - [x] Generate critiques identifying missing evidence, contradictions, and overgeneralization.
-- [ ] Attach supporting and contradicting evidence.
+- [x] Attach supporting and contradicting evidence.
 - [x] Maintain rival rule sets rather than selecting one explanation too early.
 - [x] Rank rules using simplicity, coverage, contradiction, applicability precision, and prediction history.
 - [x] Refine calibrated rule confidence or probability from actual prediction results.
@@ -211,7 +211,7 @@ Deliverables: [Phase 3 checklist](SOW_DELIVERABLES.md#phase-3--game-object-learn
 
 - [x] Record predictions before ARC3 actions or later outcomes are observed.
 - [x] Predict object identities, properties, relationships, changes, later state, or action recommendation as appropriate.
-- [ ] Store the evidence available at prediction time.
+- [x] Store the evidence available at prediction time.
 - [x] Capture the independent environment outcome through a separate outcome channel.
 - [ ] Grade success, failure, partial match, contradiction, and ungradable outcomes deterministically.
 - [x] Update positive and negative rule evidence, probability, and ranking from prediction results.
