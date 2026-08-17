@@ -16,8 +16,11 @@ from .models import (
     EncounterRecord,
     EvidencePolarity,
     EvidenceRecord,
+    IdentityDecision,
+    IdentityMemoryCheckpoint,
     InstanceParameters,
     MatchProposal,
+    MergeDecision,
     Observation,
     ObjectChange,
     PredictionGradeRecord,
@@ -26,6 +29,7 @@ from .models import (
     RecognitionAccount,
     ResidualCandidate,
     ResidualDisposition,
+    SplitDecision,
     TurtleProgramRef,
     TransitionRule,
 )
@@ -77,6 +81,83 @@ def _turtle(value: Mapping[str, Any]) -> TurtleProgramRef:
         distance=value.get("distance"),
         residual_score=value.get("residual_score"),
         description_length=value.get("description_length"),
+        schema_version=str(value.get("schema_version", "2.0.0")),
+    )
+
+
+def _atom(value: Mapping[str, Any]) -> CommittedAtom:
+    return CommittedAtom(
+        handle=str(value["handle"]),
+        atom_type=str(value["atom_type"]),
+        payload=dict(value.get("payload") or {}),
+        confidence=float(value.get("confidence", 0.0)),
+        provenance=tuple(value.get("provenance") or ()),
+        lifecycle_state=str(value.get("lifecycle_state", "active")),
+    )
+
+
+def _confidence(value: Mapping[str, Any]) -> ConfidenceHistoryRecord:
+    return ConfidenceHistoryRecord(
+        sequence=int(value["sequence"]),
+        handle=str(value["handle"]),
+        confidence=float(value["confidence"]),
+        lifecycle_state=str(value["lifecycle_state"]),
+        event=str(value["event"]),
+        reference_id=value.get("reference_id"),
+    )
+
+
+def _merge_decision(value: Mapping[str, Any]) -> MergeDecision:
+    return MergeDecision(
+        decision_id=str(value["decision_id"]),
+        identity_ids=tuple(value.get("identity_ids") or ()),
+        resulting_identity_id=str(value["resulting_identity_id"]),
+        status=IdentityDecision(str(value["status"])),
+        evidence_ids=tuple(value.get("evidence_ids") or ()),
+        provenance=tuple(_provenance(item) for item in value.get("provenance") or ()),
+        schema_version=str(value.get("schema_version", "2.0.0")),
+    )
+
+
+def _split_decision(value: Mapping[str, Any]) -> SplitDecision:
+    return SplitDecision(
+        decision_id=str(value["decision_id"]),
+        source_identity_id=str(value["source_identity_id"]),
+        resulting_identity_ids=tuple(value.get("resulting_identity_ids") or ()),
+        status=IdentityDecision(str(value["status"])),
+        evidence_ids=tuple(value.get("evidence_ids") or ()),
+        provenance=tuple(_provenance(item) for item in value.get("provenance") or ()),
+        schema_version=str(value.get("schema_version", "2.0.0")),
+    )
+
+
+def _identity_checkpoint(value: Mapping[str, Any]) -> IdentityMemoryCheckpoint:
+    return IdentityMemoryCheckpoint(
+        checkpoint_id=str(value["checkpoint_id"]),
+        sequence=int(value["sequence"]),
+        event=str(value["event"]),
+        reference_id=value.get("reference_id"),
+        atoms=tuple(_atom(item) for item in value.get("atoms") or ()),
+        evidence=tuple(
+            SemanticRecordCodec.decode("evidence", item)
+            for item in value.get("evidence") or ()
+        ),
+        merge_decisions=tuple(
+            _merge_decision(item) for item in value.get("merge_decisions") or ()
+        ),
+        split_decisions=tuple(
+            _split_decision(item) for item in value.get("split_decisions") or ()
+        ),
+        decision_snapshots={
+            str(decision_id): {
+                str(handle): None if atom is None else _atom(atom)
+                for handle, atom in snapshot.items()
+            }
+            for decision_id, snapshot in (value.get("decision_snapshots") or {}).items()
+        },
+        confidence_history=tuple(
+            _confidence(item) for item in value.get("confidence_history") or ()
+        ),
         schema_version=str(value.get("schema_version", "2.0.0")),
     )
 
@@ -354,23 +435,11 @@ class SemanticRecordCodec:
         if namespace == "turtle_programs":
             return _turtle(value)
         if namespace == "atoms":
-            return CommittedAtom(
-                handle=str(value["handle"]),
-                atom_type=str(value["atom_type"]),
-                payload=dict(value.get("payload") or {}),
-                confidence=float(value.get("confidence", 0.0)),
-                provenance=tuple(value.get("provenance") or ()),
-                lifecycle_state=str(value.get("lifecycle_state", "active")),
-            )
+            return _atom(value)
         if namespace == "confidence_history":
-            return ConfidenceHistoryRecord(
-                sequence=int(value["sequence"]),
-                handle=str(value["handle"]),
-                confidence=float(value["confidence"]),
-                lifecycle_state=str(value["lifecycle_state"]),
-                event=str(value["event"]),
-                reference_id=value.get("reference_id"),
-            )
+            return _confidence(value)
+        if namespace == "identity_checkpoints":
+            return _identity_checkpoint(value)
         raise ValueError(f"unsupported semantic namespace: {namespace!r}")
 
 

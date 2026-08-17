@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import replace
 from hashlib import sha256
 import json
-from typing import Any
+from typing import Any, Callable
 
 from .models import (
     CommittedAtom,
@@ -12,6 +12,7 @@ from .models import (
     EvidencePolarity,
     EvidenceRecord,
     IdentityDecision,
+    IdentityMemoryCheckpoint,
     MergeDecision,
     ResidualCandidate,
     ResidualDisposition,
@@ -100,6 +101,7 @@ class SymbolicMemory:
         self._identity_decisions: dict[str, MergeDecision | SplitDecision] = {}
         self._decision_snapshots: dict[str, dict[str, CommittedAtom | None]] = {}
         self._confidence_history: list[ConfidenceHistoryRecord] = []
+        self._checkpoints: list[IdentityMemoryCheckpoint] = []
 
     def get(self, handle: str) -> CommittedAtom | None:
         return self._atoms.get(handle)
@@ -122,12 +124,80 @@ class SymbolicMemory:
     def confidence_history(self, handle: str) -> tuple[ConfidenceHistoryRecord, ...]:
         return tuple(item for item in self._confidence_history if item.handle == handle)
 
+    def checkpoints(self) -> tuple[IdentityMemoryCheckpoint, ...]:
+        return tuple(self._checkpoints)
+
+    def restore(self, checkpoint: IdentityMemoryCheckpoint) -> "SymbolicMemory":
+        """Restore an exact writer state from one durable checkpoint."""
+
+        self._atoms = {item.handle: item for item in checkpoint.atoms}
+        self._evidence = {}
+        for item in checkpoint.evidence:
+            self._evidence.setdefault(item.subject_id, {})[item.evidence_id] = item
+        self._identity_decisions = {
+            item.decision_id: item
+            for item in (*checkpoint.merge_decisions, *checkpoint.split_decisions)
+        }
+        self._decision_snapshots = {
+            decision_id: dict(snapshot)
+            for decision_id, snapshot in checkpoint.decision_snapshots.items()
+        }
+        self._confidence_history = list(checkpoint.confidence_history)
+        self._checkpoints = [checkpoint]
+        self._events = [
+            {
+                "event": "durable_reload",
+                "checkpoint_id": checkpoint.checkpoint_id,
+                "source_event": checkpoint.event,
+            }
+        ]
+        return self
+
 
 class SingleWriter:
     """Only mutation path for committed atoms and their evidence."""
 
-    def __init__(self, memory: SymbolicMemory) -> None:
+    def __init__(
+        self,
+        memory: SymbolicMemory,
+        checkpoint_sink: Callable[[IdentityMemoryCheckpoint], Any] | None = None,
+    ) -> None:
         self.memory = memory
+        self.checkpoint_sink = checkpoint_sink
+
+    def _checkpoint(self, event: str, reference_id: str | None = None) -> None:
+        decisions = tuple(self.memory._identity_decisions.values())
+        sequence = (
+            self.memory._checkpoints[-1].sequence + 1
+            if self.memory._checkpoints
+            else 0
+        )
+        checkpoint = IdentityMemoryCheckpoint.create(
+            sequence=sequence,
+            event=event,
+            reference_id=reference_id,
+            atoms=tuple(self.memory._atoms[key] for key in sorted(self.memory._atoms)),
+            evidence=tuple(
+                values[key]
+                for handle in sorted(self.memory._evidence)
+                for values in (self.memory._evidence[handle],)
+                for key in sorted(values)
+            ),
+            merge_decisions=tuple(
+                item for item in decisions if isinstance(item, MergeDecision)
+            ),
+            split_decisions=tuple(
+                item for item in decisions if isinstance(item, SplitDecision)
+            ),
+            decision_snapshots={
+                decision_id: dict(snapshot)
+                for decision_id, snapshot in self.memory._decision_snapshots.items()
+            },
+            confidence_history=tuple(self.memory._confidence_history),
+        )
+        self.memory._checkpoints.append(checkpoint)
+        if self.checkpoint_sink is not None:
+            self.checkpoint_sink(checkpoint)
 
     def _record_confidence(
         self,
@@ -156,6 +226,7 @@ class SingleWriter:
         self.memory._atoms[atom.handle] = admitted
         self.memory._events.append({"event": "commit", "handle": atom.handle})
         self._record_confidence(admitted, "commit")
+        self._checkpoint("commit", atom.handle)
         return admitted
 
     def commit_residual(
@@ -193,6 +264,7 @@ class SingleWriter:
         self.memory._atoms[handle] = updated
         self.memory._events.append({"event": "evidence", "handle": handle, "evidence": evidence})
         self._record_confidence(updated, "legacy_evidence", evidence)
+        self._checkpoint("legacy_evidence", evidence)
         return updated
 
     def apply_evidence(self, handle: str, evidence: EvidenceRecord) -> CommittedAtom:
@@ -244,6 +316,7 @@ class SingleWriter:
             }
         )
         self._record_confidence(updated, "evidence_calibrated", evidence.evidence_id)
+        self._checkpoint("evidence_calibrated", evidence.evidence_id)
         return updated
 
     def tombstone(self, handle: str, reason: str) -> CommittedAtom:
@@ -256,9 +329,12 @@ class SingleWriter:
         self.memory._atoms[handle] = updated
         self.memory._events.append({"event": "tombstone", "handle": handle, "reason": reason})
         self._record_confidence(updated, "tombstone", reason)
+        self._checkpoint("tombstone", handle)
         return updated
 
-    def demote(self, handle: str, reason: str) -> CommittedAtom:
+    def demote(
+        self, handle: str, reason: str, *, checkpoint: bool = True
+    ) -> CommittedAtom:
         atom = self.memory._atoms[handle]
         updated = replace(
             atom,
@@ -268,6 +344,8 @@ class SingleWriter:
         self.memory._atoms[handle] = updated
         self.memory._events.append({"event": "demote", "handle": handle, "reason": reason})
         self._record_confidence(updated, "demote", reason)
+        if checkpoint:
+            self._checkpoint("demote", handle)
         return updated
 
     def merge_identities(
@@ -316,7 +394,7 @@ class SingleWriter:
         self._record_confidence(merged, "merge_result", decision.decision_id)
         for handle in decision.identity_ids:
             if handle != merged.handle:
-                self.demote(handle, decision.decision_id)
+                self.demote(handle, decision.decision_id, checkpoint=False)
         self.memory._identity_decisions[decision.decision_id] = decision
         self.memory._events.append(
             {
@@ -326,6 +404,7 @@ class SingleWriter:
                 "result": merged.handle,
             }
         )
+        self._checkpoint("merge", decision.decision_id)
         return merged
 
     def split_identity(
@@ -370,7 +449,7 @@ class SingleWriter:
             self.memory._atoms[item.handle] = admitted
             self._record_confidence(admitted, "split_result", decision.decision_id)
             stored.append(admitted)
-        self.demote(source.handle, decision.decision_id)
+        self.demote(source.handle, decision.decision_id, checkpoint=False)
         self.memory._identity_decisions[decision.decision_id] = decision
         self.memory._events.append(
             {
@@ -380,6 +459,7 @@ class SingleWriter:
                 "results": decision.resulting_identity_ids,
             }
         )
+        self._checkpoint("split", decision.decision_id)
         return tuple(stored)
 
     def reverse_identity_decision(self, decision_id: str, reason: str) -> None:
@@ -405,3 +485,4 @@ class SingleWriter:
         self.memory._events.append(
             {"event": "identity_decision_reversed", "decision_id": decision_id, "reason": reason}
         )
+        self._checkpoint("identity_decision_reversed", decision_id)

@@ -326,6 +326,66 @@ class SplitDecision:
 
 
 @dataclass(frozen=True)
+class IdentityMemoryCheckpoint:
+    """Append-only, self-contained identity-writer state for durable recovery."""
+
+    checkpoint_id: str
+    sequence: int
+    event: str
+    reference_id: str | None
+    atoms: tuple[CommittedAtom, ...]
+    evidence: tuple[EvidenceRecord, ...]
+    merge_decisions: tuple[MergeDecision, ...]
+    split_decisions: tuple[SplitDecision, ...]
+    decision_snapshots: Mapping[
+        str, Mapping[str, CommittedAtom | None]
+    ] = field(default_factory=dict)
+    confidence_history: tuple[ConfidenceHistoryRecord, ...] = ()
+    schema_version: str = PHASE2_SCHEMA_VERSION
+
+    @classmethod
+    def create(
+        cls,
+        *,
+        sequence: int,
+        event: str,
+        reference_id: str | None,
+        atoms: tuple[CommittedAtom, ...],
+        evidence: tuple[EvidenceRecord, ...],
+        merge_decisions: tuple[MergeDecision, ...],
+        split_decisions: tuple[SplitDecision, ...],
+        decision_snapshots: Mapping[str, Mapping[str, CommittedAtom | None]],
+        confidence_history: tuple[ConfidenceHistoryRecord, ...],
+    ) -> "IdentityMemoryCheckpoint":
+        identity = {
+            "sequence": sequence,
+            "event": event,
+            "reference_id": reference_id,
+            "atoms": atoms,
+            "decisions": tuple(
+                sorted(
+                    (*[item.decision_id for item in merge_decisions],
+                     *[item.decision_id for item in split_decisions])
+                )
+            ),
+            "confidence_records": len(confidence_history),
+            "decision_snapshots": decision_snapshots,
+        }
+        return cls(
+            checkpoint_id=deterministic_identifier("identity-checkpoint", identity),
+            sequence=sequence,
+            event=event,
+            reference_id=reference_id,
+            atoms=atoms,
+            evidence=evidence,
+            merge_decisions=merge_decisions,
+            split_decisions=split_decisions,
+            decision_snapshots=decision_snapshots,
+            confidence_history=confidence_history,
+        )
+
+
+@dataclass(frozen=True)
 class RecognitionAccount:
     account_id: str
     candidate_id: str

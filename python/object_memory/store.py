@@ -11,6 +11,7 @@ from .models import (
     ConfidenceHistoryRecord,
     EncounterRecord,
     EvidenceRecord,
+    IdentityMemoryCheckpoint,
     MatchProposal,
     Observation,
     ObjectChange,
@@ -140,6 +141,25 @@ class SymbolicStore:
         record_id = f"{value.handle}:{value.sequence:020d}"
         return self.backend.write_once("confidence_history", record_id, value)
 
+    def put_identity_checkpoint(
+        self, value: IdentityMemoryCheckpoint
+    ) -> IdentityMemoryCheckpoint:
+        return self.backend.write_once(
+            "identity_checkpoints", value.checkpoint_id, value
+        )
+
+    def restore_identity_memory(self) -> "SymbolicMemory":
+        """Restore the newest complete identity state stored by a SingleWriter."""
+
+        from .memory import SymbolicMemory
+
+        checkpoints = self.values("identity_checkpoints")
+        memory = SymbolicMemory()
+        if checkpoints:
+            latest = max(checkpoints, key=lambda item: (item.sequence, item.checkpoint_id))
+            memory.restore(latest)
+        return memory
+
     def put_prediction(self, value: PredictionRecord) -> PredictionRecord:
         if value.outcome_sequence is not None or value.grade is not None:
             raise ValueError("prediction records must be written before outcomes")
@@ -181,6 +201,7 @@ class SymbolicStore:
         "residuals",
         "transition_rules",
         "confidence_history",
+        "identity_checkpoints",
         "predictions",
         "action_recommendations",
         "prediction_grades",
@@ -212,6 +233,7 @@ class SymbolicStore:
             "transition_rules": self.put_transition_rule,
             "action_recommendations": self.put_action_recommendation,
             "confidence_history": self.put_confidence_history,
+            "identity_checkpoints": self.put_identity_checkpoint,
             "predictions": self.put_prediction,
             "prediction_grades": self.put_prediction_grade,
         }
