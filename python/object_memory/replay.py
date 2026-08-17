@@ -175,7 +175,7 @@ def _instance(value: Mapping[str, Any]) -> InstanceParameters:
         if field in geometry:
             geometry[field] = tuples(geometry[field])
     topology = dict(value.get("topology") or {})
-    for field in ("components", "holes", "enclosures", "compound_parts"):
+    for field in ("components", "holes", "enclosures", "compound_parts", "part_roles"):
         if field in topology:
             topology[field] = tuples(topology[field])
     return InstanceParameters(

@@ -89,6 +89,54 @@ def _principal_orientation(
     return round((degrees(0.5 * atan2(2.0 * xy, xx - yy)) + 180.0) % 180.0, 6)
 
 
+def _normalized_part_roles(
+    value: Any,
+    components: tuple[tuple[tuple[int, int], ...], ...],
+) -> tuple[dict[str, Any], ...]:
+    """Validate provider-supplied semantic roles against structural components."""
+
+    if value in (None, (), []):
+        return ()
+    entries = (
+        ({"role": role, "component": component} for role, component in value.items())
+        if isinstance(value, Mapping)
+        else value
+    )
+    normalized: list[dict[str, Any]] = []
+    for entry in entries:
+        if not isinstance(entry, Mapping) or not str(entry.get("role", "")).strip():
+            raise ValueError("part roles require a non-empty role and component index")
+        indexes = entry.get("components", entry.get("component"))
+        if indexes is None:
+            raise ValueError("part roles require a non-empty role and component index")
+        if isinstance(indexes, (list, tuple, set)):
+            component_indexes = tuple(sorted({int(item) for item in indexes}))
+        else:
+            component_indexes = (int(indexes),)
+        if not component_indexes or any(
+            index < 0 or index >= len(components) for index in component_indexes
+        ):
+            raise ValueError("part role references an unknown structural component")
+        normalized.append(
+            {
+                "role": str(entry["role"]),
+                "component_indices": component_indexes,
+                "cells": tuple(
+                    cell
+                    for index in component_indexes
+                    for cell in components[index]
+                ),
+                "properties": dict(entry.get("properties") or {}),
+            }
+        )
+    return tuple(
+        sorted(
+            normalized,
+            key=lambda item: (item["role"], item["component_indices"]),
+        )
+    )
+
+
 def normalize_grid_structure(item: Mapping[str, Any]) -> Mapping[str, Any]:
     """Normalize extractor-specific grid structure into one semantic contract."""
 
@@ -103,6 +151,12 @@ def normalize_grid_structure(item: Mapping[str, Any]) -> Mapping[str, Any]:
     topology = item.get("topology") if isinstance(item.get("topology"), Mapping) else {}
     holes = tuple(relative(_normalized_cells(hole)) for hole in topology.get("holes") or ())
     normalized_components = tuple(relative(component) for component in components)
+    part_roles = _normalized_part_roles(
+        item.get("partRoles")
+        or topology.get("part_roles")
+        or topology.get("partRoles"),
+        normalized_components,
+    )
     relationships = tuple(
         {
             "target": str(value.get("target")),
@@ -140,6 +194,7 @@ def normalize_grid_structure(item: Mapping[str, Any]) -> Mapping[str, Any]:
             "enclosures": holes,
             "compound": len(components) > 1,
             "compound_parts": normalized_components if len(components) > 1 else (),
+            "part_roles": part_roles,
         },
         "properties": {
             "color": item.get("colorName"),
@@ -171,6 +226,11 @@ def normalize_image_structure(item: Mapping[str, Any]) -> Mapping[str, Any]:
         if isinstance(item.get("topology"), Mapping)
         else {}
     )
+    topology_part_roles = supplied_topology.pop("part_roles", None)
+    topology_part_roles_camel = supplied_topology.pop("partRoles", None)
+    supplied_part_roles = (
+        item.get("partRoles") or topology_part_roles or topology_part_roles_camel
+    )
     width = bounds[2] - origin_x if len(bounds) >= 4 else None
     height = bounds[3] - origin_y if len(bounds) >= 4 else None
     orientation = item.get("orientation")
@@ -188,6 +248,10 @@ def normalize_image_structure(item: Mapping[str, Any]) -> Mapping[str, Any]:
         if isinstance(value, Mapping)
     )
     normalized_components = tuple(relative(component) for component in components)
+    part_roles = _normalized_part_roles(
+        supplied_part_roles,
+        normalized_components,
+    )
     topology = {
         **supplied_topology,
         "connected_components": supplied_topology.get(
@@ -196,6 +260,7 @@ def normalize_image_structure(item: Mapping[str, Any]) -> Mapping[str, Any]:
         "components": normalized_components,
         "compound": len(components) > 1,
         "compound_parts": normalized_components if len(components) > 1 else (),
+        "part_roles": part_roles,
     }
     return {
         "geometry": {

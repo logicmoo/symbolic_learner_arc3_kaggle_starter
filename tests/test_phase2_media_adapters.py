@@ -83,6 +83,10 @@ def test_image_adapter_normalizes_cells_compound_parts_and_orientation() -> None
                     "cells": [[2, 3], [3, 3], [4, 3], [7, 7]],
                     "contour": [[2, 3], [3, 3], [4, 3], [7, 7]],
                     "properties": {"color": "blue"},
+                    "partRoles": [
+                        {"role": "body", "component": 0},
+                        {"role": "marker", "component": 1, "properties": {"meaning": "goal"}},
+                    ],
                     "relationships": [
                         {"target": "goal", "relation": "left_of"}
                     ],
@@ -102,10 +106,51 @@ def test_image_adapter_normalizes_cells_compound_parts_and_orientation() -> None
     assert structure["geometry"]["cells"] == ((0, 0), (1, 0), (2, 0), (5, 4))
     assert structure["topology"]["compound"] is True
     assert len(structure["topology"]["compound_parts"]) == 2
+    assert structure["topology"]["part_roles"] == (
+        {
+            "role": "body",
+            "component_indices": (0,),
+            "cells": ((0, 0), (1, 0), (2, 0)),
+            "properties": {},
+        },
+        {
+            "role": "marker",
+            "component_indices": (1,),
+            "cells": ((5, 4),),
+            "properties": {"meaning": "goal"},
+        },
+    )
     assert structure["orientation"] is not None
     assert structure["relationships"] == (
         {"target": "goal", "relation": "left_of"},
     )
+
+
+def test_image_adapter_rejects_part_role_for_unknown_component() -> None:
+    def extract(_image: Image.Image):
+        return {
+            "objects": [
+                {
+                    "id": "bad-role",
+                    "bounds": [0, 0, 2, 2],
+                    "cells": [[0, 0]],
+                    "partRoles": [{"role": "handle", "component": 3}],
+                }
+            ]
+        }
+
+    adapter = ImageAdapter(extract, PythonProvider({}))
+    try:
+        adapter.normalize(
+            observation_id="bad-role",
+            image=Image.new("RGB", (2, 2)),
+            action_tree_node="nodes/bad-role",
+            artifact_uri="nodes/bad-role/image.png",
+        )
+    except ValueError as error:
+        assert "unknown structural component" in str(error)
+    else:
+        raise AssertionError("invalid semantic part role was accepted")
 
 
 def test_image_adapter_infers_pairwise_raster_relationships() -> None:

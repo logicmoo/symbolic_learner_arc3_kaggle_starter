@@ -9,6 +9,7 @@ from object_memory import (
     AtomSpaceSemanticBackend,
     CommittedAtom,
     EncounterRecord,
+    InstanceParameters,
     MettaFileAtomSpaceTransport,
     Observation,
     SymbolicStore,
@@ -36,6 +37,18 @@ def test_atomspace_backend_round_trips_nested_records_and_hydrates(tmp_path: Pat
             observation_id=observation.observation_id,
             action_tree_node="node/initial",
             object_identity_id="red_ball",
+            instance=InstanceParameters(
+                topology={
+                    "part_roles": (
+                        {
+                            "role": "handle",
+                            "component_indices": (1,),
+                            "cells": ((3, 0),),
+                            "properties": {"graspable": True},
+                        },
+                    )
+                }
+            ),
             turtle_programs=(TurtleProgramRef(artifact, fit_score=1.0),),
         )
     )
@@ -63,6 +76,7 @@ def test_atomspace_backend_round_trips_nested_records_and_hydrates(tmp_path: Pat
     assert loaded.encounters.records() == (first, second)
     assert loaded.artifacts.get(artifact.artifact_id) == artifact
     assert loaded.get("atoms", atom.handle) == atom
+    assert loaded.encounters.records()[0].instance.topology["part_roles"][0]["role"] == "handle"
     assert loaded.snapshot() == store.snapshot()
     source = path.read_text(encoding="utf-8")
     assert source.startswith("; Durable Phase 2 semantic-record AtomSpace.")

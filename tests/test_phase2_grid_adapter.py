@@ -68,6 +68,7 @@ def test_grid_structure_normalizes_enclosures_bars_and_compound_parts() -> None:
             "shape": "compound",
             "pixelCount": 4,
             "lineThickness": 1,
+            "partRoles": {"body": 0, "detached_marker": 1},
             "relationships": [{"target": "marker", "relation": "left_of"}],
         }
     )
@@ -84,6 +85,10 @@ def test_grid_structure_normalizes_enclosures_bars_and_compound_parts() -> None:
     assert normalized["topology"]["connected_components"] == 2
     assert normalized["topology"]["compound"] is True
     assert len(normalized["topology"]["compound_parts"]) == 2
+    assert tuple(item["role"] for item in normalized["topology"]["part_roles"]) == (
+        "body",
+        "detached_marker",
+    )
     assert normalized["topology"]["holes"] == (((1, 1),),)
     assert normalized["topology"]["enclosures"] == (((1, 1),),)
     assert normalized["properties"] == {
