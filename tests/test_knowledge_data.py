@@ -31,12 +31,27 @@ def test_binary_data_import_rejects_unsafe_or_runtime_destinations(tmp_path: Pat
     assert error.value.status_code == 400
 
 
+def test_binary_data_import_requires_explicit_overwrite(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr(workspace_api, "_resolve_workspace", lambda _workspace_id: {"id": "demo", "root": str(tmp_path)})
+    request = {"directory": "knowledge/data/photos", "files": [{"name": "x.bin", "base64": "eA=="}]}
+    workspace_api.import_workspace_data("demo", request)
+    with pytest.raises(HTTPException) as error:
+        workspace_api.import_workspace_data("demo", request)
+    assert "enable overwrite" in str(error.value.detail)
+    replaced = workspace_api.import_workspace_data("demo", {**request, "overwrite": True})
+    assert replaced["files"][0]["path"] == "knowledge/data/photos/x.bin"
+
+
 def test_knowledge_data_page_imports_selects_and_previews_workspace_values() -> None:
     page = (ROOT / "workbench" / "frontend" / "src" / "components" / "KnowledgeDataExplorer.tsx").read_text(encoding="utf-8")
     shell = (ROOT / "workbench" / "frontend" / "src" / "pages" / "FilesystemWorkbenchPage.tsx").read_text(encoding="utf-8")
 
     assert 'busy?"Importing…":"Import Data"' in page
     assert 'type="file" multiple' in page
+    assert 'aria-label="Data collection name"' in page
+    assert "Replace same-name files" in page
+    assert "directory:`knowledge/data/${collectionId}`" in page
+    assert "overwrite}" in page
     assert "/data/import`" in page
     assert "knowledge-data-preview" in page
     assert "imageSuffixes.has" in page

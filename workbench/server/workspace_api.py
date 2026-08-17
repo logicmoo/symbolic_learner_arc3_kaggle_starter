@@ -855,6 +855,7 @@ def import_workspace_data(workspace_id: str, body: dict[str, Any] = Body(...)) -
         if len(items) > 100:
             raise ValueError("at most 100 files may be imported at once")
         resources = get_filesystem_provider()
+        overwrite = body.get("overwrite") is True
         imported: list[dict[str, Any]] = []
         for item in items:
             if not isinstance(item, dict):
@@ -870,6 +871,8 @@ def import_workspace_data(workspace_id: str, body: dict[str, Any] = Body(...)) -
             if len(content) > 25 * 1024 * 1024:
                 raise ValueError(f"{name} exceeds the 25 MiB import limit")
             target = _safe_child(root, f"{directory}/{name}")
+            if resources.exists(target) and not overwrite:
+                raise ValueError(f"{name} already exists; enable overwrite to replace it")
             resources.write_bytes(target, content)
             imported.append(_file_record(root, target))
         invalidate_workspace_discovery()
