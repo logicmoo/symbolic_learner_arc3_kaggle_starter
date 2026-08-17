@@ -728,6 +728,10 @@ function WorkflowRunSplineWorkspace({
     });
   });
   const chronologyWidth = Math.max(760, run.events.length * 120 + 80);
+  const chronologyPoints = run.events.map((_event, index) => ({
+    x: 55 + index * 120,
+    y: 90 + (index % 2) * 42,
+  }));
   const focalStepId =
     memoryStepId ||
     [...run.steps]
@@ -1003,14 +1007,33 @@ function WorkflowRunSplineWorkspace({
               style={{ minWidth: chronologyWidth }}
               preserveAspectRatio="xMidYMid meet"
             >
+              <defs>
+                <marker id={`chronology-arrow-${run.id}`} viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                  <path d="M0 0L10 5L0 10z" />
+                </marker>
+              </defs>
+              {chronologyPoints.slice(1).map((point, index) => {
+                const previous = chronologyPoints[index];
+                return <path key={`chronology-edge:${run.events[index + 1].id}`} className="run-chronology-edge" d={`M${previous.x + 19},${previous.y} C${(previous.x + point.x) / 2},${previous.y} ${(previous.x + point.x) / 2},${point.y} ${point.x - 19},${point.y}`} markerEnd={`url(#chronology-arrow-${run.id})`} />;
+              })}
               {run.events.map((event, index) => {
-                const x = 55 + index * 120,
-                  y = 90 + (index % 2) * 42;
+                const { x, y } = chronologyPoints[index];
+                const selectable = Boolean(event.stepId);
                 return (
                   <g
                     key={event.id}
                     transform={`translate(${x},${y})`}
-                    className={`run-chronology-node ${/fail|error|cancel/i.test(event.kind) ? "failed" : /start|running|resume/i.test(event.kind) ? "running" : "completed"}`}
+                    className={`run-chronology-node ${/fail|error|cancel/i.test(event.kind) ? "failed" : /start|running|resume/i.test(event.kind) ? "running" : "completed"} ${event.stepId === focalStepId ? "selected" : ""}`}
+                    role={selectable ? "button" : undefined}
+                    tabIndex={selectable ? 0 : undefined}
+                    aria-label={selectable ? `Select ${event.kind} for workflow step ${event.stepId}` : event.kind}
+                    onClick={() => { if (event.stepId) { setMemoryStepId(event.stepId); setMemoryScope("step"); } }}
+                    onKeyDown={(keyboardEvent) => {
+                      if (!event.stepId || (keyboardEvent.key !== "Enter" && keyboardEvent.key !== " ")) return;
+                      keyboardEvent.preventDefault();
+                      setMemoryStepId(event.stepId);
+                      setMemoryScope("step");
+                    }}
                   >
                     <circle r="18" />
                     <text className="event-index" textAnchor="middle" y="3">
@@ -1019,6 +1042,7 @@ function WorkflowRunSplineWorkspace({
                     <text className="event-kind" textAnchor="middle" y="31">
                       {event.kind.slice(0, 18)}
                     </text>
+                    <title>{`${event.kind}${event.stepId ? ` · ${event.stepId}` : " · workflow"} · ${event.createdAt}`}</title>
                   </g>
                 );
               })}
