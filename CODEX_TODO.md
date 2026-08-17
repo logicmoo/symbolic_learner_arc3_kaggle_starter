@@ -833,6 +833,12 @@ Preserve the canonical checkout and its `codex/workbench-navigation-v2` branch.
 - [x] Represent Turtle reconstruction fit as signed identity evidence. Preserve
   the artifact, fit parameters, and measured residual; exact regeneration
   supports identity while a nonzero residual contradicts it.
+- [x] Invoke Turtle reconstruction during every semantic grid capture through
+  the real SWI-Prolog Turtle DSL. Persist fit score, distance, residual, and
+  description length on each Turtle reference; emit separately attributable
+  reconstruction evidence into the encounter, semantic store, action-tree
+  manifest, and deterministic replay. Renderer failures remain infrastructure
+  warnings and never become fabricated negative identity evidence.
 - [x] Add complete deterministic semantic-store snapshots and replay. Restore
   all exact record namespaces in dependency order, rebuild encounter/artifact
   indexes, reject unknown namespaces, and make repeated replay idempotent.

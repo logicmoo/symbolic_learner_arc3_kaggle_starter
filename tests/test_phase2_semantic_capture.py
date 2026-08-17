@@ -6,6 +6,7 @@ from action_tree import ActionTreeStore
 from object_memory import (
     ActionTreeSemanticReplay,
     EncounterRecord,
+    EvidencePolarity,
     GridAdapter,
     InMemorySemanticBackend,
     InstanceParameters,
@@ -47,18 +48,34 @@ def test_semantic_capture_persists_and_links_observations_encounters_and_turtles
     child_manifest = json.loads(child.semantic_records_path.read_text(encoding="utf-8"))
     assert [item["record_type"] for item in initial_manifest["records"]].count("observation") == 1
     assert [item["record_type"] for item in initial_manifest["records"]].count("encounter") == 2
+    assert [item["record_type"] for item in initial_manifest["records"]].count("evidence") == 2
     assert [item["record_type"] for item in child_manifest["records"]].count("encounter") == 2
     assert len(tuple((initial.path / "semantic").glob("*.turtle.pl"))) == 2
     encounters = observer.symbolic_store.encounters.records()
     assert len(encounters) == 4
     assert encounters[2].previous_encounter_id == encounters[0].encounter_id
     assert encounters[3].previous_encounter_id == encounters[1].encounter_id
+    assert all(encounter.evidence_ids for encounter in encounters)
+    assert all(encounter.turtle_programs[0].fit_score == 1.0 for encounter in encounters)
+    assert all(encounter.turtle_programs[0].residual_score == 0.0 for encounter in encounters)
+    assert all(encounter.turtle_programs[0].description_length > 0 for encounter in encounters)
+    turtle_evidence = tuple(
+        record
+        for record in observer.symbolic_store.values("evidence")
+        if str(record.detail.get("assessment", "")).startswith("turtle_")
+        or record.detail.get("assessment") == "exact_turtle_reconstruction"
+    )
+    assert len(turtle_evidence) == 4
+    assert all(record.polarity is EvidencePolarity.SUPPORTS for record in turtle_evidence)
+    assert all(record.source.provider == "swi_prolog.turtle_dsl" for record in turtle_evidence)
+    assert all(record.detail["assessment"] == "exact_turtle_reconstruction" for record in turtle_evidence)
     assert "## Semantic records" in child.readme_path.read_text(encoding="utf-8")
     replayed = ActionTreeSemanticReplay().replay(
         tree.level_root,
         SymbolicStore(InMemorySemanticBackend()),
     )
     assert len(replayed.encounters.records()) == 4
+    assert len(replayed.values("evidence")) == len(observer.symbolic_store.values("evidence"))
     assert replayed.encounters.get(encounters[2].encounter_id).previous_encounter_id == (
         encounters[0].encounter_id
     )

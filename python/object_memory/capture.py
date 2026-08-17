@@ -7,9 +7,23 @@ from pathlib import Path
 import json
 from typing import Any, Callable, Mapping
 
+from project_paths import PROJECT_ROOT
+from swipl_bridge import SWIPrologBridge
+
 from .adapters import GridAdapter
-from .models import ArtifactRef, EncounterRecord, InstanceParameters, TurtleProgramRef
-from .recognition import EncounterChangeSession, RecognitionSession
+from .forms import CellLogoForm, FitResult
+from .models import (
+    ArtifactRef,
+    EncounterRecord,
+    InstanceParameters,
+    ProvenanceRef,
+    TurtleProgramRef,
+)
+from .recognition import (
+    EncounterChangeSession,
+    RecognitionSession,
+    TurtleReconstructionEvidenceBuilder,
+)
 from .store import InMemorySemanticBackend, SymbolicStore
 
 
@@ -33,14 +47,29 @@ class SemanticGridCaptureObserver:
         adapter: GridAdapter,
         grid_selector: Callable[[Any], Any],
         symbolic_store: SymbolicStore | None = None,
+        turtle_form_factory: Callable[[str], CellLogoForm] | None = None,
     ) -> None:
         self.adapter = adapter
         self.grid_selector = grid_selector
         self.symbolic_store = symbolic_store or SymbolicStore(InMemorySemanticBackend())
         self.recognition = RecognitionSession(self.symbolic_store)
         self.changes = EncounterChangeSession(self.symbolic_store)
+        self.turtle_evidence = TurtleReconstructionEvidenceBuilder()
+        if turtle_form_factory is None:
+            bridge = SWIPrologBridge(PROJECT_ROOT / "prolog" / "arc3_agent.pl")
+            turtle_form_factory = lambda source: CellLogoForm(source, swi_bridge=bridge)
+        self.turtle_form_factory = turtle_form_factory
         self._latest_by_candidate: dict[str, str] = {}
         self._latest_observation_id: str | None = None
+
+    def _fit_turtle(self, source: str, candidate: Mapping[str, Any]) -> FitResult | None:
+        """Regenerate a captured Turtle program without fabricating failed evidence."""
+
+        try:
+            return self.turtle_form_factory(source).fit_instance(candidate)
+        except (OSError, RuntimeError, TypeError, ValueError) as exc:
+            print(f"warning: unable to fit captured Turtle program: {exc}")
+            return None
 
     @staticmethod
     def _write_record(path: Path, value: Any) -> Path:
@@ -99,6 +128,38 @@ class SemanticGridCaptureObserver:
                 content_hash=f"sha256:{sha256(turtle_source.encode('utf-8')).hexdigest()}",
                 provenance=batch.observation.provenance,
             )
+            turtle_fit = self._fit_turtle(turtle_source, details)
+            turtle_ref = TurtleProgramRef(
+                turtle_artifact,
+                fit_score=(1.0 - turtle_fit.residual) if turtle_fit is not None else None,
+                distance=turtle_fit.residual if turtle_fit is not None else None,
+                residual_score=turtle_fit.residual if turtle_fit is not None else None,
+                description_length=(
+                    float(
+                        turtle_fit.parameters.get(
+                            "description_length",
+                            len(turtle_source.encode("utf-8")),
+                        )
+                    )
+                    if turtle_fit is not None
+                    else None
+                ),
+            )
+            turtle_evidence = None
+            if turtle_fit is not None:
+                turtle_evidence = self.turtle_evidence.build(
+                    identity_id=candidate.candidate_id,
+                    fit=turtle_fit,
+                    source=ProvenanceRef.create(
+                        source_id=turtle_artifact.artifact_id,
+                        provider="swi_prolog.turtle_dsl",
+                        action_tree_node=str(node.path),
+                        artifact_id=turtle_artifact.artifact_id,
+                        metadata={"observation_id": batch.observation.observation_id},
+                    ),
+                    artifact_id=turtle_artifact.artifact_id,
+                )
+                self.symbolic_store.put_evidence(turtle_evidence)
             bounds = tuple(details.get("bounds") or (0, 0, 1, 1))
             origin_x, origin_y = float(bounds[0]), float(bounds[1])
             geometry = details.get("geometry") or {}
@@ -138,7 +199,10 @@ class SemanticGridCaptureObserver:
                     geometry=normalized_geometry,
                     topology=normalized_topology,
                 ),
-                turtle_programs=(TurtleProgramRef(turtle_artifact),),
+                turtle_programs=(turtle_ref,),
+                evidence_ids=(
+                    (turtle_evidence.evidence_id,) if turtle_evidence is not None else ()
+                ),
                 previous_encounter_id=self._latest_by_candidate.get(candidate.candidate_id),
                 matched_properties=tuple(
                     item for item in ("color", "shape") if details.get(item if item != "color" else "colorName") is not None
@@ -160,6 +224,19 @@ class SemanticGridCaptureObserver:
                 schema_version=encounter.schema_version,
                 deterministic_hash=encounter.deterministic_hash,
             )
+            if turtle_evidence is not None:
+                evidence_path = self._write_record(
+                    semantic_dir / f"{turtle_evidence.evidence_id}.evidence.json",
+                    turtle_evidence,
+                )
+                store.link_semantic_record(
+                    node,
+                    record_type="evidence",
+                    record_id=turtle_evidence.evidence_id,
+                    artifact_path=evidence_path,
+                    schema_version=turtle_evidence.schema_version,
+                    deterministic_hash=turtle_evidence.evidence_id.rsplit("-", 1)[-1],
+                )
             if self.recognition.latest_known_instances():
                 proposals = self.recognition.propose(encounter.encounter_id)
                 for proposal in proposals:
