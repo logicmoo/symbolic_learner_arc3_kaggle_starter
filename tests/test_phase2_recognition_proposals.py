@@ -77,3 +77,36 @@ def test_similarity_never_commits_identity_or_confidence_by_itself() -> None:
     assert unresolved.stored_identity_id is None
     assert unresolved.calibrated_confidence == 0.0
     assert unresolved.decision_source == "unresolved"
+
+
+def test_embedding_retrieval_is_advisory_and_never_becomes_evidence() -> None:
+    matcher = InstanceMatcher()
+    proposals = matcher.proposals(
+        candidate_id="candidate-1",
+        current=_instance(),
+        stored={
+            "property-match": _instance(),
+            "embedding-match": _instance(shape="triangle", color="blue"),
+        },
+        retrieval_scores={
+            "property-match": 0.1,
+            "embedding-match": 1.0,
+        },
+        retrieval_source="fixture-embedding-v1",
+    )
+
+    assert proposals[0].stored_identity_id == "property-match"
+    embedding = next(
+        item for item in proposals if item.stored_identity_id == "embedding-match"
+    )
+    assert embedding.retrieval_score == 1.0
+    assert embedding.retrieval_source == "fixture-embedding-v1"
+    assert embedding.evidence_ids == ()
+    unresolved = matcher.recognition_account(
+        candidate_id="candidate-1",
+        proposals=proposals,
+    )
+    assert unresolved.stored_identity_id is None
+    assert unresolved.calibrated_confidence == 0.0
+    assert unresolved.supporting_evidence_ids == ()
+    assert unresolved.contradicting_evidence_ids == ()

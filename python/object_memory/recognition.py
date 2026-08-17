@@ -138,22 +138,48 @@ class InstanceMatcher:
         current: InstanceParameters,
         stored: Mapping[str, InstanceParameters],
         provenance: tuple[ProvenanceRef, ...] = (),
+        retrieval_scores: Mapping[str, float] | None = None,
+        retrieval_source: str | None = None,
     ) -> tuple[MatchProposal, ...]:
-        proposals = [
-            self.compare(
+        proposals = []
+        for identity_id, instance in stored.items():
+            proposal = self.compare(
                 candidate_id=candidate_id,
                 current=current,
                 stored_identity_id=identity_id,
                 stored=instance,
                 provenance=provenance,
             )
-            for identity_id, instance in stored.items()
-        ]
+            if retrieval_scores is not None and identity_id in retrieval_scores:
+                score = float(retrieval_scores[identity_id])
+                if not 0.0 <= score <= 1.0:
+                    raise ValueError("embedding retrieval scores must be between 0 and 1")
+                proposal = replace(
+                    proposal,
+                    retrieval_score=score,
+                    retrieval_source=retrieval_source or "embedding_retrieval",
+                )
+                proposal = replace(
+                    proposal,
+                    proposal_id=MatchProposal.create(
+                        candidate_id=proposal.candidate_id,
+                        stored_identity_id=proposal.stored_identity_id,
+                        matched_properties=proposal.matched_properties,
+                        changed_properties=proposal.changed_properties,
+                        allowed_transformations=proposal.allowed_transformations,
+                        similarity=proposal.similarity,
+                        retrieval_score=proposal.retrieval_score,
+                        retrieval_source=proposal.retrieval_source,
+                        provenance=proposal.provenance,
+                    ).proposal_id,
+                )
+            proposals.append(proposal)
         return tuple(
             sorted(
                 proposals,
                 key=lambda item: (
                     -(item.similarity if item.similarity is not None else -1.0),
+                    -(item.retrieval_score if item.retrieval_score is not None else -1.0),
                     item.stored_identity_id,
                 ),
             )
@@ -325,7 +351,13 @@ class RecognitionSession:
             evidence_ids=proposal.evidence_ids,
         )
 
-    def propose(self, encounter_id: str) -> tuple[MatchProposal, ...]:
+    def propose(
+        self,
+        encounter_id: str,
+        *,
+        retrieval_scores: Mapping[str, float] | None = None,
+        retrieval_source: str | None = None,
+    ) -> tuple[MatchProposal, ...]:
         encounter = self.store.encounters.get(encounter_id)
         if encounter is None:
             raise KeyError(encounter_id)
@@ -336,6 +368,8 @@ class RecognitionSession:
             current=encounter.instance,
             stored=self.latest_known_instances(),
             provenance=encounter.provenance,
+            retrieval_scores=retrieval_scores,
+            retrieval_source=retrieval_source,
         )
         source = (
             encounter.provenance[0]

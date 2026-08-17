@@ -112,7 +112,7 @@ Keep the shared records in `python/object_memory/models.py`; do not create anoth
 - [x] Distinguish declared transformations from provisional residual candidates representing unexplained, potentially new structure; persist and inspect residuals through live capture and replay.
 - [x] Keep incomplete or noisier encounters from overwriting the best complete stored form while retaining their latest position and supported transformations.
 - [x] Compare Turtle reconstruction fit as one attributable source of signed recognition evidence.
-- [ ] Keep embeddings advisory for retrieval and proposal generation only.
+- [x] Keep embeddings advisory for retrieval and proposal generation only.
 
 ## Implement evidence and calibrated confidence
 

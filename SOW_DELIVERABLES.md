@@ -233,7 +233,8 @@ Phase 2 implements the semantic object layer behind the Phase 1 debugger. It use
 
 ## Phase 2 tests and documentation
 
-- [ ] **Open** Provide tests for identity, correspondence, Turtle regeneration, confidence, duplicate prevention, false merge, false split, degradation, partial visibility, memory, and replay.
+- [x] Provide tests for identity, correspondence, Turtle regeneration, confidence, duplicate prevention, false merge, false split, degradation, partial visibility, memory, and replay.
+  Evidence: the deterministic Phase 2 suites cover identity lifecycle and registry authority; competing correspondence proposals and signed evidence; real SWI-Prolog Turtle regeneration, topology, width, and rival forms; confidence calibration and reversal; write-once duplicate conflicts; reversible false merge/split handling; noise and partial-visibility completion; snapshot/Prolog memory; and action-tree replay with predecessor, conflict, and restart checks.
 
 - [x] Provide a reproducible Phase 2 workflow demonstration:
 

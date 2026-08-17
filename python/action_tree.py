@@ -806,6 +806,8 @@ class ActionTreeStore:
                             "  - unresolved candidate "
                             f"`{detail.get('candidate_id')}` → `{detail.get('stored_identity_id')}`; "
                             f"advisory similarity `{detail.get('similarity')}`; "
+                            f"advisory retrieval `{detail.get('retrieval_score')}` from "
+                            f"`{detail.get('retrieval_source') or 'none'}`; "
                             f"{len(detail.get('evidence_ids') or [])} evidence record(s)"
                         )
                     elif record["record_type"] == "recognition_account":

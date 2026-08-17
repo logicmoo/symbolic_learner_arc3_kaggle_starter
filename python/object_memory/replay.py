@@ -185,6 +185,8 @@ class SemanticRecordCodec:
                 changed_properties=_changed_properties(value.get("changed_properties") or {}),
                 allowed_transformations=tuple(value.get("allowed_transformations") or ()),
                 similarity=value.get("similarity"),
+                retrieval_score=value.get("retrieval_score"),
+                retrieval_source=value.get("retrieval_source"),
                 evidence_ids=tuple(value.get("evidence_ids") or ()),
                 provenance=tuple(_provenance(item) for item in value.get("provenance") or ()),
                 schema_version=str(value.get("schema_version", "2.0.0")),

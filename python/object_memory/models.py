@@ -233,6 +233,8 @@ class MatchProposal:
     changed_properties: Mapping[str, Any] = field(default_factory=dict)
     allowed_transformations: tuple[str, ...] = ()
     similarity: float | None = None
+    retrieval_score: float | None = None
+    retrieval_source: str | None = None
     evidence_ids: tuple[str, ...] = ()
     provenance: tuple[ProvenanceRef, ...] = ()
     schema_version: str = PHASE2_SCHEMA_VERSION
@@ -246,6 +248,8 @@ class MatchProposal:
             "stored_identity_id": stored_identity_id,
             "matched_properties": values.get("matched_properties", ()),
             "changed_properties": values.get("changed_properties", {}),
+            "retrieval_score": values.get("retrieval_score"),
+            "retrieval_source": values.get("retrieval_source"),
         }
         return cls(
             proposal_id=deterministic_identifier("match-proposal", identity),
