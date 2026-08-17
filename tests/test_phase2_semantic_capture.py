@@ -338,9 +338,35 @@ def test_semantic_capture_hands_real_state_and_transition_to_learner(
         def consume_transition(self, before, action, after):
             self.transitions.append((before, action, after))
             return {
-                "kind": "transition",
-                "before": before.state_id,
-                "after": after.state_id,
+                "value": {
+                    "state_id": after.state_id,
+                    "learning_step": {
+                        "transition": {
+                            "before_state_id": before.state_id,
+                            "action_or_event": action,
+                            "after_state_id": after.state_id,
+                            "changes": ["moved"],
+                        },
+                        "candidates": [
+                            {
+                                "candidate_id": "candidate-move",
+                                "transformation": "translate-right",
+                                "assumptions": ["stable identity"],
+                                "critiques": ["one observation"],
+                            }
+                        ],
+                        "rules": [
+                            {
+                                "rule_id": "rule-move",
+                                "action_or_event": "RIGHT",
+                                "bootstrap_probability": 0.5,
+                                "probability_source": "bootstrap",
+                                "rival_rule_ids": ["rule-recolor"],
+                                "supporting_evidence_ids": ["evidence-move"],
+                            }
+                        ],
+                    },
+                }
             }
 
     tree = ActionTreeStore(tmp_path / "tree", "game", 1)
@@ -383,3 +409,12 @@ def test_semantic_capture_hands_real_state_and_transition_to_learner(
     ]
     assert len(learner_links) == 1
     assert (child.path / learner_links[0]["artifact"]).is_file()
+    record_types = [item["record_type"] for item in manifest["records"]]
+    assert record_types.count("learner_transition") == 1
+    assert record_types.count("transformation_candidate") == 1
+    assert record_types.count("transition_rule") == 1
+    readme = child.readme_path.read_text(encoding="utf-8")
+    assert "candidate transformation `translate-right`" in readme
+    assert "1 assumption(s), 1 critique(s)" in readme
+    assert "rule for action/event `RIGHT`" in readme
+    assert "1 rival(s), 1 supporting and 0 contradicting" in readme

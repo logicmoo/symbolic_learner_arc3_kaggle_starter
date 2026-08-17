@@ -617,8 +617,9 @@ class SemanticGridCaptureObserver:
                     current_payload,
                 )
             self.learner_results.append(result)
+            result_payload = _jsonable(result)
             encoded = json.dumps(
-                _jsonable(result),
+                result_payload,
                 indent=2,
                 ensure_ascii=False,
                 sort_keys=True,
@@ -636,4 +637,58 @@ class SemanticGridCaptureObserver:
                 schema_version="1.0.0",
                 deterministic_hash=result_hash,
             )
+            value_payload = (
+                result_payload.get("value", result_payload)
+                if isinstance(result_payload, Mapping)
+                else {}
+            )
+            learning_step = (
+                value_payload.get("learning_step")
+                if isinstance(value_payload, Mapping)
+                else None
+            )
+            if isinstance(learning_step, Mapping):
+                learner_records = [
+                    ("learner_transition", learning_step.get("transition")),
+                    *(
+                        ("transformation_candidate", item)
+                        for item in learning_step.get("candidates") or ()
+                    ),
+                    *(
+                        ("transition_rule", item)
+                        for item in learning_step.get("rules") or ()
+                    ),
+                ]
+                for record_type, record_payload in learner_records:
+                    if not isinstance(record_payload, Mapping):
+                        continue
+                    record_encoded = json.dumps(
+                        record_payload,
+                        indent=2,
+                        ensure_ascii=False,
+                        sort_keys=True,
+                    ) + "\n"
+                    record_hash = sha256(record_encoded.encode("utf-8")).hexdigest()
+                    record_id = str(
+                        record_payload.get("rule_id")
+                        or record_payload.get("candidate_id")
+                        or f"learner-transition-{record_hash}"
+                    )
+                    record_path = semantic_dir / (
+                        f"{record_type}-{record_hash[:16]}.json"
+                    )
+                    if (
+                        record_path.exists()
+                        and record_path.read_text(encoding="utf-8") != record_encoded
+                    ):
+                        raise RuntimeError(f"Learner record conflict at {record_path}")
+                    record_path.write_text(record_encoded, encoding="utf-8")
+                    store.link_semantic_record(
+                        node,
+                        record_type=record_type,
+                        record_id=record_id,
+                        artifact_path=record_path,
+                        schema_version="1.0.0",
+                        deterministic_hash=record_hash,
+                    )
         self._latest_observation_id = batch.observation.observation_id

@@ -311,8 +311,8 @@ Phase 3 implements learning and prediction over the persistent objects and evide
 ## Debugger evidence writeback
 
 - [ ] **Partial** Write rules, critiques, probabilities, predictions, and grades back to the debugger and action-tree README evidence.  
-  Existing evidence: Phase 1 can already display provider-generated rules, critiques, and confidence outputs.  
-  Remaining: normalized real learner records, outcome links, grades, and evidence updates.
+  Existing evidence: Phase 1 can display provider-generated outputs; live semantic capture now decomposes normalized learner transitions, transformation candidates, and competing rules into individually linked artifacts with README summaries of assumptions, critiques, rivals, probability, and evidence.
+  Remaining: action-tree links for pre-outcome predictions, independent outcomes, and grades.
 
 - [ ] **Open** Link learned rules and action recommendations to their source observations, Phase 2 objects, evidence, predictions, and outcomes.
 

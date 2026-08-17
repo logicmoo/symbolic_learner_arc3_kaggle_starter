@@ -220,13 +220,13 @@ Deliverables: [Phase 3 checklist](SOW_DELIVERABLES.md#phase-3--game-object-learn
 
 ## Write learner evidence back to the debugger
 
-- [ ] Link candidate transformations into action-tree evidence.
-- [ ] Link competing rules, assumptions, critiques, and confidence or probability estimates.
+- [x] Link candidate transformations into action-tree evidence.
+- [x] Link competing rules, assumptions, critiques, and confidence or probability estimates.
 - [ ] Link pre-outcome predictions and independently observed outcomes.
 - [ ] Link grades and positive or negative evidence updates.
 - [ ] Link learned rules and optional action recommendations.
 - [ ] Make node READMEs trace each result back to source observations, Phase 2 objects, provider calls, and learner records.
-- [ ] Keep this writeback pluggable so the debugger remains independent of learner internals.
+- [x] Keep this writeback pluggable so the debugger remains independent of learner internals.
 
 ## Phase 3 tests and demonstrations
 

@@ -688,6 +688,32 @@ class ActionTreeStore:
                             f"`{detail.get('residual_length')}`; provenance "
                             f"`{', '.join(detail.get('provenance') or ())}`"
                         )
+                    elif record["record_type"] == "learner_transition":
+                        lines.append(
+                            f"  - `{detail.get('before_state_id')}` —"
+                            f"`{detail.get('action_or_event')}`→ "
+                            f"`{detail.get('after_state_id')}`; "
+                            f"{len(detail.get('changes') or [])} observed change(s)"
+                        )
+                    elif record["record_type"] == "transformation_candidate":
+                        lines.append(
+                            f"  - candidate transformation `{detail.get('transformation')}`; "
+                            f"{len(detail.get('assumptions') or [])} assumption(s), "
+                            f"{len(detail.get('critiques') or [])} critique(s)"
+                        )
+                    elif record["record_type"] == "transition_rule":
+                        probability = detail.get("calibrated_probability")
+                        if probability is None:
+                            probability = detail.get("bootstrap_probability", 0.0)
+                        lines.append(
+                            f"  - rule for action/event `{detail.get('action_or_event')}`; "
+                            f"probability `{probability}` from "
+                            f"`{detail.get('probability_source', 'bootstrap')}`; "
+                            f"{len(detail.get('rival_rule_ids') or [])} rival(s), "
+                            f"{len(detail.get('supporting_evidence_ids') or [])} supporting and "
+                            f"{len(detail.get('contradicting_evidence_ids') or [])} contradicting "
+                            "evidence record(s)"
+                        )
 
         lines.extend(["", "## Embedded files", ""])
 
