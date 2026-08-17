@@ -160,6 +160,52 @@ def test_while_validation_reports_bad_operator_binding_and_bound_without_crashin
     assert 'controller.while[0].condition references unavailable artifact $missing' in errors
 
 
+def test_human_input_loop_survives_engine_restart(tmp_path: Path) -> None:
+    database = tmp_path / 'human-loop.db'
+    runtime = AdvancedWorkflowEngine(database)
+    runtime.save_workflow({
+        'id': 'human-loop',
+        'outputs': {'continue': '$continue'},
+        'steps': [
+            {
+                'id': 'ask',
+                'kind': 'human',
+                'form': {'continue': {'type': 'Boolean'}},
+                'outputs': {'continue': 'continue'},
+            },
+            {
+                'id': 'decide',
+                'kind': 'operation',
+                'implementation': 'core.echo',
+                'dependsOn': ['ask'],
+                'inputs': {'value': '$continue'},
+                'outputs': {'value': 'decision'},
+                'while': {
+                    'condition': '$decision',
+                    'operator': 'truthy',
+                    'maxIterations': 3,
+                    'targetStepId': 'ask',
+                },
+            },
+        ],
+    })
+
+    waiting = runtime.start('human-loop', {})
+    waiting_again = runtime.submit_human_input(waiting['id'], 'ask', {'continue': True})
+    assert waiting_again['status'] == 'waiting'
+    assert [event['kind'] for event in waiting_again['events']].count('loop.iteration') == 1
+
+    restarted = AdvancedWorkflowEngine(database)
+    recovered = restarted.get_run(waiting['id'])
+    assert recovered['status'] == 'waiting'
+    assert next(step for step in recovered['steps'] if step['stepId'] == 'ask')['status'] == 'waiting'
+
+    completed = restarted.submit_human_input(waiting['id'], 'ask', {'continue': False})
+    assert completed['status'] == 'completed'
+    assert completed['outputs'] == {'continue': False}
+    assert [event['kind'] for event in completed['events']].count('loop.iteration') == 1
+
+
 def test_human_wait_resume_and_logs(tmp_path: Path) -> None:
     runtime = engine(tmp_path)
     runtime.save_workflow({
