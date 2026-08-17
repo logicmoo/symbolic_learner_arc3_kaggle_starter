@@ -125,6 +125,11 @@ from .recognition import (
     ResidualAnalyzer,
     TurtleReconstructionEvidenceBuilder,
 )
+from .recognition_benchmark import (
+    RecognitionBenchmarkResult,
+    RecognitionBenchmarkRunner,
+    RecognitionFixture,
+)
 from .replay import (
     ActionTreeSemanticReplay,
     AtomSpaceSemanticBackend,
@@ -227,6 +232,9 @@ __all__ = [
     "RecognitionCalibrationReport",
     "RecognitionCalibrationPolicy",
     "RecognitionCalibrator",
+    "RecognitionBenchmarkResult",
+    "RecognitionBenchmarkRunner",
+    "RecognitionFixture",
     "RecognitionSession",
     "RasterPerturbationGenerator",
     "RegistryCorrespondenceAuthority",
