@@ -2,7 +2,12 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from hashlib import sha256
+from io import BytesIO
+from pathlib import Path
 from typing import Any, Iterable, Mapping
+
+from PIL import Image
 
 from .models import ArtifactRef, CandidateObject, Observation, ProvenanceRef
 
@@ -131,6 +136,13 @@ class GridPerceptionBatch:
     extractor_details: Mapping[str, Mapping[str, Any]]
 
 
+@dataclass(frozen=True)
+class MediaPerceptionBatch:
+    observation: Observation
+    candidates: tuple[CandidateObject, ...]
+    extractor_details: Mapping[str, Mapping[str, Any]]
+
+
 class PerceptionAdapter(ABC):
     """Domain seam; core code must not import ARC or raster assumptions."""
 
@@ -239,3 +251,151 @@ class GridAdapter(PerceptionAdapter):
                 region_ref=item.get("region_ref"),
                 provenance=tuple(item.get("provenance", ())),
             )
+
+
+def _load_image(value: Any) -> tuple[Image.Image, bytes | None, str | None]:
+    if isinstance(value, Image.Image):
+        return value.copy(), None, value.format
+    if isinstance(value, (bytes, bytearray)):
+        payload = bytes(value)
+        with Image.open(BytesIO(payload)) as source:
+            return source.copy(), payload, source.format
+    path = Path(value)
+    payload = path.read_bytes()
+    with Image.open(BytesIO(payload)) as source:
+        return source.copy(), payload, source.format
+
+
+class ImageAdapter(PerceptionAdapter):
+    """Normalize raster extractor output without prescribing segmentation."""
+
+    def __init__(self, extractor: Any, provider: Any) -> None:
+        self.extractor = extractor
+        self.provider = provider
+        self._details: dict[str, Mapping[str, Any]] = {}
+
+    def normalize(
+        self,
+        *,
+        observation_id: str,
+        image: Any,
+        action_tree_node: str,
+        artifact_uri: str,
+        sequence: int | None = None,
+    ) -> MediaPerceptionBatch:
+        raster, payload, image_format = _load_image(image)
+        extracted = self.extractor(raster)
+        if not isinstance(extracted, Mapping) or not isinstance(
+            extracted.get("objects"), list
+        ):
+            raise TypeError("image extractor must return a mapping with an objects list")
+        provider_name = str(extracted.get("source", "image_extractor"))
+        provenance = ProvenanceRef(
+            source_id=observation_id,
+            provider=provider_name,
+            action_tree_node=action_tree_node,
+            sequence=sequence,
+            metadata={"algorithm": extracted.get("algorithm")},
+        )
+        digest = extracted.get("sha256") or (
+            sha256(payload).hexdigest() if payload is not None else None
+        )
+        artifact = ArtifactRef.create(
+            artifact_type="raster_image",
+            uri=artifact_uri,
+            content_hash=f"sha256:{digest}" if digest else None,
+            media_type=Image.MIME.get(image_format or "", "image/png"),
+            provenance=(provenance,),
+        )
+        candidates: list[CandidateObject] = []
+        details: dict[str, Mapping[str, Any]] = {}
+        for index, item in enumerate(extracted["objects"]):
+            if not isinstance(item, Mapping):
+                raise TypeError("image extractor object entries must be mappings")
+            candidate_id = str(
+                item.get("candidate_id") or item.get("id") or f"candidate_{index}"
+            )
+            bounds = tuple(item.get("bounds") or item.get("bbox") or ())
+            details[candidate_id] = {
+                **item,
+                "normalizedStructure": {
+                    "geometry": {"bounds": bounds},
+                    "properties": dict(item.get("properties") or {}),
+                    "relationships": tuple(item.get("relationships") or ()),
+                    "topology": dict(item.get("topology") or {}),
+                },
+            }
+            candidates.append(
+                CandidateObject(
+                    candidate_id=candidate_id,
+                    observation_id=observation_id,
+                    domain="image",
+                    provider=self.provider,
+                    region_ref=f"{artifact_uri}#objects/{candidate_id}",
+                    provenance=(observation_id, provider_name, action_tree_node),
+                )
+            )
+        self._details.update(details)
+        observation = Observation.create(
+            source_modality="raster_image",
+            artifacts=(artifact,),
+            dimensions=(raster.height, raster.width, len(raster.getbands())),
+            coordinate_contract="(x, y) pixel coordinates; origin top-left",
+            candidate_object_ids=tuple(item.candidate_id for item in candidates),
+            action_tree_node=action_tree_node,
+            provenance=(provenance,),
+        )
+        return MediaPerceptionBatch(observation, tuple(candidates), details)
+
+    def candidate_detail(self, candidate_id: str) -> Mapping[str, Any]:
+        return self._details[candidate_id]
+
+    def propose_candidates(self, observation: Any) -> Iterable[CandidateObject]:
+        if not isinstance(observation, Mapping) or "image" not in observation:
+            raise TypeError("image observation must contain an image")
+        yield from self.normalize(
+            observation_id=str(observation["observation_id"]),
+            image=observation["image"],
+            action_tree_node=str(observation["action_tree_node"]),
+            artifact_uri=str(observation["artifact_uri"]),
+            sequence=observation.get("sequence"),
+        ).candidates
+
+
+class SimpleVideoAdapter(PerceptionAdapter):
+    """Adapt an ordered iterable of decoded frames through an ImageAdapter."""
+
+    def __init__(self, image_adapter: ImageAdapter) -> None:
+        self.image_adapter = image_adapter
+
+    def normalize(
+        self,
+        *,
+        observation_id: str,
+        frames: Iterable[Any],
+        action_tree_node: str,
+        artifact_uri: str,
+    ) -> tuple[MediaPerceptionBatch, ...]:
+        batches = []
+        for sequence, frame in enumerate(frames):
+            batches.append(
+                self.image_adapter.normalize(
+                    observation_id=f"{observation_id}:frame:{sequence}",
+                    image=frame,
+                    action_tree_node=action_tree_node,
+                    artifact_uri=f"{artifact_uri}#frame={sequence}",
+                    sequence=sequence,
+                )
+            )
+        return tuple(batches)
+
+    def propose_candidates(self, observation: Any) -> Iterable[CandidateObject]:
+        if not isinstance(observation, Mapping) or "frames" not in observation:
+            raise TypeError("video observation must contain decoded frames")
+        for batch in self.normalize(
+            observation_id=str(observation["observation_id"]),
+            frames=observation["frames"],
+            action_tree_node=str(observation["action_tree_node"]),
+            artifact_uri=str(observation["artifact_uri"]),
+        ):
+            yield from batch.candidates

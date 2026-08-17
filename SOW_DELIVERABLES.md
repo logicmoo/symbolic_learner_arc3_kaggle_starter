@@ -146,7 +146,7 @@ Phase 2 implements the semantic object layer behind the Phase 1 debugger. It use
 ## Perception and normalized representation
 
 - [ ] **Partial** Implement pluggable perception providers for grid inputs.  
-  Existing evidence: `CandidateObject`, `PerceptionAdapter`, and `GridAdapter`; the adapter now wraps the existing `workbench.server.runtime.analyze_grid` extractor and emits normalized `Observation`, artifact/provenance, and candidate contracts without duplicating extraction logic.
+  Existing evidence: `CandidateObject`, `PerceptionAdapter`, and `GridAdapter`; the grid adapter wraps the existing `workbench.server.runtime.analyze_grid` extractor and emits normalized `Observation`, artifact/provenance, and candidate contracts without duplicating extraction logic. `ImageAdapter` accepts Pillow images, encoded bytes, or paths with injected segmentation providers, while `SimpleVideoAdapter` sends ordered decoded frames through the same image contract without imposing an OpenCV dependency.
   Remaining: broaden normalized topology/relationship coverage and connect the adapter to live semantic encounter creation.
 
 - [ ] **Open** Implement pluggable perception providers for image and simple-video inputs.

@@ -74,7 +74,7 @@ Keep the shared records in `python/object_memory/models.py`; do not create anoth
 - [x] Wrap it behind `GridAdapter` rather than rewriting it.
 - [x] Normalize components, geometry, properties, relationships, topology, holes, enclosures, bars, lines, and compound objects.
 - [x] Preserve exact logical-grid coordinates and source artifact references.
-- [ ] Add pluggable image and simple-video adapters behind the same normalized contracts.
+- [x] Add pluggable image and simple-video adapters behind the same normalized contracts.
 - [x] Keep provider-specific intermediate data out of persistent object records unless referenced through provenance.
 - [x] Add fixtures for irregular geometry, topology, holes, enclosure, line thickness, and disconnected strokes.
 

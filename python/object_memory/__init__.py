@@ -8,7 +8,10 @@ Prolog artifact contracts.
 from .adapters import (
     GridAdapter,
     GridPerceptionBatch,
+    ImageAdapter,
+    MediaPerceptionBatch,
     PerceptionAdapter,
+    SimpleVideoAdapter,
     normalize_grid_structure,
 )
 from .capture import SemanticGridCaptureObserver, standard_semantic_grid_observer
@@ -127,6 +130,8 @@ __all__ = [
     "GenerativeForm",
     "GptArtifactProvider",
     "GridAdapter",
+    "ImageAdapter",
+    "MediaPerceptionBatch",
     "GridPerceptionBatch",
     "IntegrationError",
     "IntegrationValidator",
@@ -142,6 +147,7 @@ __all__ = [
     "ObjectChange",
     "OutcomeChannel",
     "PerceptionAdapter",
+    "SimpleVideoAdapter",
     "PartialVisibilityCompletion",
     "Phase2LearnerPayloadBuilder",
     "phase2_transformation_learner",
