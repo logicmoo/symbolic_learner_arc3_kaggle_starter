@@ -24,3 +24,13 @@ def test_workspace_file_runner_loads_assets_through_the_workspace_api() -> None:
     assert '"data_inspect"' in source
     assert '"artifact_inspect"' in source
     assert "data-url" in source
+
+
+def test_universal_runner_separates_default_and_selected_operations() -> None:
+    source = (COMPONENTS / "ResourceExecutionPlayground.tsx").read_text(encoding="utf-8")
+    compact = "".join(source.split())
+
+    assert "constdefaultOperation=operations[0]?.id" in compact
+    assert "run(defaultOperation)" in source
+    assert "run(selectedOperation)" in source
+    assert "setSelectedOperation(current=>compatible.some" in compact
