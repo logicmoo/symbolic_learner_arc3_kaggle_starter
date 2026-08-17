@@ -15,6 +15,12 @@ from .adapters import (
     normalize_grid_structure,
 )
 from .capture import SemanticGridCaptureObserver, standard_semantic_grid_observer
+from .benchmark import (
+    PerceptionBenchmarkResult,
+    PerceptionBenchmarkRunner,
+    PerceptionFixture,
+    RasterPerturbationGenerator,
+)
 from .forms import CellLogoForm, FitResult, GenerativeForm
 from .integration import (
     GAME_OBJECT_LEARNER_SCHEMA_VERSION,
@@ -149,6 +155,9 @@ __all__ = [
     "ObjectChange",
     "OutcomeChannel",
     "PerceptionAdapter",
+    "PerceptionBenchmarkResult",
+    "PerceptionBenchmarkRunner",
+    "PerceptionFixture",
     "SimpleVideoAdapter",
     "PartialVisibilityCompletion",
     "Phase2LearnerPayloadBuilder",
@@ -177,6 +186,7 @@ __all__ = [
     "ResidualGate",
     "RecognitionAccount",
     "RecognitionSession",
+    "RasterPerturbationGenerator",
     "RegistryCorrespondenceAuthority",
     "RuleEvidence",
     "RuleExecutor",

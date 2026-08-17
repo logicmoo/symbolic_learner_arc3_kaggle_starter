@@ -267,9 +267,9 @@ Architecture: [Environment progression](SOW_PHASE_ARCHITECTURE.md#environment-pr
 - [ ] Fixed-camera physics fixtures.
 - [x] `SpriteAdapter` and contour/vector providers.
 - [ ] Top-down manipulation fixtures.
-- [ ] Partial-occlusion completion datasets.
-- [ ] Benchmark runner.
-- [ ] Perturbation generator.
+- [x] Partial-occlusion completion datasets.
+- [x] Benchmark runner.
+- [x] Perturbation generator.
 - [ ] Provider/mode ablation runner.
 - [ ] Transcript comparison and scoring tools.
 - [ ] Acceptance report generator.
