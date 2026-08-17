@@ -69,4 +69,6 @@ def test_live_capture_persists_evidence_backed_transition_changes(tmp_path: Path
     assert {item.change_id: item for item in replayed.values("object_changes")} == {
         item.change_id: item for item in changes
     }
-    assert replayed.values("residuals") == residuals
+    assert {item.residual_id: item for item in replayed.values("residuals")} == {
+        item.residual_id: item for item in residuals
+    }

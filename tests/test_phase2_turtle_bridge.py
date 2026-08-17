@@ -70,3 +70,24 @@ def test_thick_rectangle_uses_pen_width_instead_of_row_enumeration() -> None:
     assert {tuple(cell) for cell in rendered["cells"]} == {
         tuple(cell) for cell in item["cells"]
     }
+
+
+def test_hollow_object_preserves_hole_and_exact_topology() -> None:
+    grid = [
+        [0, 0, 0, 0, 0],
+        [0, 5, 5, 5, 0],
+        [0, 5, 0, 5, 0],
+        [0, 5, 5, 5, 0],
+        [0, 0, 0, 0, 0],
+    ]
+    item = analyze_grid(grid)["objects"][0]
+    rendered = CellLogoForm(item["turtleProgram"], swi_bridge=_bridge()).render()
+
+    assert item["shape"] == "hollow_square"
+    assert item["topology"]["connectedComponents"] == 1
+    assert item["topology"]["holeCount"] == 1
+    assert item["topology"]["holes"] == [[[2, 2]]]
+    assert (2, 2) not in {tuple(cell) for cell in rendered["cells"]}
+    assert {tuple(cell) for cell in rendered["cells"]} == {
+        tuple(cell) for cell in item["cells"]
+    }

@@ -136,16 +136,16 @@ Keep the shared records in `python/object_memory/models.py`; do not create anoth
 ## Phase 2 tests and demonstrations
 
 - [ ] Stable persistent identity across multiple encounters and state transitions.
-- [ ] Correspondence across before/after states and repeated examples.
+- [x] Correspondence across before/after states and repeated examples.
 - [x] Movement, recolor, resize, addition, removal, split, merge, and structural-change detection.
-- [ ] Per-object Turtle regeneration using movement, rotation, pen state, and pen width.
-- [ ] Regenerated/source comparison and residual measurement.
-- [ ] Duplicate-prevention test.
+- [x] Per-object Turtle regeneration using movement, rotation, pen state, and pen width.
+- [x] Regenerated/source comparison and residual measurement.
+- [x] Duplicate-prevention test.
 - [x] False-merge and false-split tests.
-- [ ] Translation, rotation, reflection, recolor, scale, noise, and partial-visibility fixtures.
+- [x] Translation, rotation, reflection, recolor, scale, noise, and partial-visibility fixtures.
 - [ ] Modest degradation and partial-occlusion recognition.
-- [ ] Positive and negative evidence accumulation.
-- [ ] Confidence calibration and reproducibility.
+- [x] Positive and negative evidence accumulation.
+- [x] Confidence calibration and reproducibility.
 - [x] Deterministic semantic-memory replay over exact records linked from Phase 1 action-tree manifests, including predecessor-ordered encounter chains.
 
 ## Phase 2 demonstration workflow

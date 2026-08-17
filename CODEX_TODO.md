@@ -872,6 +872,10 @@ Preserve the canonical checkout and its `codex/workbench-navigation-v2` branch.
   Emit a distinct occurrence record each time, remain provisional initially,
   and advance repeated unexplained structure to `commit_request` only through
   the deterministic `ResidualGate`.
+- [x] Preserve and recognize normalized grid topology. Carry normalized boundary
+  cells, holes, component count, and thickness into semantic instances; prove
+  translated topology with signed evidence; and regression-test exact hollow
+  object regeneration through live SWI-Prolog without filling its hole.
 - [x] Add the filesystem-backed `Visual Image Diff` page as three native
   `ThreeStateAccordionStack` columns. Persist the supplied ACTION4 then
   ACTION1 (up) image sequence as workspace assets and a sequence manifest;

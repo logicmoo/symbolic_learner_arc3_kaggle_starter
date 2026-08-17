@@ -78,6 +78,17 @@ def _turtle(value: Mapping[str, Any]) -> TurtleProgramRef:
 
 
 def _instance(value: Mapping[str, Any]) -> InstanceParameters:
+    geometry = dict(value.get("geometry") or {})
+    if "boundary_cells" in geometry:
+        geometry["boundary_cells"] = tuple(
+            tuple(cell) for cell in geometry.get("boundary_cells") or ()
+        )
+    topology = dict(value.get("topology") or {})
+    if "holes" in topology:
+        topology["holes"] = tuple(
+            tuple(tuple(cell) for cell in hole)
+            for hole in topology.get("holes") or ()
+        )
     return InstanceParameters(
         position=tuple(value.get("position") or ()),
         orientation=value.get("orientation"),
@@ -87,16 +98,29 @@ def _instance(value: Mapping[str, Any]) -> InstanceParameters:
         reflection=value.get("reflection"),
         visibility=float(value.get("visibility", 1.0)),
         noise_score=float(value.get("noise_score", 0.0)),
+        geometry=geometry,
+        topology=topology,
         schema_version=str(value.get("schema_version", "2.0.0")),
     )
 
 
 def _changed_properties(value: Mapping[str, Any]) -> dict[str, Any]:
+    def tuplify(item: Any) -> Any:
+        if isinstance(item, list):
+            return tuple(tuplify(value) for value in item)
+        if isinstance(item, Mapping):
+            return {key: tuplify(value) for key, value in item.items()}
+        return item
+
     restored: dict[str, Any] = {}
     for field, change in value.items():
         if isinstance(change, Mapping) and {"from", "to"}.issubset(change):
             restored[field] = {
-                key: tuple(item) if isinstance(item, list) else item
+                key: (
+                    tuplify(item)
+                    if field in {"position", "scale", "geometry", "topology"}
+                    else item
+                )
                 for key, item in change.items()
             }
         else:

@@ -100,6 +100,29 @@ class SemanticGridCaptureObserver:
                 provenance=batch.observation.provenance,
             )
             bounds = tuple(details.get("bounds") or (0, 0, 1, 1))
+            origin_x, origin_y = float(bounds[0]), float(bounds[1])
+            geometry = details.get("geometry") or {}
+            topology = details.get("topology") or {}
+            normalized_geometry = {
+                "width": geometry.get("width"),
+                "height": geometry.get("height"),
+                "boundary_cells": tuple(
+                    (float(cell[0]) - origin_x, float(cell[1]) - origin_y)
+                    for cell in geometry.get("boundaryCells") or ()
+                ),
+                "line_thickness": details.get("lineThickness"),
+            }
+            normalized_topology = {
+                "connected_components": topology.get("connectedComponents"),
+                "hole_count": topology.get("holeCount"),
+                "holes": tuple(
+                    tuple(
+                        (float(cell[0]) - origin_x, float(cell[1]) - origin_y)
+                        for cell in hole
+                    )
+                    for hole in topology.get("holes") or ()
+                ),
+            }
             encounter = EncounterRecord.create(
                 observation_id=batch.observation.observation_id,
                 action_tree_node=str(node.path),
@@ -112,6 +135,8 @@ class SemanticGridCaptureObserver:
                         "shape": details.get("shape"),
                     },
                     supported_transformations=("translation", "recolor"),
+                    geometry=normalized_geometry,
+                    topology=normalized_topology,
                 ),
                 turtle_programs=(TurtleProgramRef(turtle_artifact),),
                 previous_encounter_id=self._latest_by_candidate.get(candidate.candidate_id),

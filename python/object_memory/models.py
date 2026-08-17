@@ -135,6 +135,8 @@ class InstanceParameters:
     reflection: str | None = None
     visibility: float = 1.0
     noise_score: float = 0.0
+    geometry: Mapping[str, Any] = field(default_factory=dict)
+    topology: Mapping[str, Any] = field(default_factory=dict)
     schema_version: str = PHASE2_SCHEMA_VERSION
 
 

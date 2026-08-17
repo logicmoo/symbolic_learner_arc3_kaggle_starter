@@ -187,7 +187,8 @@ Phase 2 implements the semantic object layer behind the Phase 1 debugger. It use
   Existing evidence: `CellLogoForm` now executes extracted programs through `SWIPrologBridge` and the canonical `prolog/turtle_dsl.pl`; regenerated-cell fit, distance, normalized residual, and description-length metrics have live SWI-Prolog coverage.
   `TurtleReconstructionEvidenceBuilder` now converts exact fit or residual measurements into attributable signed evidence without hiding the measured residual. Remaining: invoke and persist these metrics automatically in the live recognition pipeline.
 
-- [ ] **Open** Preserve exact holes, disconnected strokes, topology, and supported thickness through the stored Turtle program.
+- [x] Preserve exact holes, disconnected strokes, topology, and supported thickness through the stored Turtle program.
+  Evidence: live SWI-Prolog regeneration exactly preserves hollow objects without filling their holes, disconnected components retain separate programs, and supported thick rectangles use canonical pen width. Semantic instances now retain translation-normalized boundary geometry, hole cells, component count, and thickness; exact topology/geometry matches create attributable support evidence.
 
 ## Residuals, duplicates, evidence, and confidence
 

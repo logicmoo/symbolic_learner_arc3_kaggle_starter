@@ -38,6 +38,10 @@ class InstanceMatcher:
             return "partial_visibility"
         if field == "noise_score":
             return "noise"
+        if field == "geometry":
+            return "geometry_change"
+        if field == "topology":
+            return "topology_change"
         return "appearance_change"
 
     def compare(
@@ -69,6 +73,10 @@ class InstanceMatcher:
             compare_field("visibility", stored.visibility, current.visibility, "partial_visibility")
         if stored.noise_score != 0.0 or current.noise_score != 0.0:
             compare_field("noise_score", stored.noise_score, current.noise_score, "noise")
+        if stored.geometry or current.geometry:
+            compare_field("geometry", stored.geometry, current.geometry, "geometry_change")
+        if stored.topology or current.topology:
+            compare_field("topology", stored.topology, current.topology, "topology_change")
         appearance_keys = sorted({*stored.appearance, *current.appearance})
         for key in appearance_keys:
             before = stored.appearance.get(key)
