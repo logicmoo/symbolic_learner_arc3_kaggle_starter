@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from enum import Enum
 from typing import Any, Callable, Iterable, Mapping, Sequence
 
 from .models import (
@@ -49,10 +50,47 @@ class RuleRivalSet:
     rules: tuple[TransitionRule, ...]
 
 
+class PredictionGradeStatus(str, Enum):
+    SUCCESS = "success"
+    FAILURE = "failure"
+    PARTIAL_MATCH = "partial_match"
+    CONTRADICTION = "contradiction"
+    UNGRADABLE = "ungradable"
+
+
 @dataclass(frozen=True)
 class PredictionGrade:
-    score: float
+    score: float | None
     evidence: tuple[Any, ...] = ()
+    status: PredictionGradeStatus | None = None
+
+    def __post_init__(self) -> None:
+        status = self.status
+        if status is None:
+            status = (
+                PredictionGradeStatus.UNGRADABLE
+                if self.score is None
+                else PredictionGradeStatus.SUCCESS
+                if self.score == 1.0
+                else PredictionGradeStatus.FAILURE
+                if self.score == 0.0
+                else PredictionGradeStatus.PARTIAL_MATCH
+            )
+            object.__setattr__(self, "status", status)
+        if self.score is None:
+            if status is not PredictionGradeStatus.UNGRADABLE:
+                raise ValueError("only an ungradable result may omit its score")
+            return
+        if not 0.0 <= self.score <= 1.0:
+            raise ValueError("prediction grade score must be in [0, 1]")
+        if status is PredictionGradeStatus.UNGRADABLE:
+            raise ValueError("an ungradable result must omit its score")
+        if status is PredictionGradeStatus.SUCCESS and self.score != 1.0:
+            raise ValueError("success requires score 1.0")
+        if status in {PredictionGradeStatus.FAILURE, PredictionGradeStatus.CONTRADICTION} and self.score != 0.0:
+            raise ValueError("failure or contradiction requires score 0.0")
+        if status is PredictionGradeStatus.PARTIAL_MATCH and not 0.0 < self.score < 1.0:
+            raise ValueError("partial match requires a score strictly between 0 and 1")
 
 
 class TransitionAnalyzer:
@@ -261,7 +299,7 @@ class GameLearningPipeline:
             "observed": observed,
             "grade": grade.score,
         }
-        if grade.score > 0.0:
+        if grade.score is not None and grade.score > 0.0:
             evidence_records.append(
                 EvidenceRecord.create(
                     subject_id=prediction.rule_id,
@@ -272,7 +310,7 @@ class GameLearningPipeline:
                     created_sequence=outcome_sequence,
                 )
             )
-        if grade.score < 1.0:
+        if grade.score is not None and grade.score < 1.0:
             evidence_records.append(
                 EvidenceRecord.create(
                     subject_id=prediction.rule_id,
@@ -293,13 +331,15 @@ class GameLearningPipeline:
             for record in evidence_records
             if record.polarity is EvidencePolarity.CONTRADICTS
         )
-        refined = self.rule_store.record_prediction_grade(
-            prediction.rule_id,
-            prediction_id=prediction_id,
-            grade=grade.score,
-            supporting_evidence_ids=supporting_ids,
-            contradicting_evidence_ids=contradicting_ids,
-        )
+        refined = self.rule_store.get(prediction.rule_id)
+        if grade.score is not None:
+            refined = self.rule_store.record_prediction_grade(
+                prediction.rule_id,
+                prediction_id=prediction_id,
+                grade=grade.score,
+                supporting_evidence_ids=supporting_ids,
+                contradicting_evidence_ids=contradicting_ids,
+            )
         if self.semantic_store is not None:
             for evidence_record in evidence_records:
                 self.semantic_store.put_evidence(evidence_record)
@@ -310,6 +350,7 @@ class GameLearningPipeline:
                     outcome_sequence=outcome_sequence,
                     outcome=observed,
                     grade=grade.score,
+                    status=grade.status.value,
                     evidence=grade.evidence,
                     evidence_record_ids=tuple(
                         record.evidence_id for record in evidence_records

@@ -107,6 +107,7 @@ def test_action_tree_materializes_prediction_grade_and_evidence_history(
             outcome_sequence=11,
             outcome={"effect": "move-right"},
             grade=1.0,
+            status="success",
             evidence=("independent_outcome",),
             evidence_record_ids=(evidence.evidence_id,),
             prior_probability=None,
@@ -129,6 +130,7 @@ def test_action_tree_materializes_prediction_grade_and_evidence_history(
     assert "probability `0.4` from `bootstrap`" in readme
     assert "1 available evidence record(s)" in readme
     assert "independently observed outcome at sequence `11`" in readme
+    assert "grade `1.0` (`success`)" in readme
     assert "`None` → `0.6666666666666666`" in readme
     assert "1 evidence update(s)" in readme
 

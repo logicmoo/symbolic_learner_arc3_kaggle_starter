@@ -21,6 +21,7 @@ from object_memory import (  # noqa: E402
     PipelineGameObjectLearnerPlugin,
     PredictionEvaluator,
     PredictionGrade,
+    PredictionGradeStatus,
     PredictionLedger,
     PredictionRecord,
     PrologProvider,
@@ -142,6 +143,30 @@ def test_prediction_must_precede_outcome() -> None:
     assert ledger.get("p1").outcome_sequence is None
     closed = ledger.grade("p1", outcome_sequence=11, outcome="move", grade=1.0)
     assert closed.grade == 1.0
+
+
+def test_prediction_grades_classify_outcomes_without_penalizing_ungradable() -> None:
+    assert PredictionGrade(1.0).status is PredictionGradeStatus.SUCCESS
+    assert PredictionGrade(0.0).status is PredictionGradeStatus.FAILURE
+    assert PredictionGrade(0.5).status is PredictionGradeStatus.PARTIAL_MATCH
+    assert (
+        PredictionGrade(
+            0.0, status=PredictionGradeStatus.CONTRADICTION
+        ).status
+        is PredictionGradeStatus.CONTRADICTION
+    )
+    assert PredictionGrade(None).status is PredictionGradeStatus.UNGRADABLE
+    for invalid in (
+        lambda: PredictionGrade(None, status=PredictionGradeStatus.FAILURE),
+        lambda: PredictionGrade(0.0, status=PredictionGradeStatus.SUCCESS),
+        lambda: PredictionGrade(1.0, status=PredictionGradeStatus.UNGRADABLE),
+    ):
+        try:
+            invalid()
+        except ValueError:
+            pass
+        else:
+            raise AssertionError("inconsistent prediction grade must be rejected")
 
 
 def test_phase3_pipeline_learns_predicts_and_grades() -> None:
@@ -283,6 +308,32 @@ def test_phase3_pipeline_learns_predicts_and_grades() -> None:
     )
     assert negative.polarity.value == "contradicts"
     assert negative.weight == 1.0
+
+    _predicted_third, _ = pipeline.predict(
+        prediction_id="prediction-3",
+        rule_id="rule-move-right",
+        source_state_id="state-4",
+        state={"player_present": True},
+        created_sequence=24,
+        executor=executor,
+    )
+    pipeline.grade_prediction(
+        prediction_id="prediction-3",
+        outcome_sequence=25,
+        outcome_channel=OutcomeChannel(lambda: {"observation": "occluded"}),
+        evaluator=PredictionEvaluator(
+            lambda _expected, _observed: PredictionGrade(
+                None,
+                evidence=("outcome_obscured",),
+                status=PredictionGradeStatus.UNGRADABLE,
+            )
+        ),
+    )
+    ungraded = semantic_store.get("prediction_grades", "prediction-3")
+    assert ungraded.status == "ungradable"
+    assert ungraded.grade is None
+    assert ungraded.evidence_record_ids == ()
+    assert rule_store.get("rule-move-right").prediction_attempts == 2
 
     for duplicate_or_invalid in (
         {"prediction_id": "prediction-1", "grade": 1.0},

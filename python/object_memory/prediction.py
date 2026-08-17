@@ -100,7 +100,7 @@ class PredictionLedger:
         *,
         outcome_sequence: int,
         outcome: Any,
-        grade: float,
+        grade: float | None,
     ) -> PredictionRecord:
         prediction = self._records[prediction_id]
         if outcome_sequence <= prediction.created_sequence:
@@ -111,7 +111,7 @@ class PredictionLedger:
             prediction,
             outcome_sequence=outcome_sequence,
             outcome=outcome,
-            grade=float(grade),
+            grade=None if grade is None else float(grade),
         )
         self._records[prediction_id] = closed
         return closed

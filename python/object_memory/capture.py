@@ -13,7 +13,13 @@ from swipl_bridge import SWIPrologBridge
 from .adapters import GridAdapter
 from .forms import CellLogoForm, FitResult
 from .integration import Phase2LearnerPayloadBuilder
-from .learning import OutcomeChannel, PredictionEvaluator, PredictionGrade, RuleExecutor
+from .learning import (
+    OutcomeChannel,
+    PredictionEvaluator,
+    PredictionGrade,
+    PredictionGradeStatus,
+    RuleExecutor,
+)
 from .memory import SingleWriter
 from .models import (
     ArtifactRef,
@@ -729,6 +735,13 @@ class SemanticGridCaptureObserver:
                                 evidence=(
                                     "independent_arc3_transition",
                                     *tuple(str(item) for item in observed),
+                                ),
+                                status=(
+                                    PredictionGradeStatus.SUCCESS
+                                    if expected in observed
+                                    else PredictionGradeStatus.CONTRADICTION
+                                    if observed
+                                    else PredictionGradeStatus.FAILURE
                                 ),
                             )
                         ),

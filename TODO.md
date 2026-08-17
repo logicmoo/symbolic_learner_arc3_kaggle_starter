@@ -213,7 +213,7 @@ Deliverables: [Phase 3 checklist](SOW_DELIVERABLES.md#phase-3--game-object-learn
 - [x] Predict object identities, properties, relationships, changes, later state, or action recommendation as appropriate.
 - [x] Store the evidence available at prediction time.
 - [x] Capture the independent environment outcome through a separate outcome channel.
-- [ ] Grade success, failure, partial match, contradiction, and ungradable outcomes deterministically.
+- [x] Grade success, failure, partial match, contradiction, and ungradable outcomes deterministically.
 - [x] Update positive and negative rule evidence, probability, and ranking from prediction results.
 - [x] Prove that post-hoc explanations receive no prediction credit.
 - [x] Preserve the original prediction, outcome, grade, and update history.

@@ -261,7 +261,10 @@ class SemanticRecordCodec:
                 rule_id=str(value["rule_id"]),
                 outcome_sequence=int(value["outcome_sequence"]),
                 outcome=value.get("outcome"),
-                grade=float(value["grade"]),
+                grade=(
+                    None if value.get("grade") is None else float(value["grade"])
+                ),
+                status=str(value.get("status", "ungraded")),
                 evidence=tuple(value.get("evidence") or ()),
                 evidence_record_ids=tuple(value.get("evidence_record_ids") or ()),
                 prior_probability=value.get("prior_probability"),

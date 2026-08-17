@@ -796,7 +796,8 @@ class ActionTreeStore:
                         lines.append(
                             f"  - independently observed outcome at sequence "
                             f"`{detail.get('outcome_sequence')}` received grade "
-                            f"`{detail.get('grade')}`; calibrated probability "
+                            f"`{detail.get('grade')}` "
+                            f"(`{detail.get('status', 'ungraded')}`); calibrated probability "
                             f"`{detail.get('prior_probability')}` → "
                             f"`{detail.get('calibrated_probability')}`; "
                             f"{len(detail.get('evidence_record_ids') or [])} evidence update(s)"

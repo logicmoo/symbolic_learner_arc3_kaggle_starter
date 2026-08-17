@@ -584,7 +584,8 @@ class PredictionGradeRecord:
     rule_id: str
     outcome_sequence: int
     outcome: Any
-    grade: float
+    grade: float | None
+    status: str = "ungraded"
     evidence: tuple[str, ...] = ()
     evidence_record_ids: tuple[str, ...] = ()
     prior_probability: float | None = None
