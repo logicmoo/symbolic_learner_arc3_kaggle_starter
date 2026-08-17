@@ -8,7 +8,9 @@ def test_english_workflow_page_uses_real_resources_and_native_accordion_stacks()
     page = (ROOT / "workbench" / "frontend" / "src" / "components" / "EnglishWorkflowPage.tsx").read_text(encoding="utf-8")
     shell = (ROOT / "workbench" / "frontend" / "src" / "pages" / "FilesystemWorkbenchPage.tsx").read_text(encoding="utf-8")
 
-    assert 'label: "English Workflow", view: "englishWorkflow"' in shell
+    assert 'label: "Workflows", view: "canvas"' in shell
+    assert '>\n              English Generation\n            </button>' in shell
+    assert 'view === "englishWorkflow"' in shell
     assert 'view === "englishWorkflow"' in shell
     assert page.count("<ThreeStateAccordionStack") == 3
     assert 'id="english-workflow-left-stack"' in page
