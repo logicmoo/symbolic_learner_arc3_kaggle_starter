@@ -1,0 +1,11 @@
+{
+  "kind": "data_inspection",
+  "id": "resource_runner_example_inspection",
+  "label": "Resource Runner Example Inspection",
+  "workspacePath": "knowledge/data/examples/resource_runner_example.json",
+  "format": ".json",
+  "mediaType": "application/json",
+  "valueType": "dict",
+  "hasValue": true,
+  "valueEncoding": "text"
+}
