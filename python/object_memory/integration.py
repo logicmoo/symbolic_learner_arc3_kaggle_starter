@@ -350,7 +350,7 @@ def phase2_rule_ranker() -> RuleRanker:
     def score(rule: TransitionRule) -> float:
         verified = rule.calibrated_probability or 0.0
         prediction_rate = (
-            rule.prediction_successes / rule.prediction_attempts
+            rule.prediction_score_total / rule.prediction_attempts
             if rule.prediction_attempts
             else 0.0
         )

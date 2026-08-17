@@ -211,6 +211,25 @@ def test_phase3_pipeline_learns_predicts_and_grades() -> None:
         ),
     )
     assert closed.grade == 1.0
+    refined = rule_store.get("rule-move-right")
+    assert refined.prediction_attempts == 1
+    assert refined.prediction_successes == 1
+    assert refined.prediction_history == ("prediction-1",)
+    assert refined.calibrated_probability == 2.0 / 3.0
+    assert refined.probability_source == "verified_prediction_history"
+
+    for duplicate_or_invalid in (
+        {"prediction_id": "prediction-1", "grade": 1.0},
+        {"prediction_id": "prediction-2", "grade": 1.1},
+    ):
+        try:
+            rule_store.record_prediction_grade(
+                "rule-move-right", **duplicate_or_invalid
+            )
+        except ValueError:
+            pass
+        else:
+            raise AssertionError("invalid prediction feedback must be rejected")
 
 
 def test_integration_validator_rejects_duplicate_object_identities() -> None:

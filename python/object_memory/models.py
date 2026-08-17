@@ -555,6 +555,8 @@ class TransitionRule:
     applicability_precision: float | None = None
     prediction_attempts: int = 0
     prediction_successes: int = 0
+    prediction_score_total: float = 0.0
+    prediction_history: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)

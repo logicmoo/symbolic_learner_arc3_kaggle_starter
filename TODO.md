@@ -203,7 +203,7 @@ Deliverables: [Phase 3 checklist](SOW_DELIVERABLES.md#phase-3--game-object-learn
 - [ ] Attach supporting and contradicting evidence.
 - [x] Maintain rival rule sets rather than selecting one explanation too early.
 - [x] Rank rules using simplicity, coverage, contradiction, applicability precision, and prediction history.
-- [ ] Refine calibrated rule confidence or probability from actual prediction results.
+- [x] Refine calibrated rule confidence or probability from actual prediction results.
 - [x] Keep bootstrap probabilities displayed by Phase 1 separate from verified Phase 3 probability updates.
 - [x] Store rule identity, assumptions, critiques, probability, evidence, and provenance.
 
@@ -214,9 +214,9 @@ Deliverables: [Phase 3 checklist](SOW_DELIVERABLES.md#phase-3--game-object-learn
 - [ ] Store the evidence available at prediction time.
 - [ ] Capture the independent environment outcome through a separate outcome channel.
 - [ ] Grade success, failure, partial match, contradiction, and ungradable outcomes deterministically.
-- [ ] Update positive and negative rule evidence, probability, and ranking from prediction results.
+- [ ] Update positive and negative rule evidence, probability, and ranking from prediction results. Probability and ranking now update; normalized positive/negative evidence records remain.
 - [ ] Prove that post-hoc explanations receive no prediction credit.
-- [ ] Preserve the original prediction, outcome, grade, and update history.
+- [x] Preserve the original prediction, outcome, grade, and update history.
 
 ## Write learner evidence back to the debugger
 
@@ -235,7 +235,7 @@ Deliverables: [Phase 3 checklist](SOW_DELIVERABLES.md#phase-3--game-object-learn
 - [x] Candidate transformation induction from actual object deltas.
 - [ ] Rival interpretations with assumptions, critiques, positive evidence, and negative evidence.
 - [ ] Learned transformation applied to a new case.
-- [ ] Rule ranking and confidence refinement from prediction history.
+- [x] Rule ranking and confidence refinement from prediction history.
 - [ ] Prediction recorded before outcome.
 - [ ] Independent outcome grading.
 - [ ] Post-hoc-credit rejection.

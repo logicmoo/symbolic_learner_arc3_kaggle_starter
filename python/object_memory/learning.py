@@ -212,9 +212,15 @@ class GameLearningPipeline:
         predicted = prediction.predicted_effects[0]
         observed = outcome_channel.read()
         grade = evaluator.evaluate(predicted, observed)
-        return self.prediction_ledger.grade(
+        closed = self.prediction_ledger.grade(
             prediction_id,
             outcome_sequence=outcome_sequence,
             outcome=observed,
             grade=grade.score,
         )
+        self.rule_store.record_prediction_grade(
+            prediction.rule_id,
+            prediction_id=prediction_id,
+            grade=grade.score,
+        )
+        return closed

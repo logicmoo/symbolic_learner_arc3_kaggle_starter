@@ -25,6 +25,34 @@ class RuleStore:
     def rules(self) -> tuple[TransitionRule, ...]:
         return tuple(self._rules.values())
 
+    def record_prediction_grade(
+        self,
+        rule_id: str,
+        *,
+        prediction_id: str,
+        grade: float,
+    ) -> TransitionRule:
+        """Refine one rule only from an independently graded prior prediction."""
+
+        if not 0.0 <= grade <= 1.0:
+            raise ValueError("prediction grade must be in [0, 1]")
+        rule = self.get(rule_id)
+        if prediction_id in rule.prediction_history:
+            raise ValueError(f"Prediction {prediction_id!r} already updated this rule")
+        attempts = rule.prediction_attempts + 1
+        score_total = rule.prediction_score_total + float(grade)
+        updated = replace(
+            rule,
+            calibrated_probability=(1.0 + score_total) / (2.0 + attempts),
+            probability_source="verified_prediction_history",
+            prediction_attempts=attempts,
+            prediction_successes=rule.prediction_successes + int(grade == 1.0),
+            prediction_score_total=score_total,
+            prediction_history=(*rule.prediction_history, prediction_id),
+        )
+        self._rules[rule_id] = updated
+        return updated
+
     def applicable(
         self,
         rule_id: str,

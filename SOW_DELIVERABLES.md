@@ -305,7 +305,8 @@ Phase 3 implements learning and prediction over the persistent objects and evide
 - [x] Prevent post-hoc explanations from receiving predictive credit.  
   Evidence: ordering enforcement in prediction ledgers.
 
-- [ ] **Open** Refine rule probability, confidence, and ranking from real prediction history.
+- [x] Refine rule probability, confidence, and ranking from prediction history.
+  Evidence: independently graded predictions append to each rule's immutable history, update a smoothed calibrated probability, and feed the Phase 2/3 ranker without rewriting rule identity.
 
 ## Debugger evidence writeback
 

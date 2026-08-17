@@ -170,3 +170,39 @@ def test_real_transformation_candidates_induce_explicitly_rival_bootstrap_rules(
     assert all(rule.coverage == 1.0 for rule in rules)
     assert all(rule.calibrated_probability is None for rule in rules)
     assert {rule.rule_id for rule in ranked} == {rule.rule_id for rule in rules}
+
+
+def test_verified_prediction_history_outranks_bootstrap_without_rewriting_identity() -> None:
+    rules = phase2_rule_inducer().induce(
+        phase2_transformation_learner().learn(
+            phase2_transition_analyzer().analyze(
+                GameObjectLearnerPayload("before", ({"id": "blue"},)),
+                "RIGHT",
+                GameObjectLearnerPayload(
+                    "after",
+                    ({"id": "candidate-blue"},),
+                    transitions=(
+                        {"kind": "moved", "evidence_ids": ["move-evidence"]},
+                        {"kind": "recolored", "evidence_ids": ["color-evidence"]},
+                    ),
+                ),
+            )
+        )
+    )
+    from object_memory import RuleStore
+
+    store = RuleStore()
+    for rule in rules:
+        store.store(rule)
+    original_id = rules[1].rule_id
+    updated = store.record_prediction_grade(
+        original_id,
+        prediction_id="prediction-verified",
+        grade=1.0,
+    )
+
+    ranked = phase2_rule_ranker().rank(store.rules())
+    assert updated.rule_id == original_id
+    assert updated.calibrated_probability == 2.0 / 3.0
+    assert updated.probability_source == "verified_prediction_history"
+    assert ranked[0].rule_id == original_id
