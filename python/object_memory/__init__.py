@@ -13,6 +13,7 @@ from .adapters import (
     PerceptionAdapter,
     SimpleVideoAdapter,
     normalize_grid_structure,
+    normalize_image_structure,
 )
 from .acceptance import AcceptanceReport, build_acceptance_report, write_acceptance_report
 from .capture import SemanticGridCaptureObserver, standard_semantic_grid_observer
@@ -195,6 +196,7 @@ __all__ = [
     "phase2_transformation_learner",
     "phase2_transition_analyzer",
     "normalize_grid_structure",
+    "normalize_image_structure",
     "phase2_rule_inducer",
     "phase2_rule_executor",
     "phase2_rule_ranker",

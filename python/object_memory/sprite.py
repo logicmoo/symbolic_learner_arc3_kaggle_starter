@@ -61,6 +61,7 @@ class AlphaContourProvider:
                 {
                     "id": f"sprite_{index}",
                     "bounds": [min(xs), min(ys), max(xs) + 1, max(ys) + 1],
+                    "cells": [list(cell) for cell in component],
                     "properties": {
                         "colors": [list(color) for color in colors],
                         "pixel_count": len(component),

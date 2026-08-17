@@ -80,6 +80,7 @@ def test_grid_structure_normalizes_enclosures_bars_and_compound_parts() -> None:
     )
     assert normalized["geometry"]["horizontal_bars"] == (((0, 0), (1, 0)),)
     assert normalized["geometry"]["vertical_bars"] == (((0, 0), (0, 1)),)
+    assert normalized["orientation"] is not None
     assert normalized["topology"]["connected_components"] == 2
     assert normalized["topology"]["compound"] is True
     assert len(normalized["topology"]["compound_parts"]) == 2

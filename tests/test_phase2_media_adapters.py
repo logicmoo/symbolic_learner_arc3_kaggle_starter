@@ -40,12 +40,19 @@ def test_image_adapter_accepts_encoded_bytes_and_normalizes_candidates() -> None
     assert batch.observation.artifacts[0].media_type == "image/png"
     assert batch.observation.artifacts[0].content_hash.startswith("sha256:")
     assert batch.candidates[0].domain == "image"
-    assert adapter.candidate_detail("red-square")["normalizedStructure"] == {
-        "geometry": {"bounds": (0, 0, 3, 2)},
-        "properties": {"color": "red"},
-        "relationships": (),
-        "topology": {},
+    structure = adapter.candidate_detail("red-square")["normalizedStructure"]
+    assert structure["geometry"] == {
+        "bounds": (0, 0, 3, 2),
+        "width": 3,
+        "height": 2,
+        "cells": (),
+        "boundary_cells": (),
     }
+    assert structure["properties"] == {"color": "red"}
+    assert structure["appearance"] == {"color": "red"}
+    assert structure["relationships"] == ()
+    assert structure["orientation"] is None
+    assert structure["scale"] == (3, 2)
 
 
 def test_simple_video_adapter_preserves_frame_order_and_provenance() -> None:
@@ -64,3 +71,38 @@ def test_simple_video_adapter_preserves_frame_order_and_provenance() -> None:
         "clip-7:frame:0",
         "clip-7:frame:1",
     ]
+
+
+def test_image_adapter_normalizes_cells_compound_parts_and_orientation() -> None:
+    def extract(_image: Image.Image):
+        return {
+            "objects": [
+                {
+                    "id": "bars",
+                    "bounds": [2, 3, 8, 8],
+                    "cells": [[2, 3], [3, 3], [4, 3], [7, 7]],
+                    "contour": [[2, 3], [3, 3], [4, 3], [7, 7]],
+                    "properties": {"color": "blue"},
+                    "relationships": [
+                        {"target": "goal", "relation": "left_of"}
+                    ],
+                }
+            ]
+        }
+
+    adapter = ImageAdapter(extract, PythonProvider({}))
+    adapter.normalize(
+        observation_id="camera-structure",
+        image=Image.new("RGBA", (8, 8)),
+        action_tree_node="nodes/structure",
+        artifact_uri="nodes/structure/camera.png",
+    )
+    structure = adapter.candidate_detail("bars")["normalizedStructure"]
+
+    assert structure["geometry"]["cells"] == ((0, 0), (1, 0), (2, 0), (5, 4))
+    assert structure["topology"]["compound"] is True
+    assert len(structure["topology"]["compound_parts"]) == 2
+    assert structure["orientation"] is not None
+    assert structure["relationships"] == (
+        {"target": "goal", "relation": "left_of"},
+    )

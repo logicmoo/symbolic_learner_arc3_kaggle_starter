@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from hashlib import sha256
 from io import BytesIO
+from math import atan2, degrees
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
@@ -69,6 +70,25 @@ def _axis_runs(
     return tuple(runs)
 
 
+def _principal_orientation(
+    cells: tuple[tuple[int, int], ...],
+) -> float | None:
+    """Return an undirected principal-axis angle, or None for symmetric shapes."""
+
+    if len(cells) < 2:
+        return None
+    center_x = sum(cell[0] for cell in cells) / len(cells)
+    center_y = sum(cell[1] for cell in cells) / len(cells)
+    xx = sum((cell[0] - center_x) ** 2 for cell in cells)
+    yy = sum((cell[1] - center_y) ** 2 for cell in cells)
+    xy = sum(
+        (cell[0] - center_x) * (cell[1] - center_y) for cell in cells
+    )
+    if abs(xx - yy) < 1e-12 and abs(xy) < 1e-12:
+        return None
+    return round((degrees(0.5 * atan2(2.0 * xy, xx - yy)) + 180.0) % 180.0, 6)
+
+
 def normalize_grid_structure(item: Mapping[str, Any]) -> Mapping[str, Any]:
     """Normalize extractor-specific grid structure into one semantic contract."""
 
@@ -96,6 +116,7 @@ def normalize_grid_structure(item: Mapping[str, Any]) -> Mapping[str, Any]:
     )
     geometry = item.get("geometry") if isinstance(item.get("geometry"), Mapping) else {}
     return {
+        "orientation": _principal_orientation(cells),
         "geometry": {
             "cells": relative(cells),
             "width": geometry.get("width", bounds[2] if len(bounds) > 2 else 0),
@@ -126,6 +147,73 @@ def normalize_grid_structure(item: Mapping[str, Any]) -> Mapping[str, Any]:
             "pixel_count": item.get("pixelCount", len(cells)),
         },
         "relationships": relationships,
+    }
+
+
+def normalize_image_structure(item: Mapping[str, Any]) -> Mapping[str, Any]:
+    """Preserve provider raster semantics in the shared normalized contract."""
+
+    bounds = tuple(int(value) for value in item.get("bounds") or item.get("bbox") or ())
+    origin_x, origin_y = bounds[:2] if len(bounds) >= 2 else (0, 0)
+    cells = _normalized_cells(item.get("cells") or item.get("maskCells"))
+    contour = _normalized_cells(
+        item.get("contour")
+        or (item.get("geometry") or {}).get("boundaryCells")
+        or cells
+    )
+
+    def relative(group: tuple[tuple[int, int], ...]) -> tuple[tuple[int, int], ...]:
+        return tuple((x - origin_x, y - origin_y) for x, y in group)
+
+    components = _connected_components(cells) if cells else ()
+    supplied_topology = (
+        dict(item.get("topology") or {})
+        if isinstance(item.get("topology"), Mapping)
+        else {}
+    )
+    width = bounds[2] - origin_x if len(bounds) >= 4 else None
+    height = bounds[3] - origin_y if len(bounds) >= 4 else None
+    orientation = item.get("orientation")
+    if orientation is None:
+        orientation = _principal_orientation(cells or contour)
+    relationships = tuple(
+        {
+            "target": str(value.get("target")),
+            "relation": str(value.get("relation")),
+        }
+        for value in sorted(
+            (item.get("relationships") or ()),
+            key=lambda value: (str(value.get("relation")), str(value.get("target"))),
+        )
+        if isinstance(value, Mapping)
+    )
+    normalized_components = tuple(relative(component) for component in components)
+    topology = {
+        **supplied_topology,
+        "connected_components": supplied_topology.get(
+            "connected_components", len(components) if cells else None
+        ),
+        "components": normalized_components,
+        "compound": len(components) > 1,
+        "compound_parts": normalized_components if len(components) > 1 else (),
+    }
+    return {
+        "geometry": {
+            "bounds": bounds,
+            "width": width,
+            "height": height,
+            "cells": relative(cells),
+            "boundary_cells": relative(contour),
+        },
+        "topology": topology,
+        "properties": dict(item.get("properties") or {}),
+        "relationships": relationships,
+        "orientation": None if orientation is None else float(orientation),
+        "scale": tuple(
+            item.get("scale")
+            or ((width, height) if width is not None and height is not None else ())
+        ),
+        "appearance": dict(item.get("appearance") or item.get("properties") or {}),
     }
 
 
@@ -315,15 +403,9 @@ class ImageAdapter(PerceptionAdapter):
             candidate_id = str(
                 item.get("candidate_id") or item.get("id") or f"candidate_{index}"
             )
-            bounds = tuple(item.get("bounds") or item.get("bbox") or ())
             details[candidate_id] = {
                 **item,
-                "normalizedStructure": {
-                    "geometry": {"bounds": bounds},
-                    "properties": dict(item.get("properties") or {}),
-                    "relationships": tuple(item.get("relationships") or ()),
-                    "topology": dict(item.get("topology") or {}),
-                },
+                "normalizedStructure": normalize_image_structure(item),
             }
             candidates.append(
                 CandidateObject(

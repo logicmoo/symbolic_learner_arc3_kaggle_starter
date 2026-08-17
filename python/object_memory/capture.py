@@ -599,6 +599,7 @@ class SemanticGridCaptureObserver:
                 instance=InstanceParameters(
                     position=(float(bounds[0]), float(bounds[1])),
                     scale=(float(bounds[2]), float(bounds[3])),
+                    orientation=normalized_structure.get("orientation"),
                     appearance={
                         "color": details.get("colorName"),
                         "shape": details.get("shape"),
