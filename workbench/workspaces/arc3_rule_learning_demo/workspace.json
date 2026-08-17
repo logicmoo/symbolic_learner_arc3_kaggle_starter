@@ -1,0 +1,10 @@
+{
+  "kind": "workspace",
+  "id": "arc3_rule_learning_demo",
+  "label": "ARC3 Rule Learning Demonstration",
+  "description": "Runnable before/action/after learning, rival-rule review, unseen-case prediction, and independent grading workflow.",
+  "includes": [
+    {"workspaceId": "shared_library_system", "includeInherited": true},
+    {"workspaceId": "shared_library_arc3", "includeInherited": true}
+  ]
+}
