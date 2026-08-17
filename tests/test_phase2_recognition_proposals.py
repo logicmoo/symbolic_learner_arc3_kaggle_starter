@@ -35,6 +35,54 @@ def test_match_proposal_explains_translation_recolor_and_scale() -> None:
     assert proposal.similarity == 2 / 5
 
 
+def test_match_proposal_covers_the_complete_supported_transformation_matrix() -> None:
+    supported = (
+        "translation",
+        "rotation",
+        "scale",
+        "reflection",
+        "recolor",
+        "noise",
+        "partial_visibility",
+    )
+    stored = InstanceParameters(
+        position=(1.0, 2.0),
+        orientation=0.0,
+        scale=(1.0, 1.0),
+        reflection="none",
+        appearance={"color": "red", "shape": "square"},
+        supported_transformations=supported,
+    )
+    current = InstanceParameters(
+        position=(4.0, 5.0),
+        orientation=90.0,
+        scale=(2.0, 2.0),
+        reflection="horizontal",
+        appearance={"color": "blue", "shape": "square"},
+        supported_transformations=supported,
+        visibility=0.6,
+        noise_score=0.1,
+    )
+
+    proposal = InstanceMatcher().compare(
+        candidate_id="degraded-transform",
+        current=current,
+        stored_identity_id="object-1",
+        stored=stored,
+    )
+
+    assert set(proposal.allowed_transformations) == set(supported)
+    assert set(proposal.changed_properties) == {
+        "position",
+        "orientation",
+        "scale",
+        "reflection",
+        "visibility",
+        "noise_score",
+        "appearance.color",
+    }
+
+
 def test_all_rival_proposals_are_retained_in_deterministic_advisory_order() -> None:
     matcher = InstanceMatcher()
     proposals = matcher.proposals(
