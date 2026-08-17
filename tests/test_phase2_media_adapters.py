@@ -106,3 +106,32 @@ def test_image_adapter_normalizes_cells_compound_parts_and_orientation() -> None
     assert structure["relationships"] == (
         {"target": "goal", "relation": "left_of"},
     )
+
+
+def test_image_adapter_infers_pairwise_raster_relationships() -> None:
+    def extract(_image: Image.Image):
+        return {
+            "objects": [
+                {"id": "frame", "bounds": [0, 0, 8, 8]},
+                {"id": "left", "bounds": [1, 2, 3, 4]},
+                {"id": "right", "bounds": [5, 5, 7, 7]},
+            ]
+        }
+
+    adapter = ImageAdapter(extract, PythonProvider({}))
+    adapter.normalize(
+        observation_id="relations",
+        image=Image.new("RGB", (8, 8)),
+        action_tree_node="nodes/relations",
+        artifact_uri="nodes/relations/image.png",
+    )
+
+    left = adapter.candidate_detail("left")["normalizedStructure"]["relationships"]
+    right = adapter.candidate_detail("right")["normalizedStructure"]["relationships"]
+    frame = adapter.candidate_detail("frame")["normalizedStructure"]["relationships"]
+    assert {item["relation"] for item in left} >= {"inside", "left_of", "above"}
+    assert {item["relation"] for item in right} >= {"inside", "right_of", "below"}
+    assert {tuple(item.values()) for item in frame} >= {
+        ("left", "contains"),
+        ("right", "contains"),
+    }

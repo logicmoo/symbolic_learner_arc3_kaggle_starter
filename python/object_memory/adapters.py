@@ -217,6 +217,52 @@ def normalize_image_structure(item: Mapping[str, Any]) -> Mapping[str, Any]:
     }
 
 
+def _raster_spatial_relationships(
+    objects: tuple[tuple[str, tuple[int, ...]], ...],
+) -> dict[str, tuple[dict[str, str], ...]]:
+    """Infer conservative pairwise relations from non-rotated raster bounds."""
+
+    relations: dict[str, set[tuple[str, str]]] = {
+        object_id: set() for object_id, _bounds in objects
+    }
+    for index, (left_id, left) in enumerate(objects):
+        if len(left) < 4:
+            continue
+        lx1, ly1, lx2, ly2 = left[:4]
+        for right_id, right in objects[index + 1:]:
+            if len(right) < 4:
+                continue
+            rx1, ry1, rx2, ry2 = right[:4]
+            if lx2 <= rx1:
+                relations[left_id].add((right_id, "left_of"))
+                relations[right_id].add((left_id, "right_of"))
+            elif rx2 <= lx1:
+                relations[left_id].add((right_id, "right_of"))
+                relations[right_id].add((left_id, "left_of"))
+            if ly2 <= ry1:
+                relations[left_id].add((right_id, "above"))
+                relations[right_id].add((left_id, "below"))
+            elif ry2 <= ly1:
+                relations[left_id].add((right_id, "below"))
+                relations[right_id].add((left_id, "above"))
+            left_contains = lx1 <= rx1 and ly1 <= ry1 and lx2 >= rx2 and ly2 >= ry2
+            right_contains = rx1 <= lx1 and ry1 <= ly1 and rx2 >= lx2 and ry2 >= ly2
+            if left_contains and left != right:
+                relations[left_id].add((right_id, "contains"))
+                relations[right_id].add((left_id, "inside"))
+            elif right_contains and left != right:
+                relations[left_id].add((right_id, "inside"))
+                relations[right_id].add((left_id, "contains"))
+            elif max(lx1, rx1) < min(lx2, rx2) and max(ly1, ry1) < min(ly2, ry2):
+                relations[left_id].add((right_id, "overlaps"))
+                relations[right_id].add((left_id, "overlaps"))
+    return {
+        object_id: tuple(
+            {"target": target, "relation": relation}
+            for target, relation in sorted(values, key=lambda value: (value[1], value[0]))
+        )
+        for object_id, values in relations.items()
+    }
 @dataclass(frozen=True)
 class GridPerceptionBatch:
     observation: Observation
@@ -397,6 +443,7 @@ class ImageAdapter(PerceptionAdapter):
         )
         candidates: list[CandidateObject] = []
         details: dict[str, Mapping[str, Any]] = {}
+        bounded_objects: list[tuple[str, tuple[int, ...]]] = []
         for index, item in enumerate(extracted["objects"]):
             if not isinstance(item, Mapping):
                 raise TypeError("image extractor object entries must be mappings")
@@ -407,6 +454,12 @@ class ImageAdapter(PerceptionAdapter):
                 **item,
                 "normalizedStructure": normalize_image_structure(item),
             }
+            bounded_objects.append(
+                (
+                    candidate_id,
+                    tuple(int(value) for value in item.get("bounds") or item.get("bbox") or ()),
+                )
+            )
             candidates.append(
                 CandidateObject(
                     candidate_id=candidate_id,
@@ -417,6 +470,18 @@ class ImageAdapter(PerceptionAdapter):
                     provenance=(observation_id, provider_name, action_tree_node),
                 )
             )
+        inferred_relationships = _raster_spatial_relationships(tuple(bounded_objects))
+        for candidate_id, inferred in inferred_relationships.items():
+            structure = dict(details[candidate_id]["normalizedStructure"])
+            combined = {
+                (str(item["target"]), str(item["relation"]))
+                for item in (*structure.get("relationships", ()), *inferred)
+            }
+            structure["relationships"] = tuple(
+                {"target": target, "relation": relation}
+                for target, relation in sorted(combined, key=lambda value: (value[1], value[0]))
+            )
+            details[candidate_id] = {**details[candidate_id], "normalizedStructure": structure}
         self._details.update(details)
         observation = Observation.create(
             source_modality="raster_image",
