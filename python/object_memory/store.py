@@ -7,6 +7,7 @@ from .memory import EncounterLog
 from .models import (
     ArtifactRef,
     CommittedAtom,
+    ConfidenceHistoryRecord,
     EncounterRecord,
     EvidenceRecord,
     MatchProposal,
@@ -121,6 +122,12 @@ class SymbolicStore:
     def put_atom(self, value: CommittedAtom) -> CommittedAtom:
         return self.backend.write_once("atoms", value.handle, value)
 
+    def put_confidence_history(
+        self, value: ConfidenceHistoryRecord
+    ) -> ConfidenceHistoryRecord:
+        record_id = f"{value.handle}:{value.sequence:020d}"
+        return self.backend.write_once("confidence_history", record_id, value)
+
     def get(self, namespace: str, record_id: str) -> Any | None:
         return self.backend.get(namespace, record_id)
 
@@ -136,6 +143,7 @@ class SymbolicStore:
         "match_proposals",
         "recognition_accounts",
         "evidence",
+        "confidence_history",
     )
 
     def snapshot(self) -> dict[str, tuple[Any, ...]]:
@@ -159,6 +167,7 @@ class SymbolicStore:
             "match_proposals": self.put_match_proposal,
             "recognition_accounts": self.put_recognition,
             "evidence": self.put_evidence,
+            "confidence_history": self.put_confidence_history,
         }
         for namespace in self.SNAPSHOT_NAMESPACES:
             if namespace == "encounters":

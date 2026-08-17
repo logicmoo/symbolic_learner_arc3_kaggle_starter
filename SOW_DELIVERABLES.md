@@ -202,13 +202,13 @@ Phase 2 implements the semantic object layer behind the Phase 1 debugger. It use
   Remaining: durable encounter-linked recognition evidence and domain calibration against fixtures.
 
 - [ ] **Partial** Refine and calibrate confidence for object identity, correspondence, and competing interpretations.
-  Existing evidence: deterministic Laplace-style confidence derived from attributable supporting and contradicting evidence, with event history and order-independence tests.
-  Remaining: correspondence/rival interpretation calibration, empirical calibration curves, and lifecycle-history preservation.
+  Existing evidence: deterministic Laplace-style confidence derived from attributable supporting and contradicting evidence, with event history and order-independence tests. Typed confidence-history records preserve every evidence and lifecycle transition across merge, split, demotion, tombstoning, and reversal; snapshots and the durable Prolog backend retain them across reloads.
+  Remaining: correspondence/rival interpretation calibration and empirical calibration curves.
 
 ## Persistent symbolic memory and replay
 
 - [ ] **Partial** Maintain persistent symbolic memory for recognized objects, observations, Turtle programs, and associated artifacts.  
-  Existing evidence: `SymbolicMemory`, a backend-neutral `SymbolicStore` facade with write-once exact identity, a replaceable `SemanticStoreBackend` boundary, observation/encounter/Turtle composition, and an `ArtifactIndex` populated by stable identifier and semantic type. Exact snapshots replay every semantic namespace in dependency order and rebuild encounter/artifact indexes idempotently. `PrologSemanticBackend` durably stores typed contracts as inspectable `semantic_record/3` facts, safely round-trips nested JSON/unicode, loads in live SWI-Prolog, and hydrates fresh facade indexes.
+  Existing evidence: `SymbolicMemory`, a backend-neutral `SymbolicStore` facade with write-once exact identity, a replaceable `SemanticStoreBackend` boundary, observation/encounter/Turtle composition, and an `ArtifactIndex` populated by stable identifier and semantic type. Repeat identity commits return the existing calibrated object and conflicting payloads fail instead of overwriting durable memory. Exact snapshots replay every semantic namespace, including confidence history, in dependency order and rebuild encounter/artifact indexes idempotently. `PrologSemanticBackend` durably stores typed contracts as inspectable `semantic_record/3` facts, safely round-trips nested JSON/unicode, loads in live SWI-Prolog, and hydrates fresh facade indexes.
   Remaining: AtomSpace backend implementation and complete lifecycle governance across durable reloads.
 
 - [ ] **Partial** Associate semantic encounters and memory updates with the history already preserved by Phase 1.  

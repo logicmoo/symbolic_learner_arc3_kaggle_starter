@@ -494,6 +494,16 @@ class CommittedAtom:
 
 
 @dataclass(frozen=True)
+class ConfidenceHistoryRecord:
+    sequence: int
+    handle: str
+    confidence: float
+    lifecycle_state: str
+    event: str
+    reference_id: str | None = None
+
+
+@dataclass(frozen=True)
 class TransitionRule:
     rule_id: str
     preconditions: tuple[Any, ...]

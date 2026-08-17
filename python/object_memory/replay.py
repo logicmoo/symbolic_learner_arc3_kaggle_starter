@@ -11,6 +11,7 @@ from typing import Any, Mapping
 from .models import (
     ArtifactRef,
     CommittedAtom,
+    ConfidenceHistoryRecord,
     EncounterRecord,
     EvidencePolarity,
     EvidenceRecord,
@@ -191,6 +192,15 @@ class SemanticRecordCodec:
                 confidence=float(value.get("confidence", 0.0)),
                 provenance=tuple(value.get("provenance") or ()),
                 lifecycle_state=str(value.get("lifecycle_state", "active")),
+            )
+        if namespace == "confidence_history":
+            return ConfidenceHistoryRecord(
+                sequence=int(value["sequence"]),
+                handle=str(value["handle"]),
+                confidence=float(value["confidence"]),
+                lifecycle_state=str(value["lifecycle_state"]),
+                event=str(value["event"]),
+                reference_id=value.get("reference_id"),
             )
         raise ValueError(f"unsupported semantic namespace: {namespace!r}")
 

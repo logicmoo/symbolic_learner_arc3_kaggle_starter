@@ -7,6 +7,7 @@ import pytest
 from object_memory import (
     ArtifactRef,
     CommittedAtom,
+    ConfidenceHistoryRecord,
     EncounterRecord,
     Observation,
     PrologSemanticBackend,
@@ -55,6 +56,9 @@ def test_prolog_semantic_backend_round_trips_and_hydrates(tmp_path: Path) -> Non
             provenance=("fixture",),
         )
     )
+    confidence_record = store.put_confidence_history(
+        ConfidenceHistoryRecord(0, "red_ball", 0.75, "active", "evidence", "ev-1")
+    )
 
     loaded = SymbolicStore(PrologSemanticBackend(path)).hydrate()
 
@@ -62,6 +66,7 @@ def test_prolog_semantic_backend_round_trips_and_hydrates(tmp_path: Path) -> Non
     assert loaded.encounters.records() == (first, second)
     assert loaded.artifacts.get(artifact.artifact_id) == artifact
     assert loaded.get("atoms", atom.handle) == atom
+    assert loaded.values("confidence_history") == (confidence_record,)
     assert loaded.snapshot() == store.snapshot()
     source = path.read_text(encoding="utf-8")
     assert ":- dynamic semantic_record/3." in source

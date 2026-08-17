@@ -7,6 +7,7 @@ from typing import Any
 
 from .models import (
     CommittedAtom,
+    ConfidenceHistoryRecord,
     EncounterRecord,
     EvidencePolarity,
     EvidenceRecord,
@@ -98,6 +99,7 @@ class SymbolicMemory:
         self._evidence: dict[str, dict[str, EvidenceRecord]] = {}
         self._identity_decisions: dict[str, MergeDecision | SplitDecision] = {}
         self._decision_snapshots: dict[str, dict[str, CommittedAtom | None]] = {}
+        self._confidence_history: list[ConfidenceHistoryRecord] = []
 
     def get(self, handle: str) -> CommittedAtom | None:
         return self._atoms.get(handle)
@@ -117,6 +119,9 @@ class SymbolicMemory:
     def identity_decision(self, decision_id: str) -> MergeDecision | SplitDecision | None:
         return self._identity_decisions.get(decision_id)
 
+    def confidence_history(self, handle: str) -> tuple[ConfidenceHistoryRecord, ...]:
+        return tuple(item for item in self._confidence_history if item.handle == handle)
+
 
 class SingleWriter:
     """Only mutation path for committed atoms and their evidence."""
@@ -124,13 +129,33 @@ class SingleWriter:
     def __init__(self, memory: SymbolicMemory) -> None:
         self.memory = memory
 
+    def _record_confidence(
+        self,
+        atom: CommittedAtom,
+        event: str,
+        reference_id: str | None = None,
+    ) -> None:
+        self.memory._confidence_history.append(
+            ConfidenceHistoryRecord(
+                sequence=len(self.memory._confidence_history),
+                handle=atom.handle,
+                confidence=atom.confidence,
+                lifecycle_state=atom.lifecycle_state,
+                event=event,
+                reference_id=reference_id,
+            )
+        )
+
     def commit(self, atom: CommittedAtom) -> CommittedAtom:
         existing = self.memory._atoms.get(atom.handle)
-        if existing is not None and existing.atom_type != atom.atom_type:
-            raise ValueError(f"Identity conflict for {atom.handle!r}")
+        if existing is not None:
+            if existing.atom_type != atom.atom_type or existing.payload != atom.payload:
+                raise ValueError(f"Identity conflict for {atom.handle!r}")
+            return existing
         admitted = replace(atom, confidence=0.0)
         self.memory._atoms[atom.handle] = admitted
         self.memory._events.append({"event": "commit", "handle": atom.handle})
+        self._record_confidence(admitted, "commit")
         return admitted
 
     def commit_residual(
@@ -167,6 +192,7 @@ class SingleWriter:
         )
         self.memory._atoms[handle] = updated
         self.memory._events.append({"event": "evidence", "handle": handle, "evidence": evidence})
+        self._record_confidence(updated, "legacy_evidence", evidence)
         return updated
 
     def apply_evidence(self, handle: str, evidence: EvidenceRecord) -> CommittedAtom:
@@ -217,6 +243,7 @@ class SingleWriter:
                 "confidence": confidence,
             }
         )
+        self._record_confidence(updated, "evidence_calibrated", evidence.evidence_id)
         return updated
 
     def tombstone(self, handle: str, reason: str) -> CommittedAtom:
@@ -228,6 +255,7 @@ class SingleWriter:
         )
         self.memory._atoms[handle] = updated
         self.memory._events.append({"event": "tombstone", "handle": handle, "reason": reason})
+        self._record_confidence(updated, "tombstone", reason)
         return updated
 
     def demote(self, handle: str, reason: str) -> CommittedAtom:
@@ -239,6 +267,7 @@ class SingleWriter:
         )
         self.memory._atoms[handle] = updated
         self.memory._events.append({"event": "demote", "handle": handle, "reason": reason})
+        self._record_confidence(updated, "demote", reason)
         return updated
 
     def merge_identities(
@@ -284,6 +313,7 @@ class SingleWriter:
             lifecycle_state="active",
         )
         self.memory._atoms[merged.handle] = merged
+        self._record_confidence(merged, "merge_result", decision.decision_id)
         for handle in decision.identity_ids:
             if handle != merged.handle:
                 self.demote(handle, decision.decision_id)
@@ -338,6 +368,7 @@ class SingleWriter:
                 lifecycle_state="active",
             )
             self.memory._atoms[item.handle] = admitted
+            self._record_confidence(admitted, "split_result", decision.decision_id)
             stored.append(admitted)
         self.demote(source.handle, decision.decision_id)
         self.memory._identity_decisions[decision.decision_id] = decision
@@ -368,6 +399,9 @@ class SingleWriter:
                     prior,
                     provenance=(*prior.provenance, reason),
                 )
+            restored = self.memory._atoms.get(handle)
+            if restored is not None:
+                self._record_confidence(restored, "identity_decision_reversed", decision_id)
         self.memory._events.append(
             {"event": "identity_decision_reversed", "decision_id": decision_id, "reason": reason}
         )

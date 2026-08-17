@@ -102,7 +102,7 @@ Keep the shared records in `python/object_memory/models.py`; do not create anoth
 - [x] Preserve multiple competing match proposals.
 - [x] Record matched and changed properties plus supporting and contradicting evidence.
 - [x] Route identity merge and split decisions through `SingleWriter` or authoritative Prolog logic.
-- [ ] Prevent duplicate durable storage when an existing object is recognized again.
+- [x] Prevent repeat commits from overwriting or duplicating an existing durable identity; return the calibrated object for the same contract and reject conflicting payloads.
 - [x] Keep false merges and false splits reversible through evidence and provenance.
 
 ## Implement recognition and change detection
@@ -120,7 +120,7 @@ Keep the shared records in `python/object_memory/models.py`; do not create anoth
 - [x] Derive calibrated object-identity confidence reproducibly from accumulated signed evidence.
 - [x] Prevent similarity scores from being treated directly as committed confidence.
 - [x] Make confidence updates reproducible and attributable to evidence records.
-- [ ] Preserve confidence history when identities are merged, split, demoted, or tombstoned.
+- [x] Preserve typed confidence and lifecycle history through evidence, merge, split, demotion, tombstoning, and reversal; include it in semantic snapshots and durable Prolog storage.
 - [x] Show recognition accounts, evidence, rivals, advisory similarity, decision source, and calibrated confidence through the Phase 1 README inspection surface.
 
 ## Implement persistent memory

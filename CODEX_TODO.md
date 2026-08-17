@@ -852,3 +852,7 @@ Preserve the canonical checkout and its `codex/workbench-navigation-v2` branch.
   records as inspectable `semantic_record/3` facts, atomically rewrite the
   store, round-trip nested/unicode payloads, hydrate facade indexes after a
   restart, and verify the generated store with live SWI-Prolog.
+- [x] Make durable identity commits duplicate-safe and preserve typed confidence
+  history. Repeat compatible commits return the calibrated object, conflicting
+  payloads fail, and evidence/lifecycle transitions survive snapshots and
+  Prolog reloads through merge, split, demotion, tombstoning, and reversal.
