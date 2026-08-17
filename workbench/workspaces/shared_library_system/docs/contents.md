@@ -6,6 +6,7 @@ Use the tabs above to move between the workbench's shared documentation from any
 
 ## Project direction
 
+- [Workbench system overview](system_overview.md)
 - [Theses and executive vision](../../../docs/design/EXECUTIVE_VISION.md)
 - [Workflow control language](../../../docs/design/WORKFLOW_CONTROL_LANGUAGE.md)
 - [Semantic workflow to runtime implementation](../../../docs/design/SEMANTIC_WORKFLOW_TO_RUNTIME_IMPLEMENTATION.md)

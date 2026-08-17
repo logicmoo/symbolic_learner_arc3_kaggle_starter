@@ -8,7 +8,7 @@ type OpenedDocument={path:string;content:string};
 
 const docTabs:HelpTab[]=[
  {id:"theses",label:"Theses",repositoryPath:"workbench/docs/design/EXECUTIVE_VISION.md"},
- {id:"overview",label:"Overview",path:"docs/models_profiles_operations_prompts.md"},
+ {id:"overview",label:"Overview",path:"docs/system_overview.md"},
  {id:"goals",label:"Goals",path:"docs/goals.md"},
  {id:"plans",label:"Planning",path:"docs/plans.md"},
  {id:"workflows",label:"Workflows",path:"docs/workflows.md"},
