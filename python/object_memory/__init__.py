@@ -23,6 +23,13 @@ from .benchmark import (
     RasterPerturbationGenerator,
 )
 from .forms import CellLogoForm, FitResult, GenerativeForm
+from .environment_fixtures import (
+    EnvironmentProgressionFixtures,
+    environment_progression_fixtures,
+    fixed_camera_physics_fixtures,
+    rendered_arcade_fixtures,
+    top_down_manipulation_fixtures,
+)
 from .integration import (
     GAME_OBJECT_LEARNER_SCHEMA_VERSION,
     GameObjectLearnerPayload,
@@ -125,6 +132,7 @@ __all__ = [
     "ConfidenceHistoryRecord",
     "CorrespondenceEvidenceBuilder",
     "EncounterRecord",
+    "EnvironmentProgressionFixtures",
     "EncounterLog",
     "EncounterChangeSession",
     "EvidencePolarity",
@@ -217,4 +225,8 @@ __all__ = [
     "TurtleProgramRef",
     "TurtleReconstructionEvidenceBuilder",
     "deterministic_identifier",
+    "environment_progression_fixtures",
+    "fixed_camera_physics_fixtures",
+    "rendered_arcade_fixtures",
+    "top_down_manipulation_fixtures",
 ]

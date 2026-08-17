@@ -348,11 +348,12 @@ Phase 3 implements learning and prediction over the persistent objects and evide
   position. The result explicitly identifies `appearance.shape` and
   `appearance.texture` as inferred rather than observed.
 
-- [ ] **Open** Demonstrate the approved environment progression:
+- [x] Demonstrate the approved environment progression:
   - ARC-style grids;
   - rendered arcade environments;
   - fixed-camera physics examples;
   - top-down manipulation with partial occlusion.
+  Evidence: `scripts/phase2_environment_progression_demo.py` runs seven deterministic fixtures through the normalized raster contracts and emits a machine-readable acceptance summary. It covers a rendered multi-sprite arcade frame, a three-frame fixed-camera motion sequence, and clean/noisy/partly occluded top-down manipulation scenes. See [Phase 2 environment progression](workbench/docs/design/PHASE2_ENVIRONMENT_PROGRESSION.md).
 
 - [ ] **Open** Demonstrate the complete Phase 3 workflow:
 

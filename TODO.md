@@ -263,10 +263,10 @@ Input game state
 
 Architecture: [Environment progression](SOW_PHASE_ARCHITECTURE.md#environment-progression)
 
-- [ ] Rendered arcade fixtures.
-- [ ] Fixed-camera physics fixtures.
+- [x] Rendered arcade fixtures.
+- [x] Fixed-camera physics fixtures.
 - [x] `SpriteAdapter` and contour/vector providers.
-- [ ] Top-down manipulation fixtures.
+- [x] Top-down manipulation fixtures.
 - [x] Partial-occlusion completion datasets.
 - [x] Benchmark runner.
 - [x] Perturbation generator.
