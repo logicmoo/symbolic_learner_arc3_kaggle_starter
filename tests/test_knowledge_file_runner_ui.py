@@ -3,6 +3,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 COMPONENTS = ROOT / "workbench" / "frontend" / "src" / "components"
+EXAMPLE = ROOT / "workbench" / "workspaces" / "shared_library_system" / "knowledge" / "data" / "examples" / "resource_runner_example.json"
 
 
 def test_data_and_artifact_explorers_use_the_workspace_file_runner() -> None:
@@ -13,6 +14,15 @@ def test_data_and_artifact_explorers_use_the_workspace_file_runner() -> None:
     assert 'resourceKind="artifact"' in artifacts
     assert "WorkspaceFileRunner" in data
     assert "WorkspaceFileRunner" in artifacts
+
+
+def test_shared_library_contains_a_real_data_runner_example() -> None:
+    import json
+
+    value = json.loads(EXAMPLE.read_text(encoding="utf-8"))
+    assert value["kind"] == "example_data"
+    assert value["id"] == "resource_runner_example"
+    assert value["values"] == [1, 2, 3]
 
 
 def test_workspace_file_runner_loads_assets_through_the_workspace_api() -> None:

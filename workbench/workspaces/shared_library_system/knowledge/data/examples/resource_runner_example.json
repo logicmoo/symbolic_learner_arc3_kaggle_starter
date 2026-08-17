@@ -1,0 +1,7 @@
+{
+  "kind": "example_data",
+  "id": "resource_runner_example",
+  "label": "Resource Runner Example",
+  "message": "A filesystem-backed Data value can be supplied to compatible Operations.",
+  "values": [1, 2, 3]
+}
