@@ -5,6 +5,12 @@ export type AccordionDisplayMode = "strip" | "scroll" | "full";
 
 export type AccordionAnchor = "top" | "bottom";
 
+const ACCORDION_MODE_CYCLE: AccordionDisplayMode[] = ["strip", "scroll", "full"];
+
+export function nextAccordionMode(mode: AccordionDisplayMode): AccordionDisplayMode {
+  return ACCORDION_MODE_CYCLE[(ACCORDION_MODE_CYCLE.indexOf(mode) + 1) % ACCORDION_MODE_CYCLE.length];
+}
+
 const accordionOrders = new Map<string, string[]>();
 const accordionOrderListeners = new Set<() => void>();
 const accordionModeListeners = new Map<string, Set<(mode: AccordionDisplayMode) => void>>();
@@ -93,12 +99,14 @@ export function ThreeStateAccordionStack({
   hostRef,
   className = "",
   controlsLabel,
+  freezeControls = false,
 }: {
   id: string;
   children?: ReactNode;
   hostRef?: Ref<HTMLDivElement>;
   className?: string;
   controlsLabel?: string;
+  freezeControls?: boolean;
 }) {
   const [collectiveMode, setCollectiveMode] = useState<AccordionDisplayMode>("scroll");
   const setAllMembers = (mode: AccordionDisplayMode) => {
@@ -106,16 +114,16 @@ export function ThreeStateAccordionStack({
     publishAccordionMode(id, mode);
   };
   return (
-    <div ref={hostRef} className={`three-state-accordion-stack ${className}`.trim()} data-accordion-stack={id} role="group" aria-label={`${id} accordion stack`}>
-      {controlsLabel && <section className="three-state-accordion-member three-state-accordion-stack-controls" data-accordion-stack-control={id}>
+    <div ref={hostRef} className={`three-state-accordion-stack ${freezeControls ? "three-state-accordion-stack-frozen-controls" : ""} ${className}`.trim()} data-accordion-stack={id} role="group" aria-label={`${id} accordion stack`}>
+      {controlsLabel && <header className="three-state-accordion-member three-state-accordion-stack-controls" data-accordion-stack-control={id}>
         <div className="three-state-accordion-member-strip">
-          <button type="button" className="three-state-accordion-member-summary" title={`Set every member in ${controlsLabel}`} onClick={() => setAllMembers(collectiveMode === "strip" ? "scroll" : "strip")}>
+          <button type="button" className="three-state-accordion-member-summary" title={`Cycle every member in ${controlsLabel}`} onClick={() => setAllMembers(nextAccordionMode(collectiveMode))}>
             <span>{controlsLabel}</span>
             <small>Set every member in this stack</small>
           </button>
           <ThreeStateAccordionControls label={controlsLabel} mode={collectiveMode} onChange={setAllMembers} />
         </div>
-      </section>}
+      </header>}
       {children}
     </div>
   );
@@ -128,6 +136,8 @@ export function accordionPanelClass(baseClass: string, mode: AccordionDisplayMod
 export function ThreeStateAccordionMember({
   id,
   stackId,
+  memberKey,
+  managedOrder,
   label,
   value,
   detail,
@@ -135,6 +145,7 @@ export function ThreeStateAccordionMember({
   onChange,
   baseClass,
   accessories,
+  stripContent,
   itemHeader,
   scrollSize = "320px",
   initialIndex,
@@ -144,6 +155,8 @@ export function ThreeStateAccordionMember({
 }: {
   id?: string;
   stackId: string;
+  memberKey?: string;
+  managedOrder?: number;
   label: string;
   value?: string;
   detail?: string;
@@ -151,6 +164,7 @@ export function ThreeStateAccordionMember({
   onChange: (mode: AccordionDisplayMode) => void;
   baseClass: string;
   accessories?: ReactNode;
+  stripContent?: (cycleMode: () => void) => ReactNode;
   itemHeader?: ReactNode;
   scrollSize?: string;
   initialIndex?: number;
@@ -158,23 +172,18 @@ export function ThreeStateAccordionMember({
   children?: ReactNode;
   footer?: ReactNode;
 }) {
-  const memberOrder = useAccordionMemberOrder(stackId, label, initialIndex, initialPlacementVersion);
-  const layoutOrder = memberOrder;
+  const orderKey = memberKey || label;
+  const memberOrder = useAccordionMemberOrder(stackId, orderKey, initialIndex, initialPlacementVersion);
+  const layoutOrder = managedOrder ?? memberOrder;
   const [dragging, setDragging] = useState(false);
   const suppressClick = useRef(false);
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
-  const lastExpandedMode = useRef<Exclude<AccordionDisplayMode, "strip">>(mode === "full" ? "full" : "scroll");
-  useEffect(() => {
-    if (mode !== "strip") lastExpandedMode.current = mode;
-  }, [mode]);
   const changeMode = (nextMode: AccordionDisplayMode) => {
-    if (nextMode !== "strip") lastExpandedMode.current = nextMode;
     onChange(nextMode);
   };
   useEffect(() => {
     const setFromStack = (nextMode: AccordionDisplayMode) => {
-      if (nextMode !== "strip") lastExpandedMode.current = nextMode;
       onChangeRef.current(nextMode);
     };
     const listeners = accordionModeListeners.get(stackId) || new Set<(mode: AccordionDisplayMode) => void>();
@@ -187,13 +196,17 @@ export function ThreeStateAccordionMember({
   }, [stackId]);
   const effectiveMode = activeAccordionDrag?.stackId === stackId ? "strip" : mode;
   const beginDrag = (event: DragEvent<HTMLButtonElement>) => {
+    if (managedOrder !== undefined) {
+      event.preventDefault();
+      return;
+    }
     setDragging(true);
     event.dataTransfer.effectAllowed = "move";
-    event.dataTransfer.setData("application/x-three-state-accordion", JSON.stringify({ stackId, label }));
-    setTimeout(() => publishAccordionChange({ stackId, label }), 0);
+    event.dataTransfer.setData("application/x-three-state-accordion", JSON.stringify({ stackId, label: orderKey }));
+    setTimeout(() => publishAccordionChange({ stackId, label: orderKey }), 0);
   };
   const beginPointerDrag = (event: ReactMouseEvent<HTMLButtonElement>) => {
-    if (event.button !== 0) return;
+    if (event.button !== 0 || managedOrder !== undefined) return;
     const startY = event.clientY;
     let moved = false;
     const move = (mouseEvent: MouseEvent) => {
@@ -201,7 +214,7 @@ export function ThreeStateAccordionMember({
         moved = true;
         suppressClick.current = true;
         setDragging(true);
-        publishAccordionChange({ stackId, label });
+        publishAccordionChange({ stackId, label: orderKey });
       }
       if (moved) mouseEvent.preventDefault();
     };
@@ -210,9 +223,9 @@ export function ThreeStateAccordionMember({
       document.removeEventListener("mouseup", finish);
       if (moved) {
         let target = document.elementFromPoint(mouseEvent.clientX, mouseEvent.clientY)?.closest<HTMLElement>("[data-accordion-member]");
-        if (target?.dataset.accordionStack !== stackId || target.dataset.accordionMember === label) {
+        if (target?.dataset.accordionStack !== stackId || target.dataset.accordionMember === orderKey) {
           target = Array.from(document.querySelectorAll<HTMLElement>("[data-accordion-member]"))
-            .filter((member) => member.dataset.accordionStack === stackId && member.dataset.accordionMember !== label)
+            .filter((member) => member.dataset.accordionStack === stackId && member.dataset.accordionMember !== orderKey)
             .sort((left, right) => {
               const leftRect = left.getBoundingClientRect();
               const rightRect = right.getBoundingClientRect();
@@ -221,7 +234,7 @@ export function ThreeStateAccordionMember({
             })[0];
         }
         if (target?.dataset.accordionStack === stackId && target.dataset.accordionMember) {
-          moveAccordionMember(stackId, label, target.dataset.accordionMember);
+          moveAccordionMember(stackId, orderKey, target.dataset.accordionMember);
         }
         setDragging(false);
         publishAccordionChange(null);
@@ -246,7 +259,7 @@ export function ThreeStateAccordionMember({
       id={id}
       className={accordionPanelClass(`${baseClass} three-state-accordion-member`, effectiveMode)}
       data-accordion-stack={stackId}
-      data-accordion-member={label}
+      data-accordion-member={orderKey}
       style={{ "--accordion-scroll-size": scrollSize, "--accordion-member-order": layoutOrder, order: layoutOrder } as CSSProperties}
       onDragOver={(event) => {
         if (event.dataTransfer.types.includes("application/x-three-state-accordion")) {
@@ -257,11 +270,13 @@ export function ThreeStateAccordionMember({
       onDrop={acceptDrop}
     >
       <div className={`three-state-accordion-member-strip ${dragging ? "dragging" : ""}`.trim()}>
-        <button type="button" className="three-state-accordion-member-summary" draggable title={`Drag to reorder ${label}`} onMouseDown={beginPointerDrag} onDragStart={beginDrag} onDragEnd={() => { setDragging(false); publishAccordionChange(null); }} onClick={() => { if (!suppressClick.current) changeMode(mode === "strip" ? lastExpandedMode.current : "strip"); }}>
-          <span>{label}</span>
-          {value && <b>{value}</b>}
-          {detail && <small>{detail}</small>}
-        </button>
+        {stripContent
+          ? <div className="three-state-accordion-member-custom-summary">{stripContent(() => changeMode(nextAccordionMode(mode)))}</div>
+          : <button type="button" className="three-state-accordion-member-summary" draggable={managedOrder === undefined} title={managedOrder === undefined ? `Drag to reorder or click to cycle ${label}` : `Click to cycle ${label}`} onMouseDown={beginPointerDrag} onDragStart={beginDrag} onDragEnd={() => { setDragging(false); publishAccordionChange(null); }} onClick={() => { if (!suppressClick.current) changeMode(nextAccordionMode(mode)); }}>
+            <span>{label}</span>
+            {value && <b>{value}</b>}
+            {detail && <small>{detail}</small>}
+          </button>}
         {accessories && <div className="three-state-accordion-strip-accessories">{accessories}</div>}
         <ThreeStateAccordionControls label={label} mode={effectiveMode} onChange={changeMode} />
       </div>
@@ -337,19 +352,19 @@ export function ThreeStateAccordionHeader({
   onChange: (mode: AccordionDisplayMode) => void;
   className?: string;
 }) {
-  const toggle = () => onChange(mode === "strip" ? "scroll" : "strip");
+  const cycle = () => onChange(nextAccordionMode(mode));
 
   return (
     <header
       className={`three-state-accordion-header ${className}`.trim()}
       role="button"
       tabIndex={0}
-      title={`Double-click to collapse or restore ${title}`}
-      onDoubleClick={toggle}
+      title={`Double-click to cycle ${title}`}
+      onDoubleClick={cycle}
       onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
-          toggle();
+          cycle();
         }
       }}
     >

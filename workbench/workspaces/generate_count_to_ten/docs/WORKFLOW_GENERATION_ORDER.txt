@@ -1,0 +1,945 @@
+{
+  "workflowId": "generate_count_to_ten",
+  "analyzedAt": "2026-08-16T21:20:04.146Z",
+  "modelId": "https.llm.c.singularitynet.io.v1-asi1",
+  "generationSteps": [
+    {
+      "name": "summary",
+      "visibility": {
+        "peers": true,
+        "updates": false
+      },
+      "promptId": "workflow.generation.summary"
+    }
+  ],
+  "lastRunSteps": [
+    {
+      "name": "summary",
+      "visibility": {
+        "peers": true,
+        "updates": false
+      },
+      "promptId": "workflow.generation.summary"
+    }
+  ],
+  "orderUsed": [
+    "summary"
+  ],
+  "generationContract": {
+    "summary": "Create a bounded semantic workflow that counts from 1 through 10 inclusive using AtomSpace memory cells, returning the ordered count values, final count, and iteration evidence.",
+    "memory": [
+      {
+        "name": "current_count",
+        "datatype": "number",
+        "requirement": "Workflow-scoped AtomSpace memory cell initialized to 1, incremented each iteration, used for loop condition and value collection. Must never exceed 10."
+      },
+      {
+        "name": "collected_values",
+        "datatype": "array",
+        "requirement": "Workflow-scoped AtomSpace memory cell initialized to empty list, accumulates count values each iteration, returned as count_values output."
+      }
+    ],
+    "checklist": [
+      "Workflow initializes current_count AtomSpace memory cell to 1",
+      "Workflow initializes collected_values AtomSpace memory cell to empty list",
+      "Workflow reads current_count on each iteration",
+      "Workflow appends current_count value to collected_values on each iteration",
+      "Workflow retains evidence linking each produced number to its iteration",
+      "Loop condition checks if current_count is less than 10",
+      "Loop increments current_count by one after each iteration",
+      "Loop has explicit maximum of 10 iterations",
+      "Loop never produces 11",
+      "Workflow returns count_values equal to [1,2,3,4,5,6,7,8,9,10]",
+      "Workflow returns final_count equal to 10",
+      "Workflow returns sufficient loop evidence to verify every iteration"
+    ],
+    "outputs": [
+      "[object Object]",
+      "[object Object]",
+      "[object Object]"
+    ],
+    "rules": [
+      "Loop must have explicit maxIterations bound of 10",
+      "Loop condition must use value.compare with operator 'less_than' comparing current_count to 10",
+      "Memory writes must declare atomspace_scope, atomspace_scope_key, atomspace_cell, atomspace_atom, change_mode, and evidenceLink",
+      "current_count must never exceed 10",
+      "All step inputs must resolve to workflow inputs or reachable producer outputs",
+      "Loop must terminate when current_count equals 10",
+      "Evidence must be retained for each iteration linking produced number to iteration"
+    ],
+    "englishsteps": [
+      {
+        "stepId": "init_current_count",
+        "label": "Initialize Current Count",
+        "purpose": "Set current_count AtomSpace memory cell to initial value 1",
+        "dependsOn": [],
+        "controlFlow": "sequence"
+      },
+      {
+        "stepId": "init_collected_values",
+        "label": "Initialize Collected Values",
+        "purpose": "Set collected_values AtomSpace memory cell to empty list",
+        "dependsOn": [],
+        "controlFlow": "sequence"
+      },
+      {
+        "stepId": "loop_start",
+        "label": "Start Counting Loop",
+        "purpose": "Begin while loop that continues while current_count is less than 10",
+        "dependsOn": [
+          "init_current_count",
+          "init_collected_values"
+        ],
+        "controlFlow": "while"
+      },
+      {
+        "stepId": "read_current_count",
+        "label": "Read Current Count",
+        "purpose": "Read current_count value from AtomSpace memory",
+        "dependsOn": [
+          "loop_start"
+        ],
+        "controlFlow": "sequence"
+      },
+      {
+        "stepId": "append_to_collected",
+        "label": "Append to Collected Values",
+        "purpose": "Append current_count value to collected_values with evidence link",
+        "dependsOn": [
+          "read_current_count"
+        ],
+        "controlFlow": "sequence"
+      },
+      {
+        "stepId": "check_loop_condition",
+        "label": "Check Loop Condition",
+        "purpose": "Compare current_count to 10 to determine if loop should continue",
+        "dependsOn": [
+          "append_to_collected"
+        ],
+        "controlFlow": "sequence"
+      },
+      {
+        "stepId": "increment_count",
+        "label": "Increment Current Count",
+        "purpose": "Increment current_count by 1 in AtomSpace memory",
+        "dependsOn": [
+          "check_loop_condition"
+        ],
+        "controlFlow": "sequence"
+      },
+      {
+        "stepId": "loop_continue",
+        "label": "Continue Loop",
+        "purpose": "Return to loop condition for next iteration",
+        "dependsOn": [
+          "increment_count"
+        ],
+        "controlFlow": "continue"
+      },
+      {
+        "stepId": "loop_exit",
+        "label": "Exit Loop",
+        "purpose": "Exit loop when condition fails and export accumulated values",
+        "dependsOn": [
+          "check_loop_condition"
+        ],
+        "controlFlow": "break"
+      },
+      {
+        "stepId": "return_results",
+        "label": "Return Results",
+        "purpose": "Return count_values, final_count, and loop_evidence as workflow outputs",
+        "dependsOn": [
+          "loop_exit"
+        ],
+        "controlFlow": "return"
+      }
+    ],
+    "steps": [
+      {
+        "id": "init_current_count",
+        "label": "Initialize Current Count",
+        "kind": "operation",
+        "operation": "memory.write",
+        "dependsOn": [],
+        "inputs": {
+          "atomspace_cell": "current_count",
+          "atomspace_scope": "workflow",
+          "atomspace_scope_key": "generate_count_to_ten",
+          "atomspace_atom": 1,
+          "change_mode": "replace",
+          "evidenceLink": "initialization"
+        },
+        "outputs": {
+          "atomspace_atom": "current_count_value",
+          "previousAtom": "previous_current_count",
+          "provenance": "init_provenance"
+        }
+      },
+      {
+        "id": "init_collected_values",
+        "label": "Initialize Collected Values",
+        "kind": "operation",
+        "operation": "memory.write",
+        "dependsOn": [],
+        "inputs": {
+          "atomspace_cell": "collected_values",
+          "atomspace_scope": "workflow",
+          "atomspace_scope_key": "generate_count_to_ten",
+          "atomspace_atom": [],
+          "change_mode": "replace",
+          "evidenceLink": "initialization"
+        },
+        "outputs": {
+          "atomspace_atom": "collected_values_list",
+          "previousAtom": "previous_collected_values",
+          "provenance": "init_values_provenance"
+        }
+      },
+      {
+        "id": "loop_start",
+        "label": "Start Counting Loop",
+        "kind": "operation",
+        "operation": "control.while",
+        "dependsOn": [
+          "init_current_count",
+          "init_collected_values"
+        ],
+        "inputs": {
+          "loopId": "counting_loop",
+          "condition": "$current_count_value",
+          "compareTo": 10,
+          "operator": "less_than",
+          "targetStepId": "read_current_count",
+          "exitStepId": "loop_exit",
+          "maxIterations": 10,
+          "retainedValues": [
+            "current_count_value",
+            "collected_values_list"
+          ],
+          "resetValues": [],
+          "accumulatedValues": [
+            "collected_values_list"
+          ],
+          "exportedValues": [
+            "collected_values_list",
+            "current_count_value"
+          ]
+        },
+        "outputs": {
+          "completed": "loop_completed",
+          "iterations": "loop_iterations",
+          "lastCondition": "last_loop_condition"
+        },
+        "while": {
+          "condition": "$current_count_value",
+          "compareTo": 10,
+          "operator": "less_than",
+          "targetStepId": "read_current_count",
+          "exitStepId": "loop_exit",
+          "maxIterations": 10
+        }
+      },
+      {
+        "id": "read_current_count",
+        "label": "Read Current Count",
+        "kind": "operation",
+        "operation": "memory.read",
+        "dependsOn": [
+          "loop_start"
+        ],
+        "inputs": {
+          "atomspace_cell": "current_count",
+          "atomspace_scope": "workflow",
+          "atomspace_scope_key": "generate_count_to_ten",
+          "missingPolicy": "error"
+        },
+        "outputs": {
+          "atomspace_atom": "iteration_count",
+          "found": "count_found",
+          "provenance": "read_provenance"
+        }
+      },
+      {
+        "id": "append_to_collected",
+        "label": "Append to Collected Values",
+        "kind": "operation",
+        "operation": "memory.write",
+        "dependsOn": [
+          "read_current_count"
+        ],
+        "inputs": {
+          "atomspace_cell": "collected_values",
+          "atomspace_scope": "workflow",
+          "atomspace_scope_key": "generate_count_to_ten",
+          "atomspace_atom": "$iteration_count",
+          "change_mode": "append",
+          "evidenceLink": "iteration_$loop_iterations"
+        },
+        "outputs": {
+          "atomspace_atom": "updated_collected_values",
+          "previousAtom": "before_append_values",
+          "provenance": "append_provenance"
+        }
+      },
+      {
+        "id": "check_loop_condition",
+        "label": "Check Loop Condition",
+        "kind": "operation",
+        "operation": "value.compare",
+        "dependsOn": [
+          "append_to_collected"
+        ],
+        "inputs": {
+          "left": "$iteration_count",
+          "operator": "less_than",
+          "right": 10
+        },
+        "outputs": {
+          "matched": "should_continue"
+        }
+      },
+      {
+        "id": "increment_count",
+        "label": "Increment Current Count",
+        "kind": "operation",
+        "operation": "memory.write",
+        "dependsOn": [
+          "check_loop_condition"
+        ],
+        "inputs": {
+          "atomspace_cell": "current_count",
+          "atomspace_scope": "workflow",
+          "atomspace_scope_key": "generate_count_to_ten",
+          "atomspace_atom": "$iteration_count",
+          "change_mode": "increment",
+          "evidenceLink": "iteration_$loop_iterations"
+        },
+        "outputs": {
+          "atomspace_atom": "incremented_count",
+          "previousAtom": "before_increment_count",
+          "provenance": "increment_provenance"
+        }
+      },
+      {
+        "id": "loop_continue",
+        "label": "Continue Loop",
+        "kind": "operation",
+        "operation": "control.loop.continue",
+        "dependsOn": [
+          "increment_count"
+        ],
+        "inputs": {
+          "loopId": "counting_loop"
+        },
+        "outputs": {
+          "continued": "continued_flag",
+          "iteration": "next_iteration"
+        }
+      },
+      {
+        "id": "loop_exit",
+        "label": "Exit Loop",
+        "kind": "operation",
+        "operation": "control.loop.break",
+        "dependsOn": [
+          "check_loop_condition"
+        ],
+        "inputs": {
+          "loopId": "counting_loop"
+        },
+        "outputs": {
+          "broken": "loop_broken",
+          "exportedValues": "final_exported_values",
+          "iterations": "total_iterations"
+        }
+      },
+      {
+        "id": "return_results",
+        "label": "Return Results",
+        "kind": "operation",
+        "operation": "control.return",
+        "dependsOn": [
+          "loop_exit"
+        ],
+        "inputs": {
+          "values": {
+            "count_values": "$updated_collected_values",
+            "final_count": "$iteration_count",
+            "loop_evidence": "$append_provenance"
+          }
+        },
+        "outputs": {
+          "returned": "return_success",
+          "values": "returned_values"
+        }
+      }
+    ],
+    "libops": [
+      {
+        "operationId": "memory.write",
+        "label": "Write AtomSpace Memory Cell",
+        "description": "Update one declared AtomSpace-backed memory cell using an explicit merge rule and retain evidence for the mutation.",
+        "inputs": {
+          "atomspace_atom": "Any",
+          "atomspace_cell": "String",
+          "atomspace_scope": "String",
+          "atomspace_scope_key": "String",
+          "change_mode": "String",
+          "evidenceLink": "String"
+        },
+        "outputs": {
+          "atomspace_atom": "Any",
+          "previousAtom": "Any",
+          "provenance": "Object"
+        }
+      },
+      {
+        "operationId": "memory.read",
+        "label": "Read AtomSpace Memory Cell",
+        "description": "Read one declared AtomSpace-backed memory cell using an explicit missing-cell policy.",
+        "inputs": {
+          "atomspace_cell": "String",
+          "atomspace_scope": "String",
+          "atomspace_scope_key": "String",
+          "default": "Any",
+          "missingPolicy": "String"
+        },
+        "outputs": {
+          "atomspace_atom": "Any",
+          "found": "Boolean",
+          "provenance": "Object"
+        }
+      },
+      {
+        "operationId": "control.while",
+        "label": "While Condition Holds",
+        "description": "Repeat a workflow region while its condition matches the selected operator, stopping at a required iteration bound.",
+        "inputs": {
+          "accumulatedValues": "Array",
+          "compareTo": "Any",
+          "condition": "Any",
+          "exitStepId": "String",
+          "exportedValues": "Array",
+          "loopId": "String",
+          "maxIterations": "Number",
+          "operator": "String",
+          "resetValues": "Array",
+          "retainedValues": "Array",
+          "targetStepId": "String"
+        },
+        "outputs": {
+          "completed": "Boolean",
+          "iterations": "Number",
+          "lastCondition": "Any"
+        }
+      },
+      {
+        "operationId": "value.compare",
+        "label": "Compare Values",
+        "description": "Compare two typed values with an explicit operator and return the Boolean result.",
+        "inputs": {
+          "left": "Any",
+          "operator": "String",
+          "right": "Any"
+        },
+        "outputs": {
+          "matched": "Boolean"
+        }
+      },
+      {
+        "operationId": "control.loop.continue",
+        "label": "Continue Loop",
+        "description": "Finalize the current iteration and return to the named active loop's condition or next-item check.",
+        "inputs": {
+          "loopId": "String"
+        },
+        "outputs": {
+          "continued": "Boolean",
+          "iteration": "Number"
+        }
+      },
+      {
+        "operationId": "control.loop.break",
+        "label": "Break Loop",
+        "description": "Finalize and exit the named active loop, exporting only its declared output values.",
+        "inputs": {
+          "loopId": "String"
+        },
+        "outputs": {
+          "broken": "Boolean",
+          "exportedValues": "Object",
+          "iterations": "Number"
+        }
+      },
+      {
+        "operationId": "control.return",
+        "label": "Return from Workflow or Operation",
+        "description": "Validate declared outputs, unwind the current frame, and return a typed result to its caller.",
+        "inputs": {
+          "values": "Object"
+        },
+        "outputs": {
+          "returned": "Boolean",
+          "values": "Object"
+        }
+      }
+    ],
+    "matchops": [
+      {
+        "requirement": "Initialize AtomSpace memory cell with a value",
+        "operationId": "memory.write",
+        "status": "matched",
+        "rationale": "memory.write with change_mode 'replace' can initialize a memory cell to a starting value"
+      },
+      {
+        "requirement": "Read value from AtomSpace memory cell",
+        "operationId": "memory.read",
+        "status": "matched",
+        "rationale": "memory.read retrieves the current value from a declared AtomSpace memory cell"
+      },
+      {
+        "requirement": "Append value to list in AtomSpace memory",
+        "operationId": "memory.write",
+        "status": "matched",
+        "rationale": "memory.write with change_mode 'append' can add values to a list stored in memory"
+      },
+      {
+        "requirement": "Increment numeric value in AtomSpace memory",
+        "operationId": "memory.write",
+        "status": "matched",
+        "rationale": "memory.write with change_mode 'increment' can increment a numeric value by 1"
+      },
+      {
+        "requirement": "Compare two values with operator",
+        "operationId": "value.compare",
+        "status": "matched",
+        "rationale": "value.compare supports 'less_than' operator for loop condition checking"
+      },
+      {
+        "requirement": "Execute while loop with finite bound",
+        "operationId": "control.while",
+        "status": "matched",
+        "rationale": "control.while provides bounded while loop with maxIterations parameter"
+      },
+      {
+        "requirement": "Continue to next loop iteration",
+        "operationId": "control.loop.continue",
+        "status": "matched",
+        "rationale": "control.loop.continue returns execution to loop condition for next iteration"
+      },
+      {
+        "requirement": "Exit loop and export values",
+        "operationId": "control.loop.break",
+        "status": "matched",
+        "rationale": "control.loop.break exits the loop and exports declared accumulated values"
+      },
+      {
+        "requirement": "Return workflow outputs",
+        "operationId": "control.return",
+        "status": "matched",
+        "rationale": "control.return validates and returns declared workflow outputs"
+      }
+    ],
+    "inventops": [],
+    "codeops": [],
+    "promptops": [],
+    "libdt": [
+      {
+        "datatypeId": "number",
+        "kind": "semantic_datatype",
+        "label": "Number",
+        "description": "A numeric value independent of integer or floating-point representation, precision, and serialization format."
+      },
+      {
+        "datatypeId": "array",
+        "kind": "semantic_datatype",
+        "label": "Array",
+        "description": "An ordered collection of zero or more values."
+      }
+    ],
+    "matchdt": [
+      {
+        "requirement": "current_count memory cell value",
+        "datatypeId": "number",
+        "representationId": "",
+        "concreteDatatypeId": "",
+        "status": "matched",
+        "rationale": "number semantic datatype represents the count value"
+      },
+      {
+        "requirement": "collected_values memory cell value",
+        "datatypeId": "array",
+        "representationId": "",
+        "concreteDatatypeId": "",
+        "status": "matched",
+        "rationale": "array semantic datatype represents the ordered list of collected count values"
+      },
+      {
+        "requirement": "count_values output",
+        "datatypeId": "array",
+        "representationId": "",
+        "concreteDatatypeId": "",
+        "status": "matched",
+        "rationale": "array semantic datatype represents the ordered output [1,2,3,4,5,6,7,8,9,10]"
+      },
+      {
+        "requirement": "final_count output",
+        "datatypeId": "number",
+        "representationId": "",
+        "concreteDatatypeId": "",
+        "status": "matched",
+        "rationale": "number semantic datatype represents the final count value 10"
+      },
+      {
+        "requirement": "loop_evidence output",
+        "datatypeId": "array",
+        "representationId": "",
+        "concreteDatatypeId": "",
+        "status": "matched",
+        "rationale": "array semantic datatype represents the collection of iteration evidence records"
+      }
+    ],
+    "inventdt": [],
+    "codedt": [],
+    "libwf": [
+      {
+        "workflowId": "generate_count_to_ten",
+        "label": "Generate Count to Ten",
+        "description": "Empty generation target. Populate this workflow from generate_count_to_ten.english_workflow_specification.",
+        "inputs": {},
+        "outputs": {}
+      }
+    ],
+    "matchwf": [
+      {
+        "requirement": "Count from 1 to 10 workflow",
+        "workflowId": "generate_count_to_ten",
+        "status": "matched",
+        "rationale": "Existing workflow generate_count_to_ten is the target for this specification"
+      }
+    ],
+    "inventwf": [],
+    "codewf": [
+      {
+        "workflowId": "generate_count_to_ten",
+        "stepIds": [
+          "init_current_count",
+          "init_collected_values",
+          "loop_start",
+          "read_current_count",
+          "append_to_collected",
+          "check_loop_condition",
+          "increment_count",
+          "loop_continue",
+          "loop_exit",
+          "return_results"
+        ],
+        "operationIds": [
+          "memory.write",
+          "memory.read",
+          "control.while",
+          "value.compare",
+          "control.loop.continue",
+          "control.loop.break",
+          "control.return"
+        ],
+        "datatypeIds": [
+          "number",
+          "array"
+        ],
+        "unresolvedOperations": [],
+        "unresolvedDatatypes": [],
+        "status": "proposed"
+      }
+    ]
+  },
+  "workflow": {
+    "id": "generate_count_to_ten",
+    "kind": "workflow",
+    "label": "Generate Count to Ten",
+    "description": "Create a bounded semantic workflow that counts from 1 through 10 inclusive using AtomSpace memory cells, returning the ordered count values, final count, and iteration evidence.",
+    "inputs": {},
+    "outputs": {
+      "count_values": "array",
+      "final_count": "number",
+      "loop_evidence": "array"
+    },
+    "memoryModel": {
+      "atomspace_scope": "workflow",
+      "atomspace_scope_key": "generate_count_to_ten",
+      "cells": [
+        {
+          "atomspace_cell": "current_count",
+          "datatype": "number",
+          "initialValue": 1,
+          "change_mode": "replace",
+          "writers": [
+            "init_current_count",
+            "increment_count"
+          ],
+          "readers": [
+            "read_current_count"
+          ],
+          "persistence": "transient"
+        },
+        {
+          "atomspace_cell": "collected_values",
+          "datatype": "array",
+          "initialValue": [],
+          "change_mode": "append",
+          "writers": [
+            "init_collected_values",
+            "append_to_collected"
+          ],
+          "readers": [
+            "append_to_collected"
+          ],
+          "persistence": "transient"
+        }
+      ]
+    },
+    "steps": [
+      {
+        "id": "init_current_count",
+        "label": "Initialize Current Count",
+        "kind": "operation",
+        "operation": "memory.write",
+        "dependsOn": [],
+        "inputs": {
+          "atomspace_cell": "current_count",
+          "atomspace_scope": "workflow",
+          "atomspace_scope_key": "generate_count_to_ten",
+          "atomspace_atom": 1,
+          "change_mode": "replace",
+          "evidenceLink": "initialization"
+        },
+        "outputs": {
+          "atomspace_atom": "current_count_value",
+          "previousAtom": "previous_current_count",
+          "provenance": "init_provenance"
+        }
+      },
+      {
+        "id": "init_collected_values",
+        "label": "Initialize Collected Values",
+        "kind": "operation",
+        "operation": "memory.write",
+        "dependsOn": [],
+        "inputs": {
+          "atomspace_cell": "collected_values",
+          "atomspace_scope": "workflow",
+          "atomspace_scope_key": "generate_count_to_ten",
+          "atomspace_atom": [],
+          "change_mode": "replace",
+          "evidenceLink": "initialization"
+        },
+        "outputs": {
+          "atomspace_atom": "collected_values_list",
+          "previousAtom": "previous_collected_values",
+          "provenance": "init_values_provenance"
+        }
+      },
+      {
+        "id": "loop_start",
+        "label": "Start Counting Loop",
+        "kind": "operation",
+        "operation": "control.while",
+        "dependsOn": [
+          "init_current_count",
+          "init_collected_values"
+        ],
+        "inputs": {
+          "loopId": "counting_loop",
+          "condition": "$current_count_value",
+          "compareTo": 10,
+          "operator": "less_than",
+          "targetStepId": "read_current_count",
+          "exitStepId": "loop_exit",
+          "maxIterations": 10,
+          "retainedValues": [
+            "current_count_value",
+            "collected_values_list"
+          ],
+          "resetValues": [],
+          "accumulatedValues": [
+            "collected_values_list"
+          ],
+          "exportedValues": [
+            "collected_values_list",
+            "current_count_value"
+          ]
+        },
+        "outputs": {
+          "completed": "loop_completed",
+          "iterations": "loop_iterations",
+          "lastCondition": "last_loop_condition"
+        },
+        "while": {
+          "condition": "$current_count_value",
+          "compareTo": 10,
+          "operator": "less_than",
+          "targetStepId": "read_current_count",
+          "exitStepId": "loop_exit",
+          "maxIterations": 10
+        }
+      },
+      {
+        "id": "read_current_count",
+        "label": "Read Current Count",
+        "kind": "operation",
+        "operation": "memory.read",
+        "dependsOn": [
+          "loop_start"
+        ],
+        "inputs": {
+          "atomspace_cell": "current_count",
+          "atomspace_scope": "workflow",
+          "atomspace_scope_key": "generate_count_to_ten",
+          "missingPolicy": "error"
+        },
+        "outputs": {
+          "atomspace_atom": "iteration_count",
+          "found": "count_found",
+          "provenance": "read_provenance"
+        }
+      },
+      {
+        "id": "append_to_collected",
+        "label": "Append to Collected Values",
+        "kind": "operation",
+        "operation": "memory.write",
+        "dependsOn": [
+          "read_current_count"
+        ],
+        "inputs": {
+          "atomspace_cell": "collected_values",
+          "atomspace_scope": "workflow",
+          "atomspace_scope_key": "generate_count_to_ten",
+          "atomspace_atom": "$iteration_count",
+          "change_mode": "append",
+          "evidenceLink": "iteration_$loop_iterations"
+        },
+        "outputs": {
+          "atomspace_atom": "updated_collected_values",
+          "previousAtom": "before_append_values",
+          "provenance": "append_provenance"
+        }
+      },
+      {
+        "id": "check_loop_condition",
+        "label": "Check Loop Condition",
+        "kind": "operation",
+        "operation": "value.compare",
+        "dependsOn": [
+          "append_to_collected"
+        ],
+        "inputs": {
+          "left": "$iteration_count",
+          "operator": "less_than",
+          "right": 10
+        },
+        "outputs": {
+          "matched": "should_continue"
+        }
+      },
+      {
+        "id": "increment_count",
+        "label": "Increment Current Count",
+        "kind": "operation",
+        "operation": "memory.write",
+        "dependsOn": [
+          "check_loop_condition"
+        ],
+        "inputs": {
+          "atomspace_cell": "current_count",
+          "atomspace_scope": "workflow",
+          "atomspace_scope_key": "generate_count_to_ten",
+          "atomspace_atom": "$iteration_count",
+          "change_mode": "increment",
+          "evidenceLink": "iteration_$loop_iterations"
+        },
+        "outputs": {
+          "atomspace_atom": "incremented_count",
+          "previousAtom": "before_increment_count",
+          "provenance": "increment_provenance"
+        }
+      },
+      {
+        "id": "loop_continue",
+        "label": "Continue Loop",
+        "kind": "operation",
+        "operation": "control.loop.continue",
+        "dependsOn": [
+          "increment_count"
+        ],
+        "inputs": {
+          "loopId": "counting_loop"
+        },
+        "outputs": {
+          "continued": "continued_flag",
+          "iteration": "next_iteration"
+        }
+      },
+      {
+        "id": "loop_exit",
+        "label": "Exit Loop",
+        "kind": "operation",
+        "operation": "control.loop.break",
+        "dependsOn": [
+          "check_loop_condition"
+        ],
+        "inputs": {
+          "loopId": "counting_loop"
+        },
+        "outputs": {
+          "broken": "loop_broken",
+          "exportedValues": "final_exported_values",
+          "iterations": "total_iterations"
+        }
+      },
+      {
+        "id": "return_results",
+        "label": "Return Results",
+        "kind": "operation",
+        "operation": "control.return",
+        "dependsOn": [
+          "loop_exit"
+        ],
+        "inputs": {
+          "values": {
+            "count_values": "$updated_collected_values",
+            "final_count": "$iteration_count",
+            "loop_evidence": "$append_provenance"
+          }
+        },
+        "outputs": {
+          "returned": "return_success",
+          "values": "returned_values"
+        }
+      }
+    ],
+    "generation": {
+      "englishDescriptionPath": "docs/WORKFLOW_DESCRIPTION.md",
+      "englishSpecificationPrompt": "generate_count_to_ten.english_workflow_specification",
+      "generationOrderPath": "docs/WORKFLOW_GENERATION_ORDER.txt",
+      "operation": "workflow.populate_from_english",
+      "operationCategories": [
+        "workflow-language"
+      ],
+      "preflightRequired": true
+    },
+    "status": "proposed"
+  },
+  "validationErrors": [
+    "'unknown operation implementation: workflow.memory.write'",
+    "'unknown operation implementation: workflow.control.while'",
+    "'unknown operation implementation: workflow.memory.read'",
+    "'unknown operation implementation: workflow.value.compare'",
+    "'unknown operation implementation: workflow.control.loop.continue'",
+    "'unknown operation implementation: workflow.control.loop.break'",
+    "'unknown operation implementation: workflow.control.return'"
+  ],
+  "score": 80
+}

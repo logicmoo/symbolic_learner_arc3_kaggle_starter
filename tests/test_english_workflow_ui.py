@@ -59,10 +59,14 @@ def test_generation_order_is_one_call_audited_and_selectively_revisable() -> Non
     assert "availableContractSectionPrompts.map((prompt)" in page
     assert "addGenerationOutput(prompt.buttonName, prompt.id)" in page
     assert "CONTRACT_SECTION_ROWS" not in page
-    assert "onAdd(entry.name)" in page
+    assert "onClick={() => onRunEntry(entry, ordinal)}" in page
+    assert "Quick call ${entry.name} at position ${ordinal}" in page
+    assert "Run only this generation step as one quick LLM call" in page
+    assert "Add another ${entry.name}" not in page
+    assert "Append another occurrence" not in page
     assert 'addGenerationOutput("group")' in page
     assert ">[+group]</button>" in page
-    assert 'aria-label={isGroup ? `Run group ${ordinal}`' in page
+    assert 'aria-label={isGroup ? `Run group ${ordinal}` : `Quick call ${entry.name} at position ${ordinal}`}' in page
     assert "generation-order-group-picker" in page
     assert "generation-order-group-actions" in page
     assert "Select group ${ordinal} for insertion" in page
@@ -82,8 +86,9 @@ def test_generation_order_is_one_call_audited_and_selectively_revisable() -> Non
     assert "effective_prompt_catalog: promptChoices" in page
     assert "effective_datatype_catalog: datatypeCatalog" in page
     assert "effective_workflow_catalog: workflowCatalog" in page
-    assert 'onRunGroup={(group, ordinal) => void analyze([group]' in page
-    assert "group.modelId || selectedModel" in page
+    assert 'onRunEntry={(entry, ordinal) => void analyze([entry]' in page
+    assert '`Quick Call ${entry.name} ${ordinal}`' in page
+    assert "entry.modelId || selectedModel" in page
     assert 'containsGenerationOutput(generationOrder, name) || containsGenerationOutput(generationOrder, "group")' in page
     assert "function initialGenerationOrder(): GenerationOrderEntry[]" in page
     assert "return [];" in page

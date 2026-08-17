@@ -102,6 +102,11 @@ const EnglishWorkflowPage = lazy(() =>
     default: module.EnglishWorkflowPage,
   })),
 );
+const VisualImageDiffPage = lazy(() =>
+  import("../components/VisualImageDiffPage").then((module) => ({
+    default: module.VisualImageDiffPage,
+  })),
+);
 const KnowledgeDataExplorer = lazy(() =>
   import("../components/KnowledgeDataExplorer").then((module) => ({
     default: module.KnowledgeDataExplorer,
@@ -213,7 +218,7 @@ type RecordFile<T> = {
   workspaceId?: string;
   document?: T;
   error?: string;
-  resolved?: { enabled?: boolean };
+  resolved?: { enabled?: boolean; backendId?: string; backend?: { label?: string } };
 };
 type DatatypeContract = string | Record<string, unknown>;
 type OperationResource = {
@@ -256,7 +261,7 @@ type OperationLibrary = {
   operations: RecordFile<OperationResource>[];
   operationImplementations: RecordFile<OperationResource>[];
 };
-type WorkflowRunnerModel = { id: string; label?: string; enabled?: boolean };
+type WorkflowRunnerModel = { id: string; label?: string; backendId?: string; backendLabel?: string; enabled?: boolean };
 type WorkspaceFile = {
   path: string;
   name: string;
@@ -318,6 +323,7 @@ import { ResourceSourceEditor } from "../components/ResourceSourceEditor";
 type View =
   | "overview"
   | "englishWorkflow"
+  | "visualImageDiff"
   | "canvas"
   | "editor"
   | "data"
@@ -350,6 +356,7 @@ type BreadcrumbEntry = { view: View; label: string; url: string };
 const WORKBENCH_VIEWS: Set<View> = new Set([
   "overview",
   "englishWorkflow",
+  "visualImageDiff",
   "canvas",
   "editor",
   "data",
@@ -386,6 +393,7 @@ const viewFromLocation = (): View | null => {
   const value = rawValue.trim().toLowerCase();
   if (value === "workflows" || value === "workflow") return "canvas";
   if (value === "english-workflow" || value === "englishworkflow") return "englishWorkflow";
+  if (value === "visual-image-diff" || value === "visualimagediff" || value === "image-diff") return "visualImageDiff";
   if (value === "workflowv2" || value === "workflows-v2" || value === "workflow-v2") return "canvas";
   if (value === "editor") return "canvas";
   if (value === "backends") return "llms";
@@ -457,6 +465,7 @@ export const NAVIGATION_V2: Array<{
       { label: "Planning", view: "plans", glyph: "◇" },
       { label: "Workflows (Legacy)", view: "canvas", glyph: "⌘" },
       { label: "English Workflow", view: "englishWorkflow", glyph: "✧" },
+      { label: "Visual Image Diff", view: "visualImageDiff", glyph: "◩" },
     ],
   },
   {
@@ -991,7 +1000,13 @@ export function FilesystemWorkbenchPage() {
       setWorkflowRunnerModels(
         (modelPayload.models || []).flatMap((record: RecordFile<{ id: string; label?: string; enabled?: boolean }>) =>
           record.document && record.resolved?.enabled !== false && record.document.enabled !== false
-            ? [{ id: record.document.id, label: record.document.label, enabled: true }]
+            ? [{
+                id: record.document.id,
+                label: record.document.label,
+                backendId: record.resolved?.backendId,
+                backendLabel: record.resolved?.backend?.label,
+                enabled: true,
+              }]
             : [],
         ),
       );
@@ -3001,6 +3016,15 @@ export function FilesystemWorkbenchPage() {
             )}
             {view === "englishWorkflow" && !workflow && (
               <div className="studio-empty">This workspace has no Workflow resource to revise from English.</div>
+            )}
+            {view === "visualImageDiff" && (
+              <VisualImageDiffPage
+                workspaceId={workspace.id}
+                workspaceLabel={workspace.label}
+                models={workflowRunnerModels}
+                operations={operationLibrary.operations.flatMap((record) => record.document ? [record.document] : [])}
+                operationImplementations={operationLibrary.operationImplementations.flatMap((record) => record.document ? [record.document] : [])}
+              />
             )}
             {view === "data" && <DataCatalogPanel workspaceId={workspace.id} />}
             {view === "knowledgeData" && (

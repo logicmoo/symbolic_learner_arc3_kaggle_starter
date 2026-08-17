@@ -42,6 +42,20 @@ values here.
 
 ## Completed and validated
 
+- [x] Make the Visual Image Diff structural columns adjustable without moving
+  any content outside its existing `ThreeStateAccordionStack`. The default
+  desktop proportions now match the accepted wide layout at approximately
+  `1 : 2.8 : 1.9` (LEFT : CENTER : RIGHT). The two stack borders are pointer
+  drag handles with keyboard adjustment, persist their ratios in browser
+  storage, and reset to the accepted proportions on double-click. Existing
+  two-column and one-column responsive layouts remain unchanged and hide the
+  inactive drag borders. Focused Visual Image Diff/navigation/workflow tests:
+  73 passed; frontend production build and `git diff --check` passed on
+  2026-08-17. The full repository suite passed with `586 passed` using an
+  external pytest base directory. Live browser validation confirmed the two
+  separators, accepted reset proportions, and identical width state in a
+  freshly opened tab after adjustment.
+
 - [x] Restore the complete repository validation baseline after the navigation,
   resource hierarchy, and runtime-discovery changes. UI contract tests now
   normalize formatting locally instead of coupling behavior checks to Prettier
@@ -894,8 +908,90 @@ Preserve the canonical checkout and its `codex/workbench-navigation-v2` branch.
   translated topology with signed evidence; and regression-test exact hollow
   object regeneration through live SWI-Prolog without filling its hole.
 - [x] Add the filesystem-backed `Visual Image Diff` page as three native
-  `ThreeStateAccordionStack` columns. Persist the supplied ACTION4 then
-  ACTION1 (up) image sequence as workspace assets and a sequence manifest;
+  `ThreeStateAccordionStack` columns. Persist the corrected ACTION3 then
+  ACTION1 image sequence as workspace assets and a sequence manifest;
   split the former monolithic ARC3 analysis prompt into classified Prompt
   resources; and initialize the composer from one ordered Prompt Profile group
-  while retaining independent `+ STEPS`, removal, and reordering controls.
+  while retaining inline `+ step`, removal, and reordering controls.
+  The center stack's single `GENERATE VISUAL DIFF` accordion now uses the
+  English Workflow composition model: selected model first, an inline Prompt
+  resource palette, selected-group insertion, `[+group]`, group copy/shuffle/
+  clear, wraparound rotation inside and outside groups, Prompt and effective
+  model selectors, and independent `peers`/`updates` visibility. No editable
+  surface was moved outside the page's three native accordion stacks. Focused
+  tests (5), frontend production build, `git diff --check`, and live selected-
+  group insertion/copy verification passed on 2026-08-17. Visual Image Diff
+  stack controls are semantic headers with their collective size buttons built
+  into the header. Each header freezes against its own independently scrolling
+  stack rather than floating against the page scroll surface. Frontend build,
+  `git diff --check`, 59 focused accordion/navigation tests, and live DOM/
+  screenshot verification passed after the header refinement. Full repository
+  validation after the refinement: 529 passed in 43.18s using an external
+  Windows base-temp directory.
+- [x] Make Visual Image Diff executable without leaving its three accordion
+  stacks. The left sequence accordion accepts multiple image uploads, the
+  center `GENERATE VISUAL DIFF` accordion selects an effective model and runs
+  the selected group as one real model invocation, and the right `RESOURCE
+  OUTPUTS` accordion displays status, errors, usage, and response text. The
+  browser prepares a labeled contact sheet so every ordered image can pass
+  through the existing single-image model endpoint. Center prompt rows now
+  fit their accordion body at narrow widths, reserve a stable scrollbar
+  gutter, and no longer place text or controls underneath the scrollbar.
+  Added the requested eleven-stage source/normalize/object/Turtle/compare/
+  rules/Prolog/validate/report pipeline as filesystem Prompt resources and
+  placed them first, in supplied order, inside the existing
+  `visual_image_diff.analysis_group` profile. The workspace manifest now
+  distributes those eleven prompts across the five real
+  `free_staged_symbolic_analysis` transaction groups: Objects (6), Changes
+  (1), Prolog (1), Rules (1), and Audit (2). The first Objects entry therefore
+  starts as a group rather than eleven unrelated composer rows. Model selectors
+  now display the resolved backend label beside the model name while retaining
+  the model resource ID as the invocation value. Accordion summary-strip clicks
+  now cycle through all three native sizes (`strip`, `scroll`, `full`); the
+  three sizing buttons remain direct state selectors. Visual Image Diff prompt
+  and group titles now also execute as quick calls, matching the English
+  Workflow generation-order behavior while submitting the current ordered
+  image sequence. The former separate `+ STEPS` and `GROUP PROMPT` members are
+  merged into that one center accordion, with the same compact inline composer,
+  wide horizontal rows, narrow stacked rows, shuffle/clear actions, and primary
+  run placement used by English Workflow. Focused Visual Image Diff tests (8),
+  frontend production build, `git diff --check`, and live browser verification
+  of one center member, twelve inline add controls, five groups, and eleven
+  nested prompt steps passed on 2026-08-17. Full repository validation after
+  the unified composer change: 539 passed in 54.46s. The RIGHT stack now also
+  has a separate item-level `PROMPT CONTENT` member alongside the retained
+  whole-transaction `COMPOSED GROUP PROMPT`: touching or focusing any of the
+  eleven individual pipeline Prompt rows selects and highlights that resource,
+  opens the inspector, and displays its complete filesystem-backed text plus
+  ID, label, classification, applicability, and produced values without
+  truncation. Changing a row's Prompt selector updates the same inspector.
+  Focused item-inspector tests (9), frontend production build,
+  `git diff --check`, live selection verification, and the full repository
+  suite (543 passed in 59.29s) completed on 2026-08-17.
+- [x] Add an in-page Visual Image Diff UIX comparison without replacing the
+  established flat composer. CENTER now contains the original `GENERATE
+  VISUAL DIFF` member unchanged and a second `GENERATE VISUAL DIFF ·
+  SUBACCORDION UIX` member bound to the same filesystem Prompt resources,
+  model choices, composition state, visibility routing, ordering actions, and
+  invocation path. The alternate view renders five top-level group resources
+  and their eleven Prompt steps as native nested `ThreeStateAccordionMember`
+  instances with independent three-state controls. Managed-order accordion
+  members follow the shared semantic order and intentionally disable a second,
+  conflicting drag order; all existing members remain draggable. Live browser
+  verification confirmed five flat rows, five group accordions, eleven nested
+  Prompt accordions, right-side Prompt inspection from the alternate view,
+  shared edits between both presentations, vertical scrolling, and no
+  horizontal overflow. Focused accordion/navigation/UIX tests: 72 passed;
+  frontend production build and `git diff --check` passed; full repository
+  validation: 557 passed in 65.55s on 2026-08-17. The alternate version's
+  sublist now uses native collapsed accordion strips carrying the same compact
+  controls as `workflow.populate_from_english`: ordinal/state cycling, quick
+  run title, `peers`/`updates`, filesystem Prompt selection, backend-qualified
+  model override, and wraparound left/remove/right actions. Parent groups stay
+  expandable while all eleven nested Prompt members start in `strip` mode and
+  retain their own `_ | * | +` selectors. Long values remain horizontally
+  reachable inside each strip and are not shortened. Frontend build, focused
+  72-test validation, live verification of 11 compact Prompt strips, strip to
+  scroll to strip cycling, and screenshot inspection passed on 2026-08-17.
+  Full repository validation after the compact-strip refinement: 582 passed
+  in 80.52s using an external Windows base-temp directory.

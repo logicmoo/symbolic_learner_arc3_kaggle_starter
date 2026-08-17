@@ -8,10 +8,10 @@ import {UniversalExecutionControls,type RunnerPopulationMode} from "./UniversalE
 
 type ExampleArgument={datatype?:string;label?:string;default?:unknown;options?:unknown[]};
 type DatatypeContract=string|Record<string,unknown>;
-type OperationDef={id:string;label?:string;description?:string;implementation?:string;inputs?:Record<string,DatatypeContract>;outputs?:Record<string,DatatypeContract>;parameters?:Record<string,unknown>;children?:string[];preferredChild?:string;example_execute?:{action?:string;arguments?:Record<string,ExampleArgument>;parameters?:Record<string,ExampleArgument>}};
+export type OperationDef={id:string;label?:string;description?:string;implementation?:string;inputs?:Record<string,DatatypeContract>;outputs?:Record<string,DatatypeContract>;parameters?:Record<string,unknown>;children?:string[];preferredChild?:string;example_execute?:{action?:string;arguments?:Record<string,ExampleArgument>;parameters?:Record<string,ExampleArgument>}};
 type HumanField={type?:string;label?:string;prompt?:string;required?:boolean;options?:unknown[]};
-type OperationImplementationDef={id:string;label?:string;implementation:string;parameters?:{form?:Record<string,HumanField>};modelSelection?:{models?:string[];strategy?:string}};
-type RunnerModel={id:string;label?:string;enabled?:boolean};
+export type OperationImplementationDef={id:string;label?:string;implementation:string;parameters?:{form?:Record<string,HumanField>};modelSelection?:{models?:string[];strategy?:string}};
+export type RunnerModel={id:string;label?:string;enabled?:boolean};
 type InvocationResult={operation:{id:string;label:string;inputs:Record<string,DatatypeContract>;outputs:Record<string,DatatypeContract>};implementation:{id:string;label:string;route:string};resolvedPrompts?:Array<{promptId:string;implementationId:string;targets?:string[];version?:number}>;inputs:Record<string,unknown>;outputs:Record<string,unknown>;elapsedMs:number;debugLogPath?:string};
 type RequestFailureDetail={message?:string;debugLogPath?:string};
 type RuntimeArtifact={name?:string;datatype?:string;representation?:string;payload?:unknown;value?:unknown;createdAt?:string;stepId?:string;provenance?:Record<string,unknown>};

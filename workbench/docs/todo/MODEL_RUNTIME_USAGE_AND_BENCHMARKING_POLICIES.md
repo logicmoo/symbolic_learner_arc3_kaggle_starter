@@ -8,9 +8,14 @@ Build the **Model Runtime Usage and Benchmarking Policies** page in the **MeTTaS
 
 The active page is backed by real workspace resources and the model-policy API. It currently provides vendor/model intent editing, inherited vendor overrides, dynamic provider-property columns, composable filters, sortable columns, frozen identity/policy columns, horizontal and vertical scrolling, visible-row selection, concurrent model probes, health observations, effective runtime and benchmark eligibility, prompt-profile references, persisted benchmark execution/results, and filesystem load/save.
 
+Backend creation and discovery are now also embedded on Model Policy: the page
+can create an OpenAI-compatible backend resource, pull its live model catalog,
+select new/changed or all available models, and overwrite-import the selected
+resources into the shared model library. The full Models editor remains linked
+for inheritance and preset work.
+
 Remaining work is intentionally narrower:
 
-- optionally embed vendor creation and backend discovery instead of using the current direct link to the Models editor's backend creation, discovery, selection, and overwrite import tools;
 - refine multi-column sorting if future catalog usage reveals additional ordering needs (Shift+click already composes sort keys);
 - optionally remove legacy read compatibility for the former benchmark-policy `promptProfiles` field after existing workspaces have migrated to `modelPresets`;
 - optionally add comparison overlays or aggregation controls beyond the current persisted-result time-series chart and exact chronological result rows.

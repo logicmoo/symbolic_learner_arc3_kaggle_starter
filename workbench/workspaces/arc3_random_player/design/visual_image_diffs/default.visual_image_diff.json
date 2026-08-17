@@ -1,0 +1,91 @@
+{
+  "kind": "visual_image_diff",
+  "id": "arc3.action3_then_action1",
+  "label": "Visual Image Diff — ACTION3 then ACTION1",
+  "description": "A filesystem-backed ARC3 image sequence for composing structured visual-difference analysis prompts.",
+  "promptProfileId": "visual_image_diff.analysis_group",
+  "runtimeWorkflowId": "free_staged_symbolic_analysis",
+  "promptGroups": [
+    {
+      "id": "objects",
+      "label": "Objects",
+      "transaction": "extract_scene_objects",
+      "operation": "vision.extract_scene_objects",
+      "profile": "openrouter-gemma-4-26b-a4b-deep",
+      "prompts": [
+        "visual_image_diff.pipeline.source",
+        "visual_image_diff.pipeline.normalize",
+        "visual_image_diff.pipeline.objects",
+        "visual_image_diff.pipeline.sync_representations",
+        "visual_image_diff.pipeline.render_turtle",
+        "visual_image_diff.pipeline.display"
+      ]
+    },
+    {
+      "id": "changes",
+      "label": "Changes",
+      "transaction": "explain_object_changes",
+      "operation": "symbolic.explain_object_changes",
+      "profile": "openrouter-nemotron-3-nano-changes",
+      "prompts": ["visual_image_diff.pipeline.compare"]
+    },
+    {
+      "id": "prolog",
+      "label": "Prolog",
+      "transaction": "prolog_render_symbolic_evidence",
+      "operation": "shared.render_programs",
+      "prompts": ["visual_image_diff.pipeline.cherry_pick"]
+    },
+    {
+      "id": "rules",
+      "label": "Rules",
+      "transaction": "induce_rules_from_prolog",
+      "operation": "symbolic.induce_rules",
+      "profile": "openrouter-north-mini-code-rules",
+      "prompts": ["visual_image_diff.pipeline.rules"]
+    },
+    {
+      "id": "audit",
+      "label": "Audit",
+      "transaction": "audit_artifact_bundle",
+      "operation": "artifact.audit_bundle",
+      "profile": "openrouter-gpt-oss-20b-audit",
+      "continueOnError": true,
+      "prompts": [
+        "visual_image_diff.pipeline.validate",
+        "visual_image_diff.pipeline.report"
+      ]
+    }
+  ],
+  "frames": [
+    {
+      "id": "state_0",
+      "label": "Sample image",
+      "assetPath": "runtime/artifacts/visual_image_diff/state_0.png"
+    },
+    {
+      "id": "state_1",
+      "label": "After ACTION3",
+      "assetPath": "runtime/artifacts/visual_image_diff/state_1.png"
+    },
+    {
+      "id": "state_2",
+      "label": "After ACTION1",
+      "assetPath": "runtime/artifacts/visual_image_diff/state_2.png"
+    }
+  ],
+  "commands": [
+    {
+      "fromFrameId": "state_0",
+      "toFrameId": "state_1",
+      "command": "ACTION3",
+      "label": "ACTION3"
+    },
+    {
+      "fromFrameId": "state_1",
+      "toFrameId": "state_2",
+      "command": "ACTION1",
+      "label": "ACTION1"
+    }
+  ]
+}

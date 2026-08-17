@@ -37,6 +37,20 @@ def test_active_model_policy_page_uses_live_filesystem_policy_api() -> None:
     assert '<ModelPolicyPageworkspaceId={workspace.id}' in shell_compact
 
 
+def test_model_policy_embeds_real_backend_creation_and_discovery() -> None:
+    page = (ROOT / "workbench" / "frontend" / "src" / "components" / "ModelPolicyPage.tsx").read_text(encoding="utf-8")
+
+    assert "/backends`" in page
+    assert "/models/discover/${encodeURIComponent(discoveryBackend)}`" in page
+    assert "/models/import/${encodeURIComponent(discoveryBackend)}`" in page
+    assert "overwrite:true" in page
+    assert "path:`design/backends/${id}.backend.json`" in page
+    assert 'aria-label="Backend model discovery"' in page
+    assert ">Pull Models</button>" in page
+    assert ">Import/overwrite selected</button>" in page
+    assert ">Create Backend</button>" in page
+
+
 def test_shared_policy_examples_form_a_resolvable_reference_graph() -> None:
     shared = ROOT / "workbench" / "workspaces" / "shared_library_system"
     paths = [

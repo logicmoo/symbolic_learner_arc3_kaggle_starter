@@ -195,11 +195,15 @@ class RecognitionCalibrator:
                 ]]
         points = tuple(
             CalibrationPoint(
-                upper_confidence=upper,
+                upper_confidence=(
+                    1.0
+                    if index == len(blocks) - 1
+                    else (upper + blocks[index + 1][0]) / 2.0
+                ),
                 probability=outcome_sum / count,
                 sample_count=int(count),
             )
-            for _lower, upper, outcome_sum, count in blocks
+            for index, (_lower, upper, outcome_sum, count) in enumerate(blocks)
         )
         return RecognitionCalibrationPolicy(scope, len(samples), points)
 

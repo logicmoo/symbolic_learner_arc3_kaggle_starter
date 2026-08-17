@@ -52,7 +52,8 @@ def test_workflow_actions_default_to_top_but_remain_draggable() -> None:
     assert 'stackId="center-stack" initialIndex={0} label="ENGLISH SPECIFICATION EDITOR"' in page
     assert 'stackId="center-stack" initialIndex={4} label="APPLY TO WORKFLOW"' in page
     assert "accordion-order-initial-placement" in source
-    assert "draggable title={`Drag to reorder ${label}`}" in source
+    assert "draggable={managedOrder === undefined}" in source
+    assert 'managedOrder === undefined ? `Drag to reorder or click to cycle ${label}` : `Click to cycle ${label}`' in source
     assert 'item !== "LEFT + RIGHT"' not in source
     assert 'label !== "LEFT + RIGHT"' not in source
 

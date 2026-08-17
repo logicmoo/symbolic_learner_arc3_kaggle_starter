@@ -717,7 +717,8 @@ def test_global_scroll_and_full_modes_have_distinct_overflow_contracts() -> None
     reference = (ROOT / "workbench" / "frontend" / "src" / "components" / "WorkflowRunnerTodoReference.tsx").read_text(encoding="utf-8")
     accordion = (ROOT / "workbench" / "frontend" / "src" / "components" / "ThreeStateAccordion.tsx").read_text(encoding="utf-8")
     assert "ThreeStateAccordionMember" in reference
-    assert "onDoubleClick={toggle}" in accordion
+    assert "onDoubleClick={cycle}" in accordion
+    assert "onChange(nextAccordionMode(mode))" in accordion
     assert 'label="SELECTED RUN SPLINE"' in history
     assert "spline-title-toggle" not in history
     assert 'aria-label="Set every accordion panel size"' not in history
@@ -757,7 +758,7 @@ def test_accordion_drag_temporarily_uses_strip_list_and_restores_saved_frames() 
     layout = (ROOT / "workbench/frontend/src/styles/workflow_layout.css").read_text(encoding="utf-8")
 
     assert 'const effectiveMode = activeAccordionDrag?.stackId === stackId ? "strip" : mode' in component
-    assert "publishAccordionChange({ stackId, label })" in component
+    assert "publishAccordionChange({ stackId, label: orderKey })" in component
     assert "publishAccordionChange(null)" in component
     assert "moveAccordionMember(stackId, source.label, label)" in component
     assert "const nextIndex = sourceIndex + (targetIndex < sourceIndex ? -1 : 1)" in component
@@ -765,7 +766,8 @@ def test_accordion_drag_temporarily_uses_strip_list_and_restores_saved_frames() 
     assert '"--accordion-member-order": layoutOrder' in component
     assert 'window.dispatchEvent(new CustomEvent(ACCORDION_ORDER_EVENT' in component
     assert 'member.style.setProperty("--accordion-member-order", String(index))' in component
-    assert 'className="three-state-accordion-member-summary" draggable title={`Drag to reorder ${label}`}' in component
+    assert 'draggable={managedOrder === undefined}' in component
+    assert 'managedOrder === undefined ? `Drag to reorder or click to cycle ${label}` : `Click to cycle ${label}`' in component
     assert '.three-state-accordion-member-summary{cursor:grab;touch-action:none}' in css
     assert "grid-row: calc(6 + var(--accordion-member-order)) !important" in layout
 
