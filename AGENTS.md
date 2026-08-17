@@ -517,7 +517,7 @@ The first Codex change should **not** implement every page. It should only estab
 
 | Goals | New hierarchical Goal editor |
 
-| Plans | New hierarchical Plan editor |
+| Planning | Hierarchical Planning Strategy editor |
 
 | Workflows | Existing workflow canvas/editor |
 
@@ -525,15 +525,15 @@ The first Codex change should **not** implement every page. It should only estab
 
 | Datatypes | Existing three-level semantic/representation/concrete editor |
 
-| Prompts | Existing hierarchical Prompts editor |
+| Source Code | Prompt editor plus Prolog, MeTTa, and Python implementation-source editors |
+
+| Systems | System/backend editor filtered to runtimes, shells, MCP servers, and plugins |
 
 | Models | Existing Models/backends/profiles editor |
 
 | Goal Runs | New goal-pursuit runtime history |
 
-| Workflow Runs | Existing workflow run state |
-
-| Execs | Operation execution records and playground runs |
+| Executions | Operation and workflow execution records, including playground runs |
 
 | Events | Existing durable events/evidence |
 
@@ -544,8 +544,6 @@ The first Codex change should **not** implement every page. It should only estab
 | Model Policy | New page from your TODO/mockup |
 
 | Benchmarks | Benchmark definitions and results |
-
-| Contexts | Runtime context and knowledge bindings |
 
 | Settings | Existing Setup page |
 
@@ -633,21 +631,35 @@ Use these groups and labels:
 
 
 
-DESIGN
+WORKSPACE
 
 Goals
 
-Plans
+Planning
 
 Workflows
 
+CAPABILITIES
+
 Operations
+
+Source Code
+
+Systems
+
+Models
 
 Datatypes
 
-Prompts
+Policies
 
-Models
+KNOWLEDGE
+
+Data
+
+AtomSpaces
+
+Artifacts
 
 
 
@@ -655,9 +667,7 @@ RUNTIME
 
 Goal Runs
 
-Workflow Runs
-
-Execs
+Executions
 
 Events
 
@@ -673,8 +683,6 @@ Model Policy
 
 Benchmarks
 
-Contexts
-
 Settings
 
 
@@ -687,7 +695,7 @@ Operations -> OperationLibraryEditor
 
 Datatypes -> DataCatalogPanel
 
-Prompts -> PromptLibraryEditor
+Source Code -> PromptLibraryEditor plus language-filtered OperationLibraryEditor views
 
 Models -> LlmModelsEditor
 

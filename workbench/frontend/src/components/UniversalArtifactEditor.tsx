@@ -52,7 +52,7 @@ export type UniversalArtifactEditorProps = {
   /** Common inspector extension: dependencies, used-by, coverage, provenance, etc. */
   inspector?: ReactNode;
 
-  /** Optional shared controls such as Preferred Implementation / Representation / Prompt Variant. */
+  /** Optional shared controls such as Preferred Implementation, Representation, or Prompt Alternative. */
   variantControls?: ReactNode;
 
   /** Documentation, History, Tests, Benchmarks, Diff, Logs, or other dockable panels. */

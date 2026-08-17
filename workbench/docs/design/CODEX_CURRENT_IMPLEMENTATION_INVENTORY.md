@@ -39,7 +39,7 @@ The backend is FastAPI, launched from `workbench/server/app.py`. The active page
 
 `OperationLibraryEditor`, `DataCatalogPanel`, `PromptLibraryEditor`, and `LlmModelsEditor` use `HierarchyResourceEditor`, a compatibility export of `UniversalArtifactEditor`. The shared shell provides hierarchy chrome, persistent closeable tabs, dirty markers, split comparison, common inspector space, variant controls, and bottom docks.
 
-The Operations editor additionally has abstract operation/implementation hierarchy, default implementation selection, Python, SWI-Prolog, MeTTa, and model/preset dispatch panels, prompt composition, raw JSON, filesystem save, and the typed `OperationPlayground`. Datatypes provides representation selection, conversions, and usage. Source Code provides prompt alternatives plus Prolog, MeTTa, and Python implementation views. Models provides backend/model/preset inheritance, resolved settings, rich configuration, and raw JSON. The active right pane loads real shared Markdown through `HelpDocumentTabs` for these families.
+The Operations editor additionally has abstract operation/implementation hierarchy, default implementation selection, Python, SWI-Prolog, MeTTa, and model/preset dispatch panels, prompt composition, raw resource-source editing, filesystem save, and the typed `OperationPlayground`. Datatypes provides representation selection, conversions, and usage. Source Code provides prompt alternatives plus Prolog, MeTTa, and Python implementation views. Models provides backend/model/preset inheritance, resolved settings, rich configuration, and raw resource-source editing. The active right pane loads real shared Markdown through `HelpDocumentTabs` for these families.
 
 ## Real, Obsolete, and Mock Pages
 
@@ -91,7 +91,7 @@ Before and after Navigation V2:
 - [ ] Python, SWI-Prolog, MeTTa, model/preset dispatch, and prompt-composition panels remain available.
 - [ ] Persistent tabs open, activate, show dirty state, close, and retain unsaved drafts.
 - [ ] Split comparison works and returns to single-pane mode.
-- [ ] Raw JSON edits and rich controls update the intended document.
+- [ ] Raw MeTTa/JSON source edits and rich controls update only the intended resource.
 - [ ] Saving inherited resources creates/updates the correct workspace override; shared resources remain protected.
 - [ ] Save followed by snapshot reload preserves changes.
 - [ ] `OperationPlayground` resolves a real implementation, accepts typed input, switches variants, runs, and shows outputs/prompts/timing.

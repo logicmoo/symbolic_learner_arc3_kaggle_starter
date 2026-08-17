@@ -14,7 +14,7 @@ Every hierarchical artifact family should provide, where meaningful:
 2. A preferred/default alternative selector.
 3. Persistent, closeable tabs with dirty markers.
 4. Single-pane and split-comparison modes.
-5. Rich artifact-specific controls plus raw JSON editing.
+5. Rich artifact-specific controls plus interchangeable MeTTa/JSON source editing.
 6. Filesystem save with shared inheritance and workspace overrides.
 7. Contextual documentation on the right.
 8. Tests, history, benchmarks, diffs, and logs when real data exists.
