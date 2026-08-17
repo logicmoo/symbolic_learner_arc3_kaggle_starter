@@ -135,7 +135,7 @@ Keep the shared records in `python/object_memory/models.py`; do not create anoth
 
 ## Phase 2 tests and demonstrations
 
-- [ ] Stable persistent identity across multiple encounters and state transitions.
+- [x] Stable persistent identity across multiple encounters and state transitions.
 - [x] Correspondence across before/after states and repeated examples.
 - [x] Movement, recolor, resize, addition, removal, split, merge, and structural-change detection.
 - [x] Per-object Turtle regeneration using movement, rotation, pen state, and pen width.
@@ -149,6 +149,11 @@ Keep the shared records in `python/object_memory/models.py`; do not create anoth
 - [x] Deterministic semantic-memory replay over exact records linked from Phase 1 action-tree manifests, including predecessor-ordered encounter chains.
 
 ## Phase 2 demonstration workflow
+
+Run `python scripts/phase2_object_memory_demo.py` for a deterministic real-grid
+demonstration. See
+[`workbench/docs/design/PHASE2_OBJECT_MEMORY_DEMONSTRATION.md`](workbench/docs/design/PHASE2_OBJECT_MEMORY_DEMONSTRATION.md)
+for the command, inspectable output paths, and regression evidence.
 
 ```text
 Input image or game state

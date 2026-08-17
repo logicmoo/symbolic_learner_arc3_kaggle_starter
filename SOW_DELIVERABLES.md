@@ -227,7 +227,7 @@ Phase 2 implements the semantic object layer behind the Phase 1 debugger. It use
 
 - [ ] **Open** Provide tests for identity, correspondence, Turtle regeneration, confidence, duplicate prevention, false merge, false split, degradation, partial visibility, memory, and replay.
 
-- [ ] **Open** Provide a reproducible Phase 2 workflow demonstration:
+- [x] Provide a reproducible Phase 2 workflow demonstration:
 
 ```text
 Input image or game state
@@ -241,7 +241,10 @@ Input image or game state
     → later recognition as the same object
 ```
 
-- [ ] **Open** Provide Phase 2 identity, correspondence, regeneration, confidence, memory, and replay documentation with linked evidence.
+  Evidence: `scripts/phase2_object_memory_demo.py` runs this path over two real logical-grid states, uses the established extractor and SWI-Prolog Turtle renderer, explicitly authorizes a friendly identity through `SingleWriter`, persists moved-object evidence, rebuilds a fresh store from action-tree manifests, and emits a machine-readable summary. `tests/test_phase2_object_memory_demo.py` asserts stable identity, four exact reconstructions, change capture, and deterministic replay. See [Phase 2 object-memory demonstration](workbench/docs/design/PHASE2_OBJECT_MEMORY_DEMONSTRATION.md).
+
+- [x] Provide Phase 2 identity, correspondence, regeneration, confidence, memory, and replay documentation with linked evidence.
+  Evidence: [Phase 2 object-memory demonstration](workbench/docs/design/PHASE2_OBJECT_MEMORY_DEMONSTRATION.md) documents the complete executable path, inspectable action-tree artifacts, exact record types, restart replay, and regression assertions.
 
 ---
 
