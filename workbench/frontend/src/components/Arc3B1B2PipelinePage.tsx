@@ -2939,7 +2939,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
               accessories={<button type="button" className={isActive ? "" : "secondary"} onClick={() => selectImage(stackIndex, imageIndex)}>{isActive ? "Selected" : "Select"}</button>}
             >
               <label className="arc3-prolog-inline-select-label">
-                <span>IMAGE PATH</span>
+                <span>BEFORE_IMAGE PATH</span>
                 <input
                   className="arc3-prolog-setup-inline-input"
                   type="text"

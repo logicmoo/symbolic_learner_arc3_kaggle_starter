@@ -117,3 +117,10 @@ def test_b1_b2_identity_parser_accepts_bbox_and_corners() -> None:
     # Prompt documents the accepted bounding-box shape.
     assert "BOUNDING BOX CONTRACT:" in source
     assert "bbox is accepted as an alias" in source
+
+
+def test_b1_b2_setup_field_labeled_before_image() -> None:
+    source = COMPONENT.read_text(encoding="utf-8")
+    # The per-setup image path field is the before/input image for removal.
+    assert "<span>BEFORE_IMAGE PATH</span>" in source
+    assert "<span>IMAGE PATH</span>" not in source
