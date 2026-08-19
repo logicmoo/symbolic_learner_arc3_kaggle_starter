@@ -530,3 +530,9 @@ label.arc3-prolog-inline-composite-label > .arc3-prolog-selected-source-chips {
   display: block;
   min-width: 0;
 }
+
+/* Single "B only" stack: let the runner fill the full column width. */
+.arc3-b1b2-page .arc3-prolog-accordion-columns {
+  --arc3-column-width: 100%;
+  display: block;
+}
