@@ -184,16 +184,17 @@ def test_b1_b2_setup_has_object_and_group_image_groups() -> None:
     assert "const setSetupEntryPath = (stackIndex: number, imageIndex: number, field: SetupCollectionField, entryIndex: number, path: string) =>" in source
     assert "const removeSetupEntry = (stackIndex: number, imageIndex: number, field: SetupCollectionField, entryIndex: number) =>" in source
     assert "const renderSetupCollectionGroup = (" in source
-    assert "options?: { defaultOpen?: boolean; derivedCount?: number; derived?: ReactNode }," in source
+    assert "options?: { defaultOpen?: boolean; derivedCount?: number; derived?: ReactNode; placeholder?: string; editable?: boolean }," in source
     assert "`${title} (${totalCount})`" in source
-    # Image groups render previews; file groups do not.
-    assert 'renderSetupCollectionGroup("objectImages", "OBJ_IMAGES", "OBJECT", "image", [...IMAGE_SUFFIXES])' in source
-    assert 'renderSetupCollectionGroup("groupImages", "GRP_IMAGES", "GROUP", "image", [...IMAGE_SUFFIXES])' in source
-    assert 'renderSetupCollectionGroup("plFiles", "PL_FILES", "PL", "file", [".pl"])' in source
-    assert 'renderSetupCollectionGroup("engFiles", "ENG_FILES", "ENG", "file", [".eng"])' in source
-    assert 'renderSetupCollectionGroup("jsonFiles", "JSON_FILES", "JSON", "file", [".json"])' in source
-    assert 'renderSetupCollectionGroup("mettaFiles", "METTA_FILES", "METTA", "file", [".metta"])' in source
-    assert 'renderSetupCollectionGroup("promptFiles", "PROMPT_FILES", "PROMPT", "file", [".prompt"])' in source
+    # Image groups render previews; file groups do not. Each call now carries an
+    # options object (defaultOpen/placeholder/editable), so match the call prefix.
+    assert 'renderSetupCollectionGroup("objectImages", "OBJ_IMAGES", "OBJECT", "image", [...IMAGE_SUFFIXES], {' in source
+    assert 'renderSetupCollectionGroup("groupImages", "GRP_IMAGES", "GROUP", "image", [...IMAGE_SUFFIXES], {' in source
+    assert 'renderSetupCollectionGroup("plFiles", "PL_FILES", "PL", "file", [".pl"], {' in source
+    assert 'renderSetupCollectionGroup("engFiles", "ENG_FILES", "ENG", "file", [".eng"], {' in source
+    assert 'renderSetupCollectionGroup("jsonFiles", "JSON_FILES", "JSON", "file", [".json"], {' in source
+    assert 'renderSetupCollectionGroup("mettaFiles", "METTA_FILES", "METTA", "file", [".metta"], {' in source
+    assert 'renderSetupCollectionGroup("promptFiles", "PROMPT_FILES", "PROMPT", "file", [".prompt"], {' in source
     assert "OBJECT_IMAGES" not in source
 
 
@@ -250,7 +251,26 @@ def test_b1_b2_setup_sub_images_grouped_after_obj_images() -> None:
     obj_index = source.index('renderSetupCollectionGroup("objectImages", "OBJ_IMAGES"')
     sub_index = source.index('renderSetupCollectionGroup("subImages", "SUB_IMAGES"')
     grp_index = source.index('renderSetupCollectionGroup("groupImages", "GRP_IMAGES"')
-    assert obj_index < sub_index < grp_index
+    # Image groups are ordered OBJ, then GRP, then SUB.
+    assert obj_index < grp_index < sub_index
+
+
+def test_b1_b2_setup_header_and_before_after_controls() -> None:
+    source = COMPONENT.read_text(encoding="utf-8")
+    # The member header shows Setup_N and an image/text-file count summary.
+    assert "label={`Setup_${imageIndex + 1}`}" in source
+    assert 'value={isActive ? "ACTIVE" : `Setup_${imageIndex + 1}`}' in source
+    assert "detail={`${subimages.length} image(s) / ${textFiles.length} textual file(s)`}" in source
+    # BEFORE and AFTER each expose a single-image [load]/[select] pair.
+    assert "const renderSingleImageControls = (browseKey: string, setter: (path: string) => void) =>" in source
+    assert "const renderSingleImageList = (browseKey: string, setter: (path: string) => void) =>" in source
+    assert "renderSingleImageControls(`before:${setup.id}`, (path) => setBeforeImagePath(stackIndex, imageIndex, path))" in source
+    assert "renderSingleImageList(`before:${setup.id}`, (path) => setBeforeImagePath(stackIndex, imageIndex, path))" in source
+    assert "renderSingleImageControls(`after:${setup.id}`, (path) => setImagePath(stackIndex, imageIndex, path))" in source
+    assert "renderSingleImageList(`after:${setup.id}`, (path) => setImagePath(stackIndex, imageIndex, path))" in source
+    # File groups carry placeholders and are flagged editable for the [edit]/[new] phase.
+    assert "placeholder: `${pathPrefix}/*.pl`," in source
+    assert "editable: true," in source
 
 
 def test_b1_b2_setup_has_no_properties_editor() -> None:

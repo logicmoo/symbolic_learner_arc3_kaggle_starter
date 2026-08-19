@@ -3071,13 +3071,57 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
               const slash = normalized.lastIndexOf("/");
               return slash > 0 ? normalized.slice(0, slash) : "";
             })();
+            const pathPrefix = normalizeAssetPath(setup.stateDir ?? stateDirDefault).replace(/\/+$/, "") || "$PATH";
+            const imageSuffixesLower = [...IMAGE_SUFFIXES].map((suffix) => suffix.toLowerCase());
+            const imageMatches = files
+              .filter((file) => imageSuffixesLower.includes((file.suffix || "").toLowerCase()))
+              .map((file) => file.path.replace(/\\/g, "/"))
+              .filter((path, index, all) => all.indexOf(path) === index)
+              .sort((left, right) => left.localeCompare(right));
+            const renderSingleImageControls = (browseKey: string, setter: (path: string) => void) => <>
+              <label className="secondary arc3-prolog-browse-btn arc3-prolog-browse-b" title="Load a file from your computer">
+                load
+                <input
+                  type="file"
+                  accept={imageSuffixesLower.join(",")}
+                  style={{ display: "none" }}
+                  onChange={(event) => {
+                    const picked = event.target.files && event.target.files[0];
+                    if (picked) {
+                      const relative = (picked as File & { webkitRelativePath?: string }).webkitRelativePath;
+                      setter(relative || picked.name);
+                    }
+                    event.target.value = "";
+                  }}
+                />
+              </label>
+              <button
+                type="button"
+                className="secondary arc3-prolog-browse-btn"
+                title="Pick from workspace files"
+                onClick={() => setOpenBrowseKey(openBrowseKey === browseKey ? null : browseKey)}
+              >select</button>
+            </>;
+            const renderSingleImageList = (browseKey: string, setter: (path: string) => void) => openBrowseKey === browseKey && <div className="arc3-prolog-browse-list">
+              {imageMatches.length
+                ? imageMatches.map((path) => <button
+                  key={path}
+                  type="button"
+                  className="arc3-prolog-browse-option"
+                  onClick={() => {
+                    setter(path);
+                    setOpenBrowseKey(null);
+                  }}
+                >{path}</button>)
+                : <div className="arc3-prolog-browse-empty">No matching workspace files</div>}
+            </div>;
             const renderSetupCollectionGroup = (
               field: SetupCollectionField,
               title: string,
               itemLabel: string,
               kind: "image" | "file",
               accept: string[],
-              options?: { defaultOpen?: boolean; derivedCount?: number; derived?: ReactNode },
+              options?: { defaultOpen?: boolean; derivedCount?: number; derived?: ReactNode; placeholder?: string; editable?: boolean },
             ) => {
               const entries = setup[field] || [];
               const acceptLower = accept.map((suffix) => suffix.toLowerCase());
@@ -3105,7 +3149,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                           className="arc3-prolog-setup-inline-input"
                           type="text"
                           value={entry.name}
-                          placeholder={kind === "image" ? "data/... image path" : "data/... file path"}
+                          placeholder={options?.placeholder ?? (kind === "image" ? "data/... image path" : "data/... file path")}
                           onChange={(event) => setSetupEntryPath(stackIndex, imageIndex, field, entryIndex, event.target.value)}
                         />
                         <label className="secondary arc3-prolog-browse-btn arc3-prolog-browse-b" title="Load a file from your computer">
@@ -3200,9 +3244,9 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
               key={setup.id}
               stackId={imagesStackId}
               memberKey={`image-${setup.id}`}
-              label={setup.label || `image_${imageIndex + 1}`}
-              value={isActive ? "ACTIVE" : `image_${imageIndex + 1}`}
-              detail={`${subimages.length} subimage(s) / ${textFiles.length} text file(s)`}
+              label={`Setup_${imageIndex + 1}`}
+              value={isActive ? "ACTIVE" : `Setup_${imageIndex + 1}`}
+              detail={`${subimages.length} image(s) / ${textFiles.length} textual file(s)`}
               mode={modeFor(`image-${setup.id}`)}
               onChange={(mode) => setModeFor(`image-${setup.id}`, mode)}
               baseClass="english-workflow-panel arc3-prolog-page-panel"
@@ -3263,16 +3307,20 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                 <summary>BEFORE &amp; COMMAND</summary>
                 <label className="arc3-prolog-inline-select-label">
                   <span>BEFORE</span>
-                  <input
-                    className="arc3-prolog-setup-inline-input"
-                    type="text"
-                    value={setup.beforeImage?.name || "../image.png"}
-                    onChange={(event) => setBeforeImagePath(stackIndex, imageIndex, event.target.value)}
-                  />
+                  <div className="arc3-prolog-browse-inputwrap">
+                    <input
+                      className="arc3-prolog-setup-inline-input"
+                      type="text"
+                      value={setup.beforeImage?.name || "../image.png"}
+                      onChange={(event) => setBeforeImagePath(stackIndex, imageIndex, event.target.value)}
+                    />
+                    {renderSingleImageControls(`before:${setup.id}`, (path) => setBeforeImagePath(stackIndex, imageIndex, path))}
+                  </div>
                 </label>
+                {renderSingleImageList(`before:${setup.id}`, (path) => setBeforeImagePath(stackIndex, imageIndex, path))}
                 {setup.beforeImage?.dataUrl
                   ? <img className="arc3-prolog-preview" src={setup.beforeImage.dataUrl} alt={`${setup.label || `image_${imageIndex + 1}`} before image`} />
-                  : <div className="arc3-prolog-setup-preview-placeholder">No before image</div>}
+                  : null}
                 <label className="arc3-prolog-inline-select-label">
                   <span>COMMAND</span>
                   <input
@@ -3285,18 +3333,31 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
               </details>
               <label className="arc3-prolog-inline-select-label">
                 <span>AFTER</span>
-                <input
-                  className="arc3-prolog-setup-inline-input"
-                  type="text"
-                  value={setup.afterImage.name}
-                  onChange={(event) => setImagePath(stackIndex, imageIndex, event.target.value)}
-                />
+                <div className="arc3-prolog-browse-inputwrap">
+                  <input
+                    className="arc3-prolog-setup-inline-input"
+                    type="text"
+                    value={setup.afterImage.name}
+                    onChange={(event) => setImagePath(stackIndex, imageIndex, event.target.value)}
+                  />
+                  {renderSingleImageControls(`after:${setup.id}`, (path) => setImagePath(stackIndex, imageIndex, path))}
+                </div>
               </label>
+              {renderSingleImageList(`after:${setup.id}`, (path) => setImagePath(stackIndex, imageIndex, path))}
               {setup.afterImage.dataUrl
                 ? <img className="arc3-prolog-preview" src={setup.afterImage.dataUrl} alt={`${setup.label || `image_${imageIndex + 1}`} image`} />
                 : <div className="arc3-prolog-setup-preview-placeholder">No image</div>}
-              {renderSetupCollectionGroup("objectImages", "OBJ_IMAGES", "OBJECT", "image", [...IMAGE_SUFFIXES])}
+              {renderSetupCollectionGroup("objectImages", "OBJ_IMAGES", "OBJECT", "image", [...IMAGE_SUFFIXES], {
+                defaultOpen: true,
+                placeholder: `${pathPrefix}/obj*_*.png`,
+              })}
+              {renderSetupCollectionGroup("groupImages", "GRP_IMAGES", "GROUP", "image", [...IMAGE_SUFFIXES], {
+                defaultOpen: false,
+                placeholder: `${pathPrefix}/grp*_*.png`,
+              })}
               {renderSetupCollectionGroup("subImages", "SUB_IMAGES", "SUB", "image", [...IMAGE_SUFFIXES], {
+                defaultOpen: false,
+                placeholder: `${pathPrefix}/*.png`,
                 derivedCount: subimages.length,
                 derived: subimages.length
                   ? <div className="arc3-prolog-setup-preview-grid">
@@ -3307,14 +3368,35 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                   </div>
                   : null,
               })}
-              {renderSetupCollectionGroup("groupImages", "GRP_IMAGES", "GROUP", "image", [...IMAGE_SUFFIXES])}
-              {renderSetupCollectionGroup("plFiles", "PL_FILES", "PL", "file", [".pl"])}
-              {renderSetupCollectionGroup("engFiles", "ENG_FILES", "ENG", "file", [".eng"])}
-              {renderSetupCollectionGroup("jsonFiles", "JSON_FILES", "JSON", "file", [".json"])}
-              {renderSetupCollectionGroup("mettaFiles", "METTA_FILES", "METTA", "file", [".metta"])}
-              {renderSetupCollectionGroup("promptFiles", "PROMPT_FILES", "PROMPT", "file", [".prompt"])}
+              {renderSetupCollectionGroup("plFiles", "PL_FILES", "PL", "file", [".pl"], {
+                defaultOpen: false,
+                editable: true,
+                placeholder: `${pathPrefix}/*.pl`,
+              })}
+              {renderSetupCollectionGroup("engFiles", "ENG_FILES", "ENG", "file", [".eng"], {
+                defaultOpen: false,
+                editable: true,
+                placeholder: `${pathPrefix}/*.eng`,
+              })}
+              {renderSetupCollectionGroup("jsonFiles", "JSON_FILES", "JSON", "file", [".json"], {
+                defaultOpen: false,
+                editable: true,
+                placeholder: `${pathPrefix}/*.json`,
+              })}
+              {renderSetupCollectionGroup("mettaFiles", "METTA_FILES", "METTA", "file", [".metta"], {
+                defaultOpen: false,
+                editable: true,
+                placeholder: `${pathPrefix}/*.metta`,
+              })}
+              {renderSetupCollectionGroup("promptFiles", "PROMPT_FILES", "PROMPT", "file", [".prompt"], {
+                defaultOpen: false,
+                editable: true,
+                placeholder: `${pathPrefix}/*.prompt`,
+              })}
               {renderSetupCollectionGroup("unknownFiles", "UNKNOWN_FILES", "UNKNOWN", "file", [], {
                 defaultOpen: false,
+                editable: true,
+                placeholder: `${pathPrefix}/*.*`,
                 derivedCount: textFiles.length,
                 derived: textFiles.length
                   ? <>{textFiles.map((item) => <details key={item.key}>
