@@ -3251,7 +3251,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
               onChange={(mode) => setModeFor(`image-${setup.id}`, mode)}
               baseClass="english-workflow-panel arc3-prolog-page-panel"
               scrollSize="480px"
-              accessories={<button type="button" className={isActive ? "" : "secondary"} onClick={() => selectImage(stackIndex, imageIndex)}>{isActive ? "Selected" : "Select"}</button>}
+              accessories={<button type="button" className={isActive ? "arc3-prolog-active-toggle" : "secondary"} onClick={() => selectImage(stackIndex, imageIndex)}>{isActive ? "Selected" : "Select"}</button>}
             >
               <details
                 className="arc3-prolog-setup-extra arc3-prolog-setup-dir-props"

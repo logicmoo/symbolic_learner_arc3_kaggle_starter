@@ -334,3 +334,20 @@ def test_b1_b2_setup_has_dir_properties_node() -> None:
     assert source.index("<summary>DIR &amp; PROPERTIES</summary>") < source.index('className="arc3-prolog-setup-state-json"') < source.index("<summary>BEFORE &amp; COMMAND</summary>")
     # DIR & PROPERTIES sits at the top of each setup, before BEFORE & COMMAND.
     assert source.index("<summary>DIR &amp; PROPERTIES</summary>") < source.index("<summary>BEFORE &amp; COMMAND</summary>")
+
+
+def test_b1_b2_buttons_have_readable_theme() -> None:
+    source = COMPONENT.read_text(encoding="utf-8")
+    styles = STYLES.read_text(encoding="utf-8")
+    # The shared .primary/.secondary chrome is scoped to other pages, so this page
+    # themes its own buttons; otherwise they fall back to the UA light-grey default
+    # (light text on a near-white background = invisible).
+    assert ".arc3-prolog-page-panel button.secondary" in styles
+    assert ".arc3-prolog-page-panel button.primary" in styles
+    assert ".arc3-prolog-page-panel button.arc3-prolog-browse-btn" in styles
+    assert ".arc3-prolog-page-panel label.arc3-prolog-browse-btn" in styles
+    assert ".arc3-prolog-page-panel button.arc3-prolog-active-toggle" in styles
+    # The active setup toggle carries a real class (not an empty string) so it can be
+    # styled as a selected/accent state.
+    assert 'className={isActive ? "arc3-prolog-active-toggle" : "secondary"}' in source
+    assert 'className={isActive ? "" : "secondary"}' not in source

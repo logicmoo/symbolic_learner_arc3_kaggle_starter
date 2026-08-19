@@ -448,6 +448,60 @@ label.arc3-prolog-inline-composite-label > .arc3-prolog-selected-source-chips {
   cursor: pointer;
 }
 
+/* The shared .primary/.secondary button chrome is scoped to other pages, so on the
+   ARC3 prompt/prolog pages these buttons otherwise fall back to the browser-default
+   light-grey background with near-invisible light text. Give every button here a
+   readable dark-theme treatment. (.arc3-prolog-browse-option list rows are excluded
+   because they style themselves as transparent text rows.) */
+.arc3-prolog-page-panel button.secondary,
+.arc3-prolog-page-panel button.arc3-prolog-browse-btn,
+.arc3-prolog-page-panel label.arc3-prolog-browse-btn,
+.arc3-prolog-page-panel button.arc3-prolog-source-chip {
+  background: #0d2029;
+  color: #cfe6ee;
+  border: 1px solid #2c4a58;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.arc3-prolog-page-panel button.secondary:hover,
+.arc3-prolog-page-panel button.arc3-prolog-browse-btn:hover,
+.arc3-prolog-page-panel label.arc3-prolog-browse-btn:hover,
+.arc3-prolog-page-panel button.arc3-prolog-source-chip:hover {
+  background: #143443;
+  border-color: #3a6c7e;
+  color: #eaf6fb;
+}
+
+.arc3-prolog-page-panel button.primary {
+  background: #133c3b;
+  color: #8df4e2;
+  border: 1px solid #2a867a;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.arc3-prolog-page-panel button.primary:hover {
+  background: #1a5150;
+  border-color: #35a596;
+  color: #b6fff0;
+}
+
+.arc3-prolog-page-panel button.arc3-prolog-active-toggle {
+  background: #17423f;
+  color: #8df4e2;
+  border: 1px solid #2a867a;
+  border-radius: 4px;
+  cursor: default;
+}
+
+.arc3-prolog-page-panel button.primary:disabled,
+.arc3-prolog-page-panel button.secondary:disabled,
+.arc3-prolog-page-panel button.arc3-prolog-browse-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 .arc3-prolog-browse-list {
   display: flex;
   flex-direction: column;
