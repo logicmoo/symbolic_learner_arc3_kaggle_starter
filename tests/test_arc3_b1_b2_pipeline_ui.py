@@ -170,17 +170,24 @@ def test_b1_b2_setup_has_before_image_and_command_fields() -> None:
 
 def test_b1_b2_setup_has_object_and_group_image_groups() -> None:
     source = COMPONENT.read_text(encoding="utf-8")
-    # Each setup has empty, user-managed OBJ_IMAGES and GRP_IMAGES groups, both
-    # driven by one generic, field-keyed implementation.
+    # User-managed per-setup collections (images + file lists) share one generic,
+    # field-keyed implementation.
     assert "objectImages?: ImageSelection[];" in source
     assert "groupImages?: ImageSelection[];" in source
-    assert 'type SetupImageField = "objectImages" | "groupImages";' in source
-    assert "const addSetupImage = (stackIndex: number, imageIndex: number, field: SetupImageField) =>" in source
-    assert "const setSetupImagePath = (stackIndex: number, imageIndex: number, field: SetupImageField, entryIndex: number, path: string) =>" in source
-    assert "const removeSetupImage = (stackIndex: number, imageIndex: number, field: SetupImageField, entryIndex: number) =>" in source
-    assert "const renderSetupImageGroup = (field: SetupImageField, title: string, itemLabel: string) =>" in source
+    for field in ("plFiles", "engFiles", "jsonFiles", "mettaFiles", "promptFiles"):
+        assert f"{field}?: ImageSelection[];" in source
+    assert "type SetupCollectionField =" in source
+    assert "const addSetupEntry = (stackIndex: number, imageIndex: number, field: SetupCollectionField) =>" in source
+    assert "const setSetupEntryPath = (stackIndex: number, imageIndex: number, field: SetupCollectionField, entryIndex: number, path: string) =>" in source
+    assert "const removeSetupEntry = (stackIndex: number, imageIndex: number, field: SetupCollectionField, entryIndex: number) =>" in source
+    assert 'const renderSetupCollectionGroup = (field: SetupCollectionField, title: string, itemLabel: string, kind: "image" | "file") =>' in source
     assert "`${title} (${entries.length})`" in source
-    # Both groups are rendered; OBJECT_IMAGES was renamed to OBJ_IMAGES.
-    assert 'renderSetupImageGroup("objectImages", "OBJ_IMAGES", "OBJECT")' in source
-    assert 'renderSetupImageGroup("groupImages", "GRP_IMAGES", "GROUP")' in source
+    # Image groups render previews; file groups do not.
+    assert 'renderSetupCollectionGroup("objectImages", "OBJ_IMAGES", "OBJECT", "image")' in source
+    assert 'renderSetupCollectionGroup("groupImages", "GRP_IMAGES", "GROUP", "image")' in source
+    assert 'renderSetupCollectionGroup("plFiles", "PL_FILES", "PL", "file")' in source
+    assert 'renderSetupCollectionGroup("engFiles", "ENG_FILES", "ENG", "file")' in source
+    assert 'renderSetupCollectionGroup("jsonFiles", "JSON_FILES", "JSON", "file")' in source
+    assert 'renderSetupCollectionGroup("mettaFiles", "METTA_FILES", "METTA", "file")' in source
+    assert 'renderSetupCollectionGroup("promptFiles", "PROMPT_FILES", "PROMPT", "file")' in source
     assert "OBJECT_IMAGES" not in source

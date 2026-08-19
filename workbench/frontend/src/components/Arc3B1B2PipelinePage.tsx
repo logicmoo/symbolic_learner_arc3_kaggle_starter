@@ -133,10 +133,22 @@ type StackSetup = {
   afterImage: ImageSelection;
   objectImages?: ImageSelection[];
   groupImages?: ImageSelection[];
+  plFiles?: ImageSelection[];
+  engFiles?: ImageSelection[];
+  jsonFiles?: ImageSelection[];
+  mettaFiles?: ImageSelection[];
+  promptFiles?: ImageSelection[];
   analysis?: ImageAnalysis;
 };
 
-type SetupImageField = "objectImages" | "groupImages";
+type SetupCollectionField =
+  | "objectImages"
+  | "groupImages"
+  | "plFiles"
+  | "engFiles"
+  | "jsonFiles"
+  | "mettaFiles"
+  | "promptFiles";
 
 type RunnerState = {
   selectedModelId: string;
@@ -2299,7 +2311,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
     });
   };
 
-  const addSetupImage = (stackIndex: number, imageIndex: number, field: SetupImageField) => {
+  const addSetupEntry = (stackIndex: number, imageIndex: number, field: SetupCollectionField) => {
     setStackState(stackIndex, (stack) => {
       const setups = stack.setups?.length ? [...stack.setups] : defaultSetups(stack.key);
       const current = setups[imageIndex];
@@ -2310,7 +2322,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
     });
   };
 
-  const setSetupImagePath = (stackIndex: number, imageIndex: number, field: SetupImageField, entryIndex: number, path: string) => {
+  const setSetupEntryPath = (stackIndex: number, imageIndex: number, field: SetupCollectionField, entryIndex: number, path: string) => {
     setStackState(stackIndex, (stack) => {
       const setups = stack.setups?.length ? [...stack.setups] : defaultSetups(stack.key);
       const current = setups[imageIndex];
@@ -2326,7 +2338,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
     });
   };
 
-  const removeSetupImage = (stackIndex: number, imageIndex: number, field: SetupImageField, entryIndex: number) => {
+  const removeSetupEntry = (stackIndex: number, imageIndex: number, field: SetupCollectionField, entryIndex: number) => {
     setStackState(stackIndex, (stack) => {
       const setups = stack.setups?.length ? [...stack.setups] : defaultSetups(stack.key);
       const current = setups[imageIndex];
@@ -3012,7 +3024,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
             const subimages = analysis?.subimages || [];
             const textFiles = analysis?.textFiles || [];
             const isActive = imageIndex === selectedIndex;
-            const renderSetupImageGroup = (field: SetupImageField, title: string, itemLabel: string) => {
+            const renderSetupCollectionGroup = (field: SetupCollectionField, title: string, itemLabel: string, kind: "image" | "file") => {
               const entries = setup[field] || [];
               return <details open className="arc3-prolog-setup-object-images">
                 <summary>{`${title} (${entries.length})`}</summary>
@@ -3026,23 +3038,25 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                       className="arc3-prolog-setup-inline-input"
                       type="text"
                       value={entry.name}
-                      placeholder="data/... image path"
-                      onChange={(event) => setSetupImagePath(stackIndex, imageIndex, field, entryIndex, event.target.value)}
+                      placeholder={kind === "image" ? "data/... image path" : "data/... file path"}
+                      onChange={(event) => setSetupEntryPath(stackIndex, imageIndex, field, entryIndex, event.target.value)}
                     />
                   </label>
-                  {entry.dataUrl
-                    ? <img className="arc3-prolog-preview" src={entry.dataUrl} alt={`${itemLabel.toLowerCase()} ${entryIndex + 1}`} />
-                    : <div className="arc3-prolog-setup-preview-placeholder">No image</div>}
+                  {kind === "image"
+                    ? (entry.dataUrl
+                      ? <img className="arc3-prolog-preview" src={entry.dataUrl} alt={`${itemLabel.toLowerCase()} ${entryIndex + 1}`} />
+                      : <div className="arc3-prolog-setup-preview-placeholder">No image</div>)
+                    : null}
                   <button
                     type="button"
                     className="secondary arc3-prolog-object-image-remove"
-                    onClick={() => removeSetupImage(stackIndex, imageIndex, field, entryIndex)}
+                    onClick={() => removeSetupEntry(stackIndex, imageIndex, field, entryIndex)}
                   >Remove</button>
                 </div>)}
                 <button
                   type="button"
                   className="secondary"
-                  onClick={() => addSetupImage(stackIndex, imageIndex, field)}
+                  onClick={() => addSetupEntry(stackIndex, imageIndex, field)}
                 >{`Add ${itemLabel.toLowerCase()}`}</button>
               </details>;
             };
@@ -3095,8 +3109,13 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
               {setup.afterImage.dataUrl
                 ? <img className="arc3-prolog-preview" src={setup.afterImage.dataUrl} alt={`${setup.label || `image_${imageIndex + 1}`} image`} />
                 : <div className="arc3-prolog-setup-preview-placeholder">No image</div>}
-              {renderSetupImageGroup("objectImages", "OBJ_IMAGES", "OBJECT")}
-              {renderSetupImageGroup("groupImages", "GRP_IMAGES", "GROUP")}
+              {renderSetupCollectionGroup("objectImages", "OBJ_IMAGES", "OBJECT", "image")}
+              {renderSetupCollectionGroup("groupImages", "GRP_IMAGES", "GROUP", "image")}
+              {renderSetupCollectionGroup("plFiles", "PL_FILES", "PL", "file")}
+              {renderSetupCollectionGroup("engFiles", "ENG_FILES", "ENG", "file")}
+              {renderSetupCollectionGroup("jsonFiles", "JSON_FILES", "JSON", "file")}
+              {renderSetupCollectionGroup("mettaFiles", "METTA_FILES", "METTA", "file")}
+              {renderSetupCollectionGroup("promptFiles", "PROMPT_FILES", "PROMPT", "file")}
               <details open>
                 <summary>{`SUB_IMAGES (${subimages.length})`}</summary>
                 {subimages.length
