@@ -3610,7 +3610,9 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
               const groupLineTotal = kind === "file"
                 ? entries.reduce((sum, entry) => sum + (lineCounts[normalizeAssetPath(entry.name).replace(/^\/+/, "")] ?? 0), 0)
                 : 0;
-              const summaryText = kind === "file" && entries.length
+              const groupHasKnownCounts = kind === "file"
+                && entries.some((entry) => lineCounts[normalizeAssetPath(entry.name).replace(/^\/+/, "")] !== undefined);
+              const summaryText = groupHasKnownCounts
                 ? `${title} (${totalCount}) ~${groupLineTotal} lines`
                 : `${title} (${totalCount})`;
               return <details
