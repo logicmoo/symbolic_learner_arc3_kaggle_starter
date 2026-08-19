@@ -3,6 +3,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 COMPONENT = ROOT / "workbench/frontend/src/components/Arc3B1B2PipelinePage.tsx"
+STYLES = ROOT / "workbench/frontend/src/styles/arc3_prompt_prolog.css"
 WORKBENCH = ROOT / "workbench/frontend/src/pages/FilesystemWorkbenchPage.tsx"
 PAGE = ROOT / "workbench/workspaces/arc3_random_player/design/workflow_pages/b1_b2_pipeline.workflow_page.json"
 
@@ -157,3 +158,11 @@ def test_b1_b2_setup_has_before_image_and_command_fields() -> None:
     assert "onChange={(event) => setBeforeImagePath(stackIndex, imageIndex, event.target.value)}" in source
     assert "value={setup.command}" in source
     assert 'value={setup.beforeImage?.name || ""}' in source
+    # BEFORE_IMAGE + COMMAND are tucked into a collapsed (default) expander.
+    assert '<details className="arc3-prolog-setup-extra">' in source
+    assert "<summary>BEFORE_IMAGE &amp; COMMAND</summary>" in source
+    # The expander stays collapsed by default: closed details hide their non-summary
+    # children (author display:grid on the labels otherwise overrides the UA hiding).
+    styles = STYLES.read_text(encoding="utf-8")
+    assert ".arc3-prolog-setup-extra:not([open]) > *:not(summary)" in styles
+    assert "display: none !important;" in styles

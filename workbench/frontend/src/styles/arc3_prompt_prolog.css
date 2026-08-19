@@ -385,6 +385,22 @@ label.arc3-prolog-inline-composite-label > .arc3-prolog-selected-source-chips {
   max-width: none;
 }
 
+.arc3-prolog-setup-extra {
+  margin: 0.35rem 0;
+}
+
+.arc3-prolog-setup-extra > summary {
+  cursor: pointer;
+  color: rgb(125, 211, 231);
+  text-transform: uppercase;
+  font-size: 0.73rem;
+  letter-spacing: 0.08em;
+}
+
+.arc3-prolog-setup-extra:not([open]) > *:not(summary) {
+  display: none !important;
+}
+
 .arc3-prolog-setup-edit-grid,
 .arc3-prolog-setup-preview-grid {
   display: grid;

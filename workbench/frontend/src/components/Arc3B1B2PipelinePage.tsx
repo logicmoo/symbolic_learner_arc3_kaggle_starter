@@ -2983,27 +2983,30 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
               scrollSize="480px"
               accessories={<button type="button" className={isActive ? "" : "secondary"} onClick={() => selectImage(stackIndex, imageIndex)}>{isActive ? "Selected" : "Select"}</button>}
             >
-              <label className="arc3-prolog-inline-select-label">
-                <span>COMMAND</span>
-                <input
-                  className="arc3-prolog-setup-inline-input"
-                  type="text"
-                  value={setup.command}
-                  onChange={(event) => setSetupCommand(stackIndex, imageIndex, event.target.value)}
-                />
-              </label>
-              <label className="arc3-prolog-inline-select-label">
-                <span>BEFORE_IMAGE PATH</span>
-                <input
-                  className="arc3-prolog-setup-inline-input"
-                  type="text"
-                  value={setup.beforeImage?.name || ""}
-                  onChange={(event) => setBeforeImagePath(stackIndex, imageIndex, event.target.value)}
-                />
-              </label>
-              {setup.beforeImage?.dataUrl
-                ? <img className="arc3-prolog-preview" src={setup.beforeImage.dataUrl} alt={`${setup.label || `image_${imageIndex + 1}`} before image`} />
-                : <div className="arc3-prolog-setup-preview-placeholder">No before image</div>}
+              <details className="arc3-prolog-setup-extra">
+                <summary>BEFORE_IMAGE &amp; COMMAND</summary>
+                <label className="arc3-prolog-inline-select-label">
+                  <span>BEFORE_IMAGE PATH</span>
+                  <input
+                    className="arc3-prolog-setup-inline-input"
+                    type="text"
+                    value={setup.beforeImage?.name || ""}
+                    onChange={(event) => setBeforeImagePath(stackIndex, imageIndex, event.target.value)}
+                  />
+                </label>
+                {setup.beforeImage?.dataUrl
+                  ? <img className="arc3-prolog-preview" src={setup.beforeImage.dataUrl} alt={`${setup.label || `image_${imageIndex + 1}`} before image`} />
+                  : <div className="arc3-prolog-setup-preview-placeholder">No before image</div>}
+                <label className="arc3-prolog-inline-select-label">
+                  <span>COMMAND</span>
+                  <input
+                    className="arc3-prolog-setup-inline-input"
+                    type="text"
+                    value={setup.command}
+                    onChange={(event) => setSetupCommand(stackIndex, imageIndex, event.target.value)}
+                  />
+                </label>
+              </details>
               <label className="arc3-prolog-inline-select-label">
                 <span>AFTER_IMAGE PATH</span>
                 <input
