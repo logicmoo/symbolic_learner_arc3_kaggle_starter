@@ -405,6 +405,10 @@ def test_b1_b2_setups_enumerate_all_data_folders() -> None:
     assert "for (const child of descendantsOf(dir)) {" in source
     # Rule 3: leftover immediate data/ children become single-setup folders.
     assert "const immediateDataChildren = dirs.filter((dir) => dir.startsWith(\"data/\")" in source
+    # Numbered dirs use their COMMAND child as the setup + command; bare numbered dirs
+    # (bar/0) glean no command.
+    assert "command: commandLeaf ? basename(commandLeaf) : \"\"" in source
+    assert "command ?? setupCommandFromPath(`${dir}/frame`)" in source
     # Numeric-aware ordering (level_10 after level_1) and group.Setup_N names.
     assert "{ numeric: true }" in source
     assert "const groupCounters = new Map<string, number>();" in source

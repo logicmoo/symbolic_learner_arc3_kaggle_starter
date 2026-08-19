@@ -523,7 +523,7 @@ function stackADescendSetupsFromFiles(workspaceId: string, files: WorkspaceFileR
   const basename = (dir: string) => dir.slice(dir.lastIndexOf("/") + 1);
   const descendantsOf = (parent: string) => dirs.filter((dir) => dir.startsWith(`${parent}/`));
   const immediateDataChildren = dirs.filter((dir) => dir.startsWith("data/") && !dir.slice("data/".length).includes("/"));
-  const setupEntries: Array<{ dir: string; group: string }> = [];
+  const setupEntries: Array<{ dir: string; group: string; command?: string }> = [];
   const consumed = new Set<string>();
   const relPath = (dir: string) => dir.replace(/^data\/?/i, "");
   // Rule 1: data/**/<parent>/0 -> numbered siblings under <parent> are setups; group = <parent>
@@ -538,8 +538,15 @@ function stackADescendSetupsFromFiles(workspaceId: string, files: WorkspaceFileR
   for (const dir of dirs) {
     const parent = dir.includes("/") ? dir.slice(0, dir.lastIndexOf("/")) : "";
     if (/^[0-9]+$/.test(basename(dir)) && numberedParents.has(parent)) {
-      setupEntries.push({ dir, group: relPath(parent) });
+      // If the numbered dir has a COMMAND child (e.g. foo/0/RESET) use that leaf as the
+      // setup and glean the command from it; a bare numbered dir (bar/0) has no command.
+      const commandLeaf = dirs
+        .filter((child) => child.startsWith(`${dir}/`) && !child.slice(dir.length + 1).includes("/"))
+        .sort((left, right) => left.localeCompare(right, undefined, { numeric: true }))[0];
+      const target = commandLeaf || dir;
+      setupEntries.push({ dir: target, group: relPath(parent), command: commandLeaf ? basename(commandLeaf) : "" });
       consumed.add(dir);
+      consumed.add(target);
     }
   }
   // Rule 2: data/**/level_[0-9]* -> the level folder plus all descendant dirs; group = level path.
@@ -582,7 +589,7 @@ function stackADescendSetupsFromFiles(workspaceId: string, files: WorkspaceFileR
   };
   const sortedEntries = setupEntries.sort((left, right) => compareByTree(left.dir, right.dir));
   const groupCounters = new Map<string, number>();
-  return sortedEntries.map(({ dir, group }, index) => {
+  return sortedEntries.map(({ dir, group, command }, index) => {
     const depth = descendDepth(dir);
     const parentDir = dir.includes("/") ? dir.slice(0, dir.lastIndexOf("/")) : "";
     const afterPath = imageByDir.get(dir) || "";
@@ -598,7 +605,7 @@ function stackADescendSetupsFromFiles(workspaceId: string, files: WorkspaceFileR
     return {
       id: `A-setup-${index + 1}`,
       label: `${group || "default"}.Setup_${groupIndex}`,
-      command: setupCommandFromPath(`${dir}/frame`),
+      command: command ?? setupCommandFromPath(`${dir}/frame`),
       note: depth ? `depth ${depth}` : "root",
       stateDir: dir,
       beforeImage: beforeSelection,
