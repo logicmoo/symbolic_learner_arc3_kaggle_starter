@@ -392,14 +392,19 @@ def test_b1_b2_setup_path_scan_writes_scan_results() -> None:
 
 def test_b1_b2_setups_enumerate_all_data_folders() -> None:
     source = COMPONENT.read_text(encoding="utf-8")
-    # Setups are generated for image frames under ANY top-level data/ folder (level_1's
-    # descend tree and layouts like other_folder/0/RESET), not only data/level_1.
+    # Setups are discovered structurally from the data/ tree by three rules.
     assert "const compareByTree = (left: string, right: string) =>" in source
-    assert "const topFolder = (path: string) =>" in source
     assert "^data\\/level_1(?:" not in source
-    # Each setup's folder (PATH) is initialized; the initial/default setup points to level_1.
+    # Rule 1: level_[0-9]* folders contribute themselves + all descendant dirs.
+    assert 'if (/^level_[0-9]*$/i.test(basename(dir))) {' in source
+    assert "for (const child of descendantsOf(dir)) setupDirs.add(child);" in source
+    # Rule 2: numeric directories are numbered siblings, each a setup.
+    assert 'if (/^[0-9]+$/.test(basename(dir))) setupDirs.add(dir);' in source
+    # Rule 3: other immediate data/ children become single-setup folders.
+    assert "const immediateDataChildren = dirs.filter((dir) => dir.startsWith(\"data/\")" in source
+    # Each setup's PATH is its own folder; the default/initial setup points to level_1.
     assert 'stateDir: "data/level_1",' in source
-    assert 'stateDir: directory || "data/level_1",' in source
+    assert "stateDir: dir," in source
 
 
 def test_b1_b2_setups_auto_scan_on_create() -> None:

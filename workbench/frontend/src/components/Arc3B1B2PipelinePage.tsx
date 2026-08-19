@@ -502,70 +502,81 @@ function parentImagePath(path: string): string {
 }
 
 function stackADescendSetupsFromFiles(workspaceId: string, files: WorkspaceFileRecord[]): StackSetup[] {
-  // A setup is created for every directory under data/ that holds an image.png-style
-  // frame — this spans any top-level folder (level_1's descend tree, or action layouts
-  // like other_folder/0/RESET, other_folder/1/LEFT, ...), not just data/level_1.
-  const topFolder = (path: string) => {
-    const rel = normalizeAssetPath(path).replace(/^data\//i, "");
-    return rel.split("/")[0] || "";
-  };
-  const descendDepth = (path: string) => {
-    const directory = normalizeAssetPath(path).slice(0, Math.max(0, normalizeAssetPath(path).lastIndexOf("/")));
-    const segments = directory.split("/").filter(Boolean);
-    return Math.max(0, segments.length - 2);
-  };
+  // Setup directories are discovered from the data/ tree by three structural rules:
+  //   1. data/**/level_[0-9]*  -> the level folder itself plus all descendant dirs (scan children)
+  //   2. data/**/<number>      -> each numbered dir is a setup (scan siblings, e.g. 0,1,2,3)
+  //   3. data/*                -> any other immediate data/ child is a single-setup folder
+  const normFiles = files
+    .map((file) => ({ file, p: file.path.replace(/\\/g, "/") }))
+    .filter((entry) => /^data\//i.test(entry.p));
+  if (!normFiles.length) return [];
+  const allDirs = new Set<string>();
+  for (const { p } of normFiles) {
+    let dir = p.includes("/") ? p.slice(0, p.lastIndexOf("/")) : "";
+    while (dir && dir !== "data") {
+      allDirs.add(dir);
+      const slash = dir.lastIndexOf("/");
+      dir = slash > 0 ? dir.slice(0, slash) : "";
+    }
+  }
+  const dirs = [...allDirs];
+  const basename = (dir: string) => dir.slice(dir.lastIndexOf("/") + 1);
+  const descendantsOf = (parent: string) => dirs.filter((dir) => dir.startsWith(`${parent}/`));
+  const immediateDataChildren = dirs.filter((dir) => dir.startsWith("data/") && !dir.slice("data/".length).includes("/"));
+  const setupDirs = new Set<string>();
+  // Rule 1: level_[0-9]* folders contribute themselves and all descendant directories.
+  for (const dir of dirs) {
+    if (/^level_[0-9]*$/i.test(basename(dir))) {
+      setupDirs.add(dir);
+      for (const child of descendantsOf(dir)) setupDirs.add(child);
+    }
+  }
+  // Rule 2: numeric-named directories are the numbered siblings (each is a setup).
+  for (const dir of dirs) {
+    if (/^[0-9]+$/.test(basename(dir))) setupDirs.add(dir);
+  }
+  // Rule 3: any other immediate data/ child with no structured descendant is a single setup.
+  for (const dir of immediateDataChildren) {
+    const name = basename(dir);
+    if (/^level_[0-9]*$/i.test(name) || /^[0-9]+$/.test(name)) continue;
+    if ([...setupDirs].some((selected) => selected === dir || selected.startsWith(`${dir}/`))) continue;
+    setupDirs.add(dir);
+  }
+  if (!setupDirs.size) return [];
+  const imageByDir = new Map<string, string>();
+  for (const { file, p } of normFiles) {
+    if (!IMAGE_SUFFIXES.has((file.suffix || "").toLowerCase())) continue;
+    const dir = p.includes("/") ? p.slice(0, p.lastIndexOf("/")) : "";
+    const name = (file.name || "").toLowerCase();
+    if (!imageByDir.has(dir) || name === "image.png") imageByDir.set(dir, p);
+  }
+  const topFolder = (dir: string) => dir.replace(/^data\//i, "").split("/")[0] || "";
+  const descendDepth = (dir: string) => Math.max(0, dir.split("/").filter(Boolean).length - 2);
   const compareByTree = (left: string, right: string) => {
     const topLeft = topFolder(left);
     const topRight = topFolder(right);
-    // Numeric-aware compare so numbered siblings (0,1,2,...,10) and level_2/level_10
-    // order naturally rather than as raw strings.
+    // Numeric-aware compare so numbered siblings (0,1,2,...,10) and level_2/level_10 order naturally.
     if (topLeft !== topRight) return topLeft.localeCompare(topRight, undefined, { numeric: true });
     return descendDepth(left) - descendDepth(right) || left.localeCompare(right, undefined, { numeric: true });
   };
-  const imageCandidates = files
-    .filter((file) => IMAGE_SUFFIXES.has((file.suffix || "").toLowerCase()))
-    .map((file) => file.path.replace(/\\/g, "/"))
-    .filter((path) => /^data\/[^/]+(?:\/[^/]+)*\/image\.(png|jpg|jpeg|webp|bmp|gif)$/i.test(path))
-    .sort(compareByTree);
-  if (!imageCandidates.length) return [];
-  // Keep one setup per descend directory and prefer png/jpg first if multiple image.* files exist.
-  const pathScore = (path: string) => {
-    const lower = path.toLowerCase();
-    if (lower.endsWith(".png")) return 0;
-    if (lower.endsWith(".jpg")) return 1;
-    if (lower.endsWith(".jpeg")) return 2;
-    return 3;
-  };
-  const byDirectory = new Map<string, string>();
-  for (const path of imageCandidates) {
-    const directory = path.slice(0, Math.max(0, path.lastIndexOf("/")));
-    const existing = byDirectory.get(directory);
-    if (!existing || pathScore(path) < pathScore(existing) || (pathScore(path) === pathScore(existing) && path.localeCompare(existing) < 0)) {
-      byDirectory.set(directory, path);
-    }
-  }
-  const selectedPaths = Array.from(byDirectory.values()).sort(compareByTree);
-  return selectedPaths.map((path, index) => {
-    const depth = descendDepth(path);
-    const directory = path.slice(0, Math.max(0, path.lastIndexOf("/")));
-    const parentDirectory = directory.includes("/") ? directory.slice(0, directory.lastIndexOf("/")) : "";
-    const beforePath = byDirectory.get(parentDirectory) || selectedPaths[index - 1] || "";
+  const selected = [...setupDirs].sort(compareByTree);
+  return selected.map((dir, index) => {
+    const depth = descendDepth(dir);
+    const parentDir = dir.includes("/") ? dir.slice(0, dir.lastIndexOf("/")) : "";
+    const afterPath = imageByDir.get(dir) || "";
+    const beforePath = imageByDir.get(parentDir) || "";
+    const afterSelection: ImageSelection = afterPath
+      ? { name: afterPath, dataUrl: workspaceAssetUrl(workspaceId, afterPath) }
+      : { name: "", dataUrl: "" };
     const beforeSelection: ImageSelection | null = beforePath
-      ? {
-        name: beforePath,
-        dataUrl: workspaceAssetUrl(workspaceId, beforePath),
-      }
+      ? { name: beforePath, dataUrl: workspaceAssetUrl(workspaceId, beforePath) }
       : null;
-    const afterSelection: ImageSelection = {
-      name: path,
-      dataUrl: workspaceAssetUrl(workspaceId, path),
-    };
     return {
       id: `A-setup-${index + 1}`,
       label: `Setup${index + 1}`,
-      command: setupCommandFromPath(path),
+      command: setupCommandFromPath(`${dir}/frame`),
       note: depth ? `depth ${depth}` : "root",
-      stateDir: directory || "data/level_1",
+      stateDir: dir,
       beforeImage: beforeSelection,
       afterImage: afterSelection,
     };
