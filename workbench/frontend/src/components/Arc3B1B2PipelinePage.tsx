@@ -382,6 +382,7 @@ const RUNNER_WORKSPACE_MODEL_SENTINEL = "__runner_workspace_model__";
 const RUNNER_WORKBENCH_MODEL_SENTINEL = "__runner_workbench_model__";
 const RUNNER_VALIDATOR_DISABLED = "__runner_validator_disabled__";
 const RUNNER_VALIDATOR_PRIMARY_MODEL = "__runner_validator_primary_model__";
+const VALIDATOR_PROMPT_DISABLED = "__validator_prompt_disabled__";
 const AUTO_GAP_MAX_PASSES = 30;
 const AUTO_VALIDATION_REPAIR_ATTEMPTS = 2;
 const BASELINE_MAX_NEW_IDENTITIES = 12;
@@ -1708,6 +1709,11 @@ function validatorPromptName(routeView: string, stackKey: StackKey, runnerIndex:
   return "no_uncircled_objects";
 }
 
+function validatorPromptDisplayName(routeView: string, stackKey: StackKey, runnerIndex: number, name: string): string {
+  if (name === VALIDATOR_PROMPT_DISABLED) return "disabled";
+  return name || validatorPromptName(routeView, stackKey, runnerIndex);
+}
+
 function isRemovalDiscoveryRunner(routeView: string, stackKey: StackKey, runnerIndex: number): boolean {
   return runnerRole(routeView, stackKey, runnerIndex) === "removal";
 }
@@ -2325,7 +2331,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
     const effectiveModelId = resolveRunnerModelId(stack, runner);
     const effectiveValidatorModelId = resolveValidatorModelId(stack, runner);
     const validatorPromptText = String(runner.validatorPromptText || "").trim();
-    const validatorEnabled = Boolean(effectiveValidatorModelId && validatorPromptText);
+    const validatorEnabled = Boolean(effectiveValidatorModelId && validatorPromptText && runner.validatorPromptName !== VALIDATOR_PROMPT_DISABLED);
     const imageSourceBeforeLabel = imageFieldLabel("before");
     const imageSourceAfterLabel = imageFieldLabel("after");
     const bColumn = stackColumns.find((candidate) => candidate.key === "B");
@@ -2376,8 +2382,8 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
       message: runMode === "primary"
         ? "Running primary prompt..."
         : runMode === "until_exit"
-          ? `Running loop until exit (${runner.validatorPromptName || validatorPromptName(pageDefinition.routeView, stack.key, runnerIndex)})...`
-          : `Running loop (${runner.validatorPromptName || validatorPromptName(pageDefinition.routeView, stack.key, runnerIndex)})...`,
+          ? `Running loop until exit (${validatorPromptDisplayName(pageDefinition.routeView, stack.key, runnerIndex, runner.validatorPromptName)})...`
+          : `Running loop (${validatorPromptDisplayName(pageDefinition.routeView, stack.key, runnerIndex, runner.validatorPromptName)})...`,
       error: "",
       rawResponse: "",
       parsed: null,
@@ -3041,8 +3047,8 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                       ? (runner.currentRunMode === "primary"
                         ? "Running Primary"
                         : runner.currentRunMode === "until_exit"
-                          ? `Running Until Exit ${runner.validatorPromptName || validatorPromptName(pageDefinition.routeView, stack.key, runnerIndex)}`
-                          : `Running Loop ${runner.validatorPromptName || validatorPromptName(pageDefinition.routeView, stack.key, runnerIndex)}`)
+                          ? `Running Until Exit ${validatorPromptDisplayName(pageDefinition.routeView, stack.key, runnerIndex, runner.validatorPromptName)}`
+                          : `Running Loop ${validatorPromptDisplayName(pageDefinition.routeView, stack.key, runnerIndex, runner.validatorPromptName)}`)
                       : (runner.result || runner.rawResponse || runner.parsed ? "Ready" : "Not Run");
                     const currentIdentitiesContent = Array.isArray(runner.parsed?.current_identities)
                       ? JSON.stringify({ current_identities: runner.parsed?.current_identities || [] }, null, 2)
@@ -3097,7 +3103,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                       "no_objects",
                       "LOOP CONDITIONS PROMPT",
                       "validate_identity_pass_output",
-                    ]).filter(Boolean);
+                    ]).filter((option) => Boolean(option) && option !== VALIDATOR_PROMPT_DISABLED);
                     const setupBundleOptions = setups.map((setup, ordinal) => ({
                       value: `${ALL_SETUP_SOURCE_PREFIX}${ordinal + 1}`,
                       label: `${ALL_SETUP_SOURCE_PREFIX}${ordinal + 1} (${setup.label || `Setup${ordinal + 1}`})`,
@@ -3458,6 +3464,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                               (previous) => ({ ...previous, validatorPromptName: event.target.value }),
                             )}
                           >
+                            <option value={VALIDATOR_PROMPT_DISABLED}>&lt;disabled&gt;</option>
                             {validatorPromptNameOptions.map((option) => <option key={`validator-prompt-name-${runnerDisplay}-${option}`} value={option}>
                               {option}
                             </option>)}

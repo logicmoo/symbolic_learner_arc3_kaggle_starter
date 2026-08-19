@@ -80,3 +80,12 @@ def test_b1_b2_setup_image_members_keep_natural_height() -> None:
     # Full-mode setup images must not shrink, so expanding one pushes the setups
     # below it down instead of overlapping them.
     assert '.arc3-b1b2-page .three-state-accordion-member[data-accordion-member^="image-"]' in css
+
+
+def test_b1_b2_loop_validate_prompt_allows_disabled() -> None:
+    source = COMPONENT.read_text(encoding="utf-8")
+    # The Loop/Validate prompt dropdown must offer an explicit <disabled> choice
+    # that turns the external validator off (loop still runs prompt-driven).
+    assert 'VALIDATOR_PROMPT_DISABLED = "__validator_prompt_disabled__"' in source
+    assert "<option value={VALIDATOR_PROMPT_DISABLED}>&lt;disabled&gt;</option>" in source
+    assert "runner.validatorPromptName !== VALIDATOR_PROMPT_DISABLED" in source
