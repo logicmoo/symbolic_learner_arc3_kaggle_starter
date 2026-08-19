@@ -536,3 +536,10 @@ label.arc3-prolog-inline-composite-label > .arc3-prolog-selected-source-chips {
   --arc3-column-width: 100%;
   display: block;
 }
+
+/* Setup/image (and runner) members fill their stack: drop the reserved twin
+   scrollbar gutters and trim horizontal padding. */
+.arc3-b1b2-page .arc3-prolog-accordion-stack {
+  scrollbar-gutter: auto;
+  padding-inline: 0.3rem;
+}
