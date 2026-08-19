@@ -12,7 +12,9 @@ def test_b1_b2_page_uses_dedicated_renderer() -> None:
     assert '"routeView": "arc3B1B2Pipeline"' in source
     assert '"renderer": "arc3_b1_b2_pipeline"' in source
     assert '"renderer": "arc3_prompt_prolog"' not in source
-    assert '"label": "B1 THEN B2"' in source
+    assert '"label": "DATA"' in source
+    assert '"label": "RUNNERS"' in source
+    assert '"label": "SOURCE"' in source
     assert '"label": "Run B1 Then B2"' in source
     assert '"label": "B1/B2 Output Files"' in source
     assert '"label": "Combined Prompt Contract"' in source
@@ -44,3 +46,8 @@ def test_b1_b2_component_has_pipeline_contract() -> None:
     assert "many_objects_1" in source
     assert "many_objects_2" in source
     assert "llm_error|next_iteration|loop_complete|loop_overbudgeted|unran" in source
+    # Per-image Column A data model: An bucket is the shared per-image store.
+    assert "selectedImageIndex" in source
+    assert "const selectImage" in source
+    assert "const captureImageAnalysis" in source
+    assert "analysis?: ImageAnalysis" in source

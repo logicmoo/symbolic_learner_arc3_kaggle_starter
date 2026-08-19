@@ -13,25 +13,25 @@
     "columns": [
       {
         "id": "left",
-        "label": "INPUTS",
+        "label": "DATA",
         "role": "data",
         "members": [
           { "id": "arc3_pair_inputs_b1_b2", "label": "B1/B2 Inputs", "component": "Arc3ImagePairInputs", "initialDisplayMode": "scroll" },
+          { "id": "arc3_output_files_b1_b2", "label": "B1/B2 Output Files", "component": "Arc3PrologOutputs", "initialDisplayMode": "scroll" },
           { "id": "arc3_combined_prompt_b1_b2", "label": "Combined Prompt Contract", "component": "Arc3CombinedPrompt", "initialDisplayMode": "scroll" }
         ]
       },
       {
         "id": "center",
-        "label": "B1 THEN B2",
+        "label": "RUNNERS",
         "role": "authoring",
         "members": [
-          { "id": "arc3_run_prompt_b1_b2", "label": "Run B1 Then B2", "component": "Arc3PromptRunner", "initialDisplayMode": "scroll" },
-          { "id": "arc3_output_files_b1_b2", "label": "B1/B2 Output Files", "component": "Arc3PrologOutputs", "initialDisplayMode": "scroll" }
+          { "id": "arc3_run_prompt_b1_b2", "label": "Run B1 Then B2", "component": "Arc3PromptRunner", "initialDisplayMode": "scroll" }
         ]
       },
       {
         "id": "right",
-        "label": "SOURCE DETAILS",
+        "label": "SOURCE",
         "role": "details",
         "members": [
           {
