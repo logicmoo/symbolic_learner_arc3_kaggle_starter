@@ -178,11 +178,14 @@ def test_b1_b2_setup_has_object_and_group_image_groups() -> None:
     for field in ("plFiles", "engFiles", "jsonFiles", "mettaFiles", "promptFiles"):
         assert f"{field}?: ImageSelection[];" in source
     assert "type SetupCollectionField =" in source
-    assert "const addSetupEntry = (stackIndex: number, imageIndex: number, field: SetupCollectionField) =>" in source
+    # The "Add" entry button + its addSetupEntry handler were removed; entries are
+    # populated by the disk scan / browse picker, not a manual add control.
+    assert "const addSetupEntry =" not in source
     assert "const setSetupEntryPath = (stackIndex: number, imageIndex: number, field: SetupCollectionField, entryIndex: number, path: string) =>" in source
     assert "const removeSetupEntry = (stackIndex: number, imageIndex: number, field: SetupCollectionField, entryIndex: number) =>" in source
-    assert 'const renderSetupCollectionGroup = (field: SetupCollectionField, title: string, itemLabel: string, kind: "image" | "file", accept: string[]) =>' in source
-    assert "`${title} (${entries.length})`" in source
+    assert "const renderSetupCollectionGroup = (" in source
+    assert "options?: { defaultOpen?: boolean; derivedCount?: number; derived?: ReactNode }," in source
+    assert "`${title} (${totalCount})`" in source
     # Image groups render previews; file groups do not.
     assert 'renderSetupCollectionGroup("objectImages", "OBJ_IMAGES", "OBJECT", "image", [...IMAGE_SUFFIXES])' in source
     assert 'renderSetupCollectionGroup("groupImages", "GRP_IMAGES", "GROUP", "image", [...IMAGE_SUFFIXES])' in source
@@ -219,16 +222,33 @@ def test_b1_b2_setup_group_rows_have_browse_buttons() -> None:
     assert ".arc3-prolog-browse-list" in styles
 
 
+def test_b1_b2_setup_groups_have_group_load_select() -> None:
+    source = COMPONENT.read_text(encoding="utf-8")
+    styles = STYLES.read_text(encoding="utf-8")
+    # Every collection group has a group-level [load]/[select] footer that appends
+    # a new entry (from the local file dialog or the workspace picker).
+    assert "const appendSetupEntryPath = (stackIndex: number, imageIndex: number, field: SetupCollectionField, path: string) =>" in source
+    assert "const addKey = `${field}:${setup.id}:__add`;" in source
+    assert 'className="arc3-prolog-object-image-actions"' in source
+    assert "appendSetupEntryPath(stackIndex, imageIndex, field, relative || picked.name)" in source
+    assert "setOpenBrowseKey(openBrowseKey === addKey ? null : addKey)" in source
+    assert "openBrowseKey === addKey &&" in source
+    assert "appendSetupEntryPath(stackIndex, imageIndex, field, path)" in source
+    assert ".arc3-prolog-object-image-actions" in styles
+
+
 def test_b1_b2_setup_text_files_group_renamed_unknown_files() -> None:
     source = COMPONENT.read_text(encoding="utf-8")
-    assert "`UNKNOWN_FILES (${textFiles.length})`" in source
+    assert 'renderSetupCollectionGroup("unknownFiles", "UNKNOWN_FILES", "UNKNOWN", "file", []' in source
     assert "TEXT FILES (${textFiles.length})" not in source
+    # The derived text outputs are still shown inside the group.
+    assert "derivedCount: textFiles.length," in source
 
 
 def test_b1_b2_setup_sub_images_grouped_after_obj_images() -> None:
     source = COMPONENT.read_text(encoding="utf-8")
     obj_index = source.index('renderSetupCollectionGroup("objectImages", "OBJ_IMAGES"')
-    sub_index = source.index("`SUB_IMAGES (${subimages.length})`")
+    sub_index = source.index('renderSetupCollectionGroup("subImages", "SUB_IMAGES"')
     grp_index = source.index('renderSetupCollectionGroup("groupImages", "GRP_IMAGES"')
     assert obj_index < sub_index < grp_index
 
@@ -245,6 +265,18 @@ def test_b1_b2_setup_has_no_properties_editor() -> None:
     assert "`PROPERTIES (${(setup.properties || []).length})`" not in source
     assert ">Add property</button>" not in source
     assert ".arc3-prolog-property-fields" not in styles
+
+
+def test_b1_b2_setup_has_no_add_buttons() -> None:
+    source = COMPONENT.read_text(encoding="utf-8")
+    # All "[ Add xxx ]" controls were removed; setups/runners/entries are populated
+    # by the disk scan and browse pickers instead of manual add buttons.
+    assert ">Add Image</button>" not in source
+    assert ">Add Runner</button>" not in source
+    assert "`Add ${itemLabel.toLowerCase()}`" not in source
+    assert "const addImage =" not in source
+    assert "const addRunner =" not in source
+    assert "const addSetupEntry =" not in source
 
 
 def test_b1_b2_setup_has_dir_properties_node() -> None:

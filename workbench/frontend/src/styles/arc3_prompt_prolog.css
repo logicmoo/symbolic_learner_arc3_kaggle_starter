@@ -414,6 +414,13 @@ label.arc3-prolog-inline-composite-label > .arc3-prolog-selected-source-chips {
   align-self: flex-start;
 }
 
+.arc3-prolog-object-image-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.35rem;
+}
+
 .arc3-prolog-browse-inputwrap {
   display: flex;
   align-items: center;

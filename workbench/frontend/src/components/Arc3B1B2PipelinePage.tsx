@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { WorkflowPageHost, type WorkflowPageComponentRegistry, type WorkflowPageDefinition } from "./WorkflowPageHost";
 import { WorkflowPageSourceEditor } from "./WorkflowPageSourceEditor";
 import { ThreeStateAccordionMember, ThreeStateAccordionStack, type AccordionDisplayMode } from "./ThreeStateAccordion";
@@ -133,6 +133,8 @@ type StackSetup = {
   afterImage: ImageSelection;
   objectImages?: ImageSelection[];
   groupImages?: ImageSelection[];
+  subImages?: ImageSelection[];
+  unknownFiles?: ImageSelection[];
   plFiles?: ImageSelection[];
   engFiles?: ImageSelection[];
   jsonFiles?: ImageSelection[];
@@ -147,6 +149,8 @@ type StackSetup = {
 type SetupCollectionField =
   | "objectImages"
   | "groupImages"
+  | "subImages"
+  | "unknownFiles"
   | "plFiles"
   | "engFiles"
   | "jsonFiles"
@@ -2198,16 +2202,6 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
     }));
   };
 
-  const addRunner = (stackIndex: number) => {
-    setStackState(stackIndex, (stack) => {
-      const nextIndex = stack.runners.length;
-      return {
-        ...stack,
-        runners: [...stack.runners, initialRunnerState(pageDefinition.routeView, stack.key, nextIndex, COLUMN_MODEL_SENTINEL, defaultTimeoutSeconds)],
-      };
-    });
-  };
-
   const incrementRunnerSetup = (stackIndex: number, runnerIndex: number) => {
     setStackState(stackIndex, (stack) => {
       const setups = stack.setups?.length ? stack.setups : defaultSetups(stack.key);
@@ -2315,12 +2309,14 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
     });
   };
 
-  const addSetupEntry = (stackIndex: number, imageIndex: number, field: SetupCollectionField) => {
+  const appendSetupEntryPath = (stackIndex: number, imageIndex: number, field: SetupCollectionField, path: string) => {
+    const trimmed = path.trim();
+    if (!trimmed) return;
     setStackState(stackIndex, (stack) => {
       const setups = stack.setups?.length ? [...stack.setups] : defaultSetups(stack.key);
       const current = setups[imageIndex];
       if (!current) return stack;
-      const entries = [...(current[field] || []), { name: "", dataUrl: "" }];
+      const entries = [...(current[field] || []), imageSelectionFromPath(workspaceId, trimmed, { name: "", dataUrl: "" })];
       setups[imageIndex] = { ...current, [field]: entries };
       return { ...stack, setups };
     });
@@ -2378,23 +2374,6 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
     } catch (reason) {
       setSetupStateField(stackIndex, imageIndex, "stateJson", `// Could not load ${rel}: ${reason instanceof Error ? reason.message : String(reason)}`);
     }
-  };
-
-  const addImage = (stackIndex: number) => {
-    setStackState(stackIndex, (stack) => {
-      const setups = stack.setups?.length ? [...stack.setups] : defaultSetups(stack.key);
-      const nextOrdinal = setups.length + 1;
-      const template = setups[setups.length - 1];
-      const newSetup: StackSetup = {
-        id: `${stack.key}-image-${nextOrdinal}-${Date.now()}`,
-        label: `image_${nextOrdinal}`,
-        command: template?.command || "level_1",
-        note: "",
-        beforeImage: null,
-        afterImage: { name: "", dataUrl: "" },
-      };
-      return { ...stack, setups: [...setups, newSetup] };
-    });
   };
 
   const captureImageAnalysis = (stackIndex: number, runnerIndex: number, imageIndex: number) => {
@@ -3048,7 +3027,6 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
         detail: `Active: ${setups[selectedIndex]?.label || `image_${selectedIndex + 1}`}`,
         baseClass: "english-workflow-panel arc3-prolog-page-panel",
         scrollSize: "calc(100vh - 250px)",
-        accessories: <button type="button" className="secondary" onClick={() => addImage(stackIndex)}>Add Image</button>,
         content: <ThreeStateAccordionStack id={imagesStackId} className="arc3-prolog-accordion-stack" controlsLabel="IMAGES">
           {setups.map((setup, imageIndex) => {
             const analysis = setup.analysis;
@@ -3060,17 +3038,27 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
               const slash = normalized.lastIndexOf("/");
               return slash > 0 ? normalized.slice(0, slash) : "";
             })();
-            const renderSetupCollectionGroup = (field: SetupCollectionField, title: string, itemLabel: string, kind: "image" | "file", accept: string[]) => {
+            const renderSetupCollectionGroup = (
+              field: SetupCollectionField,
+              title: string,
+              itemLabel: string,
+              kind: "image" | "file",
+              accept: string[],
+              options?: { defaultOpen?: boolean; derivedCount?: number; derived?: ReactNode },
+            ) => {
               const entries = setup[field] || [];
               const acceptLower = accept.map((suffix) => suffix.toLowerCase());
               const acceptAttr = acceptLower.join(",");
               const workspaceMatches = files
-                .filter((file) => acceptLower.includes((file.suffix || "").toLowerCase()))
+                .filter((file) => acceptLower.length === 0 || acceptLower.includes((file.suffix || "").toLowerCase()))
                 .map((file) => file.path.replace(/\\/g, "/"))
                 .filter((path, index, all) => all.indexOf(path) === index)
                 .sort((left, right) => left.localeCompare(right));
-              return <details open className="arc3-prolog-setup-object-images">
-                <summary>{`${title} (${entries.length})`}</summary>
+              const addKey = `${field}:${setup.id}:__add`;
+              const totalCount = (options?.derivedCount ?? 0) + entries.length;
+              return <details open={options?.defaultOpen ?? true} className="arc3-prolog-setup-object-images">
+                <summary>{`${title} (${totalCount})`}</summary>
+                {options?.derived}
                 {entries.map((entry, entryIndex) => {
                   const rowKey = `${field}:${setup.id}:${entryIndex}`;
                   return <div
@@ -3136,11 +3124,43 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                     >Remove</button>
                   </div>;
                 })}
-                <button
-                  type="button"
-                  className="secondary"
-                  onClick={() => addSetupEntry(stackIndex, imageIndex, field)}
-                >{`Add ${itemLabel.toLowerCase()}`}</button>
+                <div className="arc3-prolog-object-image-actions">
+                  <label className="secondary arc3-prolog-browse-btn arc3-prolog-browse-b" title="Load a file from your computer">
+                    load
+                    <input
+                      type="file"
+                      accept={acceptAttr}
+                      style={{ display: "none" }}
+                      onChange={(event) => {
+                        const picked = event.target.files && event.target.files[0];
+                        if (picked) {
+                          const relative = (picked as File & { webkitRelativePath?: string }).webkitRelativePath;
+                          appendSetupEntryPath(stackIndex, imageIndex, field, relative || picked.name);
+                        }
+                        event.target.value = "";
+                      }}
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    className="secondary arc3-prolog-browse-btn"
+                    title="Pick from workspace files"
+                    onClick={() => setOpenBrowseKey(openBrowseKey === addKey ? null : addKey)}
+                  >select</button>
+                </div>
+                {openBrowseKey === addKey && <div className="arc3-prolog-browse-list">
+                  {workspaceMatches.length
+                    ? workspaceMatches.map((path) => <button
+                      key={path}
+                      type="button"
+                      className="arc3-prolog-browse-option"
+                      onClick={() => {
+                        appendSetupEntryPath(stackIndex, imageIndex, field, path);
+                        setOpenBrowseKey(null);
+                      }}
+                    >{path}</button>)
+                    : <div className="arc3-prolog-browse-empty">No matching workspace files</div>}
+                </div>}
               </details>;
             };
             return <ThreeStateAccordionMember
@@ -3236,32 +3256,33 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                 ? <img className="arc3-prolog-preview" src={setup.afterImage.dataUrl} alt={`${setup.label || `image_${imageIndex + 1}`} image`} />
                 : <div className="arc3-prolog-setup-preview-placeholder">No image</div>}
               {renderSetupCollectionGroup("objectImages", "OBJ_IMAGES", "OBJECT", "image", [...IMAGE_SUFFIXES])}
-              <details open>
-                <summary>{`SUB_IMAGES (${subimages.length})`}</summary>
-                {subimages.length
+              {renderSetupCollectionGroup("subImages", "SUB_IMAGES", "SUB", "image", [...IMAGE_SUFFIXES], {
+                derivedCount: subimages.length,
+                derived: subimages.length
                   ? <div className="arc3-prolog-setup-preview-grid">
                     {subimages.map((item) => <figure key={item.key}>
                       <figcaption>{item.label}</figcaption>
                       <img className="arc3-prolog-preview" src={item.value} alt={item.label} />
                     </figure>)}
                   </div>
-                  : null}
-              </details>
+                  : null,
+              })}
               {renderSetupCollectionGroup("groupImages", "GRP_IMAGES", "GROUP", "image", [...IMAGE_SUFFIXES])}
               {renderSetupCollectionGroup("plFiles", "PL_FILES", "PL", "file", [".pl"])}
               {renderSetupCollectionGroup("engFiles", "ENG_FILES", "ENG", "file", [".eng"])}
               {renderSetupCollectionGroup("jsonFiles", "JSON_FILES", "JSON", "file", [".json"])}
               {renderSetupCollectionGroup("mettaFiles", "METTA_FILES", "METTA", "file", [".metta"])}
               {renderSetupCollectionGroup("promptFiles", "PROMPT_FILES", "PROMPT", "file", [".prompt"])}
-              <details>
-                <summary>{`UNKNOWN_FILES (${textFiles.length})`}</summary>
-                {textFiles.length
-                  ? textFiles.map((item) => <details key={item.key}>
+              {renderSetupCollectionGroup("unknownFiles", "UNKNOWN_FILES", "UNKNOWN", "file", [], {
+                defaultOpen: false,
+                derivedCount: textFiles.length,
+                derived: textFiles.length
+                  ? <>{textFiles.map((item) => <details key={item.key}>
                     <summary>{item.label}</summary>
                     <pre className="arc3-prolog-prompt-text">{item.value}</pre>
-                  </details>)
-                  : <small>No unknown files yet. Run B1/B2 on this image.</small>}
-              </details>
+                  </details>)}</>
+                  : null,
+              })}
             </ThreeStateAccordionMember>;
           })}
         </ThreeStateAccordionStack>,
@@ -3368,7 +3389,6 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                         </option>)}
                       </select>
                     </label>
-                    <button type="button" className="secondary" onClick={() => addRunner(stackIndex)}>Add Runner</button>
                   </div>
                   {stack.runners.map((runner, runnerIndex) => {
                     const effectiveRunnerModelId = resolveRunnerModelId(stack, runner);
