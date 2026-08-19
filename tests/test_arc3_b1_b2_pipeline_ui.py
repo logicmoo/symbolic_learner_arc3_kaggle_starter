@@ -42,13 +42,14 @@ def test_b1_b2_component_has_pipeline_contract() -> None:
     assert "REGENERATED_IDENTITIES_PROMPT" in source
     assert "isB1B2PipelineRoute" in source
     assert "return isB1B2PipelineRoute(routeView) ? 3 : 3;" in source
-    assert 'return pageDefinition.routeView === "arc3B1B2Pipeline" ? "B0" : "A1";' in source
-    # B0 full-extraction runner feeds B1 (removal), which feeds B2 (regeneration).
+    assert 'const B1B2_RUNNER_NAMES = ["GUESSER", "REMOVER", "REGENERATOR"];' in source
+    assert 'return pageDefinition.routeView === "arc3B1B2Pipeline" ? "GUESSER" : "A1";' in source
+    # GUESSER full-extraction runner feeds REMOVER (removal), which feeds REGENERATOR (regeneration).
     assert 'if (runnerIndex === 0) return "extraction";' in source
     assert 'if (role === "extraction") return COMBINED_PROMPT;' in source
     assert 'if (role === "extraction") return "generate_prolog_and_english";' in source
-    assert 'return ["runner:B0"];' in source
-    assert "SEED FROM B0" in source
+    assert 'return ["runner:GUESSER"];' in source
+    assert "SEED FROM GUESSER" in source
     assert "many_objects_1" in source
     assert "many_objects_2" in source
     assert "llm_error|next_iteration|loop_complete|loop_overbudgeted|unran" in source

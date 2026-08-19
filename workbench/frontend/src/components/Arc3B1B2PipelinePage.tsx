@@ -275,10 +275,10 @@ const DEFAULT_VALIDATOR_PROMPT = [
 ].join("\n");
 const REMOVAL_DISCOVERY_PASS_PROMPT = [
   "remove_smallest_object:",
-  "INPUT: the upstream B0 runner supplies current_identities plus its prolog/english files via INPUT_FILES; treat B0's current_identities as the authoritative catalog of objects present in the image.",
+  "INPUT: the upstream GUESSER runner supplies current_identities plus its prolog/english files via INPUT_FILES; treat GUESSER's current_identities as the authoritative catalog of objects present in the image.",
   "Goal: update supplied current_identities in place and remove the best removable object set from the current image.",
-  "SEED FROM B0: first take the identities B0 found and try to remove each of them from the current (before) image, working through B0's identified objects as your removal worklist before discovering anything new.",
-  "Only after B0's identities have been handled, act like the standard removal pass below and search for any removable objects B0 missed.",
+  "SEED FROM GUESSER: first take the identities GUESSER found and try to remove each of them from the current (before) image, working through GUESSER's identified objects as your removal worklist before discovering anything new.",
+  "Only after GUESSER's identities have been handled, act like the standard removal pass below and search for any removable objects GUESSER missed.",
   "OBJECT SEARCH ORDER (look for these first):",
   "1) Leaf objects that are isolated, simple, and non-container (no nested identities inside their bounds).",
   "2) Among those leaf objects, find a similar set by shape/color/size/type/proximity.",
@@ -334,11 +334,15 @@ function stackColumnsForRoute(routeView: string): Array<{ key: StackKey; label: 
 function isB1B2PipelineRoute(routeView: string): boolean {
   return routeView === "arc3B1B2Pipeline";
 }
+const B1B2_RUNNER_NAMES = ["GUESSER", "REMOVER", "REGENERATOR"];
 function runnerDisplayOrdinal(routeView: string, stackKey: StackKey, runnerIndex: number): number {
   if (isB1B2PipelineRoute(routeView) && stackKey === "B") return runnerIndex;
   return runnerIndex + 1;
 }
 function runnerDisplayId(routeView: string, stackKey: StackKey, runnerIndex: number): string {
+  if (isB1B2PipelineRoute(routeView) && stackKey === "B" && runnerIndex < B1B2_RUNNER_NAMES.length) {
+    return B1B2_RUNNER_NAMES[runnerIndex];
+  }
   return `${stackKey}${runnerDisplayOrdinal(routeView, stackKey, runnerIndex)}`;
 }
 function runnerRole(routeView: string, stackKey: StackKey, runnerIndex: number): "extraction" | "removal" | "regenerated" | "default" {
@@ -362,7 +366,7 @@ function defaultSetupIndexForRunner(routeView: string, stackKey: StackKey, runne
 }
 function defaultInputFilesSourceIdsForRunner(routeView: string, stackKey: StackKey, runnerIndex: number): string[] {
   if (isB1B2PipelineRoute(routeView) && runnerRole(routeView, stackKey, runnerIndex) === "removal") {
-    return ["runner:B0"];
+    return ["runner:GUESSER"];
   }
   return ["ALL-Setup1"];
 }
@@ -623,14 +627,14 @@ async function readImageFile(file: File): Promise<string> {
 
 function resolveFilesSource(
   filesSourceId: string,
-  runners: Array<{ id: string; parsed: ParsedPrologPayload | null; rawResponse: string; generationSeq: number }>,
+  runners: Array<{ id: string; stackKey: StackKey; parsed: ParsedPrologPayload | null; rawResponse: string; generationSeq: number }>,
   currentStackKey: StackKey,
   history: OutputHistoryEntry[],
 ): { label: string; content: string } | null {
   if (!filesSourceId || filesSourceId === "none") return null;
   if (filesSourceId === "latest:this") {
     const latest = [...runners]
-      .filter((runner) => runner.id.startsWith(currentStackKey) && runner.generationSeq > 0 && (runner.parsed || runner.rawResponse))
+      .filter((runner) => runner.stackKey === currentStackKey && runner.generationSeq > 0 && (runner.parsed || runner.rawResponse))
       .sort((left, right) => right.generationSeq - left.generationSeq)[0];
     if (!latest) return null;
     const content = latest.parsed
@@ -653,7 +657,7 @@ function resolveFilesSource(
   if (filesSourceId.startsWith("latest:stack:")) {
     const stackKey = filesSourceId.slice("latest:stack:".length) as StackKey;
     const latest = [...runners]
-      .filter((runner) => runner.id.startsWith(stackKey) && runner.generationSeq > 0 && (runner.parsed || runner.rawResponse))
+      .filter((runner) => runner.stackKey === stackKey && runner.generationSeq > 0 && (runner.parsed || runner.rawResponse))
       .sort((left, right) => right.generationSeq - left.generationSeq)[0];
     if (!latest) return null;
     const content = latest.parsed
@@ -827,7 +831,7 @@ function resolveReferenceToken(
 
 function resolveFilesSources(
   filesSourceIds: string[],
-  runners: Array<{ id: string; parsed: ParsedPrologPayload | null; rawResponse: string; generationSeq: number }>,
+  runners: Array<{ id: string; stackKey: StackKey; parsed: ParsedPrologPayload | null; rawResponse: string; generationSeq: number }>,
   currentStackKey: StackKey,
   history: OutputHistoryEntry[],
   stacks: StackColumnState[],
@@ -1736,7 +1740,7 @@ function migrateRunnerPromptText(routeView: string, stackKey: StackKey, runnerIn
 }
 
 function initialSelectedOutputId(pageDefinition: WorkflowPageDefinition): string {
-  return pageDefinition.routeView === "arc3B1B2Pipeline" ? "B0" : "A1";
+  return pageDefinition.routeView === "arc3B1B2Pipeline" ? "GUESSER" : "A1";
 }
 
 function defaultInputFilesSourceIds(): string[] {
@@ -2359,6 +2363,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
       const filesAddress = stackColumns.flatMap((column) => (
         column.runners.map((candidate, index) => ({
           id: runnerDisplayId(pageDefinition.routeView, column.key, index),
+          stackKey: column.key,
           parsed: candidate.parsed,
           rawResponse: candidate.rawResponse,
           generationSeq: candidate.generationSeq,
@@ -3642,7 +3647,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
           <summary>Removal Images</summary>
           {selectedRunner?.removedIdentityId ? <small>Removed identity: {selectedRunner.removedIdentityId}</small> : null}
           <div className="arc3-prolog-removal-images">
-            {(selectedOutput?.id === "B1"
+            {(selectedOutput?.id === "REMOVER"
               ? manyObjectImagesFromRunner(selectedRunner).map((item) => <figure key={`selected-many-${item.key}`}>
                 <figcaption>{item.label}</figcaption>
                 <img className="arc3-prolog-preview" src={item.value} alt={item.label} />
