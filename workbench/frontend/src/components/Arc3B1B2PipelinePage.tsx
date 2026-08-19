@@ -3463,6 +3463,11 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                             }}
                           />
                         </label>
+                        <button
+                          type="button"
+                          className="secondary arc3-prolog-browse-btn arc3-prolog-object-image-remove"
+                          onClick={() => removeSetupEntry(stackIndex, imageIndex, field, entryIndex)}
+                        >Remove</button>
                       </div>
                     </label>
                     {kind === "image"
@@ -3483,11 +3488,6 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                         >{path}</button>)
                         : <div className="arc3-prolog-browse-empty">No matching workspace files</div>}
                     </div>}
-                    <button
-                      type="button"
-                      className="secondary arc3-prolog-object-image-remove"
-                      onClick={() => removeSetupEntry(stackIndex, imageIndex, field, entryIndex)}
-                    >Remove</button>
                     {renderFileEditor(`edit:${field}:${setup.id}:${entryIndex}`, (path) => {
                       if (path !== entry.name) setSetupEntryPath(stackIndex, imageIndex, field, entryIndex, path);
                     })}
