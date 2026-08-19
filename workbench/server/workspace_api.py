@@ -1395,8 +1395,10 @@ def write_workspace_data_file(workspace_id: str, body: dict[str, Any] = Body(...
         if not isinstance(content, str):
             raise ValueError("content must be a string")
         resources = get_filesystem_provider()
-        resources.make_directory(target.parent)
-        resources.write_text(target, content)
+        # write_bytes writes the exact bytes to the literal path. Do NOT use write_text:
+        # for .json paths the provider remaps to a .metta physical file and re-serializes
+        # a JSON mirror, which would mangle a plain state.json rather than store it verbatim.
+        resources.write_bytes(target, content.encode("utf-8"))
         invalidate_workspace_discovery()
         return {"file": {**_file_record(root, target), "content": content}}
     except KeyError as error:
