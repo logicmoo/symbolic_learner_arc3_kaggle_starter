@@ -3329,27 +3329,17 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
       for (const path of unique) lineCountFetchedRef.current.delete(path);
     }
   };
-  useEffect(() => {
-    if (!workspaceId) return;
+  const loadLineCountsForSetup = (setup: StackSetup) => {
     const fileFields: SetupCollectionField[] = ["plFiles", "engFiles", "jsonFiles", "mettaFiles", "promptFiles", "unknownFiles"];
     const paths: string[] = [];
-    // Only the active setup of each stack renders its file rows, so fetch line counts
-    // for the active setup only, and in a single batched request.
-    for (const stack of stackColumns) {
-      const setups = stack.setups || [];
-      if (!setups.length) continue;
-      const activeIndex = Math.max(0, Math.min(stack.selectedImageIndex ?? 0, setups.length - 1));
-      const setup = setups[activeIndex];
-      if (!setup) continue;
-      for (const fileField of fileFields) {
-        for (const entry of setup[fileField] || []) {
-          const rel = normalizeAssetPath(entry.name).replace(/^\/+/, "");
-          if (rel) paths.push(rel);
-        }
+    for (const fileField of fileFields) {
+      for (const entry of setup[fileField] || []) {
+        const rel = normalizeAssetPath(entry.name).replace(/^\/+/, "");
+        if (rel) paths.push(rel);
       }
     }
     void loadLineCounts(paths);
-  }, [stackColumns, workspaceId]);
+  };
   useEffect(() => {
     if (!workspaceId) return;
     // Auto-scan each newly created setup once so its file groups populate without a
@@ -3769,7 +3759,11 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
               value={isActive ? "ACTIVE" : (setup.label || `Setup_${imageIndex + 1}`)}
               detail={`${subimages.length} image(s) / ${textFiles.length} textual file(s)`}
               mode={modeFor(`image-${setup.id}`)}
-              onChange={(mode) => setModeFor(`image-${setup.id}`, mode)}
+              onChange={(mode) => {
+                setModeFor(`image-${setup.id}`, mode);
+                // Line counts are lazy: only fetch when the user opens this setup.
+                if (mode !== "strip") loadLineCountsForSetup(setup);
+              }}
               baseClass="english-workflow-panel arc3-prolog-page-panel"
               scrollSize="480px"
               accessories={<button type="button" className={isActive ? "arc3-prolog-active-toggle" : "secondary"} onClick={() => selectImage(stackIndex, imageIndex)}>{isActive ? "Selected" : "Select"}</button>}

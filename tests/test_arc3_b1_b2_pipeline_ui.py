@@ -440,6 +440,9 @@ def test_b1_b2_setup_file_rows_show_non_blank_line_count() -> None:
     assert "/data/line-counts`" in source
     assert 'method: "POST"' in source
     assert "void loadLineCounts(paths);" in source
+    # Line counts are lazy: only fetched when the user opens a setup (mode != strip).
+    assert "const loadLineCountsForSetup = (setup: StackSetup) =>" in source
+    assert 'if (mode !== "strip") loadLineCountsForSetup(setup);' in source
     assert "const entryLineCount = kind === \"file\" ? lineCounts[entryPath] : undefined;" in source
     assert "<span>{entryLabel}{entryLineCount !== undefined ? ` (~${entryLineCount} lines)` : \"\"}</span>" in source
     # File-group summaries total the per-file line counts (~N lines).
