@@ -390,6 +390,18 @@ def test_b1_b2_setup_path_scan_writes_scan_results() -> None:
     assert "event.stopPropagation();" in source
 
 
+def test_b1_b2_setups_enumerate_all_data_folders() -> None:
+    source = COMPONENT.read_text(encoding="utf-8")
+    # Setups are generated for image frames under ANY top-level data/ folder (level_1's
+    # descend tree and layouts like other_folder/0/RESET), not only data/level_1.
+    assert "const compareByTree = (left: string, right: string) =>" in source
+    assert "const topFolder = (path: string) =>" in source
+    assert "^data\\/level_1(?:" not in source
+    # Each setup's folder (PATH) is initialized; the initial/default setup points to level_1.
+    assert 'stateDir: "data/level_1",' in source
+    assert 'stateDir: directory || "data/level_1",' in source
+
+
 def test_b1_b2_setups_auto_scan_on_create() -> None:
     source = COMPONENT.read_text(encoding="utf-8")
     # Each newly created setup is auto-scanned once (guarded by a ref) using a single

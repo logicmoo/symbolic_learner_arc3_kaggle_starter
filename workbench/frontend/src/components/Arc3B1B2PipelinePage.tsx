@@ -454,6 +454,7 @@ function defaultSetups(stackKey: StackKey): StackSetup[] {
     label: "Setup1",
     command: "level_1",
     note: "default",
+    stateDir: "data/level_1",
     beforeImage: stackKey === "A" ? null : pair.before,
     afterImage: pair.after,
   }];
@@ -485,17 +486,6 @@ function imageSelectionFromPath(workspaceId: string, path: string, fallback?: Im
   return { name: normalized, dataUrl: repositoryAssetUrl(normalized) };
 }
 
-function level1PathDepth(path: string): number {
-  const normalized = normalizeAssetPath(path).toLowerCase();
-  const prefix = "data/level_1";
-  if (!normalized.startsWith(prefix)) return 0;
-  const remainder = normalized.slice(prefix.length).replace(/^\/+/, "");
-  if (!remainder) return 0;
-  const directory = remainder.includes("/") ? remainder.slice(0, remainder.lastIndexOf("/")) : "";
-  if (!directory) return 0;
-  return directory.split("/").filter(Boolean).length;
-}
-
 function parentImagePath(path: string): string {
   const normalized = normalizeAssetPath(path);
   if (!normalized) return "";
@@ -512,15 +502,29 @@ function parentImagePath(path: string): string {
 }
 
 function stackADescendSetupsFromFiles(workspaceId: string, files: WorkspaceFileRecord[]): StackSetup[] {
+  // A setup is created for every directory under data/ that holds an image.png-style
+  // frame — this spans any top-level folder (level_1's descend tree, or action layouts
+  // like other_folder/0/RESET, other_folder/1/LEFT, ...), not just data/level_1.
+  const topFolder = (path: string) => {
+    const rel = normalizeAssetPath(path).replace(/^data\//i, "");
+    return rel.split("/")[0] || "";
+  };
+  const descendDepth = (path: string) => {
+    const directory = normalizeAssetPath(path).slice(0, Math.max(0, normalizeAssetPath(path).lastIndexOf("/")));
+    const segments = directory.split("/").filter(Boolean);
+    return Math.max(0, segments.length - 2);
+  };
+  const compareByTree = (left: string, right: string) => {
+    const topLeft = topFolder(left);
+    const topRight = topFolder(right);
+    if (topLeft !== topRight) return topLeft.localeCompare(topRight);
+    return descendDepth(left) - descendDepth(right) || left.localeCompare(right);
+  };
   const imageCandidates = files
     .filter((file) => IMAGE_SUFFIXES.has((file.suffix || "").toLowerCase()))
     .map((file) => file.path.replace(/\\/g, "/"))
-    .filter((path) => /^data\/level_1(?:\/[^/]+)*\/image\.(png|jpg|jpeg|webp|bmp|gif)$/i.test(path))
-    .sort((left, right) => {
-      const depthLeft = level1PathDepth(left);
-      const depthRight = level1PathDepth(right);
-      return depthLeft - depthRight || left.localeCompare(right);
-    });
+    .filter((path) => /^data\/[^/]+(?:\/[^/]+)*\/image\.(png|jpg|jpeg|webp|bmp|gif)$/i.test(path))
+    .sort(compareByTree);
   if (!imageCandidates.length) return [];
   // Keep one setup per descend directory and prefer png/jpg first if multiple image.* files exist.
   const pathScore = (path: string) => {
@@ -538,13 +542,9 @@ function stackADescendSetupsFromFiles(workspaceId: string, files: WorkspaceFileR
       byDirectory.set(directory, path);
     }
   }
-  const selectedPaths = Array.from(byDirectory.values()).sort((left, right) => {
-    const depthLeft = level1PathDepth(left);
-    const depthRight = level1PathDepth(right);
-    return depthLeft - depthRight || left.localeCompare(right);
-  });
+  const selectedPaths = Array.from(byDirectory.values()).sort(compareByTree);
   return selectedPaths.map((path, index) => {
-    const depth = level1PathDepth(path);
+    const depth = descendDepth(path);
     const directory = path.slice(0, Math.max(0, path.lastIndexOf("/")));
     const parentDirectory = directory.includes("/") ? directory.slice(0, directory.lastIndexOf("/")) : "";
     const beforePath = byDirectory.get(parentDirectory) || selectedPaths[index - 1] || "";
@@ -563,6 +563,7 @@ function stackADescendSetupsFromFiles(workspaceId: string, files: WorkspaceFileR
       label: `Setup${index + 1}`,
       command: setupCommandFromPath(path),
       note: depth ? `depth ${depth}` : "root",
+      stateDir: directory || "data/level_1",
       beforeImage: beforeSelection,
       afterImage: afterSelection,
     };
@@ -3276,13 +3277,18 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
     if (!workspaceId) return;
     const fileFields: SetupCollectionField[] = ["plFiles", "engFiles", "jsonFiles", "mettaFiles", "promptFiles", "unknownFiles"];
     const paths = new Set<string>();
+    // Only the active setup of each stack renders its file rows, so fetch line counts
+    // for the active setup only (avoids hundreds of asset requests across all setups).
     for (const stack of stackColumns) {
-      for (const setup of stack.setups || []) {
-        for (const fileField of fileFields) {
-          for (const entry of setup[fileField] || []) {
-            const rel = normalizeAssetPath(entry.name).replace(/^\/+/, "");
-            if (rel) paths.add(rel);
-          }
+      const setups = stack.setups || [];
+      if (!setups.length) continue;
+      const activeIndex = Math.max(0, Math.min(stack.selectedImageIndex ?? 0, setups.length - 1));
+      const setup = setups[activeIndex];
+      if (!setup) continue;
+      for (const fileField of fileFields) {
+        for (const entry of setup[fileField] || []) {
+          const rel = normalizeAssetPath(entry.name).replace(/^\/+/, "");
+          if (rel) paths.add(rel);
         }
       }
     }
