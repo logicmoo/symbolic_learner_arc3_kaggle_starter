@@ -1948,6 +1948,11 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
   const [scanDataBusy, setScanDataBusy] = useState(false);
   const [replaceGuesserOnFinish, setReplaceGuesserOnFinish] = useState(false);
   const [openBrowseKey, setOpenBrowseKey] = useState<string | null>(null);
+  const [openEditorKey, setOpenEditorKey] = useState<string | null>(null);
+  const [editorText, setEditorText] = useState("");
+  const [editorName, setEditorName] = useState("");
+  const [editorBusy, setEditorBusy] = useState(false);
+  const [editorError, setEditorError] = useState("");
   const controllersRef = useRef<Record<string, AbortController | null>>({});
   const generationSeqRef = useRef(0);
   const anyRunning = stackColumns.some((stack) => stack.runners.some((runner) => runner.running));
@@ -2409,6 +2414,46 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
     URL.revokeObjectURL(url);
   };
 
+  const downloadTextFallback = (fileName: string, content: string) => {
+    const suggested = (normalizeAssetPath(fileName).split("/").pop() || "file.txt") || "file.txt";
+    const blob = new Blob([content], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = suggested;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  const saveDataFile = async (path: string, content: string): Promise<boolean> => {
+    const clean = normalizeAssetPath(path).replace(/^\/+/, "");
+    if (!clean) {
+      setEditorError("A file path is required.");
+      return false;
+    }
+    if (!workspaceId) {
+      setEditorError("No workspace is loaded; downloaded a local copy instead.");
+      downloadTextFallback(clean, content);
+      return false;
+    }
+    try {
+      await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/data-file`, {
+        method: "PUT",
+        body: JSON.stringify({ path: clean, content }),
+      });
+      setEditorError("");
+      return true;
+    } catch (reason) {
+      // The server refuses suffixes outside DATA_FILE_SUFFIXES (and may be offline);
+      // fall back to a client-side download so the edit is never lost.
+      setEditorError(`${reason instanceof Error ? reason.message : String(reason)} — downloaded a local copy instead.`);
+      downloadTextFallback(clean, content);
+      return false;
+    }
+  };
+
   const scanSetupStatePath = async (stackIndex: number, imageIndex: number, dir: string) => {
     const prefix = normalizeAssetPath(dir).replace(/\/+$/, "");
     let records: WorkspaceFileRecord[] = files;
@@ -2474,7 +2519,20 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
         }
       }
       base.scan = { path: prefix, results };
-      setups[imageIndex] = { ...current, stateJson: `${JSON.stringify(base, null, 2)}\n` };
+      const toEntries = (paths: string[]) => paths.map((path) => imageSelectionFromPath(workspaceId, path, { name: path, dataUrl: "" }));
+      setups[imageIndex] = {
+        ...current,
+        stateJson: `${JSON.stringify(base, null, 2)}\n`,
+        objectImages: toEntries(results.obj_images),
+        groupImages: toEntries(results.grp_images),
+        subImages: toEntries(results.sub_images),
+        plFiles: toEntries(results.pl_files),
+        engFiles: toEntries(results.eng_files),
+        jsonFiles: toEntries(results.json_files),
+        mettaFiles: toEntries(results.metta_files),
+        promptFiles: toEntries(results.prompt_files),
+        unknownFiles: toEntries(results.unknown_files),
+      };
       return { ...stack, setups };
     });
   };
@@ -3142,6 +3200,11 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
               return slash > 0 ? normalized.slice(0, slash) : "";
             })();
             const pathPrefix = normalizeAssetPath(setup.stateDir ?? stateDirDefault).replace(/\/+$/, "") || "$PATH";
+            const cleanStateDir = normalizeAssetPath(setup.stateDir ?? stateDirDefault).replace(/\/+$/, "");
+            const relativeToSetupDir = (fileName: string) => {
+              const base = normalizeAssetPath(fileName).split("/").pop() || normalizeAssetPath(fileName);
+              return cleanStateDir ? `${cleanStateDir}/${base}` : base;
+            };
             const imageSuffixesLower = [...IMAGE_SUFFIXES].map((suffix) => suffix.toLowerCase());
             const imageMatches = files
               .filter((file) => imageSuffixesLower.includes((file.suffix || "").toLowerCase()))
@@ -3158,8 +3221,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                   onChange={(event) => {
                     const picked = event.target.files && event.target.files[0];
                     if (picked) {
-                      const relative = (picked as File & { webkitRelativePath?: string }).webkitRelativePath;
-                      setter(relative || picked.name);
+                      setter(relativeToSetupDir(picked.name));
                     }
                     event.target.value = "";
                   }}
@@ -3184,6 +3246,87 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                   }}
                 >{path}</button>)
                 : <div className="arc3-prolog-browse-empty">No matching workspace files</div>}
+            </div>;
+            const resolveEditorPath = (name: string) => {
+              const normalized = normalizeAssetPath(name).replace(/^\/+/, "");
+              if (!normalized) return "";
+              return normalized.includes("/") ? normalized : (cleanStateDir ? `${cleanStateDir}/${normalized}` : normalized);
+            };
+            const openEntryEditor = async (field: SetupCollectionField, entryIndex: number, path: string) => {
+              setOpenBrowseKey(null);
+              setOpenEditorKey(`edit:${field}:${setup.id}:${entryIndex}`);
+              setEditorName(path);
+              setEditorText("");
+              setEditorError("");
+              const rel = normalizeAssetPath(path).replace(/^\/+/, "");
+              if (!rel || !workspaceId) return;
+              setEditorBusy(true);
+              try {
+                const response = await fetch(workspaceAssetUrl(workspaceId, rel), { cache: "no-store" });
+                if (response.ok) setEditorText(await response.text());
+                else setEditorError(`Could not load ${rel} (${response.status})`);
+              } catch (reason) {
+                setEditorError(reason instanceof Error ? reason.message : String(reason));
+              } finally {
+                setEditorBusy(false);
+              }
+            };
+            const openNewEditor = (field: SetupCollectionField, suggestedName: string) => {
+              setOpenBrowseKey(null);
+              setOpenEditorKey(`new:${field}:${setup.id}`);
+              setEditorName(suggestedName);
+              setEditorText("");
+              setEditorError("");
+            };
+            const renderFileEditor = (editorKey: string, onSaved: (path: string) => void) => openEditorKey === editorKey && <div className="arc3-prolog-setup-file-editor">
+              <label className="arc3-prolog-inline-select-label">
+                <span>FILE</span>
+                <input
+                  className="arc3-prolog-setup-inline-input"
+                  type="text"
+                  value={editorName}
+                  placeholder={`${pathPrefix}/name.ext`}
+                  onChange={(event) => setEditorName(event.target.value)}
+                />
+              </label>
+              <textarea
+                className="arc3-prolog-setup-state-json arc3-prolog-setup-editor-text"
+                value={editorText}
+                placeholder={editorBusy ? "Loading…" : ""}
+                spellCheck={false}
+                rows={8}
+                onChange={(event) => setEditorText(event.target.value)}
+              />
+              {editorError ? <div className="arc3-prolog-error">{editorError}</div> : null}
+              <div className="arc3-prolog-setup-state-actions">
+                <button
+                  type="button"
+                  className="secondary arc3-prolog-setup-editor-save"
+                  disabled={editorBusy}
+                  onClick={async () => {
+                    const path = resolveEditorPath(editorName);
+                    if (!path) {
+                      setEditorError("A file path is required.");
+                      return;
+                    }
+                    setEditorBusy(true);
+                    const ok = await saveDataFile(path, editorText);
+                    setEditorBusy(false);
+                    if (ok) {
+                      onSaved(path);
+                      setOpenEditorKey(null);
+                    }
+                  }}
+                >Save</button>
+                <button
+                  type="button"
+                  className="secondary arc3-prolog-setup-editor-close"
+                  onClick={() => {
+                    setOpenEditorKey(null);
+                    setEditorError("");
+                  }}
+                >Close</button>
+              </div>
             </div>;
             const renderSetupCollectionGroup = (
               field: SetupCollectionField,
@@ -3231,8 +3374,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                             onChange={(event) => {
                               const picked = event.target.files && event.target.files[0];
                               if (picked) {
-                                const relative = (picked as File & { webkitRelativePath?: string }).webkitRelativePath;
-                                setSetupEntryPath(stackIndex, imageIndex, field, entryIndex, relative || picked.name);
+                                setSetupEntryPath(stackIndex, imageIndex, field, entryIndex, relativeToSetupDir(picked.name));
                               }
                               event.target.value = "";
                             }}
@@ -3244,6 +3386,12 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                           title="Pick from workspace files"
                           onClick={() => setOpenBrowseKey(openBrowseKey === rowKey ? null : rowKey)}
                         >select</button>
+                        {options?.editable && <button
+                          type="button"
+                          className="secondary arc3-prolog-browse-btn arc3-prolog-setup-edit"
+                          title="Edit this file"
+                          onClick={() => void openEntryEditor(field, entryIndex, entry.name)}
+                        >edit</button>}
                       </div>
                     </label>
                     {kind === "image"
@@ -3269,6 +3417,9 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                       className="secondary arc3-prolog-object-image-remove"
                       onClick={() => removeSetupEntry(stackIndex, imageIndex, field, entryIndex)}
                     >Remove</button>
+                    {renderFileEditor(`edit:${field}:${setup.id}:${entryIndex}`, (path) => {
+                      if (path !== entry.name) setSetupEntryPath(stackIndex, imageIndex, field, entryIndex, path);
+                    })}
                   </div>;
                 })}
                 <div className="arc3-prolog-object-image-actions">
@@ -3281,8 +3432,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                       onChange={(event) => {
                         const picked = event.target.files && event.target.files[0];
                         if (picked) {
-                          const relative = (picked as File & { webkitRelativePath?: string }).webkitRelativePath;
-                          appendSetupEntryPath(stackIndex, imageIndex, field, relative || picked.name);
+                          appendSetupEntryPath(stackIndex, imageIndex, field, relativeToSetupDir(picked.name));
                         }
                         event.target.value = "";
                       }}
@@ -3294,6 +3444,12 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                     title="Pick from workspace files"
                     onClick={() => setOpenBrowseKey(openBrowseKey === addKey ? null : addKey)}
                   >select</button>
+                  {options?.editable && <button
+                    type="button"
+                    className="secondary arc3-prolog-browse-btn arc3-prolog-setup-new"
+                    title="Create a new file"
+                    onClick={() => openNewEditor(field, `${pathPrefix}/untitled${accept[0] ?? ".txt"}`)}
+                  >new</button>}
                 </div>
                 {openBrowseKey === addKey && <div className="arc3-prolog-browse-list">
                   {workspaceMatches.length
@@ -3308,6 +3464,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                     >{path}</button>)
                     : <div className="arc3-prolog-browse-empty">No matching workspace files</div>}
                 </div>}
+                {renderFileEditor(`new:${field}:${setup.id}`, (path) => appendSetupEntryPath(stackIndex, imageIndex, field, path))}
               </details>;
             };
             return <ThreeStateAccordionMember

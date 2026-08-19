@@ -502,6 +502,17 @@ label.arc3-prolog-inline-composite-label > .arc3-prolog-selected-source-chips {
   cursor: default;
 }
 
+.arc3-prolog-setup-file-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin: 0.4rem 0 0.2rem;
+  padding: 0.5rem;
+  border: 1px solid rgb(42, 74, 88);
+  border-radius: 6px;
+  background: rgb(6, 16, 22);
+}
+
 .arc3-prolog-browse-list {
   display: flex;
   flex-direction: column;

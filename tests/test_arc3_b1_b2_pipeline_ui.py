@@ -209,7 +209,7 @@ def test_b1_b2_setup_group_rows_have_browse_buttons() -> None:
     assert "setOpenBrowseKey(openBrowseKey === rowKey ? null : rowKey)" in source
     assert 'title="Load a file from your computer"' in source
     assert 'accept={acceptAttr}' in source
-    assert "webkitRelativePath" in source
+    assert "relativeToSetupDir(picked.name)" in source
     # [load] is rendered before [select].
     load_index = source.index('title="Load a file from your computer"')
     select_index = source.index(">select</button>")
@@ -231,7 +231,7 @@ def test_b1_b2_setup_groups_have_group_load_select() -> None:
     assert "const appendSetupEntryPath = (stackIndex: number, imageIndex: number, field: SetupCollectionField, path: string) =>" in source
     assert "const addKey = `${field}:${setup.id}:__add`;" in source
     assert 'className="arc3-prolog-object-image-actions"' in source
-    assert "appendSetupEntryPath(stackIndex, imageIndex, field, relative || picked.name)" in source
+    assert "appendSetupEntryPath(stackIndex, imageIndex, field, relativeToSetupDir(picked.name))" in source
     assert "setOpenBrowseKey(openBrowseKey === addKey ? null : addKey)" in source
     assert "openBrowseKey === addKey &&" in source
     assert "appendSetupEntryPath(stackIndex, imageIndex, field, path)" in source
@@ -367,6 +367,66 @@ def test_b1_b2_setup_path_scan_writes_scan_results() -> None:
     assert "JSON.stringify(base, null, 2)" in source
     # The scan button lives inside the DIR & PROPERTIES expander, before PROP_FILE.
     assert source.index("<summary>DIR &amp; PROPERTIES</summary>") < source.index("arc3-prolog-setup-scan") < source.index("<span>PROP_FILE</span>")
+
+
+def test_b1_b2_setup_scan_populates_collection_fields() -> None:
+    source = COMPONENT.read_text(encoding="utf-8")
+    # [scan] populates the file silos below (not just the state.json editor), so images
+    # render: it maps each result bucket into the setup's collection fields.
+    assert "const toEntries = (paths: string[]) => paths.map((path) => imageSelectionFromPath(workspaceId, path" in source
+    for field, bucket in (
+        ("objectImages", "obj_images"),
+        ("groupImages", "grp_images"),
+        ("subImages", "sub_images"),
+        ("plFiles", "pl_files"),
+        ("engFiles", "eng_files"),
+        ("jsonFiles", "json_files"),
+        ("mettaFiles", "metta_files"),
+        ("promptFiles", "prompt_files"),
+        ("unknownFiles", "unknown_files"),
+    ):
+        assert f"{field}: toEntries(results.{bucket})," in source
+
+
+def test_b1_b2_setup_load_uses_setup_relative_path() -> None:
+    source = COMPONENT.read_text(encoding="utf-8")
+    # [load] picks a local file and stores the path relative to the setup's dir
+    # (setupDir/basename), rather than the bare name or webkitRelativePath.
+    assert "const relativeToSetupDir = (fileName: string) =>" in source
+    assert "return cleanStateDir ? `${cleanStateDir}/${base}` : base;" in source
+    assert "setter(relativeToSetupDir(picked.name))" in source
+    assert "setSetupEntryPath(stackIndex, imageIndex, field, entryIndex, relativeToSetupDir(picked.name))" in source
+    assert "appendSetupEntryPath(stackIndex, imageIndex, field, relativeToSetupDir(picked.name))" in source
+    # The old webkitRelativePath-or-name behavior is gone.
+    assert "relative || picked.name" not in source
+
+
+def test_b1_b2_file_groups_have_edit_new_editors() -> None:
+    source = COMPONENT.read_text(encoding="utf-8")
+    styles = STYLES.read_text(encoding="utf-8")
+    # Single-open editor state.
+    assert "const [openEditorKey, setOpenEditorKey] = useState<string | null>(null);" in source
+    assert "const [editorText, setEditorText] = useState" in source
+    assert "const [editorName, setEditorName] = useState" in source
+    # Raw-write handler with download fallback, targeting the verbatim data-file endpoint.
+    assert "const saveDataFile = async (path: string, content: string): Promise<boolean> =>" in source
+    assert "/data-file`" in source
+    assert 'method: "PUT"' in source
+    assert "const downloadTextFallback = (fileName: string, content: string) =>" in source
+    # [edit] per row + [new] in the footer, both gated on the editable option.
+    assert "options?.editable && <button" in source
+    assert 'className="secondary arc3-prolog-browse-btn arc3-prolog-setup-edit"' in source
+    assert 'className="secondary arc3-prolog-browse-btn arc3-prolog-setup-new"' in source
+    assert "void openEntryEditor(field, entryIndex, entry.name)" in source
+    assert "openNewEditor(field, `${pathPrefix}/untitled${accept[0] ?? \".txt\"}`)" in source
+    # Editor renders with Save/Close; [edit] loads content, [new] appends on save.
+    assert "const renderFileEditor = (editorKey: string, onSaved: (path: string) => void) =>" in source
+    assert 'className="secondary arc3-prolog-setup-editor-save"' in source
+    assert 'className="secondary arc3-prolog-setup-editor-close"' in source
+    assert "const ok = await saveDataFile(path, editorText);" in source
+    assert "renderFileEditor(`edit:${field}:${setup.id}:${entryIndex}`," in source
+    assert "renderFileEditor(`new:${field}:${setup.id}`, (path) => appendSetupEntryPath(stackIndex, imageIndex, field, path))" in source
+    assert ".arc3-prolog-setup-file-editor" in styles
 
 
 def test_b1_b2_buttons_have_readable_theme() -> None:
