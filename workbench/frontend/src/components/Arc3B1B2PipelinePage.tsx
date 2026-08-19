@@ -3090,7 +3090,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                 >Add object image</button>
               </details>
               <details open>
-                <summary>{`SUBIMAGES (${subimages.length})`}</summary>
+                <summary>{`SUB_IMAGES (${subimages.length})`}</summary>
                 {subimages.length
                   ? <div className="arc3-prolog-setup-preview-grid">
                     {subimages.map((item) => <figure key={item.key}>
