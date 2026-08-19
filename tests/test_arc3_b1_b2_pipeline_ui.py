@@ -266,3 +266,5 @@ def test_b1_b2_setup_has_dir_properties_node() -> None:
     assert 'className="arc3-prolog-setup-state-json"' in source
     assert 'setSetupStateField(stackIndex, imageIndex, "stateJson", event.target.value)' in source
     assert ".arc3-prolog-setup-state-json" in styles
+    # DIR & PROPERTIES sits at the top of each setup, before BEFORE & COMMAND.
+    assert source.index("<summary>DIR &amp; PROPERTIES</summary>") < source.index("<summary>BEFORE &amp; COMMAND</summary>")
