@@ -1954,6 +1954,9 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
   const [editorBusy, setEditorBusy] = useState(false);
   const [editorError, setEditorError] = useState("");
   const [groupOpen, setGroupOpen] = useState<Record<string, boolean>>({});
+  const [lineCounts, setLineCounts] = useState<Record<string, number>>({});
+  const lineCountFetchedRef = useRef<Set<string>>(new Set());
+  const autoScannedSetupsRef = useRef<Set<string>>(new Set());
   const controllersRef = useRef<Record<string, AbortController | null>>({});
   const stackColumnsRef = useRef(stackColumns);
   stackColumnsRef.current = stackColumns;
@@ -2559,13 +2562,13 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
     }
   };
 
-  const scanSetupStatePath = async (stackIndex: number, imageIndex: number, fallbackDir: string) => {
+  const scanSetupStatePath = async (stackIndex: number, imageIndex: number, fallbackDir: string, prefetched?: WorkspaceFileRecord[]) => {
     // Read the PATH from the latest committed state (via ref) so a scan performed
     // immediately after editing PATH uses the new value, not a stale render's closure.
     const liveSetup = stackColumnsRef.current?.[stackIndex]?.setups?.[imageIndex];
     const prefix = normalizeAssetPath(liveSetup?.stateDir ?? fallbackDir).replace(/\/+$/, "");
-    let records: WorkspaceFileRecord[] = files;
-    if (workspaceId) {
+    let records: WorkspaceFileRecord[] = prefetched ?? files;
+    if (!prefetched && workspaceId) {
       try {
         const payload = await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/data/files`);
         const listed = Array.isArray(payload.files) ? payload.files : [];
@@ -3254,6 +3257,78 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
       canceled = true;
     };
   }, [workspaceId]);
+  const loadLineCount = async (path: string, force = false) => {
+    const rel = normalizeAssetPath(path).replace(/^\/+/, "");
+    if (!rel || !workspaceId) return;
+    if (!force && lineCountFetchedRef.current.has(rel)) return;
+    lineCountFetchedRef.current.add(rel);
+    try {
+      const response = await fetch(workspaceAssetUrl(workspaceId, rel), { cache: "no-store" });
+      if (!response.ok) return;
+      const text = await response.text();
+      const count = text.split(/\r?\n/).filter((line) => line.trim() !== "").length;
+      setLineCounts((previous) => (previous[rel] === count ? previous : { ...previous, [rel]: count }));
+    } catch {
+      // Leave the count unknown if the file can't be read.
+    }
+  };
+  useEffect(() => {
+    if (!workspaceId) return;
+    const fileFields: SetupCollectionField[] = ["plFiles", "engFiles", "jsonFiles", "mettaFiles", "promptFiles", "unknownFiles"];
+    const paths = new Set<string>();
+    for (const stack of stackColumns) {
+      for (const setup of stack.setups || []) {
+        for (const fileField of fileFields) {
+          for (const entry of setup[fileField] || []) {
+            const rel = normalizeAssetPath(entry.name).replace(/^\/+/, "");
+            if (rel) paths.add(rel);
+          }
+        }
+      }
+    }
+    paths.forEach((path) => void loadLineCount(path));
+  }, [stackColumns, workspaceId]);
+  useEffect(() => {
+    if (!workspaceId) return;
+    // Auto-scan each newly created setup once so its file groups populate without a
+    // manual [scan] per setup. One shared /data/files fetch feeds every pending setup.
+    const pending: Array<{ stackIndex: number; imageIndex: number; fallbackDir: string }> = [];
+    stackColumns.forEach((stack, stackIndex) => {
+      (stack.setups || []).forEach((setup, imageIndex) => {
+        if (autoScannedSetupsRef.current.has(setup.id)) return;
+        autoScannedSetupsRef.current.add(setup.id);
+        const normalized = normalizeAssetPath(setup.afterImage?.name || "");
+        const slash = normalized.lastIndexOf("/");
+        const fallbackDir = slash > 0 ? normalized.slice(0, slash) : "";
+        pending.push({ stackIndex, imageIndex, fallbackDir });
+      });
+    });
+    if (!pending.length) return;
+    let canceled = false;
+    const runAutoScan = async () => {
+      let records: WorkspaceFileRecord[] = files;
+      try {
+        const payload = await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/data/files`);
+        const listed = Array.isArray(payload.files) ? payload.files : [];
+        const valid = listed.filter((item): item is WorkspaceFileRecord => Boolean(item)
+          && typeof (item as Record<string, unknown>).path === "string"
+          && typeof (item as Record<string, unknown>).name === "string"
+          && typeof (item as Record<string, unknown>).suffix === "string"
+          && typeof (item as Record<string, unknown>).modified === "number");
+        if (valid.length) records = valid;
+      } catch {
+        // Fall back to the files prop when the data listing endpoint is unavailable.
+      }
+      if (canceled) return;
+      for (const { stackIndex, imageIndex, fallbackDir } of pending) {
+        await scanSetupStatePath(stackIndex, imageIndex, fallbackDir, records);
+      }
+    };
+    void runAutoScan();
+    return () => {
+      canceled = true;
+    };
+  }, [stackColumns, workspaceId]);
   useEffect(() => {
     setSelectedOutputId(initialSelectedOutputId(pageDefinition));
   }, [pageDefinition.id, pageDefinition.routeView]);
@@ -3430,6 +3505,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                     const ok = await saveDataFile(path, editorText);
                     setEditorBusy(false);
                     if (ok) {
+                      void loadLineCount(path, true);
                       onSaved(path);
                       setOpenEditorKey(null);
                     }
@@ -3478,7 +3554,13 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
               const addKey = `${field}:${setup.id}:__add`;
               const groupKey = `${field}:${setup.id}`;
               const totalCount = (options?.derivedCount ?? 0) + entries.length;
-              const groupIsOpen = groupOpen[groupKey] ?? (options?.defaultOpen ?? true);
+              const groupIsOpen = groupOpen[groupKey] ?? ((options?.defaultOpen ?? true) && totalCount > 0);
+              const groupLineTotal = kind === "file"
+                ? entries.reduce((sum, entry) => sum + (lineCounts[normalizeAssetPath(entry.name).replace(/^\/+/, "")] ?? 0), 0)
+                : 0;
+              const summaryText = kind === "file" && entries.length
+                ? `${title} (${totalCount}) ~${groupLineTotal} lines`
+                : `${title} (${totalCount})`;
               return <details
                 open={groupIsOpen}
                 className="arc3-prolog-setup-object-images"
@@ -3487,18 +3569,20 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                   setGroupOpen((previous) => (previous[groupKey] === nextOpen ? previous : { ...previous, [groupKey]: nextOpen }));
                 }}
               >
-                <summary>{`${title} (${totalCount})`}</summary>
+                <summary>{summaryText}</summary>
                 {options?.derived}
                 {entries.map((entry, entryIndex) => {
                   const rowKey = `${field}:${setup.id}:${entryIndex}`;
                   const entryBase = normalizeAssetPath(entry.name).split("/").pop() || "";
                   const entryLabel = entryBase ? entryBase.replace(/\./g, "_") : `${itemLabel} ${entryIndex + 1}`;
+                  const entryPath = normalizeAssetPath(entry.name).replace(/^\/+/, "");
+                  const entryLineCount = kind === "file" ? lineCounts[entryPath] : undefined;
                   return <div
                     key={`${field}-${setup.id}-${entryIndex}`}
                     className="arc3-prolog-object-image-row"
                   >
                     <label className="arc3-prolog-inline-select-label">
-                      <span>{entryLabel}</span>
+                      <span>{entryLabel}{entryLineCount !== undefined ? ` (~${entryLineCount} lines)` : ""}</span>
                       <div className="arc3-prolog-browse-inputwrap">
                         <input
                           className="arc3-prolog-setup-inline-input"

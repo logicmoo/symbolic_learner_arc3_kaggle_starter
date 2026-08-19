@@ -221,7 +221,7 @@ def test_b1_b2_setup_group_rows_have_browse_buttons() -> None:
     # e.g. differences.pl -> differences_pl, falling back to "<Label> <n>" when empty.
     assert "const entryBase = normalizeAssetPath(entry.name).split(\"/\").pop() || \"\";" in source
     assert "const entryLabel = entryBase ? entryBase.replace(/\\./g, \"_\") : `${itemLabel} ${entryIndex + 1}`;" in source
-    assert "<span>{entryLabel}</span>" in source
+    assert "<span>{entryLabel}{entryLineCount !== undefined ? ` (~${entryLineCount} lines)` : \"\"}</span>" in source
     # The [select] picker lists workspace files filtered by the group's accepted suffixes.
     assert "acceptLower.includes((file.suffix || \"\").toLowerCase())" in source
     assert "openBrowseKey === rowKey &&" in source
@@ -348,7 +348,7 @@ def test_b1_b2_setup_path_scan_writes_scan_results() -> None:
     source = COMPONENT.read_text(encoding="utf-8")
     # A [scan] button beside the DIR & PROPERTIES PATH input lists the files in that
     # directory and writes a scan.results object into the state.json editor.
-    assert "const scanSetupStatePath = async (stackIndex: number, imageIndex: number, fallbackDir: string) =>" in source
+    assert "const scanSetupStatePath = async (stackIndex: number, imageIndex: number, fallbackDir: string, prefetched?: WorkspaceFileRecord[]) =>" in source
     # Scan reads the PATH from the latest committed state (ref) so editing PATH then
     # scanning immediately uses the new value, not a stale render closure.
     assert "const liveSetup = stackColumnsRef.current?.[stackIndex]?.setups?.[imageIndex];" in source
@@ -390,13 +390,40 @@ def test_b1_b2_setup_path_scan_writes_scan_results() -> None:
     assert "event.stopPropagation();" in source
 
 
+def test_b1_b2_setups_auto_scan_on_create() -> None:
+    source = COMPONENT.read_text(encoding="utf-8")
+    # Each newly created setup is auto-scanned once (guarded by a ref) using a single
+    # shared /data/files fetch passed to scanSetupStatePath as prefetched records.
+    assert "const autoScannedSetupsRef = useRef<Set<string>>(new Set());" in source
+    assert "if (autoScannedSetupsRef.current.has(setup.id)) return;" in source
+    assert "autoScannedSetupsRef.current.add(setup.id);" in source
+    assert "prefetched?: WorkspaceFileRecord[]" in source
+    assert "let records: WorkspaceFileRecord[] = prefetched ?? files;" in source
+    assert "await scanSetupStatePath(stackIndex, imageIndex, fallbackDir, records);" in source
+
+
+def test_b1_b2_setup_file_rows_show_non_blank_line_count() -> None:
+    source = COMPONENT.read_text(encoding="utf-8")
+    # File rows append the file's non-blank line count after the name label.
+    assert "const [lineCounts, setLineCounts] = useState<Record<string, number>>({});" in source
+    assert "const loadLineCount = async (path: string, force = false) =>" in source
+    assert 'text.split(/\\r?\\n/).filter((line) => line.trim() !== "").length' in source
+    assert "const entryLineCount = kind === \"file\" ? lineCounts[entryPath] : undefined;" in source
+    assert "<span>{entryLabel}{entryLineCount !== undefined ? ` (~${entryLineCount} lines)` : \"\"}</span>" in source
+    # File-group summaries total the per-file line counts (~N lines).
+    assert "const groupLineTotal = kind === \"file\"" in source
+    assert "`${title} (${totalCount}) ~${groupLineTotal} lines`" in source
+    # Counts are refreshed after an in-place editor save.
+    assert "void loadLineCount(path, true);" in source
+
+
 def test_b1_b2_setup_expand_button_opens_non_empty_groups() -> None:
     source = COMPONENT.read_text(encoding="utf-8")
     # An [expand] button next to [scan] on the DIR & PROPERTIES summary opens every
     # non-empty file group. Group open state is controlled so it can be driven.
     assert "const [groupOpen, setGroupOpen] = useState<Record<string, boolean>>({});" in source
     assert "const groupKey = `${field}:${setup.id}`;" in source
-    assert "const groupIsOpen = groupOpen[groupKey] ?? (options?.defaultOpen ?? true);" in source
+    assert "const groupIsOpen = groupOpen[groupKey] ?? ((options?.defaultOpen ?? true) && totalCount > 0);" in source
     assert "open={groupIsOpen}" in source
     assert "const expandNonEmptyGroups = () =>" in source
     assert "if (count > 0) next[`${groupField}:${setup.id}`] = true;" in source
