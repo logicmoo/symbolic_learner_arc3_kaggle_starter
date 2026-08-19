@@ -206,6 +206,8 @@ class RequestFailure extends Error {
   }
 }
 
+const DESCRIPTIVE_ID_RULE =
+  "Every object id must be a descriptive snake_case name that encodes the object's position/location and orientation (top/bottom, left/right, north/south/east/west, front/rear, corner/edge/center) together with its color, shape, and role — for example players_top_hud, northern_most_exit, left_rear_tile, right_rear_tile, bottom_center_gate, or blue_star_trigger — and never an opaque, generic, or numeric id such as obj_1, object_7, or region_a.";
 const COMBINED_PROMPT_PARTS = [
   "Analyze the current ARC3 state and return exactly one valid JSON object. Do not return Markdown or commentary. Required keys are: current_identities, current_hypotheses, action_history, objects_pl, differences_pl, similarities_pl, turtle_from_image_pl, rules_pl, objects_english, differences_english, and rules_english. Optional key: exit_value.",
   "",
@@ -218,6 +220,8 @@ const COMBINED_PROMPT_PARTS = [
   "COORDINATE CONTRACT: Reason exclusively in the logical ARC grid, normally 64x64 cells, rather than enlarged PNG display pixels. Use zero-based coordinates. x increases to the right and y increases downward. Never report 512x512 display-pixel geometry when the underlying board is 64x64. Describe exact cells, compact cell runs, logical bounding boxes, and connected components.",
   "",
   "IDENTITY CONTRACT: object_registry.pl is the canonical identity source. Reuse every established friendly ID exactly. current_identities must represent the maintained current identity set for this state and may be supplied as prior input via INPUT_FILES; if supplied, update and return it rather than discarding it. Use a two-pass identity workflow: first try to extract and re-ground all objects already represented in current_identities from the parent/current images, then account for the remaining image content and add any missing meaningful objects into current_identities. For level_1, treat identities grounded from the first/root image as the baseline catalog and preferentially reuse them in later frames. Track both pre-existing and newly observed identities in current_identities (do not split identities into separate new or initial lists). Every meaningful object visible in the analyzed images must be explicitly discussed and assigned an identity record in current_identities (new or reused as appropriate), with a minimum of 10 identities per scene. Do not remove entries from current_identities as steps progress; retain all previously tracked identities even if currently absent. Each identity should preserve first_appeared_step and be updated with last_disappeared_step when it is no longer visible. current_identities should retain small history hints about object lifecycle (such as which steps they appeared, disappeared, were occluded, or transformed) to aid future re-identification. Also track object-group behavior: when multiple objects move together or rotate together, preserve persistent group relationships and note co-motion/co-rotation evidence and step ranges in current_identities metadata. Proactively form meaningful object groups (for example trigger+mechanism, glyph-pair, corridor+exit) and persist them as group identities. Every object id must be a friendly, descriptive snake_case name built from the object's color, shape, and role, such as blue_star_trigger, and never an opaque or numeric ID such as obj_1, object_7, or region_a. Do not repeat established object_identity/3 declarations in objects_pl.",
+  "",
+  "NAMING CONTRACT: " + DESCRIPTIVE_ID_RULE,
   "",
   "LEVEL_1 FIRST-PASS MINIMUM: On level_1, first-pass extraction must include at least these canonical identities from action_trees/ls20/level_1_v2/object_registry.pl before second-pass discovery: blue_black_player, bottom_center_gate, bottom_status_panel, bottom_status_track, cyan_status_blocks, fortress_inner_courtyard, fortress_left_wing, fortress_lower_bridge, fortress_main_body, fortress_right_wing, fortress_upper_stem, gate_burgundy_panel, gate_gray_header, green_fortress, green_status_block, left_boundary_wall, lower_left_burgundy_glyph, lower_left_symbol_card, lower_right_green_target, player_black_core, player_blue_tail, upper_burgundy_glyph, upper_chamber_frame, upper_chamber_interior, upper_left_green_target, yellow_playfield.",
   "",
@@ -261,6 +265,7 @@ const GAP_DISCOVERY_PASS_PROMPT = [
   "Find meaningful entities not already covered by those boxes, or separable sub-objects not represented yet.",
   "Prioritize boundary/wall anomalies, distinct color segments, UI/status residues, and repeated motifs that should become groups.",
   "Do not duplicate existing IDs, and assign each newly discovered entity a friendly snake_case id like blue_star_trigger. Add sub_type and tight bounding_box for every newly discovered entity.",
+  DESCRIPTIVE_ID_RULE,
   "Return full current_identities updated in place; new additions must include why_new evidence.",
   "If no meaningful uncovered region remains, add no new identities.",
   "Set exit_value=loop_complete when no meaningful uncovered region remains; otherwise exit_value=next_iteration.",
@@ -269,6 +274,7 @@ const DEFAULT_VALIDATOR_PROMPT = [
   "Validate the candidate extraction JSON.",
   "Return strict JSON only: {\"approved\": boolean, \"exit_value\": \"llm_error|next_iteration|loop_complete|loop_overbudgeted|unran\", \"issues\": [\"...\"]}.",
   "Reject when identity ids duplicate, bbox is missing/invalid/out-of-bounds, or new identity count is unreasonable.",
+  "Reject when any identity id is not descriptive: ids must encode position/location and orientation (top/bottom, left/right, north/south/east/west, front/rear, corner/edge/center) along with color, shape, and role (for example players_top_hud, northern_most_exit, left_rear_tile), and must never be opaque, generic, or numeric such as obj_1, object_7, or region_a.",
   "Use exit_value=next_iteration when rejecting due to fixable issues.",
   "Use exit_value=loop_complete when approved and no uncircled objects remain; otherwise use next_iteration.",
   "Keep issues short and concrete.",
@@ -292,6 +298,7 @@ const REMOVAL_DISCOVERY_PASS_PROMPT = [
   "Return image_without_object as the original image with all selected removed_object_n pixels removed.",
   "Always carry BOTH images forward for downstream processing: image_without_object and removed_object_image.",
   "Mark each removed identity as not visible/removed in current_identities and preserve all other identities unless direct evidence requires change.",
+  DESCRIPTIVE_ID_RULE,
   "Set exit_value=next_iteration when one or more valid objects are removed, loop_complete when no valid removable leaf object(s) remain, llm_error on failure.",
 ].join("\n");
 const REGENERATED_IDENTITIES_PROMPT = [
@@ -316,6 +323,7 @@ const VALIDATION_REPAIR_PROMPT = [
   "Return strict JSON with the same required keys and a corrected full current_identities list.",
   "Do not invent extra prose. Do not drop valid prior identities.",
   "If a proposed identity fails validation, either fix bbox/type/sub_type or remove that invalid addition.",
+  "Rename any non-descriptive id to a descriptive snake_case name that encodes position/location and orientation plus color/shape/role (for example players_top_hud, northern_most_exit, left_rear_tile); never leave an opaque, generic, or numeric id such as obj_1, object_7, or region_a.",
 ].join("\n");
 const DEFAULT_BEFORE_PATH = "action_trees/ls20/level_1/image.png";
 const DEFAULT_AFTER_PATH = "action_trees/ls20/level_1/LEFT/image.png";

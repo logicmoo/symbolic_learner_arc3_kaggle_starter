@@ -89,3 +89,19 @@ def test_b1_b2_loop_validate_prompt_allows_disabled() -> None:
     assert 'VALIDATOR_PROMPT_DISABLED = "__validator_prompt_disabled__"' in source
     assert "<option value={VALIDATOR_PROMPT_DISABLED}>&lt;disabled&gt;</option>" in source
     assert "runner.validatorPromptName !== VALIDATOR_PROMPT_DISABLED" in source
+
+
+def test_b1_b2_prompts_require_descriptive_object_ids() -> None:
+    source = COMPONENT.read_text(encoding="utf-8")
+    # A shared naming rule must force position/location-aware, descriptive
+    # snake_case ids (not numeric/opaque) and be wired into every prompt.
+    assert "const DESCRIPTIVE_ID_RULE =" in source
+    assert "players_top_hud" in source
+    assert "northern_most_exit" in source
+    assert "position/location and orientation" in source
+    # Primary extraction prompt (GUESSER) carries the naming contract.
+    assert '"NAMING CONTRACT: " + DESCRIPTIVE_ID_RULE' in source
+    # Removal (REMOVER) and gap-discovery prompts reference the shared rule.
+    assert source.count("DESCRIPTIVE_ID_RULE") >= 4
+    # Validator must reject non-descriptive ids.
+    assert "Reject when any identity id is not descriptive" in source
