@@ -405,12 +405,14 @@ def test_b1_b2_setups_enumerate_all_data_folders() -> None:
     assert "for (const child of descendantsOf(dir)) {" in source
     # Rule 3: leftover immediate data/ children become single-setup folders.
     assert "const immediateDataChildren = dirs.filter((dir) => dir.startsWith(\"data/\")" in source
-    # Numeric-aware ordering (level_10 after level_1) and path-based setup names.
+    # Numeric-aware ordering (level_10 after level_1) and group.Setup_N names.
     assert "{ numeric: true }" in source
-    assert 'label: dir.replace(/^data\\//i, "") || dir,' in source
+    assert "const groupCounters = new Map<string, number>();" in source
+    assert 'label: `${group || "default"}.Setup_${groupIndex}`,' in source
     # Each setup's PATH is its own folder; the default/initial setup points to level_1.
     assert 'stateDir: "data/level_1",' in source
     assert "stateDir: dir," in source
+    assert 'label: "default.Setup_0",' in source
 
 
 def test_b1_b2_setups_auto_scan_on_create() -> None:

@@ -451,7 +451,7 @@ function defaultSetups(stackKey: StackKey): StackSetup[] {
   const pair = defaultImagePair(stackKey);
   return [{
     id: `${stackKey}-setup-1`,
-    label: "level_1",
+    label: "default.Setup_0",
     command: "level_1",
     note: "default",
     stateDir: "data/level_1",
@@ -523,10 +523,11 @@ function stackADescendSetupsFromFiles(workspaceId: string, files: WorkspaceFileR
   const basename = (dir: string) => dir.slice(dir.lastIndexOf("/") + 1);
   const descendantsOf = (parent: string) => dirs.filter((dir) => dir.startsWith(`${parent}/`));
   const immediateDataChildren = dirs.filter((dir) => dir.startsWith("data/") && !dir.slice("data/".length).includes("/"));
-  const setupDirs = new Set<string>();
+  const setupEntries: Array<{ dir: string; group: string }> = [];
   const consumed = new Set<string>();
-  // Rule 1: data/**/<parent>/0  -> the numbered siblings under <parent> are setups
-  // (only when a "0" anchor exists). Consume them so later rules skip them.
+  const relPath = (dir: string) => dir.replace(/^data\/?/i, "");
+  // Rule 1: data/**/<parent>/0 -> numbered siblings under <parent> are setups; group = <parent>
+  // ("default" when the parent is data/ itself). Consume so later rules skip them.
   const numberedParents = new Set<string>();
   for (const dir of dirs) {
     if (basename(dir) === "0") {
@@ -537,30 +538,32 @@ function stackADescendSetupsFromFiles(workspaceId: string, files: WorkspaceFileR
   for (const dir of dirs) {
     const parent = dir.includes("/") ? dir.slice(0, dir.lastIndexOf("/")) : "";
     if (/^[0-9]+$/.test(basename(dir)) && numberedParents.has(parent)) {
-      setupDirs.add(dir);
+      setupEntries.push({ dir, group: relPath(parent) });
       consumed.add(dir);
     }
   }
-  // Rule 2: data/**/level_[0-9]* -> the level folder plus all descendant dirs (scan children).
+  // Rule 2: data/**/level_[0-9]* -> the level folder plus all descendant dirs; group = level path.
   for (const dir of dirs) {
     if (consumed.has(dir)) continue;
     if (/^level_[0-9]*$/i.test(basename(dir))) {
-      setupDirs.add(dir);
+      const group = relPath(dir);
+      setupEntries.push({ dir, group });
       consumed.add(dir);
       for (const child of descendantsOf(dir)) {
-        setupDirs.add(child);
+        if (consumed.has(child)) continue;
+        setupEntries.push({ dir: child, group });
         consumed.add(child);
       }
     }
   }
-  // Rule 3: leftovers -> any other immediate data/ child not already consumed.
+  // Rule 3: leftovers -> any other immediate data/ child not already consumed; group = its path.
   for (const dir of immediateDataChildren) {
     if (consumed.has(dir)) continue;
     if ([...consumed].some((selected) => selected.startsWith(`${dir}/`))) continue;
-    setupDirs.add(dir);
+    setupEntries.push({ dir, group: relPath(dir) });
     consumed.add(dir);
   }
-  if (!setupDirs.size) return [];
+  if (!setupEntries.length) return [];
   const imageByDir = new Map<string, string>();
   for (const { file, p } of normFiles) {
     if (!IMAGE_SUFFIXES.has((file.suffix || "").toLowerCase())) continue;
@@ -577,8 +580,9 @@ function stackADescendSetupsFromFiles(workspaceId: string, files: WorkspaceFileR
     if (topLeft !== topRight) return topLeft.localeCompare(topRight, undefined, { numeric: true });
     return descendDepth(left) - descendDepth(right) || left.localeCompare(right, undefined, { numeric: true });
   };
-  const selected = [...setupDirs].sort(compareByTree);
-  return selected.map((dir, index) => {
+  const sortedEntries = setupEntries.sort((left, right) => compareByTree(left.dir, right.dir));
+  const groupCounters = new Map<string, number>();
+  return sortedEntries.map(({ dir, group }, index) => {
     const depth = descendDepth(dir);
     const parentDir = dir.includes("/") ? dir.slice(0, dir.lastIndexOf("/")) : "";
     const afterPath = imageByDir.get(dir) || "";
@@ -589,9 +593,11 @@ function stackADescendSetupsFromFiles(workspaceId: string, files: WorkspaceFileR
     const beforeSelection: ImageSelection | null = beforePath
       ? { name: beforePath, dataUrl: workspaceAssetUrl(workspaceId, beforePath) }
       : null;
+    const groupIndex = groupCounters.get(group) ?? 0;
+    groupCounters.set(group, groupIndex + 1);
     return {
       id: `A-setup-${index + 1}`,
-      label: dir.replace(/^data\//i, "") || dir,
+      label: `${group || "default"}.Setup_${groupIndex}`,
       command: setupCommandFromPath(`${dir}/frame`),
       note: depth ? `depth ${depth}` : "root",
       stateDir: dir,
