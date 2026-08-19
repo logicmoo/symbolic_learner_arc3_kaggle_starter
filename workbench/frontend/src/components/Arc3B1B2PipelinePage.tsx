@@ -3302,27 +3302,39 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
       canceled = true;
     };
   }, [workspaceId]);
-  const loadLineCount = async (path: string, force = false) => {
-    const rel = normalizeAssetPath(path).replace(/^\/+/, "");
-    if (!rel || !workspaceId) return;
-    if (!force && lineCountFetchedRef.current.has(rel)) return;
-    lineCountFetchedRef.current.add(rel);
+  const loadLineCounts = async (paths: string[], force = false) => {
+    if (!workspaceId) return;
+    const rels = paths
+      .map((path) => normalizeAssetPath(path).replace(/^\/+/, ""))
+      .filter((path) => path);
+    const wanted = force ? rels : rels.filter((path) => !lineCountFetchedRef.current.has(path));
+    const unique = [...new Set(wanted)];
+    if (!unique.length) return;
+    for (const path of unique) lineCountFetchedRef.current.add(path);
     try {
-      const response = await fetch(workspaceAssetUrl(workspaceId, rel), { cache: "no-store" });
-      if (!response.ok) return;
-      const text = await response.text();
-      const count = text.split(/\r?\n/).filter((line) => line.trim() !== "").length;
-      setLineCounts((previous) => (previous[rel] === count ? previous : { ...previous, [rel]: count }));
+      const payload = await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/data/line-counts`, {
+        method: "POST",
+        body: JSON.stringify({ paths: unique }),
+      });
+      const counts = payload.counts && typeof payload.counts === "object" ? payload.counts as Record<string, number> : {};
+      setLineCounts((previous) => {
+        const next = { ...previous };
+        for (const [path, count] of Object.entries(counts)) {
+          if (typeof count === "number") next[path] = count;
+        }
+        return next;
+      });
     } catch {
-      // Leave the count unknown if the file can't be read.
+      // Allow a later retry if the batch request fails.
+      for (const path of unique) lineCountFetchedRef.current.delete(path);
     }
   };
   useEffect(() => {
     if (!workspaceId) return;
     const fileFields: SetupCollectionField[] = ["plFiles", "engFiles", "jsonFiles", "mettaFiles", "promptFiles", "unknownFiles"];
-    const paths = new Set<string>();
+    const paths: string[] = [];
     // Only the active setup of each stack renders its file rows, so fetch line counts
-    // for the active setup only (avoids hundreds of asset requests across all setups).
+    // for the active setup only, and in a single batched request.
     for (const stack of stackColumns) {
       const setups = stack.setups || [];
       if (!setups.length) continue;
@@ -3332,11 +3344,11 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
       for (const fileField of fileFields) {
         for (const entry of setup[fileField] || []) {
           const rel = normalizeAssetPath(entry.name).replace(/^\/+/, "");
-          if (rel) paths.add(rel);
+          if (rel) paths.push(rel);
         }
       }
     }
-    paths.forEach((path) => void loadLineCount(path));
+    void loadLineCounts(paths);
   }, [stackColumns, workspaceId]);
   useEffect(() => {
     if (!workspaceId) return;
@@ -3555,7 +3567,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                     const ok = await saveDataFile(path, editorText);
                     setEditorBusy(false);
                     if (ok) {
-                      void loadLineCount(path, true);
+                      void loadLineCounts([path], true);
                       onSaved(path);
                       setOpenEditorKey(null);
                     }

@@ -102,3 +102,36 @@ def test_data_file_rejects_path_escape(tmp_path: Path, monkeypatch) -> None:
         )
 
     assert error.value.status_code == 400
+
+
+def test_line_counts_batches_non_blank_counts(tmp_path: Path, monkeypatch) -> None:
+    workspace_id = _make_workspace(tmp_path, monkeypatch)
+    base = tmp_path / "myws" / "data" / "level_1"
+    base.mkdir(parents=True)
+    (base / "objects.pl").write_text("a.\n\nb.\n   \nc.\n", encoding="utf-8")
+    (base / "empty.pl").write_text("", encoding="utf-8")
+
+    result = workspace_api.data_file_line_counts(
+        workspace_id,
+        {"paths": [
+            "data/level_1/objects.pl",
+            "data/level_1/empty.pl",
+            "data/level_1/missing.pl",
+        ]},
+    )
+
+    counts = result["counts"]
+    # Only non-whitespace lines are counted.
+    assert counts["data/level_1/objects.pl"] == 3
+    assert counts["data/level_1/empty.pl"] == 0
+    # Missing files are simply omitted.
+    assert "data/level_1/missing.pl" not in counts
+
+
+def test_line_counts_requires_list(tmp_path: Path, monkeypatch) -> None:
+    workspace_id = _make_workspace(tmp_path, monkeypatch)
+
+    with pytest.raises(HTTPException) as error:
+        workspace_api.data_file_line_counts(workspace_id, {"paths": "not-a-list"})
+
+    assert error.value.status_code == 400

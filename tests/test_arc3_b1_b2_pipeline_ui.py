@@ -435,15 +435,18 @@ def test_b1_b2_setup_file_rows_show_non_blank_line_count() -> None:
     source = COMPONENT.read_text(encoding="utf-8")
     # File rows append the file's non-blank line count after the name label.
     assert "const [lineCounts, setLineCounts] = useState<Record<string, number>>({});" in source
-    assert "const loadLineCount = async (path: string, force = false) =>" in source
-    assert 'text.split(/\\r?\\n/).filter((line) => line.trim() !== "").length' in source
+    # Line counts are fetched in one batched request (not one asset fetch per file).
+    assert "const loadLineCounts = async (paths: string[], force = false) =>" in source
+    assert "/data/line-counts`" in source
+    assert 'method: "POST"' in source
+    assert "void loadLineCounts(paths);" in source
     assert "const entryLineCount = kind === \"file\" ? lineCounts[entryPath] : undefined;" in source
     assert "<span>{entryLabel}{entryLineCount !== undefined ? ` (~${entryLineCount} lines)` : \"\"}</span>" in source
     # File-group summaries total the per-file line counts (~N lines).
     assert "const groupLineTotal = kind === \"file\"" in source
     assert "`${title} (${totalCount}) ~${groupLineTotal} lines`" in source
     # Counts are refreshed after an in-place editor save.
-    assert "void loadLineCount(path, true);" in source
+    assert "void loadLineCounts([path], true);" in source
 
 
 def test_b1_b2_setup_expand_button_opens_non_empty_groups() -> None:

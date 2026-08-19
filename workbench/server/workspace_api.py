@@ -1405,3 +1405,44 @@ def write_workspace_data_file(workspace_id: str, body: dict[str, Any] = Body(...
         raise HTTPException(status_code=404, detail=str(error)) from error
     except (OSError, ValueError) as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
+
+
+@router.post("/{workspace_id}/data/line-counts")
+def data_file_line_counts(workspace_id: str, body: dict[str, Any] = Body(...)) -> dict[str, Any]:
+    """Return the non-blank line count for many files in a single request.
+
+    The setup panel shows a per-file "~N lines" and a per-folder total; batching avoids
+    one asset request per file. Reads the literal bytes of each path (no resource/JSON
+    remapping) and counts lines that contain non-whitespace.
+    """
+    try:
+        workspace = _resolve_workspace(workspace_id)
+        root = Path(workspace["root"])
+        paths = body.get("paths")
+        if not isinstance(paths, list):
+            raise ValueError("paths must be a list")
+        if len(paths) > 2000:
+            raise ValueError("at most 2000 paths may be counted at once")
+        resources = get_filesystem_provider()
+        counts: dict[str, int] = {}
+        for raw in paths:
+            if not isinstance(raw, str) or not raw:
+                continue
+            relative = raw.replace("\\", "/").lstrip("/")
+            try:
+                target = _safe_child(root, relative)
+            except (OSError, ValueError):
+                continue
+            if not resources.is_file(target):
+                continue
+            try:
+                data = resources.read_bytes(target)
+            except (OSError, ValueError):
+                continue
+            text = data.decode("utf-8", errors="replace")
+            counts[relative] = sum(1 for line in text.splitlines() if line.strip())
+        return {"counts": counts}
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+    except (OSError, ValueError) as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
