@@ -529,11 +529,30 @@ label.arc3-prolog-inline-composite-label > .arc3-prolog-selected-source-chips {
 .arc3-b1b2-page .english-workflow-columns > .workflow-page-data,
 .arc3-b1b2-page .english-workflow-columns > .workflow-page-authoring,
 .arc3-b1b2-page .english-workflow-columns > .workflow-page-details {
-  display: block;
+  display: flex;
+  flex-direction: column;
   min-width: 0;
   min-height: 0;
   max-height: 100%;
   overflow-y: auto;
+}
+
+/* Keep each panel at its natural height, but let the last expanded panel in
+   every column grow so the column content stretches to the bottom of the page
+   instead of leaving dead space. flex-shrink 0 preserves scroll behaviour when
+   a column's content overflows. */
+.arc3-b1b2-page .english-workflow-columns > .workflow-page-data > .three-state-accordion-member,
+.arc3-b1b2-page .english-workflow-columns > .workflow-page-authoring > .three-state-accordion-member,
+.arc3-b1b2-page .english-workflow-columns > .workflow-page-details > .three-state-accordion-member {
+  flex: 0 0 auto;
+}
+
+.arc3-b1b2-page .english-workflow-columns > .workflow-page-data > .three-state-accordion-member:last-child:not(.three-state-accordion-strip),
+.arc3-b1b2-page .english-workflow-columns > .workflow-page-authoring > .three-state-accordion-member:last-child:not(.three-state-accordion-strip),
+.arc3-b1b2-page .english-workflow-columns > .workflow-page-details > .three-state-accordion-member:last-child:not(.three-state-accordion-strip) {
+  flex: 1 0 auto;
+  min-height: 0;
+  max-height: none;
 }
 
 /* Single "B only" stack: let the runner fill the full column width. */
