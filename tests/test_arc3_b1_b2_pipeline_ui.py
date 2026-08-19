@@ -432,14 +432,21 @@ def test_b1_b2_file_groups_have_edit_new_editors() -> None:
     assert 'className="secondary arc3-prolog-browse-btn arc3-prolog-setup-new"' in source
     assert "void openEntryEditor(field, entryIndex, entry.name)" in source
     assert "openNewEditor(field, `${pathPrefix}/untitled${accept[0] ?? \".txt\"}`)" in source
-    # Editor renders with Save/Close; [edit] loads content, [new] appends on save.
+    # Editor renders with Save/Save-as/Close on one line with the FILE path input;
+    # [edit] loads content, [new] appends on save.
     assert "const renderFileEditor = (editorKey: string, onSaved: (path: string) => void) =>" in source
-    assert 'className="secondary arc3-prolog-setup-editor-save"' in source
-    assert 'className="secondary arc3-prolog-setup-editor-close"' in source
+    assert 'className="arc3-prolog-setup-file-editor-head"' in source
+    assert "arc3-prolog-setup-editor-save" in source
+    assert "arc3-prolog-setup-editor-saveas" in source
+    assert "arc3-prolog-setup-editor-close" in source
+    assert "const saveTextFileAs = async (fileName: string, content: string) =>" in source
+    assert "void saveTextFileAs(editorName, editorText)" in source
+    assert "showSaveFilePicker" in source
     assert "const ok = await saveDataFile(path, editorText);" in source
     assert "renderFileEditor(`edit:${field}:${setup.id}:${entryIndex}`," in source
     assert "renderFileEditor(`new:${field}:${setup.id}`, (path) => appendSetupEntryPath(stackIndex, imageIndex, field, path))" in source
     assert ".arc3-prolog-setup-file-editor" in styles
+    assert ".arc3-prolog-setup-file-editor-head" in styles
 
 
 def test_b1_b2_columns_are_resizable() -> None:

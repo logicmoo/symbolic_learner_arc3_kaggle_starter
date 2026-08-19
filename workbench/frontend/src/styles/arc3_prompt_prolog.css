@@ -520,6 +520,28 @@ label.arc3-prolog-inline-composite-label > .arc3-prolog-selected-source-chips {
   background: rgb(6, 16, 22);
 }
 
+.arc3-prolog-setup-file-editor-head {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.arc3-prolog-setup-file-editor-head > span {
+  flex: 0 0 auto;
+  color: #6e9ea8;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+}
+
+.arc3-prolog-setup-file-editor-head > input.arc3-prolog-setup-inline-input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.arc3-prolog-setup-file-editor-head > button {
+  flex: 0 0 auto;
+}
+
 .arc3-b1b2-page .arc3-b1b2-col-resizer {
   z-index: 6;
   border-radius: 3px;

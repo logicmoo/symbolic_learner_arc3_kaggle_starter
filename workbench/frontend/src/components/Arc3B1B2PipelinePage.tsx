@@ -2495,6 +2495,27 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
     URL.revokeObjectURL(url);
   };
 
+  const saveTextFileAs = async (fileName: string, content: string) => {
+    const suggested = (normalizeAssetPath(fileName).split("/").pop() || "file.txt") || "file.txt";
+    const picker = (window as unknown as {
+      showSaveFilePicker?: (options: { suggestedName?: string }) => Promise<{
+        createWritable: () => Promise<{ write: (data: string) => Promise<void>; close: () => Promise<void> }>;
+      }>;
+    }).showSaveFilePicker;
+    if (typeof picker === "function") {
+      try {
+        const handle = await picker({ suggestedName: suggested });
+        const writable = await handle.createWritable();
+        await writable.write(content);
+        await writable.close();
+        return;
+      } catch (reason) {
+        if (reason instanceof DOMException && reason.name === "AbortError") return;
+      }
+    }
+    downloadTextFallback(suggested, content);
+  };
+
   const saveDataFile = async (path: string, content: string): Promise<boolean> => {
     const clean = normalizeAssetPath(path).replace(/^\/+/, "");
     if (!clean) {
@@ -3350,7 +3371,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
               setEditorError("");
             };
             const renderFileEditor = (editorKey: string, onSaved: (path: string) => void) => openEditorKey === editorKey && <div className="arc3-prolog-setup-file-editor">
-              <label className="arc3-prolog-inline-select-label">
+              <div className="arc3-prolog-setup-file-editor-head">
                 <span>FILE</span>
                 <input
                   className="arc3-prolog-setup-inline-input"
@@ -3359,20 +3380,9 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                   placeholder={`${pathPrefix}/name.ext`}
                   onChange={(event) => setEditorName(event.target.value)}
                 />
-              </label>
-              <textarea
-                className="arc3-prolog-setup-state-json arc3-prolog-setup-editor-text"
-                value={editorText}
-                placeholder={editorBusy ? "Loading…" : ""}
-                spellCheck={false}
-                rows={8}
-                onChange={(event) => setEditorText(event.target.value)}
-              />
-              {editorError ? <div className="arc3-prolog-error">{editorError}</div> : null}
-              <div className="arc3-prolog-setup-state-actions">
                 <button
                   type="button"
-                  className="secondary arc3-prolog-setup-editor-save"
+                  className="secondary arc3-prolog-browse-btn arc3-prolog-setup-editor-save"
                   disabled={editorBusy}
                   onClick={async () => {
                     const path = resolveEditorPath(editorName);
@@ -3391,13 +3401,27 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                 >Save</button>
                 <button
                   type="button"
-                  className="secondary arc3-prolog-setup-editor-close"
+                  className="secondary arc3-prolog-browse-btn arc3-prolog-setup-editor-saveas"
+                  onClick={() => void saveTextFileAs(editorName, editorText)}
+                >Save as..</button>
+                <button
+                  type="button"
+                  className="secondary arc3-prolog-browse-btn arc3-prolog-setup-editor-close"
                   onClick={() => {
                     setOpenEditorKey(null);
                     setEditorError("");
                   }}
                 >Close</button>
               </div>
+              <textarea
+                className="arc3-prolog-setup-state-json arc3-prolog-setup-editor-text"
+                value={editorText}
+                placeholder={editorBusy ? "Loading…" : ""}
+                spellCheck={false}
+                rows={8}
+                onChange={(event) => setEditorText(event.target.value)}
+              />
+              {editorError ? <div className="arc3-prolog-error">{editorError}</div> : null}
             </div>;
             const renderSetupCollectionGroup = (
               field: SetupCollectionField,
