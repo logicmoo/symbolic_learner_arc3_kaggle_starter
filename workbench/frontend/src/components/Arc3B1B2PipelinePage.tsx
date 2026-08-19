@@ -3124,7 +3124,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
               <details className="arc3-prolog-setup-extra">
                 <summary>BEFORE_IMAGE &amp; COMMAND</summary>
                 <label className="arc3-prolog-inline-select-label">
-                  <span>BEFORE_IMAGE PATH</span>
+                  <span>BEFORE</span>
                   <input
                     className="arc3-prolog-setup-inline-input"
                     type="text"
@@ -3146,7 +3146,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                 </label>
               </details>
               <label className="arc3-prolog-inline-select-label">
-                <span>AFTER_IMAGE PATH</span>
+                <span>AFTER</span>
                 <input
                   className="arc3-prolog-setup-inline-input"
                   type="text"

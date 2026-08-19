@@ -123,9 +123,10 @@ def test_b1_b2_identity_parser_accepts_bbox_and_corners() -> None:
 def test_b1_b2_setup_field_labeled_after_image() -> None:
     source = COMPONENT.read_text(encoding="utf-8")
     # The setup image fields use explicit BEFORE/AFTER labels, never a bare "IMAGE PATH".
-    assert "<span>AFTER_IMAGE PATH</span>" in source
-    assert "<span>BEFORE_IMAGE PATH</span>" in source
+    assert "<span>AFTER</span>" in source
+    assert "<span>BEFORE</span>" in source
     assert "<span>IMAGE PATH</span>" not in source
+    assert "_IMAGE PATH</span>" not in source
 
 
 def test_b1_b2_setup_generated_files_in_input_picker() -> None:
@@ -146,11 +147,11 @@ def test_b1_b2_setup_generated_files_in_input_picker() -> None:
 
 def test_b1_b2_setup_has_before_image_and_command_fields() -> None:
     source = COMPONENT.read_text(encoding="utf-8")
-    # Each setup exposes editable COMMAND and BEFORE_IMAGE PATH fields
-    # alongside the existing AFTER_IMAGE PATH field.
+    # Each setup exposes editable COMMAND and BEFORE image fields
+    # alongside the existing AFTER image field.
     assert "<span>COMMAND</span>" in source
-    assert "<span>BEFORE_IMAGE PATH</span>" in source
-    assert "<span>AFTER_IMAGE PATH</span>" in source
+    assert "<span>BEFORE</span>" in source
+    assert "<span>AFTER</span>" in source
     # Wired to dedicated setters that update the setup in place.
     assert "const setSetupCommand = (stackIndex: number, imageIndex: number, command: string) =>" in source
     assert "const setBeforeImagePath = (stackIndex: number, imageIndex: number, path: string) =>" in source
