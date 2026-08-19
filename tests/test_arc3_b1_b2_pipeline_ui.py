@@ -51,3 +51,6 @@ def test_b1_b2_component_has_pipeline_contract() -> None:
     assert "const selectImage" in source
     assert "const captureImageAnalysis" in source
     assert "analysis?: ImageAnalysis" in source
+    # B1->B2 uses its own 3-column page class (A/B/C), not the prolog single-column layout.
+    assert "english-workflow-page arc3-b1b2-page" in source
+    assert "english-workflow-page arc3-prolog-page" not in source

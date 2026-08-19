@@ -515,3 +515,18 @@ label.arc3-prolog-inline-composite-label > .arc3-prolog-selected-source-chips {
   grid-column: 1 / -1;
   min-width: 0;
 }
+
+/* B1 -> B2 pipeline keeps all three role columns (A/B/C) visible side by side. */
+.arc3-b1b2-page .english-workflow-columns {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) minmax(340px, 1.2fr) minmax(260px, 1fr);
+  gap: 10px;
+  overflow: auto;
+}
+
+.arc3-b1b2-page .english-workflow-columns > .workflow-page-data,
+.arc3-b1b2-page .english-workflow-columns > .workflow-page-authoring,
+.arc3-b1b2-page .english-workflow-columns > .workflow-page-details {
+  display: block;
+  min-width: 0;
+}

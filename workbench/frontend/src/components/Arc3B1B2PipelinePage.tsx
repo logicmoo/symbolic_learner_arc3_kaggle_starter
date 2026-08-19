@@ -3686,6 +3686,6 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
   return <WorkflowPageHost
     definition={pageDefinition}
     componentRegistry={registry}
-    pageClassName="english-workflow-page arc3-prolog-page"
+    pageClassName="english-workflow-page arc3-b1b2-page"
   />;
 }
