@@ -131,6 +131,7 @@ type StackSetup = {
   note?: string;
   beforeImage: ImageSelection | null;
   afterImage: ImageSelection;
+  objectImages?: ImageSelection[];
   analysis?: ImageAnalysis;
 };
 
@@ -2295,6 +2296,44 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
     });
   };
 
+  const addObjectImage = (stackIndex: number, imageIndex: number) => {
+    setStackState(stackIndex, (stack) => {
+      const setups = stack.setups?.length ? [...stack.setups] : defaultSetups(stack.key);
+      const current = setups[imageIndex];
+      if (!current) return stack;
+      const objectImages = [...(current.objectImages || []), { name: "", dataUrl: "" }];
+      setups[imageIndex] = { ...current, objectImages };
+      return { ...stack, setups };
+    });
+  };
+
+  const setObjectImagePath = (stackIndex: number, imageIndex: number, objectIndex: number, path: string) => {
+    setStackState(stackIndex, (stack) => {
+      const setups = stack.setups?.length ? [...stack.setups] : defaultSetups(stack.key);
+      const current = setups[imageIndex];
+      if (!current) return stack;
+      const objectImages = [...(current.objectImages || [])];
+      const existing = objectImages[objectIndex];
+      if (!existing) return stack;
+      objectImages[objectIndex] = path.trim()
+        ? imageSelectionFromPath(workspaceId, path, existing)
+        : { name: "", dataUrl: "" };
+      setups[imageIndex] = { ...current, objectImages };
+      return { ...stack, setups };
+    });
+  };
+
+  const removeObjectImage = (stackIndex: number, imageIndex: number, objectIndex: number) => {
+    setStackState(stackIndex, (stack) => {
+      const setups = stack.setups?.length ? [...stack.setups] : defaultSetups(stack.key);
+      const current = setups[imageIndex];
+      if (!current) return stack;
+      const objectImages = (current.objectImages || []).filter((_, index) => index !== objectIndex);
+      setups[imageIndex] = { ...current, objectImages };
+      return { ...stack, setups };
+    });
+  };
+
   const addImage = (stackIndex: number) => {
     setStackState(stackIndex, (stack) => {
       const setups = stack.setups?.length ? [...stack.setups] : defaultSetups(stack.key);
@@ -3019,6 +3058,37 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
               {setup.afterImage.dataUrl
                 ? <img className="arc3-prolog-preview" src={setup.afterImage.dataUrl} alt={`${setup.label || `image_${imageIndex + 1}`} image`} />
                 : <div className="arc3-prolog-setup-preview-placeholder">No image</div>}
+              <details open className="arc3-prolog-setup-object-images">
+                <summary>{`OBJECT_IMAGES (${(setup.objectImages || []).length})`}</summary>
+                {(setup.objectImages || []).map((objectImage, objectIndex) => <div
+                  key={`object-image-${setup.id}-${objectIndex}`}
+                  className="arc3-prolog-object-image-row"
+                >
+                  <label className="arc3-prolog-inline-select-label">
+                    <span>{`OBJECT ${objectIndex + 1}`}</span>
+                    <input
+                      className="arc3-prolog-setup-inline-input"
+                      type="text"
+                      value={objectImage.name}
+                      placeholder="data/... object image path"
+                      onChange={(event) => setObjectImagePath(stackIndex, imageIndex, objectIndex, event.target.value)}
+                    />
+                  </label>
+                  {objectImage.dataUrl
+                    ? <img className="arc3-prolog-preview" src={objectImage.dataUrl} alt={`object ${objectIndex + 1}`} />
+                    : <div className="arc3-prolog-setup-preview-placeholder">No image</div>}
+                  <button
+                    type="button"
+                    className="secondary arc3-prolog-object-image-remove"
+                    onClick={() => removeObjectImage(stackIndex, imageIndex, objectIndex)}
+                  >Remove object</button>
+                </div>)}
+                <button
+                  type="button"
+                  className="secondary"
+                  onClick={() => addObjectImage(stackIndex, imageIndex)}
+                >Add object image</button>
+              </details>
               <details open>
                 <summary>{`SUBIMAGES (${subimages.length})`}</summary>
                 {subimages.length

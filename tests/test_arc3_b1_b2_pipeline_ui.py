@@ -166,3 +166,17 @@ def test_b1_b2_setup_has_before_image_and_command_fields() -> None:
     styles = STYLES.read_text(encoding="utf-8")
     assert ".arc3-prolog-setup-extra:not([open]) > *:not(summary)" in styles
     assert "display: none !important;" in styles
+
+
+def test_b1_b2_setup_has_object_images_group() -> None:
+    source = COMPONENT.read_text(encoding="utf-8")
+    # Each setup has an empty, user-managed OBJECT_IMAGES group with add/edit/remove.
+    assert "objectImages?: ImageSelection[];" in source
+    assert 'className="arc3-prolog-setup-object-images"' in source
+    assert "OBJECT_IMAGES (${(setup.objectImages || []).length})" in source
+    assert "const addObjectImage = (stackIndex: number, imageIndex: number) =>" in source
+    assert "const setObjectImagePath = (stackIndex: number, imageIndex: number, objectIndex: number, path: string) =>" in source
+    assert "const removeObjectImage = (stackIndex: number, imageIndex: number, objectIndex: number) =>" in source
+    assert "onClick={() => addObjectImage(stackIndex, imageIndex)}" in source
+    assert "onClick={() => removeObjectImage(stackIndex, imageIndex, objectIndex)}" in source
+    assert "onChange={(event) => setObjectImagePath(stackIndex, imageIndex, objectIndex, event.target.value)}" in source

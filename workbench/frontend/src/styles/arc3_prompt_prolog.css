@@ -401,6 +401,19 @@ label.arc3-prolog-inline-composite-label > .arc3-prolog-selected-source-chips {
   display: none !important;
 }
 
+.arc3-prolog-object-image-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin: 0.35rem 0;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid rgb(29, 46, 56);
+}
+
+.arc3-prolog-object-image-remove {
+  align-self: flex-start;
+}
+
 .arc3-prolog-setup-edit-grid,
 .arc3-prolog-setup-preview-grid {
   display: grid;
