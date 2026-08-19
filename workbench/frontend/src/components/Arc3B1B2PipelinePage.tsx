@@ -451,7 +451,7 @@ function defaultSetups(stackKey: StackKey): StackSetup[] {
   const pair = defaultImagePair(stackKey);
   return [{
     id: `${stackKey}-setup-1`,
-    label: "Setup1",
+    label: "level_1",
     command: "level_1",
     note: "default",
     stateDir: "data/level_1",
@@ -524,23 +524,41 @@ function stackADescendSetupsFromFiles(workspaceId: string, files: WorkspaceFileR
   const descendantsOf = (parent: string) => dirs.filter((dir) => dir.startsWith(`${parent}/`));
   const immediateDataChildren = dirs.filter((dir) => dir.startsWith("data/") && !dir.slice("data/".length).includes("/"));
   const setupDirs = new Set<string>();
-  // Rule 1: level_[0-9]* folders contribute themselves and all descendant directories.
+  const consumed = new Set<string>();
+  // Rule 1: data/**/<parent>/0  -> the numbered siblings under <parent> are setups
+  // (only when a "0" anchor exists). Consume them so later rules skip them.
+  const numberedParents = new Set<string>();
   for (const dir of dirs) {
-    if (/^level_[0-9]*$/i.test(basename(dir))) {
-      setupDirs.add(dir);
-      for (const child of descendantsOf(dir)) setupDirs.add(child);
+    if (basename(dir) === "0") {
+      const parent = dir.includes("/") ? dir.slice(0, dir.lastIndexOf("/")) : "";
+      if (parent) numberedParents.add(parent);
     }
   }
-  // Rule 2: numeric-named directories are the numbered siblings (each is a setup).
   for (const dir of dirs) {
-    if (/^[0-9]+$/.test(basename(dir))) setupDirs.add(dir);
+    const parent = dir.includes("/") ? dir.slice(0, dir.lastIndexOf("/")) : "";
+    if (/^[0-9]+$/.test(basename(dir)) && numberedParents.has(parent)) {
+      setupDirs.add(dir);
+      consumed.add(dir);
+    }
   }
-  // Rule 3: any other immediate data/ child with no structured descendant is a single setup.
+  // Rule 2: data/**/level_[0-9]* -> the level folder plus all descendant dirs (scan children).
+  for (const dir of dirs) {
+    if (consumed.has(dir)) continue;
+    if (/^level_[0-9]*$/i.test(basename(dir))) {
+      setupDirs.add(dir);
+      consumed.add(dir);
+      for (const child of descendantsOf(dir)) {
+        setupDirs.add(child);
+        consumed.add(child);
+      }
+    }
+  }
+  // Rule 3: leftovers -> any other immediate data/ child not already consumed.
   for (const dir of immediateDataChildren) {
-    const name = basename(dir);
-    if (/^level_[0-9]*$/i.test(name) || /^[0-9]+$/.test(name)) continue;
-    if ([...setupDirs].some((selected) => selected === dir || selected.startsWith(`${dir}/`))) continue;
+    if (consumed.has(dir)) continue;
+    if ([...consumed].some((selected) => selected.startsWith(`${dir}/`))) continue;
     setupDirs.add(dir);
+    consumed.add(dir);
   }
   if (!setupDirs.size) return [];
   const imageByDir = new Map<string, string>();
@@ -573,7 +591,7 @@ function stackADescendSetupsFromFiles(workspaceId: string, files: WorkspaceFileR
       : null;
     return {
       id: `A-setup-${index + 1}`,
-      label: `Setup${index + 1}`,
+      label: dir.replace(/^data\//i, "") || dir,
       command: setupCommandFromPath(`${dir}/frame`),
       note: depth ? `depth ${depth}` : "root",
       stateDir: dir,
@@ -3722,8 +3740,8 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
               key={setup.id}
               stackId={imagesStackId}
               memberKey={`image-${setup.id}`}
-              label={`Setup_${imageIndex + 1}`}
-              value={isActive ? "ACTIVE" : `Setup_${imageIndex + 1}`}
+              label={setup.label || `Setup_${imageIndex + 1}`}
+              value={isActive ? "ACTIVE" : (setup.label || `Setup_${imageIndex + 1}`)}
               detail={`${subimages.length} image(s) / ${textFiles.length} textual file(s)`}
               mode={modeFor(`image-${setup.id}`)}
               onChange={(mode) => setModeFor(`image-${setup.id}`, mode)}

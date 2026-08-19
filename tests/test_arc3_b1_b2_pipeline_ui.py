@@ -265,9 +265,10 @@ def test_b1_b2_setup_sub_images_grouped_after_obj_images() -> None:
 
 def test_b1_b2_setup_header_and_before_after_controls() -> None:
     source = COMPONENT.read_text(encoding="utf-8")
-    # The member header shows Setup_N and an image/text-file count summary.
-    assert "label={`Setup_${imageIndex + 1}`}" in source
-    assert 'value={isActive ? "ACTIVE" : `Setup_${imageIndex + 1}`}' in source
+    # The member header shows the setup's path-based name (falling back to Setup_N) and
+    # an image/text-file count summary.
+    assert "label={setup.label || `Setup_${imageIndex + 1}`}" in source
+    assert 'value={isActive ? "ACTIVE" : (setup.label || `Setup_${imageIndex + 1}`)}' in source
     assert "detail={`${subimages.length} image(s) / ${textFiles.length} textual file(s)`}" in source
     # BEFORE and AFTER each expose a single-image [load]/[select] pair.
     assert "const renderSingleImageControls = (browseKey: string, setter: (path: string) => void) =>" in source
@@ -392,16 +393,21 @@ def test_b1_b2_setup_path_scan_writes_scan_results() -> None:
 
 def test_b1_b2_setups_enumerate_all_data_folders() -> None:
     source = COMPONENT.read_text(encoding="utf-8")
-    # Setups are discovered structurally from the data/ tree by three rules.
+    # Setups are discovered structurally from the data/ tree by ordered, consuming rules.
     assert "const compareByTree = (left: string, right: string) =>" in source
     assert "^data\\/level_1(?:" not in source
-    # Rule 1: level_[0-9]* folders contribute themselves + all descendant dirs.
+    assert "const consumed = new Set<string>();" in source
+    # Rule 1: numbered siblings (anchored by a "0") under a parent are consumed first.
+    assert 'if (basename(dir) === "0") {' in source
+    assert "numberedParents.has(parent)" in source
+    # Rule 2: level_[0-9]* folders contribute themselves + all descendant dirs.
     assert 'if (/^level_[0-9]*$/i.test(basename(dir))) {' in source
-    assert "for (const child of descendantsOf(dir)) setupDirs.add(child);" in source
-    # Rule 2: numeric directories are numbered siblings, each a setup.
-    assert 'if (/^[0-9]+$/.test(basename(dir))) setupDirs.add(dir);' in source
-    # Rule 3: other immediate data/ children become single-setup folders.
+    assert "for (const child of descendantsOf(dir)) {" in source
+    # Rule 3: leftover immediate data/ children become single-setup folders.
     assert "const immediateDataChildren = dirs.filter((dir) => dir.startsWith(\"data/\")" in source
+    # Numeric-aware ordering (level_10 after level_1) and path-based setup names.
+    assert "{ numeric: true }" in source
+    assert 'label: dir.replace(/^data\\//i, "") || dir,' in source
     # Each setup's PATH is its own folder; the default/initial setup points to level_1.
     assert 'stateDir: "data/level_1",' in source
     assert "stateDir: dir," in source
