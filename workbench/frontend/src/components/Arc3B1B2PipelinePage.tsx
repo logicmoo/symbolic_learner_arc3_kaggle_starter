@@ -1906,7 +1906,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
   };
 
   useEffect(() => {
-    setPageModelId(defaultModelId);
+    setPageModelId(preferredModelId || defaultModelId);
     setWorkspaceRunnerModelId(defaultModelId);
     setWorkbenchRunnerModelId(defaultModelId);
     if (!workspaceId) return;
@@ -1929,7 +1929,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
         }
       } catch (reason) {
         if (!canceled) {
-          setPageModelId(defaultModelId);
+          setPageModelId(preferredModelId || defaultModelId);
           setWorkspaceRunnerModelId(defaultModelId);
           setWorkbenchRunnerModelId(defaultModelId);
           setModelSelectionMessage(`Model policy defaults unavailable: ${reason instanceof Error ? reason.message : String(reason)}`);
