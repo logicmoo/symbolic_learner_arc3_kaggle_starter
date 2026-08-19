@@ -390,6 +390,22 @@ def test_b1_b2_setup_path_scan_writes_scan_results() -> None:
     assert "event.stopPropagation();" in source
 
 
+def test_b1_b2_setup_expand_button_opens_non_empty_groups() -> None:
+    source = COMPONENT.read_text(encoding="utf-8")
+    # An [expand] button next to [scan] on the DIR & PROPERTIES summary opens every
+    # non-empty file group. Group open state is controlled so it can be driven.
+    assert "const [groupOpen, setGroupOpen] = useState<Record<string, boolean>>({});" in source
+    assert "const groupKey = `${field}:${setup.id}`;" in source
+    assert "const groupIsOpen = groupOpen[groupKey] ?? (options?.defaultOpen ?? true);" in source
+    assert "open={groupIsOpen}" in source
+    assert "const expandNonEmptyGroups = () =>" in source
+    assert "if (count > 0) next[`${groupField}:${setup.id}`] = true;" in source
+    assert 'className="secondary arc3-prolog-browse-btn arc3-prolog-setup-scan-summary arc3-prolog-setup-expand-summary"' in source
+    assert "expandNonEmptyGroups();" in source
+    # The expand button sits on the summary, after the scan button.
+    assert source.index("arc3-prolog-setup-scan-summary arc3-prolog-setup-expand-summary") > source.index("arc3-prolog-setup-scan arc3-prolog-setup-scan-summary")
+
+
 def test_b1_b2_setup_scan_populates_collection_fields() -> None:
     source = COMPONENT.read_text(encoding="utf-8")
     # [scan] populates the file silos below (not just the state.json editor), so images

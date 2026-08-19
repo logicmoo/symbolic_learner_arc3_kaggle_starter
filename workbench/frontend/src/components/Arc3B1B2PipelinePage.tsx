@@ -1953,6 +1953,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
   const [editorName, setEditorName] = useState("");
   const [editorBusy, setEditorBusy] = useState(false);
   const [editorError, setEditorError] = useState("");
+  const [groupOpen, setGroupOpen] = useState<Record<string, boolean>>({});
   const controllersRef = useRef<Record<string, AbortController | null>>({});
   const stackColumnsRef = useRef(stackColumns);
   stackColumnsRef.current = stackColumns;
@@ -3385,6 +3386,26 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
               setEditorText("");
               setEditorError("");
             };
+            const expandNonEmptyGroups = () => {
+              const groupCounts: Array<[SetupCollectionField, number]> = [
+                ["objectImages", setup.objectImages?.length ?? 0],
+                ["groupImages", setup.groupImages?.length ?? 0],
+                ["subImages", (setup.subImages?.length ?? 0) + subimages.length],
+                ["plFiles", setup.plFiles?.length ?? 0],
+                ["engFiles", setup.engFiles?.length ?? 0],
+                ["jsonFiles", setup.jsonFiles?.length ?? 0],
+                ["mettaFiles", setup.mettaFiles?.length ?? 0],
+                ["promptFiles", setup.promptFiles?.length ?? 0],
+                ["unknownFiles", (setup.unknownFiles?.length ?? 0) + textFiles.length],
+              ];
+              setGroupOpen((previous) => {
+                const next = { ...previous };
+                for (const [groupField, count] of groupCounts) {
+                  if (count > 0) next[`${groupField}:${setup.id}`] = true;
+                }
+                return next;
+              });
+            };
             const renderFileEditor = (editorKey: string, onSaved: (path: string) => void) => openEditorKey === editorKey && <div className="arc3-prolog-setup-file-editor">
               <div className="arc3-prolog-setup-file-editor-head">
                 <span>FILE</span>
@@ -3455,8 +3476,17 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                 .filter((path, index, all) => all.indexOf(path) === index)
                 .sort((left, right) => left.localeCompare(right));
               const addKey = `${field}:${setup.id}:__add`;
+              const groupKey = `${field}:${setup.id}`;
               const totalCount = (options?.derivedCount ?? 0) + entries.length;
-              return <details open={options?.defaultOpen ?? true} className="arc3-prolog-setup-object-images">
+              const groupIsOpen = groupOpen[groupKey] ?? (options?.defaultOpen ?? true);
+              return <details
+                open={groupIsOpen}
+                className="arc3-prolog-setup-object-images"
+                onToggle={(event) => {
+                  const nextOpen = event.currentTarget.open;
+                  setGroupOpen((previous) => (previous[groupKey] === nextOpen ? previous : { ...previous, [groupKey]: nextOpen }));
+                }}
+              >
                 <summary>{`${title} (${totalCount})`}</summary>
                 {options?.derived}
                 {entries.map((entry, entryIndex) => {
@@ -3618,6 +3648,16 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                       void scanSetupStatePath(stackIndex, imageIndex, setup.stateDir ?? stateDirDefault);
                     }}
                   >scan</button>
+                  <button
+                    type="button"
+                    className="secondary arc3-prolog-browse-btn arc3-prolog-setup-scan-summary arc3-prolog-setup-expand-summary"
+                    title="Expand all non-empty file groups"
+                    onClick={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      expandNonEmptyGroups();
+                    }}
+                  >expand</button>
                 </summary>
                 <label className="arc3-prolog-inline-select-label">
                   <span>PATH</span>
