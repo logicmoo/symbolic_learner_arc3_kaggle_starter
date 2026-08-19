@@ -567,3 +567,10 @@ label.arc3-prolog-inline-composite-label > .arc3-prolog-selected-source-chips {
   scrollbar-gutter: auto;
   padding-inline: 0.3rem;
 }
+
+/* Setup image panels must keep their natural (max-content) height so expanding
+   one to "full" pushes the setups below it down instead of shrinking the box
+   and letting the image/subimages overlap the next setup. */
+.arc3-b1b2-page .three-state-accordion-member[data-accordion-member^="image-"] {
+  flex: 0 0 auto;
+}

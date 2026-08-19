@@ -64,3 +64,19 @@ def test_b1_b2_component_has_pipeline_contract() -> None:
     # B1->B2 uses its own 3-column page class (A/B/C), not the prolog single-column layout.
     assert "english-workflow-page arc3-b1b2-page" in source
     assert "english-workflow-page arc3-prolog-page" not in source
+
+
+def test_b1_b2_setup_switch_expands_selected_to_full() -> None:
+    source = COMPONENT.read_text(encoding="utf-8")
+    # Switching setups collapses every column-1 image to a strip and expands the
+    # newly selected setup to full view, then scrolls it into view.
+    assert 'for (const key of setupModeKeys) next[key] = "strip";' in source
+    assert 'if (selectedModeKey) next[selectedModeKey] = "full";' in source
+    assert 'scrollIntoView({ behavior: "smooth", block: "nearest" });' in source
+
+
+def test_b1_b2_setup_image_members_keep_natural_height() -> None:
+    css = (ROOT / "workbench/frontend/src/styles/arc3_prompt_prolog.css").read_text(encoding="utf-8")
+    # Full-mode setup images must not shrink, so expanding one pushes the setups
+    # below it down instead of overlapping them.
+    assert '.arc3-b1b2-page .three-state-accordion-member[data-accordion-member^="image-"]' in css

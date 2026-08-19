@@ -2141,6 +2141,14 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
   };
 
   const selectImage = (stackIndex: number, imageIndex: number) => {
+    const currentStack = stackColumns[stackIndex];
+    const currentSetups = currentStack?.setups?.length
+      ? currentStack.setups
+      : (currentStack ? defaultSetups(currentStack.key) : []);
+    const selectedClamped = Math.max(0, Math.min(imageIndex, Math.max(0, currentSetups.length - 1)));
+    const setupModeKeys = currentSetups.map((setup) => `image-${setup.id}`);
+    const selectedModeKey = currentSetups[selectedClamped] ? `image-${currentSetups[selectedClamped].id}` : null;
+
     setStackState(stackIndex, (stack) => {
       const setups = stack.setups?.length ? stack.setups : defaultSetups(stack.key);
       const clamped = Math.max(0, Math.min(imageIndex, Math.max(0, setups.length - 1)));
@@ -2150,6 +2158,27 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
         runners: stack.runners.map((runner) => ({ ...runner, setupIndex: clamped })),
       };
     });
+
+    // Switching setups collapses every image in column 1 to a strip and expands
+    // only the newly selected setup, then scrolls it into view.
+    if (setupModeKeys.length) {
+      setAccordionModes((current) => {
+        const next = { ...current };
+        for (const key of setupModeKeys) next[key] = "strip";
+        if (selectedModeKey) next[selectedModeKey] = "full";
+        return next;
+      });
+    }
+    if (selectedModeKey && typeof window !== "undefined") {
+      const targetKey = selectedModeKey;
+      window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
+        const escaped = typeof CSS !== "undefined" && CSS.escape ? CSS.escape(targetKey) : targetKey;
+        const memberEl = document.querySelector(`[data-accordion-member="${escaped}"]`);
+        if (memberEl && typeof memberEl.scrollIntoView === "function") {
+          memberEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        }
+      }));
+    }
   };
 
   const setImagePath = (stackIndex: number, imageIndex: number, path: string) => {
