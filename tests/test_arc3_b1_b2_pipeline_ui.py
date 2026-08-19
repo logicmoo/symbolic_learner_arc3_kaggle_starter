@@ -50,6 +50,9 @@ def test_b1_b2_component_has_pipeline_contract() -> None:
     assert 'if (role === "extraction") return "generate_prolog_and_english";' in source
     assert 'return ["runner:GUESSER"];' in source
     assert "SEED FROM GUESSER" in source
+    # Experimental write-back: REGENERATOR result can replace GUESSER's list.
+    assert "replaceGuesserOnFinish" in source
+    assert "Replace GUESSER list with this result on finish" in source
     assert "many_objects_1" in source
     assert "many_objects_2" in source
     assert "llm_error|next_iteration|loop_complete|loop_overbudgeted|unran" in source

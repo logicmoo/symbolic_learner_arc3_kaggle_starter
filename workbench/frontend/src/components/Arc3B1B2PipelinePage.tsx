@@ -1857,6 +1857,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
   const [workbenchRunnerModelId, setWorkbenchRunnerModelId] = useState("");
   const [modelSelectionMessage, setModelSelectionMessage] = useState("");
   const [scanDataBusy, setScanDataBusy] = useState(false);
+  const [replaceGuesserOnFinish, setReplaceGuesserOnFinish] = useState(false);
   const controllersRef = useRef<Record<string, AbortController | null>>({});
   const generationSeqRef = useRef(0);
   const anyRunning = stackColumns.some((stack) => stack.runners.some((runner) => runner.running));
@@ -2372,6 +2373,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
       const filesSources = resolveFilesSources(runner.filesSourceIds, filesAddress, stack.key, outputHistory, stackColumns, runner);
       const validationFrame = await buildImageValidationFrame(imageSourceAfter.dataUrl);
       let latestParsed = runner.parsed;
+      let acceptedAnyPass = false;
       const totalPasses = autoLoop ? Math.max(1, Math.floor(runner.autoLoopMaxIterations || AUTO_GAP_MAX_PASSES)) : 1;
       const maxLoopMs = autoLoop ? Math.max(10000, Math.floor((runner.autoLoopMaxSeconds || defaultTimeoutSeconds) * 1000)) : 0;
       const invocationTimeoutSeconds = Math.max(10, Math.floor(runner.maxPrimarySeconds || defaultTimeoutSeconds));
@@ -2628,6 +2630,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
         }
         if (!acceptedParsed || !acceptedInvocation) break;
         latestParsed = acceptedParsed;
+        acceptedAnyPass = true;
         if (!autoLoop) {
           setRunnerState(stackIndex, runnerIndex, (previous) => ({
             ...previous,
@@ -2671,6 +2674,25 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
             message: `Loop converged at pass ${passNumber}: validation passed and no new identities remained.`,
           }));
           break;
+        }
+      }
+      if (replaceGuesserOnFinish && regenerateRunner && acceptedAnyPass && isB1B2PipelineRoute(pageDefinition.routeView) && latestParsed) {
+        const finalIdentities = Array.isArray(latestParsed.regenerated_identities) && latestParsed.regenerated_identities.length
+          ? latestParsed.regenerated_identities
+          : (Array.isArray(latestParsed.current_identities) ? latestParsed.current_identities : []);
+        const guesserIndex = bColumn
+          ? bColumn.runners.findIndex((_, index) => runnerRole(pageDefinition.routeView, "B", index) === "extraction")
+          : -1;
+        const guesserStackIndex = stackColumns.findIndex((column) => column.key === "B");
+        if (finalIdentities.length && guesserIndex >= 0 && guesserStackIndex >= 0) {
+          setRunnerState(guesserStackIndex, guesserIndex, (previous) => {
+            const base = previous.parsed ?? ({} as ParsedPrologPayload);
+            return {
+              ...previous,
+              parsed: { ...base, current_identities: finalIdentities, regenerated_identities: finalIdentities },
+              message: `GUESSER list replaced with REGENERATOR result (${finalIdentities.length} identities).`,
+            };
+          });
         }
       }
     } catch (reason) {
@@ -3517,6 +3539,20 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                           Run Until Exit
                         </button>
                       </div>
+                      {isRegeneratedIdentitiesRunner(pageDefinition.routeView, stack.key, runnerIndex) && (
+                        <label
+                          className="arc3-b1b2-writeback-toggle"
+                          style={{ display: "flex", alignItems: "center", gap: "6px", margin: "6px 0" }}
+                          title="Experimental: when this REGENERATOR run finishes, overwrite the GUESSER runner's identity list with this result so the next run starts warm."
+                        >
+                          <input
+                            type="checkbox"
+                            checked={replaceGuesserOnFinish}
+                            onChange={(event) => setReplaceGuesserOnFinish(event.target.checked)}
+                          />
+                          <span>Replace GUESSER list with this result on finish</span>
+                        </label>
+                      )}
                       <details className="arc3-prolog-stack-output">
                         <summary>LOOP_FILES</summary>
                         {loopFileItems.length
