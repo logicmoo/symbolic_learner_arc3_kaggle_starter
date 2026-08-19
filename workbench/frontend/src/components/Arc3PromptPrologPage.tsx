@@ -1,6 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import { WorkflowPageHost, type WorkflowPageComponentRegistry, type WorkflowPageDefinition } from "./WorkflowPageHost";
 import { WorkflowPageSourceEditor } from "./WorkflowPageSourceEditor";
 import { ThreeStateAccordionMember, ThreeStateAccordionStack, type AccordionDisplayMode } from "./ThreeStateAccordion";
@@ -366,17 +364,6 @@ const ALL_FIELDS_ABOVE_SOURCE = "<All Column Fields Above>";
 const ALL_FIELDS_OTHER_AC_SOURCE = "<All Fields Once from other Column A-C>";
 const ALL_FIELDS_OTHER_CA_SOURCE = "<All Fields Once from other Column C-A>";
 const ALL_SETUP_SOURCE_PREFIX = "ALL-Setup";
-const TWO_IMAGE_PROLOG_HELP_PATH = "docs/TWO IMAGE PROLOG.md";
-const TWO_IMAGE_PROLOG_HELP_DEFAULT = [
-  "# TWO IMAGE PROLOG",
-  "",
-  "This is the editable help file for the Two Image Prolog page.",
-  "",
-  "## Initial notes",
-  "- Keep runner loop behavior and validator conditions documented here.",
-  "- Record prompt naming and exit-value conventions.",
-  "- Update this file as your working playbook and save to filesystem.",
-].join("\n");
 const IMAGE_SUFFIXES = new Set([".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".svg"]);
 const TEXT_SUFFIXES = new Set([".txt", ".json", ".md", ".yaml", ".yml", ".csv", ".log", ".metta", ".pl"]);
 const repositoryAssetUrl = (path: string) =>
@@ -1831,12 +1818,6 @@ export function Arc3PromptPrologPage({ pageDefinition, workspaceId, workspaceLab
   );
   const [selectedOutputId, setSelectedOutputId] = useState(() => initialSelectedOutputId(pageDefinition));
   const [outputHistory, setOutputHistory] = useState<OutputHistoryEntry[]>([]);
-  const [helpContent, setHelpContent] = useState(TWO_IMAGE_PROLOG_HELP_DEFAULT);
-  const [helpMode, setHelpMode] = useState<"source" | "render">("source");
-  const [helpLoaded, setHelpLoaded] = useState(false);
-  const [helpDirty, setHelpDirty] = useState(false);
-  const [helpSaving, setHelpSaving] = useState(false);
-  const [helpMessage, setHelpMessage] = useState("");
   const [accordionModes, setAccordionModes] = useState<Record<string, AccordionDisplayMode>>({});
   const [setupAccordionOpen, setSetupAccordionOpen] = useState<Record<StackKey, number>>({
     A: 0,
@@ -1946,61 +1927,6 @@ export function Arc3PromptPrologPage({ pageDefinition, workspaceId, workspaceLab
       canceled = true;
     };
   }, [workspaceId, defaultModelId, enabledModels]);
-
-  useEffect(() => {
-    if (!workspaceId) {
-      setHelpContent(TWO_IMAGE_PROLOG_HELP_DEFAULT);
-      setHelpLoaded(true);
-      setHelpDirty(false);
-      setHelpMessage("");
-      return;
-    }
-    let canceled = false;
-    setHelpLoaded(false);
-    setHelpDirty(false);
-    setHelpMessage("Loading help file...");
-    const loadHelpFile = async () => {
-      try {
-        const payload = await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/file?path=${encodeURIComponent(TWO_IMAGE_PROLOG_HELP_PATH)}`);
-        if (canceled) return;
-        const fileRecord = (payload.file || {}) as Record<string, unknown>;
-        const loaded = typeof fileRecord.content === "string" ? fileRecord.content : TWO_IMAGE_PROLOG_HELP_DEFAULT;
-        setHelpContent(loaded);
-        setHelpMessage("");
-      } catch {
-        if (canceled) return;
-        setHelpContent(TWO_IMAGE_PROLOG_HELP_DEFAULT);
-        setHelpMessage("New help file (not saved yet).");
-      } finally {
-        if (!canceled) setHelpLoaded(true);
-      }
-    };
-    void loadHelpFile();
-    return () => {
-      canceled = true;
-    };
-  }, [workspaceId]);
-
-  const saveHelpFile = async () => {
-    if (!workspaceId || helpSaving) return;
-    setHelpSaving(true);
-    setHelpMessage("Saving...");
-    try {
-      await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/file`, {
-        method: "PUT",
-        body: JSON.stringify({
-          path: TWO_IMAGE_PROLOG_HELP_PATH,
-          content: helpContent,
-        }),
-      });
-      setHelpDirty(false);
-      setHelpMessage(`Saved ${TWO_IMAGE_PROLOG_HELP_PATH}.`);
-    } catch (reason) {
-      setHelpMessage(`Save failed: ${reason instanceof Error ? reason.message : String(reason)}`);
-    } finally {
-      setHelpSaving(false);
-    }
-  };
 
   useEffect(() => {
     setStackColumns((previous) => previous.map((stack) => {
@@ -3589,61 +3515,6 @@ export function Arc3PromptPrologPage({ pageDefinition, workspaceId, workspaceLab
                   })}
                 </ThreeStateAccordionStack>;
               })}
-              <section className="arc3-prolog-help-column">
-                <header className="arc3-prolog-help-header">
-                  <strong>TWO IMAGE PROLOG.md</strong>
-                  <small>{TWO_IMAGE_PROLOG_HELP_PATH}</small>
-                </header>
-                <div className="arc3-prolog-help-modes">
-                  <button
-                    type="button"
-                    className={helpMode === "source" ? "primary" : "secondary"}
-                    onClick={() => setHelpMode("source")}
-                  >
-                    Source
-                  </button>
-                  <button
-                    type="button"
-                    className={helpMode === "render" ? "primary" : "secondary"}
-                    onClick={() => setHelpMode("render")}
-                  >
-                    Render
-                  </button>
-                  <button
-                    type="button"
-                    className="primary"
-                    disabled={!helpLoaded || !workspaceId || helpSaving || !helpDirty}
-                    onClick={() => void saveHelpFile()}
-                  >
-                    {helpSaving ? "Saving…" : "Save"}
-                  </button>
-                </div>
-                {helpMode === "source"
-                  ? <textarea
-                    className="arc3-prolog-help-editor"
-                    value={helpContent}
-                    onChange={(event) => {
-                      setHelpContent(event.target.value);
-                      setHelpDirty(true);
-                    }}
-                    rows={28}
-                    disabled={!helpLoaded}
-                  />
-                  : <article
-                    className="arc3-prolog-help-render markdown-body"
-                    contentEditable
-                    suppressContentEditableWarning
-                    onInput={(event) => {
-                      const next = (event.currentTarget.textContent || "").replace(/\r\n/g, "\n");
-                      setHelpContent(next);
-                      setHelpDirty(true);
-                    }}
-                  >
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{helpContent || ""}</ReactMarkdown>
-                  </article>}
-                <small>{helpDirty ? "Unsaved changes." : "Saved."}</small>
-                {helpMessage ? <small>{helpMessage}</small> : null}
-              </section>
             </div>
           </ThreeStateAccordionMember>
           <ThreeStateAccordionMember

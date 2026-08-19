@@ -113,11 +113,6 @@ def test_two_image_prolog_exposes_auto_loop_control() -> None:
     assert "_SETUP_BEFORE_PATH" in source
     assert 'return ["ALL-Setup1"];' in source
     assert "ALL-Setup" in source
-    assert "TWO IMAGE PROLOG.md" in source
-    assert "docs/TWO IMAGE PROLOG.md" in source
-    assert "Source" in source
-    assert "Render" in source
-    assert "Save" in source
     assert source.index("|&gt; Primary Prompt -") < source.index("max_primary_secs")
     assert source.index("|&gt; Primary Prompt -") < source.index("|&gt; Loop/Validate Prompt -")
     assert source.index("|&gt; Loop/Validate Prompt -") < source.index("max_primary_secs")
