@@ -3320,7 +3320,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
               .sort((left, right) => left.localeCompare(right));
             const renderSingleImageControls = (browseKey: string, setter: (path: string) => void) => <>
               <label className="secondary arc3-prolog-browse-btn arc3-prolog-browse-b" title="Load a file from your computer">
-                load
+                Load
                 <input
                   type="file"
                   accept={imageSuffixesLower.join(",")}
@@ -3339,7 +3339,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                 className="secondary arc3-prolog-browse-btn"
                 title="Pick from workspace files"
                 onClick={() => setOpenBrowseKey(openBrowseKey === browseKey ? null : browseKey)}
-              >select</button>
+              >Select</button>
             </>;
             const renderSingleImageList = (browseKey: string, setter: (path: string) => void) => openBrowseKey === browseKey && <div className="arc3-prolog-browse-list">
               {imageMatches.length
@@ -3461,12 +3461,14 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                 {options?.derived}
                 {entries.map((entry, entryIndex) => {
                   const rowKey = `${field}:${setup.id}:${entryIndex}`;
+                  const entryBase = normalizeAssetPath(entry.name).split("/").pop() || "";
+                  const entryLabel = entryBase ? entryBase.replace(/\./g, "_") : `${itemLabel} ${entryIndex + 1}`;
                   return <div
                     key={`${field}-${setup.id}-${entryIndex}`}
                     className="arc3-prolog-object-image-row"
                   >
                     <label className="arc3-prolog-inline-select-label">
-                      <span>{`${itemLabel} ${entryIndex + 1}`}</span>
+                      <span>{entryLabel}</span>
                       <div className="arc3-prolog-browse-inputwrap">
                         <input
                           className="arc3-prolog-setup-inline-input"
@@ -3480,15 +3482,15 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                           className="secondary arc3-prolog-browse-btn arc3-prolog-setup-edit"
                           title="Load and edit this file"
                           onClick={() => void openEntryEditor(field, entryIndex, entry.name)}
-                        >load/edit</button>}
+                        >Load/Edit</button>}
                         <button
                           type="button"
                           className="secondary arc3-prolog-browse-btn"
                           title="Pick from workspace files"
                           onClick={() => setOpenBrowseKey(openBrowseKey === rowKey ? null : rowKey)}
-                        >select</button>
+                        >Select</button>
                         <label className="secondary arc3-prolog-browse-btn arc3-prolog-browse-b" title="Browse for a file on your computer">
-                          browse
+                          Browse
                           <input
                             type="file"
                             accept={acceptAttr}
@@ -3540,7 +3542,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                 })}
                 <div className="arc3-prolog-object-image-actions">
                   <label className="secondary arc3-prolog-browse-btn arc3-prolog-browse-b" title="Load a file from your computer">
-                    load
+                    Load
                     <input
                       type="file"
                       accept={acceptAttr}
@@ -3559,13 +3561,13 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                     className="secondary arc3-prolog-browse-btn"
                     title="Pick from workspace files"
                     onClick={() => setOpenBrowseKey(openBrowseKey === addKey ? null : addKey)}
-                  >select</button>
+                  >Select</button>
                   {options?.editable && <button
                     type="button"
                     className="secondary arc3-prolog-browse-btn arc3-prolog-setup-new"
                     title="Create a new file"
                     onClick={() => openNewEditor(field, `${pathPrefix}/untitled${accept[0] ?? ".txt"}`)}
-                  >new</button>}
+                  >New</button>}
                 </div>
                 {openBrowseKey === addKey && <div className="arc3-prolog-browse-list">
                   {workspaceMatches.length

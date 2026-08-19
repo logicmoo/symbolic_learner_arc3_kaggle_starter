@@ -210,10 +210,18 @@ def test_b1_b2_setup_group_rows_have_browse_buttons() -> None:
     assert 'title="Browse for a file on your computer"' in source
     assert 'accept={acceptAttr}' in source
     assert "relativeToSetupDir(picked.name)" in source
-    # Row order is [select] then [browse].
-    select_index = source.index(">select</button>")
+    # Row order is [Select] then [Browse]; the first three buttons are capitalized.
+    assert ">Load/Edit</button>" in source
+    assert ">Select</button>" in source
+    assert "Browse</label>" in source or 'title="Browse for a file on your computer"' in source
+    select_index = source.index(">Select</button>")
     browse_index = source.index('title="Browse for a file on your computer"')
     assert select_index < browse_index
+    # The per-row item label is derived from the entry filename (dots -> underscores),
+    # e.g. differences.pl -> differences_pl, falling back to "<Label> <n>" when empty.
+    assert "const entryBase = normalizeAssetPath(entry.name).split(\"/\").pop() || \"\";" in source
+    assert "const entryLabel = entryBase ? entryBase.replace(/\\./g, \"_\") : `${itemLabel} ${entryIndex + 1}`;" in source
+    assert "<span>{entryLabel}</span>" in source
     # The [select] picker lists workspace files filtered by the group's accepted suffixes.
     assert "acceptLower.includes((file.suffix || \"\").toLowerCase())" in source
     assert "openBrowseKey === rowKey &&" in source
