@@ -430,8 +430,9 @@ label.arc3-prolog-inline-composite-label > .arc3-prolog-selected-source-chips {
 
 .arc3-prolog-browse-btn {
   flex: 0 0 auto;
-  padding: 0.15rem 0.5rem;
-  line-height: 1.4;
+  padding: 0.05rem 0.35rem;
+  font-size: 0.72rem;
+  line-height: 1.3;
 }
 
 .arc3-prolog-browse-b {

@@ -3052,14 +3052,8 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                           placeholder={kind === "image" ? "data/... image path" : "data/... file path"}
                           onChange={(event) => setSetupEntryPath(stackIndex, imageIndex, field, entryIndex, event.target.value)}
                         />
-                        <button
-                          type="button"
-                          className="secondary arc3-prolog-browse-btn"
-                          title="Pick from workspace files"
-                          onClick={() => setOpenBrowseKey(openBrowseKey === rowKey ? null : rowKey)}
-                        >A</button>
-                        <label className="secondary arc3-prolog-browse-btn arc3-prolog-browse-b" title="Browse local files">
-                          B
+                        <label className="secondary arc3-prolog-browse-btn arc3-prolog-browse-b" title="Load a file from your computer">
+                          load
                           <input
                             type="file"
                             accept={acceptAttr}
@@ -3074,6 +3068,12 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                             }}
                           />
                         </label>
+                        <button
+                          type="button"
+                          className="secondary arc3-prolog-browse-btn"
+                          title="Pick from workspace files"
+                          onClick={() => setOpenBrowseKey(openBrowseKey === rowKey ? null : rowKey)}
+                        >select</button>
                       </div>
                     </label>
                     {kind === "image"
