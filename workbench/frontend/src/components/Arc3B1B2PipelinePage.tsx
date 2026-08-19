@@ -275,7 +275,10 @@ const DEFAULT_VALIDATOR_PROMPT = [
 ].join("\n");
 const REMOVAL_DISCOVERY_PASS_PROMPT = [
   "remove_smallest_object:",
+  "INPUT: the upstream B0 runner supplies current_identities plus its prolog/english files via INPUT_FILES; treat B0's current_identities as the authoritative catalog of objects present in the image.",
   "Goal: update supplied current_identities in place and remove the best removable object set from the current image.",
+  "SEED FROM B0: first take the identities B0 found and try to remove each of them from the current (before) image, working through B0's identified objects as your removal worklist before discovering anything new.",
+  "Only after B0's identities have been handled, act like the standard removal pass below and search for any removable objects B0 missed.",
   "OBJECT SEARCH ORDER (look for these first):",
   "1) Leaf objects that are isolated, simple, and non-container (no nested identities inside their bounds).",
   "2) Among those leaf objects, find a similar set by shape/color/size/type/proximity.",
@@ -332,15 +335,17 @@ function isB1B2PipelineRoute(routeView: string): boolean {
   return routeView === "arc3B1B2Pipeline";
 }
 function runnerDisplayOrdinal(routeView: string, stackKey: StackKey, runnerIndex: number): number {
+  if (isB1B2PipelineRoute(routeView) && stackKey === "B") return runnerIndex;
   return runnerIndex + 1;
 }
 function runnerDisplayId(routeView: string, stackKey: StackKey, runnerIndex: number): string {
   return `${stackKey}${runnerDisplayOrdinal(routeView, stackKey, runnerIndex)}`;
 }
-function runnerRole(routeView: string, stackKey: StackKey, runnerIndex: number): "removal" | "regenerated" | "default" {
+function runnerRole(routeView: string, stackKey: StackKey, runnerIndex: number): "extraction" | "removal" | "regenerated" | "default" {
   if (isB1B2PipelineRoute(routeView) && stackKey === "B") {
-    if (runnerIndex === 0) return "removal";
-    if (runnerIndex === 1) return "regenerated";
+    if (runnerIndex === 0) return "extraction";
+    if (runnerIndex === 1) return "removal";
+    if (runnerIndex === 2) return "regenerated";
   } else {
     if (stackKey === "B" && runnerIndex === 0) return "removal";
     if (stackKey === "B" && runnerIndex === 1) return "regenerated";
@@ -348,7 +353,7 @@ function runnerRole(routeView: string, stackKey: StackKey, runnerIndex: number):
   return "default";
 }
 function defaultRunnerCountForRoute(routeView: string): number {
-  return isB1B2PipelineRoute(routeView) ? 2 : 3;
+  return isB1B2PipelineRoute(routeView) ? 3 : 3;
 }
 function defaultSetupIndexForRunner(routeView: string, stackKey: StackKey, runnerIndex: number): number {
   const role = runnerRole(routeView, stackKey, runnerIndex);
@@ -356,6 +361,9 @@ function defaultSetupIndexForRunner(routeView: string, stackKey: StackKey, runne
   return 0;
 }
 function defaultInputFilesSourceIdsForRunner(routeView: string, stackKey: StackKey, runnerIndex: number): string[] {
+  if (isB1B2PipelineRoute(routeView) && runnerRole(routeView, stackKey, runnerIndex) === "removal") {
+    return ["runner:B0"];
+  }
   return ["ALL-Setup1"];
 }
 function shouldUseDescendSetups(routeView: string, stackKey: StackKey): boolean {
@@ -1670,6 +1678,7 @@ async function request(path: string, init?: RequestInit) {
 
 function defaultRunnerPrompt(routeView: string, stackKey: StackKey, runnerIndex: number): string {
   const role = runnerRole(routeView, stackKey, runnerIndex);
+  if (role === "extraction") return COMBINED_PROMPT;
   if (role === "removal") return REMOVAL_DISCOVERY_PASS_PROMPT;
   if (role === "regenerated") return REGENERATED_IDENTITIES_PROMPT;
   if (runnerIndex === 0) return COMBINED_PROMPT;
@@ -1682,6 +1691,7 @@ function defaultRunnerPrompt(routeView: string, stackKey: StackKey, runnerIndex:
 
 function primaryPromptName(routeView: string, stackKey: StackKey, runnerIndex: number): string {
   const role = runnerRole(routeView, stackKey, runnerIndex);
+  if (role === "extraction") return "generate_prolog_and_english";
   if (role === "removal") return "remove_smallest_object";
   if (role === "regenerated") return "regenerated_identities_from_many_objects";
   if (stackKey === "A" && runnerIndex === 0) return "circle_one_identity_at_a_time";
@@ -1726,7 +1736,7 @@ function migrateRunnerPromptText(routeView: string, stackKey: StackKey, runnerIn
 }
 
 function initialSelectedOutputId(pageDefinition: WorkflowPageDefinition): string {
-  return pageDefinition.routeView === "arc3B1B2Pipeline" ? "B1" : "A1";
+  return pageDefinition.routeView === "arc3B1B2Pipeline" ? "B0" : "A1";
 }
 
 function defaultInputFilesSourceIds(): string[] {
