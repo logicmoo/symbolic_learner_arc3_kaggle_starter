@@ -513,6 +513,17 @@ label.arc3-prolog-inline-composite-label > .arc3-prolog-selected-source-chips {
   background: rgb(6, 16, 22);
 }
 
+.arc3-b1b2-page .arc3-b1b2-col-resizer {
+  z-index: 6;
+  border-radius: 3px;
+  transition: background 0.12s ease;
+}
+
+.arc3-b1b2-page .arc3-b1b2-col-resizer:hover,
+.arc3-b1b2-page .arc3-b1b2-col-resizer:active {
+  background: rgba(39, 220, 194, 0.4);
+}
+
 .arc3-prolog-browse-list {
   display: flex;
   flex-direction: column;

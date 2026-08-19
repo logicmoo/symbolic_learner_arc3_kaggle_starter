@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { WorkflowPageHost, type WorkflowPageComponentRegistry, type WorkflowPageDefinition } from "./WorkflowPageHost";
 import { WorkflowPageSourceEditor } from "./WorkflowPageSourceEditor";
 import { ThreeStateAccordionMember, ThreeStateAccordionStack, type AccordionDisplayMode } from "./ThreeStateAccordion";
@@ -1956,6 +1956,72 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
   const controllersRef = useRef<Record<string, AbortController | null>>({});
   const stackColumnsRef = useRef(stackColumns);
   stackColumnsRef.current = stackColumns;
+  const columnsElRef = useRef<HTMLDivElement | null>(null);
+  const [columnTemplate, setColumnTemplate] = useState<string | null>(null);
+  const [resizerLefts, setResizerLefts] = useState<number[]>([]);
+  const [resizerHeight, setResizerHeight] = useState(0);
+  useLayoutEffect(() => {
+    const el = columnsElRef.current;
+    if (!el) return;
+    const measure = () => {
+      const columnEls = Array.from(el.children).filter(
+        (child): child is HTMLElement => child instanceof HTMLElement && child.classList.contains("english-workflow-column"),
+      );
+      if (columnEls.length < 2) {
+        setResizerLefts([]);
+        return;
+      }
+      const gap = parseFloat(getComputedStyle(el).columnGap || "0") || 0;
+      const lefts: number[] = [];
+      for (let index = 0; index < columnEls.length - 1; index += 1) {
+        lefts.push(columnEls[index].offsetLeft + columnEls[index].offsetWidth + gap / 2);
+      }
+      setResizerLefts(lefts);
+      setResizerHeight(el.scrollHeight);
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    window.addEventListener("resize", measure);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, [columnTemplate, stackColumns]);
+  const startColumnResize = (index: number, event: { clientX: number; preventDefault: () => void }) => {
+    event.preventDefault();
+    const el = columnsElRef.current;
+    if (!el) return;
+    const columnEls = Array.from(el.children).filter(
+      (child): child is HTMLElement => child instanceof HTMLElement && child.classList.contains("english-workflow-column"),
+    );
+    if (columnEls.length < 2 || index >= columnEls.length - 1) return;
+    const widths = columnEls.map((column) => column.getBoundingClientRect().width);
+    const startX = event.clientX;
+    const minWidth = 220;
+    const leftWidth = widths[index];
+    const rightWidth = widths[index + 1];
+    const onMove = (moveEvent: PointerEvent) => {
+      let delta = moveEvent.clientX - startX;
+      delta = Math.max(-(leftWidth - minWidth), Math.min(rightWidth - minWidth, delta));
+      const next = widths.map((width, position) => {
+        if (position === index) return leftWidth + delta;
+        if (position === index + 1) return rightWidth - delta;
+        return width;
+      });
+      setColumnTemplate(next.map((width) => `${Math.round(width)}px`).join(" "));
+    };
+    const onUp = () => {
+      document.removeEventListener("pointermove", onMove);
+      document.removeEventListener("pointerup", onUp);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    document.addEventListener("pointermove", onMove);
+    document.addEventListener("pointerup", onUp);
+  };
   const generationSeqRef = useRef(0);
   const anyRunning = stackColumns.some((stack) => stack.runners.some((runner) => runner.running));
   useEffect(() => {
@@ -4502,5 +4568,20 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
     definition={pageDefinition}
     componentRegistry={registry}
     pageClassName="english-workflow-page arc3-b1b2-page"
+    columnsRef={columnsElRef}
+    columnsStyle={{ position: "relative", ...(columnTemplate ? { gridTemplateColumns: columnTemplate } : {}) }}
+    columnsOverlay={resizerLefts.length ? <div
+      className="arc3-b1b2-col-resizers"
+      style={{ position: "absolute", top: 0, left: 0, height: resizerHeight || "100%", width: 0, pointerEvents: "none" }}
+      aria-hidden="true"
+    >
+      {resizerLefts.map((left, index) => <div
+        key={index}
+        className="arc3-b1b2-col-resizer"
+        style={{ position: "absolute", top: 0, height: "100%", left: left - 4, width: 8, cursor: "col-resize", pointerEvents: "auto" }}
+        title="Drag to resize columns"
+        onPointerDown={(event) => startColumnResize(index, event)}
+      />)}
+    </div> : null}
   />;
 }

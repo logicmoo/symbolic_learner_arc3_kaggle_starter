@@ -433,6 +433,23 @@ def test_b1_b2_file_groups_have_edit_new_editors() -> None:
     assert ".arc3-prolog-setup-file-editor" in styles
 
 
+def test_b1_b2_columns_are_resizable() -> None:
+    source = COMPONENT.read_text(encoding="utf-8")
+    styles = STYLES.read_text(encoding="utf-8")
+    # Columns get draggable splitters via the host's columnsRef/columnsStyle/columnsOverlay
+    # extension points, adjusting an inline grid-template-columns on drag.
+    assert "const columnsElRef = useRef<HTMLDivElement | null>(null);" in source
+    assert "const [columnTemplate, setColumnTemplate] = useState<string | null>(null);" in source
+    assert "const startColumnResize = (index: number, event: { clientX: number; preventDefault: () => void }) =>" in source
+    assert "columnRef={columnsElRef}" in source or "columnsRef={columnsElRef}" in source
+    assert "...(columnTemplate ? { gridTemplateColumns: columnTemplate } : {})" in source
+    assert 'className="arc3-b1b2-col-resizer"' in source
+    assert "onPointerDown={(event) => startColumnResize(index, event)}" in source
+    # Adjacent columns trade width; a minimum width is enforced.
+    assert "const minWidth = 220;" in source
+    assert ".arc3-b1b2-page .arc3-b1b2-col-resizer" in styles
+
+
 def test_b1_b2_buttons_have_readable_theme() -> None:
     source = COMPONENT.read_text(encoding="utf-8")
     styles = STYLES.read_text(encoding="utf-8")
