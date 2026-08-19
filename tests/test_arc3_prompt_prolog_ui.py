@@ -12,7 +12,9 @@ def test_two_image_prolog_has_overlay_gap_loop_contract() -> None:
     assert "Image #3 is debug_overlay_image for pass-N coverage gap discovery." in source
     assert "Prior pass current_identities" in source
     assert "Loop converged at pass" in source
-    assert "(box as Record<string, unknown>).x" in source
+    assert "function coerceIdentityBoundingBox" in source
+    assert "record.bounding_box ?? record.bbox ?? record.box" in source
+    assert "const corners = cornerHint || (nc > na && nd > nb)" in source
     assert "VALIDATION_ERRORS:" in source
     assert "VALIDATION-REPAIR MODE:" in source
     assert "validatePassOutput(" in source

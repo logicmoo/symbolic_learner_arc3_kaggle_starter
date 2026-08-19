@@ -105,3 +105,15 @@ def test_b1_b2_prompts_require_descriptive_object_ids() -> None:
     assert source.count("DESCRIPTIVE_ID_RULE") >= 4
     # Validator must reject non-descriptive ids.
     assert "Reject when any identity id is not descriptive" in source
+
+
+def test_b1_b2_identity_parser_accepts_bbox_and_corners() -> None:
+    source = COMPONENT.read_text(encoding="utf-8")
+    # The identity parser must accept the bbox/box aliases (not just
+    # bounding_box) and convert [x1,y1,x2,y2] corner boxes to [x,y,w,h].
+    assert "function coerceIdentityBoundingBox" in source
+    assert "record.bounding_box ?? record.bbox ?? record.box" in source
+    assert "const corners = cornerHint || (nc > na && nd > nb)" in source
+    # Prompt documents the accepted bounding-box shape.
+    assert "BOUNDING BOX CONTRACT:" in source
+    assert "bbox is accepted as an alias" in source

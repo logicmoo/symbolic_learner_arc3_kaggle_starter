@@ -223,6 +223,8 @@ const COMBINED_PROMPT_PARTS = [
   "",
   "NAMING CONTRACT: " + DESCRIPTIVE_ID_RULE,
   "",
+  "BOUNDING BOX CONTRACT: Every identity must include a bounding_box (key bounding_box; bbox is accepted as an alias) expressed as [x1, y1, x2, y2] — the top-left and bottom-right corners, with x2 > x1 and y2 > y1 — in the same coordinate space you use elsewhere. An object form {x1, y1, x2, y2} or {x, y, width, height} is also accepted. Do not emit degenerate or zero-area boxes.",
+  "",
   "LEVEL_1 FIRST-PASS MINIMUM: On level_1, first-pass extraction must include at least these canonical identities from action_trees/ls20/level_1_v2/object_registry.pl before second-pass discovery: blue_black_player, bottom_center_gate, bottom_status_panel, bottom_status_track, cyan_status_blocks, fortress_inner_courtyard, fortress_left_wing, fortress_lower_bridge, fortress_main_body, fortress_right_wing, fortress_upper_stem, gate_burgundy_panel, gate_gray_header, green_fortress, green_status_block, left_boundary_wall, lower_left_burgundy_glyph, lower_left_symbol_card, lower_right_green_target, player_black_core, player_blue_tail, upper_burgundy_glyph, upper_chamber_frame, upper_chamber_interior, upper_left_green_target, yellow_playfield.",
   "",
   "OBJECT EXTRACTION: objects_pl must describe the current state comprehensively but nonredundantly. Detect meaningful connected color regions and useful block-level structures, including blocks, rectangles, bars, line segments, glyphs, holes, enclosures, borders, HUD elements, status indicators, compound objects, and meaningful sub-objects. Perform extraction per image independently first (parent then current) so no object in either image is skipped; then emit the current-state object facts. For level_1, prioritize extracting the full object inventory from the first/root image and treat later image extraction as reconciliation against that baseline. Extraction order must mirror identity workflow: (1) recover and validate objects already in current_identities, then (2) cover unmatched regions and objects in the rest of each image, and add those new objects to current_identities before returning. Objects that are detected in the images must be reflected in both objects_pl and current_identities. Identify likely multi-object assemblies and coupled motion patterns (objects translating or rotating together), represent those relationships explicitly, and create persistent group identities when evidence is strong. Do not treat every individual cell as a separate object unless the cell has an independent semantic role.",
@@ -265,6 +267,7 @@ const GAP_DISCOVERY_PASS_PROMPT = [
   "Find meaningful entities not already covered by those boxes, or separable sub-objects not represented yet.",
   "Prioritize boundary/wall anomalies, distinct color segments, UI/status residues, and repeated motifs that should become groups.",
   "Do not duplicate existing IDs, and assign each newly discovered entity a friendly snake_case id like blue_star_trigger. Add sub_type and tight bounding_box for every newly discovered entity.",
+  "Emit bounding_box as [x1, y1, x2, y2] top-left and bottom-right corners (x2 > x1, y2 > y1).",
   DESCRIPTIVE_ID_RULE,
   "Return full current_identities updated in place; new additions must include why_new evidence.",
   "If no meaningful uncovered region remains, add no new identities.",
@@ -298,6 +301,7 @@ const REMOVAL_DISCOVERY_PASS_PROMPT = [
   "Return image_without_object as the original image with all selected removed_object_n pixels removed.",
   "Always carry BOTH images forward for downstream processing: image_without_object and removed_object_image.",
   "Mark each removed identity as not visible/removed in current_identities and preserve all other identities unless direct evidence requires change.",
+  "Keep every identity's bounding_box as [x1, y1, x2, y2] top-left and bottom-right corners (x2 > x1, y2 > y1).",
   DESCRIPTIVE_ID_RULE,
   "Set exit_value=next_iteration when one or more valid objects are removed, loop_complete when no valid removable leaf object(s) remain, llm_error on failure.",
 ].join("\n");
@@ -958,6 +962,47 @@ async function pairSheet(before: { label: string; source: string }, after: { lab
   return canvas.toDataURL("image/png");
 }
 
+function coerceIdentityBoundingBox(box: unknown): [number, number, number, number] | null {
+  let a: unknown;
+  let b: unknown;
+  let c: unknown;
+  let d: unknown;
+  let cornerHint = false;
+  if (Array.isArray(box) && box.length === 4) {
+    [a, b, c, d] = box;
+  } else if (box && typeof box === "object") {
+    const record = box as Record<string, unknown>;
+    const hasCorner = record.x2 !== undefined || record.y2 !== undefined
+      || record.right !== undefined || record.bottom !== undefined;
+    if (hasCorner) {
+      a = record.x1 ?? record.left ?? record.x;
+      b = record.y1 ?? record.top ?? record.y;
+      c = record.x2 ?? record.right;
+      d = record.y2 ?? record.bottom;
+      cornerHint = true;
+    } else {
+      a = record.x ?? record.left;
+      b = record.y ?? record.top;
+      c = record.w ?? record.width;
+      d = record.h ?? record.height;
+    }
+  } else {
+    return null;
+  }
+  const na = Number(a);
+  const nb = Number(b);
+  const nc = Number(c);
+  const nd = Number(d);
+  if (![na, nb, nc, nd].every((value) => Number.isFinite(value))) return null;
+  // Corner form [x1, y1, x2, y2] is detected when the last pair is a valid
+  // bottom-right corner (strictly greater than the top-left); convert to
+  // the canonical [x, y, width, height] the rest of the pipeline expects.
+  const corners = cornerHint || (nc > na && nd > nb);
+  const width = corners ? nc - na : nc;
+  const height = corners ? nd - nb : nd;
+  return [na, nb, width, height];
+}
+
 function asIdentityCandidates(payload: ParsedPrologPayload | null | undefined): IdentityCandidate[] {
   if (!payload || !Array.isArray(payload.current_identities)) return [];
   return payload.current_identities
@@ -966,25 +1011,15 @@ function asIdentityCandidates(payload: ParsedPrologPayload | null | undefined): 
       const record = item as Record<string, unknown>;
       const id = String(record.id || "").trim();
       if (!id) return null;
-      const box = record.bounding_box;
-      const tuple = Array.isArray(box) && box.length === 4
-        ? box
-        : (box && typeof box === "object")
-          ? [
-            (box as Record<string, unknown>).x,
-            (box as Record<string, unknown>).y,
-            (box as Record<string, unknown>).w,
-            (box as Record<string, unknown>).h,
-          ]
-          : null;
-      if (!tuple) return { id };
-      const numeric = tuple.map((value) => Number(value));
-      if (numeric.some((value) => !Number.isFinite(value))) return { id };
-      const normalizedBox: [number, number, number, number] = [numeric[0], numeric[1], numeric[2], numeric[3]];
+      const type = typeof record.type === "string" ? record.type : undefined;
+      const sub_type = typeof record.sub_type === "string" ? record.sub_type : undefined;
+      const rawBox = record.bounding_box ?? record.bbox ?? record.box;
+      const normalizedBox = coerceIdentityBoundingBox(rawBox);
+      if (!normalizedBox) return { id, type, sub_type };
       return {
         id,
-        type: typeof record.type === "string" ? record.type : undefined,
-        sub_type: typeof record.sub_type === "string" ? record.sub_type : undefined,
+        type,
+        sub_type,
         bounding_box: normalizedBox,
       };
     })
