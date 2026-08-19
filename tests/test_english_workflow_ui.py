@@ -26,7 +26,14 @@ def test_english_workflow_page_uses_real_resources_and_native_accordion_stacks()
     assert "<WorkflowPageHost" in page
     assert "orderedColumns.map" in host
     assert "column.members.map" in host
-    assert "componentRegistry[member.component]" in host
+    assert "componentRegistry[selectedComponent]" in host
+    assert "COMPONENT INITIALIZATION FAILED" in host
+    assert "COMPONENT RENDER FAILED" in host
+    assert "INIT" in host
+    assert "setInitAttempts" in host
+    assert "Component constructor for ${member.id}" in host
+    assert "Component is uninitialized. Select INIT to attempt component initialization." in host
+    assert "MemberRenderErrorBoundary" in host
     assert "<ThreeStateAccordionStack" in host
     assert "/model-selection" in page
     assert "/operations/${encodeURIComponent(contractOperation.id)}/invoke" in page

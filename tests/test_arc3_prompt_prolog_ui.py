@@ -3,6 +3,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "workbench/frontend/src/components/Arc3PromptPrologPage.tsx"
+B1_B2_PAGE = ROOT / "workbench/workspaces/arc3_random_player/design/workflow_pages/b1_b2_pipeline.workflow_page.json"
 
 
 def test_two_image_prolog_has_overlay_gap_loop_contract() -> None:
@@ -56,15 +57,14 @@ def test_two_image_prolog_exposes_auto_loop_control() -> None:
     assert "const promptDrivenIteration = removalLoopRunner || regenerateRunner;" in source
     assert "if (promptDrivenIteration)" in source
     assert "Loop stopped at pass ${passNumber}: exit_value=${acceptedExitValue}." in source
-    assert 'if (runnerIndex === 0) return "legacy_root_getter";' in source
-    assert 'if (runnerIndex === 1) return "removal";' in source
-    assert 'if (runnerIndex === 2) return "regenerated";' in source
-    assert "LEGACY_ROOT_GETTER_PROMPT" in source
+    assert 'if (runnerIndex === 0) return "removal";' in source
+    assert 'if (runnerIndex === 1) return "regenerated";' in source
+    assert "return isB1B2PipelineRoute(routeView) ? 2 : 3;" in source
     assert "legacy_root_getter:" in source
     assert 'if (role === "removal") return REMOVAL_DISCOVERY_PASS_PROMPT;' in source
     assert 'if (role === "regenerated") return REGENERATED_IDENTITIES_PROMPT;' in source
-    assert 'if (role === "regenerated") return "extract_regenerated_identities";' in source
-    assert 'return pageDefinition.routeView === "arc3B1B2Pipeline" ? "B0" : "A1";' in source
+    assert 'if (role === "regenerated") return "regenerated_identities_from_many_objects";' in source
+    assert 'return pageDefinition.routeView === "arc3B1B2Pipeline" ? "B1" : "A1";' in source
     assert "regenerated_identities_from_many_objects:" in source
     assert 'return runnerRole(routeView, stackKey, runnerIndex) === "removal";' in source
     assert 'return runnerRole(routeView, stackKey, runnerIndex) === "regenerated";' in source
@@ -97,6 +97,7 @@ def test_two_image_prolog_exposes_auto_loop_control() -> None:
     assert "Next Setup" in source
     assert "max_primary_secs" in source
     assert "max_loop_secs" in source
+    assert "max={3600}" in source
     assert "max_iterations" in source
     assert "LIMITS:" in source
     assert "arc3-prolog-runner-limits-line" in source
@@ -124,3 +125,14 @@ def test_two_image_prolog_exposes_auto_loop_control() -> None:
     assert source.index("Run Until Exit") < source.index("LOOP_FILES")
     assert source.index("|&gt; Loop/Validate Prompt -") < source.index("RAW_PARSED")
     assert source.index("RAW_PARSED") < source.index("<summary>OUTPUT_FILES</summary>")
+
+
+def test_b1_b2_pipeline_page_is_single_stack_layout_contract() -> None:
+    source = B1_B2_PAGE.read_text(encoding="utf-8")
+    assert '"routeView": "arc3B1B2Pipeline"' in source
+    assert '"renderer": "arc3_prompt_prolog"' in source
+    assert '"label": "B1 THEN B2"' in source
+    assert '"label": "Run B1 Then B2"' in source
+    assert '"label": "B1/B2 Output Files"' in source
+    assert '"label": "Combined Prompt Contract"' in source
+    assert '"initialDisplayMode": "scroll"' in source

@@ -20,6 +20,18 @@ def _quote(value: str, force: bool = False) -> str:
     return json.dumps(value, ensure_ascii=False)
 
 
+def _single_quote(value: str) -> str:
+    escaped = (
+        value
+        .replace("\\", "\\\\")
+        .replace("'", "\\'")
+        .replace("\n", "\\n")
+        .replace("\r", "\\r")
+        .replace("\t", "\\t")
+    )
+    return f"'{escaped}'"
+
+
 def _embedded_json_parts(value: str) -> list[Any] | None:
     decoder = json.JSONDecoder()
     parts: list[Any] = []
@@ -49,6 +61,60 @@ def _embedded_json_parts(value: str) -> list[Any] | None:
     if cursor < len(value):
         parts.append(value[cursor:])
     return parts
+
+
+def _compact_embedded_json_string(value: str) -> str:
+    parts = _embedded_json_parts(value)
+    if parts is None:
+        return value
+    return "".join(
+        part if isinstance(part, str) else json.dumps(part, ensure_ascii=False, separators=(",", ":"))
+        for part in parts
+    )
+
+
+def _formatted_embedded_string_list_item(value: str) -> list[str] | None:
+    parts = _embedded_json_parts(value)
+    if not parts or not any(not isinstance(part, str) for part in parts):
+        return None
+    lines: list[str] = [""]
+    for part in parts:
+        if isinstance(part, str):
+            lines[-1] += part
+            continue
+        pretty_lines = json.dumps(part, ensure_ascii=False, indent=2).splitlines()
+        lines[-1] += pretty_lines[0]
+        lines.extend(pretty_lines[1:])
+    return [json.dumps(lines[0], ensure_ascii=False), *(_single_quote(line) for line in lines[1:])]
+
+
+def _split_long_sentence_lines(value: str, minimum_prefix: int = 50) -> list[str] | None:
+    if len(value) <= minimum_prefix or "\n" in value or "\r" in value:
+        return None
+    lines: list[str] = []
+    remaining = value
+    while len(remaining) > minimum_prefix:
+        split_at = -1
+        for match in re.finditer(r"[A-Za-z][.!?]\s+", remaining):
+            boundary = match.end()
+            if boundary >= minimum_prefix:
+                split_at = boundary
+                break
+        if split_at < 0:
+            break
+        lines.append(remaining[:split_at])
+        remaining = remaining[split_at:]
+    if not lines:
+        return None
+    lines.append(remaining)
+    return lines
+
+
+def _formatted_long_sentence_list_item(value: str) -> list[str] | None:
+    lines = _split_long_sentence_lines(value)
+    if not lines or len(lines) <= 1:
+        return None
+    return [json.dumps(lines[0], ensure_ascii=False), *(_single_quote(line) for line in lines[1:])]
 
 
 def _restore_embedded_json_string(value: dict[str, Any]) -> Any:
@@ -89,10 +155,20 @@ def json_value_to_metta(value: Any, depth: int = 0, force_quote_string: bool = F
             isinstance(item, str) and any(character.isspace() for character in item)
             for item in value
         )
-        items = [
-            f"{child_indent}{json_value_to_metta(item, depth + 1, force_quote_string=quote_string_items and isinstance(item, str))}"
-            for item in value
-        ]
+        items: list[str] = []
+        for item in value:
+            if quote_string_items and isinstance(item, str):
+                formatted = _formatted_embedded_string_list_item(item)
+                if formatted:
+                    items.extend(f"{child_indent}{line}" for line in formatted)
+                    continue
+                wrapped = _formatted_long_sentence_list_item(item)
+                if wrapped:
+                    items.extend(f"{child_indent}{line}" for line in wrapped)
+                    continue
+            items.append(
+                f"{child_indent}{json_value_to_metta(item, depth + 1, force_quote_string=quote_string_items and isinstance(item, str))}"
+            )
         return f"([]\n{'\n'.join(items)}\n{indent})"
     if isinstance(value, dict):
         if not value:
@@ -112,6 +188,7 @@ def json_document_to_metta(document: Any) -> str:
 class Token:
     value: str
     quoted: bool = False
+    quote_style: str | None = None
 
 
 def _tokenize(source: str) -> list[Token]:
@@ -138,8 +215,29 @@ def _tokenize(source: str) -> list[Token]:
                 raise ValueError(f"invalid quoted string: {error.msg}") from error
             if not isinstance(value, str):
                 raise ValueError("quoted atom must be a string")
-            tokens.append(Token(value, True))
+            tokens.append(Token(value, True, "double"))
             index += consumed
+            continue
+        if character == "'":
+            index += 1
+            value_parts: list[str] = []
+            while index < len(source):
+                next_character = source[index]
+                if next_character == "\\":
+                    if index + 1 >= len(source):
+                        raise ValueError("invalid single-quoted string")
+                    escaped = source[index + 1]
+                    value_parts.append("\n" if escaped == "n" else "\r" if escaped == "r" else "\t" if escaped == "t" else escaped)
+                    index += 2
+                    continue
+                if next_character == "'":
+                    tokens.append(Token("".join(value_parts), True, "single"))
+                    index += 1
+                    break
+                value_parts.append(next_character)
+                index += 1
+            else:
+                raise ValueError("invalid single-quoted string")
             continue
         start = index
         while index < len(source) and not source[index].isspace() and source[index] not in "()":
@@ -150,7 +248,7 @@ def _tokenize(source: str) -> list[Token]:
 
 def _atom(token: Token) -> Any:
     if token.quoted:
-        return token.value
+        return _compact_embedded_json_string(token.value)
     if token.value == "true":
         return True
     if token.value == "false":
@@ -199,15 +297,36 @@ def metta_to_json_value(source: str, *, legacy: bool = False) -> Any:
             index += 1
             return _restore_embedded_json_string(result)
         values: list[Any] = []
+        can_append_single_quoted = False
         while index >= len(tokens) or tokens[index].value != ")":
             if index >= len(tokens):
                 raise ValueError("unclosed list")
+            next_token = tokens[index]
+            if next_token.quoted and next_token.quote_style == "double":
+                values.append(next_token.value)
+                index += 1
+                can_append_single_quoted = True
+                continue
+            if next_token.quoted and next_token.quote_style == "single":
+                trimmed = next_token.value.lstrip()
+                if can_append_single_quoted and values and isinstance(values[-1], str):
+                    values[-1] = f"{values[-1]}\n{trimmed}"
+                else:
+                    values.append(trimmed)
+                index += 1
+                can_append_single_quoted = True
+                continue
             values.append(parse())
+            can_append_single_quoted = False
         index += 1
+        normalized_values = [
+            _compact_embedded_json_string(item) if isinstance(item, str) else item
+            for item in values
+        ]
         if marker == "[]" or (legacy and marker != "{}"):
-            return values
+            return normalized_values
         result: dict[str, Any] = {}
-        for entry in values:
+        for entry in normalized_values:
             if not isinstance(entry, list) or len(entry) != 2 or not isinstance(entry[0], str):
                 raise ValueError("map entries must be (name value) pairs")
             result[entry[0]] = entry[1]
@@ -230,7 +349,7 @@ def split_metta_document_spans(source: str) -> list[tuple[int, int, str]]:
     documents: list[tuple[int, int, str]] = []
     start: int | None = None
     depth = 0
-    quoted = False
+    quoted: str | None = None
     escaped = False
     comment = False
     for index, character in enumerate(source):
@@ -238,18 +357,18 @@ def split_metta_document_spans(source: str) -> list[tuple[int, int, str]]:
             if character == "\n":
                 comment = False
             continue
-        if quoted:
+        if quoted is not None:
             if escaped:
                 escaped = False
             elif character == "\\":
                 escaped = True
-            elif character == '"':
-                quoted = False
+            elif character == quoted:
+                quoted = None
             continue
         if character == ";":
             comment = True
-        elif character == '"':
-            quoted = True
+        elif character in {"'", '"'}:
+            quoted = character
         elif character == "(":
             if depth == 0:
                 start = index
@@ -263,7 +382,7 @@ def split_metta_document_spans(source: str) -> list[tuple[int, int, str]]:
                 start = None
         elif depth == 0 and not character.isspace():
             raise ValueError("top-level resource must be a map")
-    if quoted or depth or start is not None:
+    if quoted is not None or depth or start is not None:
         raise ValueError("unclosed top-level resource")
     return documents
 

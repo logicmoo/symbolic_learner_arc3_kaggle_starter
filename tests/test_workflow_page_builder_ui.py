@@ -21,7 +21,9 @@ def test_workflow_page_builder_is_reachable_and_deep_linkable() -> None:
 def test_builder_parses_pasted_json_and_preserves_last_valid_preview() -> None:
     source = BUILDER.read_text(encoding="utf-8")
 
-    assert 'aria-label="Current page specification JSON"' in source
+    assert "ResourceSourceEditor" in source
+    assert 'label="Current page specification (MeTTa/JSON/Tree)"' in source
+    assert "onValidityChange={setSourceValid}" in source
     assert "JSON.parse(source)" in source
     assert "function recoverDefinition" in source
     assert '(["left", "center", "right"] as const).map' in source
@@ -32,6 +34,7 @@ def test_builder_parses_pasted_json_and_preserves_last_valid_preview() -> None:
     assert '>INIT</button>' in source
     assert "setInitialized(false)" in source
     assert "setInitialized(true)" in source
+    assert "setSourceValid(true)" in source
     assert "and initialized components" in source
     assert "Page contents cleared. CURRENT PAGE SPECIFICATION remains ready" in source
     assert "Restore filesystem page" in source
@@ -54,12 +57,17 @@ def test_builder_renders_every_declared_component_through_the_shared_host() -> N
     source = BUILDER.read_text(encoding="utf-8")
     styles = STYLES.read_text(encoding="utf-8")
 
-    assert "function previewRegistry" in source
+    assert "useMemo<WorkflowPageComponentRegistry>" in source
     assert "definition.layout.columns.forEach" in source
     assert "components.add" in source
-    assert "previewSurface" in source
-    assert '<WorkflowPageHost definition={definition} componentRegistry={registry}' in source
-    assert "INPUT BINDINGS" in source
-    assert "OUTPUT BINDINGS" in source
-    assert "OPTIONS" in source
+    assert "Apply Component" in source
+    assert "Apply Member JSON" in source
+    assert "HEADER" in source
+    assert "MEMBER JSON" in source
+    assert "member JSON editor for ${member.id}" in source
+    assert "header controls for ${member.id}" in source
+    assert "itemHeader:" in source
+    assert "workflow-page-builder-member-host" in source
+    assert "workflow-page-builder-member-status" in source
+    assert '<WorkflowPageHost definition={definition} componentRegistry={registry} deferComponentInitialization' in source
     assert "grid-template-columns: repeat(3" in styles

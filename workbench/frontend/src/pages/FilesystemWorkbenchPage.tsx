@@ -555,6 +555,8 @@ const WORKBENCH_THEMES = [
 type WorkbenchTheme = (typeof WORKBENCH_THEMES)[number]["id"];
 const isWorkbenchTheme = (value: string | null): value is WorkbenchTheme =>
   WORKBENCH_THEMES.some((theme) => theme.id === value);
+const WORKSPACE_RESOURCE_COUNTING_STORAGE_KEY =
+  "workbench.workspaceResourceCountingEnabled";
 
 export const NAVIGATION_V2: Array<{
   group: "WORKSPACE" | "WORKFLOWS" | "CAPABILITIES" | "KNOWLEDGE" | "RUNTIME" | "SYSTEM";
@@ -888,6 +890,14 @@ export function FilesystemWorkbenchPage() {
     const saved = localStorage.getItem("workbench.theme");
     return isWorkbenchTheme(saved) ? saved : "midnight";
   });
+  const [workspaceResourceCountingEnabled, setWorkspaceResourceCountingEnabled] =
+    useState(() => {
+      const saved = localStorage.getItem(
+        WORKSPACE_RESOURCE_COUNTING_STORAGE_KEY,
+      );
+      if (saved === null) return false;
+      return saved !== "false";
+    });
   const [newWorkspaceLabel, setNewWorkspaceLabel] = useState("");
   const [newWorkspaceTemplateId, setNewWorkspaceTemplateId] =
     useState("default");
@@ -1113,27 +1123,30 @@ export function FilesystemWorkbenchPage() {
       .then((payload) => {
         if (cancelled) return;
         const next = (payload.workspaces || []) as Workspace[];
-        setWorkspaces((current) =>
-          current.some((item) => item.countsAvailable) ? current : next,
-        );
+        setWorkspaces((current) => {
+          if (!workspaceResourceCountingEnabled) return next;
+          return current.some((item) => item.countsAvailable) ? current : next;
+        });
       })
       .catch((reason) => {
         if (!cancelled) setError(String(reason));
       });
-    // Defer heavy count hydration so URL-driven workspace/view restore is not blocked.
-    detailedTimer = window.setTimeout(() => {
-      void request("/api/workspaces?detailed=true")
-        .then((payload) => {
-          if (cancelled) return;
-          setWorkspaces((payload.workspaces || []) as Workspace[]);
-        })
-        .catch(() => undefined);
-    }, 1200);
+    if (workspaceResourceCountingEnabled) {
+      // Defer heavy count hydration so URL-driven workspace/view restore is not blocked.
+      detailedTimer = window.setTimeout(() => {
+        void request("/api/workspaces?detailed=true")
+          .then((payload) => {
+            if (cancelled) return;
+            setWorkspaces((payload.workspaces || []) as Workspace[]);
+          })
+          .catch(() => undefined);
+      }, 1200);
+    }
     return () => {
       cancelled = true;
       window.clearTimeout(detailedTimer);
     };
-  }, []);
+  }, [workspaceResourceCountingEnabled]);
   useEffect(() => {
     if (workspace)
       setPlaygroundContext((current) => ({
@@ -1325,17 +1338,20 @@ export function FilesystemWorkbenchPage() {
       void request("/api/workspaces")
         .then((payload) =>
           setWorkspaces((current) =>
+            workspaceResourceCountingEnabled &&
             current.some((item) => item.countsAvailable)
               ? current
               : ((payload.workspaces || []) as Workspace[]),
           ),
         )
         .catch(() => undefined);
-      void request("/api/workspaces?detailed=true")
-        .then((payload) =>
-          setWorkspaces((payload.workspaces || []) as Workspace[]),
-        )
-        .catch(() => undefined);
+      if (workspaceResourceCountingEnabled) {
+        void request("/api/workspaces?detailed=true")
+          .then((payload) =>
+            setWorkspaces((payload.workspaces || []) as Workspace[]),
+          )
+          .catch(() => undefined);
+      }
     });
   const loadWorkspace = (item: Workspace) => loadWorkspaceById(item.id);
   const loadRequestedWorkspace = () => {
@@ -1826,6 +1842,12 @@ export function FilesystemWorkbenchPage() {
     localStorage.setItem("workbench.theme", theme);
   }, [theme]);
   useEffect(() => {
+    localStorage.setItem(
+      WORKSPACE_RESOURCE_COUNTING_STORAGE_KEY,
+      workspaceResourceCountingEnabled ? "true" : "false",
+    );
+  }, [workspaceResourceCountingEnabled]);
+  useEffect(() => {
     const takeoverEnabled = view === "canvas";
     document.body.classList.toggle(
       "shell-takeover-resource",
@@ -1978,6 +2000,14 @@ export function FilesystemWorkbenchPage() {
               <small>Choose a filesystem workspace</small>
             </div>
           </div>
+          {!workspaceResourceCountingEnabled && (
+            <div className="demo-notice">
+              <b>WORKSPACE RESOURCE COUNTING DISABLED</b>
+              <span>
+                Detailed local/inherited/overridden counts are off in Settings.
+              </span>
+            </div>
+          )}
           <div className="workspace-picker-grid">
             <form
               className="workspace-card create-workspace-card"
@@ -2052,7 +2082,8 @@ export function FilesystemWorkbenchPage() {
                 <h2>{item.label}</h2>
                 <p>{item.description || "Filesystem workspace"}</p>
                 <strong>
-                  {item.countsAvailable
+                  {workspaceResourceCountingEnabled
+                    ? item.countsAvailable
                     ? (() => {
                         const breakdowns = item.resourceCountBreakdowns || {};
                         const summary = chooserResourceOrder.reduce<
@@ -2085,7 +2116,8 @@ export function FilesystemWorkbenchPage() {
                           `${item.workflowFileCount} workflows · ${item.operationFileCount || 0} operations · ${item.datatypeFileCount || 0} datatypes · ${item.representationFileCount || 0} representations · ${item.modelFileCount || 0} model/preset items · ${item.promptFileCount || 0} prompts`
                         );
                       })()
-                    : "Calculating local/inherited/overridden totals..."}
+                    : "Calculating local/inherited/overridden totals with the worker pool..."
+                    : "Detailed resource counting disabled in Settings"}
                 </strong>
                 <small>{item.root}</small>
               </article>
@@ -3422,6 +3454,12 @@ export function FilesystemWorkbenchPage() {
                   workspaces={workspaces}
                   fileCount={snapshot?.files.length || 0}
                   implementationCount={implementations.length}
+                  workspaceResourceCountingEnabled={
+                    workspaceResourceCountingEnabled
+                  }
+                  onWorkspaceResourceCountingEnabledChange={
+                    setWorkspaceResourceCountingEnabled
+                  }
                   mode="workspace"
                   onSwitch={showWorkspaceChooser}
                   onSaved={refreshSnapshot}
@@ -3822,6 +3860,12 @@ export function FilesystemWorkbenchPage() {
                 workspaces={workspaces}
                 fileCount={snapshot?.files.length || 0}
                 implementationCount={implementations.length}
+                workspaceResourceCountingEnabled={
+                  workspaceResourceCountingEnabled
+                }
+                onWorkspaceResourceCountingEnabledChange={
+                  setWorkspaceResourceCountingEnabled
+                }
                 mode="processes"
                 onSwitch={showWorkspaceChooser}
                 onSaved={refreshSnapshot}
@@ -3833,6 +3877,12 @@ export function FilesystemWorkbenchPage() {
                 workspaces={workspaces}
                 fileCount={snapshot?.files.length || 0}
                 implementationCount={implementations.length}
+                workspaceResourceCountingEnabled={
+                  workspaceResourceCountingEnabled
+                }
+                onWorkspaceResourceCountingEnabledChange={
+                  setWorkspaceResourceCountingEnabled
+                }
                 onSwitch={showWorkspaceChooser}
                 onSaved={refreshSnapshot}
               />

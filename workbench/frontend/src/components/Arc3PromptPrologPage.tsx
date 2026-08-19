@@ -320,18 +320,15 @@ function isB1B2PipelineRoute(routeView: string): boolean {
   return routeView === "arc3B1B2Pipeline";
 }
 function runnerDisplayOrdinal(routeView: string, stackKey: StackKey, runnerIndex: number): number {
-  if (isB1B2PipelineRoute(routeView) && stackKey === "B") return runnerIndex;
   return runnerIndex + 1;
 }
 function runnerDisplayId(routeView: string, stackKey: StackKey, runnerIndex: number): string {
   return `${stackKey}${runnerDisplayOrdinal(routeView, stackKey, runnerIndex)}`;
 }
-function runnerRole(routeView: string, stackKey: StackKey, runnerIndex: number): "legacy_root_getter" | "removal" | "regenerated" | "legacy_followup" | "default" {
+function runnerRole(routeView: string, stackKey: StackKey, runnerIndex: number): "removal" | "regenerated" | "default" {
   if (isB1B2PipelineRoute(routeView) && stackKey === "B") {
-    if (runnerIndex === 0) return "legacy_root_getter";
-    if (runnerIndex === 1) return "removal";
-    if (runnerIndex === 2) return "regenerated";
-    if (runnerIndex === 3) return "legacy_followup";
+    if (runnerIndex === 0) return "removal";
+    if (runnerIndex === 1) return "regenerated";
   } else {
     if (stackKey === "B" && runnerIndex === 0) return "removal";
     if (stackKey === "B" && runnerIndex === 1) return "regenerated";
@@ -339,18 +336,14 @@ function runnerRole(routeView: string, stackKey: StackKey, runnerIndex: number):
   return "default";
 }
 function defaultRunnerCountForRoute(routeView: string): number {
-  return isB1B2PipelineRoute(routeView) ? 4 : 3;
+  return isB1B2PipelineRoute(routeView) ? 2 : 3;
 }
 function defaultSetupIndexForRunner(routeView: string, stackKey: StackKey, runnerIndex: number): number {
   const role = runnerRole(routeView, stackKey, runnerIndex);
-  if (role === "legacy_root_getter") return 1; // Setup2 pair
   if (role === "removal") return 0; // Setup1 single image
-  if (role === "legacy_followup") return 1; // Setup2 pair
   return 0;
 }
 function defaultInputFilesSourceIdsForRunner(routeView: string, stackKey: StackKey, runnerIndex: number): string[] {
-  const role = runnerRole(routeView, stackKey, runnerIndex);
-  if (role === "legacy_followup") return ["file:B2:current_identities"];
   return ["ALL-Setup1"];
 }
 function shouldUseDescendSetups(routeView: string, stackKey: StackKey): boolean {
@@ -1676,17 +1669,8 @@ async function request(path: string, init?: RequestInit) {
 
 function defaultRunnerPrompt(routeView: string, stackKey: StackKey, runnerIndex: number): string {
   const role = runnerRole(routeView, stackKey, runnerIndex);
-  if (role === "legacy_root_getter") return LEGACY_ROOT_GETTER_PROMPT;
   if (role === "removal") return REMOVAL_DISCOVERY_PASS_PROMPT;
   if (role === "regenerated") return REGENERATED_IDENTITIES_PROMPT;
-  if (role === "legacy_followup") {
-    return [
-      "legacy_followup_reconcile:",
-      "Consume Setup2 parent/current pair and reconcile against identities produced by B2.",
-      "Use B2 current_identities as input memory and refine with full parent/current transition evidence.",
-      COMBINED_PROMPT,
-    ].join("\n\n");
-  }
   if (runnerIndex === 0) return COMBINED_PROMPT;
   return [
     `Independent pass for Stack ${runnerDisplayId(routeView, stackKey, runnerIndex)}.`,
@@ -1697,10 +1681,8 @@ function defaultRunnerPrompt(routeView: string, stackKey: StackKey, runnerIndex:
 
 function primaryPromptName(routeView: string, stackKey: StackKey, runnerIndex: number): string {
   const role = runnerRole(routeView, stackKey, runnerIndex);
-  if (role === "legacy_root_getter") return "legacy_root_getter";
   if (role === "removal") return "remove_smallest_object";
-  if (role === "regenerated") return "extract_regenerated_identities";
-  if (role === "legacy_followup") return "legacy_followup_reconcile";
+  if (role === "regenerated") return "regenerated_identities_from_many_objects";
   if (stackKey === "A" && runnerIndex === 0) return "circle_one_identity_at_a_time";
   return `stack_${stackKey.toLowerCase()}${runnerDisplayOrdinal(routeView, stackKey, runnerIndex)}_identity_pass`;
 }
@@ -1739,12 +1721,11 @@ function migrateRunnerPromptText(routeView: string, stackKey: StackKey, runnerIn
   if (!trimmed) return fallback;
   if (isRemovalDiscoveryRunner(routeView, stackKey, runnerIndex) && trimmed === COMBINED_PROMPT) return REMOVAL_DISCOVERY_PASS_PROMPT;
   if (isRegeneratedIdentitiesRunner(routeView, stackKey, runnerIndex) && trimmed === COMBINED_PROMPT) return REGENERATED_IDENTITIES_PROMPT;
-  if (runnerRole(routeView, stackKey, runnerIndex) === "legacy_root_getter" && trimmed === COMBINED_PROMPT) return LEGACY_ROOT_GETTER_PROMPT;
   return promptText;
 }
 
 function initialSelectedOutputId(pageDefinition: WorkflowPageDefinition): string {
-  return pageDefinition.routeView === "arc3B1B2Pipeline" ? "B0" : "A1";
+  return pageDefinition.routeView === "arc3B1B2Pipeline" ? "B1" : "A1";
 }
 
 function defaultInputFilesSourceIds(): string[] {
@@ -2030,6 +2011,28 @@ export function Arc3PromptPrologPage({ pageDefinition, workspaceId, workspaceLab
       const normalizedSetups = stackASetups.length
         ? stackASetups
         : (stack.setups?.length ? stack.setups : defaultSetups(stack.key));
+      const routeRunnerCount = isB1B2PipelineRoute(pageDefinition.routeView)
+        ? defaultRunnerCountForRoute(pageDefinition.routeView)
+        : null;
+      const normalizedRunners = (() => {
+        if (routeRunnerCount === null) return stack.runners;
+        const trimmed = stack.runners.slice(0, routeRunnerCount);
+        if (trimmed.length >= routeRunnerCount) return trimmed;
+        return [
+          ...trimmed,
+          ...Array.from(
+            { length: routeRunnerCount - trimmed.length },
+            (_, offset) =>
+              initialRunnerState(
+                pageDefinition.routeView,
+                stack.key,
+                trimmed.length + offset,
+                COLUMN_MODEL_SENTINEL,
+                defaultTimeoutSeconds,
+              ),
+          ),
+        ];
+      })();
       const autoBefore = autoImageFromWorkspaceData(workspaceId, files, stack.key, "before");
       const autoAfter = autoImageFromWorkspaceData(workspaceId, files, stack.key, "after");
       const fallbackColumnModelSelection = defaultColumnModelSelection();
@@ -2045,7 +2048,7 @@ export function Arc3PromptPrologPage({ pageDefinition, workspaceId, workspaceLab
         beforeImage: autoBefore || normalizedSetups[0]?.beforeImage || defaults.beforeImage,
         afterImage: autoAfter || normalizedSetups[0]?.afterImage || defaults.afterImage,
         setups: normalizedSetups,
-        runners: stack.runners.map((runner, runnerIndex) => ({
+        runners: normalizedRunners.map((runner, runnerIndex) => ({
           ...runner,
           selectedModelId: isRunnerModelSentinel(runner.selectedModelId)
             || isEnabledModel(runner.selectedModelId)
@@ -3035,9 +3038,8 @@ export function Arc3PromptPrologPage({ pageDefinition, workspaceId, workspaceLab
                       runner.primaryPromptName || "",
                       primaryPromptName(pageDefinition.routeView, stack.key, runnerIndex),
                       "circle_one_identity_at_a_time",
-                      "legacy_root_getter",
                       "remove_smallest_object",
-                      "extract_regenerated_identities",
+                      "regenerated_identities_from_many_objects",
                       "remove_one_found_identity_per_pass",
                       `stack_${stack.key.toLowerCase()}${runnerDisplayOrdinal(pageDefinition.routeView, stack.key, runnerIndex)}_identity_pass`,
                     ]).filter(Boolean);
@@ -3432,7 +3434,7 @@ export function Arc3PromptPrologPage({ pageDefinition, workspaceId, workspaceLab
                           <input
                             type="number"
                             min={10}
-                            max={900}
+                            max={3600}
                             value={runner.maxPrimarySeconds}
                             onChange={(event) => setRunnerState(
                               stackIndex,

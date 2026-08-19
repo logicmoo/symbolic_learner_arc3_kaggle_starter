@@ -85,6 +85,37 @@
   white-space: pre-wrap;
 }
 
+.workflow-page-builder-member-controls {
+  display: grid;
+  gap: 8px;
+}
+
+.workflow-page-builder-member-header-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.workflow-page-builder-toggle {
+  border: 1px solid var(--line, #27414b);
+  background: var(--panel, #091820);
+  color: var(--text, #dce8e9);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font: 11px ui-monospace, SFMono-Regular, Consolas, monospace;
+  cursor: pointer;
+}
+
+.workflow-page-builder-toggle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.workflow-page-builder-member-json-editor {
+  display: grid;
+  gap: 6px;
+}
+
 .workflow-page-builder-error {
   border-color: var(--bad, #e16b72);
 }

@@ -1,4 +1,4 @@
-import { Fragment, useMemo, useState, type CSSProperties, type ReactNode, type Ref } from "react";
+import { Component, Fragment, useEffect, useMemo, useState, type CSSProperties, type ErrorInfo, type ReactNode, type Ref } from "react";
 import {
   ThreeStateAccordionMember,
   ThreeStateAccordionStack,
@@ -59,6 +59,7 @@ type Props = {
   columnsRef?: Ref<HTMLDivElement>;
   columnsOverlay?: ReactNode;
   freezeColumnControls?: boolean;
+  deferComponentInitialization?: boolean;
   stackIdForColumn?: (column: WorkflowPageColumn) => string;
   renderColumnDivider?: (
     left: WorkflowPageColumn,
@@ -69,6 +70,7 @@ type Props = {
 
 export type WorkflowPageMemberSurface = {
   content: ReactNode;
+  itemHeader?: ReactNode;
   value?: string;
   detail?: string;
   footer?: ReactNode;
@@ -90,6 +92,48 @@ export type WorkflowPageComponentRegistry = Record<
   string,
   WorkflowPageComponentRenderer
 >;
+
+type MemberRenderErrorBoundaryProps = {
+  memberId: string;
+  componentName: string;
+  children: ReactNode;
+};
+
+type MemberRenderErrorBoundaryState = {
+  error: Error | null;
+  stack: string;
+};
+
+class MemberRenderErrorBoundary extends Component<MemberRenderErrorBoundaryProps, MemberRenderErrorBoundaryState> {
+  constructor(props: MemberRenderErrorBoundaryProps) {
+    super(props);
+    this.state = { error: null, stack: "" };
+  }
+
+  static getDerivedStateFromError(error: Error): MemberRenderErrorBoundaryState {
+    return { error, stack: "" };
+  }
+
+  componentDidCatch(_error: Error, info: ErrorInfo) {
+    this.setState({ stack: info.componentStack || "" });
+  }
+
+  render() {
+    const { error, stack } = this.state;
+    if (!error) return this.props.children;
+    return <section className="workflow-page-component-error-detail">
+      <div className="validation bad">
+        <b>COMPONENT RENDER FAILED</b>
+        <span>{error.message || "Unknown component render error"}</span>
+      </div>
+      <div className="operation-abstract-summary">
+        <div><span>COMPONENT</span><code>{this.props.componentName}</code></div>
+        <div><span>MEMBER ID</span><code>{this.props.memberId}</code></div>
+      </div>
+      <pre>{error.stack || stack || error.message}</pre>
+    </section>;
+  }
+}
 
 const displayMode = (
   member: WorkflowPageMemberDefinition,
@@ -113,6 +157,7 @@ export function WorkflowPageHost({
   columnsRef,
   columnsOverlay,
   freezeColumnControls = false,
+  deferComponentInitialization = false,
   stackIdForColumn,
   renderColumnDivider,
 }: Props) {
@@ -122,12 +167,29 @@ export function WorkflowPageHost({
   );
   const surface = renderers[definition.renderer];
   const [modes, setModes] = useState<Record<string, AccordionDisplayMode>>({});
+  const [initAttempts, setInitAttempts] = useState<Record<string, number>>({});
+  const [componentOverrides, setComponentOverrides] = useState<Record<string, string>>({});
+  const [initializationPassReady, setInitializationPassReady] = useState(!deferComponentInitialization);
+  const componentOptions = useMemo(
+    () => componentRegistry ? Object.keys(componentRegistry).sort((left, right) => left.localeCompare(right)) : [],
+    [componentRegistry],
+  );
   const orderedColumns = useMemo(
     () => ["left", "center", "right"].map((id) =>
       columns.find((column) => column.id === id),
     ).filter((column): column is WorkflowPageColumn => Boolean(column)),
     [columns],
   );
+
+  useEffect(() => {
+    if (!deferComponentInitialization) {
+      setInitializationPassReady(true);
+      return;
+    }
+    setInitializationPassReady(false);
+    const handle = window.requestAnimationFrame(() => setInitializationPassReady(true));
+    return () => window.cancelAnimationFrame(handle);
+  }, [deferComponentInitialization, definition.id, definition.renderer]);
 
   if (definition.layout?.kind !== "three_column_accordion" || !completeLayout)
     return (
@@ -182,13 +244,114 @@ export function WorkflowPageHost({
             >
               {column.members.map((rawMember, index) => {
                 const member = memberDefinition(rawMember);
-                const renderer = componentRegistry[member.component];
-                const rendered: WorkflowPageMemberSurface = renderer
-                  ? renderer(member, column)
-                  : {
-                    content: <div className="studio-empty">Component {member.component} is not installed for {member.label || member.id}.</div>,
-                    value: "Component unavailable",
+                const selectedComponent = componentOverrides[member.id] || member.component;
+                const renderer = componentRegistry[selectedComponent];
+                const initAttempt = initAttempts[member.id] || 0;
+                const shouldInitialize = initializationPassReady || initAttempt > 0 || !deferComponentInitialization;
+                let rendered: WorkflowPageMemberSurface;
+                if (!shouldInitialize) {
+                  rendered = {
+                    content: <section className="workflow-page-component-error-detail">
+                      <div className="validation good">
+                        <b>COMPONENT UNINITIALIZED</b>
+                        <span>Deferred initialization mode is active.</span>
+                      </div>
+                      <div className="operation-abstract-summary">
+                        <div><span>COMPONENT</span><code>{selectedComponent}</code></div>
+                        <div><span>MEMBER ID</span><code>{member.id}</code></div>
+                      </div>
+                      <div className="operation-editor-actions">
+                        <select
+                          aria-label={`Component constructor for ${member.id}`}
+                          value={selectedComponent}
+                          onChange={(event) => {
+                            const next = event.target.value;
+                            setComponentOverrides((current) => ({ ...current, [member.id]: next }));
+                            setInitAttempts((current) => ({ ...current, [member.id]: 0 }));
+                          }}
+                        >
+                          {[...new Set([selectedComponent, ...componentOptions])].map((name) => <option key={name} value={name}>{name}</option>)}
+                        </select>
+                        <button
+                          type="button"
+                          onClick={() => setInitAttempts((current) => ({
+                            ...current,
+                            [member.id]: (current[member.id] || 0) + 1,
+                          }))}
+                        >
+                          INIT
+                        </button>
+                      </div>
+                      <p>Component is uninitialized. Select INIT to initialize this member immediately, or wait for the next pass.</p>
+                    </section>,
+                    value: "Uninitialized component",
+                    detail: "Waiting for next-pass initialization",
+                    baseClass: "english-workflow-panel workflow-page-component-error",
                   };
+                } else {
+                  try {
+                    rendered = renderer
+                      ? renderer(member, column)
+                      : {
+                        content: <section className="workflow-page-component-error-detail">
+                          <div className="validation bad">
+                            <b>COMPONENT CONSTRUCTOR NOT FOUND</b>
+                            <span>{selectedComponent} is not installed for {member.label || member.id}.</span>
+                          </div>
+                          <div className="operation-abstract-summary">
+                            <div><span>COMPONENT</span><code>{selectedComponent}</code></div>
+                            <div><span>MEMBER ID</span><code>{member.id}</code></div>
+                          </div>
+                          <div className="operation-editor-actions">
+                            <select
+                              aria-label={`Component constructor for ${member.id}`}
+                              value={selectedComponent}
+                              onChange={(event) => {
+                                const next = event.target.value;
+                                setComponentOverrides((current) => ({ ...current, [member.id]: next }));
+                                setInitAttempts((current) => ({ ...current, [member.id]: 0 }));
+                              }}
+                            >
+                              {[...new Set([selectedComponent, ...componentOptions])].map((name) => <option key={name} value={name}>{name}</option>)}
+                            </select>
+                            <button
+                              type="button"
+                              onClick={() => setInitAttempts((current) => ({
+                                ...current,
+                                [member.id]: (current[member.id] || 0) + 1,
+                              }))}
+                            >
+                              INIT
+                            </button>
+                          </div>
+                          {initAttempt > 0
+                            ? <p>Component constructor was not found for {selectedComponent}.</p>
+                            : <p>Component is uninitialized. Select INIT to attempt component initialization.</p>}
+                        </section>,
+                        value: initAttempt > 0 ? "Component constructor not found" : "Uninitialized component",
+                        detail: initAttempt > 0 ? `Missing component: ${selectedComponent}` : "Waiting for explicit initialization",
+                        baseClass: "english-workflow-panel workflow-page-component-error",
+                      };
+                  } catch (reason) {
+                    const error = reason instanceof Error ? reason : new Error(String(reason));
+                    rendered = {
+                      content: <section className="workflow-page-component-error-detail">
+                        <div className="validation bad">
+                          <b>COMPONENT INITIALIZATION FAILED</b>
+                          <span>{error.message || "Unknown component initialization error"}</span>
+                        </div>
+                        <div className="operation-abstract-summary">
+                          <div><span>COMPONENT</span><code>{selectedComponent}</code></div>
+                          <div><span>MEMBER ID</span><code>{member.id}</code></div>
+                        </div>
+                        <pre>{error.stack || error.message}</pre>
+                      </section>,
+                      value: "Component initialization failed",
+                      detail: error.message,
+                      baseClass: "english-workflow-panel workflow-page-component-error",
+                    };
+                  }
+                }
                 if (rendered.hidden) return null;
                 const mode = rendered.mode || modes[member.id] || displayMode(member);
                 return (
@@ -213,9 +376,12 @@ export function WorkflowPageHost({
                     scrollSize={rendered.scrollSize || "calc(100vh - 250px)"}
                     accessories={rendered.accessories}
                     stripDragData={rendered.stripDragData}
+                    itemHeader={rendered.itemHeader}
                     footer={rendered.footer}
                   >
-                    {rendered.content}
+                    <MemberRenderErrorBoundary memberId={member.id} componentName={selectedComponent}>
+                      {rendered.content}
+                    </MemberRenderErrorBoundary>
                   </ThreeStateAccordionMember>
                 );
               })}

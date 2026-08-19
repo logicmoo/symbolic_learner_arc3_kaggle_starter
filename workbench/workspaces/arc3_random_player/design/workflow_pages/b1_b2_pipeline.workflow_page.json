@@ -17,7 +17,7 @@
         "role": "data",
         "members": [
           { "id": "arc3_pair_inputs_b1_b2", "label": "B1/B2 Inputs", "component": "Arc3ImagePairInputs", "initialDisplayMode": "scroll" },
-          { "id": "arc3_combined_prompt_b1_b2", "label": "Combined Prompt Contract", "component": "Arc3CombinedPrompt", "initialDisplayMode": "strip" }
+          { "id": "arc3_combined_prompt_b1_b2", "label": "Combined Prompt Contract", "component": "Arc3CombinedPrompt", "initialDisplayMode": "scroll" }
         ]
       },
       {

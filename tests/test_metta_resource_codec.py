@@ -94,3 +94,111 @@ def test_numeric_lists_export_in_compact_single_line_form() -> None:
     assert decoded == document
     assert "(indices ([] 1 2 3 10))" in source
     assert "(weights ([] 0.25 0.5 1.0))" in source
+
+
+def test_single_quoted_text_lines_continue_current_text_entry() -> None:
+    source = """(
+  (kind prompt)
+  (id visual_image_diff.pipeline.source)
+  (text ([]
+    "Preserve this workflow-stage contract exactly:"
+    '{'
+    '  "id": "source",'
+    '  "task": "grab_image_source",'
+    '  "implementation": "arc3_state",'
+    '  "parameters": {},'
+    '  "outputs": {'
+    '    "images": "source_images",'
+    '    "manifest": "source_manifest"'
+    '  }'
+    '}'
+    "Second String."
+    'continued'
+  ))
+)"""
+
+    decoded = metta_document_to_json(source)
+
+    assert decoded["text"] == [
+        "Preserve this workflow-stage contract exactly:\n{\"id\":\"source\",\"task\":\"grab_image_source\",\"implementation\":\"arc3_state\",\"parameters\":{},\"outputs\":{\"images\":\"source_images\",\"manifest\":\"source_manifest\"}}",
+        "Second String.\ncontinued",
+    ]
+
+
+def test_json_to_metta_formats_embedded_json_text_strings_as_continuations() -> None:
+    document = {
+        "kind": "prompt",
+        "text": [
+            (
+                "Preserve this workflow-stage contract exactly: "
+                "{\"id\":\"source\",\"task\":\"grab_image_source\",\"implementation\":\"arc3_state\","
+                "\"parameters\":{},\"outputs\":{\"images\":\"source_images\",\"manifest\":\"source_manifest\"}}. "
+                "The submitted image sequence is the source collection for every later stage."
+            ),
+            "Second String.",
+        ],
+    }
+
+    source = json_document_to_metta(document)
+    decoded = metta_document_to_json(source)
+
+    assert '"Preserve this workflow-stage contract exactly: {"' in source
+    assert "'  \"id\": \"source\",'" in source
+    assert "'  \"task\": \"grab_image_source\",'" in source
+    assert "'  \"implementation\": \"arc3_state\",'" in source
+    assert "'  \"parameters\": {},'" in source
+    assert "'    \"images\": \"source_images\",'" in source
+    assert "'    \"manifest\": \"source_manifest\"'" in source
+    assert "'}. The submitted image sequence is the source collection for every later stage.'" in source
+    assert '"Second String."' in source
+    assert decoded == document
+
+
+def test_single_quoted_continuations_trim_leading_whitespace_on_parse() -> None:
+    source = """(
+  (kind prompt)
+  (text ([]
+    "First line."
+    '   second line keeps no front padding'
+    '  third line also trims front padding'
+  ))
+)"""
+
+    decoded = metta_document_to_json(source)
+    assert decoded["text"] == ["First line.\nsecond line keeps no front padding\nthird line also trims front padding"]
+
+
+def test_json_to_metta_wraps_long_sentence_strings_after_column_50() -> None:
+    document = {
+        "kind": "prompt",
+        "text": [
+            "Normalize geometry into the logical ARC grid, normally 64x64 cells, with zero-based x-right/y-down coordinates. The manifest must describe logical cells, runs, bounding boxes, and connected components rather than enlarged display pixels.",
+        ],
+    }
+
+    source = json_document_to_metta(document)
+    decoded = metta_document_to_json(source)
+
+    assert '"Normalize geometry into the logical ARC grid, normally 64x64 cells, with zero-based x-right/y-down coordinates. "' in source
+    assert '\'The manifest must describe logical cells, runs, bounding boxes, and connected components rather than enlarged display pixels.\'' in source
+    assert decoded["text"] == [
+        "Normalize geometry into the logical ARC grid, normally 64x64 cells, with zero-based x-right/y-down coordinates. \nThe manifest must describe logical cells, runs, bounding boxes, and connected components rather than enlarged display pixels.",
+    ]
+
+
+def test_json_to_metta_wrap_preserves_existing_separator_spaces_only() -> None:
+    document = {
+        "kind": "prompt",
+        "text": [
+            "First sentence is intentionally long enough to force a wrap decision.  Second sentence keeps two spaces from source.",
+        ],
+    }
+
+    source = json_document_to_metta(document)
+    decoded = metta_document_to_json(source)
+
+    assert '"First sentence is intentionally long enough to force a wrap decision.  "' in source
+    assert "'Second sentence keeps two spaces from source.'" in source
+    assert decoded["text"] == [
+        "First sentence is intentionally long enough to force a wrap decision.  \nSecond sentence keeps two spaces from source.",
+    ]

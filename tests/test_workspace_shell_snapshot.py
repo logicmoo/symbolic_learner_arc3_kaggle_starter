@@ -140,6 +140,14 @@ def test_active_ui_requests_shell_snapshot() -> None:
     assert source.count("/snapshot?scope=shell") == 3
 
 
+def test_workspace_chooser_exposes_resource_counting_toggle_state() -> None:
+    source = (ROOT / "workbench" / "frontend" / "src" / "pages" / "FilesystemWorkbenchPage.tsx").read_text(encoding="utf-8")
+    assert "WORKSPACE_RESOURCE_COUNTING_STORAGE_KEY" in source
+    assert "workbench.workspaceResourceCountingEnabled" in source
+    assert "WORKSPACE RESOURCE COUNTING DISABLED" in source
+    assert "worker pool" in source
+
+
 def test_workflow_catalog_does_not_require_an_english_description(tmp_path: Path) -> None:
     workflow_directory = tmp_path / "design" / "workflows"
     workflow_directory.mkdir(parents=True)

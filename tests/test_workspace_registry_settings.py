@@ -205,3 +205,6 @@ def test_settings_ui_embeds_synchronized_startup_policy_source_editor() -> None:
     assert "workspace-disk-summary" in source
     assert "workspace-resource-counts" in source
     assert "workspace-project-usage" in source
+    assert "WORKSPACE RESOURCE COUNTING" in source
+    assert "workspaceResourceCountingEnabled" in source
+    assert "worker pool" in source
