@@ -161,7 +161,7 @@ def test_b1_b2_setup_has_before_image_and_command_fields() -> None:
     assert 'value={setup.beforeImage?.name || ""}' in source
     # BEFORE_IMAGE + COMMAND are tucked into a collapsed (default) expander.
     assert '<details className="arc3-prolog-setup-extra">' in source
-    assert "<summary>BEFORE_IMAGE &amp; COMMAND</summary>" in source
+    assert "<summary>BEFORE &amp; COMMAND</summary>" in source
     # The expander stays collapsed by default: closed details hide their non-summary
     # children (author display:grid on the labels otherwise overrides the UA hiding).
     styles = STYLES.read_text(encoding="utf-8")
