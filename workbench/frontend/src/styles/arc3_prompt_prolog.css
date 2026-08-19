@@ -475,6 +475,24 @@ label.arc3-prolog-inline-composite-label > .arc3-prolog-selected-source-chips {
   padding: 0.15rem 0.35rem;
 }
 
+.arc3-prolog-property-fields {
+  display: flex;
+  gap: 0.3rem;
+  align-items: center;
+  width: 100%;
+}
+
+.arc3-prolog-property-fields > input.arc3-prolog-setup-inline-input {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+  justify-self: stretch;
+}
+
+.arc3-prolog-property-key {
+  flex: 0 0 40% !important;
+}
+
 .arc3-prolog-setup-edit-grid,
 .arc3-prolog-setup-preview-grid {
   display: grid;

@@ -231,3 +231,22 @@ def test_b1_b2_setup_sub_images_grouped_after_obj_images() -> None:
     sub_index = source.index("`SUB_IMAGES (${subimages.length})`")
     grp_index = source.index('renderSetupCollectionGroup("groupImages", "GRP_IMAGES"')
     assert obj_index < sub_index < grp_index
+
+
+def test_b1_b2_setup_has_properties_editor() -> None:
+    source = COMPONENT.read_text(encoding="utf-8")
+    styles = STYLES.read_text(encoding="utf-8")
+    # Per-setup key/value properties data model.
+    assert "type SetupProperty = {" in source
+    assert "properties?: SetupProperty[];" in source
+    # Add/edit/remove setters wired to the setup in place.
+    assert "const addSetupProperty = (stackIndex: number, imageIndex: number) =>" in source
+    assert 'const setSetupProperty = (stackIndex: number, imageIndex: number, propIndex: number, field: "key" | "value", value: string) =>' in source
+    assert "const removeSetupProperty = (stackIndex: number, imageIndex: number, propIndex: number) =>" in source
+    # A PROPERTIES group with a key input, a value input, and an add button.
+    assert "`PROPERTIES (${(setup.properties || []).length})`" in source
+    assert 'placeholder="key"' in source
+    assert 'placeholder="value"' in source
+    assert "addSetupProperty(stackIndex, imageIndex)" in source
+    assert ">Add property</button>" in source
+    assert ".arc3-prolog-property-fields" in styles
