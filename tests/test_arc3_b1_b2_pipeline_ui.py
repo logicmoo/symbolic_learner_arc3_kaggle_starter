@@ -309,7 +309,7 @@ def test_b1_b2_setup_has_dir_properties_node() -> None:
     assert 'const setSetupStateField = (stackIndex: number, imageIndex: number, field: "stateDir" | "stateFile" | "stateJson", value: string) =>' in source
     # A default-collapsed DIR & PROPERTIES node (reuses the setup-extra collapse behavior).
     assert 'className="arc3-prolog-setup-extra arc3-prolog-setup-dir-props"' in source
-    assert "<summary>DIR &amp; PROPERTIES</summary>" in source
+    assert "DIR &amp; PROPERTIES" in source
     # PATH + PROP_FILE (state.json) fields and an editable JSON textarea below.
     assert "<span>PATH</span>" in source
     assert 'placeholder="data/level_1/LEFT"' in source
@@ -331,9 +331,9 @@ def test_b1_b2_setup_has_dir_properties_node() -> None:
     assert "showSaveFilePicker" in source
     assert ".arc3-prolog-setup-state-actions" in styles
     # The editor is hidden inside the DIR & PROPERTIES expander (before BEFORE & COMMAND).
-    assert source.index("<summary>DIR &amp; PROPERTIES</summary>") < source.index('className="arc3-prolog-setup-state-json"') < source.index("<summary>BEFORE &amp; COMMAND</summary>")
+    assert source.index("DIR &amp; PROPERTIES") < source.index('className="arc3-prolog-setup-state-json"') < source.index("<summary>BEFORE &amp; COMMAND</summary>")
     # DIR & PROPERTIES sits at the top of each setup, before BEFORE & COMMAND.
-    assert source.index("<summary>DIR &amp; PROPERTIES</summary>") < source.index("<summary>BEFORE &amp; COMMAND</summary>")
+    assert source.index("DIR &amp; PROPERTIES") < source.index("<summary>BEFORE &amp; COMMAND</summary>")
 
 
 def test_b1_b2_setup_path_scan_writes_scan_results() -> None:
@@ -370,7 +370,12 @@ def test_b1_b2_setup_path_scan_writes_scan_results() -> None:
     assert "base.scan = { path: prefix, results };" in source
     assert "JSON.stringify(base, null, 2)" in source
     # The scan button lives inside the DIR & PROPERTIES expander, before PROP_FILE.
-    assert source.index("<summary>DIR &amp; PROPERTIES</summary>") < source.index("arc3-prolog-setup-scan") < source.index("<span>PROP_FILE</span>")
+    assert source.index("DIR &amp; PROPERTIES") < source.index("arc3-prolog-setup-scan") < source.index("<span>PROP_FILE</span>")
+    # A scan button also sits on the DIR & PROPERTIES summary itself, so you can scan
+    # without expanding the panel; clicking it must not toggle the <details>.
+    assert 'className="secondary arc3-prolog-browse-btn arc3-prolog-setup-scan arc3-prolog-setup-scan-summary"' in source
+    assert "event.preventDefault();" in source
+    assert "event.stopPropagation();" in source
 
 
 def test_b1_b2_setup_scan_populates_collection_fields() -> None:

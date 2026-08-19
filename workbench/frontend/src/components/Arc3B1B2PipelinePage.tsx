@@ -3559,7 +3559,19 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                   }
                 }}
               >
-                <summary>DIR &amp; PROPERTIES</summary>
+                <summary>
+                  DIR &amp; PROPERTIES
+                  <button
+                    type="button"
+                    className="secondary arc3-prolog-browse-btn arc3-prolog-setup-scan arc3-prolog-setup-scan-summary"
+                    title="Scan this directory into the file groups (no need to expand)"
+                    onClick={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      void scanSetupStatePath(stackIndex, imageIndex, setup.stateDir ?? stateDirDefault);
+                    }}
+                  >scan</button>
+                </summary>
                 <label className="arc3-prolog-inline-select-label">
                   <span>PATH</span>
                   <div className="arc3-prolog-browse-inputwrap">
