@@ -180,14 +180,48 @@ def test_b1_b2_setup_has_object_and_group_image_groups() -> None:
     assert "const addSetupEntry = (stackIndex: number, imageIndex: number, field: SetupCollectionField) =>" in source
     assert "const setSetupEntryPath = (stackIndex: number, imageIndex: number, field: SetupCollectionField, entryIndex: number, path: string) =>" in source
     assert "const removeSetupEntry = (stackIndex: number, imageIndex: number, field: SetupCollectionField, entryIndex: number) =>" in source
-    assert 'const renderSetupCollectionGroup = (field: SetupCollectionField, title: string, itemLabel: string, kind: "image" | "file") =>' in source
+    assert 'const renderSetupCollectionGroup = (field: SetupCollectionField, title: string, itemLabel: string, kind: "image" | "file", accept: string[]) =>' in source
     assert "`${title} (${entries.length})`" in source
     # Image groups render previews; file groups do not.
-    assert 'renderSetupCollectionGroup("objectImages", "OBJ_IMAGES", "OBJECT", "image")' in source
-    assert 'renderSetupCollectionGroup("groupImages", "GRP_IMAGES", "GROUP", "image")' in source
-    assert 'renderSetupCollectionGroup("plFiles", "PL_FILES", "PL", "file")' in source
-    assert 'renderSetupCollectionGroup("engFiles", "ENG_FILES", "ENG", "file")' in source
-    assert 'renderSetupCollectionGroup("jsonFiles", "JSON_FILES", "JSON", "file")' in source
-    assert 'renderSetupCollectionGroup("mettaFiles", "METTA_FILES", "METTA", "file")' in source
-    assert 'renderSetupCollectionGroup("promptFiles", "PROMPT_FILES", "PROMPT", "file")' in source
+    assert 'renderSetupCollectionGroup("objectImages", "OBJ_IMAGES", "OBJECT", "image", [...IMAGE_SUFFIXES])' in source
+    assert 'renderSetupCollectionGroup("groupImages", "GRP_IMAGES", "GROUP", "image", [...IMAGE_SUFFIXES])' in source
+    assert 'renderSetupCollectionGroup("plFiles", "PL_FILES", "PL", "file", [".pl"])' in source
+    assert 'renderSetupCollectionGroup("engFiles", "ENG_FILES", "ENG", "file", [".eng"])' in source
+    assert 'renderSetupCollectionGroup("jsonFiles", "JSON_FILES", "JSON", "file", [".json"])' in source
+    assert 'renderSetupCollectionGroup("mettaFiles", "METTA_FILES", "METTA", "file", [".metta"])' in source
+    assert 'renderSetupCollectionGroup("promptFiles", "PROMPT_FILES", "PROMPT", "file", [".prompt"])' in source
     assert "OBJECT_IMAGES" not in source
+
+
+def test_b1_b2_setup_group_rows_have_browse_buttons() -> None:
+    source = COMPONENT.read_text(encoding="utf-8")
+    styles = STYLES.read_text(encoding="utf-8")
+    # Each collection row exposes an "A" workspace-file picker and a "B" native file dialog.
+    assert "const [openBrowseKey, setOpenBrowseKey] = useState<string | null>(null);" in source
+    assert 'const rowKey = `${field}:${setup.id}:${entryIndex}`;' in source
+    assert 'title="Pick from workspace files"' in source
+    assert "setOpenBrowseKey(openBrowseKey === rowKey ? null : rowKey)" in source
+    assert 'title="Browse local files"' in source
+    assert 'accept={acceptAttr}' in source
+    assert "webkitRelativePath" in source
+    # The "A" picker lists workspace files filtered by the group's accepted suffixes.
+    assert "acceptLower.includes((file.suffix || \"\").toLowerCase())" in source
+    assert "openBrowseKey === rowKey &&" in source
+    assert "arc3-prolog-browse-option" in source
+    assert "No matching workspace files" in source
+    assert ".arc3-prolog-browse-inputwrap" in styles
+    assert ".arc3-prolog-browse-list" in styles
+
+
+def test_b1_b2_setup_text_files_group_renamed_unknown_files() -> None:
+    source = COMPONENT.read_text(encoding="utf-8")
+    assert "`UNKNOWN_FILES (${textFiles.length})`" in source
+    assert "TEXT FILES (${textFiles.length})" not in source
+
+
+def test_b1_b2_setup_sub_images_grouped_after_obj_images() -> None:
+    source = COMPONENT.read_text(encoding="utf-8")
+    obj_index = source.index('renderSetupCollectionGroup("objectImages", "OBJ_IMAGES"')
+    sub_index = source.index("`SUB_IMAGES (${subimages.length})`")
+    grp_index = source.index('renderSetupCollectionGroup("groupImages", "GRP_IMAGES"')
+    assert obj_index < sub_index < grp_index

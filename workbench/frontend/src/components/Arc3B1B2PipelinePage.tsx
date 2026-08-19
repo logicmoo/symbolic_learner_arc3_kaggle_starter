@@ -1940,6 +1940,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
   const [modelSelectionMessage, setModelSelectionMessage] = useState("");
   const [scanDataBusy, setScanDataBusy] = useState(false);
   const [replaceGuesserOnFinish, setReplaceGuesserOnFinish] = useState(false);
+  const [openBrowseKey, setOpenBrowseKey] = useState<string | null>(null);
   const controllersRef = useRef<Record<string, AbortController | null>>({});
   const generationSeqRef = useRef(0);
   const anyRunning = stackColumns.some((stack) => stack.runners.some((runner) => runner.running));
@@ -3024,35 +3025,82 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
             const subimages = analysis?.subimages || [];
             const textFiles = analysis?.textFiles || [];
             const isActive = imageIndex === selectedIndex;
-            const renderSetupCollectionGroup = (field: SetupCollectionField, title: string, itemLabel: string, kind: "image" | "file") => {
+            const renderSetupCollectionGroup = (field: SetupCollectionField, title: string, itemLabel: string, kind: "image" | "file", accept: string[]) => {
               const entries = setup[field] || [];
+              const acceptLower = accept.map((suffix) => suffix.toLowerCase());
+              const acceptAttr = acceptLower.join(",");
+              const workspaceMatches = files
+                .filter((file) => acceptLower.includes((file.suffix || "").toLowerCase()))
+                .map((file) => file.path.replace(/\\/g, "/"))
+                .filter((path, index, all) => all.indexOf(path) === index)
+                .sort((left, right) => left.localeCompare(right));
               return <details open className="arc3-prolog-setup-object-images">
                 <summary>{`${title} (${entries.length})`}</summary>
-                {entries.map((entry, entryIndex) => <div
-                  key={`${field}-${setup.id}-${entryIndex}`}
-                  className="arc3-prolog-object-image-row"
-                >
-                  <label className="arc3-prolog-inline-select-label">
-                    <span>{`${itemLabel} ${entryIndex + 1}`}</span>
-                    <input
-                      className="arc3-prolog-setup-inline-input"
-                      type="text"
-                      value={entry.name}
-                      placeholder={kind === "image" ? "data/... image path" : "data/... file path"}
-                      onChange={(event) => setSetupEntryPath(stackIndex, imageIndex, field, entryIndex, event.target.value)}
-                    />
-                  </label>
-                  {kind === "image"
-                    ? (entry.dataUrl
-                      ? <img className="arc3-prolog-preview" src={entry.dataUrl} alt={`${itemLabel.toLowerCase()} ${entryIndex + 1}`} />
-                      : <div className="arc3-prolog-setup-preview-placeholder">No image</div>)
-                    : null}
-                  <button
-                    type="button"
-                    className="secondary arc3-prolog-object-image-remove"
-                    onClick={() => removeSetupEntry(stackIndex, imageIndex, field, entryIndex)}
-                  >Remove</button>
-                </div>)}
+                {entries.map((entry, entryIndex) => {
+                  const rowKey = `${field}:${setup.id}:${entryIndex}`;
+                  return <div
+                    key={`${field}-${setup.id}-${entryIndex}`}
+                    className="arc3-prolog-object-image-row"
+                  >
+                    <label className="arc3-prolog-inline-select-label">
+                      <span>{`${itemLabel} ${entryIndex + 1}`}</span>
+                      <div className="arc3-prolog-browse-inputwrap">
+                        <input
+                          className="arc3-prolog-setup-inline-input"
+                          type="text"
+                          value={entry.name}
+                          placeholder={kind === "image" ? "data/... image path" : "data/... file path"}
+                          onChange={(event) => setSetupEntryPath(stackIndex, imageIndex, field, entryIndex, event.target.value)}
+                        />
+                        <button
+                          type="button"
+                          className="secondary arc3-prolog-browse-btn"
+                          title="Pick from workspace files"
+                          onClick={() => setOpenBrowseKey(openBrowseKey === rowKey ? null : rowKey)}
+                        >A</button>
+                        <label className="secondary arc3-prolog-browse-btn arc3-prolog-browse-b" title="Browse local files">
+                          B
+                          <input
+                            type="file"
+                            accept={acceptAttr}
+                            style={{ display: "none" }}
+                            onChange={(event) => {
+                              const picked = event.target.files && event.target.files[0];
+                              if (picked) {
+                                const relative = (picked as File & { webkitRelativePath?: string }).webkitRelativePath;
+                                setSetupEntryPath(stackIndex, imageIndex, field, entryIndex, relative || picked.name);
+                              }
+                              event.target.value = "";
+                            }}
+                          />
+                        </label>
+                      </div>
+                    </label>
+                    {kind === "image"
+                      ? (entry.dataUrl
+                        ? <img className="arc3-prolog-preview" src={entry.dataUrl} alt={`${itemLabel.toLowerCase()} ${entryIndex + 1}`} />
+                        : <div className="arc3-prolog-setup-preview-placeholder">No image</div>)
+                      : null}
+                    {openBrowseKey === rowKey && <div className="arc3-prolog-browse-list">
+                      {workspaceMatches.length
+                        ? workspaceMatches.map((path) => <button
+                          key={path}
+                          type="button"
+                          className="arc3-prolog-browse-option"
+                          onClick={() => {
+                            setSetupEntryPath(stackIndex, imageIndex, field, entryIndex, path);
+                            setOpenBrowseKey(null);
+                          }}
+                        >{path}</button>)
+                        : <div className="arc3-prolog-browse-empty">No matching workspace files</div>}
+                    </div>}
+                    <button
+                      type="button"
+                      className="secondary arc3-prolog-object-image-remove"
+                      onClick={() => removeSetupEntry(stackIndex, imageIndex, field, entryIndex)}
+                    >Remove</button>
+                  </div>;
+                })}
                 <button
                   type="button"
                   className="secondary"
@@ -3109,13 +3157,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
               {setup.afterImage.dataUrl
                 ? <img className="arc3-prolog-preview" src={setup.afterImage.dataUrl} alt={`${setup.label || `image_${imageIndex + 1}`} image`} />
                 : <div className="arc3-prolog-setup-preview-placeholder">No image</div>}
-              {renderSetupCollectionGroup("objectImages", "OBJ_IMAGES", "OBJECT", "image")}
-              {renderSetupCollectionGroup("groupImages", "GRP_IMAGES", "GROUP", "image")}
-              {renderSetupCollectionGroup("plFiles", "PL_FILES", "PL", "file")}
-              {renderSetupCollectionGroup("engFiles", "ENG_FILES", "ENG", "file")}
-              {renderSetupCollectionGroup("jsonFiles", "JSON_FILES", "JSON", "file")}
-              {renderSetupCollectionGroup("mettaFiles", "METTA_FILES", "METTA", "file")}
-              {renderSetupCollectionGroup("promptFiles", "PROMPT_FILES", "PROMPT", "file")}
+              {renderSetupCollectionGroup("objectImages", "OBJ_IMAGES", "OBJECT", "image", [...IMAGE_SUFFIXES])}
               <details open>
                 <summary>{`SUB_IMAGES (${subimages.length})`}</summary>
                 {subimages.length
@@ -3127,14 +3169,20 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                   </div>
                   : <small>No subimages yet. Run B1 on this image.</small>}
               </details>
+              {renderSetupCollectionGroup("groupImages", "GRP_IMAGES", "GROUP", "image", [...IMAGE_SUFFIXES])}
+              {renderSetupCollectionGroup("plFiles", "PL_FILES", "PL", "file", [".pl"])}
+              {renderSetupCollectionGroup("engFiles", "ENG_FILES", "ENG", "file", [".eng"])}
+              {renderSetupCollectionGroup("jsonFiles", "JSON_FILES", "JSON", "file", [".json"])}
+              {renderSetupCollectionGroup("mettaFiles", "METTA_FILES", "METTA", "file", [".metta"])}
+              {renderSetupCollectionGroup("promptFiles", "PROMPT_FILES", "PROMPT", "file", [".prompt"])}
               <details>
-                <summary>{`TEXT FILES (${textFiles.length})`}</summary>
+                <summary>{`UNKNOWN_FILES (${textFiles.length})`}</summary>
                 {textFiles.length
                   ? textFiles.map((item) => <details key={item.key}>
                     <summary>{item.label}</summary>
                     <pre className="arc3-prolog-prompt-text">{item.value}</pre>
                   </details>)
-                  : <small>No text files yet. Run B1/B2 on this image.</small>}
+                  : <small>No unknown files yet. Run B1/B2 on this image.</small>}
               </details>
             </ThreeStateAccordionMember>;
           })}
