@@ -2409,6 +2409,76 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
     URL.revokeObjectURL(url);
   };
 
+  const scanSetupStatePath = async (stackIndex: number, imageIndex: number, dir: string) => {
+    const prefix = normalizeAssetPath(dir).replace(/\/+$/, "");
+    let records: WorkspaceFileRecord[] = files;
+    if (workspaceId) {
+      try {
+        const payload = await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/data/files`);
+        const listed = Array.isArray(payload.files) ? payload.files : [];
+        const valid = listed.filter((item): item is WorkspaceFileRecord => Boolean(item)
+          && typeof (item as Record<string, unknown>).path === "string"
+          && typeof (item as Record<string, unknown>).name === "string"
+          && typeof (item as Record<string, unknown>).suffix === "string"
+          && typeof (item as Record<string, unknown>).modified === "number");
+        if (valid.length) records = valid;
+      } catch {
+        // Fall back to the files prop when the data listing endpoint is unavailable.
+      }
+    }
+    const scoped = records.filter((file) => {
+      const candidate = normalizeAssetPath(file.path);
+      if (!prefix) return !candidate.includes("/");
+      if (!candidate.startsWith(`${prefix}/`)) return false;
+      return !candidate.slice(prefix.length + 1).includes("/");
+    });
+    const results: Record<string, string[]> = {
+      obj_images: [],
+      grp_images: [],
+      sub_images: [],
+      pl_files: [],
+      eng_files: [],
+      json_files: [],
+      metta_files: [],
+      prompt_files: [],
+      unknown_files: [],
+    };
+    for (const file of scoped) {
+      const candidate = normalizeAssetPath(file.path);
+      const suffix = (file.suffix || "").toLowerCase();
+      const name = (file.name || "").toLowerCase();
+      if (IMAGE_SUFFIXES.has(suffix)) {
+        if (name.startsWith("obj")) results.obj_images.push(candidate);
+        else if (name.startsWith("grp")) results.grp_images.push(candidate);
+        else results.sub_images.push(candidate);
+      } else if (suffix === ".pl") results.pl_files.push(candidate);
+      else if (suffix === ".eng") results.eng_files.push(candidate);
+      else if (suffix === ".json") results.json_files.push(candidate);
+      else if (suffix === ".metta") results.metta_files.push(candidate);
+      else if (suffix === ".prompt") results.prompt_files.push(candidate);
+      else results.unknown_files.push(candidate);
+    }
+    for (const key of Object.keys(results)) results[key].sort();
+    setStackState(stackIndex, (stack) => {
+      const setups = stack.setups?.length ? [...stack.setups] : defaultSetups(stack.key);
+      const current = setups[imageIndex];
+      if (!current) return stack;
+      let base: Record<string, unknown> = {};
+      const existing = (current.stateJson ?? "").trim();
+      if (existing) {
+        try {
+          const parsed = JSON.parse(existing);
+          if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) base = parsed as Record<string, unknown>;
+        } catch {
+          // Replace unparseable editor contents with a fresh scan document.
+        }
+      }
+      base.scan = { path: prefix, results };
+      setups[imageIndex] = { ...current, stateJson: `${JSON.stringify(base, null, 2)}\n` };
+      return { ...stack, setups };
+    });
+  };
+
   const captureImageAnalysis = (stackIndex: number, runnerIndex: number, imageIndex: number) => {
     setStackState(stackIndex, (stack) => {
       const runner = stack.runners[runnerIndex];
@@ -3264,13 +3334,21 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                 <summary>DIR &amp; PROPERTIES</summary>
                 <label className="arc3-prolog-inline-select-label">
                   <span>PATH</span>
-                  <input
-                    className="arc3-prolog-setup-inline-input"
-                    type="text"
-                    value={setup.stateDir ?? stateDirDefault}
-                    placeholder="data/level_1/LEFT"
-                    onChange={(event) => setSetupStateField(stackIndex, imageIndex, "stateDir", event.target.value)}
-                  />
+                  <div className="arc3-prolog-browse-inputwrap">
+                    <input
+                      className="arc3-prolog-setup-inline-input"
+                      type="text"
+                      value={setup.stateDir ?? stateDirDefault}
+                      placeholder="data/level_1/LEFT"
+                      onChange={(event) => setSetupStateField(stackIndex, imageIndex, "stateDir", event.target.value)}
+                    />
+                    <button
+                      type="button"
+                      className="secondary arc3-prolog-browse-btn arc3-prolog-setup-scan"
+                      title="Scan the files in this directory into the state.json editor"
+                      onClick={() => void scanSetupStatePath(stackIndex, imageIndex, setup.stateDir ?? stateDirDefault)}
+                    >scan</button>
+                  </div>
                 </label>
                 <label className="arc3-prolog-inline-select-label">
                   <span>PROP_FILE</span>

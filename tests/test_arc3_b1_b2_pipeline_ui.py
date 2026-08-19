@@ -336,6 +336,39 @@ def test_b1_b2_setup_has_dir_properties_node() -> None:
     assert source.index("<summary>DIR &amp; PROPERTIES</summary>") < source.index("<summary>BEFORE &amp; COMMAND</summary>")
 
 
+def test_b1_b2_setup_path_scan_writes_scan_results() -> None:
+    source = COMPONENT.read_text(encoding="utf-8")
+    # A [scan] button beside the DIR & PROPERTIES PATH input lists the files in that
+    # directory and writes a scan.results object into the state.json editor.
+    assert "const scanSetupStatePath = async (stackIndex: number, imageIndex: number, dir: string) =>" in source
+    assert 'className="secondary arc3-prolog-browse-btn arc3-prolog-setup-scan"' in source
+    assert "scanSetupStatePath(stackIndex, imageIndex, setup.stateDir ?? stateDirDefault)" in source
+    # Fresh listing (with a files-prop fallback), scoped to direct children of PATH.
+    assert "/data/files" in source
+    assert 'if (!candidate.startsWith(`${prefix}/`)) return false;' in source
+    assert "return !candidate.slice(prefix.length + 1).includes" in source
+    # Categorized result buckets.
+    for bucket in (
+        "obj_images",
+        "grp_images",
+        "sub_images",
+        "pl_files",
+        "eng_files",
+        "json_files",
+        "metta_files",
+        "prompt_files",
+        "unknown_files",
+    ):
+        assert f"{bucket}:" in source or f"results.{bucket}.push" in source
+    assert 'if (name.startsWith("obj")) results.obj_images.push(candidate);' in source
+    assert 'else if (name.startsWith("grp")) results.grp_images.push(candidate);' in source
+    # The scan merges into (rather than replaces) a parseable state.json document.
+    assert "base.scan = { path: prefix, results };" in source
+    assert "JSON.stringify(base, null, 2)" in source
+    # The scan button lives inside the DIR & PROPERTIES expander, before PROP_FILE.
+    assert source.index("<summary>DIR &amp; PROPERTIES</summary>") < source.index("arc3-prolog-setup-scan") < source.index("<span>PROP_FILE</span>")
+
+
 def test_b1_b2_buttons_have_readable_theme() -> None:
     source = COMPONENT.read_text(encoding="utf-8")
     styles = STYLES.read_text(encoding="utf-8")
