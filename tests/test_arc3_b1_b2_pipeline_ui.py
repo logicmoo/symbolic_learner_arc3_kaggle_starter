@@ -201,19 +201,19 @@ def test_b1_b2_setup_has_object_and_group_image_groups() -> None:
 def test_b1_b2_setup_group_rows_have_browse_buttons() -> None:
     source = COMPONENT.read_text(encoding="utf-8")
     styles = STYLES.read_text(encoding="utf-8")
-    # Each collection row exposes a tiny [load] (native file dialog) then [select]
-    # (workspace-file picker) pair to the right of the path input.
+    # Each collection row exposes [load/edit] (editable only) then [select]
+    # (workspace-file picker) then [browse] (native file dialog).
     assert "const [openBrowseKey, setOpenBrowseKey] = useState<string | null>(null);" in source
     assert 'const rowKey = `${field}:${setup.id}:${entryIndex}`;' in source
     assert 'title="Pick from workspace files"' in source
     assert "setOpenBrowseKey(openBrowseKey === rowKey ? null : rowKey)" in source
-    assert 'title="Load a file from your computer"' in source
+    assert 'title="Browse for a file on your computer"' in source
     assert 'accept={acceptAttr}' in source
     assert "relativeToSetupDir(picked.name)" in source
-    # [load] is rendered before [select].
-    load_index = source.index('title="Load a file from your computer"')
+    # Row order is [select] then [browse].
     select_index = source.index(">select</button>")
-    assert load_index < select_index
+    browse_index = source.index('title="Browse for a file on your computer"')
+    assert select_index < browse_index
     # The [select] picker lists workspace files filtered by the group's accepted suffixes.
     assert "acceptLower.includes((file.suffix || \"\").toLowerCase())" in source
     assert "openBrowseKey === rowKey &&" in source

@@ -3436,8 +3436,20 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                           placeholder={options?.placeholder ?? (kind === "image" ? "data/... image path" : "data/... file path")}
                           onChange={(event) => setSetupEntryPath(stackIndex, imageIndex, field, entryIndex, event.target.value)}
                         />
-                        <label className="secondary arc3-prolog-browse-btn arc3-prolog-browse-b" title="Load a file from your computer">
-                          load
+                        {options?.editable && <button
+                          type="button"
+                          className="secondary arc3-prolog-browse-btn arc3-prolog-setup-edit"
+                          title="Load and edit this file"
+                          onClick={() => void openEntryEditor(field, entryIndex, entry.name)}
+                        >load/edit</button>}
+                        <button
+                          type="button"
+                          className="secondary arc3-prolog-browse-btn"
+                          title="Pick from workspace files"
+                          onClick={() => setOpenBrowseKey(openBrowseKey === rowKey ? null : rowKey)}
+                        >select</button>
+                        <label className="secondary arc3-prolog-browse-btn arc3-prolog-browse-b" title="Browse for a file on your computer">
+                          browse
                           <input
                             type="file"
                             accept={acceptAttr}
@@ -3451,18 +3463,6 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                             }}
                           />
                         </label>
-                        <button
-                          type="button"
-                          className="secondary arc3-prolog-browse-btn"
-                          title="Pick from workspace files"
-                          onClick={() => setOpenBrowseKey(openBrowseKey === rowKey ? null : rowKey)}
-                        >select</button>
-                        {options?.editable && <button
-                          type="button"
-                          className="secondary arc3-prolog-browse-btn arc3-prolog-setup-edit"
-                          title="Edit this file"
-                          onClick={() => void openEntryEditor(field, entryIndex, entry.name)}
-                        >edit</button>}
                       </div>
                     </label>
                     {kind === "image"
