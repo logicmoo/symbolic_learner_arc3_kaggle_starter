@@ -493,6 +493,22 @@ label.arc3-prolog-inline-composite-label > .arc3-prolog-selected-source-chips {
   flex: 0 0 40% !important;
 }
 
+.arc3-prolog-setup-state-json {
+  width: 100%;
+  min-height: 8rem;
+  margin-top: 0.35rem;
+  box-sizing: border-box;
+  resize: vertical;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: rgb(214, 232, 240);
+  background: rgb(8, 20, 26);
+  border: 1px solid rgb(36, 59, 71);
+  border-radius: 4px;
+  padding: 0.4rem 0.5rem;
+}
+
 .arc3-prolog-setup-edit-grid,
 .arc3-prolog-setup-preview-grid {
   display: grid;

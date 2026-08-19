@@ -139,6 +139,9 @@ type StackSetup = {
   mettaFiles?: ImageSelection[];
   promptFiles?: ImageSelection[];
   properties?: SetupProperty[];
+  stateDir?: string;
+  stateFile?: string;
+  stateJson?: string;
   analysis?: ImageAnalysis;
 };
 
@@ -2392,6 +2395,16 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
     });
   };
 
+  const setSetupStateField = (stackIndex: number, imageIndex: number, field: "stateDir" | "stateFile" | "stateJson", value: string) => {
+    setStackState(stackIndex, (stack) => {
+      const setups = stack.setups?.length ? [...stack.setups] : defaultSetups(stack.key);
+      const current = setups[imageIndex];
+      if (!current) return stack;
+      setups[imageIndex] = { ...current, [field]: value };
+      return { ...stack, setups };
+    });
+  };
+
   const addImage = (stackIndex: number) => {
     setStackState(stackIndex, (stack) => {
       const setups = stack.setups?.length ? [...stack.setups] : defaultSetups(stack.key);
@@ -3067,6 +3080,11 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
             const subimages = analysis?.subimages || [];
             const textFiles = analysis?.textFiles || [];
             const isActive = imageIndex === selectedIndex;
+            const stateDirDefault = (() => {
+              const normalized = normalizeAssetPath(setup.afterImage?.name || "");
+              const slash = normalized.lastIndexOf("/");
+              return slash > 0 ? normalized.slice(0, slash) : "";
+            })();
             const renderSetupCollectionGroup = (field: SetupCollectionField, title: string, itemLabel: string, kind: "image" | "file", accept: string[]) => {
               const entries = setup[field] || [];
               const acceptLower = accept.map((suffix) => suffix.toLowerCase());
@@ -3259,6 +3277,37 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                     <pre className="arc3-prolog-prompt-text">{item.value}</pre>
                   </details>)
                   : <small>No unknown files yet. Run B1/B2 on this image.</small>}
+              </details>
+              <details className="arc3-prolog-setup-extra arc3-prolog-setup-state">
+                <summary>STATE</summary>
+                <label className="arc3-prolog-inline-select-label">
+                  <span>DIRECTORY</span>
+                  <input
+                    className="arc3-prolog-setup-inline-input"
+                    type="text"
+                    value={setup.stateDir ?? stateDirDefault}
+                    placeholder="data/level_1/LEFT"
+                    onChange={(event) => setSetupStateField(stackIndex, imageIndex, "stateDir", event.target.value)}
+                  />
+                </label>
+                <label className="arc3-prolog-inline-select-label">
+                  <span>PROPERTIES</span>
+                  <input
+                    className="arc3-prolog-setup-inline-input"
+                    type="text"
+                    value={setup.stateFile ?? "state.json"}
+                    placeholder="state.json"
+                    onChange={(event) => setSetupStateField(stackIndex, imageIndex, "stateFile", event.target.value)}
+                  />
+                </label>
+                <textarea
+                  className="arc3-prolog-setup-state-json"
+                  value={setup.stateJson ?? ""}
+                  placeholder="{ }"
+                  spellCheck={false}
+                  rows={8}
+                  onChange={(event) => setSetupStateField(stackIndex, imageIndex, "stateJson", event.target.value)}
+                />
               </details>
             </ThreeStateAccordionMember>;
           })}

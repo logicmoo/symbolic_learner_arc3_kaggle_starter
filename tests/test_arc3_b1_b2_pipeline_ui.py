@@ -250,3 +250,24 @@ def test_b1_b2_setup_has_properties_editor() -> None:
     assert "addSetupProperty(stackIndex, imageIndex)" in source
     assert ">Add property</button>" in source
     assert ".arc3-prolog-property-fields" in styles
+
+
+def test_b1_b2_setup_has_collapsed_state_node() -> None:
+    source = COMPONENT.read_text(encoding="utf-8")
+    styles = STYLES.read_text(encoding="utf-8")
+    # Per-setup state fields + a single setter.
+    assert "stateDir?: string;" in source
+    assert "stateFile?: string;" in source
+    assert "stateJson?: string;" in source
+    assert 'const setSetupStateField = (stackIndex: number, imageIndex: number, field: "stateDir" | "stateFile" | "stateJson", value: string) =>' in source
+    # A default-collapsed STATE node (reuses the setup-extra collapse behavior).
+    assert '<details className="arc3-prolog-setup-extra arc3-prolog-setup-state">' in source
+    assert "<summary>STATE</summary>" in source
+    # DIRECTORY + PROPERTIES (state.json) fields and an editable JSON textarea.
+    assert "<span>DIRECTORY</span>" in source
+    assert 'placeholder="data/level_1/LEFT"' in source
+    assert "<span>PROPERTIES</span>" in source
+    assert 'value={setup.stateFile ?? "state.json"}' in source
+    assert 'className="arc3-prolog-setup-state-json"' in source
+    assert 'setSetupStateField(stackIndex, imageIndex, "stateJson", event.target.value)' in source
+    assert ".arc3-prolog-setup-state-json" in styles
