@@ -1954,6 +1954,8 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
   const [editorBusy, setEditorBusy] = useState(false);
   const [editorError, setEditorError] = useState("");
   const controllersRef = useRef<Record<string, AbortController | null>>({});
+  const stackColumnsRef = useRef(stackColumns);
+  stackColumnsRef.current = stackColumns;
   const generationSeqRef = useRef(0);
   const anyRunning = stackColumns.some((stack) => stack.runners.some((runner) => runner.running));
   useEffect(() => {
@@ -2454,8 +2456,11 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
     }
   };
 
-  const scanSetupStatePath = async (stackIndex: number, imageIndex: number, dir: string) => {
-    const prefix = normalizeAssetPath(dir).replace(/\/+$/, "");
+  const scanSetupStatePath = async (stackIndex: number, imageIndex: number, fallbackDir: string) => {
+    // Read the PATH from the latest committed state (via ref) so a scan performed
+    // immediately after editing PATH uses the new value, not a stale render's closure.
+    const liveSetup = stackColumnsRef.current?.[stackIndex]?.setups?.[imageIndex];
+    const prefix = normalizeAssetPath(liveSetup?.stateDir ?? fallbackDir).replace(/\/+$/, "");
     let records: WorkspaceFileRecord[] = files;
     if (workspaceId) {
       try {
