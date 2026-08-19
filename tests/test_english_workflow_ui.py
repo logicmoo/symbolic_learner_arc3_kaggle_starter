@@ -17,8 +17,11 @@ def test_english_workflow_page_uses_real_resources_and_native_accordion_stacks()
     assert '"renderer": "workflow_generation_runtime"' in definition
     assert 'snapshot?.workflowPages' in shell
     assert 'pageDefinition={workflowPageForView}' in shell
-    assert "WorkflowGenerationRuntime" in shell
+    assert "GenerateWorkflowPage" in shell
     assert "EnglishWorkflowPage" not in shell
+    assert "export function WorkflowGenerationRuntime" in page
+    assert "export function GenerateWorkflowPage" in page
+    assert "content: <WorkflowGenerationRuntime" in page
     assert "componentRegistry={registry}" in page
     assert "<WorkflowPageHost" in page
     assert "orderedColumns.map" in host
@@ -63,19 +66,20 @@ def test_generation_order_is_one_call_audited_and_selectively_revisable() -> Non
     assert "existing_workflow: draft || workflow" in page
     assert 'aria-label="Add outputs to Generation Order"' in page
     assert 'const CONTRACT_SECTION_APPLICABILITY = "english_to_workbench.contract_section"' in page
-    assert "function contractSectionPrompts(prompts: PromptChoice[])" in page
-    assert "prompt.applicability.includes(CONTRACT_SECTION_APPLICABILITY)" in page
+    assert "function contractSectionPrompts(" in page
+    assert "applicability = CONTRACT_SECTION_APPLICABILITY" in page
+    assert "prompt.applicability.includes(applicability)" in page
     assert "leftClassification.localeCompare(rightClassification)" in page
     assert "reversedName(left.buttonName).localeCompare(reversedName(right.buttonName))" in page
-    assert "availableContractSectionPrompts.map((prompt)" in page
-    assert "addGenerationOutput(prompt.buttonName, prompt.id)" in page
+    assert "applicablePrompts.map((prompt)" in page
+    assert "onAddOutput(prompt.buttonName, prompt.id)" in page
     assert "CONTRACT_SECTION_ROWS" not in page
     assert "onClick={() => onRunEntry(entry, ordinal)}" in page
     assert "Quick call ${entry.name} at position ${ordinal}" in page
     assert "Run only this generation step as one quick LLM call" in page
     assert "Add another ${entry.name}" not in page
     assert "Append another occurrence" not in page
-    assert 'addGenerationOutput("group")' in page
+    assert 'onAddOutput("group")' in page
     assert ">[+group]</button>" in page
     assert 'aria-label={isGroup ? `Run group ${ordinal}` : `Quick call ${entry.name} at position ${ordinal}`}' in page
     assert "generation-order-group-picker" in page
@@ -120,6 +124,22 @@ def test_generation_order_is_one_call_audited_and_selectively_revisable() -> Non
     assert page.index("Rotate ${entry.name} left") < page.index("Remove ${entry.name}") < page.index("Rotate ${entry.name} right")
     assert "contractTrials" in page
     assert "validationIssues" in page
+
+
+def test_workflow_generation_runtime_is_the_configured_composer_not_the_page_host() -> None:
+    page = (ROOT / "workbench/frontend/src/components/WorkflowGenerationRuntime.tsx").read_text(encoding="utf-8")
+
+    runtime_start = page.index("export function WorkflowGenerationRuntime")
+    page_start = page.index("export function GenerateWorkflowPage")
+    runtime_source = page[runtime_start:page_start]
+    page_source = page[page_start:]
+
+    assert "WorkflowPageHost" not in runtime_source
+    assert 'member.options?.outputFormats' in runtime_source
+    assert 'member.options?.promptApplicability' in runtime_source
+    assert 'member.options?.allowGroups !== false' in runtime_source
+    assert "<WorkflowPageHost" in page_source
+    assert "WorkflowGenerationComposer: composerSurface" in page_source
 
 
 def test_analyze_runs_and_persists_the_composed_generation_sequence() -> None:
@@ -277,7 +297,8 @@ def test_generate_workflow_page_definition_designs_every_column_member() -> None
     assert members["left"]["validation_rules"]["binding"] == "generation_contract.rules"
     assert [member["component"] for member in columns["right"]["members"]] == [
         "ResourceSourceEditor",
-        "PromptResourceDetail",
+        "PromptResourceList",
+        "PromptTextSourceEditor",
         "OperationResourceDetail",
         "ModelResourceDetail",
         "WorkflowSchemaInspector",

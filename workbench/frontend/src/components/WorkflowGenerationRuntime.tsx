@@ -7,6 +7,7 @@ import {
   type WorkflowPageMemberSurface,
 } from "./WorkflowPageHost";
 import { LoadTextDocuments } from "./LoadTextDocuments";
+import { ResourceSourceEditor } from "./ResourceSourceEditor";
 import { WorkflowPageSourceEditor } from "./WorkflowPageSourceEditor";
 import "../styles/english_workflow.css";
 import "../styles/english_workflow_order.css";
@@ -66,6 +67,9 @@ type PromptChoice = {
   buttonName?: string;
   classificationId?: string;
   produces?: string[];
+  path?: string;
+  source?: string;
+  workspaceId?: string;
 };
 
 type DatatypeDocument = {
@@ -104,6 +108,7 @@ type Props = {
   onGenerated: (outputs: Record<string, unknown>) => void;
   onApply: () => Promise<void> | void;
   onOpenWorkflow: () => void;
+  onOpenPrompts: () => void;
   onPageDefinitionSaved: () => Promise<unknown> | unknown;
 };
 
@@ -206,11 +211,14 @@ function reversedName(value: string) {
   return [...value].reverse().join("");
 }
 
-function contractSectionPrompts(prompts: PromptChoice[]): ContractSectionPrompt[] {
+function contractSectionPrompts(
+  prompts: PromptChoice[],
+  applicability = CONTRACT_SECTION_APPLICABILITY,
+): ContractSectionPrompt[] {
   return prompts.flatMap((prompt): ContractSectionPrompt[] => {
     const buttonName = String(prompt.buttonName || "").trim() as GenerationOutputName;
     const applicable = Array.isArray(prompt.applicability)
-      && prompt.applicability.includes(CONTRACT_SECTION_APPLICABILITY);
+      && prompt.applicability.includes(applicability);
     if (!applicable || buttonName === "group" || !CONTRACT_SECTIONS.includes(buttonName)) return [];
     return [{ ...prompt, buttonName }];
   }).sort((left, right) => {
@@ -606,7 +614,118 @@ function GenerationOrderItem({ entry, ordinal, index, siblingCount, parentGroupI
   </li>;
 }
 
+type WorkflowGenerationRuntimeProps = {
+  member: WorkflowPageMemberDefinition;
+  operation?: OperationDocument;
+  operationCatalogCount: number;
+  draftStepCount: number;
+  phase: GenerationPhase;
+  busyAction: string;
+  message: string;
+  description: string;
+  selectedModel: string;
+  models: ModelChoice[];
+  outputFormat: string;
+  prompts: PromptChoice[];
+  applicablePrompts: ContractSectionPrompt[];
+  generationOrder: GenerationOrderEntry[];
+  selectedGroupId: string | null;
+  generationOrderPath: string;
+  hasContractOperation: boolean;
+  hasAnalysisContract: boolean;
+  memoryPlanned: boolean;
+  onModelChange: (modelId: string) => void;
+  onOutputFormatChange: (format: string) => void;
+  onAddOutput: (name: GenerationOutputName, promptId?: string) => void;
+  onSelectGroup: (groupId: string) => void;
+  onRunEntry: (entry: GenerationOrderEntry, ordinal: string) => void;
+  onShuffleGroup: (groupId: string) => void;
+  onCopyGroup: (groupId: string) => void;
+  onClearGroup: (groupId: string) => void;
+  onPeers: (entryId: string, visible: boolean, parentGroupId?: string) => void;
+  onUpdates: (entryId: string, visible: boolean, parentGroupId?: string) => void;
+  onPrompt: (entryId: string, promptId: string, parentGroupId?: string) => void;
+  onEntryModel: (entryId: string, modelId: string, parentGroupId?: string) => void;
+  onRotate: (entryId: string, direction: -1 | 1, parentGroupId?: string) => void;
+  onRemove: (entryId: string, parentGroupId?: string) => void;
+  onShuffleOrder: () => void;
+  onClearOrder: () => void;
+  onAnalyze: () => void;
+  onPlan: () => void;
+  onGenerate: () => void;
+};
+
 export function WorkflowGenerationRuntime({
+  member,
+  operation,
+  operationCatalogCount,
+  draftStepCount,
+  phase,
+  busyAction,
+  message,
+  description,
+  selectedModel,
+  models,
+  outputFormat,
+  prompts,
+  applicablePrompts,
+  generationOrder,
+  selectedGroupId,
+  generationOrderPath,
+  hasContractOperation,
+  hasAnalysisContract,
+  memoryPlanned,
+  onModelChange,
+  onOutputFormatChange,
+  onAddOutput,
+  onSelectGroup,
+  onRunEntry,
+  onShuffleGroup,
+  onCopyGroup,
+  onClearGroup,
+  onPeers,
+  onUpdates,
+  onPrompt,
+  onEntryModel,
+  onRotate,
+  onRemove,
+  onShuffleOrder,
+  onClearOrder,
+  onAnalyze,
+  onPlan,
+  onGenerate,
+}: WorkflowGenerationRuntimeProps) {
+  const outputFormats = Array.isArray(member.options?.outputFormats)
+    ? member.options.outputFormats.map(String)
+    : ["json", "metta"];
+  const promptApplicability = String(member.options?.promptApplicability || CONTRACT_SECTION_APPLICABILITY);
+  const busy = busyAction !== "";
+
+  return <div className="english-workflow-generation-controls">
+    <label><span>SELECTED MODEL</span><select aria-label="English Workflow selected model" value={selectedModel} disabled={busy} onChange={(event) => onModelChange(event.target.value)}><option value="">Use system and Operation resolution</option>{models.filter((model) => model.enabled !== false).map((model) => <option key={model.id} value={model.id}>{modelOptionLabel(model)}</option>)}</select></label>
+    <label><span>OUTPUT FORMAT</span><select aria-label="English Workflow output format" value={outputFormat} onChange={(event) => onOutputFormatChange(event.target.value)}>{outputFormats.map((format) => <option key={format} value={format}>{format === "json" ? "Workflow JSON" : format === "metta" ? "MeTTa workflow resource" : format}</option>)}</select></label>
+    <fieldset className="english-workflow-contract-order">
+      <legend>CONTRACT SECTION ORDER · ONE LLM CALL</legend>
+      <div className="english-workflow-output-composer" aria-label="Add outputs to Generation Order">
+        <div className="english-workflow-output-composer-row" aria-label="Applicable Prompt resource outputs">
+          {applicablePrompts.map((prompt) => <button type="button" key={prompt.id} disabled={busy} title={`${prompt.classificationId || "Unclassified"} · ${prompt.label || prompt.id}`} onClick={() => onAddOutput(prompt.buttonName, prompt.id)}>+ {prompt.buttonName}</button>)}
+          {member.options?.allowGroups !== false && <button type="button" className="english-workflow-group-output" disabled={busy} title="Create and select a simultaneous-generation group" onClick={() => onAddOutput("group")}>[+group]</button>}
+        </div>
+        {!applicablePrompts.length && <small>No effective Prompt resources declare applicability <code>{promptApplicability}</code>.</small>}
+      </div>
+      <ol>{generationOrder.map((entry, index) => <GenerationOrderItem key={entry.id} entry={entry} ordinal={`${index + 1}`} index={index} siblingCount={generationOrder.length} selectedGroupId={selectedGroupId} busy={busy} prompts={prompts} models={models} onSelectGroup={onSelectGroup} onRunEntry={onRunEntry} onShuffleGroup={onShuffleGroup} onCopyGroup={onCopyGroup} onClearGroup={onClearGroup} onPeers={onPeers} onUpdates={onUpdates} onPrompt={onPrompt} onModel={onEntryModel} onRotate={onRotate} onRemove={onRemove} />)}</ol>
+      <div className="english-workflow-order-actions"><button type="button" disabled={busy || generationOrder.length < 2} onClick={onShuffleOrder}>Shuffle order</button><button type="button" disabled={busy || generationOrder.length === 0} onClick={onClearOrder}>Clear order</button></div>
+      <small>Analyze follows the full sequence. Any named row title runs that step as a quick call; [group] runs only that group. Prompt and Model Override routing is saved with every occurrence in <code>{generationOrderPath}</code>.</small>
+    </fieldset>
+    <button type="button" disabled={busy || !description.trim() || !hasContractOperation || !hasGenerativeStep(generationOrder)} onClick={onAnalyze}>{busyAction === "analyze" ? "Analyzing and saving…" : "⌕ Analyze & Save"}</button>
+    <button type="button" disabled={busy || !hasAnalysisContract} onClick={onPlan}>▦ Plan Memory &amp; Values</button>
+    <button type="button" className="primary" disabled={busy || !operation || !description.trim() || !hasAnalysisContract || !memoryPlanned} onClick={onGenerate}>{busyAction === "generate" ? "Generating…" : "✦ Generate Draft"}</button>
+    {message && <div className={phase === "error" ? "english-workflow-message error" : "english-workflow-message"}>{message}</div>}
+    <span className="sr-only">{operationCatalogCount} effective Operations; {draftStepCount} preview steps</span>
+  </div>;
+}
+
+export function GenerateWorkflowPage({
   pageDefinition,
   workspaceId,
   workspaceLabel,
@@ -623,12 +742,17 @@ export function WorkflowGenerationRuntime({
   onGenerated,
   onApply,
   onOpenWorkflow,
+  onOpenPrompts,
   onPageDefinitionSaved,
 }: Props) {
   const [phase, setPhase] = useState<GenerationPhase>("idle");
   const [selectedModel, setSelectedModel] = useState("");
   const [modelChoices, setModelChoices] = useState<ModelChoice[]>(models);
   const [promptChoices, setPromptChoices] = useState<PromptChoice[]>([]);
+  const [selectedPromptId, setSelectedPromptId] = useState("");
+  const [selectedPromptSource, setSelectedPromptSource] = useState("");
+  const [selectedPromptSourceValid, setSelectedPromptSourceValid] = useState(true);
+  const [savingPrompt, setSavingPrompt] = useState(false);
   const [datatypeCatalog, setDatatypeCatalog] = useState<DatatypeDocument[]>([]);
   const [workflowCatalog, setWorkflowCatalog] = useState<WorkflowDocument[]>([]);
   const [outputFormat, setOutputFormat] = useState(workflow.generation?.preferredFormat || "json");
@@ -759,7 +883,13 @@ export function WorkflowGenerationRuntime({
           if (!record || typeof record !== "object" || Array.isArray(record)) return;
           const document = (record as Record<string, unknown>).document;
           if (!document || typeof document !== "object" || Array.isArray(document)) return;
-          const prompt = document as PromptChoice;
+          const raw = record as Record<string, unknown>;
+          const prompt = {
+            ...(document as PromptChoice),
+            path: String(raw.path || ""),
+            source: String(raw.source || ""),
+            workspaceId: String(raw.workspaceId || workspaceId),
+          };
           if (prompt.id && prompt.enabled !== false) choices.set(prompt.id, prompt);
         });
         setPromptChoices([...choices.values()].sort((left, right) => (left.label || left.id).localeCompare(right.label || right.id)));
@@ -1145,36 +1275,91 @@ export function WorkflowGenerationRuntime({
     .flatMap((entry) => [entry, ...(entry.steps || [])])
     .map((entry) => entry.promptId)
     .find(Boolean);
-  const selectedPrompt = promptChoices.find((prompt) => prompt.id === explicitPromptId)
+  const selectedPrompt = promptChoices.find((prompt) => prompt.id === selectedPromptId)
+    || promptChoices.find((prompt) => prompt.id === explicitPromptId)
     || availableContractSectionPrompts[0];
   const selectedModelRecord = modelChoices.find((model) => model.id === selectedModel);
 
-  const composerSurface = (): WorkflowPageMemberSurface => ({
+  useEffect(() => {
+    if (!selectedPrompt) return;
+    setSelectedPromptId(selectedPrompt.id);
+    setSelectedPromptSource(JSON.stringify(selectedPrompt, (key, value) =>
+      ["path", "source", "workspaceId"].includes(key) ? undefined : value, 2));
+    setSelectedPromptSourceValid(true);
+  }, [selectedPrompt?.id]);
+
+  const saveSelectedPrompt = async () => {
+    if (!selectedPrompt?.path || !selectedPrompt.workspaceId || !selectedPromptSourceValid) return;
+    setSavingPrompt(true);
+    try {
+      const document = JSON.parse(selectedPromptSource) as PromptChoice;
+      const payload = await request(`/api/workspaces/${encodeURIComponent(selectedPrompt.workspaceId)}/prompts/${encodeURIComponent(selectedPrompt.id)}`, {
+        method: "PUT",
+        body: JSON.stringify({ path: selectedPrompt.path, document }),
+      });
+      const saved = payload.document as PromptChoice;
+      setPromptChoices((current) => current.map((prompt) => prompt.id === selectedPrompt.id ? {
+        ...saved,
+        path: selectedPrompt.path,
+        source: selectedPrompt.source,
+        workspaceId: selectedPrompt.workspaceId,
+      } : prompt));
+      setMessage(`Saved Prompt ${selectedPrompt.id}.`);
+    } catch (reason) {
+      setMessage(reason instanceof Error ? reason.message : String(reason));
+    } finally {
+      setSavingPrompt(false);
+    }
+  };
+
+  const composerSurface = (member: WorkflowPageMemberDefinition): WorkflowPageMemberSurface => ({
     value: operation?.id || "Operation unavailable",
     detail: `${operationCatalog.length} effective Operations`,
     baseClass: "english-workflow-panel english-workflow-generator",
     footer: <><b>{draft?.steps.length || 0} preview steps</b><span>{phase === "error" ? "Generation error" : phase}</span></>,
-    content: <div className="english-workflow-generation-controls">
-      <label><span>SELECTED MODEL</span><select aria-label="English Workflow selected model" value={selectedModel} disabled={busyAction !== ""} onChange={(event) => void changeModel(event.target.value)}><option value="">Use system and Operation resolution</option>{modelChoices.filter((model) => model.enabled !== false).map((model) => <option key={model.id} value={model.id}>{modelOptionLabel(model)}</option>)}</select></label>
-      <label><span>OUTPUT FORMAT</span><select aria-label="English Workflow output format" value={outputFormat} onChange={(event) => setOutputFormat(event.target.value)}><option value="json">Workflow JSON</option><option value="metta">MeTTa workflow resource</option></select></label>
-      <fieldset className="english-workflow-contract-order">
-        <legend>CONTRACT SECTION ORDER · ONE LLM CALL</legend>
-        <div className="english-workflow-output-composer" aria-label="Add outputs to Generation Order">
-          <div className="english-workflow-output-composer-row" aria-label="Applicable Prompt resource outputs">
-            {availableContractSectionPrompts.map((prompt) => <button type="button" key={prompt.id} disabled={busyAction !== ""} title={`${prompt.classificationId || "Unclassified"} · ${prompt.label || prompt.id}`} onClick={() => addGenerationOutput(prompt.buttonName, prompt.id)}>+ {prompt.buttonName}</button>)}
-            <button type="button" className="english-workflow-group-output" disabled={busyAction !== ""} title="Create and select a simultaneous-generation group" onClick={() => addGenerationOutput("group")}>[+group]</button>
-          </div>
-          {!availableContractSectionPrompts.length && <small>No effective Prompt resources declare applicability <code>{CONTRACT_SECTION_APPLICABILITY}</code>.</small>}
-        </div>
-        <ol>{generationOrder.map((entry, index) => <GenerationOrderItem key={entry.id} entry={entry} ordinal={`${index + 1}`} index={index} siblingCount={generationOrder.length} selectedGroupId={selectedGroupId} busy={busyAction !== ""} prompts={promptChoices} models={modelChoices} onSelectGroup={(id) => setSelectedGroupId((current) => current === id ? null : id)} onRunEntry={(entry, ordinal) => void analyze([entry], entry.name === "group" ? `Run Group ${ordinal}` : `Quick Call ${entry.name} ${ordinal}`, entry.modelId || selectedModel)} onShuffleGroup={shuffleGenerationGroup} onCopyGroup={copyGenerationGroup} onClearGroup={clearGenerationGroup} onPeers={setGenerationEntryPeers} onUpdates={setGenerationEntryUpdates} onPrompt={setGenerationEntryPrompt} onModel={setGenerationEntryModel} onRotate={rotateGenerationEntry} onRemove={removeGenerationEntry} />)}</ol>
-        <div className="english-workflow-order-actions"><button type="button" disabled={busyAction !== "" || generationOrder.length < 2} onClick={() => setGenerationOrder((current) => shuffledGenerationOrder(current))}>Shuffle order</button><button type="button" disabled={busyAction !== "" || generationOrder.length === 0} onClick={() => { setGenerationOrder([]); setSelectedGroupId(null); }}>Clear order</button></div>
-        <small>Analyze follows the full sequence. Any named row title runs that step as a quick call; [group] runs only that group. Prompt and Model Override routing is saved with every occurrence in <code>{generationOrderPath}</code>.</small>
-      </fieldset>
-      <button type="button" disabled={busyAction !== "" || !description.trim() || !contractOperation || !hasGenerativeStep(generationOrder)} onClick={() => void analyze()}>{busyAction === "analyze" ? "Analyzing and saving…" : "⌕ Analyze & Save"}</button>
-      <button type="button" disabled={busyAction !== "" || !analysisContract} onClick={plan}>▦ Plan Memory &amp; Values</button>
-      <button type="button" className="primary" disabled={busyAction !== "" || !operation || !description.trim() || !analysisContract || !memoryPlanned} onClick={() => void generate()}>{busyAction === "generate" ? "Generating…" : "✦ Generate Draft"}</button>
-      {message && <div className={phase === "error" ? "english-workflow-message error" : "english-workflow-message"}>{message}</div>}
-    </div>,
+    content: <WorkflowGenerationRuntime
+      member={member}
+      operation={operation}
+      operationCatalogCount={operationCatalog.length}
+      draftStepCount={draft?.steps.length || 0}
+      phase={phase}
+      busyAction={busyAction}
+      message={message}
+      description={description}
+      selectedModel={selectedModel}
+      models={modelChoices}
+      outputFormat={outputFormat}
+      prompts={promptChoices}
+      applicablePrompts={contractSectionPrompts(
+        promptChoices,
+        String(member.options?.promptApplicability || CONTRACT_SECTION_APPLICABILITY),
+      )}
+      generationOrder={generationOrder}
+      selectedGroupId={selectedGroupId}
+      generationOrderPath={generationOrderPath}
+      hasContractOperation={Boolean(contractOperation)}
+      hasAnalysisContract={Boolean(analysisContract)}
+      memoryPlanned={memoryPlanned}
+      onModelChange={(modelId) => void changeModel(modelId)}
+      onOutputFormatChange={setOutputFormat}
+      onAddOutput={(name, promptId) => { addGenerationOutput(name, promptId); if (promptId) setSelectedPromptId(promptId); }}
+      onSelectGroup={(id) => setSelectedGroupId((current) => current === id ? null : id)}
+      onRunEntry={(entry, ordinal) => void analyze([entry], entry.name === "group" ? `Run Group ${ordinal}` : `Quick Call ${entry.name} ${ordinal}`, entry.modelId || selectedModel)}
+      onShuffleGroup={shuffleGenerationGroup}
+      onCopyGroup={copyGenerationGroup}
+      onClearGroup={clearGenerationGroup}
+      onPeers={setGenerationEntryPeers}
+      onUpdates={setGenerationEntryUpdates}
+      onPrompt={(entryId, promptId, parentGroupId) => { setGenerationEntryPrompt(entryId, promptId, parentGroupId); setSelectedPromptId(promptId); }}
+      onEntryModel={setGenerationEntryModel}
+      onRotate={rotateGenerationEntry}
+      onRemove={removeGenerationEntry}
+      onShuffleOrder={() => setGenerationOrder((current) => shuffledGenerationOrder(current))}
+      onClearOrder={() => { setGenerationOrder([]); setSelectedGroupId(null); }}
+      onAnalyze={() => void analyze()}
+      onPlan={plan}
+      onGenerate={() => void generate()}
+    />,
   });
 
   const contractSectionSurface = (member: WorkflowPageMemberDefinition): WorkflowPageMemberSurface => {
@@ -1240,7 +1425,19 @@ export function WorkflowGenerationRuntime({
       baseClass: "english-workflow-panel english-workflow-page-source",
       content: pageDefinition ? <WorkflowPageSourceEditor workspaceId={workspaceId} pageId={member.resource?.id || pageDefinition.id} disabled={busyAction !== ""} onSaved={onPageDefinitionSaved} /> : <p>No page specification is loaded.</p>,
     }),
-    PromptResourceDetail: () => ({ value: selectedPrompt?.id || "No Prompt selected", content: selectedPrompt ? jsonDetail(selectedPrompt) : <p>Select or add a Prompt in Generation Order to inspect it here.</p> }),
+    PromptResourceList: () => ({
+      value: `${promptChoices.length} effective Prompts`,
+      detail: selectedPrompt?.id || "No Prompt selected",
+      baseClass: "english-workflow-contract-panel",
+      scrollSize: "260px",
+      content: <div className="operation-model-list compact">{promptChoices.map((prompt) => <button type="button" className={`operation-model-option ${prompt.id === selectedPrompt?.id ? "selected" : ""}`} key={prompt.id} onClick={() => setSelectedPromptId(prompt.id)}><span><b>{prompt.label || prompt.id}</b><small>{prompt.id} · {prompt.workspaceId || prompt.source || "effective"}</small></span><em>{prompt.id === selectedPrompt?.id ? "selected" : "inspect"}</em></button>)}</div>,
+    }),
+    PromptTextSourceEditor: () => ({
+      value: selectedPrompt?.id || "No Prompt selected",
+      detail: selectedPrompt?.path || "Select a Prompt from the list or center playground",
+      baseClass: "english-workflow-panel",
+      content: selectedPrompt ? <section><div className="operation-editor-actions"><button type="button" onClick={onOpenPrompts}>Open Rich Prompt Editor</button><button type="button" className="primary" disabled={savingPrompt || !selectedPromptSourceValid} onClick={() => void saveSelectedPrompt()}>{savingPrompt ? "Saving…" : "Save Selected Prompt"}</button></div><ResourceSourceEditor value={selectedPromptSource} onChange={setSelectedPromptSource} onValidityChange={setSelectedPromptSourceValid} label={`Edit ${selectedPrompt.label || selectedPrompt.id} source`} /></section> : <p>Select or add a Prompt in the center playground or Prompt list.</p>,
+    }),
     OperationResourceDetail: () => ({ value: operation?.id || contractOperation?.id || "No Operation selected", content: operation || contractOperation ? <><button type="button" onClick={onOpenWorkflow}>Open canonical rich editors</button>{jsonDetail(operation || contractOperation)}</> : <p>No authoring Operation is available.</p> }),
     ModelResourceDetail: () => ({ value: selectedModelRecord ? modelOptionLabel(selectedModelRecord) : "Inherited model", content: selectedModelRecord ? jsonDetail(selectedModelRecord) : <p>The system and Operation model-resolution policy will choose the model.</p> }),
     WorkflowSchemaInspector: () => ({ value: "Workflow + step contract", content: jsonDetail({ kind: "workflow", required: ["id", "steps"], stepRequired: ["id", "label", "kind", "operation", "dependsOn", "inputs", "outputs"], stepOptional: ["parameters", "when", "while", "foreach", "branch", "maxIterations", "metadata"] }) }),

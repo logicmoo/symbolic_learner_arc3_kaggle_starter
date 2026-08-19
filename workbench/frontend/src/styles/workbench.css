@@ -183,3 +183,212 @@ html[data-workbench-theme$="-light"] :is(img,video,canvas,svg.image-natural){fil
 .workflow-authoring-operation{margin-bottom:8px}.workflow-authoring-operation-body{display:grid;background:#08141b}.workflow-authoring-operation-body>header{display:flex;flex-direction:column;gap:3px;padding:11px}.workflow-authoring-operation-body>header span{color:var(--cyan);font:700 8px ui-monospace;letter-spacing:.11em}.workflow-authoring-operation-body>header b{font:13px ui-monospace}.workflow-authoring-operation-body>header code,.workflow-authoring-operation-body>header small{color:#78909b;font:8px ui-monospace}.workflow-authoring-operation-controls{display:flex;gap:8px;padding:10px;border-top:1px solid #29434f}.workflow-authoring-operation-controls button{border:1px solid #315361;background:#0e222c;color:#add0db;padding:8px 11px;font:9px ui-monospace;cursor:pointer}.workflow-authoring-operation-controls button.run-button{border-color:#22cbb8;color:#74f0df}
 .workflow-authoring-substack{display:flex!important;flex-direction:column;gap:5px;padding:7px}.workflow-authoring-suboperation{margin:0!important}.workflow-authoring-operation-controls{align-items:center;flex-wrap:wrap}.workflow-authoring-operation-controls span{color:#78909b;font:8px ui-monospace}.workflow-authoring-operation-controls button:disabled{opacity:.4;cursor:not-allowed}
 .workflow-inferred-values-intro{display:flex;flex-direction:column;gap:4px;padding:9px 10px;border-bottom:1px solid #29434f}.workflow-inferred-values-intro b{color:#d5e4e8;font:10px ui-monospace}.workflow-inferred-values-intro span,.workflow-inferred-values-intro small{color:#78909b;font:8px/1.45 ui-monospace}.workflow-inferred-values-intro small{color:var(--amber)}.workflow-inferred-values-stack{display:flex!important;flex-direction:column;gap:4px;padding:7px}.workflow-inferred-value{margin:0!important}.workflow-inferred-value dl{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:5px 10px;margin:0;padding:10px}.workflow-inferred-value dt{color:#78909b;font:700 8px ui-monospace}.workflow-inferred-value dd{min-width:0;margin:0;color:#c5d6dc;font:8px ui-monospace;overflow-wrap:anywhere}.workflow-inferred-value code{white-space:normal}
+.workspace-overview-host{display:flex;flex-direction:column;gap:0;min-height:0;overflow:auto}
+.workspace-overview-host>.workspace-overview,.workspace-overview-host>.workspace-settings-page{width:100%;max-width:1180px;margin:0 auto;padding:0 clamp(22px,4vw,64px) 50px}
+.workspace-overview-host>.workspace-settings-page .resource-heading{padding-top:26px}
+.workbench .main-stage,
+.workbench .stages-panel,
+.workbench .inspector,
+.workbench .resource-view {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.workbench button,
+.workbench .rail-icon,
+.workbench .resource-browser-resizer,
+.workbench .inspector-resizer,
+.workbench .shell-panel-controls button {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Make the V2 left navigation easier to read on desktop layouts. */
+@media (min-width: 1181px) {
+  .workspace {
+    grid-template-columns: 220px 250px minmax(540px, 1fr) 310px;
+  }
+
+  .rail.navigation-v2 {
+    padding: 14px 12px 10px;
+  }
+
+  .navigation-v2 .rail-section {
+    gap: 4px;
+    margin-bottom: 14px;
+  }
+
+  .navigation-v2 .rail-section > span {
+    font: 700 9px ui-monospace, monospace;
+    letter-spacing: 0.12em;
+    margin: 0 8px 6px;
+  }
+
+  .navigation-v2 .rail-icon {
+    min-height: 38px;
+    grid-template-columns: 28px 1fr;
+    gap: 7px;
+    padding: 5px 9px;
+  }
+
+  .navigation-v2 .rail-icon > span {
+    font-size: 14px;
+  }
+
+  .navigation-v2 .rail-icon small {
+    font: 600 12px ui-sans-serif, system-ui;
+  }
+}
+
+.workspace:has(> .rail.navigation-v2) {
+  grid-template-columns: 220px 250px minmax(540px, 1fr) 310px;
+}
+
+.rail.navigation-v2 .rail-section > span {
+  font: 700 9px ui-monospace, monospace;
+  letter-spacing: 0.12em;
+  margin: 0 8px 6px;
+}
+
+.rail.navigation-v2 .rail-icon {
+  min-height: 38px;
+  grid-template-columns: 28px 1fr;
+  gap: 7px;
+  padding: 5px 9px;
+}
+
+.rail.navigation-v2 .rail-icon > span {
+  font-size: 14px;
+}
+
+.rail.navigation-v2 .rail-icon small {
+  font: 600 12px ui-sans-serif, system-ui;
+}
+
+@media (min-width: 821px) {
+  .rail.navigation-v2 {
+    min-width: 220px;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+  }
+
+  .rail.navigation-v2 .rail-section {
+    display: flex !important;
+    align-items: stretch !important;
+  }
+
+  .rail.navigation-v2 .rail-section > span {
+    display: block !important;
+  }
+
+  .rail.navigation-v2 .rail-icon {
+    display: grid !important;
+    width: 100% !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+
+  .rail.navigation-v2 .rail-icon > span {
+    display: grid !important;
+  }
+
+  .rail.navigation-v2 .rail-icon small {
+    display: block !important;
+  }
+}
+
+@media (max-width: 1180px) and (min-width: 821px) {
+  .workspace:has(> .rail.navigation-v2) {
+    grid-template-columns: 220px 220px minmax(0, 1fr);
+  }
+}
+
+@media (min-width: 821px) {
+  .workspace:has(> .rail.navigation-v2) {
+    --nav-rail-width: 220px;
+    grid-template-columns: var(--nav-rail-width) 250px minmax(540px, 1fr) var(--inspector-width);
+  }
+
+  .workspace.artifact-focused:has(> .rail.navigation-v2) {
+    grid-template-columns: var(--nav-rail-width) minmax(540px, 1fr) var(--inspector-width);
+  }
+
+  .workspace.artifact-focused:has(> .rail.navigation-v2):has(.canvas-view),
+  .workspace.artifact-focused:has(> .rail.navigation-v2):has(.editor-surface) {
+    grid-template-columns: var(--nav-rail-width) 250px minmax(540px, 1fr) var(--inspector-width);
+  }
+
+  .workspace.policy-focused:has(> .rail.navigation-v2),
+  body.docs-focused .workspace:has(> .rail.navigation-v2) {
+    grid-template-columns: var(--nav-rail-width) minmax(0, 1fr);
+  }
+
+  .rail.navigation-v2 {
+    width: var(--nav-rail-width);
+    min-width: var(--nav-rail-width);
+    flex: 0 0 var(--nav-rail-width);
+  }
+}
+
+@media (max-width: 1180px) and (min-width: 821px) {
+  .workspace:has(> .rail.navigation-v2) {
+    grid-template-columns: var(--nav-rail-width) 220px minmax(0, 1fr);
+  }
+
+  .workspace.artifact-focused:has(> .rail.navigation-v2) {
+    grid-template-columns: var(--nav-rail-width) minmax(0, 1fr);
+  }
+
+  .workspace.artifact-focused:has(> .rail.navigation-v2):has(.canvas-view),
+  .workspace.artifact-focused:has(> .rail.navigation-v2):has(.editor-surface) {
+    grid-template-columns: var(--nav-rail-width) 220px minmax(0, 1fr);
+  }
+}
+
+@media (min-width: 821px) {
+  .workspace {
+    --nav-rail-width: 220px;
+    grid-template-columns: var(--nav-rail-width) 250px minmax(540px, 1fr) var(--inspector-width) !important;
+  }
+
+  .workspace.artifact-focused {
+    grid-template-columns: var(--nav-rail-width) minmax(540px, 1fr) var(--inspector-width) !important;
+  }
+
+  .workspace.artifact-focused:has(.canvas-view),
+  .workspace.artifact-focused:has(.editor-surface) {
+    grid-template-columns: var(--nav-rail-width) 250px minmax(540px, 1fr) var(--inspector-width) !important;
+  }
+
+  .workspace.policy-focused,
+  body.docs-focused .workspace {
+    grid-template-columns: var(--nav-rail-width) minmax(0, 1fr) !important;
+  }
+
+  .rail.navigation-v2 {
+    width: var(--nav-rail-width) !important;
+    min-width: var(--nav-rail-width) !important;
+    max-width: var(--nav-rail-width) !important;
+    flex: 0 0 var(--nav-rail-width) !important;
+  }
+}
+
+@media (max-width: 1180px) and (min-width: 821px) {
+  .workspace {
+    grid-template-columns: var(--nav-rail-width) 220px minmax(0, 1fr) !important;
+  }
+
+  .workspace.artifact-focused {
+    grid-template-columns: var(--nav-rail-width) minmax(0, 1fr) !important;
+  }
+
+  .workspace.artifact-focused:has(.canvas-view),
+  .workspace.artifact-focused:has(.editor-surface) {
+    grid-template-columns: var(--nav-rail-width) 220px minmax(0, 1fr) !important;
+  }
+
+  .workspace.policy-focused,
+  body.docs-focused .workspace {
+    grid-template-columns: var(--nav-rail-width) minmax(0, 1fr) !important;
+  }
+}

@@ -196,7 +196,12 @@ def read_repository_asset(path: str = Query(..., min_length=1)) -> FileResponse:
     except ValueError as error:
         raise HTTPException(status_code=400, detail="Asset path must stay inside the repository") from error
     reason = _exclusion_reason(relative)
-    if reason or target.suffix.lower() not in IMAGE_SUFFIXES:
+    action_tree_image = (
+        len(relative.parts) >= 1
+        and relative.parts[0] == "action_trees"
+        and target.suffix.lower() in IMAGE_SUFFIXES
+    )
+    if (reason and not action_tree_image) or target.suffix.lower() not in IMAGE_SUFFIXES:
         raise HTTPException(status_code=403, detail="This repository asset is not exposed")
     if not resources.is_file(target):
         raise HTTPException(status_code=404, detail=f"Repository asset not found: {path}")

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 import re
 
@@ -38,6 +39,17 @@ def test_provider_transparently_reads_existing_metta_through_json_path(tmp_path:
     assert provider.is_file(logical)
     assert provider.glob(tmp_path, ["."]) == [logical]
     assert provider.read_json(logical) == {"kind": "resource", "values": [1, "two words", {}]}
+
+
+def test_provider_keeps_level1_json_mirror_alongside_metta(tmp_path: Path) -> None:
+    provider = FilesystemProvider()
+    logical = tmp_path / "data" / "level_1" / "LEFT" / "arc3_state_analysis.json"
+    provider.write_json(logical, {"kind": "arc3_state", "id": "step_left", "score": 7})
+
+    assert logical.is_file()
+    assert logical.with_suffix(".metta").is_file()
+    assert json.loads(logical.read_text(encoding="utf-8"))["score"] == 7
+    assert provider.read_json(logical)["id"] == "step_left"
 
 
 def test_provider_reads_multiple_resources_and_surgically_updates_one(tmp_path: Path) -> None:

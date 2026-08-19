@@ -6,7 +6,7 @@
       <excludeFolder url="file://$MODULE_DIR$/venv" />
       <excludeFolder url="file://$MODULE_DIR$/workbench/.venv" />
     </content>
-    <orderEntry type="jdk" jdkName="C:\symbolic_learner_arc3_kaggle_starter\venv" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="C:\snet\PeTTa\repos\symbolic_learner_workbench\.venv" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
 </module>

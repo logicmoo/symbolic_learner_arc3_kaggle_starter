@@ -1,0 +1,58 @@
+{
+  "kind": "workflow_page",
+  "id": "arc3.b1_b2_pipeline",
+  "label": "B1 -> B2 Pipeline",
+  "description": "Run B1 removal first, emit many_objects_n, then run B2 regenerated identities across all input files.",
+  "glyph": "⇄",
+  "menuPlacement": "middle",
+  "order": 36,
+  "routeView": "arc3B1B2Pipeline",
+  "renderer": "arc3_prompt_prolog",
+  "layout": {
+    "kind": "three_column_accordion",
+    "columns": [
+      {
+        "id": "left",
+        "label": "INPUTS",
+        "role": "data",
+        "members": [
+          { "id": "arc3_pair_inputs_b1_b2", "label": "B1/B2 Inputs", "component": "Arc3ImagePairInputs", "initialDisplayMode": "scroll" },
+          { "id": "arc3_combined_prompt_b1_b2", "label": "Combined Prompt Contract", "component": "Arc3CombinedPrompt", "initialDisplayMode": "strip" }
+        ]
+      },
+      {
+        "id": "center",
+        "label": "B1 THEN B2",
+        "role": "authoring",
+        "members": [
+          { "id": "arc3_run_prompt_b1_b2", "label": "Run B1 Then B2", "component": "Arc3PromptRunner", "initialDisplayMode": "scroll" },
+          { "id": "arc3_output_files_b1_b2", "label": "B1/B2 Output Files", "component": "Arc3PrologOutputs", "initialDisplayMode": "scroll" }
+        ]
+      },
+      {
+        "id": "right",
+        "label": "SOURCE DETAILS",
+        "role": "details",
+        "members": [
+          {
+            "id": "arc3_b1_b2_page_source",
+            "label": "Current Page Specification",
+            "component": "ResourceSourceEditor",
+            "initialDisplayMode": "strip",
+            "resource": {
+              "kind": "workflow_page",
+              "id": "arc3.b1_b2_pipeline"
+            },
+            "options": {
+              "format": "json",
+              "editable": true,
+              "validateBeforeApply": true,
+              "applyOnSave": true
+            }
+          },
+          { "id": "arc3_raw_response_b1_b2", "label": "Raw Model Response", "component": "Arc3RawResponse", "initialDisplayMode": "scroll" }
+        ]
+      }
+    ]
+  }
+}

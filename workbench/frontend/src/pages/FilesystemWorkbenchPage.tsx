@@ -101,14 +101,24 @@ const WorkspaceOverview = lazy(() =>
     default: module.WorkspaceOverview,
   })),
 );
-const WorkflowGenerationRuntime = lazy(() =>
+const GenerateWorkflowPage = lazy(() =>
   import("../components/WorkflowGenerationRuntime").then((module) => ({
-    default: module.WorkflowGenerationRuntime,
+    default: module.GenerateWorkflowPage,
   })),
 );
 const VisualImageDiffPage = lazy(() =>
   import("../components/VisualImageDiffPage").then((module) => ({
     default: module.VisualImageDiffPage,
+  })),
+);
+const Arc3PromptPrologPage = lazy(() =>
+  import("../components/Arc3PromptPrologPage").then((module) => ({
+    default: module.Arc3PromptPrologPage,
+  })),
+);
+const WorkflowPageBuilder = lazy(() =>
+  import("../components/WorkflowPageBuilder").then((module) => ({
+    default: module.WorkflowPageBuilder,
   })),
 );
 const KnowledgeDataExplorer = lazy(() =>
@@ -137,6 +147,17 @@ type Workspace = {
   includes?: Array<{ workspaceId: string; includeInherited: boolean }>;
   effectiveIncludes?: string[];
   countsAvailable?: boolean;
+  resourceCountBreakdowns?: Partial<
+    Record<
+      "workflows" | "operations" | "datatypes" | "representations" | "models" | "prompts",
+      {
+        total: number;
+        local: number;
+        inherited: number;
+        overridden: number;
+      }
+    >
+  >;
   workflowFileCount: number;
   operationFileCount: number;
   backendFileCount?: number;
@@ -270,7 +291,14 @@ type OperationLibrary = {
   operations: RecordFile<OperationResource>[];
   operationImplementations: RecordFile<OperationResource>[];
 };
-type WorkflowRunnerModel = { id: string; label?: string; backendId?: string; backendLabel?: string; enabled?: boolean };
+type WorkflowRunnerModel = {
+  id: string;
+  label?: string;
+  backendId?: string;
+  backendLabel?: string;
+  enabled?: boolean;
+  capabilities?: Record<string, unknown>;
+};
 type WorkspaceFile = {
   path: string;
   name: string;
@@ -332,8 +360,12 @@ type Capability = { status: string; detail: string };
 import { ResourceSourceEditor } from "../components/ResourceSourceEditor";
 type View =
   | "overview"
+  | "currentWorkflow"
   | "englishWorkflow"
   | "visualImageDiff"
+  | "arc3TwoImageProlog"
+  | "arc3B1B2Pipeline"
+  | "workflowPageBuilder"
   | "canvas"
   | "editor"
   | "data"
@@ -364,10 +396,15 @@ type View =
   | "runtimeContexts"
   | "docs";
 type BreadcrumbEntry = { view: View; label: string; url: string };
+type TopbarSwitch = { key: string; label: string; active?: boolean; onClick: () => void };
 const WORKBENCH_VIEWS: Set<View> = new Set([
   "overview",
+  "currentWorkflow",
   "englishWorkflow",
   "visualImageDiff",
+  "arc3TwoImageProlog",
+  "arc3B1B2Pipeline",
+  "workflowPageBuilder",
   "canvas",
   "editor",
   "data",
@@ -403,9 +440,12 @@ const viewFromLocation = (): View | null => {
   const rawValue = parameters.get("view") || parameters.get("menu");
   if (!rawValue) return parameters.has("state") ? "states" : null;
   const value = rawValue.trim().toLowerCase();
-  if (value === "workflows" || value === "workflow") return "canvas";
+  if (value === "workflows" || value === "workflow") return "currentWorkflow";
   if (value === "english-workflow" || value === "englishworkflow") return "englishWorkflow";
   if (value === "visual-image-diff" || value === "visualimagediff" || value === "image-diff") return "visualImageDiff";
+  if (value === "two-image-prolog" || value === "twoimageprolog" || value === "arc3-two-image-prolog") return "arc3TwoImageProlog";
+  if (value === "b1-b2-pipeline" || value === "b1b2pipeline" || value === "arc3-b1-b2-pipeline") return "arc3B1B2Pipeline";
+  if (value === "workflow-page-builder" || value === "workflowpagebuilder" || value === "page-builder") return "workflowPageBuilder";
   if (value === "workflowv2" || value === "workflows-v2" || value === "workflow-v2") return "canvas";
   if (value === "editor") return "canvas";
   if (value === "backends") return "llms";
@@ -415,6 +455,52 @@ const workspaceFromLocation = () =>
   new URLSearchParams(window.location.search).get("workspace")?.trim() || null;
 const workflowFromLocation = () =>
   new URLSearchParams(window.location.search).get("workflow")?.trim() || null;
+const llmsPageFromLocation = (): "browse" | "discover" | "override" => {
+  const value = (
+    new URLSearchParams(window.location.search).get("llmsPage") || "browse"
+  )
+    .trim()
+    .toLowerCase();
+  return value === "discover" || value === "override" ? value : "browse";
+};
+const chooserResourceOrder = [
+  { key: "workflows", label: "workflows" },
+  { key: "operations", label: "operations" },
+  { key: "datatypes", label: "datatypes" },
+  { key: "representations", label: "representations" },
+  { key: "models", label: "model/preset items" },
+  { key: "prompts", label: "prompts" },
+] as const;
+const renderResourceBreakdown = (
+  value: { total: number; local: number; inherited: number; overridden: number },
+  label: string,
+) =>
+  (
+    <span className="workspace-resource-breakdown">
+      <span className="workspace-resource-total">{value.total} {label}</span>
+      {" ("}
+      <span className="workspace-resource-local" title="Local">
+        {value.local}
+      </span>
+      /
+      <span className="workspace-resource-inherited" title="Inherited">
+        {value.inherited}
+      </span>
+      /
+      <span className="workspace-resource-overridden" title="Overridden">
+        {value.overridden}
+      </span>
+      )
+    </span>
+  );
+const renderResourceBreakdownLegend = () => (
+  <span className="workspace-resource-legend">
+    {" ("}
+    <span className="workspace-resource-local">local</span>/
+    <span className="workspace-resource-inherited">inherited</span>/
+    <span className="workspace-resource-overridden">overridden</span>)
+  </span>
+);
 const workflowPageMenuPlacementRank = (
   placement: WorkflowPageDefinition["menuPlacement"],
 ) => ({ first: 0, middle: 1, last: 2 })[placement || "middle"];
@@ -484,12 +570,14 @@ export const NAVIGATION_V2: Array<{
   },
   {
     group: "WORKFLOWS",
-    items: [],
+    items: [
+      { label: "Current Workflow", view: "currentWorkflow", glyph: "⌘" },
+      { label: "Page Builder", view: "workflowPageBuilder", glyph: "▦" },
+    ],
   },
   {
     group: "CAPABILITIES",
     items: [
-      { label: "Workflow Resources", view: "canvas", glyph: "⌘" },
       { label: "Operations", view: "operations", glyph: "▦" },
       { label: "Source Code", view: "sourceCode", glyph: "</>" },
       { label: "Systems", view: "systems", glyph: "⚙" },
@@ -536,6 +624,9 @@ const viewLabel = (view: View) =>
       editor: "Workflow Editor",
       englishWorkflow: "Generate Workflow",
       visualImageDiff: "Visual Sequencing",
+      arc3TwoImageProlog: "Two-Image Prolog",
+      arc3B1B2Pipeline: "B1 → B2 Pipeline",
+      workflowPageBuilder: "Workflow Page Builder",
       workflowRuns: "Workflow Runs",
       evidence: "Evidence & provenance",
       checks: "Checks",
@@ -600,6 +691,9 @@ const slug = (value: string) =>
     .replace(/^_+|_+$/g, "") || "workflow";
 
 export function FilesystemWorkbenchPage() {
+  const [llmsTopMenuMode, setLlmsTopMenuMode] = useState<
+    "browse" | "discover" | "override"
+  >(() => llmsPageFromLocation());
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]),
     [workspace, setWorkspace] = useState<Workspace | null>(null),
     [snapshot, setSnapshot] = useState<Snapshot | null>(null),
@@ -614,14 +708,24 @@ export function FilesystemWorkbenchPage() {
   const breadcrumbNavigation = useRef(false);
   const loadingWorkspaceId = useRef<string | null>(null);
   const currentWorkspaceId = useRef<string | null>(null);
-  const setView = (next: View) => {
+  const setView = (
+    next: View,
+    options?: { llmsPage?: "browse" | "discover" | "override" },
+  ) => {
     setViewState(next);
     if (next === "states") {
       setWorkflowPaneFocus("runs");
       setWorkflowEditorPercent(33.333);
     }
+    if (next === "llms") {
+      const menu = options?.llmsPage || llmsTopMenuMode;
+      setLlmsTopMenuMode(menu);
+    }
     const url = new URL(window.location.href);
     url.searchParams.set("view", next === "canvas" ? "workflows" : next);
+    if (next === "llms")
+      url.searchParams.set("llmsPage", options?.llmsPage || llmsTopMenuMode);
+    else url.searchParams.delete("llmsPage");
     url.searchParams.delete("menu");
     url.searchParams.delete("resource");
     if (next !== "sourceCode") url.searchParams.delete("sourceLanguage");
@@ -649,8 +753,11 @@ export function FilesystemWorkbenchPage() {
                 ? "contexts"
                 : "data";
     setViewState(next);
+    if (next === "llms") setLlmsTopMenuMode("browse");
     const url = new URL(window.location.href);
     url.searchParams.set("view", next);
+    if (next === "llms") url.searchParams.set("llmsPage", "browse");
+    else url.searchParams.delete("llmsPage");
     url.searchParams.set("resource", id);
     url.searchParams.delete("state");
     window.history.replaceState(
@@ -840,6 +947,60 @@ export function FilesystemWorkbenchPage() {
         ),
     [workflowPageDefinitions],
   );
+  const workflowPageTopbarViews = useMemo(
+    () =>
+      new Set(
+        workflowNavigationEntries
+          .map((entry) => entry.definition.routeView as View)
+          .filter((candidate) => WORKBENCH_VIEWS.has(candidate)),
+      ),
+    [workflowNavigationEntries],
+  );
+  const workflowTopbarActive =
+    view === "canvas" ||
+    view === "states" ||
+    view === "editor" ||
+    view === "artifacts" ||
+    view === "evidence" ||
+    view === "checks" ||
+    workflowPageTopbarViews.has(view);
+  const sectionTopbarItems = useMemo(() => {
+    const section = NAVIGATION_V2.find((entry) =>
+      entry.items.some((item) => item.view === view),
+    );
+    return section?.items || [];
+  }, [view]);
+  const orderedSectionTopbarItems = useMemo(() => {
+    if (!sectionTopbarItems.length) return [];
+    const current = sectionTopbarItems.find((item) => item.view === view);
+    const others = sectionTopbarItems.filter((item) => item.view !== view);
+    return current ? [current, ...others] : sectionTopbarItems;
+  }, [sectionTopbarItems, view]);
+  const openOverviewShortcut = (anchorId: "overview-top" | "overview-counts" | "overview-inheritance") => {
+    setView("overview");
+    const url = new URL(window.location.href);
+    url.hash = anchorId;
+    window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
+    window.setTimeout(() => {
+      document.getElementById(anchorId)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 0);
+  };
+  const pageTopbarSwitches = useMemo<TopbarSwitch[]>(() => {
+    if (view === "overview") {
+      return [
+        { key: "overview", label: "Overview", active: true, onClick: () => openOverviewShortcut("overview-top") },
+        { key: "overview-counts", label: "Counts", onClick: () => openOverviewShortcut("overview-counts") },
+        { key: "overview-inheritance", label: "Inheritance", onClick: () => openOverviewShortcut("overview-inheritance") },
+        { key: "overview-workflows", label: "Open Workflow", onClick: () => setView("currentWorkflow") },
+      ];
+    }
+    return orderedSectionTopbarItems.map((item) => ({
+      key: `section-topbar:${item.view}`,
+      label: item.label,
+      active: item.view === view,
+      onClick: () => setView(item.view),
+    }));
+  }, [view, orderedSectionTopbarItems]);
   const setLeftColumnAccordionMode = (mode: AccordionDisplayMode) => {
     setWorkflowLeftColumnDisplayMode(mode);
     setSelectedStageDisplayMode(mode);
@@ -946,11 +1107,32 @@ export function FilesystemWorkbenchPage() {
   const enabledModelCount = workspace?.modelFileCount || 0;
 
   useEffect(() => {
+    let cancelled = false;
+    let detailedTimer = 0;
     void request("/api/workspaces")
-      .then((payload) =>
-        setWorkspaces((payload.workspaces || []) as Workspace[]),
-      )
-      .catch((reason) => setError(String(reason)));
+      .then((payload) => {
+        if (cancelled) return;
+        const next = (payload.workspaces || []) as Workspace[];
+        setWorkspaces((current) =>
+          current.some((item) => item.countsAvailable) ? current : next,
+        );
+      })
+      .catch((reason) => {
+        if (!cancelled) setError(String(reason));
+      });
+    // Defer heavy count hydration so URL-driven workspace/view restore is not blocked.
+    detailedTimer = window.setTimeout(() => {
+      void request("/api/workspaces?detailed=true")
+        .then((payload) => {
+          if (cancelled) return;
+          setWorkspaces((payload.workspaces || []) as Workspace[]);
+        })
+        .catch(() => undefined);
+    }, 1200);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(detailedTimer);
+    };
   }, []);
   useEffect(() => {
     if (workspace)
@@ -1054,16 +1236,16 @@ export function FilesystemWorkbenchPage() {
     setSnapshot(next);
     return next;
   };
-  const loadWorkspace = (item: Workspace) =>
+  const loadWorkspaceById = (workspaceId: string) =>
     perform(async () => {
       const [snapshotPayload, implementationPayload, operationPayload, modelPayload] =
         await Promise.all([
           request(
-            `/api/workspaces/${encodeURIComponent(item.id)}/snapshot?scope=shell`,
+            `/api/workspaces/${encodeURIComponent(workspaceId)}/snapshot?scope=shell`,
           ),
           engine("/implementations"),
-          request(`/api/workspaces/${encodeURIComponent(item.id)}/operations`),
-          request(`/api/workspaces/${encodeURIComponent(item.id)}/models`),
+          request(`/api/workspaces/${encodeURIComponent(workspaceId)}/operations`),
+          request(`/api/workspaces/${encodeURIComponent(workspaceId)}/models`),
         ]);
       const next = snapshotPayload as unknown as Snapshot;
       setWorkspace(next.workspace);
@@ -1086,7 +1268,7 @@ export function FilesystemWorkbenchPage() {
           []) as RecordFile<OperationResource>[],
       });
       setWorkflowRunnerModels(
-        (modelPayload.models || []).flatMap((record: RecordFile<{ id: string; label?: string; enabled?: boolean }>) =>
+        (modelPayload.models || []).flatMap((record: RecordFile<{ id: string; label?: string; enabled?: boolean; capabilities?: Record<string, unknown> }>) =>
           record.document && record.resolved?.enabled !== false && record.document.enabled !== false
             ? [{
                 id: record.document.id,
@@ -1094,6 +1276,7 @@ export function FilesystemWorkbenchPage() {
                 backendId: record.resolved?.backendId,
                 backendLabel: record.resolved?.backend?.label,
                 enabled: true,
+                capabilities: record.document.capabilities,
               }]
             : [],
         ),
@@ -1139,25 +1322,34 @@ export function FilesystemWorkbenchPage() {
           ),
         )
         .catch(() => undefined);
+      void request("/api/workspaces")
+        .then((payload) =>
+          setWorkspaces((current) =>
+            current.some((item) => item.countsAvailable)
+              ? current
+              : ((payload.workspaces || []) as Workspace[]),
+          ),
+        )
+        .catch(() => undefined);
       void request("/api/workspaces?detailed=true")
         .then((payload) =>
           setWorkspaces((payload.workspaces || []) as Workspace[]),
         )
         .catch(() => undefined);
     });
+  const loadWorkspace = (item: Workspace) => loadWorkspaceById(item.id);
   const loadRequestedWorkspace = () => {
     const requested = workspaceFromLocation();
     if (
       !requested ||
       requested === currentWorkspaceId.current ||
-      loadingWorkspaceId.current !== null ||
-      !workspaces.length
+      loadingWorkspaceId.current !== null
     )
       return;
     const match = workspaces.find((item) => item.id === requested);
-    if (!match) return;
+    if (!match && workspaces.length) return;
     loadingWorkspaceId.current = requested;
-    void loadWorkspace(match).finally(() => {
+    void loadWorkspaceById(match?.id || requested).finally(() => {
       if (loadingWorkspaceId.current === requested)
         loadingWorkspaceId.current = null;
       if (workspaceFromLocation() !== currentWorkspaceId.current)
@@ -1541,6 +1733,10 @@ export function FilesystemWorkbenchPage() {
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", stop);
   };
+  const hasActiveTextSelection = () => {
+    const selection = window.getSelection();
+    return Boolean(selection && !selection.isCollapsed && selection.toString());
+  };
   useEffect(() => {
     localStorage.setItem(
       "workbench.resourceBrowserWidth",
@@ -1630,13 +1826,14 @@ export function FilesystemWorkbenchPage() {
     localStorage.setItem("workbench.theme", theme);
   }, [theme]);
   useEffect(() => {
+    const takeoverEnabled = view === "canvas";
     document.body.classList.toggle(
       "shell-takeover-resource",
-      takeoverShellPanel === "resource",
+      takeoverEnabled && takeoverShellPanel === "resource",
     );
     document.body.classList.toggle(
       "shell-takeover-docs",
-      takeoverShellPanel === "docs",
+      takeoverEnabled && takeoverShellPanel === "docs",
     );
     return () => {
       document.body.classList.remove(
@@ -1644,7 +1841,10 @@ export function FilesystemWorkbenchPage() {
         "shell-takeover-docs",
       );
     };
-  }, [takeoverShellPanel]);
+  }, [takeoverShellPanel, view]);
+  useEffect(() => {
+    if (view !== "canvas") setTakeoverShellPanel(null);
+  }, [view]);
   useEffect(() => {
     if (takeoverShellPanel === "resource" && resourceBrowserWidth > 36)
       setTakeoverShellPanel(null);
@@ -1662,6 +1862,7 @@ export function FilesystemWorkbenchPage() {
   useEffect(() => {
     const restoreLocation = () => {
       setViewState(viewFromLocation() || "canvas");
+      setLlmsTopMenuMode(llmsPageFromLocation());
       loadRequestedWorkspace();
     };
     window.addEventListener("popstate", restoreLocation);
@@ -1826,10 +2027,20 @@ export function FilesystemWorkbenchPage() {
               </small>
             </form>
             {visibleWorkspaces.map((item) => (
-              <button
+              <article
                 className={`workspace-card ${item.workspaceType === "library" ? "shared-workspace-card" : ""} ${item.id === "default" ? "default-workspace-card" : ""}`}
                 key={item.root}
-                onClick={() => loadWorkspace(item)}
+                role="button"
+                tabIndex={0}
+                onClick={() => {
+                  if (hasActiveTextSelection()) return;
+                  loadWorkspace(item);
+                }}
+                onKeyDown={(event) => {
+                  if (event.key !== "Enter" && event.key !== " ") return;
+                  event.preventDefault();
+                  loadWorkspace(item);
+                }}
               >
                 <span className="workspace-kind">
                   {item.workspaceType === "library"
@@ -1842,11 +2053,42 @@ export function FilesystemWorkbenchPage() {
                 <p>{item.description || "Filesystem workspace"}</p>
                 <strong>
                   {item.countsAvailable
-                    ? `${item.workflowFileCount} workflows · ${item.operationFileCount || 0} operations · ${item.datatypeFileCount || 0} datatypes · ${item.representationFileCount || 0} representations · ${item.modelFileCount || 0} model/preset items · ${item.promptFileCount || 0} prompts`
-                    : "Inherited resource totals load after opening"}
+                    ? (() => {
+                        const breakdowns = item.resourceCountBreakdowns || {};
+                        const summary = chooserResourceOrder.reduce<
+                          Array<{
+                            key: (typeof chooserResourceOrder)[number]["key"];
+                            label: (typeof chooserResourceOrder)[number]["label"];
+                            value: {
+                              total: number;
+                              local: number;
+                              inherited: number;
+                              overridden: number;
+                            };
+                          }>
+                        >((entries, { key, label }) => {
+                          const value = breakdowns[key];
+                          if (value) entries.push({ key, label, value });
+                          return entries;
+                        }, []);
+                        return summary.length ? (
+                          <>
+                            {summary.map((entry, index) => (
+                              <span key={entry.key}>
+                                {index > 0 ? " · " : ""}
+                                {renderResourceBreakdown(entry.value, entry.label)}
+                              </span>
+                            ))}
+                            {renderResourceBreakdownLegend()}
+                          </>
+                        ) : (
+                          `${item.workflowFileCount} workflows · ${item.operationFileCount || 0} operations · ${item.datatypeFileCount || 0} datatypes · ${item.representationFileCount || 0} representations · ${item.modelFileCount || 0} model/preset items · ${item.promptFileCount || 0} prompts`
+                        );
+                      })()
+                    : "Calculating local/inherited/overridden totals..."}
                 </strong>
                 <small>{item.root}</small>
-              </button>
+              </article>
             ))}
           </div>
           {error && (
@@ -2493,7 +2735,7 @@ export function FilesystemWorkbenchPage() {
         ))}
       </nav>
       <section
-        className={`workspace ${relationshipView ? "artifact-focused" : ""} ${view === "modelPolicy" ? "policy-focused" : ""} ${view === "overview" ? "overview-focused" : ""}`}
+        className={`workspace ${relationshipView ? "artifact-focused" : ""} ${view === "modelPolicy" ? "policy-focused" : ""}`}
         style={{ "--inspector-width": `${inspectorWidth}px` } as CSSProperties}
       >
         <aside className="rail navigation-v2">
@@ -2600,59 +2842,103 @@ export function FilesystemWorkbenchPage() {
           }
         >
           <nav className="view-tabs">
-            <button
-              className={`workflow-focus-tab ${workflowCombinedView && workflowPaneFocus === "editor" ? "active" : ""}`}
-              onClick={() => {
-                setWorkflowPaneFocus("editor");
-                setWorkflowEditorPercent(66.667);
-                setView("canvas");
-              }}
-            >
-              Workflow Editor
-            </button>
-            <button
-              className={`workflow-focus-tab ${workflowCombinedView && workflowPaneFocus === "runs" ? "active" : ""}`}
-              onClick={() => {
-                setWorkflowPaneFocus("runs");
-                setWorkflowEditorPercent(33.333);
-                setView("canvas");
-              }}
-            >
-              Workflow Runs
-            </button>
-            {workflowNavigationEntries.map(({ definition }) => {
-              const target = WORKBENCH_VIEWS.has(definition.routeView as View)
-                ? (definition.routeView as View)
-                : null;
-              return target ? (
+            {view === "llms" ? (
+              <>
                 <button
-                  key={definition.id}
-                  data-workflow-page-resource={definition.id}
-                  className={view === target ? "active" : ""}
-                  onClick={() => setView(target)}
+                  className={llmsTopMenuMode === "browse" ? "active" : ""}
+                  onClick={() => {
+                    setLlmsTopMenuMode("browse");
+                    setView("llms", { llmsPage: "browse" });
+                  }}
                 >
-                  {definition.label}
+                  Browse Models
                 </button>
-              ) : null;
-            })}
-            <button
-              className={view === "artifacts" ? "active" : ""}
-              onClick={() => setView("artifacts")}
-            >
-              Artifact explorer <span>{run?.artifacts.length || 0}</span>
-            </button>
-            <button
-              className={view === "evidence" ? "active" : ""}
-              onClick={() => setView("evidence")}
-            >
-              Evidence & provenance <span>{run?.events.length || 0}</span>
-            </button>
-            <button
-              className={view === "checks" ? "active" : ""}
-              onClick={() => setView("checks")}
-            >
-              Checks
-            </button>
+                <button
+                  className={llmsTopMenuMode === "discover" ? "active" : ""}
+                  onClick={() => {
+                    setLlmsTopMenuMode("discover");
+                    setView("llms", { llmsPage: "discover" });
+                  }}
+                >
+                  Discover Public Properties
+                </button>
+                <button
+                  className={llmsTopMenuMode === "override" ? "active" : ""}
+                  onClick={() => {
+                    setLlmsTopMenuMode("override");
+                    setView("llms", { llmsPage: "override" });
+                  }}
+                >
+                  Override
+                </button>
+              </>
+            ) : workflowTopbarActive ? (
+              <>
+                <button
+                  className={`workflow-focus-tab ${workflowCombinedView && workflowPaneFocus === "editor" ? "active" : ""}`}
+                  onClick={() => {
+                    setWorkflowPaneFocus("editor");
+                    setWorkflowEditorPercent(66.667);
+                    setView("canvas");
+                  }}
+                >
+                  Workflow Editor
+                </button>
+                <button
+                  className={`workflow-focus-tab ${workflowCombinedView && workflowPaneFocus === "runs" ? "active" : ""}`}
+                  onClick={() => {
+                    setWorkflowPaneFocus("runs");
+                    setWorkflowEditorPercent(33.333);
+                    setView("canvas");
+                  }}
+                >
+                  Workflow Runs
+                </button>
+                {workflowNavigationEntries.map(({ definition }) => {
+                  const target = WORKBENCH_VIEWS.has(definition.routeView as View)
+                    ? (definition.routeView as View)
+                    : null;
+                  return target ? (
+                    <button
+                      key={definition.id}
+                      data-workflow-page-resource={definition.id}
+                      className={view === target ? "active" : ""}
+                      onClick={() => setView(target)}
+                    >
+                      {definition.label}
+                    </button>
+                  ) : null;
+                })}
+                <button
+                  className={view === "artifacts" ? "active" : ""}
+                  onClick={() => setView("artifacts")}
+                >
+                  Artifact explorer <span>{run?.artifacts.length || 0}</span>
+                </button>
+                <button
+                  className={view === "evidence" ? "active" : ""}
+                  onClick={() => setView("evidence")}
+                >
+                  Evidence & provenance <span>{run?.events.length || 0}</span>
+                </button>
+                <button
+                  className={view === "checks" ? "active" : ""}
+                  onClick={() => setView("checks")}
+                >
+                  Checks
+                </button>
+              </>
+            ) : (
+              pageTopbarSwitches.map((item) => (
+                <button
+                  key={item.key}
+                  className={item.active ? "active" : ""}
+                  onClick={item.onClick}
+                >
+                  {item.label}
+                </button>
+              ))
+            )}
           </nav>
           {workflowCombinedView&&<ThreeStateAccordionStack id="center-stack" controlsLabel="CENTER STACK">
           {workflow&&englishWorkflowOperation&&(()=>{
@@ -3099,7 +3385,7 @@ export function FilesystemWorkbenchPage() {
               />
             )}
             {view === "overview" && (
-              <div className="workspace-overview-scroll">
+              <section className="resource-view workspace-overview-host">
                 <WorkspaceOverview
                   workspaceId={workspace.id}
                   label={workspace.label}
@@ -3140,11 +3426,14 @@ export function FilesystemWorkbenchPage() {
                   onSwitch={showWorkspaceChooser}
                   onSaved={refreshSnapshot}
                 />
-              </div>
+              </section>
+            )}
+            {view === "workflowPageBuilder" && (
+              <WorkflowPageBuilder initialDefinition={workflowNavigationEntries[0]?.definition} />
             )}
             {workflowPageForView && (
               workflowPageForView.renderer === "workflow_generation_runtime" ? workflow ? (
-                <WorkflowGenerationRuntime
+                <GenerateWorkflowPage
                   pageDefinition={workflowPageForView}
                   workspaceId={workspace.id}
                   workspaceLabel={workspace.label}
@@ -3160,27 +3449,32 @@ export function FilesystemWorkbenchPage() {
                   memoryValues={effectivePreflightStateValues}
                   onGenerated={acceptEnglishWorkflowOutputs}
                   onApply={saveWorkflow}
-                  onOpenWorkflow={() => setView("canvas")}
+                  onOpenWorkflow={() => setView("currentWorkflow")}
+                  onOpenPrompts={() => setView("prompts")}
                   onPageDefinitionSaved={refreshSnapshot}
                 />
               ) : (
                 <div className="studio-empty">Select or create a Workflow resource for Generate Workflow to revise.</div>
-              ) : <WorkflowPageHost
-                definition={workflowPageForView}
-                renderers={{
-                  visual_image_diff: (
-                    <VisualImageDiffPage
-                      pageDefinition={workflowPageForView}
-                      workspaceId={workspace.id}
-                      workspaceLabel={workspace.label}
-                      models={workflowRunnerModels}
-                      operations={operationLibrary.operations.flatMap((record) => record.document ? [record.document] : [])}
-                      operationImplementations={operationLibrary.operationImplementations.flatMap((record) => record.document ? [record.document] : [])}
-                      onPageDefinitionSaved={refreshSnapshot}
-                    />
-                  ),
-                }}
-              />
+              ) : workflowPageForView.renderer === "visual_image_diff" ? (
+                <VisualImageDiffPage
+                  pageDefinition={workflowPageForView}
+                  workspaceId={workspace.id}
+                  workspaceLabel={workspace.label}
+                  models={workflowRunnerModels}
+                  operations={operationLibrary.operations.flatMap((record) => record.document ? [record.document] : [])}
+                  operationImplementations={operationLibrary.operationImplementations.flatMap((record) => record.document ? [record.document] : [])}
+                  onPageDefinitionSaved={refreshSnapshot}
+                />
+              ) : workflowPageForView.renderer === "arc3_prompt_prolog" ? (
+                <Arc3PromptPrologPage
+                  pageDefinition={workflowPageForView}
+                  workspaceId={workspace.id}
+                  workspaceLabel={workspace.label}
+                  models={workflowRunnerModels}
+                  files={snapshot?.files || []}
+                  onPageDefinitionSaved={refreshSnapshot}
+                />
+              ) : <WorkflowPageHost definition={workflowPageForView} renderers={{}} />
             )}
             {view === "data" && <DataCatalogPanel workspaceId={workspace.id} />}
             {view === "knowledgeData" && (
@@ -3470,6 +3764,7 @@ export function FilesystemWorkbenchPage() {
               <LlmModelsEditor
                 workspaceId={workspace.id}
                 catalogMode="models"
+                topMenuMode={llmsTopMenuMode}
               />
             )}{" "}
             {view === "prompts" && (

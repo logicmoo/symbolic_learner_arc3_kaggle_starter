@@ -1,9 +1,12 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { WorkflowPageDefinition } from "./WorkflowPageHost";
+import { ResourceSourceEditor } from "./ResourceSourceEditor";
 
 type Props = {
   workspaceId: string;
   pageId: string;
   disabled?: boolean;
+  liveDefinition?: WorkflowPageDefinition;
   onSaved: () => Promise<unknown> | unknown;
 };
 
@@ -18,34 +21,114 @@ async function request(path: string, init?: RequestInit) {
   return payload;
 }
 
-export function WorkflowPageSourceEditor({ workspaceId, pageId, disabled = false, onSaved }: Props) {
+type SourcePayload = {
+  content: string;
+  sourceLabel: string;
+  modified: number | null;
+};
+
+function parseSourcePayload(pageId: string, payload: Record<string, unknown>): SourcePayload {
+  const nextContent = String(payload.content || "");
+  const record = payload.workflowPage && typeof payload.workflowPage === "object"
+    ? payload.workflowPage as Record<string, unknown>
+    : {};
+  const sourceLabel = `${String(record.source || "effective")} · ${String(record.path || pageId)}`;
+  const modifiedRaw = payload.modified;
+  return {
+    content: nextContent,
+    sourceLabel,
+    modified: typeof modifiedRaw === "number" && Number.isFinite(modifiedRaw) ? modifiedRaw : null,
+  };
+}
+
+function formatDiskTimestamp(timestamp: number | null): string {
+  if (timestamp === null) return "unknown time";
+  return new Date(timestamp * 1000).toLocaleString();
+}
+
+export function WorkflowPageSourceEditor({ workspaceId, pageId, disabled = false, liveDefinition, onSaved }: Props) {
   const [content, setContent] = useState("");
   const [savedContent, setSavedContent] = useState("");
+  const [savedModified, setSavedModified] = useState<number | null>(null);
+  const [diskContent, setDiskContent] = useState("");
+  const [diskModified, setDiskModified] = useState<number | null>(null);
   const [source, setSource] = useState("");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
-  const lineNumberRef = useRef<HTMLPreElement | null>(null);
-  const lines = Math.max(1, content.split(/\r?\n/).length);
+  const [valid, setValid] = useState(true);
+  const lastSynchronizedLiveSource = useRef("");
+  const liveSource = liveDefinition ? `${JSON.stringify(liveDefinition, null, 2)}\n` : "";
+
+  const loadSource = async (showMessage = false) => {
+    setBusy(true);
+    setMessage("");
+    try {
+      const payload = await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/workflow-pages/${encodeURIComponent(pageId)}/source`) as Record<string, unknown>;
+      const parsed = parseSourcePayload(pageId, payload);
+      setContent(parsed.content);
+      setSavedContent(parsed.content);
+      setSavedModified(parsed.modified);
+      setDiskContent(parsed.content);
+      setDiskModified(parsed.modified);
+      setSource(parsed.sourceLabel);
+      if (showMessage) {
+        setMessage(`Reloaded from disk (${formatDiskTimestamp(parsed.modified)}).`);
+      }
+    } catch (reason) {
+      setMessage(reason instanceof Error ? reason.message : String(reason));
+    } finally {
+      setBusy(false);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
-    setBusy(true);
-    setMessage("");
-    void request(`/api/workspaces/${encodeURIComponent(workspaceId)}/workflow-pages/${encodeURIComponent(pageId)}/source`)
-      .then((payload) => {
-        if (cancelled) return;
-        const nextContent = String(payload.content || "");
-        const record = payload.workflowPage && typeof payload.workflowPage === "object"
-          ? payload.workflowPage as Record<string, unknown>
-          : {};
-        setContent(nextContent);
-        setSavedContent(nextContent);
-        setSource(`${String(record.source || "effective")} · ${String(record.path || pageId)}`);
-      })
-      .catch((reason) => { if (!cancelled) setMessage(reason instanceof Error ? reason.message : String(reason)); })
-      .finally(() => { if (!cancelled) setBusy(false); });
+    void (async () => {
+      await loadSource(false);
+      if (cancelled) return;
+    })();
     return () => { cancelled = true; };
   }, [workspaceId, pageId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const poll = async () => {
+      try {
+        const payload = await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/workflow-pages/${encodeURIComponent(pageId)}/source`) as Record<string, unknown>;
+        if (cancelled) return;
+        const parsed = parseSourcePayload(pageId, payload);
+        setDiskContent(parsed.content);
+        setDiskModified(parsed.modified);
+        setSource(parsed.sourceLabel);
+      } catch {
+        // Keep current editor state; polling failures should not interrupt editing.
+      }
+    };
+    const handle = window.setInterval(() => { void poll(); }, 5000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(handle);
+    };
+  }, [workspaceId, pageId]);
+
+  useEffect(() => {
+    if (!liveSource || liveSource === content) return;
+    if (content && content !== savedContent && content !== lastSynchronizedLiveSource.current) return;
+    lastSynchronizedLiveSource.current = liveSource;
+    setContent(liveSource);
+    if (savedContent && liveSource !== savedContent) {
+      setMessage("Live page components synchronized. Validate and Apply to persist this layout.");
+    }
+  }, [liveSource]);
+
+  const diskChanged = useMemo(() => {
+    if (!diskContent && !savedContent) return false;
+    if (diskContent !== savedContent) return true;
+    if (diskModified === null || savedModified === null) return false;
+    return Math.abs(diskModified - savedModified) > 0.0001;
+  }, [diskContent, diskModified, savedContent, savedModified]);
+
+  const dirty = content !== savedContent;
 
   const save = async () => {
     setBusy(true);
@@ -54,15 +137,15 @@ export function WorkflowPageSourceEditor({ workspaceId, pageId, disabled = false
       const payload = await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/workflow-pages/${encodeURIComponent(pageId)}/source`, {
         method: "PUT",
         body: JSON.stringify({ content }),
-      });
-      const nextContent = String(payload.content || content);
-      const record = payload.workflowPage && typeof payload.workflowPage === "object"
-        ? payload.workflowPage as Record<string, unknown>
-        : {};
-      setContent(nextContent);
-      setSavedContent(nextContent);
-      setSource(`${String(record.source || "workspace")} · ${String(record.path || pageId)}`);
-      setMessage(payload.createdOverride ? "Workspace override created and applied live." : "Page specification applied live.");
+      }) as Record<string, unknown>;
+      const parsed = parseSourcePayload(pageId, payload);
+      setContent(parsed.content);
+      setSavedContent(parsed.content);
+      setSavedModified(parsed.modified);
+      setDiskContent(parsed.content);
+      setDiskModified(parsed.modified);
+      setSource(parsed.sourceLabel);
+      setMessage(payload.createdOverride ? `Workspace override created and applied live (${formatDiskTimestamp(parsed.modified)}).` : `Page specification applied live (${formatDiskTimestamp(parsed.modified)}).`);
       await onSaved();
     } catch (reason) {
       setMessage(reason instanceof Error ? reason.message : String(reason));
@@ -74,12 +157,26 @@ export function WorkflowPageSourceEditor({ workspaceId, pageId, disabled = false
   return <>
     <div className="english-workflow-editor-meta">
       <code>{source || pageId}</code>
-      <button type="button" disabled={disabled || busy || content === savedContent} onClick={() => void save()}>Validate and Apply</button>
+      <button type="button" disabled={disabled || busy || !diskChanged} onClick={() => void loadSource(true)}>
+        {diskChanged ? `Reload changes (${formatDiskTimestamp(diskModified)})` : "Reload"}
+      </button>
+      <button type="button" disabled={disabled || busy || !valid || (!dirty && !diskChanged)} onClick={() => void save()}>
+        {diskChanged && !dirty ? "Validate and Apply (overwrite disk changes)" : "Validate and Apply"}
+      </button>
     </div>
-    <div className="english-workflow-editor">
-      <pre ref={lineNumberRef} aria-hidden="true">{Array.from({ length: lines }, (_, index) => index + 1).join("\n")}</pre>
-      <textarea aria-label="Current page specification" value={content} disabled={disabled || busy} onChange={(event) => setContent(event.target.value)} onScroll={(event) => { if (lineNumberRef.current) lineNumberRef.current.scrollTop = event.currentTarget.scrollTop; }} spellCheck={false} />
+    <ResourceSourceEditor
+      value={content}
+      onChange={setContent}
+      onValidityChange={setValid}
+      className="workflow-page-source-editor"
+      label="Current page specification (MeTTa/JSON)"
+      showEnablement={false}
+      disabled={disabled || busy}
+    />
+    <div className="english-workflow-editor-meta">
+      <span>{dirty ? "Unsaved changes" : "Saved"}</span>
+      <span>{diskChanged ? `Disk changed at ${formatDiskTimestamp(diskModified)}` : `Disk synced at ${formatDiskTimestamp(diskModified)}`}</span>
+      {message && <span>{message}</span>}
     </div>
-    <div className="english-workflow-editor-meta"><span>Ln {lines}</span><span>{content === savedContent ? "Saved" : "Unsaved changes"}</span>{message && <span>{message}</span>}</div>
   </>;
 }

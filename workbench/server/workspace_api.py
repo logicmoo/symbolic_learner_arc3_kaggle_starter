@@ -7,6 +7,7 @@ import shutil
 import time
 import base64
 import binascii
+from concurrent.futures import ThreadPoolExecutor
 from collections import Counter
 from threading import RLock
 from pathlib import Path
@@ -119,6 +120,90 @@ def _local_resource_counts(root: Path) -> dict[str, int]:
     return dict(counts)
 
 
+def _resource_ids_for_layer(
+    layer: Path,
+    directories: tuple[str, ...],
+    *,
+    accepted_kinds: set[str],
+    default_kind: str | None = None,
+    require_parents: bool | None = None,
+) -> set[str]:
+    resources = get_filesystem_provider()
+    ids: set[str] = set()
+    for path in resources.glob(layer, directories):
+        try:
+            documents = resources.read_json_documents(path)
+        except (OSError, ValueError, json.JSONDecodeError):
+            continue
+        for document in documents:
+            if not isinstance(document, dict):
+                continue
+            normalized_kind = str(document.get("kind") or default_kind or "").replace("-", "_")
+            if accepted_kinds and normalized_kind not in accepted_kinds:
+                continue
+            parent_ids = relationship_ids(document.get("parents"))
+            if require_parents is True and not parent_ids:
+                continue
+            if require_parents is False and parent_ids:
+                continue
+            resource_id = str(document.get("id") or "").strip()
+            if not resource_id:
+                continue
+            ids.add(resource_id)
+    return ids
+
+
+def _resource_count_breakdown(
+    root: Path,
+    directories: tuple[str, ...],
+    *,
+    accepted_kinds: set[str],
+    default_kind: str | None = None,
+    require_parents: bool | None = None,
+) -> dict[str, int]:
+    layers = effective_workspace_layers(root, root.parent)
+    local_layer_index = next(
+        (
+            index
+            for index, layer in enumerate(layers)
+            if layer.resolve() == root.resolve()
+        ),
+        len(layers) - 1,
+    )
+    layer_resource_ids = [
+        _resource_ids_for_layer(
+            layer,
+            directories,
+            accepted_kinds=accepted_kinds,
+            default_kind=default_kind,
+            require_parents=require_parents,
+        )
+        for layer in layers
+    ]
+    winner_index_by_id: dict[str, int] = {}
+    for layer_index, identifiers in enumerate(layer_resource_ids):
+        for identifier in identifiers:
+            winner_index_by_id[identifier] = layer_index
+    local_ids = {
+        identifier
+        for identifier, winner_index in winner_index_by_id.items()
+        if winner_index == local_layer_index
+    }
+    overridden_count = sum(
+        1
+        for identifier in local_ids
+        if any(identifier in layer_resource_ids[index] for index in range(local_layer_index))
+    )
+    total = len(winner_index_by_id)
+    local = len(local_ids)
+    return {
+        "total": total,
+        "local": local,
+        "inherited": total - local,
+        "overridden": overridden_count,
+    }
+
+
 def _workspace_from_directory(root: Path, *, include_counts: bool = True) -> dict[str, Any]:
     resources = get_filesystem_provider()
     metadata = _optional_metadata(root)
@@ -146,6 +231,59 @@ def _workspace_from_directory(root: Path, *, include_counts: bool = True) -> dic
     context_count = len(load_workspace_symbolic_records(root, "context")) if include_counts else 0
     file_count, disk_usage_bytes = _workspace_disk_summary(root) if include_counts else (0, 0)
     local_resource_counts = _local_resource_counts(root) if include_counts else {}
+    resource_count_breakdowns = (
+        {
+            "workflows": _resource_count_breakdown(
+                root,
+                ("design/workflows", "workflows"),
+                accepted_kinds={"workflow"},
+                default_kind="workflow",
+            ),
+            "operations": _resource_count_breakdown(
+                root,
+                (
+                    "design/operations",
+                    "design/operation_implementations",
+                    "operations",
+                    "operation_implementations",
+                ),
+                accepted_kinds={"operation", "operation_implementation"},
+                default_kind="operation",
+                require_parents=False,
+            ),
+            "datatypes": _resource_count_breakdown(
+                root,
+                (DATATYPE_DIRECTORY, "semantic_datatypes", "datatypes"),
+                accepted_kinds={"semantic_datatype"},
+                default_kind="semantic_datatype",
+            ),
+            "representations": _resource_count_breakdown(
+                root,
+                (REPRESENTATION_DIRECTORY, "representation_datatypes", "representations"),
+                accepted_kinds={"representation_datatype"},
+                default_kind="representation_datatype",
+            ),
+            "models": _resource_count_breakdown(
+                root,
+                ("design/models", "design/profiles", "models", "profiles"),
+                accepted_kinds={"model", "profile"},
+            ),
+            "prompts": _resource_count_breakdown(
+                root,
+                (
+                    "design/prompts",
+                    "design/prompt_implementations",
+                    "prompts",
+                    "prompt_implementations",
+                ),
+                accepted_kinds={"prompt"},
+                default_kind="prompt",
+                require_parents=False,
+            ),
+        }
+        if include_counts
+        else {}
+    )
     layers = effective_workspace_layers(root, root.parent)
     include_specs = declared_include_specs(root)
     return {
@@ -187,6 +325,7 @@ def _workspace_from_directory(root: Path, *, include_counts: bool = True) -> dic
         "diskUsageBytes": disk_usage_bytes,
         "resourceCounts": local_resource_counts,
         "resourceCountScope": "local",
+        "resourceCountBreakdowns": resource_count_breakdowns,
         "workflowFileCount": len(resources.glob(root, ("design/workflows",))) if include_counts and resources.is_dir(workflow_dir) else 0,
         "operationFileCount": operation_count,
         "operationImplementationFileCount": operation_implementation_count,
@@ -215,33 +354,52 @@ def discover_workspaces(*, force: bool = False, include_counts: bool = True) -> 
     roots = _workspace_roots()
     cache_key = (f"counts={include_counts}", *(str(root) for root in roots))
     with _workspace_cache_lock:
-        if not force and _workspace_cache and _workspace_cache[0] == cache_key and time.monotonic() - _workspace_cache[1] < WORKSPACE_DISCOVERY_CACHE_SECONDS:
+        if (
+            not force
+            and _workspace_cache
+            and _workspace_cache[0] == cache_key
+            and time.monotonic() - _workspace_cache[1] < WORKSPACE_DISCOVERY_CACHE_SECONDS
+        ):
             return [dict(item) for item in _workspace_cache[2]]
-        found: dict[str, dict[str, Any]] = {}
-        for container in roots:
-            if not resources.is_dir(container):
+
+    candidates: list[Path] = []
+    for container in roots:
+        if not resources.is_dir(container):
+            continue
+        try:
+            children = resources.iterdir(container)
+        except OSError:
+            continue
+        for child in children:
+            if not resources.is_dir(child) or child.name.startswith(".") or child.name in IGNORED_DIRECTORIES:
                 continue
-            try:
-                children = resources.iterdir(container)
-            except OSError:
-                continue
-            for child in children:
-                if not resources.is_dir(child) or child.name.startswith(".") or child.name in IGNORED_DIRECTORIES:
-                    continue
-                workspace = _workspace_from_directory(child, include_counts=include_counts)
+            candidates.append(child)
+
+    found: dict[str, dict[str, Any]] = {}
+
+    def load_workspace(child: Path) -> dict[str, Any]:
+        return _workspace_from_directory(child, include_counts=include_counts)
+
+    if candidates:
+        max_workers = min(8, len(candidates))
+        with ThreadPoolExecutor(max_workers=max_workers, thread_name_prefix="workspace-discovery") as pool:
+            for workspace in pool.map(load_workspace, candidates):
                 found[workspace["root"]] = workspace
-        discovered = sorted(found.values(), key=lambda item: (item["label"].lower(), item["root"].lower()))
-        projects = [item for item in discovered if item.get("workspaceType") == "project"]
-        project_ids = {item["id"] for item in projects}
-        for item in discovered:
-            used_by = sorted(project["id"] for project in projects if item["id"] in project.get("effectiveIncludes", []))
-            consumed_projects = sorted(project_id for project_id in item.get("effectiveIncludes", []) if project_id in project_ids)
-            item["usedByProjectCount"] = len(used_by)
-            item["usedByProjects"] = used_by
-            item["consumedProjectCount"] = len(consumed_projects)
-            item["consumedProjects"] = consumed_projects
+
+    discovered = sorted(found.values(), key=lambda item: (item["label"].lower(), item["root"].lower()))
+    projects = [item for item in discovered if item.get("workspaceType") == "project"]
+    project_ids = {item["id"] for item in projects}
+    for item in discovered:
+        used_by = sorted(project["id"] for project in projects if item["id"] in project.get("effectiveIncludes", []))
+        consumed_projects = sorted(project_id for project_id in item.get("effectiveIncludes", []) if project_id in project_ids)
+        item["usedByProjectCount"] = len(used_by)
+        item["usedByProjects"] = used_by
+        item["consumedProjectCount"] = len(consumed_projects)
+        item["consumedProjects"] = consumed_projects
+
+    with _workspace_cache_lock:
         _workspace_cache = (cache_key, time.monotonic(), discovered)
-        return [dict(item) for item in discovered]
+    return [dict(item) for item in discovered]
 
 
 def _resolve_workspace(workspace_id: str) -> dict[str, Any]:
@@ -931,6 +1089,7 @@ def read_effective_text_document(
 def read_workflow_page_source(workspace_id: str, page_id: str) -> dict[str, Any]:
     try:
         workspace = _resolve_workspace_without_counts(workspace_id)
+        root = Path(workspace["root"])
         record = next(
             (
                 item
@@ -941,9 +1100,21 @@ def read_workflow_page_source(workspace_id: str, page_id: str) -> dict[str, Any]
         )
         if record is None:
             raise ValueError("workflow page definition not found")
+        modified: float | None = None
+        relative_path = str(record.get("path") or "")
+        if relative_path:
+            layer = next(
+                (candidate for candidate in effective_workspace_layers(root, root.parent) if candidate.name == str(record.get("workspaceId") or "")),
+                root,
+            )
+            target = _safe_child(layer, relative_path)
+            resources = get_filesystem_provider()
+            if resources.is_file(target):
+                modified = resources.stat(target).st_mtime
         return {
             "workflowPage": record,
             "content": json.dumps(record["document"], indent=2, ensure_ascii=False) + "\n",
+            "modified": modified,
         }
     except KeyError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error
@@ -986,7 +1157,12 @@ def write_workflow_page_source(
             for item in _load_workflow_pages(workspace)
             if str((item.get("document") or {}).get("id") or "") == page_id
         )
-        return {"workflowPage": refreshed, "content": normalized, "createdOverride": workspace_record is None}
+        return {
+            "workflowPage": refreshed,
+            "content": normalized,
+            "createdOverride": workspace_record is None,
+            "modified": resources.stat(target).st_mtime if resources.is_file(target) else None,
+        }
     except KeyError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error
     except (OSError, ValueError, json.JSONDecodeError, StopIteration) as error:
@@ -1037,6 +1213,30 @@ def workspace_snapshot(workspace_id: str, scope: str = Query(default="full", pat
         "policies": load_workspace_policy_records(root),
         "artifactCategories": _load_artifact_categories(workspace),
     }
+
+
+@router.get("/{workspace_id}/data/files")
+def workspace_data_files(workspace_id: str) -> dict[str, Any]:
+    try:
+        workspace = _resolve_workspace(workspace_id)
+        root = Path(workspace["root"])
+        resources = get_filesystem_provider()
+        files: list[dict[str, Any]] = []
+        for path in resources.rglob(root, "*", ignored_names=IGNORED_DIRECTORIES):
+            if any(part in IGNORED_DIRECTORIES for part in path.parts):
+                continue
+            if not resources.is_file(path):
+                continue
+            relative = path.relative_to(root).as_posix().lower()
+            if relative.startswith("data/") or relative.startswith("knowledge/data/"):
+                files.append(_file_record(root, path))
+            if len(files) >= 5000:
+                break
+        return {"workspace": workspace, "files": files}
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+    except OSError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
 
 
 @router.get("/{workspace_id}/file")

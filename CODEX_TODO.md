@@ -42,6 +42,46 @@ values here.
 
 ## Completed and validated
 
+- [x] Re-hosted Overview inside the standard resource-page shell so it behaves
+  like other pages (for example Events): normal page body container, top menu
+  row placement, and persistent docs/help context on the right instead of the
+  previous bare/full-bleed wrapper behavior.
+
+- [x] Seeded shared `design/models/model_overridden_properties.json` with
+  initial web-sourced capability metadata for all current shared model
+  resources. Data now includes OpenRouter-derived modality/token-limit fields
+  where available, Hugging Face embedding metadata for BAAI/UAE models, and
+  explicit unresolved notes for models without reliable public capability
+  evidence in this pass.
+
+- [x] LLM top menu modes are now real mode-specific pages on the Models
+  surface: **Browse Models**, **Discover Public Properties**, and
+  **Override**. Discover mode auto-focuses backend discovery, lets users select
+  a worker model, and runs a web-grovel capability prompt (vision/multimodal,
+  token limits, and related metadata) that merges into
+  `design/models/model_overridden_properties.json`. Override mode is now a
+  dedicated filesystem-backed editor for that override resource.
+
+- [x] Workspace chooser cards now report per-resource inheritance splits without
+  requiring any workspace to be opened first. Discovery now includes
+  `resourceCountBreakdowns` for workflows, operations, datatypes,
+  representations, models, and prompts, each with `total`, `local`,
+  `inherited`, and `overridden` counts. The chooser summary renders entries in
+  the format `N resource (L local / I inherited / O overridden)`.
+
+- [x] Add a new ARC3 workflow page `arc3.two_image_prolog` for two-image upload
+  and contract-driven Prolog extraction. The new renderer
+  (`arc3_prompt_prolog`) is wired into `FilesystemWorkbenchPage`, presents
+  dedicated BEFORE/AFTER image inputs, runs the provided combined prompt
+  contract against a selected enabled model, and renders parsed outputs for
+  `new_identities`, `objects_pl`, `differences_pl`, `similarities_pl`,
+  `turtle_from_image_pl`, `turtle_from_diff_pl`, and `rules_pl` with a raw
+  response fallback panel. Added filesystem page source editing in the right
+  column via `ResourceSourceEditor`. Validation on 2026-08-18: `pytest -q
+  tests/test_visual_image_diff_ui.py` passed (19 passed) using a repo-local
+  temp directory override, frontend `npm run build` passed, and
+  `git diff --check` passed.
+
 - [x] Reorganize the active Workbench around the human/AI blackboard model:
   Workspace owns Overview, Goals, Planning, and Workflows; Capabilities owns
   Operations, Source Code, Systems, Models, Datatypes, and Policies; Knowledge
@@ -1125,3 +1165,182 @@ Preserve the canonical checkout and its `codex/workbench-navigation-v2` branch.
   loading, model-backed authoring controls, and the editable Current Page
   Specification. Focused workflow-page/navigation validation: 80 passed;
   frontend production build and `git diff --check` passed on 2026-08-18.
+- [x] Give each of the four workbench agents an independent self-managing
+  mailbox watchdog rather than a central multi-agent loop. Each supervisor owns
+  exactly one identity and cursor, checks its child every 10 seconds, runs a
+  bounded poll every 5 seconds for 61 checks, restarts it on exit, and preserves
+  deliveries in a per-agent durable spool. Heartbeats now consume only their
+  own spool and acknowledge a fixed snapshot offset so concurrently arriving
+  mail cannot be skipped. All four supervisors and poll children were verified
+  live; focused watchdog validation: 5 passed and `git diff --check` passed on
+  2026-08-18.
+- [x] Softcode Visual Image Diff through the same filesystem-driven
+  `WorkflowPageHost` and runtime component registry used by Generate Workflow,
+  while retaining its richer visual composer, nested subaccordion UIX, model
+  invocation, image sequence authoring, source inspectors, and Operation
+  playground. The page specification now declares three LEFT data members,
+  three CENTER authoring members, and three RIGHT source/detail members, and
+  the shared host supports controlled member modes plus the page's resizable
+  column dividers. Its original three-member RIGHT stack was subsequently
+  expanded into the composed group Prompt plus all 11 pipeline Prompt editors.
+  Focused workflow-page/navigation validation: 88 passed;
+  frontend production build and `git diff --check` passed. Live browser
+  verification confirmed all nine registered surfaces exactly once, two
+  column dividers, both model/group composers, and zero unavailable-component
+  fallbacks on 2026-08-18.
+- [x] Expand the Visual Image Diff RIGHT source-details stack into the live
+  composed group Prompt followed by all 11 filesystem-backed pipeline Prompt
+  resources selectable from the CENTER composers. Each named Prompt member is
+  a compact rich resource editor: contract metadata, synchronized MeTTa/JSON
+  text editing, validity gating, and a per-resource Save Prompt action using
+  the sibling-preserving Prompt update API. Live browser verification
+  confirmed 13 right-column members in the declared order, 11 Prompt editors,
+  independent expansion, and zero unavailable-component fallbacks. Focused
+  validation: 79 passed; frontend production build and `git diff --check`
+  passed on 2026-08-18.
+- [x] Add a first-class Workflow Page Builder under WORKFLOWS. CURRENT PAGE
+  SPECIFICATION accepts pasted `workflow_page` JSON; CLEAR removes the draft
+  and generated preview while preserving the editor, and LOAD performs one
+  best-effort construction pass. The loader normalizes left/center/right,
+  renders every valid declaration through `WorkflowPageHost`, and inserts
+  visible recovered-error accordion members for malformed columns or members
+  instead of rejecting the entire page. It initializes from a real effective
+  filesystem page rather than mock content. Live browser verification covered
+  CLEAR, a recovered bad component beside a valid component, three-column
+  rendering, and filesystem-page restoration. Focused validation: 92 passed;
+  frontend production build and `git diff --check` passed on 2026-08-18.
+- [x] Split Workflow Page Builder construction into explicit LOAD and INIT
+  phases. LOAD now synchronizes CURRENT PAGE SPECIFICATION with the visible
+  three-column declaration and recovered error members without activating
+  component bindings; INIT then initializes every valid declared component.
+  CLEAR resets both phases while preserving the specification editor, and a
+  refreshed filesystem definition with the same page id is synchronized back
+  into the builder rather than being ignored as stale. Generate Workflow and
+  Visual Sequencing retain their validate/apply-to-filesystem then snapshot-
+  refresh synchronization path. Focused validation: 102 passed; frontend
+  production build and `git diff --check` passed. Live browser verification
+  confirmed the filesystem definition begins in LOADED state with 20 declared
+  members and INIT replaces every pending surface with its initialized binding
+  preview on 2026-08-18.
+- [x] Turn Visual Sequencing `RESOURCE OUTPUTS` into the datafield planner for
+  the LEFT stack. `READ MIDDLE FLOW` derives the 23 current datafields from the
+  11 real filesystem Prompt `produces` contracts and records which Prompts
+  consume and produce each field. `ADD MISSING FIELD EDITORS` inserts one
+  editable accordion member per absent field immediately after RESOURCE
+  OUTPUTS, without duplicating members already declared by the page. The live
+  generated layout is synchronized into CURRENT PAGE SPECIFICATION as an
+  unsaved definition, so Validate and Apply can persist it. Live browser
+  verification confirmed 23 editors from `source_images` through
+  `workflow_report`, the correct left-stack order, and a synchronized/apply-
+  enabled page specification. Full validation: 667 passed; frontend production
+  build and `git diff --check` passed on 2026-08-18.
+- [x] Recursively convert JSON embedded inside string values during JSON→MeTTa
+  serialization, including JSON contracts surrounded by natural-language
+  Prompt prose. The codec uses reversible text/structured-JSON parts so the
+  MeTTa→JSON path reconstructs the original string semantics; nested embedded
+  JSON is handled recursively while ordinary prose and scalar-looking strings
+  remain strings. Python persistence and browser-side editor codecs implement
+  the same contract. Visual Sequencing Prompt editors now also expose explicit
+  Load, filesystem Reload, Clear, and validated Save Prompt actions. Live
+  browser verification confirmed all four controls. Full validation: 669
+  passed; frontend production build and `git diff --check` passed on
+  2026-08-18.
+- [x] Simplify Visual Sequencing group members around resource inheritance.
+  Nested Prompt steps no longer repeat a model selector; they inherit the
+  containing group's selected model, including single-step quick runs.
+  Arrow/× controls on nested steps were replaced by drag ordering plus a
+  keyboard-accessible position selector, explicit OVERRIDE and REMOVE
+  actions, and Prompt-resource replacement by drag-and-drop. Collapsed Prompt
+  strips in the RIGHT source-details stack are themselves drag sources:
+  dropping one on a Prompt step replaces that occurrence, while dropping it
+  on a group appends a new step. Live DOM verification found 11 draggable
+  right-column Prompt strips, 11 nested drag/order controls, and zero nested
+  model selectors. Focused validation: 18 passed; full validation: 669 passed;
+  frontend production build and `git diff --check` passed on 2026-08-18.
+- [x] Retire the duplicate flat Visual Diff composer and retain the nested
+  subaccordion as the sole filesystem-declared authoring component. GRAPH is
+  now a live alternative presentation of that exact `generationOrder`, not a
+  mock: real HTML editors are embedded directly in its SVG graph nodes. GRAPH
+  keeps the RIGHT source-details stack visible as its draggable filesystem
+  Prompt palette, uses one unified graph canvas and one uninterrupted vertical
+  call-sequence spine, and places
+  insertion targets before, between, and after the calls. Dropping on a gap
+  inserts a Prompt occurrence at that exact position; dropping on a call
+  replaces it. Existing calls drag-reorder and also retain keyboard-accessible
+  position selectors. Group model/visibility/order/run/copy/shuffle/clear/remove
+  controls and datafield editors mutate the same `generationOrder` and
+  `workflowData` used by COLUMNS. Column mode retains DOM-drawn field-to-Prompt
+  lines; GRAPH uses the same contracts to draw its editable edges and nodes. The
+  graph no longer renders a list of per-group graph cards: S1-S5 are subtle
+  annotated bands along the single global call sequence. S1 is restored as the
+  `IMAGE PAIR + COMMAND` stage and explicitly consumes editable `image_pair`
+  and `transition_command` fields before source, normalization, and object
+  extraction. Calls are globally numbered 1-11 while the underlying editable
+  groups remain intact.
+  Focused Visual Image Diff validation: 19 passed; frontend production build,
+  `git diff --check`, screenshot review, and live GRAPH browser verification
+  passed on 2026-08-18. Updated live DOM evidence: one graph canvas, one
+  sequence spine, five annotation bands, zero legacy stack cards, 11 globally
+  numbered Prompt editors, both S1 input editors, and the visible RIGHT Prompt
+  resource column.
+- [x] Make the unified GRAPH call sequence reorderable across transaction-group
+  boundaries. Every call node is a drag source; every before/between/after gap
+  accepts either an existing occurrence or a filesystem Prompt dragged from
+  the RIGHT column. Moving an occurrence into another segment transfers the
+  real nested step to that target group and corrects same-group indices after
+  removal. Dropping a RIGHT Prompt on a gap inserts it; dropping it on a call
+  replaces that occurrence. Focused Visual Image Diff validation: 19 passed;
+  frontend production build passed on 2026-08-18.
+- [x] Replace the hand-rendered GRAPH SVG with `@xyflow/react` and
+  `@dagrejs/dagre`. Prompt occurrences are single rounded custom React Flow
+  nodes in one Dagre-ranked top-to-bottom sequence; data nodes, group-control
+  nodes, and insertion targets share the same pannable/zoomable canvas.
+  Smooth-step directed edges, a minimap, viewport controls, foreground editor
+  nodes, and stack-aware collision spacing reduce occlusion. Inputs use left
+  handles and outputs use bottom handles. The graph still mutates the same
+  `generationOrder`/`workflowData`, supports cross-group call moves, and accepts
+  filesystem Prompts from the RIGHT column at every insertion target. Focused
+  Visual Image Diff validation: 19 passed; frontend production build passed on
+  2026-08-18.
+- [x] Add graph-wide mouseover discoverability for Visual Sequencing GRAPH mode.
+  Group, Prompt, datafield, action, and insertion-gap controls now expose
+  explicit hover tooltips (`title`) plus stronger hover/focus highlights on
+  graph nodes and insertion targets, so every hovered graph element identifies
+  itself and its action. Live verification on the default page URL
+  `http://127.0.0.1:5173/?workspace=arc3_random_player&view=visualImageDiff`
+  confirmed one React Flow canvas, 11 Prompt calls, visible RIGHT Prompt
+  column, S1 `image_pair` and `transition_command` datafield editors, and
+  nonzero tooltip counts across group, prompt, gap, and toolbar controls
+  (30/77/16/6). Graph group controls also retain explicit REMOVE alongside run,
+  copy, shuffle, and clear.
+- [x] Make each GRAPH left-side datafield map to a right-side helper
+  displayer/editor/uploader node. Each helper stays compact by default with a
+  value preview and drag handle, and expands into the full editor plus file
+  uploader only when selected. The helper nodes are filesystem-backed through
+  the same `workflowData` mutation path as COLUMNS. Live default-port check at
+  `http://127.0.0.1:5173/?workspace=arc3_random_player&view=visualImageDiff`
+  confirmed 36 helper drag handles, one expanded selected editor, 35 compact
+  preview helpers, and visible file upload control.
+- [x] Keep moved GRAPH helper nodes as the same original node instance.
+  Dragging a right-side helper now persists that helper node's position by its
+  real React Flow node ID, so moving `image_pair` (or any datafield helper)
+  moves the original instead of appearing as a fresh reset node.
+- [x] Keep helper-node selection in-place instead of showing a separate-looking
+  expanded card. Selecting a helper now slightly enlarges that same original
+  node and reveals editor/upload controls inline. Live default-port verification
+  confirmed one selected helper with inline editor (`selectedNodes:1`,
+  `editorVisible:1`) and zero legacy separate expanded cards
+  (`legacyExpandedNodes:0`).
+- [x] Verify left-side datafield clicks do not trigger far-right helper changes.
+  Live UI check at `http://127.0.0.1:5173/?workspace=arc3_random_player&view=visualImageDiff`
+  (GRAPH mode) confirmed: initial selected helper count `0`, after clicking a
+  left datafield editor it remains `0`, and only clicking a right helper sets it
+  to selected with inline editor (`1`).
+- [x] Make all GRAPH canvas item types draggable and persistent in-place
+  (groups, Prompt nodes, left data nodes, insertion gaps, and right data helper
+  nodes). Live drag verification on the default URL confirmed movement deltas
+  for every node type (`~30px` each) rather than snapping back.
+- [x] Remove left/right datafield duplication in GRAPH mode. Data helpers are
+  now consolidated into the left data nodes only, with inline edit plus upload
+  (`UP`) on that same node. Live default-port verification confirmed
+  `dataDetailNodes:0` with matching left data/upload counts (`36/36`).

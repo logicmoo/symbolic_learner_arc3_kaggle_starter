@@ -1,0 +1,517 @@
+.arc3-prolog-page-panel {
+  gap: 0.7rem;
+}
+
+.arc3-prolog-uploader {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.arc3-prolog-uploader label,
+.arc3-prolog-runner label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #6e9ea8;
+}
+
+label.arc3-prolog-inline-select-label {
+  display: grid;
+  grid-template-columns: max-content minmax(220px, 1fr);
+  align-items: center;
+  column-gap: 0.6rem;
+  row-gap: 0;
+  white-space: nowrap;
+}
+
+label.arc3-prolog-inline-select-label > span {
+  white-space: nowrap;
+}
+
+label.arc3-prolog-inline-select-label > select {
+  justify-self: end;
+  width: min(100%, 28rem);
+}
+
+label.arc3-prolog-inline-select-label > small {
+  grid-column: 1 / -1;
+}
+
+label.arc3-prolog-inline-composite-label > .arc3-prolog-files-source-picker {
+  justify-self: end;
+  width: min(100%, 34rem);
+}
+
+label.arc3-prolog-inline-composite-label > .arc3-prolog-selected-source-chips {
+  grid-column: 1 / -1;
+}
+
+.arc3-prolog-uploader small,
+.arc3-prolog-runner small {
+  color: #8ab0bc;
+}
+
+.arc3-prolog-preview {
+  width: 100%;
+  max-height: 240px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  border: 1px solid #245565;
+  border-radius: 0.4rem;
+  background: #08131a;
+}
+
+.arc3-prolog-prompt-text,
+.arc3-prolog-raw,
+.arc3-prolog-outputs pre {
+  margin: 0;
+  padding: 0.65rem;
+  border: 1px solid #245565;
+  border-radius: 0.5rem;
+  background: #08131a;
+  color: #ccf4ff;
+  font-size: 0.74rem;
+  line-height: 1.34;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.arc3-prolog-runner {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.arc3-prolog-stack-columns,
+.arc3-prolog-accordion-columns {
+  display: flex;
+  gap: 0.7rem;
+  overflow-x: auto;
+  padding-bottom: 0.35rem;
+  align-items: flex-start;
+}
+
+.arc3-prolog-accordion-columns {
+  --arc3-column-width: 33%;
+}
+
+.arc3-prolog-accordion-columns > * {
+  flex: 0 0 var(--arc3-column-width);
+  width: var(--arc3-column-width);
+  min-width: 320px;
+  resize: horizontal;
+  overflow: auto;
+  scrollbar-gutter: stable both-edges;
+}
+
+.arc3-prolog-stack,
+.arc3-prolog-accordion-stack {
+  flex: 0 0 auto;
+  min-width: 360px;
+  max-width: 100%;
+  resize: horizontal;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.55rem;
+  border: 1px solid #245565;
+  border-radius: 0.5rem;
+  background: #08131a;
+}
+
+.arc3-prolog-accordion-stack {
+  flex: 0 0 var(--arc3-column-width);
+  width: var(--arc3-column-width);
+  min-width: 320px;
+  resize: horizontal;
+  overflow: auto;
+  scrollbar-gutter: stable both-edges;
+  padding-bottom: 1.1rem;
+}
+
+.arc3-prolog-help-column {
+  flex: 0 0 var(--arc3-column-width);
+  width: var(--arc3-column-width);
+  min-width: 320px;
+  resize: horizontal;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.55rem;
+  border: 1px solid #245565;
+  border-radius: 0.5rem;
+  background: #08131a;
+}
+
+.arc3-prolog-help-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  color: #7dd3e7;
+}
+
+.arc3-prolog-help-modes {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.arc3-prolog-help-editor {
+  width: 100%;
+  min-height: 460px;
+  padding: 0.55rem;
+  border: 1px solid #245565;
+  border-radius: 0.45rem;
+  background: #051017;
+  color: #c7f0fb;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.74rem;
+  line-height: 1.34;
+  resize: vertical;
+}
+
+.arc3-prolog-help-render {
+  min-height: 460px;
+  padding: 0.7rem;
+  border: 1px solid #245565;
+  border-radius: 0.45rem;
+  background: #08131a;
+  color: #ccf4ff;
+  overflow: auto;
+}
+
+.arc3-prolog-stack-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.arc3-prolog-accordion-stack > summary {
+  cursor: pointer;
+  color: #7dd3e7;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.35rem;
+}
+
+.arc3-prolog-runner-block {
+  border: 1px solid #245565;
+  border-radius: 0.45rem;
+  padding: 0.4rem 0.5rem;
+  background: #061118;
+}
+
+.arc3-prolog-runner-block > summary {
+  cursor: pointer;
+  color: #7dd3e7;
+  text-transform: uppercase;
+  font-size: 0.73rem;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.45rem;
+}
+
+.arc3-prolog-stack-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.45rem 0.5rem;
+  border: 1px solid #245565;
+  border-radius: 0.45rem;
+  background: #08131a;
+}
+
+.arc3-prolog-prompt-editor {
+  width: 100%;
+  min-height: 11rem;
+  padding: 0.55rem;
+  border: 1px solid #245565;
+  border-radius: 0.45rem;
+  background: #051017;
+  color: #c7f0fb;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.74rem;
+  line-height: 1.34;
+  resize: vertical;
+}
+
+.arc3-prolog-prompt-collapsible summary {
+  cursor: pointer;
+  color: #7dd3e7;
+  text-transform: uppercase;
+  font-size: 0.73rem;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.35rem;
+}
+
+.arc3-prolog-prompt-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.arc3-prolog-prompt-summary select {
+  min-width: 18rem;
+  border: 1px solid #42616c;
+  background: #091820;
+  color: #d8f2fb;
+  font-size: 0.72rem;
+}
+
+.arc3-prolog-prompt-mode {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.arc3-prolog-desc-editor {
+  width: 100%;
+  min-height: 0;
+  height: calc(1.34em * 2 + 1.1rem);
+  padding: 0.55rem;
+  border: 1px solid #245565;
+  border-radius: 0.45rem;
+  background: #051017;
+  color: #c7f0fb;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.74rem;
+  line-height: 1.34;
+  resize: vertical;
+}
+
+.arc3-prolog-stack-actions {
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.arc3-prolog-files-source-picker {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.arc3-prolog-files-source-picker input,
+.arc3-prolog-files-source-picker select {
+  width: 100%;
+  border: 1px solid #42616c;
+  background: #091820;
+  color: #d4e0e4;
+  padding: 0.42rem 0.5rem;
+  font: 0.74rem ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+
+.arc3-prolog-loop-limits {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  white-space: nowrap;
+  color: #8ab0bc;
+  font: 0.72rem ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+
+.arc3-prolog-loop-limit-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.arc3-prolog-loop-limits input {
+  width: 3.8rem;
+  border: 1px solid #42616c;
+  background: #091820;
+  color: #d4e0e4;
+  padding: 0.2rem 0.3rem;
+  font: 0.72rem ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+
+.arc3-prolog-setup-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.arc3-prolog-setup-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  border: 1px solid #245565;
+  border-radius: 0.35rem;
+  padding: 0.3rem 0.4rem;
+  background: #07141d;
+}
+
+.arc3-prolog-setup-row > summary {
+  cursor: pointer;
+  color: #7dd3e7;
+  font-size: 0.73rem;
+  letter-spacing: 0.05em;
+}
+
+.arc3-prolog-setup-row input {
+  width: 100%;
+  border: 1px solid #42616c;
+  background: #091820;
+  color: #d4e0e4;
+  padding: 0.42rem 0.5rem;
+  font: 0.74rem ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+
+.arc3-prolog-setup-row label {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: center;
+  column-gap: 0.5rem;
+  width: 100%;
+  white-space: nowrap;
+}
+
+.arc3-prolog-setup-row label > span {
+  white-space: nowrap;
+}
+
+.arc3-prolog-setup-inline-input {
+  justify-self: end;
+  width: min(100%, 28rem);
+  max-width: none;
+}
+
+.arc3-prolog-setup-edit-grid,
+.arc3-prolog-setup-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+
+.arc3-prolog-setup-preview-grid figure {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.arc3-prolog-setup-preview-grid figcaption {
+  color: #8ab0bc;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+}
+
+.arc3-prolog-setup-preview-placeholder {
+  min-height: 140px;
+  border: 1px dashed #264252;
+  border-radius: 8px;
+  background: #08141d;
+  display: grid;
+  place-items: center;
+  color: #84a8b4;
+  font-size: 0.74rem;
+}
+
+.arc3-prolog-selected-source-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.28rem;
+  margin-top: 0.35rem;
+}
+
+.arc3-prolog-source-chip {
+  font: 0.7rem ui-monospace, SFMono-Regular, Consolas, monospace;
+  padding: 0.2rem 0.38rem;
+}
+
+.arc3-prolog-stack-output summary {
+  cursor: pointer;
+  color: #7dd3e7;
+  text-transform: uppercase;
+  font-size: 0.73rem;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.35rem;
+}
+
+.arc3-prolog-runner button.primary {
+  align-self: flex-start;
+}
+
+.arc3-prolog-error {
+  margin: 0;
+  color: #ff8c8c;
+}
+
+.arc3-prolog-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.24rem;
+  color: #91b8c3;
+  font-size: 0.75rem;
+}
+
+.arc3-prolog-outputs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.arc3-prolog-outputs details summary {
+  cursor: pointer;
+  color: #7dd3e7;
+  text-transform: uppercase;
+  font-size: 0.73rem;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.4rem;
+}
+
+.arc3-prolog-removal-images {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+  margin-top: 0.4rem;
+}
+
+.arc3-prolog-removal-images figure {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.arc3-prolog-removal-images figcaption {
+  color: #8ab0bc;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+}
+
+.arc3-prolog-right-column {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.arc3-prolog-debug-log summary {
+  cursor: pointer;
+  color: #7dd3e7;
+  font-size: 0.73rem;
+  letter-spacing: 0.04em;
+}
+
+.arc3-prolog-page .english-workflow-columns {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+
+.arc3-prolog-page .english-workflow-columns > .workflow-page-data,
+.arc3-prolog-page .english-workflow-columns > .workflow-page-details {
+  display: none !important;
+}
+
+.arc3-prolog-page .english-workflow-columns > .workflow-page-authoring {
+  grid-column: 1 / -1;
+  min-width: 0;
+}

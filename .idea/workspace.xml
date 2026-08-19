@@ -3,26 +3,73 @@
   <component name="AutoImportSettings">
     <option name="autoReloadType" value="ALL" />
   </component>
+  <component name="BackgroundAgentGlobalSettings">
+    <option name="selectedModelId" value="auto" />
+  </component>
   <component name="ChangeListManager">
     <list default="true" id="edb8fea1-73c1-4416-9e9a-8ac50d562623" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/workbench/workspaces/shared/design/categories/backends.artifact_category.metta" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.codex/mailbox/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/.codex/mailbox/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/arc-agi-3-agents@1.iml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/logicmoo-world-workbench.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/logicmoo-world-workbench.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test_openrouter.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_openrouter.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_universal_artifact_editor_ui.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_universal_artifact_editor_ui.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/AGENTS.md" beforeDir="false" afterPath="$PROJECT_DIR$/AGENTS.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/CODEX_TODO.md" beforeDir="false" afterPath="$PROJECT_DIR$/CODEX_TODO.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_english_workflow_ui.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_english_workflow_ui.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_goal_plan_resources.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_goal_plan_resources.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_metta_resource_codec.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_metta_resource_codec.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_metta_resource_editor_ui.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_metta_resource_editor_ui.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_model_policy_backend.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_model_policy_backend.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_navigation_v2_ui.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_navigation_v2_ui.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_resource_store.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_resource_store.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_run_workbench_kill.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_run_workbench_kill.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_shared_workspace_layout.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_shared_workspace_layout.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_visual_image_diff_ui.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_visual_image_diff_ui.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_workspace_registry_settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_workspace_registry_settings.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/vendor/ARC-AGI-3-Agents/agents/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/vendor/ARC-AGI-3-Agents/agents/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/frontend/src/components/UniversalArtifactEditor.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/src/components/UniversalArtifactEditor.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/frontend/src/components/useArtifactTreeFilter.ts" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/src/components/useArtifactTreeFilter.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/frontend/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/frontend/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/frontend/src/components/LlmModelsEditor.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/src/components/LlmModelsEditor.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/frontend/src/components/ResourceSourceEditor.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/src/components/ResourceSourceEditor.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/frontend/src/components/ThreeStateAccordion.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/src/components/ThreeStateAccordion.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/frontend/src/components/VisualImageDiffPage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/src/components/VisualImageDiffPage.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/frontend/src/components/WorkflowGenerationRuntime.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/src/components/WorkflowGenerationRuntime.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/frontend/src/components/WorkflowPageHost.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/src/components/WorkflowPageHost.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/frontend/src/components/WorkflowPageSourceEditor.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/src/components/WorkflowPageSourceEditor.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/frontend/src/components/WorkspaceOverview.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/src/components/WorkspaceOverview.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/frontend/src/lib/mettaResourceCodec.ts" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/src/lib/mettaResourceCodec.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/frontend/src/pages/FilesystemWorkbenchPage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/src/pages/FilesystemWorkbenchPage.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/workbench/frontend/src/styles/operation_editor.css" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/src/styles/operation_editor.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared/design/backends/anthropic.backend.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared/design/backends/anthropic.backend.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared/design/models/clawrouter_routers.model.metta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/frontend/src/styles/visual_image_diff.css" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/src/styles/visual_image_diff.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/frontend/src/styles/workbench.css" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/src/styles/workbench.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/frontend/src/styles/workflow_layout.css" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/src/styles/workflow_layout.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/frontend/src/styles/workspace_backed.css" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/src/styles/workspace_backed.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/frontend/vite.config.ts" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/vite.config.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/scripts/run_vite_server.bat" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/scripts/run_vite_server.bat" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/server/metta_resource_codec.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/server/metta_resource_codec.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/server/model_library.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/server/model_library.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/server/prompt_api.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/server/prompt_api.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/server/repository_docs_api.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/server/repository_docs_api.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/server/resource_store.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/server/resource_store.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/server/service_monitor_api.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/server/service_monitor_api.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/server/workspace_api.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/server/workspace_api.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/workspaces/arc3_random_player/design/visual_image_diffs/default.visual_image_diff.json" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/arc3_random_player/design/visual_image_diffs/default.visual_image_diff.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/workspaces/arc3_random_player/design/workflow_pages/visual_sequencing.workflow_page.json" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/arc3_random_player/design/workflow_pages/visual_sequencing.workflow_page.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/workflow_pages/generate_workflow.workflow_page.json" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/workflow_pages/generate_workflow.workflow_page.json" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
+  <component name="CopilotPersistence">
+    <persistenceIdMap>
+      <entry key="_C:/snet/PeTTa/repos/symbolic_learner_workbench" value="3I5Pg9pZ8fmQqat6tIcvp5GzW95" />
+    </persistenceIdMap>
+  </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="1809" />
+    <option name="cachedIndexableFilesCount" value="15807" />
     <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
   </component>
   <component name="FlaskConsoleOptions" custom-start-script="import sys; print('Python %s on %s' % (sys.version, sys.platform)); sys.path.extend([WORKING_DIR_AND_PYTHON_PATHS])&#10;from flask.cli import ScriptInfo, NoAppException&#10;for module in [&quot;main.py&quot;, &quot;wsgi.py&quot;, &quot;app.py&quot;]:&#10;    try: locals().update(ScriptInfo(app_import_path=module, create_app=None).load_app().make_shell_context()); print(&quot;\nFlask App: %s&quot; % app.import_name); break&#10;    except NoAppException: pass">
@@ -107,6 +154,21 @@
   &quot;fromUser&quot;: false
 }</component>
   <component name="ProjectId" id="3HAGvHKyqSnxZEXcP1EgQykw7uy" />
+  <component name="ProjectSessionTemplates">
+    <option name="panelTemplate">
+      <template>
+        <option name="modeId" value="Agent" />
+        <option name="model">
+          <model>
+            <option name="modelType" value="builtin_id" />
+            <option name="modelValue" value="auto" />
+          </model>
+        </option>
+        <option name="targetType" value="BACKGROUND" />
+        <option name="worktreeMode" value="WORKSPACE" />
+      </template>
+    </option>
+  </component>
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
@@ -119,11 +181,14 @@
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
     "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "ai.playground.ignore.import.keys.banner.in.settings": "true",
     "codeWithMe.voiceChat.enabledByDefault": "false",
     "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
+    "copilot.chat.legacySessionMetadata.migrated": "true",
     "git-widget-placeholder": "codex/workbench-navigation-v2",
+    "ignore.virus.scanning.warn.message": "true",
     "junie.onboarding.icon.badge.shown": "true",
-    "last_opened_file_path": "C:/symbolic_learner_arc3_codex/workbench/workspaces/shared/design/categories",
+    "last_opened_file_path": "C:/snet/PeTTa/repos/symbolic_learner_workbench",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.jshint": "true",
     "node.js.detected.package.tslint": "true",
@@ -131,9 +196,10 @@
     "node.js.selected.package.jshint": "",
     "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_package_manager_path": "yarn",
-    "settings.editor.selected.configurable": "ml.llm.LLMConfigurable",
+    "settings.editor.selected.configurable": "com.github.copilot.settings.completions.CompletionsConfigurable",
     "to.speed.mode.migration.done": "true",
-    "ts.external.directory.path": "C:\\symbolic_learner_arc3_codex\\vendor\\freerouter\\node_modules\\typescript\\lib"
+    "ts.external.directory.path": "C:\\symbolic_learner_arc3_codex\\vendor\\freerouter\\node_modules\\typescript\\lib",
+    "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
   <component name="RecentsManager">
@@ -171,7 +237,6 @@
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="DEBUG_JUST_MY_CODE" value="false" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
       <option name="RUN_TOOL" value="" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/scripts/interactive_runner.py" />
@@ -196,8 +261,8 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-js-predefined-d6986cc7102b-4abd2a77f808-JavaScript-PY-262.8665.369" />
-        <option value="bundled-python-sdk-6fa658e1df1a-5bd6d13a2a75-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-262.8665.369" />
+        <option value="bundled-js-predefined-d6986cc7102b-9b0f141eb926-JavaScript-PY-253.33514.19" />
+        <option value="bundled-python-sdk-83fa46d5d5d4-6d6dccd035ac-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-253.33514.19" />
       </set>
     </attachedChunks>
   </component>
@@ -211,6 +276,11 @@
       <workItem from="1785303689274" duration="1439000" />
       <workItem from="1785305363136" duration="5594000" />
       <workItem from="1786132864974" duration="37074000" />
+      <workItem from="1787051548483" duration="4446000" />
+      <workItem from="1787116465363" duration="6000" />
+      <workItem from="1787116586175" duration="384000" />
+      <workItem from="1787116990448" duration="1691000" />
+      <workItem from="1787134006629" duration="2673000" />
     </task>
     <servers />
   </component>

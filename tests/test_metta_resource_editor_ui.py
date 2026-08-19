@@ -21,9 +21,10 @@ def test_active_resource_editors_share_metta_json_source_editor() -> None:
 
 def test_resource_source_editor_defaults_to_metta_and_keeps_json_available() -> None:
     source = (FRONTEND / "components/ResourceSourceEditor.tsx").read_text(encoding="utf-8")
-    assert 'useState<"metta" | "json">("metta")' in source
+    assert 'useState<"metta" | "json" | "tree">("metta")' in source
     assert '>MeTTa</button>' in source
     assert '>JSON</button>' in source
+    assert '>Tree</button>' in source
     assert "mettaDocumentToJson" in source
     assert "jsonDocumentToMetta" in source
     assert "setJsonDraft(next)" in source
@@ -58,3 +59,12 @@ def test_runtime_object_previews_render_as_metta() -> None:
         assert "jsonValueToMetta" in source, relative
         for value in values:
             assert f"jsonValueToMetta({value}" in source, (relative, value)
+
+
+def test_frontend_metta_codec_recursively_converts_embedded_json_strings() -> None:
+    source = (FRONTEND / "lib/mettaResourceCodec.ts").read_text(encoding="utf-8")
+
+    assert "function embeddedJsonParts" in source
+    assert "JSON.parse(value.slice(start, end))" in source
+    assert "EMBEDDED_JSON_STRING_PARTS" in source
+    assert "JSON.stringify(part)" in source

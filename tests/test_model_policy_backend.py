@@ -87,6 +87,42 @@ def test_resolved_model_cache_tracks_catalog_revisions_without_sharing_mutations
     assert resolve_model_records(shared, workspaces_root=tmp_path)[0]["resolved"]["defaults"]["temperature"] == 0.75
 
 
+def test_model_overridden_properties_resource_is_applied_with_highest_precedence(tmp_path: Path) -> None:
+    shared = tmp_path / "shared_library_system"
+    resources = get_filesystem_provider()
+    backend = shared / "design" / "backends" / "vendor.backend.json"
+    model = shared / "design" / "models" / "model.model.json"
+    overrides = shared / "design" / "models" / "model_overridden_properties.json"
+    resources.write_json(backend, {"kind": "backend", "id": "vendor", "provider": "openai", "configuration": {"defaultModel": "remote"}})
+    resources.write_json(model, {"kind": "model", "id": "model", "inherits": "vendor", "defaults": {"temperature": 0}, "capabilities": {"vision": False}})
+    resources.write_json(overrides, {
+        "kind": "model_overridden_properties",
+        "id": "model_overridden_properties",
+        "models": {
+            "model": {
+                "capabilities": {"vision": True},
+                "defaults": {"temperature": 0.33},
+            }
+        },
+    })
+
+    resolved = resolve_model_records(shared, workspaces_root=tmp_path)[0]
+    assert resolved["document"]["capabilities"]["vision"] is True
+    assert resolved["resolved"]["defaults"]["temperature"] == 0.33
+
+
+def test_model_categories_are_preserved_on_model_documents(tmp_path: Path) -> None:
+    shared = tmp_path / "shared_library_system"
+    resources = get_filesystem_provider()
+    backend = shared / "design" / "backends" / "vendor.backend.json"
+    model = shared / "design" / "models" / "model.model.json"
+    resources.write_json(backend, {"kind": "backend", "id": "vendor", "provider": "openai", "configuration": {"defaultModel": "remote"}})
+    resources.write_json(model, {"kind": "model", "id": "model", "inherits": "vendor", "categories": ["filtered/vision"], "defaults": {"temperature": 0}})
+
+    resolved = resolve_model_records(shared, workspaces_root=tmp_path)[0]
+    assert resolved["document"]["categories"] == ["filtered/vision"]
+
+
 def test_explicit_model_override_can_reenable_vendor_child() -> None:
     records = _records(
         {"kind": "vendor_policy", "id": "vendor_policy", "vendorId": "vendor", "policy": {"wanted": "off"}},

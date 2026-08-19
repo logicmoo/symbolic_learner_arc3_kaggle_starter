@@ -159,7 +159,8 @@
             "options": { "format": "json", "editable": true, "validateBeforeApply": true, "applyOnSave": true },
             "outputs": { "source": "generate_workflow_page_source", "validation": "generate_workflow_page_validation" }
           },
-          { "id": "selected_prompt", "label": "Selected Prompt", "component": "PromptResourceDetail", "initialDisplayMode": "scroll", "inputs": { "prompt": "selected_prompt" } },
+          { "id": "prompt_resources", "label": "Prompts", "component": "PromptResourceList", "initialDisplayMode": "scroll", "inputs": { "prompts": "effective_prompt_catalog", "selection": "selected_prompt" }, "outputs": { "selection": "selected_prompt" } },
+          { "id": "selected_prompt", "label": "Selected Prompt Source", "component": "PromptTextSourceEditor", "initialDisplayMode": "scroll", "inputs": { "prompt": "selected_prompt" }, "outputs": { "prompt": "selected_prompt" }, "options": { "editable": true, "preserveSiblingResources": true, "openRichEditor": true } },
           { "id": "selected_operation", "label": "Selected Operation", "component": "OperationResourceDetail", "initialDisplayMode": "scroll", "inputs": { "operation": "selected_operation" } },
           { "id": "selected_model", "label": "Selected Model", "component": "ModelResourceDetail", "initialDisplayMode": "strip", "inputs": { "model": "selected_model" } },
           { "id": "workflow_schema", "label": "Workflow Schema", "component": "WorkflowSchemaInspector", "initialDisplayMode": "strip", "inputs": { "schema": "workflow_schema" } },

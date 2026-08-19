@@ -19,6 +19,7 @@ SHARED_WORKSPACE_ID = "shared_library_system"
 # parent relationship determines whether the UI presents it as a model preset.
 MODEL_KINDS = {"model", "profile"}
 MODEL_DIRECTORIES = ("design/models", "design/profiles", "models", "profiles")
+MODEL_OVERRIDE_PATH = "design/models/model_overridden_properties.json"
 _resolved_cache_lock = RLock()
 _resolved_cache: dict[tuple[str, str], tuple[int, float, tuple[tuple[str, int, int], ...], list[dict[str, Any]]]] = {}
 MODEL_REVISION_CHECK_SECONDS = 1.0
@@ -116,6 +117,43 @@ def _sort_records(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
 def _record_key(record: dict[str, Any]) -> str:
     document = record.get("document") or record.get("raw") or {}
     return str(document.get("id") or record.get("path") or "")
+
+
+def _deep_merge(base: dict[str, Any], patch: dict[str, Any]) -> dict[str, Any]:
+    merged = dict(base)
+    for key, value in patch.items():
+        if isinstance(value, dict) and isinstance(merged.get(key), dict):
+            merged[key] = _deep_merge(dict(merged.get(key) or {}), value)
+        else:
+            merged[key] = value
+    return merged
+
+
+def _model_override_rows(
+    workspace_root: Path,
+    *,
+    workspaces_root: Path = DEFAULT_WORKSPACES_ROOT,
+) -> dict[str, dict[str, Any]]:
+    resources = get_filesystem_provider()
+    merged: dict[str, dict[str, Any]] = {}
+    for layer in effective_workspace_layers(workspace_root, workspaces_root):
+        target = layer / MODEL_OVERRIDE_PATH
+        if not resources.is_file(target):
+            continue
+        try:
+            document = resources.read_json(target)
+        except (OSError, json.JSONDecodeError, ValueError):
+            continue
+        if not isinstance(document, dict):
+            continue
+        model_rows = document.get("models")
+        if not isinstance(model_rows, dict):
+            continue
+        for model_id, patch in model_rows.items():
+            if not str(model_id).strip() or not isinstance(patch, dict):
+                continue
+            merged[str(model_id)] = _deep_merge(merged.get(str(model_id), {}), patch)
+    return merged
 
 
 def load_workspace_model_records(
@@ -228,6 +266,7 @@ def resolve_model_records(
         )
 
     resolved: list[dict[str, Any]] = []
+    override_rows = _model_override_rows(workspace_root, workspaces_root=workspaces_root)
     for source_record in records:
         record = dict(source_record)
         node = record.get("document") or {}
@@ -249,6 +288,37 @@ def resolve_model_records(
             record["resolved"] = {"enabled": False, "inheritance": [node_id]}
             if not record.get("error"):
                 record["error"] = str(error)
+        override = override_rows.get(node_id)
+        if override:
+            document_patch = (
+                override.get("document")
+                if isinstance(override.get("document"), dict)
+                else override
+            )
+            resolved_patch = (
+                override.get("resolved")
+                if isinstance(override.get("resolved"), dict)
+                else {}
+            )
+            document = record.get("document")
+            if isinstance(document, dict) and isinstance(document_patch, dict):
+                record["document"] = _deep_merge(document, document_patch)
+            resolved_state = record.get("resolved")
+            if isinstance(resolved_state, dict):
+                merged_resolved = dict(resolved_state)
+                if isinstance(document_patch, dict):
+                    if isinstance(document_patch.get("defaults"), dict):
+                        merged_resolved["defaults"] = _deep_merge(
+                            dict(merged_resolved.get("defaults") or {}),
+                            dict(document_patch.get("defaults") or {}),
+                        )
+                    if "model" in document_patch and document_patch.get("model"):
+                        merged_resolved["model"] = document_patch.get("model")
+                    if "enabled" in document_patch:
+                        merged_resolved["enabled"] = document_patch.get("enabled")
+                if isinstance(resolved_patch, dict):
+                    merged_resolved = _deep_merge(merged_resolved, resolved_patch)
+                record["resolved"] = merged_resolved
         resolved.append(record)
     result = _sort_records(resolved)
     if revision is not None:

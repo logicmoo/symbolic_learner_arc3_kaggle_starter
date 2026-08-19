@@ -2,8 +2,38 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/arc-agi-3-agents@1.iml" filepath="$PROJECT_DIR$/.idea/arc-agi-3-agents@1.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/arc-agi-3-agents.iml" filepath="$PROJECT_DIR$/.idea/arc-agi-3-agents.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/logicmoo-world-workbench.iml" filepath="$PROJECT_DIR$/.idea/logicmoo-world-workbench.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/test.iml" filepath="$PROJECT_DIR$/.idea/test.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/test@1.iml" filepath="$PROJECT_DIR$/.idea/test@1.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/test@10.iml" filepath="$PROJECT_DIR$/.idea/test@10.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/test@11.iml" filepath="$PROJECT_DIR$/.idea/test@11.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/test@12.iml" filepath="$PROJECT_DIR$/.idea/test@12.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/test@13.iml" filepath="$PROJECT_DIR$/.idea/test@13.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/test@14.iml" filepath="$PROJECT_DIR$/.idea/test@14.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/test@15.iml" filepath="$PROJECT_DIR$/.idea/test@15.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/test@16.iml" filepath="$PROJECT_DIR$/.idea/test@16.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/test@17.iml" filepath="$PROJECT_DIR$/.idea/test@17.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/test@18.iml" filepath="$PROJECT_DIR$/.idea/test@18.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/test@19.iml" filepath="$PROJECT_DIR$/.idea/test@19.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/test@2.iml" filepath="$PROJECT_DIR$/.idea/test@2.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/test@20.iml" filepath="$PROJECT_DIR$/.idea/test@20.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/test@21.iml" filepath="$PROJECT_DIR$/.idea/test@21.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/test@22.iml" filepath="$PROJECT_DIR$/.idea/test@22.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/test@23.iml" filepath="$PROJECT_DIR$/.idea/test@23.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/test@24.iml" filepath="$PROJECT_DIR$/.idea/test@24.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/test@25.iml" filepath="$PROJECT_DIR$/.idea/test@25.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/test@26.iml" filepath="$PROJECT_DIR$/.idea/test@26.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/test@27.iml" filepath="$PROJECT_DIR$/.idea/test@27.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/test@28.iml" filepath="$PROJECT_DIR$/.idea/test@28.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/test@29.iml" filepath="$PROJECT_DIR$/.idea/test@29.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/test@3.iml" filepath="$PROJECT_DIR$/.idea/test@3.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/test@4.iml" filepath="$PROJECT_DIR$/.idea/test@4.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/test@5.iml" filepath="$PROJECT_DIR$/.idea/test@5.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/test@6.iml" filepath="$PROJECT_DIR$/.idea/test@6.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/test@7.iml" filepath="$PROJECT_DIR$/.idea/test@7.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/test@8.iml" filepath="$PROJECT_DIR$/.idea/test@8.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/test@9.iml" filepath="$PROJECT_DIR$/.idea/test@9.iml" />
     </modules>
   </component>
 </project>

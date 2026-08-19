@@ -1,0 +1,4 @@
+Baseline rule: use first-image object inventory as level_1 identity anchor.
+Hypothesis: move choices should continue reducing distance to the escape route.
+Observed rule: player touched plus_sign and rotation followed.
+Observed rule: once rotation aligns both glyphs, the top exit opens for player escape.

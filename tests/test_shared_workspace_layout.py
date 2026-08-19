@@ -27,6 +27,7 @@ KIND_DIRECTORIES = {
     "semantic_datatype": "semantic_datatypes",
     "system": "systems",
     "workflow": "workflows",
+    "workflow_page": "workflow_pages",
 }
 
 

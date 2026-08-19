@@ -89,7 +89,7 @@ def test_navigation_v2_has_required_groups_and_labels() -> None:
         "Settings",
     ):
         assert f'label: "{label}"' in source
-    assert 'label: "Workflow Resources", view: "canvas"' in source
+    assert 'label: "Current Workflow", view: "currentWorkflow"' in source
     assert 'group: "WORKFLOWS"' in source
     assert 'workflowNavigationEntries.map' in source
     assert 'data-workflow-page-placement={entry.menuPlacement}' in source
@@ -167,6 +167,7 @@ def test_artifact_editors_keep_the_resizable_resource_and_documentation_shell() 
 def test_workflow_editor_keeps_the_resource_tree_visible() -> None:
     source = ACTIVE_PAGE.read_text(encoding="utf-8")
     styles = (ROOT / "workbench" / "frontend" / "src" / "styles" / "workbench.css").read_text(encoding="utf-8")
+    layout_styles = (ROOT / "workbench" / "frontend" / "src" / "styles" / "workflow_layout.css").read_text(encoding="utf-8")
     relationship = source.split("const relationshipView=", 1)[1].split(";", 1)[0]
     artifact_focused = source.split("const artifactFocused=", 1)[1].split(";", 1)[0]
     assert "workflowCombinedView" in relationship
@@ -175,7 +176,8 @@ def test_workflow_editor_keeps_the_resource_tree_visible() -> None:
     assert 'view==="canvas"' not in artifact_focused
     assert 'view==="editor"' not in artifact_focused
     assert '.workspace.artifact-focused:has(.canvas-view)>.stages-panel' in styles
-    assert '.workspace.artifact-focused:has(.editor-surface)>.stages-panel{display:flex}' in styles
+    assert ".workbench .workspace > .stages-panel," in layout_styles
+    assert ".workbench[data-view=\"currentWorkflow\"] .workspace > .stages-panel" in layout_styles
 
 
 def test_workflow_designer_shows_filesystem_documentation_in_right_panel() -> None:
@@ -217,7 +219,7 @@ def test_navigation_reuses_current_rich_editors() -> None:
         assert f'label: "{label}"' in source
         for token in tokens:
             assert token.replace(" ", "") in compact
-    assert 'label: "Workflow Resources", view: "canvas"' in source
+    assert 'label: "Current Workflow", view: "currentWorkflow"' in source
     assert 'setView("canvas")' in source
     assert 'workflowCombinedView&&workflowColumnsHost&&createPortal(<sectionclassName="canvas-view"' in compact
     assert 'className="editor-surface"' in compact
@@ -238,7 +240,7 @@ def test_source_code_language_tabs_are_deep_linkable() -> None:
 def test_workflow_authoring_pages_are_first_class_left_navigation_items() -> None:
     source = ACTIVE_PAGE.read_text(encoding="utf-8")
     compact = "".join(source.split())
-    assert 'group:"WORKFLOWS",items:[]' in compact
+    assert 'group:"WORKFLOWS",items:[{label:"CurrentWorkflow",view:"currentWorkflow",glyph:"⌘"},{label:"PageBuilder",view:"workflowPageBuilder",glyph:"▦"}' in compact
     assert 'snapshot?.workflowPages' in source
     assert 'workflowNavigationEntries.map' in source
     assert 'data-workflow-page-resource={entry.id}' in source
@@ -246,7 +248,8 @@ def test_workflow_authoring_pages_are_first_class_left_navigation_items() -> Non
     assert 'workflowPageDefinitions.map' in source
     assert '<WorkflowPageHost' in source
     assert 'workflow_generation_runtime' in source
-    assert 'visual_image_diff:' in source
+    assert 'workflowPageForView.renderer === "visual_image_diff"' in source
+    assert '<WorkflowPageBuilder initialDefinition={workflowNavigationEntries[0]?.definition}' in source
     nav_selection = compact.split("constnavSelected", 1)[1].split(";", 1)[0]
     assert 'view==="englishWorkflow"' not in nav_selection
     assert 'view==="visualImageDiff"' not in nav_selection

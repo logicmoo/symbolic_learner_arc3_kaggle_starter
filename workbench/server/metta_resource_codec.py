@@ -9,15 +9,61 @@ from typing import Any
 SAFE_ATOM = re.compile(r'^[^\s(){}";\\]+$')
 TYPED_ATOM = re.compile(r'^(?:true|false|null|-?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?)$', re.IGNORECASE)
 NUMBER = re.compile(r'^-?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?$', re.IGNORECASE)
+EMBEDDED_JSON_STRING_PARTS = "__metta_json_string_parts__"
 
 
-def _quote(value: str) -> str:
+def _quote(value: str, force: bool = False) -> str:
+    if force:
+        return json.dumps(value, ensure_ascii=False)
     if SAFE_ATOM.fullmatch(value) and value != "{}" and not TYPED_ATOM.fullmatch(value):
         return value
     return json.dumps(value, ensure_ascii=False)
 
 
-def json_value_to_metta(value: Any, depth: int = 0) -> str:
+def _embedded_json_parts(value: str) -> list[Any] | None:
+    decoder = json.JSONDecoder()
+    parts: list[Any] = []
+    cursor = 0
+    scan = 0
+    found = False
+    while scan < len(value):
+        if value[scan] not in "[{":
+            scan += 1
+            continue
+        try:
+            parsed, consumed = decoder.raw_decode(value[scan:])
+        except json.JSONDecodeError:
+            scan += 1
+            continue
+        if not isinstance(parsed, (dict, list)):
+            scan += 1
+            continue
+        if scan > cursor:
+            parts.append(value[cursor:scan])
+        parts.append(parsed)
+        found = True
+        cursor = scan + consumed
+        scan = cursor
+    if not found:
+        return None
+    if cursor < len(value):
+        parts.append(value[cursor:])
+    return parts
+
+
+def _restore_embedded_json_string(value: dict[str, Any]) -> Any:
+    if set(value) != {EMBEDDED_JSON_STRING_PARTS}:
+        return value
+    parts = value[EMBEDDED_JSON_STRING_PARTS]
+    if not isinstance(parts, list):
+        return value
+    return "".join(
+        part if isinstance(part, str) else json.dumps(part, ensure_ascii=False, separators=(",", ":"))
+        for part in parts
+    )
+
+
+def json_value_to_metta(value: Any, depth: int = 0, force_quote_string: bool = False) -> str:
     indent = "  " * depth
     child_indent = "  " * (depth + 1)
     if value is None:
@@ -27,16 +73,31 @@ def json_value_to_metta(value: Any, depth: int = 0) -> str:
     if isinstance(value, (int, float)):
         return json.dumps(value, ensure_ascii=False, allow_nan=False)
     if isinstance(value, str):
+        if force_quote_string:
+            return _quote(value, force=True)
+        embedded = _embedded_json_parts(value)
+        if embedded is not None:
+            return json_value_to_metta({EMBEDDED_JSON_STRING_PARTS: embedded}, depth, force_quote_string=False)
         return _quote(value)
     if isinstance(value, list):
         if not value:
             return "([])"
-        items = [f"{child_indent}{json_value_to_metta(item, depth + 1)}" for item in value]
+        if all(isinstance(item, (int, float)) and not isinstance(item, bool) for item in value):
+            compact = " ".join(json.dumps(item, ensure_ascii=False, allow_nan=False) for item in value)
+            return f"([] {compact})"
+        quote_string_items = any(
+            isinstance(item, str) and any(character.isspace() for character in item)
+            for item in value
+        )
+        items = [
+            f"{child_indent}{json_value_to_metta(item, depth + 1, force_quote_string=quote_string_items and isinstance(item, str))}"
+            for item in value
+        ]
         return f"([]\n{'\n'.join(items)}\n{indent})"
     if isinstance(value, dict):
         if not value:
             return "()"
-        items = [f"{child_indent}({_quote(str(key))} {json_value_to_metta(item, depth + 1)})" for key, item in value.items()]
+        items = [f"{child_indent}({_quote(str(key))} {json_value_to_metta(item, depth + 1, force_quote_string=False)})" for key, item in value.items()]
         return f"(\n{'\n'.join(items)}\n{indent})"
     raise TypeError(f"unsupported resource value: {type(value).__name__}")
 
@@ -136,7 +197,7 @@ def metta_to_json_value(source: str, *, legacy: bool = False) -> Any:
             if index >= len(tokens):
                 raise ValueError("unclosed map")
             index += 1
-            return result
+            return _restore_embedded_json_string(result)
         values: list[Any] = []
         while index >= len(tokens) or tokens[index].value != ")":
             if index >= len(tokens):

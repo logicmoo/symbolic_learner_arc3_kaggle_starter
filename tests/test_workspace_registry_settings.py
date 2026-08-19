@@ -85,6 +85,57 @@ def test_settings_resource_counts_exclude_inherited_resources(tmp_path: Path, mo
     assert discovered["parent"]["consumedProjectCount"] == 0
 
 
+def test_workspace_chooser_breakdowns_include_local_inherited_and_overridden(tmp_path: Path, monkeypatch) -> None:
+    parent = write_workspace(tmp_path, "parent", includes=[])
+    child = write_workspace(
+        tmp_path,
+        "child",
+        includes=[{"workspaceId": "parent", "includeInherited": True}],
+    )
+    parent_operations = parent / "design" / "operations"
+    parent_operations.mkdir(parents=True)
+    (parent_operations / "shared.operation.metta").write_text(
+        "((kind operation) (id shared_operation))",
+        encoding="utf-8",
+    )
+    (parent_operations / "parent_only.operation.metta").write_text(
+        "((kind operation) (id parent_only_operation))",
+        encoding="utf-8",
+    )
+    child_operations = child / "design" / "operations"
+    child_operations.mkdir(parents=True)
+    (child_operations / "shared_override.operation.metta").write_text(
+        "((kind operation) (id shared_operation))",
+        encoding="utf-8",
+    )
+    for name in (
+        "load_workspace_backend_records",
+        "resolve_model_records",
+        "load_workspace_prompt_records",
+        "load_workspace_operation_records",
+        "load_workspace_operation_implementation_records",
+        "load_workspace_datatype_records",
+        "load_workspace_representation_records",
+        "load_workspace_concrete_datatype_records",
+        "load_workspace_symbolic_records",
+    ):
+        monkeypatch.setattr(workspace_api, name, lambda *_args, **_kwargs: [])
+    monkeypatch.setattr(workspace_api, "_workspace_roots", lambda: [tmp_path])
+    workspace_api.invalidate_workspace_discovery()
+
+    detailed = {
+        item["id"]: item
+        for item in workspace_api.list_workspaces(refresh=True, detailed=True)[
+            "workspaces"
+        ]
+    }
+    counts = detailed["child"]["resourceCountBreakdowns"]["operations"]
+    assert counts["total"] == 2
+    assert counts["local"] == 1
+    assert counts["inherited"] == 1
+    assert counts["overridden"] == 1
+
+
 def test_startup_policy_exposes_start_and_window_visibility(tmp_path: Path, monkeypatch) -> None:
     policy_path = tmp_path / "workbench_startup.json"
     policy_path.write_text(json.dumps({"services": {"clawrouter": {"start": False, "hidden": True}}}), encoding="utf-8")

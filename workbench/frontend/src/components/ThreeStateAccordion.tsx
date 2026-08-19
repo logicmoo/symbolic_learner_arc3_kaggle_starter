@@ -145,6 +145,7 @@ export function ThreeStateAccordionMember({
   onChange,
   baseClass,
   accessories,
+  stripDragData,
   stripContent,
   itemHeader,
   scrollSize = "320px",
@@ -164,6 +165,7 @@ export function ThreeStateAccordionMember({
   onChange: (mode: AccordionDisplayMode) => void;
   baseClass: string;
   accessories?: ReactNode;
+  stripDragData?: Record<string, string>;
   stripContent?: (cycleMode: () => void) => ReactNode;
   itemHeader?: ReactNode;
   scrollSize?: string;
@@ -201,8 +203,9 @@ export function ThreeStateAccordionMember({
       return;
     }
     setDragging(true);
-    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.effectAllowed = stripDragData ? "copyMove" : "move";
     event.dataTransfer.setData("application/x-three-state-accordion", JSON.stringify({ stackId, label: orderKey }));
+    Object.entries(stripDragData || {}).forEach(([type, data]) => event.dataTransfer.setData(type, data));
     setTimeout(() => publishAccordionChange({ stackId, label: orderKey }), 0);
   };
   const beginPointerDrag = (event: ReactMouseEvent<HTMLButtonElement>) => {

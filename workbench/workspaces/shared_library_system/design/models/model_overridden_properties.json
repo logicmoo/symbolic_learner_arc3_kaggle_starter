@@ -1,0 +1,681 @@
+{
+  "kind": "model_overridden_properties",
+  "id": "model_overridden_properties",
+  "updatedAt": "2026-08-18T10:34:02.353926Z",
+  "sources": [
+    "https://openrouter.ai/api/v1/models",
+    "https://huggingface.co/api/models/BAAI/bge-base-en-v1.5",
+    "https://huggingface.co/api/models/WhereIsAI/UAE-Large-V1"
+  ],
+  "models": {
+    "asicloud-asi1-mini": {
+      "sources": [
+        "lookup:unresolved"
+      ],
+      "notes": "No reliable public capability metadata found during this pass; keep backend-declared values until curated evidence is added."
+    },
+    "asicloud-asi1": {
+      "sources": [
+        "lookup:unresolved"
+      ],
+      "notes": "No reliable public capability metadata found during this pass; keep backend-declared values until curated evidence is added."
+    },
+    "clawrouter-free-router": {
+      "sources": [
+        "lookup:unresolved"
+      ],
+      "notes": "No reliable public capability metadata found during this pass; keep backend-declared values until curated evidence is added."
+    },
+    "freerouter-auto-free": {
+      "sources": [
+        "https://openrouter.ai/api/v1/models"
+      ],
+      "capabilities": {
+        "text": true,
+        "vision": true,
+        "multimodal": true,
+        "audio": true,
+        "tools": true,
+        "json": true,
+        "reasoning": true
+      },
+      "limits": {
+        "contextWindow": 2000000,
+        "maxOutputTokens": null
+      },
+      "notes": "Sourced from OpenRouter public model registry.",
+      "providerMetadata": {
+        "publicModelId": "openrouter/auto",
+        "publicModelName": "Auto Router",
+        "publicArchitecture": {
+          "modality": "text+image+file+audio+video->text+image",
+          "input_modalities": [
+            "text",
+            "image",
+            "audio",
+            "file",
+            "video"
+          ],
+          "output_modalities": [
+            "text",
+            "image"
+          ],
+          "tokenizer": "Router",
+          "instruct_type": null
+        }
+      }
+    },
+    "https.llm.c.singularitynet.io.v1-asi1-mini": {
+      "sources": [
+        "lookup:unresolved"
+      ],
+      "notes": "No reliable public capability metadata found during this pass; keep backend-declared values until curated evidence is added."
+    },
+    "https.llm.c.singularitynet.io.v1-asi1": {
+      "sources": [
+        "lookup:unresolved"
+      ],
+      "notes": "No reliable public capability metadata found during this pass; keep backend-declared values until curated evidence is added."
+    },
+    "https.llm.c.singularitynet.io.v1-baai_bge-base-en-v1.5": {
+      "sources": [
+        "https://huggingface.co/api/models/BAAI/bge-base-en-v1.5"
+      ],
+      "capabilities": {
+        "text": true,
+        "vision": false,
+        "multimodal": false,
+        "audio": false,
+        "tools": false,
+        "json": false,
+        "reasoning": false,
+        "embedding": true
+      },
+      "limits": {
+        "contextWindow": null,
+        "maxOutputTokens": null
+      },
+      "notes": "Embedding model metadata sourced from Hugging Face public registry; generation token limits not declared there.",
+      "providerMetadata": {
+        "pipelineTag": "feature-extraction",
+        "library": "sentence-transformers",
+        "tags": [
+          "sentence-transformers",
+          "pytorch",
+          "onnx",
+          "safetensors",
+          "bert",
+          "feature-extraction",
+          "sentence-similarity",
+          "transformers",
+          "mteb",
+          "en",
+          "arxiv:2401.03462",
+          "arxiv:2312.15503",
+          "arxiv:2311.13534",
+          "arxiv:2310.07554",
+          "arxiv:2309.07597",
+          "license:mit",
+          "model-index",
+          "text-embeddings-inference",
+          "endpoints_compatible",
+          "deploy:sagemaker",
+          "deploy:azure",
+          "region:us"
+        ]
+      }
+    },
+    "https.llm.c.singularitynet.io.v1-google_gemma-3-27b-it": {
+      "sources": [
+        "https://openrouter.ai/api/v1/models"
+      ],
+      "capabilities": {
+        "text": true,
+        "vision": true,
+        "multimodal": true,
+        "audio": false,
+        "tools": true,
+        "json": true,
+        "reasoning": false
+      },
+      "limits": {
+        "contextWindow": 262144,
+        "maxOutputTokens": 131072
+      },
+      "notes": "Sourced from OpenRouter public model registry.",
+      "providerMetadata": {
+        "publicModelId": "google/gemma-3-27b-it",
+        "publicModelName": "Google: Gemma 3 27B",
+        "publicArchitecture": {
+          "modality": "text+image->text",
+          "input_modalities": [
+            "text",
+            "image"
+          ],
+          "output_modalities": [
+            "text"
+          ],
+          "tokenizer": "Gemini",
+          "instruct_type": "gemma"
+        }
+      }
+    },
+    "https.llm.c.singularitynet.io.v1-google_gemma-4-31b-it": {
+      "sources": [
+        "https://openrouter.ai/api/v1/models"
+      ],
+      "capabilities": {
+        "text": true,
+        "vision": true,
+        "multimodal": true,
+        "audio": false,
+        "tools": true,
+        "json": true,
+        "reasoning": true
+      },
+      "limits": {
+        "contextWindow": 262144,
+        "maxOutputTokens": 262144
+      },
+      "notes": "Sourced from OpenRouter public model registry.",
+      "providerMetadata": {
+        "publicModelId": "google/gemma-4-31b-it",
+        "publicModelName": "Google: Gemma 4 31B",
+        "publicArchitecture": {
+          "modality": "text+image+video->text",
+          "input_modalities": [
+            "image",
+            "text",
+            "video"
+          ],
+          "output_modalities": [
+            "text"
+          ],
+          "tokenizer": "Gemma",
+          "instruct_type": null
+        }
+      }
+    },
+    "https.llm.c.singularitynet.io.v1-meta-llama_llama-3.3-70b-instruct": {
+      "sources": [
+        "https://openrouter.ai/api/v1/models"
+      ],
+      "capabilities": {
+        "text": true,
+        "vision": false,
+        "multimodal": false,
+        "audio": false,
+        "tools": true,
+        "json": true,
+        "reasoning": false
+      },
+      "limits": {
+        "contextWindow": 131072,
+        "maxOutputTokens": 16384
+      },
+      "notes": "Sourced from OpenRouter public model registry.",
+      "providerMetadata": {
+        "publicModelId": "meta-llama/llama-3.3-70b-instruct",
+        "publicModelName": "Meta: Llama 3.3 70B Instruct",
+        "publicArchitecture": {
+          "modality": "text->text",
+          "input_modalities": [
+            "text"
+          ],
+          "output_modalities": [
+            "text"
+          ],
+          "tokenizer": "Llama3",
+          "instruct_type": "llama3"
+        }
+      }
+    },
+    "https.llm.c.singularitynet.io.v1-minimax_minimax-m2.5": {
+      "sources": [
+        "https://openrouter.ai/api/v1/models"
+      ],
+      "capabilities": {
+        "text": true,
+        "vision": false,
+        "multimodal": false,
+        "audio": false,
+        "tools": true,
+        "json": true,
+        "reasoning": true
+      },
+      "limits": {
+        "contextWindow": 204800,
+        "maxOutputTokens": 196608
+      },
+      "notes": "Sourced from OpenRouter public model registry.",
+      "providerMetadata": {
+        "publicModelId": "minimax/minimax-m2.5",
+        "publicModelName": "MiniMax: MiniMax M2.5",
+        "publicArchitecture": {
+          "modality": "text->text",
+          "input_modalities": [
+            "text"
+          ],
+          "output_modalities": [
+            "text"
+          ],
+          "tokenizer": "Other",
+          "instruct_type": null
+        }
+      }
+    },
+    "https.llm.c.singularitynet.io.v1-minimax_minimax-m2.7": {
+      "sources": [
+        "https://openrouter.ai/api/v1/models"
+      ],
+      "capabilities": {
+        "text": true,
+        "vision": false,
+        "multimodal": false,
+        "audio": false,
+        "tools": true,
+        "json": true,
+        "reasoning": true
+      },
+      "limits": {
+        "contextWindow": 204800,
+        "maxOutputTokens": 131072
+      },
+      "notes": "Sourced from OpenRouter public model registry.",
+      "providerMetadata": {
+        "publicModelId": "minimax/minimax-m2.7",
+        "publicModelName": "MiniMax: MiniMax M2.7",
+        "publicArchitecture": {
+          "modality": "text->text",
+          "input_modalities": [
+            "text"
+          ],
+          "output_modalities": [
+            "text"
+          ],
+          "tokenizer": "Other",
+          "instruct_type": null
+        }
+      }
+    },
+    "https.llm.c.singularitynet.io.v1-minimax_minimax-m3-f": {
+      "sources": [
+        "lookup:unresolved"
+      ],
+      "notes": "No reliable public capability metadata found during this pass; keep backend-declared values until curated evidence is added."
+    },
+    "https.llm.c.singularitynet.io.v1-minimax_minimax-m3": {
+      "sources": [
+        "https://openrouter.ai/api/v1/models"
+      ],
+      "capabilities": {
+        "text": true,
+        "vision": true,
+        "multimodal": true,
+        "audio": false,
+        "tools": true,
+        "json": true,
+        "reasoning": true
+      },
+      "limits": {
+        "contextWindow": 1048576,
+        "maxOutputTokens": 512000
+      },
+      "notes": "Sourced from OpenRouter public model registry.",
+      "providerMetadata": {
+        "publicModelId": "minimax/minimax-m3",
+        "publicModelName": "MiniMax: MiniMax M3",
+        "publicArchitecture": {
+          "modality": "text+image+video->text",
+          "input_modalities": [
+            "text",
+            "image",
+            "video"
+          ],
+          "output_modalities": [
+            "text"
+          ],
+          "tokenizer": "Other",
+          "instruct_type": null
+        }
+      }
+    },
+    "https.llm.c.singularitynet.io.v1-mistralai_mistral-nemo": {
+      "sources": [
+        "https://openrouter.ai/api/v1/models"
+      ],
+      "capabilities": {
+        "text": true,
+        "vision": false,
+        "multimodal": false,
+        "audio": false,
+        "tools": true,
+        "json": true,
+        "reasoning": false
+      },
+      "limits": {
+        "contextWindow": 131072,
+        "maxOutputTokens": 16384
+      },
+      "notes": "Sourced from OpenRouter public model registry.",
+      "providerMetadata": {
+        "publicModelId": "mistralai/mistral-nemo",
+        "publicModelName": "Mistral: Mistral Nemo",
+        "publicArchitecture": {
+          "modality": "text->text",
+          "input_modalities": [
+            "text"
+          ],
+          "output_modalities": [
+            "text"
+          ],
+          "tokenizer": "Mistral",
+          "instruct_type": "mistral"
+        }
+      }
+    },
+    "https.llm.c.singularitynet.io.v1-nousresearch_hermes-4-70b": {
+      "sources": [
+        "https://openrouter.ai/api/v1/models"
+      ],
+      "capabilities": {
+        "text": true,
+        "vision": false,
+        "multimodal": false,
+        "audio": false,
+        "tools": false,
+        "json": true,
+        "reasoning": true
+      },
+      "limits": {
+        "contextWindow": 131072,
+        "maxOutputTokens": null
+      },
+      "notes": "Sourced from OpenRouter public model registry.",
+      "providerMetadata": {
+        "publicModelId": "nousresearch/hermes-4-70b",
+        "publicModelName": "Nous: Hermes 4 70B",
+        "publicArchitecture": {
+          "modality": "text->text",
+          "input_modalities": [
+            "text"
+          ],
+          "output_modalities": [
+            "text"
+          ],
+          "tokenizer": "Llama3",
+          "instruct_type": null
+        }
+      }
+    },
+    "https.llm.c.singularitynet.io.v1-openai_gpt-oss-120b": {
+      "sources": [
+        "https://openrouter.ai/api/v1/models"
+      ],
+      "capabilities": {
+        "text": true,
+        "vision": false,
+        "multimodal": false,
+        "audio": false,
+        "tools": true,
+        "json": true,
+        "reasoning": true
+      },
+      "limits": {
+        "contextWindow": 131072,
+        "maxOutputTokens": 131072
+      },
+      "notes": "Sourced from OpenRouter public model registry.",
+      "providerMetadata": {
+        "publicModelId": "openai/gpt-oss-120b",
+        "publicModelName": "OpenAI: gpt-oss-120b",
+        "publicArchitecture": {
+          "modality": "text->text",
+          "input_modalities": [
+            "text"
+          ],
+          "output_modalities": [
+            "text"
+          ],
+          "tokenizer": "GPT",
+          "instruct_type": null
+        }
+      }
+    },
+    "https.llm.c.singularitynet.io.v1-openai_gpt-oss-20b": {
+      "sources": [
+        "https://openrouter.ai/api/v1/models"
+      ],
+      "capabilities": {
+        "text": true,
+        "vision": false,
+        "multimodal": false,
+        "audio": false,
+        "tools": true,
+        "json": true,
+        "reasoning": true
+      },
+      "limits": {
+        "contextWindow": 131072,
+        "maxOutputTokens": 131072
+      },
+      "notes": "Sourced from OpenRouter public model registry.",
+      "providerMetadata": {
+        "publicModelId": "openai/gpt-oss-20b",
+        "publicModelName": "OpenAI: gpt-oss-20b",
+        "publicArchitecture": {
+          "modality": "text->text",
+          "input_modalities": [
+            "text"
+          ],
+          "output_modalities": [
+            "text"
+          ],
+          "tokenizer": "GPT",
+          "instruct_type": null
+        }
+      }
+    },
+    "https.llm.c.singularitynet.io.v1-qwen_qwen3-32b": {
+      "sources": [
+        "https://openrouter.ai/api/v1/models"
+      ],
+      "capabilities": {
+        "text": true,
+        "vision": false,
+        "multimodal": false,
+        "audio": false,
+        "tools": true,
+        "json": true,
+        "reasoning": true
+      },
+      "limits": {
+        "contextWindow": 131072,
+        "maxOutputTokens": 16384
+      },
+      "notes": "Sourced from OpenRouter public model registry.",
+      "providerMetadata": {
+        "publicModelId": "qwen/qwen3-32b",
+        "publicModelName": "Qwen: Qwen3 32B",
+        "publicArchitecture": {
+          "modality": "text->text",
+          "input_modalities": [
+            "text"
+          ],
+          "output_modalities": [
+            "text"
+          ],
+          "tokenizer": "Qwen3",
+          "instruct_type": "qwen3"
+        }
+      }
+    },
+    "https.llm.c.singularitynet.io.v1-qwen_qwen3.5-35b-a3b": {
+      "sources": [
+        "https://openrouter.ai/api/v1/models"
+      ],
+      "capabilities": {
+        "text": true,
+        "vision": true,
+        "multimodal": true,
+        "audio": false,
+        "tools": true,
+        "json": true,
+        "reasoning": true
+      },
+      "limits": {
+        "contextWindow": 262144,
+        "maxOutputTokens": 65536
+      },
+      "notes": "Sourced from OpenRouter public model registry.",
+      "providerMetadata": {
+        "publicModelId": "qwen/qwen3.5-35b-a3b",
+        "publicModelName": "Qwen: Qwen3.5-35B-A3B",
+        "publicArchitecture": {
+          "modality": "text+image+video->text",
+          "input_modalities": [
+            "text",
+            "image",
+            "video"
+          ],
+          "output_modalities": [
+            "text"
+          ],
+          "tokenizer": "Qwen3",
+          "instruct_type": null
+        }
+      }
+    },
+    "https.llm.c.singularitynet.io.v1-whereisai_uae-large-v1": {
+      "sources": [
+        "https://huggingface.co/api/models/WhereIsAI/UAE-Large-V1"
+      ],
+      "capabilities": {
+        "text": true,
+        "vision": false,
+        "multimodal": false,
+        "audio": false,
+        "tools": false,
+        "json": false,
+        "reasoning": false,
+        "embedding": true
+      },
+      "limits": {
+        "contextWindow": null,
+        "maxOutputTokens": null
+      },
+      "notes": "Embedding model metadata sourced from Hugging Face public registry; generation token limits not declared there.",
+      "providerMetadata": {
+        "pipelineTag": "feature-extraction",
+        "library": "sentence-transformers",
+        "tags": [
+          "sentence-transformers",
+          "onnx",
+          "safetensors",
+          "openvino",
+          "bert",
+          "feature-extraction",
+          "mteb",
+          "sentence_embedding",
+          "feature_extraction",
+          "transformers",
+          "transformers.js",
+          "en",
+          "arxiv:2309.12871",
+          "license:mit",
+          "model-index",
+          "text-embeddings-inference",
+          "endpoints_compatible",
+          "deploy:azure",
+          "region:us"
+        ]
+      }
+    },
+    "https.llm.c.singularitynet.io.v1-z-ai_glm-4.7-flash": {
+      "sources": [
+        "https://openrouter.ai/api/v1/models"
+      ],
+      "capabilities": {
+        "text": true,
+        "vision": false,
+        "multimodal": false,
+        "audio": false,
+        "tools": true,
+        "json": true,
+        "reasoning": true
+      },
+      "limits": {
+        "contextWindow": 202752,
+        "maxOutputTokens": 16384
+      },
+      "notes": "Sourced from OpenRouter public model registry.",
+      "providerMetadata": {
+        "publicModelId": "z-ai/glm-4.7-flash",
+        "publicModelName": "Z.ai: GLM 4.7 Flash",
+        "publicArchitecture": {
+          "modality": "text->text",
+          "input_modalities": [
+            "text"
+          ],
+          "output_modalities": [
+            "text"
+          ],
+          "tokenizer": "Other",
+          "instruct_type": null
+        }
+      }
+    },
+    "omniroute-free-router-preset-high": {
+      "sources": [
+        "lookup:unresolved"
+      ],
+      "notes": "No reliable public capability metadata found during this pass; keep backend-declared values until curated evidence is added."
+    },
+    "omniroute-free-router": {
+      "sources": [
+        "lookup:unresolved"
+      ],
+      "notes": "No reliable public capability metadata found during this pass; keep backend-declared values until curated evidence is added."
+    },
+    "openrouter-body-builder": {
+      "sources": [
+        "https://openrouter.ai/api/v1/models"
+      ],
+      "capabilities": {
+        "text": true,
+        "vision": false,
+        "multimodal": false,
+        "audio": false,
+        "tools": false,
+        "json": false,
+        "reasoning": false
+      },
+      "limits": {
+        "contextWindow": 128000,
+        "maxOutputTokens": null
+      },
+      "notes": "Sourced from OpenRouter public model registry.",
+      "providerMetadata": {
+        "publicModelId": "openrouter/bodybuilder",
+        "publicModelName": "Body Builder (beta)",
+        "publicArchitecture": {
+          "modality": "text->text",
+          "input_modalities": [
+            "text"
+          ],
+          "output_modalities": [
+            "text"
+          ],
+          "tokenizer": "Router",
+          "instruct_type": null
+        }
+      }
+    },
+    "snet-asi1": {
+      "sources": [
+        "lookup:unresolved"
+      ],
+      "notes": "No reliable public capability metadata found during this pass; keep backend-declared values until curated evidence is added."
+    }
+  }
+}

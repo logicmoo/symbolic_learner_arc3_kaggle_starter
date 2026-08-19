@@ -1,0 +1,112 @@
+.workflow-page-builder {
+  display: grid;
+  grid-template-rows: auto minmax(190px, 32vh) minmax(0, 1fr);
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--surface, #071219);
+}
+
+.workflow-page-builder-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--line, #27414b);
+}
+
+.workflow-page-builder-header h1,
+.workflow-page-builder-header p {
+  margin: 3px 0 0;
+}
+
+.workflow-page-builder-header > div:last-child {
+  display: grid;
+  justify-items: end;
+}
+
+.workflow-page-builder-source {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 6px;
+  min-height: 0;
+  padding: 10px 18px;
+  border-bottom: 1px solid var(--line, #27414b);
+}
+
+.workflow-page-builder-source > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.workflow-page-builder-source > header > div {
+  display: flex;
+  gap: 7px;
+}
+
+.workflow-page-builder-source textarea {
+  width: 100%;
+  min-height: 0;
+  resize: vertical;
+  border: 1px solid var(--line-strong, #376272);
+  background: var(--panel, #091820);
+  color: var(--text, #dce8e9);
+  padding: 10px;
+  font: 12px/1.45 ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+
+.workflow-page-builder-source footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.workflow-page-builder-preview {
+  min-height: 0;
+  overflow: auto;
+}
+
+.workflow-page-builder-rendered {
+  min-height: 100%;
+}
+
+.workflow-page-builder-rendered .english-workflow-columns {
+  min-height: 100%;
+  grid-template-columns: repeat(3, minmax(240px, 1fr));
+}
+
+.workflow-page-builder-member pre {
+  max-height: 180px;
+  overflow: auto;
+  white-space: pre-wrap;
+}
+
+.workflow-page-builder-error {
+  border-color: var(--bad, #e16b72);
+}
+
+.workflow-page-builder-error .three-state-accordion-member-strip {
+  box-shadow: inset 3px 0 0 var(--bad, #e16b72);
+}
+
+.workflow-page-builder-pending {
+  border-color: var(--accent, #4ea6c8);
+}
+
+.workflow-page-builder-pending .three-state-accordion-member-strip {
+  box-shadow: inset 3px 0 0 var(--accent, #4ea6c8);
+}
+
+@media (max-width: 1180px) {
+  .workflow-page-builder {
+    grid-template-rows: auto minmax(170px, 30vh) minmax(0, 1fr);
+  }
+
+  .workflow-page-builder-rendered .english-workflow-columns {
+    grid-template-columns: 1fr;
+  }
+}

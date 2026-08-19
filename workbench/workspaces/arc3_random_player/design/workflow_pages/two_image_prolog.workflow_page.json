@@ -1,0 +1,58 @@
+{
+  "kind": "workflow_page",
+  "id": "arc3.two_image_prolog",
+  "label": "Two-Image Prolog",
+  "description": "Upload a before/after image pair, run the ARC3 combined JSON prompt, and inspect each returned Prolog section.",
+  "glyph": "⬒",
+  "menuPlacement": "middle",
+  "order": 35,
+  "routeView": "arc3TwoImageProlog",
+  "renderer": "arc3_prompt_prolog",
+  "layout": {
+    "kind": "three_column_accordion",
+    "columns": [
+      {
+        "id": "left",
+        "label": "INPUTS",
+        "role": "data",
+        "members": [
+          { "id": "arc3_pair_inputs", "label": "Image Pair Inputs", "component": "Arc3ImagePairInputs", "initialDisplayMode": "scroll" },
+          { "id": "arc3_combined_prompt", "label": "Combined Prompt Contract", "component": "Arc3CombinedPrompt", "initialDisplayMode": "scroll" }
+        ]
+      },
+      {
+        "id": "center",
+        "label": "RUN + OUTPUTS",
+        "role": "authoring",
+        "members": [
+          { "id": "arc3_run_prompt", "label": "Run Combined Prompt", "component": "Arc3PromptRunner", "initialDisplayMode": "scroll" },
+          { "id": "arc3_output_files", "label": "Extracted Prolog Files", "component": "Arc3PrologOutputs", "initialDisplayMode": "scroll" }
+        ]
+      },
+      {
+        "id": "right",
+        "label": "SOURCE DETAILS",
+        "role": "details",
+        "members": [
+          {
+            "id": "arc3_two_image_page_source",
+            "label": "Current Page Specification",
+            "component": "ResourceSourceEditor",
+            "initialDisplayMode": "strip",
+            "resource": {
+              "kind": "workflow_page",
+              "id": "arc3.two_image_prolog"
+            },
+            "options": {
+              "format": "json",
+              "editable": true,
+              "validateBeforeApply": true,
+              "applyOnSave": true
+            }
+          },
+          { "id": "arc3_raw_response", "label": "Raw Model Response", "component": "Arc3RawResponse", "initialDisplayMode": "scroll" }
+        ]
+      }
+    ]
+  }
+}

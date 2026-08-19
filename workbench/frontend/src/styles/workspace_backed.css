@@ -24,6 +24,12 @@
   padding: 42px 0 64px;
 }
 
+.workspace-gate,
+.workspace-gate * {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
 .brand-lockup {
   display: flex;
   align-items: center;
@@ -85,6 +91,11 @@
   cursor: pointer;
   box-shadow: 0 16px 36px #0005;
   transition: transform .14s ease, border-color .14s ease, background .14s ease;
+}
+
+.workspace-card:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
 }
 
 .workspace-card:hover {
@@ -195,6 +206,23 @@
 .workspace-card strong {
   color: #a7bbc4;
   font: 600 9px ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+
+.workspace-resource-local {
+  color: var(--green);
+}
+
+.workspace-resource-inherited {
+  color: var(--violet);
+}
+
+.workspace-resource-overridden {
+  color: var(--amber);
+}
+
+.workspace-resource-legend {
+  display: inline-block;
+  margin-left: 8px;
 }
 
 .workspace-card > small:last-child {

@@ -152,7 +152,8 @@ Frontend:
 
 ```bash
 cd workbench/frontend
-npm run dev
+npm run build
+npm run preview
 ```
 
 Production frontend check:

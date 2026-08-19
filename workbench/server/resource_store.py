@@ -74,6 +74,19 @@ class FilesystemProvider:
     def _logical_json_path(path: Path) -> Path:
         return path.with_suffix(".json") if path.suffix.lower() == ".metta" else path
 
+    @staticmethod
+    def _is_level1_data_json(path: Path) -> bool:
+        if path.suffix.lower() != ".json":
+            return False
+        parts = [part.lower() for part in path.parts]
+        return any(parts[index] == "data" and parts[index + 1] == "level_1" for index in range(len(parts) - 1))
+
+    def _write_level1_json_mirror(self, path: Path, value: Any) -> None:
+        if not self._is_level1_data_json(path):
+            return
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(value, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+
     def glob(self, root: Path, directories: Iterable[str], pattern: str = "*.json") -> list[Path]:
         self._record("scan")
         patterns = [pattern]
@@ -137,14 +150,19 @@ class FilesystemProvider:
         self._record("write", path)
         physical = self._physical_path(path, writing=True)
         physical.parent.mkdir(parents=True, exist_ok=True)
+        mirror_value: Any | None = None
         if path.suffix.lower() == ".json" and physical.suffix.lower() == ".metta":
             value = json.loads(content)
+            mirror_value = value
             if isinstance(value, dict) and physical.exists():
                 self.write_json_resource(path, value)
+                self._write_level1_json_mirror(path, value)
                 return
             documents = value if isinstance(value, list) else [value]
             content = "\n".join(json_document_to_metta(item).rstrip() for item in documents) + "\n"
         physical.write_text(content, encoding=encoding)
+        if mirror_value is not None:
+            self._write_level1_json_mirror(path, mirror_value)
 
     def open_append_text(self, path: Path, *, encoding: str = "utf-8"):
         """Open an operational text sink while retaining the provider boundary."""
@@ -209,10 +227,12 @@ class FilesystemProvider:
             physical = self._physical_path(path, writing=True)
             if isinstance(document, dict) and physical.exists():
                 self.write_json_resource(path, document)
+                self._write_level1_json_mirror(path, document)
                 return
             self._record("write", path)
             physical.parent.mkdir(parents=True, exist_ok=True)
             physical.write_text(json_document_to_metta(document), encoding="utf-8")
+            self._write_level1_json_mirror(path, document)
             return
         self.write_text(path, json.dumps(document, indent=2, ensure_ascii=False) + "\n")
 
@@ -236,6 +256,7 @@ class FilesystemProvider:
         self._record("write", path)
         physical.parent.mkdir(parents=True, exist_ok=True)
         physical.write_text(source, encoding="utf-8")
+        self._write_level1_json_mirror(path, document)
 
     def delete(self, path: Path) -> None:
         self._invalidate(path)
@@ -254,6 +275,7 @@ class FilesystemProvider:
             physical = self._physical_path(target, writing=True)
             physical.parent.mkdir(parents=True, exist_ok=True)
             physical.write_text(json_document_to_metta(document), encoding="utf-8")
+            self._write_level1_json_mirror(target, document)
             source.unlink(missing_ok=True)
             return
         source.replace(target)

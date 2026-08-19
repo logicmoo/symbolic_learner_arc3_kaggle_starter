@@ -1,0 +1,577 @@
+{
+  "current_identities": [
+    {
+      "id": "player_token",
+      "type": "agent_marker",
+      "sub_type": "two_color_avatar",
+      "label": "Small two-color player token",
+      "bounding_box": {
+        "x": 26,
+        "y": 39,
+        "w": 2,
+        "h": 2
+      },
+      "first_appeared_step": 0,
+      "last_disappeared_step": null,
+      "confidence": 0.97,
+      "tracking_notes": "Compact movable-looking marker with contrasting core/tail colors.",
+      "ascii_depiction_lines": [
+        "bk",
+        "b."
+      ]
+    },
+    {
+      "id": "player_core_dark",
+      "type": "pixel_cluster",
+      "sub_type": "agent_core",
+      "label": "Dark core pixel of player token",
+      "bounding_box": {
+        "x": 26,
+        "y": 39,
+        "w": 1,
+        "h": 1
+      },
+      "first_appeared_step": 0,
+      "last_disappeared_step": null,
+      "confidence": 0.93,
+      "tracking_notes": "Single dark anchor pixel inside player token.",
+      "ascii_depiction_lines": [
+        "k"
+      ]
+    },
+    {
+      "id": "player_tail_blue",
+      "type": "pixel_cluster",
+      "sub_type": "agent_tail",
+      "label": "Blue trailing pixel of player token",
+      "bounding_box": {
+        "x": 26,
+        "y": 40,
+        "w": 1,
+        "h": 1
+      },
+      "first_appeared_step": 0,
+      "last_disappeared_step": null,
+      "confidence": 0.9,
+      "tracking_notes": "Offset colored pixel attached to player token.",
+      "ascii_depiction_lines": [
+        "b"
+      ]
+    },
+    {
+      "id": "fortress_structure",
+      "type": "compound_region",
+      "sub_type": "fortress_assembly",
+      "label": "Large fortress-like green structure",
+      "bounding_box": {
+        "x": 16,
+        "y": 10,
+        "w": 31,
+        "h": 37
+      },
+      "first_appeared_step": 0,
+      "last_disappeared_step": null,
+      "confidence": 0.98,
+      "tracking_notes": "Dominant connected structure with wings, bridge, and upper chamber.",
+      "ascii_depiction_lines": [
+        "[ fortress ]"
+      ]
+    },
+    {
+      "id": "fortress_center_mass",
+      "type": "block_region",
+      "sub_type": "fortress_core",
+      "label": "Central mass of fortress",
+      "bounding_box": {
+        "x": 20,
+        "y": 18,
+        "w": 23,
+        "h": 20
+      },
+      "first_appeared_step": 0,
+      "last_disappeared_step": null,
+      "confidence": 0.95,
+      "tracking_notes": "Main body connecting side wings.",
+      "ascii_depiction_lines": [
+        "######"
+      ]
+    },
+    {
+      "id": "fortress_wing_left",
+      "type": "rectangular_block",
+      "sub_type": "side_wing_left",
+      "label": "Left side wing of fortress",
+      "bounding_box": {
+        "x": 16,
+        "y": 20,
+        "w": 8,
+        "h": 12
+      },
+      "first_appeared_step": 0,
+      "last_disappeared_step": null,
+      "confidence": 0.93,
+      "tracking_notes": "Left protruding rectangular extension.",
+      "ascii_depiction_lines": [
+        "####"
+      ]
+    },
+    {
+      "id": "fortress_wing_right",
+      "type": "rectangular_block",
+      "sub_type": "side_wing_right",
+      "label": "Right side wing of fortress",
+      "bounding_box": {
+        "x": 39,
+        "y": 20,
+        "w": 8,
+        "h": 12
+      },
+      "first_appeared_step": 0,
+      "last_disappeared_step": null,
+      "confidence": 0.93,
+      "tracking_notes": "Right protruding rectangular extension.",
+      "ascii_depiction_lines": [
+        "####"
+      ]
+    },
+    {
+      "id": "fortress_bridge_lower",
+      "type": "horizontal_bar",
+      "sub_type": "connector_lower",
+      "label": "Lower horizontal connector in fortress",
+      "bounding_box": {
+        "x": 22,
+        "y": 33,
+        "w": 19,
+        "h": 3
+      },
+      "first_appeared_step": 0,
+      "last_disappeared_step": null,
+      "confidence": 0.91,
+      "tracking_notes": "Crossbar linking lower sections.",
+      "ascii_depiction_lines": [
+        "======"
+      ]
+    },
+    {
+      "id": "fortress_stem_upper",
+      "type": "vertical_bar",
+      "sub_type": "connector_upper",
+      "label": "Upper vertical stem into chamber",
+      "bounding_box": {
+        "x": 30,
+        "y": 12,
+        "w": 3,
+        "h": 9
+      },
+      "first_appeared_step": 0,
+      "last_disappeared_step": null,
+      "confidence": 0.9,
+      "tracking_notes": "Vertical passage connecting core to upper chamber.",
+      "ascii_depiction_lines": [
+        "|",
+        "|",
+        "|"
+      ]
+    },
+    {
+      "id": "chamber_frame_top",
+      "type": "rectangular_frame",
+      "sub_type": "upper_chamber_border",
+      "label": "Top chamber frame",
+      "bounding_box": {
+        "x": 24,
+        "y": 8,
+        "w": 15,
+        "h": 10
+      },
+      "first_appeared_step": 0,
+      "last_disappeared_step": null,
+      "confidence": 0.92,
+      "tracking_notes": "Framed compartment near top of fortress.",
+      "ascii_depiction_lines": [
+        "+-----+"
+      ]
+    },
+    {
+      "id": "chamber_fill_top",
+      "type": "enclosed_region",
+      "sub_type": "chamber_interior",
+      "label": "Interior fill of top chamber",
+      "bounding_box": {
+        "x": 26,
+        "y": 10,
+        "w": 11,
+        "h": 6
+      },
+      "first_appeared_step": 0,
+      "last_disappeared_step": null,
+      "confidence": 0.88,
+      "tracking_notes": "Region enclosed by top frame.",
+      "ascii_depiction_lines": [
+        "....."
+      ]
+    },
+    {
+      "id": "glyph_top_hook",
+      "type": "symbol",
+      "sub_type": "hooked_glyph",
+      "label": "Hook-like symbol in upper chamber",
+      "bounding_box": {
+        "x": 30,
+        "y": 12,
+        "w": 4,
+        "h": 3
+      },
+      "first_appeared_step": 0,
+      "last_disappeared_step": null,
+      "confidence": 0.86,
+      "tracking_notes": "Angular colored symbol centered in top chamber.",
+      "ascii_depiction_lines": [
+        "_/"
+      ]
+    },
+    {
+      "id": "gate_bottom_center",
+      "type": "compound_panel",
+      "sub_type": "embedded_gate",
+      "label": "Two-layer gate embedded at fortress bottom center",
+      "bounding_box": {
+        "x": 28,
+        "y": 34,
+        "w": 8,
+        "h": 7
+      },
+      "first_appeared_step": 0,
+      "last_disappeared_step": null,
+      "confidence": 0.92,
+      "tracking_notes": "Distinct two-color gate-like insert at lower center.",
+      "ascii_depiction_lines": [
+        "[==]"
+      ]
+    },
+    {
+      "id": "gate_header_light",
+      "type": "horizontal_bar",
+      "sub_type": "gate_header",
+      "label": "Light header strip on gate",
+      "bounding_box": {
+        "x": 28,
+        "y": 34,
+        "w": 8,
+        "h": 2
+      },
+      "first_appeared_step": 0,
+      "last_disappeared_step": null,
+      "confidence": 0.9,
+      "tracking_notes": "Top strip of gate assembly.",
+      "ascii_depiction_lines": [
+        "----"
+      ]
+    },
+    {
+      "id": "gate_panel_dark",
+      "type": "rectangular_block",
+      "sub_type": "gate_body_lower",
+      "label": "Darker lower panel on gate",
+      "bounding_box": {
+        "x": 29,
+        "y": 36,
+        "w": 6,
+        "h": 4
+      },
+      "first_appeared_step": 0,
+      "last_disappeared_step": null,
+      "confidence": 0.89,
+      "tracking_notes": "Lower block of gate assembly.",
+      "ascii_depiction_lines": [
+        "####"
+      ]
+    },
+    {
+      "id": "hud_panel_bottom",
+      "type": "interface_panel",
+      "sub_type": "status_container",
+      "label": "Bottom status panel",
+      "bounding_box": {
+        "x": 8,
+        "y": 52,
+        "w": 48,
+        "h": 8
+      },
+      "first_appeared_step": 0,
+      "last_disappeared_step": null,
+      "confidence": 0.96,
+      "tracking_notes": "Large horizontal UI strip at bottom.",
+      "ascii_depiction_lines": [
+        "[ HUD ]"
+      ]
+    },
+    {
+      "id": "hud_track_bottom",
+      "type": "horizontal_bar",
+      "sub_type": "status_track",
+      "label": "Long track inside bottom status panel",
+      "bounding_box": {
+        "x": 12,
+        "y": 54,
+        "w": 38,
+        "h": 3
+      },
+      "first_appeared_step": 0,
+      "last_disappeared_step": null,
+      "confidence": 0.93,
+      "tracking_notes": "Continuous track element in status panel.",
+      "ascii_depiction_lines": [
+        "======="
+      ]
+    },
+    {
+      "id": "hud_block_left_green",
+      "type": "rectangular_block",
+      "sub_type": "status_indicator_left",
+      "label": "Left indicator block in status track",
+      "bounding_box": {
+        "x": 12,
+        "y": 54,
+        "w": 4,
+        "h": 3
+      },
+      "first_appeared_step": 0,
+      "last_disappeared_step": null,
+      "confidence": 0.9,
+      "tracking_notes": "Left-most colored indicator in track.",
+      "ascii_depiction_lines": [
+        "GG"
+      ]
+    },
+    {
+      "id": "hud_blocks_right_cyan",
+      "type": "block_cluster",
+      "sub_type": "status_indicator_cluster_right",
+      "label": "Cluster of right-side status indicator blocks",
+      "bounding_box": {
+        "x": 44,
+        "y": 54,
+        "w": 9,
+        "h": 3
+      },
+      "first_appeared_step": 0,
+      "last_disappeared_step": null,
+      "confidence": 0.91,
+      "tracking_notes": "Three adjacent colored status blocks.",
+      "ascii_depiction_lines": [
+        "CCC"
+      ]
+    },
+    {
+      "id": "wall_left_boundary",
+      "type": "boundary_wall",
+      "sub_type": "vertical_outer_wall",
+      "label": "Left outer boundary wall",
+      "bounding_box": {
+        "x": 2,
+        "y": 6,
+        "w": 2,
+        "h": 55
+      },
+      "first_appeared_step": 0,
+      "last_disappeared_step": null,
+      "confidence": 0.95,
+      "tracking_notes": "Major vertical border element.",
+      "ascii_depiction_lines": [
+        "||"
+      ]
+    },
+    {
+      "id": "wall_left_patch_upper",
+      "type": "color_deviation",
+      "sub_type": "wall_insert_upper",
+      "label": "Upper color variation on left wall",
+      "bounding_box": {
+        "x": 2,
+        "y": 14,
+        "w": 2,
+        "h": 2
+      },
+      "first_appeared_step": 0,
+      "last_disappeared_step": null,
+      "confidence": 0.74,
+      "tracking_notes": "Detected non-uniform patch during wall scan.",
+      "ascii_depiction_lines": [
+        ".."
+      ]
+    },
+    {
+      "id": "wall_left_patch_lower",
+      "type": "color_deviation",
+      "sub_type": "wall_insert_lower",
+      "label": "Lower color variation on left wall",
+      "bounding_box": {
+        "x": 2,
+        "y": 41,
+        "w": 2,
+        "h": 2
+      },
+      "first_appeared_step": 0,
+      "last_disappeared_step": null,
+      "confidence": 0.71,
+      "tracking_notes": "Second non-uniform wall patch.",
+      "ascii_depiction_lines": [
+        ".."
+      ]
+    },
+    {
+      "id": "symbol_card_lower_left",
+      "type": "panel",
+      "sub_type": "symbol_card",
+      "label": "Lower-left symbol card",
+      "bounding_box": {
+        "x": 8,
+        "y": 42,
+        "w": 9,
+        "h": 8
+      },
+      "first_appeared_step": 0,
+      "last_disappeared_step": null,
+      "confidence": 0.9,
+      "tracking_notes": "Standalone panel carrying local symbol.",
+      "ascii_depiction_lines": [
+        "[ ]"
+      ]
+    },
+    {
+      "id": "glyph_lower_left",
+      "type": "symbol",
+      "sub_type": "angular_glyph",
+      "label": "Angular symbol on lower-left card",
+      "bounding_box": {
+        "x": 10,
+        "y": 44,
+        "w": 5,
+        "h": 4
+      },
+      "first_appeared_step": 0,
+      "last_disappeared_step": null,
+      "confidence": 0.87,
+      "tracking_notes": "Distinct angular mark on card.",
+      "ascii_depiction_lines": [
+        "<>"
+      ]
+    },
+    {
+      "id": "target_upper_left",
+      "type": "target_marker",
+      "sub_type": "ring_with_colored_core",
+      "label": "Target marker in upper-left wing",
+      "bounding_box": {
+        "x": 19,
+        "y": 23,
+        "w": 4,
+        "h": 4
+      },
+      "first_appeared_step": 0,
+      "last_disappeared_step": null,
+      "confidence": 0.85,
+      "tracking_notes": "Ring-like marker with contrasting center.",
+      "ascii_depiction_lines": [
+        "(o)"
+      ]
+    },
+    {
+      "id": "target_lower_right",
+      "type": "target_marker",
+      "sub_type": "ring_with_colored_core",
+      "label": "Target marker in lower-right wing",
+      "bounding_box": {
+        "x": 41,
+        "y": 30,
+        "w": 4,
+        "h": 4
+      },
+      "first_appeared_step": 0,
+      "last_disappeared_step": null,
+      "confidence": 0.85,
+      "tracking_notes": "Ring-like marker with contrasting center.",
+      "ascii_depiction_lines": [
+        "(o)"
+      ]
+    },
+    {
+      "id": "playfield_background_yellow",
+      "type": "background_region",
+      "sub_type": "playfield_fill",
+      "label": "Primary yellow playfield background",
+      "bounding_box": {
+        "x": 4,
+        "y": 4,
+        "w": 56,
+        "h": 48
+      },
+      "first_appeared_step": 0,
+      "last_disappeared_step": null,
+      "confidence": 0.99,
+      "tracking_notes": "Dominant contiguous background color.",
+      "ascii_depiction_lines": [
+        "~~~~"
+      ]
+    },
+    {
+      "id": "group_fortress_assembly",
+      "type": "object_group",
+      "sub_type": "structural_group",
+      "label": "Fortress structural assembly group",
+      "bounding_box": {
+        "x": 16,
+        "y": 8,
+        "w": 31,
+        "h": 39
+      },
+      "first_appeared_step": 0,
+      "last_disappeared_step": null,
+      "confidence": 0.9,
+      "tracking_notes": "Groups core, wings, bridge, stem, and chamber parts.",
+      "ascii_depiction_lines": [
+        "[F]"
+      ]
+    },
+    {
+      "id": "group_gate_assembly",
+      "type": "object_group",
+      "sub_type": "mechanical_group",
+      "label": "Bottom-center gate assembly group",
+      "bounding_box": {
+        "x": 28,
+        "y": 34,
+        "w": 8,
+        "h": 7
+      },
+      "first_appeared_step": 0,
+      "last_disappeared_step": null,
+      "confidence": 0.9,
+      "tracking_notes": "Groups gate container, header, and lower panel.",
+      "ascii_depiction_lines": [
+        "[G]"
+      ]
+    },
+    {
+      "id": "group_status_assembly",
+      "type": "object_group",
+      "sub_type": "hud_group",
+      "label": "Bottom status assembly group",
+      "bounding_box": {
+        "x": 8,
+        "y": 52,
+        "w": 48,
+        "h": 8
+      },
+      "first_appeared_step": 0,
+      "last_disappeared_step": null,
+      "confidence": 0.92,
+      "tracking_notes": "Groups panel, track, and indicator blocks.",
+      "ascii_depiction_lines": [
+        "[S]"
+      ]
+    }
+  ]
+}

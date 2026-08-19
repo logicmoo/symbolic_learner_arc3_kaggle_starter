@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { Fragment, useMemo, useState, type CSSProperties, type ReactNode, type Ref } from "react";
 import {
   ThreeStateAccordionMember,
   ThreeStateAccordionStack,
@@ -54,6 +54,17 @@ type Props = {
   header?: ReactNode;
   footer?: ReactNode;
   pageClassName?: string;
+  columnsClassName?: string;
+  columnsStyle?: CSSProperties;
+  columnsRef?: Ref<HTMLDivElement>;
+  columnsOverlay?: ReactNode;
+  freezeColumnControls?: boolean;
+  stackIdForColumn?: (column: WorkflowPageColumn) => string;
+  renderColumnDivider?: (
+    left: WorkflowPageColumn,
+    right: WorkflowPageColumn,
+    index: number,
+  ) => ReactNode;
 };
 
 export type WorkflowPageMemberSurface = {
@@ -62,9 +73,12 @@ export type WorkflowPageMemberSurface = {
   detail?: string;
   footer?: ReactNode;
   accessories?: ReactNode;
+  stripDragData?: Record<string, string>;
   baseClass?: string;
   scrollSize?: string;
   hidden?: boolean;
+  mode?: AccordionDisplayMode;
+  onModeChange?: (mode: AccordionDisplayMode) => void;
 };
 
 export type WorkflowPageComponentRenderer = (
@@ -94,6 +108,13 @@ export function WorkflowPageHost({
   header,
   footer,
   pageClassName = "",
+  columnsClassName = "",
+  columnsStyle,
+  columnsRef,
+  columnsOverlay,
+  freezeColumnControls = false,
+  stackIdForColumn,
+  renderColumnDivider,
 }: Props) {
   const columns = definition.layout?.columns || [];
   const completeLayout = ["left", "center", "right"].every((id) =>
@@ -144,15 +165,20 @@ export function WorkflowPageHost({
       data-workflow-page-columns={columns.map((column) => column.id).join(" ")}
     >
       {header}
-      <div className="english-workflow-columns">
-        {orderedColumns.map((column) => {
-          const stackId = `${definition.id}-${column.id}-stack`;
-          return (
+      <div
+        ref={columnsRef}
+        className={`english-workflow-columns ${columnsClassName}`.trim()}
+        style={columnsStyle}
+      >
+        {orderedColumns.map((column, columnIndex) => {
+          const stackId = stackIdForColumn?.(column) || `${definition.id}-${column.id}-stack`;
+          const nextColumn = orderedColumns[columnIndex + 1];
+          return <Fragment key={column.id}>
             <ThreeStateAccordionStack
-              key={column.id}
               id={stackId}
               className={`english-workflow-column workflow-page-${column.role || column.id}`}
               controlsLabel={`${column.label} STACK`}
+              freezeControls={freezeColumnControls}
             >
               {column.members.map((rawMember, index) => {
                 const member = memberDefinition(rawMember);
@@ -164,7 +190,7 @@ export function WorkflowPageHost({
                     value: "Component unavailable",
                   };
                 if (rendered.hidden) return null;
-                const mode = modes[member.id] || displayMode(member);
+                const mode = rendered.mode || modes[member.id] || displayMode(member);
                 return (
                   <ThreeStateAccordionMember
                     key={member.id}
@@ -177,13 +203,16 @@ export function WorkflowPageHost({
                     value={rendered.value}
                     detail={rendered.detail}
                     mode={mode}
-                    onChange={(nextMode) => setModes((current) => ({
-                      ...current,
-                      [member.id]: nextMode,
-                    }))}
+                    onChange={(nextMode) => rendered.onModeChange
+                      ? rendered.onModeChange(nextMode)
+                      : setModes((current) => ({
+                        ...current,
+                        [member.id]: nextMode,
+                      }))}
                     baseClass={rendered.baseClass || "english-workflow-panel"}
                     scrollSize={rendered.scrollSize || "calc(100vh - 250px)"}
                     accessories={rendered.accessories}
+                    stripDragData={rendered.stripDragData}
                     footer={rendered.footer}
                   >
                     {rendered.content}
@@ -191,8 +220,10 @@ export function WorkflowPageHost({
                 );
               })}
             </ThreeStateAccordionStack>
-          );
+            {nextColumn && renderColumnDivider?.(column, nextColumn, columnIndex)}
+          </Fragment>;
         })}
+        {columnsOverlay}
       </div>
       {footer}
     </section>

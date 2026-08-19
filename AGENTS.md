@@ -335,7 +335,7 @@ STEPS=200` runs a targeted session. These Make targets assume a Unix-like
 
 shell; use `README_WINDOWS.md` on Windows.
 
-\- From `workbench/frontend/`, `npm install && npm run dev` starts Vite and
+\- From `workbench/frontend/`, `npm install && npm run build && npm run preview` starts Vite without file watching and
 
 `npm run build` type-checks and builds the frontend. Node.js 22+ is required.
 
