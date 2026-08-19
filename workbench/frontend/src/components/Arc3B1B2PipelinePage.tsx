@@ -132,8 +132,11 @@ type StackSetup = {
   beforeImage: ImageSelection | null;
   afterImage: ImageSelection;
   objectImages?: ImageSelection[];
+  groupImages?: ImageSelection[];
   analysis?: ImageAnalysis;
 };
+
+type SetupImageField = "objectImages" | "groupImages";
 
 type RunnerState = {
   selectedModelId: string;
@@ -2296,40 +2299,40 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
     });
   };
 
-  const addObjectImage = (stackIndex: number, imageIndex: number) => {
+  const addSetupImage = (stackIndex: number, imageIndex: number, field: SetupImageField) => {
     setStackState(stackIndex, (stack) => {
       const setups = stack.setups?.length ? [...stack.setups] : defaultSetups(stack.key);
       const current = setups[imageIndex];
       if (!current) return stack;
-      const objectImages = [...(current.objectImages || []), { name: "", dataUrl: "" }];
-      setups[imageIndex] = { ...current, objectImages };
+      const entries = [...(current[field] || []), { name: "", dataUrl: "" }];
+      setups[imageIndex] = { ...current, [field]: entries };
       return { ...stack, setups };
     });
   };
 
-  const setObjectImagePath = (stackIndex: number, imageIndex: number, objectIndex: number, path: string) => {
+  const setSetupImagePath = (stackIndex: number, imageIndex: number, field: SetupImageField, entryIndex: number, path: string) => {
     setStackState(stackIndex, (stack) => {
       const setups = stack.setups?.length ? [...stack.setups] : defaultSetups(stack.key);
       const current = setups[imageIndex];
       if (!current) return stack;
-      const objectImages = [...(current.objectImages || [])];
-      const existing = objectImages[objectIndex];
+      const entries = [...(current[field] || [])];
+      const existing = entries[entryIndex];
       if (!existing) return stack;
-      objectImages[objectIndex] = path.trim()
+      entries[entryIndex] = path.trim()
         ? imageSelectionFromPath(workspaceId, path, existing)
         : { name: "", dataUrl: "" };
-      setups[imageIndex] = { ...current, objectImages };
+      setups[imageIndex] = { ...current, [field]: entries };
       return { ...stack, setups };
     });
   };
 
-  const removeObjectImage = (stackIndex: number, imageIndex: number, objectIndex: number) => {
+  const removeSetupImage = (stackIndex: number, imageIndex: number, field: SetupImageField, entryIndex: number) => {
     setStackState(stackIndex, (stack) => {
       const setups = stack.setups?.length ? [...stack.setups] : defaultSetups(stack.key);
       const current = setups[imageIndex];
       if (!current) return stack;
-      const objectImages = (current.objectImages || []).filter((_, index) => index !== objectIndex);
-      setups[imageIndex] = { ...current, objectImages };
+      const entries = (current[field] || []).filter((_, index) => index !== entryIndex);
+      setups[imageIndex] = { ...current, [field]: entries };
       return { ...stack, setups };
     });
   };
@@ -3009,6 +3012,40 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
             const subimages = analysis?.subimages || [];
             const textFiles = analysis?.textFiles || [];
             const isActive = imageIndex === selectedIndex;
+            const renderSetupImageGroup = (field: SetupImageField, title: string, itemLabel: string) => {
+              const entries = setup[field] || [];
+              return <details open className="arc3-prolog-setup-object-images">
+                <summary>{`${title} (${entries.length})`}</summary>
+                {entries.map((entry, entryIndex) => <div
+                  key={`${field}-${setup.id}-${entryIndex}`}
+                  className="arc3-prolog-object-image-row"
+                >
+                  <label className="arc3-prolog-inline-select-label">
+                    <span>{`${itemLabel} ${entryIndex + 1}`}</span>
+                    <input
+                      className="arc3-prolog-setup-inline-input"
+                      type="text"
+                      value={entry.name}
+                      placeholder="data/... image path"
+                      onChange={(event) => setSetupImagePath(stackIndex, imageIndex, field, entryIndex, event.target.value)}
+                    />
+                  </label>
+                  {entry.dataUrl
+                    ? <img className="arc3-prolog-preview" src={entry.dataUrl} alt={`${itemLabel.toLowerCase()} ${entryIndex + 1}`} />
+                    : <div className="arc3-prolog-setup-preview-placeholder">No image</div>}
+                  <button
+                    type="button"
+                    className="secondary arc3-prolog-object-image-remove"
+                    onClick={() => removeSetupImage(stackIndex, imageIndex, field, entryIndex)}
+                  >Remove</button>
+                </div>)}
+                <button
+                  type="button"
+                  className="secondary"
+                  onClick={() => addSetupImage(stackIndex, imageIndex, field)}
+                >{`Add ${itemLabel.toLowerCase()}`}</button>
+              </details>;
+            };
             return <ThreeStateAccordionMember
               key={setup.id}
               stackId={imagesStackId}
@@ -3058,37 +3095,8 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
               {setup.afterImage.dataUrl
                 ? <img className="arc3-prolog-preview" src={setup.afterImage.dataUrl} alt={`${setup.label || `image_${imageIndex + 1}`} image`} />
                 : <div className="arc3-prolog-setup-preview-placeholder">No image</div>}
-              <details open className="arc3-prolog-setup-object-images">
-                <summary>{`OBJECT_IMAGES (${(setup.objectImages || []).length})`}</summary>
-                {(setup.objectImages || []).map((objectImage, objectIndex) => <div
-                  key={`object-image-${setup.id}-${objectIndex}`}
-                  className="arc3-prolog-object-image-row"
-                >
-                  <label className="arc3-prolog-inline-select-label">
-                    <span>{`OBJECT ${objectIndex + 1}`}</span>
-                    <input
-                      className="arc3-prolog-setup-inline-input"
-                      type="text"
-                      value={objectImage.name}
-                      placeholder="data/... object image path"
-                      onChange={(event) => setObjectImagePath(stackIndex, imageIndex, objectIndex, event.target.value)}
-                    />
-                  </label>
-                  {objectImage.dataUrl
-                    ? <img className="arc3-prolog-preview" src={objectImage.dataUrl} alt={`object ${objectIndex + 1}`} />
-                    : <div className="arc3-prolog-setup-preview-placeholder">No image</div>}
-                  <button
-                    type="button"
-                    className="secondary arc3-prolog-object-image-remove"
-                    onClick={() => removeObjectImage(stackIndex, imageIndex, objectIndex)}
-                  >Remove object</button>
-                </div>)}
-                <button
-                  type="button"
-                  className="secondary"
-                  onClick={() => addObjectImage(stackIndex, imageIndex)}
-                >Add object image</button>
-              </details>
+              {renderSetupImageGroup("objectImages", "OBJ_IMAGES", "OBJECT")}
+              {renderSetupImageGroup("groupImages", "GRP_IMAGES", "GROUP")}
               <details open>
                 <summary>{`SUB_IMAGES (${subimages.length})`}</summary>
                 {subimages.length

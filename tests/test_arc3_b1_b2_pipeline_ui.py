@@ -168,15 +168,19 @@ def test_b1_b2_setup_has_before_image_and_command_fields() -> None:
     assert "display: none !important;" in styles
 
 
-def test_b1_b2_setup_has_object_images_group() -> None:
+def test_b1_b2_setup_has_object_and_group_image_groups() -> None:
     source = COMPONENT.read_text(encoding="utf-8")
-    # Each setup has an empty, user-managed OBJECT_IMAGES group with add/edit/remove.
+    # Each setup has empty, user-managed OBJ_IMAGES and GRP_IMAGES groups, both
+    # driven by one generic, field-keyed implementation.
     assert "objectImages?: ImageSelection[];" in source
-    assert 'className="arc3-prolog-setup-object-images"' in source
-    assert "OBJECT_IMAGES (${(setup.objectImages || []).length})" in source
-    assert "const addObjectImage = (stackIndex: number, imageIndex: number) =>" in source
-    assert "const setObjectImagePath = (stackIndex: number, imageIndex: number, objectIndex: number, path: string) =>" in source
-    assert "const removeObjectImage = (stackIndex: number, imageIndex: number, objectIndex: number) =>" in source
-    assert "onClick={() => addObjectImage(stackIndex, imageIndex)}" in source
-    assert "onClick={() => removeObjectImage(stackIndex, imageIndex, objectIndex)}" in source
-    assert "onChange={(event) => setObjectImagePath(stackIndex, imageIndex, objectIndex, event.target.value)}" in source
+    assert "groupImages?: ImageSelection[];" in source
+    assert 'type SetupImageField = "objectImages" | "groupImages";' in source
+    assert "const addSetupImage = (stackIndex: number, imageIndex: number, field: SetupImageField) =>" in source
+    assert "const setSetupImagePath = (stackIndex: number, imageIndex: number, field: SetupImageField, entryIndex: number, path: string) =>" in source
+    assert "const removeSetupImage = (stackIndex: number, imageIndex: number, field: SetupImageField, entryIndex: number) =>" in source
+    assert "const renderSetupImageGroup = (field: SetupImageField, title: string, itemLabel: string) =>" in source
+    assert "`${title} (${entries.length})`" in source
+    # Both groups are rendered; OBJECT_IMAGES was renamed to OBJ_IMAGES.
+    assert 'renderSetupImageGroup("objectImages", "OBJ_IMAGES", "OBJECT")' in source
+    assert 'renderSetupImageGroup("groupImages", "GRP_IMAGES", "GROUP")' in source
+    assert "OBJECT_IMAGES" not in source
