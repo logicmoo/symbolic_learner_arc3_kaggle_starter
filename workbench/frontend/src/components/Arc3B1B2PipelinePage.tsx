@@ -2363,6 +2363,23 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
     });
   };
 
+  const loadSetupStateJson = async (stackIndex: number, imageIndex: number, dir: string, fileName: string) => {
+    const cleanDir = normalizeAssetPath(dir).replace(/\/+$/, "");
+    const cleanFile = normalizeAssetPath(fileName).replace(/^\/+/, "");
+    const rel = cleanDir ? `${cleanDir}/${cleanFile}` : cleanFile;
+    if (!cleanFile) return;
+    try {
+      const response = await fetch(workspaceAssetUrl(workspaceId, rel), { cache: "no-store" });
+      if (!response.ok) {
+        setSetupStateField(stackIndex, imageIndex, "stateJson", `// Could not load ${rel} (${response.status})`);
+        return;
+      }
+      setSetupStateField(stackIndex, imageIndex, "stateJson", await response.text());
+    } catch (reason) {
+      setSetupStateField(stackIndex, imageIndex, "stateJson", `// Could not load ${rel}: ${reason instanceof Error ? reason.message : String(reason)}`);
+    }
+  };
+
   const addImage = (stackIndex: number) => {
     setStackState(stackIndex, (stack) => {
       const setups = stack.setups?.length ? [...stack.setups] : defaultSetups(stack.key);
@@ -3139,7 +3156,14 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
               scrollSize="480px"
               accessories={<button type="button" className={isActive ? "" : "secondary"} onClick={() => selectImage(stackIndex, imageIndex)}>{isActive ? "Selected" : "Select"}</button>}
             >
-              <details className="arc3-prolog-setup-extra arc3-prolog-setup-dir-props">
+              <details
+                className="arc3-prolog-setup-extra arc3-prolog-setup-dir-props"
+                onToggle={(event) => {
+                  if (event.currentTarget.open && !(setup.stateJson ?? "").trim()) {
+                    void loadSetupStateJson(stackIndex, imageIndex, setup.stateDir ?? stateDirDefault, setup.stateFile ?? "state.json");
+                  }
+                }}
+              >
                 <summary>DIR &amp; PROPERTIES</summary>
                 <label className="arc3-prolog-inline-select-label">
                   <span>PATH</span>
@@ -3161,15 +3185,20 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                     onChange={(event) => setSetupStateField(stackIndex, imageIndex, "stateFile", event.target.value)}
                   />
                 </label>
+                <button
+                  type="button"
+                  className="secondary arc3-prolog-setup-state-load"
+                  onClick={() => void loadSetupStateJson(stackIndex, imageIndex, setup.stateDir ?? stateDirDefault, setup.stateFile ?? "state.json")}
+                >Load {(setup.stateFile ?? "state.json")}</button>
+                <textarea
+                  className="arc3-prolog-setup-state-json"
+                  value={setup.stateJson ?? ""}
+                  placeholder="{ }"
+                  spellCheck={false}
+                  rows={8}
+                  onChange={(event) => setSetupStateField(stackIndex, imageIndex, "stateJson", event.target.value)}
+                />
               </details>
-              <textarea
-                className="arc3-prolog-setup-state-json"
-                value={setup.stateJson ?? ""}
-                placeholder="{ }"
-                spellCheck={false}
-                rows={8}
-                onChange={(event) => setSetupStateField(stackIndex, imageIndex, "stateJson", event.target.value)}
-              />
               <details className="arc3-prolog-setup-extra">
                 <summary>BEFORE &amp; COMMAND</summary>
                 <label className="arc3-prolog-inline-select-label">
@@ -3177,7 +3206,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                   <input
                     className="arc3-prolog-setup-inline-input"
                     type="text"
-                    value={setup.beforeImage?.name || ""}
+                    value={setup.beforeImage?.name || "../image.png"}
                     onChange={(event) => setBeforeImagePath(stackIndex, imageIndex, event.target.value)}
                   />
                 </label>

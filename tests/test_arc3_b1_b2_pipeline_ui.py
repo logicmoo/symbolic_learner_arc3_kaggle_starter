@@ -158,7 +158,7 @@ def test_b1_b2_setup_has_before_image_and_command_fields() -> None:
     assert "onChange={(event) => setSetupCommand(stackIndex, imageIndex, event.target.value)}" in source
     assert "onChange={(event) => setBeforeImagePath(stackIndex, imageIndex, event.target.value)}" in source
     assert "value={setup.command}" in source
-    assert 'value={setup.beforeImage?.name || ""}' in source
+    assert 'value={setup.beforeImage?.name || "../image.png"}' in source
     # BEFORE_IMAGE + COMMAND are tucked into a collapsed (default) expander.
     assert '<details className="arc3-prolog-setup-extra">' in source
     assert "<summary>BEFORE &amp; COMMAND</summary>" in source
@@ -256,7 +256,7 @@ def test_b1_b2_setup_has_dir_properties_node() -> None:
     assert "stateJson?: string;" in source
     assert 'const setSetupStateField = (stackIndex: number, imageIndex: number, field: "stateDir" | "stateFile" | "stateJson", value: string) =>' in source
     # A default-collapsed DIR & PROPERTIES node (reuses the setup-extra collapse behavior).
-    assert '<details className="arc3-prolog-setup-extra arc3-prolog-setup-dir-props">' in source
+    assert 'className="arc3-prolog-setup-extra arc3-prolog-setup-dir-props"' in source
     assert "<summary>DIR &amp; PROPERTIES</summary>" in source
     # PATH + PROP_FILE (state.json) fields and an editable JSON textarea below.
     assert "<span>PATH</span>" in source
@@ -266,5 +266,11 @@ def test_b1_b2_setup_has_dir_properties_node() -> None:
     assert 'className="arc3-prolog-setup-state-json"' in source
     assert 'setSetupStateField(stackIndex, imageIndex, "stateJson", event.target.value)' in source
     assert ".arc3-prolog-setup-state-json" in styles
+    # The JSON editor loads the contents of <PATH>/<PROP_FILE> from the workspace.
+    assert "const loadSetupStateJson = async (stackIndex: number, imageIndex: number, dir: string, fileName: string) =>" in source
+    assert "fetch(workspaceAssetUrl(workspaceId, rel)" in source
+    assert 'loadSetupStateJson(stackIndex, imageIndex, setup.stateDir ?? stateDirDefault, setup.stateFile ?? "state.json")' in source
+    # The editor is hidden inside the DIR & PROPERTIES expander (before BEFORE & COMMAND).
+    assert source.index("<summary>DIR &amp; PROPERTIES</summary>") < source.index('className="arc3-prolog-setup-state-json"') < source.index("<summary>BEFORE &amp; COMMAND</summary>")
     # DIR & PROPERTIES sits at the top of each setup, before BEFORE & COMMAND.
     assert source.index("<summary>DIR &amp; PROPERTIES</summary>") < source.index("<summary>BEFORE &amp; COMMAND</summary>")
