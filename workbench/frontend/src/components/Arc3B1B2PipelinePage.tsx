@@ -2516,6 +2516,21 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
     downloadTextFallback(suggested, content);
   };
 
+  const saveEntryFileAs = async (path: string) => {
+    const rel = normalizeAssetPath(path).replace(/^\/+/, "");
+    if (!rel) return;
+    let content = "";
+    if (workspaceId) {
+      try {
+        const response = await fetch(workspaceAssetUrl(workspaceId, rel), { cache: "no-store" });
+        if (response.ok) content = await response.text();
+      } catch {
+        // Save whatever we could read (possibly empty) rather than blocking.
+      }
+    }
+    await saveTextFileAs(rel, content);
+  };
+
   const saveDataFile = async (path: string, content: string): Promise<boolean> => {
     const clean = normalizeAssetPath(path).replace(/^\/+/, "");
     if (!clean) {
@@ -3492,6 +3507,12 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                           className="secondary arc3-prolog-browse-btn arc3-prolog-object-image-remove"
                           onClick={() => removeSetupEntry(stackIndex, imageIndex, field, entryIndex)}
                         >Remove</button>
+                        {options?.editable && <button
+                          type="button"
+                          className="secondary arc3-prolog-browse-btn arc3-prolog-setup-entry-saveas"
+                          title="Save this file to your computer"
+                          onClick={() => void saveEntryFileAs(entry.name)}
+                        >Save as..</button>}
                       </div>
                     </label>
                     {kind === "image"

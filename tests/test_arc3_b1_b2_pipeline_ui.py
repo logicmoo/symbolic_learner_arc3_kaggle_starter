@@ -442,6 +442,10 @@ def test_b1_b2_file_groups_have_edit_new_editors() -> None:
     assert "const saveTextFileAs = async (fileName: string, content: string) =>" in source
     assert "void saveTextFileAs(editorName, editorText)" in source
     assert "showSaveFilePicker" in source
+    # Each editable row also exposes a [Save as..] that downloads the file's content.
+    assert "const saveEntryFileAs = async (path: string) =>" in source
+    assert 'className="secondary arc3-prolog-browse-btn arc3-prolog-setup-entry-saveas"' in source
+    assert "void saveEntryFileAs(entry.name)" in source
     assert "const ok = await saveDataFile(path, editorText);" in source
     assert "renderFileEditor(`edit:${field}:${setup.id}:${entryIndex}`," in source
     assert "renderFileEditor(`new:${field}:${setup.id}`, (path) => appendSetupEntryPath(stackIndex, imageIndex, field, path))" in source
