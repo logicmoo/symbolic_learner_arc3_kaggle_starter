@@ -47,6 +47,10 @@ from workspace_credentials import bootstrap_backend_credential, credential_statu
 router = APIRouter(prefix="/workspaces", tags=["workspaces"])
 
 TEXT_SUFFIXES = {".json", ".md", ".txt", ".py", ".pl", ".metta", ".yaml", ".yml", ".toml"}
+# Suffixes that may be written verbatim through PUT /{workspace_id}/data-file. This
+# superset of TEXT_SUFFIXES adds the setup-panel file-group extensions (.eng/.prompt)
+# so the [edit]/[new] editors can round-trip their bytes without JSON/resource mangling.
+DATA_FILE_SUFFIXES = TEXT_SUFFIXES | {".eng", ".prompt"}
 IGNORED_DIRECTORIES = {".git", ".venv", "node_modules", "__pycache__"}
 WORKSPACE_DISCOVERY_CACHE_SECONDS = 60.0
 _workspace_cache_lock = RLock()
@@ -1364,4 +1368,38 @@ def write_workspace_file(workspace_id: str, body: dict[str, Any] = Body(...)) ->
     except KeyError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error
     except (OSError, ValueError, json.JSONDecodeError) as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+
+@router.put("/{workspace_id}/data-file")
+def write_workspace_data_file(workspace_id: str, body: dict[str, Any] = Body(...)) -> dict[str, Any]:
+    """Write a text file verbatim, bypassing all resource/JSON handling.
+
+    Unlike ``PUT /{workspace_id}/file`` this endpoint never injects a ``kind`` field,
+    never relocates the target to a canonical resource path, and never synchronizes
+    parent backlinks. The setup panel's [scan]/state-editor save and the file-group
+    [edit]/[new] editors rely on the on-disk bytes round-tripping exactly (e.g. a plain
+    ``state.json`` must not gain a ``kind``). Writable suffixes are limited to
+    ``DATA_FILE_SUFFIXES``; other types fall back to a client-side download.
+    """
+    try:
+        workspace = _resolve_workspace(workspace_id)
+        root = Path(workspace["root"])
+        relative = str(body.get("path") or "")
+        if not relative:
+            raise ValueError("path is required")
+        target = _safe_child(root, relative)
+        if target.suffix.lower() not in DATA_FILE_SUFFIXES:
+            raise ValueError("file type is not writable as raw text")
+        content = body.get("content")
+        if not isinstance(content, str):
+            raise ValueError("content must be a string")
+        resources = get_filesystem_provider()
+        resources.make_directory(target.parent)
+        resources.write_text(target, content)
+        invalidate_workspace_discovery()
+        return {"file": {**_file_record(root, target), "content": content}}
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+    except (OSError, ValueError) as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
