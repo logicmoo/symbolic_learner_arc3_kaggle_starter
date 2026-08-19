@@ -482,6 +482,13 @@ label.arc3-prolog-inline-composite-label > .arc3-prolog-selected-source-chips {
   padding: 0.15rem 0.35rem;
 }
 
+.arc3-prolog-setup-state-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.35rem;
+}
+
 .arc3-prolog-setup-state-json {
   width: 100%;
   min-height: 8rem;

@@ -302,6 +302,14 @@ def test_b1_b2_setup_has_dir_properties_node() -> None:
     assert "const loadSetupStateJson = async (stackIndex: number, imageIndex: number, dir: string, fileName: string) =>" in source
     assert "fetch(workspaceAssetUrl(workspaceId, rel)" in source
     assert 'loadSetupStateJson(stackIndex, imageIndex, setup.stateDir ?? stateDirDefault, setup.stateFile ?? "state.json")' in source
+    # Load button carries no filename in its label; a Save as.. button sits beside it.
+    assert ">Load</button>" in source
+    assert "Load {(setup.stateFile ?? " not in source
+    assert ">Save as..</button>" in source
+    assert "const saveSetupStateJson = async (fileName: string, content: string) =>" in source
+    assert 'saveSetupStateJson(setup.stateFile ?? "state.json", setup.stateJson ?? "")' in source
+    assert "showSaveFilePicker" in source
+    assert ".arc3-prolog-setup-state-actions" in styles
     # The editor is hidden inside the DIR & PROPERTIES expander (before BEFORE & COMMAND).
     assert source.index("<summary>DIR &amp; PROPERTIES</summary>") < source.index('className="arc3-prolog-setup-state-json"') < source.index("<summary>BEFORE &amp; COMMAND</summary>")
     # DIR & PROPERTIES sits at the top of each setup, before BEFORE & COMMAND.

@@ -2376,6 +2376,39 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
     }
   };
 
+  const saveSetupStateJson = async (fileName: string, content: string) => {
+    const suggested = (normalizeAssetPath(fileName).split("/").pop() || "state.json") || "state.json";
+    const picker = (window as unknown as {
+      showSaveFilePicker?: (options: {
+        suggestedName?: string;
+        types?: Array<{ description?: string; accept: Record<string, string[]> }>;
+      }) => Promise<{ createWritable: () => Promise<{ write: (data: string) => Promise<void>; close: () => Promise<void> }> }>;
+    }).showSaveFilePicker;
+    if (typeof picker === "function") {
+      try {
+        const handle = await picker({
+          suggestedName: suggested,
+          types: [{ description: "JSON", accept: { "application/json": [".json"] } }],
+        });
+        const writable = await handle.createWritable();
+        await writable.write(content);
+        await writable.close();
+        return;
+      } catch (reason) {
+        if (reason instanceof DOMException && reason.name === "AbortError") return;
+      }
+    }
+    const blob = new Blob([content], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = suggested;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+  };
+
   const captureImageAnalysis = (stackIndex: number, runnerIndex: number, imageIndex: number) => {
     setStackState(stackIndex, (stack) => {
       const runner = stack.runners[runnerIndex];
@@ -3205,11 +3238,18 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                     onChange={(event) => setSetupStateField(stackIndex, imageIndex, "stateFile", event.target.value)}
                   />
                 </label>
-                <button
-                  type="button"
-                  className="secondary arc3-prolog-setup-state-load"
-                  onClick={() => void loadSetupStateJson(stackIndex, imageIndex, setup.stateDir ?? stateDirDefault, setup.stateFile ?? "state.json")}
-                >Load {(setup.stateFile ?? "state.json")}</button>
+                <div className="arc3-prolog-setup-state-actions">
+                  <button
+                    type="button"
+                    className="secondary arc3-prolog-setup-state-load"
+                    onClick={() => void loadSetupStateJson(stackIndex, imageIndex, setup.stateDir ?? stateDirDefault, setup.stateFile ?? "state.json")}
+                  >Load</button>
+                  <button
+                    type="button"
+                    className="secondary arc3-prolog-setup-state-saveas"
+                    onClick={() => void saveSetupStateJson(setup.stateFile ?? "state.json", setup.stateJson ?? "")}
+                  >Save as..</button>
+                </div>
                 <textarea
                   className="arc3-prolog-setup-state-json"
                   value={setup.stateJson ?? ""}
