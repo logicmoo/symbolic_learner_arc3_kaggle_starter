@@ -3280,26 +3280,29 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
               </details>
               <details className="arc3-prolog-setup-extra arc3-prolog-setup-state">
                 <summary>STATE</summary>
-                <label className="arc3-prolog-inline-select-label">
-                  <span>DIRECTORY</span>
-                  <input
-                    className="arc3-prolog-setup-inline-input"
-                    type="text"
-                    value={setup.stateDir ?? stateDirDefault}
-                    placeholder="data/level_1/LEFT"
-                    onChange={(event) => setSetupStateField(stackIndex, imageIndex, "stateDir", event.target.value)}
-                  />
-                </label>
-                <label className="arc3-prolog-inline-select-label">
-                  <span>PROPERTIES</span>
-                  <input
-                    className="arc3-prolog-setup-inline-input"
-                    type="text"
-                    value={setup.stateFile ?? "state.json"}
-                    placeholder="state.json"
-                    onChange={(event) => setSetupStateField(stackIndex, imageIndex, "stateFile", event.target.value)}
-                  />
-                </label>
+                <details className="arc3-prolog-setup-extra arc3-prolog-setup-dir-props">
+                  <summary>DIR_PROPS</summary>
+                  <label className="arc3-prolog-inline-select-label">
+                    <span>DIRECTORY</span>
+                    <input
+                      className="arc3-prolog-setup-inline-input"
+                      type="text"
+                      value={setup.stateDir ?? stateDirDefault}
+                      placeholder="data/level_1/LEFT"
+                      onChange={(event) => setSetupStateField(stackIndex, imageIndex, "stateDir", event.target.value)}
+                    />
+                  </label>
+                  <label className="arc3-prolog-inline-select-label">
+                    <span>PROPERTIES</span>
+                    <input
+                      className="arc3-prolog-setup-inline-input"
+                      type="text"
+                      value={setup.stateFile ?? "state.json"}
+                      placeholder="state.json"
+                      onChange={(event) => setSetupStateField(stackIndex, imageIndex, "stateFile", event.target.value)}
+                    />
+                  </label>
+                </details>
                 <textarea
                   className="arc3-prolog-setup-state-json"
                   value={setup.stateJson ?? ""}

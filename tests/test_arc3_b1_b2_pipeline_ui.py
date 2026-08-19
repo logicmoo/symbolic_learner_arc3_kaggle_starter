@@ -264,6 +264,8 @@ def test_b1_b2_setup_has_collapsed_state_node() -> None:
     assert '<details className="arc3-prolog-setup-extra arc3-prolog-setup-state">' in source
     assert "<summary>STATE</summary>" in source
     # DIRECTORY + PROPERTIES (state.json) fields and an editable JSON textarea.
+    assert '<details className="arc3-prolog-setup-extra arc3-prolog-setup-dir-props">' in source
+    assert "<summary>DIR_PROPS</summary>" in source
     assert "<span>DIRECTORY</span>" in source
     assert 'placeholder="data/level_1/LEFT"' in source
     assert "<span>PROPERTIES</span>" in source
