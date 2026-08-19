@@ -520,8 +520,10 @@ label.arc3-prolog-inline-composite-label > .arc3-prolog-selected-source-chips {
 .arc3-b1b2-page .english-workflow-columns {
   display: grid;
   grid-template-columns: minmax(260px, 1fr) minmax(340px, 1.2fr) minmax(260px, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   gap: 10px;
-  overflow: auto;
+  height: calc(100vh - 100px);
+  overflow: hidden;
 }
 
 .arc3-b1b2-page .english-workflow-columns > .workflow-page-data,
@@ -529,6 +531,9 @@ label.arc3-prolog-inline-composite-label > .arc3-prolog-selected-source-chips {
 .arc3-b1b2-page .english-workflow-columns > .workflow-page-details {
   display: block;
   min-width: 0;
+  min-height: 0;
+  max-height: 100%;
+  overflow-y: auto;
 }
 
 /* Single "B only" stack: let the runner fill the full column width. */
