@@ -119,8 +119,41 @@ def test_b1_b2_identity_parser_accepts_bbox_and_corners() -> None:
     assert "bbox is accepted as an alias" in source
 
 
-def test_b1_b2_setup_field_labeled_before_image() -> None:
+def test_b1_b2_setup_field_labeled_after_image() -> None:
     source = COMPONENT.read_text(encoding="utf-8")
-    # The per-setup image path field is the before/input image for removal.
+    # The setup image fields use explicit BEFORE/AFTER labels, never a bare "IMAGE PATH".
+    assert "<span>AFTER_IMAGE PATH</span>" in source
     assert "<span>BEFORE_IMAGE PATH</span>" in source
     assert "<span>IMAGE PATH</span>" not in source
+
+
+def test_b1_b2_setup_generated_files_in_input_picker() -> None:
+    source = COMPONENT.read_text(encoding="utf-8")
+    # Options builder: each setup's generated subimages + text outputs become
+    # individual INPUT_FILES options keyed by setup id + analysis item key.
+    assert "value: `setup-file:${setup.id}:${item.key}`," in source
+    assert "label: `SETUP ${setupOrdinal + 1} FILE ${item.label} (${columnState.key})`," in source
+    assert "...(setup.analysis?.subimages || [])," in source
+    assert "...(setup.analysis?.textFiles || [])," in source
+    # Resolver: setup-file tokens resolve to the analysis item content.
+    assert "const setupFileMatch = /^setup-file:([^:]+):(.+)$/i.exec(trimmed);" in source
+    assert "[...setup.analysis.subimages, ...setup.analysis.textFiles]" in source
+    # Chip display stays readable for the new token.
+    assert "const setupFile = /^setup-file:[^:]+:(.+)$/i.exec(trimmed);" in source
+    assert 'if (setupFile) return `SETUP_FILE ${setupFile[1]}`;' in source
+
+
+def test_b1_b2_setup_has_before_image_and_command_fields() -> None:
+    source = COMPONENT.read_text(encoding="utf-8")
+    # Each setup exposes editable COMMAND and BEFORE_IMAGE PATH fields
+    # alongside the existing AFTER_IMAGE PATH field.
+    assert "<span>COMMAND</span>" in source
+    assert "<span>BEFORE_IMAGE PATH</span>" in source
+    assert "<span>AFTER_IMAGE PATH</span>" in source
+    # Wired to dedicated setters that update the setup in place.
+    assert "const setSetupCommand = (stackIndex: number, imageIndex: number, command: string) =>" in source
+    assert "const setBeforeImagePath = (stackIndex: number, imageIndex: number, path: string) =>" in source
+    assert "onChange={(event) => setSetupCommand(stackIndex, imageIndex, event.target.value)}" in source
+    assert "onChange={(event) => setBeforeImagePath(stackIndex, imageIndex, event.target.value)}" in source
+    assert "value={setup.command}" in source
+    assert 'value={setup.beforeImage?.name || ""}' in source

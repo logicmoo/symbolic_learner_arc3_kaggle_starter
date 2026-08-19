@@ -738,6 +738,21 @@ function resolveReferenceToken(
 ): { label: string; content: string } | null {
   const trimmed = token.trim();
   if (!trimmed) return null;
+  const setupFileMatch = /^setup-file:([^:]+):(.+)$/i.exec(trimmed);
+  if (setupFileMatch) {
+    const setupId = setupFileMatch[1];
+    const fileKey = setupFileMatch[2];
+    for (const stack of stacks) {
+      const setup = (stack.setups || []).find((candidate) => candidate.id === setupId);
+      if (!setup?.analysis) continue;
+      const item = [...setup.analysis.subimages, ...setup.analysis.textFiles]
+        .find((file) => file.key === fileKey);
+      if (item) {
+        return { label: `${setup.label || setupId} / ${item.label}`, content: item.value };
+      }
+    }
+    return null;
+  }
   const columnTextMatch = /^([ABCX])_(generated|command)$/i.exec(trimmed);
   if (columnTextMatch) {
     const stackToken = columnTextMatch[1].toUpperCase();
@@ -909,6 +924,8 @@ function isGeneratedToken(value: string): boolean {
 function displayFieldToken(value: string): string {
   const trimmed = value.trim();
   if (/^ALL-Setup[0-9]+$/i.test(trimmed)) return trimmed;
+  const setupFile = /^setup-file:[^:]+:(.+)$/i.exec(trimmed);
+  if (setupFile) return `SETUP_FILE ${setupFile[1]}`;
   const prompt = /^(?:[ABC](?:_[0-9]+)?_)?PROMPT$/i.exec(trimmed)
     || /^(?:[ABCX])_PROMPT[0-9]+$/i.exec(trimmed)
     || /^(?:[ABCX])(?:_([0-9]+))?_PROMPT$/i.exec(trimmed);
@@ -2250,6 +2267,34 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
     });
   };
 
+  const setBeforeImagePath = (stackIndex: number, imageIndex: number, path: string) => {
+    setStackState(stackIndex, (stack) => {
+      const setups = stack.setups?.length ? [...stack.setups] : defaultSetups(stack.key);
+      const current = setups[imageIndex];
+      if (!current) return stack;
+      const nextImage = path.trim()
+        ? imageSelectionFromPath(workspaceId, path, current.beforeImage || undefined)
+        : null;
+      setups[imageIndex] = { ...current, beforeImage: nextImage };
+      const active = stack.selectedImageIndex ?? 0;
+      return {
+        ...stack,
+        setups,
+        beforeImage: imageIndex === active ? nextImage : stack.beforeImage,
+      };
+    });
+  };
+
+  const setSetupCommand = (stackIndex: number, imageIndex: number, command: string) => {
+    setStackState(stackIndex, (stack) => {
+      const setups = stack.setups?.length ? [...stack.setups] : defaultSetups(stack.key);
+      const current = setups[imageIndex];
+      if (!current) return stack;
+      setups[imageIndex] = { ...current, command };
+      return { ...stack, setups };
+    });
+  };
+
   const addImage = (stackIndex: number) => {
     setStackState(stackIndex, (stack) => {
       const setups = stack.setups?.length ? [...stack.setups] : defaultSetups(stack.key);
@@ -2939,7 +2984,28 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
               accessories={<button type="button" className={isActive ? "" : "secondary"} onClick={() => selectImage(stackIndex, imageIndex)}>{isActive ? "Selected" : "Select"}</button>}
             >
               <label className="arc3-prolog-inline-select-label">
+                <span>COMMAND</span>
+                <input
+                  className="arc3-prolog-setup-inline-input"
+                  type="text"
+                  value={setup.command}
+                  onChange={(event) => setSetupCommand(stackIndex, imageIndex, event.target.value)}
+                />
+              </label>
+              <label className="arc3-prolog-inline-select-label">
                 <span>BEFORE_IMAGE PATH</span>
+                <input
+                  className="arc3-prolog-setup-inline-input"
+                  type="text"
+                  value={setup.beforeImage?.name || ""}
+                  onChange={(event) => setBeforeImagePath(stackIndex, imageIndex, event.target.value)}
+                />
+              </label>
+              {setup.beforeImage?.dataUrl
+                ? <img className="arc3-prolog-preview" src={setup.beforeImage.dataUrl} alt={`${setup.label || `image_${imageIndex + 1}`} before image`} />
+                : <div className="arc3-prolog-setup-preview-placeholder">No before image</div>}
+              <label className="arc3-prolog-inline-select-label">
+                <span>AFTER_IMAGE PATH</span>
                 <input
                   className="arc3-prolog-setup-inline-input"
                   type="text"
@@ -3241,6 +3307,17 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                             label: `SETUP ${setupOrdinal + 1} AFTER IMAGE (${columnState.key})`,
                           },
                         ]))
+                      )),
+                      ...stackColumns.flatMap((columnState) => (
+                        (columnState.setups || []).flatMap((setup, setupOrdinal) => (
+                          [
+                            ...(setup.analysis?.subimages || []),
+                            ...(setup.analysis?.textFiles || []),
+                          ].map((item) => ({
+                            value: `setup-file:${setup.id}:${item.key}`,
+                            label: `SETUP ${setupOrdinal + 1} FILE ${item.label} (${columnState.key})`,
+                          }))
+                        ))
                       )),
                     ]);
                     const otherColumnsAC = activeStackColumns
