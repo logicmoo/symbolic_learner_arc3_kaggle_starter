@@ -3245,7 +3245,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                       <img className="arc3-prolog-preview" src={item.value} alt={item.label} />
                     </figure>)}
                   </div>
-                  : <small>No subimages yet. Run B1 on this image.</small>}
+                  : null}
               </details>
               {renderSetupCollectionGroup("groupImages", "GRP_IMAGES", "GROUP", "image", [...IMAGE_SUFFIXES])}
               {renderSetupCollectionGroup("plFiles", "PL_FILES", "PL", "file", [".pl"])}
