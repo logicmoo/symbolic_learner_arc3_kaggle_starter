@@ -7,7 +7,7 @@
   "menuPlacement": "middle",
   "order": 36,
   "routeView": "arc3B1B2Pipeline",
-  "renderer": "arc3_prompt_prolog",
+  "renderer": "arc3_b1_b2_pipeline",
   "layout": {
     "kind": "three_column_accordion",
     "columns": [

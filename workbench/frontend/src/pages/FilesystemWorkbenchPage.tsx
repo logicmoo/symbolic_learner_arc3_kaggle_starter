@@ -116,6 +116,11 @@ const Arc3PromptPrologPage = lazy(() =>
     default: module.Arc3PromptPrologPage,
   })),
 );
+const Arc3B1B2PipelinePage = lazy(() =>
+  import("../components/Arc3B1B2PipelinePage").then((module) => ({
+    default: module.Arc3B1B2PipelinePage,
+  })),
+);
 const WorkflowPageBuilder = lazy(() =>
   import("../components/WorkflowPageBuilder").then((module) => ({
     default: module.WorkflowPageBuilder,
@@ -3501,6 +3506,15 @@ export function FilesystemWorkbenchPage() {
                   models={workflowRunnerModels}
                   operations={operationLibrary.operations.flatMap((record) => record.document ? [record.document] : [])}
                   operationImplementations={operationLibrary.operationImplementations.flatMap((record) => record.document ? [record.document] : [])}
+                  onPageDefinitionSaved={refreshSnapshot}
+                />
+              ) : workflowPageForView.renderer === "arc3_b1_b2_pipeline" ? (
+                <Arc3B1B2PipelinePage
+                  pageDefinition={workflowPageForView}
+                  workspaceId={workspace.id}
+                  workspaceLabel={workspace.label}
+                  models={workflowRunnerModels}
+                  files={snapshot?.files || []}
                   onPageDefinitionSaved={refreshSnapshot}
                 />
               ) : workflowPageForView.renderer === "arc3_prompt_prolog" ? (

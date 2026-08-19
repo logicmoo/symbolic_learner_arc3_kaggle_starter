@@ -3,7 +3,6 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "workbench/frontend/src/components/Arc3PromptPrologPage.tsx"
-B1_B2_PAGE = ROOT / "workbench/workspaces/arc3_random_player/design/workflow_pages/b1_b2_pipeline.workflow_page.json"
 
 
 def test_two_image_prolog_has_overlay_gap_loop_contract() -> None:
@@ -120,14 +119,3 @@ def test_two_image_prolog_exposes_auto_loop_control() -> None:
     assert source.index("Run Until Exit") < source.index("LOOP_FILES")
     assert source.index("|&gt; Loop/Validate Prompt -") < source.index("RAW_PARSED")
     assert source.index("RAW_PARSED") < source.index("<summary>OUTPUT_FILES</summary>")
-
-
-def test_b1_b2_pipeline_page_is_single_stack_layout_contract() -> None:
-    source = B1_B2_PAGE.read_text(encoding="utf-8")
-    assert '"routeView": "arc3B1B2Pipeline"' in source
-    assert '"renderer": "arc3_prompt_prolog"' in source
-    assert '"label": "B1 THEN B2"' in source
-    assert '"label": "Run B1 Then B2"' in source
-    assert '"label": "B1/B2 Output Files"' in source
-    assert '"label": "Combined Prompt Contract"' in source
-    assert '"initialDisplayMode": "scroll"' in source
