@@ -517,8 +517,10 @@ function stackADescendSetupsFromFiles(workspaceId: string, files: WorkspaceFileR
   const compareByTree = (left: string, right: string) => {
     const topLeft = topFolder(left);
     const topRight = topFolder(right);
-    if (topLeft !== topRight) return topLeft.localeCompare(topRight);
-    return descendDepth(left) - descendDepth(right) || left.localeCompare(right);
+    // Numeric-aware compare so numbered siblings (0,1,2,...,10) and level_2/level_10
+    // order naturally rather than as raw strings.
+    if (topLeft !== topRight) return topLeft.localeCompare(topRight, undefined, { numeric: true });
+    return descendDepth(left) - descendDepth(right) || left.localeCompare(right, undefined, { numeric: true });
   };
   const imageCandidates = files
     .filter((file) => IMAGE_SUFFIXES.has((file.suffix || "").toLowerCase()))
