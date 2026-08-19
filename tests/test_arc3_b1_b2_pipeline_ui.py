@@ -233,23 +233,18 @@ def test_b1_b2_setup_sub_images_grouped_after_obj_images() -> None:
     assert obj_index < sub_index < grp_index
 
 
-def test_b1_b2_setup_has_properties_editor() -> None:
+def test_b1_b2_setup_has_no_properties_editor() -> None:
     source = COMPONENT.read_text(encoding="utf-8")
     styles = STYLES.read_text(encoding="utf-8")
-    # Per-setup key/value properties data model.
-    assert "type SetupProperty = {" in source
-    assert "properties?: SetupProperty[];" in source
-    # Add/edit/remove setters wired to the setup in place.
-    assert "const addSetupProperty = (stackIndex: number, imageIndex: number) =>" in source
-    assert 'const setSetupProperty = (stackIndex: number, imageIndex: number, propIndex: number, field: "key" | "value", value: string) =>' in source
-    assert "const removeSetupProperty = (stackIndex: number, imageIndex: number, propIndex: number) =>" in source
-    # A PROPERTIES group with a key input, a value input, and an add button.
-    assert "`PROPERTIES (${(setup.properties || []).length})`" in source
-    assert 'placeholder="key"' in source
-    assert 'placeholder="value"' in source
-    assert "addSetupProperty(stackIndex, imageIndex)" in source
-    assert ">Add property</button>" in source
-    assert ".arc3-prolog-property-fields" in styles
+    # The per-setup key/value PROPERTIES editor has been removed entirely.
+    assert "type SetupProperty = {" not in source
+    assert "properties?: SetupProperty[];" not in source
+    assert "addSetupProperty" not in source
+    assert "setSetupProperty" not in source
+    assert "removeSetupProperty" not in source
+    assert "`PROPERTIES (${(setup.properties || []).length})`" not in source
+    assert ">Add property</button>" not in source
+    assert ".arc3-prolog-property-fields" not in styles
 
 
 def test_b1_b2_setup_has_collapsed_state_node() -> None:

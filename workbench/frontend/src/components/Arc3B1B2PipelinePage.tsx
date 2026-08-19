@@ -138,16 +138,10 @@ type StackSetup = {
   jsonFiles?: ImageSelection[];
   mettaFiles?: ImageSelection[];
   promptFiles?: ImageSelection[];
-  properties?: SetupProperty[];
   stateDir?: string;
   stateFile?: string;
   stateJson?: string;
   analysis?: ImageAnalysis;
-};
-
-type SetupProperty = {
-  key: string;
-  value: string;
 };
 
 type SetupCollectionField =
@@ -2359,42 +2353,6 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
     });
   };
 
-  const addSetupProperty = (stackIndex: number, imageIndex: number) => {
-    setStackState(stackIndex, (stack) => {
-      const setups = stack.setups?.length ? [...stack.setups] : defaultSetups(stack.key);
-      const current = setups[imageIndex];
-      if (!current) return stack;
-      const properties = [...(current.properties || []), { key: "", value: "" }];
-      setups[imageIndex] = { ...current, properties };
-      return { ...stack, setups };
-    });
-  };
-
-  const setSetupProperty = (stackIndex: number, imageIndex: number, propIndex: number, field: "key" | "value", value: string) => {
-    setStackState(stackIndex, (stack) => {
-      const setups = stack.setups?.length ? [...stack.setups] : defaultSetups(stack.key);
-      const current = setups[imageIndex];
-      if (!current) return stack;
-      const properties = [...(current.properties || [])];
-      const existing = properties[propIndex];
-      if (!existing) return stack;
-      properties[propIndex] = { ...existing, [field]: value };
-      setups[imageIndex] = { ...current, properties };
-      return { ...stack, setups };
-    });
-  };
-
-  const removeSetupProperty = (stackIndex: number, imageIndex: number, propIndex: number) => {
-    setStackState(stackIndex, (stack) => {
-      const setups = stack.setups?.length ? [...stack.setups] : defaultSetups(stack.key);
-      const current = setups[imageIndex];
-      if (!current) return stack;
-      const properties = (current.properties || []).filter((_, index) => index !== propIndex);
-      setups[imageIndex] = { ...current, properties };
-      return { ...stack, setups };
-    });
-  };
-
   const setSetupStateField = (stackIndex: number, imageIndex: number, field: "stateDir" | "stateFile" | "stateJson", value: string) => {
     setStackState(stackIndex, (stack) => {
       const setups = stack.setups?.length ? [...stack.setups] : defaultSetups(stack.key);
@@ -3217,40 +3175,6 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
               {setup.afterImage.dataUrl
                 ? <img className="arc3-prolog-preview" src={setup.afterImage.dataUrl} alt={`${setup.label || `image_${imageIndex + 1}`} image`} />
                 : <div className="arc3-prolog-setup-preview-placeholder">No image</div>}
-              <details open className="arc3-prolog-setup-object-images">
-                <summary>{`PROPERTIES (${(setup.properties || []).length})`}</summary>
-                {(setup.properties || []).map((prop, propIndex) => <div
-                  key={`property-${setup.id}-${propIndex}`}
-                  className="arc3-prolog-object-image-row arc3-prolog-property-row"
-                >
-                  <div className="arc3-prolog-property-fields">
-                    <input
-                      className="arc3-prolog-setup-inline-input arc3-prolog-property-key"
-                      type="text"
-                      value={prop.key}
-                      placeholder="key"
-                      onChange={(event) => setSetupProperty(stackIndex, imageIndex, propIndex, "key", event.target.value)}
-                    />
-                    <input
-                      className="arc3-prolog-setup-inline-input arc3-prolog-property-value"
-                      type="text"
-                      value={prop.value}
-                      placeholder="value"
-                      onChange={(event) => setSetupProperty(stackIndex, imageIndex, propIndex, "value", event.target.value)}
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    className="secondary arc3-prolog-object-image-remove"
-                    onClick={() => removeSetupProperty(stackIndex, imageIndex, propIndex)}
-                  >Remove</button>
-                </div>)}
-                <button
-                  type="button"
-                  className="secondary"
-                  onClick={() => addSetupProperty(stackIndex, imageIndex)}
-                >Add property</button>
-              </details>
               {renderSetupCollectionGroup("objectImages", "OBJ_IMAGES", "OBJECT", "image", [...IMAGE_SUFFIXES])}
               <details open>
                 <summary>{`SUB_IMAGES (${subimages.length})`}</summary>
