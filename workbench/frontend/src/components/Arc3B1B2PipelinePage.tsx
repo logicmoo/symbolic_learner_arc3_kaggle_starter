@@ -1818,7 +1818,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
     }),
     [enabledModels],
   );
-  const preferredModelId = enabledModels.find((model) => model.id === "minimax/minimax-m3")?.id || "";
+  const preferredModelId = enabledModels.find((model) => /gemma[-_/]4([^0-9]|$)/.test(normalizedModelName(model)))?.id || "";
   const defaultModelId = enabledModels[0]?.id || "";
   const [stackColumns, setStackColumns] = useState<StackColumnState[]>(
     () => activeStackColumns.map((column) => ({
