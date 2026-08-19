@@ -2568,10 +2568,10 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
         else if (name.startsWith("grp")) results.grp_images.push(candidate);
         else results.sub_images.push(candidate);
       } else if (suffix === ".pl") results.pl_files.push(candidate);
-      else if (suffix === ".eng") results.eng_files.push(candidate);
       else if (suffix === ".json") results.json_files.push(candidate);
       else if (suffix === ".metta") results.metta_files.push(candidate);
       else if (suffix === ".prompt") results.prompt_files.push(candidate);
+      else if (name.includes("eng")) results.eng_files.push(candidate);
       else results.unknown_files.push(candidate);
     }
     for (const key of Object.keys(results)) results[key].sort();
@@ -3694,7 +3694,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
               {renderSetupCollectionGroup("engFiles", "ENG_FILES", "ENG", "file", [".eng"], {
                 defaultOpen: false,
                 editable: true,
-                placeholder: `${pathPrefix}/*.eng`,
+                placeholder: `${pathPrefix}/*eng*`,
               })}
               {renderSetupCollectionGroup("jsonFiles", "JSON_FILES", "JSON", "file", [".json"], {
                 defaultOpen: false,

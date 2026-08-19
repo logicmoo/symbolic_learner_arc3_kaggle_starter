@@ -366,6 +366,10 @@ def test_b1_b2_setup_path_scan_writes_scan_results() -> None:
         assert f"{bucket}:" in source or f"results.{bucket}.push" in source
     assert 'if (name.startsWith("obj")) results.obj_images.push(candidate);' in source
     assert 'else if (name.startsWith("grp")) results.grp_images.push(candidate);' in source
+    # ENG uses a *eng* filename mask (matches e.g. .english), checked after the specific
+    # suffixes and just before the unknown fallthrough.
+    assert 'else if (name.includes("eng")) results.eng_files.push(candidate);' in source
+    assert source.index("results.prompt_files.push") < source.index('name.includes("eng")') < source.index("results.unknown_files.push")
     # The scan merges into (rather than replaces) a parseable state.json document.
     assert "base.scan = { path: prefix, results };" in source
     assert "JSON.stringify(base, null, 2)" in source
