@@ -357,8 +357,8 @@ const REMOVAL_DISCOVERY_PASS_PROMPT = [
   "DOCUMENT MUTATION: take the document you were given and tag the extracted object with extracted=true, extracted_to=obj_<ID>.png, and extracted_from set to the original image this pass consumed; note that later passes use the new _<n>_removed.png image as their original. Carry every other part of the received document forward unchanged — do not add or drop other entries.",
   "Always carry BOTH images forward for downstream processing: obj_<ID>.png (the extracted object) and image_without_object (the new original).",
   "BACKGROUND FILL: when the object is lifted out, its bounding-box region is automatically inpainted with the surrounding background (for example grass under a soccer player) so image_without_object stays clean — you do not need to ask for this.",
-  "OVERLAP REDRAW: if the extracted object was overlapping or occluding another object, redrawing the vacated region reconstructs the hidden part of that underlying object — whenever you redraw part of an overlapping object, put a note there naming the overlapped object and which part was redrawn.",
-  "META NOTES: a short note is recorded on the document that the vacated region was filled with background (added grass) for the extracted object; preserve any such meta notes you receive.",
+  "OVERLAP REDRAW: if the extracted object was overlapping or occluding another object, redrawing the vacated region reconstructs the hidden part of that underlying object — whenever you redraw part of an overlapping object, append an English note to that overlapped object's identity notes list saying which part was redrawn.",
+  "META NOTES: the English note that the vacated region was filled with background (added grass) is appended to the extracted object's identity notes list; preserve every note already in an identity's notes list.",
   "Set exit_value=next_iteration when one valid leaf object was extracted, loop_complete when no valid removable leaf object remains, llm_error on failure.",
 ].join("\n");
 const REGENERATED_IDENTITIES_PROMPT = [
@@ -3335,7 +3335,9 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                   if (Array.isArray(parsedRecord.current_identities)) {
                     parsedRecord.current_identities = (parsedRecord.current_identities as unknown[]).map((entry) => {
                       if (entry && typeof entry === "object" && String((entry as Record<string, unknown>).id || "") === removedId) {
-                        return { ...(entry as Record<string, unknown>), extracted: true, extracted_to: objFileName, extracted_from: consumedOriginal, new_original_image: newOriginalName, background_filled: true, background_fill_note: fillNote, background_fill_color: fillColor };
+                        const record = entry as Record<string, unknown>;
+                        const priorEntryNotes = Array.isArray(record.notes) ? (record.notes as unknown[]) : (record.notes ? [record.notes] : []);
+                        return { ...record, extracted: true, extracted_to: objFileName, extracted_from: consumedOriginal, new_original_image: newOriginalName, background_filled: true, background_fill_color: fillColor, notes: [...priorEntryNotes, fillNote] };
                       }
                       return entry;
                     });
