@@ -693,12 +693,21 @@ function parentImagePath(path: string): string {
   return candidate;
 }
 
+function directionLetter(name: string): string | null {
+  const map: Record<string, string> = { u: "U", d: "D", l: "L", r: "R", up: "U", down: "D", left: "L", right: "R" };
+  return map[name.trim().toLowerCase()] || null;
+}
+
+// For labels: abbreviate only direction folders (UP->U, DOWN->D, ...); keep others full.
+function labelSegment(name: string): string {
+  return directionLetter(name) || name;
+}
+
 function abbreviateSegment(name: string): string {
-  // Direction folders map to a single letter (L/R/U/D); anything else collapses to its
-  // first 3 non-vowel characters (uppercased) so the command stays compact.
-  const key = name.trim().toLowerCase();
-  const directions: Record<string, string> = { l: "L", r: "R", u: "U", d: "D", left: "L", right: "R", up: "U", down: "D" };
-  if (directions[key]) return directions[key];
+  // For commands: direction folders map to a single letter (L/R/U/D); anything else
+  // collapses to its first 3 non-vowel characters (uppercased) so the command stays compact.
+  const dir = directionLetter(name);
+  if (dir) return dir;
   const consonants = name.replace(/[aeiou]/gi, "");
   return (consonants || name).slice(0, 3).toUpperCase();
 }
@@ -762,7 +771,7 @@ function stackADescendSetupsFromFiles(workspaceId: string, files: WorkspaceFileR
     const beforeSelection: ImageSelection | null = beforePath
       ? { name: beforePath, dataUrl: workspaceAssetUrl(workspaceId, beforePath) }
       : null;
-    const dottedName = relPath(dir).split("/").filter(Boolean).join(".");
+    const dottedName = relPath(dir).split("/").filter(Boolean).map(labelSegment).join(".");
     return {
       id: `A-setup-${index + 1}`,
       label: dottedName || group || "default",
