@@ -179,6 +179,25 @@ def test_b1_b2_primary_prompt_combo_lists_all_prompts() -> None:
     assert "...(isB1B2PipelineRoute(pageDefinition.routeView) ? B1B2_ALL_PRIMARY_PROMPT_NAMES : [])," in source
 
 
+def test_b1_b2_prompt_registry_is_typed_and_sorted_by_applicability() -> None:
+    source = COMPONENT.read_text(encoding="utf-8")
+    # A typed prompt registry stores each prompt with input/output types and tags.
+    assert "type PromptDefinition = {" in source
+    assert "const B1B2_PROMPT_REGISTRY: PromptDefinition[] = [" in source
+    # Concrete + semantic type tags are used.
+    for tag in ['"file_png"', '"file_json"', '"file_pl"', '"image"', '"object_identities"', '"first_identities"', '"removal_images"', '"regenerated_identities"']:
+        assert tag in source
+    # Each runner role has an input/output profile used for scoring applicability.
+    assert "const B1B2_ROLE_PROFILE: Record<string, { inputs: PromptTypeTag[]; outputs: PromptTypeTag[] }>" in source
+    assert "function promptApplicabilityScore(optionName: string, role: string): number {" in source
+    # The combo is sorted by applicability (own runner slot first).
+    assert "primaryPromptNameOptions.sort((left, right) => {" in source
+    assert "promptApplicabilityScore(left, runnerRoleMode)" in source
+    # Options are labeled with their input/output types.
+    assert "function promptOptionLabel(optionName: string): string {" in source
+    assert "promptOptionLabel(option)" in source
+
+
 def test_b1_b2_setup_switch_expands_selected_to_full() -> None:
     source = COMPONENT.read_text(encoding="utf-8")
     # Switching setups collapses every column-1 image to a strip and expands the

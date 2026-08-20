@@ -377,6 +377,109 @@ const LEGACY_ROOT_GETTER_PROMPT = [
   "Prioritize broad, stable identity coverage over narrow per-pass edits.",
   COMBINED_PROMPT,
 ].join("\n\n");
+// Typed prompt registry: every B1B2 prompt with its concrete input/output types
+// (file_png, file_json, file_pl, file_metta, file_eng), semantic types (image,
+// object_identities, first_identities, current_identities, regenerated_identities,
+// removal_images), and free-form tags. The runner PRIMARY PROMPT combo uses this to
+// sort prompts by how applicable each is to the runner's role.
+type PromptTypeTag = string;
+type PromptDefinition = {
+  name: string;
+  text: string;
+  inputs: PromptTypeTag[];
+  outputs: PromptTypeTag[];
+  tags: string[];
+};
+const B1B2_PROMPT_REGISTRY: PromptDefinition[] = [
+  {
+    name: "generate_first_pass_object_guesses",
+    text: FIRST_PASS_OBJECT_GUESSES_PROMPT,
+    inputs: ["image", "file_png"],
+    outputs: ["first_identities", "object_identities", "file_json"],
+    tags: ["guess", "first_pass", "single_image"],
+  },
+  {
+    name: "generate_prolog_and_english",
+    text: COMBINED_PROMPT,
+    inputs: ["image", "file_png", "object_identities"],
+    outputs: ["current_identities", "object_identities", "objects_pl", "file_pl", "file_eng", "file_json"],
+    tags: ["extraction", "prolog", "english"],
+  },
+  {
+    name: "remove_smallest_object",
+    text: REMOVAL_DISCOVERY_PASS_PROMPT,
+    inputs: ["image", "file_png", "object_identities", "current_identities"],
+    outputs: ["removal_images", "file_png", "current_identities", "object_identities"],
+    tags: ["removal"],
+  },
+  {
+    name: "merge_identities",
+    text: MERGE_IDENTITIES_PROMPT,
+    inputs: ["object_identities", "file_json"],
+    outputs: ["current_identities", "object_identities", "file_json"],
+    tags: ["merge"],
+  },
+  {
+    name: "regenerated_identities_from_many_objects",
+    text: REGENERATED_IDENTITIES_PROMPT,
+    inputs: ["removal_images", "file_png", "object_identities"],
+    outputs: ["current_identities", "regenerated_identities", "object_identities", "file_json"],
+    tags: ["regenerated"],
+  },
+  {
+    name: "legacy_root_getter",
+    text: LEGACY_ROOT_GETTER_PROMPT,
+    inputs: ["image", "file_png", "object_identities"],
+    outputs: ["current_identities", "object_identities", "file_pl", "file_eng", "file_json"],
+    tags: ["extraction", "legacy"],
+  },
+];
+// Which registered content prompt backs each runner role, and the input/output type
+// profile the role expects (used to score prompt applicability).
+const B1B2_ROLE_CONTENT_PROMPT: Record<string, string> = {
+  guess: "generate_first_pass_object_guesses",
+  extraction: "generate_prolog_and_english",
+  removal: "remove_smallest_object",
+  merge: "merge_identities",
+  regenerated: "regenerated_identities_from_many_objects",
+};
+const B1B2_ROLE_PROFILE: Record<string, { inputs: PromptTypeTag[]; outputs: PromptTypeTag[] }> = {
+  guess: { inputs: ["image"], outputs: ["first_identities", "object_identities"] },
+  extraction: { inputs: ["image", "object_identities"], outputs: ["current_identities", "object_identities", "file_pl", "file_eng"] },
+  removal: { inputs: ["image", "object_identities"], outputs: ["removal_images", "object_identities"] },
+  merge: { inputs: ["object_identities"], outputs: ["current_identities", "object_identities"] },
+  regenerated: { inputs: ["removal_images"], outputs: ["current_identities", "regenerated_identities"] },
+};
+const B1B2_RUNNER_NAME_ROLE: Record<string, string> = {
+  FIRST_GUESSER: "guess",
+  IMPROVED_GUESSER: "extraction",
+  FIRST_REMOVER: "removal",
+  IMPROVED_REMOVER: "removal",
+  MERGE: "merge",
+  REGENERATOR: "regenerated",
+};
+function promptDefinitionForOption(optionName: string): PromptDefinition | null {
+  const slotMatch = /^(.+)_RUNNER_PROMPT$/.exec(optionName);
+  const contentName = slotMatch
+    ? (B1B2_ROLE_CONTENT_PROMPT[B1B2_RUNNER_NAME_ROLE[slotMatch[1]] || ""] || "")
+    : optionName;
+  return B1B2_PROMPT_REGISTRY.find((prompt) => prompt.name === contentName) || null;
+}
+function promptApplicabilityScore(optionName: string, role: string): number {
+  const profile = B1B2_ROLE_PROFILE[role];
+  const def = promptDefinitionForOption(optionName);
+  if (!profile || !def) return 0;
+  const overlap = (left: PromptTypeTag[], right: PromptTypeTag[]) =>
+    left.filter((item) => right.includes(item)).length;
+  let score = overlap(def.inputs, profile.inputs) + overlap(def.outputs, profile.outputs);
+  if (def.tags.includes(role)) score += 5;
+  return score;
+}
+function promptOptionLabel(optionName: string): string {
+  const def = promptDefinitionForOption(optionName);
+  if (!def) return optionName;
+  return `${optionName}  ·  in: ${def.inputs.join(", ") || "-"} → out: ${def.outputs.join(", ") || "-"}`;
+}
 const VALIDATION_REPAIR_PROMPT = [
   "VALIDATION-REPAIR MODE:",
   "You must correct only the validation failures listed in VALIDATION_ERRORS.",
@@ -412,6 +515,7 @@ const B1B2_ALL_PRIMARY_PROMPT_NAMES = [
   "remove_smallest_object",
   "merge_identities",
   "regenerated_identities_from_many_objects",
+  "legacy_root_getter",
   "circle_one_identity_at_a_time",
   "remove_one_found_identity_per_pass",
 ];
@@ -4357,6 +4461,16 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                       "remove_one_found_identity_per_pass",
                       `stack_${stack.key.toLowerCase()}${runnerDisplayOrdinal(pageDefinition.routeView, stack.key, runnerIndex)}_identity_pass`,
                     ]).filter(Boolean);
+                    if (isB1B2PipelineRoute(pageDefinition.routeView)) {
+                      // Sort prompts by how applicable each is to this runner's role
+                      // (this runner's own prompt slot always ranks first).
+                      const ownSlot = `${runnerDisplay}_RUNNER_PROMPT`;
+                      primaryPromptNameOptions.sort((left, right) => {
+                        const leftScore = (left === ownSlot ? 1000 : 0) + promptApplicabilityScore(left, runnerRoleMode);
+                        const rightScore = (right === ownSlot ? 1000 : 0) + promptApplicabilityScore(right, runnerRoleMode);
+                        return rightScore - leftScore;
+                      });
+                    }
                     const validatorPromptNameOptions = dedupeStringList([
                       runner.validatorPromptName || "",
                       "no_uncircled_objects",
@@ -4730,7 +4844,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                             )}
                           >
                             {primaryPromptNameOptions.map((option) => <option key={`primary-prompt-name-${runnerDisplay}-${option}`} value={option}>
-                              {option}
+                              {isB1B2PipelineRoute(pageDefinition.routeView) ? promptOptionLabel(option) : option}
                             </option>)}
                           </select>
                         </summary>
