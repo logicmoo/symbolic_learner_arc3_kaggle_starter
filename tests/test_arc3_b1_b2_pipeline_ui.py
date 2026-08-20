@@ -394,6 +394,23 @@ def test_b1_b2_setup_path_scan_writes_scan_results() -> None:
     assert "event.stopPropagation();" in source
 
 
+def test_b1_b2_setup_path_has_workspace_folder_browse() -> None:
+    source = COMPONENT.read_text(encoding="utf-8")
+    # A [browse] button beside the PATH input opens a picker of existing data/ folders.
+    assert "const pathBrowseKey = `path:${setup.id}`;" in source
+    assert "setOpenBrowseKey(openBrowseKey === pathBrowseKey ? null : pathBrowseKey)" in source
+    assert "openBrowseKey === pathBrowseKey && <div className=\"arc3-prolog-browse-list\">" in source
+    # Folder options are derived from workspace files (dirs under data/, numeric-aware).
+    assert "const workspaceDirs = (() => {" in source
+    assert '/^data(\\/|$)/i.test(dir)' in source
+    assert '{ numeric: true }' in source
+    # Picking a folder sets the setup's PATH (stateDir) and closes the list.
+    assert 'setSetupStateField(stackIndex, imageIndex, "stateDir", dir);' in source
+    assert "No workspace folders" in source
+    # The browse button sits between the PATH input and the scan button.
+    assert source.index(">browse</button>") < source.index("arc3-prolog-setup-scan\"")
+
+
 def test_b1_b2_setups_enumerate_all_data_folders() -> None:
     source = COMPONENT.read_text(encoding="utf-8")
     # Setups are discovered structurally from the data/ tree by ordered, consuming rules.

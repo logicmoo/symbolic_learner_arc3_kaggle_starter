@@ -3418,6 +3418,23 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
       const setups = stack.setups?.length ? stack.setups : defaultSetups(stack.key);
       const selectedIndex = Math.max(0, Math.min(stack.selectedImageIndex ?? 0, Math.max(0, setups.length - 1)));
       const imagesStackId = "arc3-b1b2-images-A";
+      const workspaceDirs = (() => {
+        const dirs = new Set<string>();
+        files.forEach((file) => {
+          const norm = (file.path || "").replace(/\\/g, "/").replace(/\/+$/, "");
+          if (!norm) return;
+          const parts = norm.split("/");
+          parts.pop();
+          let acc = "";
+          for (const part of parts) {
+            acc = acc ? `${acc}/${part}` : part;
+            dirs.add(acc);
+          }
+        });
+        return Array.from(dirs)
+          .filter((dir) => /^data(\/|$)/i.test(dir) && dir.toLowerCase() !== "data")
+          .sort((left, right) => left.localeCompare(right, undefined, { numeric: true }));
+      })();
       const setupGroups: Array<{ groupName: string; items: Array<{ setup: StackSetup; imageIndex: number }> }> = [];
       const groupIndexByName = new Map<string, number>();
       setups.forEach((setup, imageIndex) => {
@@ -3463,6 +3480,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
             })();
             const pathPrefix = normalizeAssetPath(setup.stateDir ?? stateDirDefault).replace(/\/+$/, "") || "$PATH";
             const cleanStateDir = normalizeAssetPath(setup.stateDir ?? stateDirDefault).replace(/\/+$/, "");
+            const pathBrowseKey = `path:${setup.id}`;
             const relativeToSetupDir = (fileName: string) => {
               const base = normalizeAssetPath(fileName).split("/").pop() || normalizeAssetPath(fileName);
               return cleanStateDir ? `${cleanStateDir}/${base}` : base;
@@ -3843,12 +3861,31 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                     />
                     <button
                       type="button"
+                      className="secondary arc3-prolog-browse-btn"
+                      title="Pick an existing workspace folder as this setup's PATH"
+                      onClick={() => setOpenBrowseKey(openBrowseKey === pathBrowseKey ? null : pathBrowseKey)}
+                    >browse</button>
+                    <button
+                      type="button"
                       className="secondary arc3-prolog-browse-btn arc3-prolog-setup-scan"
                       title="Scan the files in this directory into the state.json editor"
                       onClick={() => void scanSetupStatePath(stackIndex, imageIndex, setup.stateDir ?? stateDirDefault)}
                     >scan</button>
                   </div>
                 </label>
+                {openBrowseKey === pathBrowseKey && <div className="arc3-prolog-browse-list">
+                  {workspaceDirs.length
+                    ? workspaceDirs.map((dir) => <button
+                      key={dir}
+                      type="button"
+                      className="arc3-prolog-browse-option"
+                      onClick={() => {
+                        setSetupStateField(stackIndex, imageIndex, "stateDir", dir);
+                        setOpenBrowseKey(null);
+                      }}
+                    >{dir}</button>)
+                    : <div className="arc3-prolog-browse-empty">No workspace folders</div>}
+                </div>}
                 <label className="arc3-prolog-inline-select-label">
                   <span>PROP_FILE</span>
                   <input

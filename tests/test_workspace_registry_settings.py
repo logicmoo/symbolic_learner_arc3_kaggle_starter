@@ -208,3 +208,19 @@ def test_settings_ui_embeds_synchronized_startup_policy_source_editor() -> None:
     assert "WORKSPACE RESOURCE COUNTING" in source
     assert "workspaceResourceCountingEnabled" in source
     assert "worker pool" in source
+
+
+def test_workspace_chooser_has_enumerate_resource_counts_button() -> None:
+    source = (Path(__file__).parents[1] / "workbench" / "frontend" / "src" / "pages" / "FilesystemWorkbenchPage.tsx").read_text(encoding="utf-8")
+    assert "workspace-count-actions" in source
+    assert "workspace-count-enumerate" in source
+    assert "Enumerate resource counts" in source
+    assert "Recount resource counts" in source
+    assert "setWorkspaceResourceCountingEnabled(true)" in source
+    assert '/api/workspaces?detailed=true' in source
+
+
+def test_workspace_chooser_enumerate_button_is_styled() -> None:
+    source = (Path(__file__).parents[1] / "workbench" / "frontend" / "src" / "styles" / "workspace_backed.css").read_text(encoding="utf-8")
+    assert ".workspace-count-actions" in source
+    assert ".workspace-count-enumerate" in source

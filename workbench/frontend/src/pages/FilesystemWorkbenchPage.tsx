@@ -2013,6 +2013,28 @@ export function FilesystemWorkbenchPage() {
               </span>
             </div>
           )}
+          <div className="workspace-count-actions">
+            <button
+              type="button"
+              className="workspace-count-enumerate"
+              disabled={busy}
+              title="Scan every workspace and tally its local/inherited/overridden resource counts"
+              onClick={() => {
+                if (!workspaceResourceCountingEnabled) {
+                  setWorkspaceResourceCountingEnabled(true);
+                }
+                void request("/api/workspaces?detailed=true")
+                  .then((payload) =>
+                    setWorkspaces((payload.workspaces || []) as Workspace[]),
+                  )
+                  .catch((reason) => setError(String(reason)));
+              }}
+            >
+              {workspaceResourceCountingEnabled
+                ? "Recount resource counts"
+                : "Enumerate resource counts"}
+            </button>
+          </div>
           <div className="workspace-picker-grid">
             <form
               className="workspace-card create-workspace-card"
