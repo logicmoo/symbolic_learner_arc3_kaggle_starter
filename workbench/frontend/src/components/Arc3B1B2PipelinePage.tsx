@@ -694,10 +694,9 @@ function parentImagePath(path: string): string {
 }
 
 function stackADescendSetupsFromFiles(workspaceId: string, files: WorkspaceFileRecord[]): StackSetup[] {
-  // Setup directories are discovered from the data/ tree by three structural rules:
-  //   1. data/**/level_[0-9]*  -> the level folder itself plus all descendant dirs (scan children)
-  //   2. data/**/<number>      -> each numbered dir is a setup (scan siblings, e.g. 0,1,2,3)
-  //   3. data/*                -> any other immediate data/ child is a single-setup folder
+  // Setup directories are the LEAF folders of the data/ tree: walk every trail downward
+  // and, wherever it bottoms out on a directory that has no child directories, that leaf
+  // is a single setup (its group is the parent trail).
   const normFiles = files
     .map((file) => ({ file, p: file.path.replace(/\\/g, "/") }))
     .filter((entry) => /^data\//i.test(entry.p));
@@ -712,55 +711,15 @@ function stackADescendSetupsFromFiles(workspaceId: string, files: WorkspaceFileR
     }
   }
   const dirs = [...allDirs];
-  const basename = (dir: string) => dir.slice(dir.lastIndexOf("/") + 1);
-  const descendantsOf = (parent: string) => dirs.filter((dir) => dir.startsWith(`${parent}/`));
-  const immediateDataChildren = dirs.filter((dir) => dir.startsWith("data/") && !dir.slice("data/".length).includes("/"));
-  const setupEntries: Array<{ dir: string; group: string; command?: string }> = [];
-  const consumed = new Set<string>();
   const relPath = (dir: string) => dir.replace(/^data\/?/i, "");
-  // Rule 1: data/**/<parent>/0 -> numbered siblings under <parent> are setups; group = <parent>
-  // ("default" when the parent is data/ itself). Consume so later rules skip them.
-  const numberedParents = new Set<string>();
+  // A setup is a LEAF directory: follow each trail down and, once it bottoms out on a
+  // directory with no child directories, treat that leaf as a single setup.
+  const isLeaf = (dir: string) => !dirs.some((other) => other !== dir && other.startsWith(`${dir}/`));
+  const setupEntries: Array<{ dir: string; group: string; command?: string }> = [];
   for (const dir of dirs) {
-    if (basename(dir) === "0") {
-      const parent = dir.includes("/") ? dir.slice(0, dir.lastIndexOf("/")) : "";
-      if (parent) numberedParents.add(parent);
-    }
-  }
-  for (const dir of dirs) {
+    if (!isLeaf(dir)) continue;
     const parent = dir.includes("/") ? dir.slice(0, dir.lastIndexOf("/")) : "";
-    if (/^[0-9]+$/.test(basename(dir)) && numberedParents.has(parent)) {
-      // If the numbered dir has a COMMAND child (e.g. foo/0/RESET) use that leaf as the
-      // setup and glean the command from it; a bare numbered dir (bar/0) has no command.
-      const commandLeaf = dirs
-        .filter((child) => child.startsWith(`${dir}/`) && !child.slice(dir.length + 1).includes("/"))
-        .sort((left, right) => left.localeCompare(right, undefined, { numeric: true }))[0];
-      const target = commandLeaf || dir;
-      setupEntries.push({ dir: target, group: relPath(parent), command: commandLeaf ? basename(commandLeaf) : "" });
-      consumed.add(dir);
-      consumed.add(target);
-    }
-  }
-  // Rule 2: data/**/level_[0-9]* -> the level folder plus all descendant dirs; group = level path.
-  for (const dir of dirs) {
-    if (consumed.has(dir)) continue;
-    if (/^level_[0-9]*$/i.test(basename(dir))) {
-      const group = relPath(dir);
-      setupEntries.push({ dir, group });
-      consumed.add(dir);
-      for (const child of descendantsOf(dir)) {
-        if (consumed.has(child)) continue;
-        setupEntries.push({ dir: child, group });
-        consumed.add(child);
-      }
-    }
-  }
-  // Rule 3: leftovers -> any other immediate data/ child not already consumed; group = its path.
-  for (const dir of immediateDataChildren) {
-    if (consumed.has(dir)) continue;
-    if ([...consumed].some((selected) => selected.startsWith(`${dir}/`))) continue;
-    setupEntries.push({ dir, group: relPath(dir) });
-    consumed.add(dir);
+    setupEntries.push({ dir, group: relPath(parent) || relPath(dir) });
   }
   if (!setupEntries.length) return [];
   const imageByDir = new Map<string, string>();

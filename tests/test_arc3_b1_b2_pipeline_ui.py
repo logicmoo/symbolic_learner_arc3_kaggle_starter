@@ -550,21 +550,13 @@ def test_b1_b2_setup_path_has_workspace_folder_browse() -> None:
 
 def test_b1_b2_setups_enumerate_all_data_folders() -> None:
     source = COMPONENT.read_text(encoding="utf-8")
-    # Setups are discovered structurally from the data/ tree by ordered, consuming rules.
+    # Setups are the LEAF directories of the data/ tree (walk each trail down to a folder
+    # with no child directories; that leaf is one setup).
     assert "const compareByTree = (left: string, right: string) =>" in source
     assert "^data\\/level_1(?:" not in source
-    assert "const consumed = new Set<string>();" in source
-    # Rule 1: numbered siblings (anchored by a "0") under a parent are consumed first.
-    assert 'if (basename(dir) === "0") {' in source
-    assert "numberedParents.has(parent)" in source
-    # Rule 2: level_[0-9]* folders contribute themselves + all descendant dirs.
-    assert 'if (/^level_[0-9]*$/i.test(basename(dir))) {' in source
-    assert "for (const child of descendantsOf(dir)) {" in source
-    # Rule 3: leftover immediate data/ children become single-setup folders.
-    assert "const immediateDataChildren = dirs.filter((dir) => dir.startsWith(\"data/\")" in source
-    # Numbered dirs use their COMMAND child as the setup + command; bare numbered dirs
-    # (bar/0) glean no command.
-    assert "command: commandLeaf ? basename(commandLeaf) : \"\"" in source
+    assert "const isLeaf = (dir: string) => !dirs.some((other) => other !== dir && other.startsWith(`${dir}/`));" in source
+    assert "if (!isLeaf(dir)) continue;" in source
+    assert "setupEntries.push({ dir, group: relPath(parent) || relPath(dir) });" in source
     assert "command ?? setupCommandFromPath(`${dir}/frame`)" in source
     # Numeric-aware ordering (level_10 after level_1) and group.Setup_N names.
     assert "{ numeric: true }" in source
