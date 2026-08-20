@@ -107,6 +107,15 @@ def test_b1_b2_first_guesser_single_image_first_pass() -> None:
     assert 'if (role === "extraction") return ["runner:FIRST_REMOVER"];' in source
 
 
+def test_b1_b2_loop_models_default_disabled() -> None:
+    source = COMPONENT.read_text(encoding="utf-8")
+    # Every B1B2 runner defaults its LOOP_MODEL (validator model) to Disabled.
+    assert "validatorModelId: isB1B2PipelineRoute(routeView) ? RUNNER_VALIDATOR_DISABLED : RUNNER_VALIDATOR_PRIMARY_MODEL," in source
+    assert 'const RUNNER_VALIDATOR_DISABLED = "__runner_validator_disabled__";' in source
+    assert "<span>LOOP_MODEL</span>" in source
+    assert "<option value={RUNNER_VALIDATOR_DISABLED}>Disabled</option>" in source
+
+
 def test_b1_b2_setup_switch_expands_selected_to_full() -> None:
     source = COMPONENT.read_text(encoding="utf-8")
     # Switching setups collapses every column-1 image to a strip and expands the

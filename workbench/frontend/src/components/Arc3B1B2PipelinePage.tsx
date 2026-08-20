@@ -1922,7 +1922,7 @@ function initialRunnerState(routeView: string, stackKey: StackKey, runnerIndex: 
   const initialFilesSourceIds = defaultInputFilesSourceIdsForRunner(routeView, stackKey, runnerIndex);
   return {
     selectedModelId: selectedModelId || COLUMN_MODEL_SENTINEL,
-    validatorModelId: RUNNER_VALIDATOR_PRIMARY_MODEL,
+    validatorModelId: isB1B2PipelineRoute(routeView) ? RUNNER_VALIDATOR_DISABLED : RUNNER_VALIDATOR_PRIMARY_MODEL,
     setupIndex: defaultSetupIndexForRunner(routeView, stackKey, runnerIndex),
     filesSourceSelection: initialFilesSourceIds[0],
     filesSourceIds: initialFilesSourceIds,
