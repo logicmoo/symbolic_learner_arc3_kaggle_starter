@@ -43,9 +43,9 @@ def test_b1_b2_component_has_pipeline_contract() -> None:
     assert "REGENERATED_IDENTITIES_PROMPT" in source
     assert "isB1B2PipelineRoute" in source
     assert "return isB1B2PipelineRoute(routeView) ? 4 : 3;" in source
-    assert 'const B1B2_RUNNER_NAMES = ["Simple Guesser", "GUESSER", "REMOVER", "REGENERATOR"];' in source
+    assert 'const B1B2_RUNNER_NAMES = ["FIRST_GUESSER", "GUESSER", "REMOVER", "REGENERATOR"];' in source
     assert 'return pageDefinition.routeView === "arc3B1B2Pipeline" ? "GUESSER" : "A1";' in source
-    # Simple Guesser (first pass) precedes the GUESSER full-extraction runner, which feeds
+    # FIRST_GUESSER (first pass) precedes the GUESSER full-extraction runner, which feeds
     # REMOVER (removal), which feeds REGENERATOR (regeneration).
     assert 'if (runnerIndex === 0) return "guess";' in source
     assert 'if (runnerIndex === 1) return "extraction";' in source
@@ -69,10 +69,10 @@ def test_b1_b2_component_has_pipeline_contract() -> None:
     assert "english-workflow-page arc3-prolog-page" not in source
 
 
-def test_b1_b2_simple_guesser_is_first_runner_with_copied_prompt() -> None:
+def test_b1_b2_first_guesser_is_first_runner_with_copied_prompt() -> None:
     source = COMPONENT.read_text(encoding="utf-8")
-    # A "Simple Guesser" runner goes first, ahead of GUESSER/REMOVER/REGENERATOR.
-    assert 'const B1B2_RUNNER_NAMES = ["Simple Guesser", "GUESSER", "REMOVER", "REGENERATOR"];' in source
+    # A "FIRST_GUESSER" runner goes first, ahead of GUESSER/REMOVER/REGENERATOR.
+    assert 'const B1B2_RUNNER_NAMES = ["FIRST_GUESSER", "GUESSER", "REMOVER", "REGENERATOR"];' in source
     # The pipeline now has four runners in stack B.
     assert "return isB1B2PipelineRoute(routeView) ? 4 : 3;" in source
     # Its role is "guess" at index 0; the full extraction pass moves to index 1.
@@ -84,6 +84,8 @@ def test_b1_b2_simple_guesser_is_first_runner_with_copied_prompt() -> None:
     # and carries the same COMBINED_PROMPT text.
     assert 'if (role === "guess") return "generate_first_pass_object_guesses";' in source
     assert 'if (role === "guess") return COMBINED_PROMPT;' in source
+    # FIRST_GUESSER feeds the chain: the extraction (GUESSER) runner consumes it by default.
+    assert 'if (role === "extraction") return ["runner:FIRST_GUESSER", "ALL-Setup1"];' in source
 
 
 def test_b1_b2_setup_switch_expands_selected_to_full() -> None:
