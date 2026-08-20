@@ -158,6 +158,18 @@ type SetupCollectionField =
   | "mettaFiles"
   | "promptFiles";
 
+const SETUP_COLLECTION_FIELDS: SetupCollectionField[] = [
+  "objectImages",
+  "groupImages",
+  "subImages",
+  "plFiles",
+  "engFiles",
+  "jsonFiles",
+  "mettaFiles",
+  "promptFiles",
+  "unknownFiles",
+];
+
 type RunnerState = {
   selectedModelId: string;
   validatorModelId: string;
@@ -841,14 +853,27 @@ function resolveReferenceToken(
     const fileKey = setupFileMatch[2];
     for (const stack of stacks) {
       const setup = (stack.setups || []).find((candidate) => candidate.id === setupId);
-      if (!setup?.analysis) continue;
-      const item = [...setup.analysis.subimages, ...setup.analysis.textFiles]
-        .find((file) => file.key === fileKey);
-      if (item) {
-        return { label: `${setup.label || setupId} / ${item.label}`, content: item.value };
+      if (!setup) continue;
+      if (setup.analysis) {
+        const item = [...setup.analysis.subimages, ...setup.analysis.textFiles]
+          .find((file) => file.key === fileKey);
+        if (item) {
+          return { label: `${setup.label || setupId} / ${item.label}`, content: item.value };
+        }
+      }
+      for (const field of SETUP_COLLECTION_FIELDS) {
+        const entry = (setup[field] || []).find((file) => file.name === fileKey);
+        if (entry) {
+          return { label: `${setup.label || setupId} / ${entry.name}`, content: entry.name };
+        }
       }
     }
     return null;
+  }
+  const dataFileMatch = /^data-file:(.+)$/i.exec(trimmed);
+  if (dataFileMatch) {
+    const path = dataFileMatch[1];
+    return { label: `A / ${path}`, content: path };
   }
   const columnTextMatch = /^([ABCX])_(generated|command)$/i.exec(trimmed);
   if (columnTextMatch) {
@@ -4354,6 +4379,26 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                           }))
                         ))
                       )),
+                      ...stackColumns.flatMap((columnState) => (
+                        (columnState.setups || []).flatMap((setup, setupOrdinal) => (
+                          SETUP_COLLECTION_FIELDS.flatMap((field) => (
+                            (setup[field] || [])
+                              .filter((entry) => entry.name)
+                              .map((entry) => ({
+                                value: `setup-file:${setup.id}:${entry.name}`,
+                                label: `SETUP ${setupOrdinal + 1} ${entry.name.split("/").pop() || entry.name} (${columnState.key})`,
+                              }))
+                          ))
+                        ))
+                      )),
+                      ...files
+                        .map((file) => (file.path || "").replace(/\\/g, "/"))
+                        .filter((path) => /^data\//i.test(path))
+                        .sort((left, right) => left.localeCompare(right, undefined, { numeric: true }))
+                        .map((path) => ({
+                          value: `data-file:${path}`,
+                          label: `A FILE ${path.replace(/^data\//i, "")}`,
+                        })),
                     ]);
                     const otherColumnsAC = activeStackColumns
                       .map((column) => column.key)

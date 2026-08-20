@@ -121,6 +121,19 @@ def test_b1_b2_loop_models_default_disabled() -> None:
     assert "<option value={VALIDATOR_PROMPT_DISABLED}>&lt;disabled&gt;</option>" in source
 
 
+def test_b1_b2_input_files_combo_lists_all_setup_files() -> None:
+    source = COMPONENT.read_text(encoding="utf-8")
+    # The INPUT_FILES combo auto-populates with every file in column A (all setup collection files).
+    assert "const SETUP_COLLECTION_FIELDS: SetupCollectionField[] = [" in source
+    assert "SETUP_COLLECTION_FIELDS.flatMap((field) => (" in source
+    assert "value: `setup-file:${setup.id}:${entry.name}`," in source
+    # And the file-source resolver can resolve those collection-file tokens.
+    assert "const entry = (setup[field] || []).find((file) => file.name === fileKey);" in source
+    # It also lists every data/ file directly from the files prop (reliable, no scan needed).
+    assert 'value: `data-file:${path}`,' in source
+    assert 'const dataFileMatch = /^data-file:(.+)$/i.exec(trimmed);' in source
+
+
 def test_b1_b2_setup_switch_expands_selected_to_full() -> None:
     source = COMPONENT.read_text(encoding="utf-8")
     # Switching setups collapses every column-1 image to a strip and expands the
