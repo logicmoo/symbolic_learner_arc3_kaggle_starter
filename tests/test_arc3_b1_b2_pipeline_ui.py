@@ -42,20 +42,20 @@ def test_b1_b2_component_has_pipeline_contract() -> None:
     assert "REMOVAL_DISCOVERY_PASS_PROMPT" in source
     assert "REGENERATED_IDENTITIES_PROMPT" in source
     assert "isB1B2PipelineRoute" in source
-    assert "return isB1B2PipelineRoute(routeView) ? 4 : 3;" in source
-    assert 'const B1B2_RUNNER_NAMES = ["FIRST_GUESSER", "GUESSER", "FIRST_REMOVER", "REGENERATOR"];' in source
-    assert 'return pageDefinition.routeView === "arc3B1B2Pipeline" ? "GUESSER" : "A1";' in source
-    # FIRST_GUESSER (first pass) precedes the GUESSER full-extraction runner, which feeds
-    # FIRST_REMOVER (removal), which feeds REGENERATOR (regeneration).
+    assert "return isB1B2PipelineRoute(routeView) ? 5 : 3;" in source
+    assert 'const B1B2_RUNNER_NAMES = ["FIRST_GUESSER", "IMPROVED_GUESSER", "FIRST_REMOVER", "IMPROVED_REMOVER", "REGENERATOR"];' in source
+    assert 'return pageDefinition.routeView === "arc3B1B2Pipeline" ? "IMPROVED_GUESSER" : "A1";' in source
+    # FIRST_GUESSER (first pass) precedes IMPROVED_GUESSER (full extraction), which feeds
+    # FIRST_REMOVER then IMPROVED_REMOVER (removal copies), which feed REGENERATOR (regeneration).
     assert 'if (runnerIndex === 0) return "guess";' in source
     assert 'if (runnerIndex === 1) return "extraction";' in source
     assert 'if (role === "extraction") return COMBINED_PROMPT;' in source
     assert 'if (role === "extraction") return "generate_prolog_and_english";' in source
-    assert 'return ["runner:GUESSER", "runner:FIRST_GUESSER"];' in source
-    assert "SEED FROM GUESSER" in source
-    # Experimental write-back: REGENERATOR result can replace GUESSER's list.
+    assert 'return ["runner:IMPROVED_GUESSER", "runner:FIRST_GUESSER"];' in source
+    assert "SEED FROM IMPROVED_GUESSER" in source
+    # Experimental write-back: REGENERATOR result can replace IMPROVED_GUESSER's list.
     assert "replaceGuesserOnFinish" in source
-    assert "Replace GUESSER list with this result on finish" in source
+    assert "Replace IMPROVED_GUESSER list with this result on finish" in source
     assert "many_objects_1" in source
     assert "many_objects_2" in source
     assert "llm_error|next_iteration|loop_complete|loop_overbudgeted|unran" in source
@@ -71,15 +71,16 @@ def test_b1_b2_component_has_pipeline_contract() -> None:
 
 def test_b1_b2_first_guesser_single_image_first_pass() -> None:
     source = COMPONENT.read_text(encoding="utf-8")
-    # A "FIRST_GUESSER" runner goes first, ahead of GUESSER/FIRST_REMOVER/REGENERATOR.
-    assert 'const B1B2_RUNNER_NAMES = ["FIRST_GUESSER", "GUESSER", "FIRST_REMOVER", "REGENERATOR"];' in source
-    # The pipeline now has four runners in stack B.
-    assert "return isB1B2PipelineRoute(routeView) ? 4 : 3;" in source
+    # A "FIRST_GUESSER" runner goes first, ahead of IMPROVED_GUESSER/FIRST_REMOVER/IMPROVED_REMOVER/REGENERATOR.
+    assert 'const B1B2_RUNNER_NAMES = ["FIRST_GUESSER", "IMPROVED_GUESSER", "FIRST_REMOVER", "IMPROVED_REMOVER", "REGENERATOR"];' in source
+    # The pipeline now has five runners in stack B.
+    assert "return isB1B2PipelineRoute(routeView) ? 5 : 3;" in source
     # Its role is "guess" at index 0; the full extraction pass moves to index 1.
     assert 'if (runnerIndex === 0) return "guess";' in source
     assert 'if (runnerIndex === 1) return "extraction";' in source
     assert 'if (runnerIndex === 2) return "removal";' in source
-    assert 'if (runnerIndex === 3) return "regenerated";' in source
+    assert 'if (runnerIndex === 3) return "removal";' in source
+    assert 'if (runnerIndex === 4) return "regenerated";' in source
     # Input: a single image, and no INPUT_FILES text sources.
     assert 'if (role === "guess") return [];' in source
     assert 'const guessRole = role === "guess";' in source
@@ -91,7 +92,7 @@ def test_b1_b2_first_guesser_single_image_first_pass() -> None:
     assert "const FIRST_PASS_OBJECT_GUESSES_PROMPT = [" in source
     assert "single required key: current_identities" in source
     assert "Return only current_identities in the JSON response." in source
-    # FIRST_GUESSER still feeds the chain: the extraction (GUESSER) runner consumes it.
+    # FIRST_GUESSER still feeds the chain: the extraction (IMPROVED_GUESSER) runner consumes it.
     assert 'if (role === "extraction") return ["runner:FIRST_GUESSER", "ALL-Setup1"];' in source
 
 

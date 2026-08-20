@@ -317,10 +317,10 @@ const DEFAULT_VALIDATOR_PROMPT = [
 ].join("\n");
 const REMOVAL_DISCOVERY_PASS_PROMPT = [
   "remove_smallest_object:",
-  "INPUT: the upstream GUESSER runner supplies current_identities plus its prolog/english files via INPUT_FILES; treat GUESSER's current_identities as the authoritative catalog of objects present in the image.",
+  "INPUT: the upstream IMPROVED_GUESSER runner supplies current_identities plus its prolog/english files via INPUT_FILES; treat IMPROVED_GUESSER's current_identities as the authoritative catalog of objects present in the image.",
   "Goal: update supplied current_identities in place and remove the best removable object set from the current image.",
-  "SEED FROM GUESSER: first take the identities GUESSER found and try to remove each of them from the current (before) image, working through GUESSER's identified objects as your removal worklist before discovering anything new.",
-  "Only after GUESSER's identities have been handled, act like the standard removal pass below and search for any removable objects GUESSER missed.",
+  "SEED FROM IMPROVED_GUESSER: first take the identities IMPROVED_GUESSER found and try to remove each of them from the current (before) image, working through IMPROVED_GUESSER's identified objects as your removal worklist before discovering anything new.",
+  "Only after IMPROVED_GUESSER's identities have been handled, act like the standard removal pass below and search for any removable objects IMPROVED_GUESSER missed.",
   "OBJECT SEARCH ORDER (look for these first):",
   "1) Leaf objects that are isolated, simple, and non-container (no nested identities inside their bounds).",
   "2) Among those leaf objects, find a similar set by shape/color/size/type/proximity.",
@@ -379,7 +379,7 @@ function stackColumnsForRoute(routeView: string): Array<{ key: StackKey; label: 
 function isB1B2PipelineRoute(routeView: string): boolean {
   return routeView === "arc3B1B2Pipeline";
 }
-const B1B2_RUNNER_NAMES = ["FIRST_GUESSER", "GUESSER", "FIRST_REMOVER", "REGENERATOR"];
+const B1B2_RUNNER_NAMES = ["FIRST_GUESSER", "IMPROVED_GUESSER", "FIRST_REMOVER", "IMPROVED_REMOVER", "REGENERATOR"];
 function runnerDisplayOrdinal(routeView: string, stackKey: StackKey, runnerIndex: number): number {
   if (isB1B2PipelineRoute(routeView) && stackKey === "B") return runnerIndex;
   return runnerIndex + 1;
@@ -395,7 +395,8 @@ function runnerRole(routeView: string, stackKey: StackKey, runnerIndex: number):
     if (runnerIndex === 0) return "guess";
     if (runnerIndex === 1) return "extraction";
     if (runnerIndex === 2) return "removal";
-    if (runnerIndex === 3) return "regenerated";
+    if (runnerIndex === 3) return "removal";
+    if (runnerIndex === 4) return "regenerated";
   } else {
     if (stackKey === "B" && runnerIndex === 0) return "removal";
     if (stackKey === "B" && runnerIndex === 1) return "regenerated";
@@ -403,7 +404,7 @@ function runnerRole(routeView: string, stackKey: StackKey, runnerIndex: number):
   return "default";
 }
 function defaultRunnerCountForRoute(routeView: string): number {
-  return isB1B2PipelineRoute(routeView) ? 4 : 3;
+  return isB1B2PipelineRoute(routeView) ? 5 : 3;
 }
 function defaultSetupIndexForRunner(routeView: string, stackKey: StackKey, runnerIndex: number): number {
   const role = runnerRole(routeView, stackKey, runnerIndex);
@@ -415,7 +416,7 @@ function defaultInputFilesSourceIdsForRunner(routeView: string, stackKey: StackK
     const role = runnerRole(routeView, stackKey, runnerIndex);
     if (role === "guess") return [];
     if (role === "extraction") return ["runner:FIRST_GUESSER", "ALL-Setup1"];
-    if (role === "removal") return ["runner:GUESSER", "runner:FIRST_GUESSER"];
+    if (role === "removal") return ["runner:IMPROVED_GUESSER", "runner:FIRST_GUESSER"];
   }
   return ["ALL-Setup1"];
 }
@@ -1891,7 +1892,7 @@ function migrateRunnerPromptText(routeView: string, stackKey: StackKey, runnerIn
 }
 
 function initialSelectedOutputId(pageDefinition: WorkflowPageDefinition): string {
-  return pageDefinition.routeView === "arc3B1B2Pipeline" ? "GUESSER" : "A1";
+  return pageDefinition.routeView === "arc3B1B2Pipeline" ? "IMPROVED_GUESSER" : "A1";
 }
 
 function defaultInputFilesSourceIds(): string[] {
@@ -3220,7 +3221,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
             return {
               ...previous,
               parsed: { ...base, current_identities: finalIdentities, regenerated_identities: finalIdentities },
-              message: `GUESSER list replaced with REGENERATOR result (${finalIdentities.length} identities).`,
+              message: `IMPROVED_GUESSER list replaced with REGENERATOR result (${finalIdentities.length} identities).`,
             };
           });
         }
@@ -4710,14 +4711,14 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                         <label
                           className="arc3-b1b2-writeback-toggle"
                           style={{ display: "flex", alignItems: "center", gap: "6px", margin: "6px 0" }}
-                          title="Experimental: when this REGENERATOR run finishes, overwrite the GUESSER runner's identity list with this result so the next run starts warm."
+                          title="Experimental: when this REGENERATOR run finishes, overwrite the IMPROVED_GUESSER runner's identity list with this result so the next run starts warm."
                         >
                           <input
                             type="checkbox"
                             checked={replaceGuesserOnFinish}
                             onChange={(event) => setReplaceGuesserOnFinish(event.target.checked)}
                           />
-                          <span>Replace GUESSER list with this result on finish</span>
+                          <span>Replace IMPROVED_GUESSER list with this result on finish</span>
                         </label>
                       )}
                       <details className="arc3-prolog-stack-output">
@@ -4850,7 +4851,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
           <summary>Removal Images</summary>
           {selectedRunner?.removedIdentityId ? <small>Removed identity: {selectedRunner.removedIdentityId}</small> : null}
           <div className="arc3-prolog-removal-images">
-            {(selectedOutput?.id === "FIRST_REMOVER"
+            {(selectedOutput?.id === "FIRST_REMOVER" || selectedOutput?.id === "IMPROVED_REMOVER"
               ? manyObjectImagesFromRunner(selectedRunner).map((item) => <figure key={`selected-many-${item.key}`}>
                 <figcaption>{item.label}</figcaption>
                 <img className="arc3-prolog-preview" src={item.value} alt={item.label} />
