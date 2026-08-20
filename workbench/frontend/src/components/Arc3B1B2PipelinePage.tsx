@@ -2879,7 +2879,17 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
         setSetupStateField(stackIndex, imageIndex, "stateJson", `// Could not load ${rel} (${response.status})`);
         return;
       }
-      setSetupStateField(stackIndex, imageIndex, "stateJson", await response.text());
+      const text = await response.text();
+      setSetupStateField(stackIndex, imageIndex, "stateJson", text);
+      try {
+        const parsed = JSON.parse(text);
+        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+          const command = (parsed as Record<string, unknown>).command;
+          if (typeof command === "string" && command.trim()) setSetupCommand(stackIndex, imageIndex, command.trim());
+        }
+      } catch {
+        // Props file is not JSON; leave the setup command as-is.
+      }
     } catch (reason) {
       setSetupStateField(stackIndex, imageIndex, "stateJson", `// Could not load ${rel}: ${reason instanceof Error ? reason.message : String(reason)}`);
     }
@@ -4518,6 +4528,18 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                     className="secondary arc3-prolog-setup-state-saveas"
                     onClick={() => void saveSetupStateJson(setup.stateFile ?? "state.json", setup.stateJson ?? "")}
                   >Save as..</button>
+                  <button
+                    type="button"
+                    className="secondary arc3-prolog-setup-state-save"
+                    title="Save this props file in place"
+                    onClick={async () => {
+                      const dir = normalizeAssetPath(setup.stateDir ?? stateDirDefault).replace(/\/+$/, "");
+                      const file = (setup.stateFile ?? "state.json").trim() || "state.json";
+                      const path = dir ? `${dir}/${file}` : file;
+                      const ok = await saveDataFile(path, setup.stateJson ?? "");
+                      if (ok) void loadLineCounts([path], true);
+                    }}
+                  >Save</button>
                 </div>
                 <textarea
                   className="arc3-prolog-setup-state-json"
