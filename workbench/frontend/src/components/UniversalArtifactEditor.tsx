@@ -3,6 +3,7 @@ import { ArtifactTreeCommandContext, type ArtifactTreeCommand } from "./Artifact
 import { RepeatSwitch, TreeViewControls } from "./TreeViewControls";
 import { DEFAULT_TREE_VISIBILITY_RULES, type TreeVisibilityRules, useArtifactTreeFilter } from "./useArtifactTreeFilter";
 import { CategorizedArtifactNodes } from "./CategorizedArtifactTree";
+import { TreePaneResizer } from "./TreePaneResizer";
 import "../styles/operation_editor.css";
 
 export const UNIVERSAL_ARTIFACT_EDITOR_BASELINE = "current-rich-editor";
@@ -180,6 +181,7 @@ export function UniversalArtifactEditor({
         <ArtifactTreeCommandContext.Provider value={treeCommand}><div className="artifact-navigator-content" ref={treeRef}><CategorizedArtifactNodes onlyCategories={false} categoryCommand={categoryCommand} workspaceId={workspaceId} categoryTree={categoryTree}>{leftPane}</CategorizedArtifactNodes></div></ArtifactTreeCommandContext.Provider>
       </div>
       <div className={workspaceClassName}>
+        <TreePaneResizer />
         <div className={tabsClassName}>
           {tabs.map(tab => <div className={`operation-document-tab ${tab.key===activeKey?"active":""}`} key={tab.key}>
             <button onClick={()=>onActivate(tab.key)} title={tab.subtitle || tab.label}>

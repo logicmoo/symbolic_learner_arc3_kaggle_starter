@@ -9,6 +9,7 @@ import {ResourceSourceEditor} from "./ResourceSourceEditor";
 import {ResourceEnablementBadge,enablementClass,resolveResourceEnablement} from "./resourceEnablement";
 import {displayResourcePath} from "./resourcePath";
 import {jsonValueToMetta} from "../lib/mettaResourceCodec";
+import {TreePaneResizer} from "./TreePaneResizer";
 import "../styles/operation_editor.css";
 
 type Source="shared"|"workspace";
@@ -94,6 +95,7 @@ export function OperationLibraryEditor({workspaceId,sourceLanguage}:{workspaceId
     {viewControlsOpen&&<TreeViewControls kinds={treeKinds} rules={visibilityRules} onChange={setVisibilityRules} showParents={showParents} onShowParentsChange={setShowParents} onBranchAction={commandBranches}/>}
    </div>
    <div className="operation-editor-workspace">
+    <TreePaneResizer />
     <div className="operation-document-tabs">{openDocs.map(doc=><div className={`operation-document-tab ${doc.key===activeKey?"active":""}`} key={doc.key}><button onClick={()=>setActiveKey(doc.key)}><span>{relationshipIds(doc.record.document?.parents).length?"IMPL":"OPERATION"}</span><b>{doc.record.document?.label||doc.record.document?.id||doc.record.path}</b>{doc.dirty&&<i>●</i>}</button><button className="close" onClick={()=>close(doc.key)}>×</button></div>)}</div>
     <div className={`operation-editor-panes ${comparison?"split":"single"}`}>
       {active?renderEditor(active):<div className="studio-empty">Select a operation or implementation.</div>}

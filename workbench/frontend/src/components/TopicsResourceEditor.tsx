@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { jsonDocumentToMetta } from "../lib/mettaResourceCodec";
 import { ResourceSourceEditor } from "./ResourceSourceEditor";
 import { ArtifactTreeBranch } from "./ArtifactTreeBranch";
+import { TreePaneResizer } from "./TreePaneResizer";
 import "../styles/operation_editor.css";
 
 type Source = "shared" | "workspace";
@@ -166,8 +167,8 @@ export function TopicsResourceEditor({ workspaceId }: { workspaceId: string }) {
       </div>
       {error && <div className="demo-notice"><b>Topic editor error</b><span>{error}</span></div>}
       {status && !error && <div className="demo-notice"><b>{status}</b><span>{records.length} topic resources.</span></div>}
-      <div className="operation-hierarchy-panes" style={{ display: "flex", gap: "16px", alignItems: "flex-start" }}>
-        <div className="operation-tree-pane" style={{ flex: "0 0 320px", maxHeight: "70vh", overflow: "auto" }}>
+      <div className="operation-hierarchy-layout navigator-expanded">
+        <div className="operation-tree-pane">
           {!loaded && <div className="studio-empty">Loading topics…</div>}
           {grouped.map(([name, rows]) => (
             <ArtifactTreeBranch key={name} label={name} searchValue={{ topic: name }} header={<div className="inheritance-row"><span className="operation-tree-row operation-parent"><span className="operation-kind-badge">GROUP</span><span><b>{name}</b><small>{rows.length} topic{rows.length === 1 ? "" : "s"}</small></span></span></div>}>
@@ -191,11 +192,12 @@ export function TopicsResourceEditor({ workspaceId }: { workspaceId: string }) {
             </ArtifactTreeBranch>
           ))}
         </div>
-        <div className="operation-editor-workspace" style={{ flex: "1 1 auto", minWidth: 0 }}>
+        <div className="operation-editor-workspace">
+          <TreePaneResizer />
           {!selected ? (
             <div className="studio-empty">Select a topic on the left, or create a new one.</div>
           ) : (
-            <section className="operation-editor-document primary">
+            <section className="operation-editor-document primary" style={{ flex: 1, minHeight: 0 }}>
               <div className="operation-editor-toolbar">
                 <div>
                   <span>{selectedKey === NEW_KEY ? "NEW TOPIC" : "TOPIC"}{dirty ? " · UNSAVED" : ""}</span>
