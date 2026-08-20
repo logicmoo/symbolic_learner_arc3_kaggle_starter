@@ -720,6 +720,12 @@ def test_b1_b2_file_groups_have_edit_new_editors() -> None:
     assert "renderFileEditor(`new:${field}:${setup.id}`, (path) => appendSetupEntryPath(stackIndex, imageIndex, field, path))" in source
     assert ".arc3-prolog-setup-file-editor" in styles
     assert ".arc3-prolog-setup-file-editor-head" in styles
+    # .md files get a live markdown preview rendered with the app's ReactMarkdown + GFM.
+    assert "import ReactMarkdown from \"react-markdown\";" in source
+    assert "import remarkGfm from \"remark-gfm\";" in source
+    assert "/^.+\\.md$/i.test(editorName.trim())" in source
+    assert "<ReactMarkdown remarkPlugins={[remarkGfm]}>{editorText}</ReactMarkdown>" in source
+    assert ".arc3-prolog-md-preview" in styles
 
 
 def test_b1_b2_columns_are_resizable() -> None:

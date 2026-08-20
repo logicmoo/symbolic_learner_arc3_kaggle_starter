@@ -1,8 +1,11 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { WorkflowPageHost, type WorkflowPageComponentRegistry, type WorkflowPageDefinition } from "./WorkflowPageHost";
 import { WorkflowPageSourceEditor } from "./WorkflowPageSourceEditor";
 import { ThreeStateAccordionMember, ThreeStateAccordionStack, type AccordionDisplayMode } from "./ThreeStateAccordion";
 import "../styles/arc3_prompt_prolog.css";
+import "../styles/help_tabs.css";
 
 type ModelChoice = {
   id: string;
@@ -4403,6 +4406,12 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                 rows={8}
                 onChange={(event) => setEditorText(event.target.value)}
               />
+              {/^.+\.md$/i.test(editorName.trim()) && <details className="arc3-prolog-md-preview" open>
+                <summary>MARKDOWN PREVIEW</summary>
+                <article className="relationship-markdown markdown-body">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{editorText}</ReactMarkdown>
+                </article>
+              </details>}
               {editorError ? <div className="arc3-prolog-error">{editorError}</div> : null}
             </div>;
             const renderSetupCollectionGroup = (
