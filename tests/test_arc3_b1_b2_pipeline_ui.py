@@ -531,6 +531,21 @@ def test_b1_b2_setup_path_scan_writes_scan_results() -> None:
     assert "event.stopPropagation();" in source
 
 
+def test_b1_b2_setup_command_and_groups_hydrate_from_state() -> None:
+    source = COMPONENT.read_text(encoding="utf-8")
+    # The command is derived from the node's action: explicit command, else action_directory
+    # (e.g. DOWN), else observation.action_input.id (e.g. RESET for a level's reset node).
+    assert "const commandFromParsedState = (parsed: Record<string, unknown>): string | undefined =>" in source
+    assert "const actionDir = parsed.action_directory;" in source
+    assert "const actionInput = (observation as Record<string, unknown>).action_input;" in source
+    assert "const command = commandFromParsedState(base);" in source
+    # Loading a setup's state.json hydrates its file groups from the persisted scan.results,
+    # so README.md (an unknown file) shows in UNKNOWN_FILES without needing a fresh scan.
+    assert "const applyScanResultsToSetup = (stackIndex: number, imageIndex: number, results: Record<string, unknown>) =>" in source
+    assert "unknownFiles: toEntries(asPaths(results.unknown_files))," in source
+    assert "applyScanResultsToSetup(stackIndex, imageIndex, results as Record<string, unknown>);" in source
+
+
 def test_b1_b2_setup_path_has_workspace_folder_browse() -> None:
     source = COMPONENT.read_text(encoding="utf-8")
     # A [browse] button beside the PATH input opens a picker of existing data/ folders.

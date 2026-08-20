@@ -2879,6 +2879,52 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
     });
   };
 
+  const commandFromParsedState = (parsed: Record<string, unknown>): string | undefined => {
+    // The command for a node is the action that produced it: an explicit `command` prop wins,
+    // otherwise the human action folder (action_directory, e.g. DOWN), then the raw action id
+    // (observation.action_input.id / incoming_action, e.g. RESET for the level's reset node).
+    const explicit = parsed.command;
+    if (typeof explicit === "string" && explicit.trim()) return explicit.trim();
+    const actionDir = parsed.action_directory;
+    if (typeof actionDir === "string" && actionDir.trim()) return actionDir.trim();
+    const observation = parsed.observation;
+    if (observation && typeof observation === "object" && !Array.isArray(observation)) {
+      const actionInput = (observation as Record<string, unknown>).action_input;
+      if (actionInput && typeof actionInput === "object" && !Array.isArray(actionInput)) {
+        const id = (actionInput as Record<string, unknown>).id;
+        if (typeof id === "string" && id.trim()) return id.trim();
+      }
+    }
+    const incoming = parsed.incoming_action;
+    if (typeof incoming === "string" && incoming.trim()) return incoming.trim();
+    return undefined;
+  };
+
+  const applyScanResultsToSetup = (stackIndex: number, imageIndex: number, results: Record<string, unknown>) => {
+    // Hydrate a setup's file-group collections from a persisted scan.results block so the
+    // groups (OBJ/GRP/SUB images, PL/ENG/JSON/METTA/PROMPT/UNKNOWN files) show without a rescan.
+    const asPaths = (value: unknown): string[] => Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+    setStackState(stackIndex, (stack) => {
+      const setups = stack.setups?.length ? [...stack.setups] : defaultSetups(stack.key);
+      const current = setups[imageIndex];
+      if (!current) return stack;
+      const toEntries = (paths: string[]) => paths.map((path) => imageSelectionFromPath(workspaceId, path, { name: path, dataUrl: "" }));
+      setups[imageIndex] = {
+        ...current,
+        objectImages: toEntries(asPaths(results.obj_images)),
+        groupImages: toEntries(asPaths(results.grp_images)),
+        subImages: toEntries(asPaths(results.sub_images)),
+        plFiles: toEntries(asPaths(results.pl_files)),
+        engFiles: toEntries(asPaths(results.eng_files)),
+        jsonFiles: toEntries(asPaths(results.json_files)),
+        mettaFiles: toEntries(asPaths(results.metta_files)),
+        promptFiles: toEntries(asPaths(results.prompt_files)),
+        unknownFiles: toEntries(asPaths(results.unknown_files)),
+      };
+      return { ...stack, setups };
+    });
+  };
+
   const loadSetupStateJson = async (stackIndex: number, imageIndex: number, dir: string, fileName: string) => {
     const cleanDir = normalizeAssetPath(dir).replace(/\/+$/, "");
     const cleanFile = normalizeAssetPath(fileName).replace(/^\/+/, "");
@@ -2895,11 +2941,19 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
       try {
         const parsed = JSON.parse(text);
         if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-          const command = (parsed as Record<string, unknown>).command;
-          if (typeof command === "string" && command.trim()) setSetupCommand(stackIndex, imageIndex, command.trim());
+          const record = parsed as Record<string, unknown>;
+          const command = commandFromParsedState(record);
+          if (command) setSetupCommand(stackIndex, imageIndex, command);
+          const scan = record.scan;
+          if (scan && typeof scan === "object" && !Array.isArray(scan)) {
+            const results = (scan as Record<string, unknown>).results;
+            if (results && typeof results === "object" && !Array.isArray(results)) {
+              applyScanResultsToSetup(stackIndex, imageIndex, results as Record<string, unknown>);
+            }
+          }
         }
       } catch {
-        // Props file is not JSON; leave the setup command as-is.
+        // Props file is not JSON; leave the setup command and file groups as-is.
       }
     } catch (reason) {
       setSetupStateField(stackIndex, imageIndex, "stateJson", `// Could not load ${rel}: ${reason instanceof Error ? reason.message : String(reason)}`);
@@ -3111,8 +3165,8 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
       }
     }
     base.scan = { path: prefix, results };
-    const command = base.command;
-    if (typeof command === "string" && command.trim()) setSetupCommand(stackIndex, imageIndex, command.trim());
+    const command = commandFromParsedState(base);
+    if (command) setSetupCommand(stackIndex, imageIndex, command);
     const newStateJson = `${JSON.stringify(base, null, 2)}\n`;
     setStackState(stackIndex, (stack) => {
       const setups = stack.setups?.length ? [...stack.setups] : defaultSetups(stack.key);
