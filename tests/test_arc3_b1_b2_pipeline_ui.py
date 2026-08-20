@@ -556,6 +556,9 @@ def test_b1_b2_setups_enumerate_all_data_folders() -> None:
     assert "^data\\/level_1(?:" not in source
     assert "const isLeaf = (dir: string) => !dirs.some((other) => other !== dir && other.startsWith(`${dir}/`));" in source
     assert "if (!isLeaf(dir)) continue;" in source
+    # Only trails passing through a level* folder become setups.
+    assert "const hasLevelSegment = (dir: string) => relPath(dir).split(\"/\").some((seg) => /^level/i.test(seg));" in source
+    assert "if (!hasLevelSegment(dir)) continue;" in source
     # exports/histories bookkeeping folders and any dot-directory are skipped by the scan.
     assert 'const SCAN_IGNORED_DIR_NAMES = new Set(["exports", "histories"]);' in source
     assert "!hasIgnoredScanSegment(entry.p)" in source

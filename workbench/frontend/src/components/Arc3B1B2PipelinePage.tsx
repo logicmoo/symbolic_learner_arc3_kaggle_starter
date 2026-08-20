@@ -762,9 +762,13 @@ function stackADescendSetupsFromFiles(workspaceId: string, files: WorkspaceFileR
   // A setup is a LEAF directory (bottom of each trail). Deep leaves are named by their
   // ROOT folder (group), and the trail of folder names below the root becomes the command.
   const isLeaf = (dir: string) => !dirs.some((other) => other !== dir && other.startsWith(`${dir}/`));
+  // Only trails that pass through a `level*` folder are real action-tree setups; anything else
+  // (stray silos, ad-hoc folders) is skipped by the new naming system.
+  const hasLevelSegment = (dir: string) => relPath(dir).split("/").some((seg) => /^level/i.test(seg));
   const setupEntries: Array<{ dir: string; group: string; command?: string }> = [];
   for (const dir of dirs) {
     if (!isLeaf(dir)) continue;
+    if (!hasLevelSegment(dir)) continue;
     const segments = relPath(dir).split("/").filter(Boolean);
     const group = segments[0] || relPath(dir);
     const command = segments.length > 1 ? segments.slice(1).map(abbreviateSegment).join(".") : undefined;
