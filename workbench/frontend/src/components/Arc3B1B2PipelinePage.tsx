@@ -693,41 +693,17 @@ function parentImagePath(path: string): string {
   return candidate;
 }
 
-// The ARC action space (see python/action_tree.py STANDARD_ACTION_NAMES): the four moves
-// plus SPACE, the SELECT/CLICK pointer action (which carries 2D x/y coordinates baked into
-// the folder name, e.g. SELECT_x_3_y_5), UNDO, and RESET. Returns a compact token or null.
-function actionToken(name: string): string | null {
-  const simple: Record<string, string> = {
-    u: "U", up: "U", d: "D", down: "D", l: "L", left: "L", r: "R", right: "R",
-    space: "S", select: "C", click: "C", undo: "Z", reset: "X",
-  };
-  const exact = simple[name.trim().toLowerCase()];
-  if (exact) return exact;
-  // Coordinate pointer actions (SELECT_x_3_y_5, CLICK_x_3_y_5, ...) become C<x>_<y>.
-  if (/^(select|click)(?:[._-]|$)/i.test(name.trim())) {
-    const nums = name.match(/\d+/g);
-    return nums && nums.length ? `C${nums.join("_")}` : "C";
-  }
-  return null;
-}
-
 function abbreviateSegment(name: string): string {
-  // Mangle a folder segment into a compact token: ARC action folders map to their action
-  // letter (U/D/L/R/S, C for SELECT/CLICK with 2D coords -> C3_5, Z undo, X reset);
-  // underscore-separated names keep the first letter of each word plus any full numeric
-  // part, with no separator before a number (Level_1 -> L1, Alpha_Number -> A_N); anything
-  // else collapses to its first 3 non-vowel characters. Always uppercased.
-  const action = actionToken(name);
-  if (action) return action;
-  if (name.includes("_")) {
-    return name.split("_").filter(Boolean).map((part, index) => {
-      const numeric = /^\d+$/.test(part);
-      const token = numeric ? part : part[0];
-      return index === 0 || numeric ? token : `_${token}`;
-    }).join("").toUpperCase();
-  }
-  const consonants = name.replace(/[aeiou]/gi, "");
-  return (consonants || name).slice(0, 3).toUpperCase();
+  // Mangle a folder segment to its first letter followed by every number group it contains,
+  // each prefixed with "_" (Level_1 -> L_1, Click_32x43 -> C_32_43, SELECT_x_3_y_5 -> S_3_5);
+  // all other letters after the first are dropped. SPACE is the one exception: its first
+  // letter would collide with SELECT's "S", so it keeps its consonants (SPACE -> SPC).
+  // Directions fall out naturally (UP -> U, DOWN -> D, LEFT -> L, RIGHT -> R). Always uppercased.
+  const trimmed = name.trim();
+  if (/^space$/i.test(trimmed)) return "SPC";
+  const firstLetter = (trimmed.match(/[a-zA-Z]/)?.[0] || trimmed[0] || "").toUpperCase();
+  const numbers = trimmed.match(/\d+/g) || [];
+  return numbers.length ? `${firstLetter}${numbers.map((n) => `_${n}`).join("")}` : firstLetter;
 }
 
 function stackADescendSetupsFromFiles(workspaceId: string, files: WorkspaceFileRecord[]): StackSetup[] {
