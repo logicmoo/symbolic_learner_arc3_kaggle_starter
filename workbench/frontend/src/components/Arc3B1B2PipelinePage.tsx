@@ -2309,6 +2309,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
   const [scanDataBusy, setScanDataBusy] = useState(false);
   const [initBusy, setInitBusy] = useState(false);
   const [dataDirectory, setDataDirectory] = useState("data");
+  const [scanPhase, setScanPhase] = useState("");
   const [extraModels, setExtraModels] = useState<ModelChoice[]>([]);
   const [modelProbes, setModelProbes] = useState<Record<string, { status: string; latencyMs: number }>>({});
   const [replaceGuesserOnFinish, setReplaceGuesserOnFinish] = useState(false);
@@ -4000,6 +4001,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
   };
 
   const scanAllFoundSetupsCore = async () => {
+    setScanPhase("setups");
     autoScannedSetupsRef.current = new Set();
     const payload = await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/data/files`);
     const records = scopeToDataDir((Array.isArray(payload.files) ? payload.files : []) as WorkspaceFileRecord[]);
@@ -4010,6 +4012,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
         : [];
       const columnSetups = enumerated.length ? enumerated : defaultSetups(key);
       for (let imageIndex = 0; imageIndex < columnSetups.length; imageIndex += 1) {
+        setScanPhase(`setup:${columnSetups[imageIndex].stateDir || ""}`);
         await scanSetupStatePath(stackIndex, imageIndex, columnSetups[imageIndex].stateDir || "", records, true);
       }
     }
@@ -4017,7 +4020,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
 
   const runBusy = async (work: () => Promise<void>) => {
     setInitBusy(true);
-    try { await work(); } finally { setInitBusy(false); }
+    try { await work(); } finally { setInitBusy(false); setScanPhase(""); }
   };
 
   // "Do All Scans": reset, add missing vision models, scan data + all found setups
@@ -4026,18 +4029,21 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
     setStackColumns(activeStackColumns.map((column) =>
       initialStackColumnState(pageDefinition.routeView, column.key, defaultColumnModelSelection(), defaultTimeoutSeconds)));
     const created = await addMissingVisionModelsCore();
+    setScanPhase("scanData");
     await scanDataByName();
     await scanAllFoundSetupsCore();
+    setScanPhase("pingAll");
     await pingModelsCore(() => true, created);
   });
 
-  const scanDataForSetups = () => runBusy(async () => { await scanDataByName(); });
+  const scanDataForSetups = () => runBusy(async () => { setScanPhase("scanData"); await scanDataByName(); });
   const scanAllFoundSetups = () => runBusy(scanAllFoundSetupsCore);
-  const pingAllModels = () => runBusy(() => pingModelsCore(() => true, extraModels));
-  const pingVisionModels = () => runBusy(() => pingModelsCore(isVisionModel, extraModels));
-  const pingNonVisionModels = () => runBusy(() => pingModelsCore((model) => !isVisionModel(model), extraModels));
+  const pingAllModels = () => runBusy(async () => { setScanPhase("pingAll"); await pingModelsCore(() => true, extraModels); });
+  const pingVisionModels = () => runBusy(async () => { setScanPhase("pingVision"); await pingModelsCore(isVisionModel, extraModels); });
+  const pingNonVisionModels = () => runBusy(async () => { setScanPhase("pingNonVision"); await pingModelsCore((model) => !isVisionModel(model), extraModels); });
 
   const scanSetup = (stackIndex: number, imageIndex: number, stateDir: string) => runBusy(async () => {
+    setScanPhase(`setup:${stateDir}`);
     const payload = await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/data/files`);
     const records = scopeToDataDir((Array.isArray(payload.files) ? payload.files : []) as WorkspaceFileRecord[]);
     await scanSetupStatePath(stackIndex, imageIndex, stateDir, records, true);
@@ -5652,8 +5658,11 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
     for (const part of parts) { cur = cur ? `${cur}/${part}` : part; if (/^data(\/|$)/i.test(cur)) acc.push(cur); }
     return acc;
   }))).sort((left, right) => left.localeCompare(right, undefined, { numeric: true }));
+  const toolbarBtn: CSSProperties = { border: "1px solid #2d4652", background: "#12232c", color: "#90a5af", borderRadius: "4px", padding: "6px 9px", font: "600 8px ui-monospace,monospace", cursor: "pointer", whiteSpace: "nowrap" };
+  const toolbarBtnPrimary: CSSProperties = { ...toolbarBtn, borderColor: "#2a867a", background: "#133c3b", color: "#8df4e2" };
+  const depressed = (active: boolean): CSSProperties => active ? { boxShadow: "inset 0 2px 6px rgba(0,0,0,0.55)", borderColor: "var(--cyan)", background: "#0d2b30", transform: "translateY(1px)" } : {};
   const headerToolbar = (
-    <div className="arc3-b1b2-toolbar" style={{ display: "flex", flexWrap: "wrap", gap: "6px", padding: "6px 10px", borderBottom: "1px solid var(--line)", alignItems: "center" }}>
+    <div className="arc3-b1b2-toolbar" style={{ display: "flex", flexWrap: "wrap", gap: "6px", padding: "6px 10px", borderBottom: "1px solid var(--line)", alignItems: "center", background: "#0b1820" }}>
       <label style={{ display: "flex", alignItems: "center", gap: "4px", font: "600 8px ui-monospace,monospace", letterSpacing: ".06em", color: "#69818e" }}>
         DATA DIR
         <input
@@ -5662,30 +5671,32 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
           placeholder="data"
           aria-label="Data directory for scans"
           onChange={(event) => setDataDirectory(event.target.value)}
-          style={{ width: "170px" }}
+          style={{ width: "170px", border: "1px solid #2d4652", background: "#09141b", color: "#c5d4da", borderRadius: "3px", padding: "5px 7px", font: "8px ui-monospace,monospace" }}
         />
       </label>
       <select
         aria-label="Browse for new data directory"
         value=""
         onChange={(event) => { if (event.target.value) setDataDirectory(event.target.value); }}
+        style={toolbarBtn}
       >
         <option value="">Browse For new Data Dir…</option>
         {dataDirOptions.map((dir) => <option key={dir} value={dir}>{dir}</option>)}
       </select>
-      <button type="button" className="primary" onClick={() => void initializeAndScan()} disabled={initBusy || scanDataBusy}>
+      <button type="button" style={{ ...toolbarBtnPrimary, ...depressed(initBusy) }} onClick={() => void initializeAndScan()} disabled={initBusy || scanDataBusy}>
         {initBusy ? "Working…" : "Do All Scans"}
       </button>
-      <button type="button" className="secondary" onClick={() => void scanDataForSetups()} disabled={initBusy || scanDataBusy}>Scan Data For Setups</button>
-      <button type="button" className="secondary" onClick={() => void scanAllFoundSetups()} disabled={initBusy || scanDataBusy}>Scan All Currently Found Setups and Sync Props and Files</button>
-      <button type="button" className="secondary" onClick={() => void pingAllModels()} disabled={initBusy || scanDataBusy}>Ping All Enabled Models</button>
-      <button type="button" className="secondary" onClick={() => void pingVisionModels()} disabled={initBusy || scanDataBusy}>Ping All Vision Models</button>
-      <button type="button" className="secondary" onClick={() => void pingNonVisionModels()} disabled={initBusy || scanDataBusy}>Ping All Non-vision Models</button>
+      <button type="button" aria-pressed={scanPhase === "scanData"} style={{ ...toolbarBtn, ...depressed(scanPhase === "scanData") }} onClick={() => void scanDataForSetups()} disabled={initBusy || scanDataBusy}>Scan Data For Setups</button>
+      <button type="button" aria-pressed={scanPhase === "setups" || scanPhase.startsWith("setup:")} style={{ ...toolbarBtn, ...depressed(scanPhase === "setups" || scanPhase.startsWith("setup:")) }} onClick={() => void scanAllFoundSetups()} disabled={initBusy || scanDataBusy}>Scan All Currently Found Setups and Sync Props and Files</button>
+      <button type="button" aria-pressed={scanPhase === "pingAll"} style={{ ...toolbarBtn, ...depressed(scanPhase === "pingAll") }} onClick={() => void pingAllModels()} disabled={initBusy || scanDataBusy}>Ping All Enabled Models</button>
+      <button type="button" aria-pressed={scanPhase === "pingVision"} style={{ ...toolbarBtn, ...depressed(scanPhase === "pingVision") }} onClick={() => void pingVisionModels()} disabled={initBusy || scanDataBusy}>Ping All Vision Models</button>
+      <button type="button" aria-pressed={scanPhase === "pingNonVision"} style={{ ...toolbarBtn, ...depressed(scanPhase === "pingNonVision") }} onClick={() => void pingNonVisionModels()} disabled={initBusy || scanDataBusy}>Ping All Non-vision Models</button>
       {stackColumns.flatMap((stack, stackIndex) => {
         const setups = stack.setups?.length ? stack.setups : defaultSetups(stack.key);
         return setups.map((setup, imageIndex) => {
           const label = setup.command || (setup.stateDir ? (setup.stateDir.split("/").pop() || setup.stateDir) : `Setup ${imageIndex + 1}`);
-          return <button key={`hdr-scan-${stack.key}-${imageIndex}`} type="button" className="secondary" title={`Scan setup ${setup.stateDir || label}`} onClick={() => void scanSetup(stackIndex, imageIndex, setup.stateDir || "")} disabled={initBusy || scanDataBusy}>Scan {label}</button>;
+          const active = scanPhase === `setup:${setup.stateDir || ""}`;
+          return <button key={`hdr-scan-${stack.key}-${imageIndex}`} type="button" aria-pressed={active} style={{ ...toolbarBtn, ...depressed(active) }} title={`Scan setup ${setup.stateDir || label}`} onClick={() => void scanSetup(stackIndex, imageIndex, setup.stateDir || "")} disabled={initBusy || scanDataBusy}>Scan {label}</button>;
         });
       })}
     </div>
