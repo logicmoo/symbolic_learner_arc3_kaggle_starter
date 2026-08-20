@@ -7,6 +7,10 @@
     vision/recognition
     vision/grouping
   ))
+  (subjects ([]
+    segmentation
+    vision
+  ))
   (children ([]
     vision.extract_scene_objects.automatic_llm
   ))

@@ -7,6 +7,9 @@
     vision/grouping
     graphics/reconstruction
   ))
+  (subjects ([]
+    vision
+  ))
   (implementation llm.complete)
   (inputs (
     (image Image)

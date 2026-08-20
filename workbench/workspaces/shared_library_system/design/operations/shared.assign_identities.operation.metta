@@ -7,6 +7,9 @@
     symbolic/identity
     world-modeling/entities
   ))
+  (subjects ([]
+    object-identity
+  ))
   (implementation symbolic.identity)
   (inputs (
     (entities EntityCollection)

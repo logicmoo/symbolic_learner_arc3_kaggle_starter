@@ -7,6 +7,10 @@
     vision/grouping
     world-modeling/entities
   ))
+  (subjects ([]
+    segmentation
+    world-modeling
+  ))
   (implementation vision.segment)
   (inputs (
     (observation Observation)

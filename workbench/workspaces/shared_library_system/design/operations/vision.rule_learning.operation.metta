@@ -7,6 +7,9 @@
     symbolic/rule-learning
     learning/induction
   ))
+  (subjects ([]
+    vision
+  ))
   (implementation llm.complete)
   (inputs (
     (transitions ChangeDescription)

@@ -7,6 +7,10 @@
     vision/tracking
     world-modeling/transitions
   ))
+  (subjects ([]
+    vision
+    world-modeling
+  ))
   (implementation llm.complete)
   (inputs (
     (before Image)

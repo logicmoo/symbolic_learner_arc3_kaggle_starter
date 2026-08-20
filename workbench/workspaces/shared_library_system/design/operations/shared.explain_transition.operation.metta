@@ -7,6 +7,9 @@
     world-modeling/transitions
     learning/hypotheses
   ))
+  (subjects ([]
+    world-modeling
+  ))
   (implementation symbolic.transition)
   (inputs (
     (before Observation)

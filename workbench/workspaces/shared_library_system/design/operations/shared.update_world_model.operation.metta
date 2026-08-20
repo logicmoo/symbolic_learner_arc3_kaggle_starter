@@ -7,6 +7,9 @@
     learning/hypotheses
     symbolic/reasoning
   ))
+  (subjects ([]
+    world-modeling
+  ))
   (implementation symbolic.world_model)
   (inputs (
     (hypotheses HypothesisSet)
