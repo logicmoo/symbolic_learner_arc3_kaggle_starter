@@ -694,19 +694,22 @@ function parentImagePath(path: string): string {
 }
 
 function abbreviateSegment(name: string): string {
-  // Mangle a folder segment underscore-part by underscore-part:
-  //   * the first part contributes its first letter with its ORIGINAL case preserved
-  //     (Level_1 -> L_1, level_1.dir -> l_1_d, UP -> U) plus any numbers it carries;
-  //   * later pure-word parts contribute their first letter lowercased (Alpha_Number -> A_n,
-  //     level_1.dir -> l_1_d);
-  //   * parts containing numbers contribute the full number groups, dropping stray single
-  //     axis letters (Level_1 -> L_1, Click_32x43 -> C_32_43, SELECT_x_3_y_5 -> S_3_5);
-  //   * stray single letters after the first part are dropped.
+  // Mangle a folder segment into a compact token. Split it on "_", "." and "-", then:
+  //   * the first part contributes its first letter with its ORIGINAL case preserved, plus any
+  //     numbers it carries (Level_1 -> L_1, level_1.dir -> l_1_d, UP -> U);
+  //   * every number group is kept in full; any text between numbers is deleted, so coordinate
+  //     blobs collapse (Click_32x43 -> C_32_43, SELECT_x_3_y_5 -> S_3_5);
+  //   * a later PURE-WORD part is kept as its first letter (case preserved) only when it comes
+  //     AFTER the last number (Alpha_Number -> A_N, level_1.dir -> l_1_d,
+  //     Click_at_44x55_Hard -> C_44_55_H); words before or between numbers are deleted
+  //     (Click_at_44x55_Hard_1 -> C_44_55_1).
   // SPACE is the one exception: its first letter would collide with SELECT's "S", so it keeps
   // its consonants (SPACE -> SPC). Directions fall out naturally (UP -> U, DOWN -> D, ...).
   const trimmed = name.trim();
   if (/^space$/i.test(trimmed)) return trimmed.replace(/[aeiou]/gi, "").slice(0, 3);
   const parts = trimmed.split(/[_.\-]+/).filter(Boolean);
+  let lastNumberIndex = -1;
+  parts.forEach((part, index) => { if (/\d/.test(part)) lastNumberIndex = index; });
   const tokens: string[] = [];
   parts.forEach((part, index) => {
     const digitGroups = part.match(/\d+/g) || [];
@@ -717,8 +720,8 @@ function abbreviateSegment(name: string): string {
       digitGroups.forEach((num) => tokens.push(num));
     } else if (digitGroups.length) {
       digitGroups.forEach((num) => tokens.push(num));
-    } else if (letters.length > 1) {
-      tokens.push(letters[0].toLowerCase());
+    } else if (index > lastNumberIndex && letters.length) {
+      tokens.push(letters[0]);
     }
   });
   return tokens.length ? tokens.join("_") : (trimmed[0] || "");
