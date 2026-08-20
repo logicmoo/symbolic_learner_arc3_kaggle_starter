@@ -695,22 +695,24 @@ function parentImagePath(path: string): string {
 
 function abbreviateSegment(name: string): string {
   // Mangle a folder segment underscore-part by underscore-part:
-  //   * the first part contributes its first letter, uppercased (plus any numbers it carries);
-  //   * later pure-word parts contribute their first letter, lowercased (Alpha_Number -> A_n);
+  //   * the first part contributes its first letter with its ORIGINAL case preserved
+  //     (Level_1 -> L_1, level_1.dir -> l_1_d, UP -> U) plus any numbers it carries;
+  //   * later pure-word parts contribute their first letter lowercased (Alpha_Number -> A_n,
+  //     level_1.dir -> l_1_d);
   //   * parts containing numbers contribute the full number groups, dropping stray single
   //     axis letters (Level_1 -> L_1, Click_32x43 -> C_32_43, SELECT_x_3_y_5 -> S_3_5);
   //   * stray single letters after the first part are dropped.
   // SPACE is the one exception: its first letter would collide with SELECT's "S", so it keeps
   // its consonants (SPACE -> SPC). Directions fall out naturally (UP -> U, DOWN -> D, ...).
   const trimmed = name.trim();
-  if (/^space$/i.test(trimmed)) return "SPC";
+  if (/^space$/i.test(trimmed)) return trimmed.replace(/[aeiou]/gi, "").slice(0, 3);
   const parts = trimmed.split(/[_.\-]+/).filter(Boolean);
   const tokens: string[] = [];
   parts.forEach((part, index) => {
     const digitGroups = part.match(/\d+/g) || [];
     const letters = part.replace(/[^a-zA-Z]/g, "");
     if (index === 0) {
-      const head = (letters[0] || part[0] || "").toUpperCase();
+      const head = letters[0] || part[0] || "";
       if (head) tokens.push(head);
       digitGroups.forEach((num) => tokens.push(num));
     } else if (digitGroups.length) {
@@ -719,9 +721,7 @@ function abbreviateSegment(name: string): string {
       tokens.push(letters[0].toLowerCase());
     }
   });
-  if (!tokens.length) return (trimmed[0] || "").toUpperCase();
-  tokens[0] = tokens[0].toUpperCase();
-  return tokens.join("_");
+  return tokens.length ? tokens.join("_") : (trimmed[0] || "");
 }
 
 function stackADescendSetupsFromFiles(workspaceId: string, files: WorkspaceFileRecord[]): StackSetup[] {
