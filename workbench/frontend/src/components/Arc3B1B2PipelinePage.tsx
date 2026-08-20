@@ -4101,7 +4101,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
         setupGroups[groupPos].items.push({ setup, imageIndex });
       });
       return {
-        value: `${setups.length} image${setups.length === 1 ? "" : "s"}`,
+        value: `SETUPS (${setups.length})`,
         detail: `Active: ${setups[selectedIndex]?.label || `image_${selectedIndex + 1}`}`,
         baseClass: "english-workflow-panel arc3-prolog-page-panel",
         scrollSize: "calc(100vh - 250px)",
