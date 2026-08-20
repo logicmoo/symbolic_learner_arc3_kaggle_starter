@@ -556,6 +556,10 @@ def test_b1_b2_setups_enumerate_all_data_folders() -> None:
     assert "^data\\/level_1(?:" not in source
     assert "const isLeaf = (dir: string) => !dirs.some((other) => other !== dir && other.startsWith(`${dir}/`));" in source
     assert "if (!isLeaf(dir)) continue;" in source
+    # exports/histories bookkeeping folders and any dot-directory are skipped by the scan.
+    assert 'const SCAN_IGNORED_DIR_NAMES = new Set(["exports", "histories"]);' in source
+    assert "!hasIgnoredScanSegment(entry.p)" in source
+    assert 'seg.startsWith(".") || SCAN_IGNORED_DIR_NAMES.has(seg.toLowerCase())' in source
     # Deep leaves are grouped by their root folder; the trail below the root is the command.
     assert "const group = segments[0] || relPath(dir);" in source
     assert "setupEntries.push({ dir, group, command });" in source

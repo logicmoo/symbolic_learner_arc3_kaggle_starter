@@ -727,13 +727,22 @@ function abbreviateSegment(name: string): string {
   return tokens.length ? tokens.join("_") : (trimmed[0] || "");
 }
 
+// Directories skipped entirely by the setup scan: export/history bookkeeping folders and any
+// dot-directory (a segment starting with ".").
+const SCAN_IGNORED_DIR_NAMES = new Set(["exports", "histories"]);
+function hasIgnoredScanSegment(path: string): boolean {
+  const segments = path.replace(/\\/g, "/").split("/");
+  // Only inspect directory segments; the final segment is the file name.
+  return segments.slice(0, -1).some((seg) => seg.startsWith(".") || SCAN_IGNORED_DIR_NAMES.has(seg.toLowerCase()));
+}
+
 function stackADescendSetupsFromFiles(workspaceId: string, files: WorkspaceFileRecord[]): StackSetup[] {
   // Setup directories are the LEAF folders of the data/ tree: walk every trail downward
   // and, wherever it bottoms out on a directory that has no child directories, that leaf
   // is a single setup (its group is the parent trail).
   const normFiles = files
     .map((file) => ({ file, p: file.path.replace(/\\/g, "/") }))
-    .filter((entry) => /^data\//i.test(entry.p));
+    .filter((entry) => /^data\//i.test(entry.p) && !hasIgnoredScanSegment(entry.p));
   if (!normFiles.length) return [];
   const allDirs = new Set<string>();
   for (const { p } of normFiles) {
