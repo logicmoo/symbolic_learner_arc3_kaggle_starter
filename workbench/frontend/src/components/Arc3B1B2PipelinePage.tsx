@@ -49,6 +49,7 @@ type ParsedPrologPayload = {
   new_identities?: unknown[];
   initial_identities?: unknown[];
   current_identities?: unknown[];
+  first_identities?: unknown[];
   regenerated_identities?: unknown[];
   current_hypotheses?: unknown[];
   currnet_hypotheses?: unknown[];
@@ -287,12 +288,21 @@ const COMBINED_PROMPT = COMBINED_PROMPT_PARTS.join("\n");
 const FIRST_PASS_OBJECT_GUESSES_PROMPT = [
   "generate_first_pass_object_guesses:",
   "You are given a SINGLE ARC3 image: the current game state. There is no parent image and no INPUT_FILES.",
-  "Return exactly one valid JSON object with a single required key: current_identities. Do not return Markdown or commentary. Optional key: exit_value.",
-  "current_identities must be a JSON array of object identity records. Each record includes id, type, label, and bounding_box as [x1, y1, x2, y2] (top-left and bottom-right corners, x2 > x1, y2 > y1), plus first_appeared_step and last_disappeared_step.",
+  "Return exactly one valid JSON object with a single required key: first_identities. Do not return Markdown or commentary. Optional key: exit_value.",
+  "first_identities must be a JSON array of object identity records. Each record includes id, type, label, and bounding_box as [x1, y1, x2, y2] (top-left and bottom-right corners, x2 > x1, y2 > y1), plus first_appeared_step and last_disappeared_step.",
   "Reason in the logical ARC grid (normally 64x64, zero-based; x increases to the right, y increases downward), never display pixels.",
   "Detect at least 10 meaningful objects when present: connected color regions, blocks, glyphs, borders, HUD/status elements, and compound objects. This is a fast first-pass guess of the objects in the image; downstream runners refine it.",
   "NAMING: " + DESCRIPTIVE_ID_RULE,
   "Set exit_value=loop_complete when the identity list looks stable; otherwise exit_value=next_iteration.",
+].join("\n");
+const MERGE_IDENTITIES_PROMPT = [
+  "merge_identities:",
+  "You are given several per-image identity lists via INPUT_FILES (each is a <Stem>_identities JSON produced by the upstream extraction runs).",
+  "Merge them into exactly one JSON object with a single required key: current_identities. Optional key: exit_value.",
+  "current_identities must be the deduplicated union of all supplied identities. When two records describe the same object (overlapping bounding_box and compatible color/shape/role), keep one merged record and preserve its bounding_box, lifecycle metadata, and the most descriptive snake_case id.",
+  "Do not drop identities: every distinct object from any input list must appear exactly once in current_identities.",
+  "NAMING: " + DESCRIPTIVE_ID_RULE,
+  "Set exit_value=loop_complete when the merged list is stable; otherwise exit_value=next_iteration.",
 ].join("\n");
 const GAP_DISCOVERY_PASS_PROMPT = [
   "PASS-N GAP DISCOVERY:",
@@ -317,10 +327,10 @@ const DEFAULT_VALIDATOR_PROMPT = [
 ].join("\n");
 const REMOVAL_DISCOVERY_PASS_PROMPT = [
   "remove_smallest_object:",
-  "INPUT: the upstream IMPROVED_GUESSER runner supplies current_identities plus its prolog/english files via INPUT_FILES; treat IMPROVED_GUESSER's current_identities as the authoritative catalog of objects present in the image.",
-  "Goal: update supplied current_identities in place and remove the best removable object set from the current image.",
-  "SEED FROM IMPROVED_GUESSER: first take the identities IMPROVED_GUESSER found and try to remove each of them from the current (before) image, working through IMPROVED_GUESSER's identified objects as your removal worklist before discovering anything new.",
-  "Only after IMPROVED_GUESSER's identities have been handled, act like the standard removal pass below and search for any removable objects IMPROVED_GUESSER missed.",
+  "INPUT: the upstream guesser runner supplies its identities (first_identities or current_identities) plus any prolog/english files via INPUT_FILES; treat those supplied identities as the authoritative catalog of objects present in the image.",
+  "Goal: update the supplied identities in place and remove the best removable object set from the current image.",
+  "SEED FROM UPSTREAM: first take the identities the upstream guesser found and try to remove each of them from the current (before) image, working through them as your removal worklist before discovering anything new.",
+  "Only after the upstream identities have been handled, act like the standard removal pass below and search for any removable objects that were missed.",
   "OBJECT SEARCH ORDER (look for these first):",
   "1) Leaf objects that are isolated, simple, and non-container (no nested identities inside their bounds).",
   "2) Among those leaf objects, find a similar set by shape/color/size/type/proximity.",
@@ -379,7 +389,7 @@ function stackColumnsForRoute(routeView: string): Array<{ key: StackKey; label: 
 function isB1B2PipelineRoute(routeView: string): boolean {
   return routeView === "arc3B1B2Pipeline";
 }
-const B1B2_RUNNER_NAMES = ["FIRST_GUESSER", "FIRST_REMOVER", "IMPROVED_GUESSER", "IMPROVED_REMOVER", "REGENERATOR"];
+const B1B2_RUNNER_NAMES = ["FIRST_GUESSER", "FIRST_REMOVER", "IMPROVED_GUESSER", "MERGE", "IMPROVED_REMOVER", "REGENERATOR"];
 function runnerDisplayOrdinal(routeView: string, stackKey: StackKey, runnerIndex: number): number {
   if (isB1B2PipelineRoute(routeView) && stackKey === "B") return runnerIndex;
   return runnerIndex + 1;
@@ -390,13 +400,14 @@ function runnerDisplayId(routeView: string, stackKey: StackKey, runnerIndex: num
   }
   return `${stackKey}${runnerDisplayOrdinal(routeView, stackKey, runnerIndex)}`;
 }
-function runnerRole(routeView: string, stackKey: StackKey, runnerIndex: number): "guess" | "extraction" | "removal" | "regenerated" | "default" {
+function runnerRole(routeView: string, stackKey: StackKey, runnerIndex: number): "guess" | "extraction" | "removal" | "merge" | "regenerated" | "default" {
   if (isB1B2PipelineRoute(routeView) && stackKey === "B") {
     if (runnerIndex === 0) return "guess";
     if (runnerIndex === 1) return "removal";
     if (runnerIndex === 2) return "extraction";
-    if (runnerIndex === 3) return "removal";
-    if (runnerIndex === 4) return "regenerated";
+    if (runnerIndex === 3) return "merge";
+    if (runnerIndex === 4) return "removal";
+    if (runnerIndex === 5) return "regenerated";
   } else {
     if (stackKey === "B" && runnerIndex === 0) return "removal";
     if (stackKey === "B" && runnerIndex === 1) return "regenerated";
@@ -404,7 +415,7 @@ function runnerRole(routeView: string, stackKey: StackKey, runnerIndex: number):
   return "default";
 }
 function defaultRunnerCountForRoute(routeView: string): number {
-  return isB1B2PipelineRoute(routeView) ? 5 : 3;
+  return isB1B2PipelineRoute(routeView) ? 6 : 3;
 }
 function defaultSetupIndexForRunner(routeView: string, stackKey: StackKey, runnerIndex: number): number {
   const role = runnerRole(routeView, stackKey, runnerIndex);
@@ -415,10 +426,11 @@ function defaultInputFilesSourceIdsForRunner(routeView: string, stackKey: StackK
   if (isB1B2PipelineRoute(routeView)) {
     const role = runnerRole(routeView, stackKey, runnerIndex);
     if (role === "guess") return [];
-    if (role === "extraction") return ["runner:FIRST_GUESSER", "ALL-Setup1"];
     if (role === "removal") return runnerIndex < 2
       ? ["runner:FIRST_GUESSER"]
-      : ["runner:IMPROVED_GUESSER", "runner:FIRST_GUESSER"];
+      : ["runner:MERGE"];
+    if (role === "extraction") return ["runner:FIRST_REMOVER"];
+    if (role === "merge") return ["runner:IMPROVED_GUESSER"];
   }
   return ["ALL-Setup1"];
 }
@@ -1831,6 +1843,7 @@ function defaultRunnerPrompt(routeView: string, stackKey: StackKey, runnerIndex:
   if (role === "guess") return FIRST_PASS_OBJECT_GUESSES_PROMPT;
   if (role === "extraction") return COMBINED_PROMPT;
   if (role === "removal") return REMOVAL_DISCOVERY_PASS_PROMPT;
+  if (role === "merge") return MERGE_IDENTITIES_PROMPT;
   if (role === "regenerated") return REGENERATED_IDENTITIES_PROMPT;
   if (runnerIndex === 0) return COMBINED_PROMPT;
   return [
@@ -1845,6 +1858,7 @@ function primaryPromptName(routeView: string, stackKey: StackKey, runnerIndex: n
   if (role === "guess") return "generate_first_pass_object_guesses";
   if (role === "extraction") return "generate_prolog_and_english";
   if (role === "removal") return "remove_smallest_object";
+  if (role === "merge") return "merge_identities";
   if (role === "regenerated") return "regenerated_identities_from_many_objects";
   if (stackKey === "A" && runnerIndex === 0) return "circle_one_identity_at_a_time";
   return `stack_${stackKey.toLowerCase()}${runnerDisplayOrdinal(routeView, stackKey, runnerIndex)}_identity_pass`;
@@ -2824,9 +2838,13 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
     const imageSourceBeforeLabel = imageFieldLabel("before");
     const imageSourceAfterLabel = imageFieldLabel("after");
     const bColumn = stackColumns.find((candidate) => candidate.key === "B");
-    const b1RunnerIndex = bColumn?.runners.findIndex((candidate, index) =>
-      isRemovalDiscoveryRunner(pageDefinition.routeView, "B", index)
-    ) ?? -1;
+    const b1RunnerIndex = (() => {
+      if (!bColumn) return -1;
+      for (let index = bColumn.runners.length - 1; index >= 0; index -= 1) {
+        if (isRemovalDiscoveryRunner(pageDefinition.routeView, "B", index)) return index;
+      }
+      return -1;
+    })();
     const b1Runner = bColumn && b1RunnerIndex >= 0 ? bColumn.runners[b1RunnerIndex] : null;
     const bucketManyObjects = (activeSetup?.analysis?.subimages || [])
       .filter((item) => /^many_objects/.test(item.key))
@@ -2960,7 +2978,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
               : `Use stack ${stack.key} fields ${imageSourceBeforeLabel}/${imageSourceAfterLabel}. Treat image #1 as parent and image #2 as current state.`,
             !guessRole && isGapPass ? "Image #3 is debug_overlay_image for pass-N coverage gap discovery." : "",
             guessRole
-              ? "Return only current_identities in the JSON response."
+              ? "Return only first_identities in the JSON response."
               : "Also generate current_identities, current_hypotheses, action_history, objects_english, differences_english, and rules_english in the JSON response.",
             filesSources.length
               ? `Files input sources: ${filesSources.map((source) => source.label).join(" | ")}.`

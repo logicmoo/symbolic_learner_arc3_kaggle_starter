@@ -42,18 +42,25 @@ def test_b1_b2_component_has_pipeline_contract() -> None:
     assert "REMOVAL_DISCOVERY_PASS_PROMPT" in source
     assert "REGENERATED_IDENTITIES_PROMPT" in source
     assert "isB1B2PipelineRoute" in source
-    assert "return isB1B2PipelineRoute(routeView) ? 5 : 3;" in source
-    assert 'const B1B2_RUNNER_NAMES = ["FIRST_GUESSER", "FIRST_REMOVER", "IMPROVED_GUESSER", "IMPROVED_REMOVER", "REGENERATOR"];' in source
+    assert "return isB1B2PipelineRoute(routeView) ? 6 : 3;" in source
+    assert 'const B1B2_RUNNER_NAMES = ["FIRST_GUESSER", "FIRST_REMOVER", "IMPROVED_GUESSER", "MERGE", "IMPROVED_REMOVER", "REGENERATOR"];' in source
     assert 'return pageDefinition.routeView === "arc3B1B2Pipeline" ? "IMPROVED_GUESSER" : "A1";' in source
-    # Pairs: FIRST_GUESSER -> FIRST_REMOVER, then IMPROVED_GUESSER -> IMPROVED_REMOVER, then REGENERATOR.
+    # Scatter-gather chain: FIRST_GUESSER -> FIRST_REMOVER -> IMPROVED_GUESSER -> MERGE -> IMPROVED_REMOVER -> REGENERATOR.
     assert 'if (runnerIndex === 0) return "guess";' in source
     assert 'if (runnerIndex === 1) return "removal";' in source
     assert 'if (runnerIndex === 2) return "extraction";' in source
+    assert 'if (runnerIndex === 3) return "merge";' in source
+    assert 'if (runnerIndex === 4) return "removal";' in source
+    assert 'if (runnerIndex === 5) return "regenerated";' in source
     assert 'if (role === "extraction") return COMBINED_PROMPT;' in source
     assert 'if (role === "extraction") return "generate_prolog_and_english";' in source
+    assert 'if (role === "merge") return "merge_identities";' in source
+    assert "const MERGE_IDENTITIES_PROMPT = [" in source
     assert '["runner:FIRST_GUESSER"]' in source
-    assert '["runner:IMPROVED_GUESSER", "runner:FIRST_GUESSER"]' in source
-    assert "SEED FROM IMPROVED_GUESSER" in source
+    assert '["runner:FIRST_REMOVER"]' in source
+    assert '["runner:IMPROVED_GUESSER"]' in source
+    assert '["runner:MERGE"]' in source
+    assert "SEED FROM UPSTREAM" in source
     # Experimental write-back: REGENERATOR result can replace IMPROVED_GUESSER's list.
     assert "replaceGuesserOnFinish" in source
     assert "Replace IMPROVED_GUESSER list with this result on finish" in source
@@ -72,29 +79,30 @@ def test_b1_b2_component_has_pipeline_contract() -> None:
 
 def test_b1_b2_first_guesser_single_image_first_pass() -> None:
     source = COMPONENT.read_text(encoding="utf-8")
-    # A "FIRST_GUESSER" runner goes first: pairs are FIRST_GUESSER/FIRST_REMOVER then IMPROVED_GUESSER/IMPROVED_REMOVER.
-    assert 'const B1B2_RUNNER_NAMES = ["FIRST_GUESSER", "FIRST_REMOVER", "IMPROVED_GUESSER", "IMPROVED_REMOVER", "REGENERATOR"];' in source
-    # The pipeline now has five runners in stack B.
-    assert "return isB1B2PipelineRoute(routeView) ? 5 : 3;" in source
-    # Roles: guess, removal, extraction, removal, regenerated.
+    # A "FIRST_GUESSER" runner goes first in the 6-stage scatter-gather chain.
+    assert 'const B1B2_RUNNER_NAMES = ["FIRST_GUESSER", "FIRST_REMOVER", "IMPROVED_GUESSER", "MERGE", "IMPROVED_REMOVER", "REGENERATOR"];' in source
+    # The pipeline now has six runners in stack B.
+    assert "return isB1B2PipelineRoute(routeView) ? 6 : 3;" in source
+    # Roles: guess, removal, extraction, merge, removal, regenerated.
     assert 'if (runnerIndex === 0) return "guess";' in source
     assert 'if (runnerIndex === 1) return "removal";' in source
     assert 'if (runnerIndex === 2) return "extraction";' in source
-    assert 'if (runnerIndex === 3) return "removal";' in source
-    assert 'if (runnerIndex === 4) return "regenerated";' in source
+    assert 'if (runnerIndex === 3) return "merge";' in source
+    assert 'if (runnerIndex === 4) return "removal";' in source
+    assert 'if (runnerIndex === 5) return "regenerated";' in source
     # Input: a single image, and no INPUT_FILES text sources.
     assert 'if (role === "guess") return [];' in source
     assert 'const guessRole = role === "guess";' in source
     assert "const image = guessRole" in source
     assert "Image #1 is the current ARC3 state; there is no parent image." in source
-    # Output: only current_identities, via a dedicated lean prompt (not COMBINED_PROMPT).
+    # Output: only first_identities, via a dedicated lean prompt (not COMBINED_PROMPT).
     assert 'if (role === "guess") return "generate_first_pass_object_guesses";' in source
     assert 'if (role === "guess") return FIRST_PASS_OBJECT_GUESSES_PROMPT;' in source
     assert "const FIRST_PASS_OBJECT_GUESSES_PROMPT = [" in source
-    assert "single required key: current_identities" in source
-    assert "Return only current_identities in the JSON response." in source
-    # FIRST_GUESSER still feeds the chain: the extraction (IMPROVED_GUESSER) runner consumes it.
-    assert 'if (role === "extraction") return ["runner:FIRST_GUESSER", "ALL-Setup1"];' in source
+    assert "single required key: first_identities" in source
+    assert "Return only first_identities in the JSON response." in source
+    # The extraction runner (IMPROVED_GUESSER) consumes the removal pngs from FIRST_REMOVER.
+    assert 'if (role === "extraction") return ["runner:FIRST_REMOVER"];' in source
 
 
 def test_b1_b2_setup_switch_expands_selected_to_full() -> None:
