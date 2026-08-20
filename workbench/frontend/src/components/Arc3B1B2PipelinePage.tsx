@@ -1241,7 +1241,7 @@ function dominantColorRatio(
 function validatePassOutput(
   previous: ParsedPrologPayload | null | undefined,
   next: ParsedPrologPayload | null | undefined,
-  frame: ImageValidationFrame,
+  frame: ImageValidationFrame | null,
   mode: "baseline" | "gap",
 ): PassValidationResult {
   const issues: ValidationIssue[] = [];
@@ -1271,6 +1271,12 @@ function validatePassOutput(
   for (const identity of all) {
     if (!identity.bounding_box) {
       issues.push({ id: identity.id, code: "missing_bbox", detail: "Every identity must include bounding_box." });
+      continue;
+    }
+    if (!frame) {
+      if (!previousIds.has(identity.id) && (!identity.type || !identity.sub_type)) {
+        issues.push({ id: identity.id, code: "missing_type_or_sub_type", detail: "New identities must include type and sub_type." });
+      }
       continue;
     }
     const pixelBox = normalizeBboxToPixels(identity.bounding_box, frame.width, frame.height);
@@ -2062,6 +2068,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
   const [editorError, setEditorError] = useState("");
   const [groupOpen, setGroupOpen] = useState<Record<string, boolean>>({});
   const [lineCounts, setLineCounts] = useState<Record<string, number>>({});
+  const [dataFiles, setDataFiles] = useState<WorkspaceFileRecord[]>([]);
   const lineCountFetchedRef = useRef<Set<string>>(new Set());
   const autoScannedSetupsRef = useRef<Set<string>>(new Set());
   const controllersRef = useRef<Record<string, AbortController | null>>({});
@@ -2894,16 +2901,49 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
       ? (imageSourceAfter || imageSourceBefore)
       : imageSourceBefore;
     const guessRole = role === "guess";
+    const pickedImagePath = (() => {
+      for (const sourceId of (runner.filesSourceIds || [])) {
+        const token = sourceId.trim();
+        let path = "";
+        if (token.startsWith("data-file:")) path = token.slice("data-file:".length);
+        else {
+          const match = /^setup-file:[^:]+:(.+)$/i.exec(token);
+          if (match) path = match[1];
+        }
+        if (path && /\.(png|jpe?g|gif|webp|bmp)$/i.test(path)) return path;
+      }
+      // Fall back to the active setup's own image (e.g. data/level_1/image.png).
+      const dir = normalizeAssetPath(activeSetup?.stateDir || "").replace(/\/+$/, "").toLowerCase();
+      if (dir) {
+        const exact = dataFiles.find((file) => (file.path || "").replace(/\\/g, "/").toLowerCase() === `${dir}/image.png`);
+        if (exact) return (exact.path || "").replace(/\\/g, "/");
+        const anyImage = dataFiles.find((file) => {
+          const normalized = (file.path || "").replace(/\\/g, "/");
+          return /\.(png|jpe?g)$/i.test(normalized) && normalized.toLowerCase().startsWith(`${dir}/`);
+        });
+        if (anyImage) return (anyImage.path || "").replace(/\\/g, "/");
+      }
+      return "";
+    })();
+    const pickedImage = pickedImagePath
+      ? { name: pickedImagePath, dataUrl: workspaceAssetUrl(workspaceId, pickedImagePath) }
+      : null;
+    const guessImageSource = pickedImage?.dataUrl
+      || imageSourceAfter?.dataUrl
+      || imageSourceBefore?.dataUrl
+      || "";
+    const beforeUrl = effectiveImageSourceBefore?.dataUrl || guessImageSource;
+    const afterUrl = imageSourceAfter?.dataUrl || guessImageSource;
     if (!effectiveModelId) {
       setRunnerState(stackIndex, runnerIndex, (previous) => ({ ...previous, error: "Select an enabled model first. exit_value=unran." }));
       return;
     }
-    if (guessRole ? !imageSourceAfter : (!effectiveImageSourceBefore || !imageSourceAfter)) {
+    if (guessRole ? !guessImageSource : (!beforeUrl || !afterUrl)) {
       setRunnerState(stackIndex, runnerIndex, (previous) => ({
         ...previous,
         error: guessRole
-          ? `Load ${imageSourceAfterLabel} first. exit_value=unran.`
-          : `Load ${imageSourceBeforeLabel}/${imageSourceAfterLabel} first. exit_value=unran.`,
+          ? `Pick an image in INPUT_FILES (or set ${imageSourceAfterLabel}) first. exit_value=unran.`
+          : `Pick an image in INPUT_FILES (or set ${imageSourceBeforeLabel}/${imageSourceAfterLabel}) first. exit_value=unran.`,
       }));
       return;
     }
@@ -2944,7 +2984,9 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
         }))
       ));
       const filesSources = resolveFilesSources(runner.filesSourceIds, filesAddress, stack.key, outputHistory, stackColumns, runner);
-      const validationFrame = await buildImageValidationFrame(imageSourceAfter.dataUrl);
+      const validationFrame = await buildImageValidationFrame(
+        guessRole ? guessImageSource : afterUrl,
+      ).catch(() => null);
       let latestParsed = runner.parsed;
       let acceptedAnyPass = false;
       const totalPasses = autoLoop ? Math.max(1, Math.floor(runner.autoLoopMaxIterations || AUTO_GAP_MAX_PASSES)) : 1;
@@ -2963,26 +3005,26 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
         const isGapPass = autoLoop && passNumber > 1;
         const baseImageLabels = {
           before: `${imageSourceBeforeLabel} (${effectiveImageSourceBefore?.name ?? "current"})`,
-          after: `${imageSourceAfterLabel} (${imageSourceAfter.name})`,
+          after: `${imageSourceAfterLabel} (${imageSourceAfter?.name ?? "current"})`,
         };
         let overlaySource = "";
         const image = guessRole
-          ? imageSourceAfter.dataUrl
+          ? guessImageSource
           : isGapPass
           ? await (async () => {
             overlaySource = await createIdentityOverlay(
-              imageSourceAfter.dataUrl,
+              afterUrl,
               asIdentityCandidates(priorPassParsed),
             );
             return triSheet(
-              { label: baseImageLabels.before, source: effectiveImageSourceBefore!.dataUrl },
-              { label: baseImageLabels.after, source: imageSourceAfter.dataUrl },
+              { label: baseImageLabels.before, source: beforeUrl },
+              { label: baseImageLabels.after, source: afterUrl },
               { label: "debug_overlay_image (claimed boxes)", source: overlaySource },
             );
           })()
           : await pairSheet(
-            { label: baseImageLabels.before, source: effectiveImageSourceBefore!.dataUrl },
-            { label: baseImageLabels.after, source: imageSourceAfter.dataUrl },
+            { label: baseImageLabels.before, source: beforeUrl },
+            { label: baseImageLabels.after, source: afterUrl },
           );
         if (overlaySource) {
           setRunnerState(stackIndex, runnerIndex, (previous) => ({ ...previous, loopImageWithCircles: overlaySource }));
@@ -3417,6 +3459,26 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
   };
   useEffect(() => {
     if (!workspaceId) return;
+    // Load the full data/ listing (which includes images) once, so the INPUT_FILES combo
+    // can offer every file in column A and runners can submit a picked image.
+    let canceled = false;
+    void request(`/api/workspaces/${encodeURIComponent(workspaceId)}/data/files`)
+      .then((payload) => {
+        if (canceled) return;
+        const listed = Array.isArray(payload.files) ? payload.files : [];
+        const valid = listed.filter((item): item is WorkspaceFileRecord => Boolean(item)
+          && typeof (item as Record<string, unknown>).path === "string"
+          && typeof (item as Record<string, unknown>).name === "string"
+          && typeof (item as Record<string, unknown>).suffix === "string");
+        if (valid.length) setDataFiles(valid);
+      })
+      .catch(() => undefined);
+    return () => {
+      canceled = true;
+    };
+  }, [workspaceId]);
+  useEffect(() => {
+    if (!workspaceId) return;
     // Auto-scan each newly created setup once so its file groups populate without a
     // manual [scan] per setup. One shared /data/files fetch feeds every pending setup.
     const pending: Array<{ stackIndex: number; imageIndex: number; fallbackDir: string }> = [];
@@ -3447,6 +3509,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
         // Fall back to the files prop when the data listing endpoint is unavailable.
       }
       if (canceled) return;
+      setDataFiles(records);
       for (const { stackIndex, imageIndex, fallbackDir } of pending) {
         await scanSetupStatePath(stackIndex, imageIndex, fallbackDir, records);
       }
@@ -4391,7 +4454,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                           ))
                         ))
                       )),
-                      ...files
+                      ...(dataFiles.length ? dataFiles : files)
                         .map((file) => (file.path || "").replace(/\\/g, "/"))
                         .filter((path) => /^data\//i.test(path))
                         .sort((left, right) => left.localeCompare(right, undefined, { numeric: true }))

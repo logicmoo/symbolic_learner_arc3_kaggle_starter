@@ -132,6 +132,23 @@ def test_b1_b2_input_files_combo_lists_all_setup_files() -> None:
     # It also lists every data/ file directly from the files prop (reliable, no scan needed).
     assert 'value: `data-file:${path}`,' in source
     assert 'const dataFileMatch = /^data-file:(.+)$/i.exec(trimmed);' in source
+    # The combo prefers the full /data/files listing (which includes images) when available.
+    assert "...(dataFiles.length ? dataFiles : files)" in source
+
+
+def test_b1_b2_runner_submits_picked_image_and_tolerates_missing_frame() -> None:
+    source = COMPONENT.read_text(encoding="utf-8")
+    # A runner can submit an image picked in INPUT_FILES (data-file/setup-file image path).
+    assert "if (path && /\\.(png|jpe?g|gif|webp|bmp)$/i.test(path)) return path;" in source
+    assert "dataUrl: workspaceAssetUrl(workspaceId, pickedImagePath)" in source
+    assert "const guessImageSource = pickedImage?.dataUrl" in source
+    assert "const image = guessRole" in source
+    assert "? guessImageSource" in source
+    # The image validation frame no longer crashes the run when no image loads.
+    assert ").catch(() => null);" in source
+    assert "frame: ImageValidationFrame | null," in source
+    # The full data listing (with images) is captured for the combo/image resolution.
+    assert "setDataFiles(records);" in source
 
 
 def test_b1_b2_setup_switch_expands_selected_to_full() -> None:
