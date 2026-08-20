@@ -353,7 +353,7 @@ const REMOVAL_DISCOVERY_PASS_PROMPT = [
   "SELECTION HANDOFF: return current_identities as a SINGLE entry — ONLY the object you are extracting — with its descriptive snake_case id plus type, sub_type, and bounding_box [x1, y1, x2, y2] (x2 > x1, y2 > y1) so the pipeline can crop it. current_identities must contain no other identities, no lifecycle, and no groups.",
   DESCRIPTIVE_ID_RULE,
   "EXTRACTED OBJECT IMAGE: the extracted object is emitted as an image file named obj_<ID>.png, where <ID> is that object's descriptive id.",
-  "NEW ORIGINAL IMAGE: the current original with the extracted object's pixels removed is emitted as image_without_object and saved by appending _<n>_removed.png (n = this pass number, e.g. original_1_removed.png); that image becomes the new original image consumed by the next pass.",
+  "NEW ORIGINAL IMAGE: the current original with the extracted object's pixels removed is emitted as image_without_object and saved as <original>_<n>_removed.png where n is the pass number (original_1_removed.png, then original_2_removed.png next pass, and so on — the pass number increments, the stem does not compound); that image becomes the new original image consumed by the next pass.",
   "DOCUMENT MUTATION: take the document you were given and tag the extracted object with extracted=true, extracted_to=obj_<ID>.png, and extracted_from set to the original image this pass consumed; note that later passes use the new _<n>_removed.png image as their original. Carry every other part of the received document forward unchanged — do not add or drop other entries.",
   "Always carry BOTH images forward for downstream processing: obj_<ID>.png (the extracted object) and image_without_object (the new original).",
   "BACKGROUND FILL: when the object is lifted out, its bounding-box region is automatically inpainted with the surrounding background (for example grass under a soccer player) so image_without_object stays clean — you do not need to ask for this.",
@@ -3317,7 +3317,8 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                   const removedId = selectedRemovable.id;
                   const objFileName = `obj_${removedId}.png`;
                   const consumedOriginal = imageSourceAfter.name || "original";
-                  const newOriginalName = `${consumedOriginal.replace(/\.[^.]+$/, "")}_${passNumber}_removed.png`;
+                  const originalStem = consumedOriginal.replace(/\.[^.]+$/, "").replace(/_\d+_removed$/, "");
+                  const newOriginalName = `${originalStem}_${passNumber}_removed.png`;
                   parsedRecord[`obj_${removedId}`] = removalArtifacts.objectImage;
                   parsedRecord.image_of_object_removed = removalArtifacts.objectImage;
                   parsedRecord.image_without_object = removalArtifacts.backgroundImage;
