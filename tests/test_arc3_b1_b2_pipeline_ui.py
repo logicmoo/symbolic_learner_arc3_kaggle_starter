@@ -556,7 +556,9 @@ def test_b1_b2_setups_enumerate_all_data_folders() -> None:
     assert "^data\\/level_1(?:" not in source
     assert "const isLeaf = (dir: string) => !dirs.some((other) => other !== dir && other.startsWith(`${dir}/`));" in source
     assert "if (!isLeaf(dir)) continue;" in source
-    assert "setupEntries.push({ dir, group: relPath(parent) || relPath(dir) });" in source
+    # Deep leaves are grouped by their root folder; the trail below the root is the command.
+    assert "const group = segments[0] || relPath(dir);" in source
+    assert "setupEntries.push({ dir, group, command });" in source
     assert "command ?? setupCommandFromPath(`${dir}/frame`)" in source
     # Numeric-aware ordering (level_10 after level_1) and group.Setup_N names.
     assert "{ numeric: true }" in source

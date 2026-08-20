@@ -712,14 +712,16 @@ function stackADescendSetupsFromFiles(workspaceId: string, files: WorkspaceFileR
   }
   const dirs = [...allDirs];
   const relPath = (dir: string) => dir.replace(/^data\/?/i, "");
-  // A setup is a LEAF directory: follow each trail down and, once it bottoms out on a
-  // directory with no child directories, treat that leaf as a single setup.
+  // A setup is a LEAF directory (bottom of each trail). Deep leaves are named by their
+  // ROOT folder (group), and the trail of folder names below the root becomes the command.
   const isLeaf = (dir: string) => !dirs.some((other) => other !== dir && other.startsWith(`${dir}/`));
   const setupEntries: Array<{ dir: string; group: string; command?: string }> = [];
   for (const dir of dirs) {
     if (!isLeaf(dir)) continue;
-    const parent = dir.includes("/") ? dir.slice(0, dir.lastIndexOf("/")) : "";
-    setupEntries.push({ dir, group: relPath(parent) || relPath(dir) });
+    const segments = relPath(dir).split("/").filter(Boolean);
+    const group = segments[0] || relPath(dir);
+    const command = segments.length > 1 ? segments.slice(1).join("/") : undefined;
+    setupEntries.push({ dir, group, command });
   }
   if (!setupEntries.length) return [];
   const imageByDir = new Map<string, string>();
