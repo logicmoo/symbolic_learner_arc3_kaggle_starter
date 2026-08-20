@@ -681,3 +681,74 @@ def test_llm_response_parser_surfaces_embedded_provider_error() -> None:
 def test_llm_response_parser_reports_unexpected_keys() -> None:
     with pytest.raises(RuntimeError, match=r"unsupported response shape \(keys: id, model\)"):
         _llm_response_text({"id": "response-id", "model": "unexpected"})
+
+
+def test_declared_subject_matter_route_falls_back_when_no_handler_registered() -> None:
+    root = DEFAULT_WORKSPACES_ROOT / "shared_library_system"
+    # Without a route predicate the declared abstract label is returned verbatim
+    # (preserves legacy resolution for callers that do not know the registry).
+    direct = resolve_operation_implementation(root, "shared.extract_entities")
+    assert direct.get("direct") is True
+    assert direct["implementation"]["implementation"] == "vision.segment"
+    # With the engine's route predicate, a declared-but-unregistered subject-matter
+    # label degrades to the automatic LLM fallback instead of an unknown-operation error.
+    resolved = resolve_operation_implementation(
+        root,
+        "shared.extract_entities",
+        is_known_route={"core.echo", "llm.complete"}.__contains__,
+    )
+    assert resolved["fallback"] is True
+    assert resolved["implementation"]["implementation"] == "llm.complete"
+    assert resolved["implementation"]["id"] == "shared.extract_entities.automatic_llm_fallback"
+
+
+def test_known_direct_route_is_preserved_when_predicate_supplied() -> None:
+    resolved = resolve_operation_implementation(
+        DEFAULT_WORKSPACES_ROOT / "shared_library_system",
+        "shared.echo",
+        is_known_route={"core.echo"}.__contains__,
+    )
+    assert resolved["direct"] is True
+    assert resolved["implementation"]["implementation"] == "core.echo"
+
+
+def test_materialize_step_uses_llm_fallback_for_unregistered_route() -> None:
+    executable = materialize_workflow_step(
+        {"id": "seg", "workspaceId": "shared_library_system"},
+        {"id": "s1", "operation": "shared.extract_entities", "inputs": {"observation": "obs"}},
+        is_known_route={"llm.complete"}.__contains__,
+    )
+    assert executable["implementation"] == "llm.complete"
+    assert executable["implementationVariant"] == "shared.extract_entities.automatic_llm_fallback"
+    assert executable["parameters"].get("automaticFallback") is True
+
+
+def test_engine_registry_reports_known_and_unknown_routes() -> None:
+    from workflow_engine_api import engine
+
+    assert engine.registry.has("llm.complete") is True
+    assert engine.registry.has("core.echo") is True
+    assert engine.registry.has("vision.segment") is False
+
+
+def test_invoke_operation_runs_declared_only_operation_via_fallback(monkeypatch: pytest.MonkeyPatch) -> None:
+    sent: dict[str, object] = {}
+
+    class Response:
+        def __enter__(self): return self
+        def __exit__(self, *_args: object) -> None: return None
+        def read(self) -> bytes:
+            return json.dumps({"choices": [{"message": {"content": '{"entities": []}'}}]}).encode()
+
+    def urlopen(request: object, **_kwargs: object) -> Response:
+        sent.update(json.loads(getattr(request, "data").decode()))
+        return Response()
+
+    monkeypatch.setenv("OPENROUTER_API_KEY", "openrouter-test-key")
+    monkeypatch.setattr("workflow_providers.urllib.request.urlopen", urlopen)
+    result = invoke_operation("shared_library_system", "shared.extract_entities", {
+        "inputs": {"observation": "a grid of colored cells"},
+    })
+    assert result["implementation"]["route"] == "llm.complete"
+    assert result["implementation"]["id"] == "shared.extract_entities.automatic_llm_fallback"
+    assert result["outputs"] == {"entities": []}

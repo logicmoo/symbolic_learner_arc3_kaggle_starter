@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from backend_library import load_workspace_backend_records
 from model_library import resolve_model_records
@@ -177,7 +177,7 @@ def _model_execution_parameters(
     return {key: value for key, value in parameters.items() if value is not None}
 
 
-def materialize_workflow_step(workflow: dict[str, Any], step: dict[str, Any]) -> dict[str, Any]:
+def materialize_workflow_step(workflow: dict[str, Any], step: dict[str, Any], *, is_known_route: Callable[[str], bool] | None = None) -> dict[str, Any]:
     """Resolve a workflow_step/operation reference into an executable engine operation step."""
     operation_id = step.get("operation")
     if not operation_id:
@@ -188,6 +188,7 @@ def materialize_workflow_step(workflow: dict[str, Any], step: dict[str, Any]) ->
         workspace_root,
         str(operation_id),
         str(step.get("implementationVariant")) if step.get("implementationVariant") else None,
+        is_known_route=is_known_route,
     )
     operation = resolved["operation"]
     implementation = resolved["implementation"]
@@ -301,8 +302,8 @@ def materialize_workflow_step(workflow: dict[str, Any], step: dict[str, Any]) ->
     }
 
 
-def materialize_workflow(workflow: dict[str, Any]) -> dict[str, Any]:
+def materialize_workflow(workflow: dict[str, Any], *, is_known_route: Callable[[str], bool] | None = None) -> dict[str, Any]:
     return {
         **workflow,
-        "steps": [materialize_workflow_step(workflow, step) for step in workflow.get("steps") or []],
+        "steps": [materialize_workflow_step(workflow, step, is_known_route=is_known_route) for step in workflow.get("steps") or []],
     }

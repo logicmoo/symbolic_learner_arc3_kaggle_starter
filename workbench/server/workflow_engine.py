@@ -42,6 +42,9 @@ class OperationRegistry:
             raise KeyError(f'unknown operation implementation: {name}')
         return self._operations[name]
 
+    def has(self, name: str) -> bool:
+        return name in self._operations
+
     def describe(self) -> list[dict[str, Any]]:
         return [{'name': s.name, 'inputs': s.inputs, 'outputs': s.outputs} for s in self._operations.values()]
 

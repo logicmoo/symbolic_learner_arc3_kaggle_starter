@@ -22,7 +22,7 @@ class WorkspaceAwareWorkflowEngine(AdvancedWorkflowEngine):
 
     def validate(self, document: dict[str, Any]) -> list[str]:
         try:
-            executable = materialize_workflow(document)
+            executable = materialize_workflow(document, is_known_route=self.registry.has)
         except (KeyError, ValueError) as error:
             return [str(error)]
         return super().validate(executable)
@@ -31,7 +31,7 @@ class WorkspaceAwareWorkflowEngine(AdvancedWorkflowEngine):
         run = self.get_run(run_id)
         workflow = self.get_workflow(run['workflowId'], run['workflowVersion'])
         try:
-            executable = materialize_workflow_step(workflow, step)
+            executable = materialize_workflow_step(workflow, step, is_known_route=self.registry.has)
         except (KeyError, ValueError) as error:
             return self._handle_failure(run_id, step, error)
         super()._execute_advanced_step(run_id, executable)

@@ -81,6 +81,7 @@ def invoke_operation(
             workspace_root,
             operation_id,
             str(requested) if requested else None,
+            is_known_route=engine.registry.has,
         )
         operation = resolved["operation"]
         implementation = resolved["implementation"]
@@ -105,6 +106,7 @@ def invoke_operation(
         executable = materialize_workflow_step(
             {"id": "operation_playground", "workspaceId": workspace_id},
             step,
+            is_known_route=engine.registry.has,
         )
         if executable.get("kind") == "human":
             response = {

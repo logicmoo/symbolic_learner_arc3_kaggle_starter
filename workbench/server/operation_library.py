@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any, Callable, Iterable
 
 from metta_resource_codec import json_document_to_metta
 from resource_relationships import points_to, relationship_ids
@@ -159,7 +159,7 @@ def load_workspace_operation_implementation_records(workspace_root: Path, *, wor
     return [r for r in _effective_resources(workspace_root, workspaces_root=workspaces_root) if relationship_ids((r.get("document") or {}).get("parents"))]
 
 
-def resolve_operation_implementation(workspace_root: Path, operation_id: str, requested: str | None = None, *, workspaces_root: Path = DEFAULT_WORKSPACES_ROOT) -> dict[str, Any]:
+def resolve_operation_implementation(workspace_root: Path, operation_id: str, requested: str | None = None, *, workspaces_root: Path = DEFAULT_WORKSPACES_ROOT, is_known_route: Callable[[str], bool] | None = None) -> dict[str, Any]:
     operations = {str((r.get("document") or {}).get("id")): r for r in load_workspace_operation_records(workspace_root, workspaces_root=workspaces_root)}
     implementations = {str((r.get("document") or {}).get("id")): r for r in load_workspace_operation_implementation_records(workspace_root, workspaces_root=workspaces_root)}
     operation_record = operations.get(operation_id)
@@ -191,7 +191,12 @@ def resolve_operation_implementation(workspace_root: Path, operation_id: str, re
     variants = list(dict.fromkeys([*declared_variants, *reverse_variants]))
     if not variants:
         direct_route = str(operation.get("implementation") or "").strip()
-        if direct_route:
+        # A declared route is only executable when the engine registers a handler
+        # for it. Abstract subject-matter labels (e.g. vision.segment, symbolic.identity)
+        # have no handler, so they must degrade to the automatic LLM fallback rather
+        # than being handed to the engine as an unknown implementation.
+        direct_executable = bool(direct_route) and (is_known_route is None or is_known_route(direct_route))
+        if direct_executable:
             if requested and requested != operation_id:
                 raise ValueError(f"implementation {requested} is not allowed by operation {operation_id}")
             return {
@@ -201,7 +206,10 @@ def resolve_operation_implementation(workspace_root: Path, operation_id: str, re
                 "implementationRecord": operation_record,
                 "direct": True,
             }
-        if requested and requested != fallback_id:
+        allowed_requests = {fallback_id}
+        if direct_route:
+            allowed_requests.add(operation_id)
+        if requested and requested not in allowed_requests:
             raise ValueError(f"implementation {requested} is not allowed by operation {operation_id}")
         return {
             "operation": operation,
