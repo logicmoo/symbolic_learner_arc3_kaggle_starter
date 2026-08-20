@@ -697,6 +697,18 @@ def test_b1_b2_setup_load_uses_setup_relative_path() -> None:
     assert "setter(relativeToSetupDir(picked.name))" in source
     assert "setSetupEntryPath(stackIndex, imageIndex, field, entryIndex, relativeToSetupDir(picked.name))" in source
     assert "appendSetupEntryPath(stackIndex, imageIndex, field, relativeToSetupDir(picked.name))" in source
+
+
+def test_b1_b2_use_setup_is_exclusive_and_no_child_cascade() -> None:
+    source = COMPONENT.read_text(encoding="utf-8")
+    # "Use" collapses every other setup and expands + scans the used one.
+    assert "const activateSetupExclusive = (stackIndex: number, imageIndex: number, setup: StackSetup) =>" in source
+    assert 'next[`image-${item.id}`] = item.id === setup.id ? "scroll" : "strip";' in source
+    assert "onClick={() => activateSetupExclusive(stackIndex, imageIndex, setup)}" in source
+    # Parent stacks reveal children instead of mass-cascading them: neither the images stack nor
+    # each per-group stack carries a collective controlsLabel.
+    assert "controlsLabel={groupName}" not in source
+    assert 'controlsLabel="IMAGES"' not in source
     # The old webkitRelativePath-or-name behavior is gone.
     assert "relative || picked.name" not in source
 

@@ -4150,6 +4150,21 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
     await scanSetupStatePath(stackIndex, imageIndex, stateDir, records, true);
   });
 
+  // "Use" a setup: collapse every other setup to strip, expand this one (which gets scanned),
+  // make it the active setup, and scan it.
+  const activateSetupExclusive = (stackIndex: number, imageIndex: number, setup: StackSetup) => {
+    const stack = stackColumnsRef.current?.[stackIndex];
+    const setups = stack?.setups?.length ? stack.setups : (stack ? defaultSetups(stack.key) : []);
+    setAccordionModes((current) => {
+      const next = { ...current };
+      setups.forEach((item) => { next[`image-${item.id}`] = item.id === setup.id ? "scroll" : "strip"; });
+      return next;
+    });
+    openScannedSetupsRef.current.add(setup.id);
+    selectImage(stackIndex, imageIndex);
+    void scanSetup(stackIndex, imageIndex, setup.stateDir || "");
+  };
+
   const registry: WorkflowPageComponentRegistry = {
     Arc3ImagePairInputs: () => {
       const stackIndex = 0;
@@ -4242,7 +4257,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
               baseClass="english-workflow-panel arc3-prolog-page-panel"
               scrollSize="calc(100vh - 320px)"
             >
-              <ThreeStateAccordionStack id={groupStackId} className="arc3-prolog-accordion-stack" controlsLabel={groupName}>
+              <ThreeStateAccordionStack id={groupStackId} className="arc3-prolog-accordion-stack">
                 {items.map(({ setup, imageIndex }) => {
             const analysis = setup.analysis;
             const subimages = analysis?.subimages || [];
@@ -5841,7 +5856,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
         return setups.map((setup, imageIndex) => {
           const label = setup.label || setup.command || (setup.stateDir ? (setup.stateDir.split("/").pop() || setup.stateDir) : `Setup ${imageIndex + 1}`);
           const active = scanPhase === `setup:${setup.stateDir || ""}`;
-          return <button key={`hdr-scan-${stack.key}-${imageIndex}`} type="button" aria-pressed={active} style={{ ...toolbarBtn, ...depressed(active) }} title={`Use setup ${setup.stateDir || label} (make it the active setup and rescan it)`} onClick={() => { selectImage(stackIndex, imageIndex); void scanSetup(stackIndex, imageIndex, setup.stateDir || ""); }} disabled={initBusy || scanDataBusy}>Use {label}</button>;
+          return <button key={`hdr-scan-${stack.key}-${imageIndex}`} type="button" aria-pressed={active} style={{ ...toolbarBtn, ...depressed(active) }} title={`Use setup ${setup.stateDir || label} (make it the active setup, collapse the others, and rescan it)`} onClick={() => activateSetupExclusive(stackIndex, imageIndex, setup)} disabled={initBusy || scanDataBusy}>Use {label}</button>;
         });
       })}
     </div>
