@@ -402,9 +402,9 @@ def test_b1_b2_setup_sub_images_grouped_after_obj_images() -> None:
 
 def test_b1_b2_setup_header_and_before_after_controls() -> None:
     source = COMPONENT.read_text(encoding="utf-8")
-    # Setups are grouped: a top-level group node (level_1, ...) contains its setups,
-    # each labeled by the local Setup_N name.
-    assert "const setupLocalLabel = (setup.label || \"\").includes(\".Setup_\")" in source
+    # Setups group by their root folder; each name begins with the folder right below
+    # data (e.g., data/1l111/Level_1 -> "1l111.Level_1").
+    assert "const setupLocalLabel = setupRoot && rawSetupLabel !== setupRoot && !rawSetupLabel.startsWith(`${setupRoot}.`)" in source
     assert "label={setupLocalLabel}" in source
     assert 'value={isActive ? "ACTIVE" : setupLocalLabel}' in source
     assert "const setupGroups: Array<{ groupName: string; items: Array<{ setup: StackSetup; imageIndex: number }> }> = [];" in source

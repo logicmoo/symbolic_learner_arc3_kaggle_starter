@@ -4458,9 +4458,11 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                 {renderFileEditor(`new:${field}:${setup.id}`, (path) => appendSetupEntryPath(stackIndex, imageIndex, field, path))}
               </details>;
             };
-            const setupLocalLabel = (setup.label || "").includes(".Setup_")
-              ? setup.label.slice(setup.label.lastIndexOf(".Setup_") + 1)
-              : (setup.label || `Setup_${imageIndex + 1}`);
+            const setupRoot = (setup.stateDir || "").replace(/^data\/?/i, "").split("/").filter(Boolean)[0] || "";
+            const rawSetupLabel = (setup.label || `Setup_${imageIndex + 1}`).replace(/^default\./, "");
+            const setupLocalLabel = setupRoot && rawSetupLabel !== setupRoot && !rawSetupLabel.startsWith(`${setupRoot}.`)
+              ? `${setupRoot}.${rawSetupLabel}`
+              : rawSetupLabel;
             return <ThreeStateAccordionMember
               key={setup.id}
               stackId={groupStackId}
