@@ -694,16 +694,34 @@ function parentImagePath(path: string): string {
 }
 
 function abbreviateSegment(name: string): string {
-  // Mangle a folder segment to its first letter followed by every number group it contains,
-  // each prefixed with "_" (Level_1 -> L_1, Click_32x43 -> C_32_43, SELECT_x_3_y_5 -> S_3_5);
-  // all other letters after the first are dropped. SPACE is the one exception: its first
-  // letter would collide with SELECT's "S", so it keeps its consonants (SPACE -> SPC).
-  // Directions fall out naturally (UP -> U, DOWN -> D, LEFT -> L, RIGHT -> R). Always uppercased.
+  // Mangle a folder segment underscore-part by underscore-part:
+  //   * the first part contributes its first letter, uppercased (plus any numbers it carries);
+  //   * later pure-word parts contribute their first letter, lowercased (Alpha_Number -> A_n);
+  //   * parts containing numbers contribute the full number groups, dropping stray single
+  //     axis letters (Level_1 -> L_1, Click_32x43 -> C_32_43, SELECT_x_3_y_5 -> S_3_5);
+  //   * stray single letters after the first part are dropped.
+  // SPACE is the one exception: its first letter would collide with SELECT's "S", so it keeps
+  // its consonants (SPACE -> SPC). Directions fall out naturally (UP -> U, DOWN -> D, ...).
   const trimmed = name.trim();
   if (/^space$/i.test(trimmed)) return "SPC";
-  const firstLetter = (trimmed.match(/[a-zA-Z]/)?.[0] || trimmed[0] || "").toUpperCase();
-  const numbers = trimmed.match(/\d+/g) || [];
-  return numbers.length ? `${firstLetter}${numbers.map((n) => `_${n}`).join("")}` : firstLetter;
+  const parts = trimmed.split(/[_.\-]+/).filter(Boolean);
+  const tokens: string[] = [];
+  parts.forEach((part, index) => {
+    const digitGroups = part.match(/\d+/g) || [];
+    const letters = part.replace(/[^a-zA-Z]/g, "");
+    if (index === 0) {
+      const head = (letters[0] || part[0] || "").toUpperCase();
+      if (head) tokens.push(head);
+      digitGroups.forEach((num) => tokens.push(num));
+    } else if (digitGroups.length) {
+      digitGroups.forEach((num) => tokens.push(num));
+    } else if (letters.length > 1) {
+      tokens.push(letters[0].toLowerCase());
+    }
+  });
+  if (!tokens.length) return (trimmed[0] || "").toUpperCase();
+  tokens[0] = tokens[0].toUpperCase();
+  return tokens.join("_");
 }
 
 function stackADescendSetupsFromFiles(workspaceId: string, files: WorkspaceFileRecord[]): StackSetup[] {
