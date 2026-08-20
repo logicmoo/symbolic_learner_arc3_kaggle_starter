@@ -284,6 +284,16 @@ const COMBINED_PROMPT_PARTS = [
 ];
 
 const COMBINED_PROMPT = COMBINED_PROMPT_PARTS.join("\n");
+const FIRST_PASS_OBJECT_GUESSES_PROMPT = [
+  "generate_first_pass_object_guesses:",
+  "You are given a SINGLE ARC3 image: the current game state. There is no parent image and no INPUT_FILES.",
+  "Return exactly one valid JSON object with a single required key: current_identities. Do not return Markdown or commentary. Optional key: exit_value.",
+  "current_identities must be a JSON array of object identity records. Each record includes id, type, label, and bounding_box as [x1, y1, x2, y2] (top-left and bottom-right corners, x2 > x1, y2 > y1), plus first_appeared_step and last_disappeared_step.",
+  "Reason in the logical ARC grid (normally 64x64, zero-based; x increases to the right, y increases downward), never display pixels.",
+  "Detect at least 10 meaningful objects when present: connected color regions, blocks, glyphs, borders, HUD/status elements, and compound objects. This is a fast first-pass guess of the objects in the image; downstream runners refine it.",
+  "NAMING: " + DESCRIPTIVE_ID_RULE,
+  "Set exit_value=loop_complete when the identity list looks stable; otherwise exit_value=next_iteration.",
+].join("\n");
 const GAP_DISCOVERY_PASS_PROMPT = [
   "PASS-N GAP DISCOVERY:",
   "Use image #3 as debug_overlay_image. Every drawn box+label in image #3 is already-claimed coverage.",
@@ -403,6 +413,7 @@ function defaultSetupIndexForRunner(routeView: string, stackKey: StackKey, runne
 function defaultInputFilesSourceIdsForRunner(routeView: string, stackKey: StackKey, runnerIndex: number): string[] {
   if (isB1B2PipelineRoute(routeView)) {
     const role = runnerRole(routeView, stackKey, runnerIndex);
+    if (role === "guess") return [];
     if (role === "extraction") return ["runner:FIRST_GUESSER", "ALL-Setup1"];
     if (role === "removal") return ["runner:GUESSER"];
   }
@@ -1814,7 +1825,7 @@ async function request(path: string, init?: RequestInit) {
 
 function defaultRunnerPrompt(routeView: string, stackKey: StackKey, runnerIndex: number): string {
   const role = runnerRole(routeView, stackKey, runnerIndex);
-  if (role === "guess") return COMBINED_PROMPT;
+  if (role === "guess") return FIRST_PASS_OBJECT_GUESSES_PROMPT;
   if (role === "extraction") return COMBINED_PROMPT;
   if (role === "removal") return REMOVAL_DISCOVERY_PASS_PROMPT;
   if (role === "regenerated") return REGENERATED_IDENTITIES_PROMPT;
@@ -1873,6 +1884,7 @@ function migrateRunnerPromptText(routeView: string, stackKey: StackKey, runnerIn
   const trimmed = String(promptText || "").trim();
   const fallback = defaultRunnerPrompt(routeView, stackKey, runnerIndex);
   if (!trimmed) return fallback;
+  if (runnerRole(routeView, stackKey, runnerIndex) === "guess" && trimmed === COMBINED_PROMPT) return FIRST_PASS_OBJECT_GUESSES_PROMPT;
   if (isRemovalDiscoveryRunner(routeView, stackKey, runnerIndex) && trimmed === COMBINED_PROMPT) return REMOVAL_DISCOVERY_PASS_PROMPT;
   if (isRegeneratedIdentitiesRunner(routeView, stackKey, runnerIndex) && trimmed === COMBINED_PROMPT) return REGENERATED_IDENTITIES_PROMPT;
   return promptText;
@@ -2832,14 +2844,17 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
     const effectiveImageSourceBefore = role === "removal" && isB1B2PipelineRoute(pageDefinition.routeView)
       ? (imageSourceAfter || imageSourceBefore)
       : imageSourceBefore;
+    const guessRole = role === "guess";
     if (!effectiveModelId) {
       setRunnerState(stackIndex, runnerIndex, (previous) => ({ ...previous, error: "Select an enabled model first. exit_value=unran." }));
       return;
     }
-    if (!effectiveImageSourceBefore || !imageSourceAfter) {
+    if (guessRole ? !imageSourceAfter : (!effectiveImageSourceBefore || !imageSourceAfter)) {
       setRunnerState(stackIndex, runnerIndex, (previous) => ({
         ...previous,
-        error: `Load ${imageSourceBeforeLabel}/${imageSourceAfterLabel} first. exit_value=unran.`,
+        error: guessRole
+          ? `Load ${imageSourceAfterLabel} first. exit_value=unran.`
+          : `Load ${imageSourceBeforeLabel}/${imageSourceAfterLabel} first. exit_value=unran.`,
       }));
       return;
     }
@@ -2898,24 +2913,26 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
         const priorPassParsed = latestParsed;
         const isGapPass = autoLoop && passNumber > 1;
         const baseImageLabels = {
-          before: `${imageSourceBeforeLabel} (${effectiveImageSourceBefore.name})`,
+          before: `${imageSourceBeforeLabel} (${effectiveImageSourceBefore?.name ?? "current"})`,
           after: `${imageSourceAfterLabel} (${imageSourceAfter.name})`,
         };
         let overlaySource = "";
-        const image = isGapPass
+        const image = guessRole
+          ? imageSourceAfter.dataUrl
+          : isGapPass
           ? await (async () => {
             overlaySource = await createIdentityOverlay(
               imageSourceAfter.dataUrl,
               asIdentityCandidates(priorPassParsed),
             );
             return triSheet(
-              { label: baseImageLabels.before, source: effectiveImageSourceBefore.dataUrl },
+              { label: baseImageLabels.before, source: effectiveImageSourceBefore!.dataUrl },
               { label: baseImageLabels.after, source: imageSourceAfter.dataUrl },
               { label: "debug_overlay_image (claimed boxes)", source: overlaySource },
             );
           })()
           : await pairSheet(
-            { label: baseImageLabels.before, source: effectiveImageSourceBefore.dataUrl },
+            { label: baseImageLabels.before, source: effectiveImageSourceBefore!.dataUrl },
             { label: baseImageLabels.after, source: imageSourceAfter.dataUrl },
           );
         if (overlaySource) {
@@ -2930,14 +2947,18 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
         for (let attempt = 0; attempt <= AUTO_VALIDATION_REPAIR_ATTEMPTS; attempt += 1) {
           const isRepairAttempt = attempt > 0;
           const passPrompt = isGapPass
-            ? (removalLoopRunner
+            ? (removalLoopRunner || guessRole
               ? runner.promptText
               : [runner.promptText, GAP_DISCOVERY_PASS_PROMPT].join("\n\n"))
             : runner.promptText;
           const prompt = [
-            `Use stack ${stack.key} fields ${imageSourceBeforeLabel}/${imageSourceAfterLabel}. Treat image #1 as parent and image #2 as current state.`,
-            isGapPass ? "Image #3 is debug_overlay_image for pass-N coverage gap discovery." : "",
-            "Also generate current_identities, current_hypotheses, action_history, objects_english, differences_english, and rules_english in the JSON response.",
+            guessRole
+              ? `Use stack ${stack.key} field ${imageSourceAfterLabel}. Image #1 is the current ARC3 state; there is no parent image.`
+              : `Use stack ${stack.key} fields ${imageSourceBeforeLabel}/${imageSourceAfterLabel}. Treat image #1 as parent and image #2 as current state.`,
+            !guessRole && isGapPass ? "Image #3 is debug_overlay_image for pass-N coverage gap discovery." : "",
+            guessRole
+              ? "Return only current_identities in the JSON response."
+              : "Also generate current_identities, current_hypotheses, action_history, objects_english, differences_english, and rules_english in the JSON response.",
             filesSources.length
               ? `Files input sources: ${filesSources.map((source) => source.label).join(" | ")}.`
               : "Files input source: none.",

@@ -69,7 +69,7 @@ def test_b1_b2_component_has_pipeline_contract() -> None:
     assert "english-workflow-page arc3-prolog-page" not in source
 
 
-def test_b1_b2_first_guesser_is_first_runner_with_copied_prompt() -> None:
+def test_b1_b2_first_guesser_single_image_first_pass() -> None:
     source = COMPONENT.read_text(encoding="utf-8")
     # A "FIRST_GUESSER" runner goes first, ahead of GUESSER/REMOVER/REGENERATOR.
     assert 'const B1B2_RUNNER_NAMES = ["FIRST_GUESSER", "GUESSER", "REMOVER", "REGENERATOR"];' in source
@@ -80,11 +80,18 @@ def test_b1_b2_first_guesser_is_first_runner_with_copied_prompt() -> None:
     assert 'if (runnerIndex === 1) return "extraction";' in source
     assert 'if (runnerIndex === 2) return "removal";' in source
     assert 'if (runnerIndex === 3) return "regenerated";' in source
-    # Its prompt is a copy of generate_prolog_and_english, named generate_first_pass_object_guesses,
-    # and carries the same COMBINED_PROMPT text.
+    # Input: a single image, and no INPUT_FILES text sources.
+    assert 'if (role === "guess") return [];' in source
+    assert 'const guessRole = role === "guess";' in source
+    assert "const image = guessRole" in source
+    assert "Image #1 is the current ARC3 state; there is no parent image." in source
+    # Output: only current_identities, via a dedicated lean prompt (not COMBINED_PROMPT).
     assert 'if (role === "guess") return "generate_first_pass_object_guesses";' in source
-    assert 'if (role === "guess") return COMBINED_PROMPT;' in source
-    # FIRST_GUESSER feeds the chain: the extraction (GUESSER) runner consumes it by default.
+    assert 'if (role === "guess") return FIRST_PASS_OBJECT_GUESSES_PROMPT;' in source
+    assert "const FIRST_PASS_OBJECT_GUESSES_PROMPT = [" in source
+    assert "single required key: current_identities" in source
+    assert "Return only current_identities in the JSON response." in source
+    # FIRST_GUESSER still feeds the chain: the extraction (GUESSER) runner consumes it.
     assert 'if (role === "extraction") return ["runner:FIRST_GUESSER", "ALL-Setup1"];' in source
 
 
