@@ -4472,13 +4472,15 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
             const setupLocalLabel = setupRoot && rawSetupLabel !== setupRoot && !rawSetupLabel.startsWith(`${setupRoot}.`)
               ? `${setupRoot}.${rawSetupLabel}`
               : rawSetupLabel;
+            const setupImageCount = (setup.objectImages?.length || 0) + (setup.groupImages?.length || 0) + (setup.subImages?.length || 0);
+            const setupNonImageCount = (setup.unknownFiles?.length || 0) + (setup.plFiles?.length || 0) + (setup.engFiles?.length || 0) + (setup.jsonFiles?.length || 0) + (setup.mettaFiles?.length || 0) + (setup.promptFiles?.length || 0);
             return <ThreeStateAccordionMember
               key={setup.id}
               stackId={groupStackId}
               memberKey={`image-${setup.id}`}
               label={setupLocalLabel}
-              value={isActive ? "ACTIVE" : setupLocalLabel}
-              detail={`${subimages.length} image(s) / ${textFiles.length} textual file(s)`}
+              value={isActive ? `${setupLocalLabel} · ACTIVE` : setupLocalLabel}
+              detail={`Images (${setupImageCount}) NonImages (${setupNonImageCount})`}
               mode={modeFor(`image-${setup.id}`)}
               onChange={(mode) => {
                 setModeFor(`image-${setup.id}`, mode);

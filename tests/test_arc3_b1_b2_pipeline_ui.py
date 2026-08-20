@@ -406,10 +406,10 @@ def test_b1_b2_setup_header_and_before_after_controls() -> None:
     # data (e.g., data/1l111/Level_1 -> "1l111.Level_1").
     assert "const setupLocalLabel = setupRoot && rawSetupLabel !== setupRoot && !rawSetupLabel.startsWith(`${setupRoot}.`)" in source
     assert "label={setupLocalLabel}" in source
-    assert 'value={isActive ? "ACTIVE" : setupLocalLabel}' in source
+    assert 'value={isActive ? `${setupLocalLabel} · ACTIVE` : setupLocalLabel}' in source
     assert "const setupGroups: Array<{ groupName: string; items: Array<{ setup: StackSetup; imageIndex: number }> }> = [];" in source
     assert "<ThreeStateAccordionStack id={groupStackId}" in source
-    assert "detail={`${subimages.length} image(s) / ${textFiles.length} textual file(s)`}" in source
+    assert "detail={`Images (${setupImageCount}) NonImages (${setupNonImageCount})`}" in source
     # BEFORE and AFTER each expose a single-image [load]/[select] pair.
     assert "const renderSingleImageControls = (browseKey: string, setter: (path: string) => void) =>" in source
     assert "const renderSingleImageList = (browseKey: string, setter: (path: string) => void) =>" in source
