@@ -107,6 +107,19 @@ def test_b1_b2_first_guesser_single_image_first_pass() -> None:
     assert 'if (role === "extraction") return ["runner:FIRST_REMOVER"];' in source
 
 
+def test_b1_b2_identity_records_require_pixel_count_and_colors_list() -> None:
+    source = COMPONENT.read_text(encoding="utf-8")
+    # Every identity record must carry pixel_count and colors_list across all identity-producing prompts.
+    assert source.count("pixel_count") >= 3
+    assert source.count("colors_list") >= 3
+    # Full extraction (COMBINED_PROMPT) OUTPUT TYPES lists them.
+    assert "Each identity must also include pixel_count" in source
+    # First-pass guess prompt lists them.
+    assert "pixel_count (an integer count of the logical grid cells the object occupies), and colors_list" in source
+    # Merge prompt preserves/requires them.
+    assert "Every merged identity must include pixel_count" in source
+
+
 def test_b1_b2_loop_models_default_disabled() -> None:
     source = COMPONENT.read_text(encoding="utf-8")
     # Every B1B2 runner defaults its LOOP_MODEL (validator model) to Disabled.
