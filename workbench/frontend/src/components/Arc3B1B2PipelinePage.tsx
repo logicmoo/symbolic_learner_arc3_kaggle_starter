@@ -4104,7 +4104,19 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
       const setupNonImageCount = setups.reduce((sum, item) => sum + (item.unknownFiles?.length || 0) + (item.plFiles?.length || 0) + (item.engFiles?.length || 0) + (item.jsonFiles?.length || 0) + (item.mettaFiles?.length || 0) + (item.promptFiles?.length || 0), 0);
       return {
         value: `SETUPS (${setups.length}) Images (${setupImageCount}) NonImages (${setupNonImageCount})`,
-        detail: `Active: ${setups[selectedIndex]?.label || `image_${selectedIndex + 1}`}`,
+        accessories: (
+          <select
+            aria-label="Active setup"
+            className="arc3-prolog-active-setup-select"
+            value={selectedIndex}
+            onClick={(event) => event.stopPropagation()}
+            onChange={(event) => selectImage(stackIndex, Number(event.target.value))}
+          >
+            {setups.map((setup, index) => (
+              <option key={setup.id} value={index}>{`Active: ${setup.label || `image_${index + 1}`}`}</option>
+            ))}
+          </select>
+        ),
         baseClass: "english-workflow-panel arc3-prolog-page-panel",
         scrollSize: "calc(100vh - 250px)",
         content: <ThreeStateAccordionStack id={imagesStackId} className="arc3-prolog-accordion-stack" controlsLabel="IMAGES">
