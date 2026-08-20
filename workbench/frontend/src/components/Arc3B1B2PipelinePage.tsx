@@ -2842,6 +2842,23 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
     }
   };
 
+  const saveRemovalArtifacts = async (directory: string, files: Array<{ name: string; dataUrl: string }>): Promise<void> => {
+    if (!workspaceId) return;
+    const dir = normalizeAssetPath(directory).replace(/^\/+|\/+$/g, "") || "data";
+    const payloadFiles = files
+      .map((file) => ({ name: file.name, base64: (file.dataUrl.split(",")[1] || "") }))
+      .filter((file) => file.name && file.base64);
+    if (!payloadFiles.length) return;
+    try {
+      await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/data/import`, {
+        method: "POST",
+        body: JSON.stringify({ directory: dir, files: payloadFiles, overwrite: true }),
+      });
+    } catch {
+      // Non-fatal: the extracted images stay in the analysis panel even if the disk write fails.
+    }
+  };
+
   const scanSetupStatePath = async (stackIndex: number, imageIndex: number, fallbackDir: string, prefetched?: WorkspaceFileRecord[]) => {
     // Read the PATH from the latest committed state (via ref) so a scan performed
     // immediately after editing PATH uses the new value, not a stale render's closure.
@@ -3186,6 +3203,8 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
         const passBeforeName = removalLoopRunner ? removalWorkingBeforeName : (effectiveImageSourceBefore?.name ?? "current");
         let nextRemovalUrl = "";
         let nextRemovalName = "";
+        let nextObjUrl = "";
+        let nextObjName = "";
         const baseImageLabels = {
           before: `${imageSourceBeforeLabel} (${passBeforeName})`,
           after: `${imageSourceAfterLabel} (${passAfterName})`,
@@ -3332,6 +3351,8 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                   const newOriginalName = `${originalStem}_with_${passNumber}_removed.png`;
                   nextRemovalUrl = removalArtifacts.backgroundImage;
                   nextRemovalName = newOriginalName;
+                  nextObjUrl = removalArtifacts.objectImage;
+                  nextObjName = objFileName;
                   parsedRecord[`obj_${removedId}`] = removalArtifacts.objectImage;
                   parsedRecord.image_of_object_removed = removalArtifacts.objectImage;
                   parsedRecord.image_without_object = removalArtifacts.backgroundImage;
@@ -3467,6 +3488,10 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
           removalWorkingBeforeName = removalWorkingName;
           removalWorkingUrl = nextRemovalUrl;
           removalWorkingName = nextRemovalName;
+          await saveRemovalArtifacts(activeSetup?.stateDir || "data", [
+            { name: nextObjName, dataUrl: nextObjUrl },
+            { name: nextRemovalName, dataUrl: nextRemovalUrl },
+          ]);
         }
         if (!autoLoop) {
           setRunnerState(stackIndex, runnerIndex, (previous) => ({
