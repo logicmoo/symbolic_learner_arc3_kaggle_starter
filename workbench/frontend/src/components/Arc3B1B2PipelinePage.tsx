@@ -3418,13 +3418,40 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
       const setups = stack.setups?.length ? stack.setups : defaultSetups(stack.key);
       const selectedIndex = Math.max(0, Math.min(stack.selectedImageIndex ?? 0, Math.max(0, setups.length - 1)));
       const imagesStackId = "arc3-b1b2-images-A";
+      const setupGroups: Array<{ groupName: string; items: Array<{ setup: StackSetup; imageIndex: number }> }> = [];
+      const groupIndexByName = new Map<string, number>();
+      setups.forEach((setup, imageIndex) => {
+        const rawLabel = setup.label || `Setup_${imageIndex + 1}`;
+        const groupName = rawLabel.includes(".Setup_") ? rawLabel.slice(0, rawLabel.lastIndexOf(".Setup_")) : rawLabel;
+        let groupPos = groupIndexByName.get(groupName);
+        if (groupPos === undefined) {
+          groupPos = setupGroups.length;
+          groupIndexByName.set(groupName, groupPos);
+          setupGroups.push({ groupName, items: [] });
+        }
+        setupGroups[groupPos].items.push({ setup, imageIndex });
+      });
       return {
         value: `${setups.length} image${setups.length === 1 ? "" : "s"}`,
         detail: `Active: ${setups[selectedIndex]?.label || `image_${selectedIndex + 1}`}`,
         baseClass: "english-workflow-panel arc3-prolog-page-panel",
         scrollSize: "calc(100vh - 250px)",
         content: <ThreeStateAccordionStack id={imagesStackId} className="arc3-prolog-accordion-stack" controlsLabel="IMAGES">
-          {setups.map((setup, imageIndex) => {
+          {setupGroups.map(({ groupName, items }) => {
+            const groupStackId = `${imagesStackId}-${groupName.replace(/[^A-Za-z0-9_-]/g, "_")}`;
+            return <ThreeStateAccordionMember
+              key={`group-${groupName}`}
+              stackId={imagesStackId}
+              memberKey={`group-${groupName}`}
+              label={groupName}
+              detail={`${items.length} setup${items.length === 1 ? "" : "s"}`}
+              mode={modeFor(`group-${groupName}`, "scroll")}
+              onChange={(mode) => setModeFor(`group-${groupName}`, mode)}
+              baseClass="english-workflow-panel arc3-prolog-page-panel"
+              scrollSize="calc(100vh - 320px)"
+            >
+              <ThreeStateAccordionStack id={groupStackId} className="arc3-prolog-accordion-stack" controlsLabel={groupName}>
+                {items.map(({ setup, imageIndex }) => {
             const analysis = setup.analysis;
             const subimages = analysis?.subimages || [];
             const textFiles = analysis?.textFiles || [];
@@ -3753,12 +3780,15 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                 {renderFileEditor(`new:${field}:${setup.id}`, (path) => appendSetupEntryPath(stackIndex, imageIndex, field, path))}
               </details>;
             };
+            const setupLocalLabel = (setup.label || "").includes(".Setup_")
+              ? setup.label.slice(setup.label.lastIndexOf(".Setup_") + 1)
+              : (setup.label || `Setup_${imageIndex + 1}`);
             return <ThreeStateAccordionMember
               key={setup.id}
-              stackId={imagesStackId}
+              stackId={groupStackId}
               memberKey={`image-${setup.id}`}
-              label={setup.label || `Setup_${imageIndex + 1}`}
-              value={isActive ? "ACTIVE" : (setup.label || `Setup_${imageIndex + 1}`)}
+              label={setupLocalLabel}
+              value={isActive ? "ACTIVE" : setupLocalLabel}
               detail={`${subimages.length} image(s) / ${textFiles.length} textual file(s)`}
               mode={modeFor(`image-${setup.id}`)}
               onChange={(mode) => {
@@ -3952,6 +3982,9 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                   </details>)}</>
                   : null,
               })}
+            </ThreeStateAccordionMember>;
+                })}
+              </ThreeStateAccordionStack>
             </ThreeStateAccordionMember>;
           })}
         </ThreeStateAccordionStack>,

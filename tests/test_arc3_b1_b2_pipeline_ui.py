@@ -265,10 +265,13 @@ def test_b1_b2_setup_sub_images_grouped_after_obj_images() -> None:
 
 def test_b1_b2_setup_header_and_before_after_controls() -> None:
     source = COMPONENT.read_text(encoding="utf-8")
-    # The member header shows the setup's path-based name (falling back to Setup_N) and
-    # an image/text-file count summary.
-    assert "label={setup.label || `Setup_${imageIndex + 1}`}" in source
-    assert 'value={isActive ? "ACTIVE" : (setup.label || `Setup_${imageIndex + 1}`)}' in source
+    # Setups are grouped: a top-level group node (level_1, ...) contains its setups,
+    # each labeled by the local Setup_N name.
+    assert "const setupLocalLabel = (setup.label || \"\").includes(\".Setup_\")" in source
+    assert "label={setupLocalLabel}" in source
+    assert 'value={isActive ? "ACTIVE" : setupLocalLabel}' in source
+    assert "const setupGroups: Array<{ groupName: string; items: Array<{ setup: StackSetup; imageIndex: number }> }> = [];" in source
+    assert "<ThreeStateAccordionStack id={groupStackId}" in source
     assert "detail={`${subimages.length} image(s) / ${textFiles.length} textual file(s)`}" in source
     # BEFORE and AFTER each expose a single-image [load]/[select] pair.
     assert "const renderSingleImageControls = (browseKey: string, setter: (path: string) => void) =>" in source
