@@ -54,12 +54,20 @@ export function TopicsResourceEditor({ workspaceId }: { workspaceId: string }) {
 
   const load = async () => {
     const payload = await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/artifact-categories`);
-    const next = (payload.artifactCategories || []) as TopicRecord[];
-    setRecords(next.filter((record) => record.document && record.document.kind === "artifact_category"));
+    const next = ((payload.artifactCategories || []) as TopicRecord[]).filter((record) => record.document && record.document.kind === "artifact_category");
+    setRecords(next);
     setLoaded(true);
     return next;
   };
-  useEffect(() => { setSelectedKey(null); setSource(""); setDirty(false); void load().catch((reason) => setError(String(reason))); }, [workspaceId]);
+  useEffect(() => {
+    setSelectedKey(null); setSource(""); setDirty(false);
+    void load().then((loadedRecords) => {
+      const requested = new URLSearchParams(window.location.search).get("resource");
+      if (!requested) return;
+      const match = loadedRecords.find((record) => record.document && (record.document.path === requested || record.document.id === requested));
+      if (match && match.document) { setSelectedKey(match.document.id); setSource(JSON.stringify(match.document, null, 2)); setDirty(false); setStatus(null); setError(null); }
+    }).catch((reason) => setError(String(reason)));
+  }, [workspaceId]);
 
   const grouped = useMemo(() => {
     const groups = new Map<string, TopicRecord[]>();
