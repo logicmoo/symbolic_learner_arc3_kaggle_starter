@@ -695,12 +695,12 @@ function parentImagePath(path: string): string {
 
 function abbreviateSegment(name: string): string {
   // Mangle a folder segment into a compact token. Split it on "_", "." and "-", then:
-  //   * the first part contributes its first letter with its ORIGINAL case preserved, plus any
-  //     numbers it carries (Level_1 -> L_1, level_1.dir -> l_1_d, UP -> U);
+  //   * the first part contributes its first letter, UPPERCASED, plus any numbers it carries
+  //     (Level_1 -> L_1, level_1_v2 -> L_1_2, level_1.dir -> L_1_d, UP -> U);
   //   * every number group is kept in full; any text between numbers is deleted, so coordinate
   //     blobs collapse (Click_32x43 -> C_32_43, SELECT_x_3_y_5 -> S_3_5);
-  //   * a later PURE-WORD part is kept as its first letter (case preserved) only when it comes
-  //     AFTER the last number (Alpha_Number -> A_N, level_1.dir -> l_1_d,
+  //   * a later PURE-WORD part is kept as its first letter (its own case) only when it comes
+  //     AFTER the last number (Alpha_Number -> A_N, level_1.dir -> L_1_d,
   //     Click_at_44x55_Hard -> C_44_55_H); words before or between numbers are deleted
   //     (Click_at_44x55_Hard_1 -> C_44_55_1).
   // SPACE is the one exception: its first letter would collide with SELECT's "S", so it keeps
@@ -724,7 +724,11 @@ function abbreviateSegment(name: string): string {
       tokens.push(letters[0]);
     }
   });
-  return tokens.length ? tokens.join("_") : (trimmed[0] || "");
+  if (!tokens.length) return (trimmed[0] || "").toUpperCase();
+  // The head letter is uppercased so a leaf reads like a title (level_1_v2 -> L_1_2); later
+  // word initials keep their own case (Alpha_Number -> A_N, Click_at_44x55_Hard -> C_44_55_H).
+  tokens[0] = tokens[0].toUpperCase();
+  return tokens.join("_");
 }
 
 // Directories skipped entirely by the setup scan: export/history bookkeeping folders and any
