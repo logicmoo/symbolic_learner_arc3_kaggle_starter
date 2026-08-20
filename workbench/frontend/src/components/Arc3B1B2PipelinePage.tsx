@@ -4103,8 +4103,22 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
         }
         setupGroups[groupPos].items.push({ setup, imageIndex });
       });
-      const setupImageCount = setups.reduce((sum, item) => sum + (item.objectImages?.length || 0) + (item.groupImages?.length || 0) + (item.subImages?.length || 0), 0);
-      const setupNonImageCount = setups.reduce((sum, item) => sum + (item.unknownFiles?.length || 0) + (item.plFiles?.length || 0) + (item.engFiles?.length || 0) + (item.jsonFiles?.length || 0) + (item.mettaFiles?.length || 0) + (item.promptFiles?.length || 0), 0);
+      const imageSuffixSet = new Set([...IMAGE_SUFFIXES].map((suffix) => suffix.toLowerCase()));
+      const setupDirCounts = new Map<string, { images: number; nonImages: number }>();
+      files.forEach((file) => {
+        const filePath = (file.path || "").replace(/\\/g, "/");
+        const slash = filePath.lastIndexOf("/");
+        if (slash <= 0) return;
+        const dir = filePath.slice(0, slash);
+        const dot = filePath.lastIndexOf(".");
+        const ext = (file.suffix || (dot > slash ? filePath.slice(dot) : "")).toLowerCase();
+        const entry = setupDirCounts.get(dir) || { images: 0, nonImages: 0 };
+        if (imageSuffixSet.has(ext)) entry.images += 1; else entry.nonImages += 1;
+        setupDirCounts.set(dir, entry);
+      });
+      const countsForSetup = (setup: StackSetup) => setupDirCounts.get((setup.stateDir || "").replace(/\\/g, "/").replace(/\/+$/, "")) || { images: 0, nonImages: 0 };
+      const setupImageCount = setups.reduce((sum, item) => sum + countsForSetup(item).images, 0);
+      const setupNonImageCount = setups.reduce((sum, item) => sum + countsForSetup(item).nonImages, 0);
       return {
         value: `SETUPS (${setups.length}) Images (${setupImageCount}) NonImages (${setupNonImageCount})`,
         accessories: (
@@ -4472,8 +4486,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
             const setupLocalLabel = setupRoot && rawSetupLabel !== setupRoot && !rawSetupLabel.startsWith(`${setupRoot}.`)
               ? `${setupRoot}.${rawSetupLabel}`
               : rawSetupLabel;
-            const setupImageCount = (setup.objectImages?.length || 0) + (setup.groupImages?.length || 0) + (setup.subImages?.length || 0);
-            const setupNonImageCount = (setup.unknownFiles?.length || 0) + (setup.plFiles?.length || 0) + (setup.engFiles?.length || 0) + (setup.jsonFiles?.length || 0) + (setup.mettaFiles?.length || 0) + (setup.promptFiles?.length || 0);
+            const { images: setupImageCount, nonImages: setupNonImageCount } = countsForSetup(setup);
             return <ThreeStateAccordionMember
               key={setup.id}
               stackId={groupStackId}
