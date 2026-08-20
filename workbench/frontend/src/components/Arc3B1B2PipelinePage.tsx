@@ -4100,8 +4100,10 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
         }
         setupGroups[groupPos].items.push({ setup, imageIndex });
       });
+      const setupImageCount = setups.reduce((sum, item) => sum + (item.objectImages?.length || 0) + (item.groupImages?.length || 0) + (item.subImages?.length || 0), 0);
+      const setupNonImageCount = setups.reduce((sum, item) => sum + (item.unknownFiles?.length || 0) + (item.plFiles?.length || 0) + (item.engFiles?.length || 0) + (item.jsonFiles?.length || 0) + (item.mettaFiles?.length || 0) + (item.promptFiles?.length || 0), 0);
       return {
-        value: `SETUPS (${setups.length})`,
+        value: `SETUPS (${setups.length}) Images (${setupImageCount}) NonImages (${setupNonImageCount})`,
         detail: `Active: ${setups[selectedIndex]?.label || `image_${selectedIndex + 1}`}`,
         baseClass: "english-workflow-panel arc3-prolog-page-panel",
         scrollSize: "calc(100vh - 250px)",
