@@ -2339,6 +2339,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
   const [modelSelectionMessage, setModelSelectionMessage] = useState("");
   const [scanDataBusy, setScanDataBusy] = useState(false);
   const [initBusy, setInitBusy] = useState(false);
+  const [dataDirectory, setDataDirectory] = useState("data");
   const [extraModels, setExtraModels] = useState<ModelChoice[]>([]);
   const [modelProbes, setModelProbes] = useState<Record<string, { status: string; latencyMs: number }>>({});
   const [replaceGuesserOnFinish, setReplaceGuesserOnFinish] = useState(false);
@@ -3976,6 +3977,15 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
     }
   };
 
+  const scopeToDataDir = (records: WorkspaceFileRecord[]): WorkspaceFileRecord[] => {
+    const dir = normalizeAssetPath(dataDirectory).replace(/^\/+|\/+$/g, "");
+    if (!dir || dir === "data") return records;
+    return records.filter((record) => {
+      const path = normalizeAssetPath(record.path);
+      return path === dir || path.startsWith(`${dir}/`);
+    });
+  };
+
   const initializeAndScan = async () => {
     setInitBusy(true);
     try {
@@ -4028,7 +4038,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
       await scanDataByName();
       autoScannedSetupsRef.current = new Set();
       const payload = await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/data/files`);
-      const records = (Array.isArray(payload.files) ? payload.files : []) as WorkspaceFileRecord[];
+      const records = scopeToDataDir((Array.isArray(payload.files) ? payload.files : []) as WorkspaceFileRecord[]);
       for (let stackIndex = 0; stackIndex < activeStackColumns.length; stackIndex += 1) {
         const key = activeStackColumns[stackIndex].key;
         const enumerated = shouldUseDescendSetups(pageDefinition.routeView, key)
@@ -4048,7 +4058,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
     setInitBusy(true);
     try {
       const payload = await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/data/files`);
-      const records = (Array.isArray(payload.files) ? payload.files : []) as WorkspaceFileRecord[];
+      const records = scopeToDataDir((Array.isArray(payload.files) ? payload.files : []) as WorkspaceFileRecord[]);
       await scanSetupStatePath(stackIndex, imageIndex, stateDir, records, true);
     } finally {
       setInitBusy(false);
@@ -4760,28 +4770,6 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
             onChange={(mode) => setModeFor("all-stack", mode)}
             baseClass="english-workflow-panel arc3-prolog-page-panel"
             scrollSize="calc(100vh - 320px)"
-            accessories={<>
-              <button type="button" className="primary" onClick={() => void initializeAndScan()} disabled={initBusy || scanDataBusy}>
-                {initBusy ? "Initializing…" : "Initialize & Scan All"}
-              </button>
-              {stackColumns.flatMap((stack, stackIndex) => {
-                const setups = stack.setups?.length ? stack.setups : defaultSetups(stack.key);
-                return setups.map((setup, imageIndex) => {
-                  const label = setup.command || (setup.stateDir ? (setup.stateDir.split("/").pop() || setup.stateDir) : `Setup ${imageIndex + 1}`);
-                  return <button
-                    key={`scan-setup-${stack.key}-${imageIndex}`}
-                    type="button"
-                    className="secondary"
-                    title={`Scan setup ${setup.stateDir || label}`}
-                    onClick={() => void scanSetup(stackIndex, imageIndex, setup.stateDir || "")}
-                    disabled={initBusy || scanDataBusy}
-                  >Scan {label}</button>;
-                });
-              })}
-              <button type="button" className="secondary" onClick={() => void scanDataByName()} disabled={scanDataBusy || initBusy}>
-                {scanDataBusy ? "Scanning…" : "Scan Data"}
-              </button>
-            </>}
           >
             <div className="arc3-prolog-accordion-columns">
               {stackColumns.map((stack, stackIndex) => {
@@ -5678,9 +5666,38 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
     }),
   };
 
+  const headerToolbar = (
+    <div className="arc3-b1b2-toolbar" style={{ display: "flex", flexWrap: "wrap", gap: "6px", padding: "6px 10px", borderBottom: "1px solid var(--line)", alignItems: "center" }}>
+      <label style={{ display: "flex", alignItems: "center", gap: "4px", font: "600 8px ui-monospace,monospace", letterSpacing: ".06em", color: "#69818e" }}>
+        DATA DIR
+        <input
+          type="text"
+          value={dataDirectory}
+          placeholder="data"
+          aria-label="Data directory for scans"
+          onChange={(event) => setDataDirectory(event.target.value)}
+          style={{ width: "170px" }}
+        />
+      </label>
+      <button type="button" className="primary" onClick={() => void initializeAndScan()} disabled={initBusy || scanDataBusy}>
+        {initBusy ? "Initializing…" : "Initialize & Scan All"}
+      </button>
+      {stackColumns.flatMap((stack, stackIndex) => {
+        const setups = stack.setups?.length ? stack.setups : defaultSetups(stack.key);
+        return setups.map((setup, imageIndex) => {
+          const label = setup.command || (setup.stateDir ? (setup.stateDir.split("/").pop() || setup.stateDir) : `Setup ${imageIndex + 1}`);
+          return <button key={`hdr-scan-${stack.key}-${imageIndex}`} type="button" className="secondary" title={`Scan setup ${setup.stateDir || label}`} onClick={() => void scanSetup(stackIndex, imageIndex, setup.stateDir || "")} disabled={initBusy || scanDataBusy}>Scan {label}</button>;
+        });
+      })}
+      <button type="button" className="secondary" onClick={() => void scanDataByName()} disabled={scanDataBusy || initBusy}>
+        {scanDataBusy ? "Scanning…" : "Scan Data"}
+      </button>
+    </div>
+  );
   return <WorkflowPageHost
     definition={pageDefinition}
     componentRegistry={registry}
+    header={headerToolbar}
     pageClassName="english-workflow-page arc3-b1b2-page"
     columnsRef={columnsElRef}
     columnsStyle={{ position: "relative", ...(columnTemplate ? { gridTemplateColumns: columnTemplate } : {}) }}
