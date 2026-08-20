@@ -693,6 +693,16 @@ function parentImagePath(path: string): string {
   return candidate;
 }
 
+function abbreviateSegment(name: string): string {
+  // Direction folders map to a single letter (L/R/U/D); anything else collapses to its
+  // first 3 non-vowel characters (uppercased) so the command stays compact.
+  const key = name.trim().toLowerCase();
+  const directions: Record<string, string> = { l: "L", r: "R", u: "U", d: "D", left: "L", right: "R", up: "U", down: "D" };
+  if (directions[key]) return directions[key];
+  const consonants = name.replace(/[aeiou]/gi, "");
+  return (consonants || name).slice(0, 3).toUpperCase();
+}
+
 function stackADescendSetupsFromFiles(workspaceId: string, files: WorkspaceFileRecord[]): StackSetup[] {
   // Setup directories are the LEAF folders of the data/ tree: walk every trail downward
   // and, wherever it bottoms out on a directory that has no child directories, that leaf
@@ -720,7 +730,7 @@ function stackADescendSetupsFromFiles(workspaceId: string, files: WorkspaceFileR
     if (!isLeaf(dir)) continue;
     const segments = relPath(dir).split("/").filter(Boolean);
     const group = segments[0] || relPath(dir);
-    const command = segments.length > 1 ? segments.slice(1).join("/") : undefined;
+    const command = segments.length > 1 ? segments.slice(1).map(abbreviateSegment).join(".") : undefined;
     setupEntries.push({ dir, group, command });
   }
   if (!setupEntries.length) return [];
@@ -741,7 +751,6 @@ function stackADescendSetupsFromFiles(workspaceId: string, files: WorkspaceFileR
     return descendDepth(left) - descendDepth(right) || left.localeCompare(right, undefined, { numeric: true });
   };
   const sortedEntries = setupEntries.sort((left, right) => compareByTree(left.dir, right.dir));
-  const groupCounters = new Map<string, number>();
   return sortedEntries.map(({ dir, group, command }, index) => {
     const depth = descendDepth(dir);
     const parentDir = dir.includes("/") ? dir.slice(0, dir.lastIndexOf("/")) : "";
@@ -753,11 +762,10 @@ function stackADescendSetupsFromFiles(workspaceId: string, files: WorkspaceFileR
     const beforeSelection: ImageSelection | null = beforePath
       ? { name: beforePath, dataUrl: workspaceAssetUrl(workspaceId, beforePath) }
       : null;
-    const groupIndex = groupCounters.get(group) ?? 0;
-    groupCounters.set(group, groupIndex + 1);
+    const dottedName = relPath(dir).split("/").filter(Boolean).join(".");
     return {
       id: `A-setup-${index + 1}`,
-      label: `${group || "default"}.Setup_${groupIndex}`,
+      label: dottedName || group || "default",
       command: command ?? setupCommandFromPath(`${dir}/frame`),
       note: depth ? `depth ${depth}` : "root",
       stateDir: dir,
@@ -4071,7 +4079,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
       const groupIndexByName = new Map<string, number>();
       setups.forEach((setup, imageIndex) => {
         const rawLabel = setup.label || `Setup_${imageIndex + 1}`;
-        const groupName = rawLabel.includes(".Setup_") ? rawLabel.slice(0, rawLabel.lastIndexOf(".Setup_")) : rawLabel;
+        const groupName = (setup.stateDir || "").replace(/^data\/?/i, "").split("/").filter(Boolean)[0] || rawLabel;
         let groupPos = groupIndexByName.get(groupName);
         if (groupPos === undefined) {
           groupPos = setupGroups.length;

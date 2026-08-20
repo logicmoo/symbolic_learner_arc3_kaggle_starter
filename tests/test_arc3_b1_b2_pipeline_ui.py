@@ -560,10 +560,10 @@ def test_b1_b2_setups_enumerate_all_data_folders() -> None:
     assert "const group = segments[0] || relPath(dir);" in source
     assert "setupEntries.push({ dir, group, command });" in source
     assert "command ?? setupCommandFromPath(`${dir}/frame`)" in source
-    # Numeric-aware ordering (level_10 after level_1) and group.Setup_N names.
+    # Numeric-aware ordering (level_10 after level_1); each leaf's label is the dotted path.
     assert "{ numeric: true }" in source
-    assert "const groupCounters = new Map<string, number>();" in source
-    assert 'label: `${group || "default"}.Setup_${groupIndex}`,' in source
+    assert 'const dottedName = relPath(dir).split("/").filter(Boolean).join(".");' in source
+    assert 'label: dottedName || group || "default",' in source
     # Each setup's PATH is its own folder; the default/initial setup points to level_1.
     assert 'stateDir: "data/level_1",' in source
     assert "stateDir: dir," in source
