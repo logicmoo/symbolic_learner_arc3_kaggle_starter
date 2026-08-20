@@ -1930,7 +1930,7 @@ function initialRunnerState(routeView: string, stackKey: StackKey, runnerIndex: 
     promptText: defaultRunnerPrompt(routeView, stackKey, runnerIndex),
     primaryPromptName: primaryPromptName(routeView, stackKey, runnerIndex),
     validatorPromptText: DEFAULT_VALIDATOR_PROMPT,
-    validatorPromptName: validatorPromptName(routeView, stackKey, runnerIndex),
+    validatorPromptName: isB1B2PipelineRoute(routeView) ? VALIDATOR_PROMPT_DISABLED : validatorPromptName(routeView, stackKey, runnerIndex),
     promptMode: "loop",
     autoLoopMaxIterations: AUTO_GAP_MAX_PASSES,
     autoLoopMaxSeconds: defaultTimeoutSeconds,

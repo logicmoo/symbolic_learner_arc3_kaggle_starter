@@ -114,6 +114,11 @@ def test_b1_b2_loop_models_default_disabled() -> None:
     assert 'const RUNNER_VALIDATOR_DISABLED = "__runner_validator_disabled__";' in source
     assert "<span>LOOP_MODEL</span>" in source
     assert "<option value={RUNNER_VALIDATOR_DISABLED}>Disabled</option>" in source
+    # Every B1B2 runner also defaults its Loop/Validate Prompt to <disabled>.
+    assert "validatorPromptName: isB1B2PipelineRoute(routeView) ? VALIDATOR_PROMPT_DISABLED : validatorPromptName(routeView, stackKey, runnerIndex)," in source
+    assert 'const VALIDATOR_PROMPT_DISABLED = "__validator_prompt_disabled__";' in source
+    assert "Loop/Validate Prompt" in source
+    assert "<option value={VALIDATOR_PROMPT_DISABLED}>&lt;disabled&gt;</option>" in source
 
 
 def test_b1_b2_setup_switch_expands_selected_to_full() -> None:
