@@ -872,6 +872,90 @@ const modelOptionLabel = (model: ModelChoice) => {
   return `${model.backendLabel || model.backendId || model.id} · ${model.label || model.id}${tagSuffix}`;
 };
 
+const SNET_BACKEND_ID = "https.llm.c.singularitynet.io.v1";
+// Confirmed vision-capable SNET models (floated to the top of the model combos).
+const SNET_VISION_MODEL_IDS = [
+  "google/gemma-4-31b-it",
+  "google/gemma-4-26b-a4b-it",
+  "minimax/minimax-m3",
+  "minimax/minimax-m3-f",
+  "qwen/qwen3.8-27b",
+];
+// Requested but not served by SNET (return "Model not found") — shown just below, marked down.
+const SNET_DOWN_MODEL_IDS = [
+  "google/gemma-3-27b-it",
+  "qwen/qwen3-32b",
+  "qwen/qwen3.5-35b-a3b",
+];
+// Vision models without an existing resource in the shared/workspace catalog.
+const SNET_MISSING_VISION_MODEL_IDS = ["google/gemma-4-26b-a4b-it", "qwen/qwen3.8-27b"];
+
+const snetModelResourceId = (modelId: string) => `${SNET_BACKEND_ID}-${modelId.replace(/\//g, "_")}`;
+
+const snetVisionModelMetta = (modelId: string) => `(
+  (kind model)
+  (id ${snetModelResourceId(modelId)})
+  (label ${modelId})
+  (description "Discovered from SingularityNET LLM.")
+  (parents ([]
+    ${SNET_BACKEND_ID}
+  ))
+  (model ${modelId})
+  (enabled true)
+  (capabilities (
+    (audio false)
+    (code false)
+    (functionCalling false)
+    (json false)
+    (jsonMode false)
+    (local false)
+    (multimodal true)
+    (reasoning false)
+    (text true)
+    (tools false)
+    (vision true)
+  ))
+  (limits (
+    (contextWindow null)
+    (maxOutputTokens null)
+  ))
+  (pricing ())
+  (properties (
+    (id ${modelId})
+    (owned_by snet+cudo)
+    (object model)
+    (created 0)
+    (ownedBy snet+cudo)
+  ))
+  (providerMetadata (
+    (id ${modelId})
+    (owned_by snet+cudo)
+    (object model)
+    (created 0)
+  ))
+  (discovery (
+    (managed true)
+    (backendId ${SNET_BACKEND_ID})
+    (remoteModelId ${modelId})
+  ))
+)
+`;
+
+const modelMatchesSnetId = (model: ModelChoice, snetId: string): boolean =>
+  `${model.label || ""} ${model.id || ""}`.toLowerCase().includes(snetId.toLowerCase());
+
+async function makeSolidBlueDataUrl(): Promise<string> {
+  const canvas = window.document.createElement("canvas");
+  canvas.width = 64;
+  canvas.height = 64;
+  const context = canvas.getContext("2d");
+  if (!context) return "";
+  context.fillStyle = "#0000ff";
+  context.fillRect(0, 0, 64, 64);
+  return canvas.toDataURL("image/png");
+}
+
+
 const runnerModelSelectionLabel = (value: string) => {
   if (value === COLUMN_MODEL_SENTINEL) return "Column Model";
   if (value === RUNNER_WORKSPACE_MODEL_SENTINEL) return "Workspace Model";
@@ -2254,6 +2338,9 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
   const [workbenchRunnerModelId, setWorkbenchRunnerModelId] = useState("");
   const [modelSelectionMessage, setModelSelectionMessage] = useState("");
   const [scanDataBusy, setScanDataBusy] = useState(false);
+  const [initBusy, setInitBusy] = useState(false);
+  const [extraModels, setExtraModels] = useState<ModelChoice[]>([]);
+  const [modelProbes, setModelProbes] = useState<Record<string, { status: string; latencyMs: number }>>({});
   const [replaceGuesserOnFinish, setReplaceGuesserOnFinish] = useState(false);
   const [openBrowseKey, setOpenBrowseKey] = useState<string | null>(null);
   const [openEditorKey, setOpenEditorKey] = useState<string | null>(null);
@@ -2353,7 +2440,34 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
     );
   }, [activeStackColumns, stackColumns, defaultTimeoutSeconds, pageDefinition.routeView]);
 
-  const isEnabledModel = (modelId: string) => enabledModels.some((model) => model.id === modelId);
+  const isEnabledModel = (modelId: string) => enabledModels.some((model) => model.id === modelId) || extraModels.some((model) => model.id === modelId);
+  const comboModels = useMemo(() => {
+    const merged = [...models];
+    for (const extra of extraModels) if (!merged.some((model) => model.id === extra.id)) merged.push(extra);
+    const rank = (model: ModelChoice): number => {
+      const vision = SNET_VISION_MODEL_IDS.findIndex((id) => modelMatchesSnetId(model, id));
+      if (vision >= 0) return vision;
+      const down = SNET_DOWN_MODEL_IDS.findIndex((id) => modelMatchesSnetId(model, id));
+      if (down >= 0) return 100 + down;
+      return 1000;
+    };
+    return merged
+      .map((model, index) => ({ model, index }))
+      .sort((left, right) => rank(left.model) - rank(right.model) || left.index - right.index)
+      .map((entry) => entry.model);
+  }, [models, extraModels]);
+  const comboModelLabel = (model: ModelChoice): string => {
+    const base = modelOptionLabel(model);
+    const disabled = model.enabled === false ? " · (disabled)" : "";
+    const visionId = SNET_VISION_MODEL_IDS.find((id) => modelMatchesSnetId(model, id));
+    if (visionId) {
+      const probe = modelProbes[visionId];
+      if (probe) return `${base} · 👁 ${probe.status === "ok" ? `${probe.latencyMs}ms` : probe.status}${disabled}`;
+      return `${base} · 👁 vision${disabled}`;
+    }
+    if (SNET_DOWN_MODEL_IDS.some((id) => modelMatchesSnetId(model, id))) return `${base} · ⬇ down${disabled}`;
+    return `${base}${disabled}`;
+  };
   const resolveWorkspaceRunnerModelId = () => {
     if (workspaceRunnerModelId && isEnabledModel(workspaceRunnerModelId)) return workspaceRunnerModelId;
     return defaultModelId;
@@ -3833,6 +3947,73 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
     }
   };
 
+  const initializeAndScan = async () => {
+    setInitBusy(true);
+    try {
+      // 1. Reset every setup + runner on this page to its B1-B2 defaults.
+      setStackColumns(activeStackColumns.map((column) =>
+        initialStackColumnState(pageDefinition.routeView, column.key, defaultColumnModelSelection(), defaultTimeoutSeconds)));
+
+      // 2. Create the missing vision models as .model.metta resources and register them locally.
+      const created: ModelChoice[] = [];
+      for (const modelId of SNET_MISSING_VISION_MODEL_IDS) {
+        const resourceId = snetModelResourceId(modelId);
+        try {
+          await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/file`, {
+            method: "PUT",
+            body: JSON.stringify({ path: `design/models/${resourceId}.model.metta`, content: snetVisionModelMetta(modelId) }),
+          });
+        } catch {
+          // Non-fatal: still surface the model locally so it appears in the combos.
+        }
+        created.push({ id: resourceId, label: modelId, backendId: SNET_BACKEND_ID, backendLabel: "snet", enabled: true, capabilities: { vision: true, text: true, multimodal: true } });
+      }
+      setExtraModels((previous) => {
+        const next = [...previous];
+        for (const model of created) if (!next.some((entry) => entry.id === model.id)) next.push(model);
+        return next;
+      });
+
+      // 3. Probe vision latency (solid-blue image) for the vision + down models.
+      const blue = await makeSolidBlueDataUrl();
+      const lookup = [...enabledModels, ...created];
+      const probes: Record<string, { status: string; latencyMs: number }> = {};
+      await Promise.all([...SNET_VISION_MODEL_IDS, ...SNET_DOWN_MODEL_IDS].map(async (snetId) => {
+        const choice = lookup.find((model) => modelMatchesSnetId(model, snetId));
+        if (!choice) { probes[snetId] = { status: "missing", latencyMs: 0 }; return; }
+        const started = performance.now();
+        try {
+          await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/models/${encodeURIComponent(choice.id)}/invoke`, {
+            method: "POST",
+            body: JSON.stringify({ prompt: "What color is this image? Reply with just the color name.", image: blue, timeoutSeconds: 60 }),
+          });
+          probes[snetId] = { status: "ok", latencyMs: Math.round(performance.now() - started) };
+        } catch {
+          probes[snetId] = { status: "down", latencyMs: Math.round(performance.now() - started) };
+        }
+      }));
+      setModelProbes(probes);
+
+      // 4. Scan every setup directory, then rebuild every file-selector combo by
+      //    re-scanning all setup paths across all stacks.
+      await scanDataByName();
+      autoScannedSetupsRef.current = new Set();
+      const payload = await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/data/files`);
+      const records = (Array.isArray(payload.files) ? payload.files : []) as WorkspaceFileRecord[];
+      const columns = stackColumnsRef.current;
+      for (let stackIndex = 0; stackIndex < columns.length; stackIndex += 1) {
+        const columnSetups = columns[stackIndex].setups?.length ? columns[stackIndex].setups : defaultSetups(columns[stackIndex].key);
+        for (let imageIndex = 0; imageIndex < columnSetups.length; imageIndex += 1) {
+          const setup = columnSetups[imageIndex];
+          await loadSetupStateJson(stackIndex, imageIndex, setup.stateDir || "", setup.stateFile || "state.json");
+          await scanSetupStatePath(stackIndex, imageIndex, setup.stateDir || "", records);
+        }
+      }
+    } finally {
+      setInitBusy(false);
+    }
+  };
+
   const registry: WorkflowPageComponentRegistry = {
     Arc3ImagePairInputs: () => {
       const stackIndex = 0;
@@ -4494,8 +4675,8 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
               >
                 <option value={RUNNER_WORKSPACE_MODEL_SENTINEL}>&lt;Workspace Model&gt;</option>
                 <option value={RUNNER_WORKBENCH_MODEL_SENTINEL}>&lt;Workbench Model&gt;</option>
-                {enabledModels.map((model) => <option key={`page-model-${model.id}`} value={model.id}>
-                  {modelOptionLabel(model)}
+                {comboModels.map((model) => <option key={`page-model-${model.id}`} value={model.id}>
+                  {comboModelLabel(model)}
                 </option>)}
               </select>
             </label>
@@ -4512,9 +4693,14 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
             onChange={(mode) => setModeFor("all-stack", mode)}
             baseClass="english-workflow-panel arc3-prolog-page-panel"
             scrollSize="calc(100vh - 320px)"
-            accessories={<button type="button" className="secondary" onClick={() => void scanDataByName()} disabled={scanDataBusy}>
-              {scanDataBusy ? "Scanning…" : "Scan Data"}
-            </button>}
+            accessories={<>
+              <button type="button" className="primary" onClick={() => void initializeAndScan()} disabled={initBusy || scanDataBusy}>
+                {initBusy ? "Initializing…" : "Initialize & Scan"}
+              </button>
+              <button type="button" className="secondary" onClick={() => void scanDataByName()} disabled={scanDataBusy || initBusy}>
+                {scanDataBusy ? "Scanning…" : "Scan Data"}
+              </button>
+            </>}
           >
             <div className="arc3-prolog-accordion-columns">
               {stackColumns.map((stack, stackIndex) => {
@@ -4553,8 +4739,8 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                         )}
                       >
                         <option value={PAGE_MODEL_SENTINEL}>&lt;Page Model&gt;</option>
-                        {enabledModels.map((model) => <option key={`column-model-${stack.key}-${model.id}`} value={model.id}>
-                          {modelOptionLabel(model)}
+                        {comboModels.map((model) => <option key={`column-model-${stack.key}-${model.id}`} value={model.id}>
+                          {comboModelLabel(model)}
                         </option>)}
                       </select>
                     </label>
@@ -4969,7 +5155,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                           <option value={COLUMN_MODEL_SENTINEL}>&lt;Column Model&gt;</option>
                           <option value={RUNNER_WORKSPACE_MODEL_SENTINEL}>&lt;Workspace Model&gt;</option>
                           <option value={RUNNER_WORKBENCH_MODEL_SENTINEL}>&lt;Workbench Model&gt;</option>
-                          {enabledModels.map((model) => <option key={model.id} value={model.id}>{modelOptionLabel(model)}</option>)}
+                          {comboModels.map((model) => <option key={model.id} value={model.id}>{comboModelLabel(model)}</option>)}
                         </select>
                       </label>
                       <label className="arc3-prolog-inline-select-label">
@@ -4985,8 +5171,8 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                           <option value={COLUMN_MODEL_SENTINEL}>&lt;Column Model&gt;</option>
                           <option value={RUNNER_WORKSPACE_MODEL_SENTINEL}>&lt;Workspace Model&gt;</option>
                           <option value={RUNNER_WORKBENCH_MODEL_SENTINEL}>&lt;Workbench Model&gt;</option>
-                          {enabledModels.map((model) => <option key={`validator-${runnerDisplay}-${model.id}`} value={model.id}>
-                            {modelOptionLabel(model)}
+                          {comboModels.map((model) => <option key={`validator-${runnerDisplay}-${model.id}`} value={model.id}>
+                            {comboModelLabel(model)}
                           </option>)}
                         </select>
                       </label>
