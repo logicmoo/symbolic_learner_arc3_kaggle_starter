@@ -5,7 +5,8 @@
   (description "Capture a batch of examples without discarding source ordering or provenance.")
   (topics ([]
     learning
-    memory
+    recognition-memory
+    core-primitives
   ))
   (implementation core.echo)
   (inputs ((value VisualExampleSet)))
@@ -19,7 +20,8 @@
   (description "Stage evidence in a stable form before review or memory publication.")
   (topics ([]
     learning
-    memory
+    recognition-memory
+    core-primitives
   ))
   (implementation core.echo)
   (inputs ((value Any)))
@@ -33,7 +35,8 @@
   (description "Promote perceived evidence into a recognizable memory candidate while retaining provenance.")
   (topics ([]
     vision
-    memory
+    recognition-memory
+    core-primitives
   ))
   (implementation core.echo)
   (inputs ((value Any)))
@@ -46,8 +49,9 @@
   (label "Publish Memory Record")
   (description "Combine staged evidence with review or context into a durable memory record.")
   (topics ([]
-    memory
+    recognition-memory
     learning
+    core-primitives
   ))
   (implementation core.merge)
   (inputs ((left Any) (right Any)))
@@ -60,8 +64,9 @@
   (label "Bind Memory Context")
   (description "Bind a recognizable memory to its domain or runtime context.")
   (topics ([]
-    memory
+    recognition-memory
     world-modeling
+    core-primitives
   ))
   (implementation core.merge)
   (inputs ((left Any) (right Any)))
@@ -74,8 +79,9 @@
   (label "Capture Agent Exchange")
   (description "Capture one agent observation, request, or message as stable evidence.")
   (topics ([]
-    agents
-    memory
+    agent-interaction
+    recognition-memory
+    core-primitives
   ))
   (implementation core.echo)
   (inputs ((value Any)))
@@ -89,7 +95,8 @@
   (description "Stage the smallest meaningful facts extracted from an agent exchange.")
   (topics ([]
     atomspaces
-    memory
+    recognition-memory
+    core-primitives
   ))
   (implementation core.echo)
   (inputs ((value AgentExchange)))
@@ -102,8 +109,9 @@
   (label "Compose Agent Response Record")
   (description "Bind a request to a proposed response for inspection and retention.")
   (topics ([]
-    agents
-    memory
+    agent-interaction
+    recognition-memory
+    core-primitives
   ))
   (implementation core.merge)
   (inputs ((left Any) (right Any)))
@@ -116,8 +124,9 @@
   (label "Retain Agent Interaction")
   (description "Combine observed context and response evidence into retained interaction memory.")
   (topics ([]
-    agents
-    memory
+    agent-interaction
+    recognition-memory
+    core-primitives
   ))
   (implementation core.merge)
   (inputs ((left Any) (right Any)))
@@ -130,8 +139,9 @@
   (label "Reason About Request")
   (description "Produce an inspectable reasoning trace from a request before symbolic translation.")
   (topics ([]
-    agents
+    agent-interaction
     symbolic
+    core-primitives
   ))
   (implementation core.echo)
   (inputs ((value Any)))
@@ -146,6 +156,7 @@
   (topics ([]
     atomspaces
     symbolic
+    core-primitives
   ))
   (implementation core.echo)
   (inputs ((value Any)))
@@ -160,6 +171,7 @@
   (topics ([]
     atomspaces
     symbolic
+    systems-python
   ))
   (implementation python.expression)
   (inputs ((context Object)))
@@ -174,6 +186,7 @@
   (topics ([]
     atomspaces
     symbolic
+    core-primitives
   ))
   (implementation core.echo)
   (inputs ((value Any)))
@@ -188,6 +201,7 @@
   (topics ([]
     atomspaces
     symbolic
+    core-primitives
   ))
   (implementation core.merge)
   (inputs ((left Any) (right Any)))
@@ -200,8 +214,9 @@
   (label "Run Weaker-Model Control")
   (description "Capture a weaker-model rerun of the same task as a control after memory is judged sufficient.")
   (topics ([]
-    models
-    memory
+    model-control
+    recognition-memory
+    core-primitives
   ))
   (implementation core.echo)
   (inputs ((value Any)))
@@ -214,8 +229,9 @@
   (label "Compare Memory Grounding")
   (description "Bind the memory-grounded symbolic result to a weaker-model control for attribution evidence.")
   (topics ([]
-    models
-    memory
+    model-control
+    recognition-memory
+    core-primitives
   ))
   (implementation core.merge)
   (inputs ((left Any) (right Any)))

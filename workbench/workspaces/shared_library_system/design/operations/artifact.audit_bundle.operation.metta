@@ -5,6 +5,7 @@
   (topics ([]
     artifacts
     symbolic
+    systems-llm
   ))
   (implementation llm.complete)
   (inputs (

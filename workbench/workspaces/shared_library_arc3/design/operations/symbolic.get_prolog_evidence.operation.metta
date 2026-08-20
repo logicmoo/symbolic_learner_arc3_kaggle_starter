@@ -38,7 +38,7 @@
   (topics ([]
     arc3
     symbolic
-    llm
+    systems-llm
   ))
   (implementation llm.complete)
   (inputs (
@@ -75,7 +75,7 @@
   (topics ([]
     arc3
     symbolic
-    python
+    systems-python
   ))
   (implementation python.callable)
   (inputs (

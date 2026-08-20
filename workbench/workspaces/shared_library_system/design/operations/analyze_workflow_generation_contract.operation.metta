@@ -4,7 +4,8 @@
   (label "Analyze Workflow Generation Contract")
   (description "Generate a complete English-to-Workflow contract in one LLM call, honoring an experimental section order so ordering effects can be compared.")
   (topics ([]
-    workflow
+    workflow-authoring
+    planning
   ))
   (inputs (
     (english_specification Text)
@@ -31,7 +32,8 @@
   (id workflow.analyze_generation_contract.json)
   (label "Analyze Workflow Generation Contract / JSON")
   (topics ([]
-    workflow
+    workflow-authoring
+    systems-llm
   ))
   (implementation llm.complete)
   (parents ([] workflow.analyze_generation_contract))

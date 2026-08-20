@@ -6,6 +6,7 @@
     symbolic
     world-modeling
     vision
+    systems-prolog
   ))
   (implementation prolog.properties)
   (inputs (

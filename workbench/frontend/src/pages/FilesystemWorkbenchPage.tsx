@@ -261,6 +261,7 @@ type OperationResource = {
   label?: string;
   description?: string;
   categories?: string[];
+  topics?: string[];
   implementation?: string;
   parents?: string[];
   children?: string[];
@@ -3033,8 +3034,8 @@ export function FilesystemWorkbenchPage() {
                           if(!document)return[];
                           const requiredCategories=workflow.generation?.operationCategories||[];
                           if(!requiredCategories.length)return[document];
-                          const categories=document.categories||[];
-                          return requiredCategories.some(required=>categories.some(category=>category===required||category.startsWith(`${required}/`)))?[document]:[];
+                          const topics=document.topics||document.categories||[];
+                          return requiredCategories.some(required=>topics.some(topic=>topic===required||topic.startsWith(`${required}/`)))?[document]:[];
                         }),
                         workflow_schema:{kind:"workflow",required:["id","steps"],stepRequired:["id","label","kind","operation","dependsOn","inputs","outputs"],stepOptional:["parameters","when","while","foreach","branch","maxIterations","metadata"]},
                         memory_values_plan:{values:effectivePreflightStateValues},

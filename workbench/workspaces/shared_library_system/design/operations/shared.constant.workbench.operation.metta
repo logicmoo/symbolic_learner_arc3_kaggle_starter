@@ -4,8 +4,9 @@
   (label "Constant Value / Workbench")
   (description "Return a value configured on the workflow step.")
   (topics ([]
-    core
-    sample
+    core-primitives
+    sample-demos
+    systems-workbench
   ))
   (parents ([]
     shared.constant

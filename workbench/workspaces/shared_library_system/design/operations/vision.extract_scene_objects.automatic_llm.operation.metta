@@ -6,6 +6,7 @@
   (topics ([]
     segmentation
     vision
+    systems-llm
   ))
   (implementation llm.complete)
   (inputs (

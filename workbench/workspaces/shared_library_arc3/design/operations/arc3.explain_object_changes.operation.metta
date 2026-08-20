@@ -6,6 +6,7 @@
     arc3
     vision
     symbolic
+    systems-llm
   ))
   (implementation llm.complete)
   (inputs (

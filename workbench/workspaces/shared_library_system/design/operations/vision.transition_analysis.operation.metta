@@ -5,6 +5,7 @@
   (topics ([]
     vision
     world-modeling
+    systems-llm
   ))
   (implementation llm.complete)
   (inputs (

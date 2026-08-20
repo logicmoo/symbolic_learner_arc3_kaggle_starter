@@ -4,7 +4,8 @@
   (label "Revise Workflow from English")
   (description "Browse the previous Workflow, revise it from an authoritative English resource, and report operation contracts that remain unresolved.")
   (topics ([]
-    workflow
+    workflow-authoring
+    text
   ))
   (inputs (
     (english_specification Text)
@@ -30,7 +31,8 @@
   (id workflow.populate_from_english.json)
   (label "Revise Workflow from English")
   (topics ([]
-    workflow
+    workflow-authoring
+    systems-llm
   ))
   (implementation llm.complete)
   (parents ([] workflow.populate_from_english))

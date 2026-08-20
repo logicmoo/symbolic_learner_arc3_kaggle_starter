@@ -1,7 +1,8 @@
 (
   (kind operation)
   (topics ([]
-    inspection
+    gallery-inspection
+    collection-building
   ))
   (id gallery.curate_resource)
   (label "Gallery Curation Operation")
@@ -26,8 +27,9 @@
 (
   (kind operation)
   (topics ([]
-    inspection
-    sample
+    gallery-inspection
+    sample-demos
+    systems-python
   ))
   (id gallery.curate_resource.python)
   (label "Gallery Curation Operation / Python")

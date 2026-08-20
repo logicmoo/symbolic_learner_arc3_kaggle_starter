@@ -6,6 +6,7 @@
     arc3
     segmentation
     vision
+    systems-llm
   ))
   (implementation llm.complete)
   (inputs (

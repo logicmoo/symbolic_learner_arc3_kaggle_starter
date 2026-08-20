@@ -4,7 +4,8 @@
   (label "Echo Into Titlecased / SWI-Prolog")
   (description "Take received text, execute the embedded Prolog source with SWI-Prolog, and return the title-cased text.")
   (topics ([]
-    sample
+    sample-demos
+    systems-prolog
   ))
   (implementation prolog.source)
   (inputs (

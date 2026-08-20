@@ -6,6 +6,7 @@
     symbolic
     world-modeling
     vision
+    systems-llm
   ))
   (implementation llm.complete)
   (inputs (

@@ -4,7 +4,8 @@
   (label "Echo Into Titlecased / LLM")
   (description "Take received text, send it through an LLM with the shared titlecase prompt, and return the title-cased text.")
   (topics ([]
-    sample
+    sample-demos
+    systems-llm
   ))
   (implementation llm.complete)
   (inputs (

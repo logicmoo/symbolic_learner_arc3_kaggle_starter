@@ -1,6 +1,7 @@
 (
   (kind operation) (id arc3_random.discover_games) (label "Discover ARC Games") (topics ([]
    arc3
+   games
  ))
   (description "Ask the real ARC service for its current game catalog.")
   (role abstract_stage) (inputs ()) (outputs ((games Array)))
@@ -10,6 +11,7 @@
 (
   (kind operation) (id arc3_random.discover_games.python) (label "Discover ARC Games / Python") (topics ([]
    arc3
+   systems-python
  ))
   (description "Call Arcade.get_environments and normalize the returned records.")
   (implementation python.callable) (inputs ()) (outputs ((games Array)))
@@ -19,7 +21,7 @@
 (
   (kind operation) (id arc3_random.curate_viewable_gallery) (label "Curate Viewable Gallery") (topics ([]
    arc3
-   inspection
+   gallery-inspection
  ))
   (description "Curate either the available-game previews or the selected game's first screenshot as a viewable Gallery Resource.")
   (role abstract_stage) (inputs ((games Array) (workspace_root Text) (game Any) (session Object)))
@@ -30,8 +32,9 @@
 (
   (kind operation) (id arc3_random.curate_viewable_gallery.python) (label "Curate Viewable Gallery / Python") (topics ([]
    arc3
-   inspection
-   sample
+   gallery-inspection
+   sample-demos
+   systems-python
  ))
   (implementation python.callable) (inputs ((games Array) (workspace_root Text) (game Any) (session Object)))
   (outputs ((gallery Object)))
@@ -41,6 +44,7 @@
 (
   (kind operation) (id arc3_random.initialize_played_games) (label "Start Empty Played-Games List") (topics ([]
    arc3
+   systems-python
  ))
   (description "Start this workflow run with an empty ordered list of played ARC game IDs.")
   (implementation python.callable) (inputs ()) (outputs ((played_games Array)))
@@ -50,6 +54,7 @@
 (
   (kind operation) (id arc3_random.filter_unplayed_games) (label "Filter Already-Played Games") (topics ([]
    arc3
+   systems-python
  ))
   (description "Remove games already selected in this run; begin a new cycle only after the catalog is exhausted.")
   (implementation python.callable) (inputs ((games Array) (played_games Array))) (outputs ((games Array)))
@@ -59,6 +64,7 @@
 (
   (kind operation) (id arc3_random.remember_played_game) (label "Remember Selected Game") (topics ([]
    arc3
+   systems-python
  ))
   (description "Append the selected game ID to the ordered played-games list without duplicates.")
   (implementation python.callable) (inputs ((played_games Array) (game Any))) (outputs ((played_games Array)))
@@ -68,6 +74,7 @@
 (
   (kind operation) (id arc3_random.select_game) (label "Select ARC Game") (topics ([]
    arc3
+   games
  ))
   (description "Choose from a catalog already filtered to unplayed games while avoiding an immediate repeat.")
   (role abstract_stage) (inputs ((games Array) (previous_game_id Text) (seed Number)))
@@ -78,6 +85,7 @@
 (
   (kind operation) (id arc3_random.select_game.random) (label "Select ARC Game / Select Random") (topics ([]
    arc3
+   systems-python
  ))
   (description "Select from the live games by delegating to the reusable Random List Element behavior.")
   (implementation python.callable) (inputs ((games Array) (previous_game_id Text) (seed Number)))
@@ -100,6 +108,7 @@
 (
   (kind operation) (id arc3_random.load_game_metta_data) (label "Load Game MeTTa Data") (topics ([]
    arc3
+   games
  ))
   (description "Load the selected game's MeTTa knowledge and AtomSpace, start its live session, and capture its first visual screenshot.")
   (role abstract_stage) (inputs ((game Any) (workspace_root Text)))
@@ -110,7 +119,8 @@
 (
   (kind operation) (id arc3_random.load_game_metta_data.python) (label "Load Game MeTTa Data / Python") (topics ([]
    arc3
-   sample
+   sample-demos
+   systems-python
  ))
   (implementation python.callable) (inputs ((game Any) (workspace_root Text)))
   (outputs ((session Object) (controls Array) (initial_screenshot Image)))
@@ -120,6 +130,7 @@
 (
   (kind operation) (id arc3_random.initialize_selected_game) (label "Initialize Selected ARC Game") (topics ([]
    arc3
+   games
  ))
   (description "Initialize the ARC episode through the environment API and expose its first playable frame without making a move.")
   (role abstract_stage) (inputs ((session Object)))
@@ -130,7 +141,8 @@
 (
   (kind operation) (id arc3_random.initialize_selected_game.python) (label "Initialize Selected ARC Game / Python") (topics ([]
    arc3
-   sample
+   sample-demos
+   systems-python
  ))
   (implementation python.callable) (inputs ((session Object)))
   (outputs ((session Object) (result Object) (initial_screenshot Image)))
@@ -140,6 +152,7 @@
 (
   (kind operation) (id arc3_random.reset_selected_game) (label "Reset Current ARC Game Level") (topics ([]
    arc3
+   games
  ))
   (description "Restore the current ARC level to its last saved checkpoint, or restart the entire selected game from level one.")
   (role abstract_stage) (inputs ((session Object) (target Text)))
@@ -150,7 +163,8 @@
 (
   (kind operation) (id arc3_random.reset_selected_game.python) (label "Reset Current ARC Game Level / Python") (topics ([]
    arc3
-   sample
+   sample-demos
+   systems-python
  ))
   (implementation python.callable) (inputs ((session Object) (target Text)))
   (outputs ((session Object) (result Object) (reset_screenshot Image)))
@@ -161,6 +175,7 @@
 (
   (kind operation) (id arc3_random.pick_random_move_and_execute) (label "Pick Random Move and Execute It") (topics ([]
    arc3
+   games
  ))
   (description "Capture the current frame, choose one legal random move, execute it, and return the resulting screenshot.")
   (role abstract_stage) (inputs ((session Object) (controls Array) (game Any) (memory Object) (seed Number) (move_limit Number)))
@@ -171,6 +186,7 @@
 (
   (kind operation) (id arc3_random.pick_random_move_and_execute.python) (label "Pick Random Move and Execute It / Python") (topics ([]
    arc3
+   systems-python
  ))
   (description "Use the live ARC session and its declared controls to advance exactly one step.")
   (implementation python.callable) (inputs ((session Object) (controls Array) (game Any) (memory Object) (seed Number) (move_limit Number)))
@@ -182,6 +198,7 @@
 (
   (kind operation) (id arc3_random.capture_observation) (label "Capture ARC Observation") (topics ([]
    arc3
+   observation
  ))
   (description "Represent the selected game, captured frame path, state, level, and content hash as durable evidence.")
   (role abstract_stage) (inputs ((game Any) (frame_path Text) (state Text) (level Number)))
@@ -192,6 +209,7 @@
 (
   (kind operation) (id arc3_random.capture_observation.python) (label "Capture ARC Observation / Python") (topics ([]
    arc3
+   systems-python
  ))
   (description "Hash the real captured image and retain its selected-game and state metadata.")
   (implementation python.callable) (inputs ((game Any) (frame_path Text) (state Text) (level Number)))
@@ -202,6 +220,7 @@
 (
   (kind operation) (id arc3_random.propose_action) (label "Propose ARC Action") (topics ([]
    arc3
+   games
  ))
   (description "Choose one legal ARC action using observation evidence and retained outcomes.")
   (role abstract_stage)
@@ -213,6 +232,7 @@
 (
   (kind operation) (id arc3_random.propose_action.python) (label "Propose ARC Action / Python") (topics ([]
    arc3
+   systems-python
  ))
   (description "Use learned-weighted randomness, including reset and complex coordinate handling.")
   (implementation python.callable)
@@ -224,6 +244,7 @@
 (
   (kind operation) (id arc3_random.propose_action.llm) (label "Propose ARC Action / Prompt + Vision") (topics ([]
    arc3
+   systems-llm
  ))
   (description "Use a configured vision-capable model to propose a legal action from the same contract.")
   (implementation llm.complete)
@@ -236,6 +257,7 @@
 (
   (kind operation) (id arc3_random.assess_transition) (label "Assess ARC Transition") (topics ([]
    arc3
+   world-modeling
  ))
   (description "Explain what an action did well or poorly from before/after evidence.")
   (role abstract_stage) (inputs ((before Object) (after Object))) (outputs ((assessment Object)))
@@ -245,6 +267,7 @@
 (
   (kind operation) (id arc3_random.execute_action) (label "Execute ARC Action") (topics ([]
    arc3
+   games
  ))
   (description "Apply exactly one proposed legal action through the bound ARC runner and return its resulting observable state.")
   (role abstract_stage) (inputs ((session Object) (proposal Object)))
@@ -255,6 +278,7 @@
 (
   (kind operation) (id arc3_random.execute_action.python) (label "Execute ARC Action / Python") (topics ([]
    arc3
+   systems-python
  ))
   (description "Call the live runner for one action without owning the surrounding learning tree.")
   (implementation python.callable) (inputs ((session Object) (proposal Object)))
@@ -265,6 +289,7 @@
 (
   (kind operation) (id arc3_random.assess_transition.python) (label "Assess ARC Transition / Python") (topics ([]
    arc3
+   systems-python
  ))
   (description "Apply deterministic win, loss, level, and frame-change rules.")
   (implementation python.callable) (inputs ((before Object) (after Object))) (outputs ((assessment Object)))
@@ -274,6 +299,7 @@
 (
   (kind operation) (id arc3_random.assess_transition.llm) (label "Assess ARC Transition / Prompt + Vision") (topics ([]
    arc3
+   systems-llm
  ))
   (description "Use a configured model to produce a richer evidence-backed critique.")
   (implementation llm.complete) (inputs ((before Object) (after Object))) (outputs ((assessment Object)))
@@ -284,6 +310,7 @@
 (
   (kind operation) (id arc3_random.update_memory) (label "Update ARC Learning Memory") (topics ([]
    arc3
+   recognition-memory
  ))
   (description "Accumulate good, bad, and neutral action evidence for later sessions.")
   (role abstract_stage) (inputs ((memory Object) (game_id Text) (action Text) (assessment Object)))
@@ -294,6 +321,7 @@
 (
   (kind operation) (id arc3_random.update_memory.python) (label "Update ARC Learning Memory / Python") (topics ([]
    arc3
+   systems-python
  ))
   (description "Update immutable JSON-compatible per-game action statistics.")
   (implementation python.callable) (inputs ((memory Object) (game_id Text) (action Text) (assessment Object)))
@@ -323,6 +351,7 @@
 (
   (kind operation) (id arc3_random.should_rotate) (label "Test Game Time Budget") (topics ([]
    arc3
+   games
  ))
   (description "Decide whether the current game has exhausted its configured play budget.")
   (role abstract_stage) (inputs ((started_monotonic Number) (duration_seconds Number) (now_monotonic Number)))
@@ -333,6 +362,7 @@
 (
   (kind operation) (id arc3_random.should_rotate.python) (label "Test Game Time Budget / Python") (topics ([]
    arc3
+   systems-python
  ))
   (description "Compare monotonic timestamps without coupling the loop to wall-clock time.")
   (implementation python.callable) (inputs ((started_monotonic Number) (duration_seconds Number) (now_monotonic Number)))
@@ -343,6 +373,7 @@
 (
   (kind operation) (id arc3_random.run_session) (label "Run ARC Random-Learning Session") (topics ([]
    arc3
+   games
  ))
   (description "Execute the real outer loop and persist runtime evidence for one or more games.")
   (role abstract_stage)
@@ -354,6 +385,7 @@
 (
   (kind operation) (id arc3_random.run_session.python) (label "Run ARC Random-Learning Session / Python") (topics ([]
    arc3
+   systems-python
  ))
   (description "Invoke the live ARC runner using the same decomposed operation contracts.")
   (implementation python.callable)

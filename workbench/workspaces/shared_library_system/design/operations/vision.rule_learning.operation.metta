@@ -6,6 +6,7 @@
     vision
     symbolic
     learning
+    systems-llm
   ))
   (implementation llm.complete)
   (inputs (

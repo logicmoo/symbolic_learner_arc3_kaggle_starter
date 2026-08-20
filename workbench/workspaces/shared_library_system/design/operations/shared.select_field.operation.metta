@@ -3,8 +3,8 @@
   (label "Select Record Field")
   (description "Select one field from an object artifact using the configured key.")
   (topics ([]
-    core
-    data
+    core-primitives
+    data-merge-select
   ))
   (implementation core.select)
   (inputs (

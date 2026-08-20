@@ -6,6 +6,7 @@
     vision
     segmentation
     graphics
+    systems-llm
   ))
   (implementation llm.complete)
   (inputs (

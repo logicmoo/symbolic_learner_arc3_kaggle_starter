@@ -4,7 +4,7 @@
     workflow-language
     control-flow
     conditionals
-    branching
+    conditional-branching
   ))
   (id control.if_cond.jumpt_branch)
   (label "If Condition, Jump Branch")
@@ -36,7 +36,7 @@
     workflow-language
     control-flow
     conditionals
-    invocation
+    operation-invocation
   ))
   (id control.if_cond.do_operation)
   (label "If Condition, Do Operation")

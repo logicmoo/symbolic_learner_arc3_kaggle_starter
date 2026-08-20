@@ -4,7 +4,7 @@
   (label "Set Named Value")
   (topics ([]
     workflow-language
-    values
+    workflow-values
   ))
   (description "Bind an immutable supplied value to a run-scoped alias while retaining the prior produced value and alias transition evidence.")
   (implementation workflow.value.set)
@@ -18,8 +18,8 @@
   (label "Compare Values")
   (topics ([]
     workflow-language
-    values
-    conditions
+    workflow-values
+    conditionals
   ))
   (description "Compare two typed values with an explicit operator and return the Boolean result.")
   (implementation workflow.value.compare)
@@ -33,7 +33,7 @@
   (label "Read AtomSpace Memory Cell")
   (topics ([]
     workflow-language
-    memory
+    recognition-memory
   ))
   (description "Read one declared AtomSpace-backed memory cell using an explicit missing-cell policy.")
   (implementation workflow.memory.read)
@@ -47,7 +47,7 @@
   (label "Write AtomSpace Memory Cell")
   (topics ([]
     workflow-language
-    memory
+    recognition-memory
   ))
   (description "Update one declared AtomSpace-backed memory cell using an explicit merge rule and retain evidence for the mutation.")
   (implementation workflow.memory.write)
@@ -92,7 +92,7 @@
   (topics ([]
     workflow-language
     control-flow
-    calls
+    programming-control-flow
   ))
   (description "Validate declared outputs, unwind the current frame, and return a typed result to its caller.")
   (implementation workflow.control.return)

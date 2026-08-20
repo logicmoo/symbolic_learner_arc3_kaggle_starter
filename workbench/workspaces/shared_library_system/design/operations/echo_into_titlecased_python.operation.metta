@@ -4,7 +4,8 @@
   (label "Echo Into Titlecased / Python")
   (description "Take received text, call an imported Python function, and return the title-cased text.")
   (topics ([]
-    sample
+    sample-demos
+    systems-python
   ))
   (implementation python.callable)
   (inputs (

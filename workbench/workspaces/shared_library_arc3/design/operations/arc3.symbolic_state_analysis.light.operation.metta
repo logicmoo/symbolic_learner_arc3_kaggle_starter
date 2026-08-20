@@ -5,7 +5,8 @@
   (topics ([]
     arc3
     vision
-    sample
+    sample-demos
+    systems-llm
   ))
   (implementation llm.complete)
   (inputs (

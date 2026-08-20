@@ -3,8 +3,8 @@
   (label "Constant Value")
   (description "Produce a configured constant value.")
   (topics ([]
-    core
-    sample
+    core-primitives
+    sample-demos
   ))
   (inputs ())
   (outputs (

@@ -5,6 +5,7 @@
   (topics ([]
     observation
     world-modeling
+    core-primitives
   ))
   (implementation core.echo)
   (inputs (

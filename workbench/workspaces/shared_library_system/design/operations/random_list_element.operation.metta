@@ -1,7 +1,8 @@
 (
   (kind operation)
   (topics ([]
-    collection
+    collection-building
+    sample-demos
   ))
   (id collection.random_list_element)
   (label "Random List Element")
@@ -14,8 +15,9 @@
 (
   (kind operation)
   (topics ([]
-    collection
-    sample
+    collection-building
+    sample-demos
+    systems-python
   ))
   (id collection.random_list_element.python)
   (label "Random List Element / Python")

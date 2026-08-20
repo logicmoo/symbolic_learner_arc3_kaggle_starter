@@ -4,8 +4,8 @@
   (label "Request a Number / Workbench")
   (description "Materialize the request as a durable human-input workflow step.")
   (topics ([]
-    sample
-    system
+    sample-demos
+    systems-workbench
   ))
   (parents ([]
     sample.request_number

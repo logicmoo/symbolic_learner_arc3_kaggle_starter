@@ -3,8 +3,8 @@
   (label "Merge Records")
   (description "Merge two object records into one derived record. Useful for combining observations, actions, metadata, evidence, and results.")
   (topics ([]
-    core
-    data
+    core-primitives
+    data-merge-select
   ))
   (implementation core.merge)
   (inputs (

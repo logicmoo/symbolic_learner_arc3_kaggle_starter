@@ -6,6 +6,7 @@
   (topics ([]
     learning
     arc3
+    systems-llm
   ))
   (implementation llm.complete)
   (inputs (
@@ -28,6 +29,7 @@
   (topics ([]
     learning
     arc3
+    systems-llm
   ))
   (implementation llm.complete)
   (inputs (

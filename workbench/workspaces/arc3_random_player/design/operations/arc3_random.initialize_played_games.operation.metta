@@ -4,6 +4,7 @@
   (label "Start Empty Played-Games List")
   (topics ([]
     arc3
+    systems-python
   ))
   (description "Start this workflow run with an empty ordered list of played ARC game IDs.")
   (implementation python.callable)

@@ -5,7 +5,7 @@
   (description "Take received text and return the title-cased text.")
   (topics ([]
     text
-    sample
+    sample-demos
   ))
   (role abstract_stage)
   (inputs (

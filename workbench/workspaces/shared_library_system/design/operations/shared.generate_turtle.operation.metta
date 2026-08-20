@@ -5,6 +5,7 @@
   (topics ([]
     graphics
     symbolic
+    systems-llm
   ))
   (implementation llm.turtle)
   (inputs (

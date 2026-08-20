@@ -27,7 +27,7 @@ def test_titlecase_llm_implementation_is_a_sample_topic() -> None:
     document = get_filesystem_provider().read_json(path)
     assert document["kind"] == "operation"
     assert document["parents"] == ["echo_into_titlecased"]
-    assert "sample" in document["topics"]
+    assert "sample-demos" in document["topics"]
 
 
 def test_topic_sets_resolve_participating_operations() -> None:

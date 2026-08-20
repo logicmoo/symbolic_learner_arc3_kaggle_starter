@@ -4,8 +4,8 @@
   (label "Request a Number")
   (description "Pause a workflow and ask its user to enter a number in the Workbench UI.")
   (topics ([]
-    sample
-    core
+    sample-demos
+    core-primitives
   ))
   (inputs ())
   (outputs (

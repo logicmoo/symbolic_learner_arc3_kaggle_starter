@@ -5,6 +5,7 @@
   (topics ([]
     arc3
     symbolic
+    systems-llm
   ))
   (implementation llm.complete)
   (inputs (

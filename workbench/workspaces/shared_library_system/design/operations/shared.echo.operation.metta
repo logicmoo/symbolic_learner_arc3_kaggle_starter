@@ -3,8 +3,8 @@
   (label "Echo Value")
   (description "Pass a value through unchanged.")
   (topics ([]
-    core
-    sample
+    core-primitives
+    sample-demos
   ))
   (implementation core.echo)
   (inputs (

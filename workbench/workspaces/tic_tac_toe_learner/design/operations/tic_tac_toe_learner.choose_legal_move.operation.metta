@@ -4,7 +4,7 @@
   (description "Workspace-specific human operation for selecting a legal board coordinate.")
   (topics ([]
     games
-    sample
+    sample-demos
   ))
   (implementation human.await_input)
   (inputs (
