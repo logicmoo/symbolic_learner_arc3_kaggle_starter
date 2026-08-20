@@ -679,6 +679,26 @@ function imageSelectionFromPath(workspaceId: string, path: string, fallback?: Im
   return { name: normalized, dataUrl: repositoryAssetUrl(normalized) };
 }
 
+// Pretty-print JSON like JSON.stringify(value, null, 2), except an array whose entries are ALL
+// numbers renders inline on a single line ([1, 2, 3, 4, 5]) instead of one element per line.
+function formatJson(value: unknown, indent = 0): string {
+  const pad = "  ".repeat(indent);
+  const padInner = "  ".repeat(indent + 1);
+  if (Array.isArray(value)) {
+    if (value.length === 0) return "[]";
+    if (value.every((item) => typeof item === "number")) return `[${value.join(", ")}]`;
+    const items = value.map((item) => padInner + formatJson(item, indent + 1));
+    return `[\n${items.join(",\n")}\n${pad}]`;
+  }
+  if (value && typeof value === "object") {
+    const keys = Object.keys(value as Record<string, unknown>);
+    if (keys.length === 0) return "{}";
+    const items = keys.map((key) => `${padInner}${JSON.stringify(key)}: ${formatJson((value as Record<string, unknown>)[key], indent + 1)}`);
+    return `{\n${items.join(",\n")}\n${pad}}`;
+  }
+  return JSON.stringify(value);
+}
+
 function parentImagePath(path: string): string {
   const normalized = normalizeAssetPath(path);
   if (!normalized) return "";
@@ -2939,23 +2959,26 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
         return;
       }
       const text = await response.text();
-      setSetupStateField(stackIndex, imageIndex, "stateJson", text);
+      let parsed: unknown;
       try {
-        const parsed = JSON.parse(text);
-        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-          const record = parsed as Record<string, unknown>;
-          const command = commandFromParsedState(record);
-          if (command) setSetupCommand(stackIndex, imageIndex, command);
-          const scan = record.scan;
-          if (scan && typeof scan === "object" && !Array.isArray(scan)) {
-            const results = (scan as Record<string, unknown>).results;
-            if (results && typeof results === "object" && !Array.isArray(results)) {
-              applyScanResultsToSetup(stackIndex, imageIndex, results as Record<string, unknown>);
-            }
+        parsed = JSON.parse(text);
+      } catch {
+        parsed = undefined;
+      }
+      // Reformat valid JSON so number lists render inline; keep raw text otherwise.
+      const display = parsed && typeof parsed === "object" ? `${formatJson(parsed)}\n` : text;
+      setSetupStateField(stackIndex, imageIndex, "stateJson", display);
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        const record = parsed as Record<string, unknown>;
+        const command = commandFromParsedState(record);
+        if (command) setSetupCommand(stackIndex, imageIndex, command);
+        const scan = record.scan;
+        if (scan && typeof scan === "object" && !Array.isArray(scan)) {
+          const results = (scan as Record<string, unknown>).results;
+          if (results && typeof results === "object" && !Array.isArray(results)) {
+            applyScanResultsToSetup(stackIndex, imageIndex, results as Record<string, unknown>);
           }
         }
-      } catch {
-        // Props file is not JSON; leave the setup command and file groups as-is.
       }
     } catch (reason) {
       setSetupStateField(stackIndex, imageIndex, "stateJson", `// Could not load ${rel}: ${reason instanceof Error ? reason.message : String(reason)}`);
@@ -3169,7 +3192,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
     base.scan = { path: prefix, results };
     const command = commandFromParsedState(base);
     if (command) setSetupCommand(stackIndex, imageIndex, command);
-    const newStateJson = `${JSON.stringify(base, null, 2)}\n`;
+    const newStateJson = `${formatJson(base)}\n`;
     setStackState(stackIndex, (stack) => {
       const setups = stack.setups?.length ? [...stack.setups] : defaultSetups(stack.key);
       const current = setups[imageIndex];

@@ -539,7 +539,9 @@ def test_b1_b2_setup_path_scan_writes_scan_results() -> None:
     assert source.index("results.prompt_files.push") < source.index('name.includes("eng")') < source.index("results.unknown_files.push")
     # The scan merges into (rather than replaces) a parseable state.json document.
     assert "base.scan = { path: prefix, results };" in source
-    assert "JSON.stringify(base, null, 2)" in source
+    assert "const newStateJson = `${formatJson(base)}\\n`;" in source
+    # Number-only arrays render inline (e.g. available_actions: [1, 2, 3, 4, 5]).
+    assert "if (value.every((item) => typeof item === \"number\")) return `[${value.join(\", \")}]`;" in source
     # The scan button lives inside the DIR & PROPERTIES expander, before PROP_FILE.
     assert source.index("DIR &amp; PROPERTIES") < source.index("arc3-prolog-setup-scan") < source.index("<span>PROP_FILE</span>")
     # A scan button also sits on the DIR & PROPERTIES summary itself, so you can scan
