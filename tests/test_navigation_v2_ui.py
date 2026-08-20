@@ -505,9 +505,9 @@ def test_runtime_artifacts_deep_link_to_datatype_resources() -> None:
 
 def test_workspace_entry_does_not_wait_for_capability_diagnostics() -> None:
     source = (ROOT / "workbench" / "frontend" / "src" / "pages" / "FilesystemWorkbenchPage.tsx").read_text(encoding="utf-8")
-    load_workspace = source.split("const loadWorkspace=", 1)[1].split("const loadRequestedWorkspace=", 1)[0]
-    assert 'setWorkspace(next.workspace)' in load_workspace
-    assert 'currentWorkspaceId.current=next.workspace.id' in load_workspace
+    load_workspace = source.split("const loadWorkspaceById =", 1)[1].split("const loadWorkspace =", 1)[0]
+    assert "setWorkspace(next.workspace)" in load_workspace
+    assert "currentWorkspaceId.current=next.workspace.id" in load_workspace
     assert 'void engine("/capabilities").then' in source
 
 

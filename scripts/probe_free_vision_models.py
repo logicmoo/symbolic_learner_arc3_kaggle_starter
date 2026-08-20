@@ -9,6 +9,10 @@ import urllib.request
 from dataclasses import dataclass
 from typing import Any
 
+from _runtime import configure_runtime_home
+
+configure_runtime_home(__file__)
+
 
 @dataclass(frozen=True)
 class CandidateModel:

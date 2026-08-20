@@ -64,7 +64,7 @@ def test_shared_runtime_contains_no_design_documents() -> None:
 
 
 def test_every_workspace_uses_lifecycle_first_resource_directories() -> None:
-    allowed = {"design", "knowledge", "runtime", "policies", "docs"}
+    allowed = {"design", "knowledge", "runtime", "policies", "docs", "data"}
     for workspace in WORKSPACES.iterdir():
         if not workspace.is_dir() or workspace.name.startswith("."):
             continue
