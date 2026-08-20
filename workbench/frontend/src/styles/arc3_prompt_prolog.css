@@ -800,7 +800,6 @@ label.arc3-prolog-inline-composite-label > .arc3-prolog-selected-source-chips {
   flex: 0 0 auto;
 }
 
-.arc3-prolog-md-preview { margin-top: 6px; border: 1px solid #2d4652; border-radius: 4px; background: #0b1620; }
-.arc3-prolog-md-preview > summary { cursor: pointer; padding: 4px 8px; font: 9px ui-monospace, monospace; color: #7fa8bd; letter-spacing: 0.05em; }
-.arc3-prolog-md-preview .markdown-body { padding: 8px 12px; max-height: 320px; overflow: auto; }
+.arc3-prolog-md-modes { display: inline-flex; gap: 4px; margin: 0 6px; }
+.arc3-prolog-md-render { margin-top: 6px; border: 1px solid #2d4652; border-radius: 4px; background: #0b1620; padding: 8px 12px; max-height: 360px; overflow: auto; }
 

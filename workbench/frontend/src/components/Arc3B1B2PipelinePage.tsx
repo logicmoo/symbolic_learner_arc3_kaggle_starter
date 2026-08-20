@@ -1,11 +1,9 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import { MarkdownDocument } from "./MarkdownDocument";
 import { WorkflowPageHost, type WorkflowPageComponentRegistry, type WorkflowPageDefinition } from "./WorkflowPageHost";
 import { WorkflowPageSourceEditor } from "./WorkflowPageSourceEditor";
 import { ThreeStateAccordionMember, ThreeStateAccordionStack, type AccordionDisplayMode } from "./ThreeStateAccordion";
 import "../styles/arc3_prompt_prolog.css";
-import "../styles/help_tabs.css";
 
 type ModelChoice = {
   id: string;
@@ -2363,6 +2361,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
   const [editorName, setEditorName] = useState("");
   const [editorBusy, setEditorBusy] = useState(false);
   const [editorError, setEditorError] = useState("");
+  const [editorMdMode, setEditorMdMode] = useState<"source" | "render">("source");
   const [groupOpen, setGroupOpen] = useState<Record<string, boolean>>({});
   const [lineCounts, setLineCounts] = useState<Record<string, number>>({});
   const [dataFiles, setDataFiles] = useState<WorkspaceFileRecord[]>([]);
@@ -4314,6 +4313,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
               setEditorName(path);
               setEditorText("");
               setEditorError("");
+              setEditorMdMode("render");
               const rel = normalizeAssetPath(path).replace(/^\/+/, "");
               if (!rel || !workspaceId) return;
               setEditorBusy(true);
@@ -4333,6 +4333,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
               setEditorName(suggestedName);
               setEditorText("");
               setEditorError("");
+              setEditorMdMode("source");
             };
             const expandNonEmptyGroups = () => {
               const groupCounts: Array<[SetupCollectionField, number]> = [
@@ -4354,7 +4355,10 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                 return next;
               });
             };
-            const renderFileEditor = (editorKey: string, onSaved: (path: string) => void) => openEditorKey === editorKey && <div className="arc3-prolog-setup-file-editor">
+            const renderFileEditor = (editorKey: string, onSaved: (path: string) => void) => {
+              if (openEditorKey !== editorKey) return null;
+              const isMarkdown = /^.+\.md$/i.test(editorName.trim());
+              return <div className="arc3-prolog-setup-file-editor">
               <div className="arc3-prolog-setup-file-editor-head">
                 <span>FILE</span>
                 <input
@@ -4364,6 +4368,18 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                   placeholder={`${pathPrefix}/name.ext`}
                   onChange={(event) => setEditorName(event.target.value)}
                 />
+                {isMarkdown && <div className="arc3-prolog-md-modes">
+                  <button
+                    type="button"
+                    className={editorMdMode === "source" ? "primary" : "secondary"}
+                    onClick={() => setEditorMdMode("source")}
+                  >Source</button>
+                  <button
+                    type="button"
+                    className={editorMdMode === "render" ? "primary" : "secondary"}
+                    onClick={() => setEditorMdMode("render")}
+                  >Render</button>
+                </div>}
                 <button
                   type="button"
                   className="secondary arc3-prolog-browse-btn arc3-prolog-setup-editor-save"
@@ -4398,22 +4414,19 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                   }}
                 >Close</button>
               </div>
-              <textarea
-                className="arc3-prolog-setup-state-json arc3-prolog-setup-editor-text"
-                value={editorText}
-                placeholder={editorBusy ? "Loading…" : ""}
-                spellCheck={false}
-                rows={8}
-                onChange={(event) => setEditorText(event.target.value)}
-              />
-              {/^.+\.md$/i.test(editorName.trim()) && <details className="arc3-prolog-md-preview" open>
-                <summary>MARKDOWN PREVIEW</summary>
-                <article className="relationship-markdown markdown-body">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{editorText}</ReactMarkdown>
-                </article>
-              </details>}
+              {isMarkdown && editorMdMode === "render"
+                ? <MarkdownDocument className="arc3-prolog-md-render" content={editorText} />
+                : <textarea
+                  className="arc3-prolog-setup-state-json arc3-prolog-setup-editor-text"
+                  value={editorText}
+                  placeholder={editorBusy ? "Loading…" : ""}
+                  spellCheck={false}
+                  rows={8}
+                  onChange={(event) => setEditorText(event.target.value)}
+                />}
               {editorError ? <div className="arc3-prolog-error">{editorError}</div> : null}
             </div>;
+            };
             const renderSetupCollectionGroup = (
               field: SetupCollectionField,
               title: string,

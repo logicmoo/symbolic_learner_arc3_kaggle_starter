@@ -1,6 +1,5 @@
 import {useEffect,useState} from "react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import {MarkdownDocument} from "./MarkdownDocument";
 import "../styles/help_tabs.css";
 
 type HelpTab={id:string;label:string;path?:string;repositoryPath?:string};
@@ -67,7 +66,7 @@ export function HelpDocumentTabs({preferred,context,onOpenDocs}:{preferred?:stri
  const back=()=>setHistory(current=>{const next=[...current];setOpened(next.pop()||null);return next});
  return <div className="help-doc-inspector">
   <div className="help-doc-tabs">{history.length>0&&<button onClick={back}>← Back</button>}{tabs.map(item=><button key={item.id} className={active===item.id&&!opened?"active":""} onClick={()=>{setActive(item.id);setOpened(null);setHistory([])}}>{item.label}</button>)}</div>
-  <div className="inspect-section relationship-guide"><article className="relationship-markdown markdown-body"><ReactMarkdown remarkPlugins={[remarkGfm]} components={{a:({node:_node,href="",...props})=>{const docsSearch=href.startsWith("?docs=");const localMarkdown=!/^(https?:|mailto:|#)/i.test(href)&&href.split("#",1)[0].toLowerCase().endsWith(".md");return <a {...props} href={href} target={docsSearch||localMarkdown?undefined:"_blank"} rel={docsSearch||localMarkdown?undefined:"noreferrer"} onClick={docsSearch?event=>{event.preventDefault();const filter=decodeURIComponent(href.slice(6));if(onOpenDocs)onOpenDocs(filter);else window.dispatchEvent(new CustomEvent("workbench:open-docs",{detail:filter}))}:localMarkdown?event=>{event.preventDefault();void navigate(href).catch(reason=>setErrors(current=>({...current,[active]:String(reason)})))}:undefined}/>}}}>{document.content}</ReactMarkdown></article></div>
+  <div className="inspect-section relationship-guide"><MarkdownDocument content={document.content} onOpenDocs={onOpenDocs} onNavigateMarkdown={(href)=>void navigate(href).catch(reason=>setErrors(current=>({...current,[active]:String(reason)})))}/></div>
   <div className="provenance-foot">{active==="context"&&!opened?<><span>INSPECTOR SOURCE</span><code>current workspace state</code><span className="verified">✓ live data</span></>:<><span>DOCUMENTATION SOURCE</span><code>{document.path}</code><span className={errors[active]?"":"verified"}>{errors[active]?"load error":"✓ filesystem backed"}</span></>}</div>
  </div>;
 }

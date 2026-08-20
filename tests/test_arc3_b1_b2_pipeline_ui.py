@@ -6,6 +6,24 @@ COMPONENT = ROOT / "workbench/frontend/src/components/Arc3B1B2PipelinePage.tsx"
 STYLES = ROOT / "workbench/frontend/src/styles/arc3_prompt_prolog.css"
 WORKBENCH = ROOT / "workbench/frontend/src/pages/FilesystemWorkbenchPage.tsx"
 PAGE = ROOT / "workbench/workspaces/arc3_random_player/design/workflow_pages/b1_b2_pipeline.workflow_page.json"
+MARKDOWN_DOCUMENT = ROOT / "workbench/frontend/src/components/MarkdownDocument.tsx"
+HELP_TABS = ROOT / "workbench/frontend/src/components/HelpDocumentTabs.tsx"
+
+
+def test_markdown_document_is_shared_help_renderer() -> None:
+    source = MARKDOWN_DOCUMENT.read_text(encoding="utf-8")
+    # The shared renderer carries the help-file link rewrites.
+    assert 'import ReactMarkdown from "react-markdown";' in source
+    assert 'import remarkGfm from "remark-gfm";' in source
+    assert 'const docsSearch = href.startsWith("?docs=");' in source
+    assert '.toLowerCase().endsWith(".md")' in source
+    assert 'window.dispatchEvent(new CustomEvent("workbench:open-docs"' in source
+    assert 'target={docsSearch || localMarkdown ? undefined : "_blank"}' in source
+    # The help tabs now consume the shared renderer rather than an inline ReactMarkdown.
+    help_source = HELP_TABS.read_text(encoding="utf-8")
+    assert 'import {MarkdownDocument} from "./MarkdownDocument";' in help_source
+    assert "<MarkdownDocument content={document.content}" in help_source
+    assert "import ReactMarkdown" not in help_source
 
 
 def test_b1_b2_page_uses_dedicated_renderer() -> None:
@@ -720,12 +738,15 @@ def test_b1_b2_file_groups_have_edit_new_editors() -> None:
     assert "renderFileEditor(`new:${field}:${setup.id}`, (path) => appendSetupEntryPath(stackIndex, imageIndex, field, path))" in source
     assert ".arc3-prolog-setup-file-editor" in styles
     assert ".arc3-prolog-setup-file-editor-head" in styles
-    # .md files get a live markdown preview rendered with the app's ReactMarkdown + GFM.
-    assert "import ReactMarkdown from \"react-markdown\";" in source
-    assert "import remarkGfm from \"remark-gfm\";" in source
-    assert "/^.+\\.md$/i.test(editorName.trim())" in source
-    assert "<ReactMarkdown remarkPlugins={[remarkGfm]}>{editorText}</ReactMarkdown>" in source
-    assert ".arc3-prolog-md-preview" in styles
+    # .md files get a Source/Render editor (like the help view) whose Render mode uses the shared
+    # MarkdownDocument renderer (with the special link rewrites).
+    assert 'import { MarkdownDocument } from "./MarkdownDocument";' in source
+    assert "const isMarkdown = /^.+\\.md$/i.test(editorName.trim());" in source
+    assert 'const [editorMdMode, setEditorMdMode] = useState<"source" | "render">("source");' in source
+    assert 'onClick={() => setEditorMdMode("source")}' in source
+    assert 'onClick={() => setEditorMdMode("render")}' in source
+    assert '<MarkdownDocument className="arc3-prolog-md-render" content={editorText} />' in source
+    assert ".arc3-prolog-md-render" in styles
 
 
 def test_b1_b2_columns_are_resizable() -> None:
