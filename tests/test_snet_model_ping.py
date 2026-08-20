@@ -70,6 +70,20 @@ def _ping(model: str, api_key: str) -> dict:
     return {"model": model, **result}
 
 
+EMBEDDING_PREFIXES = ("BAAI/", "WhereIsAI/")
+
+
+def _catalog(api_key: str) -> list[str]:
+    request = urllib.request.Request(
+        f"{SNET_BASE_URL}/models",
+        headers={"Authorization": f"Bearer {api_key}", "Accept": "application/json"},
+        method="GET",
+    )
+    with urllib.request.urlopen(request, timeout=TIMEOUT_S) as response:
+        payload = json.loads(response.read().decode("utf-8"))
+    return sorted(str(item.get("id")) for item in (payload.get("data") or []) if isinstance(item, dict) and item.get("id"))
+
+
 def _solid_png(width: int, height: int, rgb: tuple[int, int, int]) -> bytes:
     """Encode a solid-color RGB PNG without any third-party imaging dependency."""
     red, green, blue = rgb
@@ -133,4 +147,26 @@ def test_snet_models_identify_blue_image() -> None:
     assert len(results) == len(SNET_MODELS)
     for item in results:
         assert {"model", "status", "latencyMs", "response"} <= set(item)
+
+
+@pytest.mark.skipif(not os.environ.get("SNET_API_KEY"), reason="SNET_API_KEY is not set")
+def test_snet_catalog_models_all_resolve() -> None:
+    """Whatever SNET's /models catalog advertises must actually exist and resolve."""
+    api_key = os.environ["SNET_API_KEY"]
+    catalog = _catalog(api_key)
+    chat_models = [model for model in catalog if not model.startswith(EMBEDDING_PREFIXES)]
+    assert chat_models, "SNET /models returned no chat models"
+
+    print("\n\n=== SNET catalog existence check ===")
+    missing: list[str] = []
+    for model in chat_models:
+        result = _post_chat(model, api_key, [{"role": "user", "content": "Reply with the single word: ok"}], 5)
+        print(f"[{result['status']:>10} {result['latencyMs']:>8.1f} ms] {model}")
+        response = str(result.get("response") or "").lower()
+        if result["status"].startswith("HTTP 40") and ("not found" in response or "does not exist" in response):
+            missing.append(model)
+    print("\n=== end ===\n")
+
+    # If the catalog says a model exists, it needs to exist.
+    assert not missing, f"catalog-advertised models that do not resolve: {missing}"
 
