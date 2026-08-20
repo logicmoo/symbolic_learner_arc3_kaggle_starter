@@ -1,6 +1,11 @@
 (
   (kind operation)
-  (categories ([] workflow-language control-flow conditionals branching))
+  (topics ([]
+    workflow-language
+    control-flow
+    conditionals
+    branching
+  ))
   (id control.if_cond.jumpt_branch)
   (label "If Condition, Jump Branch")
   (description "Evaluate a declared condition and branch to an existing workflow step when it matches; otherwise continue through the declared fall-through path.")
@@ -27,7 +32,12 @@
 )
 (
   (kind operation)
-  (categories ([] workflow-language control-flow conditionals invocation))
+  (topics ([]
+    workflow-language
+    control-flow
+    conditionals
+    invocation
+  ))
   (id control.if_cond.do_operation)
   (label "If Condition, Do Operation")
   (description "Evaluate a declared condition and invoke an existing semantic operation when it matches; otherwise return an explicit skipped result without inventing an implementation.")

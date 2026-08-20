@@ -2,9 +2,9 @@
   (id artifact.audit_bundle)
   (label "Audit Artifact Bundle")
   (description "Reusable consistency-audit operation migrated from the legacy ARC3 audit_artifact_bundle transaction.")
-  (categories ([]
-    artifacts/validation
-    symbolic/validation
+  (topics ([]
+    artifacts
+    symbolic
   ))
   (implementation llm.complete)
   (inputs (

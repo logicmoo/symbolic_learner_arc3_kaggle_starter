@@ -2,13 +2,10 @@
   (id shared.explain_transition)
   (label "Explain State Transition")
   (description "Explain a before/action/after transition as hypotheses and evidence. Generic world-learning operation.")
-  (categories ([]
-    symbolic/explanation
-    world-modeling/transitions
-    learning/hypotheses
-  ))
-  (subjects ([]
+  (topics ([]
+    symbolic
     world-modeling
+    learning
   ))
   (implementation symbolic.transition)
   (inputs (

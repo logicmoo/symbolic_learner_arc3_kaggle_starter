@@ -2,13 +2,10 @@
   (id shared.update_world_model)
   (label "Update World Model")
   (description "Update a revisable world model from hypotheses and evidence. Generic learning operation reusable across domains.")
-  (categories ([]
-    world-modeling/update
-    learning/hypotheses
-    symbolic/reasoning
-  ))
-  (subjects ([]
+  (topics ([]
     world-modeling
+    learning
+    symbolic
   ))
   (implementation symbolic.world_model)
   (inputs (

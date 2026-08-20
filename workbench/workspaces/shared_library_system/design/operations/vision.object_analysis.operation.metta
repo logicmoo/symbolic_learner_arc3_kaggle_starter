@@ -2,13 +2,10 @@
   (id vision.object_analysis)
   (label "Vision Object Analysis")
   (description "Analyze one visual state into structured objects and an executable reconstruction. This is the reusable vision core extracted from the older ARC3 prompt package.")
-  (categories ([]
-    vision/recognition
-    vision/grouping
-    graphics/reconstruction
-  ))
-  (subjects ([]
+  (topics ([]
     vision
+    segmentation
+    graphics
   ))
   (implementation llm.complete)
   (inputs (

@@ -3,7 +3,9 @@
   (id workflow.populate_from_english)
   (label "Revise Workflow from English")
   (description "Browse the previous Workflow, revise it from an authoritative English resource, and report operation contracts that remain unresolved.")
-  (categories ([] workflow/generation workflow/preflight))
+  (topics ([]
+    workflow
+  ))
   (inputs (
     (english_specification Text)
     (effective_operation_catalog Array)
@@ -27,7 +29,9 @@
   (kind operation)
   (id workflow.populate_from_english.json)
   (label "Revise Workflow from English")
-  (categories ([] workflow/generation workflow/revision))
+  (topics ([]
+    workflow
+  ))
   (implementation llm.complete)
   (parents ([] workflow.populate_from_english))
   (inputs (

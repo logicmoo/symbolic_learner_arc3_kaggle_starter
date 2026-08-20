@@ -2,7 +2,10 @@
   (kind operation)
   (id value.set)
   (label "Set Named Value")
-  (categories ([] workflow-language values))
+  (topics ([]
+    workflow-language
+    values
+  ))
   (description "Bind an immutable supplied value to a run-scoped alias while retaining the prior produced value and alias transition evidence.")
   (implementation workflow.value.set)
   (inputs ((name String) (value Any)))
@@ -13,7 +16,11 @@
   (kind operation)
   (id value.compare)
   (label "Compare Values")
-  (categories ([] workflow-language values conditions))
+  (topics ([]
+    workflow-language
+    values
+    conditions
+  ))
   (description "Compare two typed values with an explicit operator and return the Boolean result.")
   (implementation workflow.value.compare)
   (inputs ((left Any) (operator String) (right Any)))
@@ -24,7 +31,10 @@
   (kind operation)
   (id memory.read)
   (label "Read AtomSpace Memory Cell")
-  (categories ([] workflow-language memory))
+  (topics ([]
+    workflow-language
+    memory
+  ))
   (description "Read one declared AtomSpace-backed memory cell using an explicit missing-cell policy.")
   (implementation workflow.memory.read)
   (inputs ((atomspace_scope String) (atomspace_scope_key String) (atomspace_cell String) (missingPolicy String) (default Any)))
@@ -35,7 +45,10 @@
   (kind operation)
   (id memory.write)
   (label "Write AtomSpace Memory Cell")
-  (categories ([] workflow-language memory))
+  (topics ([]
+    workflow-language
+    memory
+  ))
   (description "Update one declared AtomSpace-backed memory cell using an explicit merge rule and retain evidence for the mutation.")
   (implementation workflow.memory.write)
   (inputs ((atomspace_scope String) (atomspace_scope_key String) (atomspace_cell String) (atomspace_atom Any) (change_mode String) (evidenceLink String)))
@@ -46,7 +59,11 @@
   (kind operation)
   (id control.loop.continue)
   (label "Continue Loop")
-  (categories ([] workflow-language control-flow loops))
+  (topics ([]
+    workflow-language
+    control-flow
+    loops
+  ))
   (description "Finalize the current iteration and return to the named active loop's condition or next-item check.")
   (implementation workflow.control.loop.continue)
   (inputs ((loopId String)))
@@ -57,7 +74,11 @@
   (kind operation)
   (id control.loop.break)
   (label "Break Loop")
-  (categories ([] workflow-language control-flow loops))
+  (topics ([]
+    workflow-language
+    control-flow
+    loops
+  ))
   (description "Finalize and exit the named active loop, exporting only its declared output values.")
   (implementation workflow.control.loop.break)
   (inputs ((loopId String)))
@@ -68,7 +89,11 @@
   (kind operation)
   (id control.return)
   (label "Return from Workflow or Operation")
-  (categories ([] workflow-language control-flow calls))
+  (topics ([]
+    workflow-language
+    control-flow
+    calls
+  ))
   (description "Validate declared outputs, unwind the current frame, and return a typed result to its caller.")
   (implementation workflow.control.return)
   (inputs ((values Object)))

@@ -2,9 +2,9 @@
   (id shared.echo)
   (label "Echo Value")
   (description "Pass a value through unchanged.")
-  (categories ([]
-    core/values
-    sample/core
+  (topics ([]
+    core
+    sample
   ))
   (implementation core.echo)
   (inputs (

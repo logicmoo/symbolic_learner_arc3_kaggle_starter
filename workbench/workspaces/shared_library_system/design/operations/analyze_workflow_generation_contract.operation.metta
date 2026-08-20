@@ -3,7 +3,9 @@
   (id workflow.analyze_generation_contract)
   (label "Analyze Workflow Generation Contract")
   (description "Generate a complete English-to-Workflow contract in one LLM call, honoring an experimental section order so ordering effects can be compared.")
-  (categories ([] workflow/generation workflow/preflight))
+  (topics ([]
+    workflow
+  ))
   (inputs (
     (english_specification Text)
     (generation_steps Array)
@@ -28,7 +30,9 @@
   (kind operation)
   (id workflow.analyze_generation_contract.json)
   (label "Analyze Workflow Generation Contract / JSON")
-  (categories ([] workflow/generation workflow/preflight))
+  (topics ([]
+    workflow
+  ))
   (implementation llm.complete)
   (parents ([] workflow.analyze_generation_contract))
   (inputs (

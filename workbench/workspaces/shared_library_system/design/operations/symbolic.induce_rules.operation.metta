@@ -2,9 +2,9 @@
   (id symbolic.induce_rules)
   (label "Induce Rules from Symbolic Evidence")
   (description "Reusable rule-induction operation migrated from the legacy ARC3 induce_rules_from_prolog transaction.")
-  (categories ([]
-    symbolic/rule-learning
-    learning/induction
+  (topics ([]
+    symbolic
+    learning
   ))
   (implementation llm.complete)
   (inputs (

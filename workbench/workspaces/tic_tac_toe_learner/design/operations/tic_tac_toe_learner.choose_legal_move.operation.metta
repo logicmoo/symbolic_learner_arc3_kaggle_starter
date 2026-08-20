@@ -2,10 +2,9 @@
   (id tic_tac_toe_learner.choose_legal_move)
   (label "Choose Legal Tic-Tac-Toe Move")
   (description "Workspace-specific human operation for selecting a legal board coordinate.")
-  (categories ([]
-    games/tic-tac-toe
-    games/input
-    sample/games
+  (topics ([]
+    games
+    sample
   ))
   (implementation human.await_input)
   (inputs (

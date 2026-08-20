@@ -3,10 +3,10 @@
   (id scene_graph_to_logo)
   (label "Scene Graph to LOGO")
   (description "Convert an image from scene-graph representation to LOGO/Turtle representation.")
-  (categories ([]
-    vision/conversion
-    graphics/turtle
-    datatypes/representation
+  (topics ([]
+    segmentation
+    graphics
+    datatypes
   ))
   (inputs (
     (image (

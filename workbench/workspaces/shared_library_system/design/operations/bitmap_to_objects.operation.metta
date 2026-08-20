@@ -3,10 +3,9 @@
   (id bitmap_to_objects)
   (label "Bitmap to Objects")
   (description "Convert an image from bitmap representation to an object-list representation.")
-  (categories ([]
-    vision/conversion
-    vision/extraction
-    datatypes/representation
+  (topics ([]
+    segmentation
+    datatypes
   ))
   (inputs (
     (image (

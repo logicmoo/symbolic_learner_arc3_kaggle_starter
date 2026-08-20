@@ -2,13 +2,11 @@
   (id shared.assign_identities)
   (label "Assign Stable Identities")
   (description "Assign stable symbolic identities to entities across views, states, or time. Generic symbolic perception operation.")
-  (categories ([]
-    vision/tracking
-    symbolic/identity
-    world-modeling/entities
-  ))
-  (subjects ([]
+  (topics ([]
+    vision
+    symbolic
     object-identity
+    world-modeling
   ))
   (implementation symbolic.identity)
   (inputs (

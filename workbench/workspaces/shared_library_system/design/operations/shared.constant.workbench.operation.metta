@@ -3,7 +3,10 @@
   (id shared.constant.workbench)
   (label "Constant Value / Workbench")
   (description "Return a value configured on the workflow step.")
-  (categories ([] core/values sample/core))
+  (topics ([]
+    core
+    sample
+  ))
   (parents ([]
     shared.constant
   ))

@@ -3,10 +3,10 @@
   (id text_to_scene_graph)
   (label "Text to Scene Graph")
   (description "Convert an image represented as natural-language description into scene-graph representation.")
-  (categories ([]
-    text/understanding
-    vision/conversion
-    datatypes/representation
+  (topics ([]
+    text
+    segmentation
+    datatypes
   ))
   (inputs (
     (image (

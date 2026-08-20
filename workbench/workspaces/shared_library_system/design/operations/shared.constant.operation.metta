@@ -2,9 +2,9 @@
   (id shared.constant)
   (label "Constant Value")
   (description "Produce a configured constant value.")
-  (categories ([]
-    core/values
-    sample/core
+  (topics ([]
+    core
+    sample
   ))
   (inputs ())
   (outputs (

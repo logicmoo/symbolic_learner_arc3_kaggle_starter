@@ -3,9 +3,9 @@
   (id sample.request_number)
   (label "Request a Number")
   (description "Pause a workflow and ask its user to enter a number in the Workbench UI.")
-  (categories ([]
-    sample/input
-    core/human
+  (topics ([]
+    sample
+    core
   ))
   (inputs ())
   (outputs (

@@ -3,8 +3,8 @@
   (id echo_into_titlecased_llm)
   (label "Echo Into Titlecased / LLM")
   (description "Take received text, send it through an LLM with the shared titlecase prompt, and return the title-cased text.")
-  (categories ([]
-    sample/llm
+  (topics ([]
+    sample
   ))
   (implementation llm.complete)
   (inputs (

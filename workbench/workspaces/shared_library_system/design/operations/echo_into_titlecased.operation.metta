@@ -3,9 +3,9 @@
   (id echo_into_titlecased)
   (label "Echo Into Titlecased")
   (description "Take received text and return the title-cased text.")
-  (categories ([]
-    text/transformation
-    sample/text
+  (topics ([]
+    text
+    sample
   ))
   (role abstract_stage)
   (inputs (

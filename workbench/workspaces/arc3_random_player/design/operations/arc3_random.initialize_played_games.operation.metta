@@ -2,8 +2,8 @@
   (kind operation)
   (id arc3_random.initialize_played_games)
   (label "Start Empty Played-Games List")
-  (categories ([]
-    arc3/random-player
+  (topics ([]
+    arc3
   ))
   (description "Start this workflow run with an empty ordered list of played ARC game IDs.")
   (implementation python.callable)

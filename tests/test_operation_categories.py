@@ -7,7 +7,7 @@ ROOT = Path(__file__).resolve().parents[1]
 WORKSPACES = ROOT / "workbench" / "workspaces"
 
 
-def test_every_operation_has_at_least_one_valid_category_path() -> None:
+def test_every_operation_has_at_least_one_topic() -> None:
     resources = get_filesystem_provider()
     operations = list(WORKSPACES.glob("*/design/operations/*.operation.metta"))
     assert operations
@@ -15,26 +15,28 @@ def test_every_operation_has_at_least_one_valid_category_path() -> None:
         payload = resources.read_json(path.with_suffix(".json"))
         documents = payload if isinstance(payload, list) else [payload]
         for document in documents:
-            categories = document.get("categories")
-            assert isinstance(categories, list) and categories, (path, document.get("id"))
-            assert all(isinstance(category, str) and category.strip(" /") for category in categories), (path, document.get("id"))
+            topics = document.get("topics")
+            assert isinstance(topics, list) and topics, (path, document.get("id"))
+            assert all(isinstance(topic, str) and topic.strip(" /") for topic in topics), (path, document.get("id"))
+            # Topics are flat, top-level matters (converted from the old category paths).
+            assert all("/" not in topic for topic in topics), (path, document.get("id"))
 
 
-def test_titlecase_llm_implementation_is_a_sample_llm() -> None:
+def test_titlecase_llm_implementation_is_a_sample_topic() -> None:
     path = WORKSPACES / "shared_library_system" / "design" / "operations" / "echo_into_titlecased_llm.operation.metta"
     document = get_filesystem_provider().read_json(path)
     assert document["kind"] == "operation"
     assert document["parents"] == ["echo_into_titlecased"]
-    assert "sample/llm" in document["categories"]
+    assert "sample" in document["topics"]
 
 
-def test_subject_matter_sets_resolve_participating_operations() -> None:
+def test_topic_sets_resolve_participating_operations() -> None:
     from artifact_category_library import apply_artifact_categories, load_workspace_artifact_categories
     from operation_library import DEFAULT_WORKSPACES_ROOT, load_workspace_operation_records
 
     root = DEFAULT_WORKSPACES_ROOT / "shared_library_system"
-    categories = {str((r.get("document") or {}).get("id")) for r in load_workspace_artifact_categories(root)}
-    assert {"subjects.segmentation", "subjects.vision", "subjects.object_identity", "subjects.world_modeling"} <= categories
+    category_ids = {str((r.get("document") or {}).get("id")) for r in load_workspace_artifact_categories(root)}
+    assert {"topics.segmentation", "topics.vision", "topics.object_identity", "topics.world_modeling"} <= category_ids
 
     applied = apply_artifact_categories(
         load_workspace_operation_records(root),
@@ -42,7 +44,7 @@ def test_subject_matter_sets_resolve_participating_operations() -> None:
         "operations",
     )
     declared = {
-        str(r["document"]["id"]): set(r["document"].get("subjects") or [])
+        str(r["document"]["id"]): set(r["document"].get("topics") or [])
         for r in applied if r.get("document")
     }
     resolved = {
@@ -50,17 +52,16 @@ def test_subject_matter_sets_resolve_participating_operations() -> None:
         for r in applied if r.get("document")
     }
 
-    # An operation participates in subject-matter sets independently of how it executes.
+    # A topic is declared independently of how the operation executes.
     assert {"segmentation", "world-modeling"} <= declared["shared.extract_entities"]
-    # Segmentation is not inherently visual: extract_entities is not in the vision set.
+    # Segmentation is not inherently visual: extract_entities is not in the vision topic.
     assert "vision" not in declared["shared.extract_entities"]
-    assert declared["shared.assign_identities"] == {"object-identity"}
+    assert "object-identity" in declared["shared.assign_identities"]
 
-    # The set resources attach their path to every participating operation.
-    assert "subjects/segmentation" in resolved["shared.extract_entities"]
-    assert "subjects/world-modeling" in resolved["shared.extract_entities"]
-    assert "subjects/vision" not in resolved["shared.extract_entities"]
-    assert "subjects/object-identity" in resolved["shared.assign_identities"]
-    assert "subjects/vision" in resolved["vision.object_analysis"]
-    # A single operation can belong to multiple subject-matter sets.
-    assert {"subjects/segmentation", "subjects/vision"} <= resolved["vision.extract_scene_objects"]
+    # The topic set resources attach their bare, top-level path to each member operation.
+    assert {"segmentation", "world-modeling"} <= resolved["shared.extract_entities"]
+    assert "vision" not in resolved["shared.extract_entities"]
+    assert "object-identity" in resolved["shared.assign_identities"]
+    assert "vision" in resolved["vision.object_analysis"]
+    # A single operation can belong to multiple topics.
+    assert {"segmentation", "vision"} <= resolved["vision.extract_scene_objects"]

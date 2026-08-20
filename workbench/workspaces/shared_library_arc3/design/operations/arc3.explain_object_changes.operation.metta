@@ -2,10 +2,10 @@
   (id arc3.explain_object_changes)
   (label "ARC3 Explain Object Changes")
   (description "ARC3 wrapper around shared symbolic transition analysis, adding ARC3 identity and artifact-file contracts.")
-  (categories ([]
-    arc3/analysis
-    vision/transition
-    symbolic/explanation
+  (topics ([]
+    arc3
+    vision
+    symbolic
   ))
   (implementation llm.complete)
   (inputs (

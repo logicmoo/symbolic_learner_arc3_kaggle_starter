@@ -2,10 +2,10 @@
   (id symbolic.explain_object_changes)
   (label "Explain Object Changes")
   (description "Reusable symbolic transition operation migrated from the legacy ARC3 explain_object_changes transaction.")
-  (categories ([]
-    symbolic/explanation
-    world-modeling/transitions
-    vision/transition
+  (topics ([]
+    symbolic
+    world-modeling
+    vision
   ))
   (implementation llm.complete)
   (inputs (

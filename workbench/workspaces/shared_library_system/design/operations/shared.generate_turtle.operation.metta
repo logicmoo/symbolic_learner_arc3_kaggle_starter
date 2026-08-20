@@ -2,10 +2,9 @@
   (id shared.generate_turtle)
   (label "Generate Turtle Program")
   (description "Generate an executable Turtle representation from entities and symbolic facts. Reusable for any grid or drawing domain.")
-  (categories ([]
-    graphics/generation
-    graphics/turtle
-    symbolic/programming
+  (topics ([]
+    graphics
+    symbolic
   ))
   (implementation llm.turtle)
   (inputs (

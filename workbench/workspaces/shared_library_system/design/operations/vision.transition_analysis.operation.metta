@@ -2,12 +2,7 @@
   (id vision.transition_analysis)
   (label "Vision Transition Analysis")
   (description "Compare before/after visual states, track objects, and describe observed changes without prematurely turning them into rules.")
-  (categories ([]
-    vision/transition
-    vision/tracking
-    world-modeling/transitions
-  ))
-  (subjects ([]
+  (topics ([]
     vision
     world-modeling
   ))

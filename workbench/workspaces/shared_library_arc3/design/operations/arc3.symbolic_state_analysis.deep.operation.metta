@@ -2,10 +2,10 @@
   (id arc3.symbolic_state_analysis.deep)
   (label "ARC3 Symbolic State Analysis — deep")
   (description "Legacy deep ARC3 prompt composition expressed correctly as a Operation; adds cross-state correspondence without the extreme rule-hypothesis pass.")
-  (categories ([]
-    arc3/analysis
-    vision/transition
-    sample/arc3
+  (topics ([]
+    arc3
+    vision
+    sample
   ))
   (implementation llm.complete)
   (inputs (

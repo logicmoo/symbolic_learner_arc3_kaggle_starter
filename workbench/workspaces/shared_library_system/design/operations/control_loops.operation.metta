@@ -1,6 +1,10 @@
 (
   (kind operation)
-  (categories ([] workflow-language control-flow loops))
+  (topics ([]
+    workflow-language
+    control-flow
+    loops
+  ))
   (id control.while)
   (label "While Condition Holds")
   (description "Repeat a workflow region while its condition matches the selected operator, stopping at a required iteration bound.")
@@ -11,7 +15,11 @@
 )
 (
   (kind operation)
-  (categories ([] workflow-language control-flow loops))
+  (topics ([]
+    workflow-language
+    control-flow
+    loops
+  ))
   (id control.for_each)
   (label "For Each Item")
   (description "Repeat a workflow region once for each supplied item, stopping at a required item bound.")

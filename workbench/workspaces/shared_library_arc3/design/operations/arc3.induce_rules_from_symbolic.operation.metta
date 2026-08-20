@@ -2,9 +2,9 @@
   (id arc3.induce_rules_from_symbolic)
   (label "ARC3 Induce Rules from Symbolic Evidence")
   (description "ARC3 wrapper around shared rule induction, adding ARC3 identity and rules.pl output contracts.")
-  (categories ([]
-    arc3/learning
-    symbolic/rule-learning
+  (topics ([]
+    arc3
+    symbolic
   ))
   (implementation llm.complete)
   (inputs (

@@ -2,9 +2,9 @@
   (id shared.select_field)
   (label "Select Record Field")
   (description "Select one field from an object artifact using the configured key.")
-  (categories ([]
-    core/records
-    data/selection
+  (topics ([]
+    core
+    data
   ))
   (implementation core.select)
   (inputs (

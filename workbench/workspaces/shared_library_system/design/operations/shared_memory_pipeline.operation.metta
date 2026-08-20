@@ -3,7 +3,10 @@
   (id shared.capture_learning_examples)
   (label "Capture Learning Examples")
   (description "Capture a batch of examples without discarding source ordering or provenance.")
-  (categories ([] learning/examples memory/capture))
+  (topics ([]
+    learning
+    memory
+  ))
   (implementation core.echo)
   (inputs ((value VisualExampleSet)))
   (outputs ((value VisualExampleSet)))
@@ -14,7 +17,10 @@
   (id shared.normalize_learning_evidence)
   (label "Normalize Learning Evidence")
   (description "Stage evidence in a stable form before review or memory publication.")
-  (categories ([] learning/evidence memory/staging))
+  (topics ([]
+    learning
+    memory
+  ))
   (implementation core.echo)
   (inputs ((value Any)))
   (outputs ((value Any)))
@@ -25,7 +31,10 @@
   (id shared.establish_recognizable_memory)
   (label "Establish Recognizable Memory")
   (description "Promote perceived evidence into a recognizable memory candidate while retaining provenance.")
-  (categories ([] vision/recognition memory/staging))
+  (topics ([]
+    vision
+    memory
+  ))
   (implementation core.echo)
   (inputs ((value Any)))
   (outputs ((value RecognizableMemory)))
@@ -36,7 +45,10 @@
   (id shared.publish_memory_record)
   (label "Publish Memory Record")
   (description "Combine staged evidence with review or context into a durable memory record.")
-  (categories ([] memory/publication learning/evidence))
+  (topics ([]
+    memory
+    learning
+  ))
   (implementation core.merge)
   (inputs ((left Any) (right Any)))
   (outputs ((value RecognizableMemory)))
@@ -47,7 +59,10 @@
   (id shared.bind_memory_context)
   (label "Bind Memory Context")
   (description "Bind a recognizable memory to its domain or runtime context.")
-  (categories ([] memory/context world-modeling/evidence))
+  (topics ([]
+    memory
+    world-modeling
+  ))
   (implementation core.merge)
   (inputs ((left Any) (right Any)))
   (outputs ((value ContextualMemory)))
@@ -58,7 +73,10 @@
   (id shared.capture_agent_exchange)
   (label "Capture Agent Exchange")
   (description "Capture one agent observation, request, or message as stable evidence.")
-  (categories ([] agents/conversation memory/capture))
+  (topics ([]
+    agents
+    memory
+  ))
   (implementation core.echo)
   (inputs ((value Any)))
   (outputs ((value AgentExchange)))
@@ -69,7 +87,10 @@
   (id shared.stage_microatoms)
   (label "Stage Micro-Atoms")
   (description "Stage the smallest meaningful facts extracted from an agent exchange.")
-  (categories ([] atomspaces/mutation memory/staging))
+  (topics ([]
+    atomspaces
+    memory
+  ))
   (implementation core.echo)
   (inputs ((value AgentExchange)))
   (outputs ((value MicroAtomSet)))
@@ -80,7 +101,10 @@
   (id shared.compose_agent_response)
   (label "Compose Agent Response Record")
   (description "Bind a request to a proposed response for inspection and retention.")
-  (categories ([] agents/conversation memory/context))
+  (topics ([]
+    agents
+    memory
+  ))
   (implementation core.merge)
   (inputs ((left Any) (right Any)))
   (outputs ((value AgentExchange)))
@@ -91,7 +115,10 @@
   (id shared.retain_agent_interaction)
   (label "Retain Agent Interaction")
   (description "Combine observed context and response evidence into retained interaction memory.")
-  (categories ([] agents/memory memory/publication))
+  (topics ([]
+    agents
+    memory
+  ))
   (implementation core.merge)
   (inputs ((left Any) (right Any)))
   (outputs ((value AgentInteractionMemory)))
@@ -102,7 +129,10 @@
   (id shared.reason_about_request)
   (label "Reason About Request")
   (description "Produce an inspectable reasoning trace from a request before symbolic translation.")
-  (categories ([] agents/reasoning symbolic/generation))
+  (topics ([]
+    agents
+    symbolic
+  ))
   (implementation core.echo)
   (inputs ((value Any)))
   (outputs ((value LlmReasoningTrace)))
@@ -113,7 +143,10 @@
   (id shared.generate_atomese)
   (label "Generate Atomese Candidate")
   (description "Translate a reasoning trace into an Atomese program candidate.")
-  (categories ([] atomspaces/mutation symbolic/generation))
+  (topics ([]
+    atomspaces
+    symbolic
+  ))
   (implementation core.echo)
   (inputs ((value Any)))
   (outputs ((value AtomeseProgram)))
@@ -124,7 +157,10 @@
   (id shared.assess_symbolic_coverage)
   (label "Assess Symbolic Coverage")
   (description "Validate an Atomese candidate and report whether its symbolic coverage is adequate.")
-  (categories ([] atomspaces/query symbolic/validation))
+  (topics ([]
+    atomspaces
+    symbolic
+  ))
   (implementation python.expression)
   (inputs ((context Object)))
   (outputs ((value SymbolicCoverageAssessment)))
@@ -135,7 +171,10 @@
   (id shared.repair_atomese)
   (label "Repair Atomese Candidate")
   (description "Apply one bounded repair candidate in a symbolic coverage retry sequence.")
-  (categories ([] atomspaces/mutation symbolic/repair))
+  (topics ([]
+    atomspaces
+    symbolic
+  ))
   (implementation core.echo)
   (inputs ((value Any)))
   (outputs ((value AtomeseProgram)))
@@ -146,7 +185,10 @@
   (id shared.execute_symbolic_report)
   (label "Execute and Report Symbolic Result")
   (description "Bind adequate Atomese and its coverage assessment into an execution report.")
-  (categories ([] atomspaces/query symbolic/execution))
+  (topics ([]
+    atomspaces
+    symbolic
+  ))
   (implementation core.merge)
   (inputs ((left Any) (right Any)))
   (outputs ((value SymbolicExecutionReport)))
@@ -157,7 +199,10 @@
   (id shared.run_weaker_model_control)
   (label "Run Weaker-Model Control")
   (description "Capture a weaker-model rerun of the same task as a control after memory is judged sufficient.")
-  (categories ([] models/evaluation memory/validation))
+  (topics ([]
+    models
+    memory
+  ))
   (implementation core.echo)
   (inputs ((value Any)))
   (outputs ((value WeakerModelControl)))
@@ -168,7 +213,10 @@
   (id shared.compare_memory_grounding)
   (label "Compare Memory Grounding")
   (description "Bind the memory-grounded symbolic result to a weaker-model control for attribution evidence.")
-  (categories ([] models/evaluation memory/validation))
+  (topics ([]
+    models
+    memory
+  ))
   (implementation core.merge)
   (inputs ((left Any) (right Any)))
   (outputs ((value MemoryGroundingEvidence)))

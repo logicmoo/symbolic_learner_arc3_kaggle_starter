@@ -2,10 +2,10 @@
   (id arc3.symbolic_state_analysis.light)
   (label "ARC3 Symbolic State Analysis — light")
   (description "Legacy light ARC3 prompt composition expressed correctly as a Operation; model/profile settings remain separate.")
-  (categories ([]
-    arc3/analysis
-    vision/recognition
-    sample/arc3
+  (topics ([]
+    arc3
+    vision
+    sample
   ))
   (implementation llm.complete)
   (inputs (

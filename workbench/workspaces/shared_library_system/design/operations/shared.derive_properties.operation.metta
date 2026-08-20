@@ -2,10 +2,10 @@
   (id shared.derive_properties)
   (label "Derive Symbolic Properties")
   (description "Derive grounded properties and relations for identified entities. Generic symbolic-analysis operation.")
-  (categories ([]
-    symbolic/properties
-    world-modeling/entities
-    vision/recognition
+  (topics ([]
+    symbolic
+    world-modeling
+    vision
   ))
   (implementation prolog.properties)
   (inputs (

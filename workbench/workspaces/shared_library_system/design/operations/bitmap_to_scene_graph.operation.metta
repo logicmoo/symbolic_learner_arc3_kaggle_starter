@@ -3,10 +3,9 @@
   (id bitmap_to_scene_graph)
   (label "Bitmap to Scene Graph")
   (description "Convert an image from bitmap representation to scene-graph representation without changing its abstract datatype.")
-  (categories ([]
-    vision/conversion
-    vision/grouping
-    datatypes/representation
+  (topics ([]
+    segmentation
+    datatypes
   ))
   (inputs (
     (image (

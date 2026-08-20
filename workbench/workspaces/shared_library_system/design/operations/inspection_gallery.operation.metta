@@ -1,6 +1,8 @@
 (
   (kind operation)
-  (categories ([] inspection/gallery))
+  (topics ([]
+    inspection
+  ))
   (id gallery.curate_resource)
   (label "Gallery Curation Operation")
   (description "Optional, specializable circuit-board-style inspection probe that assembles any upstream collection into a Gallery Resource for humans, AI, and downstream operations without filtering, judging utility, or learning. It is non-blocking by default; a child or workflow may require it. Its Python child is the deterministic implementation available when the task executes.")
@@ -23,7 +25,10 @@
 )
 (
   (kind operation)
-  (categories ([] inspection/gallery sample/python))
+  (topics ([]
+    inspection
+    sample
+  ))
   (id gallery.curate_resource.python)
   (label "Gallery Curation Operation / Python")
   (implementation python.callable)
