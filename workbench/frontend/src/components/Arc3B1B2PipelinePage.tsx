@@ -693,25 +693,38 @@ function parentImagePath(path: string): string {
   return candidate;
 }
 
-function directionLetter(name: string): string | null {
-  const map: Record<string, string> = { u: "U", d: "D", l: "L", r: "R", up: "U", down: "D", left: "L", right: "R" };
-  return map[name.trim().toLowerCase()] || null;
-}
-
-// For labels: abbreviate only direction folders (UP->U, DOWN->D, ...); keep others full.
-function labelSegment(name: string): string {
-  return directionLetter(name) || name;
+// The ARC action space (see python/action_tree.py STANDARD_ACTION_NAMES): the four moves
+// plus SPACE, the SELECT/CLICK pointer action (which carries 2D x/y coordinates baked into
+// the folder name, e.g. SELECT_x_3_y_5), UNDO, and RESET. Returns a compact token or null.
+function actionToken(name: string): string | null {
+  const simple: Record<string, string> = {
+    u: "U", up: "U", d: "D", down: "D", l: "L", left: "L", r: "R", right: "R",
+    space: "S", select: "C", click: "C", undo: "Z", reset: "X",
+  };
+  const exact = simple[name.trim().toLowerCase()];
+  if (exact) return exact;
+  // Coordinate pointer actions (SELECT_x_3_y_5, CLICK_x_3_y_5, ...) become C<x>_<y>.
+  if (/^(select|click)(?:[._-]|$)/i.test(name.trim())) {
+    const nums = name.match(/\d+/g);
+    return nums && nums.length ? `C${nums.join("_")}` : "C";
+  }
+  return null;
 }
 
 function abbreviateSegment(name: string): string {
-  // For commands: direction folders map to a single letter (L/R/U/D); underscore-separated
-  // names collapse to the first letter of each part joined by "_" (Alpha_Number -> A_N);
-  // anything else collapses to its first 3 non-vowel characters (uppercased) so the command
-  // stays compact.
-  const dir = directionLetter(name);
-  if (dir) return dir;
+  // Mangle a folder segment into a compact token: ARC action folders map to their action
+  // letter (U/D/L/R/S, C for SELECT/CLICK with 2D coords -> C3_5, Z undo, X reset);
+  // underscore-separated names keep the first letter of each word plus any full numeric
+  // part, with no separator before a number (Level_1 -> L1, Alpha_Number -> A_N); anything
+  // else collapses to its first 3 non-vowel characters. Always uppercased.
+  const action = actionToken(name);
+  if (action) return action;
   if (name.includes("_")) {
-    return name.split("_").filter(Boolean).map((part) => part[0]).join("_").toUpperCase();
+    return name.split("_").filter(Boolean).map((part, index) => {
+      const numeric = /^\d+$/.test(part);
+      const token = numeric ? part : part[0];
+      return index === 0 || numeric ? token : `_${token}`;
+    }).join("").toUpperCase();
   }
   const consonants = name.replace(/[aeiou]/gi, "");
   return (consonants || name).slice(0, 3).toUpperCase();
@@ -744,7 +757,7 @@ function stackADescendSetupsFromFiles(workspaceId: string, files: WorkspaceFileR
     if (!isLeaf(dir)) continue;
     const segments = relPath(dir).split("/").filter(Boolean);
     const group = segments[0] || relPath(dir);
-    const command = segments.length > 1 ? [labelSegment(segments[1]), ...segments.slice(2).map(abbreviateSegment)].filter(Boolean).join(".") : undefined;
+    const command = segments.length > 1 ? segments.slice(1).map(abbreviateSegment).join(".") : undefined;
     setupEntries.push({ dir, group, command });
   }
   if (!setupEntries.length) return [];
@@ -776,7 +789,7 @@ function stackADescendSetupsFromFiles(workspaceId: string, files: WorkspaceFileR
     const beforeSelection: ImageSelection | null = beforePath
       ? { name: beforePath, dataUrl: workspaceAssetUrl(workspaceId, beforePath) }
       : null;
-    const dottedName = relPath(dir).split("/").filter(Boolean).map(labelSegment).join(".");
+    const dottedName = relPath(dir).split("/").filter(Boolean).map((seg, index) => index === 0 ? seg : abbreviateSegment(seg)).join(".");
     return {
       id: `A-setup-${index + 1}`,
       label: dottedName || group || "default",
