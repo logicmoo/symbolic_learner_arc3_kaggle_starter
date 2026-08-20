@@ -682,7 +682,8 @@ def _load_systems(workspace: dict[str, Any]) -> list[dict[str, Any]]:
             for record in _load_documents(layer, directory, layer_source(layer, root), "system"):
                 document = record.get("document") or {}
                 combined[str(document.get("id") or record["path"])] = record
-    return sorted(combined.values(), key=lambda record: str((record.get("document") or {}).get("label") or record["path"]).lower())
+    ordered = sorted(combined.values(), key=lambda record: str((record.get("document") or {}).get("label") or record["path"]).lower())
+    return _with_artifact_categories(workspace, ordered, "models")
 
 
 def _load_models(workspace: dict[str, Any]) -> list[dict[str, Any]]:

@@ -14,8 +14,8 @@ TREE_KINDS = {
     "plans": {"planning_strategy"},
     "operations": {"operation"},
     "datatypes": {"semantic_datatype", "representation_datatype", "concrete_datatype"},
-    "prompts": {"prompt"},
-    "models": {"backend", "model"},
+    "prompts": {"prompt", "prompt_implementation", "prompt_profile"},
+    "models": {"backend", "model", "system"},
     "atomspaces": {"atomspace"},
     "workflows": {"workflow"},
 }
