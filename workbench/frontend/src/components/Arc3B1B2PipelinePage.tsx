@@ -403,6 +403,18 @@ function isB1B2PipelineRoute(routeView: string): boolean {
   return routeView === "arc3B1B2Pipeline";
 }
 const B1B2_RUNNER_NAMES = ["FIRST_GUESSER", "FIRST_REMOVER", "IMPROVED_GUESSER", "MERGE", "IMPROVED_REMOVER", "REGENERATOR"];
+// Every prompt a B1B2 runner can be pointed at: the per-runner prompt slots plus the
+// underlying prompt-content contracts. Used to populate the PRIMARY PROMPT combo box.
+const B1B2_ALL_PRIMARY_PROMPT_NAMES = [
+  ...B1B2_RUNNER_NAMES.map((name) => `${name}_RUNNER_PROMPT`),
+  "generate_first_pass_object_guesses",
+  "generate_prolog_and_english",
+  "remove_smallest_object",
+  "merge_identities",
+  "regenerated_identities_from_many_objects",
+  "circle_one_identity_at_a_time",
+  "remove_one_found_identity_per_pass",
+];
 function runnerDisplayOrdinal(routeView: string, stackKey: StackKey, runnerIndex: number): number {
   if (isB1B2PipelineRoute(routeView) && stackKey === "B") return runnerIndex;
   return runnerIndex + 1;
@@ -4338,6 +4350,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                     const primaryPromptNameOptions = dedupeStringList([
                       runner.primaryPromptName || "",
                       primaryPromptName(pageDefinition.routeView, stack.key, runnerIndex),
+                      ...(isB1B2PipelineRoute(pageDefinition.routeView) ? B1B2_ALL_PRIMARY_PROMPT_NAMES : []),
                       "circle_one_identity_at_a_time",
                       "remove_smallest_object",
                       "regenerated_identities_from_many_objects",

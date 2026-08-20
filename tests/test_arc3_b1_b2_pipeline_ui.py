@@ -168,6 +168,17 @@ def test_b1_b2_runner_submits_picked_image_and_tolerates_missing_frame() -> None
     assert "await singleSheet({ label: baseImageLabels.after, source: guessImageSource })" in source
 
 
+def test_b1_b2_primary_prompt_combo_lists_all_prompts() -> None:
+    source = COMPONENT.read_text(encoding="utf-8")
+    # A canonical list of every B1B2 prompt (per-runner slots + content contracts) exists.
+    assert "const B1B2_ALL_PRIMARY_PROMPT_NAMES = [" in source
+    assert "...B1B2_RUNNER_NAMES.map((name) => `${name}_RUNNER_PROMPT`)," in source
+    assert '"generate_first_pass_object_guesses",' in source
+    assert '"merge_identities",' in source
+    # The PRIMARY PROMPT combo includes that full list on the B1B2 route.
+    assert "...(isB1B2PipelineRoute(pageDefinition.routeView) ? B1B2_ALL_PRIMARY_PROMPT_NAMES : [])," in source
+
+
 def test_b1_b2_setup_switch_expands_selected_to_full() -> None:
     source = COMPONENT.read_text(encoding="utf-8")
     # Switching setups collapses every column-1 image to a strip and expands the
