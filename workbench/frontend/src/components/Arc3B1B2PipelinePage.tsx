@@ -379,7 +379,7 @@ function stackColumnsForRoute(routeView: string): Array<{ key: StackKey; label: 
 function isB1B2PipelineRoute(routeView: string): boolean {
   return routeView === "arc3B1B2Pipeline";
 }
-const B1B2_RUNNER_NAMES = ["FIRST_GUESSER", "GUESSER", "REMOVER", "REGENERATOR"];
+const B1B2_RUNNER_NAMES = ["FIRST_GUESSER", "GUESSER", "FIRST_REMOVER", "REGENERATOR"];
 function runnerDisplayOrdinal(routeView: string, stackKey: StackKey, runnerIndex: number): number {
   if (isB1B2PipelineRoute(routeView) && stackKey === "B") return runnerIndex;
   return runnerIndex + 1;
@@ -415,7 +415,7 @@ function defaultInputFilesSourceIdsForRunner(routeView: string, stackKey: StackK
     const role = runnerRole(routeView, stackKey, runnerIndex);
     if (role === "guess") return [];
     if (role === "extraction") return ["runner:FIRST_GUESSER", "ALL-Setup1"];
-    if (role === "removal") return ["runner:GUESSER"];
+    if (role === "removal") return ["runner:GUESSER", "runner:FIRST_GUESSER"];
   }
   return ["ALL-Setup1"];
 }
@@ -4850,7 +4850,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
           <summary>Removal Images</summary>
           {selectedRunner?.removedIdentityId ? <small>Removed identity: {selectedRunner.removedIdentityId}</small> : null}
           <div className="arc3-prolog-removal-images">
-            {(selectedOutput?.id === "REMOVER"
+            {(selectedOutput?.id === "FIRST_REMOVER"
               ? manyObjectImagesFromRunner(selectedRunner).map((item) => <figure key={`selected-many-${item.key}`}>
                 <figcaption>{item.label}</figcaption>
                 <img className="arc3-prolog-preview" src={item.value} alt={item.label} />

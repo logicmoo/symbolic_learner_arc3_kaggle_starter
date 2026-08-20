@@ -43,15 +43,15 @@ def test_b1_b2_component_has_pipeline_contract() -> None:
     assert "REGENERATED_IDENTITIES_PROMPT" in source
     assert "isB1B2PipelineRoute" in source
     assert "return isB1B2PipelineRoute(routeView) ? 4 : 3;" in source
-    assert 'const B1B2_RUNNER_NAMES = ["FIRST_GUESSER", "GUESSER", "REMOVER", "REGENERATOR"];' in source
+    assert 'const B1B2_RUNNER_NAMES = ["FIRST_GUESSER", "GUESSER", "FIRST_REMOVER", "REGENERATOR"];' in source
     assert 'return pageDefinition.routeView === "arc3B1B2Pipeline" ? "GUESSER" : "A1";' in source
     # FIRST_GUESSER (first pass) precedes the GUESSER full-extraction runner, which feeds
-    # REMOVER (removal), which feeds REGENERATOR (regeneration).
+    # FIRST_REMOVER (removal), which feeds REGENERATOR (regeneration).
     assert 'if (runnerIndex === 0) return "guess";' in source
     assert 'if (runnerIndex === 1) return "extraction";' in source
     assert 'if (role === "extraction") return COMBINED_PROMPT;' in source
     assert 'if (role === "extraction") return "generate_prolog_and_english";' in source
-    assert 'return ["runner:GUESSER"];' in source
+    assert 'return ["runner:GUESSER", "runner:FIRST_GUESSER"];' in source
     assert "SEED FROM GUESSER" in source
     # Experimental write-back: REGENERATOR result can replace GUESSER's list.
     assert "replaceGuesserOnFinish" in source
@@ -71,8 +71,8 @@ def test_b1_b2_component_has_pipeline_contract() -> None:
 
 def test_b1_b2_first_guesser_single_image_first_pass() -> None:
     source = COMPONENT.read_text(encoding="utf-8")
-    # A "FIRST_GUESSER" runner goes first, ahead of GUESSER/REMOVER/REGENERATOR.
-    assert 'const B1B2_RUNNER_NAMES = ["FIRST_GUESSER", "GUESSER", "REMOVER", "REGENERATOR"];' in source
+    # A "FIRST_GUESSER" runner goes first, ahead of GUESSER/FIRST_REMOVER/REGENERATOR.
+    assert 'const B1B2_RUNNER_NAMES = ["FIRST_GUESSER", "GUESSER", "FIRST_REMOVER", "REGENERATOR"];' in source
     # The pipeline now has four runners in stack B.
     assert "return isB1B2PipelineRoute(routeView) ? 4 : 3;" in source
     # Its role is "guess" at index 0; the full extraction pass moves to index 1.
