@@ -2365,6 +2365,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
   const [dataFiles, setDataFiles] = useState<WorkspaceFileRecord[]>([]);
   const lineCountFetchedRef = useRef<Set<string>>(new Set());
   const autoScannedSetupsRef = useRef<Set<string>>(new Set());
+  const openScannedSetupsRef = useRef<Set<string>>(new Set());
   const controllersRef = useRef<Record<string, AbortController | null>>({});
   const stackColumnsRef = useRef(stackColumns);
   stackColumnsRef.current = stackColumns;
@@ -3799,6 +3800,9 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
   const setModeFor = (key: string, mode: AccordionDisplayMode) => setAccordionModes((current) => ({ ...current, [key]: mode }));
   const applyScannedDataFiles = async (candidateFiles: WorkspaceFileRecord[], overwriteExisting = true) => {
     if (!workspaceId) return;
+    // Setups are about to be re-enumerated (ids are index-based and reused), so forget which
+    // ones were scanned-on-open; the next open of each should scan afresh.
+    openScannedSetupsRef.current = new Set();
     const updates = await Promise.all(activeStackColumns.map(async (column) => ({
       key: column.key,
       generated: await readWorkspaceTextDataField(workspaceId, candidateFiles, column.key, "Generated"),
@@ -4530,7 +4534,14 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
               onChange={(mode) => {
                 setModeFor(`image-${setup.id}`, mode);
                 // Line counts are lazy: only fetch when the user opens this setup.
-                if (mode !== "strip") loadLineCountsForSetup(setup);
+                if (mode !== "strip") {
+                  loadLineCountsForSetup(setup);
+                  // First time a setup is opened, run a real scan if it hasn't been scanned yet.
+                  if (!openScannedSetupsRef.current.has(setup.id)) {
+                    openScannedSetupsRef.current.add(setup.id);
+                    void scanSetup(stackIndex, imageIndex, setup.stateDir || "");
+                  }
+                }
               }}
               baseClass="english-workflow-panel arc3-prolog-page-panel"
               scrollSize="480px"

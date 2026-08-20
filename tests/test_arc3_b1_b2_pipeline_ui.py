@@ -589,6 +589,15 @@ def test_b1_b2_setups_auto_scan_on_create() -> None:
     assert "await scanSetupStatePath(stackIndex, imageIndex, fallbackDir, records);" in source
 
 
+def test_b1_b2_setup_scans_on_open() -> None:
+    source = COMPONENT.read_text(encoding="utf-8")
+    # Opening a setup (leaving strip mode) scans it once if it has not been scanned yet.
+    assert "const openScannedSetupsRef = useRef<Set<string>>(new Set());" in source
+    assert "if (!openScannedSetupsRef.current.has(setup.id)) {" in source
+    assert "openScannedSetupsRef.current.add(setup.id);" in source
+    assert 'void scanSetup(stackIndex, imageIndex, setup.stateDir || "");' in source
+
+
 def test_b1_b2_setup_file_rows_show_non_blank_line_count() -> None:
     source = COMPONENT.read_text(encoding="utf-8")
     # File rows append the file's non-blank line count after the name label.
@@ -600,7 +609,8 @@ def test_b1_b2_setup_file_rows_show_non_blank_line_count() -> None:
     assert "void loadLineCounts(paths);" in source
     # Line counts are lazy: only fetched when the user opens a setup (mode != strip).
     assert "const loadLineCountsForSetup = (setup: StackSetup) =>" in source
-    assert 'if (mode !== "strip") loadLineCountsForSetup(setup);' in source
+    assert 'if (mode !== "strip") {' in source
+    assert "loadLineCountsForSetup(setup);" in source
     assert "const entryLineCount = kind === \"file\" ? lineCounts[entryPath] : undefined;" in source
     assert "<span>{entryLabel}{entryLineCount !== undefined ? ` (~${entryLineCount} lines)` : \"\"}</span>" in source
     # File-group summaries total the per-file line counts (~N lines).
