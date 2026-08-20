@@ -23,9 +23,12 @@ SNET_BASE_URL = "https://llm.c.singularitynet.io/v1"
 SNET_MODELS = [
     "google/gemma-3-27b-it",
     "google/gemma-4-31b-it",
+    "google/gemma-4-26b-a4b-it",
     "minimax/minimax-m3",
+    "minimax/minimax-m3-f",
     "qwen/qwen3-32b",
     "qwen/qwen3.5-35b-a3b",
+    "qwen/qwen3.8-27b",
 ]
 PROMPT = "Describe yourself in 2-3 sentences. Who and what are you, and who built you?"
 TIMEOUT_S = 60
