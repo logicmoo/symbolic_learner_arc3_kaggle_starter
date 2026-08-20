@@ -378,7 +378,7 @@ def test_universal_tree_exposes_composable_tri_state_view_controls() -> None:
 def test_first_class_categories_are_visually_distinct_from_virtual_folders() -> None:
     category_tree = _text("CategorizedArtifactTree.tsx")
     styles = (ROOT / "workbench" / "frontend" / "src" / "styles" / "operation_editor.css").read_text(encoding="utf-8")
-    assert '"First-class category" : "Virtual category"' in category_tree
+    assert '"First-class topic" : "Virtual category"' in category_tree
     assert 'firstClass ? "category-first-class" : "category-virtual"' in category_tree
     assert "/artifact-categories" in category_tree
     assert "document.trees?.includes(categoryTree)" in category_tree
