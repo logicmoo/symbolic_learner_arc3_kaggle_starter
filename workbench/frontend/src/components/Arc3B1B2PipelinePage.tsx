@@ -2419,14 +2419,12 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
   const comboModelLabel = (model: ModelChoice): string => {
     const base = modelOptionLabel(model);
     const disabled = model.enabled === false ? " · (disabled)" : "";
-    const visionId = SNET_VISION_MODEL_IDS.find((id) => modelMatchesSnetId(model, id));
-    if (visionId) {
-      const probe = modelProbes[visionId];
-      if (probe) return `${base} · 👁 ${probe.status === "ok" ? `${probe.latencyMs}ms` : probe.status}${disabled}`;
-      return `${base} · 👁 vision${disabled}`;
-    }
-    if (SNET_DOWN_MODEL_IDS.some((id) => modelMatchesSnetId(model, id))) return `${base} · ⬇ down${disabled}`;
-    return `${base}${disabled}`;
+    const probe = modelProbes[model.label || model.id || ""];
+    const latency = probe ? ` · ${probe.status === "ok" ? `${probe.latencyMs}ms` : probe.status}` : "";
+    const isVision = SNET_VISION_MODEL_IDS.some((id) => modelMatchesSnetId(model, id));
+    const isDown = SNET_DOWN_MODEL_IDS.some((id) => modelMatchesSnetId(model, id));
+    const marker = isVision ? " · 👁" : isDown ? " · ⬇ down" : "";
+    return `${base}${marker}${latency}${disabled}`;
   };
   const resolveWorkspaceRunnerModelId = () => {
     if (workspaceRunnerModelId && isEnabledModel(workspaceRunnerModelId)) return workspaceRunnerModelId;
@@ -3945,84 +3943,95 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
     });
   };
 
-  const initializeAndScan = async () => {
-    setInitBusy(true);
-    try {
-      // 1. Reset every setup + runner on this page to its B1-B2 defaults.
-      setStackColumns(activeStackColumns.map((column) =>
-        initialStackColumnState(pageDefinition.routeView, column.key, defaultColumnModelSelection(), defaultTimeoutSeconds)));
-
-      // 2. Create the missing vision models as .model.metta resources and register them locally.
-      const created: ModelChoice[] = [];
-      for (const modelId of SNET_MISSING_VISION_MODEL_IDS) {
-        const resourceId = snetModelResourceId(modelId);
-        try {
-          await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/file`, {
-            method: "PUT",
-            body: JSON.stringify({ path: `design/models/${resourceId}.model.metta`, content: snetVisionModelMetta(modelId) }),
-          });
-        } catch {
-          // Non-fatal: still surface the model locally so it appears in the combos.
-        }
-        created.push({ id: resourceId, label: modelId, backendId: SNET_BACKEND_ID, backendLabel: "snet", enabled: true, capabilities: { vision: true, text: true, multimodal: true } });
+  const addMissingVisionModelsCore = async (): Promise<ModelChoice[]> => {
+    const created: ModelChoice[] = [];
+    for (const modelId of SNET_MISSING_VISION_MODEL_IDS) {
+      const resourceId = snetModelResourceId(modelId);
+      try {
+        await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/file`, {
+          method: "PUT",
+          body: JSON.stringify({ path: `design/models/${resourceId}.model.metta`, content: snetVisionModelMetta(modelId) }),
+        });
+      } catch {
+        // Non-fatal: still surface the model locally so it appears in the combos.
       }
-      setExtraModels((previous) => {
-        const next = [...previous];
-        for (const model of created) if (!next.some((entry) => entry.id === model.id)) next.push(model);
-        return next;
-      });
+      created.push({ id: resourceId, label: modelId, backendId: SNET_BACKEND_ID, backendLabel: "snet", enabled: true, capabilities: { vision: true, text: true, multimodal: true } });
+    }
+    setExtraModels((previous) => {
+      const next = [...previous];
+      for (const model of created) if (!next.some((entry) => entry.id === model.id)) next.push(model);
+      return next;
+    });
+    return created;
+  };
 
-      // 3. Probe vision latency (solid-blue image) for the vision + down models.
-      const blue = await makeSolidBlueDataUrl();
-      const lookup = [...enabledModels, ...created];
-      const probes: Record<string, { status: string; latencyMs: number }> = {};
-      await Promise.all([...SNET_VISION_MODEL_IDS, ...SNET_DOWN_MODEL_IDS].map(async (snetId) => {
-        const choice = lookup.find((model) => modelMatchesSnetId(model, snetId));
-        if (!choice) { probes[snetId] = { status: "missing", latencyMs: 0 }; return; }
-        const started = performance.now();
-        try {
-          await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/models/${encodeURIComponent(choice.id)}/invoke`, {
-            method: "POST",
-            body: JSON.stringify({ prompt: "What color is this image? Reply with just the color name.", image: blue, timeoutSeconds: 60 }),
-          });
-          probes[snetId] = { status: "ok", latencyMs: Math.round(performance.now() - started) };
-        } catch {
-          probes[snetId] = { status: "down", latencyMs: Math.round(performance.now() - started) };
-        }
-      }));
-      setModelProbes(probes);
-
-      // 4. Scan every setup directory, then rebuild every file-selector combo by
-      //    enumerating all discovered setups and re-scanning + persisting each one's props.
-      await scanDataByName();
-      autoScannedSetupsRef.current = new Set();
-      const payload = await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/data/files`);
-      const records = scopeToDataDir((Array.isArray(payload.files) ? payload.files : []) as WorkspaceFileRecord[]);
-      for (let stackIndex = 0; stackIndex < activeStackColumns.length; stackIndex += 1) {
-        const key = activeStackColumns[stackIndex].key;
-        const enumerated = shouldUseDescendSetups(pageDefinition.routeView, key)
-          ? stackADescendSetupsFromFiles(workspaceId, records)
-          : [];
-        const columnSetups = enumerated.length ? enumerated : defaultSetups(key);
-        for (let imageIndex = 0; imageIndex < columnSetups.length; imageIndex += 1) {
-          await scanSetupStatePath(stackIndex, imageIndex, columnSetups[imageIndex].stateDir || "", records, true);
-        }
+  const isVisionModel = (model: ModelChoice) => SNET_VISION_MODEL_IDS.some((id) => modelMatchesSnetId(model, id)) || normalizedCapabilities(model).vision === true;
+  const pingModelsCore = async (filter: (model: ModelChoice) => boolean, extra: ModelChoice[] = []) => {
+    const blue = await makeSolidBlueDataUrl();
+    const lookup = [...enabledModels, ...extra].filter(filter);
+    const seen = new Set<string>();
+    const probes: Record<string, { status: string; latencyMs: number }> = {};
+    await Promise.all(lookup.map(async (model) => {
+      const key = model.label || model.id;
+      if (!key || seen.has(key)) return;
+      seen.add(key);
+      const body = isVisionModel(model)
+        ? { prompt: "What color is this image? Reply with just the color name.", image: blue, timeoutSeconds: 60 }
+        : { prompt: "Reply with the single word: ok", timeoutSeconds: 60 };
+      const started = performance.now();
+      try {
+        await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/models/${encodeURIComponent(model.id)}/invoke`, { method: "POST", body: JSON.stringify(body) });
+        probes[key] = { status: "ok", latencyMs: Math.round(performance.now() - started) };
+      } catch {
+        probes[key] = { status: "down", latencyMs: Math.round(performance.now() - started) };
       }
-    } finally {
-      setInitBusy(false);
+    }));
+    setModelProbes((previous) => ({ ...previous, ...probes }));
+  };
+
+  const scanAllFoundSetupsCore = async () => {
+    autoScannedSetupsRef.current = new Set();
+    const payload = await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/data/files`);
+    const records = scopeToDataDir((Array.isArray(payload.files) ? payload.files : []) as WorkspaceFileRecord[]);
+    for (let stackIndex = 0; stackIndex < activeStackColumns.length; stackIndex += 1) {
+      const key = activeStackColumns[stackIndex].key;
+      const enumerated = shouldUseDescendSetups(pageDefinition.routeView, key)
+        ? stackADescendSetupsFromFiles(workspaceId, records)
+        : [];
+      const columnSetups = enumerated.length ? enumerated : defaultSetups(key);
+      for (let imageIndex = 0; imageIndex < columnSetups.length; imageIndex += 1) {
+        await scanSetupStatePath(stackIndex, imageIndex, columnSetups[imageIndex].stateDir || "", records, true);
+      }
     }
   };
 
-  const scanSetup = async (stackIndex: number, imageIndex: number, stateDir: string) => {
+  const runBusy = async (work: () => Promise<void>) => {
     setInitBusy(true);
-    try {
-      const payload = await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/data/files`);
-      const records = scopeToDataDir((Array.isArray(payload.files) ? payload.files : []) as WorkspaceFileRecord[]);
-      await scanSetupStatePath(stackIndex, imageIndex, stateDir, records, true);
-    } finally {
-      setInitBusy(false);
-    }
+    try { await work(); } finally { setInitBusy(false); }
   };
+
+  // "Do All Scans": reset, add missing vision models, scan data + all found setups
+  // (persisting props/files), then ping every enabled model.
+  const initializeAndScan = () => runBusy(async () => {
+    setStackColumns(activeStackColumns.map((column) =>
+      initialStackColumnState(pageDefinition.routeView, column.key, defaultColumnModelSelection(), defaultTimeoutSeconds)));
+    const created = await addMissingVisionModelsCore();
+    await scanDataByName();
+    await scanAllFoundSetupsCore();
+    await pingModelsCore(() => true, created);
+  });
+
+  const scanDataForSetups = () => runBusy(async () => { await scanDataByName(); });
+  const scanAllFoundSetups = () => runBusy(scanAllFoundSetupsCore);
+  const pingAllModels = () => runBusy(() => pingModelsCore(() => true, extraModels));
+  const pingVisionModels = () => runBusy(() => pingModelsCore(isVisionModel, extraModels));
+  const pingNonVisionModels = () => runBusy(() => pingModelsCore((model) => !isVisionModel(model), extraModels));
+
+  const scanSetup = (stackIndex: number, imageIndex: number, stateDir: string) => runBusy(async () => {
+    const payload = await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/data/files`);
+    const records = scopeToDataDir((Array.isArray(payload.files) ? payload.files : []) as WorkspaceFileRecord[]);
+    await scanSetupStatePath(stackIndex, imageIndex, stateDir, records, true);
+  });
 
   const registry: WorkflowPageComponentRegistry = {
     Arc3ImagePairInputs: () => {
@@ -5625,6 +5634,14 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
     }),
   };
 
+  const dataDirOptions = Array.from(new Set(files.flatMap((file) => {
+    const parts = (file.path || "").replace(/\\/g, "/").split("/");
+    parts.pop();
+    const acc: string[] = [];
+    let cur = "";
+    for (const part of parts) { cur = cur ? `${cur}/${part}` : part; if (/^data(\/|$)/i.test(cur)) acc.push(cur); }
+    return acc;
+  }))).sort((left, right) => left.localeCompare(right, undefined, { numeric: true }));
   const headerToolbar = (
     <div className="arc3-b1b2-toolbar" style={{ display: "flex", flexWrap: "wrap", gap: "6px", padding: "6px 10px", borderBottom: "1px solid var(--line)", alignItems: "center" }}>
       <label style={{ display: "flex", alignItems: "center", gap: "4px", font: "600 8px ui-monospace,monospace", letterSpacing: ".06em", color: "#69818e" }}>
@@ -5638,9 +5655,22 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
           style={{ width: "170px" }}
         />
       </label>
+      <select
+        aria-label="Browse for new data directory"
+        value=""
+        onChange={(event) => { if (event.target.value) setDataDirectory(event.target.value); }}
+      >
+        <option value="">Browse For new Data Dir…</option>
+        {dataDirOptions.map((dir) => <option key={dir} value={dir}>{dir}</option>)}
+      </select>
       <button type="button" className="primary" onClick={() => void initializeAndScan()} disabled={initBusy || scanDataBusy}>
-        {initBusy ? "Initializing…" : "Initialize & Scan All"}
+        {initBusy ? "Working…" : "Do All Scans"}
       </button>
+      <button type="button" className="secondary" onClick={() => void scanDataForSetups()} disabled={initBusy || scanDataBusy}>Scan Data For Setups</button>
+      <button type="button" className="secondary" onClick={() => void scanAllFoundSetups()} disabled={initBusy || scanDataBusy}>Scan All Currently Found Setups and Sync Props and Files</button>
+      <button type="button" className="secondary" onClick={() => void pingAllModels()} disabled={initBusy || scanDataBusy}>Ping All Enabled Models</button>
+      <button type="button" className="secondary" onClick={() => void pingVisionModels()} disabled={initBusy || scanDataBusy}>Ping All Vision Models</button>
+      <button type="button" className="secondary" onClick={() => void pingNonVisionModels()} disabled={initBusy || scanDataBusy}>Ping All Non-vision Models</button>
       {stackColumns.flatMap((stack, stackIndex) => {
         const setups = stack.setups?.length ? stack.setups : defaultSetups(stack.key);
         return setups.map((setup, imageIndex) => {
@@ -5648,9 +5678,6 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
           return <button key={`hdr-scan-${stack.key}-${imageIndex}`} type="button" className="secondary" title={`Scan setup ${setup.stateDir || label}`} onClick={() => void scanSetup(stackIndex, imageIndex, setup.stateDir || "")} disabled={initBusy || scanDataBusy}>Scan {label}</button>;
         });
       })}
-      <button type="button" className="secondary" onClick={() => void scanDataByName()} disabled={scanDataBusy || initBusy}>
-        {scanDataBusy ? "Scanning…" : "Scan Data"}
-      </button>
     </div>
   );
   return <WorkflowPageHost
