@@ -62,7 +62,11 @@ def test_b1_b2_component_has_pipeline_contract() -> None:
     assert '["runner:FIRST_REMOVER"]' in source
     assert '["runner:IMPROVED_GUESSER"]' in source
     assert '["runner:MERGE"]' in source
-    assert "SEED FROM UPSTREAM" in source
+    # The remover extracts one leaf object (not nested), emits obj_<ID>.png, and mutates
+    # the received document instead of regenerating an identity catalog.
+    assert "SELECT ONE LEAF OBJECT THAT IS NOT INSIDE ANOTHER" in source
+    assert "obj_<ID>.png" in source
+    assert "DOCUMENT MUTATION" in source
     # Experimental write-back: REGENERATOR result can replace IMPROVED_GUESSER's list.
     assert "replaceGuesserOnFinish" in source
     assert "Replace IMPROVED_GUESSER list with this result on finish" in source
@@ -181,9 +185,11 @@ def test_b1_b2_primary_prompt_combo_lists_all_prompts() -> None:
 
 def test_b1_b2_prompt_registry_is_typed_and_sorted_by_applicability() -> None:
     source = COMPONENT.read_text(encoding="utf-8")
-    # A typed prompt registry stores each prompt with input/output types and tags.
-    assert "type PromptDefinition = {" in source
-    assert "const B1B2_PROMPT_REGISTRY: PromptDefinition[] = [" in source
+    # A typed operation/implementation registry stores each implementation with
+    # input/output types and tags; prompt implementations are derived by filtering.
+    assert "type ImplementationDefinition = {" in source
+    assert "const B1B2_IMPLEMENTATION_REGISTRY: ImplementationDefinition[] = [" in source
+    assert 'const B1B2_PROMPT_REGISTRY = B1B2_IMPLEMENTATION_REGISTRY.filter((impl) => impl.kind === "prompt");' in source
     # Concrete + semantic type tags are used.
     for tag in ['"file_png"', '"file_json"', '"file_pl"', '"image"', '"object_identities"', '"first_identities"', '"removal_images"', '"regenerated_identities"']:
         assert tag in source

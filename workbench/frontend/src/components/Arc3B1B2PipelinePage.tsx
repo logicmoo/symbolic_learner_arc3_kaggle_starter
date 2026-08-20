@@ -98,6 +98,8 @@ type RemovalArtifacts = {
   backgroundImage: string;
   accepted: boolean;
   issues: string[];
+  fillColor?: [number, number, number, number];
+  filledBox?: { left: number; top: number; width: number; height: number };
 };
 
 type ValidatorAssessment = {
@@ -177,6 +179,9 @@ type RunnerState = {
   filesSourceSelection: string;
   filesSourceIds: string[];
   generationSeq: number;
+  operationId: string;
+  implementationKind: ImplementationKind;
+  implementationRef: string;
   promptText: string;
   primaryPromptName: string;
   validatorPromptText: string;
@@ -340,26 +345,21 @@ const DEFAULT_VALIDATOR_PROMPT = [
 ].join("\n");
 const REMOVAL_DISCOVERY_PASS_PROMPT = [
   "remove_smallest_object:",
-  "INPUT: the upstream guesser runner supplies its identities (first_identities or current_identities) plus any prolog/english files via INPUT_FILES; treat those supplied identities as the authoritative catalog of objects present in the image.",
-  "Goal: update the supplied identities in place and remove the best removable object set from the current image.",
-  "SEED FROM UPSTREAM: first take the identities the upstream guesser found and try to remove each of them from the current (before) image, working through them as your removal worklist before discovering anything new.",
-  "Only after the upstream identities have been handled, act like the standard removal pass below and search for any removable objects that were missed.",
-  "OBJECT SEARCH ORDER (look for these first):",
-  "1) Leaf objects that are isolated, simple, and non-container (no nested identities inside their bounds).",
-  "2) Among those leaf objects, find a similar set by shape/color/size/type/proximity.",
-  "3) If no similar set is strong enough, fall back to the single smallest valid leaf object by area/pixel footprint.",
-  "Container and composite hard gates: never remove a parent/container/group object while removable leaf objects exist.",
-  "A valid removable candidate must NOT contain any other identity/object and must not be a merged composite blob.",
-  "Special corridor rule: if an object looks like a corridor/maze shell, remove only the shell/walls and leave interior objects/content behind.",
-  "Try to remove an array of similar objects in one pass whenever the similarity evidence is clear.",
-  "When removing multiple objects in one pass, output each removed image separately as removed_object_1, removed_object_2, ... removed_object_n in ascending numeric order.",
-  "Keep removed_object_image as a compatibility alias (use combined removed set, or removed_object_1 when only one object is removed).",
-  "Return image_without_object as the original image with all selected removed_object_n pixels removed.",
-  "Always carry BOTH images forward for downstream processing: image_without_object and removed_object_image.",
-  "Mark each removed identity as not visible/removed in current_identities and preserve all other identities unless direct evidence requires change.",
-  "Keep every identity's bounding_box as [x1, y1, x2, y2] top-left and bottom-right corners (x2 > x1, y2 > y1).",
+  "INPUT: you receive the current original image plus the document/identities catalog it already has via INPUT_FILES. That supplied document is authoritative — do NOT regenerate it, do NOT re-ground every object, and do NOT build a new identity catalog.",
+  "TASK: extract exactly ONE object from the current original image this pass, then hand back the document you were given with that one object tagged as extracted.",
+  "SELECT ONE LEAF OBJECT THAT IS NOT INSIDE ANOTHER: it must be a top-level, isolated, non-container leaf (no nested identities/objects within its bounds) and must not be a merged composite blob. Never pick a parent/container/group while any removable leaf object still exists.",
+  "OBJECT SEARCH ORDER: 1) isolated simple leaf objects; 2) among those, prefer a clear similar set by shape/color/size; 3) otherwise the single smallest valid leaf object by area/pixel footprint.",
+  "Special corridor rule: if an object looks like a corridor/maze shell, extract only the shell/walls and leave interior objects/content behind.",
+  "SELECTION HANDOFF: return current_identities as a SINGLE entry — ONLY the object you are extracting — with its descriptive snake_case id plus type, sub_type, and bounding_box [x1, y1, x2, y2] (x2 > x1, y2 > y1) so the pipeline can crop it. current_identities must contain no other identities, no lifecycle, and no groups.",
   DESCRIPTIVE_ID_RULE,
-  "Set exit_value=next_iteration when one or more valid objects are removed, loop_complete when no valid removable leaf object(s) remain, llm_error on failure.",
+  "EXTRACTED OBJECT IMAGE: the extracted object is emitted as an image file named obj_<ID>.png, where <ID> is that object's descriptive id.",
+  "NEW ORIGINAL IMAGE: the current original with the extracted object's pixels removed is emitted as image_without_object and saved by appending _<n>_removed.png (n = this pass number, e.g. original_1_removed.png); that image becomes the new original image consumed by the next pass.",
+  "DOCUMENT MUTATION: take the document you were given and tag the extracted object with extracted=true, extracted_to=obj_<ID>.png, and extracted_from set to the original image this pass consumed; note that later passes use the new _<n>_removed.png image as their original. Carry every other part of the received document forward unchanged — do not add or drop other entries.",
+  "Always carry BOTH images forward for downstream processing: obj_<ID>.png (the extracted object) and image_without_object (the new original).",
+  "BACKGROUND FILL: when the object is lifted out, its bounding-box region is automatically inpainted with the surrounding background (for example grass under a soccer player) so image_without_object stays clean — you do not need to ask for this.",
+  "OVERLAP REDRAW: if the extracted object was overlapping or occluding another object, redrawing the vacated region reconstructs the hidden part of that underlying object — whenever you redraw part of an overlapping object, put a note there naming the overlapped object and which part was redrawn.",
+  "META NOTES: a short note is recorded on the document that the vacated region was filled with background (added grass) for the extracted object; preserve any such meta notes you receive.",
+  "Set exit_value=next_iteration when one valid leaf object was extracted, loop_complete when no valid removable leaf object remains, llm_error on failure.",
 ].join("\n");
 const REGENERATED_IDENTITIES_PROMPT = [
   "regenerated_identities_from_many_objects:",
@@ -377,65 +377,61 @@ const LEGACY_ROOT_GETTER_PROMPT = [
   "Prioritize broad, stable identity coverage over narrow per-pass edits.",
   COMBINED_PROMPT,
 ].join("\n\n");
-// Typed prompt registry: every B1B2 prompt with its concrete input/output types
-// (file_png, file_json, file_pl, file_metta, file_eng), semantic types (image,
-// object_identities, first_identities, current_identities, regenerated_identities,
-// removal_images), and free-form tags. The runner PRIMARY PROMPT combo uses this to
-// sort prompts by how applicable each is to the runner's role.
+// A JOB is the typed Operation contract a runner fulfills: an operation id plus the input
+// and output types it consumes/produces. A runner is a configured, tested instance of one
+// of these operations (see B1B2_IMPLEMENTATION_REGISTRY for the "how").
 type PromptTypeTag = string;
-type PromptDefinition = {
+type OperationDefinition = {
+  id: string;
+  label: string;
+  inputs: PromptTypeTag[];
+  outputs: PromptTypeTag[];
+};
+const B1B2_OPERATIONS: Record<string, OperationDefinition> = {
+  guess: { id: "arc3.first_pass_object_guesses", label: "First-pass object guesses", inputs: ["image"], outputs: ["first_identities", "object_identities"] },
+  extraction: { id: "arc3.extract_prolog_and_english", label: "Extract prolog + english", inputs: ["image", "object_identities"], outputs: ["current_identities", "object_identities", "file_pl", "file_eng"] },
+  removal: { id: "arc3.remove_object", label: "Remove object", inputs: ["image", "object_identities"], outputs: ["removal_images", "object_identities"] },
+  merge: { id: "arc3.merge_identities", label: "Merge identities", inputs: ["object_identities"], outputs: ["current_identities", "object_identities"] },
+  regenerated: { id: "arc3.regenerate_identities", label: "Regenerate identities", inputs: ["removal_images"], outputs: ["current_identities", "regenerated_identities"] },
+};
+// An IMPLEMENTATION is HOW a job gets done, keyed by { operation, kind } where kind is
+// prompt | python | prolog | metta. Today only prompt implementations execute; python /
+// prolog / metta entries are declared-only (typed contracts, not yet wired to a backend).
+// Concrete types (file_png/file_json/file_pl/file_metta/file_eng) and semantic types
+// (image, object_identities, first_identities, current_identities, regenerated_identities,
+// removal_images) plus tags let each runner sort its implementations by applicability.
+type ImplementationKind = "prompt" | "python" | "prolog" | "metta";
+const B1B2_IMPLEMENTATION_KINDS: ImplementationKind[] = ["prompt", "python", "prolog", "metta"];
+type ImplementationDefinition = {
+  operation: string;
+  kind: ImplementationKind;
   name: string;
   text: string;
   inputs: PromptTypeTag[];
   outputs: PromptTypeTag[];
   tags: string[];
 };
-const B1B2_PROMPT_REGISTRY: PromptDefinition[] = [
-  {
-    name: "generate_first_pass_object_guesses",
-    text: FIRST_PASS_OBJECT_GUESSES_PROMPT,
-    inputs: ["image", "file_png"],
-    outputs: ["first_identities", "object_identities", "file_json"],
-    tags: ["guess", "first_pass", "single_image"],
-  },
-  {
-    name: "generate_prolog_and_english",
-    text: COMBINED_PROMPT,
-    inputs: ["image", "file_png", "object_identities"],
-    outputs: ["current_identities", "object_identities", "objects_pl", "file_pl", "file_eng", "file_json"],
-    tags: ["extraction", "prolog", "english"],
-  },
-  {
-    name: "remove_smallest_object",
-    text: REMOVAL_DISCOVERY_PASS_PROMPT,
-    inputs: ["image", "file_png", "object_identities", "current_identities"],
-    outputs: ["removal_images", "file_png", "current_identities", "object_identities"],
-    tags: ["removal"],
-  },
-  {
-    name: "merge_identities",
-    text: MERGE_IDENTITIES_PROMPT,
-    inputs: ["object_identities", "file_json"],
-    outputs: ["current_identities", "object_identities", "file_json"],
-    tags: ["merge"],
-  },
-  {
-    name: "regenerated_identities_from_many_objects",
-    text: REGENERATED_IDENTITIES_PROMPT,
-    inputs: ["removal_images", "file_png", "object_identities"],
-    outputs: ["current_identities", "regenerated_identities", "object_identities", "file_json"],
-    tags: ["regenerated"],
-  },
-  {
-    name: "legacy_root_getter",
-    text: LEGACY_ROOT_GETTER_PROMPT,
-    inputs: ["image", "file_png", "object_identities"],
-    outputs: ["current_identities", "object_identities", "file_pl", "file_eng", "file_json"],
-    tags: ["extraction", "legacy"],
-  },
+const B1B2_IMPLEMENTATION_REGISTRY: ImplementationDefinition[] = [
+  // --- prompt implementations (executable today) ---
+  { operation: "arc3.first_pass_object_guesses", kind: "prompt", name: "generate_first_pass_object_guesses", text: FIRST_PASS_OBJECT_GUESSES_PROMPT, inputs: ["image", "file_png"], outputs: ["first_identities", "object_identities", "file_json"], tags: ["guess", "first_pass", "single_image"] },
+  { operation: "arc3.extract_prolog_and_english", kind: "prompt", name: "generate_prolog_and_english", text: COMBINED_PROMPT, inputs: ["image", "file_png", "object_identities"], outputs: ["current_identities", "object_identities", "objects_pl", "file_pl", "file_eng", "file_json"], tags: ["extraction", "prolog", "english"] },
+  { operation: "arc3.remove_object", kind: "prompt", name: "remove_smallest_object", text: REMOVAL_DISCOVERY_PASS_PROMPT, inputs: ["image", "file_png", "object_identities", "current_identities"], outputs: ["removal_images", "file_png", "current_identities"], tags: ["removal"] },
+  { operation: "arc3.merge_identities", kind: "prompt", name: "merge_identities", text: MERGE_IDENTITIES_PROMPT, inputs: ["object_identities", "file_json"], outputs: ["current_identities", "object_identities", "file_json"], tags: ["merge"] },
+  { operation: "arc3.regenerate_identities", kind: "prompt", name: "regenerated_identities_from_many_objects", text: REGENERATED_IDENTITIES_PROMPT, inputs: ["removal_images", "file_png", "object_identities"], outputs: ["current_identities", "regenerated_identities", "object_identities", "file_json"], tags: ["regenerated"] },
+  { operation: "arc3.extract_prolog_and_english", kind: "prompt", name: "legacy_root_getter", text: LEGACY_ROOT_GETTER_PROMPT, inputs: ["image", "file_png", "object_identities"], outputs: ["current_identities", "object_identities", "file_pl", "file_eng", "file_json"], tags: ["extraction", "legacy"] },
+  // --- python implementations (declared-only) ---
+  { operation: "arc3.first_pass_object_guesses", kind: "python", name: "detect_objects_cv", text: "Python CV object detector: connected-component + color segmentation over the grid.", inputs: ["image", "file_png"], outputs: ["first_identities", "object_identities", "file_json"], tags: ["guess", "cv"] },
+  { operation: "arc3.remove_object", kind: "python", name: "remove_object_cv", text: "Python CV object remover: mask + inpaint each identity from the image.", inputs: ["image", "object_identities"], outputs: ["removal_images", "file_png"], tags: ["removal", "cv"] },
+  { operation: "arc3.merge_identities", kind: "python", name: "merge_identities_py", text: "Python identity merger: dedupe by bounding-box IoU + color/shape compatibility.", inputs: ["object_identities", "file_json"], outputs: ["current_identities", "file_json"], tags: ["merge"] },
+  // --- prolog implementations (declared-only) ---
+  { operation: "arc3.extract_prolog_and_english", kind: "prolog", name: "extract_objects_pl", text: "Prolog extractor: derive object/3 + relations facts from the grid state.", inputs: ["image", "object_identities"], outputs: ["current_identities", "objects_pl", "file_pl"], tags: ["extraction", "prolog"] },
+  { operation: "arc3.merge_identities", kind: "prolog", name: "merge_identities_pl", text: "Prolog identity merger: unify identities by declarative correspondence rules.", inputs: ["object_identities"], outputs: ["current_identities"], tags: ["merge", "prolog"] },
+  // --- metta implementations (declared-only) ---
+  { operation: "arc3.regenerate_identities", kind: "metta", name: "regenerate_identities_metta", text: "MeTTa regenerator: recompose identities from many_objects atoms in the AtomSpace.", inputs: ["removal_images", "object_identities"], outputs: ["current_identities", "regenerated_identities"], tags: ["regenerated", "metta"] },
 ];
-// Which registered content prompt backs each runner role, and the input/output type
-// profile the role expects (used to score prompt applicability).
+// Backward-compatible view of just the prompt-kind implementations.
+const B1B2_PROMPT_REGISTRY = B1B2_IMPLEMENTATION_REGISTRY.filter((impl) => impl.kind === "prompt");
+// Which registered content prompt backs each runner role.
 const B1B2_ROLE_CONTENT_PROMPT: Record<string, string> = {
   guess: "generate_first_pass_object_guesses",
   extraction: "generate_prolog_and_english",
@@ -443,13 +439,10 @@ const B1B2_ROLE_CONTENT_PROMPT: Record<string, string> = {
   merge: "merge_identities",
   regenerated: "regenerated_identities_from_many_objects",
 };
-const B1B2_ROLE_PROFILE: Record<string, { inputs: PromptTypeTag[]; outputs: PromptTypeTag[] }> = {
-  guess: { inputs: ["image"], outputs: ["first_identities", "object_identities"] },
-  extraction: { inputs: ["image", "object_identities"], outputs: ["current_identities", "object_identities", "file_pl", "file_eng"] },
-  removal: { inputs: ["image", "object_identities"], outputs: ["removal_images", "object_identities"] },
-  merge: { inputs: ["object_identities"], outputs: ["current_identities", "object_identities"] },
-  regenerated: { inputs: ["removal_images"], outputs: ["current_identities", "regenerated_identities"] },
-};
+// The input/output type profile each role expects, derived from its operation contract.
+const B1B2_ROLE_PROFILE: Record<string, { inputs: PromptTypeTag[]; outputs: PromptTypeTag[] }> = Object.fromEntries(
+  Object.entries(B1B2_OPERATIONS).map(([role, operation]) => [role, { inputs: operation.inputs, outputs: operation.outputs }]),
+);
 const B1B2_RUNNER_NAME_ROLE: Record<string, string> = {
   FIRST_GUESSER: "guess",
   IMPROVED_GUESSER: "extraction",
@@ -458,12 +451,24 @@ const B1B2_RUNNER_NAME_ROLE: Record<string, string> = {
   MERGE: "merge",
   REGENERATOR: "regenerated",
 };
-function promptDefinitionForOption(optionName: string): PromptDefinition | null {
+function roleForRunnerName(runnerName: string): string {
+  return B1B2_RUNNER_NAME_ROLE[runnerName] || "";
+}
+function operationIdForRole(role: string): string {
+  return B1B2_OPERATIONS[role]?.id || "";
+}
+function operationById(operationId: string): OperationDefinition | null {
+  return Object.values(B1B2_OPERATIONS).find((operation) => operation.id === operationId) || null;
+}
+function implementationsFor(operationId: string, kind: ImplementationKind): ImplementationDefinition[] {
+  return B1B2_IMPLEMENTATION_REGISTRY.filter((impl) => impl.operation === operationId && impl.kind === kind);
+}
+function promptDefinitionForOption(optionName: string): ImplementationDefinition | null {
   const slotMatch = /^(.+)_RUNNER_PROMPT$/.exec(optionName);
   const contentName = slotMatch
     ? (B1B2_ROLE_CONTENT_PROMPT[B1B2_RUNNER_NAME_ROLE[slotMatch[1]] || ""] || "")
     : optionName;
-  return B1B2_PROMPT_REGISTRY.find((prompt) => prompt.name === contentName) || null;
+  return B1B2_PROMPT_REGISTRY.find((impl) => impl.name === contentName) || null;
 }
 function promptApplicabilityScore(optionName: string, role: string): number {
   const profile = B1B2_ROLE_PROFILE[role];
@@ -1549,6 +1554,25 @@ async function generateRemovalArtifacts(
   const objectData = new ImageData(frame.width, frame.height);
   const backgroundData = new ImageData(new Uint8ClampedArray(frame.rgba), frame.width, frame.height);
   const fill = dominantBorderColor(frame, projected.left, projected.top, projected.width, projected.height);
+  // Fill the vacated region with the nearest surrounding background (e.g. grass under a player)
+  // by extending the closest just-outside-the-box edge pixel inward, instead of a flat color block.
+  const sampleBackground = (x: number, y: number): [number, number, number, number] => {
+    const leftEdge = projected.left - 1;
+    const rightEdge = projected.left + projected.width;
+    const topEdge = projected.top - 1;
+    const bottomEdge = projected.top + projected.height;
+    const nearest = Math.min(x - leftEdge, rightEdge - x, y - topEdge, bottomEdge - y);
+    let sx = x;
+    let sy = y;
+    if (nearest === x - leftEdge) sx = leftEdge;
+    else if (nearest === rightEdge - x) sx = rightEdge;
+    else if (nearest === y - topEdge) sy = topEdge;
+    else sy = bottomEdge;
+    sx = Math.max(0, Math.min(frame.width - 1, sx));
+    sy = Math.max(0, Math.min(frame.height - 1, sy));
+    const sampleIndex = (sy * frame.width + sx) * 4;
+    return [frame.rgba[sampleIndex], frame.rgba[sampleIndex + 1], frame.rgba[sampleIndex + 2], frame.rgba[sampleIndex + 3]];
+  };
   let changedInside = 0;
   let insideTotal = 0;
   let changedOutside = 0;
@@ -1563,15 +1587,16 @@ async function generateRemovalArtifacts(
         && y < projected.top + projected.height;
       if (inside) {
         insideTotal += 1;
+        const patch = sampleBackground(x, y);
         objectData.data[index] = frame.rgba[index];
         objectData.data[index + 1] = frame.rgba[index + 1];
         objectData.data[index + 2] = frame.rgba[index + 2];
         objectData.data[index + 3] = frame.rgba[index + 3];
         if (frame.rgba[index + 3] > 0) objectVisible += 1;
-        backgroundData.data[index] = fill[0];
-        backgroundData.data[index + 1] = fill[1];
-        backgroundData.data[index + 2] = fill[2];
-        backgroundData.data[index + 3] = fill[3];
+        backgroundData.data[index] = patch[0];
+        backgroundData.data[index + 1] = patch[1];
+        backgroundData.data[index + 2] = patch[2];
+        backgroundData.data[index + 3] = patch[3];
         if (backgroundData.data[index] !== frame.rgba[index]
           || backgroundData.data[index + 1] !== frame.rgba[index + 1]
           || backgroundData.data[index + 2] !== frame.rgba[index + 2]
@@ -1607,6 +1632,8 @@ async function generateRemovalArtifacts(
     backgroundImage: backgroundCanvas.toDataURL("image/png"),
     accepted: issues.length === 0,
     issues,
+    fillColor: fill,
+    filledBox: { left: projected.left, top: projected.top, width: projected.width, height: projected.height },
   };
 }
 
@@ -2087,6 +2114,9 @@ function initialRunnerState(routeView: string, stackKey: StackKey, runnerIndex: 
     filesSourceSelection: initialFilesSourceIds[0],
     filesSourceIds: initialFilesSourceIds,
     generationSeq: 0,
+    operationId: operationIdForRole(runnerRole(routeView, stackKey, runnerIndex)),
+    implementationKind: "prompt",
+    implementationRef: "",
     promptText: defaultRunnerPrompt(routeView, stackKey, runnerIndex),
     primaryPromptName: primaryPromptName(routeView, stackKey, runnerIndex),
     validatorPromptText: DEFAULT_VALIDATOR_PROMPT,
@@ -2431,6 +2461,12 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
           filesSourceSelection: runner.filesSourceSelection
             || runner.filesSourceIds?.[0]
             || defaultInputFilesSourceIdsForRunner(pageDefinition.routeView, stack.key, runnerIndex)[0],
+          operationId: String((runner as unknown as Record<string, unknown>).operationId || "").trim()
+            || operationIdForRole(runnerRole(pageDefinition.routeView, stack.key, runnerIndex)),
+          implementationKind: (B1B2_IMPLEMENTATION_KINDS as string[]).includes(String((runner as unknown as Record<string, unknown>).implementationKind || ""))
+            ? (runner as unknown as Record<string, unknown>).implementationKind as ImplementationKind
+            : "prompt",
+          implementationRef: String((runner as unknown as Record<string, unknown>).implementationRef || "").trim(),
           promptText: migrateRunnerPromptText(pageDefinition.routeView, stack.key, runnerIndex, runner.promptText),
           primaryPromptName: String((runner as unknown as Record<string, unknown>).primaryPromptName || "").trim() || primaryPromptName(pageDefinition.routeView, stack.key, runnerIndex),
           validatorPromptText: runner.validatorPromptText || DEFAULT_VALIDATOR_PROMPT,
@@ -3063,6 +3099,13 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
       || "";
     const beforeUrl = effectiveImageSourceBefore?.dataUrl || guessImageSource;
     const afterUrl = imageSourceAfter?.dataUrl || guessImageSource;
+    if (isB1B2PipelineRoute(pageDefinition.routeView) && runner.implementationKind && runner.implementationKind !== "prompt") {
+      setRunnerState(stackIndex, runnerIndex, (previous) => ({
+        ...previous,
+        error: `${runner.implementationKind} implementations are declared-only; the execution backend is not wired yet. Switch IMPLEMENTATION back to prompt to run. exit_value=unran.`,
+      }));
+      return;
+    }
     if (!effectiveModelId) {
       setRunnerState(stackIndex, runnerIndex, (previous) => ({ ...previous, error: "Select an enabled model first. exit_value=unran." }));
       return;
@@ -3271,12 +3314,32 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
               } else {
                 if (parsedPayload) {
                   const parsedRecord = parsedPayload as unknown as Record<string, unknown>;
+                  const removedId = selectedRemovable.id;
+                  const objFileName = `obj_${removedId}.png`;
+                  const consumedOriginal = imageSourceAfter.name || "original";
+                  const newOriginalName = `${consumedOriginal.replace(/\.[^.]+$/, "")}_${passNumber}_removed.png`;
+                  parsedRecord[`obj_${removedId}`] = removalArtifacts.objectImage;
                   parsedRecord.image_of_object_removed = removalArtifacts.objectImage;
                   parsedRecord.image_without_object = removalArtifacts.backgroundImage;
                   parsedRecord.removed_object_image = removalArtifacts.objectImage;
+                  parsedRecord.new_original_image = removalArtifacts.backgroundImage;
+                  parsedRecord.new_original_image_name = newOriginalName;
+                  const fillNote = `Extracted ${removedId} and filled the vacated region with the surrounding background (e.g. grass under a player) so ${newOriginalName} reads cleanly.`;
+                  parsedRecord.background_fill_note = fillNote;
+                  const fillColor = removalArtifacts.fillColor || null;
+                  const priorNotes = Array.isArray(parsedRecord.meta_notes) ? (parsedRecord.meta_notes as unknown[]) : [];
+                  parsedRecord.meta_notes = [...priorNotes, { kind: "background_fill", object: removedId, extracted_to: objFileName, note: fillNote, fill_color: fillColor, box: removalArtifacts.filledBox || null }];
                   parsedRecord.many_objects_1 = removalArtifacts.objectImage;
                   parsedRecord.many_objects_2 = removalArtifacts.backgroundImage;
                   parsedRecord.many_objects = [removalArtifacts.objectImage, removalArtifacts.backgroundImage];
+                  if (Array.isArray(parsedRecord.current_identities)) {
+                    parsedRecord.current_identities = (parsedRecord.current_identities as unknown[]).map((entry) => {
+                      if (entry && typeof entry === "object" && String((entry as Record<string, unknown>).id || "") === removedId) {
+                        return { ...(entry as Record<string, unknown>), extracted: true, extracted_to: objFileName, extracted_from: consumedOriginal, new_original_image: newOriginalName, background_filled: true, background_fill_note: fillNote, background_fill_color: fillColor };
+                      }
+                      return entry;
+                    });
+                  }
                 }
                 setRunnerState(stackIndex, runnerIndex, (previous) => ({
                   ...previous,
@@ -4471,6 +4534,17 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                         return rightScore - leftScore;
                       });
                     }
+                    const runnerOperation = operationById(runner.operationId)
+                      || B1B2_OPERATIONS[runnerRoleMode]
+                      || null;
+                    const jobIoLabel = runnerOperation
+                      ? `${runnerOperation.id}  ·  in: ${runnerOperation.inputs.join(", ") || "-"} → out: ${runnerOperation.outputs.join(", ") || "-"}`
+                      : runnerRoleMode || "-";
+                    const implementationOptions = (isB1B2PipelineRoute(pageDefinition.routeView) && runner.implementationKind !== "prompt")
+                      ? implementationsFor(runnerOperation?.id || runner.operationId, runner.implementationKind)
+                          .slice()
+                          .sort((left, right) => promptApplicabilityScore(right.name, runnerRoleMode) - promptApplicabilityScore(left.name, runnerRoleMode))
+                      : [];
                     const validatorPromptNameOptions = dedupeStringList([
                       runner.validatorPromptName || "",
                       "no_uncircled_objects",
@@ -4829,6 +4903,51 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                           Next Setup
                         </button>
                       </div>
+                      {isB1B2PipelineRoute(pageDefinition.routeView) && (
+                        <div className="arc3-b1b2-runner-job">
+                          <div className="arc3-b1b2-runner-job-line">
+                            <span className="arc3-b1b2-runner-job-label">JOB</span>
+                            <small title="The typed Operation this runner fulfills (its inputs and outputs).">{jobIoLabel}</small>
+                          </div>
+                          <label className="arc3-prolog-inline-select-label">
+                            <span>IMPLEMENTATION</span>
+                            <select
+                              aria-label={`Implementation kind for ${runnerDisplay}`}
+                              value={runner.implementationKind}
+                              title="How this job is implemented. Only prompt executes today; python/prolog/metta are declared-only."
+                              onChange={(event) => setRunnerState(
+                                stackIndex,
+                                runnerIndex,
+                                (previous) => ({ ...previous, implementationKind: event.target.value as ImplementationKind }),
+                              )}
+                            >
+                              {B1B2_IMPLEMENTATION_KINDS.map((kind) => <option key={`impl-kind-${runnerDisplay}-${kind}`} value={kind}>
+                                {kind === "prompt" ? "prompt" : `${kind} (declared-only)`}
+                              </option>)}
+                            </select>
+                          </label>
+                          {runner.implementationKind !== "prompt" && (
+                            <label className="arc3-prolog-inline-select-label">
+                              <span>{runner.implementationKind.toUpperCase()} IMPL</span>
+                              <select
+                                aria-label={`Implementation for ${runnerDisplay}`}
+                                value={runner.implementationRef || implementationOptions[0]?.name || ""}
+                                onChange={(event) => setRunnerState(
+                                  stackIndex,
+                                  runnerIndex,
+                                  (previous) => ({ ...previous, implementationRef: event.target.value }),
+                                )}
+                              >
+                                {implementationOptions.length
+                                  ? implementationOptions.map((impl) => <option key={`impl-${runnerDisplay}-${impl.name}`} value={impl.name}>
+                                    {`${impl.name}  ·  in: ${impl.inputs.join(", ") || "-"} → out: ${impl.outputs.join(", ") || "-"}`}
+                                  </option>)
+                                  : <option value="">No {runner.implementationKind} implementations declared for this job</option>}
+                              </select>
+                            </label>
+                          )}
+                        </div>
+                      )}
                       <details className="arc3-prolog-prompt-collapsible">
                         <summary className="arc3-prolog-prompt-summary">
                           <span>|&gt; Primary Prompt -</span>
