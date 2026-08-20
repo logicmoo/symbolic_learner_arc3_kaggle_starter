@@ -17,6 +17,7 @@ Use the tabs above to move between the workbench's shared documentation from any
 - [Planning](plans.md)
 - [Workflows](workflows.md)
 - [Operations](operations.md)
+- [Topics](topics.md)
 - [Prompts](prompts.md)
 - [Data](data.md)
 - [Artifacts](artifacts.md)

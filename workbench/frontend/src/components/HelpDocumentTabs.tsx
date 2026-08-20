@@ -20,6 +20,7 @@ const docTabs:HelpTab[]=[
  {id:"systems",label:"Systems",path:"docs/systems.md"},
  {id:"sourceCode",label:"Source Code",path:"docs/source_code.md"},
  {id:"operations",label:"Operations",path:"docs/operations.md"},
+ {id:"topics",label:"Topics",path:"docs/topics.md"},
  {id:"policies",label:"Policies",path:"docs/policies.md"},
  {id:"benchmarks",label:"Benchmarks",path:"docs/benchmarks.md"},
  {id:"prompts",label:"Prompts",path:"docs/prompts.md"},

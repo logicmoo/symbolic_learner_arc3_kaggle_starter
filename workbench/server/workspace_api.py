@@ -1372,6 +1372,26 @@ def write_workspace_file(workspace_id: str, body: dict[str, Any] = Body(...)) ->
         raise HTTPException(status_code=400, detail=str(error)) from error
 
 
+@router.delete("/{workspace_id}/file")
+def delete_workspace_file(workspace_id: str, path: str = Query(...)) -> dict[str, Any]:
+    try:
+        workspace = _resolve_workspace(workspace_id)
+        root = Path(workspace["root"])
+        requested = _safe_child(root, path)
+        if requested.suffix.lower() not in TEXT_SUFFIXES:
+            raise ValueError("file type is not editable text")
+        resources = get_filesystem_provider()
+        if not resources.is_file(requested):
+            raise KeyError(f"file not found: {path}")
+        resources.delete(requested)
+        invalidate_workspace_discovery()
+        return {"deleted": requested.relative_to(root).as_posix()}
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+    except (OSError, ValueError) as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+
 @router.put("/{workspace_id}/data-file")
 def write_workspace_data_file(workspace_id: str, body: dict[str, Any] = Body(...)) -> dict[str, Any]:
     """Write a text file verbatim, bypassing all resource/JSON handling.

@@ -42,6 +42,7 @@ type OperationDocument = {
   label?: string;
   description?: string;
   categories?: string[];
+  topics?: string[];
   preferredChild?: string;
 };
 
@@ -1146,7 +1147,7 @@ export function GenerateWorkflowPage({
       const requiredCategories = workflow.generation?.operationCategories || [];
       const effectiveCatalog = operationCatalog.filter((candidate) =>
         !requiredCategories.length || requiredCategories.some((required) =>
-          (candidate.categories || []).some((category) => category === required || category.startsWith(`${required}/`)),
+          (candidate.topics || candidate.categories || []).some((topic) => topic === required || topic.startsWith(`${required}/`)),
         ),
       );
       const payload = await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/operations/${encodeURIComponent(operation.id)}/invoke`, {

@@ -81,6 +81,11 @@ const PolicyLibraryEditor = lazy(() =>
     default: module.PolicyLibraryEditor,
   })),
 );
+const TopicsResourceEditor = lazy(() =>
+  import("../components/TopicsResourceEditor").then((module) => ({
+    default: module.TopicsResourceEditor,
+  })),
+);
 const RepositoryDocsPage = lazy(() =>
   import("../components/RepositoryDocsPage").then((module) => ({
     default: module.RepositoryDocsPage,
@@ -380,6 +385,7 @@ type View =
   | "artifacts"
   | "evidence"
   | "operations"
+  | "topics"
   | "sourceCode"
   | "systems"
   | "llms"
@@ -419,6 +425,7 @@ const WORKBENCH_VIEWS: Set<View> = new Set([
   "artifacts",
   "evidence",
   "operations",
+  "topics",
   "sourceCode",
   "systems",
   "llms",
@@ -587,6 +594,7 @@ export const NAVIGATION_V2: Array<{
     group: "CAPABILITIES",
     items: [
       { label: "Operations", view: "operations", glyph: "▦" },
+      { label: "Topics", view: "topics", glyph: "☷" },
       { label: "Source Code", view: "sourceCode", glyph: "</>" },
       { label: "Systems", view: "systems", glyph: "⚙" },
       { label: "Models", view: "llms", glyph: "✦" },
@@ -3826,6 +3834,9 @@ export function FilesystemWorkbenchPage() {
             {view === "sourceCode" && (
               <SourceCodeEditor workspaceId={workspace.id} />
             )}{" "}
+            {view === "topics" && (
+              <TopicsResourceEditor workspaceId={workspace.id} />
+            )}{" "}
             {view === "policies" && (
               <PolicyLibraryEditor workspaceId={workspace.id} />
             )}{" "}
@@ -4141,6 +4152,8 @@ export function FilesystemWorkbenchPage() {
                             ? "systems"
                             : view === "operations"
                               ? "operations"
+                              : view === "topics"
+                                ? "topics"
                               : view === "policies"
                                 ? "policies"
                                 : view === "modelPolicy"
