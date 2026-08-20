@@ -56,6 +56,8 @@ def test_b1_b2_component_has_pipeline_contract() -> None:
     assert 'if (role === "extraction") return "generate_prolog_and_english";' in source
     assert 'if (role === "merge") return "merge_identities";' in source
     assert "const MERGE_IDENTITIES_PROMPT = [" in source
+    # Each B1B2 runner's prompt name is derived from the runner name: <RUNNER>_RUNNER_PROMPT.
+    assert "${runnerDisplayId(routeView, stackKey, runnerIndex)}_RUNNER_PROMPT" in source
     assert '["runner:FIRST_GUESSER"]' in source
     assert '["runner:FIRST_REMOVER"]' in source
     assert '["runner:IMPROVED_GUESSER"]' in source

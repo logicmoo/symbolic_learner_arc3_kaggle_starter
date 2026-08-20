@@ -1854,6 +1854,9 @@ function defaultRunnerPrompt(routeView: string, stackKey: StackKey, runnerIndex:
 }
 
 function primaryPromptName(routeView: string, stackKey: StackKey, runnerIndex: number): string {
+  if (isB1B2PipelineRoute(routeView) && stackKey === "B" && runnerIndex < B1B2_RUNNER_NAMES.length) {
+    return `${runnerDisplayId(routeView, stackKey, runnerIndex)}_RUNNER_PROMPT`;
+  }
   const role = runnerRole(routeView, stackKey, runnerIndex);
   if (role === "guess") return "generate_first_pass_object_guesses";
   if (role === "extraction") return "generate_prolog_and_english";
