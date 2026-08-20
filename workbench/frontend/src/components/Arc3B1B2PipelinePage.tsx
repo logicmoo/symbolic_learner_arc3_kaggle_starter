@@ -1074,6 +1074,18 @@ async function loadImage(source: string): Promise<HTMLImageElement> {
   });
 }
 
+async function singleSheet(image: { label: string; source: string }): Promise<string> {
+  const loaded = await loadImage(image.source);
+  const canvas = window.document.createElement("canvas");
+  canvas.width = Math.max(1, loaded.naturalWidth || 512);
+  canvas.height = Math.max(1, loaded.naturalHeight || 512);
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("This browser could not prepare the submitted image.");
+  context.imageSmoothingEnabled = false;
+  context.drawImage(loaded, 0, 0, canvas.width, canvas.height);
+  return canvas.toDataURL("image/png");
+}
+
 async function pairSheet(before: { label: string; source: string }, after: { label: string; source: string }): Promise<string> {
   const [left, right] = await Promise.all([loadImage(before.source), loadImage(after.source)]);
   const canvas = window.document.createElement("canvas");
@@ -3009,7 +3021,9 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
         };
         let overlaySource = "";
         const image = guessRole
-          ? guessImageSource
+          ? (/^(?:data:|https?:)/i.test(guessImageSource) && guessImageSource.startsWith("data:")
+              ? guessImageSource
+              : await singleSheet({ label: baseImageLabels.after, source: guessImageSource }))
           : isGapPass
           ? await (async () => {
             overlaySource = await createIdentityOverlay(

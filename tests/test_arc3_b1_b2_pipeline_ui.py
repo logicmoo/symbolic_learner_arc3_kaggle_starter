@@ -149,6 +149,10 @@ def test_b1_b2_runner_submits_picked_image_and_tolerates_missing_frame() -> None
     assert "frame: ImageValidationFrame | null," in source
     # The full data listing (with images) is captured for the combo/image resolution.
     assert "setDataFiles(records);" in source
+    # The guess image is encoded to a data: URL (via singleSheet) so the backend accepts it.
+    assert "async function singleSheet(" in source
+    assert 'return canvas.toDataURL("image/png");' in source
+    assert "await singleSheet({ label: baseImageLabels.after, source: guessImageSource })" in source
 
 
 def test_b1_b2_setup_switch_expands_selected_to_full() -> None:
