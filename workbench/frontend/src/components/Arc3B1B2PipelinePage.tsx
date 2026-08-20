@@ -353,12 +353,13 @@ const REMOVAL_DISCOVERY_PASS_PROMPT = [
   "SELECTION HANDOFF: return current_identities as a SINGLE entry — ONLY the object you are extracting — reusing the EXACT id that FIRST_GUESSER / the supplied document already assigned to it, plus its type, sub_type, and bounding_box [x1, y1, x2, y2] (x2 > x1, y2 > y1) so the pipeline can crop it. current_identities must contain no other identities, no lifecycle, and no groups.",
   "ID REUSE: do NOT rename, normalize, or invent a new id for the extracted object — copy FIRST_GUESSER's id for it verbatim so obj_<ID>.png matches the id already in the document.",
   "EXTRACTED OBJECT IMAGE: the extracted object is emitted as an image file named obj_<ID>.png, where <ID> is that exact reused id.",
-  "NEW ORIGINAL IMAGE: the current original with the extracted object's pixels removed is emitted as image_without_object and saved as <original>_<n>_removed.png where n is the pass number (original_1_removed.png, then original_2_removed.png next pass, and so on — the pass number increments, the stem does not compound); that image becomes the new original image consumed by the next pass.",
-  "DOCUMENT MUTATION: take the document you were given and tag the extracted object with extracted=true, extracted_to=obj_<ID>.png, and extracted_from set to the original image this pass consumed; note that later passes use the new _<n>_removed.png image as their original. Carry every other part of the received document forward unchanged — do not add or drop other entries.",
+  "NEW ORIGINAL IMAGE: the current original with the extracted object's pixels removed is emitted as image_without_object and saved as <original>_with_<n>_removed.png where n is the pass number (original_with_1_removed.png, then original_with_2_removed.png next pass, and so on — the pass number increments, the stem does not compound); that image becomes the new original image consumed by the next pass.",
+  "DOCUMENT MUTATION: take the document you were given and tag the extracted object with extracted=true, extracted_to=obj_<ID>.png, and extracted_from set to the original image this pass consumed; note that later passes use the new _with_<n>_removed.png image as their original. Carry every other part of the received document forward unchanged — do not add or drop other entries.",
   "Always carry BOTH images forward for downstream processing: obj_<ID>.png (the extracted object) and image_without_object (the new original).",
   "BACKGROUND FILL: when the object is lifted out, its bounding-box region is automatically inpainted with the surrounding background (for example grass under a soccer player) so image_without_object stays clean — you do not need to ask for this.",
   "OVERLAP REDRAW: if the extracted object was overlapping or occluding another object, redrawing the vacated region reconstructs the hidden part of that underlying object — whenever you redraw part of an overlapping object, append an English note to that overlapped object's identity notes list saying which part was redrawn.",
   "META NOTES: the English note that the vacated region was filled with background (added grass) is appended to the extracted object's identity notes list; preserve every note already in an identity's notes list.",
+  "LOOP RESUBMIT: on exit_value=next_iteration the runner resubmits its two new output files (obj_<ID>.png and the new original original_with_<n>_removed.png); the next pass consumes that new original and extracts the next leaf object from the reduced scene.",
   "Set exit_value=next_iteration when one valid leaf object was extracted, loop_complete when no valid removable leaf object remains, llm_error on failure.",
 ].join("\n");
 const REGENERATED_IDENTITIES_PROMPT = [
@@ -3161,6 +3162,8 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
       ).catch(() => null);
       let latestParsed = runner.parsed;
       let acceptedAnyPass = false;
+      let removalWorkingUrl = afterUrl;
+      let removalWorkingName = imageSourceAfter?.name || "original";
       const totalPasses = autoLoop ? Math.max(1, Math.floor(runner.autoLoopMaxIterations || AUTO_GAP_MAX_PASSES)) : 1;
       const maxLoopMs = autoLoop ? Math.max(10000, Math.floor((runner.autoLoopMaxSeconds || defaultTimeoutSeconds) * 1000)) : 0;
       const invocationTimeoutSeconds = Math.max(10, Math.floor(runner.maxPrimarySeconds || defaultTimeoutSeconds));
@@ -3175,9 +3178,13 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
         }
         const priorPassParsed = latestParsed;
         const isGapPass = autoLoop && passNumber > 1;
+        const passAfterUrl = removalLoopRunner ? removalWorkingUrl : afterUrl;
+        const passAfterName = removalLoopRunner ? removalWorkingName : (imageSourceAfter?.name ?? "current");
+        let nextRemovalUrl = "";
+        let nextRemovalName = "";
         const baseImageLabels = {
           before: `${imageSourceBeforeLabel} (${effectiveImageSourceBefore?.name ?? "current"})`,
-          after: `${imageSourceAfterLabel} (${imageSourceAfter?.name ?? "current"})`,
+          after: `${imageSourceAfterLabel} (${passAfterName})`,
         };
         let overlaySource = "";
         const image = guessRole
@@ -3187,18 +3194,18 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
           : isGapPass
           ? await (async () => {
             overlaySource = await createIdentityOverlay(
-              afterUrl,
+              passAfterUrl,
               asIdentityCandidates(priorPassParsed),
             );
             return triSheet(
               { label: baseImageLabels.before, source: beforeUrl },
-              { label: baseImageLabels.after, source: afterUrl },
+              { label: baseImageLabels.after, source: passAfterUrl },
               { label: "debug_overlay_image (claimed boxes)", source: overlaySource },
             );
           })()
           : await pairSheet(
             { label: baseImageLabels.before, source: beforeUrl },
-            { label: baseImageLabels.after, source: afterUrl },
+            { label: baseImageLabels.after, source: passAfterUrl },
           );
         if (overlaySource) {
           setRunnerState(stackIndex, runnerIndex, (previous) => ({ ...previous, loopImageWithCircles: overlaySource }));
@@ -3300,7 +3307,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
           if (passAccepted && removalLoopRunner) {
             const selectedRemovable = pickRemovableIdentity(priorPassParsed, parsedPayload);
             if (selectedRemovable) {
-              removalArtifacts = await generateRemovalArtifacts(imageSourceAfter.dataUrl, selectedRemovable);
+              removalArtifacts = await generateRemovalArtifacts(passAfterUrl, selectedRemovable);
               if (!removalArtifacts.accepted) {
                 passAccepted = false;
                 passIssues = [
@@ -3316,9 +3323,11 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                   const parsedRecord = parsedPayload as unknown as Record<string, unknown>;
                   const removedId = selectedRemovable.id;
                   const objFileName = `obj_${removedId}.png`;
-                  const consumedOriginal = imageSourceAfter.name || "original";
-                  const originalStem = consumedOriginal.replace(/\.[^.]+$/, "").replace(/_\d+_removed$/, "");
-                  const newOriginalName = `${originalStem}_${passNumber}_removed.png`;
+                  const consumedOriginal = passAfterName;
+                  const originalStem = consumedOriginal.replace(/\.[^.]+$/, "").replace(/_with_\d+_removed$/, "").replace(/_\d+_removed$/, "");
+                  const newOriginalName = `${originalStem}_with_${passNumber}_removed.png`;
+                  nextRemovalUrl = removalArtifacts.backgroundImage;
+                  nextRemovalName = newOriginalName;
                   parsedRecord[`obj_${removedId}`] = removalArtifacts.objectImage;
                   parsedRecord.image_of_object_removed = removalArtifacts.objectImage;
                   parsedRecord.image_without_object = removalArtifacts.backgroundImage;
@@ -3449,6 +3458,10 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
         if (!acceptedParsed || !acceptedInvocation) break;
         latestParsed = acceptedParsed;
         acceptedAnyPass = true;
+        if (removalLoopRunner && nextRemovalUrl) {
+          removalWorkingUrl = nextRemovalUrl;
+          removalWorkingName = nextRemovalName;
+        }
         if (!autoLoop) {
           setRunnerState(stackIndex, runnerIndex, (previous) => ({
             ...previous,
