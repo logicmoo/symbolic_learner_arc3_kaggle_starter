@@ -704,10 +704,15 @@ function labelSegment(name: string): string {
 }
 
 function abbreviateSegment(name: string): string {
-  // For commands: direction folders map to a single letter (L/R/U/D); anything else
-  // collapses to its first 3 non-vowel characters (uppercased) so the command stays compact.
+  // For commands: direction folders map to a single letter (L/R/U/D); underscore-separated
+  // names collapse to the first letter of each part joined by "_" (Alpha_Number -> A_N);
+  // anything else collapses to its first 3 non-vowel characters (uppercased) so the command
+  // stays compact.
   const dir = directionLetter(name);
   if (dir) return dir;
+  if (name.includes("_")) {
+    return name.split("_").filter(Boolean).map((part) => part[0]).join("_").toUpperCase();
+  }
   const consonants = name.replace(/[aeiou]/gi, "");
   return (consonants || name).slice(0, 3).toUpperCase();
 }
@@ -739,7 +744,7 @@ function stackADescendSetupsFromFiles(workspaceId: string, files: WorkspaceFileR
     if (!isLeaf(dir)) continue;
     const segments = relPath(dir).split("/").filter(Boolean);
     const group = segments[0] || relPath(dir);
-    const command = segments.length > 1 ? segments.slice(1).map(abbreviateSegment).join(".") : undefined;
+    const command = segments.length > 1 ? [labelSegment(segments[1]), ...segments.slice(2).map(abbreviateSegment)].filter(Boolean).join(".") : undefined;
     setupEntries.push({ dir, group, command });
   }
   if (!setupEntries.length) return [];
