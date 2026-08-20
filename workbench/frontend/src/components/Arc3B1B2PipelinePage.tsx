@@ -369,7 +369,7 @@ function stackColumnsForRoute(routeView: string): Array<{ key: StackKey; label: 
 function isB1B2PipelineRoute(routeView: string): boolean {
   return routeView === "arc3B1B2Pipeline";
 }
-const B1B2_RUNNER_NAMES = ["GUESSER", "REMOVER", "REGENERATOR"];
+const B1B2_RUNNER_NAMES = ["Simple Guesser", "GUESSER", "REMOVER", "REGENERATOR"];
 function runnerDisplayOrdinal(routeView: string, stackKey: StackKey, runnerIndex: number): number {
   if (isB1B2PipelineRoute(routeView) && stackKey === "B") return runnerIndex;
   return runnerIndex + 1;
@@ -380,11 +380,12 @@ function runnerDisplayId(routeView: string, stackKey: StackKey, runnerIndex: num
   }
   return `${stackKey}${runnerDisplayOrdinal(routeView, stackKey, runnerIndex)}`;
 }
-function runnerRole(routeView: string, stackKey: StackKey, runnerIndex: number): "extraction" | "removal" | "regenerated" | "default" {
+function runnerRole(routeView: string, stackKey: StackKey, runnerIndex: number): "guess" | "extraction" | "removal" | "regenerated" | "default" {
   if (isB1B2PipelineRoute(routeView) && stackKey === "B") {
-    if (runnerIndex === 0) return "extraction";
-    if (runnerIndex === 1) return "removal";
-    if (runnerIndex === 2) return "regenerated";
+    if (runnerIndex === 0) return "guess";
+    if (runnerIndex === 1) return "extraction";
+    if (runnerIndex === 2) return "removal";
+    if (runnerIndex === 3) return "regenerated";
   } else {
     if (stackKey === "B" && runnerIndex === 0) return "removal";
     if (stackKey === "B" && runnerIndex === 1) return "regenerated";
@@ -392,7 +393,7 @@ function runnerRole(routeView: string, stackKey: StackKey, runnerIndex: number):
   return "default";
 }
 function defaultRunnerCountForRoute(routeView: string): number {
-  return isB1B2PipelineRoute(routeView) ? 3 : 3;
+  return isB1B2PipelineRoute(routeView) ? 4 : 3;
 }
 function defaultSetupIndexForRunner(routeView: string, stackKey: StackKey, runnerIndex: number): number {
   const role = runnerRole(routeView, stackKey, runnerIndex);
@@ -1811,6 +1812,7 @@ async function request(path: string, init?: RequestInit) {
 
 function defaultRunnerPrompt(routeView: string, stackKey: StackKey, runnerIndex: number): string {
   const role = runnerRole(routeView, stackKey, runnerIndex);
+  if (role === "guess") return COMBINED_PROMPT;
   if (role === "extraction") return COMBINED_PROMPT;
   if (role === "removal") return REMOVAL_DISCOVERY_PASS_PROMPT;
   if (role === "regenerated") return REGENERATED_IDENTITIES_PROMPT;
@@ -1824,6 +1826,7 @@ function defaultRunnerPrompt(routeView: string, stackKey: StackKey, runnerIndex:
 
 function primaryPromptName(routeView: string, stackKey: StackKey, runnerIndex: number): string {
   const role = runnerRole(routeView, stackKey, runnerIndex);
+  if (role === "guess") return "generate_first_pass_object_guesses";
   if (role === "extraction") return "generate_prolog_and_english";
   if (role === "removal") return "remove_smallest_object";
   if (role === "regenerated") return "regenerated_identities_from_many_objects";

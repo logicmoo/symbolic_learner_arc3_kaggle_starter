@@ -42,11 +42,13 @@ def test_b1_b2_component_has_pipeline_contract() -> None:
     assert "REMOVAL_DISCOVERY_PASS_PROMPT" in source
     assert "REGENERATED_IDENTITIES_PROMPT" in source
     assert "isB1B2PipelineRoute" in source
-    assert "return isB1B2PipelineRoute(routeView) ? 3 : 3;" in source
-    assert 'const B1B2_RUNNER_NAMES = ["GUESSER", "REMOVER", "REGENERATOR"];' in source
+    assert "return isB1B2PipelineRoute(routeView) ? 4 : 3;" in source
+    assert 'const B1B2_RUNNER_NAMES = ["Simple Guesser", "GUESSER", "REMOVER", "REGENERATOR"];' in source
     assert 'return pageDefinition.routeView === "arc3B1B2Pipeline" ? "GUESSER" : "A1";' in source
-    # GUESSER full-extraction runner feeds REMOVER (removal), which feeds REGENERATOR (regeneration).
-    assert 'if (runnerIndex === 0) return "extraction";' in source
+    # Simple Guesser (first pass) precedes the GUESSER full-extraction runner, which feeds
+    # REMOVER (removal), which feeds REGENERATOR (regeneration).
+    assert 'if (runnerIndex === 0) return "guess";' in source
+    assert 'if (runnerIndex === 1) return "extraction";' in source
     assert 'if (role === "extraction") return COMBINED_PROMPT;' in source
     assert 'if (role === "extraction") return "generate_prolog_and_english";' in source
     assert 'return ["runner:GUESSER"];' in source
@@ -65,6 +67,23 @@ def test_b1_b2_component_has_pipeline_contract() -> None:
     # B1->B2 uses its own 3-column page class (A/B/C), not the prolog single-column layout.
     assert "english-workflow-page arc3-b1b2-page" in source
     assert "english-workflow-page arc3-prolog-page" not in source
+
+
+def test_b1_b2_simple_guesser_is_first_runner_with_copied_prompt() -> None:
+    source = COMPONENT.read_text(encoding="utf-8")
+    # A "Simple Guesser" runner goes first, ahead of GUESSER/REMOVER/REGENERATOR.
+    assert 'const B1B2_RUNNER_NAMES = ["Simple Guesser", "GUESSER", "REMOVER", "REGENERATOR"];' in source
+    # The pipeline now has four runners in stack B.
+    assert "return isB1B2PipelineRoute(routeView) ? 4 : 3;" in source
+    # Its role is "guess" at index 0; the full extraction pass moves to index 1.
+    assert 'if (runnerIndex === 0) return "guess";' in source
+    assert 'if (runnerIndex === 1) return "extraction";' in source
+    assert 'if (runnerIndex === 2) return "removal";' in source
+    assert 'if (runnerIndex === 3) return "regenerated";' in source
+    # Its prompt is a copy of generate_prolog_and_english, named generate_first_pass_object_guesses,
+    # and carries the same COMBINED_PROMPT text.
+    assert 'if (role === "guess") return "generate_first_pass_object_guesses";' in source
+    assert 'if (role === "guess") return COMBINED_PROMPT;' in source
 
 
 def test_b1_b2_setup_switch_expands_selected_to_full() -> None:
