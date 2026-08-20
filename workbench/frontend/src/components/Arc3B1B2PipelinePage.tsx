@@ -4122,7 +4122,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
         ),
         baseClass: "english-workflow-panel arc3-prolog-page-panel",
         scrollSize: "calc(100vh - 250px)",
-        content: <ThreeStateAccordionStack id={imagesStackId} className="arc3-prolog-accordion-stack" controlsLabel="IMAGES">
+        content: <ThreeStateAccordionStack id={imagesStackId} className="arc3-prolog-accordion-stack">
           {setupGroups.map(({ groupName, items }) => {
             const groupStackId = `${imagesStackId}-${groupName.replace(/[^A-Za-z0-9_-]/g, "_")}`;
             return <ThreeStateAccordionMember
