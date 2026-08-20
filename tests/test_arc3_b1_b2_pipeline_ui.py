@@ -489,11 +489,11 @@ def test_b1_b2_setup_path_scan_writes_scan_results() -> None:
     source = COMPONENT.read_text(encoding="utf-8")
     # A [scan] button beside the DIR & PROPERTIES PATH input lists the files in that
     # directory and writes a scan.results object into the state.json editor.
-    assert "const scanSetupStatePath = async (stackIndex: number, imageIndex: number, fallbackDir: string, prefetched?: WorkspaceFileRecord[]) =>" in source
+    assert "const scanSetupStatePath = async (stackIndex: number, imageIndex: number, fallbackDir: string, prefetched?: WorkspaceFileRecord[], persist = false) =>" in source
     # Scan reads the PATH from the latest committed state (ref) so editing PATH then
     # scanning immediately uses the new value, not a stale render closure.
     assert "const liveSetup = stackColumnsRef.current?.[stackIndex]?.setups?.[imageIndex];" in source
-    assert "normalizeAssetPath(liveSetup?.stateDir ?? fallbackDir)" in source
+    assert "liveSetup?.stateDir ?? fallbackDir" in source
     assert 'className="secondary arc3-prolog-browse-btn arc3-prolog-setup-scan"' in source
     assert "scanSetupStatePath(stackIndex, imageIndex, setup.stateDir ?? stateDirDefault)" in source
     # Fresh listing (with a files-prop fallback), scoped to direct children of PATH.

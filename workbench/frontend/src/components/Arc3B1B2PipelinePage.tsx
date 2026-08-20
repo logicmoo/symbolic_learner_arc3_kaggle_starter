@@ -3021,11 +3021,11 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
     }
   };
 
-  const scanSetupStatePath = async (stackIndex: number, imageIndex: number, fallbackDir: string, prefetched?: WorkspaceFileRecord[]) => {
+  const scanSetupStatePath = async (stackIndex: number, imageIndex: number, fallbackDir: string, prefetched?: WorkspaceFileRecord[], persist = false) => {
     // Read the PATH from the latest committed state (via ref) so a scan performed
     // immediately after editing PATH uses the new value, not a stale render's closure.
     const liveSetup = stackColumnsRef.current?.[stackIndex]?.setups?.[imageIndex];
-    const prefix = normalizeAssetPath(liveSetup?.stateDir ?? fallbackDir).replace(/\/+$/, "");
+    const prefix = normalizeAssetPath(persist ? (fallbackDir || liveSetup?.stateDir || "") : (liveSetup?.stateDir ?? fallbackDir)).replace(/\/+$/, "");
     let records: WorkspaceFileRecord[] = prefetched ?? files;
     if (!prefetched && workspaceId) {
       try {
@@ -3074,12 +3074,22 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
       else results.unknown_files.push(candidate);
     }
     for (const key of Object.keys(results)) results[key].sort();
-    setStackState(stackIndex, (stack) => {
-      const setups = stack.setups?.length ? [...stack.setups] : defaultSetups(stack.key);
-      const current = setups[imageIndex];
-      if (!current) return stack;
-      let base: Record<string, unknown> = {};
-      const existing = (current.stateJson ?? "").trim();
+    const stateFile = persist ? "state.json" : (((liveSetup?.stateFile ?? "state.json") || "state.json").trim() || "state.json");
+    const rel = prefix ? `${prefix}/${stateFile}` : stateFile;
+    let base: Record<string, unknown> = {};
+    if (persist && workspaceId) {
+      // Read the props file fresh from disk so the persisted doc keeps existing props.
+      try {
+        const response = await fetch(workspaceAssetUrl(workspaceId, rel), { cache: "no-store" });
+        if (response.ok) {
+          const parsed = JSON.parse(await response.text());
+          if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) base = parsed as Record<string, unknown>;
+        }
+      } catch {
+        // Fresh scan document when the props file is absent or invalid.
+      }
+    } else {
+      const existing = (liveSetup?.stateJson ?? "").trim();
       if (existing) {
         try {
           const parsed = JSON.parse(existing);
@@ -3088,11 +3098,19 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
           // Replace unparseable editor contents with a fresh scan document.
         }
       }
-      base.scan = { path: prefix, results };
+    }
+    base.scan = { path: prefix, results };
+    const command = base.command;
+    if (typeof command === "string" && command.trim()) setSetupCommand(stackIndex, imageIndex, command.trim());
+    const newStateJson = `${JSON.stringify(base, null, 2)}\n`;
+    setStackState(stackIndex, (stack) => {
+      const setups = stack.setups?.length ? [...stack.setups] : defaultSetups(stack.key);
+      const current = setups[imageIndex];
+      if (!current) return stack;
       const toEntries = (paths: string[]) => paths.map((path) => imageSelectionFromPath(workspaceId, path, { name: path, dataUrl: "" }));
       setups[imageIndex] = {
         ...current,
-        stateJson: `${JSON.stringify(base, null, 2)}\n`,
+        stateJson: newStateJson,
         objectImages: toEntries(results.obj_images),
         groupImages: toEntries(results.grp_images),
         subImages: toEntries(results.sub_images),
@@ -3105,6 +3123,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
       };
       return { ...stack, setups };
     });
+    if (persist && workspaceId) await saveDataFile(rel, newStateJson);
   };
 
   const captureImageAnalysis = (stackIndex: number, runnerIndex: number, imageIndex: number) => {
@@ -4005,20 +4024,32 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
       setModelProbes(probes);
 
       // 4. Scan every setup directory, then rebuild every file-selector combo by
-      //    re-scanning all setup paths across all stacks.
+      //    enumerating all discovered setups and re-scanning + persisting each one's props.
       await scanDataByName();
       autoScannedSetupsRef.current = new Set();
       const payload = await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/data/files`);
       const records = (Array.isArray(payload.files) ? payload.files : []) as WorkspaceFileRecord[];
-      const columns = stackColumnsRef.current;
-      for (let stackIndex = 0; stackIndex < columns.length; stackIndex += 1) {
-        const columnSetups = columns[stackIndex].setups?.length ? columns[stackIndex].setups : defaultSetups(columns[stackIndex].key);
+      for (let stackIndex = 0; stackIndex < activeStackColumns.length; stackIndex += 1) {
+        const key = activeStackColumns[stackIndex].key;
+        const enumerated = shouldUseDescendSetups(pageDefinition.routeView, key)
+          ? stackADescendSetupsFromFiles(workspaceId, records)
+          : [];
+        const columnSetups = enumerated.length ? enumerated : defaultSetups(key);
         for (let imageIndex = 0; imageIndex < columnSetups.length; imageIndex += 1) {
-          const setup = columnSetups[imageIndex];
-          await loadSetupStateJson(stackIndex, imageIndex, setup.stateDir || "", setup.stateFile || "state.json");
-          await scanSetupStatePath(stackIndex, imageIndex, setup.stateDir || "", records);
+          await scanSetupStatePath(stackIndex, imageIndex, columnSetups[imageIndex].stateDir || "", records, true);
         }
       }
+    } finally {
+      setInitBusy(false);
+    }
+  };
+
+  const scanSetup = async (stackIndex: number, imageIndex: number, stateDir: string) => {
+    setInitBusy(true);
+    try {
+      const payload = await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/data/files`);
+      const records = (Array.isArray(payload.files) ? payload.files : []) as WorkspaceFileRecord[];
+      await scanSetupStatePath(stackIndex, imageIndex, stateDir, records, true);
     } finally {
       setInitBusy(false);
     }
@@ -4717,8 +4748,22 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
             scrollSize="calc(100vh - 320px)"
             accessories={<>
               <button type="button" className="primary" onClick={() => void initializeAndScan()} disabled={initBusy || scanDataBusy}>
-                {initBusy ? "Initializing…" : "Initialize & Scan"}
+                {initBusy ? "Initializing…" : "Initialize & Scan All"}
               </button>
+              {stackColumns.flatMap((stack, stackIndex) => {
+                const setups = stack.setups?.length ? stack.setups : defaultSetups(stack.key);
+                return setups.map((setup, imageIndex) => {
+                  const label = setup.command || (setup.stateDir ? (setup.stateDir.split("/").pop() || setup.stateDir) : `Setup ${imageIndex + 1}`);
+                  return <button
+                    key={`scan-setup-${stack.key}-${imageIndex}`}
+                    type="button"
+                    className="secondary"
+                    title={`Scan setup ${setup.stateDir || label}`}
+                    onClick={() => void scanSetup(stackIndex, imageIndex, setup.stateDir || "")}
+                    disabled={initBusy || scanDataBusy}
+                  >Scan {label}</button>;
+                });
+              })}
               <button type="button" className="secondary" onClick={() => void scanDataByName()} disabled={scanDataBusy || initBusy}>
                 {scanDataBusy ? "Scanning…" : "Scan Data"}
               </button>
