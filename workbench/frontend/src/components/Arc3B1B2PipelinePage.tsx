@@ -359,7 +359,7 @@ const REMOVAL_DISCOVERY_PASS_PROMPT = [
   "BACKGROUND FILL: when the object is lifted out, its bounding-box region is automatically inpainted with the surrounding background (for example grass under a soccer player) so image_without_object stays clean — you do not need to ask for this.",
   "OVERLAP REDRAW: if the extracted object was overlapping or occluding another object, redrawing the vacated region reconstructs the hidden part of that underlying object — whenever you redraw part of an overlapping object, append an English note to that overlapped object's identity notes list saying which part was redrawn.",
   "META NOTES: the English note that the vacated region was filled with background (added grass) is appended to the extracted object's identity notes list; preserve every note already in an identity's notes list.",
-  "LOOP RESUBMIT: on exit_value=next_iteration the runner resubmits its two new output files (obj_<ID>.png and the new original original_with_<n>_removed.png); the next pass consumes that new original and extracts the next leaf object from the reduced scene.",
+  "LOOP RESUBMIT: obj_<ID>.png is a saved output only and is NEVER resubmitted. On exit_value=next_iteration the runner resubmits only its two scene images — the new original (the one just consumed) and original_with_<n>_removed.png (the reduced scene) — and the next pass extracts the next leaf object from the reduced scene.",
   "Set exit_value=next_iteration when one valid leaf object was extracted, loop_complete when no valid removable leaf object remains, llm_error on failure.",
 ].join("\n");
 const REGENERATED_IDENTITIES_PROMPT = [
@@ -3164,6 +3164,8 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
       let acceptedAnyPass = false;
       let removalWorkingUrl = afterUrl;
       let removalWorkingName = imageSourceAfter?.name || "original";
+      let removalWorkingBeforeUrl = beforeUrl;
+      let removalWorkingBeforeName = effectiveImageSourceBefore?.name || "original";
       const totalPasses = autoLoop ? Math.max(1, Math.floor(runner.autoLoopMaxIterations || AUTO_GAP_MAX_PASSES)) : 1;
       const maxLoopMs = autoLoop ? Math.max(10000, Math.floor((runner.autoLoopMaxSeconds || defaultTimeoutSeconds) * 1000)) : 0;
       const invocationTimeoutSeconds = Math.max(10, Math.floor(runner.maxPrimarySeconds || defaultTimeoutSeconds));
@@ -3180,10 +3182,12 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
         const isGapPass = autoLoop && passNumber > 1;
         const passAfterUrl = removalLoopRunner ? removalWorkingUrl : afterUrl;
         const passAfterName = removalLoopRunner ? removalWorkingName : (imageSourceAfter?.name ?? "current");
+        const passBeforeUrl = removalLoopRunner ? removalWorkingBeforeUrl : beforeUrl;
+        const passBeforeName = removalLoopRunner ? removalWorkingBeforeName : (effectiveImageSourceBefore?.name ?? "current");
         let nextRemovalUrl = "";
         let nextRemovalName = "";
         const baseImageLabels = {
-          before: `${imageSourceBeforeLabel} (${effectiveImageSourceBefore?.name ?? "current"})`,
+          before: `${imageSourceBeforeLabel} (${passBeforeName})`,
           after: `${imageSourceAfterLabel} (${passAfterName})`,
         };
         let overlaySource = "";
@@ -3198,13 +3202,13 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
               asIdentityCandidates(priorPassParsed),
             );
             return triSheet(
-              { label: baseImageLabels.before, source: beforeUrl },
+              { label: baseImageLabels.before, source: passBeforeUrl },
               { label: baseImageLabels.after, source: passAfterUrl },
               { label: "debug_overlay_image (claimed boxes)", source: overlaySource },
             );
           })()
           : await pairSheet(
-            { label: baseImageLabels.before, source: beforeUrl },
+            { label: baseImageLabels.before, source: passBeforeUrl },
             { label: baseImageLabels.after, source: passAfterUrl },
           );
         if (overlaySource) {
@@ -3459,6 +3463,8 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
         latestParsed = acceptedParsed;
         acceptedAnyPass = true;
         if (removalLoopRunner && nextRemovalUrl) {
+          removalWorkingBeforeUrl = removalWorkingUrl;
+          removalWorkingBeforeName = removalWorkingName;
           removalWorkingUrl = nextRemovalUrl;
           removalWorkingName = nextRemovalName;
         }
