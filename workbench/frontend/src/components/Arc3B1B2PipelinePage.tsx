@@ -5722,7 +5722,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
         return setups.map((setup, imageIndex) => {
           const label = setup.command || (setup.stateDir ? (setup.stateDir.split("/").pop() || setup.stateDir) : `Setup ${imageIndex + 1}`);
           const active = scanPhase === `setup:${setup.stateDir || ""}`;
-          return <button key={`hdr-scan-${stack.key}-${imageIndex}`} type="button" aria-pressed={active} style={{ ...toolbarBtn, ...depressed(active) }} title={`Scan setup ${setup.stateDir || label}`} onClick={() => void scanSetup(stackIndex, imageIndex, setup.stateDir || "")} disabled={initBusy || scanDataBusy}>Scan {label}</button>;
+          return <button key={`hdr-scan-${stack.key}-${imageIndex}`} type="button" aria-pressed={active} style={{ ...toolbarBtn, ...depressed(active) }} title={`Use setup ${setup.stateDir || label} (make it the active setup and rescan it)`} onClick={() => { selectImage(stackIndex, imageIndex); void scanSetup(stackIndex, imageIndex, setup.stateDir || ""); }} disabled={initBusy || scanDataBusy}>Use {label}</button>;
         });
       })}
     </div>
