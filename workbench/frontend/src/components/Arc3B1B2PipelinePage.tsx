@@ -379,7 +379,7 @@ function stackColumnsForRoute(routeView: string): Array<{ key: StackKey; label: 
 function isB1B2PipelineRoute(routeView: string): boolean {
   return routeView === "arc3B1B2Pipeline";
 }
-const B1B2_RUNNER_NAMES = ["FIRST_GUESSER", "IMPROVED_GUESSER", "FIRST_REMOVER", "IMPROVED_REMOVER", "REGENERATOR"];
+const B1B2_RUNNER_NAMES = ["FIRST_GUESSER", "FIRST_REMOVER", "IMPROVED_GUESSER", "IMPROVED_REMOVER", "REGENERATOR"];
 function runnerDisplayOrdinal(routeView: string, stackKey: StackKey, runnerIndex: number): number {
   if (isB1B2PipelineRoute(routeView) && stackKey === "B") return runnerIndex;
   return runnerIndex + 1;
@@ -393,8 +393,8 @@ function runnerDisplayId(routeView: string, stackKey: StackKey, runnerIndex: num
 function runnerRole(routeView: string, stackKey: StackKey, runnerIndex: number): "guess" | "extraction" | "removal" | "regenerated" | "default" {
   if (isB1B2PipelineRoute(routeView) && stackKey === "B") {
     if (runnerIndex === 0) return "guess";
-    if (runnerIndex === 1) return "extraction";
-    if (runnerIndex === 2) return "removal";
+    if (runnerIndex === 1) return "removal";
+    if (runnerIndex === 2) return "extraction";
     if (runnerIndex === 3) return "removal";
     if (runnerIndex === 4) return "regenerated";
   } else {
@@ -416,7 +416,9 @@ function defaultInputFilesSourceIdsForRunner(routeView: string, stackKey: StackK
     const role = runnerRole(routeView, stackKey, runnerIndex);
     if (role === "guess") return [];
     if (role === "extraction") return ["runner:FIRST_GUESSER", "ALL-Setup1"];
-    if (role === "removal") return ["runner:IMPROVED_GUESSER", "runner:FIRST_GUESSER"];
+    if (role === "removal") return runnerIndex < 2
+      ? ["runner:FIRST_GUESSER"]
+      : ["runner:IMPROVED_GUESSER", "runner:FIRST_GUESSER"];
   }
   return ["ALL-Setup1"];
 }
