@@ -65,7 +65,23 @@ export function TopicsResourceEditor({ workspaceId }: { workspaceId: string }) {
       const requested = new URLSearchParams(window.location.search).get("resource");
       if (!requested) return;
       const match = loadedRecords.find((record) => record.document && (record.document.path === requested || record.document.id === requested));
-      if (match && match.document) { setSelectedKey(match.document.id); setSource(JSON.stringify(match.document, null, 2)); setDirty(false); setStatus(null); setError(null); }
+      if (match && match.document) {
+        setSelectedKey(match.document.id); setSource(JSON.stringify(match.document, null, 2)); setDirty(false); setStatus(null); setError(null);
+      } else {
+        const token = requested.split("/").pop() || requested;
+        const doc: TopicDoc = {
+          kind: "artifact_category",
+          id: `topics.${token.replace(/-/g, "_")}`,
+          label: token.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
+          description: `Resources whose topic is ${token.replace(/-/g, " ")}.`,
+          path: requested,
+          trees: ["operations"],
+          query: { kinds: ["operation"], where: { topics: { contains: token } } },
+          parentMode: "show",
+        };
+        setSelectedKey(NEW_KEY); setSource(JSON.stringify(doc, null, 2)); setDirty(true);
+        setStatus(`Virtual topic "${requested}" — save to make it a first-class topic.`); setError(null);
+      }
     }).catch((reason) => setError(String(reason)));
   }, [workspaceId]);
 
@@ -84,7 +100,7 @@ export function TopicsResourceEditor({ workspaceId }: { workspaceId: string }) {
   }, [records]);
 
   const selected = selectedKey === NEW_KEY
-    ? { path: "", workspaceId, document: NEW_TEMPLATE(), source: "workspace" as Source }
+    ? { path: "", workspaceId, document: ((): TopicDoc => { try { return JSON.parse(source) as TopicDoc; } catch { return NEW_TEMPLATE(); } })(), source: "workspace" as Source }
     : records.find((record) => record.document?.id === selectedKey) || null;
 
   const select = (record: TopicRecord) => {
