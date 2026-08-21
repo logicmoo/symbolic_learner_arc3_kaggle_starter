@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import json
 import os
+import urllib.parse
 from pathlib import Path
 from typing import Any
 
@@ -62,6 +63,10 @@ def _project_record(record: dict[str, Any]) -> dict[str, Any]:
         "to": record.get("to"),
         "text": record.get("text", ""),
         "type": record.get("type", "message"),
+        "channelId": record.get("channel_id"),
+        "author": record.get("author"),
+        "channelName": record.get("channel_name"),
+        "raw": record,
     }
 
 
@@ -133,7 +138,11 @@ def channel_messages(
         _project_record(record)
         for record in read_tail_records(root / "messages.jsonl", max_bytes)
         if not record.get("audit_of")
-        and (record.get("to") == channel or record.get("from") == channel)
+        and (
+            record.get("to") == channel
+            or record.get("from") == channel
+            or record.get("channel_id") == channel
+        )
     ]
     if limit and len(thread) > limit:
         thread = thread[-limit:]
@@ -141,11 +150,11 @@ def channel_messages(
 
 
 def list_channels(root: Path, *, max_bytes: int = MESSAGES_TAIL_BYTES) -> list[dict[str, Any]]:
-    """List every mailbox/channel worth showing in the picker.
+    """List every mailbox/channel worth showing in the pickers.
 
-    Mailboxes are derived from the participants seen in recent traffic; retained
-    relay channels are added from the relay status (best effort over REST). The
-    two default identities are always present so the chat works on a fresh store.
+    Merges the relay registry (authoritative: agent mailboxes + retained
+    channels) with participants seen in recent traffic, so the combos are
+    populated with every possibility. Message counts come from recent traffic.
     """
 
     participants: dict[str, int] = {}
@@ -157,26 +166,93 @@ def list_channels(root: Path, *, max_bytes: int = MESSAGES_TAIL_BYTES) -> list[d
             if isinstance(value, str) and value and value not in AUDIT_CHANNEL_NAMES:
                 participants[value] = participants.get(value, 0) + 1
 
-    channels = [{"id": cid, "kind": "mailbox", "messages": count} for cid, count in participants.items()]
-    known_ids = set(participants)
+    channels: dict[str, dict[str, Any]] = {}
+
+    def add(cid: Any, kind: str) -> None:
+        if not isinstance(cid, str) or not cid or cid in AUDIT_CHANNEL_NAMES or cid in channels:
+            return
+        channels[cid] = {"id": cid, "kind": kind, "messages": participants.get(cid, 0)}
 
     if _mailbox_client is not None:
         try:
-            status = _mailbox_client.status_rest()
-            for cid in status.get("channels") or []:
-                if isinstance(cid, str) and cid not in known_ids:
-                    channels.append({"id": cid, "kind": "channel", "messages": 0})
-                    known_ids.add(cid)
+            registry = _mailbox_client._rest_request("GET", "/v1/registry")
+            for agent in registry.get("agents", []):
+                add(agent.get("mailbox") or agent.get("agent_id"), "mailbox")
+            for channel in registry.get("channels", []):
+                add(channel.get("id"), str(channel.get("channel_type") or "channel"))
         except Exception:
             pass
 
+    for participant in participants:
+        add(participant, "mailbox")
     for default_id in (DEFAULT_PEER_AGENT, DEFAULT_USER_AGENT):
-        if default_id not in known_ids:
-            channels.append({"id": default_id, "kind": "mailbox", "messages": 0})
-            known_ids.add(default_id)
+        add(default_id, "mailbox")
 
-    channels.sort(key=lambda item: (item["kind"] != "mailbox", -int(item["messages"]), item["id"]))
-    return channels
+    result = list(channels.values())
+    result.sort(key=lambda item: (item["kind"] != "mailbox", -int(item["messages"]), item["id"]))
+    return result
+
+
+def list_agents(root: Path) -> list[dict[str, Any]]:
+    """List registered agents (for the YOU/TO pickers).
+
+    Merges the relay registry agents with the mailbox participants seen in recent
+    traffic, so the YOU/TO combos are populated with every possibility. The two
+    default identities are always present.
+    """
+
+    agents: list[str] = []
+    if _mailbox_client is not None:
+        try:
+            registry = _mailbox_client._rest_request("GET", "/v1/registry")
+            agents = [str(a.get("agent_id")) for a in registry.get("agents", []) if a.get("agent_id")]
+        except Exception:
+            agents = []
+    agents.extend(channel["id"] for channel in list_channels(root) if channel.get("kind") == "mailbox")
+    agents.extend((DEFAULT_USER_AGENT, DEFAULT_PEER_AGENT))
+    seen: set[str] = set()
+    ordered: list[dict[str, Any]] = []
+    for agent_id in agents:
+        if agent_id and agent_id not in seen:
+            seen.add(agent_id)
+            ordered.append({"id": agent_id})
+    return ordered
+
+
+def _agent_channel_subscriptions(agent: str) -> set[str]:
+    if _mailbox_client is None:
+        return set()
+    try:
+        data = _mailbox_client._rest_request(
+            "GET", "/v1/cursors?" + urllib.parse.urlencode({"cursor": agent})
+        )
+    except Exception:
+        return set()
+    recipients: set[str] = set(data.get("recipients", []) or [])
+    for position in data.get("positions", []) or []:
+        recipient = position.get("recipient")
+        if recipient:
+            recipients.add(str(recipient))
+    return recipients
+
+
+def subscribe_agent_to_channel(agent: str, channel: str) -> bool:
+    """Give ``agent`` a cursor on ``channel`` so addressing it there subscribes it.
+
+    Best effort and idempotent: skips when the agent already subscribes, and
+    subscribes with ``start=now`` (called before the message is sent so the agent
+    still sees it).
+    """
+
+    if _mailbox_client is None or not agent or not channel or agent == channel:
+        return False
+    if channel in _agent_channel_subscriptions(agent):
+        return False
+    try:
+        _mailbox_client.initialize_cursor_rest(channel, cursor=agent, start="now")
+        return True
+    except Exception:
+        return False
 
 
 @router.get("/mailbox/status")
@@ -198,6 +274,42 @@ def mailbox_status() -> dict[str, Any]:
 def mailbox_channels() -> dict[str, Any]:
     root = resolve_mailbox_root()
     return {"channels": list_channels(root), "default": DEFAULT_PEER_AGENT}
+
+
+@router.get("/mailbox/agents")
+def mailbox_agents() -> dict[str, Any]:
+    root = resolve_mailbox_root()
+    return {"agents": list_agents(root), "defaultUser": DEFAULT_USER_AGENT, "defaultAgent": DEFAULT_PEER_AGENT}
+
+
+@router.post("/mailbox/agents")
+def mailbox_create_agent(
+    id: str = Body(..., embed=True),
+    presence: str | None = Body(None, embed=True),
+) -> dict[str, Any]:
+    if _mailbox_client is None:
+        raise HTTPException(status_code=503, detail="mailbox_channels client is not installed")
+    agent_id = id.strip() if isinstance(id, str) else ""
+    if not agent_id:
+        raise HTTPException(status_code=400, detail="Agent id must not be empty")
+    presence_id = presence.strip() if isinstance(presence, str) and presence.strip() else f"{agent_id}-app"
+    try:
+        registration = _mailbox_client.register_agent_rest(agent_id, presence_id=presence_id)
+    except Exception as error:
+        registration = {"skipped": True, "reason": str(error)}
+    return {"id": agent_id, "presence": presence_id, "registration": registration}
+
+
+@router.post("/mailbox/channels")
+def mailbox_create_channel(id: str = Body(..., embed=True)) -> dict[str, Any]:
+    if _mailbox_client is None:
+        raise HTTPException(status_code=503, detail="mailbox_channels client is not installed")
+    channel_id = id.strip() if isinstance(id, str) else ""
+    if not channel_id:
+        raise HTTPException(status_code=400, detail="Channel id must not be empty")
+    # Creating a channel = subscribing the default agent to it so the relay retains it.
+    created = subscribe_agent_to_channel(DEFAULT_PEER_AGENT, channel_id)
+    return {"id": channel_id, "created": created}
 
 
 @router.get("/mailbox/messages")
@@ -226,14 +338,19 @@ def mailbox_send(
     text: str = Body(..., embed=True),
     to: str = Body(DEFAULT_PEER_AGENT, embed=True),
     sender: str = Body(DEFAULT_USER_AGENT, embed=True),
+    channel_id: str | None = Body(None, embed=True),
 ) -> dict[str, Any]:
     if _mailbox_client is None:
         raise HTTPException(status_code=503, detail="mailbox_channels client is not installed")
     if not text.strip():
         raise HTTPException(status_code=400, detail="Message text must not be empty")
+    channel = (channel_id.strip() or None) if isinstance(channel_id, str) else None
+    # Addressing an agent on a channel auto-subscribes that agent to the channel.
+    subscribed = subscribe_agent_to_channel(to, channel) if channel else False
     root = resolve_mailbox_root()
+    extra = {"channel_id": channel} if channel else {}
     try:
-        record = _mailbox_client.send(to, text, sender=sender, root=root)
+        record = _mailbox_client.send(to, text, sender=sender, root=root, **extra)
     except Exception as error:  # surface send failures as a 500 with detail
         raise HTTPException(status_code=500, detail=f"Mailbox send failed: {error}") from error
-    return {"message": _project_record(record)}
+    return {"message": _project_record(record), "subscribed": subscribed}

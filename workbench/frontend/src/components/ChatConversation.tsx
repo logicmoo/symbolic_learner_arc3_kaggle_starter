@@ -15,9 +15,14 @@ export type ChatMessage = {
   to?: string;
   text: string;
   type?: string;
+  channelId?: string | null;
+  author?: string | null;
+  channelName?: string | null;
+  raw?: unknown;
 };
 
 export type ChannelOption = { id: string; kind?: string; messages?: number };
+export type AgentOption = { id: string };
 
 type Props = {
   user?: string;
@@ -45,9 +50,10 @@ async function readJson(response: Response): Promise<Record<string, unknown>> {
 }
 
 // Shared chat surface used by both the full Chat page and the floatable mini-dock.
-// The mailbox is the source of truth: every poll replaces the visible thread with
-// the server's recent history, and sending simply refetches so the new message
-// appears once it has been persisted.
+// Four editable combos drive it: YOU/TO pick agents, CHANNEL (view) and SEND-TO
+// (channel_id) pick channels. All are editable so a new name can be typed in;
+// addressing an agent with a SEND-TO channel auto-subscribes it server-side. Every
+// message carries its raw record so it can be inspected as JSON.
 export function ChatConversation({
   user = DEFAULT_CHAT_USER,
   peer = DEFAULT_CHAT_PEER,
@@ -56,22 +62,39 @@ export function ChatConversation({
   showChannelPicker = true,
   onError,
 }: Props) {
+  const [you, setYou] = useState(user);
   const [channel, setChannel] = useState(peer);
+  const [target, setTarget] = useState(peer);
+  const [sendChannel, setSendChannel] = useState("");
+  const [agents, setAgents] = useState<AgentOption[]>([]);
   const [channels, setChannels] = useState<ChannelOption[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [ready, setReady] = useState(false);
   const [errorText, setErrorText] = useState("");
+  const [newEntry, setNewEntry] = useState("");
   const listRef = useRef<HTMLDivElement | null>(null);
   const stickBottomRef = useRef(true);
 
-  const fetchChannels = useCallback(async () => {
+  // Switching the viewed channel re-points addressing to it by default; the "To"
+  // field can then be overridden to address anyone independently.
+  const selectChannel = useCallback((next: string) => {
+    setChannel(next);
+    setTarget(next);
+  }, []);
+
+  const fetchDirectory = useCallback(async () => {
     try {
-      const payload = await readJson(await fetch("/api/mailbox/channels"));
-      setChannels((payload.channels as ChannelOption[]) || []);
+      const [agentPayload, channelPayload] = await Promise.all([
+        readJson(await fetch("/api/mailbox/agents")),
+        readJson(await fetch("/api/mailbox/channels")),
+      ]);
+      setAgents((agentPayload.agents as AgentOption[]) || []);
+      setChannels((channelPayload.channels as ChannelOption[]) || []);
     } catch {
-      // The channel list is best-effort; keep whatever we already have.
+      // Directory is best-effort; keep whatever we already have.
     }
   }, []);
 
@@ -90,10 +113,10 @@ export function ChatConversation({
   }, [channel, onError]);
 
   useEffect(() => {
-    fetchChannels();
-    const timer = window.setInterval(fetchChannels, 15000);
+    fetchDirectory();
+    const timer = window.setInterval(fetchDirectory, 15000);
     return () => window.clearInterval(timer);
-  }, [fetchChannels]);
+  }, [fetchDirectory]);
 
   useEffect(() => {
     let active = true;
@@ -126,11 +149,14 @@ export function ChatConversation({
     if (!text || sending) return;
     setSending(true);
     try {
+      const body: Record<string, unknown> = { text, to: target, sender: you };
+      const routed = sendChannel.trim();
+      if (routed) body.channel_id = routed;
       await readJson(
         await fetch("/api/mailbox/send", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text, to: channel, sender: user }),
+          body: JSON.stringify(body),
         }),
       );
       setInput("");
@@ -143,7 +169,7 @@ export function ChatConversation({
     } finally {
       setSending(false);
     }
-  }, [input, sending, channel, user, fetchMessages, onError]);
+  }, [input, sending, target, you, sendChannel, fetchMessages, onError]);
 
   const handleKeyDown = (event: ReactKeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === "Enter" && !event.shiftKey) {
@@ -152,30 +178,110 @@ export function ChatConversation({
     }
   };
 
-  // Keep the active channel selectable even before the list has loaded it.
-  const channelOptions = channels.some((option) => option.id === channel)
-    ? channels
-    : [{ id: channel, kind: "mailbox" } as ChannelOption, ...channels];
+  const makeAgent = useCallback(async () => {
+    const id = newEntry.trim();
+    if (!id) return;
+    try {
+      await readJson(
+        await fetch("/api/mailbox/agents", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id }),
+        }),
+      );
+      setAgents((prev) => (prev.some((a) => a.id === id) ? prev : [...prev, { id }]));
+      setTarget(id);
+      setNewEntry("");
+      fetchDirectory();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      setErrorText(message);
+      onError?.(message);
+    }
+  }, [newEntry, fetchDirectory, onError]);
+
+  const makeChannel = useCallback(async () => {
+    const id = newEntry.trim();
+    if (!id) return;
+    try {
+      await readJson(
+        await fetch("/api/mailbox/channels", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id }),
+        }),
+      );
+      setChannels((prev) => (prev.some((c) => c.id === id) ? prev : [...prev, { id, kind: "channel" }]));
+      setChannel(id);
+      setTarget(id);
+      setSendChannel(id);
+      setNewEntry("");
+      fetchDirectory();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      setErrorText(message);
+      onError?.(message);
+    }
+  }, [newEntry, fetchDirectory, onError]);
+
+  const toggleRaw = (id: string) => setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
+
+  // Selects need the current value present as an option even before lists load.
+  const agentChoices = Array.from(new Set([you, target, ...agents.map((a) => a.id)].filter(Boolean)));
+  const channelChoices = Array.from(new Set([channel, ...channels.map((c) => c.id)].filter(Boolean)));
+  const sendChoices = Array.from(new Set([sendChannel, ...channels.map((c) => c.id)].filter(Boolean)));
 
   return (
     <div className={`chat-conversation ${className ?? ""}`.trim()}>
       {showChannelPicker && (
-        <div className="chat-channelbar">
-          <label>
-            <span>Channel</span>
-            <select
-              value={channel}
-              onChange={(event) => setChannel(event.target.value)}
-              aria-label="Mailbox channel"
-            >
-              {channelOptions.map((option) => (
-                <option key={option.id} value={option.id}>
-                  {option.id}
-                  {option.messages ? ` (${option.messages})` : ""}
-                </option>
+        <div className="chat-controls">
+          <label className="chat-control">
+            <span>You</span>
+            <select value={you} onChange={(event) => setYou(event.target.value)} aria-label="Your agent identity">
+              {agentChoices.map((id) => (
+                <option key={id} value={id}>{id}</option>
               ))}
             </select>
           </label>
+          <label className="chat-control">
+            <span>To</span>
+            <select value={target} onChange={(event) => setTarget(event.target.value)} aria-label="Addressed agent">
+              {agentChoices.map((id) => (
+                <option key={id} value={id}>{id}</option>
+              ))}
+            </select>
+          </label>
+          <label className="chat-control">
+            <span>Channel</span>
+            <select value={channel} onChange={(event) => selectChannel(event.target.value)} aria-label="Viewed channel">
+              {channelChoices.map((id) => (
+                <option key={id} value={id}>{id}</option>
+              ))}
+            </select>
+          </label>
+          <label className="chat-control">
+            <span>Send-to</span>
+            <select value={sendChannel} onChange={(event) => setSendChannel(event.target.value)} aria-label="Send channel">
+              <option value="">(none)</option>
+              {sendChoices.map((id) => (
+                <option key={id} value={id}>{id}</option>
+              ))}
+            </select>
+          </label>
+          <div className="chat-make">
+            <input
+              value={newEntry}
+              onChange={(event) => setNewEntry(event.target.value)}
+              placeholder="new agent or channel name"
+              aria-label="New agent or channel name"
+            />
+            <button type="button" onClick={makeAgent} disabled={!newEntry.trim()}>
+              Make new agent
+            </button>
+            <button type="button" onClick={makeChannel} disabled={!newEntry.trim()}>
+              Make new channel
+            </button>
+          </div>
         </div>
       )}
       <div className="chat-messages" ref={listRef} onScroll={handleScroll}>
@@ -185,15 +291,43 @@ export function ChatConversation({
         {messages.map((message) => (
           <div
             key={message.id}
-            className={`chat-message ${message.from === user ? "mine" : "theirs"}`}
+            className={`chat-message ${message.from === you ? "mine" : "theirs"}`}
           >
             <div className="chat-message-meta">
-              <span className="chat-message-from">{message.from}</span>
+              <span className="chat-message-from">{message.author || message.from}</span>
+              {message.author && message.from && message.author !== message.from && (
+                <span className="chat-message-via">via {message.from}</span>
+              )}
+              {message.type && message.type !== "message" && (
+                <span className="chat-message-type">{message.type}</span>
+              )}
               {message.timestamp && (
                 <span className="chat-message-time">{formatTime(message.timestamp)}</span>
               )}
+              <button
+                type="button"
+                className="chat-json-toggle"
+                title="Inspect raw JSON"
+                aria-label="Inspect raw JSON"
+                onClick={() => toggleRaw(message.id)}
+              >
+                {"{ }"}
+              </button>
             </div>
-            <MarkdownDocument className="chat-message-body" content={message.text || ""} />
+            {message.text ? (
+              <MarkdownDocument className="chat-message-body" content={message.text} />
+            ) : (
+              <div className="chat-message-empty">
+                {message.channelName
+                  ? `(${message.type || "message"} in ${message.channelName} — inspect JSON)`
+                  : "(no text — inspect JSON)"}
+              </div>
+            )}
+            {expanded[message.id] && (
+              <pre className="chat-message-json">
+                {JSON.stringify(message.raw ?? message, null, 2)}
+              </pre>
+            )}
           </div>
         ))}
       </div>
@@ -203,7 +337,7 @@ export function ChatConversation({
           value={input}
           onChange={(event) => setInput(event.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={`Message ${channel}… (Enter to send, Shift+Enter for newline)`}
+          placeholder={`Message ${target}… (Enter to send, Shift+Enter for newline)`}
           rows={2}
           disabled={sending}
         />

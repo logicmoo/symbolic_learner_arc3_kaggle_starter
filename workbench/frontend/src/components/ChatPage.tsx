@@ -1,4 +1,3 @@
-import { useState } from "react";
 import {
   ChatConversation,
   DEFAULT_CHAT_USER,
@@ -6,45 +5,23 @@ import {
 } from "./ChatConversation";
 import "../styles/chat.css";
 
-// Full-page chat surface. It reuses the shared ChatConversation (which carries the
-// channel picker) and adds a small identity bar so the operator can change who
-// they send as on the shared mailbox bus.
+// Full-page chat surface. The YOU / TO / CHANNEL / SEND-TO controls live in the
+// shared ChatConversation, so the page is just a titled wrapper around it.
 export function ChatPage() {
-  const [user, setUser] = useState(DEFAULT_CHAT_USER);
-  const [draftUser, setDraftUser] = useState(DEFAULT_CHAT_USER);
-
   return (
     <section className="chat-page">
       <header className="chat-page-header">
         <div className="chat-page-title">
           <h1>Chat</h1>
           <p>
-            Talk to the workbench agent over the shared mailbox. Pick any mailbox channel
-            from the dropdown; messages render with full Markdown, like the assistant
-            transcript.
+            Talk over the shared mailbox. Pick who you are (YOU) and who you address (TO)
+            from the agents, the channel to view (CHANNEL) and post into (SEND-TO) from the
+            channels — all editable, and any message can be inspected as raw JSON.
           </p>
         </div>
-        <form
-          className="chat-identities"
-          onSubmit={(event) => {
-            event.preventDefault();
-            setUser(draftUser.trim() || DEFAULT_CHAT_USER);
-          }}
-        >
-          <label>
-            <span>You</span>
-            <input
-              value={draftUser}
-              onChange={(event) => setDraftUser(event.target.value)}
-              aria-label="Your mailbox identity"
-            />
-          </label>
-          <button type="submit">Apply</button>
-        </form>
       </header>
       <ChatConversation
-        key={user}
-        user={user}
+        user={DEFAULT_CHAT_USER}
         peer={DEFAULT_CHAT_PEER}
         className="chat-page-conversation"
       />

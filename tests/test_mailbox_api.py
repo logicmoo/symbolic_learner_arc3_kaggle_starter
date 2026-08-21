@@ -158,3 +158,81 @@ def test_mailbox_messages_channel_mode(monkeypatch: pytest.MonkeyPatch, tmp_path
     assert [message["id"] for message in payload["messages"]] == ["1", "2"]
     assert payload["channel"] == "agent"
 
+
+def test_channel_messages_matches_channel_id(tmp_path: Path) -> None:
+    _write_jsonl(
+        tmp_path / "messages.jsonl",
+        [
+            {"id": "1", "from": "mattermost", "to": "bridge", "text": "hi", "channel_id": "room-1"},
+            {"id": "2", "from": "x", "to": "y", "text": "nope"},
+        ],
+    )
+    thread = mailbox_api.channel_messages(tmp_path, "room-1")
+    assert [message["id"] for message in thread] == ["1"]
+
+
+def test_list_agents_merges_participants_and_defaults(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setattr(mailbox_api, "_mailbox_client", None)
+    _write_jsonl(
+        tmp_path / "messages.jsonl",
+        [{"id": "1", "from": "alice", "to": "bob", "text": "hi"}],
+    )
+    agent_ids = [agent["id"] for agent in mailbox_api.list_agents(tmp_path)]
+    assert "alice" in agent_ids and "bob" in agent_ids
+    assert mailbox_api.DEFAULT_USER_AGENT in agent_ids
+    assert mailbox_api.DEFAULT_PEER_AGENT in agent_ids
+
+
+class _FakeRelay:
+    def __init__(self) -> None:
+        self.sent: list[dict] = []
+        self.cursors: list[tuple[str, str]] = []
+
+    def _rest_request(self, method: str, path: str):  # noqa: ANN001
+        return {"recipients": [], "positions": []}
+
+    def initialize_cursor_rest(self, recipient: str, *, cursor: str, start: str = "now", base_url=None):  # noqa: ANN001
+        self.cursors.append((recipient, cursor))
+        return {"recipient": recipient, "cursor": cursor}
+
+    def register_agent_rest(self, agent_id: str, *, presence_id: str = "", base_url=None):  # noqa: ANN001
+        self.registered = getattr(self, "registered", [])
+        self.registered.append((agent_id, presence_id))
+        return {"agent_id": agent_id, "presence_id": presence_id}
+
+    def send(self, to: str, text: str, *, sender: str, root=None, **extra):  # noqa: ANN001
+        record = {"id": "s1", "from": sender, "to": to, "text": text, "type": "message", **extra}
+        self.sent.append(record)
+        return record
+
+
+def test_mailbox_send_with_channel_id_auto_subscribes(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setenv("AGENT_MAILBOX_DIR", str(tmp_path))
+    fake = _FakeRelay()
+    monkeypatch.setattr(mailbox_api, "_mailbox_client", fake)
+    result = mailbox_api.mailbox_send(text="hi", to="some-agent", sender="me", channel_id="room-9")
+    assert result["subscribed"] is True
+    assert ("room-9", "some-agent") in fake.cursors
+    assert fake.sent and fake.sent[0].get("channel_id") == "room-9"
+
+
+def test_mailbox_create_agent(monkeypatch: pytest.MonkeyPatch) -> None:
+    fake = _FakeRelay()
+    monkeypatch.setattr(mailbox_api, "_mailbox_client", fake)
+    result = mailbox_api.mailbox_create_agent(id="new-agent", presence=None)
+    assert result["id"] == "new-agent"
+    assert ("new-agent", "new-agent-app") in fake.registered
+
+
+def test_mailbox_create_channel(monkeypatch: pytest.MonkeyPatch) -> None:
+    fake = _FakeRelay()
+    monkeypatch.setattr(mailbox_api, "_mailbox_client", fake)
+    result = mailbox_api.mailbox_create_channel(id="new-room")
+    assert result["id"] == "new-room"
+    assert ("new-room", mailbox_api.DEFAULT_PEER_AGENT) in fake.cursors
+
+

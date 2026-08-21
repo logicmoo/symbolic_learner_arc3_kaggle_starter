@@ -100,13 +100,23 @@ def register_worker(
     base_url: str = RELAY_URL,
     start: str = "now",
 ) -> dict[str, Any]:
-    """Register the worker + presence and initialise its cursor on each source."""
+    """Register the worker + presence and initialise its cursor on each source.
+
+    Idempotent: an already-registered agent (the relay answers 400) is tolerated
+    so re-runs still (re)initialise cursors, which is the part that matters when
+    adding a new source to the poll set.
+    """
     client = _require_client()
-    registration = client.register_agent_rest(agent, presence_id=presence, base_url=base_url)
-    cursors = [
-        client.initialize_cursor_rest(source, cursor=agent, start=start, base_url=base_url)
-        for source in sources
-    ]
+    try:
+        registration: dict[str, Any] = client.register_agent_rest(agent, presence_id=presence, base_url=base_url)
+    except Exception as error:
+        registration = {"skipped": True, "reason": str(error)}
+    cursors: list[dict[str, Any]] = []
+    for source in sources:
+        try:
+            cursors.append(client.initialize_cursor_rest(source, cursor=agent, start=start, base_url=base_url))
+        except Exception as error:
+            cursors.append({"recipient": source, "error": str(error)})
     return {"agent": agent, "presence": presence, "registration": registration, "cursors": cursors}
 
 
