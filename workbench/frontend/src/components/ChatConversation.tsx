@@ -6,7 +6,7 @@ import "../styles/chat.css";
 // are read back from the shared mailbox, so the same component renders the whole
 // two-way conversation.
 export const DEFAULT_CHAT_USER = "symbolic-workbench-user";
-export const DEFAULT_CHAT_PEER = "github-copilot-facilitator-agent";
+export const DEFAULT_CHAT_PEER = "symbolic-workbench-user";
 
 export type ChatMessage = {
   id: string;

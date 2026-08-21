@@ -39,6 +39,9 @@ ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_AGENT = "github-copilot-facilitator-agent"
 DEFAULT_PRESENCE = "github-copilot-facilitator-agent-app"
 DEFAULT_PEER = "symbolic-workbench-user"
+# The shared channel both the workbench user and the agent post to; it is also the
+# Chat page's default display channel.
+SHARED_USER_CHANNEL = "symbolic-workbench-user"
 EVENT_CHANNEL = "server_events"
 RELAY_URL = os.environ.get("AGENT_MAILBOX_URL") or "http://127.0.0.1:46667"
 API_BASE = os.environ.get("WORKBENCH_API_BASE", "http://127.0.0.1:8000")
@@ -58,8 +61,21 @@ def _require_client() -> Any:
 
 
 def default_sources(agent: str) -> list[str]:
-    """The poll set for this scope: the worker's own mailbox + lifecycle events."""
-    return [agent, EVENT_CHANNEL]
+    """The poll set for the chat loop.
+
+    Includes the shared user channel, the agent's own mailbox, and
+    ``server_events`` - lifecycle events are surfaced too so the agent can read
+    them and decide whether to react. Only the agent's own posts are filtered out
+    (to avoid reacting to itself); that decision lives in the poll, not here.
+    """
+    ordered = [SHARED_USER_CHANNEL, agent, EVENT_CHANNEL]
+    seen: set[str] = set()
+    result: list[str] = []
+    for source in ordered:
+        if source and source not in seen:
+            seen.add(source)
+            result.append(source)
+    return result
 
 
 def _project(record: dict[str, Any], *, source: str | None = None) -> dict[str, Any]:
@@ -99,13 +115,24 @@ def unread_across_sources(
     sources: Sequence[str],
     cursor: str,
     base_url: str = RELAY_URL,
+    exclude_from: str | None = None,
+    only_messages: bool = False,
 ) -> list[dict[str, Any]]:
-    """Peek unread messages across every polled source without advancing cursors."""
+    """Peek unread messages across every polled source without advancing cursors.
+
+    ``exclude_from`` drops the agent's own posts (so a shared channel does not make
+    it react to itself); ``only_messages`` keeps chat messages and drops relay
+    lifecycle events so the chat interrupt is not tripped by them.
+    """
     client = _require_client()
     messages: list[dict[str, Any]] = []
     for source in sources:
         for record in client.peek_rest(source, base_url=base_url, cursor=cursor):
             if record.get("audit_of"):
+                continue
+            if only_messages and record.get("type", "message") != "message":
+                continue
+            if exclude_from and record.get("from") == exclude_from:
                 continue
             messages.append(_project(record, source=source))
     return messages
@@ -216,7 +243,9 @@ def status_snapshot(agent: str, *, sources: Sequence[str], cursor: str, base_url
         except Exception:
             relay = {}
         try:
-            unread = unread_across_sources(sources=sources, cursor=cursor, base_url=base_url)
+            unread = unread_across_sources(
+                sources=sources, cursor=cursor, base_url=base_url, exclude_from=agent
+            )
         except Exception:
             unread = []
     return {
@@ -314,7 +343,12 @@ def main(argv: Sequence[str] | None = None) -> int:
             state, messages = poll_until(
                 timeout=args.timeout,
                 interval=args.interval,
-                peek=lambda: unread_across_sources(sources=sources, cursor=cursor, base_url=args.base_url),
+                peek=lambda: unread_across_sources(
+                    sources=sources,
+                    cursor=cursor,
+                    base_url=args.base_url,
+                    exclude_from=args.agent,
+                ),
             )
         except Exception as error:
             _print({"status": "error", "error": str(error)})

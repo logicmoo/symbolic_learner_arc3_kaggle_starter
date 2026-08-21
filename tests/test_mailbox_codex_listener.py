@@ -46,8 +46,9 @@ class FakeRelayClient:
         return {"agents": [{"agent_id": listener.DEFAULT_AGENT}]}
 
 
-def test_default_sources_include_mailbox_and_events() -> None:
+def test_default_sources_include_shared_channel_agent_and_events() -> None:
     assert listener.default_sources("github-copilot-facilitator-agent") == [
+        "symbolic-workbench-user",
         "github-copilot-facilitator-agent",
         "server_events",
     ]
@@ -99,6 +100,23 @@ def test_unread_across_sources_tags_source_and_skips_audit(monkeypatch: pytest.M
     )
     assert [message["id"] for message in unread] == ["1", "e1"]
     assert {message["source"] for message in unread} == {"github-copilot-facilitator-agent", "server_events"}
+
+
+def test_unread_across_sources_excludes_self(monkeypatch: pytest.MonkeyPatch) -> None:
+    # Loop suppression: never react to the agent's own posts on a shared channel.
+    fake = FakeRelayClient({
+        "symbolic-workbench-user": [
+            {"id": "1", "from": "symbolic-workbench-user", "to": "symbolic-workbench-user", "text": "hi"},
+            {"id": "2", "from": "github-copilot-facilitator-agent", "to": "symbolic-workbench-user", "text": "my own reply"},
+        ],
+    })
+    monkeypatch.setattr(listener, "_mailbox", fake)
+    unread = listener.unread_across_sources(
+        sources=["symbolic-workbench-user"],
+        cursor="github-copilot-facilitator-agent",
+        exclude_from="github-copilot-facilitator-agent",
+    )
+    assert [message["id"] for message in unread] == ["1"]
 
 
 def test_register_worker_registers_and_inits_cursors(monkeypatch: pytest.MonkeyPatch) -> None:
