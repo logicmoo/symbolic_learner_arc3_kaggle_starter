@@ -1590,7 +1590,9 @@ function validatePassOutput(
       }
     }
   }
-  return { accepted: issues.length === 0, newCount: newOnly.length, issues };
+  // missing_type_or_sub_type is a non-blocking warning (identities are auto-filled with a
+  // default type/sub_type in normalizeParsedPayload), so it never blocks acceptance.
+  return { accepted: issues.every((issue) => issue.code === "missing_type_or_sub_type"), newCount: newOnly.length, issues };
 }
 
 function newIdentityCandidates(
@@ -1904,7 +1906,15 @@ function normalizeParsedPayload(payload: ParsedPrologPayload, previous?: ParsedP
     ),
     priorCurrent,
   );
-  normalized.current_identities = mergedCurrent;
+  // Auto-fill a default type/sub_type for any identity that omitted them, so downstream stays
+  // consistent and the pass validation's missing_type_or_sub_type warning does not recur.
+  normalized.current_identities = mergedCurrent.map((entry) => {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) return entry;
+    const record = entry as Record<string, unknown>;
+    const typeValue = typeof record.type === "string" && record.type.trim() ? record.type : "object";
+    const subTypeValue = typeof record.sub_type === "string" && record.sub_type.trim() ? record.sub_type : "unknown";
+    return { ...record, type: typeValue, sub_type: subTypeValue };
+  }) as typeof mergedCurrent;
   normalized.current_hypotheses = hypotheses.length ? mergeIdentityList(hypotheses, priorHypotheses) : priorHypotheses;
   normalized.action_history = history.length ? [...priorHistory, ...history] : priorHistory;
   delete normalized.currnet_hypotheses;
@@ -2629,12 +2639,14 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
             || isEnabledModel(runner.selectedModelId)
             ? runner.selectedModelId
             : COLUMN_MODEL_SENTINEL,
-          validatorModelId: runner.validatorModelId === RUNNER_VALIDATOR_DISABLED
+          validatorModelId: (isB1B2PipelineRoute(pageDefinition.routeView) && runnerIndex === 1)
+            ? RUNNER_VALIDATOR_DISABLED
+            : (runner.validatorModelId === RUNNER_VALIDATOR_DISABLED
             || runner.validatorModelId === RUNNER_VALIDATOR_PRIMARY_MODEL
             || isRunnerModelSentinel(runner.validatorModelId)
             || isEnabledModel(runner.validatorModelId)
             ? runner.validatorModelId
-            : RUNNER_VALIDATOR_PRIMARY_MODEL,
+            : RUNNER_VALIDATOR_PRIMARY_MODEL),
           filesSourceIds: runner.filesSourceIds?.length
             ? runner.filesSourceIds.filter((sourceId) => !isGeneratedToken(sourceId))
             : defaultInputFilesSourceIdsForRunner(pageDefinition.routeView, stack.key, runnerIndex),

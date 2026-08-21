@@ -717,6 +717,17 @@ def test_b1_b2_use_setup_is_exclusive_and_no_child_cascade() -> None:
     # each per-group stack carries a collective controlsLabel.
     assert "controlsLabel={groupName}" not in source
     assert 'controlsLabel="IMAGES"' not in source
+
+
+def test_b1_b2_first_remover_has_no_validator_and_types_autofill() -> None:
+    source = COMPONENT.read_text(encoding="utf-8")
+    # FIRST_REMOVER (runner index 1) is forced to have no validator in the B1B2 pipeline.
+    assert "(isB1B2PipelineRoute(pageDefinition.routeView) && runnerIndex === 1)" in source
+    assert "? RUNNER_VALIDATOR_DISABLED" in source
+    # Missing type/sub_type auto-fills a default and is a non-blocking warning.
+    assert 'typeof record.type === "string" && record.type.trim() ? record.type : "object"' in source
+    assert 'typeof record.sub_type === "string" && record.sub_type.trim() ? record.sub_type : "unknown"' in source
+    assert 'return { accepted: issues.every((issue) => issue.code === "missing_type_or_sub_type")' in source
     # The old webkitRelativePath-or-name behavior is gone.
     assert "relative || picked.name" not in source
 
