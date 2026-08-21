@@ -115,6 +115,7 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
   const [savepoints, setSavepoints] = useState<PlaySavepoint[]>([]);
   const [rewindOpen, setRewindOpen] = useState(false);
   const [rewindHover, setRewindHover] = useState<number | null>(null);
+  const [autoSelect, setAutoSelect] = useState(true);
   const boardRef = useRef<HTMLImageElement | null>(null);
 
   const assetUrl = useCallback(
@@ -306,7 +307,15 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
   };
 
   const handleBoardClick = (event: React.MouseEvent<HTMLImageElement>) => {
-    if (!armedAction || !session || session.closed || busy) return;
+    if (!session || session.closed || busy) return;
+    // No armed action: fall back to an enabled click action (SELECT).
+    const fallback = !armedAction && autoSelect
+      ? session.availableActions.find(
+          (action) => action.complex && action.enabled && action.label.toUpperCase() === "SELECT",
+        ) || session.availableActions.find((action) => action.complex && action.enabled)
+      : null;
+    const action = armedAction || (fallback ? fallback.id : null);
+    if (!action) return;
     const image = boardRef.current;
     if (!image || !image.naturalWidth || !image.clientWidth) return;
     const bounds = image.getBoundingClientRect();
@@ -314,7 +323,6 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
     const py = ((event.clientY - bounds.top) * image.naturalHeight) / bounds.height;
     const gx = Math.max(0, Math.floor(px / FRAME_SCALE));
     const gy = Math.max(0, Math.floor(py / FRAME_SCALE));
-    const action = armedAction;
     setArmedAction(null);
     void sendAction(action, gx, gy);
   };
@@ -415,7 +423,13 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
                 className={`arc3-play-board ${armedAction ? "armed" : ""}`}
                 tabIndex={0}
                 onKeyDown={handleKeyDown}
-                title={armedAction ? `Click the board to send ${armedAction} at that cell` : "Arrow keys / Space play directly"}
+                title={
+                  armedAction
+                    ? `Click the board to send ${armedAction} at that cell`
+                    : autoSelect && session.availableActions.some((action) => action.complex && action.enabled)
+                      ? "Click a cell to auto-SELECT it · arrow keys / Space play directly"
+                      : "Arrow keys / Space play directly"
+                }
               >
                 {session.framePath ? (
                   <img
@@ -446,6 +460,13 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
                     {action.label}
                   </button>
                 ))}
+                <button
+                  className={`arc3-play-action arc3-play-autoselect ${autoSelect ? "down" : ""}`}
+                  title="When down, clicking a board cell fires SELECT there automatically (no arming needed)"
+                  onClick={() => setAutoSelect((value) => !value)}
+                >
+                  auto-SELECT
+                </button>
               </div>
               <div className="arc3-play-actions arc3-play-session-controls">
                 {session.closed && (
