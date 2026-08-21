@@ -425,6 +425,11 @@ def stored_identifier_directory(root: Path, *, max_bytes: int = REGISTRY_TAIL_BY
 _NAMES_CACHE: dict[str, Any] = {"at": 0.0, "names": {}}
 NAMES_CACHE_TTL_SECS = 60.0
 
+# ids we already asked the relay about and got nothing back: id -> asked-at time.
+# Keeps repeated lookups of the same unknown id from hammering the relay.
+_LOOKUP_MISSES: dict[str, float] = {}
+LOOKUP_MISS_TTL_SECS = 300.0
+
 
 def identifier_names(root: Path, *, refresh: bool = False) -> dict[str, str]:
     """Map opaque platform identifiers (e.g. Mattermost ids) to readable names.
@@ -535,13 +540,15 @@ def mailbox_registry_bootstrap(limit: int = Query(2000, ge=1, le=10000)) -> dict
 
 
 @router.get("/mailbox/identifier")
-def mailbox_identifier_lookup(id: str = Query(...)) -> dict[str, Any]:
+def mailbox_identifier_lookup(id: str = Query(...), force: bool = Query(False)) -> dict[str, Any]:
     """Resolve one strange identifier: blackboard first, then the live relay.
 
     When an id is not on the ``server_registry`` blackboard yet, the relay's
     ``/v1/identifiers`` directory is asked for an exact match. A hit is
     persisted back to the blackboard as a new ``identifier_entry`` bubble so
-    every agent learns it; a full miss reports ``found: false``.
+    every agent learns it; a full miss reports ``found: false`` and is
+    remembered for ``LOOKUP_MISS_TTL_SECS`` so the relay is not asked about the
+    same unknown id again until then (``force=true`` re-asks immediately).
     """
 
     identifier = id.strip() if isinstance(id, str) else ""
@@ -550,6 +557,7 @@ def mailbox_identifier_lookup(id: str = Query(...)) -> dict[str, Any]:
     root = resolve_mailbox_root()
     for entry in stored_identifier_directory(root):
         if str(entry.get("identifier")) == identifier:
+            _LOOKUP_MISSES.pop(identifier, None)
             return {
                 "id": identifier,
                 "found": True,
@@ -558,6 +566,21 @@ def mailbox_identifier_lookup(id: str = Query(...)) -> dict[str, Any]:
                 "name": _identifier_display(entry),
                 "stored": False,
             }
+
+    now = time.time()
+    asked_at = _LOOKUP_MISSES.get(identifier)
+    if not (force is True) and asked_at and now - asked_at < LOOKUP_MISS_TTL_SECS:
+        # We already asked the relay about this id recently; don't ask again.
+        return {
+            "id": identifier,
+            "found": False,
+            "source": "miss-cache",
+            "entry": None,
+            "name": None,
+            "stored": False,
+            "requestedAt": asked_at,
+            "retryAfterSecs": round(LOOKUP_MISS_TTL_SECS - (now - asked_at)),
+        }
 
     miss = {"id": identifier, "found": False, "source": None, "entry": None,
             "name": None, "stored": False}
@@ -579,7 +602,10 @@ def mailbox_identifier_lookup(id: str = Query(...)) -> dict[str, Any]:
         candidates[0] if candidates else None,
     )
     if entry is None:
+        _LOOKUP_MISSES[identifier] = now  # remember when we asked
+        miss["requestedAt"] = now
         return miss
+    _LOOKUP_MISSES.pop(identifier, None)
     stored = False
     try:
         _mailbox_client.send(

@@ -191,6 +191,7 @@ def _reset_names_cache() -> None:
 
     mailbox_api._NAMES_CACHE["at"] = 0.0
     mailbox_api._NAMES_CACHE["names"] = {}
+    mailbox_api._LOOKUP_MISSES.clear()
 
 
 class _FakeRelay:
@@ -557,5 +558,40 @@ def test_identifier_lookup_reports_a_full_miss(
     assert result["found"] is False
     assert result["entry"] is None
     assert fake.sent == []
+
+
+def test_identifier_lookup_remembers_misses(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setenv("AGENT_MAILBOX_DIR", str(tmp_path))
+    fake = _FakeRelay(identifiers=[])
+    calls: list[str] = []
+    original = fake._rest_request
+
+    def counting(method: str, path: str, payload=None, base_url=None):  # noqa: ANN001
+        calls.append(path)
+        return original(method, path, payload, base_url)
+
+    fake._rest_request = counting  # type: ignore[method-assign]
+    monkeypatch.setattr(mailbox_api, "_mailbox_client", fake)
+
+    first = mailbox_api.mailbox_identifier_lookup(id="ghost-id")
+    assert first["found"] is False
+    assert first["requestedAt"] > 0
+    assert len(calls) == 1
+
+    # Asking again within the TTL is served from the miss cache: no relay call.
+    second = mailbox_api.mailbox_identifier_lookup(id="ghost-id")
+    assert second["source"] == "miss-cache"
+    assert second["retryAfterSecs"] > 0
+    assert len(calls) == 1
+
+    # force=true re-asks, and a relay that has learned the id clears the miss.
+    fake.identifiers.append({"identifier": "ghost-id", "text": "now-known"})
+    third = mailbox_api.mailbox_identifier_lookup(id="ghost-id", force=True)
+    assert third["found"] is True
+    assert third["source"] == "relay"
+    assert len(calls) == 2
+    assert "ghost-id" not in mailbox_api._LOOKUP_MISSES
 
 
