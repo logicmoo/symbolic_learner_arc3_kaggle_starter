@@ -463,6 +463,59 @@
   background: color-mix(in srgb, var(--violet) 12%, var(--panel2));
 }
 
+/* A bubble being edited grows and tints amber: it IS the editor. */
+.chat-message.editing {
+  max-width: 98%;
+  width: 98%;
+  border-color: color-mix(in srgb, var(--amber, #d9a441) 65%, var(--line));
+  background: color-mix(in srgb, var(--amber, #d9a441) 12%, var(--panel2));
+}
+
+.chat-entry-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.chat-entry-edit textarea {
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.45;
+  padding: 6px 8px;
+}
+
+.chat-entry-edit-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chat-entry-edit-actions button {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--text);
+  font-size: 11px;
+  padding: 3px 10px;
+  cursor: pointer;
+}
+
+.chat-entry-edit-actions button:hover {
+  border-color: color-mix(in srgb, var(--amber, #d9a441) 60%, var(--line));
+}
+
+.chat-entry-edit-note {
+  font-size: 11px;
+  color: var(--muted);
+}
+
 .chat-message-meta {
   display: flex;
   align-items: baseline;

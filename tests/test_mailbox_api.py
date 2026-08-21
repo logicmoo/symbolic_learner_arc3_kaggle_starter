@@ -1922,3 +1922,115 @@ def test_mailbox_adapters_relays_endpoint_returns_seeds(
     assert {item["id"] for item in payload["adapter_types"]} == set(
         mailbox_api.ADAPTER_TYPE_SEEDS)
     assert {item["id"] for item in payload["relays"]} >= set(mailbox_api.RELAY_SEEDS)
+
+
+def test_edit_record_in_place_rewrites_line(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setenv("AGENT_MAILBOX_DIR", str(tmp_path))
+    monkeypatch.setattr(mailbox_api, "_mailbox_client", None)
+    _write_jsonl(
+        tmp_path / "messages.jsonl",
+        [
+            {"id": "r0", "from": "a", "to": "b", "text": "one"},
+            {"id": "r1", "from": "a", "to": "b", "text": "two"},
+            {"id": "r2", "from": "a", "to": "b", "text": "three"},
+        ],
+    )
+
+    result = mailbox_api._edit_record(
+        "r1",
+        {"id": "IGNORED", "from": "a", "to": "b", "text": "TWO!", "note": 7},
+        "in-place",
+    )
+    assert result["edited"] == "r1"
+    assert result["mode"] == "in-place"
+    assert result["record"]["id"] == "r1"  # log id survives the rewrite
+
+    lines = [
+        json.loads(line)
+        for line in (tmp_path / "messages.jsonl").read_text(encoding="utf-8").splitlines()
+    ]
+    assert [line["id"] for line in lines] == ["r0", "r1", "r2"]
+    assert lines[1]["text"] == "TWO!"
+    assert lines[1]["note"] == 7
+    assert lines[0]["text"] == "one" and lines[2]["text"] == "three"
+    assert list(tmp_path.glob("messages.jsonl.edited-*.bak"))
+
+    missing = mailbox_api._edit_record("nope", {"to": "b"}, "in-place")
+    assert str(missing["error"]).startswith("no record")
+    assert "error" in mailbox_api._edit_record("r1", {"to": "b"}, "sideways")
+    assert "error" in mailbox_api._edit_record("", {"to": "b"})
+    assert "error" in mailbox_api._edit_record("r1", None)
+
+
+def test_edit_record_at_end_appends_and_marks_replaced(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setenv("AGENT_MAILBOX_DIR", str(tmp_path))
+    fake = _FakeRelay()
+    monkeypatch.setattr(mailbox_api, "_mailbox_client", fake)
+    _write_jsonl(
+        tmp_path / "messages.jsonl",
+        [
+            {"id": "r0", "from": "me", "to": "reg", "channel_id": "room",
+             "type": "relay_entry", "text": "", "entry": {"x": 1}},
+            {"id": "r1", "from": "me", "to": "reg", "channel_id": "room",
+             "type": "relay_entry", "text": "", "entry": {"x": 2}},
+        ],
+    )
+
+    result = mailbox_api._edit_record(
+        "r0",
+        {"from": "me", "to": "reg", "channel_id": "room", "type": "relay_entry",
+         "text": "", "entry": {"x": 1, "enabled": True}},
+        "at-end",
+    )
+    assert result["mode"] == "at-end"
+    key = result["entryKey"]
+    assert key.startswith("entry_")
+    assert result["replacedByMarking"] == "ok"
+    # The append went through the client with the fresh entry_key and payload.
+    assert fake.sent
+    appended = fake.sent[-1]
+    assert appended["entry_key"] == key
+    assert appended["entry"] == {"x": 1, "enabled": True}
+    assert appended["channel_id"] == "room"
+    assert appended["id"] != "r0"  # fresh log id, not the old one
+    # The old line is still in place but marked as replaced.
+    lines = [
+        json.loads(line)
+        for line in (tmp_path / "messages.jsonl").read_text(encoding="utf-8").splitlines()
+    ]
+    assert [line["id"] for line in lines] == ["r0", "r1"]
+    assert lines[0]["replaced-by"] == key
+    assert lines[1].get("replaced-by") is None
+
+    no_to = mailbox_api._edit_record("r0", {"text": "x"}, "at-end")
+    assert "needs a 'to'" in str(no_to["error"])
+
+
+def test_mailbox_record_endpoint_validates(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setenv("AGENT_MAILBOX_DIR", str(tmp_path))
+    monkeypatch.setattr(mailbox_api, "_mailbox_client", None)
+    _write_jsonl(
+        tmp_path / "messages.jsonl",
+        [{"id": "r0", "from": "a", "to": "b", "text": "x"}],
+    )
+
+    with pytest.raises(mailbox_api.HTTPException) as missing:
+        mailbox_api.mailbox_record_edit(id="nope", record={"to": "b"}, mode="in-place")
+    assert missing.value.status_code == 404
+    with pytest.raises(mailbox_api.HTTPException) as bad_mode:
+        mailbox_api.mailbox_record_edit(id="r0", record={"to": "b"}, mode="sideways")
+    assert bad_mode.value.status_code == 400
+    with pytest.raises(mailbox_api.HTTPException) as no_client:
+        mailbox_api.mailbox_record_edit(id="r0", record={"to": "b"}, mode="at-end")
+    assert no_client.value.status_code == 503
+
+    ok = mailbox_api.mailbox_record_edit(
+        id="r0", record={"from": "a", "to": "b", "text": "edited"}, mode="in-place"
+    )
+    assert ok["record"]["text"] == "edited"

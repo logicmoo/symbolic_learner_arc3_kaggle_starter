@@ -90,6 +90,13 @@ Grooming is a worker op: dry-run by default, `{"apply": true}` rewrites
 `messages.jsonl` in place after a timestamped backup and re-points every
 cursor at the equivalent position in the new file.
 
+Single records are edited the same guarded way: `POST /api/mailbox/record`
+`{id, record, mode}` (worker op `edit_record`) saves a complete record either
+`in-place` (rewrite that line, keep its `id`, timestamped backup + cursor
+re-point) or `at-end` (append as the newest record with a fresh `entry_key`
+and mark the old line `replaced-by: entry_<n>`). The chat UI's per-bubble ✎
+editor and mm-side message edits both go through this call.
+
 ## First-class service agents
 
 - **`mattermost-bridge-agent`** — handles all mattermost driver jobs for every

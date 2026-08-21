@@ -1653,6 +1653,13 @@ def execute_worker_command(command: dict[str, Any]) -> dict[str, Any]:
             str(command.get("canonical") or ""),
             str(command.get("kind") or "channel"),
         )
+    if op == "edit_record":
+        record = command.get("record")
+        return _edit_record(
+            str(command.get("id") or ""),
+            record if isinstance(record, dict) else None,
+            str(command.get("mode") or "in-place"),
+        )
     return {"error": f"unknown op {op!r}"}
 
 
@@ -2293,6 +2300,138 @@ def _groom_channels(*, apply: bool = False) -> dict[str, Any]:
     return summary
 
 
+def _replace_record_line(root: Path, record_id: str, transform) -> dict[str, Any]:
+    """Rewrite the one log line whose record ``id`` matches, via ``transform(old)``.
+
+    Registry entries are the expected target, so this stays simple: back up,
+    swap the single line, and nudge any byte cursors that sat past it (entry
+    positions are preserved, so nobody's place in a channel moves).
+    """
+
+    path = root / "messages.jsonl"
+    lines, old_ends = _read_all_lines(path)
+    target_index: int | None = None
+    old_record: dict[str, Any] | None = None
+    for index, line in enumerate(lines):
+        try:
+            parsed = json.loads(line.decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            continue
+        if isinstance(parsed, dict) and parsed.get("id") == record_id:
+            target_index, old_record = index, parsed
+    if target_index is None or old_record is None:
+        return {"error": f"no record with id {record_id!r}"}
+    new_record = transform(old_record)
+    stamp = time.strftime("%Y%m%d-%H%M%S")
+    backup = path.with_name(f"messages.jsonl.edited-{stamp}.bak")
+    shutil.copy2(path, backup)
+    new_lines = list(lines)
+    new_lines[target_index] = (
+        json.dumps(new_record, ensure_ascii=False) + "\n"
+    ).encode("utf-8")
+    new_ends: list[int] = []
+    offset = 0
+    for line in new_lines:
+        offset += len(line)
+        new_ends.append(offset)
+    temporary = path.with_name(f"messages.jsonl.edited-{stamp}.tmp")
+    with temporary.open("wb") as stream:
+        stream.writelines(new_lines)
+    os.replace(temporary, path)
+    with _TRAFFIC_LOCK:
+        _TRAFFIC_STATE.update(path="", offset=0, checkpoint=b"", stats={})
+    cursors = 0
+    if _mailbox_client is not None and new_ends != old_ends:
+        for agent, channel_ids in _cursor_map(root).items():
+            for cid in channel_ids:
+                cursor_path = _mailbox_client._cursor_path(root, f"{cid}:{agent}")
+                old_offset = _mailbox_client._read_cursor(cursor_path)
+                count = bisect.bisect_right(old_ends, old_offset)
+                new_offset = new_ends[count - 1] if count else 0
+                if new_offset != old_offset:
+                    _mailbox_client._write_cursor(cursor_path, new_offset)
+                    cursors += 1
+    return {"record": new_record, "backup": backup.name, "cursorsNudged": cursors}
+
+
+def _edit_record(
+    record_id: str, replacement: dict[str, Any] | None, mode: str = "in-place"
+) -> dict[str, Any]:
+    """Save one stored record's complete JSON (the entry editor, and mm edits).
+
+    ``in-place`` overwrites the record's line wholesale (its log ``id`` is
+    kept). ``at-end`` appends the edited version as the newest record of the
+    same sequence and marks the old one ``replaced-by: entry_<n>`` — for
+    ``*_entry`` registry records latest-per-id already wins, so the original
+    simply becomes traceable history. Platform-side edits (e.g. a Mattermost
+    message edited in mm) flow through the same op via REST/worker to update
+    the mirrored record.
+    """
+
+    record_id = record_id.strip() if isinstance(record_id, str) else ""
+    if not record_id:
+        return {"error": "record id must not be empty"}
+    if not isinstance(replacement, dict):
+        return {"error": "record must be a JSON object"}
+    root = resolve_mailbox_root()
+    if mode == "in-place":
+        result = _replace_record_line(
+            root, record_id, lambda old: {**replacement, "id": record_id}
+        )
+        if "error" in result:
+            return result
+        return {"edited": record_id, "mode": mode, **result}
+    if mode != "at-end":
+        return {"error": "mode must be 'in-place' or 'at-end'"}
+    if _mailbox_client is None:
+        return {"error": "mailbox_channels client is not installed"}
+    body = dict(replacement)
+    to = body.get("to")
+    if not isinstance(to, str) or not to:
+        return {"error": "record needs a 'to' to be appended"}
+    channel = body.get("channel_id")
+    channel = channel if isinstance(channel, str) and channel else None
+    new_key = _next_entry_key(root, channel or to)
+    extra = {
+        key: value
+        for key, value in body.items()
+        if key not in (
+            "id", "dedupe_id", "timestamp", "from", "to", "text", "type", "channel_id",
+        )
+    }
+    extra["entry_key"] = new_key
+    kwargs: dict[str, Any] = {"extra_fields": extra}
+    if channel:
+        kwargs["channel_id"] = channel
+    if body.get("type"):
+        kwargs["message_type"] = str(body["type"])
+    sender = body.get("from")
+    text = body.get("text")
+    try:
+        saved = _mailbox_client.send(
+            to,
+            text if isinstance(text, str) else "",
+            sender=str(sender) if isinstance(sender, str) and sender else DEFAULT_USER_AGENT,
+            root=root,
+            **kwargs,
+        )
+    except Exception as error:
+        return {"error": f"append failed: {error}"}
+    marked = _replace_record_line(
+        root, record_id, lambda old: {**old, "replaced-by": new_key}
+    )
+    result = {
+        "edited": record_id,
+        "mode": mode,
+        "entryKey": new_key,
+        "record": saved if isinstance(saved, dict) else {**body, "entry_key": new_key},
+        "replacedByMarking": marked.get("error") or "ok",
+    }
+    if "backup" in marked:
+        result["backup"] = marked["backup"]
+    return result
+
+
 def _channel_entry_ends(root: Path) -> dict[str, list[int]]:
     """channel -> byte end offset of each of its entries, in entry_N order.
 
@@ -2749,7 +2888,10 @@ def mailbox_entity_save(
             sender=DEFAULT_USER_AGENT,
             root=root,
             message_type=message_type,
-            extra_fields={"entry": payload},
+            extra_fields={
+                "entry": payload,
+                "entry_key": _next_entry_key(root, target),
+            },
             channel_id=target,
         )
     except Exception as error:
@@ -2763,6 +2905,27 @@ def mailbox_entity_save(
         records = registry["relays" if kind_id == "relay" else "adapter_types"]
     fresh = next((item for item in records if item.get("id") == entity_id), payload)
     return {"kind": kind_id, "id": entity_id, "stored": True, "channel": target, "entry": fresh}
+
+
+@router.post("/mailbox/record")
+def mailbox_record_edit(
+    id: str = Body(..., embed=True),
+    record: dict[str, Any] = Body(..., embed=True),
+    mode: str = Body("in-place", embed=True),
+) -> dict[str, Any]:
+    """Save a complete record: the entry editor's ✎, and mm-side edits too."""
+
+    result = _edit_record(id, record, mode if isinstance(mode, str) else "in-place")
+    if "error" in result:
+        detail = str(result["error"])
+        if detail.startswith("no record"):
+            code = 404
+        elif "not installed" in detail:
+            code = 503
+        else:
+            code = 400
+        raise HTTPException(status_code=code, detail=detail)
+    return result
 
 
 def _cursor_status(root: Path, channel: str, agent: str) -> dict[str, Any]:

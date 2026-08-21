@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { MarkdownDocument } from "./MarkdownDocument";
+import { jsonDocumentToMetta, mettaDocumentToJson } from "../lib/mettaResourceCodec";
 import "../styles/chat.css";
 
 // The workbench user identity and the agent they talk to. Both sides of this pair
@@ -99,6 +100,11 @@ export function ChatConversation({
   const [inspectText, setInspectText] = useState("");
   const [inspectNote, setInspectNote] = useState("");
   const [inspectBusy, setInspectBusy] = useState(false);
+  const [entryEditId, setEntryEditId] = useState<string | null>(null);
+  const [entryEditText, setEntryEditText] = useState("");
+  const [entryEditFormat, setEntryEditFormat] = useState<"json" | "metta">("json");
+  const [entryEditNote, setEntryEditNote] = useState("");
+  const [entryEditBusy, setEntryEditBusy] = useState(false);
   // Require-match bar: the list looks EVERYWHERE in the log; each depressed
   // button ANDs its picker's value in as a required match. Only CHANNEL is
   // required by default (classic channel view).
@@ -281,6 +287,102 @@ export function ChatConversation({
   // Messages without text default to the JSON view; the toggle flips from the effective state.
   const toggleRaw = (id: string, defaultOpen = false) =>
     setExpanded((prev) => ({ ...prev, [id]: !(prev[id] ?? defaultOpen) }));
+
+  // Per-entry ✎ editor: the bubble becomes the editor. Save posts the COMPLETE
+  // record to /api/mailbox/record, either rewriting its log line (in-place) or
+  // appending the edit as the newest record and marking the old one
+  // replaced-by: entry_<n> (at-end). Like the other JSON editors it has a
+  // MeTTa mode (mettaResourceCodec), Reload discards edits, Save as..
+  // downloads to disk.
+  const openEntryEdit = (message: ChatMessage) => {
+    if (entryEditId === message.id) {
+      setEntryEditId(null);
+      return;
+    }
+    setEntryEditId(message.id);
+    setEntryEditFormat("json");
+    setEntryEditText(JSON.stringify(message.raw ?? message, null, 2));
+    setEntryEditNote("");
+  };
+
+  const entryEditAsJson = (): string => {
+    if (entryEditFormat === "json") return entryEditText;
+    return mettaDocumentToJson(entryEditText);
+  };
+
+  const toggleEntryEditFormat = () => {
+    try {
+      if (entryEditFormat === "json") {
+        setEntryEditText(jsonDocumentToMetta(entryEditText));
+        setEntryEditFormat("metta");
+      } else {
+        setEntryEditText(mettaDocumentToJson(entryEditText));
+        setEntryEditFormat("json");
+      }
+      setEntryEditNote("");
+    } catch (error) {
+      setEntryEditNote(error instanceof Error ? error.message : String(error));
+    }
+  };
+
+  const reloadEntryEdit = () => {
+    const message = messages.find((entry) => entry.id === entryEditId);
+    if (!message) {
+      setEntryEditNote("record is no longer in view");
+      return;
+    }
+    const json = JSON.stringify(message.raw ?? message, null, 2);
+    try {
+      setEntryEditText(entryEditFormat === "metta" ? jsonDocumentToMetta(json) : json);
+      setEntryEditNote("reloaded — edits discarded");
+    } catch (error) {
+      setEntryEditNote(error instanceof Error ? error.message : String(error));
+    }
+  };
+
+  const downloadEntryEdit = () => {
+    const extension = entryEditFormat === "metta" ? "metta" : "json";
+    const blob = new Blob([entryEditText], {
+      type: extension === "json" ? "application/json" : "text/plain",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${entryEditId || "record"}.${extension}`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const saveEntryEdit = async (mode: "in-place" | "at-end") => {
+    if (!entryEditId) return;
+    let record: unknown;
+    try {
+      record = JSON.parse(entryEditAsJson());
+    } catch (error) {
+      setEntryEditNote(`invalid ${entryEditFormat === "metta" ? "MeTTa" : "JSON"}: ${
+        error instanceof Error ? error.message : String(error)
+      }`);
+      return;
+    }
+    setEntryEditBusy(true);
+    try {
+      const payload = await readJson(
+        await fetch("/api/mailbox/record", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: entryEditId, record, mode }),
+        }),
+      );
+      setEntryEditNote(
+        mode === "at-end" && payload.entryKey ? `saved at-end as ${payload.entryKey}` : `saved ${mode}`,
+      );
+      await fetchMessages();
+    } catch (error) {
+      setEntryEditNote(error instanceof Error ? error.message : String(error));
+    } finally {
+      setEntryEditBusy(false);
+    }
+  };
 
   const fetchConfig = useCallback(async () => {
     if (!configChannel) {
@@ -732,7 +834,9 @@ export function ChatConversation({
         {messages.map((message) => (
           <div
             key={message.id}
-            className={`chat-message ${message.from === you ? "mine" : "theirs"}`}
+            className={`chat-message ${message.from === you ? "mine" : "theirs"}${
+              entryEditId === message.id ? " editing" : ""
+            }`}
           >
             <div className="chat-message-meta">
               <span className="chat-message-from">{message.authorName || message.author || message.from}</span>
@@ -754,6 +858,15 @@ export function ChatConversation({
               >
                 {"{ }"}
               </button>
+              <button
+                type="button"
+                className="chat-json-toggle"
+                title="Edit record JSON"
+                aria-label="Edit record JSON"
+                onClick={() => openEntryEdit(message)}
+              >
+                {"\u270e"}
+              </button>
             </div>
             {message.text ? (
               <MarkdownDocument className="chat-message-body" content={message.text} />
@@ -764,10 +877,42 @@ export function ChatConversation({
                   : "(no text — inspect JSON)"}
               </div>
             )}
-            {(expanded[message.id] ?? !message.text) && (
+            {(expanded[message.id] ?? !message.text) && entryEditId !== message.id && (
               <pre className="chat-message-json">
                 {JSON.stringify(message.raw ?? message, null, 2)}
               </pre>
+            )}
+            {entryEditId === message.id && (
+              <div className="chat-entry-edit">
+                <textarea
+                  value={entryEditText}
+                  onChange={(event) => setEntryEditText(event.target.value)}
+                  rows={Math.min(40, entryEditText.split("\n").length + 1)}
+                  spellCheck={false}
+                  disabled={entryEditBusy}
+                />
+                <div className="chat-entry-edit-actions">
+                  <button type="button" onClick={toggleEntryEditFormat} disabled={entryEditBusy}>
+                    {entryEditFormat === "json" ? "MeTTa" : "JSON"}
+                  </button>
+                  <button type="button" onClick={reloadEntryEdit} disabled={entryEditBusy}>
+                    Reload
+                  </button>
+                  <button type="button" onClick={() => saveEntryEdit("in-place")} disabled={entryEditBusy}>
+                    Save in-place
+                  </button>
+                  <button type="button" onClick={() => saveEntryEdit("at-end")} disabled={entryEditBusy}>
+                    Save at-end
+                  </button>
+                  <button type="button" onClick={downloadEntryEdit} disabled={entryEditBusy}>
+                    Save as..
+                  </button>
+                  <button type="button" onClick={() => setEntryEditId(null)} disabled={entryEditBusy}>
+                    Close
+                  </button>
+                  {entryEditNote && <span className="chat-entry-edit-note">{entryEditNote}</span>}
+                </div>
+              </div>
             )}
           </div>
         ))}

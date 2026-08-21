@@ -4,6 +4,24 @@ Talk over the shared append-only mailbox (`messages.jsonl`). Every record has
 `from`, `to`, optional `channel_id`, a `type` and `text`; any message can be
 inspected as raw JSON with the `{ }` button.
 
+## Per-entry editor (✎)
+
+Every bubble everywhere also has a ✎ button: the bubble grows, tints amber and
+becomes an editor holding the record's complete JSON (sized to show it all).
+Like the other JSON editors it has a **MeTTa** mode toggle (same
+resource codec), **Reload** discards edits, and **Save as..** downloads the
+text to disk. Saving posts the complete record to `POST /api/mailbox/record`
+(also available as worker op `edit_record` — mm-side message edits flow
+through the same call):
+
+- **Save in-place** — rewrites that record's log line wholesale (its `id` is
+  kept; a timestamped `messages.jsonl.edited-*.bak` backup is written and any
+  byte cursors are re-pointed).
+- **Save at-end** — appends the edited version as the newest record (fresh
+  `id` + `entry_key`) and marks the old line `replaced-by: entry_<n>`; for
+  `*_entry` registry records latest-per-id already wins, so the original just
+  becomes traceable history.
+
 ## Pickers (top banner)
 
 - **YOU** — the agent identity you write as (`from` on sent records).
