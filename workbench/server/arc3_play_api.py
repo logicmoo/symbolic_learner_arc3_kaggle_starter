@@ -222,12 +222,14 @@ class PlaySession:
             with _engine_lock:
                 self.runner.step(action, x=x, y=y)
             data = {key: value for key, value in (("x", x), ("y", y)) if value is not None}
-            self.replay_log.append({"op": "step", "action": str(action).upper(), "data": data})
+            op: dict[str, Any] = {"op": "step", "action": str(action).upper(), "data": data}
             level = self.runner.current_level_label()
             if level != self._last_level:
                 move = self._record_level_transition(action, x, y, level)
             else:
                 move = self._record_move(action, x, y)
+            op["directory"] = move.get("directory")
+            self.replay_log.append(op)
             return move
 
     def _record_move(self, action: str, x: int | None, y: int | None) -> dict[str, Any]:
@@ -473,6 +475,7 @@ class PlaySession:
                 "framePath": self._relative(frame_path) if frame_path.is_file() else None,
                 "forkedFrom": self.forked_from,
                 "availableActions": self._available_actions(),
+                "replayLog": [dict(entry) for entry in self.replay_log],
             }
             if include_moves:
                 payload["moves"] = list(self.moves)
@@ -521,6 +524,8 @@ def create_session(body: dict[str, Any] = Body(default_factory=dict)) -> dict[st
     workspace_id = str(body.get("workspaceId") or "").strip()
     game_id = str(body.get("gameId") or "").strip()
     savepoint_id = str(body.get("savepointId") or "").strip()
+    replay_ops_raw = body.get("replayLog")
+    replay_ops = [dict(op) for op in replay_ops_raw] if isinstance(replay_ops_raw, list) else []
     if not workspace_id or (not game_id and not savepoint_id):
         raise HTTPException(status_code=400, detail="workspaceId and gameId are required")
     root = _workspace_root(workspace_id)
@@ -537,6 +542,10 @@ def create_session(body: dict[str, Any] = Body(default_factory=dict)) -> dict[st
                 list(savepoint.get("replay_log") or []),
                 forked_from=str(savepoint.get("id")),
             )
+        elif replay_ops:
+            # Play-from-here on a closed session: re-drive the recorded ops
+            # into this fresh session (no revival of the old one needed).
+            session.replay_recipe(replay_ops, forked_from=str(body.get("forkedFrom") or "history"))
     except HTTPException:
         raise
     except Exception as error:

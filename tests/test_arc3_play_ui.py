@@ -40,6 +40,8 @@ def test_play_component_has_recorder_contract() -> None:
     assert "rewind-target" in source
     assert "Click to rewind here" in source
     assert "actionShort" in source
+    assert "START SESSION" in source
+    assert "playing from here" in source
     assert "Fork" in source
     assert "Resume" in source
     assert "End session" in source

@@ -34,6 +34,13 @@ type PlayMove = {
   level_completed?: string;
 };
 
+type ReplayOp = {
+  op: string;
+  action?: string;
+  data?: Record<string, number>;
+  directory?: string | null;
+};
+
 type PlaySessionSnapshot = {
   id: string;
   workspaceId: string;
@@ -50,6 +57,7 @@ type PlaySessionSnapshot = {
   framePath?: string | null;
   forkedFrom?: string | null;
   availableActions: PlayAction[];
+  replayLog?: ReplayOp[];
   moves?: PlayMove[];
 };
 
@@ -150,7 +158,13 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
     try {
       await work();
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : String(reason));
+      const message = reason instanceof Error ? reason.message : String(reason);
+      setError(message);
+      if (message.includes("unknown play session")) {
+        // Backend lost the session (e.g. reload) — flip to closed so
+        // START SESSION and fork-from-history become available.
+        setSession((current) => (current ? { ...current, closed: true } : current));
+      }
     } finally {
       setBusy(false);
     }
@@ -164,6 +178,25 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
       const payload = await request("/api/arc3-play/sessions", {
         method: "POST",
         body: JSON.stringify({ workspaceId, gameId }),
+      });
+      setArmedAction(null);
+      setSession(payload.session as PlaySessionSnapshot);
+    });
+
+  const playFromMove = (move: PlayMove) =>
+    perform(async () => {
+      if (!session) return;
+      const log = session.replayLog || [];
+      const cut = log.findIndex((entry) => entry.directory === move.directory);
+      if (cut < 0) return;
+      const payload = await request("/api/arc3-play/sessions", {
+        method: "POST",
+        body: JSON.stringify({
+          workspaceId,
+          gameId: session.gameDirectory,
+          replayLog: log.slice(0, cut + 1),
+          forkedFrom: `history ${move.directory}`,
+        }),
       });
       setArmedAction(null);
       setSession(payload.session as PlaySessionSnapshot);
@@ -389,6 +422,16 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
                 ))}
               </div>
               <div className="arc3-play-actions arc3-play-session-controls">
+                {session.closed && (
+                  <button
+                    className="arc3-play-action"
+                    disabled={busy}
+                    title="Start a fresh session of this game"
+                    onClick={() => void startGame(session.gameDirectory)}
+                  >
+                    START SESSION
+                  </button>
+                )}
                 <span
                   className="arc3-play-rewind-wrap"
                   onMouseLeave={() => {
@@ -503,7 +546,10 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
                 {newestFirst.map((move) => {
                   const levelIdx = levelIndexByDir.get(move.directory);
                   const rewindCount = levelIdx === undefined ? 0 : levelMoves.length - 1 - levelIdx;
-                  const clickable = rewindCount > 0 && !busy && !session.closed;
+                  const canRewind = !session.closed && !busy && rewindCount > 0;
+                  const canReplayFrom =
+                    session.closed && !busy && (session.replayLog || []).some((entry) => entry.directory === move.directory);
+                  const clickable = canRewind || canReplayFrom;
                   return (
                   <div
                     key={move.directory}
@@ -511,21 +557,25 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
                       rewindTargetDir === move.directory ? " rewind-target" : ""
                     }${clickable ? " clickable" : ""}`}
                     title={
-                      clickable
+                      canRewind
                         ? `Click to rewind here — undoes the ${rewindCount} newer move${rewindCount > 1 ? "s" : ""}`
-                        : levelIdx !== undefined && rewindCount === 0
-                          ? "Current position"
-                          : undefined
+                        : canReplayFrom
+                          ? "Click to fork a new session playing from here"
+                          : levelIdx !== undefined && rewindCount === 0 && !session.closed
+                            ? "Current position"
+                            : undefined
                     }
-                    onMouseEnter={clickable ? () => setRewindHover(rewindCount) : undefined}
-                    onMouseLeave={clickable ? () => setRewindHover(null) : undefined}
+                    onMouseEnter={canRewind ? () => setRewindHover(rewindCount) : undefined}
+                    onMouseLeave={canRewind ? () => setRewindHover(null) : undefined}
                     onClick={
-                      clickable
+                      canRewind
                         ? () => {
                             setRewindHover(null);
                             void undoMove(rewindCount);
                           }
-                        : undefined
+                        : canReplayFrom
+                          ? () => void playFromMove(move)
+                          : undefined
                     }
                   >
                     <img src={assetUrl(`${move.directory}/image.png`)} alt={`Move ${move.index}`} loading="lazy" />
