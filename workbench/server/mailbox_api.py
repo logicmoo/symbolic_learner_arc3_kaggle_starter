@@ -181,6 +181,9 @@ ADAPTER_TYPE_SEEDS = {
 # a presence logged in it merges tracking fields into that relay's stored
 # JSON here, and tries to note logouts the same way.
 RELAY_SEEDS = {
+    # The mm presences relay-chat the agent -> platform-channel drop-box:
+    # they speak queued outbound items into mattermost. The mm channel is
+    # decided per item from its address hints.
     "mm_relay_presence_min_botnick": {
         "adapter": "mattermost",
         "server": "chat.singularitynet.io",
@@ -188,6 +191,7 @@ RELAY_SEEDS = {
         "own_token": True,
         "token_env": "MM_BOT_TOKEN",
         "puppeted_by": "codex agents",
+        "relay-chat": [OUTBOUND_TO_CHANNEL_QUEUE],
     },
     "mm_relay_presence_atom_ant": {
         "adapter": "mattermost",
@@ -195,6 +199,7 @@ RELAY_SEEDS = {
         "identity": "atom_ant",
         "own_token": True,
         "puppeted_by": "codex agents",
+        "relay-chat": [OUTBOUND_TO_CHANNEL_QUEUE],
     },
     "mm_relay_presence_metta_bot": {
         "adapter": "mattermost",
@@ -202,6 +207,7 @@ RELAY_SEEDS = {
         "identity": "metta_bot",
         "own_token": True,
         "puppeted_by": "codex agents",
+        "relay-chat": [OUTBOUND_TO_CHANNEL_QUEUE],
     },
     "irc_relay_presence_jllykifsh": {
         "adapter": "irc",
@@ -2694,49 +2700,67 @@ def mailbox_entity_save(
     id: str = Body(..., embed=True),
     entry: dict[str, Any] = Body(..., embed=True),
 ) -> dict[str, Any]:
-    """Persist an edited agent/channel JSON as a durable blackboard record.
+    """Persist an edited entity JSON as a durable blackboard record.
 
-    Agent entries go to ``server_agents_registry`` and channel entries to
-    ``server_channels_registry``; the latest record per id wins. Computed fields
-    (``cursors``/``messages``) are stripped before storing.
+    Agent entries go to ``server_agents_registry``, channel entries to
+    ``server_channels_registry``, and relay/adapter_type entries to
+    ``server_adapters_relays_registry``; the latest record per id wins.
+    Computed fields (``cursors``/``messages``) are stripped before storing.
     """
 
     if _mailbox_client is None:
         raise HTTPException(status_code=503, detail="mailbox_channels client is not installed")
+    kinds = {
+        "agent": (AGENTS_CHANNEL, "agent_entry"),
+        "channel": (CHANNELS_CHANNEL, "channel_entry"),
+        "relay": (ADAPTERS_RELAYS_CHANNEL, "relay_entry"),
+        "adapter_type": (ADAPTERS_RELAYS_CHANNEL, "adapter_type_entry"),
+    }
     kind_id = kind.strip().lower() if isinstance(kind, str) else ""
     entity_id = id.strip() if isinstance(id, str) else ""
-    if kind_id not in {"agent", "channel"}:
-        raise HTTPException(status_code=400, detail="kind must be 'agent' or 'channel'")
+    if kind_id not in kinds:
+        raise HTTPException(
+            status_code=400,
+            detail="kind must be 'agent', 'channel', 'relay' or 'adapter_type'",
+        )
     if not entity_id:
         raise HTTPException(status_code=400, detail="id must not be empty")
     if not isinstance(entry, dict):
         raise HTTPException(status_code=400, detail="entry must be a JSON object")
     root = resolve_mailbox_root()
-    target = AGENTS_CHANNEL if kind_id == "agent" else CHANNELS_CHANNEL
+    target, message_type = kinds[kind_id]
     payload = {
         k: v
         for k, v in entry.items()
         if k not in ("cursors", "messages", "subscribers", "lastMessageAt")
     }
     payload["id"] = entity_id
-    # authority: filename | channelname — decides whether source data overwrites
-    # this entry at start; authority_copy_from: always | once — with a filename
-    # authority, "once" stops re-copying after the first materialization.
-    payload.setdefault("authority", target)
-    payload.setdefault("authority_copy_from", "always")
+    if kind_id in ("agent", "channel"):
+        # authority: filename | channelname — decides whether source data
+        # overwrites this entry at start; authority_copy_from: always | once —
+        # with a filename authority, "once" stops re-copying after the first
+        # materialization.
+        payload.setdefault("authority", target)
+        payload.setdefault("authority_copy_from", "always")
     try:
         _mailbox_client.send(
             target,
             "",
             sender=DEFAULT_USER_AGENT,
             root=root,
-            message_type=f"{kind_id}_entry",
+            message_type=message_type,
             extra_fields={"entry": payload},
             channel_id=target,
         )
     except Exception as error:
         raise HTTPException(status_code=500, detail=f"Storing entry failed: {error}") from error
-    records = list_agents(root) if kind_id == "agent" else list_channels(root)
+    if kind_id == "agent":
+        records = list_agents(root)
+    elif kind_id == "channel":
+        records = list_channels(root)
+    else:
+        registry = adapters_relays_registry(root)
+        records = registry["relays" if kind_id == "relay" else "adapter_types"]
     fresh = next((item for item in records if item.get("id") == entity_id), payload)
     return {"kind": kind_id, "id": entity_id, "stored": True, "channel": target, "entry": fresh}
 

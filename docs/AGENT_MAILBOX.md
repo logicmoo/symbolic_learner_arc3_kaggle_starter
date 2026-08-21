@@ -141,12 +141,13 @@ cursor at the equivalent position in the new file.
 - **`server_adapters_relays_registry`** — the delivery plumbing as data:
   `adapter_type_entry` per adapter type the code ships, and `relay_entry` per
   presence — puppet bots with their own tokens that say things as our codex
-  agents puppet them (e.g. `mm_relay_presence_min_botnick` on
-  chat.singularitynet.io, or `irc_relay_presence_jllykifsh` on QuakeNet
-  `##logicmoo`, whose prospective job is written into its config now as
-  `example-of-relay-chat: ["test", "image", "arc3"]` — software configured
-  later will relay those mattermost channels into `##logicmoo` prefixed like
-  `snet|test|douglas.miles: hi irc`). A presence
+  agents puppet them. Presences carry `relay-chat` lists (channel names for
+  now; richer per-entry props later): the mm presences relay the
+  `server_outbound_relay_agent_to_channel` drop-box into mattermost, and
+  `irc_relay_presence_jllykifsh` on QuakeNet `##logicmoo` carries its
+  prospective job as `example-of-relay-chat: ["test", "image", "arc3"]` —
+  software configured later will relay those mattermost channels into
+  `##logicmoo` prefixed like `snet|test|douglas.miles: hi irc`). A presence
   declaration carries all the config its adapter might use; how presences map
   to sockets (one each, pooled) is the adapter's business, and the adapter
   merges login (and best-effort logout) tracking into the stored relay JSONs.
