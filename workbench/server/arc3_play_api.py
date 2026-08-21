@@ -450,7 +450,7 @@ class PlaySession:
             "ACTION3": "LEFT",
             "ACTION4": "RIGHT",
             "ACTION5": "SPACE",
-            "ACTION6": "SELECT",
+            "ACTION6": "CLICK",
             "ACTION7": "UNDO",
         }
         actions: list[dict[str, Any]] = []

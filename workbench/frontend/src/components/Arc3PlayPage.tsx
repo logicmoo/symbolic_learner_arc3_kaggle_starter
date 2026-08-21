@@ -308,10 +308,10 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
 
   const handleBoardClick = (event: React.MouseEvent<HTMLImageElement>) => {
     if (!session || session.closed || busy) return;
-    // No armed action: fall back to an enabled click action (SELECT).
+    // No armed action: fall back to an enabled coordinate action (CLICK).
     const fallback = !armedAction && autoSelect
       ? session.availableActions.find(
-          (action) => action.complex && action.enabled && action.label.toUpperCase() === "SELECT",
+          (action) => action.complex && action.enabled && action.label.toUpperCase() === "CLICK",
         ) || session.availableActions.find((action) => action.complex && action.enabled)
       : null;
     const action = armedAction || (fallback ? fallback.id : null);
@@ -427,7 +427,7 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
                   armedAction
                     ? `Click the board to send ${armedAction} at that cell`
                     : autoSelect && session.availableActions.some((action) => action.complex && action.enabled)
-                      ? "Click a cell to auto-SELECT it · arrow keys / Space play directly"
+                      ? "Click a cell to auto-CLICK it · arrow keys / Space play directly"
                       : "Arrow keys / Space play directly"
                 }
               >
@@ -462,10 +462,10 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
                 ))}
                 <button
                   className={`arc3-play-action arc3-play-autoselect ${autoSelect ? "down" : ""}`}
-                  title="When down, clicking a board cell fires SELECT there automatically (no arming needed)"
+                  title="When down, clicking a board cell fires CLICK there automatically (no arming needed)"
                   onClick={() => setAutoSelect((value) => !value)}
                 >
-                  auto-SELECT
+                  auto-CLICK
                 </button>
               </div>
               <div className="arc3-play-actions arc3-play-session-controls">
