@@ -418,3 +418,64 @@
 .arc3-play-move.clickable:hover {
   border-color: rgba(46, 204, 64, 0.8);
 }
+
+.arc3-play-target button,
+.arc3-play-savepoint button {
+  border-radius: 4px;
+  padding: 2px 10px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.75rem;
+}
+
+.arc3-play-target button {
+  border: 1px solid rgba(0, 116, 217, 0.7);
+  background: rgba(0, 116, 217, 0.2);
+  color: inherit;
+}
+
+.arc3-play-target button:hover {
+  background: rgba(0, 116, 217, 0.35);
+}
+
+.arc3-play-savepoint-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.arc3-play-savepoint button.resume {
+  border: 1px solid rgba(46, 204, 64, 0.7);
+  background: rgba(46, 204, 64, 0.2);
+  color: inherit;
+}
+
+.arc3-play-savepoint button.resume:hover {
+  background: rgba(46, 204, 64, 0.35);
+}
+
+.arc3-play-savepoint button.dup {
+  border: 1px solid rgba(0, 116, 217, 0.7);
+  background: rgba(0, 116, 217, 0.2);
+  color: inherit;
+}
+
+.arc3-play-savepoint button.dup:hover {
+  background: rgba(0, 116, 217, 0.35);
+}
+
+.arc3-play-savepoint button.del {
+  border: 1px solid rgba(255, 65, 54, 0.7);
+  background: rgba(255, 65, 54, 0.2);
+  color: inherit;
+}
+
+.arc3-play-savepoint button.del:hover {
+  background: rgba(255, 65, 54, 0.35);
+}
+
+.arc3-play-target button:disabled,
+.arc3-play-savepoint button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}

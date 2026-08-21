@@ -121,6 +121,7 @@ class PlaySession:
         self.created_at = _utc_now()
         self.lock = threading.RLock()
         self.closed = False
+        self._autosave_id = uuid.uuid4().hex[:12]
         with _engine_lock:
             self.runner = module.Arc3Runner(
                 game_id=self.game_id,
@@ -230,6 +231,7 @@ class PlaySession:
                 move = self._record_move(action, x, y)
             op["directory"] = move.get("directory")
             self.replay_log.append(op)
+            self._autosave()
             return move
 
     def _record_move(self, action: str, x: int | None, y: int | None) -> dict[str, Any]:
@@ -274,6 +276,7 @@ class PlaySession:
                 self.runner.reset(clear_history=True)
             self.replay_log.append({"op": "reset"})
             self._begin_level_dir(reason="new_attempt")
+            self._autosave()
 
     def undo(self, count: int = 1) -> dict[str, Any]:
         # Artificial rewind: games are deterministic, so RESET the current
@@ -321,6 +324,7 @@ class PlaySession:
             except Exception:
                 verified = None
             self._write_recording(reason="undo")
+            self._autosave()
             return {
                 "rewound": rewound,
                 "count": len(rewound),
@@ -346,36 +350,53 @@ class PlaySession:
                         pass
             self.replay_log = []
             self._begin_level_dir(reason="game_restart")
+            self._autosave()
 
     def fork(self, label: str | None = None) -> dict[str, Any]:
         # Non-disruptive save-point: snapshot the deterministic replay
         # recipe into the game log and keep playing.
         with self.lock:
             self._require_open()
-            savepoint = {
-                "id": uuid.uuid4().hex[:12],
-                "kind": "arc3_play_savepoint",
-                "created_at": _utc_now(),
-                "label": str(label).strip() if label else None,
-                "game_id": self.game_id,
-                "game_directory": self.game_dir,
-                "level": self._last_level,
-                "level_directory": self._relative(self.level_dir),
-                "move_index": len(self._level_moves) - 1 if self._level_moves else None,
-                "state": self.runner.state_name(),
-                "session_id": self.id,
-                "replay_log": [dict(entry) for entry in self.replay_log],
-            }
-            path = self.workspace_root / "data" / self.game_dir / "savepoints.json"
-            with _savepoints_lock:
-                entries = _load_savepoints(path)
-                entries.append(savepoint)
-                path.parent.mkdir(parents=True, exist_ok=True)
-                path.write_text(
-                    json.dumps(entries, indent=2, ensure_ascii=False),
-                    encoding="utf-8",
-                )
+            savepoint = self._savepoint_payload(uuid.uuid4().hex[:12], label)
+            self._write_savepoint(savepoint)
             return savepoint
+
+    def _savepoint_payload(self, savepoint_id: str, label: str | None) -> dict[str, Any]:
+        return {
+            "id": savepoint_id,
+            "kind": "arc3_play_savepoint",
+            "created_at": _utc_now(),
+            "label": str(label).strip() if label else None,
+            "game_id": self.game_id,
+            "game_directory": self.game_dir,
+            "level": self._last_level,
+            "level_directory": self._relative(self.level_dir),
+            "move_index": len(self._level_moves) - 1 if self._level_moves else None,
+            "state": self.runner.state_name(),
+            "session_id": self.id,
+            "replay_log": [dict(entry) for entry in self.replay_log],
+        }
+
+    def _write_savepoint(self, savepoint: dict[str, Any], replace_id: str | None = None) -> None:
+        path = self.workspace_root / "data" / self.game_dir / "savepoints.json"
+        with _savepoints_lock:
+            entries = _load_savepoints(path)
+            if replace_id:
+                entries = [entry for entry in entries if str(entry.get("id")) != replace_id]
+            entries.append(savepoint)
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(
+                json.dumps(entries, indent=2, ensure_ascii=False),
+                encoding="utf-8",
+            )
+
+    def _autosave(self) -> None:
+        # Rolling backup: one savepoint per session, overwritten after every
+        # move so the latest position is always resumable.
+        if not any(entry.get("op") == "step" for entry in self.replay_log):
+            return
+        savepoint = self._savepoint_payload(self._autosave_id, "auto save (latest)")
+        self._write_savepoint(savepoint, replace_id=self._autosave_id)
 
     def replay_recipe(self, recipe: list[dict[str, Any]], forked_from: str) -> None:
         # Re-drive the session through the normal act/reset path so every
@@ -576,6 +597,56 @@ def list_savepoints(workspaceId: str, gameId: str | None = None) -> dict[str, An
     return {"savepoints": entries}
 
 
+@router.delete("/savepoints/{savepoint_id}")
+def delete_savepoint(savepoint_id: str, workspaceId: str, gameId: str | None = None) -> dict[str, Any]:
+    root = _workspace_root(workspaceId)
+    data_root = root / "data"
+    if gameId:
+        directories = [data_root / _game_slug(gameId)]
+    else:
+        directories = [path for path in data_root.iterdir() if path.is_dir()] if data_root.is_dir() else []
+    with _savepoints_lock:
+        for directory in directories:
+            path = directory / "savepoints.json"
+            entries = _load_savepoints(path)
+            kept = [entry for entry in entries if str(entry.get("id")) != savepoint_id]
+            if len(kept) != len(entries):
+                path.write_text(
+                    json.dumps(kept, indent=2, ensure_ascii=False),
+                    encoding="utf-8",
+                )
+                return {"deleted": savepoint_id}
+    raise HTTPException(status_code=404, detail=f"savepoint not found: {savepoint_id}")
+
+
+@router.post("/savepoints/{savepoint_id}/duplicate", status_code=201)
+def duplicate_savepoint(savepoint_id: str, workspaceId: str, gameId: str | None = None) -> dict[str, Any]:
+    root = _workspace_root(workspaceId)
+    data_root = root / "data"
+    if gameId:
+        directories = [data_root / _game_slug(gameId)]
+    else:
+        directories = [path for path in data_root.iterdir() if path.is_dir()] if data_root.is_dir() else []
+    with _savepoints_lock:
+        for directory in directories:
+            path = directory / "savepoints.json"
+            entries = _load_savepoints(path)
+            for entry in entries:
+                if str(entry.get("id")) == savepoint_id:
+                    copy = json.loads(json.dumps(entry))
+                    copy["id"] = uuid.uuid4().hex[:12]
+                    copy["created_at"] = _utc_now()
+                    label = str(entry.get("label") or "").strip()
+                    copy["label"] = f"{label} (copy)" if label else f"copy of {savepoint_id}"
+                    entries.append(copy)
+                    path.write_text(
+                        json.dumps(entries, indent=2, ensure_ascii=False),
+                        encoding="utf-8",
+                    )
+                    return {"savepoint": {key: value for key, value in copy.items() if key != "replay_log"}}
+    raise HTTPException(status_code=404, detail=f"savepoint not found: {savepoint_id}")
+
+
 def _find_savepoint(root: Path, savepoint_id: str, game_dir: str | None = None) -> dict[str, Any] | None:
     data_root = root / "data"
     if game_dir:
@@ -687,3 +758,17 @@ def close_session(session_id: str) -> dict[str, Any]:
     with _sessions_lock:
         _sessions.pop(session_id, None)
     return {"session": session.snapshot()}
+
+
+@router.on_event("shutdown")
+def _save_open_sessions_on_shutdown() -> None:
+    # The dev server file-watcher reloads the process on code changes.
+    # The rolling per-move autosave already keeps every session backed up,
+    # so shutdown only needs to close environments cleanly.
+    with _sessions_lock:
+        sessions = list(_sessions.values())
+    for session in sessions:
+        try:
+            session.close()
+        except Exception:
+            pass

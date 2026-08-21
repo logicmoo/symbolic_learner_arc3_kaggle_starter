@@ -173,6 +173,13 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
   const startGame = (gameId: string) =>
     perform(async () => {
       if (session && !session.closed) {
+        if (session.moveCount > 0) {
+          // Jumping to another game: save the abandoned position first.
+          await request(`/api/arc3-play/sessions/${encodeURIComponent(session.id)}/fork`, {
+            method: "POST",
+            body: JSON.stringify({ label: `auto save (switched to ${gameId})` }),
+          }).catch(() => undefined);
+        }
         await request(`/api/arc3-play/sessions/${encodeURIComponent(session.id)}`, { method: "DELETE" }).catch(() => undefined);
       }
       const payload = await request("/api/arc3-play/sessions", {
@@ -181,6 +188,7 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
       });
       setArmedAction(null);
       setSession(payload.session as PlaySessionSnapshot);
+      await loadSavepoints();
     });
 
   const playFromMove = (move: PlayMove) =>
@@ -260,6 +268,24 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
       });
       setArmedAction(null);
       setSession(payload.session as PlaySessionSnapshot);
+    });
+
+  const duplicateSavepoint = (savepointId: string) =>
+    perform(async () => {
+      await request(
+        `/api/arc3-play/savepoints/${encodeURIComponent(savepointId)}/duplicate?workspaceId=${encodeURIComponent(workspaceId)}`,
+        { method: "POST" },
+      );
+      await loadSavepoints();
+    });
+
+  const deleteSavepoint = (savepointId: string) =>
+    perform(async () => {
+      await request(
+        `/api/arc3-play/savepoints/${encodeURIComponent(savepointId)}?workspaceId=${encodeURIComponent(workspaceId)}`,
+        { method: "DELETE" },
+      );
+      await loadSavepoints();
     });
 
   const endSession = () =>
@@ -612,9 +638,32 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
                     {point.created_at} · {point.state || "?"}
                   </small>
                 </div>
-                <button disabled={busy} title="Replay this save-point into a fresh session" onClick={() => void resumeSavepoint(point.id)}>
-                  Resume
-                </button>
+                <div className="arc3-play-savepoint-buttons">
+                  <button
+                    className="resume"
+                    disabled={busy}
+                    title="Replay this save-point into a fresh session"
+                    onClick={() => void resumeSavepoint(point.id)}
+                  >
+                    Resume
+                  </button>
+                  <button
+                    className="dup"
+                    disabled={busy}
+                    title="Duplicate this save-point"
+                    onClick={() => void duplicateSavepoint(point.id)}
+                  >
+                    Duplicate
+                  </button>
+                  <button
+                    className="del"
+                    disabled={busy}
+                    title="Delete this save-point"
+                    onClick={() => void deleteSavepoint(point.id)}
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
             ))}
             {!savepoints.length && <div className="arc3-play-empty">No save-points yet.</div>}
