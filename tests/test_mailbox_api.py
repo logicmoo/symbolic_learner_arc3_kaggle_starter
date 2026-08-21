@@ -257,6 +257,38 @@ def test_mailbox_send_with_channel_id_auto_subscribes(
     assert fake.sent and fake.sent[0].get("channel_id") == "room-9"
 
 
+def test_mailbox_send_on_registry_channel_also_auto_subscribes(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setenv("AGENT_MAILBOX_DIR", str(tmp_path))
+    fake = _FakeRelay()
+    monkeypatch.setattr(mailbox_api, "_mailbox_client", fake)
+    result = mailbox_api.mailbox_send(
+        text="hi", to="some-agent", sender="me", channel_id=mailbox_api.REGISTRY_CHANNEL
+    )
+    assert result["subscribed"] is True
+    assert (mailbox_api.REGISTRY_CHANNEL, "some-agent") in fake.cursors
+
+
+def test_stored_dont_autosubscribe_overrides_default(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setenv("AGENT_MAILBOX_DIR", str(tmp_path))
+    fake = _FakeRelay()
+    monkeypatch.setattr(mailbox_api, "_mailbox_client", fake)
+    _write_jsonl(
+        tmp_path / "messages.jsonl",
+        [
+            {"id": "1", "from": "app", "to": mailbox_api.REGISTRY_CHANNEL,
+             "type": "channel_config", "config_for": "room-9",
+             "text": json.dumps({"dont-autosubscribe": True})},
+        ],
+    )
+    result = mailbox_api.mailbox_send(text="hi", to="some-agent", sender="me", channel_id="room-9")
+    assert result["subscribed"] is False
+    assert fake.cursors == []
+
+
 def test_mailbox_create_agent(monkeypatch: pytest.MonkeyPatch) -> None:
     fake = _FakeRelay()
     monkeypatch.setattr(mailbox_api, "_mailbox_client", fake)
@@ -290,9 +322,6 @@ def test_list_channels_annotates_readable_names(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     monkeypatch.setattr(mailbox_api, "_mailbox_client", None)
-    directory = [
-        {"identifier": "c83yabc", "text": "arc3-room", "kind": "channel", "display": "ARC3 Room"},
-    ]
     _write_jsonl(
         tmp_path / "messages.jsonl",
         [
@@ -300,8 +329,14 @@ def test_list_channels_annotates_readable_names(
                 "id": "1",
                 "from": "app",
                 "to": mailbox_api.REGISTRY_CHANNEL,
-                "type": "identifier_directory",
-                "text": json.dumps(directory),
+                "type": "identifier_entry",
+                "text": "",
+                "entry": {
+                    "identifier": "c83yabc",
+                    "text": "arc3-room",
+                    "kind": "channel",
+                    "metadata": {"display_name": "ARC3 Room"},
+                },
             },
             {"id": "2", "from": "mm-chat-host-c83yabc", "to": "someone", "text": "traffic"},
         ],
@@ -311,10 +346,12 @@ def test_list_channels_annotates_readable_names(
     assert channels["mm-chat-host-c83yabc"]["name"] == "ARC3 Room"
 
 
-def test_messaging_registry_falls_back_to_stored(
+def test_messaging_registry_reads_only_the_blackboard(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    monkeypatch.setattr(mailbox_api, "_mailbox_client", None)
+    # Even with a live relay available, the stored record is the source of truth.
+    fake = _FakeRelay(registry={"version": 1, "agents": [{"agent_id": "live-only"}]})
+    monkeypatch.setattr(mailbox_api, "_mailbox_client", fake)
     snapshot = {"version": 1, "agents": [{"agent_id": "stored-agent"}], "channels": []}
     _write_jsonl(
         tmp_path / "messages.jsonl",
@@ -331,24 +368,25 @@ def test_messaging_registry_falls_back_to_stored(
     assert mailbox_api.messaging_registry(tmp_path) == snapshot
     agent_ids = [agent["id"] for agent in mailbox_api.list_agents(tmp_path)]
     assert "stored-agent" in agent_ids
+    assert "live-only" not in agent_ids
 
 
 def test_channel_config_merges_registry_traffic_and_stored(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    fake = _FakeRelay(
-        registry={
-            "channels": [
-                {"id": "room-1", "channel_type": "mattermost", "aliases": [], "subscribers": ["a"]},
-            ],
-            "agents": [],
-        }
-    )
-    monkeypatch.setattr(mailbox_api, "_mailbox_client", fake)
+    monkeypatch.setattr(mailbox_api, "_mailbox_client", None)
+    registry = {
+        "channels": [
+            {"id": "room-1", "channel_type": "mattermost", "aliases": [], "subscribers": ["a"]},
+        ],
+        "agents": [],
+    }
     stored = {"purpose": "testing", "channelName": "Renamed Room"}
     _write_jsonl(
         tmp_path / "messages.jsonl",
         [
+            {"id": "0", "from": "app", "to": mailbox_api.REGISTRY_CHANNEL,
+             "type": "messaging_registry", "text": json.dumps(registry)},
             {"id": "1", "from": "mattermost", "to": "bridge", "channel_id": "room-1",
              "channel_name": "room-one", "text": "hi", "timestamp": "2026-01-01T00:00:00Z"},
             {"id": "2", "from": "app", "to": mailbox_api.REGISTRY_CHANNEL,
@@ -361,13 +399,18 @@ def test_channel_config_merges_registry_traffic_and_stored(
     assert config["purpose"] == "testing"
     # The stored edit overlays the traffic-derived name.
     assert config["channelName"] == "Renamed Room"
+    # Every channel (registry included) auto-subscribes unless a stored
+    # config opts it out.
+    assert config["dont-autosubscribe"] is False
+    registry_config = mailbox_api.channel_config(tmp_path, mailbox_api.REGISTRY_CHANNEL)
+    assert registry_config["dont-autosubscribe"] is False
 
 
 def test_update_channel_config_subscribes_and_stores(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     monkeypatch.setenv("AGENT_MAILBOX_DIR", str(tmp_path))
-    fake = _FakeRelay(registry={"channels": [], "agents": []})
+    fake = _FakeRelay()
     monkeypatch.setattr(mailbox_api, "_mailbox_client", fake)
     result = mailbox_api.mailbox_update_channel_config(
         channel="room-2", config={"channelName": "Room Two", "subscribers": ["bob"]}
@@ -381,14 +424,14 @@ def test_update_channel_config_subscribes_and_stores(
     assert json.loads(stored[0]["text"])["channelName"] == "Room Two"
 
 
-def test_registry_bootstrap_stores_both_snapshots(
+def test_registry_bootstrap_posts_entry_bubbles(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     monkeypatch.setenv("AGENT_MAILBOX_DIR", str(tmp_path))
     fake = _FakeRelay(
         registry={"version": 1, "agents": [{"agent_id": "a1"}], "connectors": [], "channels": [], "relays": []},
         identifiers=[
-            {"identifier": "u1", "text": "alice", "kind": "user", "metadata": {}},
+            {"identifier": "u1", "text": "alice", "kind": "user", "metadata": {"email": "a@x"}},
             {"identifier": "c1", "text": "room", "kind": "channel",
              "metadata": {"display_name": "The Room"}},
             {"identifier": "", "text": "dropped", "kind": "user"},
@@ -397,32 +440,68 @@ def test_registry_bootstrap_stores_both_snapshots(
     monkeypatch.setattr(mailbox_api, "_mailbox_client", fake)
     result = mailbox_api.mailbox_registry_bootstrap(limit=100)
     assert result["registryStored"] is True
-    assert result["identifiersStored"] is True
     assert result["identifierCount"] == 2
+    assert result["identifiersPosted"] == 2
     types = [record["type"] for record in fake.sent]
-    assert "messaging_registry" in types and "identifier_directory" in types
-    directory = json.loads(
-        next(record for record in fake.sent if record["type"] == "identifier_directory")["text"]
-    )
-    assert {"identifier": "c1", "text": "room", "kind": "channel",
-            "display": "The Room", "system": None} in directory
+    assert "messaging_registry" in types
+    bubbles = [record for record in fake.sent if record["type"] == "identifier_entry"]
+    # One bubble per entry, carrying the full uncondensed entry with empty text.
+    assert len(bubbles) == 2
+    assert all(record["text"] == "" for record in bubbles)
+    assert bubbles[0]["entry"] == fake.identifiers[0]
+    assert bubbles[1]["entry"]["metadata"]["display_name"] == "The Room"
 
 
-def test_identifier_names_merges_stored_and_relay(
+def test_registry_bootstrap_skips_unchanged_entries(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
+    monkeypatch.setenv("AGENT_MAILBOX_DIR", str(tmp_path))
+    entry = {"identifier": "u1", "text": "alice", "kind": "user", "metadata": {}}
+    _write_jsonl(
+        tmp_path / "messages.jsonl",
+        [
+            {"id": "1", "from": "app", "to": mailbox_api.REGISTRY_CHANNEL,
+             "type": "identifier_entry", "text": "", "entry": entry},
+        ],
+    )
+    fake = _FakeRelay(
+        registry={"version": 1, "agents": [], "connectors": [], "channels": [], "relays": []},
+        identifiers=[
+            dict(entry),
+            {"identifier": "u2", "text": "bob", "kind": "user", "metadata": {}},
+        ],
+    )
+    monkeypatch.setattr(mailbox_api, "_mailbox_client", fake)
+    result = mailbox_api.mailbox_registry_bootstrap(limit=100)
+    assert result["identifierCount"] == 2
+    assert result["identifiersPosted"] == 1
+    assert result["identifiersUnchanged"] == 1
+    bubbles = [record for record in fake.sent if record["type"] == "identifier_entry"]
+    assert [record["entry"]["identifier"] for record in bubbles] == ["u2"]
+
+
+def test_identifier_names_reads_only_the_blackboard(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    # A live relay with extra identifiers must not leak into name resolution.
     fake = _FakeRelay(identifiers=[{"identifier": "live-1", "text": "livename", "kind": "user"}])
     monkeypatch.setattr(mailbox_api, "_mailbox_client", fake)
     _write_jsonl(
         tmp_path / "messages.jsonl",
         [
             {"id": "1", "from": "app", "to": mailbox_api.REGISTRY_CHANNEL,
-             "type": "identifier_directory",
-             "text": json.dumps([{"identifier": "stored-1", "text": "storedname"}])},
+             "type": "identifier_entry", "text": "",
+             "entry": {"identifier": "stored-1", "text": "storedname"}},
+            {"id": "2", "from": "app", "to": mailbox_api.REGISTRY_CHANNEL,
+             "type": "identifier_entry", "text": "",
+             "entry": {"identifier": "stored-2", "text": "plain",
+                       "metadata": {"display_name": "Pretty Name"}}},
         ],
     )
     names = mailbox_api.identifier_names(tmp_path, refresh=True)
     assert names["stored-1"] == "storedname"
-    assert names["live-1"] == "livename"
+    # metadata display_name is preferred over text.
+    assert names["stored-2"] == "Pretty Name"
+    assert "live-1" not in names
 
 
