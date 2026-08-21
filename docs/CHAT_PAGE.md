@@ -16,8 +16,8 @@ inspected as raw JSON with the `{ }` button.
   a SEND-TO channel auto-subscribes it server-side).
 
 Clicking a picker's label (YOU / TO / CHANNEL / SEND-TO) opens the entity's
-stored JSON entry for editing — Save posts it to the `server_agents` /
-`server_channels` blackboard.
+stored JSON entry for editing — Save posts it to the `server_agents_registry` /
+`server_channels_registry` blackboard.
 
 ## Require-match bar (the filter)
 
@@ -69,10 +69,12 @@ Entries belong to the sequence of their `channel_id` (or `to` when unrouted)
 and are keyed `entry_0, entry_1, …` — keys are never reused (next is always
 max+1). A record relayed from another sequence may declare
 `copy_of: "mailbox-id/entry_n"`. Well-known service channels
-(`server_registry`, `server_agents`, `server_channels`, `server_worker_queue`,
-`outbound_delivery`) are never agents; service queues list their designated
-`monitors` (e.g. `outbound_delivery` → `outbound_delivery_resolver_agent`,
-which resolves address hints and routes items to delivery bridges like
-`mattermost-bridge-agent`).
+(`server_identifiers_registry`, `server_agents_registry`,
+`server_channels_registry`, `server_worker_queue`, `server_events_log`,
+`server_grooming_registry`, `server_adapters_relays_registry` and the two
+outbound queues) are never agents; service queues list their designated
+`monitors` (e.g. `server_outbound_relay_agent_to_channel` →
+`outbound_delivery_resolver_agent`, which resolves address hints and routes
+items to delivery bridges like `mattermost-bridge-agent`).
 
 See also: [AGENT_MAILBOX.md](AGENT_MAILBOX.md).

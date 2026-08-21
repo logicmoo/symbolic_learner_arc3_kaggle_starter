@@ -68,14 +68,17 @@ DEFAULT_USER_AGENT = "symbolic-workbench-user"
 DEFAULT_PEER_AGENT = "github-copilot-facilitator-agent"
 
 # Channel configs edited in the UI are persisted as ``channel_config`` records
-# addressed to this well-known registry channel; the latest record per channel wins.
-REGISTRY_CHANNEL = "server_registry"
+# addressed to this well-known registry channel; the latest record per channel
+# wins. It is the identifier blackboard: identifier_entry records, resolver
+# indexes and relay snapshots all live here.
+REGISTRY_CHANNEL = "server_identifiers_registry"
 
 # Edited agent/channel JSONs live on their own blackboard channels: every
-# ``agent_entry`` record goes to server_agents and every ``channel_entry`` record
-# to server_channels; the latest record per id wins.
-AGENTS_CHANNEL = "server_agents"
-CHANNELS_CHANNEL = "server_channels"
+# ``agent_entry`` record goes to server_agents_registry and every
+# ``channel_entry`` record to server_channels_registry; the latest record per
+# id wins.
+AGENTS_CHANNEL = "server_agents_registry"
+CHANNELS_CHANNEL = "server_channels_registry"
 
 # Background work requests (e.g. identifier lookups inspired by opaque ids found
 # in registry metadata) are enqueued as durable ``worker_task`` records on this
@@ -89,20 +92,157 @@ CHANNELS_CHANNEL = "server_channels"
 WORKER_QUEUE_CHANNEL = "server_worker_queue"
 WORKER_LOADER_AGENT = "worker_pool_loader_agent"
 
-# ``outbound_delivery`` is the drop-box for posting to external platforms. A
-# sender does NOT need to know how delivery works: it drops its text plus
-# whatever address hints it has (channel_type, endpoint_address, channel_id,
-# root_id, …). The resolver agent below monitors the queue and owns the
-# know-how — resolving human names (e.g. channel "test" on a chat workspace)
-# to endpoint addresses and handing each item to the bridge that can deliver it.
-OUTBOUND_DELIVERY_CHANNEL = "outbound_delivery"
+# The outbound drop-boxes for posting to the outside world. A sender does NOT
+# need to know how delivery works: it drops its text plus whatever address
+# hints it has (channel_type, endpoint_address, channel_id, root_id, …) and
+# the resolver agent below monitors both queues and owns the know-how —
+# resolving human names (e.g. channel "test" on a chat workspace) to endpoint
+# addresses and handing each item to the bridge that can deliver it.
+#   server_outbound_relay_agent_to_channel — agent -> platform-channel
+#     messages (e.g. posts destined for a Mattermost channel).
+#   server_outbound_relay_agent_to_agent   — agent -> agent messages.
+# The legacy single queue (outbound_delivery / server_outbound_delivery) and
+# the old agent_to_channel / agent_to_agent audit channels fold into these:
+# bare ids fold via the alias table, whole records split by content (endpoint
+# evidence means a platform-channel delivery).
+OUTBOUND_TO_CHANNEL_QUEUE = "server_outbound_relay_agent_to_channel"
+OUTBOUND_TO_AGENT_QUEUE = "server_outbound_relay_agent_to_agent"
+OUTBOUND_LEGACY_IDS = frozenset({"outbound_delivery", "server_outbound_delivery"})
 OUTBOUND_DELIVERY_RESOLVER_AGENT = "outbound_delivery_resolver_agent"
 
+# Server lifecycle / adapter event stream (posted by the mailbox server side
+# as ``server_events``; displayed and groomed under the canonical log name).
+EVENTS_CHANNEL = "server_events_log"
+
+# Service channels are ``server_``-prefixed and registries say ``_registry``.
+# These seeds fold legacy spellings into the canonical ids at view time, and a
+# ``groom_channels`` apply rewrites history as if they always existed.
+CHANNEL_ALIAS_CANONICAL = {
+    "server_registry": REGISTRY_CHANNEL,
+    "server_agents": AGENTS_CHANNEL,
+    "server_channels": CHANNELS_CHANNEL,
+    "outbound_delivery": OUTBOUND_TO_CHANNEL_QUEUE,
+    "server_outbound_delivery": OUTBOUND_TO_CHANNEL_QUEUE,
+    "agent_to_channel": OUTBOUND_TO_CHANNEL_QUEUE,
+    "agent_to_agent": OUTBOUND_TO_AGENT_QUEUE,
+    "server_events": EVENTS_CHANNEL,
+}
+
+# The grooming registry holds the remap knowledge itself as data: one
+# ``remap_entry`` record per legacy spelling ({id, canonical, kind}; the
+# latest record wins and an empty canonical retires the remap), plus
+# cumulative ``remap_usage`` records counting how often each fold fired per
+# preposition set (to / from / channel_id combinations).
+GROOMING_CHANNEL = "server_grooming_registry"
+
+# ``server_adapters_relays_registry`` catalogs the delivery plumbing as data:
+#   adapter_type_entry — one per adapter TYPE the code ships (mirrors
+#                        mailbox_channels.channel_relay.ADAPTER_CAPABILITIES).
+#   relay_entry        — the presences. These matter most: each relay is a
+#                        distinct bot presence with its OWN bot token, and
+#                        says things as it is puppeted by our codex agents.
+#                        A presence declaration carries ALL the config its
+#                        adapter might use (server, identity, token env,
+#                        channels, ...) — there is no separate per-connection
+#                        config tier.
+# Stored entries extend/override the seeds, and the connectors + relays
+# arrays in the sibling config/relays.json are merged in read-only.
+ADAPTERS_RELAYS_CHANNEL = "server_adapters_relays_registry"
+
+# Reflects mailbox_channels.channel_relay.ADAPTER_CAPABILITIES (kept local so
+# the workbench never has to import the relay's adapter stack).
+ADAPTER_TYPE_SEEDS = {
+    "mattermost": {"presence": "single", "threads": True, "attachments": True},
+    "irc": {"presence": "single", "threads": False, "attachments": False},
+    "discord": {"presence": "single", "threads": True, "attachments": True},
+    "matrix": {"presence": "single", "threads": True, "attachments": True},
+    "discourse": {"presence": "single", "threads": True, "attachments": True,
+                  "interaction": "forum"},
+    "slack": {"presence": "multiple", "threads": True, "attachments": True},
+    "telegram": {"presence": "single", "threads": True, "attachments": True},
+    "whatsapp": {"presence": "single", "threads": False, "attachments": True,
+                 "interaction": "business"},
+    "whatsapp_personal": {"presence": "single", "threads": True, "attachments": True,
+                          "interaction": "unofficial-web-companion", "official": False},
+    "facebook_messenger": {"presence": "single", "threads": False, "attachments": True,
+                           "interaction": "page"},
+    "viber": {"presence": "single", "threads": False, "attachments": True,
+              "interaction": "bot"},
+    "line": {"presence": "single", "threads": True, "attachments": True,
+             "interaction": "user-group-room"},
+}
+
+# Known relays: puppet bot presences that an adapter logs onto a server
+# (e.g. the irc adapter puts jllykifsh into irc.quakenet ##logicmoo).
+# Each relay uses its own bot token/identity and says things as it is
+# puppeted by our codex agents. A presence declaration carries all the
+# config its adapter might use; how presences map to connections (one
+# socket each, pooled, shared) is up to the adapter. When the adapter gets
+# a presence logged in it merges tracking fields into that relay's stored
+# JSON here, and tries to note logouts the same way.
+RELAY_SEEDS = {
+    "mm_relay_presence_min_botnick": {
+        "adapter": "mattermost",
+        "server": "chat.singularitynet.io",
+        "identity": "min.botnick",
+        "own_token": True,
+        "token_env": "MM_BOT_TOKEN",
+        "puppeted_by": "codex agents",
+    },
+    "mm_relay_presence_atom_ant": {
+        "adapter": "mattermost",
+        "server": "chat.singularitynet.io",
+        "identity": "atom_ant",
+        "own_token": True,
+        "puppeted_by": "codex agents",
+    },
+    "mm_relay_presence_metta_bot": {
+        "adapter": "mattermost",
+        "server": "chat.singularitynet.io",
+        "identity": "metta_bot",
+        "own_token": True,
+        "puppeted_by": "codex agents",
+    },
+    "irc_relay_presence_jllykifsh": {
+        "adapter": "irc",
+        "server": "irc.quakenet.org",
+        "identity": "jllykifsh",
+        "channels": ["##logicmoo"],
+        "own_token": True,
+        "puppeted_by": "codex agents",
+        # Prospective job (software configured later): relay all chat from
+        # these mattermost channels into ##logicmoo, one line each, e.g.
+        # "snet|test|douglas.miles: hi irc". Named example-of- until real.
+        "example-of-relay-chat": ["test", "image", "arc3"],
+    },
+}
+
+
+def _fold_channel(cid: Any) -> Any:
+    """Canonical spelling for a channel id (legacy service names fold)."""
+
+    return _REMAPS_CACHE["channels"].get(cid, cid) if isinstance(cid, str) else cid
+
+
+def _fold_agent(aid: Any) -> Any:
+    """Canonical spelling for an agent id (aliases + stored remaps fold)."""
+
+    return _REMAPS_CACHE["agents"].get(aid, aid) if isinstance(aid, str) else aid
+
+
+def _fold_id(value: Any) -> Any:
+    """Fold a to/from-style id through both the channel and agent remaps."""
+
+    return _fold_agent(_fold_channel(value))
+
+
 # Blackboard/service channels are never agents: stored entries or cursors
-# bearing these ids must not leak into the agents directory.
+# bearing these ids (canonical or legacy) must not leak into the agents
+# directory.
 WELL_KNOWN_CHANNELS = {
     REGISTRY_CHANNEL, AGENTS_CHANNEL, CHANNELS_CHANNEL, WORKER_QUEUE_CHANNEL,
-    OUTBOUND_DELIVERY_CHANNEL,
+    OUTBOUND_TO_CHANNEL_QUEUE, OUTBOUND_TO_AGENT_QUEUE, EVENTS_CHANNEL,
+    GROOMING_CHANNEL, ADAPTERS_RELAYS_CHANNEL, *CHANNEL_ALIAS_CANONICAL,
 }
 
 # Every Mattermost bridge identity is one agent whose job is to handle ALL
@@ -123,16 +263,166 @@ AGENT_ALIAS_CANONICAL = {
     "channel-relay": MAILBOX_SERVER_AGENT,
 }
 
-# Role descriptions seeded onto server_agents for the service identities.
+# legacy -> canonical fold maps merged from the built-in seeds above and the
+# ``remap_entry`` records stored on the grooming registry. Refreshed whenever
+# the log grows, the root changes, or the TTL lapses.
+_REMAPS_CACHE: dict[str, Any] = {
+    "root": "",
+    "size": -1,
+    "at": 0.0,
+    "channels": dict(CHANNEL_ALIAS_CANONICAL),
+    "agents": dict(AGENT_ALIAS_CANONICAL),
+}
+REMAPS_CACHE_TTL_SECS = 30.0
+
+# Fold telemetry accumulated since the last flush: (kind, legacy) ->
+# {"canonical": id, "sets": {"to+channel_id": count, ...}}. Not every fold is
+# persisted individually — counts are folded into cumulative ``remap_usage``
+# records on the grooming registry, one per remap, keyed by preposition set.
+_REMAP_USAGE: dict[tuple[str, str], dict[str, Any]] = {}
+_REMAP_USAGE_FLUSHED_AT = [0.0]
+REMAP_USAGE_FLUSH_SECS = 60.0
+
+
+def _note_fold(kind: str, legacy: str, canonical: str, fields: tuple[str, ...]) -> None:
+    """Count one fold application under its preposition set (e.g. to+channel_id)."""
+
+    if not fields:
+        return
+    usage = _REMAP_USAGE.setdefault((kind, legacy), {"canonical": canonical, "sets": {}})
+    usage["canonical"] = canonical
+    label = "+".join(fields)
+    usage["sets"][label] = int(usage["sets"].get(label) or 0) + 1
+
+
+def _split_outbound(record: dict[str, Any]) -> str:
+    """Pick the outbound queue a legacy outbound_delivery record belongs to.
+
+    Endpoint evidence (an ``endpoint_address`` / ``endpoint`` block or a
+    ``channel_type`` hint) marks an agent -> platform-channel delivery;
+    anything else was an agent -> agent message.
+    """
+
+    if (
+        record.get("endpoint_address")
+        or isinstance(record.get("endpoint"), dict)
+        or record.get("channel_type")
+    ):
+        return OUTBOUND_TO_CHANNEL_QUEUE
+    return OUTBOUND_TO_AGENT_QUEUE
+
+
+def _fold_record_addresses(record: dict[str, Any]) -> tuple[Any, Any, Any]:
+    """Fold a message's to/from/channel_id, logging which prepositions folded."""
+
+    raw = (record.get("to"), record.get("from"), record.get("channel_id"))
+    folded = tuple(
+        _split_outbound(record)
+        if field in ("to", "channel_id") and value in OUTBOUND_LEGACY_IDS
+        else _fold_id(value)
+        for field, value in zip(("to", "from", "channel_id"), raw)
+    )
+    hits: dict[tuple[str, str], list[str]] = {}
+    for field, old, new in zip(("to", "from", "channel_id"), raw, folded):
+        if isinstance(old, str) and new != old:
+            hits.setdefault((old, str(new)), []).append(field)
+    for (legacy, canonical), fields in hits.items():
+        kind = "channel" if legacy in _REMAPS_CACHE["channels"] else "agent"
+        _note_fold(kind, legacy, canonical, tuple(fields))
+    return folded  # type: ignore[return-value]
+
+
+def _raw_grooming_entries(root: Path, record_type: str) -> dict[str, dict[str, Any]]:
+    """Latest grooming-registry entries by id, WITHOUT folding (no recursion)."""
+
+    entries: dict[str, dict[str, Any]] = {}
+    for record in read_tail_records(root / "messages.jsonl", REGISTRY_TAIL_BYTES):
+        if record.get("audit_of"):
+            continue
+        if GROOMING_CHANNEL not in (record.get("to"), record.get("channel_id")):
+            continue
+        if record.get("type") != record_type:
+            continue
+        entry = record.get("entry")
+        if isinstance(entry, dict) and isinstance(entry.get("id"), str) and entry["id"]:
+            entries[entry["id"]] = entry
+    return entries
+
+
+def _refresh_remaps(root: Path, *, force: bool = False) -> None:
+    """Merge stored remap_entry records into the fold maps (and flush usage)."""
+
+    now = time.time()
+    size = _messages_size(root)
+    same_root = _REMAPS_CACHE["root"] == str(root)
+    if (not force and same_root and _REMAPS_CACHE["size"] == size
+            and now - _REMAPS_CACHE["at"] < REMAPS_CACHE_TTL_SECS):
+        return
+    channels = dict(CHANNEL_ALIAS_CANONICAL)
+    agents = dict(AGENT_ALIAS_CANONICAL)
+    for legacy, entry in _raw_grooming_entries(root, "remap_entry").items():
+        canonical = str(entry.get("canonical") or "").strip()
+        kind = str(entry.get("kind") or "channel").strip().lower()
+        table = agents if kind == "agent" else channels
+        if not canonical or canonical == legacy:
+            table.pop(legacy, None)  # retired remap (built-in seeds included)
+        else:
+            table[legacy] = canonical
+    if not same_root:
+        _REMAP_USAGE.clear()  # usage never crosses mailbox roots
+    _REMAPS_CACHE.update(root=str(root), size=size, at=now, channels=channels, agents=agents)
+    _flush_remap_usage(root)
+
+
+def _flush_remap_usage(root: Path, *, force: bool = False) -> None:
+    """Fold accumulated counts into cumulative remap_usage records."""
+
+    now = time.time()
+    if not _REMAP_USAGE or _mailbox_client is None:
+        return
+    if not force and now - _REMAP_USAGE_FLUSHED_AT[0] < REMAP_USAGE_FLUSH_SECS:
+        return
+    _REMAP_USAGE_FLUSHED_AT[0] = now
+    stored = _raw_grooming_entries(root, "remap_usage")
+    pending = dict(_REMAP_USAGE)
+    _REMAP_USAGE.clear()
+    try:
+        for (kind, legacy), usage in pending.items():
+            key = f"usage:{kind}:{legacy}"
+            sets = dict((stored.get(key) or {}).get("sets") or {})
+            for label, count in usage["sets"].items():
+                sets[label] = int(sets.get(label) or 0) + int(count)
+            entry = {
+                "id": key,
+                "kind": kind,
+                "legacy": legacy,
+                "canonical": usage["canonical"],
+                "sets": sets,
+                "total": sum(sets.values()),
+            }
+            _mailbox_client.send(
+                GROOMING_CHANNEL, "", sender=DEFAULT_USER_AGENT, root=root,
+                message_type="remap_usage", extra_fields={"entry": entry},
+                channel_id=GROOMING_CHANNEL,
+            )
+    except Exception:
+        # Sending failed: put the pending deltas back for the next flush.
+        for key2, usage2 in pending.items():
+            back = _REMAP_USAGE.setdefault(key2, {"canonical": usage2["canonical"], "sets": {}})
+            for label, count in usage2["sets"].items():
+                back["sets"][label] = int(back["sets"].get(label) or 0) + int(count)
+
+# Role descriptions seeded onto server_agents_registry for the service identities.
 AGENT_ROLES = {
     MATTERMOST_BRIDGE_AGENT: (
         "Handles all mattermost driver jobs for every configured Mattermost "
         "server: inbound fan-out, outbound posts and channel IO. Delivers the "
-        "outbound_delivery items the resolver routes to it (adapters, "
+        "outbound-relay items the resolver routes to it (adapters, "
         "duplicate suppression)."
     ),
     OUTBOUND_DELIVERY_RESOLVER_AGENT: (
-        "Monitors only the outbound_delivery queue: resolves each drop's "
+        "Monitors the server_outbound_relay_agent_to_channel and "
+        "server_outbound_relay_agent_to_agent queues: resolves each drop's "
         "address hints (channel_type, endpoint_address, human channel names) "
         "and subscribes/hands off to the right bridge agent for delivery."
     ),
@@ -147,7 +437,7 @@ AGENT_ROLES = {
 }
 
 # Known channel_type -> bridge routing the resolver applies when it hands an
-# outbound_delivery item to a delivery-capable bridge (an email-bridge-agent
+# outbound-delivery item to a delivery-capable bridge (an email-bridge-agent
 # would register here once it exists).
 DELIVERY_BRIDGE_AGENTS = {
     "mattermost": MATTERMOST_BRIDGE_AGENT,
@@ -155,11 +445,12 @@ DELIVERY_BRIDGE_AGENTS = {
 
 # Service queues are monitored by the agents expected to hold a cursor there
 # and settle entries. Designated, not exclusive: anyone may also subscribe
-# (e.g. a user watching outbound_delivery for debugging) — but these agents
+# (e.g. a user watching the delivery queue for debugging) — but these agents
 # are the ones responsible for it.
 CHANNEL_MONITORS = {
     WORKER_QUEUE_CHANNEL: (WORKER_LOADER_AGENT,),
-    OUTBOUND_DELIVERY_CHANNEL: (OUTBOUND_DELIVERY_RESOLVER_AGENT,),
+    OUTBOUND_TO_CHANNEL_QUEUE: (OUTBOUND_DELIVERY_RESOLVER_AGENT,),
+    OUTBOUND_TO_AGENT_QUEUE: (OUTBOUND_DELIVERY_RESOLVER_AGENT,),
 }
 
 # Only read the tail of the shared log for the thread view; the file accumulates
@@ -167,7 +458,7 @@ CHANNEL_MONITORS = {
 MESSAGES_TAIL_BYTES = 512 * 1024
 
 # Registry snapshots (messaging_registry / identifier_entry / channel_config
-# records on the server_registry channel) get a deeper tail so they stay
+# records on the identifiers-registry channel) get a deeper tail so they stay
 # discoverable as ordinary chat traffic accumulates.
 REGISTRY_TAIL_BYTES = 4 * 1024 * 1024
 
@@ -181,9 +472,17 @@ def resolve_mailbox_root() -> Path:
 
     configured = os.environ.get("AGENT_MAILBOX_DIR")
     if configured:
-        return Path(configured).expanduser().resolve()
-    repo_root = Path(__file__).resolve().parents[2]
-    return (repo_root.parent / "mailbox_channel" / "mailbox").resolve()
+        root = Path(configured).expanduser().resolve()
+    else:
+        repo_root = Path(__file__).resolve().parents[2]
+        root = (repo_root.parent / "mailbox_channel" / "mailbox").resolve()
+    try:
+        # Keep the legacy->canonical fold maps in sync with the grooming
+        # registry; cheap thanks to the size+TTL guard.
+        _refresh_remaps(root)
+    except Exception:
+        pass
+    return root
 
 
 def _project_record(record: dict[str, Any], names: dict[str, str] | None = None) -> dict[str, Any]:
@@ -265,9 +564,9 @@ def thread_messages(
     return thread
 
 
-# The server's fan-out audit copies go to these pseudo-recipients; hide them from
-# the channel picker and channel views.
-AUDIT_CHANNEL_NAMES = {"agent_to_channel", "agent_to_agent"}
+# (The legacy agent_to_channel / agent_to_agent audit pseudo-recipients fold
+# into the outbound relay queues via CHANNEL_ALIAS_CANONICAL; audit copies —
+# records bearing ``audit_of`` — stay hidden everywhere regardless.)
 
 
 def channel_messages(
@@ -280,15 +579,12 @@ def channel_messages(
 ) -> list[dict[str, Any]]:
     """Return every message that involves ``channel`` (as sender or recipient)."""
 
+    wanted = _fold_id(channel)
     thread = [
         _project_record(record, names)
         for record in read_tail_records(root / "messages.jsonl", max_bytes)
         if not record.get("audit_of")
-        and (
-            record.get("to") == channel
-            or record.get("from") == channel
-            or record.get("channel_id") == channel
-        )
+        and wanted in _fold_record_addresses(record)
     ]
     if limit and len(thread) > limit:
         thread = thread[-limit:]
@@ -327,18 +623,21 @@ def filtered_messages(
             needle = text.lower()
             matcher = lambda value: needle in value.lower()  # noqa: E731
     picked = []
+    to = _fold_id(to)
+    sender = _fold_id(sender)
+    channel = _fold_id(channel)
+    channel_id = _fold_channel(channel_id)
     for record in read_tail_records(root / "messages.jsonl"):
         if record.get("audit_of"):
             continue
-        if to and record.get("to") != to:
+        folded_to, folded_from, folded_cid = _fold_record_addresses(record)
+        if to and folded_to != to:
             continue
-        if sender and record.get("from") != sender:
+        if sender and folded_from != sender:
             continue
-        if channel and channel not in (
-            record.get("to"), record.get("from"), record.get("channel_id")
-        ):
+        if channel and channel not in (folded_to, folded_from, folded_cid):
             continue
-        if channel_id and record.get("channel_id") != channel_id:
+        if channel_id and folded_cid != channel_id:
             continue
         if matcher and not matcher(str(record.get("text") or "")):
             continue
@@ -349,13 +648,15 @@ def filtered_messages(
 
 
 def stored_messaging_registry(root: Path, *, max_bytes: int | None = None) -> dict[str, Any]:
-    """Return the latest relay-registry snapshot stored on server_registry."""
+    """Return the latest relay-registry snapshot stored on the registry channel."""
 
     stored: dict[str, Any] = {}
     for record in read_tail_records(root / "messages.jsonl", max_bytes):
         if record.get("audit_of"):
             continue
-        if REGISTRY_CHANNEL not in (record.get("to"), record.get("channel_id")):
+        if REGISTRY_CHANNEL not in (
+            _fold_channel(record.get("to")), _fold_channel(record.get("channel_id"))
+        ):
             continue
         if record.get("type") != "messaging_registry":
             continue
@@ -371,9 +672,9 @@ def stored_messaging_registry(root: Path, *, max_bytes: int | None = None) -> di
 def messaging_registry(root: Path) -> dict[str, Any]:
     """The registry (agents/connectors/channels/relays) read from the blackboard.
 
-    The ``server_registry`` channel is the single source of truth: the latest
-    ``messaging_registry`` record wins. The live relay is consulted only by the
-    bootstrap endpoint, which syncs relay state onto the channel.
+    The ``server_identifiers_registry`` channel is the single source of truth:
+    the latest ``messaging_registry`` record wins. The live relay is consulted
+    only by the bootstrap endpoint, which syncs relay state onto the channel.
     """
 
     return stored_messaging_registry(root)
@@ -478,12 +779,11 @@ def _traffic_stats(root: Path) -> dict[str, dict[str, Any]]:
             if not isinstance(record, dict) or record.get("audit_of"):
                 continue
             timestamp = record.get("timestamp")
-            channel_id = record.get("channel_id")
-            affiliation = channel_id or record.get("to")
+            folded_to, folded_from, folded_cid = _fold_record_addresses(record)
+            affiliation = folded_cid or folded_to
             seen: set[str] = set()
-            for field in ("to", "from", "channel_id"):
-                value = record.get(field)
-                if isinstance(value, str) and value and value not in AUDIT_CHANNEL_NAMES:
+            for value in (folded_to, folded_from, folded_cid):
+                if isinstance(value, str) and value:
                     seen.add(value)
             for value in seen:
                 entry = stats.setdefault(
@@ -515,7 +815,7 @@ def _traffic_stats(root: Path) -> dict[str, dict[str, Any]]:
                     entry["nextEntry"] = max(entry["nextEntry"], index + 1)
                 if isinstance(timestamp, str) and timestamp:
                     entry["lastMessageAt"] = timestamp
-                if value == channel_id:
+                if value == folded_cid:
                     entry["isChannel"] = True
                     if record.get("channel_name"):
                         entry["channelName"] = str(record["channel_name"])
@@ -552,8 +852,9 @@ def list_channels(root: Path) -> list[dict[str, Any]]:
         return None
 
     def add(cid: Any, kind: str, source: dict[str, Any] | None = None) -> None:
-        if not isinstance(cid, str) or not cid or cid in AUDIT_CHANNEL_NAMES:
+        if not isinstance(cid, str) or not cid:
             return
+        cid = _fold_channel(cid)
         traffic = stats.get(cid) or {}
         if cid not in channels:
             channels[cid] = {
@@ -588,7 +889,7 @@ def list_channels(root: Path) -> list[dict[str, Any]]:
     for agent in registry.get("agents", []) or []:
         mailbox = agent.get("mailbox") or agent.get("agent_id")
         if isinstance(mailbox, str):
-            mailbox = AGENT_ALIAS_CANONICAL.get(mailbox, mailbox)
+            mailbox = _fold_agent(mailbox)
         record = dict(agent)
         if mailbox != MATTERMOST_BRIDGE_AGENT:
             record.setdefault("entered_by", MATTERMOST_BRIDGE_AGENT)
@@ -677,7 +978,7 @@ def list_agents(root: Path) -> list[dict[str, Any]]:
             return
         # Aliased bridge identities fold into their canonical agent, and
         # blackboard channels never masquerade as agents.
-        agent_id = AGENT_ALIAS_CANONICAL.get(agent_id, agent_id)
+        agent_id = _fold_agent(agent_id)
         if agent_id in WELL_KNOWN_CHANNELS:
             return
         if agent_id not in by_id:
@@ -691,9 +992,7 @@ def list_agents(root: Path) -> list[dict[str, Any]]:
         record = dict(agent)
         # Registry agents are entered by the first-class bridge agent: it owns
         # the relay registry and registers the bridged identities it drives.
-        if AGENT_ALIAS_CANONICAL.get(
-            str(agent.get("agent_id")), str(agent.get("agent_id"))
-        ) != MATTERMOST_BRIDGE_AGENT:
+        if _fold_agent(str(agent.get("agent_id"))) != MATTERMOST_BRIDGE_AGENT:
             record.setdefault("entered_by", MATTERMOST_BRIDGE_AGENT)
         add(agent.get("agent_id"), record)
     for channel in list_channels(root):
@@ -704,7 +1003,7 @@ def list_agents(root: Path) -> list[dict[str, Any]]:
     for service_agent, role in AGENT_ROLES.items():
         add(service_agent, {"role": role})
     for agent_id, entry in stored_entity_entries(root, "agent_entry", AGENTS_CHANNEL).items():
-        agent_id = AGENT_ALIAS_CANONICAL.get(agent_id, agent_id)
+        agent_id = _fold_agent(agent_id)
         if agent_id in WELL_KNOWN_CHANNELS:
             continue
         add(agent_id)
@@ -723,7 +1022,7 @@ def list_agents(root: Path) -> list[dict[str, Any]]:
     if _mailbox_client is not None:
         size = _messages_size(root)
         for agent_id, channel_ids in _cursor_map(root).items():
-            agent_id = AGENT_ALIAS_CANONICAL.get(agent_id, agent_id)
+            agent_id = _fold_agent(agent_id)
             if agent_id in WELL_KNOWN_CHANNELS:
                 continue  # a blackboard channel's cursor is not an agent
             add(agent_id)
@@ -818,13 +1117,15 @@ def mailbox_create_channel(id: str = Body(..., embed=True)) -> dict[str, Any]:
 
 
 def stored_channel_config(root: Path, channel: str, *, max_bytes: int | None = None) -> dict[str, Any]:
-    """Return the latest edited config stored on the server_registry channel."""
+    """Return the latest edited config stored on the registry channel."""
 
     stored: dict[str, Any] = {}
     for record in read_tail_records(root / "messages.jsonl", max_bytes):
         if record.get("audit_of"):
             continue
-        if REGISTRY_CHANNEL not in (record.get("to"), record.get("channel_id")):
+        if REGISTRY_CHANNEL not in (
+            _fold_channel(record.get("to")), _fold_channel(record.get("channel_id"))
+        ):
             continue
         if record.get("type") != "channel_config" or record.get("config_for") != channel:
             continue
@@ -850,7 +1151,9 @@ def stored_entity_entries(
     for record in read_tail_records(root / "messages.jsonl", max_bytes):
         if record.get("audit_of"):
             continue
-        if channel not in (record.get("to"), record.get("channel_id")):
+        if channel not in (
+            _fold_channel(record.get("to")), _fold_channel(record.get("channel_id"))
+        ):
             continue
         if record.get("type") != record_type:
             continue
@@ -858,6 +1161,81 @@ def stored_entity_entries(
         if isinstance(entry, dict) and isinstance(entry.get("id"), str) and entry["id"]:
             entries[entry["id"]] = entry
     return entries
+
+
+def _relays_config(root: Path) -> dict[str, Any]:
+    """Best-effort read of the sibling relay's config/relays.json (read-only)."""
+
+    candidates: list[Path] = []
+    env_dir = os.environ.get("MAILBOX_RELAY_CONFIG_DIR")
+    if env_dir:
+        candidates.append(Path(env_dir) / "relays.json")
+    candidates.append(root.parent / "config" / "relays.json")
+    for path in candidates:
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if isinstance(payload, dict):
+            return payload
+    return {}
+
+
+def adapters_relays_registry(root: Path, *, max_bytes: int | None = None) -> dict[str, Any]:
+    """Adapter types + relay presences: seeds ∪ config ∪ stored entries.
+
+    Relays are the interesting part: puppet bot presences (own token, spoken
+    through by our codex agents) whose declarations carry all the config an
+    adapter might use. Sources are tagged: ``code`` seeds, the sibling
+    config/relays.json connectors + relays arrays (``config``, read-only) and
+    ``adapter_type_entry``/``relay_entry`` records stored on the registry
+    channel (``stored``, latest per id wins). Adapters merge tracking fields
+    into the stored relay JSONs at runtime — on login, and best-effort on
+    logout too — so stored overlays seed fields rather than replacing the
+    declaration.
+    """
+
+    adapter_types = {
+        type_id: {"id": type_id, "source": "code", **caps}
+        for type_id, caps in ADAPTER_TYPE_SEEDS.items()
+    }
+    relays = {
+        relay_id: {"id": relay_id, "source": "code", **spec}
+        for relay_id, spec in RELAY_SEEDS.items()
+    }
+
+    config = _relays_config(root)
+    for stanza in list(config.get("connectors") or []) + list(config.get("relays") or []):
+        if not isinstance(stanza, dict) or not stanza.get("id"):
+            continue
+        relay_id = str(stanza["id"])
+        entry = dict(relays.get(relay_id) or {"id": relay_id})
+        entry["source"] = "config"
+        for key, value in stanza.items():
+            if key in ("id", "kind"):
+                continue
+            # connectors call the server "instance"; presences say "server"
+            entry["server" if key == "instance" else key] = value
+        relays[relay_id] = entry
+
+    for type_id, entry in stored_entity_entries(
+        root, "adapter_type_entry", ADAPTERS_RELAYS_CHANNEL, max_bytes=max_bytes
+    ).items():
+        adapter_types[type_id] = {
+            **(adapter_types.get(type_id) or {}), "id": type_id, **entry, "source": "stored",
+        }
+    for relay_id, entry in stored_entity_entries(
+        root, "relay_entry", ADAPTERS_RELAYS_CHANNEL, max_bytes=max_bytes
+    ).items():
+        relays[relay_id] = {
+            **(relays.get(relay_id) or {}), "id": relay_id, **entry, "source": "stored",
+        }
+
+    return {
+        "channel": ADAPTERS_RELAYS_CHANNEL,
+        "adapter_types": [adapter_types[key] for key in sorted(adapter_types)],
+        "relays": [relays[key] for key in sorted(relays)],
+    }
 
 
 def _identifier_display(entry: dict[str, Any]) -> str | None:
@@ -869,7 +1247,7 @@ def _identifier_display(entry: dict[str, Any]) -> str | None:
 
 
 def stored_identifier_directory(root: Path, *, max_bytes: int | None = None) -> list[dict[str, Any]]:
-    """Return the identifier entries stored on server_registry, one per bubble.
+    """Return the identifier entries stored on the registry channel, one per bubble.
 
     Each ``identifier_entry`` record carries one full (uncondensed) directory
     entry in its ``entry`` field; the latest record per identifier wins.
@@ -879,7 +1257,9 @@ def stored_identifier_directory(root: Path, *, max_bytes: int | None = None) -> 
     for record in read_tail_records(root / "messages.jsonl", max_bytes):
         if record.get("audit_of"):
             continue
-        if REGISTRY_CHANNEL not in (record.get("to"), record.get("channel_id")):
+        if REGISTRY_CHANNEL not in (
+            _fold_channel(record.get("to")), _fold_channel(record.get("channel_id"))
+        ):
             continue
         if record.get("type") != "identifier_entry":
             continue
@@ -904,9 +1284,9 @@ LOOKUP_MISS_TTL_SECS = 300.0
 def identifier_names(root: Path, *, refresh: bool = False) -> dict[str, str]:
     """Map opaque platform identifiers (e.g. Mattermost ids) to readable names.
 
-    Reads only the ``identifier_entry`` records on the ``server_registry``
-    blackboard (populated by the bootstrap endpoint); the live relay is never
-    consulted here.
+    Reads only the ``identifier_entry`` records on the
+    ``server_identifiers_registry`` blackboard (populated by the bootstrap
+    endpoint); the live relay is never consulted here.
     """
 
     now = time.time()
@@ -925,9 +1305,10 @@ def identifier_names(root: Path, *, refresh: bool = False) -> dict[str, str]:
 
 @router.post("/mailbox/registry/bootstrap")
 def mailbox_registry_bootstrap(limit: int = Query(2000, ge=1, le=10000)) -> dict[str, Any]:
-    """Bootstrap the server_registry channel from the live relay.
+    """Bootstrap the identifiers-registry channel from the live relay.
 
-    Persists relay state as records on the ``server_registry`` channel, which
+    Persists relay state as records on the ``server_identifiers_registry``
+    channel, which
     acts as the registry's blackboard: the relay's ``/v1/registry``
     (agents/connectors/channels/relays) as one ``messaging_registry`` record,
     and every ``/v1/identifiers`` directory entry as its own uncondensed
@@ -1014,7 +1395,7 @@ def _identifier_lookup(
 ) -> dict[str, Any]:
     """Resolve one strange identifier: blackboard first, then the live relay.
 
-    When an id is not on the ``server_registry`` blackboard yet, the relay's
+    When an id is not on the ``server_identifiers_registry`` blackboard yet, the relay's
     ``/v1/identifiers`` directory is asked for an exact match. A hit is
     persisted back to the blackboard as a new ``identifier_entry`` bubble so
     every agent learns it. A full miss reports ``found: false``, is remembered
@@ -1259,6 +1640,12 @@ def execute_worker_command(command: dict[str, Any]) -> dict[str, Any]:
             str(command.get("agent") or ""),
             str(command.get("channel") or ""),
             str(command.get("state") or ""),
+        )
+    if op == "set_remap":
+        return _set_remap(
+            str(command.get("legacy") or ""),
+            str(command.get("canonical") or ""),
+            str(command.get("kind") or "channel"),
         )
     return {"error": f"unknown op {op!r}"}
 
@@ -1758,8 +2145,12 @@ def _groom_channels(*, apply: bool = False) -> dict[str, Any]:
         for source in info["merges"]:
             if source != info["canonical"]:
                 mapping[source] = info["canonical"]
-    # Duplicate bridge/agent identities merge the same way channels do.
-    mapping.update(AGENT_ALIAS_CANONICAL)
+    # Duplicate bridge/agent identities merge the same way channels do, and
+    # legacy registry spellings fold into their canonical ``_registry`` ids —
+    # including any remap_entry knowledge stored on the grooming registry.
+    _refresh_remaps(root, force=True)
+    mapping.update(_REMAPS_CACHE["agents"])
+    mapping.update(_REMAPS_CACHE["channels"])
     touched = sum(
         1
         for record in records
@@ -1775,8 +2166,8 @@ def _groom_channels(*, apply: bool = False) -> dict[str, Any]:
             "names": info["names"],
         } for info in plan.values()},
         "agents": {
-            canonical: sorted(a for a, c in AGENT_ALIAS_CANONICAL.items() if c == canonical)
-            for canonical in set(AGENT_ALIAS_CANONICAL.values())
+            canonical: sorted(a for a, c in _REMAPS_CACHE["agents"].items() if c == canonical)
+            for canonical in set(_REMAPS_CACHE["agents"].values())
         },
         "applied": False,
     }
@@ -1801,6 +2192,11 @@ def _groom_channels(*, apply: bool = False) -> dict[str, Any]:
             offset += len(line)
             new_ends.append(offset)
             continue
+        # Legacy outbound_delivery drops split by content: endpoint evidence
+        # means agent -> platform-channel, otherwise agent -> agent.
+        for field in ("to", "channel_id"):
+            if record.get(field) in OUTBOUND_LEGACY_IDS:
+                record[field] = _split_outbound(record)
         for field in ("to", "from", "channel_id"):
             if record.get(field) in mapping:
                 record[field] = mapping[record[field]]
@@ -1816,11 +2212,16 @@ def _groom_channels(*, apply: bool = False) -> dict[str, Any]:
         if record.get("config_for") in mapping:
             record["config_for"] = mapping[record["config_for"]]
         entry = record.get("entry")
-        if isinstance(entry, dict) and entry.get("id") in mapping:
+        if (
+            isinstance(entry, dict) and entry.get("id") in mapping
+            # remap_entry/remap_usage ids ARE the legacy spellings — never
+            # rewrite the remap knowledge itself.
+            and record.get("type") not in ("remap_entry", "remap_usage")
+        ):
             entry["id"] = mapping[entry["id"]]
         if not record.get("audit_of"):
             channel = record.get("channel_id") or record.get("to")
-            if isinstance(channel, str) and channel and channel not in AUDIT_CHANNEL_NAMES:
+            if isinstance(channel, str) and channel:
                 index = entry_counts.get(channel, 0)
                 record["entry_key"] = f"entry_{index}"
                 entry_counts[channel] = index + 1
@@ -1905,8 +2306,11 @@ def _channel_entry_ends(root: Path) -> dict[str, list[int]]:
             continue
         if not isinstance(record, dict) or record.get("audit_of"):
             continue
-        channel = record.get("channel_id") or record.get("to")
-        if isinstance(channel, str) and channel and channel not in AUDIT_CHANNEL_NAMES:
+        channel = _fold_channel(record.get("channel_id") or record.get("to"))
+        if channel in OUTBOUND_LEGACY_IDS or record.get("channel_id") in OUTBOUND_LEGACY_IDS \
+                or record.get("to") in OUTBOUND_LEGACY_IDS:
+            channel = _split_outbound(record)
+        if isinstance(channel, str) and channel:
             ends.setdefault(channel, []).append(offset)
     return ends
 
@@ -1915,12 +2319,12 @@ def _sync_subscriptions() -> dict[str, Any]:
     """Project the subscription relation onto the durable registries.
 
     Subscription is explicit intent, cursors are just read positions — so each
-    agent's ``agent_entry`` on ``server_agents`` carries BOTH: a
+    agent's ``agent_entry`` on ``server_agents_registry`` carries BOTH: a
     ``subscriptions`` map (channel -> "subscribed" | "unsubscribed", where
     "unsubscribed" is a sticky opt-out that subscribe-missing sweeps must
     honor) and the ``cursors`` map (offset + entry_N per channel). Channels an
     agent has a cursor on default to "subscribed" unless already opted out.
-    Each channel's ``channel_entry`` on ``server_channels`` carries the
+    Each channel's ``channel_entry`` on ``server_channels_registry`` carries the
     mirrored ``subscribers`` list (subscribed agents only). A subscription
     without a cursor is materialized: an offset-0 cursor (entry_0, nothing
     consumed yet) is auto-created and registered in cursor_subscriptions.json.
@@ -1933,7 +2337,7 @@ def _sync_subscriptions() -> dict[str, Any]:
     # channels themselves never count as subscribing agents.
     cursor_map: dict[str, list[str]] = {}
     for raw_agent, channel_ids in _cursor_map(root).items():
-        agent = AGENT_ALIAS_CANONICAL.get(raw_agent, raw_agent)
+        agent = _fold_agent(raw_agent)
         if agent in WELL_KNOWN_CHANNELS:
             continue
         merged = set(cursor_map.get(agent) or [])
@@ -1942,9 +2346,9 @@ def _sync_subscriptions() -> dict[str, Any]:
     channel_subscribers: dict[str, set[str]] = {}
     for channel in messaging_registry(root).get("channels", []) or []:
         if isinstance(channel, dict) and isinstance(channel.get("id"), str):
-            declared = channel_subscribers.setdefault(channel["id"], set())
+            declared = channel_subscribers.setdefault(_fold_channel(channel["id"]), set())
             declared.update(
-                AGENT_ALIAS_CANONICAL.get(s, s)
+                _fold_agent(s)
                 for s in (channel.get("subscribers") or [])
                 if isinstance(s, str) and s and s not in WELL_KNOWN_CHANNELS
             )
@@ -1954,7 +2358,7 @@ def _sync_subscriptions() -> dict[str, Any]:
     autocursored = 0
     stored_agents: dict[str, dict[str, Any]] = {}
     for raw_agent, entry in stored_entity_entries(root, "agent_entry", AGENTS_CHANNEL).items():
-        agent = AGENT_ALIAS_CANONICAL.get(raw_agent, raw_agent)
+        agent = _fold_agent(raw_agent)
         if agent in WELL_KNOWN_CHANNELS:
             continue
         target = stored_agents.setdefault(agent, {})
@@ -1980,12 +2384,13 @@ def _sync_subscriptions() -> dict[str, Any]:
         if isinstance(declared_subs, dict):
             for cid, status in declared_subs.items():
                 if isinstance(cid, str) and cid:
-                    subscriptions[cid] = (
+                    subscriptions[_fold_channel(cid)] = (
                         "unsubscribed" if str(status) == "unsubscribed" else "subscribed"
                     )
         elif isinstance(declared_subs, list):  # legacy list form -> all subscribed
             subscriptions = {
-                cid: "subscribed" for cid in declared_subs if isinstance(cid, str) and cid
+                _fold_channel(cid): "subscribed"
+                for cid in declared_subs if isinstance(cid, str) and cid
             }
         cursor_channels = set(cursor_map.get(agent) or [])
         for cid, monitors in CHANNEL_MONITORS.items():
@@ -2065,7 +2470,8 @@ def _set_subscription(agent: str, channel: str, state: str) -> dict[str, Any]:
 
     if _mailbox_client is None:
         return {"error": "mailbox_channels client is not installed"}
-    agent = AGENT_ALIAS_CANONICAL.get(agent, agent)
+    agent = _fold_agent(agent)
+    channel = _fold_channel(channel)
     if not agent or not channel:
         return {"error": "agent and channel must not be empty"}
     if agent in WELL_KNOWN_CHANNELS:
@@ -2096,6 +2502,49 @@ def _set_subscription(agent: str, channel: str, state: str) -> dict[str, Any]:
     }
 
 
+def _set_remap(legacy: str, canonical: str, kind: str) -> dict[str, Any]:
+    """Store one legacy->canonical remap on the grooming registry.
+
+    The remap becomes data: a ``remap_entry`` record whose id IS the legacy
+    spelling. The latest record per id wins; an empty (or self) canonical
+    retires the remap — including the built-in seeds.
+    """
+
+    if _mailbox_client is None:
+        return {"error": "mailbox_channels client is not installed"}
+    legacy = legacy.strip()
+    canonical = canonical.strip()
+    kind = kind.strip().lower() or "channel"
+    if not legacy:
+        return {"error": "legacy spelling must not be empty"}
+    if kind not in ("channel", "agent"):
+        return {"error": "kind must be channel or agent"}
+    service_ids = {
+        REGISTRY_CHANNEL, AGENTS_CHANNEL, CHANNELS_CHANNEL, WORKER_QUEUE_CHANNEL,
+        OUTBOUND_TO_CHANNEL_QUEUE, OUTBOUND_TO_AGENT_QUEUE, EVENTS_CHANNEL,
+        GROOMING_CHANNEL,
+    }
+    if legacy in service_ids:
+        return {"error": f"{legacy!r} is a canonical service channel; it cannot be remapped"}
+    root = resolve_mailbox_root()
+    retired = not canonical or canonical == legacy
+    entry = {"id": legacy, "canonical": "" if retired else canonical, "kind": kind}
+    _mailbox_client.send(
+        GROOMING_CHANNEL, "", sender=DEFAULT_USER_AGENT, root=root,
+        message_type="remap_entry", extra_fields={"entry": entry},
+        channel_id=GROOMING_CHANNEL,
+    )
+    _refresh_remaps(root, force=True)
+    return {
+        "legacy": legacy,
+        "canonical": entry["canonical"],
+        "kind": kind,
+        "action": "retired" if retired else "set",
+        "channels": dict(_REMAPS_CACHE["channels"]),
+        "agents": dict(_REMAPS_CACHE["agents"]),
+    }
+
+
 @router.get("/mailbox/resolve")
 def mailbox_resolve(name: str = Query("")) -> dict[str, Any]:
     """The typed resolver: users / workspaces / channels maps keyed by UUID.
@@ -2118,7 +2567,7 @@ def channel_config(root: Path, channel: str) -> dict[str, Any]:
     agent mailboxes contribute agent_id/presences. Recent traffic supplies the
     human-readable ``channelName`` (e.g. Mattermost's channel_name), a message
     count, and the last-message timestamp. Configs edited in the UI are stored on
-    the ``server_registry`` channel and overlay everything else.
+    the ``server_identifiers_registry`` channel and overlay everything else.
     """
 
     config: dict[str, Any] = {
@@ -2197,7 +2646,8 @@ def mailbox_update_channel_config(
 
     Names added to ``subscribers`` get a relay cursor on the channel; the whole
     edited config is then persisted as a ``channel_config`` record on the
-    ``server_registry`` channel, where the latest record per channel wins.
+    ``server_identifiers_registry`` channel, where the latest record per
+    channel wins.
     """
 
     root = resolve_mailbox_root()
@@ -2246,8 +2696,8 @@ def mailbox_entity_save(
 ) -> dict[str, Any]:
     """Persist an edited agent/channel JSON as a durable blackboard record.
 
-    Agent entries go to ``server_agents`` and channel entries to
-    ``server_channels``; the latest record per id wins. Computed fields
+    Agent entries go to ``server_agents_registry`` and channel entries to
+    ``server_channels_registry``; the latest record per id wins. Computed fields
     (``cursors``/``messages``) are stripped before storing.
     """
 
@@ -2294,6 +2744,8 @@ def mailbox_entity_save(
 def _cursor_status(root: Path, channel: str, agent: str) -> dict[str, Any]:
     """Report where ``agent``'s cursor sits on ``channel`` (bytes + entry_N)."""
 
+    channel = _fold_channel(channel)
+    agent = _fold_agent(agent)
     size = _messages_size(root)
     brief = _cursor_brief(root, channel, agent, size)
     # The rewrite-proof position: how many of the channel's entries are behind
@@ -2341,6 +2793,8 @@ def mailbox_cursor_set(
     normalized = start.strip().lower() if isinstance(start, str) else "now"
     if not channel_id or not agent_id:
         raise HTTPException(status_code=400, detail="channel and agent are required")
+    channel_id = _fold_channel(channel_id)
+    agent_id = _fold_agent(agent_id)
     if normalized not in {"beginning", "start", "now"}:
         raise HTTPException(status_code=400, detail="start must be 'beginning' or 'now'")
     root = resolve_mailbox_root()
@@ -2412,6 +2866,8 @@ def mailbox_cursor_remove(channel: str = Query(...), agent: str = Query(...)) ->
     agent_id = agent.strip() if isinstance(agent, str) else ""
     if not channel_id or not agent_id:
         raise HTTPException(status_code=400, detail="channel and agent are required")
+    channel_id = _fold_channel(channel_id)
+    agent_id = _fold_agent(agent_id)
     root = resolve_mailbox_root()
     path = _mailbox_client._cursor_path(root, f"{channel_id}:{agent_id}")
     existed = path.exists()
@@ -2450,6 +2906,50 @@ def mailbox_subscription(
         code = 503 if "not installed" in result["error"] else 400
         raise HTTPException(status_code=code, detail=result["error"])
     return result
+
+
+@router.post("/mailbox/remap")
+def mailbox_remap(
+    legacy: str = Body(..., embed=True),
+    canonical: str = Body("", embed=True),
+    kind: str = Body("channel", embed=True),
+) -> dict[str, Any]:
+    """Store one legacy->canonical remap (empty canonical retires it)."""
+
+    result = _set_remap(
+        legacy if isinstance(legacy, str) else "",
+        canonical if isinstance(canonical, str) else "",
+        kind if isinstance(kind, str) else "channel",
+    )
+    if "error" in result:
+        code = 503 if "not installed" in result["error"] else 400
+        raise HTTPException(status_code=code, detail=result["error"])
+    return result
+
+
+@router.get("/mailbox/remaps")
+def mailbox_remaps() -> dict[str, Any]:
+    """The merged fold maps plus the cumulative fold-usage counters."""
+
+    root = resolve_mailbox_root()
+    _refresh_remaps(root, force=True)
+    _flush_remap_usage(root, force=True)
+    usage = sorted(
+        _raw_grooming_entries(root, "remap_usage").values(),
+        key=lambda item: str(item.get("id") or ""),
+    )
+    return {
+        "channels": dict(_REMAPS_CACHE["channels"]),
+        "agents": dict(_REMAPS_CACHE["agents"]),
+        "usage": usage,
+    }
+
+
+@router.get("/mailbox/adapters-relays")
+def mailbox_adapters_relays() -> dict[str, Any]:
+    """The adapters/relays registry: adapter types + relay presences."""
+
+    return adapters_relays_registry(resolve_mailbox_root())
 
 
 @router.get("/mailbox/messages")
@@ -2514,7 +3014,9 @@ def mailbox_send(
         raise HTTPException(
             status_code=400, detail="copy_of must look like 'mailbox-id/entry_n'"
         )
-    to = AGENT_ALIAS_CANONICAL.get(to, to)
+    # Agent aliases fold on send; channel spellings are kept raw so legacy
+    # readers (e.g. the sibling relay watching outbound_delivery) still match.
+    to = _fold_agent(to)
     channel = (channel_id.strip() or None) if isinstance(channel_id, str) else None
     root = resolve_mailbox_root()
     # Addressing an agent on a channel auto-subscribes it unless the stored

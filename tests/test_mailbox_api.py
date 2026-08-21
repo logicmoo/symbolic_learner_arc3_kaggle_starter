@@ -1266,8 +1266,9 @@ def test_sync_subscriptions_projects_intent_and_autocursors(
 
     result = mailbox_api._sync_subscriptions()
 
-    # +2 monitor agents (bridge/loader) with their autocursored service queues.
-    assert result == {"agents": 5, "channels": 3, "autocursored": 3}
+    # +2 monitor agents (bridge/loader) with their autocursored service queues
+    # (the resolver holds both outbound relay queues).
+    assert result == {"agents": 5, "channels": 4, "autocursored": 4}
     agents = {r["entry"]["id"]: r["entry"] for r in fake.sent if r["type"] == "agent_entry"}
     assert agents["agent-a"]["subscriptions"] == {"room-1": "subscribed"}
     cursor = agents["agent-a"]["cursors"]["room-1"]
@@ -1570,9 +1571,9 @@ def test_sync_subscriptions_folds_aliases_and_skips_well_known_channels(
 
     result = mailbox_api._sync_subscriptions()
 
-    # The designated monitors join in: the resolver picks up outbound_delivery,
-    # the loader picks up server_worker_queue (both autocursored at 0).
-    assert result == {"agents": 3, "channels": 3, "autocursored": 2}
+    # The designated monitors join in: the resolver picks up both outbound
+    # relay queues, the loader picks up server_worker_queue (autocursored at 0).
+    assert result == {"agents": 3, "channels": 4, "autocursored": 3}
     entries = [r["entry"] for r in fake.sent if r["type"] == "agent_entry"]
     assert [e["id"] for e in entries] == [
         mailbox_api.MATTERMOST_BRIDGE_AGENT,
@@ -1580,7 +1581,8 @@ def test_sync_subscriptions_folds_aliases_and_skips_well_known_channels(
         mailbox_api.WORKER_LOADER_AGENT]
     assert entries[0]["subscriptions"] == {"room-1": "subscribed"}
     assert entries[1]["subscriptions"] == {
-        mailbox_api.OUTBOUND_DELIVERY_CHANNEL: "subscribed"}
+        mailbox_api.OUTBOUND_TO_AGENT_QUEUE: "subscribed",
+        mailbox_api.OUTBOUND_TO_CHANNEL_QUEUE: "subscribed"}
 
 
 def test_outbound_delivery_is_a_monitored_queue_not_an_agent(
@@ -1605,14 +1607,21 @@ def test_outbound_delivery_is_a_monitored_queue_not_an_agent(
     mailbox_api._sync_subscriptions()
 
     channels = {c["id"]: c for c in mailbox_api.list_channels(tmp_path)}
-    queue = channels[mailbox_api.OUTBOUND_DELIVERY_CHANNEL]
+    # The legacy outbound_delivery drop split by content: o1 carries endpoint
+    # evidence -> agent_to_channel queue; both queues share the resolver.
+    queue = channels[mailbox_api.OUTBOUND_TO_CHANNEL_QUEUE]
     assert queue["monitors"] == [mailbox_api.OUTBOUND_DELIVERY_RESOLVER_AGENT]
     assert mailbox_api.OUTBOUND_DELIVERY_RESOLVER_AGENT in queue["subscribers"]
+    agent_queue = channels[mailbox_api.OUTBOUND_TO_AGENT_QUEUE]
+    assert agent_queue["monitors"] == [mailbox_api.OUTBOUND_DELIVERY_RESOLVER_AGENT]
+    assert "outbound_delivery" not in channels
     worker_queue = channels[mailbox_api.WORKER_QUEUE_CHANNEL]
     assert worker_queue["monitors"] == [mailbox_api.WORKER_LOADER_AGENT]
-    # The queue never masquerades as an agent, even when seen as a sender.
+    # The queues never masquerade as agents, even when seen as a sender.
     agents = {a["id"] for a in mailbox_api.list_agents(tmp_path)}
-    assert mailbox_api.OUTBOUND_DELIVERY_CHANNEL not in agents
+    assert mailbox_api.OUTBOUND_TO_CHANNEL_QUEUE not in agents
+    assert mailbox_api.OUTBOUND_TO_AGENT_QUEUE not in agents
+    assert "outbound_delivery" not in agents
 
 
 def test_filtered_messages_and_require_match_endpoint(
@@ -1707,3 +1716,209 @@ def test_cursor_status_reports_entry_positions(
     empty = mailbox_api._cursor_status(tmp_path, "room-1", "agent-b")
     assert empty["initialized"] is False
     assert empty["entries_total"] == 3
+
+
+def _fresh_remaps_cache() -> dict:
+    return {
+        "root": "", "size": -1, "at": 0.0,
+        "channels": dict(mailbox_api.CHANNEL_ALIAS_CANONICAL),
+        "agents": dict(mailbox_api.AGENT_ALIAS_CANONICAL),
+    }
+
+
+def test_outbound_legacy_records_split_by_content(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setenv("AGENT_MAILBOX_DIR", str(tmp_path))
+    monkeypatch.setattr(mailbox_api, "_REMAPS_CACHE", _fresh_remaps_cache())
+    monkeypatch.setattr(mailbox_api, "_REMAP_USAGE", {})
+    _write_jsonl(
+        tmp_path / "messages.jsonl",
+        [
+            # Endpoint evidence -> an agent -> platform-channel delivery …
+            {"id": "d1", "from": "codex", "to": "outbound_delivery", "text": "post",
+             "endpoint_address": "mm/chat.example.io/abc"},
+            # … no evidence -> an agent -> agent message.
+            {"id": "d2", "from": "codex", "to": "outbound_delivery", "text": "ping"},
+            # The old audit channel names fold straight into the queues.
+            {"id": "d3", "from": "bridge", "to": "agent_to_agent", "text": "status"},
+            {"id": "d4", "from": "bridge", "to": "agent_to_channel", "text": "copy"},
+        ],
+    )
+
+    def ids(channel: str) -> list[str]:
+        return [m["id"] for m in mailbox_api.channel_messages(tmp_path, channel)]
+
+    assert ids(mailbox_api.OUTBOUND_TO_CHANNEL_QUEUE) == ["d1", "d4"]
+    assert ids(mailbox_api.OUTBOUND_TO_AGENT_QUEUE) == ["d2", "d3"]
+    # Legacy spellings keep working as queries: bare ids fold via the alias
+    # table (outbound_delivery defaults to the channel queue).
+    assert ids("outbound_delivery") == ["d1", "d4"]
+    assert ids("agent_to_agent") == ["d2", "d3"]
+
+
+def test_fold_usage_telemetry_counts_and_flushes(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setenv("AGENT_MAILBOX_DIR", str(tmp_path))
+    fake = _FakeRelay()
+    monkeypatch.setattr(mailbox_api, "_mailbox_client", fake)
+    monkeypatch.setattr(mailbox_api, "_REMAPS_CACHE", _fresh_remaps_cache())
+    monkeypatch.setattr(mailbox_api, "_REMAP_USAGE", {})
+    monkeypatch.setattr(mailbox_api, "_REMAP_USAGE_FLUSHED_AT", [0.0])
+    _write_jsonl(
+        tmp_path / "messages.jsonl",
+        [
+            {"id": "u1", "from": "a", "to": "server_registry",
+             "channel_id": "server_registry", "text": "x"},
+            {"id": "u2", "from": "a", "to": "server_registry", "text": "y"},
+        ],
+    )
+
+    mailbox_api.channel_messages(tmp_path, mailbox_api.REGISTRY_CHANNEL)
+
+    # One count per record per legacy id, keyed by the preposition set.
+    usage = mailbox_api._REMAP_USAGE[("channel", "server_registry")]
+    assert usage["canonical"] == mailbox_api.REGISTRY_CHANNEL
+    assert usage["sets"] == {"to+channel_id": 1, "to": 1}
+
+    mailbox_api._flush_remap_usage(tmp_path, force=True)
+    assert mailbox_api._REMAP_USAGE == {}
+    flushed = [r for r in fake.sent if r["type"] == "remap_usage"]
+    assert len(flushed) == 1
+    entry = flushed[0]["entry"]
+    assert entry["id"] == "usage:channel:server_registry"
+    assert entry["kind"] == "channel"
+    assert entry["legacy"] == "server_registry"
+    assert entry["sets"] == {"to+channel_id": 1, "to": 1}
+    assert entry["total"] == 2
+
+
+def test_set_remap_and_stored_folds_and_retire(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setenv("AGENT_MAILBOX_DIR", str(tmp_path))
+    fake = _FakeRelay()
+    monkeypatch.setattr(mailbox_api, "_mailbox_client", fake)
+    monkeypatch.setattr(mailbox_api, "_REMAPS_CACHE", _fresh_remaps_cache())
+    monkeypatch.setattr(mailbox_api, "_REMAP_USAGE", {})
+    (tmp_path / "messages.jsonl").write_text("", encoding="utf-8")
+
+    result = mailbox_api._set_remap("old-room", "new-room", "channel")
+    assert result["action"] == "set"
+    sent = [r for r in fake.sent if r["type"] == "remap_entry"]
+    assert sent[-1]["entry"] == {"id": "old-room", "canonical": "new-room", "kind": "channel"}
+
+    # The fake relay does not persist; store the entries as the log would.
+    def grooming(entry: dict, rid: str) -> dict:
+        return {"id": rid, "from": "u", "to": mailbox_api.GROOMING_CHANNEL,
+                "channel_id": mailbox_api.GROOMING_CHANNEL, "type": "remap_entry",
+                "entry": entry}
+
+    _write_jsonl(tmp_path / "messages.jsonl", [
+        grooming({"id": "old-room", "canonical": "new-room", "kind": "channel"}, "m1"),
+        grooming({"id": "old-bot", "canonical": "new-bot", "kind": "agent"}, "m2"),
+    ])
+    mailbox_api._refresh_remaps(tmp_path, force=True)
+    assert mailbox_api._fold_channel("old-room") == "new-room"
+    assert mailbox_api._fold_agent("old-bot") == "new-bot"
+
+    # A later empty (or self) canonical retires the remap — seeds included.
+    _write_jsonl(tmp_path / "messages.jsonl", [
+        grooming({"id": "old-room", "canonical": "new-room", "kind": "channel"}, "m1"),
+        grooming({"id": "old-bot", "canonical": "new-bot", "kind": "agent"}, "m2"),
+        grooming({"id": "old-room", "canonical": "", "kind": "channel"}, "m3"),
+        grooming({"id": "server_registry", "canonical": "server_registry",
+                  "kind": "channel"}, "m4"),
+    ])
+    mailbox_api._refresh_remaps(tmp_path, force=True)
+    assert mailbox_api._fold_channel("old-room") == "old-room"
+    assert mailbox_api._fold_channel("server_registry") == "server_registry"
+    assert mailbox_api._fold_agent("old-bot") == "new-bot"
+
+    # Validation: no empty legacy, no bogus kind, no remapping service ids.
+    assert "error" in mailbox_api._set_remap("", "x", "channel")
+    assert "error" in mailbox_api._set_remap("x", "y", "bogus")
+    assert "error" in mailbox_api._set_remap(
+        mailbox_api.WORKER_QUEUE_CHANNEL, "y", "channel")
+
+    # REST parity: the endpoint and worker op reach the same implementation.
+    payload = mailbox_api.mailbox_remap(legacy="old-x", canonical="new-x", kind="agent")
+    assert payload["action"] == "set"
+    assert (payload["legacy"], payload["canonical"]) == ("old-x", "new-x")
+    queued = mailbox_api.execute_worker_command(
+        {"op": "set_remap", "legacy": "old-y", "canonical": "", "kind": "channel"})
+    assert queued["action"] == "retired"
+    listing = mailbox_api.mailbox_remaps()
+    assert listing["channels"]["outbound_delivery"] == mailbox_api.OUTBOUND_TO_CHANNEL_QUEUE
+    assert isinstance(listing["usage"], list)
+
+
+def test_adapters_relays_registry_merges_seeds_config_and_stored(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setattr(mailbox_api, "_REMAPS_CACHE", _fresh_remaps_cache())
+    monkeypatch.setattr(mailbox_api, "_REMAP_USAGE", {})
+    monkeypatch.delenv("MAILBOX_RELAY_CONFIG_DIR", raising=False)
+    root = tmp_path / "mailbox"
+    config_dir = tmp_path / "config"
+    config_dir.mkdir(parents=True)
+    config_dir.joinpath("relays.json").write_text(json.dumps({
+        "connectors": [
+            {"id": "mattermost-primary", "adapter": "mattermost", "enabled": True,
+             "instance": "chat.example.org", "token_env": "MM_BOT_TOKEN"},
+        ],
+        "relays": [
+            {"id": "retained-relay-1", "kind": "relay", "enabled": False,
+             "source_channel": "general"},
+        ],
+    }), encoding="utf-8")
+    _write_jsonl(root / "messages.jsonl", [
+        # The adapter noted a login on the seeded IRC presence …
+        {"id": "t1", "type": "relay_entry", "to": mailbox_api.ADAPTERS_RELAYS_CHANNEL,
+         "entry": {"id": "irc_relay_presence_jllykifsh", "logged_in": True,
+                   "session": "sock-7"}},
+        # … and someone registered a brand-new adapter type as data.
+        {"id": "t2", "type": "adapter_type_entry",
+         "to": mailbox_api.ADAPTERS_RELAYS_CHANNEL,
+         "entry": {"id": "xmpp", "presence": "single", "threads": False}},
+    ])
+
+    registry = mailbox_api.adapters_relays_registry(root)
+    types = {item["id"]: item for item in registry["adapter_types"]}
+    relays = {item["id"]: item for item in registry["relays"]}
+
+    assert registry["channel"] == mailbox_api.ADAPTERS_RELAYS_CHANNEL
+    # Code seeds are present and tagged.
+    assert types["mattermost"]["source"] == "code"
+    assert relays["mm_relay_presence_atom_ant"]["identity"] == "atom_ant"
+    assert relays["mm_relay_presence_min_botnick"]["token_env"] == "MM_BOT_TOKEN"
+    # config/relays.json connectors + relays merge read-only; a connector's
+    # "instance" is surfaced as the presence's "server".
+    assert relays["mattermost-primary"]["source"] == "config"
+    assert relays["mattermost-primary"]["server"] == "chat.example.org"
+    assert relays["retained-relay-1"]["source_channel"] == "general"
+    # Stored tracking overlays the seed declaration without erasing it.
+    tracked = relays["irc_relay_presence_jllykifsh"]
+    assert tracked["source"] == "stored"
+    assert tracked["logged_in"] is True
+    assert tracked["session"] == "sock-7"
+    assert tracked["identity"] == "jllykifsh"
+    assert tracked["channels"] == ["##logicmoo"]
+    assert tracked["server"] == "irc.quakenet.org"
+    assert types["xmpp"]["source"] == "stored"
+
+
+def test_mailbox_adapters_relays_endpoint_returns_seeds(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setenv("AGENT_MAILBOX_DIR", str(tmp_path))
+    monkeypatch.delenv("MAILBOX_RELAY_CONFIG_DIR", raising=False)
+    monkeypatch.setattr(mailbox_api, "_REMAPS_CACHE", _fresh_remaps_cache())
+    monkeypatch.setattr(mailbox_api, "_REMAP_USAGE", {})
+    _write_jsonl(tmp_path / "messages.jsonl", [])
+
+    payload = mailbox_api.mailbox_adapters_relays()
+    assert {item["id"] for item in payload["adapter_types"]} == set(
+        mailbox_api.ADAPTER_TYPE_SEEDS)
+    assert {item["id"] for item in payload["relays"]} >= set(mailbox_api.RELAY_SEEDS)

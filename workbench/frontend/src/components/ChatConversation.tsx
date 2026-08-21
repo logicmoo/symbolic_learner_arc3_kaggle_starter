@@ -418,7 +418,8 @@ export function ChatConversation({
   // of whatever that picker points at; clicking the same label again hides it.
   // YOU/TO show the agent record as returned by /api/mailbox/agents (cursors
   // included); the channel labels show the channel record. Save posts the edited
-  // JSON to the server_agents / server_channels blackboard channel; Reload
+  // JSON to the server_agents_registry / server_channels_registry blackboard
+  // channel; Reload
   // re-queries the record.
   const loadEntity = useCallback(async (kind: "agent" | "channel", id: string) => {
     const endpoint = kind === "agent" ? "/api/mailbox/agents" : "/api/mailbox/channels";
@@ -515,13 +516,16 @@ export function ChatConversation({
     };
   }, [cursorInfo, inspect, loadEntity]);
 
-  const agentChoices = Array.from(new Set([you, target, ...agents.map((a) => a.id)].filter(Boolean)));
-  const channelChoices = Array.from(new Set([channel, ...channels.map((c) => c.id)].filter(Boolean)));
-  const sendChoices = Array.from(new Set([sendChannel, ...channels.map((c) => c.id)].filter(Boolean)));
+  // Combo boxes list alphabetically (case-insensitive); dedup keeps the
+  // currently-selected values present even when the directory lags.
+  const alpha = (a: string, b: string) => a.toLowerCase().localeCompare(b.toLowerCase());
+  const agentChoices = Array.from(new Set([you, target, ...agents.map((a) => a.id)].filter(Boolean))).sort(alpha);
+  const channelChoices = Array.from(new Set([channel, ...channels.map((c) => c.id)].filter(Boolean))).sort(alpha);
+  const sendChoices = Array.from(new Set([sendChannel, ...channels.map((c) => c.id)].filter(Boolean))).sort(alpha);
 
   // Channel options carry a readable name resolved from the identifier directory
-  // (bootstrapped onto server_registry), so opaque bridge ids get annotated, and
-  // show how many entries recent traffic holds for each channel.
+  // (bootstrapped onto server_identifiers_registry), so opaque bridge ids get
+  // annotated, and show how many entries recent traffic holds for each channel.
   const channelNames = new Map(channels.map((c) => [c.id, c.name] as const));
   const channelCounts = new Map(channels.map((c) => [c.id, c.messages] as const));
   // The TO agent's explicit subscription setting on the viewed channel (if any).

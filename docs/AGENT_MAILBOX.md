@@ -74,13 +74,13 @@ existed:
   convenience, or restoring an entry that went missing) may name its original
   as `copy_of: "mailbox-id/entry_n"`; the send API accepts the field and the
   UI projection surfaces it as `copyOf`.
-- **Subscriptions vs cursors**: agent entries on `server_agents` keep a
+- **Subscriptions vs cursors**: agent entries on `server_agents_registry` keep a
   `subscriptions` map (`channel -> "subscribed" | "unsubscribed"`; opt-outs are
   sticky against subscribe-missing sweeps) separate from `cursors`, which
   store both the fast byte `offset` and the rewrite-proof
   `entries_consumed`/`entry_next` position. A subscription without a cursor is
-  auto-materialized at `entry_0`. Channel entries on `server_channels` mirror
-  the `subscribers` list. Run op `sync_subscriptions` to re-project.
+  auto-materialized at `entry_0`. Channel entries on `server_channels_registry`
+  mirror the `subscribers` list. Run op `sync_subscriptions` to re-project.
 - **Typed resolver**: `GET /api/mailbox/resolve` returns `users`,
   `workspaces` and `channels` maps (each keyed by its own UUID) plus an
   `aliases` table mapping any name to typed refs, e.g.
@@ -110,22 +110,48 @@ cursor at the equivalent position in the new file.
   to the pool) and a final `worker_task_result` over the leftover entry. A
   dependency whose entry no longer exists counts as satisfied, so compaction
   can never wedge the queue.
-- **`outbound_delivery_resolver_agent`** — monitors only the
-  `outbound_delivery` drop-box. Senders there need not know how delivery
-  works: they drop text plus whatever address hints they have (`channel_type`,
-  `endpoint_address`, a human channel name like `test`). The resolver owns the
-  know-how — resolving names to endpoint addresses and handing each item to
-  the right delivery bridge (`mattermost` → `mattermost-bridge-agent`; an
-  email bridge would register the same way).
+- **`outbound_delivery_resolver_agent`** — monitors the outbound drop-boxes:
+  `server_outbound_relay_agent_to_channel` (agent → platform-channel posts)
+  and `server_outbound_relay_agent_to_agent` (agent → agent messages). The
+  legacy `outbound_delivery`/`agent_to_channel`/`agent_to_agent` spellings
+  fold into them, whole records split by content (endpoint evidence ⇒ the
+  channel queue). Senders need not know how delivery works: they drop text
+  plus whatever address hints they have (`channel_type`, `endpoint_address`,
+  a human channel name like `test`). The resolver owns the know-how —
+  resolving names to endpoint addresses and handing each item to the right
+  delivery bridge (`mattermost` → `mattermost-bridge-agent`; an email bridge
+  would register the same way).
 - Service queues carry a `monitors` list naming their designated agent
-  (`server_worker_queue` → loader, `outbound_delivery` → resolver). Designated,
-  not exclusive: anyone may also subscribe, e.g. a user watching a queue for
-  debugging. `sync_subscriptions` auto-subscribes monitors (sticky opt-outs
-  still win).
-- Blackboard/service channels (`server_registry`, `server_agents`,
-  `server_channels`, `server_worker_queue`, `outbound_delivery`) are never
+  (`server_worker_queue` → loader, both outbound queues → resolver).
+  Designated, not exclusive: anyone may also subscribe, e.g. a user watching
+  a queue for debugging. `sync_subscriptions` auto-subscribes monitors (sticky
+  opt-outs still win).
+- Blackboard/service channels (`server_identifiers_registry`,
+  `server_agents_registry`, `server_channels_registry`, `server_worker_queue`,
+  `server_events_log`, `server_grooming_registry`,
+  `server_adapters_relays_registry` and the two outbound queues) are never
   agents: their cursors or stored entries do not appear in the agents
   directory.
+- **`server_grooming_registry`** — remap knowledge as data: `remap_entry`
+  records fold legacy channel/agent spellings into canonical ids at view time
+  (latest per id wins; an empty or self canonical retires the remap, seeds
+  included), plus cumulative `remap_usage` records counting how often each
+  fold fired per preposition-set (`to+channel_id`, `from`, …). Manage via
+  `POST /api/mailbox/remap`, `GET /api/mailbox/remaps`, worker op `set_remap`.
+- **`server_adapters_relays_registry`** — the delivery plumbing as data:
+  `adapter_type_entry` per adapter type the code ships, and `relay_entry` per
+  presence — puppet bots with their own tokens that say things as our codex
+  agents puppet them (e.g. `mm_relay_presence_min_botnick` on
+  chat.singularitynet.io, or `irc_relay_presence_jllykifsh` on QuakeNet
+  `##logicmoo`, whose prospective job is written into its config now as
+  `example-of-relay-chat: ["test", "image", "arc3"]` — software configured
+  later will relay those mattermost channels into `##logicmoo` prefixed like
+  `snet|test|douglas.miles: hi irc`). A presence
+  declaration carries all the config its adapter might use; how presences map
+  to sockets (one each, pooled) is the adapter's business, and the adapter
+  merges login (and best-effort logout) tracking into the stored relay JSONs.
+  `GET /api/mailbox/adapters-relays` merges code seeds ∪ the sibling
+  `config/relays.json` ∪ stored entries.
 
 ## External Mailbox Channel Relay Bridging Proxy
 
@@ -138,9 +164,10 @@ health signal used to detect an already-running relay and prevent overlap.
 
 Inbound Mattermost posts are fanned out to the configured transport-neutral
 recipients (by default `symbolic-workbench-codex`, `omegaclaw-core-codex`, and
-`omegaclaw-min`). To post outbound, drop a record on the `outbound_delivery`
-queue with whatever address hints you have — `channel_type`, `channel_id`,
-`endpoint_address`, optional `root_id`/`thread_id` thread
+`omegaclaw-min`). To post outbound, drop a record on the
+`server_outbound_relay_agent_to_channel` queue (legacy `outbound_delivery`
+folds into it) with whatever address hints you have — `channel_type`,
+`channel_id`, `endpoint_address`, optional `root_id`/`thread_id` thread
 context. The resolver/bridge agents own delivery (the relay's dispatcher
 consumes that queue, suppresses duplicates via its ledger, and answers with
 `channel_delivery_suppressed`/`channel_delivery_failed` records).
