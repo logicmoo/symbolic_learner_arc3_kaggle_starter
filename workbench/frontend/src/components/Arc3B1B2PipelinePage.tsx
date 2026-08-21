@@ -348,7 +348,8 @@ const DEFAULT_VALIDATOR_PROMPT = [
 ].join("\n");
 const REMOVAL_DISCOVERY_PASS_PROMPT = [
   "remove_smallest_object:",
-  "Use current_identities and pick an object (prioritized by smallness) to extract obj_<ID>.png from <original>.png, and put what is left over in <original>_with_<n>_removed.png (the reduced scene, background inpainted). Add {\"extracted\": \"obj_<ID>.png\"} to the props of <ID> in current_identities and return the document so you won't accidentally try to extract it again.",
+  "Use current_identities and pick an object (prioritized by smallness) to extract obj_<ID>.png from <original>.png and what is left over put in <original>_with_<n>_removed.png (the reduced scene, background inpainted), and add \"extracted\": \"obj_<ID>.png\" to the props of <ID> in current_identities and return the document so you won't accidentally try to find it again.",
+  "The bounding_box only LOCATES the object — do not just crop that rectangle. Follow the object's actual pixels (its color-connected shape/mask): obj_<ID>.png contains only those object pixels (everything else transparent), and <original>_with_<n>_removed.png inpaints only that exact footprint from the surrounding background, leaving neighboring objects and background untouched.",
 ].join("\n");
 // Loop-mode instruction snippets appended to the base remove_smallest_object prompt above. Each
 // LOOP MODE picks exactly one; the base stays identical so only the loop behavior changes.

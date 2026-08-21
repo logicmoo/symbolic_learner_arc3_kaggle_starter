@@ -87,10 +87,10 @@ def test_b1_b2_component_has_pipeline_contract() -> None:
     assert '["runner:IMPROVED_GUESSER"]' in source
     assert '["runner:MERGE"]' in source
     # The remover picks an object (smallest first), extracts obj_<ID>.png, writes the reduced
-    # original, and records {"extracted": "obj_<ID>.png"} on that identity in current_identities.
+    # original, and records "extracted": "obj_<ID>.png" on that identity in current_identities.
     assert "Use current_identities and pick an object (prioritized by smallness) to extract obj_<ID>.png from <original>.png" in source
     assert "obj_<ID>.png" in source
-    assert 'Add {\\"extracted\\": \\"obj_<ID>.png\\"} to the props of <ID> in current_identities' in source
+    assert 'add \\"extracted\\": \\"obj_<ID>.png\\" to the props of <ID> in current_identities' in source
     # Experimental write-back: REGENERATOR result can replace IMPROVED_GUESSER's list.
     assert "replaceGuesserOnFinish" in source
     assert "Replace IMPROVED_GUESSER list with this result on finish" in source
