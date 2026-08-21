@@ -534,6 +534,78 @@ def mailbox_registry_bootstrap(limit: int = Query(2000, ge=1, le=10000)) -> dict
     }
 
 
+@router.get("/mailbox/identifier")
+def mailbox_identifier_lookup(id: str = Query(...)) -> dict[str, Any]:
+    """Resolve one strange identifier: blackboard first, then the live relay.
+
+    When an id is not on the ``server_registry`` blackboard yet, the relay's
+    ``/v1/identifiers`` directory is asked for an exact match. A hit is
+    persisted back to the blackboard as a new ``identifier_entry`` bubble so
+    every agent learns it; a full miss reports ``found: false``.
+    """
+
+    identifier = id.strip() if isinstance(id, str) else ""
+    if not identifier:
+        raise HTTPException(status_code=400, detail="Identifier must not be empty")
+    root = resolve_mailbox_root()
+    for entry in stored_identifier_directory(root):
+        if str(entry.get("identifier")) == identifier:
+            return {
+                "id": identifier,
+                "found": True,
+                "source": "blackboard",
+                "entry": entry,
+                "name": _identifier_display(entry),
+                "stored": False,
+            }
+
+    miss = {"id": identifier, "found": False, "source": None, "entry": None,
+            "name": None, "stored": False}
+    if _mailbox_client is None:
+        return miss
+    query = urllib.parse.urlencode({"identifier": identifier, "limit": 5})
+    try:
+        data = _mailbox_client._rest_request("GET", f"/v1/identifiers?{query}")
+    except Exception:
+        data = {}
+    candidates = [
+        entry
+        for entry in ((data.get("identifiers") if isinstance(data, dict) else None) or [])
+        if isinstance(entry, dict) and entry.get("identifier")
+    ]
+    # Prefer the exact id; fall back to the relay's first (normalized) match.
+    entry = next(
+        (candidate for candidate in candidates if str(candidate["identifier"]) == identifier),
+        candidates[0] if candidates else None,
+    )
+    if entry is None:
+        return miss
+    stored = False
+    try:
+        _mailbox_client.send(
+            REGISTRY_CHANNEL,
+            "",
+            sender=DEFAULT_USER_AGENT,
+            root=root,
+            message_type="identifier_entry",
+            extra_fields={"entry": entry},
+            channel_id=REGISTRY_CHANNEL,
+        )
+        stored = True
+        _NAMES_CACHE["at"] = 0.0
+        _NAMES_CACHE["names"] = {}
+    except Exception:
+        pass  # the lookup still succeeds even if persisting the discovery fails
+    return {
+        "id": identifier,
+        "found": True,
+        "source": "relay",
+        "entry": entry,
+        "name": _identifier_display(entry),
+        "stored": stored,
+    }
+
+
 def channel_config(root: Path, channel: str, *, max_bytes: int = MESSAGES_TAIL_BYTES) -> dict[str, Any]:
     """Describe one channel: relay registry record enriched with traffic details.
 

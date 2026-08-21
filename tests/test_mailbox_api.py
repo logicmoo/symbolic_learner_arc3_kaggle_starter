@@ -505,3 +505,57 @@ def test_identifier_names_reads_only_the_blackboard(
     assert "live-1" not in names
 
 
+def test_identifier_lookup_prefers_the_blackboard(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setenv("AGENT_MAILBOX_DIR", str(tmp_path))
+    fake = _FakeRelay(identifiers=[{"identifier": "u1", "text": "relay-copy"}])
+    monkeypatch.setattr(mailbox_api, "_mailbox_client", fake)
+    _write_jsonl(
+        tmp_path / "messages.jsonl",
+        [
+            {"id": "1", "from": "app", "to": mailbox_api.REGISTRY_CHANNEL,
+             "type": "identifier_entry", "text": "",
+             "entry": {"identifier": "u1", "text": "stored-copy"}},
+        ],
+    )
+    result = mailbox_api.mailbox_identifier_lookup(id="u1")
+    assert result["found"] is True
+    assert result["source"] == "blackboard"
+    assert result["name"] == "stored-copy"
+    assert fake.sent == []  # nothing re-posted for a known id
+
+
+def test_identifier_lookup_asks_relay_and_persists_discovery(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setenv("AGENT_MAILBOX_DIR", str(tmp_path))
+    entry = {"identifier": "strange-id", "text": "mystery", "kind": "user",
+             "metadata": {"display_name": "Mystery Guest"}}
+    fake = _FakeRelay(identifiers=[entry])
+    monkeypatch.setattr(mailbox_api, "_mailbox_client", fake)
+    result = mailbox_api.mailbox_identifier_lookup(id="strange-id")
+    assert result["found"] is True
+    assert result["source"] == "relay"
+    assert result["name"] == "Mystery Guest"
+    assert result["stored"] is True
+    bubbles = [record for record in fake.sent if record["type"] == "identifier_entry"]
+    # The discovery lands on the blackboard so every agent learns it.
+    assert len(bubbles) == 1
+    assert bubbles[0]["to"] == mailbox_api.REGISTRY_CHANNEL
+    assert bubbles[0]["text"] == ""
+    assert bubbles[0]["entry"] == entry
+
+
+def test_identifier_lookup_reports_a_full_miss(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setenv("AGENT_MAILBOX_DIR", str(tmp_path))
+    fake = _FakeRelay(identifiers=[])
+    monkeypatch.setattr(mailbox_api, "_mailbox_client", fake)
+    result = mailbox_api.mailbox_identifier_lookup(id="nobody-knows")
+    assert result["found"] is False
+    assert result["entry"] is None
+    assert fake.sent == []
+
+
