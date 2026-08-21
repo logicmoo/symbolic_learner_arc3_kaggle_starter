@@ -67,8 +67,13 @@ existed:
 - **Channel key**: the platform UUID (opaque tail) is stored as `key` on every
   channel record; registry maps are keyed by it.
 - **Message keys**: each record belonging to a channel carries
-  `entry_key: "entry_<n>"` in arrival order. A channel's entry count is always
-  the next key; new sends are stamped automatically.
+  `entry_key: "entry_<n>"` in arrival order. The next key is always max+1 —
+  keys are never reused — so settled entries stay safe to delete once
+  compaction lands (deletion itself comes later). New sends are stamped
+  automatically. A record relayed/forwarded from another sequence (out of
+  convenience, or restoring an entry that went missing) may name its original
+  as `copy_of: "mailbox-id/entry_n"`; the send API accepts the field and the
+  UI projection surfaces it as `copyOf`.
 - **Subscriptions vs cursors**: agent entries on `server_agents` keep a
   `subscriptions` map (`channel -> "subscribed" | "unsubscribed"`; opt-outs are
   sticky against subscribe-missing sweeps) separate from `cursors`, which
@@ -85,6 +90,43 @@ Grooming is a worker op: dry-run by default, `{"apply": true}` rewrites
 `messages.jsonl` in place after a timestamped backup and re-points every
 cursor at the equivalent position in the new file.
 
+## First-class service agents
+
+- **`mattermost-bridge-agent`** — handles all mattermost driver jobs for every
+  configured Mattermost server (inbound fan-out, outbound posts, channel IO).
+  The legacy identities `mattermost`, `local-mattermost-server` and
+  `mattermost-bridge` merge into it: the groom rewrites history, cursors and
+  registry docs, and the API folds stray new traffic at view time. Most
+  registry entries are entered by this agent — registry-sourced records carry
+  `entered_by: "mattermost-bridge-agent"`.
+- **`mailbox-server-agent`** — the local mailbox server itself (owns
+  `messages.jsonl`, relays channel traffic, runs local delivery). The legacy
+  `local-agent`, `mailbox-server` and `channel-relay` identities merge into it
+  the same way.
+- **`worker_pool_loader_agent`** — takes work items off `server_worker_queue`
+  WITHOUT removing them. Each `worker_task` keeps its `entry_key`; the loader
+  layers `worker_task_status` records (`blocked` while declared
+  `depends_on: ["entry_4", …]` entries are unsettled, `submitted` when handed
+  to the pool) and a final `worker_task_result` over the leftover entry. A
+  dependency whose entry no longer exists counts as satisfied, so compaction
+  can never wedge the queue.
+- **`outbound_delivery_resolver_agent`** — monitors only the
+  `outbound_delivery` drop-box. Senders there need not know how delivery
+  works: they drop text plus whatever address hints they have (`channel_type`,
+  `endpoint_address`, a human channel name like `test`). The resolver owns the
+  know-how — resolving names to endpoint addresses and handing each item to
+  the right delivery bridge (`mattermost` → `mattermost-bridge-agent`; an
+  email bridge would register the same way).
+- Service queues carry a `monitors` list naming their designated agent
+  (`server_worker_queue` → loader, `outbound_delivery` → resolver). Designated,
+  not exclusive: anyone may also subscribe, e.g. a user watching a queue for
+  debugging. `sync_subscriptions` auto-subscribes monitors (sticky opt-outs
+  still win).
+- Blackboard/service channels (`server_registry`, `server_agents`,
+  `server_channels`, `server_worker_queue`, `outbound_delivery`) are never
+  agents: their cursors or stored entries do not appear in the agents
+  directory.
+
 ## External Mailbox Channel Relay Bridging Proxy
 
 Channel transport is owned by the sibling proxy project, not by Workbench,
@@ -96,10 +138,13 @@ health signal used to detect an already-running relay and prevent overlap.
 
 Inbound Mattermost posts are fanned out to the configured transport-neutral
 recipients (by default `symbolic-workbench-codex`, `omegaclaw-core-codex`, and
-`omegaclaw-min`). To post outbound, send a record to
-`channel-relay` with `channel_type`, `channel_id`, and optional
-`root_id`/`thread_id` routing
-context. Credentials remain in the proxy project's ignored `.env` as `MM_URL`,
+`omegaclaw-min`). To post outbound, drop a record on the `outbound_delivery`
+queue with whatever address hints you have — `channel_type`, `channel_id`,
+`endpoint_address`, optional `root_id`/`thread_id` thread
+context. The resolver/bridge agents own delivery (the relay's dispatcher
+consumes that queue, suppresses duplicates via its ledger, and answers with
+`channel_delivery_suppressed`/`channel_delivery_failed` records).
+Credentials remain in the proxy project's ignored `.env` as `MM_URL`,
 `MM_BOT_TOKEN`, and `MM_CHANNEL_ID`; they are never stored in workspace files.
 The complete REST, Codex, OmegaClaw, MeTTaClaw, and workflow integration guide
 is maintained by the sibling `C:\snet\PeTTa\repos\mailbox_channel\README.md`

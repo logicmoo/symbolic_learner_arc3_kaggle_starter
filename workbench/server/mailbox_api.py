@@ -18,9 +18,21 @@ Converted record scheme (post-groom): bridged channels use one canonical id
 ``mm-<host-dashed>-<platform-key>`` (workspace slugs omitted); every channel
 keeps its platform UUID as ``key`` with all legacy spellings as ``aliases``;
 each record belonging to a channel carries ``entry_key`` (``entry_<n>`` in
-arrival order) so a channel's entry count is always the next key. Agents carry
-a ``subscriptions`` map (channel -> subscribed|unsubscribed, opt-outs sticky)
-distinct from their byte+entry ``cursors``.
+arrival order). Entry keys are never reused — the next key is max+1, so
+settled entries stay safe to delete later (compaction comes separately).
+Agents carry a ``subscriptions`` map (channel -> subscribed|unsubscribed,
+opt-outs sticky) distinct from their byte+entry ``cursors``.
+
+First-class service agents: ``mattermost-bridge-agent`` handles all mattermost
+driver jobs for every configured Mattermost server (the legacy ``mattermost``/
+``local-mattermost-server``/``mattermost-bridge`` identities merge into it, and
+most registry entries are entered by it); ``mailbox-server-agent`` is the local
+server itself (``local-agent``/``mailbox-server``/``channel-relay`` merge into
+it); ``worker_pool_loader_agent`` drains ``server_worker_queue`` WITHOUT
+removing entries — it layers ``worker_task_status`` (blocked/submitted) and
+``worker_task_result`` records over the leftover ``entry_<n>``. A task may
+declare ``depends_on: ["entry_4", …]``; unsettled dependencies block it, and a
+dependency whose entry no longer exists counts as satisfied.
 
 Reading the thread goes straight to the JSONL file (filtered by the participant
 pair) rather than the cursor-based ``receive``/``peek`` helpers, because the chat
@@ -67,9 +79,88 @@ CHANNELS_CHANNEL = "server_channels"
 
 # Background work requests (e.g. identifier lookups inspired by opaque ids found
 # in registry metadata) are enqueued as durable ``worker_task`` records on this
-# channel; an in-process thread pool executes them and posts a
-# ``worker_task_result`` record back onto the same channel.
+# channel. ``worker_pool_loader_agent`` takes items off the queue WITHOUT
+# removing them: it layers ``worker_task_status`` records (submitted/blocked)
+# and a final ``worker_task_result`` over the original entry, referencing it by
+# its ``entry_key``. Settled entries are DESIGNED to be safe to delete
+# (compaction comes later, only once settlement is provably safe): entry keys
+# are never reused and a dependency whose entry no longer exists counts as
+# satisfied.
 WORKER_QUEUE_CHANNEL = "server_worker_queue"
+WORKER_LOADER_AGENT = "worker_pool_loader_agent"
+
+# ``outbound_delivery`` is the drop-box for posting to external platforms. A
+# sender does NOT need to know how delivery works: it drops its text plus
+# whatever address hints it has (channel_type, endpoint_address, channel_id,
+# root_id, …). The resolver agent below monitors the queue and owns the
+# know-how — resolving human names (e.g. channel "test" on a chat workspace)
+# to endpoint addresses and handing each item to the bridge that can deliver it.
+OUTBOUND_DELIVERY_CHANNEL = "outbound_delivery"
+OUTBOUND_DELIVERY_RESOLVER_AGENT = "outbound_delivery_resolver_agent"
+
+# Blackboard/service channels are never agents: stored entries or cursors
+# bearing these ids must not leak into the agents directory.
+WELL_KNOWN_CHANNELS = {
+    REGISTRY_CHANNEL, AGENTS_CHANNEL, CHANNELS_CHANNEL, WORKER_QUEUE_CHANNEL,
+    OUTBOUND_DELIVERY_CHANNEL,
+}
+
+# Every Mattermost bridge identity is one agent whose job is to handle ALL
+# mattermost driver jobs for every configured Mattermost server (inbound
+# fan-out, outbound posts, channel IO — one agent, many hosts). Legacy
+# spellings are merged by the groom (history, cursors, registry docs) and
+# folded at view time so stray new traffic still displays under the canonical id.
+MATTERMOST_BRIDGE_AGENT = "mattermost-bridge-agent"
+# Likewise the local mailbox server's own identities (the log daemon, the
+# channel relay and the generic local agent) are one first-class agent.
+MAILBOX_SERVER_AGENT = "mailbox-server-agent"
+AGENT_ALIAS_CANONICAL = {
+    "mattermost": MATTERMOST_BRIDGE_AGENT,
+    "local-mattermost-server": MATTERMOST_BRIDGE_AGENT,
+    "mattermost-bridge": MATTERMOST_BRIDGE_AGENT,
+    "local-agent": MAILBOX_SERVER_AGENT,
+    "mailbox-server": MAILBOX_SERVER_AGENT,
+    "channel-relay": MAILBOX_SERVER_AGENT,
+}
+
+# Role descriptions seeded onto server_agents for the service identities.
+AGENT_ROLES = {
+    MATTERMOST_BRIDGE_AGENT: (
+        "Handles all mattermost driver jobs for every configured Mattermost "
+        "server: inbound fan-out, outbound posts and channel IO. Delivers the "
+        "outbound_delivery items the resolver routes to it (adapters, "
+        "duplicate suppression)."
+    ),
+    OUTBOUND_DELIVERY_RESOLVER_AGENT: (
+        "Monitors only the outbound_delivery queue: resolves each drop's "
+        "address hints (channel_type, endpoint_address, human channel names) "
+        "and subscribes/hands off to the right bridge agent for delivery."
+    ),
+    MAILBOX_SERVER_AGENT: (
+        "The local mailbox server itself: owns messages.jsonl, relays channel "
+        "traffic and runs the local delivery jobs."
+    ),
+    WORKER_LOADER_AGENT: (
+        "Takes work items off server_worker_queue (leaving the entries in "
+        "place) and layers submitted/blocked/result statuses over them."
+    ),
+}
+
+# Known channel_type -> bridge routing the resolver applies when it hands an
+# outbound_delivery item to a delivery-capable bridge (an email-bridge-agent
+# would register here once it exists).
+DELIVERY_BRIDGE_AGENTS = {
+    "mattermost": MATTERMOST_BRIDGE_AGENT,
+}
+
+# Service queues are monitored by the agents expected to hold a cursor there
+# and settle entries. Designated, not exclusive: anyone may also subscribe
+# (e.g. a user watching outbound_delivery for debugging) — but these agents
+# are the ones responsible for it.
+CHANNEL_MONITORS = {
+    WORKER_QUEUE_CHANNEL: (WORKER_LOADER_AGENT,),
+    OUTBOUND_DELIVERY_CHANNEL: (OUTBOUND_DELIVERY_RESOLVER_AGENT,),
+}
 
 # Only read the tail of the shared log for the thread view; the file accumulates
 # every agent's traffic and can be several megabytes.
@@ -110,19 +201,28 @@ def _project_record(record: dict[str, Any], names: dict[str, str] | None = None)
         "authorName": (names or {}).get(str(author)) if author else None,
         "channelName": record.get("channel_name")
         or ((names or {}).get(str(channel_id)) if channel_id else None),
+        "entryKey": record.get("entry_key"),
+        # A relayed/forwarded entry names its original as ``mailbox-id/entry_n``
+        # (e.g. an agent forwarding a queue message into the right mailbox).
+        "copyOf": record.get("copy_of"),
         "raw": record,
     }
 
 
-def read_tail_records(messages_path: Path, max_bytes: int = MESSAGES_TAIL_BYTES) -> list[dict[str, Any]]:
-    """Parse the last ``max_bytes`` of a JSONL mailbox file into records."""
+def read_tail_records(messages_path: Path, max_bytes: int | None = None) -> list[dict[str, Any]]:
+    """Parse a JSONL mailbox file into records.
+
+    Always starts at byte 0 (the whole file) unless a caller deliberately
+    limits itself by passing ``max_bytes``, in which case only the file's
+    tail is parsed (the partial line at the seek boundary is discarded).
+    """
 
     try:
         size = messages_path.stat().st_size
     except FileNotFoundError:
         return []
     with messages_path.open("rb") as stream:
-        if size > max_bytes:
+        if max_bytes is not None and size > max_bytes:
             stream.seek(size - max_bytes)
             stream.readline()  # discard the partial line at the seek boundary
         raw = stream.read()
@@ -143,7 +243,7 @@ def thread_messages(
     peer: str,
     *,
     limit: int = 200,
-    max_bytes: int = MESSAGES_TAIL_BYTES,
+    max_bytes: int | None = None,
     names: dict[str, str] | None = None,
 ) -> list[dict[str, Any]]:
     """Return the direct conversation between ``user`` and ``peer``.
@@ -175,7 +275,7 @@ def channel_messages(
     channel: str,
     *,
     limit: int = 200,
-    max_bytes: int = MESSAGES_TAIL_BYTES,
+    max_bytes: int | None = None,
     names: dict[str, str] | None = None,
 ) -> list[dict[str, Any]]:
     """Return every message that involves ``channel`` (as sender or recipient)."""
@@ -195,7 +295,7 @@ def channel_messages(
     return thread
 
 
-def stored_messaging_registry(root: Path, *, max_bytes: int = REGISTRY_TAIL_BYTES) -> dict[str, Any]:
+def stored_messaging_registry(root: Path, *, max_bytes: int | None = None) -> dict[str, Any]:
     """Return the latest relay-registry snapshot stored on server_registry."""
 
     stored: dict[str, Any] = {}
@@ -338,6 +438,7 @@ def _traffic_stats(root: Path) -> dict[str, dict[str, Any]]:
                     {
                         "messages": 0,
                         "entries": 0,
+                        "nextEntry": 0,
                         "lastMessageAt": None,
                         "channelName": None,
                         "isChannel": False,
@@ -345,9 +446,20 @@ def _traffic_stats(root: Path) -> dict[str, dict[str, Any]]:
                 )
                 entry["messages"] += 1
                 if value == affiliation:
-                    # This record BELONGS to the channel: its key is entry_<n>
-                    # and the running count is always the next key.
+                    # This record BELONGS to the channel: its key is entry_<n>.
+                    # nextEntry is max+1 (never a recycled key), so deleting
+                    # settled entries later can never reissue an old key.
                     entry["entries"] += 1
+                    stamped = record.get("entry_key")
+                    index = None
+                    if isinstance(stamped, str) and stamped.startswith("entry_"):
+                        try:
+                            index = int(stamped[6:])
+                        except ValueError:
+                            index = None
+                    if index is None:
+                        index = entry["nextEntry"]
+                    entry["nextEntry"] = max(entry["nextEntry"], index + 1)
                 if isinstance(timestamp, str) and timestamp:
                     entry["lastMessageAt"] = timestamp
                 if value == channel_id:
@@ -418,16 +530,27 @@ def list_channels(root: Path) -> list[dict[str, Any]]:
             channels[cid].setdefault("key", cid)
 
     registry = messaging_registry(root)
+    # Registry entries are entered by the first-class bridge agent — it owns
+    # the relay registry — so stamp provenance unless a record says otherwise.
     for agent in registry.get("agents", []) or []:
-        add(agent.get("mailbox") or agent.get("agent_id"), "mailbox", agent)
+        mailbox = agent.get("mailbox") or agent.get("agent_id")
+        if isinstance(mailbox, str):
+            mailbox = AGENT_ALIAS_CANONICAL.get(mailbox, mailbox)
+        record = dict(agent)
+        if mailbox != MATTERMOST_BRIDGE_AGENT:
+            record.setdefault("entered_by", MATTERMOST_BRIDGE_AGENT)
+        add(mailbox, "mailbox", record)
     for channel in registry.get("channels", []) or []:
-        add(channel.get("id"), str(channel.get("channel_type") or "channel"), channel)
+        record = dict(channel)
+        record.setdefault("entered_by", MATTERMOST_BRIDGE_AGENT)
+        add(channel.get("id"), str(channel.get("channel_type") or "channel"), record)
         _inspire_metadata_lookups(channel, names)
 
-    add(REGISTRY_CHANNEL, "registry")
-    add(AGENTS_CHANNEL, "registry")
-    add(CHANNELS_CHANNEL, "registry")
-    add(WORKER_QUEUE_CHANNEL, "registry")
+    for cid in sorted(WELL_KNOWN_CHANNELS):
+        add(cid, "registry")
+    for cid, monitors in CHANNEL_MONITORS.items():
+        if cid in channels:
+            channels[cid].setdefault("monitors", list(monitors))
     for participant, traffic in stats.items():
         # An id seen as a record's channel_id is a channel, never a mailbox.
         add(participant, "channel" if traffic.get("isChannel") else "mailbox")
@@ -499,6 +622,11 @@ def list_agents(root: Path) -> list[dict[str, Any]]:
     def add(agent_id: Any, record: dict[str, Any] | None = None) -> None:
         if not isinstance(agent_id, str) or not agent_id:
             return
+        # Aliased bridge identities fold into their canonical agent, and
+        # blackboard channels never masquerade as agents.
+        agent_id = AGENT_ALIAS_CANONICAL.get(agent_id, agent_id)
+        if agent_id in WELL_KNOWN_CHANNELS:
+            return
         if agent_id not in by_id:
             by_id[agent_id] = {"id": agent_id}
             order.append(agent_id)
@@ -507,13 +635,25 @@ def list_agents(root: Path) -> list[dict[str, Any]]:
                 by_id[agent_id].setdefault(key, value)
 
     for agent in registry.get("agents", []) or []:
-        add(agent.get("agent_id"), agent)
+        record = dict(agent)
+        # Registry agents are entered by the first-class bridge agent: it owns
+        # the relay registry and registers the bridged identities it drives.
+        if AGENT_ALIAS_CANONICAL.get(
+            str(agent.get("agent_id")), str(agent.get("agent_id"))
+        ) != MATTERMOST_BRIDGE_AGENT:
+            record.setdefault("entered_by", MATTERMOST_BRIDGE_AGENT)
+        add(agent.get("agent_id"), record)
     for channel in list_channels(root):
         if channel.get("kind") == "mailbox":
             add(channel["id"], channel)
     add(DEFAULT_USER_AGENT)
     add(DEFAULT_PEER_AGENT)
+    for service_agent, role in AGENT_ROLES.items():
+        add(service_agent, {"role": role})
     for agent_id, entry in stored_entity_entries(root, "agent_entry", AGENTS_CHANNEL).items():
+        agent_id = AGENT_ALIAS_CANONICAL.get(agent_id, agent_id)
+        if agent_id in WELL_KNOWN_CHANNELS:
+            continue
         add(agent_id)
         cleaned = {k: v for k, v in entry.items() if k not in ("cursors", "messages", "lastMessageAt")}
         authority = str(cleaned.get("authority") or AGENTS_CHANNEL)
@@ -530,6 +670,9 @@ def list_agents(root: Path) -> list[dict[str, Any]]:
     if _mailbox_client is not None:
         size = _messages_size(root)
         for agent_id, channel_ids in _cursor_map(root).items():
+            agent_id = AGENT_ALIAS_CANONICAL.get(agent_id, agent_id)
+            if agent_id in WELL_KNOWN_CHANNELS:
+                continue  # a blackboard channel's cursor is not an agent
             add(agent_id)
             by_id[agent_id]["cursors"] = {
                 cid: _cursor_brief(root, cid, agent_id, size) for cid in channel_ids
@@ -621,7 +764,7 @@ def mailbox_create_channel(id: str = Body(..., embed=True)) -> dict[str, Any]:
     return {"id": channel_id, "created": created}
 
 
-def stored_channel_config(root: Path, channel: str, *, max_bytes: int = REGISTRY_TAIL_BYTES) -> dict[str, Any]:
+def stored_channel_config(root: Path, channel: str, *, max_bytes: int | None = None) -> dict[str, Any]:
     """Return the latest edited config stored on the server_registry channel."""
 
     stored: dict[str, Any] = {}
@@ -642,7 +785,7 @@ def stored_channel_config(root: Path, channel: str, *, max_bytes: int = REGISTRY
 
 
 def stored_entity_entries(
-    root: Path, record_type: str, channel: str, *, max_bytes: int = REGISTRY_TAIL_BYTES
+    root: Path, record_type: str, channel: str, *, max_bytes: int | None = None
 ) -> dict[str, dict[str, Any]]:
     """Latest edited agent/channel entries stored on ``channel``, by id.
 
@@ -672,7 +815,7 @@ def _identifier_display(entry: dict[str, Any]) -> str | None:
     return str(name) if name else None
 
 
-def stored_identifier_directory(root: Path, *, max_bytes: int = REGISTRY_TAIL_BYTES) -> list[dict[str, Any]]:
+def stored_identifier_directory(root: Path, *, max_bytes: int | None = None) -> list[dict[str, Any]]:
     """Return the identifier entries stored on server_registry, one per bubble.
 
     Each ``identifier_entry`` record carries one full (uncondensed) directory
@@ -965,14 +1108,21 @@ def mailbox_identifier_lookup_post(
 # Durable command queue: each ``worker_task`` record carries the command a REST
 # call would have been, plus ``queue_mode``. REST commands execute immediately
 # unless the client requested ``enqueue``; a task picked up from the queue
-# requests immediate execution (never re-enqueues). An in-process thread pool
-# drains the queue and posts a ``worker_task_result`` record per task.
+# requests immediate execution (never re-enqueues). ``worker_pool_loader_agent``
+# drains the queue WITHOUT removing entries: it layers ``worker_task_status``
+# (submitted / blocked) and ``worker_task_result`` records over the original
+# entry_<n>, so the leftover task entry plus its overlay tells the full story.
+# A task may declare ``depends_on: ["entry_4", "entry_20"]``; the loader holds
+# it (blocked) until those queue entries are settled — a result record exists,
+# or the entry itself no longer exists (compacted away = satisfied).
 
 _WORKER_POOL: ThreadPoolExecutor | None = None
 _WORKER_LOCK = threading.Lock()
 _WORKER_SEEN: set[str] = set()  # task keys enqueued during this process run
 
 WORKER_QUEUE_MODES = {"immediate", "enqueue"}
+WORKER_DEP_WAIT_SECS = 60.0  # max time the loader holds a blocked task
+WORKER_DEP_POLL_SECS = 0.25
 
 
 def _worker_pool() -> ThreadPoolExecutor:
@@ -984,6 +1134,53 @@ def _worker_pool() -> ThreadPoolExecutor:
 
 def _command_key(command: dict[str, Any]) -> str:
     return json.dumps(command, sort_keys=True, ensure_ascii=False)
+
+
+def _next_entry_key(root: Path, channel: str) -> str:
+    """Next never-reused entry_<n> for ``channel`` (max existing + 1)."""
+
+    stats_entry = _traffic_stats(root).get(channel) or {}
+    return f"entry_{int(stats_entry.get('nextEntry') or 0)}"
+
+
+def _queue_entry_states(root: Path) -> dict[str, str]:
+    """Fold the queue channel into entry_key -> latest lifecycle status.
+
+    A ``worker_task`` starts ``queued``; ``worker_task_status`` overlays
+    (submitted/blocked/…); ``worker_task_result`` settles it (done/error). The
+    original entries stay in the log — the overlay is the source of truth.
+    """
+
+    states: dict[str, str] = {}
+    for record in read_tail_records(root / "messages.jsonl"):
+        if record.get("audit_of"):
+            continue
+        if WORKER_QUEUE_CHANNEL not in (record.get("to"), record.get("channel_id")):
+            continue
+        kind = record.get("type")
+        if kind == "worker_task":
+            key = record.get("entry_key")
+            if isinstance(key, str) and key:
+                states.setdefault(key, str(record.get("status") or "queued"))
+        elif kind in ("worker_task_status", "worker_task_result"):
+            key = record.get("task_entry")
+            if isinstance(key, str) and key and record.get("status"):
+                states[key] = str(record["status"])
+    return states
+
+
+def _dependencies_settled(root: Path, depends_on: list[str]) -> bool:
+    """True when every dependency entry is settled or no longer exists."""
+
+    if not depends_on:
+        return True
+    states = _queue_entry_states(root)
+    for dep in depends_on:
+        status = states.get(dep)
+        # Unknown entry = deleted/compacted away = satisfied by design.
+        if status is not None and status not in ("done", "error"):
+            return False
+    return True
 
 
 def execute_worker_command(command: dict[str, Any]) -> dict[str, Any]:
@@ -1033,36 +1230,99 @@ def run_worker_command(
             if key in _WORKER_SEEN:
                 return {"queued": False, "duplicate": True, "taskKey": key}
             _WORKER_SEEN.add(key)
+    depends_on = [d for d in (command.get("depends_on") or []) if isinstance(d, str) and d]
+    task_entry = None
     if _mailbox_client is not None:
         try:
+            root = resolve_mailbox_root()
+            task_entry = _next_entry_key(root, WORKER_QUEUE_CHANNEL)
+            fields: dict[str, Any] = {
+                "command": command,
+                "queue_mode": "enqueue",
+                "task_key": key,
+                "entry_key": task_entry,
+                "status": "queued",
+                "requested_at": time.time(),
+                "requested_because": reason,
+            }
+            if depends_on:
+                fields["depends_on"] = depends_on
             _mailbox_client.send(
                 WORKER_QUEUE_CHANNEL,
                 "",
                 sender=DEFAULT_USER_AGENT,
-                root=resolve_mailbox_root(),
+                root=root,
                 message_type="worker_task",
-                extra_fields={
-                    "command": command,
-                    "queue_mode": "enqueue",
-                    "task_key": key,
-                    "status": "queued",
-                    "requested_at": time.time(),
-                    "requested_because": reason,
-                },
+                extra_fields=fields,
                 channel_id=WORKER_QUEUE_CHANNEL,
             )
         except Exception:
             pass  # the pool still runs the task; only the durable record is lost
     try:
-        _worker_pool().submit(_run_queued_command, dict(command), key)
+        _worker_pool().submit(_run_queued_command, dict(command), key, task_entry, depends_on)
     except Exception:
         pass
-    return {"queued": True, "taskKey": key}
+    return {"queued": True, "taskKey": key, "taskEntry": task_entry}
 
 
-def _run_queued_command(command: dict[str, Any], key: str) -> None:
-    """Drain one queued task: execute immediately and post the result record."""
+def _post_task_status(task_entry: str | None, key: str, status: str, **fields: Any) -> None:
+    """Loader-agent overlay: layer a status record over the leftover task entry."""
 
+    if _mailbox_client is None:
+        return
+    try:
+        root = resolve_mailbox_root()
+        _mailbox_client.send(
+            WORKER_QUEUE_CHANNEL,
+            "",
+            sender=WORKER_LOADER_AGENT,
+            root=root,
+            message_type="worker_task_status",
+            extra_fields={
+                # Overlay records are queue entries in their own right.
+                "entry_key": _next_entry_key(root, WORKER_QUEUE_CHANNEL),
+                "task_key": key,
+                "task_entry": task_entry,
+                "status": status,
+                "at": time.time(),
+                **fields,
+            },
+            channel_id=WORKER_QUEUE_CHANNEL,
+        )
+    except Exception:
+        pass  # best effort: the overlay must never kill the worker
+
+
+def _run_queued_command(
+    command: dict[str, Any],
+    key: str,
+    task_entry: str | None = None,
+    depends_on: list[str] | None = None,
+) -> None:
+    """The worker_pool_loader_agent takes one item off the queue.
+
+    The ``worker_task`` entry stays in the log; the loader layers status
+    records over it: ``submitted`` when it hands the command to the pool
+    thread, ``blocked`` while declared ``depends_on`` entries are unsettled,
+    and finally a ``worker_task_result``.
+    """
+
+    deps = list(depends_on or [])
+    if task_entry in deps:
+        deps.remove(task_entry)  # a task can never depend on its own entry
+    if deps:
+        try:
+            root = resolve_mailbox_root()
+            if not _dependencies_settled(root, deps):
+                _post_task_status(task_entry, key, "blocked", depends_on=deps)
+                deadline = time.monotonic() + WORKER_DEP_WAIT_SECS
+                while time.monotonic() < deadline:
+                    time.sleep(WORKER_DEP_POLL_SECS)
+                    if _dependencies_settled(root, deps):
+                        break
+        except Exception:
+            pass
+    _post_task_status(task_entry, key, "submitted", depends_on=deps or None)
     try:
         result = execute_worker_command(command)
     except Exception as error:  # noqa: BLE001 - worker threads must never raise
@@ -1071,15 +1331,18 @@ def _run_queued_command(command: dict[str, Any], key: str) -> None:
         return
     summary = {k: result[k] for k in ("found", "name", "source", "error") if k in result}
     try:
+        root = resolve_mailbox_root()
         _mailbox_client.send(
             WORKER_QUEUE_CHANNEL,
             "",
-            sender=DEFAULT_USER_AGENT,
-            root=resolve_mailbox_root(),
+            sender=WORKER_LOADER_AGENT,
+            root=root,
             message_type="worker_task_result",
             extra_fields={
+                "entry_key": _next_entry_key(root, WORKER_QUEUE_CHANNEL),
                 "command": command,
                 "task_key": key,
+                "task_entry": task_entry,
                 "queue_mode": "immediate",
                 "status": "error" if result.get("error") else "done",
                 "completed_at": time.time(),
@@ -1301,6 +1564,23 @@ def _remap_registry_snapshot(snapshot: dict[str, Any], plan: dict[str, dict[str,
                              mapping: dict[str, str]) -> dict[str, Any]:
     """Convert a registry doc to the canonical scheme: keyed channels, merged aliases."""
 
+    snapshot = dict(snapshot)
+    agents = snapshot.get("agents")
+    if isinstance(agents, list):
+        merged_agents: dict[str, dict[str, Any]] = {}
+        for agent in agents:
+            if not isinstance(agent, dict):
+                continue
+            agent_id = _remap_id(agent.get("agent_id"), mapping)
+            mailbox = _remap_id(agent.get("mailbox"), mapping)
+            target = merged_agents.setdefault(str(mailbox or agent_id), {})
+            for field, value in agent.items():
+                target.setdefault(field, value)
+            if agent_id:
+                target["agent_id"] = agent_id
+            if mailbox:
+                target["mailbox"] = mailbox
+        snapshot["agents"] = list(merged_agents.values())
     channels = snapshot.get("channels")
     if not isinstance(channels, list):
         return snapshot
@@ -1323,10 +1603,13 @@ def _remap_registry_snapshot(snapshot: dict[str, Any], plan: dict[str, dict[str,
             target["key"] = info["key"]
             aliases.update(info["aliases"])
         target["aliases"] = sorted(aliases - {cid})
-        subscribers = {s for s in (target.get("subscribers") or []) if isinstance(s, str)}
-        subscribers.update(s for s in (channel.get("subscribers") or []) if isinstance(s, str))
+        subscribers = {
+            _remap_id(s, mapping) for s in (target.get("subscribers") or []) if isinstance(s, str)
+        }
+        subscribers.update(
+            _remap_id(s, mapping) for s in (channel.get("subscribers") or []) if isinstance(s, str)
+        )
         target["subscribers"] = sorted(subscribers)
-    snapshot = dict(snapshot)
     snapshot["channels"] = list(merged.values())
     return snapshot
 
@@ -1416,6 +1699,8 @@ def _groom_channels(*, apply: bool = False) -> dict[str, Any]:
         for source in info["merges"]:
             if source != info["canonical"]:
                 mapping[source] = info["canonical"]
+    # Duplicate bridge/agent identities merge the same way channels do.
+    mapping.update(AGENT_ALIAS_CANONICAL)
     touched = sum(
         1
         for record in records
@@ -1430,6 +1715,10 @@ def _groom_channels(*, apply: bool = False) -> dict[str, Any]:
             "aliases": info["aliases"],
             "names": info["names"],
         } for info in plan.values()},
+        "agents": {
+            canonical: sorted(a for a, c in AGENT_ALIAS_CANONICAL.items() if c == canonical)
+            for canonical in set(AGENT_ALIAS_CANONICAL.values())
+        },
         "applied": False,
     }
     if not apply:
@@ -1491,16 +1780,20 @@ def _groom_channels(*, apply: bool = False) -> dict[str, Any]:
     cursor_pairs = 0
     if _mailbox_client is not None:
         cursor_map = _cursor_map(root)
-        remapped: dict[str, list[str]] = {}
+        # Fold aliased agents (and channels) together, keeping the furthest
+        # consumed position per merged pair.
+        consumed_by_agent: dict[str, dict[str, int]] = {}
         for agent, channel_ids in cursor_map.items():
-            consumed: dict[str, int] = {}
+            target = consumed_by_agent.setdefault(mapping.get(agent, agent), {})
             for cid in channel_ids:
                 canonical = mapping.get(cid, cid)
                 old_offset = _mailbox_client._read_cursor(
                     _mailbox_client._cursor_path(root, f"{cid}:{agent}")
                 )
                 count = bisect.bisect_right(old_ends, old_offset)
-                consumed[canonical] = max(consumed.get(canonical, 0), count)
+                target[canonical] = max(target.get(canonical, 0), count)
+        remapped: dict[str, list[str]] = {}
+        for agent, consumed in consumed_by_agent.items():
             for canonical, count in consumed.items():
                 new_offset = new_ends[count - 1] if count else 0
                 _mailbox_client._write_cursor(
@@ -1577,20 +1870,47 @@ def _sync_subscriptions() -> dict[str, Any]:
     if _mailbox_client is None:
         return {"error": "mailbox_channels client is not installed"}
     root = resolve_mailbox_root()
-    cursor_map = _cursor_map(root)
+    # Aliased bridge identities fold into their canonical agent, and blackboard
+    # channels themselves never count as subscribing agents.
+    cursor_map: dict[str, list[str]] = {}
+    for raw_agent, channel_ids in _cursor_map(root).items():
+        agent = AGENT_ALIAS_CANONICAL.get(raw_agent, raw_agent)
+        if agent in WELL_KNOWN_CHANNELS:
+            continue
+        merged = set(cursor_map.get(agent) or [])
+        merged.update(channel_ids)
+        cursor_map[agent] = sorted(merged)
     channel_subscribers: dict[str, set[str]] = {}
     for channel in messaging_registry(root).get("channels", []) or []:
         if isinstance(channel, dict) and isinstance(channel.get("id"), str):
             declared = channel_subscribers.setdefault(channel["id"], set())
             declared.update(
-                s for s in (channel.get("subscribers") or []) if isinstance(s, str) and s
+                AGENT_ALIAS_CANONICAL.get(s, s)
+                for s in (channel.get("subscribers") or [])
+                if isinstance(s, str) and s and s not in WELL_KNOWN_CHANNELS
             )
     size = _messages_size(root)
     entry_ends = _channel_entry_ends(root)
     agents_written = 0
     autocursored = 0
-    stored_agents = stored_entity_entries(root, "agent_entry", AGENTS_CHANNEL)
+    stored_agents: dict[str, dict[str, Any]] = {}
+    for raw_agent, entry in stored_entity_entries(root, "agent_entry", AGENTS_CHANNEL).items():
+        agent = AGENT_ALIAS_CANONICAL.get(raw_agent, raw_agent)
+        if agent in WELL_KNOWN_CHANNELS:
+            continue
+        target = stored_agents.setdefault(agent, {})
+        merge_subs = target.get("subscriptions")
+        for key, value in entry.items():
+            target.setdefault(key, value)
+        extra_subs = entry.get("subscriptions")
+        if (isinstance(merge_subs, dict) and isinstance(extra_subs, dict)
+                and merge_subs is not extra_subs):
+            for cid, status in extra_subs.items():
+                # Union alias subscriptions; a sticky opt-out wins on conflict.
+                if str(status) == "unsubscribed" or cid not in merge_subs:
+                    merge_subs[cid] = status
     agent_names = set(cursor_map)
+    agent_names.update(m for ms in CHANNEL_MONITORS.values() for m in ms)
     for agent, entry in stored_agents.items():
         if isinstance(entry.get("subscriptions"), (list, dict)):
             agent_names.add(agent)
@@ -1609,6 +1929,11 @@ def _sync_subscriptions() -> dict[str, Any]:
                 cid: "subscribed" for cid in declared_subs if isinstance(cid, str) and cid
             }
         cursor_channels = set(cursor_map.get(agent) or [])
+        for cid, monitors in CHANNEL_MONITORS.items():
+            # Designated monitors are subscribed to their service queue unless
+            # they explicitly opted out (sticky "unsubscribed" wins).
+            if agent in monitors:
+                subscriptions.setdefault(cid, "subscribed")
         for cid in cursor_channels:
             subscriptions.setdefault(cid, "subscribed")
         for cid, status in subscriptions.items():
@@ -2028,11 +2353,18 @@ def mailbox_send(
     to: str = Body(DEFAULT_PEER_AGENT, embed=True),
     sender: str = Body(DEFAULT_USER_AGENT, embed=True),
     channel_id: str | None = Body(None, embed=True),
+    copy_of: str | None = Body(None, embed=True),
 ) -> dict[str, Any]:
     if _mailbox_client is None:
         raise HTTPException(status_code=503, detail="mailbox_channels client is not installed")
     if not text.strip():
         raise HTTPException(status_code=400, detail="Message text must not be empty")
+    reference = copy_of.strip() if isinstance(copy_of, str) else ""
+    if reference and not re.fullmatch(r".+/entry_\d+", reference):
+        raise HTTPException(
+            status_code=400, detail="copy_of must look like 'mailbox-id/entry_n'"
+        )
+    to = AGENT_ALIAS_CANONICAL.get(to, to)
     channel = (channel_id.strip() or None) if isinstance(channel_id, str) else None
     root = resolve_mailbox_root()
     # Addressing an agent on a channel auto-subscribes it unless the stored
@@ -2044,11 +2376,16 @@ def mailbox_send(
     )
     extra = {"channel_id": channel} if channel else {}
     # Secret per-channel message key: the record BELONGS to channel (or the
-    # ``to`` mailbox) and gets the next ``entry_<n>``; the lifetime ``entries``
-    # count is always the next key.
+    # ``to`` mailbox) and gets the next ``entry_<n>`` — always max+1, so keys
+    # stay unique even after settled entries are deleted.
     affiliation = channel or to
-    next_index = int((_traffic_stats(root).get(affiliation) or {}).get("entries") or 0)
+    stats_entry = _traffic_stats(root).get(affiliation) or {}
+    next_index = int(stats_entry.get("nextEntry") or stats_entry.get("entries") or 0)
     extra["extra_fields"] = {"entry_key": f"entry_{next_index}"}
+    if reference:
+        # A forwarded/relayed copy keeps a pointer to its original entry, so
+        # readers can trace it back (and dedupe) across sequences.
+        extra["extra_fields"]["copy_of"] = reference
     try:
         record = _mailbox_client.send(to, text, sender=sender, root=root, **extra)
     except Exception as error:  # surface send failures as a 500 with detail

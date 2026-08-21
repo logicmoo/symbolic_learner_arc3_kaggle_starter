@@ -962,6 +962,7 @@ def test_traffic_stats_are_lifetime_and_incremental(tmp_path: Path) -> None:
     assert stats["room-x"] == {
         "messages": 1,
         "entries": 1,
+        "nextEntry": 1,
         "lastMessageAt": "2026-01-01T00:00:00Z",
         "channelName": None,
         "isChannel": True,
@@ -1265,7 +1266,8 @@ def test_sync_subscriptions_projects_intent_and_autocursors(
 
     result = mailbox_api._sync_subscriptions()
 
-    assert result == {"agents": 3, "channels": 1, "autocursored": 1}
+    # +2 monitor agents (bridge/loader) with their autocursored service queues.
+    assert result == {"agents": 5, "channels": 3, "autocursored": 3}
     agents = {r["entry"]["id"]: r["entry"] for r in fake.sent if r["type"] == "agent_entry"}
     assert agents["agent-a"]["subscriptions"] == {"room-1": "subscribed"}
     cursor = agents["agent-a"]["cursors"]["room-1"]
@@ -1279,9 +1281,8 @@ def test_sync_subscriptions_projects_intent_and_autocursors(
     # Sticky opt-out never re-subscribes and keeps no cursor projection.
     assert agents["opted-out"]["subscriptions"] == {"room-1": "unsubscribed"}
     assert agents["opted-out"]["cursors"] == {}
-    channels = [r["entry"] for r in fake.sent if r["type"] == "channel_entry"]
-    assert channels[0]["id"] == "room-1"
-    assert channels[0]["subscribers"] == ["agent-a", "auto-sub", "declared-agent"]
+    channels = {r["entry"]["id"]: r["entry"] for r in fake.sent if r["type"] == "channel_entry"}
+    assert channels["room-1"]["subscribers"] == ["agent-a", "auto-sub", "declared-agent"]
 
 
 def test_resolver_index_typed_maps_and_endpoint(
@@ -1349,3 +1350,266 @@ def test_mailbox_send_stamps_next_entry_key(
 
     stamped = [r for r in fake.sent if r.get("entry_key")]
     assert stamped and stamped[0]["entry_key"] == "entry_2"
+
+
+# ── worker loader agent, entry keys, dependencies, agent merging ─────────────
+
+
+def test_worker_enqueue_stamps_entry_key_and_loader_overlays_status(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setenv("AGENT_MAILBOX_DIR", str(tmp_path))
+    fake = _FakeRelay()
+    monkeypatch.setattr(mailbox_api, "_mailbox_client", fake)
+    _fresh_worker_state(monkeypatch)
+    queue = mailbox_api.WORKER_QUEUE_CHANNEL
+    # An old task occupies entry_7: the next key is max+1 — never recycled —
+    # even though the channel holds a single (leftover) entry.
+    _write_jsonl(
+        tmp_path / "messages.jsonl",
+        [
+            {"id": "t0", "from": "user", "to": queue, "channel_id": queue,
+             "type": "worker_task", "entry_key": "entry_7", "status": "queued"},
+        ],
+    )
+
+    outcome = mailbox_api.run_worker_command(
+        {"op": "identifier_lookup", "id": "mysteryid0123456789abc"}, queue_mode="enqueue"
+    )
+
+    assert outcome["queued"] is True
+    assert outcome["taskEntry"] == "entry_8"
+    task = next(r for r in fake.sent if r["type"] == "worker_task")
+    assert task["entry_key"] == "entry_8"
+    assert task["status"] == "queued"
+    # The loader agent leaves the entry in place and layers statuses over it.
+    statuses = [r for r in fake.sent if r["type"] == "worker_task_status"]
+    assert [s["status"] for s in statuses] == ["submitted"]
+    assert statuses[0]["from"] == mailbox_api.WORKER_LOADER_AGENT
+    assert statuses[0]["task_entry"] == "entry_8"
+    result = next(r for r in fake.sent if r["type"] == "worker_task_result")
+    assert result["from"] == mailbox_api.WORKER_LOADER_AGENT
+    assert result["task_entry"] == "entry_8"
+
+
+def test_worker_depends_on_gates_execution(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setenv("AGENT_MAILBOX_DIR", str(tmp_path))
+    fake = _FakeRelay()
+    monkeypatch.setattr(mailbox_api, "_mailbox_client", fake)
+    _fresh_worker_state(monkeypatch)
+    monkeypatch.setattr(mailbox_api, "WORKER_DEP_WAIT_SECS", 0.3)
+    monkeypatch.setattr(mailbox_api, "WORKER_DEP_POLL_SECS", 0.05)
+    queue = mailbox_api.WORKER_QUEUE_CHANNEL
+    _write_jsonl(
+        tmp_path / "messages.jsonl",
+        [
+            # entry_4 is still queued (unsettled) …
+            {"id": "t0", "from": "user", "to": queue, "channel_id": queue,
+             "type": "worker_task", "entry_key": "entry_4", "status": "queued"},
+            # … while entry_20 ran to completion (settled).
+            {"id": "t1", "from": "user", "to": queue, "channel_id": queue,
+             "type": "worker_task", "entry_key": "entry_20", "status": "queued"},
+            {"id": "t2", "from": mailbox_api.WORKER_LOADER_AGENT, "to": queue,
+             "channel_id": queue, "type": "worker_task_result",
+             "task_entry": "entry_20", "status": "done"},
+        ],
+    )
+
+    def statuses_for(key: str) -> list[str]:
+        return [r["status"] for r in fake.sent
+                if r["type"] == "worker_task_status" and r.get("task_key") == key]
+
+    # A settled dependency is satisfied — and so is one whose entry no longer
+    # exists (deleted/compacted away): no block, straight to submitted.
+    done = mailbox_api.run_worker_command(
+        {"op": "identifier_lookup", "id": "aaaa0123456789abcdefgh",
+         "depends_on": ["entry_20"]}, queue_mode="enqueue")
+    gone = mailbox_api.run_worker_command(
+        {"op": "identifier_lookup", "id": "bbbb0123456789abcdefgh",
+         "depends_on": ["entry_999"]}, queue_mode="enqueue")
+    assert statuses_for(done["taskKey"]) == ["submitted"]
+    assert statuses_for(gone["taskKey"]) == ["submitted"]
+
+    # An unsettled dependency blocks the task; it still runs after the wait cap.
+    blocked = mailbox_api.run_worker_command(
+        {"op": "identifier_lookup", "id": "cccc0123456789abcdefgh",
+         "depends_on": ["entry_4"]}, queue_mode="enqueue")
+    assert statuses_for(blocked["taskKey"]) == ["blocked", "submitted"]
+    task = next(r for r in fake.sent
+                if r["type"] == "worker_task" and r.get("task_key") == blocked["taskKey"])
+    assert task["depends_on"] == ["entry_4"]
+
+    # A task can never block on its own entry key.
+    selfdep = mailbox_api.run_worker_command(
+        {"op": "identifier_lookup", "id": "dddd0123456789abcdefgh",
+         "depends_on": ["entry_22"]}, queue_mode="enqueue")
+    assert selfdep["taskEntry"] == "entry_22"
+    assert statuses_for(selfdep["taskKey"]) == ["submitted"]
+
+
+def test_agent_aliases_fold_into_first_class_agents(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setenv("AGENT_MAILBOX_DIR", str(tmp_path))
+    fake = _FakeRelay()
+    monkeypatch.setattr(mailbox_api, "_mailbox_client", fake)
+    monkeypatch.setattr(mailbox_api, "_NAMES_CACHE", {"at": 0.0, "names": {}})
+    bridge = mailbox_api.MATTERMOST_BRIDGE_AGENT
+    server = mailbox_api.MAILBOX_SERVER_AGENT
+    registry = {"agents": [
+        {"agent_id": "mattermost-bridge", "mailbox": "mattermost-bridge"},
+        {"agent_id": "relay-registered-x", "mailbox": "relay-registered-x"},
+    ]}
+    _write_jsonl(
+        tmp_path / "messages.jsonl",
+        [
+            {"id": "m0", "from": "app", "to": mailbox_api.REGISTRY_CHANNEL,
+             "type": "messaging_registry", "text": json.dumps(registry)},
+            {"id": "m1", "from": "mattermost", "to": "room-1", "channel_id": "room-1",
+             "text": "hello"},
+            {"id": "e0", "from": "app", "to": mailbox_api.AGENTS_CHANNEL,
+             "type": "agent_entry", "entry": {"id": "mattermost", "note": "legacy"}},
+        ],
+    )
+    (tmp_path / "cursor_subscriptions.json").write_text(json.dumps({
+        "version": 1,
+        "cursors": {
+            "local-mattermost-server": ["room-1"],
+            "channel-relay": ["room-1"],
+            "server_registry": ["server_registry"],
+        },
+    }), encoding="utf-8")
+
+    agents = {a["id"]: a for a in mailbox_api.list_agents(tmp_path)}
+
+    # The alias trio folded into the first-class bridge agent …
+    assert bridge in agents
+    for alias in ("mattermost", "mattermost-bridge", "local-mattermost-server"):
+        assert alias not in agents
+    assert agents[bridge]["note"] == "legacy"      # stored entry folded in
+    assert "room-1" in agents[bridge]["cursors"]   # alias cursor folded in
+    # … the local server identities fold the same way …
+    assert server in agents and "channel-relay" not in agents
+    # … blackboard channels never masquerade as agents …
+    assert "server_registry" not in agents
+    # … the service agents declare their roles …
+    assert agents[bridge]["role"] == mailbox_api.AGENT_ROLES[bridge]
+    assert agents[mailbox_api.WORKER_LOADER_AGENT]["role"] == (
+        mailbox_api.AGENT_ROLES[mailbox_api.WORKER_LOADER_AGENT])
+    # … and registry entries carry provenance: entered by the bridge agent.
+    assert agents["relay-registered-x"]["entered_by"] == bridge
+    assert "entered_by" not in agents[bridge]
+
+    # New traffic addressed to an alias lands on the canonical id too.
+    mailbox_api.mailbox_send(text="hi", to="channel-relay", sender="me")
+    assert fake.sent[-1]["to"] == server
+
+
+def test_groom_apply_merges_agent_aliases(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setenv("AGENT_MAILBOX_DIR", str(tmp_path))
+    fake = _FakeRelay()
+    monkeypatch.setattr(mailbox_api, "_mailbox_client", fake)
+    bridge = mailbox_api.MATTERMOST_BRIDGE_AGENT
+    _write_jsonl(
+        tmp_path / "messages.jsonl",
+        [
+            {"id": "m0", "from": "mattermost", "to": "room-1", "channel_id": "room-1",
+             "text": "one"},
+            {"id": "m1", "from": "local-mattermost-server", "to": "room-1",
+             "channel_id": "room-1", "text": "two"},
+            {"id": "e0", "from": "app", "to": mailbox_api.AGENTS_CHANNEL,
+             "channel_id": mailbox_api.AGENTS_CHANNEL, "type": "agent_entry",
+             "entry": {"id": "mattermost-bridge"}},
+        ],
+    )
+    old_ends = _line_ends(tmp_path / "messages.jsonl")
+    # Two alias cursors at different positions: the merge keeps the furthest.
+    fake._write_cursor(fake._cursor_path(tmp_path, "room-1:mattermost"), old_ends[0])
+    fake._write_cursor(fake._cursor_path(tmp_path, "room-1:mattermost-bridge"), old_ends[1])
+    (tmp_path / "cursor_subscriptions.json").write_text(json.dumps({
+        "version": 1,
+        "cursors": {"mattermost": ["room-1"], "mattermost-bridge": ["room-1"]},
+    }), encoding="utf-8")
+
+    summary = mailbox_api._groom_channels(apply=True)
+
+    assert summary["agents"][bridge] == [
+        "local-mattermost-server", "mattermost", "mattermost-bridge"]
+    records = [json.loads(line) for line in
+               (tmp_path / "messages.jsonl").read_text(encoding="utf-8").splitlines()]
+    assert [r["from"] for r in records[:2]] == [bridge, bridge]
+    assert records[2]["entry"]["id"] == bridge
+    # One folded cursor at the furthest consumed position, canonical doc key.
+    new_ends = _line_ends(tmp_path / "messages.jsonl")
+    assert fake._read_cursor(fake._cursor_path(tmp_path, f"room-1:{bridge}")) == new_ends[1]
+    document = json.loads((tmp_path / "cursor_subscriptions.json").read_text(encoding="utf-8"))
+    assert document["cursors"] == {bridge: ["room-1"]}
+
+
+def test_sync_subscriptions_folds_aliases_and_skips_well_known_channels(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setenv("AGENT_MAILBOX_DIR", str(tmp_path))
+    fake = _FakeRelay()
+    monkeypatch.setattr(mailbox_api, "_mailbox_client", fake)
+    _write_jsonl(
+        tmp_path / "messages.jsonl",
+        [{"id": "r1", "from": "a", "to": "room-1", "channel_id": "room-1", "text": "one"}],
+    )
+    (tmp_path / "cursor_subscriptions.json").write_text(json.dumps({
+        "version": 1,
+        "cursors": {
+            "mattermost": ["room-1"],
+            "server_registry": ["server_registry"],
+        },
+    }), encoding="utf-8")
+
+    result = mailbox_api._sync_subscriptions()
+
+    # The designated monitors join in: the resolver picks up outbound_delivery,
+    # the loader picks up server_worker_queue (both autocursored at 0).
+    assert result == {"agents": 3, "channels": 3, "autocursored": 2}
+    entries = [r["entry"] for r in fake.sent if r["type"] == "agent_entry"]
+    assert [e["id"] for e in entries] == [
+        mailbox_api.MATTERMOST_BRIDGE_AGENT,
+        mailbox_api.OUTBOUND_DELIVERY_RESOLVER_AGENT,
+        mailbox_api.WORKER_LOADER_AGENT]
+    assert entries[0]["subscriptions"] == {"room-1": "subscribed"}
+    assert entries[1]["subscriptions"] == {
+        mailbox_api.OUTBOUND_DELIVERY_CHANNEL: "subscribed"}
+
+
+def test_outbound_delivery_is_a_monitored_queue_not_an_agent(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setenv("AGENT_MAILBOX_DIR", str(tmp_path))
+    fake = _FakeRelay()
+    monkeypatch.setattr(mailbox_api, "_mailbox_client", fake)
+    _write_jsonl(
+        tmp_path / "messages.jsonl",
+        [
+            # A codex worker drops an outbound post knowing nothing about
+            # delivery — just its text and whatever address hint it has …
+            {"id": "o1", "from": "symbolic-workbench-codex", "to": "outbound_delivery",
+             "text": "hello", "endpoint_address": "mm/chat.example.io/abc123"},
+            # … and the queue even answers as a sender (duplicate suppression).
+            {"id": "o2", "from": "outbound_delivery", "to": "symbolic-workbench-codex",
+             "type": "channel_delivery_suppressed", "text": "dup"},
+        ],
+    )
+
+    mailbox_api._sync_subscriptions()
+
+    channels = {c["id"]: c for c in mailbox_api.list_channels(tmp_path)}
+    queue = channels[mailbox_api.OUTBOUND_DELIVERY_CHANNEL]
+    assert queue["monitors"] == [mailbox_api.OUTBOUND_DELIVERY_RESOLVER_AGENT]
+    assert mailbox_api.OUTBOUND_DELIVERY_RESOLVER_AGENT in queue["subscribers"]
+    worker_queue = channels[mailbox_api.WORKER_QUEUE_CHANNEL]
+    assert worker_queue["monitors"] == [mailbox_api.WORKER_LOADER_AGENT]
+    # The queue never masquerades as an agent, even when seen as a sender.
+    agents = {a["id"] for a in mailbox_api.list_agents(tmp_path)}
+    assert mailbox_api.OUTBOUND_DELIVERY_CHANNEL not in agents
