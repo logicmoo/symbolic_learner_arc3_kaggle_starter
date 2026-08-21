@@ -9,6 +9,7 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import { createPortal } from "react-dom";
+import { ChatDock } from "../components/ChatDock";
 import { PddlPlanImportPanel } from "../components/PddlPlanImportPanel";
 import {
   HumanInputForm,
@@ -124,6 +125,11 @@ const Arc3PromptPrologPage = lazy(() =>
 const Arc3B1B2PipelinePage = lazy(() =>
   import("../components/Arc3B1B2PipelinePage").then((module) => ({
     default: module.Arc3B1B2PipelinePage,
+  })),
+);
+const ChatPage = lazy(() =>
+  import("../components/ChatPage").then((module) => ({
+    default: module.ChatPage,
   })),
 );
 const WorkflowPageBuilder = lazy(() =>
@@ -376,6 +382,7 @@ type View =
   | "visualImageDiff"
   | "arc3TwoImageProlog"
   | "arc3B1B2Pipeline"
+  | "chat"
   | "workflowPageBuilder"
   | "canvas"
   | "editor"
@@ -416,6 +423,7 @@ const WORKBENCH_VIEWS: Set<View> = new Set([
   "visualImageDiff",
   "arc3TwoImageProlog",
   "arc3B1B2Pipeline",
+  "chat",
   "workflowPageBuilder",
   "canvas",
   "editor",
@@ -579,6 +587,7 @@ export const NAVIGATION_V2: Array<{
     group: "WORKSPACE",
     items: [
       { label: "Overview", view: "overview", glyph: "⌂" },
+      { label: "Chat", view: "chat", glyph: "✉" },
       { label: "Goals", view: "goals", glyph: "◎" },
       { label: "Planning", view: "plans", glyph: "◇" },
     ],
@@ -3505,6 +3514,11 @@ export function FilesystemWorkbenchPage() {
             {view === "workflowPageBuilder" && (
               <WorkflowPageBuilder initialDefinition={workflowNavigationEntries[0]?.definition} />
             )}
+            {view === "chat" && (
+              <Suspense fallback={<div className="studio-empty">Loading chat…</div>}>
+                <ChatPage />
+              </Suspense>
+            )}
             {workflowPageForView && (
               workflowPageForView.renderer === "workflow_generation_runtime" ? workflow ? (
                 <GenerateWorkflowPage
@@ -4262,6 +4276,7 @@ export function FilesystemWorkbenchPage() {
         <span>{workspace.promptFileCount || 0} prompts</span>
         <span className="footer-right">filesystem workspace</span>
       </footer>
+      <ChatDock onOpenFullPage={() => setView("chat")} />
     </main>
   );
 }

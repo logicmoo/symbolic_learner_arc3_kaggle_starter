@@ -8,6 +8,7 @@ from fastapi.responses import JSONResponse
 
 from datatype_api import router as datatype_router
 from goal_run_api import router as goal_run_router
+from mailbox_api import router as mailbox_router
 from prompt_api import router as prompt_router
 from routes.artifacts import router as artifacts_router
 from routes.workflow import router as workflow_router
@@ -54,6 +55,7 @@ app.include_router(workflow_runner_todo_router, prefix="/api")
 app.include_router(workspace_router, prefix="/api")
 app.include_router(datatype_router, prefix="/api")
 app.include_router(goal_run_router, prefix="/api")
+app.include_router(mailbox_router, prefix="/api")
 app.include_router(prompt_router, prefix="/api")
 app.include_router(operation_router, prefix="/api")
 app.include_router(model_policy_todo_router, prefix="/api")
