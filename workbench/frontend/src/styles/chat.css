@@ -115,6 +115,73 @@
   min-width: 56px;
 }
 
+.chat-control > .chat-label {
+  min-width: 56px;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--muted);
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+  text-decoration: underline dotted transparent;
+}
+
+.chat-control > .chat-label:hover {
+  color: var(--cyan);
+  text-decoration-color: var(--cyan);
+}
+
+.chat-inspect {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.chat-inspect-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.chat-inspect-head span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-inspect-note {
+  color: var(--cyan);
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.chat-inspect-edit {
+  min-height: 160px;
+  resize: vertical;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 8px;
+  font-size: 11px;
+  line-height: 1.35;
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  color: var(--text);
+  white-space: pre;
+}
+
+.chat-inspect-edit:focus {
+  outline: none;
+  border-color: var(--cyan);
+}
+
 .chat-control input,
 .chat-control select {
   flex: 1;
@@ -141,6 +208,38 @@
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+.chat-cursor {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted, #9aa4b2);
+}
+
+.chat-cursor-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-cursor button {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 3px 8px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.chat-cursor button:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 
 .chat-make input {

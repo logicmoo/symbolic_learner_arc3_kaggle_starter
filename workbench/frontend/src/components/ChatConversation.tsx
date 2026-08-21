@@ -23,7 +23,16 @@ export type ChatMessage = {
 };
 
 export type ChannelOption = { id: string; kind?: string; messages?: number; name?: string | null };
-export type AgentOption = { id: string };
+
+type CursorInfo = {
+  channel: string;
+  agent: string;
+  initialized: boolean;
+  offset: number;
+  size: number;
+  behind: number;
+};
+export type AgentOption = { id: string; [key: string]: unknown };
 
 type Props = {
   user?: string;
@@ -80,6 +89,12 @@ export function ChatConversation({
   const [configError, setConfigError] = useState("");
   const [configNote, setConfigNote] = useState("");
   const [configBusy, setConfigBusy] = useState(false);
+  const [cursorInfo, setCursorInfo] = useState<CursorInfo | null>(null);
+  const [cursorBusy, setCursorBusy] = useState(false);
+  const [inspect, setInspect] = useState<{ label: string; id: string; kind: "agent" | "channel" } | null>(null);
+  const [inspectText, setInspectText] = useState("");
+  const [inspectNote, setInspectNote] = useState("");
+  const [inspectBusy, setInspectBusy] = useState(false);
   const listRef = useRef<HTMLDivElement | null>(null);
   const stickBottomRef = useRef(true);
 
@@ -294,17 +309,148 @@ export function ChatConversation({
     }
   }, [configChannel, configText]);
 
+  // Cursor control: while looking at a channel with "To" set to an agent, show
+  // where that agent's cursor sits on the channel and allow repositioning it.
+  const fetchCursor = useCallback(async () => {
+    if (!channel || !target) {
+      setCursorInfo(null);
+      return;
+    }
+    try {
+      const query = `channel=${encodeURIComponent(channel)}&agent=${encodeURIComponent(target)}`;
+      const payload = await readJson(await fetch(`/api/mailbox/cursor?${query}`));
+      setCursorInfo(payload as CursorInfo);
+    } catch {
+      setCursorInfo(null);
+    }
+  }, [channel, target]);
+
+  useEffect(() => {
+    fetchCursor();
+  }, [fetchCursor]);
+
+  const moveCursor = useCallback(
+    async (start: "beginning" | "now" | "remove") => {
+      if (!channel || !target) return;
+      setCursorBusy(true);
+      try {
+        const query = `channel=${encodeURIComponent(channel)}&agent=${encodeURIComponent(target)}`;
+        const payload = await readJson(
+          start === "remove"
+            ? await fetch(`/api/mailbox/cursor?${query}`, { method: "DELETE" })
+            : await fetch("/api/mailbox/cursor", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ channel, agent: target, start }),
+              }),
+        );
+        setCursorInfo(payload as CursorInfo);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        setErrorText(message);
+        onError?.(message);
+      } finally {
+        setCursorBusy(false);
+      }
+    },
+    [channel, target, onError],
+  );
+
   // Selects need the current value present as an option even before lists load.
+  // Clicking a picker label (YOU/TO/CHANNEL/SEND-TO) opens an editable JSON view
+  // of whatever that picker points at; clicking the same label again hides it.
+  // YOU/TO show the agent record as returned by /api/mailbox/agents (cursors
+  // included); the channel labels show the channel record. Save posts the edited
+  // JSON to the server_agents / server_channels blackboard channel; Reload
+  // re-queries the record.
+  const loadEntity = useCallback(async (kind: "agent" | "channel", id: string) => {
+    const endpoint = kind === "agent" ? "/api/mailbox/agents" : "/api/mailbox/channels";
+    const payload = await readJson(await fetch(endpoint));
+    const list = (payload[kind === "agent" ? "agents" : "channels"] as Array<Record<string, unknown>>) || [];
+    return list.find((item) => item.id === id) ?? { id };
+  }, []);
+
+  const inspectId = useCallback(
+    (label: string, id: string) => {
+      if (!id) return;
+      if (inspect && inspect.label === label && inspect.id === id) {
+        setInspect(null);
+        return;
+      }
+      const kind = label === "YOU" || label === "TO" ? ("agent" as const) : ("channel" as const);
+      const record =
+        kind === "agent"
+          ? agents.find((a) => a.id === id) ?? { id }
+          : channels.find((c) => c.id === id) ?? { id };
+      setInspect({ label, id, kind });
+      setInspectText(JSON.stringify(record, null, 2));
+      setInspectNote("");
+    },
+    [inspect, agents, channels],
+  );
+
+  const reloadInspect = useCallback(async () => {
+    if (!inspect) return;
+    setInspectBusy(true);
+    try {
+      const record = await loadEntity(inspect.kind, inspect.id);
+      setInspectText(JSON.stringify(record, null, 2));
+      setInspectNote("reloaded");
+      void fetchDirectory();
+    } catch (error) {
+      setInspectNote(error instanceof Error ? error.message : String(error));
+    } finally {
+      setInspectBusy(false);
+    }
+  }, [inspect, loadEntity, fetchDirectory]);
+
+  const saveInspect = useCallback(async () => {
+    if (!inspect) return;
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(inspectText);
+    } catch (error) {
+      setInspectNote(`Invalid JSON: ${error instanceof Error ? error.message : String(error)}`);
+      return;
+    }
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      setInspectNote("Entry must be a JSON object");
+      return;
+    }
+    setInspectBusy(true);
+    try {
+      const payload = await readJson(
+        await fetch("/api/mailbox/entity", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ kind: inspect.kind, id: inspect.id, entry: parsed }),
+        }),
+      );
+      const record = (payload.entry as Record<string, unknown>) ?? parsed;
+      setInspectText(JSON.stringify(record, null, 2));
+      setInspectNote(`saved to ${String(payload.channel ?? "")}`.trim());
+      void fetchDirectory();
+    } catch (error) {
+      setInspectNote(error instanceof Error ? error.message : String(error));
+    } finally {
+      setInspectBusy(false);
+    }
+  }, [inspect, inspectText, fetchDirectory]);
+
   const agentChoices = Array.from(new Set([you, target, ...agents.map((a) => a.id)].filter(Boolean)));
   const channelChoices = Array.from(new Set([channel, ...channels.map((c) => c.id)].filter(Boolean)));
   const sendChoices = Array.from(new Set([sendChannel, ...channels.map((c) => c.id)].filter(Boolean)));
 
   // Channel options carry a readable name resolved from the identifier directory
-  // (bootstrapped onto server_registry), so opaque bridge ids get annotated.
+  // (bootstrapped onto server_registry), so opaque bridge ids get annotated, and
+  // show how many entries recent traffic holds for each channel.
   const channelNames = new Map(channels.map((c) => [c.id, c.name] as const));
+  const channelCounts = new Map(channels.map((c) => [c.id, c.messages] as const));
   const channelLabel = (id: string) => {
     const name = channelNames.get(id);
-    return name && name !== id ? `${name} · ${id}` : id;
+    const base = name && name !== id ? `${name} · ${id}` : id;
+    const count = channelCounts.get(id);
+    return typeof count === "number" ? `${base} · ${count}` : base;
   };
 
   return (
@@ -312,7 +458,7 @@ export function ChatConversation({
       {showChannelPicker && (
         <div className="chat-controls">
           <label className="chat-control">
-            <span>You</span>
+            <button type="button" className="chat-label" onClick={() => void inspectId("YOU", you)}>You</button>
             <select value={you} onChange={(event) => setYou(event.target.value)} aria-label="Your agent identity">
               {agentChoices.map((id) => (
                 <option key={id} value={id}>{id}</option>
@@ -320,7 +466,7 @@ export function ChatConversation({
             </select>
           </label>
           <label className="chat-control">
-            <span>To</span>
+            <button type="button" className="chat-label" onClick={() => void inspectId("TO", target)}>To</button>
             <select value={target} onChange={(event) => setTarget(event.target.value)} aria-label="Addressed agent">
               {agentChoices.map((id) => (
                 <option key={id} value={id}>{id}</option>
@@ -328,7 +474,7 @@ export function ChatConversation({
             </select>
           </label>
           <label className="chat-control">
-            <span>Channel</span>
+            <button type="button" className="chat-label" onClick={() => void inspectId("CHANNEL", channel)}>Channel</button>
             <select value={channel} onChange={(event) => selectChannel(event.target.value)} aria-label="Viewed channel">
               {channelChoices.map((id) => (
                 <option key={id} value={id}>{channelLabel(id)}</option>
@@ -336,7 +482,7 @@ export function ChatConversation({
             </select>
           </label>
           <label className="chat-control">
-            <span>Send-to</span>
+            <button type="button" className="chat-label" onClick={() => void inspectId("SEND-TO", sendChannel)}>Send-to</button>
             <select value={sendChannel} onChange={(event) => setSendChannel(event.target.value)} aria-label="Send channel">
               <option value="">(none)</option>
               {sendChoices.map((id) => (
@@ -358,6 +504,55 @@ export function ChatConversation({
               Make new channel
             </button>
           </div>
+          {channel && target && (
+            <div className="chat-cursor">
+              <span className="chat-cursor-label">
+                Cursor · {target} on {channelLabel(channel)}:{" "}
+                {cursorInfo
+                  ? cursorInfo.initialized
+                    ? `${cursorInfo.behind} bytes behind`
+                    : "no cursor set"
+                  : "…"}
+              </span>
+              <button type="button" disabled={cursorBusy} onClick={() => void moveCursor("beginning")}>
+                ⏮ Beginning
+              </button>
+              <button type="button" disabled={cursorBusy} onClick={() => void moveCursor("now")}>
+                Now ⏭
+              </button>
+              <button
+                type="button"
+                disabled={cursorBusy || !(cursorInfo && cursorInfo.initialized)}
+                onClick={() => void moveCursor("remove")}
+              >
+                ✕ Remove
+              </button>
+            </div>
+          )}
+          {inspect && (
+            <div className="chat-inspect">
+              <div className="chat-inspect-head">
+                <span>{inspect.label} · {inspect.id}</span>
+                {inspectNote && <span className="chat-inspect-note">{inspectNote}</span>}
+                <button type="button" className="chat-json-toggle" disabled={inspectBusy} onClick={() => void reloadInspect()}>
+                  ⟳ Reload
+                </button>
+                <button type="button" className="chat-json-toggle" disabled={inspectBusy} onClick={() => void saveInspect()}>
+                  Save
+                </button>
+                <button type="button" className="chat-json-toggle" onClick={() => setInspect(null)}>
+                  ✕
+                </button>
+              </div>
+              <textarea
+                className="chat-inspect-edit"
+                value={inspectText}
+                onChange={(event) => setInspectText(event.target.value)}
+                spellCheck={false}
+                aria-label={`${inspect.kind} JSON entry`}
+              />
+            </div>
+          )}
         </div>
       )}
       <div className="chat-messages" ref={listRef} onScroll={handleScroll}>

@@ -41,6 +41,12 @@ DEFAULT_PEER_AGENT = "github-copilot-facilitator-agent"
 # addressed to this well-known registry channel; the latest record per channel wins.
 REGISTRY_CHANNEL = "server_registry"
 
+# Edited agent/channel JSONs live on their own blackboard channels: every
+# ``agent_entry`` record goes to server_agents and every ``channel_entry`` record
+# to server_channels; the latest record per id wins.
+AGENTS_CHANNEL = "server_agents"
+CHANNELS_CHANNEL = "server_channels"
+
 # Only read the tail of the shared log for the thread view; the file accumulates
 # every agent's traffic and can be several megabytes.
 MESSAGES_TAIL_BYTES = 512 * 1024
@@ -196,6 +202,41 @@ def messaging_registry(root: Path) -> dict[str, Any]:
     return stored_messaging_registry(root)
 
 
+def _cursor_map(root: Path) -> dict[str, list[str]]:
+    """agent -> channels with a cursor, from cursor_subscriptions.json."""
+
+    try:
+        document = json.loads((root / "cursor_subscriptions.json").read_text(encoding="utf-8"))
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+    cursors = document.get("cursors") or {}
+    result: dict[str, list[str]] = {}
+    for agent, channel_ids in cursors.items():
+        if isinstance(channel_ids, list):
+            result[str(agent)] = list(dict.fromkeys(str(c) for c in channel_ids))
+    return result
+
+
+def _cursor_brief(root: Path, channel: str, agent: str, size: int) -> dict[str, Any]:
+    """Compact cursor position for embedding in agent/channel records."""
+
+    path = _mailbox_client._cursor_path(root, f"{channel}:{agent}")
+    initialized = path.exists()
+    offset = _mailbox_client._read_cursor(path)
+    return {
+        "offset": offset,
+        "behind": max(0, size - offset) if initialized else size,
+        "initialized": initialized,
+    }
+
+
+def _messages_size(root: Path) -> int:
+    try:
+        return (root / "messages.jsonl").stat().st_size
+    except FileNotFoundError:
+        return 0
+
+
 def list_channels(root: Path, *, max_bytes: int = MESSAGES_TAIL_BYTES) -> list[dict[str, Any]]:
     """List every mailbox/channel worth showing in the pickers.
 
@@ -208,10 +249,13 @@ def list_channels(root: Path, *, max_bytes: int = MESSAGES_TAIL_BYTES) -> list[d
     for record in read_tail_records(root / "messages.jsonl", max_bytes):
         if record.get("audit_of"):
             continue
-        for key in ("to", "from"):
+        seen_in_record: set[str] = set()
+        for key in ("to", "from", "channel_id"):
             value = record.get(key)
             if isinstance(value, str) and value and value not in AUDIT_CHANNEL_NAMES:
-                participants[value] = participants.get(value, 0) + 1
+                seen_in_record.add(value)
+        for value in seen_in_record:
+            participants[value] = participants.get(value, 0) + 1
 
     channels: dict[str, dict[str, Any]] = {}
     names = identifier_names(root)
@@ -249,9 +293,36 @@ def list_channels(root: Path, *, max_bytes: int = MESSAGES_TAIL_BYTES) -> list[d
     for participant in participants:
         add(participant, "mailbox")
     add(REGISTRY_CHANNEL, "registry")
+    add(AGENTS_CHANNEL, "registry")
+    add(CHANNELS_CHANNEL, "registry")
     for default_id in (DEFAULT_PEER_AGENT, DEFAULT_USER_AGENT):
         add(default_id, "mailbox")
 
+    for channel_id, entry in stored_entity_entries(root, "channel_entry", CHANNELS_CHANNEL).items():
+        record = channels.get(channel_id)
+        if record is None:
+            continue  # entries for unlisted channels appear once traffic exists
+        cleaned = {k: v for k, v in entry.items() if k not in ("cursors", "messages")}
+        authority = str(cleaned.get("authority") or CHANNELS_CHANNEL)
+        copy_from = str(cleaned.get("authority_copy_from") or "always").lower()
+        # authority decides who wins at start: the blackboard entry when it names
+        # the entity channel, the computed/source record when it names a file —
+        # unless the copy already happened once (authority_copy_from: once).
+        entry_wins = authority == CHANNELS_CHANNEL or copy_from == "once"
+        merged = {**record, **cleaned} if entry_wins else {**cleaned, **record}
+        merged["id"] = channel_id
+        merged["authority"] = authority
+        channels[channel_id] = merged
+    for record in channels.values():
+        record.setdefault("authority", "messages.jsonl")
+    if _mailbox_client is not None:
+        size = _messages_size(root)
+        for agent_id, channel_ids in _cursor_map(root).items():
+            for cid in channel_ids:
+                record = channels.get(cid)
+                if record is not None:
+                    record.setdefault("cursors", {})
+                    record["cursors"][agent_id] = _cursor_brief(root, cid, agent_id, size)
     result = list(channels.values())
     result.sort(key=lambda item: (item["kind"] != "mailbox", -int(item["messages"]), item["id"]))
     return result
@@ -261,38 +332,62 @@ def list_agents(root: Path) -> list[dict[str, Any]]:
     """List registered agents (for the YOU/TO pickers).
 
     Merges the relay registry agents with the mailbox participants seen in recent
-    traffic, so the YOU/TO combos are populated with every possibility. The two
-    default identities are always present.
+    traffic, so the YOU/TO combos are populated with every possibility. Each entry
+    keeps the full registry record (plus traffic stats) so the UI can display the
+    agent's JSON. The two default identities are always present.
     """
 
     registry = messaging_registry(root)
-    agents = [str(a.get("agent_id")) for a in registry.get("agents", []) or [] if a.get("agent_id")]
-    agents.extend(channel["id"] for channel in list_channels(root) if channel.get("kind") == "mailbox")
-    agents.extend((DEFAULT_USER_AGENT, DEFAULT_PEER_AGENT))
-    seen: set[str] = set()
-    ordered: list[dict[str, Any]] = []
-    for agent_id in agents:
-        if agent_id and agent_id not in seen:
-            seen.add(agent_id)
-            ordered.append({"id": agent_id})
-    return ordered
+    by_id: dict[str, dict[str, Any]] = {}
+    order: list[str] = []
+
+    def add(agent_id: Any, record: dict[str, Any] | None = None) -> None:
+        if not isinstance(agent_id, str) or not agent_id:
+            return
+        if agent_id not in by_id:
+            by_id[agent_id] = {"id": agent_id}
+            order.append(agent_id)
+        if isinstance(record, dict):
+            for key, value in record.items():
+                by_id[agent_id].setdefault(key, value)
+
+    for agent in registry.get("agents", []) or []:
+        add(agent.get("agent_id"), agent)
+    for channel in list_channels(root):
+        if channel.get("kind") == "mailbox":
+            add(channel["id"], channel)
+    add(DEFAULT_USER_AGENT)
+    add(DEFAULT_PEER_AGENT)
+    for agent_id, entry in stored_entity_entries(root, "agent_entry", AGENTS_CHANNEL).items():
+        add(agent_id)
+        cleaned = {k: v for k, v in entry.items() if k not in ("cursors", "messages")}
+        authority = str(cleaned.get("authority") or AGENTS_CHANNEL)
+        copy_from = str(cleaned.get("authority_copy_from") or "always").lower()
+        if authority == AGENTS_CHANNEL or copy_from == "once":
+            by_id[agent_id].update(cleaned)  # entry is authoritative: edits win
+        else:
+            for key, value in cleaned.items():  # file authority: source fields win
+                by_id[agent_id].setdefault(key, value)
+        by_id[agent_id]["id"] = agent_id
+        by_id[agent_id]["authority"] = authority
+    for record in by_id.values():
+        record.setdefault("authority", "messages.jsonl")
+    if _mailbox_client is not None:
+        size = _messages_size(root)
+        for agent_id, channel_ids in _cursor_map(root).items():
+            add(agent_id)
+            by_id[agent_id]["cursors"] = {
+                cid: _cursor_brief(root, cid, agent_id, size) for cid in channel_ids
+            }
+    return [by_id[agent_id] for agent_id in order]
 
 
 def _agent_channel_subscriptions(agent: str) -> set[str]:
+    """Channels ``agent`` holds a cursor on, read straight from the blackboard root."""
+
     if _mailbox_client is None:
         return set()
-    try:
-        data = _mailbox_client._rest_request(
-            "GET", "/v1/cursors?" + urllib.parse.urlencode({"cursor": agent})
-        )
-    except Exception:
-        return set()
-    recipients: set[str] = set(data.get("recipients", []) or [])
-    for position in data.get("positions", []) or []:
-        recipient = position.get("recipient")
-        if recipient:
-            recipients.add(str(recipient))
-    return recipients
+    return set(_cursor_map(resolve_mailbox_root()).get(agent, []))
 
 
 def subscribe_agent_to_channel(agent: str, channel: str) -> bool:
@@ -391,6 +486,29 @@ def stored_channel_config(root: Path, channel: str, *, max_bytes: int = REGISTRY
     return stored
 
 
+def stored_entity_entries(
+    root: Path, record_type: str, channel: str, *, max_bytes: int = REGISTRY_TAIL_BYTES
+) -> dict[str, dict[str, Any]]:
+    """Latest edited agent/channel entries stored on ``channel``, by id.
+
+    Each ``agent_entry``/``channel_entry`` record carries one full JSON object in
+    its ``entry`` field; the latest record per id wins.
+    """
+
+    entries: dict[str, dict[str, Any]] = {}
+    for record in read_tail_records(root / "messages.jsonl", max_bytes):
+        if record.get("audit_of"):
+            continue
+        if channel not in (record.get("to"), record.get("channel_id")):
+            continue
+        if record.get("type") != record_type:
+            continue
+        entry = record.get("entry")
+        if isinstance(entry, dict) and isinstance(entry.get("id"), str) and entry["id"]:
+            entries[entry["id"]] = entry
+    return entries
+
+
 def _identifier_display(entry: dict[str, Any]) -> str | None:
     """Readable name for an identifier-directory entry (display name over text)."""
 
@@ -425,9 +543,10 @@ def stored_identifier_directory(root: Path, *, max_bytes: int = REGISTRY_TAIL_BY
 _NAMES_CACHE: dict[str, Any] = {"at": 0.0, "names": {}}
 NAMES_CACHE_TTL_SECS = 60.0
 
-# ids we already asked the relay about and got nothing back: id -> asked-at time.
+# ids we already asked the relay about and got nothing back:
+# id -> {"at": asked-at time, "message": the incoming message that made us ask}.
 # Keeps repeated lookups of the same unknown id from hammering the relay.
-_LOOKUP_MISSES: dict[str, float] = {}
+_LOOKUP_MISSES: dict[str, dict[str, Any]] = {}
 LOOKUP_MISS_TTL_SECS = 300.0
 
 
@@ -539,21 +658,21 @@ def mailbox_registry_bootstrap(limit: int = Query(2000, ge=1, le=10000)) -> dict
     }
 
 
-@router.get("/mailbox/identifier")
-def mailbox_identifier_lookup(id: str = Query(...), force: bool = Query(False)) -> dict[str, Any]:
+def _identifier_lookup(
+    identifier: str, *, force: bool = False, message: dict[str, Any] | None = None
+) -> dict[str, Any]:
     """Resolve one strange identifier: blackboard first, then the live relay.
 
     When an id is not on the ``server_registry`` blackboard yet, the relay's
     ``/v1/identifiers`` directory is asked for an exact match. A hit is
     persisted back to the blackboard as a new ``identifier_entry`` bubble so
-    every agent learns it; a full miss reports ``found: false`` and is
-    remembered for ``LOOKUP_MISS_TTL_SECS`` so the relay is not asked about the
-    same unknown id again until then (``force=true`` re-asks immediately).
+    every agent learns it. A full miss reports ``found: false``, is remembered
+    for ``LOOKUP_MISS_TTL_SECS`` so the relay is not asked about the same
+    unknown id again until then (``force`` re-asks immediately), and is posted
+    to the blackboard as an ``identifier_lookup_request`` bubble carrying the
+    original incoming ``message`` as the reason the id got requested.
     """
 
-    identifier = id.strip() if isinstance(id, str) else ""
-    if not identifier:
-        raise HTTPException(status_code=400, detail="Identifier must not be empty")
     root = resolve_mailbox_root()
     for entry in stored_identifier_directory(root):
         if str(entry.get("identifier")) == identifier:
@@ -568,8 +687,8 @@ def mailbox_identifier_lookup(id: str = Query(...), force: bool = Query(False)) 
             }
 
     now = time.time()
-    asked_at = _LOOKUP_MISSES.get(identifier)
-    if not (force is True) and asked_at and now - asked_at < LOOKUP_MISS_TTL_SECS:
+    cached = _LOOKUP_MISSES.get(identifier)
+    if not force and cached and now - cached["at"] < LOOKUP_MISS_TTL_SECS:
         # We already asked the relay about this id recently; don't ask again.
         return {
             "id": identifier,
@@ -578,12 +697,13 @@ def mailbox_identifier_lookup(id: str = Query(...), force: bool = Query(False)) 
             "entry": None,
             "name": None,
             "stored": False,
-            "requestedAt": asked_at,
-            "retryAfterSecs": round(LOOKUP_MISS_TTL_SECS - (now - asked_at)),
+            "requestedAt": cached["at"],
+            "requestedBecause": cached.get("message"),
+            "retryAfterSecs": round(LOOKUP_MISS_TTL_SECS - (now - cached["at"])),
         }
 
-    miss = {"id": identifier, "found": False, "source": None, "entry": None,
-            "name": None, "stored": False}
+    miss: dict[str, Any] = {"id": identifier, "found": False, "source": None,
+                            "entry": None, "name": None, "stored": False}
     if _mailbox_client is None:
         return miss
     query = urllib.parse.urlencode({"identifier": identifier, "limit": 5})
@@ -602,8 +722,27 @@ def mailbox_identifier_lookup(id: str = Query(...), force: bool = Query(False)) 
         candidates[0] if candidates else None,
     )
     if entry is None:
-        _LOOKUP_MISSES[identifier] = now  # remember when we asked
+        _LOOKUP_MISSES[identifier] = {"at": now, "message": message}
+        try:
+            # Durable "why": the unresolved request lands on the blackboard so
+            # any agent that can resolve the id sees what triggered the ask.
+            _mailbox_client.send(
+                REGISTRY_CHANNEL,
+                "",
+                sender=DEFAULT_USER_AGENT,
+                root=root,
+                message_type="identifier_lookup_request",
+                extra_fields={
+                    "identifier": identifier,
+                    "requested_at": now,
+                    "requested_because": message,
+                },
+                channel_id=REGISTRY_CHANNEL,
+            )
+        except Exception:
+            pass  # the miss is still reported even if persisting the ask fails
         miss["requestedAt"] = now
+        miss["requestedBecause"] = message
         return miss
     _LOOKUP_MISSES.pop(identifier, None)
     stored = False
@@ -630,6 +769,30 @@ def mailbox_identifier_lookup(id: str = Query(...), force: bool = Query(False)) 
         "name": _identifier_display(entry),
         "stored": stored,
     }
+
+
+@router.get("/mailbox/identifier")
+def mailbox_identifier_lookup(id: str = Query(...), force: bool = Query(False)) -> dict[str, Any]:
+    identifier = id.strip() if isinstance(id, str) else ""
+    if not identifier:
+        raise HTTPException(status_code=400, detail="Identifier must not be empty")
+    return _identifier_lookup(identifier, force=force is True)
+
+
+@router.post("/mailbox/identifier")
+def mailbox_identifier_lookup_post(
+    id: str = Body(..., embed=True),
+    force: bool = Body(False, embed=True),
+    message: Any = Body(None, embed=True),
+) -> dict[str, Any]:
+    """Lookup with context: ``message`` is the original incoming message (JSON)
+    whose strange id triggered the request; it is remembered as the reason."""
+
+    identifier = id.strip() if isinstance(id, str) else ""
+    if not identifier:
+        raise HTTPException(status_code=400, detail="Identifier must not be empty")
+    reason = message if isinstance(message, dict) else None
+    return _identifier_lookup(identifier, force=force is True, message=reason)
 
 
 def channel_config(root: Path, channel: str, *, max_bytes: int = MESSAGES_TAIL_BYTES) -> dict[str, Any]:
@@ -765,6 +928,176 @@ def mailbox_update_channel_config(
         "stored": stored,
         "config": channel_config(root, channel_id),
     }
+
+
+@router.post("/mailbox/entity")
+def mailbox_entity_save(
+    kind: str = Body(..., embed=True),
+    id: str = Body(..., embed=True),
+    entry: dict[str, Any] = Body(..., embed=True),
+) -> dict[str, Any]:
+    """Persist an edited agent/channel JSON as a durable blackboard record.
+
+    Agent entries go to ``server_agents`` and channel entries to
+    ``server_channels``; the latest record per id wins. Computed fields
+    (``cursors``/``messages``) are stripped before storing.
+    """
+
+    if _mailbox_client is None:
+        raise HTTPException(status_code=503, detail="mailbox_channels client is not installed")
+    kind_id = kind.strip().lower() if isinstance(kind, str) else ""
+    entity_id = id.strip() if isinstance(id, str) else ""
+    if kind_id not in {"agent", "channel"}:
+        raise HTTPException(status_code=400, detail="kind must be 'agent' or 'channel'")
+    if not entity_id:
+        raise HTTPException(status_code=400, detail="id must not be empty")
+    if not isinstance(entry, dict):
+        raise HTTPException(status_code=400, detail="entry must be a JSON object")
+    root = resolve_mailbox_root()
+    target = AGENTS_CHANNEL if kind_id == "agent" else CHANNELS_CHANNEL
+    payload = {k: v for k, v in entry.items() if k not in ("cursors", "messages")}
+    payload["id"] = entity_id
+    # authority: filename | channelname — decides whether source data overwrites
+    # this entry at start; authority_copy_from: always | once — with a filename
+    # authority, "once" stops re-copying after the first materialization.
+    payload.setdefault("authority", target)
+    payload.setdefault("authority_copy_from", "always")
+    try:
+        _mailbox_client.send(
+            target,
+            "",
+            sender=DEFAULT_USER_AGENT,
+            root=root,
+            message_type=f"{kind_id}_entry",
+            extra_fields={"entry": payload},
+            channel_id=target,
+        )
+    except Exception as error:
+        raise HTTPException(status_code=500, detail=f"Storing entry failed: {error}") from error
+    records = list_agents(root) if kind_id == "agent" else list_channels(root)
+    fresh = next((item for item in records if item.get("id") == entity_id), payload)
+    return {"kind": kind_id, "id": entity_id, "stored": True, "channel": target, "entry": fresh}
+
+
+def _cursor_status(root: Path, channel: str, agent: str) -> dict[str, Any]:
+    """Report where ``agent``'s cursor sits on ``channel`` (byte offsets)."""
+
+    size = _messages_size(root)
+    return {
+        "channel": channel,
+        "agent": agent,
+        "size": size,
+        **_cursor_brief(root, channel, agent, size),
+    }
+
+
+@router.get("/mailbox/cursor")
+def mailbox_cursor_status(channel: str = Query(...), agent: str = Query(...)) -> dict[str, Any]:
+    if _mailbox_client is None:
+        raise HTTPException(status_code=503, detail="mailbox_channels client is not installed")
+    channel_id = channel.strip() if isinstance(channel, str) else ""
+    agent_id = agent.strip() if isinstance(agent, str) else ""
+    if not channel_id or not agent_id:
+        raise HTTPException(status_code=400, detail="channel and agent are required")
+    return _cursor_status(resolve_mailbox_root(), channel_id, agent_id)
+
+
+@router.post("/mailbox/cursor")
+def mailbox_cursor_set(
+    channel: str = Body(..., embed=True),
+    agent: str = Body(..., embed=True),
+    start: str = Body("now", embed=True),
+) -> dict[str, Any]:
+    """Move ``agent``'s cursor on ``channel`` to the beginning or to now.
+
+    An existing cursor file is repositioned in place; a missing one is
+    initialized (which also registers the subscription).
+    """
+
+    if _mailbox_client is None:
+        raise HTTPException(status_code=503, detail="mailbox_channels client is not installed")
+    channel_id = channel.strip() if isinstance(channel, str) else ""
+    agent_id = agent.strip() if isinstance(agent, str) else ""
+    normalized = start.strip().lower() if isinstance(start, str) else "now"
+    if not channel_id or not agent_id:
+        raise HTTPException(status_code=400, detail="channel and agent are required")
+    if normalized not in {"beginning", "start", "now"}:
+        raise HTTPException(status_code=400, detail="start must be 'beginning' or 'now'")
+    root = resolve_mailbox_root()
+    path = _mailbox_client._cursor_path(root, f"{channel_id}:{agent_id}")
+    try:
+        if path.exists():
+            offset = 0 if normalized in {"beginning", "start"} else _messages_size(root)
+            _mailbox_client._write_cursor(path, offset)
+            action = "repositioned"
+        else:
+            _mailbox_client.initialize_cursor(
+                channel_id, cursor=agent_id, start=normalized, root=root
+            )
+            action = "initialized"
+    except Exception as error:
+        raise HTTPException(status_code=500, detail=f"Cursor update failed: {error}") from error
+    status = _cursor_status(root, channel_id, agent_id)
+    status["action"] = action
+    status["start"] = normalized
+    return status
+
+
+def _forget_cursor_subscription(root: Path, agent: str, channel: str) -> bool:
+    """Drop ``channel`` from ``agent``'s cursor list in cursor_subscriptions.json."""
+
+    path = root / "cursor_subscriptions.json"
+    try:
+        document = json.loads(path.read_text(encoding="utf-8"))
+    except (FileNotFoundError, json.JSONDecodeError):
+        return False
+    cursors = document.get("cursors") or {}
+    entries = [str(item) for item in cursors.get(agent, [])]
+    if channel not in entries:
+        return False
+    remaining = [item for item in entries if item != channel]
+    if remaining:
+        cursors[agent] = remaining
+    else:
+        cursors.pop(agent, None)
+    document["cursors"] = cursors
+    path.write_text(json.dumps(document, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return True
+
+
+@router.delete("/mailbox/cursor")
+def mailbox_cursor_remove(channel: str = Query(...), agent: str = Query(...)) -> dict[str, Any]:
+    """Remove ``agent``'s cursor on ``channel`` entirely (no cursor set).
+
+    Deletes the cursor file, forgets the cursor subscription, and best-effort
+    clears the registry subscriber entry on the relay.
+    """
+
+    if _mailbox_client is None:
+        raise HTTPException(status_code=503, detail="mailbox_channels client is not installed")
+    channel_id = channel.strip() if isinstance(channel, str) else ""
+    agent_id = agent.strip() if isinstance(agent, str) else ""
+    if not channel_id or not agent_id:
+        raise HTTPException(status_code=400, detail="channel and agent are required")
+    root = resolve_mailbox_root()
+    path = _mailbox_client._cursor_path(root, f"{channel_id}:{agent_id}")
+    existed = path.exists()
+    try:
+        path.unlink(missing_ok=True)
+    except Exception as error:
+        raise HTTPException(status_code=500, detail=f"Cursor remove failed: {error}") from error
+    forgotten = _forget_cursor_subscription(root, agent_id, channel_id)
+    try:
+        _mailbox_client._rest_request(
+            "POST",
+            "/v1/subscriptions",
+            {"channel": channel_id, "identity": agent_id, "subscribed": False},
+        )
+    except Exception:
+        pass  # relay subscriber list is advisory here
+    status = _cursor_status(root, channel_id, agent_id)
+    status["action"] = "removed" if (existed or forgotten) else "absent"
+    return status
 
 
 @router.get("/mailbox/messages")
