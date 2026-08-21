@@ -348,7 +348,7 @@ const DEFAULT_VALIDATOR_PROMPT = [
 ].join("\n");
 const REMOVAL_DISCOVERY_PASS_PROMPT = [
   "remove_smallest_object:",
-  "Use current_identities to extract obj_<ID>.png from <original>.png and put what is left over in <original>_with_<n>_removed.png (the reduced scene, background inpainted), then tag that identity in current_identities with (extracted: obj_<ID>.png) and return the document.",
+  "Use current_identities and pick an object (prioritized by smallness) to extract obj_<ID>.png from <original>.png, and put what is left over in <original>_with_<n>_removed.png (the reduced scene, background inpainted). Add {\"extracted\": \"obj_<ID>.png\"} to the props of <ID> in current_identities and return the document so you won't accidentally try to extract it again.",
 ].join("\n");
 // Loop-mode instruction snippets appended to the base remove_smallest_object prompt above. Each
 // LOOP MODE picks exactly one; the base stays identical so only the loop behavior changes.
