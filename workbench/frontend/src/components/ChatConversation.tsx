@@ -224,7 +224,9 @@ export function ChatConversation({
     }
   }, [newEntry, fetchDirectory, onError]);
 
-  const toggleRaw = (id: string) => setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
+  // Messages without text default to the JSON view; the toggle flips from the effective state.
+  const toggleRaw = (id: string, defaultOpen = false) =>
+    setExpanded((prev) => ({ ...prev, [id]: !(prev[id] ?? defaultOpen) }));
 
   // Selects need the current value present as an option even before lists load.
   const agentChoices = Array.from(new Set([you, target, ...agents.map((a) => a.id)].filter(Boolean)));
@@ -309,7 +311,7 @@ export function ChatConversation({
                 className="chat-json-toggle"
                 title="Inspect raw JSON"
                 aria-label="Inspect raw JSON"
-                onClick={() => toggleRaw(message.id)}
+                onClick={() => toggleRaw(message.id, !message.text)}
               >
                 {"{ }"}
               </button>
@@ -323,7 +325,7 @@ export function ChatConversation({
                   : "(no text — inspect JSON)"}
               </div>
             )}
-            {expanded[message.id] && (
+            {(expanded[message.id] ?? !message.text) && (
               <pre className="chat-message-json">
                 {JSON.stringify(message.raw ?? message, null, 2)}
               </pre>
