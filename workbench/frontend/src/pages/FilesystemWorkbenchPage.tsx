@@ -127,6 +127,11 @@ const Arc3B1B2PipelinePage = lazy(() =>
     default: module.Arc3B1B2PipelinePage,
   })),
 );
+const Arc3PlayPage = lazy(() =>
+  import("../components/Arc3PlayPage").then((module) => ({
+    default: module.Arc3PlayPage,
+  })),
+);
 const ChatPage = lazy(() =>
   import("../components/ChatPage").then((module) => ({
     default: module.ChatPage,
@@ -382,6 +387,7 @@ type View =
   | "visualImageDiff"
   | "arc3TwoImageProlog"
   | "arc3B1B2Pipeline"
+  | "arc3Play"
   | "chat"
   | "workflowPageBuilder"
   | "canvas"
@@ -423,6 +429,7 @@ const WORKBENCH_VIEWS: Set<View> = new Set([
   "visualImageDiff",
   "arc3TwoImageProlog",
   "arc3B1B2Pipeline",
+  "arc3Play",
   "chat",
   "workflowPageBuilder",
   "canvas",
@@ -466,6 +473,7 @@ const viewFromLocation = (): View | null => {
   if (value === "visual-image-diff" || value === "visualimagediff" || value === "image-diff") return "visualImageDiff";
   if (value === "two-image-prolog" || value === "twoimageprolog" || value === "arc3-two-image-prolog") return "arc3TwoImageProlog";
   if (value === "b1-b2-pipeline" || value === "b1b2pipeline" || value === "arc3-b1-b2-pipeline") return "arc3B1B2Pipeline";
+  if (value === "play" || value === "arc3-play" || value === "arc3play" || value === "play-record") return "arc3Play";
   if (value === "workflow-page-builder" || value === "workflowpagebuilder" || value === "page-builder") return "workflowPageBuilder";
   if (value === "workflowv2" || value === "workflows-v2" || value === "workflow-v2") return "canvas";
   if (value === "editor") return "canvas";
@@ -651,6 +659,7 @@ const viewLabel = (view: View) =>
       visualImageDiff: "Visual Sequencing",
       arc3TwoImageProlog: "Two-Image Prolog",
       arc3B1B2Pipeline: "B1 → B2 Pipeline",
+      arc3Play: "Play & Record",
       workflowPageBuilder: "Workflow Page Builder",
       workflowRuns: "Workflow Runs",
       evidence: "Evidence & provenance",
@@ -3552,6 +3561,12 @@ export function FilesystemWorkbenchPage() {
                   operations={operationLibrary.operations.flatMap((record) => record.document ? [record.document] : [])}
                   operationImplementations={operationLibrary.operationImplementations.flatMap((record) => record.document ? [record.document] : [])}
                   onPageDefinitionSaved={refreshSnapshot}
+                />
+              ) : workflowPageForView.renderer === "arc3_play" ? (
+                <Arc3PlayPage
+                  pageDefinition={workflowPageForView}
+                  workspaceId={workspace.id}
+                  workspaceLabel={workspace.label}
                 />
               ) : workflowPageForView.renderer === "arc3_b1_b2_pipeline" ? (
                 <Arc3B1B2PipelinePage

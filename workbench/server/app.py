@@ -6,6 +6,7 @@ from fastapi import Body, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from arc3_play_api import router as arc3_play_router
 from datatype_api import router as datatype_router
 from goal_run_api import router as goal_run_router
 from mailbox_api import router as mailbox_router
@@ -53,6 +54,7 @@ app.include_router(artifacts_router, prefix="/api")
 app.include_router(workflow_engine_router, prefix="/api")
 app.include_router(workflow_runner_todo_router, prefix="/api")
 app.include_router(workspace_router, prefix="/api")
+app.include_router(arc3_play_router, prefix="/api")
 app.include_router(datatype_router, prefix="/api")
 app.include_router(goal_run_router, prefix="/api")
 app.include_router(mailbox_router, prefix="/api")

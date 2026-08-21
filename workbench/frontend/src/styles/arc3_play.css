@@ -1,0 +1,265 @@
+.arc3-play-page {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 100%;
+  min-height: 0;
+  padding: 12px;
+  box-sizing: border-box;
+}
+
+.arc3-play-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.arc3-play-header h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.arc3-play-header small {
+  opacity: 0.7;
+}
+
+.arc3-play-error {
+  color: #ff6b6b;
+  font-size: 13px;
+  max-width: 50%;
+}
+
+.arc3-play-columns {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr) 340px;
+  gap: 12px;
+  flex: 1;
+  min-height: 0;
+}
+
+.arc3-play-columns > section {
+  border: 1px solid rgba(128, 128, 128, 0.35);
+  border-radius: 8px;
+  padding: 10px;
+  overflow-y: auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.arc3-play-section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  opacity: 0.8;
+}
+
+.arc3-play-game-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.arc3-play-game {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 8px 10px;
+  border: 1px solid rgba(128, 128, 128, 0.35);
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.arc3-play-game:hover:not(:disabled) {
+  border-color: rgba(100, 160, 255, 0.8);
+}
+
+.arc3-play-game.active {
+  border-color: #2ecc40;
+}
+
+.arc3-play-game em {
+  color: #2ecc40;
+  font-size: 11px;
+  font-style: normal;
+}
+
+.arc3-play-game small {
+  opacity: 0.65;
+}
+
+.arc3-play-empty {
+  opacity: 0.6;
+  font-size: 13px;
+  padding: 12px;
+}
+
+.arc3-play-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  font-size: 13px;
+}
+
+.arc3-play-state {
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+}
+
+.arc3-play-state.live {
+  background: rgba(0, 116, 217, 0.25);
+}
+
+.arc3-play-state.win {
+  background: rgba(46, 204, 64, 0.35);
+}
+
+.arc3-play-state.over {
+  background: rgba(255, 65, 54, 0.35);
+}
+
+.arc3-play-board {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  flex: 1;
+  outline: none;
+}
+
+.arc3-play-board img {
+  max-width: 100%;
+  max-height: 100%;
+  image-rendering: pixelated;
+  border: 1px solid rgba(128, 128, 128, 0.4);
+  user-select: none;
+}
+
+.arc3-play-board.armed img {
+  cursor: crosshair;
+  border-color: #ffdc00;
+}
+
+.arc3-play-armed-note {
+  font-size: 12px;
+  color: #ffdc00;
+}
+
+.arc3-play-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.arc3-play-action {
+  padding: 6px 14px;
+  border: 1px solid rgba(128, 128, 128, 0.45);
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.arc3-play-action:hover:not(:disabled) {
+  border-color: rgba(100, 160, 255, 0.9);
+}
+
+.arc3-play-action:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.arc3-play-action.armed {
+  border-color: #ffdc00;
+  color: #ffdc00;
+}
+
+.arc3-play-action.reset {
+  border-color: rgba(255, 133, 27, 0.7);
+}
+
+.arc3-play-action.end {
+  border-color: rgba(255, 65, 54, 0.7);
+}
+
+.arc3-play-action-divider {
+  flex: 1;
+}
+
+.arc3-play-target,
+.arc3-play-leveldirs {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+}
+
+.arc3-play-target code,
+.arc3-play-leveldirs code,
+.arc3-play-move code {
+  font-size: 11px;
+  word-break: break-all;
+  opacity: 0.85;
+}
+
+.arc3-play-target button {
+  align-self: flex-start;
+  padding: 3px 10px;
+  border: 1px solid rgba(128, 128, 128, 0.45);
+  border-radius: 5px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.arc3-play-moves {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.arc3-play-move {
+  display: flex;
+  gap: 8px;
+  border: 1px solid rgba(128, 128, 128, 0.3);
+  border-radius: 6px;
+  padding: 6px;
+}
+
+.arc3-play-move img {
+  width: 64px;
+  height: 64px;
+  image-rendering: pixelated;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.arc3-play-move b {
+  font-size: 12px;
+  display: block;
+}
+
+.arc3-play-move small {
+  display: block;
+  opacity: 0.7;
+  font-size: 11px;
+}
+
+.arc3-play-move-data {
+  font-weight: normal;
+  opacity: 0.8;
+}

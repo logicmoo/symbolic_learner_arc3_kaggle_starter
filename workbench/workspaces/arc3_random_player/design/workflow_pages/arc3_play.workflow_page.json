@@ -1,0 +1,56 @@
+{
+  "kind": "workflow_page",
+  "id": "arc3.play_recorder",
+  "label": "Play & Record",
+  "description": "Enumerate ARC3 games, play one live in the browser, and record every move into data/<game>/level_<n>_<datetime>_<ns>/0..k as B1 -> B2 setup input.",
+  "glyph": "\u25b6",
+  "menuPlacement": "middle",
+  "order": 35,
+  "routeView": "arc3Play",
+  "renderer": "arc3_play",
+  "layout": {
+    "kind": "three_column_accordion",
+    "columns": [
+      {
+        "id": "left",
+        "label": "GAMES",
+        "role": "data",
+        "members": [
+          { "id": "arc3_play_games", "label": "ARC3 Games", "component": "Arc3PlayGameList", "initialDisplayMode": "scroll" }
+        ]
+      },
+      {
+        "id": "center",
+        "label": "LIVE GAME",
+        "role": "authoring",
+        "members": [
+          { "id": "arc3_play_board", "label": "Play & Record", "component": "Arc3PlayBoard", "initialDisplayMode": "scroll" }
+        ]
+      },
+      {
+        "id": "right",
+        "label": "RECORDING",
+        "role": "details",
+        "members": [
+          { "id": "arc3_play_recording", "label": "Recorded Moves", "component": "Arc3PlayRecording", "initialDisplayMode": "scroll" },
+          {
+            "id": "arc3_play_page_source",
+            "label": "Current Page Specification",
+            "component": "ResourceSourceEditor",
+            "initialDisplayMode": "strip",
+            "resource": {
+              "kind": "workflow_page",
+              "id": "arc3.play_recorder"
+            },
+            "options": {
+              "format": "json",
+              "editable": true,
+              "validateBeforeApply": true,
+              "applyOnSave": true
+            }
+          }
+        ]
+      }
+    ]
+  }
+}
