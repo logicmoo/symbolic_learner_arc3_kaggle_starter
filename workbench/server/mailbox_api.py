@@ -33,7 +33,7 @@ router = APIRouter()
 # The workbench user and the agent they chat with. Both are overridable per request
 # so the same UI can address other agents on the shared bus.
 DEFAULT_USER_AGENT = "symbolic-workbench-user"
-DEFAULT_PEER_AGENT = "symbolic-workbench-codex"
+DEFAULT_PEER_AGENT = "github-copilot-facilitator-agent"
 
 # Only read the tail of the shared log for the thread view; the file accumulates
 # every agent's traffic and can be several megabytes.
