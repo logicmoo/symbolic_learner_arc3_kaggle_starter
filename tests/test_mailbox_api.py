@@ -931,3 +931,421 @@ def test_identifier_lookup_remembers_misses(
     assert "ghost-id" not in mailbox_api._LOOKUP_MISSES
 
 
+
+
+# ── lifetime traffic stats + server_worker_queue ─────────────────────────────
+
+
+class _InlinePool:
+    """Deterministic stand-in for the worker thread pool: runs submits inline."""
+
+    def submit(self, fn, *args, **kwargs):  # noqa: ANN001, ANN002, ANN003
+        fn(*args, **kwargs)
+
+
+def _fresh_worker_state(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(mailbox_api, "_WORKER_SEEN", set())
+    monkeypatch.setattr(mailbox_api, "_worker_pool", lambda: _InlinePool())
+    monkeypatch.setattr(mailbox_api, "_NAMES_CACHE", {"at": 0.0, "names": {}})
+
+
+def test_traffic_stats_are_lifetime_and_incremental(tmp_path: Path) -> None:
+    messages = tmp_path / "messages.jsonl"
+    _write_jsonl(
+        messages,
+        [
+            {"id": "1", "from": "alice", "to": "room-x", "channel_id": "room-x",
+             "timestamp": "2026-01-01T00:00:00Z", "text": "hi"},
+        ],
+    )
+    stats = mailbox_api._traffic_stats(tmp_path)
+    assert stats["room-x"] == {
+        "messages": 1,
+        "entries": 1,
+        "lastMessageAt": "2026-01-01T00:00:00Z",
+        "channelName": None,
+        "isChannel": True,
+    }
+    assert stats["alice"]["isChannel"] is False
+    assert stats["alice"]["entries"] == 0  # mentioned as sender, owns no entries
+
+    # Appended records are picked up incrementally (offset advances, no rescan).
+    with messages.open("a", encoding="utf-8") as stream:
+        stream.write(json.dumps({
+            "id": "2", "from": "bob", "to": "room-x", "channel_id": "room-x",
+            "channel_name": "Room X", "timestamp": "2026-01-02T09:00:00Z",
+        }) + "\n")
+    stats = mailbox_api._traffic_stats(tmp_path)
+    assert stats["room-x"]["messages"] == 2
+    assert stats["room-x"]["lastMessageAt"] == "2026-01-02T09:00:00Z"
+    assert stats["room-x"]["channelName"] == "Room X"
+    assert stats["bob"]["messages"] == 1
+
+    # A rewritten file no longer matches the checkpoint: stats rescan cleanly.
+    _write_jsonl(messages, [{"id": "9", "from": "zed", "to": "fresh", "text": "x"}])
+    stats = mailbox_api._traffic_stats(tmp_path)
+    assert "room-x" not in stats
+    assert stats["fresh"]["messages"] == 1
+
+
+def test_list_channels_kinds_split_channels_from_mailboxes(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setattr(mailbox_api, "_mailbox_client", None)
+    _write_jsonl(
+        tmp_path / "messages.jsonl",
+        [
+            {"id": "1", "from": "alice", "to": "bridge",
+             "channel_id": "mm-opaque-bridge-channel", "text": "relayed"},
+            {"id": "2", "from": "app", "to": mailbox_api.REGISTRY_CHANNEL,
+             "type": "messaging_registry", "text": "{}"},
+        ],
+    )
+    channels = {c["id"]: c for c in mailbox_api.list_channels(tmp_path)}
+    # ids seen as a record's channel_id are channels, never agent mailboxes …
+    assert channels["mm-opaque-bridge-channel"]["kind"] == "channel"
+    # … and well-known channels keep their registry kind despite traffic.
+    assert channels[mailbox_api.REGISTRY_CHANNEL]["kind"] == "registry"
+    assert channels[mailbox_api.WORKER_QUEUE_CHANNEL]["kind"] == "registry"
+    agent_ids = {a["id"] for a in mailbox_api.list_agents(tmp_path)}
+    assert "alice" in agent_ids and "bridge" in agent_ids
+    # channels no longer leak into the YOU/TO agent pickers.
+    assert "mm-opaque-bridge-channel" not in agent_ids
+
+
+def test_list_channels_merges_registry_record_and_inspires_lookup(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setenv("AGENT_MAILBOX_DIR", str(tmp_path))
+    fake = _FakeRelay()
+    monkeypatch.setattr(mailbox_api, "_mailbox_client", fake)
+    _fresh_worker_state(monkeypatch)
+    workspace_id = "wsopaqueid0123456789abcdef"
+    snapshot = {
+        "version": 1,
+        "agents": [],
+        "channels": [
+            {
+                "id": "mm-host-room",
+                "channel_type": "mattermost",
+                "aliases": ["nice-room"],
+                "subscribers": ["bridge-bot"],
+                "metadata": {
+                    "channel_name": "nice-room",
+                    "workspace_id": workspace_id,
+                    "workspace_name": "chat",
+                },
+            }
+        ],
+    }
+    _write_jsonl(tmp_path / "messages.jsonl", [_registry_snapshot_record(snapshot)])
+
+    channels = {c["id"]: c for c in mailbox_api.list_channels(tmp_path)}
+    record = channels["mm-host-room"]
+    # The registry record merged in whole — metadata and aliases included.
+    assert record["metadata"]["workspace_id"] == workspace_id
+    assert record["aliases"] == ["nice-room"]
+    assert record["kind"] == "mattermost"
+    assert "bridge-bot" in record["subscribers"]
+
+    # The opaque workspace_id inspired a durable, REST-shaped lookup task …
+    tasks = [r for r in fake.sent if r.get("type") == "worker_task"]
+    assert len(tasks) == 1
+    task = tasks[0]
+    assert task["to"] == mailbox_api.WORKER_QUEUE_CHANNEL
+    assert task["command"] == {"op": "identifier_lookup", "id": workspace_id}
+    assert task["queue_mode"] == "enqueue"
+    assert task["status"] == "queued"
+    assert task["requested_because"] == {"channel": "mm-host-room", "metadata_key": "workspace_id"}
+
+    # … the (inline) pool drained it immediately and posted the result record …
+    results = [r for r in fake.sent if r.get("type") == "worker_task_result"]
+    assert len(results) == 1
+    assert results[0]["task_key"] == task["task_key"]
+    assert results[0]["queue_mode"] == "immediate"
+    assert results[0]["status"] == "done"
+    assert results[0]["result"]["found"] is False
+
+    # … and the unresolved id landed as a lookup request on the registry too.
+    asks = [r for r in fake.sent if r.get("type") == "identifier_lookup_request"]
+    assert [a["identifier"] for a in asks] == [workspace_id]
+
+    # Listing again does not enqueue the same task twice (process-lifetime dedup).
+    before = len(fake.sent)
+    mailbox_api.list_channels(tmp_path)
+    assert [r for r in fake.sent[before:] if r.get("type") == "worker_task"] == []
+
+
+def test_worker_endpoint_immediate_enqueue_and_dedup(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setenv("AGENT_MAILBOX_DIR", str(tmp_path))
+    fake = _FakeRelay(identifiers=[{"identifier": "knownid0123456789abcdef", "text": "Known Thing"}])
+    monkeypatch.setattr(mailbox_api, "_mailbox_client", fake)
+    _fresh_worker_state(monkeypatch)
+    command = {"op": "identifier_lookup", "id": "knownid0123456789abcdef"}
+
+    # REST default: immediate — the command runs now and returns its result.
+    ran = mailbox_api.mailbox_worker_command(command=dict(command))
+    assert ran["queued"] is False
+    assert ran["result"]["found"] is True
+    assert ran["result"]["source"] == "relay"
+    assert not [r for r in fake.sent if r.get("type") == "worker_task"]
+
+    # Opt-in enqueue posts the durable task; the drained task runs immediate.
+    queued = mailbox_api.mailbox_worker_command(command=dict(command), queue="enqueue")
+    assert queued["queued"] is True
+    tasks = [r for r in fake.sent if r.get("type") == "worker_task"]
+    results = [r for r in fake.sent if r.get("type") == "worker_task_result"]
+    assert len(tasks) == 1 and len(results) == 1
+    assert results[0]["status"] == "done"
+
+    # The same command enqueued again is a duplicate, not a second task.
+    again = mailbox_api.mailbox_worker_command(command=dict(command), queue="enqueue")
+    assert again == {"queued": False, "duplicate": True, "taskKey": queued["taskKey"]}
+    assert len([r for r in fake.sent if r.get("type") == "worker_task"]) == 1
+
+    # Unknown ops surface an error result instead of raising.
+    bad = mailbox_api.mailbox_worker_command(command={"op": "frobnicate"})
+    assert bad["result"]["error"] == "unknown op 'frobnicate'"
+    with pytest.raises(mailbox_api.HTTPException):
+        mailbox_api.mailbox_worker_command(command={})
+
+
+def test_identifier_post_can_enqueue(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    monkeypatch.setenv("AGENT_MAILBOX_DIR", str(tmp_path))
+    fake = _FakeRelay()
+    monkeypatch.setattr(mailbox_api, "_mailbox_client", fake)
+    _fresh_worker_state(monkeypatch)
+    outcome = mailbox_api.mailbox_identifier_lookup_post(
+        id="mysteryid0123456789abc", message={"why": "strange"}, queue="enqueue"
+    )
+    assert outcome["queued"] is True
+    tasks = [r for r in fake.sent if r.get("type") == "worker_task"]
+    assert tasks and tasks[0]["command"] == {
+        "op": "identifier_lookup",
+        "id": "mysteryid0123456789abc",
+        "force": False,
+        "message": {"why": "strange"},
+    }
+    assert tasks[0]["requested_because"] == {"why": "strange"}
+
+
+# ── channel grooming, keyed resolver, subscription sync ──────────────────────
+
+_KEY = "abcdefghij1234567890zzzz"
+_CANON = f"mm-chat-example-com-{_KEY}"
+_WS_FORM = f"mm-chat-example-com-team-{_KEY}"
+_SLASH_FORM = f"mm/chat.example.com/{_KEY}"
+
+
+def _line_ends(path: Path) -> list[int]:
+    ends, offset = [], 0
+    for line in path.read_bytes().splitlines(keepends=True):
+        offset += len(line)
+        ends.append(offset)
+    return ends
+
+
+def _groom_fixture(tmp_path: Path) -> None:
+    registry = {"channels": [{
+        "id": _WS_FORM,
+        "channel_type": "channel",
+        "aliases": ["test-room"],
+        "subscribers": ["agent-one"],
+        "metadata": {
+            "external_address": _SLASH_FORM,
+            "endpoint": "chat.example.com",
+            "workspace_name": "team",
+            "channel_name": "Test Room",
+        },
+    }]}
+    _write_jsonl(
+        tmp_path / "messages.jsonl",
+        [
+            {"id": "m0", "from": "app", "to": mailbox_api.REGISTRY_CHANNEL,
+             "type": "messaging_registry", "text": json.dumps(registry)},
+            {"id": "m1", "from": "joe", "to": _WS_FORM, "channel_id": _WS_FORM,
+             "channel_name": "Test Room", "text": "one"},
+            {"id": "m2", "from": "joe", "to": _CANON, "channel_id": _CANON, "text": "two"},
+            {"id": "m3", "from": "joe", "to": _SLASH_FORM, "channel_id": _SLASH_FORM,
+             "text": "three"},
+            {"id": "m4", "from": "joe", "to": _KEY, "text": "four"},
+            {"id": "m5", "from": "x", "to": "other-agent", "text": "five"},
+        ],
+    )
+
+
+def test_groom_channels_dry_run_reports_plan_without_touching_files(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setenv("AGENT_MAILBOX_DIR", str(tmp_path))
+    monkeypatch.setattr(mailbox_api, "_mailbox_client", _FakeRelay())
+    _groom_fixture(tmp_path)
+    before = (tmp_path / "messages.jsonl").read_bytes()
+
+    plan = mailbox_api._groom_channels(apply=False)
+
+    assert plan["applied"] is False
+    assert plan["recordsToRemap"] == 3  # workspace, slash and bare forms
+    channel = plan["channels"][_CANON]
+    assert channel["key"] == _KEY
+    assert set(channel["aliases"]) >= {_WS_FORM, _SLASH_FORM, _KEY}
+    assert "Test Room" in channel["names"]
+    assert (tmp_path / "messages.jsonl").read_bytes() == before
+
+
+def test_groom_channels_apply_rewrites_log_cursors_and_registry(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setenv("AGENT_MAILBOX_DIR", str(tmp_path))
+    fake = _FakeRelay()
+    monkeypatch.setattr(mailbox_api, "_mailbox_client", fake)
+    _groom_fixture(tmp_path)
+    old_ends = _line_ends(tmp_path / "messages.jsonl")
+    # agent-one consumed through record index 2 of the old file (3 records).
+    fake._write_cursor(fake._cursor_path(tmp_path, f"{_WS_FORM}:agent-one"), old_ends[2])
+    (tmp_path / "cursor_subscriptions.json").write_text(
+        json.dumps({"version": 1, "cursors": {"agent-one": [_WS_FORM]}}), encoding="utf-8"
+    )
+
+    summary = mailbox_api._groom_channels(apply=True)
+
+    assert summary["applied"] is True
+    records = [json.loads(line) for line in
+               (tmp_path / "messages.jsonl").read_text(encoding="utf-8").splitlines()]
+    # Every duplicate spelling now reads as the canonical id.
+    assert [r.get("to") for r in records[1:5]] == [_CANON] * 4
+    assert [r.get("entry_key") for r in records[1:5]] == [
+        "entry_0", "entry_1", "entry_2", "entry_3"]
+    assert records[5]["entry_key"] == "entry_0"  # other-agent keeps its own sequence
+    # The stored registry doc converted to the keyed canonical scheme.
+    stored = json.loads(records[0]["text"])
+    assert stored["channels"][0]["id"] == _CANON
+    assert stored["channels"][0]["key"] == _KEY
+    assert set(stored["channels"][0]["aliases"]) >= {_WS_FORM, _SLASH_FORM, _KEY}
+    # Cursor surgery: same records consumed, expressed in new-file offsets.
+    new_ends = _line_ends(tmp_path / "messages.jsonl")
+    moved = fake._read_cursor(fake._cursor_path(tmp_path, f"{_CANON}:agent-one"))
+    assert moved == new_ends[2]
+    document = json.loads((tmp_path / "cursor_subscriptions.json").read_text(encoding="utf-8"))
+    assert document["cursors"] == {"agent-one": [_CANON]}
+    assert list(tmp_path.glob("messages.jsonl.groomed-*.bak"))
+    posted = [r["type"] for r in fake.sent]
+    assert "messaging_registry" in posted and "resolver_index" in posted
+
+
+def test_sync_subscriptions_projects_intent_and_autocursors(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setenv("AGENT_MAILBOX_DIR", str(tmp_path))
+    fake = _FakeRelay()
+    monkeypatch.setattr(mailbox_api, "_mailbox_client", fake)
+    registry = {"channels": [{"id": "room-1", "subscribers": ["declared-agent"]}]}
+    _write_jsonl(
+        tmp_path / "messages.jsonl",
+        [
+            {"id": "m0", "from": "app", "to": mailbox_api.REGISTRY_CHANNEL,
+             "type": "messaging_registry", "text": json.dumps(registry)},
+            {"id": "r1", "from": "a", "to": "room-1", "text": "one"},
+            {"id": "r2", "from": "b", "to": "room-1", "text": "two"},
+            {"id": "e1", "from": "app", "to": mailbox_api.AGENTS_CHANNEL,
+             "type": "agent_entry",
+             "entry": {"id": "opted-out", "subscriptions": {"room-1": "unsubscribed"}}},
+            {"id": "e2", "from": "app", "to": mailbox_api.AGENTS_CHANNEL,
+             "type": "agent_entry",
+             "entry": {"id": "auto-sub", "subscriptions": {"room-1": "subscribed"}}},
+        ],
+    )
+    ends = _line_ends(tmp_path / "messages.jsonl")
+    fake._write_cursor(fake._cursor_path(tmp_path, "room-1:agent-a"), ends[1])
+    (tmp_path / "cursor_subscriptions.json").write_text(
+        json.dumps({"version": 1, "cursors": {"agent-a": ["room-1"]}}), encoding="utf-8"
+    )
+
+    result = mailbox_api._sync_subscriptions()
+
+    assert result == {"agents": 3, "channels": 1, "autocursored": 1}
+    agents = {r["entry"]["id"]: r["entry"] for r in fake.sent if r["type"] == "agent_entry"}
+    assert agents["agent-a"]["subscriptions"] == {"room-1": "subscribed"}
+    cursor = agents["agent-a"]["cursors"]["room-1"]
+    assert cursor["offset"] == ends[1]
+    assert cursor["entries_consumed"] == 1 and cursor["entry_next"] == "entry_1"
+    # Subscribed without a cursor -> autocursor at entry_0 and doc registration.
+    assert agents["auto-sub"]["cursors"]["room-1"]["entry_next"] == "entry_0"
+    assert fake._read_cursor(fake._cursor_path(tmp_path, "room-1:auto-sub")) == 0
+    document = json.loads((tmp_path / "cursor_subscriptions.json").read_text(encoding="utf-8"))
+    assert document["cursors"]["auto-sub"] == ["room-1"]
+    # Sticky opt-out never re-subscribes and keeps no cursor projection.
+    assert agents["opted-out"]["subscriptions"] == {"room-1": "unsubscribed"}
+    assert agents["opted-out"]["cursors"] == {}
+    channels = [r["entry"] for r in fake.sent if r["type"] == "channel_entry"]
+    assert channels[0]["id"] == "room-1"
+    assert channels[0]["subscribers"] == ["agent-a", "auto-sub", "declared-agent"]
+
+
+def test_resolver_index_typed_maps_and_endpoint(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setenv("AGENT_MAILBOX_DIR", str(tmp_path))
+    monkeypatch.setattr(mailbox_api, "_mailbox_client", _FakeRelay())
+    workspace_id = "wsuuid098765432109876543"
+    user_id = "useruuidabcdef1234567890"
+    registry = {"channels": [{
+        "id": _CANON,
+        "aliases": ["test-room"],
+        "metadata": {
+            "external_address": _SLASH_FORM,
+            "channel_name": "Test Room",
+            "workspace_id": workspace_id,
+            "workspace_name": "team",
+        },
+    }]}
+    _write_jsonl(
+        tmp_path / "messages.jsonl",
+        [
+            {"id": "m0", "from": "app", "to": mailbox_api.REGISTRY_CHANNEL,
+             "type": "messaging_registry", "text": json.dumps(registry)},
+            {"id": "i1", "from": "app", "to": mailbox_api.REGISTRY_CHANNEL,
+             "type": "identifier_entry",
+             "entry": {"identifier": user_id, "kind": "user", "display": "Joe Blow"}},
+            {"id": "i2", "from": "app", "to": mailbox_api.REGISTRY_CHANNEL,
+             "type": "identifier_entry",
+             "entry": {"identifier": _KEY, "kind": "channel", "display": "Test Room"}},
+        ],
+    )
+
+    index = mailbox_api._resolver_index(tmp_path)
+
+    assert index["users"][user_id]["name"] == "Joe Blow"
+    assert index["workspaces"][workspace_id]["name"] == "team"
+    assert index["channels"][_KEY]["id"] == _CANON
+    assert index["channels"][_KEY]["workspace"] == workspace_id
+    assert {"type": "channel", "key": _KEY} in index["aliases"]["test-room"]
+    assert {"type": "channel", "key": _KEY} in index["aliases"]["Test Room"]
+    assert {"type": "user", "key": user_id} in index["aliases"]["Joe Blow"]
+    assert {"type": "workspace", "key": workspace_id} in index["aliases"]["team"]
+
+    resolved = mailbox_api.mailbox_resolve(name="test-room")
+    assert resolved == {"name": "test-room",
+                        "refs": [{"type": "channel", "key": _KEY}]}
+
+
+def test_mailbox_send_stamps_next_entry_key(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setenv("AGENT_MAILBOX_DIR", str(tmp_path))
+    fake = _FakeRelay()
+    monkeypatch.setattr(mailbox_api, "_mailbox_client", fake)
+    _write_jsonl(
+        tmp_path / "messages.jsonl",
+        [
+            {"id": "1", "from": "a", "to": "room-9", "channel_id": "room-9", "text": "x"},
+            {"id": "2", "from": "b", "to": "room-9", "channel_id": "room-9", "text": "y"},
+        ],
+    )
+
+    mailbox_api.mailbox_send(text="hi", to="agent-x", sender="me", channel_id="room-9")
+
+    stamped = [r for r in fake.sent if r.get("entry_key")]
+    assert stamped and stamped[0]["entry_key"] == "entry_2"

@@ -54,6 +54,37 @@ and invoke `receive <identity>` periodically. Do not edit or truncate
 `messages.jsonl`; archive it only after all consumers have been stopped and
 their cursors have been coordinated.
 
+## Canonical channel identity (converted format)
+
+The log has been groomed (`POST /api/mailbox/worker` op `groom_channels`) so
+that every bridged channel has exactly one id — the workspace slug never
+existed:
+
+- **Canonical id**: `mm-<host-dashed>-<platform-key>`, e.g.
+  `mm-chat-singularitynet-io-81u5jjbjttng8fejorr11xns9h`. Legacy spellings
+  (workspace form `mm-<host>-<workspace>-<key>`, slash form `mm/<host>/<key>`,
+  bare `<key>`) are merged into it and preserved as `aliases`.
+- **Channel key**: the platform UUID (opaque tail) is stored as `key` on every
+  channel record; registry maps are keyed by it.
+- **Message keys**: each record belonging to a channel carries
+  `entry_key: "entry_<n>"` in arrival order. A channel's entry count is always
+  the next key; new sends are stamped automatically.
+- **Subscriptions vs cursors**: agent entries on `server_agents` keep a
+  `subscriptions` map (`channel -> "subscribed" | "unsubscribed"`; opt-outs are
+  sticky against subscribe-missing sweeps) separate from `cursors`, which
+  store both the fast byte `offset` and the rewrite-proof
+  `entries_consumed`/`entry_next` position. A subscription without a cursor is
+  auto-materialized at `entry_0`. Channel entries on `server_channels` mirror
+  the `subscribers` list. Run op `sync_subscriptions` to re-project.
+- **Typed resolver**: `GET /api/mailbox/resolve` returns `users`,
+  `workspaces` and `channels` maps (each keyed by its own UUID) plus an
+  `aliases` table mapping any name to typed refs, e.g.
+  `"test": [{"type": "channel", "key": "<CHANNEL-UUID>"}]`.
+
+Grooming is a worker op: dry-run by default, `{"apply": true}` rewrites
+`messages.jsonl` in place after a timestamped backup and re-points every
+cursor at the equivalent position in the new file.
+
 ## External Mailbox Channel Relay Bridging Proxy
 
 Channel transport is owned by the sibling proxy project, not by Workbench,

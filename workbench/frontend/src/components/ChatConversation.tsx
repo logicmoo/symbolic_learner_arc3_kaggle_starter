@@ -186,6 +186,7 @@ export function ChatConversation({
       setInput("");
       stickBottomRef.current = true;
       await fetchMessages();
+      void fetchDirectory(); // refresh picker counts/lastMessageAt right away
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       setErrorText(message);
@@ -193,7 +194,7 @@ export function ChatConversation({
     } finally {
       setSending(false);
     }
-  }, [input, sending, target, you, sendChannel, fetchMessages, onError]);
+  }, [input, sending, target, you, sendChannel, fetchMessages, fetchDirectory, onError]);
 
   const handleKeyDown = (event: ReactKeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === "Enter" && !event.shiftKey) {
