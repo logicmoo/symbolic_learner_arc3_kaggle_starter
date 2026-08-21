@@ -17,11 +17,14 @@ export type ChatMessage = {
   type?: string;
 };
 
+export type ChannelOption = { id: string; kind?: string; messages?: number };
+
 type Props = {
   user?: string;
   peer?: string;
   className?: string;
   pollMs?: number;
+  showChannelPicker?: boolean;
   onError?: (message: string) => void;
 };
 
@@ -50,8 +53,11 @@ export function ChatConversation({
   peer = DEFAULT_CHAT_PEER,
   className,
   pollMs = 3000,
+  showChannelPicker = true,
   onError,
 }: Props) {
+  const [channel, setChannel] = useState(peer);
+  const [channels, setChannels] = useState<ChannelOption[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -60,9 +66,18 @@ export function ChatConversation({
   const listRef = useRef<HTMLDivElement | null>(null);
   const stickBottomRef = useRef(true);
 
+  const fetchChannels = useCallback(async () => {
+    try {
+      const payload = await readJson(await fetch("/api/mailbox/channels"));
+      setChannels((payload.channels as ChannelOption[]) || []);
+    } catch {
+      // The channel list is best-effort; keep whatever we already have.
+    }
+  }, []);
+
   const fetchMessages = useCallback(async () => {
     try {
-      const query = `user=${encodeURIComponent(user)}&peer=${encodeURIComponent(peer)}&limit=300`;
+      const query = `channel=${encodeURIComponent(channel)}&limit=300`;
       const payload = await readJson(await fetch(`/api/mailbox/messages?${query}`));
       setMessages((payload.messages as ChatMessage[]) || []);
       setReady(true);
@@ -72,10 +87,19 @@ export function ChatConversation({
       setErrorText(message);
       onError?.(message);
     }
-  }, [user, peer, onError]);
+  }, [channel, onError]);
+
+  useEffect(() => {
+    fetchChannels();
+    const timer = window.setInterval(fetchChannels, 15000);
+    return () => window.clearInterval(timer);
+  }, [fetchChannels]);
 
   useEffect(() => {
     let active = true;
+    setReady(false);
+    setMessages([]);
+    stickBottomRef.current = true;
     fetchMessages();
     const timer = window.setInterval(() => {
       if (active) fetchMessages();
@@ -106,7 +130,7 @@ export function ChatConversation({
         await fetch("/api/mailbox/send", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text, to: peer, sender: user }),
+          body: JSON.stringify({ text, to: channel, sender: user }),
         }),
       );
       setInput("");
@@ -119,7 +143,7 @@ export function ChatConversation({
     } finally {
       setSending(false);
     }
-  }, [input, sending, peer, user, fetchMessages, onError]);
+  }, [input, sending, channel, user, fetchMessages, onError]);
 
   const handleKeyDown = (event: ReactKeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === "Enter" && !event.shiftKey) {
@@ -128,11 +152,35 @@ export function ChatConversation({
     }
   };
 
+  // Keep the active channel selectable even before the list has loaded it.
+  const channelOptions = channels.some((option) => option.id === channel)
+    ? channels
+    : [{ id: channel, kind: "mailbox" } as ChannelOption, ...channels];
+
   return (
     <div className={`chat-conversation ${className ?? ""}`.trim()}>
+      {showChannelPicker && (
+        <div className="chat-channelbar">
+          <label>
+            <span>Channel</span>
+            <select
+              value={channel}
+              onChange={(event) => setChannel(event.target.value)}
+              aria-label="Mailbox channel"
+            >
+              {channelOptions.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.id}
+                  {option.messages ? ` (${option.messages})` : ""}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+      )}
       <div className="chat-messages" ref={listRef} onScroll={handleScroll}>
         {ready && messages.length === 0 && (
-          <div className="chat-empty">No messages yet — say hello.</div>
+          <div className="chat-empty">No messages on this channel yet.</div>
         )}
         {messages.map((message) => (
           <div
@@ -155,7 +203,7 @@ export function ChatConversation({
           value={input}
           onChange={(event) => setInput(event.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={`Message ${peer}… (Enter to send, Shift+Enter for newline)`}
+          placeholder={`Message ${channel}… (Enter to send, Shift+Enter for newline)`}
           rows={2}
           disabled={sending}
         />

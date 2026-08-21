@@ -107,3 +107,54 @@ def test_mailbox_status_reports_directory(monkeypatch: pytest.MonkeyPatch, tmp_p
     assert status["mailboxDir"] == str(tmp_path.resolve())
     assert status["exists"] is True
     assert status["messagesBytes"] > 0
+
+
+def test_channel_messages_returns_to_or_from(tmp_path: Path) -> None:
+    _write_jsonl(
+        tmp_path / "messages.jsonl",
+        [
+            {"id": "1", "from": "user", "to": "agent", "text": "hi"},
+            {"id": "2", "from": "agent", "to": "user", "text": "hello"},
+            {"id": "3", "from": "other", "to": "someone", "text": "unrelated"},
+            {"id": "4", "from": "agent", "to": "user", "text": "audit", "audit_of": "2"},
+        ],
+    )
+    thread = mailbox_api.channel_messages(tmp_path, "agent")
+    assert [message["id"] for message in thread] == ["1", "2"]
+
+
+def test_list_channels_includes_participants_and_defaults(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    # Avoid a real relay call for retained channels during the test.
+    monkeypatch.setattr(mailbox_api, "_mailbox_client", None)
+    _write_jsonl(
+        tmp_path / "messages.jsonl",
+        [
+            {"id": "1", "from": "symbolic-workbench-user", "to": "github-copilot-facilitator-agent", "text": "a"},
+            {"id": "2", "from": "github-copilot-facilitator-agent", "to": "symbolic-workbench-user", "text": "b"},
+            {"id": "3", "from": "x", "to": "agent_to_agent", "text": "audit-channel", "audit_of": "1"},
+        ],
+    )
+    channels = mailbox_api.list_channels(tmp_path)
+    ids = [channel["id"] for channel in channels]
+    assert "github-copilot-facilitator-agent" in ids
+    assert "symbolic-workbench-user" in ids
+    # Audit fan-out channels are hidden.
+    assert "agent_to_agent" not in ids
+
+
+def test_mailbox_messages_channel_mode(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    monkeypatch.setenv("AGENT_MAILBOX_DIR", str(tmp_path))
+    _write_jsonl(
+        tmp_path / "messages.jsonl",
+        [
+            {"id": "1", "from": "user", "to": "agent", "text": "to-agent"},
+            {"id": "2", "from": "agent", "to": "elsewhere", "text": "from-agent"},
+            {"id": "3", "from": "n", "to": "m", "text": "unrelated"},
+        ],
+    )
+    payload = mailbox_api.mailbox_messages(channel="agent", limit=200)
+    assert [message["id"] for message in payload["messages"]] == ["1", "2"]
+    assert payload["channel"] == "agent"
+

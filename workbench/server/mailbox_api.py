@@ -115,6 +115,70 @@ def thread_messages(
     return thread
 
 
+# The server's fan-out audit copies go to these pseudo-recipients; hide them from
+# the channel picker and channel views.
+AUDIT_CHANNEL_NAMES = {"agent_to_channel", "agent_to_agent"}
+
+
+def channel_messages(
+    root: Path,
+    channel: str,
+    *,
+    limit: int = 200,
+    max_bytes: int = MESSAGES_TAIL_BYTES,
+) -> list[dict[str, Any]]:
+    """Return every message that involves ``channel`` (as sender or recipient)."""
+
+    thread = [
+        _project_record(record)
+        for record in read_tail_records(root / "messages.jsonl", max_bytes)
+        if not record.get("audit_of")
+        and (record.get("to") == channel or record.get("from") == channel)
+    ]
+    if limit and len(thread) > limit:
+        thread = thread[-limit:]
+    return thread
+
+
+def list_channels(root: Path, *, max_bytes: int = MESSAGES_TAIL_BYTES) -> list[dict[str, Any]]:
+    """List every mailbox/channel worth showing in the picker.
+
+    Mailboxes are derived from the participants seen in recent traffic; retained
+    relay channels are added from the relay status (best effort over REST). The
+    two default identities are always present so the chat works on a fresh store.
+    """
+
+    participants: dict[str, int] = {}
+    for record in read_tail_records(root / "messages.jsonl", max_bytes):
+        if record.get("audit_of"):
+            continue
+        for key in ("to", "from"):
+            value = record.get(key)
+            if isinstance(value, str) and value and value not in AUDIT_CHANNEL_NAMES:
+                participants[value] = participants.get(value, 0) + 1
+
+    channels = [{"id": cid, "kind": "mailbox", "messages": count} for cid, count in participants.items()]
+    known_ids = set(participants)
+
+    if _mailbox_client is not None:
+        try:
+            status = _mailbox_client.status_rest()
+            for cid in status.get("channels") or []:
+                if isinstance(cid, str) and cid not in known_ids:
+                    channels.append({"id": cid, "kind": "channel", "messages": 0})
+                    known_ids.add(cid)
+        except Exception:
+            pass
+
+    for default_id in (DEFAULT_PEER_AGENT, DEFAULT_USER_AGENT):
+        if default_id not in known_ids:
+            channels.append({"id": default_id, "kind": "mailbox", "messages": 0})
+            known_ids.add(default_id)
+
+    channels.sort(key=lambda item: (item["kind"] != "mailbox", -int(item["messages"]), item["id"]))
+    return channels
+
+
 @router.get("/mailbox/status")
 def mailbox_status() -> dict[str, Any]:
     root = resolve_mailbox_root()
@@ -130,17 +194,29 @@ def mailbox_status() -> dict[str, Any]:
     }
 
 
+@router.get("/mailbox/channels")
+def mailbox_channels() -> dict[str, Any]:
+    root = resolve_mailbox_root()
+    return {"channels": list_channels(root), "default": DEFAULT_PEER_AGENT}
+
+
 @router.get("/mailbox/messages")
 def mailbox_messages(
     user: str = Query(DEFAULT_USER_AGENT),
     peer: str = Query(DEFAULT_PEER_AGENT),
+    channel: str | None = None,
     limit: int = Query(200, ge=1, le=2000),
 ) -> dict[str, Any]:
     root = resolve_mailbox_root()
+    if channel:
+        messages = channel_messages(root, channel, limit=limit)
+    else:
+        messages = thread_messages(root, user, peer, limit=limit)
     return {
-        "messages": thread_messages(root, user, peer, limit=limit),
+        "messages": messages,
         "user": user,
         "peer": peer,
+        "channel": channel,
         "mailboxDir": str(root),
     }
 

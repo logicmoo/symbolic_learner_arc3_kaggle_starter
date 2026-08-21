@@ -6,14 +6,12 @@ import {
 } from "./ChatConversation";
 import "../styles/chat.css";
 
-// Full-page chat surface. It reuses the shared ChatConversation and adds an
-// identity bar so the operator can retarget which agent they are talking to on
-// the shared mailbox bus.
+// Full-page chat surface. It reuses the shared ChatConversation (which carries the
+// channel picker) and adds a small identity bar so the operator can change who
+// they send as on the shared mailbox bus.
 export function ChatPage() {
   const [user, setUser] = useState(DEFAULT_CHAT_USER);
-  const [peer, setPeer] = useState(DEFAULT_CHAT_PEER);
   const [draftUser, setDraftUser] = useState(DEFAULT_CHAT_USER);
-  const [draftPeer, setDraftPeer] = useState(DEFAULT_CHAT_PEER);
 
   return (
     <section className="chat-page">
@@ -21,8 +19,9 @@ export function ChatPage() {
         <div className="chat-page-title">
           <h1>Chat</h1>
           <p>
-            Talk to the workbench agent over the shared mailbox. Messages render with full
-            Markdown, exactly like the assistant transcript.
+            Talk to the workbench agent over the shared mailbox. Pick any mailbox channel
+            from the dropdown; messages render with full Markdown, like the assistant
+            transcript.
           </p>
         </div>
         <form
@@ -30,7 +29,6 @@ export function ChatPage() {
           onSubmit={(event) => {
             event.preventDefault();
             setUser(draftUser.trim() || DEFAULT_CHAT_USER);
-            setPeer(draftPeer.trim() || DEFAULT_CHAT_PEER);
           }}
         >
           <label>
@@ -41,21 +39,13 @@ export function ChatPage() {
               aria-label="Your mailbox identity"
             />
           </label>
-          <label>
-            <span>Peer</span>
-            <input
-              value={draftPeer}
-              onChange={(event) => setDraftPeer(event.target.value)}
-              aria-label="Peer mailbox identity"
-            />
-          </label>
           <button type="submit">Apply</button>
         </form>
       </header>
       <ChatConversation
-        key={`${user}:${peer}`}
+        key={user}
         user={user}
-        peer={peer}
+        peer={DEFAULT_CHAT_PEER}
         className="chat-page-conversation"
       />
     </section>
