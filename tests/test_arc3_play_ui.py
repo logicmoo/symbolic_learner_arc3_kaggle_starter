@@ -32,6 +32,10 @@ def test_play_component_has_recorder_contract() -> None:
     assert "/arc3-play/sessions" in source
     assert "levelDir" in source
     assert "New attempt" in source
+    assert "Restart game" in source
+    assert "Rewind {count} move" in source
+    assert "Fork" in source
+    assert "Resume" in source
     assert "End session" in source
     styles = STYLES.read_text(encoding="utf-8")
     assert ".arc3-play" in styles
@@ -49,6 +53,29 @@ def test_play_api_records_flat_move_dirs() -> None:
     assert "state.json" in source
     # Runner's own action tree stays out of data/.
     assert "play_action_trees" in source
+
+
+def test_play_api_supports_undo_and_restart() -> None:
+    source = API.read_text(encoding="utf-8")
+    # Artificial undo: reset the level and deterministically replay all
+    # moves except the last, rewinding into the previous move dir.
+    assert '"/sessions/{session_id}/undo"' in source
+    assert "replay_verified" in source
+    assert "shutil.rmtree" in source
+    # Full game restart back to level 1.
+    assert '"/sessions/{session_id}/restart"' in source
+    assert "restart_game" in source
+
+
+def test_play_api_supports_fork_savepoints() -> None:
+    source = API.read_text(encoding="utf-8")
+    # Fork = non-disruptive save-point in the per-game log, replayable later.
+    assert '"/sessions/{session_id}/fork"' in source
+    assert '"/savepoints"' in source
+    assert "savepoints.json" in source
+    assert "replay_log" in source
+    assert "def replay_recipe" in source
+    assert "savepointId" in source
 
 
 def test_play_router_is_mounted() -> None:

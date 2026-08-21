@@ -48,8 +48,22 @@ type PlaySessionSnapshot = {
   levelDir: string;
   levelDirs: string[];
   framePath?: string | null;
+  forkedFrom?: string | null;
   availableActions: PlayAction[];
   moves?: PlayMove[];
+};
+
+type PlaySavepoint = {
+  id: string;
+  created_at: string;
+  label?: string | null;
+  game_id: string;
+  game_directory: string;
+  level?: string | null;
+  level_directory?: string | null;
+  move_index?: number | null;
+  state?: string | null;
+  move_total?: number;
 };
 
 const FRAME_SCALE = 10;
@@ -90,6 +104,7 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
   const [error, setError] = useState("");
   const [armedAction, setArmedAction] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [savepoints, setSavepoints] = useState<PlaySavepoint[]>([]);
   const boardRef = useRef<HTMLImageElement | null>(null);
 
   const assetUrl = useCallback(
@@ -113,6 +128,19 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
   useEffect(() => {
     void loadGames(false);
   }, [loadGames]);
+
+  const loadSavepoints = useCallback(async () => {
+    try {
+      const payload = await request(`/api/arc3-play/savepoints?workspaceId=${encodeURIComponent(workspaceId)}`);
+      setSavepoints((payload.savepoints as PlaySavepoint[]) || []);
+    } catch {
+      setSavepoints([]);
+    }
+  }, [workspaceId]);
+
+  useEffect(() => {
+    void loadSavepoints();
+  }, [loadSavepoints]);
 
   const perform = useCallback(async (work: () => Promise<void>) => {
     setBusy(true);
@@ -153,6 +181,48 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
     perform(async () => {
       if (!session) return;
       const payload = await request(`/api/arc3-play/sessions/${encodeURIComponent(session.id)}/reset`, { method: "POST" });
+      setArmedAction(null);
+      setSession(payload.session as PlaySessionSnapshot);
+    });
+
+  const restartGame = () =>
+    perform(async () => {
+      if (!session) return;
+      const payload = await request(`/api/arc3-play/sessions/${encodeURIComponent(session.id)}/restart`, { method: "POST" });
+      setArmedAction(null);
+      setSession(payload.session as PlaySessionSnapshot);
+    });
+
+  const undoMove = (count: number) =>
+    perform(async () => {
+      if (!session) return;
+      const payload = await request(`/api/arc3-play/sessions/${encodeURIComponent(session.id)}/undo`, {
+        method: "POST",
+        body: JSON.stringify({ count }),
+      });
+      setArmedAction(null);
+      setSession(payload.session as PlaySessionSnapshot);
+    });
+
+  const forkSavepoint = () =>
+    perform(async () => {
+      if (!session) return;
+      await request(`/api/arc3-play/sessions/${encodeURIComponent(session.id)}/fork`, {
+        method: "POST",
+        body: JSON.stringify({}),
+      });
+      await loadSavepoints();
+    });
+
+  const resumeSavepoint = (savepointId: string) =>
+    perform(async () => {
+      if (session && !session.closed) {
+        await request(`/api/arc3-play/sessions/${encodeURIComponent(session.id)}`, { method: "DELETE" }).catch(() => undefined);
+      }
+      const payload = await request("/api/arc3-play/sessions", {
+        method: "POST",
+        body: JSON.stringify({ workspaceId, savepointId }),
+      });
       setArmedAction(null);
       setSession(payload.session as PlaySessionSnapshot);
     });
@@ -301,9 +371,50 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
                     {action.label}
                   </button>
                 ))}
-                <span className="arc3-play-action-divider" />
-                <button className="arc3-play-action reset" disabled={busy || session.closed} onClick={() => void resetAttempt()}>
+              </div>
+              <div className="arc3-play-actions arc3-play-session-controls">
+                <select
+                  className="arc3-play-action reset arc3-play-rewind"
+                  disabled={busy || session.closed || !session.levelMoveCount}
+                  title="Rewind: reset the level and deterministically replay all but the last N moves"
+                  value=""
+                  onChange={(event) => {
+                    const count = Number(event.target.value);
+                    if (count > 0) void undoMove(count);
+                  }}
+                >
+                  <option value="" disabled>
+                    Rewind…
+                  </option>
+                  {Array.from({ length: session.levelMoveCount }, (_, offset) => offset + 1).map((count) => (
+                    <option key={count} value={count}>
+                      Rewind {count} move{count > 1 ? "s" : ""}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  className="arc3-play-action reset"
+                  disabled={busy || session.closed}
+                  title="Save-point: snapshot this position to the game log (keep playing); resume it later"
+                  onClick={() => void forkSavepoint()}
+                >
+                  Fork
+                </button>
+                <button
+                  className="arc3-play-action reset"
+                  disabled={busy || session.closed}
+                  title="Restart the current level (new attempt dir)"
+                  onClick={() => void resetAttempt()}
+                >
                   New attempt
+                </button>
+                <button
+                  className="arc3-play-action reset"
+                  disabled={busy || session.closed}
+                  title="Restart the whole game from level 1 (fresh environment)"
+                  onClick={() => void restartGame()}
+                >
+                  Restart game
                 </button>
                 <button className="arc3-play-action end" disabled={busy || session.closed} onClick={() => void endSession()}>
                   End session
@@ -324,6 +435,7 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
                 <small>ACTIVE LEVEL DIR (use as B1 -&gt; B2 setup stateDir)</small>
                 <code>{session.levelDir}</code>
                 <button onClick={() => void copyLevelDir()}>{copied ? "Copied" : "Copy path"}</button>
+                {session.forkedFrom && <small>resumed from save-point {session.forkedFrom}</small>}
               </div>
               {session.levelDirs.length > 1 && (
                 <div className="arc3-play-leveldirs">
@@ -357,6 +469,26 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
               </div>
             </>
           )}
+          <div className="arc3-play-savepoints">
+            <small>SAVE-POINTS (fork a session to add one)</small>
+            {savepoints.map((point) => (
+              <div key={point.id} className="arc3-play-savepoint">
+                <div>
+                  <b>
+                    {point.game_directory} · level {point.level || "?"} · {point.move_total ?? 0} moves
+                  </b>
+                  <small>
+                    {point.label ? `${point.label} · ` : ""}
+                    {point.created_at} · {point.state || "?"}
+                  </small>
+                </div>
+                <button disabled={busy} title="Replay this save-point into a fresh session" onClick={() => void resumeSavepoint(point.id)}>
+                  Resume
+                </button>
+              </div>
+            ))}
+            {!savepoints.length && <div className="arc3-play-empty">No save-points yet.</div>}
+          </div>
         </section>
       </div>
     </div>

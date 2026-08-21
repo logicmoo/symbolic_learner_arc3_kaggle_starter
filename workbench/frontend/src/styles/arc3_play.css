@@ -263,3 +263,64 @@
   font-weight: normal;
   opacity: 0.8;
 }
+
+
+.arc3-play-savepoints {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.arc3-play-savepoints > small {
+  opacity: 0.7;
+  letter-spacing: 0.06em;
+}
+
+.arc3-play-savepoint {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border: 1px solid rgba(128, 128, 128, 0.3);
+  border-radius: 6px;
+  padding: 6px 8px;
+}
+
+.arc3-play-savepoint > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.arc3-play-savepoint b {
+  font-size: 12px;
+}
+
+.arc3-play-savepoint small {
+  opacity: 0.65;
+  font-size: 11px;
+  word-break: break-all;
+}
+
+.arc3-play-savepoint button {
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+
+.arc3-play-rewind {
+  appearance: auto;
+  min-width: 96px;
+}
+
+
+.arc3-play-session-controls {
+  border-top: 1px dashed rgba(128, 128, 128, 0.35);
+  padding-top: 8px;
+  opacity: 0.92;
+}
+
+.arc3-play-session-controls .arc3-play-action {
+  font-size: 12px;
+}

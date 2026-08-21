@@ -21,6 +21,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import shutil
 import sys
 import threading
 import time
@@ -42,6 +43,15 @@ _CATALOG_TTL_SECONDS = 600.0
 
 _sessions: dict[str, "PlaySession"] = {}
 _sessions_lock = threading.Lock()
+_savepoints_lock = threading.Lock()
+
+
+def _load_savepoints(path: Path) -> list[dict[str, Any]]:
+    try:
+        loaded = json.loads(path.read_text(encoding="utf-8"))
+        return list(loaded) if isinstance(loaded, list) else []
+    except (OSError, ValueError):
+        return []
 
 
 def _ensure_python_path() -> None:
@@ -121,6 +131,9 @@ class PlaySession:
         self.level_dirs: list[Path] = []
         self.moves: list[dict[str, Any]] = []
         self._level_moves: list[dict[str, Any]] = []
+        # Deterministic recipe from env creation to now: step/reset ops.
+        self.replay_log: list[dict[str, Any]] = []
+        self.forked_from: str | None = None
         self._last_level = self.runner.current_level_label()
         self._begin_level_dir(reason="session_start")
 
@@ -208,6 +221,8 @@ class PlaySession:
             self._require_open()
             with _engine_lock:
                 self.runner.step(action, x=x, y=y)
+            data = {key: value for key, value in (("x", x), ("y", y)) if value is not None}
+            self.replay_log.append({"op": "step", "action": str(action).upper(), "data": data})
             level = self.runner.current_level_label()
             if level != self._last_level:
                 move = self._record_level_transition(action, x, y, level)
@@ -255,7 +270,124 @@ class PlaySession:
             self._require_open()
             with _engine_lock:
                 self.runner.reset(clear_history=True)
+            self.replay_log.append({"op": "reset"})
             self._begin_level_dir(reason="new_attempt")
+
+    def undo(self, count: int = 1) -> dict[str, Any]:
+        # Artificial rewind: games are deterministic, so RESET the current
+        # level, replay every recorded move except the last `count`, and
+        # drop the rewound move directories so the recording position
+        # points at the earlier move again.
+        with self.lock:
+            self._require_open()
+            if not self._level_moves:
+                raise ValueError("no moves to undo in this level")
+            count = max(1, min(int(count), len(self._level_moves)))
+            replay = list(self._level_moves[:-count])
+            rewound = list(self._level_moves[-count:])
+            with _engine_lock:
+                self.runner.reset(clear_history=True)
+                for move in replay:
+                    data = move.get("data") or {}
+                    self.runner.step(
+                        move["action"], x=data.get("x"), y=data.get("y")
+                    )
+            for move in rewound:
+                shutil.rmtree(
+                    self.level_dir / str(move["index"]), ignore_errors=True
+                )
+            self._level_moves = replay
+            for move in reversed(rewound):
+                if self.moves and self.moves[-1] is move:
+                    self.moves.pop()
+                if self.replay_log and self.replay_log[-1].get("op") == "step":
+                    self.replay_log.pop()
+            # Verify the deterministic replay landed on the recorded frame.
+            verified: bool | None = None
+            try:
+                png = self._frame_png()
+                digest = hashlib.sha256(png).hexdigest()[:16] if png else None
+                expected_dir = (
+                    self.level_dir / str(replay[-1]["index"])
+                    if replay
+                    else self.level_dir
+                )
+                expected = json.loads(
+                    (expected_dir / "state.json").read_text(encoding="utf-8")
+                ).get("image_hash")
+                verified = bool(digest and expected and digest == expected)
+            except Exception:
+                verified = None
+            self._write_recording(reason="undo")
+            return {
+                "rewound": rewound,
+                "count": len(rewound),
+                "undone_at": _utc_now(),
+                "replay_verified": verified,
+            }
+
+    def restart(self) -> None:
+        # Full game restart: fresh environment back at level 1 (unlike
+        # reset, which only restarts the current level).
+        with self.lock:
+            self._require_open()
+            with _engine_lock:
+                old_env = getattr(self.runner, "env", None)
+                self.runner.restart_game()
+                if hasattr(self.runner, "_pending_level_after_win"):
+                    self.runner._pending_level_after_win = None
+                close = getattr(old_env, "close", None)
+                if callable(close):
+                    try:
+                        close()
+                    except Exception:
+                        pass
+            self.replay_log = []
+            self._begin_level_dir(reason="game_restart")
+
+    def fork(self, label: str | None = None) -> dict[str, Any]:
+        # Non-disruptive save-point: snapshot the deterministic replay
+        # recipe into the game log and keep playing.
+        with self.lock:
+            self._require_open()
+            savepoint = {
+                "id": uuid.uuid4().hex[:12],
+                "kind": "arc3_play_savepoint",
+                "created_at": _utc_now(),
+                "label": str(label).strip() if label else None,
+                "game_id": self.game_id,
+                "game_directory": self.game_dir,
+                "level": self._last_level,
+                "level_directory": self._relative(self.level_dir),
+                "move_index": len(self._level_moves) - 1 if self._level_moves else None,
+                "state": self.runner.state_name(),
+                "session_id": self.id,
+                "replay_log": [dict(entry) for entry in self.replay_log],
+            }
+            path = self.workspace_root / "data" / self.game_dir / "savepoints.json"
+            with _savepoints_lock:
+                entries = _load_savepoints(path)
+                entries.append(savepoint)
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(
+                    json.dumps(entries, indent=2, ensure_ascii=False),
+                    encoding="utf-8",
+                )
+            return savepoint
+
+    def replay_recipe(self, recipe: list[dict[str, Any]], forked_from: str) -> None:
+        # Re-drive the session through the normal act/reset path so every
+        # replayed move is recorded exactly like live play.
+        for entry in recipe:
+            op = str(entry.get("op") or "")
+            if op == "reset":
+                self.reset()
+            elif op == "step":
+                data = entry.get("data") or {}
+                self.act(str(entry.get("action")), x=data.get("x"), y=data.get("y"))
+        self.forked_from = forked_from
+        with self.lock:
+            self._write_recording(reason="fork_resume")
 
     def close(self) -> None:
         with self.lock:
@@ -339,6 +471,7 @@ class PlaySession:
                 "levelDir": self._relative(self.level_dir),
                 "levelDirs": [self._relative(path) for path in self.level_dirs],
                 "framePath": self._relative(frame_path) if frame_path.is_file() else None,
+                "forkedFrom": self.forked_from,
                 "availableActions": self._available_actions(),
             }
             if include_moves:
@@ -387,11 +520,23 @@ def list_sessions() -> dict[str, Any]:
 def create_session(body: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
     workspace_id = str(body.get("workspaceId") or "").strip()
     game_id = str(body.get("gameId") or "").strip()
-    if not workspace_id or not game_id:
+    savepoint_id = str(body.get("savepointId") or "").strip()
+    if not workspace_id or (not game_id and not savepoint_id):
         raise HTTPException(status_code=400, detail="workspaceId and gameId are required")
     root = _workspace_root(workspace_id)
+    savepoint: dict[str, Any] | None = None
+    if savepoint_id:
+        savepoint = _find_savepoint(root, savepoint_id, game_dir=_game_slug(game_id) if game_id else None)
+        if savepoint is None:
+            raise HTTPException(status_code=404, detail=f"savepoint not found: {savepoint_id}")
+        game_id = str(savepoint.get("game_id") or game_id)
     try:
         session = PlaySession(workspace_id, root, game_id)
+        if savepoint is not None:
+            session.replay_recipe(
+                list(savepoint.get("replay_log") or []),
+                forked_from=str(savepoint.get("id")),
+            )
     except HTTPException:
         raise
     except Exception as error:
@@ -399,6 +544,41 @@ def create_session(body: dict[str, Any] = Body(default_factory=dict)) -> dict[st
     with _sessions_lock:
         _sessions[session.id] = session
     return {"session": session.snapshot()}
+
+
+@router.get("/savepoints")
+def list_savepoints(workspaceId: str, gameId: str | None = None) -> dict[str, Any]:
+    root = _workspace_root(workspaceId)
+    entries: list[dict[str, Any]] = []
+    if gameId:
+        directories = [root / "data" / _game_slug(gameId)]
+    else:
+        data_root = root / "data"
+        directories = [path for path in data_root.iterdir() if path.is_dir()] if data_root.is_dir() else []
+    with _savepoints_lock:
+        for directory in directories:
+            for entry in _load_savepoints(directory / "savepoints.json"):
+                summary = {key: value for key, value in entry.items() if key != "replay_log"}
+                summary["move_total"] = sum(
+                    1 for op in entry.get("replay_log") or [] if op.get("op") == "step"
+                )
+                entries.append(summary)
+    entries.sort(key=lambda entry: str(entry.get("created_at") or ""), reverse=True)
+    return {"savepoints": entries}
+
+
+def _find_savepoint(root: Path, savepoint_id: str, game_dir: str | None = None) -> dict[str, Any] | None:
+    data_root = root / "data"
+    if game_dir:
+        directories = [data_root / game_dir]
+    else:
+        directories = [path for path in data_root.iterdir() if path.is_dir()] if data_root.is_dir() else []
+    with _savepoints_lock:
+        for directory in directories:
+            for entry in _load_savepoints(directory / "savepoints.json"):
+                if str(entry.get("id")) == savepoint_id:
+                    return entry
+    return None
 
 
 def _get_session(session_id: str) -> PlaySession:
@@ -446,6 +626,48 @@ def reset(session_id: str) -> dict[str, Any]:
         raise
     except Exception as error:
         raise HTTPException(status_code=400, detail=f"reset failed: {error}") from error
+    return {"session": session.snapshot()}
+
+
+@router.post("/sessions/{session_id}/undo")
+def undo(session_id: str, body: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
+    session = _get_session(session_id)
+    try:
+        count = int(body.get("count") or 1)
+    except (TypeError, ValueError):
+        count = 1
+    try:
+        removed = session.undo(count=count)
+    except HTTPException:
+        raise
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    except Exception as error:
+        raise HTTPException(status_code=400, detail=f"undo failed: {error}") from error
+    return {"removed": removed, "session": session.snapshot()}
+
+
+@router.post("/sessions/{session_id}/fork")
+def fork(session_id: str, body: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
+    session = _get_session(session_id)
+    try:
+        savepoint = session.fork(label=body.get("label"))
+    except HTTPException:
+        raise
+    except Exception as error:
+        raise HTTPException(status_code=400, detail=f"fork failed: {error}") from error
+    return {"savepoint": savepoint, "session": session.snapshot()}
+
+
+@router.post("/sessions/{session_id}/restart")
+def restart(session_id: str) -> dict[str, Any]:
+    session = _get_session(session_id)
+    try:
+        session.restart()
+    except HTTPException:
+        raise
+    except Exception as error:
+        raise HTTPException(status_code=400, detail=f"restart failed: {error}") from error
     return {"session": session.snapshot()}
 
 
