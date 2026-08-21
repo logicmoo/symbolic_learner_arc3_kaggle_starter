@@ -100,6 +100,7 @@ export function ChatConversation({
   const [inspectText, setInspectText] = useState("");
   const [inspectNote, setInspectNote] = useState("");
   const [inspectBusy, setInspectBusy] = useState(false);
+  const [entryEditKey, setEntryEditKey] = useState<string | null>(null);
   const [entryEditId, setEntryEditId] = useState<string | null>(null);
   const [entryEditText, setEntryEditText] = useState("");
   const [entryEditFormat, setEntryEditFormat] = useState<"json" | "metta">("json");
@@ -293,12 +294,21 @@ export function ChatConversation({
   // appending the edit as the newest record and marking the old one
   // replaced-by: entry_<n> (at-end). Like the other JSON editors it has a
   // MeTTa mode (mettaResourceCodec), Reload discards edits, Save as..
-  // downloads to disk.
+  // downloads to disk. Config-entry versions share an id, so bubbles are
+  // keyed id|timestamp while saves target the id (last line out wins).
+  const bubbleKey = (message: ChatMessage) => `${message.id}|${message.timestamp || ""}`;
+
+  const closeEntryEdit = () => {
+    setEntryEditKey(null);
+    setEntryEditId(null);
+  };
+
   const openEntryEdit = (message: ChatMessage) => {
-    if (entryEditId === message.id) {
-      setEntryEditId(null);
+    if (entryEditKey === bubbleKey(message)) {
+      closeEntryEdit();
       return;
     }
+    setEntryEditKey(bubbleKey(message));
     setEntryEditId(message.id);
     setEntryEditFormat("json");
     setEntryEditText(JSON.stringify(message.raw ?? message, null, 2));
@@ -326,7 +336,7 @@ export function ChatConversation({
   };
 
   const reloadEntryEdit = () => {
-    const message = messages.find((entry) => entry.id === entryEditId);
+    const message = messages.find((entry) => bubbleKey(entry) === entryEditKey);
     if (!message) {
       setEntryEditNote("record is no longer in view");
       return;
@@ -833,9 +843,9 @@ export function ChatConversation({
         )}
         {messages.map((message) => (
           <div
-            key={message.id}
+            key={`${message.id}|${message.timestamp || ""}`}
             className={`chat-message ${message.from === you ? "mine" : "theirs"}${
-              entryEditId === message.id ? " editing" : ""
+              entryEditKey === bubbleKey(message) ? " editing" : ""
             }`}
           >
             <div className="chat-message-meta">
@@ -877,12 +887,12 @@ export function ChatConversation({
                   : "(no text — inspect JSON)"}
               </div>
             )}
-            {(expanded[message.id] ?? !message.text) && entryEditId !== message.id && (
+            {(expanded[message.id] ?? !message.text) && entryEditKey !== bubbleKey(message) && (
               <pre className="chat-message-json">
                 {JSON.stringify(message.raw ?? message, null, 2)}
               </pre>
             )}
-            {entryEditId === message.id && (
+            {entryEditKey === bubbleKey(message) && (
               <div className="chat-entry-edit">
                 <textarea
                   value={entryEditText}
@@ -907,7 +917,7 @@ export function ChatConversation({
                   <button type="button" onClick={downloadEntryEdit} disabled={entryEditBusy}>
                     Save as..
                   </button>
-                  <button type="button" onClick={() => setEntryEditId(null)} disabled={entryEditBusy}>
+                  <button type="button" onClick={closeEntryEdit} disabled={entryEditBusy}>
                     Close
                   </button>
                   {entryEditNote && <span className="chat-entry-edit-note">{entryEditNote}</span>}

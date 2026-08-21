@@ -340,11 +340,14 @@ def test_entity_save_posts_to_entity_channel(
     record = fake.sent[-1]
     assert record["to"] == mailbox_api.AGENTS_CHANNEL
     assert record["type"] == "agent_entry"
-    entry = record["entry"]
-    assert entry["display_name"] == "Alice Prime"
-    assert "cursors" not in entry  # computed fields stripped before storing
-    assert entry["authority"] == mailbox_api.AGENTS_CHANNEL
-    assert entry["authority_copy_from"] == "always"
+    # Flat config entry: the blob IS the record top level, keyed by entity id.
+    assert "entry" not in record
+    assert record["id"] == "alice"
+    assert record["kind"] == "agent_entry"
+    assert record["display_name"] == "Alice Prime"
+    assert "cursors" not in record  # computed fields stripped before storing
+    assert record["authority"] == mailbox_api.AGENTS_CHANNEL
+    assert record["authority_copy_from"] == "always"
 
     channel_result = mailbox_api.mailbox_entity_save(
         kind="channel", id="room-1", entry={"name": "War Room", "subscribers": ["stale"]}
@@ -352,7 +355,28 @@ def test_entity_save_posts_to_entity_channel(
     assert channel_result["channel"] == mailbox_api.CHANNELS_CHANNEL
     assert fake.sent[-1]["to"] == mailbox_api.CHANNELS_CHANNEL
     assert fake.sent[-1]["type"] == "channel_entry"
-    assert "subscribers" not in fake.sent[-1]["entry"]  # computed list never stored
+    assert fake.sent[-1]["id"] == "room-1"
+    assert "subscribers" not in fake.sent[-1]  # computed list never stored
+
+
+def test_entity_save_merge_posts_changed_keys(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """merge=True stores a <kind>_changed_keys patch without injecting defaults."""
+
+    monkeypatch.setenv("AGENT_MAILBOX_DIR", str(tmp_path))
+    fake = _FakeRelay()
+    monkeypatch.setattr(mailbox_api, "_mailbox_client", fake)
+    result = mailbox_api.mailbox_entity_save(
+        kind="agent", id="alice", entry={"status": "logged-in"}, merge=True
+    )
+    assert result["stored"] is True
+    record = fake.sent[-1]
+    assert record["type"] == "agent_entry_changed_keys"
+    assert record["kind"] == "agent_entry_changed_keys"
+    assert record["id"] == "alice"
+    assert record["status"] == "logged-in"
+    assert "authority" not in record  # partial patch never injects defaults
 
 
 @pytest.fixture(autouse=True)
@@ -1891,7 +1915,9 @@ def test_adapters_relays_registry_merges_seeds_config_and_stored(
     assert registry["channel"] == mailbox_api.ADAPTERS_RELAYS_CHANNEL
     # Code seeds are present and tagged.
     assert types["mattermost"]["source"] == "code"
-    assert relays["mm_relay_presence_atom_ant"]["identity"] == "atom_ant"
+    assert relays["mm_relay_presence_atom_ant"]["identity"] == "atom.ant"
+    assert relays["mm_relay_presence_atom_ant"]["relay-chat"][0]["filter"] == {
+        "as": "atom.ant"}
     assert relays["mm_relay_presence_min_botnick"]["token_env"] == "MM_BOT_TOKEN"
     # config/relays.json connectors + relays merge read-only; a connector's
     # "instance" is surfaced as the presence's "server".
@@ -2008,6 +2034,98 @@ def test_edit_record_at_end_appends_and_marks_replaced(
 
     no_to = mailbox_api._edit_record("r0", {"text": "x"}, "at-end")
     assert "needs a 'to'" in str(no_to["error"])
+    missing = mailbox_api._edit_record(
+        "ghost", {"from": "me", "to": "reg", "text": ""}, "at-end"
+    )
+    assert str(missing["error"]).startswith("no record")
+    assert len(fake.sent) == 1  # nothing appended for a record that isn't there
+
+
+def test_edit_record_at_end_marks_old_line_for_shared_config_ids(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Config-entry versions share their entity id; at-end must mark the OLD line."""
+
+    monkeypatch.setenv("AGENT_MAILBOX_DIR", str(tmp_path))
+
+    class _WritingRelay(_FakeRelay):
+        def __init__(self, path: Path) -> None:
+            super().__init__()
+            self._path = path
+
+        def send(self, to, text, **kwargs):  # noqa: ANN001
+            record = super().send(to, text, **kwargs)
+            with self._path.open("a", encoding="utf-8") as stream:
+                stream.write(json.dumps(record, ensure_ascii=False) + "\n")
+            return record
+
+    fake = _WritingRelay(tmp_path / "messages.jsonl")
+    monkeypatch.setattr(mailbox_api, "_mailbox_client", fake)
+    _write_jsonl(
+        tmp_path / "messages.jsonl",
+        [
+            {"id": "rel_a", "kind": "relay_entry", "from": "me", "to": "reg",
+             "channel_id": "reg", "type": "relay_entry", "text": "", "enabled": False},
+            {"id": "rel_a", "kind": "relay_entry", "from": "me", "to": "reg",
+             "channel_id": "reg", "type": "relay_entry", "text": "", "enabled": True},
+        ],
+    )
+
+    result = mailbox_api._edit_record(
+        "rel_a",
+        {"id": "rel_a", "kind": "relay_entry", "from": "me", "to": "reg",
+         "channel_id": "reg", "type": "relay_entry", "text": "", "enabled": False},
+        "at-end",
+    )
+    key = result["entryKey"]
+    assert result["replacedByMarking"] == "ok"
+    # A config entry keeps its entity id on the appended version.
+    assert fake.sent[-1]["id"] == "rel_a"
+    lines = [
+        json.loads(line)
+        for line in (tmp_path / "messages.jsonl").read_text(encoding="utf-8").splitlines()
+    ]
+    assert len(lines) == 3
+    # The line that was current BEFORE the edit is the one marked, never the
+    # fresh append (which shares the same id).
+    assert lines[1]["replaced-by"] == key
+    assert "replaced-by" not in lines[0]
+    assert "replaced-by" not in lines[2]
+
+
+def test_stored_entity_entries_reads_flat_and_folds_changed_keys(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setattr(mailbox_api, "_REMAPS_CACHE", _fresh_remaps_cache())
+    monkeypatch.setattr(mailbox_api, "_REMAP_USAGE", {})
+    root = tmp_path / "mailbox"
+    reg = mailbox_api.ADAPTERS_RELAYS_CHANNEL
+    _write_jsonl(root / "messages.jsonl", [
+        # Flat config entry: the blob IS the record top level.
+        {"id": "rel_a", "kind": "relay_entry", "type": "relay_entry", "to": reg,
+         "channel_id": reg, "from": "me", "text": "", "timestamp": "t",
+         "entry_key": "entry_1", "adapter": "irc", "enabled": False},
+        # Legacy nested record still reads.
+        {"id": "log-uuid-1", "type": "relay_entry", "to": reg,
+         "entry": {"id": "rel_b", "x": 1}},
+        # changed_keys = MERGE: only the changed keys, folded over the current.
+        {"id": "rel_a", "kind": "relay_entry_changed_keys",
+         "type": "relay_entry_changed_keys", "to": reg, "channel_id": reg,
+         "from": "adapter", "text": "", "logged_in": True},
+        # Plain <type> = REPLACEMENT: the previous rel_b entry is discarded.
+        {"id": "rel_b", "kind": "relay_entry", "type": "relay_entry", "to": reg,
+         "channel_id": reg, "from": "me", "text": "", "y": 2},
+    ])
+
+    entries = mailbox_api.stored_entity_entries(root, "relay_entry", reg)
+    assert set(entries) == {"rel_a", "rel_b"}
+    # Envelope fields stay out; the changed-keys patch merged in; kind folds
+    # back to the base type.
+    assert entries["rel_a"] == {
+        "id": "rel_a", "kind": "relay_entry", "adapter": "irc",
+        "enabled": False, "logged_in": True,
+    }
+    assert entries["rel_b"] == {"id": "rel_b", "kind": "relay_entry", "y": 2}
 
 
 def test_mailbox_record_endpoint_validates(

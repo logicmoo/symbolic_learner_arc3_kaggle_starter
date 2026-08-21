@@ -97,6 +97,16 @@ re-point) or `at-end` (append as the newest record with a fresh `entry_key`
 and mark the old line `replaced-by: entry_<n>`). The chat UI's per-bubble ✎
 editor and mm-side message edits both go through this call.
 
+Registry entries are stored **flat**: the config blob IS the record's top
+level — its `id` is the entity id (versions of one entity share it; the last
+one out is the one the system uses) and `kind` names the entry type
+(`agent_entry`, `channel_entry`, `relay_entry`, `adapter_type_entry`), with
+only mailbox routing fields alongside. Legacy records that nested the blob
+under `entry` are still read. Each type has two update kinds: `<kind>` is a
+REPLACEMENT and `<kind>_changed_keys` is a MERGE carrying just the keys that
+changed (how adapters note login/logout without erasing the declaration) —
+`POST /api/mailbox/entity` with `merge: true` stores one.
+
 ## First-class service agents
 
 - **`mattermost-bridge-agent`** — handles all mattermost driver jobs for every
@@ -146,18 +156,23 @@ editor and mm-side message edits both go through this call.
   fold fired per preposition-set (`to+channel_id`, `from`, …). Manage via
   `POST /api/mailbox/remap`, `GET /api/mailbox/remaps`, worker op `set_remap`.
 - **`server_adapters_relays_registry`** — the delivery plumbing as data:
-  `adapter_type_entry` per adapter type the code ships, and `relay_entry` per
+  `adapter_type_entry` per adapter type the code ships (capabilities plus its
+  implementing `python-class` in the sibling repo and rollout state like
+  `enabled`/`notes`), and `relay_entry` per
   presence — puppet bots with their own tokens that say things as our codex
-  agents puppet them. Presences carry `relay-chat` lists (channel names for
-  now; richer per-entry props later): the mm presences relay the
-  `server_outbound_relay_agent_to_channel` drop-box into mattermost, and
+  agents puppet them. Presences carry `relay-chat` rule lists — objects
+  `{mailbox, enabled, filter, outputs-to}` (filter `as` = puppeted identity,
+  `from` = author agent; outputs-to takes `mm/<server>/<channel>` names or
+  `$message.channel` for the item's own channel hint): the mm presences relay
+  the `server_outbound_relay_agent_to_channel` drop-box into mattermost, and
   `irc_relay_presence_jllykifsh` on QuakeNet `##logicmoo` carries its
   prospective job as `example-of-relay-chat: ["test", "image", "arc3"]` —
   software configured later will relay those mattermost channels into
   `##logicmoo` prefixed like `snet|test|douglas.miles: hi irc`). A presence
   declaration carries all the config its adapter might use; how presences map
   to sockets (one each, pooled) is the adapter's business, and the adapter
-  merges login (and best-effort logout) tracking into the stored relay JSONs.
+  merges login (and best-effort logout) tracking into the stored relay JSONs
+  as `relay_entry_changed_keys` patches.
   `GET /api/mailbox/adapters-relays` merges code seeds ∪ the sibling
   `config/relays.json` ∪ stored entries.
 

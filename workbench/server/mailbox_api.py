@@ -150,26 +150,44 @@ GROOMING_CHANNEL = "server_grooming_registry"
 ADAPTERS_RELAYS_CHANNEL = "server_adapters_relays_registry"
 
 # Reflects mailbox_channels.channel_relay.ADAPTER_CAPABILITIES (kept local so
-# the workbench never has to import the relay's adapter stack).
+# the workbench never has to import the relay's adapter stack), plus
+# workbench-side facts: "python-class" is the implementing adapter's dotted
+# path in the sibling repo, "enabled"/"notes" track rollout state. Stored
+# adapter_type_entry records overlay these (changed_keys patches merge).
 ADAPTER_TYPE_SEEDS = {
-    "mattermost": {"presence": "single", "threads": True, "attachments": True},
-    "irc": {"presence": "single", "threads": False, "attachments": False},
-    "discord": {"presence": "single", "threads": True, "attachments": True},
-    "matrix": {"presence": "single", "threads": True, "attachments": True},
+    "mattermost": {"presence": "single", "threads": True, "attachments": True,
+                   "python-class": "mailbox_channels.adapters.mattermost_adapter.MattermostRelay"},
+    "irc": {"presence": "single", "threads": False, "attachments": False,
+            "python-class": "mailbox_channels.adapters.irc_adapter.IrcAdapter"},
+    "discord": {"presence": "single", "threads": True, "attachments": True,
+                "python-class": "mailbox_channels.adapters.discord_adapter.DiscordAdapter"},
+    "matrix": {"presence": "single", "threads": True, "attachments": True,
+               "python-class": "mailbox_channels.adapters.matrix_adapter.MatrixAdapter"},
     "discourse": {"presence": "single", "threads": True, "attachments": True,
-                  "interaction": "forum"},
-    "slack": {"presence": "multiple", "threads": True, "attachments": True},
-    "telegram": {"presence": "single", "threads": True, "attachments": True},
+                  "interaction": "forum",
+                  "python-class": "mailbox_channels.adapters.discourse_adapter.DiscourseAdapter"},
+    "slack": {"presence": "multiple", "threads": True, "attachments": True,
+              "python-class": "mailbox_channels.adapters.slack_adapter.SlackAdapter"},
+    "telegram": {"presence": "single", "threads": True, "attachments": True,
+                 "python-class": "mailbox_channels.adapters.telegram_adapter.TelegramAdapter"},
     "whatsapp": {"presence": "single", "threads": False, "attachments": True,
-                 "interaction": "business"},
+                 "interaction": "business",
+                 "python-class": "mailbox_channels.adapters.whatsapp_adapter.WhatsAppAdapter",
+                 "enabled": False, "notes": "Is WIP use at own risk"},
     "whatsapp_personal": {"presence": "single", "threads": True, "attachments": True,
-                          "interaction": "unofficial-web-companion", "official": False},
+                          "interaction": "unofficial-web-companion", "official": False,
+                          "python-class": ("mailbox_channels.adapters."
+                                           "whatsapp_personal_adapter.WhatsAppPersonalAdapter")},
     "facebook_messenger": {"presence": "single", "threads": False, "attachments": True,
-                           "interaction": "page"},
+                           "interaction": "page",
+                           "python-class": ("mailbox_channels.adapters."
+                                            "facebook_messenger_adapter.FacebookMessengerAdapter")},
     "viber": {"presence": "single", "threads": False, "attachments": True,
-              "interaction": "bot"},
+              "interaction": "bot",
+              "python-class": "mailbox_channels.adapters.viber_adapter.ViberAdapter"},
     "line": {"presence": "single", "threads": True, "attachments": True,
-             "interaction": "user-group-room"},
+             "interaction": "user-group-room",
+             "python-class": "mailbox_channels.adapters.line_adapter.LineAdapter"},
 }
 
 # Known relays: puppet bot presences that an adapter logs onto a server
@@ -182,8 +200,12 @@ ADAPTER_TYPE_SEEDS = {
 # JSON here, and tries to note logouts the same way.
 RELAY_SEEDS = {
     # The mm presences relay-chat the agent -> platform-channel drop-box:
-    # they speak queued outbound items into mattermost. The mm channel is
-    # decided per item from its address hints.
+    # they speak queued outbound items into mattermost. A relay-chat item is
+    # an object {mailbox, enabled, filter, outputs-to}: read the mailbox
+    # queue, take items matching filter (as = puppeted identity, from =
+    # author agent), and speak them into each outputs-to destination
+    # ("mm/<server-index>/<channel>" or "$message.channel" to use the item's
+    # own channel hint).
     "mm_relay_presence_min_botnick": {
         "adapter": "mattermost",
         "server": "chat.singularitynet.io",
@@ -191,15 +213,41 @@ RELAY_SEEDS = {
         "own_token": True,
         "token_env": "MM_BOT_TOKEN",
         "puppeted_by": "codex agents",
-        "relay-chat": [OUTBOUND_TO_CHANNEL_QUEUE],
+        "relay-chat": [
+            {
+                "mailbox": OUTBOUND_TO_CHANNEL_QUEUE,
+                "enabled": False,
+                "filter": {"as": "min.botnick"},
+                "outputs-to": ["$message.channel"],
+            },
+        ],
     },
     "mm_relay_presence_atom_ant": {
         "adapter": "mattermost",
         "server": "chat.singularitynet.io",
-        "identity": "atom_ant",
+        "identity": "atom.ant",
         "own_token": True,
         "puppeted_by": "codex agents",
-        "relay-chat": [OUTBOUND_TO_CHANNEL_QUEUE],
+        "relay-chat": [
+            {
+                "mailbox": OUTBOUND_TO_CHANNEL_QUEUE,
+                "enabled": False,
+                "filter": {"as": "atom.ant"},
+                "outputs-to": ["mm/0/relay-debugging"],
+            },
+            {
+                "mailbox": OUTBOUND_TO_CHANNEL_QUEUE,
+                "enabled": False,
+                "filter": {"as": "atom.ant"},
+                "outputs-to": ["mm/0/atom-ant-project"],
+            },
+            {
+                "mailbox": OUTBOUND_TO_CHANNEL_QUEUE,
+                "enabled": False,
+                "filter": {"from": "atom-ant-codex-agent"},
+                "outputs-to": ["$message.channel"],
+            },
+        ],
     },
     "mm_relay_presence_metta_bot": {
         "adapter": "mattermost",
@@ -207,7 +255,14 @@ RELAY_SEEDS = {
         "identity": "metta_bot",
         "own_token": True,
         "puppeted_by": "codex agents",
-        "relay-chat": [OUTBOUND_TO_CHANNEL_QUEUE],
+        "relay-chat": [
+            {
+                "mailbox": OUTBOUND_TO_CHANNEL_QUEUE,
+                "enabled": False,
+                "filter": {"as": "metta_bot"},
+                "outputs-to": ["$message.channel"],
+            },
+        ],
     },
     "irc_relay_presence_jllykifsh": {
         "adapter": "irc",
@@ -1144,15 +1199,37 @@ def stored_channel_config(root: Path, channel: str, *, max_bytes: int | None = N
     return stored
 
 
+# Mailbox routing fields around a flat config entry; everything else on the
+# record IS the entry. Legacy records nested the whole entry under "entry".
+# Note "attachments" stays OUT of this set: adapter entries use it as a
+# boolean capability, and kind-filtered config records never carry mailbox
+# attachment lists.
+_ENTITY_ENVELOPE_FIELDS = frozenset({
+    "dedupe_id", "timestamp", "from", "to", "text", "type",
+    "channel_id", "channel_type", "source_id", "thread_id", "root_id",
+    "entry_key", "replaced-by", "audit_of", "audit_recipient",
+    "metadata", "copy_of",
+})
+
+
 def stored_entity_entries(
     root: Path, record_type: str, channel: str, *, max_bytes: int | None = None
 ) -> dict[str, dict[str, Any]]:
-    """Latest edited agent/channel entries stored on ``channel``, by id.
+    """Latest stored config entries of one kind on ``channel``, by id.
 
-    Each ``agent_entry``/``channel_entry`` record carries one full JSON object in
-    its ``entry`` field; the latest record per id wins.
+    These are config entries: the last one out is the one the system uses
+    (latest record per id wins). New records are flat — the entry JSON blob IS
+    the record's top level, carrying ``kind`` (e.g. ``adapter_type_entry``)
+    and its own ``id``, with only mailbox routing fields alongside. Legacy
+    records nested the blob under ``entry`` and are still read.
+
+    Two kinds of update per entry type: ``<type>`` is a REPLACEMENT (the blob
+    becomes the whole entry) and ``<type>_changed_keys`` is a MERGE (just the
+    keys that changed, overwritten into the current entry — how adapters note
+    login/logout tracking without erasing the declaration).
     """
 
+    changed_keys_type = f"{record_type}_changed_keys"
     entries: dict[str, dict[str, Any]] = {}
     for record in read_tail_records(root / "messages.jsonl", max_bytes):
         if record.get("audit_of"):
@@ -1161,11 +1238,26 @@ def stored_entity_entries(
             _fold_channel(record.get("to")), _fold_channel(record.get("channel_id"))
         ):
             continue
-        if record.get("type") != record_type:
+        marker = record.get("kind") or record.get("type")
+        if marker not in (record_type, changed_keys_type):
             continue
-        entry = record.get("entry")
-        if isinstance(entry, dict) and isinstance(entry.get("id"), str) and entry["id"]:
-            entries[entry["id"]] = entry
+        nested = record.get("entry")
+        if isinstance(nested, dict):
+            entry = nested
+        else:
+            entry = {
+                key: value
+                for key, value in record.items()
+                if key not in _ENTITY_ENVELOPE_FIELDS
+            }
+        entity_id = entry.get("id")
+        if not (isinstance(entity_id, str) and entity_id):
+            continue
+        if marker == changed_keys_type:
+            entry = {**entries.get(entity_id, {}), **entry}
+        if entry.get("kind") == changed_keys_type:
+            entry["kind"] = record_type  # the folded entry is the base kind
+        entries[entity_id] = entry
     return entries
 
 
@@ -2300,12 +2392,17 @@ def _groom_channels(*, apply: bool = False) -> dict[str, Any]:
     return summary
 
 
-def _replace_record_line(root: Path, record_id: str, transform) -> dict[str, Any]:
+def _replace_record_line(
+    root: Path, record_id: str, transform, *, line_index: int | None = None
+) -> dict[str, Any]:
     """Rewrite the one log line whose record ``id`` matches, via ``transform(old)``.
 
     Registry entries are the expected target, so this stays simple: back up,
     swap the single line, and nudge any byte cursors that sat past it (entry
-    positions are preserved, so nobody's place in a channel moves).
+    positions are preserved, so nobody's place in a channel moves). Config
+    entries share their entity id across versions, so by default the LAST
+    matching line (the one the system uses) is edited; pass ``line_index`` to
+    pin a specific line instead.
     """
 
     path = root / "messages.jsonl"
@@ -2313,6 +2410,8 @@ def _replace_record_line(root: Path, record_id: str, transform) -> dict[str, Any
     target_index: int | None = None
     old_record: dict[str, Any] | None = None
     for index, line in enumerate(lines):
+        if line_index is not None and index != line_index:
+            continue
         try:
             parsed = json.loads(line.decode("utf-8"))
         except (UnicodeDecodeError, json.JSONDecodeError):
@@ -2389,16 +2488,26 @@ def _edit_record(
     to = body.get("to")
     if not isinstance(to, str) or not to:
         return {"error": "record needs a 'to' to be appended"}
+    # Pin the line being replaced BEFORE appending: config entries share their
+    # entity id across versions, so a post-append search would find the copy.
+    lines, _ = _read_all_lines(root / "messages.jsonl")
+    target_index: int | None = None
+    for index, line in enumerate(lines):
+        try:
+            parsed = json.loads(line.decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            continue
+        if isinstance(parsed, dict) and parsed.get("id") == record_id:
+            target_index = index
+    if target_index is None:
+        return {"error": f"no record with id {record_id!r}"}
     channel = body.get("channel_id")
     channel = channel if isinstance(channel, str) and channel else None
     new_key = _next_entry_key(root, channel or to)
-    extra = {
-        key: value
-        for key, value in body.items()
-        if key not in (
-            "id", "dedupe_id", "timestamp", "from", "to", "text", "type", "channel_id",
-        )
-    }
+    core = ["dedupe_id", "timestamp", "from", "to", "text", "type", "channel_id"]
+    if not (isinstance(body.get("kind"), str) and body["kind"]):
+        core.append("id")  # plain messages get a fresh log id; config entries keep theirs
+    extra = {key: value for key, value in body.items() if key not in core}
     extra["entry_key"] = new_key
     kwargs: dict[str, Any] = {"extra_fields": extra}
     if channel:
@@ -2418,7 +2527,8 @@ def _edit_record(
     except Exception as error:
         return {"error": f"append failed: {error}"}
     marked = _replace_record_line(
-        root, record_id, lambda old: {**old, "replaced-by": new_key}
+        root, record_id, lambda old: {**old, "replaced-by": new_key},
+        line_index=target_index,
     )
     result = {
         "edited": record_id,
@@ -2838,13 +2948,19 @@ def mailbox_entity_save(
     kind: str = Body(..., embed=True),
     id: str = Body(..., embed=True),
     entry: dict[str, Any] = Body(..., embed=True),
+    merge: bool = Body(False, embed=True),
 ) -> dict[str, Any]:
-    """Persist an edited entity JSON as a durable blackboard record.
+    """Persist an edited entity JSON as a durable blackboard config entry.
 
     Agent entries go to ``server_agents_registry``, channel entries to
     ``server_channels_registry``, and relay/adapter_type entries to
-    ``server_adapters_relays_registry``; the latest record per id wins.
-    Computed fields (``cursors``/``messages``) are stripped before storing.
+    ``server_adapters_relays_registry``; the last one out is the one the
+    system uses (latest per id wins). The entry blob IS the stored record's
+    top level — its ``id`` is the entity id and ``kind`` marks the entry type
+    (e.g. ``adapter_type_entry``) — with only mailbox routing fields
+    alongside. ``merge: true`` stores a ``<kind>_changed_keys`` record: just
+    the keys that changed, folded into the current entry at read time.
+    Computed fields (``cursors``/``messages``) are stripped.
     """
 
     if _mailbox_client is None:
@@ -2868,17 +2984,22 @@ def mailbox_entity_save(
         raise HTTPException(status_code=400, detail="entry must be a JSON object")
     root = resolve_mailbox_root()
     target, message_type = kinds[kind_id]
+    merge = merge is True  # direct calls see the Body(...) default, not a bool
+    if merge:
+        message_type = f"{message_type}_changed_keys"
     payload = {
         k: v
         for k, v in entry.items()
         if k not in ("cursors", "messages", "subscribers", "lastMessageAt")
+        and k not in _ENTITY_ENVELOPE_FIELDS  # keep routing fields ours
     }
     payload["id"] = entity_id
-    if kind_id in ("agent", "channel"):
+    payload["kind"] = message_type
+    if kind_id in ("agent", "channel") and not merge:
         # authority: filename | channelname — decides whether source data
         # overwrites this entry at start; authority_copy_from: always | once —
         # with a filename authority, "once" stops re-copying after the first
-        # materialization.
+        # materialization. A changed-keys patch never injects defaults.
         payload.setdefault("authority", target)
         payload.setdefault("authority_copy_from", "always")
     try:
@@ -2888,10 +3009,10 @@ def mailbox_entity_save(
             sender=DEFAULT_USER_AGENT,
             root=root,
             message_type=message_type,
-            extra_fields={
-                "entry": payload,
-                "entry_key": _next_entry_key(root, target),
-            },
+            # Flat config entry: the blob is the record top level; its id
+            # (the entity id) deliberately overrides the log uuid — versions
+            # of one entity share the id and the last one out wins.
+            extra_fields={**payload, "entry_key": _next_entry_key(root, target)},
             channel_id=target,
         )
     except Exception as error:
