@@ -312,6 +312,7 @@ const FIRST_PASS_OBJECT_GUESSES_PROMPT = [
   "current_identities must be a JSON array of object identity records. Each record includes id, type, label, and bounding_box as [x1, y1, x2, y2] (top-left and bottom-right corners, x2 > x1, y2 > y1), plus first_appeared_step, last_disappeared_step, pixel_count (an integer count of the logical grid cells the object occupies), and colors_list (a JSON array of the distinct colors present in the object, most-dominant first, each written as a friendly human color name in snake_case such as red, sky_blue, forest_green, or bright_yellow — never hex codes, RGB triples, or numeric palette indices).",
   "Reason in the logical ARC grid (normally 64x64, zero-based; x increases to the right, y increases downward), never display pixels.",
   "Detect at least 10 meaningful objects when present: connected color regions, blocks, glyphs, borders, HUD/status elements, and compound objects. This is a fast first-pass guess of the objects in the image; downstream runners refine it.",
+  "Avoid trivial single-pixel objects: skip 1x1 specks and isolated noise (pixel_count 1); only include objects of at least a few connected cells.",
   "NAMING: " + DESCRIPTIVE_ID_RULE,
   "Set exit_value=loop_complete when the identity list looks stable; otherwise exit_value=next_iteration.",
 ].join("\n");
