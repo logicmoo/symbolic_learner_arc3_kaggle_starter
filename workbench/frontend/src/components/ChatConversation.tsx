@@ -437,6 +437,27 @@ export function ChatConversation({
     }
   }, [inspect, inspectText, fetchDirectory]);
 
+  // Cursor moves change what an open inspector shows (the agent's cursor map or
+  // the channel's subscribers), so requery it when it points at the affected pair.
+  useEffect(() => {
+    if (!cursorInfo || !inspect) return;
+    const affected =
+      (inspect.kind === "agent" && inspect.id === cursorInfo.agent) ||
+      (inspect.kind === "channel" && inspect.id === cursorInfo.channel);
+    if (!affected) return;
+    let stale = false;
+    loadEntity(inspect.kind, inspect.id)
+      .then((record) => {
+        if (!stale) setInspectText(JSON.stringify(record, null, 2));
+      })
+      .catch(() => {
+        // keep the current text when the refresh fails
+      });
+    return () => {
+      stale = true;
+    };
+  }, [cursorInfo, inspect, loadEntity]);
+
   const agentChoices = Array.from(new Set([you, target, ...agents.map((a) => a.id)].filter(Boolean)));
   const channelChoices = Array.from(new Set([channel, ...channels.map((c) => c.id)].filter(Boolean)));
   const sendChoices = Array.from(new Set([sendChannel, ...channels.map((c) => c.id)].filter(Boolean)));

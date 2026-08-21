@@ -302,7 +302,7 @@ def list_channels(root: Path, *, max_bytes: int = MESSAGES_TAIL_BYTES) -> list[d
         record = channels.get(channel_id)
         if record is None:
             continue  # entries for unlisted channels appear once traffic exists
-        cleaned = {k: v for k, v in entry.items() if k not in ("cursors", "messages")}
+        cleaned = {k: v for k, v in entry.items() if k not in ("cursors", "messages", "subscribers")}
         authority = str(cleaned.get("authority") or CHANNELS_CHANNEL)
         copy_from = str(cleaned.get("authority_copy_from") or "always").lower()
         # authority decides who wins at start: the blackboard entry when it names
@@ -316,13 +316,28 @@ def list_channels(root: Path, *, max_bytes: int = MESSAGES_TAIL_BYTES) -> list[d
     for record in channels.values():
         record.setdefault("authority", "messages.jsonl")
     if _mailbox_client is not None:
-        size = _messages_size(root)
+        # Channels keep a plain subscriber list; per-cursor detail (offset/behind)
+        # lives on the agent JSON instead.
         for agent_id, channel_ids in _cursor_map(root).items():
             for cid in channel_ids:
                 record = channels.get(cid)
                 if record is not None:
-                    record.setdefault("cursors", {})
-                    record["cursors"][agent_id] = _cursor_brief(root, cid, agent_id, size)
+                    subscribers = record.setdefault("subscribers", [])
+                    if agent_id not in subscribers:
+                        subscribers.append(agent_id)
+    # Declared registry membership counts too: the list is the live union of
+    # cursor holders and the registry's channel subscribers, never a saved copy.
+    for channel_rec in registry.get("channels", []) or []:
+        record = channels.get(channel_rec.get("id"))
+        if record is None or not isinstance(channel_rec.get("subscribers"), list):
+            continue
+        subscribers = record.setdefault("subscribers", [])
+        for name in channel_rec["subscribers"]:
+            if isinstance(name, str) and name and name not in subscribers:
+                subscribers.append(name)
+    for record in channels.values():
+        if isinstance(record.get("subscribers"), list):
+            record["subscribers"] = sorted(record["subscribers"])
     result = list(channels.values())
     result.sort(key=lambda item: (item["kind"] != "mailbox", -int(item["messages"]), item["id"]))
     return result
@@ -955,7 +970,7 @@ def mailbox_entity_save(
         raise HTTPException(status_code=400, detail="entry must be a JSON object")
     root = resolve_mailbox_root()
     target = AGENTS_CHANNEL if kind_id == "agent" else CHANNELS_CHANNEL
-    payload = {k: v for k, v in entry.items() if k not in ("cursors", "messages")}
+    payload = {k: v for k, v in entry.items() if k not in ("cursors", "messages", "subscribers")}
     payload["id"] = entity_id
     # authority: filename | channelname — decides whether source data overwrites
     # this entry at start; authority_copy_from: always | once — with a filename
@@ -1029,6 +1044,9 @@ def mailbox_cursor_set(
         if path.exists():
             offset = 0 if normalized in {"beginning", "start"} else _messages_size(root)
             _mailbox_client._write_cursor(path, offset)
+            # Back-fill the subscriptions map so both the agent JSON and the
+            # channel JSON list this cursor in their computed cursor maps.
+            _mailbox_client._remember_cursor_subscription(root, agent_id, channel_id)
             action = "repositioned"
         else:
             _mailbox_client.initialize_cursor(
@@ -1037,6 +1055,16 @@ def mailbox_cursor_set(
             action = "initialized"
     except Exception as error:
         raise HTTPException(status_code=500, detail=f"Cursor update failed: {error}") from error
+    try:
+        # Setting a cursor makes you a subscriber: mirror it into the relay's
+        # registry subscriber list (the inverse of what remove does).
+        _mailbox_client._rest_request(
+            "POST",
+            "/v1/subscriptions",
+            {"channel": channel_id, "identity": agent_id, "subscribed": True},
+        )
+    except Exception:
+        pass  # relay subscriber list is advisory here
     status = _cursor_status(root, channel_id, agent_id)
     status["action"] = action
     status["start"] = normalized

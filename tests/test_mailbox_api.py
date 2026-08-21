@@ -283,9 +283,15 @@ def test_channel_entry_overlay_and_cursor_maps(
 ) -> None:
     fake = _FakeRelay()
     monkeypatch.setattr(mailbox_api, "_mailbox_client", fake)
+    snapshot = {
+        "version": 1,
+        "agents": [],
+        "channels": [{"id": "room-1", "channel_type": "topic", "subscribers": ["carol"]}],
+    }
     _write_jsonl(
         tmp_path / "messages.jsonl",
         [
+            _registry_snapshot_record(snapshot),
             {"id": "1", "from": "alice", "to": "room-1", "text": "hi"},
             {
                 "id": "e1",
@@ -293,7 +299,12 @@ def test_channel_entry_overlay_and_cursor_maps(
                 "to": mailbox_api.CHANNELS_CHANNEL,
                 "type": "channel_entry",
                 "text": "",
-                "entry": {"id": "room-1", "name": "War Room", "messages": 999, "cursors": {"stale": {}}},
+                "entry": {
+                    "id": "room-1",
+                    "name": "War Room",
+                    "messages": 999,
+                    "subscribers": ["stale"],
+                },
             },
         ],
     )
@@ -306,8 +317,10 @@ def test_channel_entry_overlay_and_cursor_maps(
     room = channels["room-1"]
     assert room["name"] == "War Room"  # saved edit wins
     assert room["messages"] == 1  # counts stay computed, not the saved 999
-    assert room["cursors"]["bob"]["initialized"] is True  # computed, stale copy dropped
-    assert "stale" not in room["cursors"]
+    # Live union of cursor holders + declared registry subscribers; stale saved
+    # copies never survive.
+    assert room["subscribers"] == ["bob", "carol"]
+    assert "cursors" not in room  # cursor detail lives on the agent JSON
 
     agents = {a["id"]: a for a in mailbox_api.list_agents(tmp_path)}
     assert agents["bob"]["cursors"]["room-1"]["initialized"] is True
@@ -333,10 +346,13 @@ def test_entity_save_posts_to_entity_channel(
     assert entry["authority"] == mailbox_api.AGENTS_CHANNEL
     assert entry["authority_copy_from"] == "always"
 
-    channel_result = mailbox_api.mailbox_entity_save(kind="channel", id="room-1", entry={"name": "War Room"})
+    channel_result = mailbox_api.mailbox_entity_save(
+        kind="channel", id="room-1", entry={"name": "War Room", "subscribers": ["stale"]}
+    )
     assert channel_result["channel"] == mailbox_api.CHANNELS_CHANNEL
     assert fake.sent[-1]["to"] == mailbox_api.CHANNELS_CHANNEL
     assert fake.sent[-1]["type"] == "channel_entry"
+    assert "subscribers" not in fake.sent[-1]["entry"]  # computed list never stored
 
 
 @pytest.fixture(autouse=True)
@@ -381,6 +397,17 @@ class _FakeRelay:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(str(offset), encoding="ascii")
 
+    def _remember_cursor_subscription(self, root: Path, cursor: str, recipient: str) -> None:
+        target = root / "cursor_subscriptions.json"
+        try:
+            document = json.loads(target.read_text(encoding="utf-8"))
+        except (FileNotFoundError, json.JSONDecodeError):
+            document = {"version": 1, "cursors": {}}
+        members = document.setdefault("cursors", {}).setdefault(cursor, [])
+        if recipient not in members:
+            members.append(recipient)
+        target.write_text(json.dumps(document, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
     def initialize_cursor(self, recipient: str, *, cursor: str, start: str = "now", root=None):  # noqa: ANN001
         path = self._cursor_path(root, f"{recipient}:{cursor}")
         if path.exists():
@@ -393,6 +420,7 @@ class _FakeRelay:
             except FileNotFoundError:
                 offset = 0
         self._write_cursor(path, offset)
+        self._remember_cursor_subscription(root, cursor, recipient)
         self.cursors.append((recipient, cursor))
         return {"recipient": recipient, "cursor": cursor, "start": start, "offset": offset}
 
@@ -844,6 +872,28 @@ def test_cursor_remove_deletes_file_and_subscription(
 
     again = mailbox_api.mailbox_cursor_remove(channel="room-1", agent="bob")
     assert again["action"] == "absent"
+
+
+def test_cursor_reposition_backfills_subscription_map(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A repositioned cursor file shows up in both the agent and channel JSONs."""
+
+    monkeypatch.setenv("AGENT_MAILBOX_DIR", str(tmp_path))
+    fake = _FakeRelay()
+    monkeypatch.setattr(mailbox_api, "_mailbox_client", fake)
+    _write_jsonl(tmp_path / "messages.jsonl", [{"id": "1", "from": "a", "to": "room-1", "text": "hi"}])
+    # Cursor file exists but the pair is missing from cursor_subscriptions.json.
+    fake._write_cursor(fake._cursor_path(tmp_path, "room-1:bob"), 0)
+    assert mailbox_api._cursor_map(tmp_path) == {}
+
+    result = mailbox_api.mailbox_cursor_set(channel="room-1", agent="bob", start="beginning")
+    assert result["action"] == "repositioned"
+    assert mailbox_api._cursor_map(tmp_path) == {"bob": ["room-1"]}
+    agents = {a["id"]: a for a in mailbox_api.list_agents(tmp_path)}
+    assert agents["bob"]["cursors"]["room-1"]["initialized"] is True
+    channels = {c["id"]: c for c in mailbox_api.list_channels(tmp_path)}
+    assert channels["room-1"]["subscribers"] == ["bob"]
 
 
 def test_identifier_lookup_remembers_misses(
