@@ -17,11 +17,12 @@ export type ChatMessage = {
   type?: string;
   channelId?: string | null;
   author?: string | null;
+  authorName?: string | null;
   channelName?: string | null;
   raw?: unknown;
 };
 
-export type ChannelOption = { id: string; kind?: string; messages?: number };
+export type ChannelOption = { id: string; kind?: string; messages?: number; name?: string | null };
 export type AgentOption = { id: string };
 
 type Props = {
@@ -75,8 +76,16 @@ export function ChatConversation({
   const [ready, setReady] = useState(false);
   const [errorText, setErrorText] = useState("");
   const [newEntry, setNewEntry] = useState("");
+  const [configText, setConfigText] = useState("");
+  const [configError, setConfigError] = useState("");
+  const [configNote, setConfigNote] = useState("");
+  const [configBusy, setConfigBusy] = useState(false);
   const listRef = useRef<HTMLDivElement | null>(null);
   const stickBottomRef = useRef(true);
+
+  // The config editor tracks the channel messages are sent on (SEND-TO channel if
+  // set, otherwise the viewed channel).
+  const configChannel = sendChannel || channel;
 
   // Switching the viewed channel re-points addressing to it by default; the "To"
   // field can then be overridden to address anyone independently.
@@ -228,10 +237,75 @@ export function ChatConversation({
   const toggleRaw = (id: string, defaultOpen = false) =>
     setExpanded((prev) => ({ ...prev, [id]: !(prev[id] ?? defaultOpen) }));
 
+  const fetchConfig = useCallback(async () => {
+    if (!configChannel) {
+      setConfigText("");
+      return;
+    }
+    try {
+      const payload = await readJson(
+        await fetch(`/api/mailbox/channel-config?channel=${encodeURIComponent(configChannel)}`),
+      );
+      setConfigText(JSON.stringify(payload.config ?? {}, null, 2));
+      setConfigError("");
+      setConfigNote("");
+    } catch (error) {
+      setConfigError(error instanceof Error ? error.message : String(error));
+    }
+  }, [configChannel]);
+
+  useEffect(() => {
+    fetchConfig();
+  }, [fetchConfig]);
+
+  // Apply = subscribe any new names in `subscribers`, then persist the whole
+  // edited config as a channel_config record on the server_registry channel.
+  const applyConfig = useCallback(async () => {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(configText);
+    } catch (error) {
+      setConfigError(`Invalid JSON: ${error instanceof Error ? error.message : String(error)}`);
+      return;
+    }
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      setConfigError("Config must be a JSON object");
+      return;
+    }
+    setConfigBusy(true);
+    try {
+      const payload = await readJson(
+        await fetch("/api/mailbox/channel-config", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ channel: configChannel, config: parsed }),
+        }),
+      );
+      setConfigText(JSON.stringify(payload.config ?? parsed, null, 2));
+      const subscribed = (payload.subscribed as string[]) || [];
+      setConfigNote(
+        `Stored on server_registry${subscribed.length ? `; subscribed: ${subscribed.join(", ")}` : ""}`,
+      );
+      setConfigError("");
+    } catch (error) {
+      setConfigError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setConfigBusy(false);
+    }
+  }, [configChannel, configText]);
+
   // Selects need the current value present as an option even before lists load.
   const agentChoices = Array.from(new Set([you, target, ...agents.map((a) => a.id)].filter(Boolean)));
   const channelChoices = Array.from(new Set([channel, ...channels.map((c) => c.id)].filter(Boolean)));
   const sendChoices = Array.from(new Set([sendChannel, ...channels.map((c) => c.id)].filter(Boolean)));
+
+  // Channel options carry a readable name resolved from the identifier directory
+  // (bootstrapped onto server_registry), so opaque bridge ids get annotated.
+  const channelNames = new Map(channels.map((c) => [c.id, c.name] as const));
+  const channelLabel = (id: string) => {
+    const name = channelNames.get(id);
+    return name && name !== id ? `${name} · ${id}` : id;
+  };
 
   return (
     <div className={`chat-conversation ${className ?? ""}`.trim()}>
@@ -257,7 +331,7 @@ export function ChatConversation({
             <span>Channel</span>
             <select value={channel} onChange={(event) => selectChannel(event.target.value)} aria-label="Viewed channel">
               {channelChoices.map((id) => (
-                <option key={id} value={id}>{id}</option>
+                <option key={id} value={id}>{channelLabel(id)}</option>
               ))}
             </select>
           </label>
@@ -266,7 +340,7 @@ export function ChatConversation({
             <select value={sendChannel} onChange={(event) => setSendChannel(event.target.value)} aria-label="Send channel">
               <option value="">(none)</option>
               {sendChoices.map((id) => (
-                <option key={id} value={id}>{id}</option>
+                <option key={id} value={id}>{channelLabel(id)}</option>
               ))}
             </select>
           </label>
@@ -296,7 +370,7 @@ export function ChatConversation({
             className={`chat-message ${message.from === you ? "mine" : "theirs"}`}
           >
             <div className="chat-message-meta">
-              <span className="chat-message-from">{message.author || message.from}</span>
+              <span className="chat-message-from">{message.authorName || message.author || message.from}</span>
               {message.author && message.from && message.author !== message.from && (
                 <span className="chat-message-via">via {message.from}</span>
               )}
@@ -346,6 +420,27 @@ export function ChatConversation({
         <button className="chat-send" onClick={send} disabled={sending || !input.trim()}>
           {sending ? "Sending…" : "Send"}
         </button>
+      </div>
+      <div className="chat-config">
+        <div className="chat-config-head">
+          <span className="chat-config-title">Channel config — {channelLabel(configChannel)}</span>
+          <button type="button" onClick={fetchConfig} disabled={configBusy}>
+            Reload
+          </button>
+          <button type="button" onClick={applyConfig} disabled={configBusy || !configText.trim()}>
+            {configBusy ? "Applying…" : "Apply"}
+          </button>
+        </div>
+        <textarea
+          className="chat-config-editor"
+          value={configText}
+          onChange={(event) => setConfigText(event.target.value)}
+          rows={8}
+          spellCheck={false}
+          aria-label="Channel config JSON"
+        />
+        {configError && <div className="chat-error">{configError}</div>}
+        {configNote && <div className="chat-config-note">{configNote}</div>}
       </div>
     </div>
   );

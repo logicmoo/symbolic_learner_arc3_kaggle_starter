@@ -185,12 +185,26 @@ def test_list_agents_merges_participants_and_defaults(
     assert mailbox_api.DEFAULT_PEER_AGENT in agent_ids
 
 
+@pytest.fixture(autouse=True)
+def _reset_names_cache() -> None:
+    """Keep the identifier-name cache from leaking between tests."""
+
+    mailbox_api._NAMES_CACHE["at"] = 0.0
+    mailbox_api._NAMES_CACHE["names"] = {}
+
+
 class _FakeRelay:
-    def __init__(self) -> None:
+    def __init__(self, registry: dict | None = None, identifiers: list[dict] | None = None) -> None:
         self.sent: list[dict] = []
         self.cursors: list[tuple[str, str]] = []
+        self.registry = registry or {}
+        self.identifiers = identifiers or []
 
-    def _rest_request(self, method: str, path: str):  # noqa: ANN001
+    def _rest_request(self, method: str, path: str, payload=None, base_url=None):  # noqa: ANN001
+        if path == "/v1/registry":
+            return self.registry
+        if path.startswith("/v1/identifiers"):
+            return {"identifiers": self.identifiers}
         return {"recipients": [], "positions": []}
 
     def initialize_cursor_rest(self, recipient: str, *, cursor: str, start: str = "now", base_url=None):  # noqa: ANN001
@@ -202,8 +216,31 @@ class _FakeRelay:
         self.registered.append((agent_id, presence_id))
         return {"agent_id": agent_id, "presence_id": presence_id}
 
-    def send(self, to: str, text: str, *, sender: str, root=None, **extra):  # noqa: ANN001
-        record = {"id": "s1", "from": sender, "to": to, "text": text, "type": "message", **extra}
+    def send(  # noqa: ANN001 - mirrors the real client's keyword surface
+        self,
+        to: str,
+        text: str,
+        *,
+        sender: str,
+        root=None,
+        message_type: str = "message",
+        metadata=None,
+        extra_fields=None,
+        channel_id=None,
+        **extra,
+    ):
+        record = {
+            "id": f"s{len(self.sent) + 1}",
+            "from": sender,
+            "to": to,
+            "text": text,
+            "type": message_type,
+        }
+        if extra_fields:
+            record.update(extra_fields)
+        if channel_id:
+            record["channel_id"] = channel_id
+        record.update(extra)
         self.sent.append(record)
         return record
 
@@ -234,5 +271,158 @@ def test_mailbox_create_channel(monkeypatch: pytest.MonkeyPatch) -> None:
     result = mailbox_api.mailbox_create_channel(id="new-room")
     assert result["id"] == "new-room"
     assert ("new-room", mailbox_api.DEFAULT_PEER_AGENT) in fake.cursors
+
+
+def test_project_record_resolves_names() -> None:
+    record = {
+        "id": "1",
+        "from": "mattermost",
+        "author": "mmid-abc",
+        "channel_id": "mmchan-1",
+        "text": "hi",
+    }
+    projected = mailbox_api._project_record(record, {"mmid-abc": "alice", "mmchan-1": "General"})
+    assert projected["authorName"] == "alice"
+    assert projected["channelName"] == "General"
+
+
+def test_list_channels_annotates_readable_names(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setattr(mailbox_api, "_mailbox_client", None)
+    directory = [
+        {"identifier": "c83yabc", "text": "arc3-room", "kind": "channel", "display": "ARC3 Room"},
+    ]
+    _write_jsonl(
+        tmp_path / "messages.jsonl",
+        [
+            {
+                "id": "1",
+                "from": "app",
+                "to": mailbox_api.REGISTRY_CHANNEL,
+                "type": "identifier_directory",
+                "text": json.dumps(directory),
+            },
+            {"id": "2", "from": "mm-chat-host-c83yabc", "to": "someone", "text": "traffic"},
+        ],
+    )
+    channels = {channel["id"]: channel for channel in mailbox_api.list_channels(tmp_path)}
+    # The bridged id's trailing segment resolves through the stored directory.
+    assert channels["mm-chat-host-c83yabc"]["name"] == "ARC3 Room"
+
+
+def test_messaging_registry_falls_back_to_stored(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setattr(mailbox_api, "_mailbox_client", None)
+    snapshot = {"version": 1, "agents": [{"agent_id": "stored-agent"}], "channels": []}
+    _write_jsonl(
+        tmp_path / "messages.jsonl",
+        [
+            {
+                "id": "1",
+                "from": "app",
+                "to": mailbox_api.REGISTRY_CHANNEL,
+                "type": "messaging_registry",
+                "text": json.dumps(snapshot),
+            },
+        ],
+    )
+    assert mailbox_api.messaging_registry(tmp_path) == snapshot
+    agent_ids = [agent["id"] for agent in mailbox_api.list_agents(tmp_path)]
+    assert "stored-agent" in agent_ids
+
+
+def test_channel_config_merges_registry_traffic_and_stored(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    fake = _FakeRelay(
+        registry={
+            "channels": [
+                {"id": "room-1", "channel_type": "mattermost", "aliases": [], "subscribers": ["a"]},
+            ],
+            "agents": [],
+        }
+    )
+    monkeypatch.setattr(mailbox_api, "_mailbox_client", fake)
+    stored = {"purpose": "testing", "channelName": "Renamed Room"}
+    _write_jsonl(
+        tmp_path / "messages.jsonl",
+        [
+            {"id": "1", "from": "mattermost", "to": "bridge", "channel_id": "room-1",
+             "channel_name": "room-one", "text": "hi", "timestamp": "2026-01-01T00:00:00Z"},
+            {"id": "2", "from": "app", "to": mailbox_api.REGISTRY_CHANNEL,
+             "type": "channel_config", "config_for": "room-1", "text": json.dumps(stored)},
+        ],
+    )
+    config = mailbox_api.channel_config(tmp_path, "room-1")
+    assert config["kind"] == "mattermost"
+    assert config["messages"] == 1
+    assert config["purpose"] == "testing"
+    # The stored edit overlays the traffic-derived name.
+    assert config["channelName"] == "Renamed Room"
+
+
+def test_update_channel_config_subscribes_and_stores(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setenv("AGENT_MAILBOX_DIR", str(tmp_path))
+    fake = _FakeRelay(registry={"channels": [], "agents": []})
+    monkeypatch.setattr(mailbox_api, "_mailbox_client", fake)
+    result = mailbox_api.mailbox_update_channel_config(
+        channel="room-2", config={"channelName": "Room Two", "subscribers": ["bob"]}
+    )
+    assert result["stored"] is True
+    assert result["subscribed"] == ["bob"]
+    assert ("room-2", "bob") in fake.cursors
+    stored = [record for record in fake.sent if record["type"] == "channel_config"]
+    assert stored and stored[0]["to"] == mailbox_api.REGISTRY_CHANNEL
+    assert stored[0]["config_for"] == "room-2"
+    assert json.loads(stored[0]["text"])["channelName"] == "Room Two"
+
+
+def test_registry_bootstrap_stores_both_snapshots(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setenv("AGENT_MAILBOX_DIR", str(tmp_path))
+    fake = _FakeRelay(
+        registry={"version": 1, "agents": [{"agent_id": "a1"}], "connectors": [], "channels": [], "relays": []},
+        identifiers=[
+            {"identifier": "u1", "text": "alice", "kind": "user", "metadata": {}},
+            {"identifier": "c1", "text": "room", "kind": "channel",
+             "metadata": {"display_name": "The Room"}},
+            {"identifier": "", "text": "dropped", "kind": "user"},
+        ],
+    )
+    monkeypatch.setattr(mailbox_api, "_mailbox_client", fake)
+    result = mailbox_api.mailbox_registry_bootstrap(limit=100)
+    assert result["registryStored"] is True
+    assert result["identifiersStored"] is True
+    assert result["identifierCount"] == 2
+    types = [record["type"] for record in fake.sent]
+    assert "messaging_registry" in types and "identifier_directory" in types
+    directory = json.loads(
+        next(record for record in fake.sent if record["type"] == "identifier_directory")["text"]
+    )
+    assert {"identifier": "c1", "text": "room", "kind": "channel",
+            "display": "The Room", "system": None} in directory
+
+
+def test_identifier_names_merges_stored_and_relay(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    fake = _FakeRelay(identifiers=[{"identifier": "live-1", "text": "livename", "kind": "user"}])
+    monkeypatch.setattr(mailbox_api, "_mailbox_client", fake)
+    _write_jsonl(
+        tmp_path / "messages.jsonl",
+        [
+            {"id": "1", "from": "app", "to": mailbox_api.REGISTRY_CHANNEL,
+             "type": "identifier_directory",
+             "text": json.dumps([{"identifier": "stored-1", "text": "storedname"}])},
+        ],
+    )
+    names = mailbox_api.identifier_names(tmp_path, refresh=True)
+    assert names["stored-1"] == "storedname"
+    assert names["live-1"] == "livename"
 
 
