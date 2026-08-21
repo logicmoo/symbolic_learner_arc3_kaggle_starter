@@ -348,20 +348,9 @@ const DEFAULT_VALIDATOR_PROMPT = [
 ].join("\n");
 const REMOVAL_DISCOVERY_PASS_PROMPT = [
   "remove_smallest_object:",
-  "INPUT: you receive the current original image plus the document/identities catalog it already has via INPUT_FILES. That supplied document is authoritative — do NOT regenerate it, do NOT re-ground every object, and do NOT build a new identity catalog.",
-  "TASK: extract exactly ONE object from the current original image this pass, then hand back the document you were given with that one object tagged as extracted.",
-  "SELECT ONE LEAF OBJECT THAT IS NOT INSIDE ANOTHER: it must be a top-level, isolated, non-container leaf (no nested identities/objects within its bounds) and must not be a merged composite blob. Never pick a parent/container/group while any removable leaf object still exists.",
-  "OBJECT SEARCH ORDER: 1) isolated simple leaf objects; 2) among those, prefer a clear similar set by shape/color/size; 3) otherwise the single smallest valid leaf object by area/pixel footprint.",
-  "Special corridor rule: if an object looks like a corridor/maze shell, extract only the shell/walls and leave interior objects/content behind.",
-  "SELECTION HANDOFF: return current_identities as a SINGLE entry — ONLY the object you are extracting — reusing the EXACT id that FIRST_GUESSER / the supplied document already assigned to it, plus its type, sub_type, and bounding_box [x1, y1, x2, y2] (x2 > x1, y2 > y1) so the pipeline can crop it. current_identities must contain no other identities, no lifecycle, and no groups.",
-  "ID REUSE: do NOT rename, normalize, or invent a new id for the extracted object — copy FIRST_GUESSER's id for it verbatim so obj_<ID>.png matches the id already in the document.",
-  "EXTRACTED OBJECT IMAGE: the extracted object is emitted as an image file named obj_<ID>.png, where <ID> is that exact reused id.",
-  "NEW ORIGINAL IMAGE: the current original with the extracted object's pixels removed is emitted as image_without_object and saved as <original>_with_<n>_removed.png where n is the pass number (original_with_1_removed.png, then original_with_2_removed.png next pass, and so on — the pass number increments, the stem does not compound); that image becomes the new original image consumed by the next pass.",
-  "DOCUMENT MUTATION: take the document you were given and tag the extracted object with extracted=true, extracted_to=obj_<ID>.png, and extracted_from set to the original image this pass consumed; note that later passes use the new _with_<n>_removed.png image as their original. Carry every other part of the received document forward unchanged — do not add or drop other entries.",
-  "Always carry BOTH images forward for downstream processing: obj_<ID>.png (the extracted object) and image_without_object (the new original).",
-  "BACKGROUND FILL: when the object is lifted out, its bounding-box region is automatically inpainted with the surrounding background (for example grass under a soccer player) so image_without_object stays clean — you do not need to ask for this.",
-  "OVERLAP REDRAW: if the extracted object was overlapping or occluding another object, redrawing the vacated region reconstructs the hidden part of that underlying object — whenever you redraw part of an overlapping object, append an English note to that overlapped object's identity notes list saying which part was redrawn.",
-  "META NOTES: the English note that the vacated region was filled with background (added grass) is appended to the extracted object's identity notes list; preserve every note already in an identity's notes list.",
+  "Extract obj_<ID>.png from the incoming original_*.png and put what is left over into original_with_<n>_removed.png (the reduced scene, background inpainted).",
+  "From first_identities.json, pick the object and reuse its exact id; return current_identities as that SINGLE entry (id + type + sub_type + bounding_box) so the pipeline can crop obj_<ID>.png.",
+  "Tag the object extracted and return the document (extracted: obj_<ID>.png).",
 ].join("\n");
 // Loop-mode instruction snippets appended to the base remove_smallest_object prompt above. Each
 // LOOP MODE picks exactly one; the base stays identical so only the loop behavior changes.

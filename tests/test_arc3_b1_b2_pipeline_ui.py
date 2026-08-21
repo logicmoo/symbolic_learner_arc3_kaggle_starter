@@ -86,11 +86,11 @@ def test_b1_b2_component_has_pipeline_contract() -> None:
     assert '["runner:FIRST_REMOVER"]' in source
     assert '["runner:IMPROVED_GUESSER"]' in source
     assert '["runner:MERGE"]' in source
-    # The remover extracts one leaf object (not nested), emits obj_<ID>.png, and mutates
-    # the received document instead of regenerating an identity catalog.
-    assert "SELECT ONE LEAF OBJECT THAT IS NOT INSIDE ANOTHER" in source
+    # The remover extracts one object into obj_<ID>.png, writes the reduced original, and tags
+    # the object extracted in the document (using first_identities.json).
+    assert "Extract obj_<ID>.png from the incoming original_*.png" in source
     assert "obj_<ID>.png" in source
-    assert "DOCUMENT MUTATION" in source
+    assert "Tag the object extracted and return the document (extracted: obj_<ID>.png)." in source
     # Experimental write-back: REGENERATOR result can replace IMPROVED_GUESSER's list.
     assert "replaceGuesserOnFinish" in source
     assert "Replace IMPROVED_GUESSER list with this result on finish" in source
