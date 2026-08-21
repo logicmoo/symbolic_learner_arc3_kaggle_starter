@@ -87,10 +87,10 @@ def test_b1_b2_component_has_pipeline_contract() -> None:
     assert '["runner:IMPROVED_GUESSER"]' in source
     assert '["runner:MERGE"]' in source
     # The remover extracts one object into obj_<ID>.png, writes the reduced original, and tags
-    # the object extracted in the document (using first_identities.json).
-    assert "Extract obj_<ID>.png from the incoming original_*.png" in source
+    # the identity extracted in current_identities.
+    assert "Use current_identities to extract obj_<ID>.png from <original>.png" in source
     assert "obj_<ID>.png" in source
-    assert "Tag the object extracted and return the document (extracted: obj_<ID>.png)." in source
+    assert "tag that identity in current_identities with (extracted: obj_<ID>.png) and return the document." in source
     # Experimental write-back: REGENERATOR result can replace IMPROVED_GUESSER's list.
     assert "replaceGuesserOnFinish" in source
     assert "Replace IMPROVED_GUESSER list with this result on finish" in source
@@ -125,12 +125,12 @@ def test_b1_b2_first_guesser_single_image_first_pass() -> None:
     assert 'const guessRole = role === "guess";' in source
     assert "const image = guessRole" in source
     assert "Image #1 is the current ARC3 state; there is no parent image." in source
-    # Output: only first_identities, via a dedicated lean prompt (not COMBINED_PROMPT).
+    # Output: only current_identities, via a dedicated lean prompt (not COMBINED_PROMPT).
     assert 'if (role === "guess") return "generate_first_pass_object_guesses";' in source
     assert 'if (role === "guess") return FIRST_PASS_OBJECT_GUESSES_PROMPT;' in source
     assert "const FIRST_PASS_OBJECT_GUESSES_PROMPT = [" in source
-    assert "single required key: first_identities" in source
-    assert "Return only first_identities in the JSON response." in source
+    assert "single required key: current_identities" in source
+    assert "Return only current_identities in the JSON response." in source
     # The extraction runner (IMPROVED_GUESSER) consumes the removal pngs from FIRST_REMOVER.
     assert 'if (role === "extraction") return ["runner:FIRST_REMOVER"];' in source
 
@@ -215,7 +215,7 @@ def test_b1_b2_prompt_registry_is_typed_and_sorted_by_applicability() -> None:
     assert "const B1B2_IMPLEMENTATION_REGISTRY: ImplementationDefinition[] = [" in source
     assert 'const B1B2_PROMPT_REGISTRY = B1B2_IMPLEMENTATION_REGISTRY.filter((impl) => impl.kind === "prompt");' in source
     # Concrete + semantic type tags are used.
-    for tag in ['"file_png"', '"file_json"', '"file_pl"', '"image"', '"object_identities"', '"first_identities"', '"removal_images"', '"regenerated_identities"']:
+    for tag in ['"file_png"', '"file_json"', '"file_pl"', '"image"', '"object_identities"', '"current_identities"', '"removal_images"', '"regenerated_identities"']:
         assert tag in source
     # Each runner role has an input/output profile used for scoring applicability.
     assert "const B1B2_ROLE_PROFILE: Record<string, { inputs: PromptTypeTag[]; outputs: PromptTypeTag[] }>" in source

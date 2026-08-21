@@ -308,8 +308,8 @@ const COMBINED_PROMPT = COMBINED_PROMPT_PARTS.join("\n");
 const FIRST_PASS_OBJECT_GUESSES_PROMPT = [
   "generate_first_pass_object_guesses:",
   "You are given a SINGLE ARC3 image: the current game state. There is no parent image and no INPUT_FILES.",
-  "Return exactly one valid JSON object with a single required key: first_identities. Do not return Markdown or commentary. Optional key: exit_value.",
-  "first_identities must be a JSON array of object identity records. Each record includes id, type, label, and bounding_box as [x1, y1, x2, y2] (top-left and bottom-right corners, x2 > x1, y2 > y1), plus first_appeared_step, last_disappeared_step, pixel_count (an integer count of the logical grid cells the object occupies), and colors_list (a JSON array of the distinct colors present in the object, most-dominant first, each written as a friendly human color name in snake_case such as red, sky_blue, forest_green, or bright_yellow — never hex codes, RGB triples, or numeric palette indices).",
+  "Return exactly one valid JSON object with a single required key: current_identities. Do not return Markdown or commentary. Optional key: exit_value.",
+  "current_identities must be a JSON array of object identity records. Each record includes id, type, label, and bounding_box as [x1, y1, x2, y2] (top-left and bottom-right corners, x2 > x1, y2 > y1), plus first_appeared_step, last_disappeared_step, pixel_count (an integer count of the logical grid cells the object occupies), and colors_list (a JSON array of the distinct colors present in the object, most-dominant first, each written as a friendly human color name in snake_case such as red, sky_blue, forest_green, or bright_yellow — never hex codes, RGB triples, or numeric palette indices).",
   "Reason in the logical ARC grid (normally 64x64, zero-based; x increases to the right, y increases downward), never display pixels.",
   "Detect at least 10 meaningful objects when present: connected color regions, blocks, glyphs, borders, HUD/status elements, and compound objects. This is a fast first-pass guess of the objects in the image; downstream runners refine it.",
   "NAMING: " + DESCRIPTIVE_ID_RULE,
@@ -348,9 +348,7 @@ const DEFAULT_VALIDATOR_PROMPT = [
 ].join("\n");
 const REMOVAL_DISCOVERY_PASS_PROMPT = [
   "remove_smallest_object:",
-  "Extract obj_<ID>.png from the incoming original_*.png and put what is left over into original_with_<n>_removed.png (the reduced scene, background inpainted).",
-  "From first_identities.json, pick the object and reuse its exact id; return current_identities as that SINGLE entry (id + type + sub_type + bounding_box) so the pipeline can crop obj_<ID>.png.",
-  "Tag the object extracted and return the document (extracted: obj_<ID>.png).",
+  "Use current_identities to extract obj_<ID>.png from <original>.png and put what is left over in <original>_with_<n>_removed.png (the reduced scene, background inpainted), then tag that identity in current_identities with (extracted: obj_<ID>.png) and return the document.",
 ].join("\n");
 // Loop-mode instruction snippets appended to the base remove_smallest_object prompt above. Each
 // LOOP MODE picks exactly one; the base stays identical so only the loop behavior changes.
@@ -397,7 +395,7 @@ type OperationDefinition = {
   outputs: PromptTypeTag[];
 };
 const B1B2_OPERATIONS: Record<string, OperationDefinition> = {
-  guess: { id: "arc3.first_pass_object_guesses", label: "First-pass object guesses", inputs: ["image"], outputs: ["first_identities", "object_identities"] },
+  guess: { id: "arc3.first_pass_object_guesses", label: "First-pass object guesses", inputs: ["image"], outputs: ["current_identities", "object_identities"] },
   extraction: { id: "arc3.extract_prolog_and_english", label: "Extract prolog + english", inputs: ["image", "object_identities"], outputs: ["current_identities", "object_identities", "file_pl", "file_eng"] },
   removal: { id: "arc3.remove_object", label: "Remove object", inputs: ["image", "object_identities"], outputs: ["removal_images", "object_identities"] },
   merge: { id: "arc3.merge_identities", label: "Merge identities", inputs: ["object_identities"], outputs: ["current_identities", "object_identities"] },
@@ -407,7 +405,7 @@ const B1B2_OPERATIONS: Record<string, OperationDefinition> = {
 // prompt | python | prolog | metta. Today only prompt implementations execute; python /
 // prolog / metta entries are declared-only (typed contracts, not yet wired to a backend).
 // Concrete types (file_png/file_json/file_pl/file_metta/file_eng) and semantic types
-// (image, object_identities, first_identities, current_identities, regenerated_identities,
+// (image, object_identities, current_identities, regenerated_identities,
 // removal_images) plus tags let each runner sort its implementations by applicability.
 type ImplementationKind = "prompt" | "python" | "prolog" | "metta";
 const B1B2_IMPLEMENTATION_KINDS: ImplementationKind[] = ["prompt", "python", "prolog", "metta"];
@@ -422,7 +420,7 @@ type ImplementationDefinition = {
 };
 const B1B2_IMPLEMENTATION_REGISTRY: ImplementationDefinition[] = [
   // --- prompt implementations (executable today) ---
-  { operation: "arc3.first_pass_object_guesses", kind: "prompt", name: "generate_first_pass_object_guesses", text: FIRST_PASS_OBJECT_GUESSES_PROMPT, inputs: ["image", "file_png"], outputs: ["first_identities", "object_identities", "file_json"], tags: ["guess", "first_pass", "single_image"] },
+  { operation: "arc3.first_pass_object_guesses", kind: "prompt", name: "generate_first_pass_object_guesses", text: FIRST_PASS_OBJECT_GUESSES_PROMPT, inputs: ["image", "file_png"], outputs: ["current_identities", "object_identities", "file_json"], tags: ["guess", "first_pass", "single_image"] },
   { operation: "arc3.extract_prolog_and_english", kind: "prompt", name: "generate_prolog_and_english", text: COMBINED_PROMPT, inputs: ["image", "file_png", "object_identities"], outputs: ["current_identities", "object_identities", "objects_pl", "file_pl", "file_eng", "file_json"], tags: ["extraction", "prolog", "english"] },
   { operation: "arc3.remove_object", kind: "prompt", name: "remove_smallest_object_external_loop", text: REMOVE_SMALLEST_OBJECT_EXTERNAL_LOOP_PROMPT, inputs: ["image", "file_png", "object_identities", "current_identities"], outputs: ["removal_images", "file_png", "current_identities"], tags: ["removal", "loop_model", "external"] },
   { operation: "arc3.remove_object", kind: "prompt", name: "remove_smallest_object_iterated_loop", text: REMOVE_SMALLEST_OBJECT_ITERATED_LOOP_PROMPT, inputs: ["image", "file_png", "current_identities"], outputs: ["removal_images", "file_png", "current_identities"], tags: ["removal", "iterated", "loop"] },
@@ -432,7 +430,7 @@ const B1B2_IMPLEMENTATION_REGISTRY: ImplementationDefinition[] = [
   { operation: "arc3.regenerate_identities", kind: "prompt", name: "regenerated_identities_from_many_objects", text: REGENERATED_IDENTITIES_PROMPT, inputs: ["removal_images", "file_png", "object_identities"], outputs: ["current_identities", "regenerated_identities", "object_identities", "file_json"], tags: ["regenerated"] },
   { operation: "arc3.extract_prolog_and_english", kind: "prompt", name: "legacy_root_getter", text: LEGACY_ROOT_GETTER_PROMPT, inputs: ["image", "file_png", "object_identities"], outputs: ["current_identities", "object_identities", "file_pl", "file_eng", "file_json"], tags: ["extraction", "legacy"] },
   // --- python implementations (declared-only) ---
-  { operation: "arc3.first_pass_object_guesses", kind: "python", name: "detect_objects_cv", text: "Python CV object detector: connected-component + color segmentation over the grid.", inputs: ["image", "file_png"], outputs: ["first_identities", "object_identities", "file_json"], tags: ["guess", "cv"] },
+  { operation: "arc3.first_pass_object_guesses", kind: "python", name: "detect_objects_cv", text: "Python CV object detector: connected-component + color segmentation over the grid.", inputs: ["image", "file_png"], outputs: ["current_identities", "object_identities", "file_json"], tags: ["guess", "cv"] },
   { operation: "arc3.remove_object", kind: "python", name: "remove_object_cv", text: "Python CV object remover: mask + inpaint each identity from the image.", inputs: ["image", "object_identities"], outputs: ["removal_images", "file_png"], tags: ["removal", "cv"] },
   { operation: "arc3.merge_identities", kind: "python", name: "merge_identities_py", text: "Python identity merger: dedupe by bounding-box IoU + color/shape compatibility.", inputs: ["object_identities", "file_json"], outputs: ["current_identities", "file_json"], tags: ["merge"] },
   // --- prolog implementations (declared-only) ---
@@ -3527,7 +3525,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
             simulateLoop ? `SIMULATE THE RESUBMISSION LOOP: in this single response, perform up to ${runner.autoLoopMaxIterations} extraction passes yourself — each pass extract exactly one leaf object (not inside another), emit its obj_<ID>.png and the reduced original_with_<k>_removed.png, then continue on the reduced scene for the next object; stop when no removable leaf remains or after ${runner.autoLoopMaxIterations} passes. Return the full ordered sequence of passes.` : "",
             !guessRole && isGapPass ? "Image #3 is debug_overlay_image for pass-N coverage gap discovery." : "",
             guessRole
-              ? "Return only first_identities in the JSON response."
+              ? "Return only current_identities in the JSON response."
               : "Also generate current_identities, current_hypotheses, action_history, objects_english, differences_english, and rules_english in the JSON response.",
             filesSources.length
               ? `Files input sources: ${filesSources.map((source) => source.label).join(" | ")}.`
