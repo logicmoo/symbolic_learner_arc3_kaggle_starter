@@ -105,6 +105,8 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
   const [armedAction, setArmedAction] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [savepoints, setSavepoints] = useState<PlaySavepoint[]>([]);
+  const [rewindOpen, setRewindOpen] = useState(false);
+  const [rewindHover, setRewindHover] = useState<number | null>(null);
   const boardRef = useRef<HTMLImageElement | null>(null);
 
   const assetUrl = useCallback(
@@ -281,8 +283,22 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
 
   const moves = session?.moves || [];
   const newestFirst = [...moves].reverse();
+  const levelMoves = session ? moves.filter((move) => move.directory.startsWith(`${session.levelDir}/`)) : [];
+  const levelIndexByDir = new Map(levelMoves.map((move, idx) => [move.directory, idx] as const));
+  const rewindUndoneDirs = new Set(
+    rewindHover ? levelMoves.slice(-rewindHover).map((move) => move.directory) : [],
+  );
+  const rewindTargetDir = rewindHover
+    ? levelMoves[levelMoves.length - rewindHover - 1]?.directory ?? null
+    : null;
   const stateName = session?.state || "";
   const stateClass = stateName === "WIN" ? "win" : stateName === "GAME_OVER" ? "over" : "live";
+  const actionLabels = new Map((session?.availableActions || []).map((action) => [action.id, action.label] as const));
+  const actionShort = (action: string) => actionLabels.get(action) || action;
+  const actionFull = (action: string) => {
+    const label = actionLabels.get(action);
+    return label && label !== action ? `${label} (${action})` : action;
+  };
 
   return (
     <div className="arc3-play-page">
@@ -373,25 +389,62 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
                 ))}
               </div>
               <div className="arc3-play-actions arc3-play-session-controls">
-                <select
-                  className="arc3-play-action reset arc3-play-rewind"
-                  disabled={busy || session.closed || !session.levelMoveCount}
-                  title="Rewind: reset the level and deterministically replay all but the last N moves"
-                  value=""
-                  onChange={(event) => {
-                    const count = Number(event.target.value);
-                    if (count > 0) void undoMove(count);
+                <span
+                  className="arc3-play-rewind-wrap"
+                  onMouseLeave={() => {
+                    setRewindOpen(false);
+                    setRewindHover(null);
                   }}
                 >
-                  <option value="" disabled>
-                    Rewind…
-                  </option>
-                  {Array.from({ length: session.levelMoveCount }, (_, offset) => offset + 1).map((count) => (
-                    <option key={count} value={count}>
-                      Rewind {count} move{count > 1 ? "s" : ""}
-                    </option>
-                  ))}
-                </select>
+                  <button
+                    className="arc3-play-action reset arc3-play-rewind"
+                    disabled={busy || session.closed || !session.levelMoveCount}
+                    title="Rewind: reset the level and deterministically replay all but the last N moves"
+                    onClick={() => setRewindOpen((open) => !open)}
+                  >
+                    Rewind… {rewindOpen ? "▾" : "▴"}
+                  </button>
+                  {rewindOpen && !session.closed && session.levelMoveCount > 0 && (
+                    <div className="arc3-play-rewind-menu">
+                      {Array.from({ length: session.levelMoveCount }, (_, offset) => offset + 1).map((count) => {
+                        const undone = levelMoves.slice(-count).reverse();
+                        const target = levelMoves[levelMoves.length - count - 1] || null;
+                        const shown = undone.slice(0, 4);
+                        return (
+                          <button
+                            key={count}
+                            className="arc3-play-rewind-option"
+                            onMouseEnter={() => setRewindHover(count)}
+                            onFocus={() => setRewindHover(count)}
+                            onClick={() => {
+                              setRewindOpen(false);
+                              setRewindHover(null);
+                              void undoMove(count);
+                            }}
+                          >
+                            <b>
+                              Rewind {count} move{count > 1 ? "s" : ""}
+                            </b>
+                            <span className="arc3-play-rewind-undoes">
+                              {shown.map((move) => (
+                                <span key={move.directory} className="arc3-play-rewind-thumb">
+                                  <img src={assetUrl(`${move.directory}/image.png`)} alt={`Move ${move.index}`} loading="lazy" />
+                                  <small>
+                                    {move.index}/ {actionShort(move.action)}
+                                  </small>
+                                </span>
+                              ))}
+                              {undone.length > shown.length && <small>+{undone.length - shown.length} more</small>}
+                            </span>
+                            <small className="arc3-play-rewind-back">
+                              {target ? `back to ${target.index}/ · ${actionShort(target.action)}` : "back to level start"}
+                            </small>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </span>
                 <button
                   className="arc3-play-action reset"
                   disabled={busy || session.closed}
@@ -447,12 +500,38 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
               )}
               <div className="arc3-play-moves">
                 <small>MOVES (newest first — stored in 0/ 1/ 2/ …)</small>
-                {newestFirst.map((move) => (
-                  <div key={move.directory} className="arc3-play-move">
+                {newestFirst.map((move) => {
+                  const levelIdx = levelIndexByDir.get(move.directory);
+                  const rewindCount = levelIdx === undefined ? 0 : levelMoves.length - 1 - levelIdx;
+                  const clickable = rewindCount > 0 && !busy && !session.closed;
+                  return (
+                  <div
+                    key={move.directory}
+                    className={`arc3-play-move${rewindUndoneDirs.has(move.directory) ? " will-undo" : ""}${
+                      rewindTargetDir === move.directory ? " rewind-target" : ""
+                    }${clickable ? " clickable" : ""}`}
+                    title={
+                      clickable
+                        ? `Click to rewind here — undoes the ${rewindCount} newer move${rewindCount > 1 ? "s" : ""}`
+                        : levelIdx !== undefined && rewindCount === 0
+                          ? "Current position"
+                          : undefined
+                    }
+                    onMouseEnter={clickable ? () => setRewindHover(rewindCount) : undefined}
+                    onMouseLeave={clickable ? () => setRewindHover(null) : undefined}
+                    onClick={
+                      clickable
+                        ? () => {
+                            setRewindHover(null);
+                            void undoMove(rewindCount);
+                          }
+                        : undefined
+                    }
+                  >
                     <img src={assetUrl(`${move.directory}/image.png`)} alt={`Move ${move.index}`} loading="lazy" />
                     <div>
                       <b>
-                        {move.index}/ · {move.action}
+                        {move.index}/ · {actionFull(move.action)}
                         {move.data && Object.keys(move.data).length > 0 && (
                           <span className="arc3-play-move-data"> {JSON.stringify(move.data)}</span>
                         )}
@@ -464,7 +543,8 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
                       <code>{move.directory}</code>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
                 {!newestFirst.length && <div className="arc3-play-empty">No moves recorded yet.</div>}
               </div>
             </>

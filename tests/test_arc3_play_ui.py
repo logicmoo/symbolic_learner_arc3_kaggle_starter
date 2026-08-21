@@ -34,6 +34,12 @@ def test_play_component_has_recorder_contract() -> None:
     assert "New attempt" in source
     assert "Restart game" in source
     assert "Rewind {count} move" in source
+    assert "arc3-play-rewind-menu" in source
+    assert "back to level start" in source
+    assert "will-undo" in source
+    assert "rewind-target" in source
+    assert "Click to rewind here" in source
+    assert "actionShort" in source
     assert "Fork" in source
     assert "Resume" in source
     assert "End session" in source
