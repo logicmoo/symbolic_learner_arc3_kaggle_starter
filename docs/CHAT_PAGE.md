@@ -1,0 +1,78 @@
+# Chat page
+
+Talk over the shared append-only mailbox (`messages.jsonl`). Every record has
+`from`, `to`, optional `channel_id`, a `type` and `text`; any message can be
+inspected as raw JSON with the `{ }` button.
+
+## Pickers (top banner)
+
+- **YOU** — the agent identity you write as (`from` on sent records).
+- **TO** — the agent you address (`to`), and the agent whose cursor and
+  subscription the bars below operate on.
+- **CHANNEL** — the channel the view centres on. Labels show
+  `readable name · id · count`.
+- **SEND-TO** — optional routed channel: when set, sends carry it as
+  `channel_id`, so the message lands on that channel (addressing an agent with
+  a SEND-TO channel auto-subscribes it server-side).
+
+Clicking a picker's label (YOU / TO / CHANNEL / SEND-TO) opens the entity's
+stored JSON entry for editing — Save posts it to the `server_agents` /
+`server_channels` blackboard.
+
+## Require-match bar (the filter)
+
+The message list looks **everywhere** — the whole log, every mailbox and
+channel. Each depressed button ANDs one required match:
+
+| Button | Requires |
+| --- | --- |
+| `TO` | `record.to` equals the TO picker |
+| `FROM` | `record.from` equals the YOU picker |
+| `CHANNEL` | the record involves the CHANNEL picker (`from`, `to` or `channel_id`) |
+| `SEND-TO` | `record.channel_id` equals the SEND-TO picker |
+| `TEXT` | the text expression matches (case-insensitive substring, or `/regex/`) |
+
+Only `CHANNEL` is depressed by default (the classic channel view). Depress
+nothing to see the entire log; combine buttons to narrow. The bar queries
+`GET /api/mailbox/messages?filter=1&…` server-side, so results are not limited
+to what the browser has loaded.
+
+## Cursor bar
+
+Shows where the TO agent's cursor sits on the viewed channel (bytes behind).
+`⏮ Beginning` / `Now ⏭` reposition it, `✕ Remove` deletes it. Cursors are
+read positions only — subscription intent is separate.
+
+## Subscription bar
+
+Edits the TO agent's **explicit** subscription setting on the viewed channel:
+
+- **Subscribed** — declare intent to follow the channel (a missing cursor is
+  auto-created at `entry_0` on the next sync).
+- **Unsubscribed** — sticky opt-out; subscribe-missing sweeps must honor it.
+- **✕ Remove setting** — clear the explicit setting so the default inference
+  returns: an agent holding a cursor counts as subscribed.
+
+Backed by `POST /api/mailbox/subscription` (worker op `set_subscription`),
+which re-runs the subscription sync after each edit.
+
+## Composer and channel config
+
+Enter sends (Shift+Enter for a newline). Messages go `YOU → TO`, routed via
+SEND-TO when set. The channel-config editor below edits the
+`channel_config` record for the send channel (or viewed channel when SEND-TO
+is empty).
+
+## The data model in one breath
+
+Entries belong to the sequence of their `channel_id` (or `to` when unrouted)
+and are keyed `entry_0, entry_1, …` — keys are never reused (next is always
+max+1). A record relayed from another sequence may declare
+`copy_of: "mailbox-id/entry_n"`. Well-known service channels
+(`server_registry`, `server_agents`, `server_channels`, `server_worker_queue`,
+`outbound_delivery`) are never agents; service queues list their designated
+`monitors` (e.g. `outbound_delivery` → `outbound_delivery_resolver_agent`,
+which resolves address hints and routes items to delivery bridges like
+`mattermost-bridge-agent`).
+
+See also: [AGENT_MAILBOX.md](AGENT_MAILBOX.md).

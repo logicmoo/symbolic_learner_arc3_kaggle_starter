@@ -31,6 +31,9 @@ type CursorInfo = {
   offset: number;
   size: number;
   behind: number;
+  entries_consumed?: number;
+  entry_next?: string;
+  entries_total?: number;
 };
 export type AgentOption = { id: string; [key: string]: unknown };
 
@@ -91,10 +94,21 @@ export function ChatConversation({
   const [configBusy, setConfigBusy] = useState(false);
   const [cursorInfo, setCursorInfo] = useState<CursorInfo | null>(null);
   const [cursorBusy, setCursorBusy] = useState(false);
+  const [subBusy, setSubBusy] = useState(false);
   const [inspect, setInspect] = useState<{ label: string; id: string; kind: "agent" | "channel" } | null>(null);
   const [inspectText, setInspectText] = useState("");
   const [inspectNote, setInspectNote] = useState("");
   const [inspectBusy, setInspectBusy] = useState(false);
+  // Require-match bar: the list looks EVERYWHERE in the log; each depressed
+  // button ANDs its picker's value in as a required match. Only CHANNEL is
+  // required by default (classic channel view).
+  const [requireTo, setRequireTo] = useState(false);
+  const [requireFrom, setRequireFrom] = useState(false);
+  const [requireChannel, setRequireChannel] = useState(true);
+  const [requireSendTo, setRequireSendTo] = useState(false);
+  const [requireText, setRequireText] = useState(false);
+  const [textExpr, setTextExpr] = useState("");
+  const [textQuery, setTextQuery] = useState("");
   const listRef = useRef<HTMLDivElement | null>(null);
   const stickBottomRef = useRef(true);
 
@@ -122,10 +136,21 @@ export function ChatConversation({
     }
   }, []);
 
+  // Debounce the text expression so typing doesn't refetch per keystroke.
+  useEffect(() => {
+    const timer = window.setTimeout(() => setTextQuery(textExpr.trim()), 400);
+    return () => window.clearTimeout(timer);
+  }, [textExpr]);
+
   const fetchMessages = useCallback(async () => {
     try {
-      const query = `channel=${encodeURIComponent(channel)}&limit=300`;
-      const payload = await readJson(await fetch(`/api/mailbox/messages?${query}`));
+      const params = new URLSearchParams({ filter: "1", limit: "300" });
+      if (requireTo && target) params.set("to", target);
+      if (requireFrom && you) params.set("from", you);
+      if (requireChannel && channel) params.set("channel", channel);
+      if (requireSendTo && sendChannel) params.set("channel_id", sendChannel);
+      if (requireText && textQuery) params.set("text", textQuery);
+      const payload = await readJson(await fetch(`/api/mailbox/messages?${params.toString()}`));
       setMessages((payload.messages as ChatMessage[]) || []);
       setReady(true);
       setErrorText("");
@@ -134,7 +159,11 @@ export function ChatConversation({
       setErrorText(message);
       onError?.(message);
     }
-  }, [channel, onError]);
+  }, [
+    channel, you, target, sendChannel,
+    requireTo, requireFrom, requireChannel, requireSendTo, requireText, textQuery,
+    onError,
+  ]);
 
   useEffect(() => {
     fetchDirectory();
@@ -357,6 +386,33 @@ export function ChatConversation({
     [channel, target, onError],
   );
 
+  // Subscription control: set/clear the explicit subscribed|unsubscribed intent
+  // for the TO agent on the viewed channel ("remove" reverts to the default
+  // inference where cursor holders count as subscribed).
+  const setSubscription = useCallback(
+    async (state: "subscribed" | "unsubscribed" | "remove") => {
+      if (!channel || !target) return;
+      setSubBusy(true);
+      try {
+        await readJson(
+          await fetch("/api/mailbox/subscription", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ agent: target, channel, state }),
+          }),
+        );
+        await Promise.all([fetchDirectory(), fetchCursor()]);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        setErrorText(message);
+        onError?.(message);
+      } finally {
+        setSubBusy(false);
+      }
+    },
+    [channel, target, fetchDirectory, fetchCursor, onError],
+  );
+
   // Selects need the current value present as an option even before lists load.
   // Clicking a picker label (YOU/TO/CHANNEL/SEND-TO) opens an editable JSON view
   // of whatever that picker points at; clicking the same label again hides it.
@@ -468,6 +524,10 @@ export function ChatConversation({
   // show how many entries recent traffic holds for each channel.
   const channelNames = new Map(channels.map((c) => [c.id, c.name] as const));
   const channelCounts = new Map(channels.map((c) => [c.id, c.messages] as const));
+  // The TO agent's explicit subscription setting on the viewed channel (if any).
+  const targetRecord = agents.find((a) => a.id === target) as Record<string, unknown> | undefined;
+  const targetSubs = (targetRecord?.subscriptions ?? null) as Record<string, string> | null;
+  const subSetting = targetSubs && channel in targetSubs ? targetSubs[channel] : null;
   const channelLabel = (id: string) => {
     const name = channelNames.get(id);
     const base = name && name !== id ? `${name} · ${id}` : id;
@@ -512,6 +572,63 @@ export function ChatConversation({
               ))}
             </select>
           </label>
+          <div className="chat-require">
+            <span className="chat-require-label" title="The list looks EVERYWHERE in the log; each depressed button requires its picker's value to match (AND).">
+              Require match
+            </span>
+            <button
+              type="button"
+              className={`chat-require-btn${requireTo ? " active" : ""}`}
+              aria-pressed={requireTo}
+              title="Require record.to to equal the TO picker"
+              onClick={() => setRequireTo((v) => !v)}
+            >
+              TO
+            </button>
+            <button
+              type="button"
+              className={`chat-require-btn${requireFrom ? " active" : ""}`}
+              aria-pressed={requireFrom}
+              title="Require record.from to equal the YOU picker"
+              onClick={() => setRequireFrom((v) => !v)}
+            >
+              FROM
+            </button>
+            <button
+              type="button"
+              className={`chat-require-btn${requireChannel ? " active" : ""}`}
+              aria-pressed={requireChannel}
+              title="Require the record to involve the CHANNEL picker (from, to or channel_id)"
+              onClick={() => setRequireChannel((v) => !v)}
+            >
+              CHANNEL
+            </button>
+            <button
+              type="button"
+              className={`chat-require-btn${requireSendTo ? " active" : ""}`}
+              aria-pressed={requireSendTo}
+              title="Require record.channel_id to equal the SEND-TO picker"
+              onClick={() => setRequireSendTo((v) => !v)}
+            >
+              SEND-TO
+            </button>
+            <button
+              type="button"
+              className={`chat-require-btn${requireText ? " active" : ""}`}
+              aria-pressed={requireText}
+              title="Require the text expression below to match (substring, or /regex/)"
+              onClick={() => setRequireText((v) => !v)}
+            >
+              TEXT
+            </button>
+            <input
+              className="chat-require-input"
+              value={textExpr}
+              onChange={(event) => setTextExpr(event.target.value)}
+              placeholder="text expression — substring or /regex/"
+              aria-label="Text expression"
+            />
+          </div>
           <div className="chat-make">
             <input
               value={newEntry}
@@ -532,8 +649,8 @@ export function ChatConversation({
                 Cursor · {target} on {channelLabel(channel)}:{" "}
                 {cursorInfo
                   ? cursorInfo.initialized
-                    ? `${cursorInfo.behind} bytes behind`
-                    : "no cursor set"
+                    ? `${cursorInfo.entry_next ?? "?"} next · ${cursorInfo.entries_consumed ?? 0}/${cursorInfo.entries_total ?? "?"} entries consumed · ${cursorInfo.behind} bytes behind`
+                    : `no cursor set (channel holds ${cursorInfo.entries_total ?? 0} entries)`
                   : "…"}
               </span>
               <button type="button" disabled={cursorBusy} onClick={() => void moveCursor("beginning")}>
@@ -548,6 +665,33 @@ export function ChatConversation({
                 onClick={() => void moveCursor("remove")}
               >
                 ✕ Remove
+              </button>
+            </div>
+          )}
+          {channel && target && (
+            <div className="chat-sub">
+              <span className="chat-sub-label" title="Explicit subscription intent; 'Remove setting' reverts to the default (cursor holders count as subscribed).">
+                Subscription · {target} on {channelLabel(channel)}:{" "}
+                {subSetting ?? (cursorInfo && cursorInfo.initialized ? "(default: subscribed via cursor)" : "(no setting)")}
+              </span>
+              <button
+                type="button"
+                className={subSetting === "subscribed" ? "active" : ""}
+                disabled={subBusy}
+                onClick={() => void setSubscription("subscribed")}
+              >
+                Subscribed
+              </button>
+              <button
+                type="button"
+                className={subSetting === "unsubscribed" ? "active" : ""}
+                disabled={subBusy}
+                onClick={() => void setSubscription("unsubscribed")}
+              >
+                Unsubscribed
+              </button>
+              <button type="button" disabled={subBusy || !subSetting} onClick={() => void setSubscription("remove")}>
+                ✕ Remove setting
               </button>
             </div>
           )}
@@ -579,7 +723,7 @@ export function ChatConversation({
       )}
       <div className="chat-messages" ref={listRef} onScroll={handleScroll}>
         {ready && messages.length === 0 && (
-          <div className="chat-empty">No messages on this channel yet.</div>
+          <div className="chat-empty">No messages match the required filters.</div>
         )}
         {messages.map((message) => (
           <div

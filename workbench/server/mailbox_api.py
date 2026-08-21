@@ -295,6 +295,59 @@ def channel_messages(
     return thread
 
 
+def filtered_messages(
+    root: Path,
+    *,
+    to: str | None = None,
+    sender: str | None = None,
+    channel: str | None = None,
+    channel_id: str | None = None,
+    text: str | None = None,
+    limit: int = 200,
+    names: dict[str, str] | None = None,
+) -> list[dict[str, Any]]:
+    """Search the WHOLE log; every given constraint must match (logical AND).
+
+    Constraints mirror the UI's require-match bar: ``to``/``sender`` exact
+    record fields, ``channel`` involvement (from, to or channel_id),
+    ``channel_id`` the routed send channel only, and ``text`` a
+    case-insensitive substring — or a regular expression when written
+    ``/like-this/``. No constraints means everything, everywhere (audit
+    copies stay hidden).
+    """
+
+    matcher = None
+    if text:
+        if len(text) > 1 and text.startswith("/") and text.endswith("/"):
+            try:
+                matcher = re.compile(text[1:-1], re.IGNORECASE).search
+            except re.error:
+                matcher = None  # broken regex falls back to a plain substring
+        if matcher is None:
+            needle = text.lower()
+            matcher = lambda value: needle in value.lower()  # noqa: E731
+    picked = []
+    for record in read_tail_records(root / "messages.jsonl"):
+        if record.get("audit_of"):
+            continue
+        if to and record.get("to") != to:
+            continue
+        if sender and record.get("from") != sender:
+            continue
+        if channel and channel not in (
+            record.get("to"), record.get("from"), record.get("channel_id")
+        ):
+            continue
+        if channel_id and record.get("channel_id") != channel_id:
+            continue
+        if matcher and not matcher(str(record.get("text") or "")):
+            continue
+        picked.append(_project_record(record, names))
+    if limit and len(picked) > limit:
+        picked = picked[-limit:]
+    return picked
+
+
 def stored_messaging_registry(root: Path, *, max_bytes: int | None = None) -> dict[str, Any]:
     """Return the latest relay-registry snapshot stored on server_registry."""
 
@@ -1201,6 +1254,12 @@ def execute_worker_command(command: dict[str, Any]) -> dict[str, Any]:
         return _groom_channels(apply=bool(command.get("apply")))
     if op == "sync_subscriptions":
         return _sync_subscriptions()
+    if op == "set_subscription":
+        return _set_subscription(
+            str(command.get("agent") or ""),
+            str(command.get("channel") or ""),
+            str(command.get("state") or ""),
+        )
     return {"error": f"unknown op {op!r}"}
 
 
@@ -1996,6 +2055,47 @@ def _sync_subscriptions() -> dict[str, Any]:
     }
 
 
+def _set_subscription(agent: str, channel: str, state: str) -> dict[str, Any]:
+    """Edit one explicit subscription setting, then re-project the registries.
+
+    ``subscribed`` / ``unsubscribed`` write the sticky intent onto the agent's
+    stored ``agent_entry``; ``remove`` clears the explicit setting so the
+    default inference (cursor holders count as subscribed) takes over again.
+    """
+
+    if _mailbox_client is None:
+        return {"error": "mailbox_channels client is not installed"}
+    agent = AGENT_ALIAS_CANONICAL.get(agent, agent)
+    if not agent or not channel:
+        return {"error": "agent and channel must not be empty"}
+    if agent in WELL_KNOWN_CHANNELS:
+        return {"error": f"{agent!r} is a well-known channel, not an agent"}
+    if state not in ("subscribed", "unsubscribed", "remove"):
+        return {"error": "state must be subscribed, unsubscribed or remove"}
+    root = resolve_mailbox_root()
+    entry = dict(stored_entity_entries(root, "agent_entry", AGENTS_CHANNEL).get(agent) or {})
+    subscriptions = dict(entry.get("subscriptions") or {})
+    if state == "remove":
+        subscriptions.pop(channel, None)
+    else:
+        subscriptions[channel] = state
+    entry["id"] = agent
+    entry["subscriptions"] = subscriptions
+    _mailbox_client.send(
+        AGENTS_CHANNEL, "", sender=DEFAULT_USER_AGENT, root=root,
+        message_type="agent_entry", extra_fields={"entry": entry},
+        channel_id=AGENTS_CHANNEL,
+    )
+    sync = _sync_subscriptions()
+    return {
+        "agent": agent,
+        "channel": channel,
+        "state": state,
+        "subscriptions": subscriptions,
+        "sync": sync,
+    }
+
+
 @router.get("/mailbox/resolve")
 def mailbox_resolve(name: str = Query("")) -> dict[str, Any]:
     """The typed resolver: users / workspaces / channels maps keyed by UUID.
@@ -2192,14 +2292,22 @@ def mailbox_entity_save(
 
 
 def _cursor_status(root: Path, channel: str, agent: str) -> dict[str, Any]:
-    """Report where ``agent``'s cursor sits on ``channel`` (byte offsets)."""
+    """Report where ``agent``'s cursor sits on ``channel`` (bytes + entry_N)."""
 
     size = _messages_size(root)
+    brief = _cursor_brief(root, channel, agent, size)
+    # The rewrite-proof position: how many of the channel's entries are behind
+    # the byte offset, i.e. the next unread entry key.
+    ends = _channel_entry_ends(root).get(channel, [])
+    consumed = bisect.bisect_right(ends, brief["offset"])
     return {
         "channel": channel,
         "agent": agent,
         "size": size,
-        **_cursor_brief(root, channel, agent, size),
+        **brief,
+        "entries_consumed": consumed,
+        "entry_next": f"entry_{consumed}",
+        "entries_total": len(ends),
     }
 
 
@@ -2325,16 +2433,54 @@ def mailbox_cursor_remove(channel: str = Query(...), agent: str = Query(...)) ->
     return status
 
 
+@router.post("/mailbox/subscription")
+def mailbox_subscription(
+    agent: str = Body(..., embed=True),
+    channel: str = Body(..., embed=True),
+    state: str = Body(..., embed=True),
+) -> dict[str, Any]:
+    """Set or clear one explicit subscription (also worker op set_subscription)."""
+
+    result = _set_subscription(
+        agent.strip() if isinstance(agent, str) else "",
+        channel.strip() if isinstance(channel, str) else "",
+        state.strip().lower() if isinstance(state, str) else "",
+    )
+    if "error" in result:
+        code = 503 if "not installed" in result["error"] else 400
+        raise HTTPException(status_code=code, detail=result["error"])
+    return result
+
+
 @router.get("/mailbox/messages")
 def mailbox_messages(
     user: str = Query(DEFAULT_USER_AGENT),
     peer: str = Query(DEFAULT_PEER_AGENT),
     channel: str | None = None,
+    to: str | None = Query(None),
+    sender: str | None = Query(None, alias="from"),
+    channel_id: str | None = Query(None),
+    text: str | None = Query(None),
+    require: bool = Query(False, alias="filter"),
     limit: int = Query(200, ge=1, le=2000),
 ) -> dict[str, Any]:
     root = resolve_mailbox_root()
     names = identifier_names(root)
-    if channel:
+
+    # Direct (non-HTTP) callers leave FastAPI's Query sentinels in place;
+    # treat anything that is not a real value as unset.
+    def _opt(value: Any) -> str | None:
+        return value if isinstance(value, str) and value else None
+
+    to, sender, channel_id, text = _opt(to), _opt(sender), _opt(channel_id), _opt(text)
+    require = require is True
+    if require or to or sender or channel_id or text:
+        # Require-match mode: look everywhere, then AND the given constraints.
+        messages = filtered_messages(
+            root, to=to, sender=sender, channel=channel,
+            channel_id=channel_id, text=text, limit=limit, names=names,
+        )
+    elif channel:
         messages = channel_messages(root, channel, limit=limit, names=names)
     else:
         messages = thread_messages(root, user, peer, limit=limit, names=names)
@@ -2343,6 +2489,10 @@ def mailbox_messages(
         "user": user,
         "peer": peer,
         "channel": channel,
+        "filters": {
+            "to": to, "from": sender, "channel": channel,
+            "channelId": channel_id, "text": text,
+        } if (require or to or sender or channel_id or text) else None,
         "mailboxDir": str(root),
     }
 

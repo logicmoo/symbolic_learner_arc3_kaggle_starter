@@ -1613,3 +1613,97 @@ def test_outbound_delivery_is_a_monitored_queue_not_an_agent(
     # The queue never masquerades as an agent, even when seen as a sender.
     agents = {a["id"] for a in mailbox_api.list_agents(tmp_path)}
     assert mailbox_api.OUTBOUND_DELIVERY_CHANNEL not in agents
+
+
+def test_filtered_messages_and_require_match_endpoint(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setenv("AGENT_MAILBOX_DIR", str(tmp_path))
+    _write_jsonl(
+        tmp_path / "messages.jsonl",
+        [
+            {"id": "r0", "from": "a", "to": "b", "text": "alpha one"},
+            {"id": "r1", "from": "b", "to": "a", "text": "beta two"},
+            {"id": "r2", "from": "a", "to": "room-1", "channel_id": "room-1",
+             "text": "gamma three"},
+            {"id": "r3", "from": "a", "to": "b", "text": "alpha one",
+             "audit_of": "r0"},
+        ],
+    )
+
+    def ids(**kwargs: object) -> list[str]:
+        return [m["id"] for m in mailbox_api.filtered_messages(tmp_path, **kwargs)]
+
+    assert ids() == ["r0", "r1", "r2"]                 # everywhere, audit hidden
+    assert ids(to="b") == ["r0"]
+    assert ids(sender="a") == ["r0", "r2"]
+    assert ids(channel="room-1") == ["r2"]             # involvement
+    assert ids(channel_id="room-1") == ["r2"]          # routed send channel only
+    assert ids(text="ALPHA") == ["r0"]                 # case-insensitive substring
+    assert ids(text="/^(beta|gamma)/") == ["r1", "r2"]  # /regex/ form
+    assert ids(sender="a", text="three") == ["r2"]     # constraints AND together
+    assert ids(limit=2) == ["r1", "r2"]
+
+    payload = mailbox_api.mailbox_messages(
+        user="u", peer="p", channel=None, to="b", sender=None,
+        channel_id=None, text=None, require=False, limit=200,
+    )
+    assert [m["id"] for m in payload["messages"]] == ["r0"]
+    assert payload["filters"] == {
+        "to": "b", "from": None, "channel": None, "channelId": None, "text": None}
+
+
+def test_set_subscription_states_and_remove(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setenv("AGENT_MAILBOX_DIR", str(tmp_path))
+    fake = _FakeRelay()
+    monkeypatch.setattr(mailbox_api, "_mailbox_client", fake)
+    (tmp_path / "messages.jsonl").write_text("", encoding="utf-8")
+    bridge = mailbox_api.MATTERMOST_BRIDGE_AGENT
+
+    # Aliased agent folds; explicit subscribe records intent and syncs.
+    result = mailbox_api._set_subscription("mattermost", "room-9", "subscribed")
+    assert result["agent"] == bridge
+    assert result["subscriptions"] == {"room-9": "subscribed"}
+    assert result["sync"]["agents"] >= 1
+
+    result = mailbox_api._set_subscription(bridge, "room-9", "unsubscribed")
+    assert result["subscriptions"] == {"room-9": "unsubscribed"}
+
+    # Remove clears the explicit setting (inference may still re-subscribe
+    # cursor holders at sync time).
+    result = mailbox_api._set_subscription(bridge, "room-9", "remove")
+    assert result["subscriptions"] == {}
+
+    assert "error" in mailbox_api._set_subscription(bridge, "room-9", "bogus")
+    assert "error" in mailbox_api._set_subscription("server_registry", "room-9", "subscribed")
+    assert "error" in mailbox_api._set_subscription("", "room-9", "subscribed")
+
+
+def test_cursor_status_reports_entry_positions(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setenv("AGENT_MAILBOX_DIR", str(tmp_path))
+    fake = _FakeRelay()
+    monkeypatch.setattr(mailbox_api, "_mailbox_client", fake)
+    _write_jsonl(
+        tmp_path / "messages.jsonl",
+        [
+            {"id": "c0", "from": "x", "to": "room-1", "channel_id": "room-1", "text": "one"},
+            {"id": "c1", "from": "x", "to": "room-1", "channel_id": "room-1", "text": "two"},
+            {"id": "c2", "from": "x", "to": "room-1", "channel_id": "room-1", "text": "three"},
+        ],
+    )
+    ends = _line_ends(tmp_path / "messages.jsonl")
+    fake._write_cursor(fake._cursor_path(tmp_path, "room-1:agent-a"), ends[1])
+
+    status = mailbox_api._cursor_status(tmp_path, "room-1", "agent-a")
+
+    assert status["entries_consumed"] == 2
+    assert status["entry_next"] == "entry_2"
+    assert status["entries_total"] == 3
+    # An uninitialized cursor still reports how many entries the channel holds.
+    empty = mailbox_api._cursor_status(tmp_path, "room-1", "agent-b")
+    assert empty["initialized"] is False
+    assert empty["entries_total"] == 3
