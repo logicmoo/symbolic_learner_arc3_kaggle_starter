@@ -58,6 +58,12 @@ def test_b1_b2_component_has_pipeline_contract() -> None:
     assert "remove_smallest_object" in source
     assert "regenerated_identities_from_many_objects" in source
     assert "REMOVAL_DISCOVERY_PASS_PROMPT" in source
+    # LOOP MODE prompts are the base extraction prompt plus an appended loop snippet.
+    assert "const ITERATED_LOOP_PROMPT = [" in source
+    assert "const SIMULATED_LOOP_PROMPT = [" in source
+    assert "const EXTERNAL_LOOP_PROMPT = [" in source
+    assert "const SINGLE_PASS_LOOP_PROMPT = [" in source
+    assert "const REMOVE_SMALLEST_OBJECT_ITERATED_LOOP_PROMPT = `${REMOVAL_DISCOVERY_PASS_PROMPT}" in source
     assert "REGENERATED_IDENTITIES_PROMPT" in source
     assert "isB1B2PipelineRoute" in source
     assert "return isB1B2PipelineRoute(routeView) ? 6 : 3;" in source

@@ -68,7 +68,7 @@ type ParsedPrologPayload = {
 
 type PromptExitValue = "llm_error" | "next_iteration" | "loop_complete" | "loop_overbudgeted" | "unran";
 type RunnerRunMode = "primary" | "loop" | "until_exit";
-type RunnerLoopMode = "python" | "simulate" | "loop_model";
+type RunnerLoopMode = "python" | "simulate" | "loop_model" | "single";
 
 type IdentityCandidate = {
   id: string;
@@ -362,29 +362,25 @@ const REMOVAL_DISCOVERY_PASS_PROMPT = [
   "BACKGROUND FILL: when the object is lifted out, its bounding-box region is automatically inpainted with the surrounding background (for example grass under a soccer player) so image_without_object stays clean — you do not need to ask for this.",
   "OVERLAP REDRAW: if the extracted object was overlapping or occluding another object, redrawing the vacated region reconstructs the hidden part of that underlying object — whenever you redraw part of an overlapping object, append an English note to that overlapped object's identity notes list saying which part was redrawn.",
   "META NOTES: the English note that the vacated region was filled with background (added grass) is appended to the extracted object's identity notes list; preserve every note already in an identity's notes list.",
-  "LOOP RESUBMIT (pipeline-driven): the RUNNER — not you — performs resubmission across separate calls. Do exactly ONE extraction this call and return; do NOT loop, resubmit to yourself, or extract more than one object. obj_<ID>.png is a saved output only and is NEVER resubmitted. When you signal exit_value=next_iteration, the runner makes a fresh call resubmitting only its two scene images (the new original just consumed and original_with_<n>_removed.png, the reduced scene) so the next extraction runs on the reduced scene. ONLY if you are explicitly asked to SIMULATE the resubmission pipeline should you iterate the whole removal sequence within a single response.",
-  "Set exit_value=next_iteration when one valid leaf object was extracted, loop_complete when no valid removable leaf object remains, llm_error on failure.",
 ].join("\n");
-const REMOVAL_LOOP_STEP_PROMPT = [
-  "remove_smallest_object_loop_step:",
-  "You are the LOOP model for iterative object removal. You run once per iteration on the CURRENT reduced scene (the two scene images the runner resubmits) — never on obj_<ID>.png.",
-  "Extract exactly ONE more leaf object that is NOT inside another (top-level, non-container), reusing the exact id the supplied document already assigns it.",
-  "Return current_identities as a SINGLE entry (id + type + sub_type + bounding_box) so the pipeline can crop it; emit obj_<ID>.png and the reduced original_with_<n>_removed.png; mutate the received document to tag that object extracted; append the English fill note to that identity's notes list.",
-  "EXIT CODE DECIDES RESUBMISSION: set exit_value=next_iteration to have the runner resubmit only its two scene images (the new original and original_with_<n>_removed.png) for another step; loop_complete when no removable leaf remains; llm_error on failure. obj_<ID>.png is never resubmitted.",
+// Loop-mode instruction snippets appended to the base remove_smallest_object prompt above. Each
+// LOOP MODE picks exactly one; the base stays identical so only the loop behavior changes.
+const SINGLE_PASS_LOOP_PROMPT = [
+  "SINGLE PASS: extract exactly ONE leaf object this call and return. Do not loop and no exit_value is needed — the runner will NOT resubmit (the same one-pass style as FIRST_GUESSER).",
 ].join("\n");
-const REMOVAL_SIMULATED_PROMPT = [
-  "remove_smallest_object_simulated:",
-  "Simulate the ENTIRE removal loop yourself in this single response — the runner will NOT resubmit anything to you.",
-  "Repeatedly extract one leaf object that is NOT inside another from the current scene, reusing each object's existing id, until no removable leaf remains (or the requested pass count is reached).",
-  "For each pass k output: the extracted object's id, its obj_<ID>.png, and the reduced original_with_<k>_removed.png; carry the reduced scene forward as the input to the next simulated pass.",
-  "Return the full ordered sequence of passes plus the final mutated document, with each extracted object tagged extracted and the English fill note appended to its identity notes list.",
+const SIMULATED_LOOP_PROMPT = [
+  "SIMULATED LOOP: pretend you are the loop and simulate the ENTIRE removal sequence yourself in this single response — the runner will NOT resubmit. Repeatedly extract one leaf object (not inside another) from the current scene, reusing each object's existing id, until no removable leaf remains (or the requested pass count). For each pass k emit obj_<ID>.png and the reduced original_with_<k>_removed.png, carry the reduced scene forward, and return the full ordered sequence plus the final mutated document.",
 ].join("\n");
-const REMOVAL_PYTHON_PROMPT = [
-  "remove_smallest_object_python:",
-  "Contract for the Python CV removal loop (declared-only; the execution backend is not wired yet).",
-  "For each leaf object that is not inside another: mask its bounding box, inpaint the vacated region from the surrounding background, write obj_<ID>.png (the extracted object) and original_with_<n>_removed.png (the reduced scene), and tag the object extracted in the document.",
-  "The Python driver owns the loop and resubmission; obj_<ID>.png is a saved artifact and is never resubmitted.",
+const ITERATED_LOOP_PROMPT = [
+  "ITERATED LOOP (runner-driven): do exactly ONE extraction this call on the current reduced scene, then set exit_value. Your exit_value drives the runner: exit_value=next_iteration makes the runner put the two scene images (the new original and original_with_<n>_removed.png) back in and call you again for the next object; loop_complete when no removable leaf remains; llm_error on failure. obj_<ID>.png is a saved output and is NEVER resubmitted.",
 ].join("\n");
+const EXTERNAL_LOOP_PROMPT = [
+  "EXTERNAL LOOP: do exactly ONE extraction this call. A separate help/validator model (FIRST_GUESSER_LOOP_VALIDATOR_PROMPT) then reviews the result and decides whether the runner resubmits the two scene images for another pass or stops. Set exit_value as your own signal, but the external validator's decision governs continuation. obj_<ID>.png is never resubmitted.",
+].join("\n");
+const REMOVE_SMALLEST_OBJECT_SINGLE_PROMPT = `${REMOVAL_DISCOVERY_PASS_PROMPT}\n\n${SINGLE_PASS_LOOP_PROMPT}`;
+const REMOVE_SMALLEST_OBJECT_SIMULATED_LOOP_PROMPT = `${REMOVAL_DISCOVERY_PASS_PROMPT}\n\n${SIMULATED_LOOP_PROMPT}`;
+const REMOVE_SMALLEST_OBJECT_ITERATED_LOOP_PROMPT = `${REMOVAL_DISCOVERY_PASS_PROMPT}\n\n${ITERATED_LOOP_PROMPT}`;
+const REMOVE_SMALLEST_OBJECT_EXTERNAL_LOOP_PROMPT = `${REMOVAL_DISCOVERY_PASS_PROMPT}\n\n${EXTERNAL_LOOP_PROMPT}`;
 const REGENERATED_IDENTITIES_PROMPT = [
   "regenerated_identities_from_many_objects:",
   "Treat each many_objects_n image as a real source of object candidates, then merge all recovered entities into regenerated_identities.",
@@ -439,10 +435,10 @@ const B1B2_IMPLEMENTATION_REGISTRY: ImplementationDefinition[] = [
   // --- prompt implementations (executable today) ---
   { operation: "arc3.first_pass_object_guesses", kind: "prompt", name: "generate_first_pass_object_guesses", text: FIRST_PASS_OBJECT_GUESSES_PROMPT, inputs: ["image", "file_png"], outputs: ["first_identities", "object_identities", "file_json"], tags: ["guess", "first_pass", "single_image"] },
   { operation: "arc3.extract_prolog_and_english", kind: "prompt", name: "generate_prolog_and_english", text: COMBINED_PROMPT, inputs: ["image", "file_png", "object_identities"], outputs: ["current_identities", "object_identities", "objects_pl", "file_pl", "file_eng", "file_json"], tags: ["extraction", "prolog", "english"] },
-  { operation: "arc3.remove_object", kind: "prompt", name: "remove_smallest_object_looped", text: REMOVAL_DISCOVERY_PASS_PROMPT, inputs: ["image", "file_png", "object_identities", "current_identities"], outputs: ["removal_images", "file_png", "current_identities"], tags: ["removal", "loop_model"] },
-  { operation: "arc3.remove_object", kind: "prompt", name: "remove_smallest_object_loop_step", text: REMOVAL_LOOP_STEP_PROMPT, inputs: ["image", "file_png", "current_identities"], outputs: ["removal_images", "file_png", "current_identities"], tags: ["removal", "loop_model", "loop"] },
-  { operation: "arc3.remove_object", kind: "prompt", name: "remove_smallest_object_simulated", text: REMOVAL_SIMULATED_PROMPT, inputs: ["image", "file_png", "current_identities"], outputs: ["removal_images", "file_png", "current_identities"], tags: ["removal", "simulate"] },
-  { operation: "arc3.remove_object", kind: "prompt", name: "remove_smallest_object_python", text: REMOVAL_PYTHON_PROMPT, inputs: ["image", "object_identities"], outputs: ["removal_images", "file_png"], tags: ["removal", "python"] },
+  { operation: "arc3.remove_object", kind: "prompt", name: "remove_smallest_object_external_loop", text: REMOVE_SMALLEST_OBJECT_EXTERNAL_LOOP_PROMPT, inputs: ["image", "file_png", "object_identities", "current_identities"], outputs: ["removal_images", "file_png", "current_identities"], tags: ["removal", "loop_model", "external"] },
+  { operation: "arc3.remove_object", kind: "prompt", name: "remove_smallest_object_iterated_loop", text: REMOVE_SMALLEST_OBJECT_ITERATED_LOOP_PROMPT, inputs: ["image", "file_png", "current_identities"], outputs: ["removal_images", "file_png", "current_identities"], tags: ["removal", "iterated", "loop"] },
+  { operation: "arc3.remove_object", kind: "prompt", name: "remove_smallest_object_simulated_loop", text: REMOVE_SMALLEST_OBJECT_SIMULATED_LOOP_PROMPT, inputs: ["image", "file_png", "current_identities"], outputs: ["removal_images", "file_png", "current_identities"], tags: ["removal", "simulate"] },
+  { operation: "arc3.remove_object", kind: "prompt", name: "remove_smallest_object_single", text: REMOVE_SMALLEST_OBJECT_SINGLE_PROMPT, inputs: ["image", "file_png", "object_identities"], outputs: ["removal_images", "file_png"], tags: ["removal", "single"] },
   { operation: "arc3.merge_identities", kind: "prompt", name: "merge_identities", text: MERGE_IDENTITIES_PROMPT, inputs: ["object_identities", "file_json"], outputs: ["current_identities", "object_identities", "file_json"], tags: ["merge"] },
   { operation: "arc3.regenerate_identities", kind: "prompt", name: "regenerated_identities_from_many_objects", text: REGENERATED_IDENTITIES_PROMPT, inputs: ["removal_images", "file_png", "object_identities"], outputs: ["current_identities", "regenerated_identities", "object_identities", "file_json"], tags: ["regenerated"] },
   { operation: "arc3.extract_prolog_and_english", kind: "prompt", name: "legacy_root_getter", text: LEGACY_ROOT_GETTER_PROMPT, inputs: ["image", "file_png", "object_identities"], outputs: ["current_identities", "object_identities", "file_pl", "file_eng", "file_json"], tags: ["extraction", "legacy"] },
@@ -544,10 +540,10 @@ const B1B2_ALL_PRIMARY_PROMPT_NAMES = [
   ...B1B2_RUNNER_NAMES.map((name) => `${name}_RUNNER_PROMPT`),
   "generate_first_pass_object_guesses",
   "generate_prolog_and_english",
-  "remove_smallest_object_looped",
-  "remove_smallest_object_loop_step",
-  "remove_smallest_object_simulated",
-  "remove_smallest_object_python",
+  "remove_smallest_object_external_loop",
+  "remove_smallest_object_iterated_loop",
+  "remove_smallest_object_simulated_loop",
+  "remove_smallest_object_single",
   "merge_identities",
   "regenerated_identities_from_many_objects",
   "legacy_root_getter",
@@ -2205,9 +2201,10 @@ function validatorPromptName(routeView: string, stackKey: StackKey, runnerIndex:
 }
 
 function removalPromptForLoopMode(mode: RunnerLoopMode): { name: string; text: string } {
-  if (mode === "simulate") return { name: "remove_smallest_object_simulated", text: REMOVAL_SIMULATED_PROMPT };
-  if (mode === "python") return { name: "remove_smallest_object_python", text: REMOVAL_PYTHON_PROMPT };
-  return { name: "remove_smallest_object_looped", text: REMOVAL_DISCOVERY_PASS_PROMPT };
+  if (mode === "simulate") return { name: "remove_smallest_object_simulated_loop", text: REMOVE_SMALLEST_OBJECT_SIMULATED_LOOP_PROMPT };
+  if (mode === "python") return { name: "remove_smallest_object_iterated_loop", text: REMOVE_SMALLEST_OBJECT_ITERATED_LOOP_PROMPT };
+  if (mode === "single") return { name: "remove_smallest_object_single", text: REMOVE_SMALLEST_OBJECT_SINGLE_PROMPT };
+  return { name: "remove_smallest_object_external_loop", text: REMOVE_SMALLEST_OBJECT_EXTERNAL_LOOP_PROMPT };
 }
 
 function validatorPromptDisplayName(routeView: string, stackKey: StackKey, runnerIndex: number, name: string): string {
@@ -2655,7 +2652,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
           validatorPromptText: runner.validatorPromptText || DEFAULT_VALIDATOR_PROMPT,
           validatorPromptName: String((runner as unknown as Record<string, unknown>).validatorPromptName || "").trim() || validatorPromptName(pageDefinition.routeView, stack.key, runnerIndex),
           promptMode: String((runner as unknown as Record<string, unknown>).promptMode || "").trim() === "validator" ? "validator" : "loop",
-          loopMode: (["python", "simulate", "loop_model"] as string[]).includes(String((runner as unknown as Record<string, unknown>).loopMode || ""))
+          loopMode: (["python", "simulate", "loop_model", "single"] as string[]).includes(String((runner as unknown as Record<string, unknown>).loopMode || ""))
             ? (runner as unknown as Record<string, unknown>).loopMode as RunnerLoopMode
             : "loop_model",
           autoLoopMaxIterations: Number.isFinite(runner.autoLoopMaxIterations) && runner.autoLoopMaxIterations > 0
@@ -3321,7 +3318,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
     const autoLoop = runMode !== "primary";
     const untilExit = runMode === "until_exit";
     const loopMode: RunnerLoopMode = runner.loopMode || "loop_model";
-    const pythonLoop = loopMode === "python";
+    const singleLoop = loopMode === "single";
     const simulateLoop = promptDrivenIteration && loopMode === "simulate";
     const effectiveModelId = resolveRunnerModelId(stack, runner);
     const effectiveValidatorModelId = resolveValidatorModelId(stack, runner);
@@ -3398,13 +3395,6 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
       }));
       return;
     }
-    if (isB1B2PipelineRoute(pageDefinition.routeView) && pythonLoop) {
-      setRunnerState(stackIndex, runnerIndex, (previous) => ({
-        ...previous,
-        error: "LOOP MODE 'python' is declared-only; the Python looping backend is not wired yet. Switch LOOP MODE to loop_model or simulate to run. exit_value=unran.",
-      }));
-      return;
-    }
     if (!effectiveModelId) {
       setRunnerState(stackIndex, runnerIndex, (previous) => ({ ...previous, error: "Select an enabled model first. exit_value=unran." }));
       return;
@@ -3464,7 +3454,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
       let removalWorkingName = imageSourceAfter?.name || "original";
       let removalWorkingBeforeUrl = beforeUrl;
       let removalWorkingBeforeName = effectiveImageSourceBefore?.name || "original";
-      const totalPasses = (autoLoop && !simulateLoop) ? Math.max(1, Math.floor(runner.autoLoopMaxIterations || AUTO_GAP_MAX_PASSES)) : 1;
+      const totalPasses = (autoLoop && !simulateLoop && !singleLoop) ? Math.max(1, Math.floor(runner.autoLoopMaxIterations || AUTO_GAP_MAX_PASSES)) : 1;
       const maxLoopMs = autoLoop ? Math.max(10000, Math.floor((runner.autoLoopMaxSeconds || defaultTimeoutSeconds) * 1000)) : 0;
       const invocationTimeoutSeconds = Math.max(10, Math.floor(runner.maxPrimarySeconds || defaultTimeoutSeconds));
       const loopStartMs = Date.now();
@@ -3524,7 +3514,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
           const isRepairAttempt = attempt > 0;
           const passPrompt = isGapPass
             ? (removalLoopRunner
-              ? (loopMode === "loop_model" ? REMOVAL_LOOP_STEP_PROMPT : runner.promptText)
+              ? runner.promptText
               : guessRole
               ? runner.promptText
               : [runner.promptText, GAP_DISCOVERY_PASS_PROMPT].join("\n\n"))
@@ -5586,7 +5576,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                         </span>
                       </div>
                       <div className="arc3-prolog-stack-actions">
-                        <label className="arc3-b1b2-loopmode" style={{ display: "flex", alignItems: "center", gap: "4px", marginRight: "8px" }} title="How the resubmission loop runs: loop_model (exit-code driven resubmission across calls), simulate (the LLM loops inside one call), or python (declared-only backend, not wired yet).">
+                        <label className="arc3-b1b2-loopmode" style={{ display: "flex", alignItems: "center", gap: "4px", marginRight: "8px" }} title="How the removal loop runs: loop_model (a separate validator/help model decides when to stop), simulate (the LLM pretends to loop inside one call), python (iterated — the model's exit_value re-feeds the two scene images and calls again), or single (one pass, no exit_value, like the first runner).">
                           <span style={{ font: "600 7px ui-monospace,monospace", letterSpacing: ".08em", color: "#69818e" }}>LOOP MODE</span>
                           <select
                             value={runner.loopMode}
@@ -5600,9 +5590,10 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
                               });
                             }}
                           >
-                            <option value="loop_model">loop_model</option>
-                            <option value="simulate">simulate</option>
-                            <option value="python">python (declared-only)</option>
+                            <option value="loop_model">loop_model (external validator decides)</option>
+                            <option value="simulate">simulate (LLM loops in one call)</option>
+                            <option value="python">python (iterated: exit code re-feeds)</option>
+                            <option value="single">single (one pass, no exit code)</option>
                           </select>
                         </label>
                         <button
