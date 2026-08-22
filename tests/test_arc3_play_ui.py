@@ -246,6 +246,20 @@ def test_play_page_recordings_section_can_be_refreshed() -> None:
     assert ".arc3-play-section-actions" in styles
 
 
+def test_play_page_has_movelist_recording_cross_import_actions() -> None:
+    source = COMPONENT.read_text(encoding="utf-8")
+    # RECORDINGS panel: full import + materializing Recordings from move-lists.
+    assert "importAllImportables(sortedRecordings)" in source
+    assert "importAllMovelistsAsRecordings" in source
+    assert "/api/arc3-play/recordings/materialize-movelists" in source
+    # MOVE-LISTS panel: lightweight (move-list only) import + deriving
+    # move-lists from existing Recordings.
+    assert "importAllImportablesAsMovelists(sortedRecordings)" in source
+    assert "/api/arc3-play/import-movelist" in source
+    assert "importAllRecordingsMoves" in source
+    assert "/api/arc3-play/recordings/import-movelists" in source
+
+
 def test_play_page_recordings_path_can_be_set_from_the_right_panel() -> None:
     source = COMPONENT.read_text(encoding="utf-8")
     assert "RECORDINGS PATH" in source

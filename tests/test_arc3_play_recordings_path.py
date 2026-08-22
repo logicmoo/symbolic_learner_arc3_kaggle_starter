@@ -270,3 +270,62 @@ def test_sort_recordings_by_size_is_idempotent_after_new_imports_land(tmp_path: 
 def test_strip_size_suffix_undoes_a_previous_size_rank_rename() -> None:
     assert arc3_play_api._strip_size_suffix("my_import_size_0002") == "my_import"
     assert arc3_play_api._strip_size_suffix("saved_001") == "saved_001"
+
+
+def test_savepoint_from_recording_derives_a_move_list_from_a_recording_json(tmp_path: Path) -> None:
+    root = tmp_path
+    game_root = root / "data" / "Recordings" / "ar25"
+    entry = game_root / "saved_001"
+    entry.mkdir(parents=True)
+    manifest = {
+        "kind": "arc3_play_recording",
+        "game_id": "ar25",
+        "level": "2",
+        "moves": [
+            {"action": "ACTION1", "data": {}, "directory": "data/Recordings/ar25/saved_001/0", "level": "1", "state": "NOT_FINISHED"},
+            {"action": "ACTION2", "data": {"x": 3, "y": 4}, "directory": "data/Recordings/ar25/saved_001/1", "level": "2", "state": "WIN"},
+        ],
+    }
+    (entry / "recording.json").write_text(json.dumps(manifest), encoding="utf-8")
+
+    savepoint = arc3_play_api._savepoint_from_recording(root, "ar25", entry)
+
+    assert savepoint is not None
+    assert savepoint["level_directory"] == "data/Recordings/ar25/saved_001"
+    assert savepoint["state"] == "WIN"
+    assert savepoint["move_index"] == 1
+    assert savepoint["replay_log"] == [
+        {"op": "step", "action": "ACTION1", "data": {}, "directory": "data/Recordings/ar25/saved_001/0", "level": "1"},
+        {"op": "step", "action": "ACTION2", "data": {"x": 3, "y": 4}, "directory": "data/Recordings/ar25/saved_001/1", "level": "2"},
+    ]
+
+
+def test_savepoint_from_recording_returns_none_for_a_manifest_with_no_moves(tmp_path: Path) -> None:
+    root = tmp_path
+    game_root = root / "data" / "Recordings" / "ar25"
+    entry = game_root / "saved_001"
+    entry.mkdir(parents=True)
+    (entry / "recording.json").write_text(json.dumps({"moves": []}), encoding="utf-8")
+
+    assert arc3_play_api._savepoint_from_recording(root, "ar25", entry) is None
+
+
+def test_import_movelists_from_recordings_skips_dirs_that_already_have_one(tmp_path: Path) -> None:
+    root = tmp_path
+    game_root = root / "data" / "Recordings" / "ar25"
+    entry = game_root / "saved_001"
+    entry.mkdir(parents=True)
+    manifest = {"moves": [{"action": "ACTION1", "data": {}, "directory": "x/0", "level": "1", "state": "NOT_FINISHED"}]}
+    (entry / "recording.json").write_text(json.dumps(manifest), encoding="utf-8")
+
+    created_first = arc3_play_api._import_movelists_from_recordings_in(root, game_root)
+    assert created_first == 1
+    savepoints = json.loads((game_root / "savepoints.json").read_text(encoding="utf-8"))
+    assert len(savepoints) == 1
+    assert savepoints[0]["level_directory"] == "data/Recordings/ar25/saved_001"
+
+    # Re-running doesn't create a duplicate for the same Recording dir.
+    created_second = arc3_play_api._import_movelists_from_recordings_in(root, game_root)
+    assert created_second == 0
+    savepoints_after = json.loads((game_root / "savepoints.json").read_text(encoding="utf-8"))
+    assert len(savepoints_after) == 1

@@ -729,6 +729,51 @@ export function Arc3PlayPage({
       await loadSavepoints();
     });
 
+  const importAllImportablesAsMovelists = (list: PlayRecording[]) =>
+    perform(async () => {
+      setImportNote("");
+      let imported = 0;
+      let failed = 0;
+      for (const recording of list) {
+        try {
+          await request("/api/arc3-play/import-movelist", {
+            method: "POST",
+            body: JSON.stringify({ workspaceId, path: recording.path }),
+          });
+          imported += 1;
+        } catch {
+          failed += 1;
+        }
+      }
+      setImportNote(
+        `imported ${imported} of ${list.length} move-list${list.length === 1 ? "" : "s"} (no images/state written)` +
+          (failed ? ` (${failed} failed)` : ""),
+      );
+      await loadSavepoints();
+    });
+
+  const importAllRecordingsMoves = () =>
+    perform(async () => {
+      const gameParam = filterGameId ? `&gameId=${encodeURIComponent(filterGameId)}` : "";
+      const payload = await request(
+        `/api/arc3-play/recordings/import-movelists?workspaceId=${encodeURIComponent(workspaceId)}${gameParam}`,
+        { method: "POST" },
+      );
+      setImportNote(`created ${payload.created ?? 0} move-list(s) from existing Recordings`);
+      await loadSavepoints();
+    });
+
+  const importAllMovelistsAsRecordings = () =>
+    perform(async () => {
+      const gameParam = filterGameId ? `&gameId=${encodeURIComponent(filterGameId)}` : "";
+      const payload = await request(
+        `/api/arc3-play/recordings/materialize-movelists?workspaceId=${encodeURIComponent(workspaceId)}${gameParam}`,
+        { method: "POST" },
+      );
+      setImportNote(`materialized ${payload.count ?? 0} Recording(s) from move-lists`);
+      await loadSavepoints();
+    });
+
   const endSession = () =>
     perform(async () => {
       if (!session) return;
@@ -1226,6 +1271,22 @@ export function Arc3PlayPage({
               </button>
               <button
                 className="arc3-play-rescan"
+                disabled={busy || !sortedRecordings.length}
+                title="Import every IMPORTABLE recording currently listed below into full Recordings + move-lists (respects Filter)"
+                onClick={() => void importAllImportables(sortedRecordings)}
+              >
+                Import All Importables
+              </button>
+              <button
+                className="arc3-play-rescan"
+                disabled={busy}
+                title="For every MOVE-LIST whose Recording doesn't exist on disk yet, replay it into a fresh saved_<NNN> Recording (respects Filter)"
+                onClick={() => void importAllMovelistsAsRecordings()}
+              >
+                Import All Movelists
+              </button>
+              <button
+                className="arc3-play-rescan"
                 disabled={busy}
                 title="Rank imported recording dirs on disk by size (biggest = _size_0001); respects Filter. Never touches live-play saved_<NNN> dirs."
                 onClick={() => void sortRecordingsBySize()}
@@ -1446,6 +1507,22 @@ export function Arc3PlayPage({
               MOVE-LISTS (fork a session to add one)
               <button className="arc3-play-collapse-toggle" onClick={() => toggleSection("restartPoints")}>
                 {collapsedSections.restartPoints ? "▸ Expand" : "▾ Collapse"}
+              </button>
+              <button
+                className="arc3-play-rescan"
+                disabled={busy || !sortedRecordings.length}
+                title="Import every IMPORTABLE recording currently listed below into move-lists only -- skips the expensive per-move image/state writes (respects Filter)"
+                onClick={() => void importAllImportablesAsMovelists(sortedRecordings)}
+              >
+                Import All Importables
+              </button>
+              <button
+                className="arc3-play-rescan"
+                disabled={busy}
+                title="For every Recording directory without a move-list yet, derive one from its own recorded moves (respects Filter)"
+                onClick={() => void importAllRecordingsMoves()}
+              >
+                Import All Recordings' Moves
               </button>
               <button
                 className="arc3-play-rescan"

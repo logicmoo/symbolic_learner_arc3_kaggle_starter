@@ -1093,6 +1093,127 @@ def _purge_prior_import(root: Path, game_dir: str, rel_path: str) -> int:
     return removed
 
 
+def _purge_prior_movelist_import(root: Path, game_dir: str, rel_path: str) -> int:
+    """Movelist-only counterpart to _purge_prior_import: since this mode
+    never writes Recording directories, only savepoints.json needs
+    de-duplicating for a re-import of the same source."""
+    removed = 0
+    for game_root in _game_dirs_for(root, game_dir):
+        savepoints_path = game_root / "savepoints.json"
+        with _savepoints_lock:
+            entries = _load_savepoints(savepoints_path)
+            kept = [entry for entry in entries if entry.get("imported_from") != rel_path]
+            removed += len(entries) - len(kept)
+            if len(kept) != len(entries):
+                savepoints_path.write_text(
+                    json.dumps(kept, indent=2, ensure_ascii=False),
+                    encoding="utf-8",
+                )
+    return removed
+
+
+def _import_recording_as_movelist(root: Path, rel_path: str, label: str | None) -> dict[str, Any]:
+    """Lightweight counterpart to _import_recording: parse the same
+    human-JSONL source into a MOVE-LIST (savepoint) only -- no per-move
+    image.png/state.json, no Recording directories at all. Lets a big
+    recording be scanned into a resumable move-list cheaply; the actual
+    Recording (with images) can be materialized later on demand (see
+    import_movelists_from_recordings' counterpart, "Import All Movelists",
+    which replays a move-list through a real session to produce one)."""
+    source = (root / rel_path).resolve()
+    try:
+        source.relative_to(root)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail="path must live inside the workspace") from error
+    if not source.is_file():
+        raise HTTPException(status_code=404, detail=f"recording not found: {rel_path}")
+
+    events: list[dict[str, Any]] = []
+    for line in source.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        data = row.get("data") if isinstance(row, dict) else None
+        if isinstance(data, dict) and isinstance(data.get("frame"), list):
+            events.append(row)
+    if not events:
+        raise HTTPException(status_code=400, detail="no frame events found in recording")
+
+    first = events[0]["data"]
+    game_id = str(first.get("game_id") or source.stem)
+    guid = str(first.get("guid") or uuid.uuid4().hex)
+    game_dir = _game_slug(game_id)
+    session_tag = f"import-{guid[:12]}"
+    import_label = str(label).strip() if label else f"human recording {source.stem} (move-list only)"
+    _purge_prior_movelist_import(root, game_dir, rel_path)
+
+    replay_log: list[dict[str, Any]] = []
+    move_total = 0
+    current_level = str(int(events[0]["data"].get("levels_completed") or 0) + 1)
+    last_completed = int(events[0]["data"].get("levels_completed") or 0)
+    final_state = str(events[0]["data"].get("state") or "NOT_FINISHED")
+
+    for event in events[1:]:
+        data = event["data"]
+        action_input = data.get("action_input") or {}
+        action_id = int(action_input.get("id") or 0)
+        if action_id == 0:
+            current_level = str(int(data.get("levels_completed") or 0) + 1)
+            replay_log.append({"op": "reset", "level": current_level})
+            last_completed = int(data.get("levels_completed") or 0)
+            continue
+        action = f"ACTION{action_id}"
+        raw_data = action_input.get("data") or {}
+        action_data = {key: int(raw_data[key]) for key in ("x", "y") if key in raw_data}
+        replay_log.append({"op": "step", "action": action, "data": action_data, "level": current_level})
+        move_total += 1
+        final_state = str(data.get("state") or final_state)
+        completed = int(data.get("levels_completed") or 0)
+        if completed != last_completed and final_state.upper() != "WIN":
+            current_level = str(completed + 1)
+        last_completed = completed
+
+    savepoint = {
+        "id": uuid.uuid4().hex[:12],
+        "kind": "arc3_play_savepoint",
+        "created_at": _utc_now(),
+        "label": import_label,
+        "game_id": game_id,
+        "game_directory": game_dir,
+        "level": current_level,
+        "level_directory": None,
+        "move_index": None,
+        "state": final_state,
+        "session_id": session_tag,
+        "imported_from": rel_path,
+        "replay_log": replay_log,
+    }
+    savepoints_path = _game_write_dir(root, game_dir) / "savepoints.json"
+    with _savepoints_lock:
+        entries = _load_savepoints(savepoints_path)
+        entries.append(savepoint)
+        savepoints_path.parent.mkdir(parents=True, exist_ok=True)
+        savepoints_path.write_text(
+            json.dumps(entries, indent=2, ensure_ascii=False),
+            encoding="utf-8",
+        )
+    return {
+        "imported": {
+            "path": rel_path,
+            "gameId": game_id,
+            "gameDirectory": game_dir,
+            "moveCount": move_total,
+            "levelDirs": [],
+            "state": final_state,
+        },
+        "savepoint": {key: value for key, value in savepoint.items() if key != "replay_log"},
+    }
+
+
 def _import_recording(root: Path, rel_path: str, label: str | None) -> dict[str, Any]:
     _ensure_python_path()
     from image_codec import frame_to_png_bytes
@@ -1412,6 +1533,109 @@ def _load_trace_playbook_snapshots(run_dir: Path, filename: str = "playbook.md")
         if changed:
             snapshots[invocation_number] = content
     return snapshots
+
+
+def _import_release_run_as_movelist(root: Path, rel_dir: str, label: str | None) -> dict[str, Any]:
+    """Lightweight counterpart to _import_release_run: parse the same
+    release-run log into a MOVE-LIST (savepoint) only -- no per-move
+    image.png/state.json, no Recording directories at all. See
+    _import_recording_as_movelist for the human-JSONL equivalent and the
+    rationale (skip the expensive part of a big import; materialize a real
+    Recording from the move-list later on demand, only if actually needed)."""
+    _ensure_python_path()
+
+    run_dir = (root / rel_dir).resolve()
+    try:
+        run_dir.relative_to(root)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail="path must live inside the workspace") from error
+    log_path = run_dir / "workspace" / "log.txt"
+    arclog_path = run_dir / "workspace" / "arclog.py"
+    if not log_path.is_file() or not arclog_path.is_file():
+        raise HTTPException(status_code=404, detail=f"not a release-run directory: {rel_dir}")
+
+    spec = importlib.util.spec_from_file_location(f"_arclog_{abs(hash(str(arclog_path)))}", arclog_path)
+    if spec is None or spec.loader is None:
+        raise HTTPException(status_code=400, detail=f"could not load parser at {arclog_path}")
+    arclog_module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = arclog_module
+    spec.loader.exec_module(arclog_module)
+    steps = arclog_module.load(str(log_path))
+    if not steps:
+        raise HTTPException(status_code=400, detail="no steps found in log.txt")
+
+    scorecard: dict[str, Any] = {}
+    scorecard_path = run_dir / "scorecard.json"
+    if scorecard_path.is_file():
+        try:
+            scorecard = json.loads(scorecard_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            scorecard = {}
+    envs = scorecard.get("environments") if isinstance(scorecard, dict) else None
+    env_id = envs[0].get("id") if isinstance(envs, list) and envs else None
+    game_id = str(env_id or run_dir.parent.name)
+    game_dir = _game_slug(game_id)
+    session_tag = f"release-{run_dir.parent.name}-{run_dir.name}"
+    import_label = str(label).strip() if label else f"release run {run_dir.parent.name}/{run_dir.name} (move-list only)"
+    _purge_prior_movelist_import(root, game_dir, rel_dir)
+
+    replay_log: list[dict[str, Any]] = []
+    move_total = 0
+    current_level = str(int(steps[0].levels_completed) + 1)
+    last_completed = steps[0].levels_completed
+    final_state = str(steps[0].state or "NOT_FINISHED")
+
+    for step in steps[1:]:
+        action = str(step.action).upper()
+        if action == "RESET":
+            current_level = str(int(step.levels_completed) + 1)
+            replay_log.append({"op": "reset", "level": current_level})
+            last_completed = step.levels_completed
+            continue
+        action_data = {key: value for key, value in (("x", step.x), ("y", step.y)) if value is not None}
+        replay_log.append({"op": "step", "action": action, "data": action_data, "level": current_level})
+        move_total += 1
+        final_state = str(step.state or final_state)
+        completed = step.levels_completed
+        if completed != last_completed and final_state.upper() != "WIN":
+            current_level = str(int(completed) + 1)
+        last_completed = completed
+
+    savepoint = {
+        "id": uuid.uuid4().hex[:12],
+        "kind": "arc3_play_savepoint",
+        "created_at": _utc_now(),
+        "label": import_label,
+        "game_id": game_id,
+        "game_directory": game_dir,
+        "level": current_level,
+        "level_directory": None,
+        "move_index": None,
+        "state": final_state,
+        "session_id": session_tag,
+        "imported_from": rel_dir,
+        "replay_log": replay_log,
+    }
+    savepoints_path = _game_write_dir(root, game_dir) / "savepoints.json"
+    with _savepoints_lock:
+        entries = _load_savepoints(savepoints_path)
+        entries.append(savepoint)
+        savepoints_path.parent.mkdir(parents=True, exist_ok=True)
+        savepoints_path.write_text(
+            json.dumps(entries, indent=2, ensure_ascii=False),
+            encoding="utf-8",
+        )
+    return {
+        "imported": {
+            "path": rel_dir,
+            "gameId": game_id,
+            "gameDirectory": game_dir,
+            "moveCount": move_total,
+            "levelDirs": [],
+            "state": final_state,
+        },
+        "savepoint": {key: value for key, value in savepoint.items() if key != "replay_log"},
+    }
 
 
 def _import_release_run(root: Path, rel_dir: str, label: str | None) -> dict[str, Any]:
@@ -1855,6 +2079,130 @@ def retain_largest_recordings(workspaceId: str, keep: int, gameId: str | None = 
     return {"removed": removed, "count": len(removed)}
 
 
+def _savepoint_from_recording(root: Path, game_dir: str, entry: Path) -> dict[str, Any] | None:
+    """Derive a MOVE-LIST (savepoint) from one existing Recording directory's
+    own recording.json -- its "moves" list, replayed as a flat sequence of
+    step ops (a single Recording directory holds one attempt's moves only,
+    so there is nothing to reset between)."""
+    manifest_path = entry / "recording.json"
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    moves = manifest.get("moves")
+    if not isinstance(moves, list) or not moves:
+        return None
+    replay_log: list[dict[str, Any]] = []
+    for move in moves:
+        if not isinstance(move, dict):
+            continue
+        replay_log.append(
+            {
+                "op": "step",
+                "action": move.get("action"),
+                "data": move.get("data") or {},
+                "directory": move.get("directory"),
+                "level": move.get("level"),
+            }
+        )
+    last_move = moves[-1] if isinstance(moves[-1], dict) else {}
+    return {
+        "id": uuid.uuid4().hex[:12],
+        "kind": "arc3_play_savepoint",
+        "created_at": _utc_now(),
+        "label": f"derived from {entry.name}",
+        "game_id": manifest.get("game_id") or game_dir,
+        "game_directory": game_dir,
+        "level": manifest.get("level"),
+        "level_directory": entry.relative_to(root).as_posix(),
+        "move_index": len(moves) - 1,
+        "state": last_move.get("state") or "NOT_FINISHED",
+        "session_id": manifest.get("session_id") or f"derived-{entry.name}",
+        "replay_log": replay_log,
+    }
+
+
+def _import_movelists_from_recordings_in(root: Path, game_root: Path) -> int:
+    """For every Recording directory in one game root that doesn't already
+    have a MOVE-LIST (savepoint) referencing it, derive one from its own
+    recorded moves and append it to savepoints.json."""
+    savepoints_path = game_root / "savepoints.json"
+    with _savepoints_lock:
+        entries = _load_savepoints(savepoints_path)
+        existing_dirs = {str(entry.get("level_directory")) for entry in entries if entry.get("level_directory")}
+        created = 0
+        for recording_dir in _iter_recording_dirs(game_root):
+            rel = recording_dir.relative_to(root).as_posix()
+            if rel in existing_dirs:
+                continue
+            savepoint = _savepoint_from_recording(root, game_root.name, recording_dir)
+            if savepoint is None:
+                continue
+            entries.append(savepoint)
+            created += 1
+        if created:
+            savepoints_path.parent.mkdir(parents=True, exist_ok=True)
+            savepoints_path.write_text(json.dumps(entries, indent=2, ensure_ascii=False), encoding="utf-8")
+    return created
+
+
+@router.post("/recordings/import-movelists")
+def import_movelists_from_recordings(workspaceId: str, gameId: str | None = None) -> dict[str, Any]:
+    """MOVE-LISTS panel's "Import All Recordings' Moves": scan every Recording
+    directory and create a MOVE-LIST for any that doesn't already have one."""
+    root = _workspace_root(workspaceId)
+    directories = _game_dirs_for(root, _game_slug(gameId)) if gameId else _all_game_dirs(root)
+    created = 0
+    for directory in directories:
+        if directory.is_dir():
+            created += _import_movelists_from_recordings_in(root, directory)
+    return {"created": created}
+
+
+@router.post("/recordings/materialize-movelists")
+def materialize_movelists(workspaceId: str, gameId: str | None = None) -> dict[str, Any]:
+    """RECORDINGS panel's "Import All Movelists": for every MOVE-LIST whose
+    referenced Recording directory doesn't exist on disk (movelist-only
+    imports via /import-movelist, or a directory since deleted), replay its
+    move-list through a fresh session -- writing a brand-new saved_<NNN>
+    Recording -- and repoint the savepoint's level_directory at it."""
+    root = _workspace_root(workspaceId)
+    directories = _game_dirs_for(root, _game_slug(gameId)) if gameId else _all_game_dirs(root)
+    materialized: list[dict[str, str]] = []
+    for game_root in directories:
+        savepoints_path = game_root / "savepoints.json"
+        if not savepoints_path.is_file():
+            continue
+        with _savepoints_lock:
+            entries = _load_savepoints(savepoints_path)
+        for entry in entries:
+            level_directory = entry.get("level_directory")
+            if level_directory and (root / level_directory).is_dir():
+                continue  # already materialized on disk
+            replay_log = entry.get("replay_log") or []
+            if not replay_log:
+                continue
+            game_id = str(entry.get("game_id") or entry.get("game_directory") or "")
+            if not game_id:
+                continue
+            try:
+                session = PlaySession(workspaceId, root, game_id)
+                session.replay_recipe(list(replay_log), forked_from=str(entry.get("id")))
+                new_level_dir = session._relative(session.level_dir)
+                session.close()
+            except Exception:
+                continue
+            with _savepoints_lock:
+                current = _load_savepoints(savepoints_path)
+                for item in current:
+                    if item.get("id") == entry.get("id"):
+                        item["level_directory"] = new_level_dir
+                        item["move_index"] = len(replay_log) - 1
+                savepoints_path.write_text(json.dumps(current, indent=2, ensure_ascii=False), encoding="utf-8")
+            materialized.append({"savepointId": str(entry.get("id")), "levelDirectory": new_level_dir})
+    return {"materialized": materialized, "count": len(materialized)}
+
+
 @router.post("/import-recording", status_code=201)
 def import_recording(body: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
     workspace_id = str(body.get("workspaceId") or "").strip()
@@ -1867,6 +2215,26 @@ def import_recording(body: dict[str, Any] = Body(default_factory=dict)) -> dict[
     if target.is_dir() and (target / "workspace" / "log.txt").is_file():
         return _import_release_run(root, rel_path, str(label) if label else None)
     return _import_recording(root, rel_path, str(label) if label else None)
+
+
+@router.post("/import-movelist", status_code=201)
+def import_movelist(body: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
+    """Lightweight import: create only the MOVE-LIST (savepoint) from an
+    IMPORTABLE source, skipping the expensive per-move image.png/state.json
+    writes -- so importing a big recording just to get a resumable
+    move-list doesn't require paying for a full Recording. Materialize a
+    real Recording from the resulting move-list later, on demand, via the
+    MOVE-LISTS panel's "Import All Recordings' Moves" / resuming it."""
+    workspace_id = str(body.get("workspaceId") or "").strip()
+    rel_path = str(body.get("path") or "").strip()
+    if not workspace_id or not rel_path:
+        raise HTTPException(status_code=400, detail="workspaceId and path are required")
+    root = _workspace_root(workspace_id)
+    label = body.get("label")
+    target = root / rel_path
+    if target.is_dir() and (target / "workspace" / "log.txt").is_file():
+        return _import_release_run_as_movelist(root, rel_path, str(label) if label else None)
+    return _import_recording_as_movelist(root, rel_path, str(label) if label else None)
 
 
 def _find_savepoint(root: Path, savepoint_id: str, game_dir: str | None = None) -> dict[str, Any] | None:
