@@ -1,8 +1,8 @@
-# llm_emul worker automation prompt
+# Copilot automation prompt (llm_emul worker)
 
 [← Back to top-level README](../../README.md)
 
-This file explains everything needed to run a Codex/Copilot agent as an
+This file explains everything needed to run a Copilot agent as an
 `llm_emul` **worker** -- for the human setting it up and for the agent
 that runs each wake. An `llm_emul` worker connects to the relay, waits a
 short while for a relayed request, answers it as the model, then rests --
@@ -19,7 +19,7 @@ worker_id.
 
 ## How it works (for the operator)
 
-- You create one recurring Codex automation that fires every **30 seconds**
+- You create one recurring Copilot automation that fires every **30 seconds**
   as a liveness **heartbeat**.
 - The heartbeat does not talk to the relay itself. It checks whether a
   worker loop for this worker_id is already alive. If it is, the heartbeat
@@ -70,7 +70,7 @@ repo -- no download step. In each worker's workspace:
    `curl http://127.0.0.1:8000/v1/models` (or your standalone port).
 2. Pick a worker_id and do one bounded test run:
    `python scripts/llm_emul_worker.py --worker-id <worker-id> --once`
-3. Create the 30-second heartbeat automation (see "Creating the Codex
+3. Create the 30-second heartbeat automation (see "Creating the Copilot
    automation") that keeps a worker loop alive for that worker_id.
 
 A token is **not required** by the current relay -- workers can connect
@@ -80,7 +80,7 @@ through `LLM_EMUL_TOKEN` in the automation environment, never in a file.
 
 ### Prompt: create a worker
 
-Paste into Codex in the worker's workspace. On start it connects under its
+Paste into Copilot in the worker's workspace. On start it connects under its
 worker_id and begins serving relayed requests.
 
 ```text
@@ -94,7 +94,7 @@ Worker identity (worker_id): symbolic-workbench-worker   (e.g. <project>-worker)
 2. Do one bounded test run:
    python scripts/llm_emul_worker.py --worker-id symbolic-workbench-worker --once
 3. Create the 30-second heartbeat automation that keeps a worker loop alive
-   for symbolic-workbench-worker (see "Creating the Codex automation").
+   for symbolic-workbench-worker (see "Creating the Copilot automation").
 4. Act as a worker:
    - When a request is relayed to you, read its model/persona line and its
      prompt, then write your answer to the reply file so it is sent back.
@@ -111,11 +111,11 @@ each is routed to independently by its model prefix.
 
 ## The prompt
 
-Copy the prompt below into the recurring Codex automation for the
+Copy the prompt below into the recurring Copilot automation for the
 workspace that should host the worker. Replace every `<PLACEHOLDER>`
 before enabling it.
 
-Run the Codex automation as a liveness heartbeat every 30 seconds. Each
+Run the Copilot automation as a liveness heartbeat every 30 seconds. Each
 wake checks whether this worker_id's loop is already alive: if it is, do
 nothing and never start a second loop for the same worker_id; if it is not
 (it died), restart it. The worker loop connects, waits up to ~10 seconds
@@ -199,7 +199,7 @@ See `LLM_EMUL_ONBOARDING.md` for the request/reply mechanics and
 ## PowerShell preparation
 
 The worker client is already in the repo, so there's no download. Optional
-connection details (prefer a secret manager or the Codex automation
+connection details (prefer a secret manager or the Copilot automation
 environment for production tokens):
 
 ```powershell
@@ -232,9 +232,9 @@ intentionally sharing that identity's traffic -- a new connection under an
 existing worker_id replaces the previous one as the active relay target.
 Use distinct worker_ids for independent workers.
 
-## Creating the Codex automation
+## Creating the Copilot automation
 
-1. Open the intended workspace in Codex Desktop.
+1. Open the intended workspace in Copilot Desktop.
 2. Create a recurring automation for that workspace.
 3. Choose a 30-second interval (a liveness heartbeat). The worker loop it
    (re)starts runs its own connect/idle/rest cycle, and the heartbeat only
@@ -248,5 +248,5 @@ Use distinct worker_ids for independent workers.
 
 Having this file and `scripts/llm_emul_worker.py` in a workspace prepares
 everything the automation needs, but does not itself create or enable a
-Codex recurring task. Each Codex installation/user must create that task
+Copilot recurring task. Each Copilot installation/user must create that task
 once.

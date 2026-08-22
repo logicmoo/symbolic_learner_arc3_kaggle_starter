@@ -261,6 +261,16 @@ def test_onboarding_doc_reachable_at_all_three_urls(client: TestClient) -> None:
         assert response.text == canonical.text
 
 
+def test_automation_doc_reachable_at_root_and_canonical(client: TestClient) -> None:
+    canonical = client.get("/llm_emul/docs/COPILOT_AUTOMATION.md")
+    assert canonical.status_code == 200
+    for alias in ("/workbench/docs/COPILOT_AUTOMATION.md", "/COPILOT_AUTOMATION.md"):
+        response = client.get(alias)
+        assert response.status_code == 200, alias
+        assert "text/markdown" in response.headers["content-type"]
+        assert response.text == canonical.text
+
+
 def test_static_html_served_at_namespaced_and_root_paths(client: TestClient) -> None:
     namespaced = client.get("/llm_emul/static/index.html")
     assert namespaced.status_code == 200

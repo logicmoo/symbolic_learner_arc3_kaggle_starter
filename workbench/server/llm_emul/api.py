@@ -558,6 +558,16 @@ def serve_onboarding_doc_aliases(request: Request) -> Response:
     return serve_doc("LLM_EMUL_ONBOARDING.md", request)
 
 
+# The automation prompt is also served at the bare root /COPILOT_AUTOMATION.md
+# for bootstrap parity with other relays (an agent being set up can just
+# fetch it from the server root), in addition to the canonical
+# /llm_emul/docs/COPILOT_AUTOMATION.md.
+@router.get("/workbench/docs/COPILOT_AUTOMATION.md")
+@router.get("/COPILOT_AUTOMATION.md")
+def serve_automation_doc_aliases(request: Request) -> Response:
+    return serve_doc("COPILOT_AUTOMATION.md", request)
+
+
 # ---------------------------------------------------------------------------
 # Static HTML (and other assets) under workbench/server/llm_emul/static/,
 # served both under a namespaced /llm_emul/static/ path and as bare
