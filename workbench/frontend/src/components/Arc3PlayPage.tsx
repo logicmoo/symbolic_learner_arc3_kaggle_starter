@@ -1,11 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
 import { type WorkflowPageDefinition } from "./WorkflowPageHost";
+import { Arc3B1B2PipelinePage, type ModelChoice, type WorkspaceFileRecord } from "./Arc3B1B2PipelinePage";
 import "../styles/arc3_play.css";
 
 type Props = {
   pageDefinition: WorkflowPageDefinition;
   workspaceId: string;
   workspaceLabel: string;
+  b1b2PageDefinition?: WorkflowPageDefinition;
+  b1b2Models?: ModelChoice[];
+  b1b2Files?: WorkspaceFileRecord[];
+  onB1B2PageDefinitionSaved?: () => Promise<unknown> | unknown;
 };
 
 type GameInfo = {
@@ -113,7 +118,15 @@ const KEY_TO_ACTION: Record<string, string> = {
   " ": "ACTION5",
 };
 
-export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Props) {
+export function Arc3PlayPage({
+  pageDefinition,
+  workspaceId,
+  workspaceLabel,
+  b1b2PageDefinition,
+  b1b2Models,
+  b1b2Files,
+  onB1B2PageDefinitionSaved,
+}: Props) {
   const [games, setGames] = useState<GameInfo[]>([]);
   const [gamesLoading, setGamesLoading] = useState(false);
   const [session, setSession] = useState<PlaySessionSnapshot | null>(null);
@@ -193,6 +206,17 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
     window.addEventListener("mouseup", onUp);
     document.body.style.cursor = "col-resize";
   };
+
+  // Embed only the B1 -> B2 "Run B1 Then B2" runner-stack panel (its center
+  // column) in the Play page's left column; the B1B2 page's own DATA/SOURCE
+  // columns are emptied here since Play already has its own recording panels.
+  const b1b2CenterOnlyDefinition = useMemo<WorkflowPageDefinition | null>(() => {
+    if (!b1b2PageDefinition) return null;
+    const columns = (b1b2PageDefinition.layout?.columns || []).map((column) =>
+      column.id === "center" ? column : { ...column, members: [] },
+    );
+    return { ...b1b2PageDefinition, layout: { ...b1b2PageDefinition.layout, columns } };
+  }, [b1b2PageDefinition]);
 
   const assetUrl = useCallback(
     (path: string) => `/api/workspaces/${encodeURIComponent(workspaceId)}/asset?path=${encodeURIComponent(path)}`,
@@ -750,8 +774,32 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
       <div
         className="arc3-play-columns"
         ref={columnsRef}
-        style={{ gridTemplateColumns: `minmax(0, 1fr) 6px ${colWidths.right}px` }}
+        style={{ gridTemplateColumns: `${colWidths.left}px 6px minmax(0, 1fr) 6px ${colWidths.right}px` }}
       >
+        <section className="arc3-play-b1b2-column">
+          <div className="arc3-play-section-title">
+            <span>B1 -&gt; B2 RUNNER STACK</span>
+          </div>
+          {b1b2CenterOnlyDefinition ? (
+            <Arc3B1B2PipelinePage
+              pageDefinition={b1b2CenterOnlyDefinition}
+              workspaceId={workspaceId}
+              workspaceLabel={workspaceLabel}
+              models={b1b2Models || []}
+              files={b1b2Files || []}
+              onPageDefinitionSaved={onB1B2PageDefinitionSaved || (() => {})}
+            />
+          ) : (
+            <div className="arc3-play-empty">B1 -&gt; B2 runner stack unavailable (page definition not loaded).</div>
+          )}
+        </section>
+
+        <div
+          className="arc3-play-col-resizer"
+          title="Drag to resize"
+          onMouseDown={startColumnDrag("left")}
+        />
+
         <section className="arc3-play-board-column">
           {!session && <div className="arc3-play-empty">Pick a game on the left to start playing and recording.</div>}
           {session && (

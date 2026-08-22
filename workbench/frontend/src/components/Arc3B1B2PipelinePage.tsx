@@ -5,7 +5,7 @@ import { WorkflowPageSourceEditor } from "./WorkflowPageSourceEditor";
 import { ThreeStateAccordionMember, ThreeStateAccordionStack, type AccordionDisplayMode } from "./ThreeStateAccordion";
 import "../styles/arc3_prompt_prolog.css";
 
-type ModelChoice = {
+export type ModelChoice = {
   id: string;
   label?: string;
   backendId?: string;
@@ -14,7 +14,7 @@ type ModelChoice = {
   capabilities?: Record<string, unknown>;
 };
 
-type Props = {
+export type Props = {
   pageDefinition: WorkflowPageDefinition;
   workspaceId: string;
   workspaceLabel: string;
@@ -28,7 +28,7 @@ type Props = {
   onPageDefinitionSaved: () => Promise<unknown> | unknown;
 };
 
-type WorkspaceFileRecord = {
+export type WorkspaceFileRecord = {
   path: string;
   name: string;
   suffix: string;

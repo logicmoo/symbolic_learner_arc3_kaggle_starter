@@ -969,6 +969,9 @@ export function FilesystemWorkbenchPage() {
   const workflowPageForView = workflowPageDefinitions.find(
     (definition) => definition.routeView === view,
   );
+  const b1b2PageDefinitionForPlay = workflowPageDefinitions.find(
+    (definition) => definition.routeView === "arc3B1B2Pipeline",
+  );
   const workflowNavigationEntries = useMemo(
     () =>
       workflowPageDefinitions
@@ -3567,6 +3570,10 @@ export function FilesystemWorkbenchPage() {
                   pageDefinition={workflowPageForView}
                   workspaceId={workspace.id}
                   workspaceLabel={workspace.label}
+                  b1b2PageDefinition={b1b2PageDefinitionForPlay}
+                  b1b2Models={workflowRunnerModels}
+                  b1b2Files={snapshot?.files || []}
+                  onB1B2PageDefinitionSaved={refreshSnapshot}
                 />
               ) : workflowPageForView.renderer === "arc3_b1_b2_pipeline" ? (
                 <Arc3B1B2PipelinePage

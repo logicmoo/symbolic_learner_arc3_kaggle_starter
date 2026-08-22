@@ -103,6 +103,25 @@
   gap: 10px;
 }
 
+.arc3-play-b1b2-column {
+  overflow-x: hidden;
+}
+
+.arc3-play-b1b2-column .workflow-page-host {
+  border: 0;
+  padding: 0;
+  height: auto;
+}
+
+.arc3-play-b1b2-column .english-workflow-columns {
+  display: block;
+}
+
+.arc3-play-b1b2-column .workflow-page-data,
+.arc3-play-b1b2-column .workflow-page-details {
+  display: none;
+}
+
 .arc3-play-section-title {
   display: flex;
   align-items: center;

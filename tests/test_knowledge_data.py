@@ -16,7 +16,7 @@ import workspace_api  # noqa: E402
 
 
 def test_binary_data_import_uses_workspace_knowledge_storage(tmp_path: Path, monkeypatch) -> None:
-    monkeypatch.setattr(workspace_api, "_resolve_workspace", lambda _workspace_id: {"id": "demo", "root": str(tmp_path)})
+    monkeypatch.setattr(workspace_api, "_resolve_workspace_without_counts", lambda _workspace_id: {"id": "demo", "root": str(tmp_path)})
     payload = workspace_api.import_workspace_data("demo", {"files": [{"name": "frame.png", "base64": base64.b64encode(b"PNG").decode()}]})
 
     assert payload["directory"] == "knowledge/data/imports"
@@ -25,14 +25,14 @@ def test_binary_data_import_uses_workspace_knowledge_storage(tmp_path: Path, mon
 
 
 def test_binary_data_import_rejects_unsafe_or_runtime_destinations(tmp_path: Path, monkeypatch) -> None:
-    monkeypatch.setattr(workspace_api, "_resolve_workspace", lambda _workspace_id: {"id": "demo", "root": str(tmp_path)})
+    monkeypatch.setattr(workspace_api, "_resolve_workspace_without_counts", lambda _workspace_id: {"id": "demo", "root": str(tmp_path)})
     with pytest.raises(HTTPException) as error:
         workspace_api.import_workspace_data("demo", {"directory": "runtime/logs", "files": [{"name": "x.bin", "base64": "eA=="}]})
     assert error.value.status_code == 400
 
 
 def test_binary_data_import_requires_explicit_overwrite(tmp_path: Path, monkeypatch) -> None:
-    monkeypatch.setattr(workspace_api, "_resolve_workspace", lambda _workspace_id: {"id": "demo", "root": str(tmp_path)})
+    monkeypatch.setattr(workspace_api, "_resolve_workspace_without_counts", lambda _workspace_id: {"id": "demo", "root": str(tmp_path)})
     request = {"directory": "knowledge/data/photos", "files": [{"name": "x.bin", "base64": "eA=="}]}
     workspace_api.import_workspace_data("demo", request)
     with pytest.raises(HTTPException) as error:

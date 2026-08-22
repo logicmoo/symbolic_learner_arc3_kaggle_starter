@@ -17,7 +17,7 @@ import workspace_api
 
 def test_shell_snapshot_skips_editor_specific_catalogs(tmp_path: Path, monkeypatch) -> None:
     workspace = {"id": "test", "label": "Test", "root": str(tmp_path)}
-    monkeypatch.setattr(workspace_api, "_resolve_workspace", lambda _workspace_id: workspace)
+    monkeypatch.setattr(workspace_api, "_resolve_workspace_without_counts", lambda _workspace_id: workspace)
     monkeypatch.setattr(workspace_api, "_load_workflows", lambda _workspace: [])
     monkeypatch.setattr(workspace_api, "_load_workflow_pages", lambda _workspace: [])
     monkeypatch.setattr(workspace_api, "_load_symbolic_family", lambda _workspace, _family: [])
@@ -220,3 +220,26 @@ def test_workspace_file_endpoint_uses_lightweight_resolution() -> None:
     endpoint = source.split("def read_workspace_file", 1)[1].split("@router.get", 1)[0]
     assert "_resolve_workspace_without_counts(workspace_id)" in endpoint
     assert "_resolve_workspace(workspace_id)" not in endpoint
+
+
+def test_shell_snapshot_endpoint_uses_lightweight_resolution() -> None:
+    source = (ROOT / "workbench" / "server" / "workspace_api.py").read_text(encoding="utf-8")
+    endpoint = source.split("def workspace_snapshot", 1)[1].split("def _collect_shell_files", 1)[0]
+    assert "_resolve_workspace_without_counts(workspace_id)" in endpoint
+    assert "_resolve_workspace(workspace_id)" not in endpoint
+
+
+def test_collect_shell_files_filters_by_suffix_respects_limit_and_ignores_dirs(tmp_path: Path) -> None:
+    (tmp_path / "state.json").write_text("{}", encoding="utf-8")
+    (tmp_path / "notes.md").write_text("hi", encoding="utf-8")
+    (tmp_path / "image.png").write_bytes(b"\x89PNG")
+    ignored = tmp_path / "node_modules"
+    ignored.mkdir()
+    (ignored / "ignored.json").write_text("{}", encoding="utf-8")
+
+    files = workspace_api._collect_shell_files(tmp_path, limit=2000)
+    paths = {record["path"] for record in files}
+    assert paths == {"state.json", "notes.md"}
+
+    limited = workspace_api._collect_shell_files(tmp_path, limit=1)
+    assert len(limited) == 1

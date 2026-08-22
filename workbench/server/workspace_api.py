@@ -781,6 +781,10 @@ def get_workspace(workspace_id: str) -> dict[str, Any]:
 @router.get("/{workspace_id}/settings")
 def get_workspace_settings(workspace_id: str) -> dict[str, Any]:
     try:
+        # This is the Settings UI's own resource-counting surface (file count,
+        # disk usage, per-kind resource breakdowns) -- unlike every other
+        # per-workspace endpoint below, it genuinely needs the full counts and
+        # is only hit when a user opens Settings, not on every workspace load.
         workspace = _resolve_workspace(workspace_id)
         root = Path(workspace["root"])
         return {"workspace": workspace, "document": read_workspace_metadata(root), "path": str(workspace_metadata_path(root))}
@@ -833,7 +837,7 @@ def delete_workspace(workspace_id: str) -> dict[str, Any]:
     if workspace_id in {SHARED_WORKSPACE_ID, "default", "shared_library_system"}:
         raise HTTPException(status_code=400, detail="This protected workspace cannot be deleted")
     try:
-        workspace = _resolve_workspace(workspace_id)
+        workspace = _resolve_workspace_without_counts(workspace_id)
         dependents = [item["id"] for item in discover_workspaces(force=True) if item["id"] != workspace_id and any(spec["workspaceId"] == workspace_id for spec in item.get("includes", []))]
         if dependents:
             raise ValueError(f"Workspace is still included by: {', '.join(sorted(dependents))}")
@@ -859,7 +863,7 @@ def _workspace_credential_statuses(workspace: dict[str, Any]) -> list[dict[str, 
 @router.get("/{workspace_id}/credentials")
 def workspace_credentials(workspace_id: str) -> dict[str, Any]:
     try:
-        workspace = _resolve_workspace(workspace_id)
+        workspace = _resolve_workspace_without_counts(workspace_id)
         return {"credentials": _workspace_credential_statuses(workspace)}
     except KeyError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error
@@ -870,7 +874,7 @@ def workspace_credentials(workspace_id: str) -> dict[str, Any]:
 @router.put("/{workspace_id}/credentials/{environment_name}")
 def update_workspace_credential(workspace_id: str, environment_name: str, body: dict[str, Any] = Body(...)) -> dict[str, Any]:
     try:
-        workspace = _resolve_workspace(workspace_id)
+        workspace = _resolve_workspace_without_counts(workspace_id)
         allowed = {item["environmentVariable"] for item in _workspace_credential_statuses(workspace)}
         if environment_name not in allowed:
             raise ValueError("credential is not declared by a backend visible to this workspace")
@@ -890,7 +894,7 @@ def update_workspace_credential(workspace_id: str, environment_name: str, body: 
 @router.delete("/{workspace_id}/credentials/{environment_name}")
 def delete_workspace_credential(workspace_id: str, environment_name: str) -> dict[str, Any]:
     try:
-        workspace = _resolve_workspace(workspace_id)
+        workspace = _resolve_workspace_without_counts(workspace_id)
         allowed = {item["environmentVariable"] for item in _workspace_credential_statuses(workspace)}
         if environment_name not in allowed:
             raise ValueError("credential is not declared by a backend visible to this workspace")
@@ -905,7 +909,7 @@ def delete_workspace_credential(workspace_id: str, environment_name: str) -> dic
 @router.post("/{workspace_id}/credentials/{environment_name}/bootstrap")
 def bootstrap_workspace_credential(workspace_id: str, environment_name: str, body: dict[str, Any] = Body(default={})) -> dict[str, Any]:
     try:
-        workspace = _resolve_workspace(workspace_id)
+        workspace = _resolve_workspace_without_counts(workspace_id)
         records = load_workspace_backend_records(Path(workspace["root"]))
         backend_id = str(body.get("backendId") or "")
         backend = next(
@@ -933,7 +937,7 @@ def bootstrap_workspace_credential(workspace_id: str, environment_name: str, bod
 @router.get("/{workspace_id}/operations")
 def workspace_operations(workspace_id: str) -> dict[str, Any]:
     try:
-        workspace = _resolve_workspace(workspace_id)
+        workspace = _resolve_workspace_without_counts(workspace_id)
         return {"workspace": workspace, "operations": _load_operations(workspace), "operationImplementations": _load_operation_implementations(workspace)}
     except KeyError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error
@@ -942,7 +946,7 @@ def workspace_operations(workspace_id: str) -> dict[str, Any]:
 @router.get("/{workspace_id}/artifact-categories")
 def workspace_artifact_categories(workspace_id: str) -> dict[str, Any]:
     try:
-        workspace = _resolve_workspace(workspace_id)
+        workspace = _resolve_workspace_without_counts(workspace_id)
         return {"workspace": workspace, "artifactCategories": _load_artifact_categories(workspace)}
     except KeyError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error
@@ -951,7 +955,7 @@ def workspace_artifact_categories(workspace_id: str) -> dict[str, Any]:
 @router.get("/{workspace_id}/datatypes")
 def workspace_datatypes(workspace_id: str) -> dict[str, Any]:
     try:
-        workspace = _resolve_workspace(workspace_id)
+        workspace = _resolve_workspace_without_counts(workspace_id)
         return {"workspace": workspace, "datatypes": _load_datatypes(workspace)}
     except KeyError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error
@@ -960,7 +964,7 @@ def workspace_datatypes(workspace_id: str) -> dict[str, Any]:
 @router.get("/{workspace_id}/representations")
 def workspace_representations(workspace_id: str) -> dict[str, Any]:
     try:
-        workspace = _resolve_workspace(workspace_id)
+        workspace = _resolve_workspace_without_counts(workspace_id)
         return {"workspace": workspace, "representations": _load_representations(workspace)}
     except KeyError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error
@@ -969,7 +973,7 @@ def workspace_representations(workspace_id: str) -> dict[str, Any]:
 @router.get("/{workspace_id}/backends")
 def workspace_backends(workspace_id: str) -> dict[str, Any]:
     try:
-        workspace = _resolve_workspace(workspace_id)
+        workspace = _resolve_workspace_without_counts(workspace_id)
         return {"workspace": workspace, "backends": _load_backends(workspace), "backendLibrary": _load_backend_library(workspace)}
     except KeyError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error
@@ -978,7 +982,7 @@ def workspace_backends(workspace_id: str) -> dict[str, Any]:
 @router.get("/{workspace_id}/systems")
 def workspace_systems(workspace_id: str) -> dict[str, Any]:
     try:
-        workspace = _resolve_workspace(workspace_id)
+        workspace = _resolve_workspace_without_counts(workspace_id)
         return {"workspace": workspace, "systems": _load_systems(workspace)}
     except KeyError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error
@@ -987,7 +991,7 @@ def workspace_systems(workspace_id: str) -> dict[str, Any]:
 @router.get("/{workspace_id}/models")
 def workspace_models(workspace_id: str) -> dict[str, Any]:
     try:
-        workspace = _resolve_workspace(workspace_id)
+        workspace = _resolve_workspace_without_counts(workspace_id)
         return {"workspace": workspace, "models": _load_models(workspace), "modelLibrary": _load_model_library(workspace)}
     except KeyError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error
@@ -996,7 +1000,7 @@ def workspace_models(workspace_id: str) -> dict[str, Any]:
 @router.get("/{workspace_id}/prompts")
 def workspace_prompts(workspace_id: str) -> dict[str, Any]:
     try:
-        workspace = _resolve_workspace(workspace_id)
+        workspace = _resolve_workspace_without_counts(workspace_id)
         return {"workspace": workspace, "prompts": _load_prompts(workspace), "promptLibrary": _load_prompt_library(workspace)}
     except KeyError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error
@@ -1005,7 +1009,7 @@ def workspace_prompts(workspace_id: str) -> dict[str, Any]:
 @router.get("/{workspace_id}/goals")
 def workspace_goals(workspace_id: str) -> dict[str, Any]:
     try:
-        workspace = _resolve_workspace(workspace_id)
+        workspace = _resolve_workspace_without_counts(workspace_id)
         records = _load_symbolic_family(workspace, "goal")
         return {"workspace": workspace, "resources": records, "hierarchy": symbolic_hierarchy(records, "goal")}
     except KeyError as error:
@@ -1015,7 +1019,7 @@ def workspace_goals(workspace_id: str) -> dict[str, Any]:
 @router.get("/{workspace_id}/policies")
 def workspace_policies(workspace_id: str) -> dict[str, Any]:
     try:
-        workspace = _resolve_workspace(workspace_id)
+        workspace = _resolve_workspace_without_counts(workspace_id)
         records = load_workspace_policy_records(Path(workspace["root"]))
         return {"workspace": workspace, "resources": records, "hierarchy": policy_hierarchy(records)}
     except KeyError as error:
@@ -1025,7 +1029,7 @@ def workspace_policies(workspace_id: str) -> dict[str, Any]:
 @router.get("/{workspace_id}/plans")
 def workspace_plans(workspace_id: str) -> dict[str, Any]:
     try:
-        workspace = _resolve_workspace(workspace_id)
+        workspace = _resolve_workspace_without_counts(workspace_id)
         records = _load_symbolic_family(workspace, "plan")
         return {"workspace": workspace, "resources": records, "hierarchy": symbolic_hierarchy(records, "plan")}
     except KeyError as error:
@@ -1035,7 +1039,7 @@ def workspace_plans(workspace_id: str) -> dict[str, Any]:
 @router.get("/{workspace_id}/contexts")
 def workspace_contexts(workspace_id: str) -> dict[str, Any]:
     try:
-        workspace = _resolve_workspace(workspace_id)
+        workspace = _resolve_workspace_without_counts(workspace_id)
         records = _load_symbolic_family(workspace, "context")
         return {"workspace": workspace, "resources": records, "hierarchy": symbolic_hierarchy(records, "context")}
     except KeyError as error:
@@ -1135,7 +1139,7 @@ def write_workflow_page_source(
     body: dict[str, Any] = Body(...),
 ) -> dict[str, Any]:
     try:
-        workspace = _resolve_workspace(workspace_id)
+        workspace = _resolve_workspace_without_counts(workspace_id)
         root = Path(workspace["root"])
         content = str(body.get("content") or "")
         document = _validate_workflow_page_definition(json.loads(content), page_id)
@@ -1178,19 +1182,16 @@ def write_workflow_page_source(
 @router.get("/{workspace_id}/snapshot")
 def workspace_snapshot(workspace_id: str, scope: str = Query(default="full", pattern="^(full|shell)$")) -> dict[str, Any]:
     try:
-        workspace = _resolve_workspace(workspace_id)
+        # Counts-free resolve: every workspace load/select hits this endpoint
+        # (it's the shell bootstrap call), so paying for the full catalog
+        # enumeration (models/prompts/operations/datatypes/goals/plans/disk-
+        # usage summaries) here -- work whose result the frontend doesn't even
+        # read from this response -- made simply opening a workspace slow.
+        workspace = _resolve_workspace_without_counts(workspace_id)
     except KeyError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error
     root = Path(workspace["root"])
-    files: list[dict[str, Any]] = []
-    resources = get_filesystem_provider()
-    for path in resources.rglob(root, "*", ignored_names=IGNORED_DIRECTORIES):
-        if any(part in IGNORED_DIRECTORIES for part in path.parts):
-            continue
-        if resources.is_file(path) and path.suffix.lower() in TEXT_SUFFIXES:
-            files.append(_file_record(root, path))
-        if len(files) >= 2000:
-            break
+    files = _collect_shell_files(root, limit=2000)
     shell = {
         "workspace": workspace,
         "workflows": _load_workflows(workspace),
@@ -1219,6 +1220,44 @@ def workspace_snapshot(workspace_id: str, scope: str = Query(default="full", pat
         "policies": load_workspace_policy_records(root),
         "artifactCategories": _load_artifact_categories(workspace),
     }
+
+
+def _collect_shell_files(root: Path, limit: int) -> list[dict[str, Any]]:
+    """Collect up to `limit` TEXT_SUFFIXES file records under root.
+
+    The naive version of this loop called `resources.rglob(root, "*", ...)`,
+    which fully walks *and sorts* the entire workspace tree (every file, of
+    every suffix) before any filtering happens, then per candidate called
+    `resources.is_file()` (1-2 syscalls) followed by `_file_record()` (2-3
+    more syscalls via stat()+is_dir()) -- up to 5 redundant syscalls each,
+    paid even for files that get discarded (e.g. every recorded move's
+    image.png, which never matches TEXT_SUFFIXES). With data/ now holding
+    many thousands of recorded/imported game-move files, that combination
+    made the shell snapshot (needed just to open any workflow page,
+    including Play & Record) take minutes. This walks with os.walk
+    directly, filters by suffix (a free string check) before touching the
+    filesystem at all, and stops as soon as `limit` matches are found
+    instead of materializing the whole tree first.
+    """
+    matches: list[Path] = []
+    for directory, names, filenames in os.walk(root, topdown=True):
+        names[:] = [name for name in names if name not in IGNORED_DIRECTORIES]
+        directory_path = Path(directory)
+        for filename in filenames:
+            if Path(filename).suffix.lower() not in TEXT_SUFFIXES:
+                continue
+            matches.append(directory_path / filename)
+            if len(matches) >= limit:
+                break
+        if len(matches) >= limit:
+            break
+    matches.sort(key=lambda path: path.as_posix().lower())
+    files: list[dict[str, Any]] = []
+    for path in matches:
+        record = _fast_data_file_record(root, path)
+        if record is not None:
+            files.append(record)
+    return files
 
 
 def _fast_data_file_record(root: Path, path: Path) -> dict[str, Any] | None:
@@ -1315,7 +1354,7 @@ def read_workspace_file(workspace_id: str, path: str = Query(...)) -> dict[str, 
 @router.get("/{workspace_id}/asset")
 def read_workspace_asset(workspace_id: str, path: str = Query(...)) -> FileResponse:
     try:
-        workspace = _resolve_workspace(workspace_id)
+        workspace = _resolve_workspace_without_counts(workspace_id)
         root = Path(workspace["root"]).resolve()
         requested = Path(path)
         target = requested.resolve() if requested.is_absolute() else _safe_child(root, path).resolve()
@@ -1334,7 +1373,7 @@ def read_workspace_asset(workspace_id: str, path: str = Query(...)) -> FileRespo
 def import_workspace_data(workspace_id: str, body: dict[str, Any] = Body(...)) -> dict[str, Any]:
     """Import binary knowledge values without bypassing the filesystem provider."""
     try:
-        workspace = _resolve_workspace(workspace_id)
+        workspace = _resolve_workspace_without_counts(workspace_id)
         root = Path(workspace["root"])
         directory = str(body.get("directory") or "knowledge/data/imports").strip().replace("\\", "/").strip("/")
         if not directory or directory.startswith(("design/", "runtime/")):
@@ -1376,7 +1415,7 @@ def import_workspace_data(workspace_id: str, body: dict[str, Any] = Body(...)) -
 @router.put("/{workspace_id}/file")
 def write_workspace_file(workspace_id: str, body: dict[str, Any] = Body(...)) -> dict[str, Any]:
     try:
-        workspace = _resolve_workspace(workspace_id)
+        workspace = _resolve_workspace_without_counts(workspace_id)
         root = Path(workspace["root"])
         relative = str(body.get("path") or "")
         if not relative:
@@ -1425,7 +1464,7 @@ def write_workspace_file(workspace_id: str, body: dict[str, Any] = Body(...)) ->
 @router.delete("/{workspace_id}/file")
 def delete_workspace_file(workspace_id: str, path: str = Query(...)) -> dict[str, Any]:
     try:
-        workspace = _resolve_workspace(workspace_id)
+        workspace = _resolve_workspace_without_counts(workspace_id)
         root = Path(workspace["root"])
         requested = _safe_child(root, path)
         if requested.suffix.lower() not in TEXT_SUFFIXES:
@@ -1454,7 +1493,7 @@ def write_workspace_data_file(workspace_id: str, body: dict[str, Any] = Body(...
     ``DATA_FILE_SUFFIXES``; other types fall back to a client-side download.
     """
     try:
-        workspace = _resolve_workspace(workspace_id)
+        workspace = _resolve_workspace_without_counts(workspace_id)
         root = Path(workspace["root"])
         relative = str(body.get("path") or "")
         if not relative:
@@ -1487,7 +1526,7 @@ def data_file_line_counts(workspace_id: str, body: dict[str, Any] = Body(...)) -
     remapping) and counts lines that contain non-whitespace.
     """
     try:
-        workspace = _resolve_workspace(workspace_id)
+        workspace = _resolve_workspace_without_counts(workspace_id)
         root = Path(workspace["root"])
         paths = body.get("paths")
         if not isinstance(paths, list):
