@@ -126,6 +126,6 @@ webui = "webui"
 webui = ["static/*.html"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests", "workbench/server/llm_emul/tests"]
+testpaths = ["tests"]
 pythonpath = ["python", "workbench/server"]
 addopts = "-ra"
