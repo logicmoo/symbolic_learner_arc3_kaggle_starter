@@ -37,14 +37,13 @@
   font-size: 0.72rem;
   padding: 4px 8px;
   cursor: pointer;
-  background: #3a3a3a;
-  color: #e6e6e6;
-  border: 1px solid #555;
+  background: transparent;
+  color: inherit;
+  border: 1px solid rgba(128, 128, 128, 0.5);
   border-radius: 4px;
 }
 
 .arc3-play-game-picker button:hover:not(:disabled) {
-  background: #474747;
   border-color: rgba(0, 116, 217, 0.9);
 }
 
@@ -53,9 +52,9 @@
   font-size: 0.66rem;
   padding: 1px 8px;
   cursor: pointer;
-  background: #3a3a3a;
-  color: #e6e6e6;
-  border: 1px solid #555;
+  background: transparent;
+  color: inherit;
+  border: 1px solid rgba(128, 128, 128, 0.5);
   border-radius: 4px;
 }
 
@@ -64,9 +63,9 @@
   font-size: 0.7rem;
   padding: 0 5px;
   cursor: pointer;
-  background: #3a3a3a;
-  color: #e6e6e6;
-  border: 1px solid #555;
+  background: transparent;
+  color: inherit;
+  border: 1px solid rgba(128, 128, 128, 0.4);
   border-radius: 3px;
 }
 
@@ -202,8 +201,8 @@
   padding: 8px 10px;
   border: 1px solid rgba(128, 128, 128, 0.35);
   border-radius: 6px;
-  background: #3a3a3a;
-  color: #e6e6e6;
+  background: transparent;
+  color: inherit;
   cursor: pointer;
   text-align: left;
 }
@@ -295,10 +294,10 @@
 
 .arc3-play-action {
   padding: 6px 14px;
-  border: 1px solid #555;
+  border: 1px solid rgba(128, 128, 128, 0.45);
   border-radius: 6px;
-  background: #3a3a3a;
-  color: #e6e6e6;
+  background: transparent;
+  color: inherit;
   cursor: pointer;
   font-size: 13px;
 }
@@ -501,8 +500,8 @@
   padding: 0.3rem 0.4rem;
   border: 1px solid transparent;
   border-radius: 4px;
-  background: #3a3a3a;
-  color: #e6e6e6;
+  background: transparent;
+  color: inherit;
   cursor: pointer;
   text-align: left;
   font: inherit;
@@ -685,9 +684,9 @@
   font-size: 0.66rem;
   padding: 1px 8px;
   cursor: pointer;
-  background: #3a3a3a;
-  color: #e6e6e6;
-  border: 1px solid #555;
+  background: transparent;
+  color: inherit;
+  border: 1px solid rgba(128, 128, 128, 0.5);
   border-radius: 4px;
 }
 
