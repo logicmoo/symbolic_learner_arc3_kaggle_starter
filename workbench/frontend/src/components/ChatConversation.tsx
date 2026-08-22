@@ -16,17 +16,17 @@ export type ChatMessage = {
   to?: string;
   text: string;
   type?: string;
-  channelId?: string | null;
+  mailboxId?: string | null;
   author?: string | null;
   authorName?: string | null;
-  channelName?: string | null;
+  mailboxName?: string | null;
   raw?: unknown;
 };
 
-export type ChannelOption = { id: string; kind?: string; messages?: number; name?: string | null };
+export type MailboxOption = { id: string; kind?: string; messages?: number; name?: string | null };
 
 type CursorInfo = {
-  channel: string;
+  mailbox: string;
   agent: string;
   initialized: boolean;
   offset: number;
@@ -43,7 +43,7 @@ type Props = {
   peer?: string;
   className?: string;
   pollMs?: number;
-  showChannelPicker?: boolean;
+  showMailboxPicker?: boolean;
   onError?: (message: string) => void;
 };
 
@@ -64,24 +64,24 @@ async function readJson(response: Response): Promise<Record<string, unknown>> {
 }
 
 // Shared chat surface used by both the full Chat page and the floatable mini-dock.
-// Four editable combos drive it: YOU/TO pick agents, CHANNEL (view) and SEND-TO
-// (channel_id) pick channels. All are editable so a new name can be typed in;
-// addressing an agent with a SEND-TO channel auto-subscribes it server-side. Every
-// message carries its raw record so it can be inspected as JSON.
+// Four editable combos drive it: YOU/TO pick agents, MAILBOX (view) and SEND-TO
+// (send_to) pick mailboxes. YOU/TO are enumerated with first-class agents; the
+// mailbox combos list the mailbox documents. Every message carries its raw
+// record so it can be inspected as JSON.
 export function ChatConversation({
   user = DEFAULT_CHAT_USER,
   peer = DEFAULT_CHAT_PEER,
   className,
   pollMs = 3000,
-  showChannelPicker = true,
+  showMailboxPicker = true,
   onError,
 }: Props) {
   const [you, setYou] = useState(user);
-  const [channel, setChannel] = useState(peer);
+  const [mailbox, setMailbox] = useState(peer);
   const [target, setTarget] = useState(peer);
-  const [sendChannel, setSendChannel] = useState("");
+  const [sendMailbox, setSendMailbox] = useState("");
   const [agents, setAgents] = useState<AgentOption[]>([]);
-  const [channels, setChannels] = useState<ChannelOption[]>([]);
+  const [mailboxes, setMailboxes] = useState<MailboxOption[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [input, setInput] = useState("");
@@ -96,7 +96,7 @@ export function ChatConversation({
   const [cursorInfo, setCursorInfo] = useState<CursorInfo | null>(null);
   const [cursorBusy, setCursorBusy] = useState(false);
   const [subBusy, setSubBusy] = useState(false);
-  const [inspect, setInspect] = useState<{ label: string; id: string; kind: "agent" | "channel" } | null>(null);
+  const [inspect, setInspect] = useState<{ label: string; id: string; kind: "agent" | "mailbox" } | null>(null);
   const [inspectText, setInspectText] = useState("");
   const [inspectNote, setInspectNote] = useState("");
   const [inspectBusy, setInspectBusy] = useState(false);
@@ -107,11 +107,11 @@ export function ChatConversation({
   const [entryEditNote, setEntryEditNote] = useState("");
   const [entryEditBusy, setEntryEditBusy] = useState(false);
   // Require-match bar: the list looks EVERYWHERE in the log; each depressed
-  // button ANDs its picker's value in as a required match. Only CHANNEL is
-  // required by default (classic channel view).
+  // button ANDs its picker's value in as a required match. Only MAILBOX is
+  // required by default (classic mailbox view).
   const [requireTo, setRequireTo] = useState(false);
   const [requireFrom, setRequireFrom] = useState(false);
-  const [requireChannel, setRequireChannel] = useState(true);
+  const [requireMailbox, setRequireMailbox] = useState(true);
   const [requireSendTo, setRequireSendTo] = useState(false);
   const [requireText, setRequireText] = useState(false);
   const [textExpr, setTextExpr] = useState("");
@@ -119,25 +119,25 @@ export function ChatConversation({
   const listRef = useRef<HTMLDivElement | null>(null);
   const stickBottomRef = useRef(true);
 
-  // The config editor tracks the channel messages are sent on (SEND-TO channel if
-  // set, otherwise the viewed channel).
-  const configChannel = sendChannel || channel;
+  // The config editor tracks the mailbox messages are sent on (SEND-TO mailbox if
+  // set, otherwise the viewed mailbox).
+  const configMailbox = sendMailbox || mailbox;
 
-  // Switching the viewed channel re-points addressing to it by default; the "To"
+  // Switching the viewed mailbox re-points addressing to it by default; the "To"
   // field can then be overridden to address anyone independently.
-  const selectChannel = useCallback((next: string) => {
-    setChannel(next);
+  const selectMailbox = useCallback((next: string) => {
+    setMailbox(next);
     setTarget(next);
   }, []);
 
   const fetchDirectory = useCallback(async () => {
     try {
-      const [agentPayload, channelPayload] = await Promise.all([
+      const [agentPayload, mailboxPayload] = await Promise.all([
         readJson(await fetch("/api/mailbox/agents")),
-        readJson(await fetch("/api/mailbox/channels")),
+        readJson(await fetch("/api/mailbox/mailboxes")),
       ]);
       setAgents((agentPayload.agents as AgentOption[]) || []);
-      setChannels((channelPayload.channels as ChannelOption[]) || []);
+      setMailboxes((mailboxPayload.mailboxes as MailboxOption[]) || []);
     } catch {
       // Directory is best-effort; keep whatever we already have.
     }
@@ -154,8 +154,8 @@ export function ChatConversation({
       const params = new URLSearchParams({ filter: "1", limit: "300" });
       if (requireTo && target) params.set("to", target);
       if (requireFrom && you) params.set("from", you);
-      if (requireChannel && channel) params.set("channel", channel);
-      if (requireSendTo && sendChannel) params.set("channel_id", sendChannel);
+      if (requireMailbox && mailbox) params.set("mailbox", mailbox);
+      if (requireSendTo && sendMailbox) params.set("send_to", sendMailbox);
       if (requireText && textQuery) params.set("text", textQuery);
       const payload = await readJson(await fetch(`/api/mailbox/messages?${params.toString()}`));
       setMessages((payload.messages as ChatMessage[]) || []);
@@ -167,8 +167,8 @@ export function ChatConversation({
       onError?.(message);
     }
   }, [
-    channel, you, target, sendChannel,
-    requireTo, requireFrom, requireChannel, requireSendTo, requireText, textQuery,
+    mailbox, you, target, sendMailbox,
+    requireTo, requireFrom, requireMailbox, requireSendTo, requireText, textQuery,
     onError,
   ]);
 
@@ -210,8 +210,8 @@ export function ChatConversation({
     setSending(true);
     try {
       const body: Record<string, unknown> = { text, to: target, sender: you };
-      const routed = sendChannel.trim();
-      if (routed) body.channel_id = routed;
+      const routed = sendMailbox.trim();
+      if (routed) body.send_to = routed;
       await readJson(
         await fetch("/api/mailbox/send", {
           method: "POST",
@@ -230,7 +230,7 @@ export function ChatConversation({
     } finally {
       setSending(false);
     }
-  }, [input, sending, target, you, sendChannel, fetchMessages, fetchDirectory, onError]);
+  }, [input, sending, target, you, sendMailbox, fetchMessages, fetchDirectory, onError]);
 
   const handleKeyDown = (event: ReactKeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === "Enter" && !event.shiftKey) {
@@ -261,21 +261,21 @@ export function ChatConversation({
     }
   }, [newEntry, fetchDirectory, onError]);
 
-  const makeChannel = useCallback(async () => {
+  const makeMailbox = useCallback(async () => {
     const id = newEntry.trim();
     if (!id) return;
     try {
       await readJson(
-        await fetch("/api/mailbox/channels", {
+        await fetch("/api/mailbox/mailboxes", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ id }),
         }),
       );
-      setChannels((prev) => (prev.some((c) => c.id === id) ? prev : [...prev, { id, kind: "channel" }]));
-      setChannel(id);
+      setMailboxes((prev) => (prev.some((c) => c.id === id) ? prev : [...prev, { id, kind: "mailbox" }]));
+      setMailbox(id);
       setTarget(id);
-      setSendChannel(id);
+      setSendMailbox(id);
       setNewEntry("");
       fetchDirectory();
     } catch (error) {
@@ -395,13 +395,13 @@ export function ChatConversation({
   };
 
   const fetchConfig = useCallback(async () => {
-    if (!configChannel) {
+    if (!configMailbox) {
       setConfigText("");
       return;
     }
     try {
       const payload = await readJson(
-        await fetch(`/api/mailbox/channel-config?channel=${encodeURIComponent(configChannel)}`),
+        await fetch(`/api/mailbox/mailbox-config?mailbox=${encodeURIComponent(configMailbox)}`),
       );
       setConfigText(JSON.stringify(payload.config ?? {}, null, 2));
       setConfigError("");
@@ -409,14 +409,14 @@ export function ChatConversation({
     } catch (error) {
       setConfigError(error instanceof Error ? error.message : String(error));
     }
-  }, [configChannel]);
+  }, [configMailbox]);
 
   useEffect(() => {
     fetchConfig();
   }, [fetchConfig]);
 
   // Apply = subscribe any new names in `subscribers`, then persist the whole
-  // edited config as a channel_config record on the server_registry channel.
+  // edited config as a mailbox config record on server_identifiers_registry.
   const applyConfig = useCallback(async () => {
     let parsed: unknown;
     try {
@@ -432,16 +432,16 @@ export function ChatConversation({
     setConfigBusy(true);
     try {
       const payload = await readJson(
-        await fetch("/api/mailbox/channel-config", {
+        await fetch("/api/mailbox/mailbox-config", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ channel: configChannel, config: parsed }),
+          body: JSON.stringify({ mailbox: configMailbox, config: parsed }),
         }),
       );
       setConfigText(JSON.stringify(payload.config ?? parsed, null, 2));
       const subscribed = (payload.subscribed as string[]) || [];
       setConfigNote(
-        `Stored on server_registry${subscribed.length ? `; subscribed: ${subscribed.join(", ")}` : ""}`,
+        `Stored on server_identifiers_registry${subscribed.length ? `; subscribed: ${subscribed.join(", ")}` : ""}`,
       );
       setConfigError("");
     } catch (error) {
@@ -449,23 +449,23 @@ export function ChatConversation({
     } finally {
       setConfigBusy(false);
     }
-  }, [configChannel, configText]);
+  }, [configMailbox, configText]);
 
-  // Cursor control: while looking at a channel with "To" set to an agent, show
-  // where that agent's cursor sits on the channel and allow repositioning it.
+  // Cursor control: while looking at a mailbox with "To" set to an agent, show
+  // where that agent's cursor sits on the mailbox and allow repositioning it.
   const fetchCursor = useCallback(async () => {
-    if (!channel || !target) {
+    if (!mailbox || !target) {
       setCursorInfo(null);
       return;
     }
     try {
-      const query = `channel=${encodeURIComponent(channel)}&agent=${encodeURIComponent(target)}`;
+      const query = `mailbox=${encodeURIComponent(mailbox)}&agent=${encodeURIComponent(target)}`;
       const payload = await readJson(await fetch(`/api/mailbox/cursor?${query}`));
       setCursorInfo(payload as CursorInfo);
     } catch {
       setCursorInfo(null);
     }
-  }, [channel, target]);
+  }, [mailbox, target]);
 
   useEffect(() => {
     fetchCursor();
@@ -473,17 +473,17 @@ export function ChatConversation({
 
   const moveCursor = useCallback(
     async (start: "beginning" | "now" | "remove") => {
-      if (!channel || !target) return;
+      if (!mailbox || !target) return;
       setCursorBusy(true);
       try {
-        const query = `channel=${encodeURIComponent(channel)}&agent=${encodeURIComponent(target)}`;
+        const query = `mailbox=${encodeURIComponent(mailbox)}&agent=${encodeURIComponent(target)}`;
         const payload = await readJson(
           start === "remove"
             ? await fetch(`/api/mailbox/cursor?${query}`, { method: "DELETE" })
             : await fetch("/api/mailbox/cursor", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ channel, agent: target, start }),
+                body: JSON.stringify({ mailbox, agent: target, start }),
               }),
         );
         setCursorInfo(payload as CursorInfo);
@@ -495,22 +495,22 @@ export function ChatConversation({
         setCursorBusy(false);
       }
     },
-    [channel, target, onError],
+    [mailbox, target, onError],
   );
 
   // Subscription control: set/clear the explicit subscribed|unsubscribed intent
-  // for the TO agent on the viewed channel ("remove" reverts to the default
+  // for the TO agent on the viewed mailbox ("remove" reverts to the default
   // inference where cursor holders count as subscribed).
   const setSubscription = useCallback(
     async (state: "subscribed" | "unsubscribed" | "remove") => {
-      if (!channel || !target) return;
+      if (!mailbox || !target) return;
       setSubBusy(true);
       try {
         await readJson(
           await fetch("/api/mailbox/subscription", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ agent: target, channel, state }),
+            body: JSON.stringify({ agent: target, mailbox, state }),
           }),
         );
         await Promise.all([fetchDirectory(), fetchCursor()]);
@@ -522,21 +522,21 @@ export function ChatConversation({
         setSubBusy(false);
       }
     },
-    [channel, target, fetchDirectory, fetchCursor, onError],
+    [mailbox, target, fetchDirectory, fetchCursor, onError],
   );
 
   // Selects need the current value present as an option even before lists load.
-  // Clicking a picker label (YOU/TO/CHANNEL/SEND-TO) opens an editable JSON view
+  // Clicking a picker label (YOU/TO/MAILBOX/SEND-TO) opens an editable JSON view
   // of whatever that picker points at; clicking the same label again hides it.
   // YOU/TO show the agent record as returned by /api/mailbox/agents (cursors
-  // included); the channel labels show the channel record. Save posts the edited
-  // JSON to the server_agents_registry / server_channels_registry blackboard
-  // channel; Reload
-  // re-queries the record.
-  const loadEntity = useCallback(async (kind: "agent" | "channel", id: string) => {
-    const endpoint = kind === "agent" ? "/api/mailbox/agents" : "/api/mailbox/channels";
+  // included); the mailbox labels show the mailbox record. Save posts the edited
+  // JSON to the server_registry_agents blackboard (agents are stored objects;
+  // server channels are only a live view of what the IRC/Mattermost server says
+  // we are on, not something stored here). Reload re-queries the record.
+  const loadEntity = useCallback(async (kind: "agent" | "mailbox", id: string) => {
+    const endpoint = kind === "agent" ? "/api/mailbox/agents" : "/api/mailbox/mailboxes";
     const payload = await readJson(await fetch(endpoint));
-    const list = (payload[kind === "agent" ? "agents" : "channels"] as Array<Record<string, unknown>>) || [];
+    const list = (payload[kind === "agent" ? "agents" : "mailboxes"] as Array<Record<string, unknown>>) || [];
     return list.find((item) => item.id === id) ?? { id };
   }, []);
 
@@ -547,16 +547,16 @@ export function ChatConversation({
         setInspect(null);
         return;
       }
-      const kind = label === "YOU" || label === "TO" ? ("agent" as const) : ("channel" as const);
+      const kind = label === "YOU" || label === "TO" ? ("agent" as const) : ("mailbox" as const);
       const record =
         kind === "agent"
           ? agents.find((a) => a.id === id) ?? { id }
-          : channels.find((c) => c.id === id) ?? { id };
+          : mailboxes.find((c) => c.id === id) ?? { id };
       setInspect({ label, id, kind });
       setInspectText(JSON.stringify(record, null, 2));
       setInspectNote("");
     },
-    [inspect, agents, channels],
+    [inspect, agents, mailboxes],
   );
 
   const reloadInspect = useCallback(async () => {
@@ -598,7 +598,7 @@ export function ChatConversation({
       );
       const record = (payload.entry as Record<string, unknown>) ?? parsed;
       setInspectText(JSON.stringify(record, null, 2));
-      setInspectNote(`saved to ${String(payload.channel ?? "")}`.trim());
+      setInspectNote(`saved to ${String(payload.mailbox ?? "")}`.trim());
       void fetchDirectory();
     } catch (error) {
       setInspectNote(error instanceof Error ? error.message : String(error));
@@ -608,12 +608,12 @@ export function ChatConversation({
   }, [inspect, inspectText, fetchDirectory]);
 
   // Cursor moves change what an open inspector shows (the agent's cursor map or
-  // the channel's subscribers), so requery it when it points at the affected pair.
+  // the mailbox's subscribers), so requery it when it points at the affected pair.
   useEffect(() => {
     if (!cursorInfo || !inspect) return;
     const affected =
       (inspect.kind === "agent" && inspect.id === cursorInfo.agent) ||
-      (inspect.kind === "channel" && inspect.id === cursorInfo.channel);
+      (inspect.kind === "mailbox" && inspect.id === cursorInfo.mailbox);
     if (!affected) return;
     let stale = false;
     loadEntity(inspect.kind, inspect.id)
@@ -632,28 +632,28 @@ export function ChatConversation({
   // currently-selected values present even when the directory lags.
   const alpha = (a: string, b: string) => a.toLowerCase().localeCompare(b.toLowerCase());
   const agentChoices = Array.from(new Set([you, target, ...agents.map((a) => a.id)].filter(Boolean))).sort(alpha);
-  const channelChoices = Array.from(new Set([channel, ...channels.map((c) => c.id)].filter(Boolean))).sort(alpha);
-  const sendChoices = Array.from(new Set([sendChannel, ...channels.map((c) => c.id)].filter(Boolean))).sort(alpha);
+  const mailboxChoices = Array.from(new Set([mailbox, ...mailboxes.map((c) => c.id)].filter(Boolean))).sort(alpha);
+  const sendChoices = Array.from(new Set([sendMailbox, ...mailboxes.map((c) => c.id)].filter(Boolean))).sort(alpha);
 
-  // Channel options carry a readable name resolved from the identifier directory
+  // Mailbox options carry a readable name resolved from the identifier directory
   // (bootstrapped onto server_identifiers_registry), so opaque bridge ids get
-  // annotated, and show how many entries recent traffic holds for each channel.
-  const channelNames = new Map(channels.map((c) => [c.id, c.name] as const));
-  const channelCounts = new Map(channels.map((c) => [c.id, c.messages] as const));
-  // The TO agent's explicit subscription setting on the viewed channel (if any).
+  // annotated, and show how many entries recent traffic holds for each mailbox.
+  const mailboxNames = new Map(mailboxes.map((c) => [c.id, c.name] as const));
+  const mailboxCounts = new Map(mailboxes.map((c) => [c.id, c.messages] as const));
+  // The TO agent's explicit subscription setting on the viewed mailbox (if any).
   const targetRecord = agents.find((a) => a.id === target) as Record<string, unknown> | undefined;
   const targetSubs = (targetRecord?.subscriptions ?? null) as Record<string, string> | null;
-  const subSetting = targetSubs && channel in targetSubs ? targetSubs[channel] : null;
-  const channelLabel = (id: string) => {
-    const name = channelNames.get(id);
+  const subSetting = targetSubs && mailbox in targetSubs ? targetSubs[mailbox] : null;
+  const mailboxLabel = (id: string) => {
+    const name = mailboxNames.get(id);
     const base = name && name !== id ? `${name} · ${id}` : id;
-    const count = channelCounts.get(id);
+    const count = mailboxCounts.get(id);
     return typeof count === "number" ? `${base} · ${count}` : base;
   };
 
   return (
     <div className={`chat-conversation ${className ?? ""}`.trim()}>
-      {showChannelPicker && (
+      {showMailboxPicker && (
         <div className="chat-controls">
           <label className="chat-control">
             <button type="button" className="chat-label" onClick={() => void inspectId("YOU", you)}>You</button>
@@ -672,19 +672,19 @@ export function ChatConversation({
             </select>
           </label>
           <label className="chat-control">
-            <button type="button" className="chat-label" onClick={() => void inspectId("CHANNEL", channel)}>Channel</button>
-            <select value={channel} onChange={(event) => selectChannel(event.target.value)} aria-label="Viewed channel">
-              {channelChoices.map((id) => (
-                <option key={id} value={id}>{channelLabel(id)}</option>
+            <button type="button" className="chat-label" onClick={() => void inspectId("MAILBOX", mailbox)}>Mailbox</button>
+            <select value={mailbox} onChange={(event) => selectMailbox(event.target.value)} aria-label="Viewed mailbox">
+              {mailboxChoices.map((id) => (
+                <option key={id} value={id}>{mailboxLabel(id)}</option>
               ))}
             </select>
           </label>
           <label className="chat-control">
-            <button type="button" className="chat-label" onClick={() => void inspectId("SEND-TO", sendChannel)}>Send-to</button>
-            <select value={sendChannel} onChange={(event) => setSendChannel(event.target.value)} aria-label="Send channel">
+            <button type="button" className="chat-label" onClick={() => void inspectId("SEND-TO", sendMailbox)}>Send-to</button>
+            <select value={sendMailbox} onChange={(event) => setSendMailbox(event.target.value)} aria-label="Send mailbox">
               <option value="">(none)</option>
               {sendChoices.map((id) => (
-                <option key={id} value={id}>{channelLabel(id)}</option>
+                <option key={id} value={id}>{mailboxLabel(id)}</option>
               ))}
             </select>
           </label>
@@ -712,18 +712,18 @@ export function ChatConversation({
             </button>
             <button
               type="button"
-              className={`chat-require-btn${requireChannel ? " active" : ""}`}
-              aria-pressed={requireChannel}
-              title="Require the record to involve the CHANNEL picker (from, to or channel_id)"
-              onClick={() => setRequireChannel((v) => !v)}
+              className={`chat-require-btn${requireMailbox ? " active" : ""}`}
+              aria-pressed={requireMailbox}
+              title="Require the record to involve the MAILBOX picker (from, to or send_to)"
+              onClick={() => setRequireMailbox((v) => !v)}
             >
-              CHANNEL
+              MAILBOX
             </button>
             <button
               type="button"
               className={`chat-require-btn${requireSendTo ? " active" : ""}`}
               aria-pressed={requireSendTo}
-              title="Require record.channel_id to equal the SEND-TO picker"
+              title="Require record.send_to to equal the SEND-TO picker"
               onClick={() => setRequireSendTo((v) => !v)}
             >
               SEND-TO
@@ -749,24 +749,24 @@ export function ChatConversation({
             <input
               value={newEntry}
               onChange={(event) => setNewEntry(event.target.value)}
-              placeholder="new agent or channel name"
-              aria-label="New agent or channel name"
+              placeholder="new agent or mailbox name"
+              aria-label="New agent or mailbox name"
             />
             <button type="button" onClick={makeAgent} disabled={!newEntry.trim()}>
               Make new agent
             </button>
-            <button type="button" onClick={makeChannel} disabled={!newEntry.trim()}>
-              Make new channel
+            <button type="button" onClick={makeMailbox} disabled={!newEntry.trim()}>
+              Make new mailbox
             </button>
           </div>
-          {channel && target && (
+          {mailbox && target && (
             <div className="chat-cursor">
               <span className="chat-cursor-label">
-                Cursor · {target} on {channelLabel(channel)}:{" "}
+                Cursor · {target} on {mailboxLabel(mailbox)}:{" "}
                 {cursorInfo
                   ? cursorInfo.initialized
                     ? `${cursorInfo.entry_next ?? "?"} next · ${cursorInfo.entries_consumed ?? 0}/${cursorInfo.entries_total ?? "?"} entries consumed · ${cursorInfo.behind} bytes behind`
-                    : `no cursor set (channel holds ${cursorInfo.entries_total ?? 0} entries)`
+                    : `no cursor set (mailbox holds ${cursorInfo.entries_total ?? 0} entries)`
                   : "…"}
               </span>
               <button type="button" disabled={cursorBusy} onClick={() => void moveCursor("beginning")}>
@@ -784,10 +784,10 @@ export function ChatConversation({
               </button>
             </div>
           )}
-          {channel && target && (
+          {mailbox && target && (
             <div className="chat-sub">
               <span className="chat-sub-label" title="Explicit subscription intent; 'Remove setting' reverts to the default (cursor holders count as subscribed).">
-                Subscription · {target} on {channelLabel(channel)}:{" "}
+                Subscription · {target} on {mailboxLabel(mailbox)}:{" "}
                 {subSetting ?? (cursorInfo && cursorInfo.initialized ? "(default: subscribed via cursor)" : "(no setting)")}
               </span>
               <button
@@ -882,8 +882,8 @@ export function ChatConversation({
               <MarkdownDocument className="chat-message-body" content={message.text} />
             ) : (
               <div className="chat-message-empty">
-                {message.channelName
-                  ? `(${message.type || "message"} in ${message.channelName} — inspect JSON)`
+                {message.mailboxName
+                  ? `(${message.type || "message"} in ${message.mailboxName} — inspect JSON)`
                   : "(no text — inspect JSON)"}
               </div>
             )}
@@ -943,7 +943,7 @@ export function ChatConversation({
       </div>
       <div className="chat-config">
         <div className="chat-config-head">
-          <span className="chat-config-title">Channel config — {channelLabel(configChannel)}</span>
+          <span className="chat-config-title">Mailbox config — {mailboxLabel(configMailbox)}</span>
           <button type="button" onClick={fetchConfig} disabled={configBusy}>
             Reload
           </button>
@@ -957,7 +957,7 @@ export function ChatConversation({
           onChange={(event) => setConfigText(event.target.value)}
           rows={8}
           spellCheck={false}
-          aria-label="Channel config JSON"
+          aria-label="Mailbox config JSON"
         />
         {configError && <div className="chat-error">{configError}</div>}
         {configNote && <div className="chat-config-note">{configNote}</div>}

@@ -7,7 +7,7 @@ import {
 import { MarkdownDocument } from "./MarkdownDocument";
 import "../styles/chat.css";
 
-// Full-page chat surface. The YOU / TO / CHANNEL / SEND-TO controls live in the
+// Full-page chat surface. The YOU / TO / MAILBOX / SEND-TO controls live in the
 // shared ChatConversation, so the page is just a titled wrapper around it plus
 // the Help panel (docs/CHAT_PAGE.md) toggled from the top banner.
 export function ChatPage() {
@@ -49,8 +49,8 @@ export function ChatPage() {
           </div>
           <p>
             Talk over the shared mailbox. Pick who you are (YOU) and who you address (TO)
-            from the agents, the channel to view (CHANNEL) and post into (SEND-TO) from the
-            channels — all editable, and any message can be inspected as raw JSON. The
+            from the agents, the mailbox to view (MAILBOX) and post into (SEND-TO) from the
+            mailboxes — all editable, and any message can be inspected as raw JSON. The
             require-match bar filters the whole log: only depressed fields must match.
           </p>
         </div>

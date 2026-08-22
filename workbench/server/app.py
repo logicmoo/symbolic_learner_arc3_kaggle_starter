@@ -9,7 +9,7 @@ from fastapi.responses import JSONResponse
 from arc3_play_api import router as arc3_play_router
 from datatype_api import router as datatype_router
 from goal_run_api import router as goal_run_router
-from mailbox_api import router as mailbox_router
+from mailbox_api_lib import router as mailbox_router
 from prompt_api import router as prompt_router
 from routes.artifacts import router as artifacts_router
 from routes.workflow import router as workflow_router
