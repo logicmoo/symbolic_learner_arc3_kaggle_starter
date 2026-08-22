@@ -460,13 +460,15 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
                     {action.label}
                   </button>
                 ))}
-                <button
-                  className={`arc3-play-action arc3-play-autoselect ${autoSelect ? "down" : ""}`}
-                  title="When down, clicking a board cell fires CLICK there automatically (no arming needed)"
-                  onClick={() => setAutoSelect((value) => !value)}
-                >
-                  auto-CLICK
-                </button>
+                {session.availableActions.some((action) => action.complex && action.enabled) && (
+                  <button
+                    className={`arc3-play-action arc3-play-autoselect ${autoSelect ? "down" : ""}`}
+                    title="When down, clicking a board cell fires CLICK there automatically (no arming needed)"
+                    onClick={() => setAutoSelect((value) => !value)}
+                  >
+                    auto-CLICK
+                  </button>
+                )}
               </div>
               <div className="arc3-play-actions arc3-play-session-controls">
                 {session.closed && (
