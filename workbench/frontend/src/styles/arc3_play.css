@@ -149,6 +149,13 @@
   opacity: 0.8;
 }
 
+.arc3-play-mini-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
 .arc3-play-section-actions {
   display: flex;
   align-items: center;

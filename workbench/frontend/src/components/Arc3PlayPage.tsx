@@ -1453,49 +1453,58 @@ export function Arc3PlayPage({
                   </div>
               {levelMoves.length > 0 && (
                 <div className="arc3-play-move-setup">
-                  <small>MOVE AS SETUP (bootstrap the same way a B1-&gt;B2 setup scans its dir, but over 0/ 1/ 2/ …)</small>
-                  <div className="arc3-play-move-setup-row">
-                    <select
-                      value={inspectOrdinal ?? levelMoves.length - 1}
-                      onChange={(event) => {
-                        const ordinal = Number(event.target.value);
-                        setInspectOrdinal(ordinal);
-                        setInspectScan(null);
-                      }}
-                    >
-                      {levelMoves.map((move, ordinal) => (
-                        <option key={move.directory} value={ordinal}>
-                          {ordinal}/ {actionShort(move.action)}
-                          {ordinal === levelMoves.length - 1 ? " (latest)" : ""}
-                        </option>
-                      ))}
-                    </select>
-                    <button
-                      disabled={inspectLoading}
-                      onClick={() => {
-                        const ordinal = inspectOrdinal ?? levelMoves.length - 1;
-                        void loadMoveScan(levelMoves[ordinal].directory);
-                      }}
-                    >
-                      {inspectLoading ? "Scanning…" : "Scan"}
-                    </button>
-                    <button onClick={() => void copyMoveDir(levelMoves[inspectOrdinal ?? levelMoves.length - 1].directory)}>
-                      {inspectCopied ? "Copied" : "Copy path"}
+                  <div className="arc3-play-mini-header">
+                    <small>MOVE AS SETUP (bootstrap the same way a B1-&gt;B2 setup scans its dir, but over 0/ 1/ 2/ …)</small>
+                    <button className="arc3-play-collapse-toggle" onClick={() => toggleSection("moveSetup")}>
+                      {collapsedSections.moveSetup ? "▸ Expand" : "▾ Collapse"}
                     </button>
                   </div>
-                  {inspectScan && (
-                    <div className="arc3-play-move-scan">
-                      {Object.entries(inspectScan)
-                        .filter(([, paths]) => paths.length > 0)
-                        .map(([bucket, paths]) => (
-                          <span key={bucket} className="arc3-play-move-scan-bucket">
-                            {bucket}: {paths.length}
-                          </span>
-                        ))}
-                      {Object.values(inspectScan).every((paths) => paths.length === 0) && (
-                        <span className="arc3-play-move-scan-bucket">only image.png so far</span>
+                  {!collapsedSections.moveSetup && (
+                    <>
+                      <div className="arc3-play-move-setup-row">
+                        <select
+                          value={inspectOrdinal ?? levelMoves.length - 1}
+                          onChange={(event) => {
+                            const ordinal = Number(event.target.value);
+                            setInspectOrdinal(ordinal);
+                            setInspectScan(null);
+                          }}
+                        >
+                          {levelMoves.map((move, ordinal) => (
+                            <option key={move.directory} value={ordinal}>
+                              {ordinal}/ {actionShort(move.action)}
+                              {ordinal === levelMoves.length - 1 ? " (latest)" : ""}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          disabled={inspectLoading}
+                          onClick={() => {
+                            const ordinal = inspectOrdinal ?? levelMoves.length - 1;
+                            void loadMoveScan(levelMoves[ordinal].directory);
+                          }}
+                        >
+                          {inspectLoading ? "Scanning…" : "Scan"}
+                        </button>
+                        <button onClick={() => void copyMoveDir(levelMoves[inspectOrdinal ?? levelMoves.length - 1].directory)}>
+                          {inspectCopied ? "Copied" : "Copy path"}
+                        </button>
+                      </div>
+                      {inspectScan && (
+                        <div className="arc3-play-move-scan">
+                          {Object.entries(inspectScan)
+                            .filter(([, paths]) => paths.length > 0)
+                            .map(([bucket, paths]) => (
+                              <span key={bucket} className="arc3-play-move-scan-bucket">
+                                {bucket}: {paths.length}
+                              </span>
+                            ))}
+                          {Object.values(inspectScan).every((paths) => paths.length === 0) && (
+                            <span className="arc3-play-move-scan-bucket">only image.png so far</span>
+                          )}
+                        </div>
                       )}
-                    </div>
+                    </>
                   )}
                 </div>
               )}
@@ -1508,8 +1517,13 @@ export function Arc3PlayPage({
                 </div>
               )}
               <div className="arc3-play-moves">
-                <small>MOVES (newest first — stored in 0/ 1/ 2/ …)</small>
-                {newestFirst.map((move) => {
+                <div className="arc3-play-mini-header">
+                  <small>MOVES (newest first — stored in 0/ 1/ 2/ …)</small>
+                  <button className="arc3-play-collapse-toggle" onClick={() => toggleSection("movesList")}>
+                    {collapsedSections.movesList ? "▸ Expand" : "▾ Collapse"}
+                  </button>
+                </div>
+                {!collapsedSections.movesList && newestFirst.map((move) => {
                   const levelIdx = levelIndexByDir.get(move.directory);
                   const rewindCount = levelIdx === undefined ? 0 : levelMoves.length - 1 - levelIdx;
                   const canRewind = !session.closed && !busy && rewindCount > 0;
@@ -1594,7 +1608,7 @@ export function Arc3PlayPage({
                   </div>
                   );
                 })}
-                {!newestFirst.length && <div className="arc3-play-empty">No moves recorded yet.</div>}
+                {!collapsedSections.movesList && !newestFirst.length && <div className="arc3-play-empty">No moves recorded yet.</div>}
               </div>
                 </>
               )}
@@ -1641,7 +1655,13 @@ export function Arc3PlayPage({
             </small>
             {!collapsedSections.restartPoints && (
               <>
-                {filteredSavepoints.map((point) => (
+                <div className="arc3-play-mini-header">
+                  <small>{filteredSavepoints.length} move-list(s)</small>
+                  <button className="arc3-play-collapse-toggle" onClick={() => toggleSection("restartPointsList")}>
+                    {collapsedSections.restartPointsList ? "▸ Expand" : "▾ Collapse"}
+                  </button>
+                </div>
+                {!collapsedSections.restartPointsList && filteredSavepoints.map((point) => (
               <div key={point.id} className="arc3-play-savepoint">
                 <div>
                   <b>
@@ -1688,7 +1708,9 @@ export function Arc3PlayPage({
                 </div>
               </div>
             ))}
-                {!filteredSavepoints.length && <div className="arc3-play-empty">No save-points yet.</div>}
+                {!collapsedSections.restartPointsList && !filteredSavepoints.length && (
+                  <div className="arc3-play-empty">No save-points yet.</div>
+                )}
               </>
             )}
           </div>
@@ -1726,7 +1748,13 @@ export function Arc3PlayPage({
             {!collapsedSections.importables && (
               <>
                 {importNote && <div className="arc3-play-import-note">{importNote}</div>}
-                {sortedRecordings.map((recording) => (
+                <div className="arc3-play-mini-header">
+                  <small>{sortedRecordings.length} importable recording(s)</small>
+                  <button className="arc3-play-collapse-toggle" onClick={() => toggleSection("importablesList")}>
+                    {collapsedSections.importablesList ? "▸ Expand" : "▾ Collapse"}
+                  </button>
+                </div>
+                {!collapsedSections.importablesList && sortedRecordings.map((recording) => (
                   <div key={recording.path} className="arc3-play-savepoint">
                     <div className="arc3-play-savepoint-info">
                       <b>{recording.name}</b>
@@ -1751,7 +1779,7 @@ export function Arc3PlayPage({
                     </div>
                   </div>
                 ))}
-                {!sortedRecordings.length && (
+                {!collapsedSections.importablesList && !sortedRecordings.length && (
                   <div className="arc3-play-empty">
                     No importable recordings found.{" "}
                     <button className="arc3-play-rescan" disabled={busy} onClick={() => void loadRecordings()}>
