@@ -557,6 +557,50 @@ def serve_doc(rel_path: str, request: Request) -> Response:
 def serve_onboarding_doc_aliases(request: Request) -> Response:
     return serve_doc("LLM_EMUL_ONBOARDING.md", request)
 
+
+# ---------------------------------------------------------------------------
+# Static HTML (and other assets) under workbench/server/llm_emul/static/,
+# served both under a namespaced /llm_emul/static/ path and as bare
+# top-level /{name}.html files (so e.g. a landing page at
+# static/index.html is reachable as /index.html). The bare route only
+# matches a single path segment ending in .html, so it can't shadow the
+# other /v1, /admin, or /llm_emul routes.
+# ---------------------------------------------------------------------------
+_STATIC_ROOT = Path(__file__).resolve().parent / "static"
+
+_STATIC_MEDIA_TYPES = {
+    ".html": "text/html; charset=utf-8",
+    ".css": "text/css; charset=utf-8",
+    ".js": "text/javascript; charset=utf-8",
+    ".json": "application/json; charset=utf-8",
+    ".svg": "image/svg+xml",
+    ".png": "image/png",
+    ".ico": "image/x-icon",
+}
+
+
+def _serve_static(rel_path: str) -> Response:
+    if not rel_path or ".." in Path(rel_path).parts or Path(rel_path).is_absolute():
+        raise HTTPException(status_code=400, detail=f"invalid static path '{rel_path}'")
+    path = _STATIC_ROOT / rel_path
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail=f"no such static file '{rel_path}'")
+    media_type = _STATIC_MEDIA_TYPES.get(path.suffix, "application/octet-stream")
+    if media_type.startswith(("text/", "application/json")):
+        return Response(content=path.read_text(encoding="utf-8"), media_type=media_type)
+    return Response(content=path.read_bytes(), media_type=media_type)
+
+
+@router.get("/llm_emul/static/{rel_path:path}")
+def serve_static_asset(rel_path: str) -> Response:
+    return _serve_static(rel_path)
+
+
+@router.get("/{filename}.html")
+def serve_root_html(filename: str) -> Response:
+    """Bare top-level *.html convenience, e.g. /index.html -> static/index.html."""
+    return _serve_static(f"{filename}.html")
+
 # ---------------------------------------------------------------------------
 # Generic durable storage -- lets a worker "borrow" this server's disk as
 # a scratch space (notes, drafts, anything it wants to persist between

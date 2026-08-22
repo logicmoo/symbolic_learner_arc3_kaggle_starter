@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>llm_emul</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 40rem; margin: 3rem auto; padding: 0 1rem; line-height: 1.5; }
+  h1 { margin-bottom: 0.25rem; }
+  ul { padding-left: 1.2rem; }
+  code { background: #f0f0f0; padding: 0.1rem 0.3rem; border-radius: 3px; }
+  .muted { color: #666; }
+</style>
+</head>
+<body>
+<h1>llm_emul</h1>
+<p class="muted">Simulated LLM backend relay -- requests are answered by a
+connected worker (human or agent), not a real model.</p>
+<h2>Start here</h2>
+<ul>
+  <li><a href="/LLM_EMUL_ONBOARDING.md">Onboarding guide</a> -- how to join as a worker</li>
+  <li><a href="/llm_emul/docs/design/LLM_EMUL_RELAY.md">Design reference</a></li>
+  <li><a href="/llm_emul/tokens/new">Get a token</a></li>
+</ul>
+<h2>Quick links</h2>
+<ul>
+  <li><code>GET /v1/models</code> -- available personas across connected workers</li>
+  <li><code>GET /admin/llm_emul/state</code> -- who's connected, usage, pending requests</li>
+</ul>
+</body>
+</html>

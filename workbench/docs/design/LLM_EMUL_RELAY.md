@@ -210,6 +210,13 @@ paths, so it can't become a read-anything vector from the network), and
 path traversal out of an aliased directory is refused just like the
 normal docs root.
 
+Static HTML/CSS/JS assets under `workbench/server/llm_emul/static/` are
+served at `GET /llm_emul/static/{rel_path}` and, for single-segment HTML
+files, at the bare root `GET /{name}.html` (e.g. `static/index.html` is
+reachable as `/index.html`). The bare route only matches one path
+segment ending in `.html`, so it can't shadow the `/v1`, `/admin`, or
+other `/llm_emul` routes.
+
 ## Admin / test-controller surface
 
 `/admin/llm_emul/*` is **not** part of the OpenAI-compatible API -- it's
@@ -297,7 +304,7 @@ with `encoding="utf-8-sig"`.
 
 ## Tests
 
-`workbench/server/llm_emul/tests/test_llm_emul_api.py` (51 tests) covers, via a `FakeWorker` double
+`workbench/server/llm_emul/tests/test_llm_emul_api.py` (54 tests) covers, via a `FakeWorker` double
 registered directly into `_connected_workers` (no real WebSocket needed):
 
 - persona listing/lookup, multi-worker aggregation

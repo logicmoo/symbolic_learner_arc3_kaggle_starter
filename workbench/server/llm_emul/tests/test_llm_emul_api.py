@@ -261,6 +261,23 @@ def test_onboarding_doc_reachable_at_all_three_urls(client: TestClient) -> None:
         assert response.text == canonical.text
 
 
+def test_static_html_served_at_namespaced_and_root_paths(client: TestClient) -> None:
+    namespaced = client.get("/llm_emul/static/index.html")
+    assert namespaced.status_code == 200
+    assert "text/html" in namespaced.headers["content-type"]
+    assert "llm_emul" in namespaced.text
+
+    root = client.get("/index.html")
+    assert root.status_code == 200
+    assert root.text == namespaced.text
+
+
+def test_static_missing_and_traversal(client: TestClient) -> None:
+    assert client.get("/llm_emul/static/nope.html").status_code == 404
+    assert client.get("/does-not-exist.html").status_code == 404
+    assert client.get("/llm_emul/static/../api.py").status_code in (400, 404)
+
+
 def test_specific_worker_prefix_pins_worker_regardless_of_model_field(client: TestClient, short_timeout: None) -> None:
     """A client hitting /llm_emul/specific_worker/alice/v1/chat/completions
     must be routed to alice even if it sends a "model" naming someone
