@@ -4,6 +4,7 @@ import json
 import os
 import re
 import shutil
+import stat as stat_module
 import time
 import base64
 import binascii
@@ -1220,21 +1221,70 @@ def workspace_snapshot(workspace_id: str, scope: str = Query(default="full", pat
     }
 
 
+def _fast_data_file_record(root: Path, path: Path) -> dict[str, Any] | None:
+    """Single-stat file record for hot listing loops over many files.
+
+    _file_record()/is_file()/is_dir() each go through FilesystemProvider,
+    which re-resolves .json -> .metta sibling transparency and re-stats
+    separately per call -- up to ~5 redundant syscalls per file. At
+    thousands of files (e.g. many recorded ARC3 game moves) that compounds
+    from milliseconds into minutes. This does exactly one stat per file
+    (two only for a .json path whose .metta sibling doesn't exist).
+    """
+    physical = path
+    if path.suffix.lower() == ".json":
+        metta_path = path.with_suffix(".metta")
+        try:
+            info = metta_path.stat()
+            physical = metta_path
+        except OSError:
+            try:
+                info = path.stat()
+            except OSError:
+                return None
+    else:
+        try:
+            info = path.stat()
+        except OSError:
+            return None
+    if not stat_module.S_ISREG(info.st_mode):
+        return None
+    return {
+        "path": path.relative_to(root).as_posix(),
+        "name": path.name,
+        "suffix": path.suffix.lower(),
+        "size": info.st_size,
+        "modified": info.st_mtime,
+        "kind": "file",
+    }
+
+
 @router.get("/{workspace_id}/data/files")
 def workspace_data_files(workspace_id: str) -> dict[str, Any]:
     try:
-        workspace = _resolve_workspace(workspace_id)
+        # Counts-free resolve: this endpoint only needs workspace["root"], not
+        # the full catalog enumeration (models/prompts/operations/datatypes/
+        # goals/plans/disk-usage summaries) that _resolve_workspace() also
+        # does as a side effect -- that was the dominant cost, dwarfing the
+        # per-file listing work below.
+        workspace = _resolve_workspace_without_counts(workspace_id)
         root = Path(workspace["root"])
         resources = get_filesystem_provider()
         files: list[dict[str, Any]] = []
-        for path in resources.rglob(root, "*", ignored_names=IGNORED_DIRECTORIES):
-            if any(part in IGNORED_DIRECTORIES for part in path.parts):
-                continue
-            if not resources.is_file(path):
-                continue
-            relative = path.relative_to(root).as_posix().lower()
-            if relative.startswith("data/") or relative.startswith("knowledge/data/"):
-                files.append(_file_record(root, path))
+        # Walk data/ and knowledge/data/ directly instead of the whole
+        # workspace root + string-prefix filtering after the fact -- avoids
+        # needlessly touching runtime/, design/, docs/, etc. (which can grow
+        # large on their own, e.g. runtime/states/play_action_trees/).
+        scan_roots = [candidate for candidate in (root / "data", root / "knowledge" / "data") if resources.is_dir(candidate)]
+        for scan_root in scan_roots:
+            for path in resources.rglob(scan_root, "*", ignored_names=IGNORED_DIRECTORIES):
+                if any(part in IGNORED_DIRECTORIES for part in path.parts):
+                    continue
+                record = _fast_data_file_record(root, path)
+                if record is not None:
+                    files.append(record)
+                if len(files) >= 5000:
+                    break
             if len(files) >= 5000:
                 break
         return {"workspace": workspace, "files": files}
