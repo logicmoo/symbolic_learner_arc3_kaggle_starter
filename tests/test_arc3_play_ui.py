@@ -31,7 +31,7 @@ def test_play_component_has_recorder_contract() -> None:
     assert "/arc3-play/games" in source
     assert "/arc3-play/sessions" in source
     assert "levelDir" in source
-    assert "New attempt" in source
+    assert "Restart Level" in source
     assert "Restart game" in source
     assert "Rewind {count} move" in source
     assert "arc3-play-rewind-menu" in source
@@ -222,6 +222,20 @@ def test_play_page_deep_link_auto_resumes_recording_or_savepoint() -> None:
     # Resumes a live session from whichever savepoint id was found.
     assert '"/api/arc3-play/sessions"' in source
     assert "savepointId" in source
+    # The resumed session's timeline is populated (not dropped) so the user
+    # lands on the ending state but can still slide the timeline back to
+    # any earlier move, instead of only seeing the win/end frame.
+    assert "applyResumedSession(payload.session as PlaySessionSnapshot)" in source
+
+
+def test_play_page_resume_populates_scrubbable_timeline() -> None:
+    source = COMPONENT.read_text(encoding="utf-8")
+    assert "const applyResumedSession = useCallback((snap: PlaySessionSnapshot)" in source
+    assert "setReplayScript(script.length > 0 ? script : null)" in source
+    assert "setReplayPos(script.length)" in source
+    # resumeSavepoint (the "Resume" button on a save-point) must use the
+    # same helper, not silently clear the timeline.
+    assert "applyResumedSession(payload.session as PlaySessionSnapshot);\n    });" in source
 
 
 def test_play_page_recordings_section_can_be_refreshed() -> None:

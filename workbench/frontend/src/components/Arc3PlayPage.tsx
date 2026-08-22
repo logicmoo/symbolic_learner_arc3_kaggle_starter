@@ -239,6 +239,19 @@ export function Arc3PlayPage({
     }
   }, []);
 
+  // Resuming a save-point (or fast-forwarding an auto-imported recording)
+  // used to drop straight into the ending state with no way to look back.
+  // Populate the timeline from the resumed session's own replay log instead
+  // -- positioned at the end (so play continues live from where it left
+  // off) but fully scrubbable, so a slide/click on any tick steps back to
+  // that point in the run.
+  const applyResumedSession = useCallback((snap: PlaySessionSnapshot) => {
+    setSession(snap);
+    const script = (snap.replayLog || []).filter((op) => op.op === "step" || op.op === "reset");
+    setReplayScript(script.length > 0 ? script : null);
+    setReplayPos(script.length);
+  }, []);
+
   useEffect(() => {
     void loadGames(false);
   }, [loadGames]);
@@ -297,7 +310,7 @@ export function Arc3PlayPage({
           method: "POST",
           body: JSON.stringify({ workspaceId, savepointId }),
         });
-        setSession(payload.session as PlaySessionSnapshot);
+        applyResumedSession(payload.session as PlaySessionSnapshot);
       } catch (reason) {
         setError(reason instanceof Error ? reason.message : String(reason));
       }
@@ -488,9 +501,8 @@ export function Arc3PlayPage({
         body: JSON.stringify({ workspaceId, savepointId }),
       });
       setArmedAction(null);
-      setReplayScript(null);
       setReplayPlaying(false);
-      setSession(payload.session as PlaySessionSnapshot);
+      applyResumedSession(payload.session as PlaySessionSnapshot);
     });
 
   const loadSavepoint = (point: PlaySavepoint) =>
@@ -822,7 +834,7 @@ export function Arc3PlayPage({
         <div>
           <h2>{pageDefinition.label || "Play & Record"}</h2>
           <small>
-            {workspaceLabel} · every move is recorded to data/&lt;game&gt;/level_&lt;n&gt;_&lt;datetime&gt;_&lt;ns&gt;/0..k for B1 -&gt; B2 setups
+            {workspaceLabel} · every move is recorded to data/Recordings/&lt;game&gt;/level_&lt;n&gt;_&lt;NNN&gt;/0..k for B1 -&gt; B2 setups
           </small>
         </div>
         <div className="arc3-play-game-picker">
@@ -1033,7 +1045,7 @@ export function Arc3PlayPage({
                   title="Restart the current level (new attempt dir)"
                   onClick={() => void resetAttempt()}
                 >
-                  New attempt
+                  Restart Level{session.level ? `_${session.level}` : ""}
                 </button>
                 <button
                   className="arc3-play-action reset"
