@@ -335,9 +335,9 @@ STEPS=200` runs a targeted session. These Make targets assume a Unix-like
 
 shell; use `README_WINDOWS.md` on Windows.
 
-\- From `workbench/frontend/`, `npm install && npm run build && npm run preview` starts Vite without file watching and
+\- From `workbench/frontend/`, `npm install && npm run dev` starts Vite with hot-reloading (preferred for interactive use) and
 
-`npm run build` type-checks and builds the frontend. Node.js 22+ is required.
+`npm run build` type-checks and builds the frontend (used for validation/production checks, not for serving the interactive app). Node.js 22+ is required.
 
 \- `swipl -q -s prolog/run_tests.pl` runs the SWI-Prolog test entrypoint.
 

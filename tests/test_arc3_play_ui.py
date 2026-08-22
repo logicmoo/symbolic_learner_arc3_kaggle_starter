@@ -213,6 +213,25 @@ def test_play_page_recordings_section_can_be_refreshed() -> None:
     assert ".arc3-play-section-actions" in styles
 
 
+def test_play_page_recordings_path_can_be_set_from_the_right_panel() -> None:
+    source = COMPONENT.read_text(encoding="utf-8")
+    assert "RECORDINGS PATH" in source
+    assert "recordingsPathDraft" in source
+    assert "setRecordingsPath" in source
+    assert "/recordings-path" in source
+    assert "Reset to default" in source
+    assert "recordingsPathIsDefault" in source
+    styles = STYLES.read_text(encoding="utf-8")
+    assert ".arc3-play-recordings-path" in styles
+
+    api_source = API.read_text(encoding="utf-8")
+    assert '"/sessions/{session_id}/recordings-path"' in api_source
+    assert "def set_recordings_path" in api_source
+    assert "def _recordings_container" in api_source
+    assert "recordingsPath" in api_source
+    assert "recordingsPathIsDefault" in api_source
+
+
 def test_games_gallery_page_exists_and_is_wired_into_navigation() -> None:
     gallery_component = (ROOT / "workbench/frontend/src/components/Arc3GamesGalleryPage.tsx").read_text(encoding="utf-8")
     assert "export function Arc3GamesGalleryPage(" in gallery_component

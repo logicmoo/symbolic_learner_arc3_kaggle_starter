@@ -114,3 +114,52 @@ def test_all_game_dirs_lists_both_locations_for_a_game_present_in_each(tmp_path:
     assert len(dirs) == 2
     names = sorted(path.name for path in dirs)
     assert names == ["ar25", "ar25"]
+
+
+def _bare_session(workspace_root: Path, game_dir: str = "ar25") -> arc3_play_api.PlaySession:
+    """A PlaySession with only the attributes set_recordings_path()/
+    _recordings_container() need, bypassing __init__ (which requires the
+    real arc_agi engine)."""
+    session = object.__new__(arc3_play_api.PlaySession)
+    session.workspace_root = workspace_root
+    session.game_dir = game_dir
+    session.recordings_root = None
+    return session
+
+
+def test_recordings_container_defaults_to_data_recordings_game(tmp_path: Path) -> None:
+    session = _bare_session(tmp_path, "ar25")
+    assert session._recordings_container() == tmp_path / "data" / "Recordings" / "ar25"
+
+
+def test_set_recordings_path_overrides_the_container(tmp_path: Path) -> None:
+    session = _bare_session(tmp_path, "ar25")
+    session.set_recordings_path("custom/recordings/spot")
+
+    expected = tmp_path / "custom" / "recordings" / "spot"
+    assert session._recordings_container() == expected
+    assert expected.is_dir()  # created eagerly so writers can rely on it existing
+
+
+def test_set_recordings_path_empty_or_none_resets_to_default(tmp_path: Path) -> None:
+    session = _bare_session(tmp_path, "ar25")
+    session.set_recordings_path("custom/spot")
+    assert session.recordings_root is not None
+
+    session.set_recordings_path("")
+    assert session.recordings_root is None
+    assert session._recordings_container() == tmp_path / "data" / "Recordings" / "ar25"
+
+    session.set_recordings_path("custom/spot")
+    session.set_recordings_path(None)
+    assert session.recordings_root is None
+
+
+def test_set_recordings_path_rejects_paths_that_escape_the_workspace(tmp_path: Path) -> None:
+    session = _bare_session(tmp_path, "ar25")
+    try:
+        session.set_recordings_path("../outside")
+        raise AssertionError("expected ValueError for a path escaping the workspace root")
+    except ValueError:
+        pass
+    assert session.recordings_root is None

@@ -311,6 +311,21 @@
   gap: 8px;
 }
 
+.arc3-play-recordings-path input[type="text"] {
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(128, 128, 128, 0.45);
+  background: transparent;
+  color: inherit;
+  font-size: 12px;
+  font-family: ui-monospace, monospace;
+}
+
+.arc3-play-recordings-path-actions {
+  display: flex;
+  gap: 6px;
+}
+
 .arc3-play-move {
   display: flex;
   gap: 8px;

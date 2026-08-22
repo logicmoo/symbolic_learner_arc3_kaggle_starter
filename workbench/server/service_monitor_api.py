@@ -473,7 +473,7 @@ def _validate_submitted_command(service_id: str, cwd: Path, command: list[str]) 
         "clawrouter": "@blockrun/clawrouter" in text,
         "omniroute": "omniroute" in text,
         "freerouter": "freerouter" in cwd_text and "server.js" in text,
-        "workbench-web": cwd.name.lower() == "frontend" and "npm" in text and "preview" in text and "vite" in text,
+        "workbench-web": cwd.name.lower() == "frontend" and "npm" in text and "dev" in text and "vite" in text,
         "channel-relay": "mailbox_channel" in cwd_text and "mailbox_channels.server" in text,
     }
     if not allowed.get(service_id, False):

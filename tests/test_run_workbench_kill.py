@@ -61,7 +61,7 @@ def test_managed_batch_files_submit_expanded_final_commands_to_api() -> None:
         "run_clawrouter.bat": ("--service clawrouter", "npx.cmd --yes @blockrun/clawrouter --port %CLAWROUTER_PORT%"),
         "run_omniroute.bat": ("--service omniroute", "serve --port %OMNIROUTE_PORT%"),
         "run_freerouter.bat": ("--service freerouter", "node dist\\server.js"),
-        "run_vite_server.bat": ("--service workbench-web", "npm.cmd run build && npm.cmd run preview"),
+        "run_vite_server.bat": ("--service workbench-web", "npm.cmd run dev"),
         "run_channel_relay.bat": ("--service channel-relay", "-m mailbox_channels.server"),
     }
     scripts = ROOT / "workbench" / "scripts"

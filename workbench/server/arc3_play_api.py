@@ -111,6 +111,14 @@ def _game_write_dir(root: Path, game_dir: str) -> Path:
     return _games_container(root) / game_dir
 
 
+def _safe_workspace_child(root: Path, relative: str) -> Path:
+    resolved_root = root.resolve()
+    resolved = (resolved_root / relative).resolve()
+    if resolved != resolved_root and resolved_root not in resolved.parents:
+        raise ValueError("path escapes workspace root")
+    return resolved
+
+
 def _game_dirs_for(root: Path, game_dir: str) -> list[Path]:
     """Every existing directory for one game: new location first, then legacy."""
     candidates = [_game_write_dir(root, game_dir), root / "data" / game_dir]
@@ -245,7 +253,13 @@ def _scan_setup_dir(directory: Path, root: Path) -> dict[str, Any]:
 class PlaySession:
     """One live ARC3 environment plus its flat 0/1/2 move recording."""
 
-    def __init__(self, workspace_id: str, workspace_root: Path, game_id: str) -> None:
+    def __init__(
+        self,
+        workspace_id: str,
+        workspace_root: Path,
+        game_id: str,
+        recordings_path: str | None = None,
+    ) -> None:
         module = _load_runner_module()
         self.id = uuid.uuid4().hex
         self.workspace_id = workspace_id
@@ -256,6 +270,12 @@ class PlaySession:
         self.lock = threading.RLock()
         self.closed = False
         self._autosave_id = uuid.uuid4().hex[:12]
+        # Optional per-session override of where recordings/savepoints are
+        # written (relative to workspace_root); None means the default
+        # data/Recordings/<game>/ location. See set_recordings_path().
+        self.recordings_root: Path | None = None
+        if recordings_path:
+            self.set_recordings_path(recordings_path)
         with _engine_lock:
             self.runner = module.Arc3Runner(
                 game_id=self.game_id,
@@ -280,9 +300,29 @@ class PlaySession:
 
         return frame_to_png_bytes(self.runner.current_grid())
 
+    def _recordings_container(self) -> Path:
+        """Where this session currently writes new level dirs/savepoints.json:
+        the custom override if one was set, else the default
+        data/Recordings/<game>/ location."""
+        if self.recordings_root is not None:
+            return self.recordings_root
+        return _game_write_dir(self.workspace_root, self.game_dir)
+
+    def set_recordings_path(self, relative_path: str | None) -> None:
+        """Override (or, with None/empty, reset to default) where this
+        session's FUTURE level dirs and savepoints.json are written. Does not
+        move anything already on disk. relative_path is resolved against
+        workspace_root and must stay inside it."""
+        if not relative_path or not relative_path.strip():
+            self.recordings_root = None
+            return
+        resolved = _safe_workspace_child(self.workspace_root, relative_path.strip())
+        resolved.mkdir(parents=True, exist_ok=True)
+        self.recordings_root = resolved
+
     def _begin_level_dir(self, reason: str) -> None:
         level = self.runner.current_level_label()
-        container = _game_write_dir(self.workspace_root, self.game_dir)
+        container = self._recordings_container()
         name = _next_ranked_level_dir_name(container, level)
         directory = container / name
         directory.mkdir(parents=True, exist_ok=True)
@@ -514,7 +554,7 @@ class PlaySession:
         }
 
     def _write_savepoint(self, savepoint: dict[str, Any], replace_id: str | None = None) -> None:
-        path = _game_write_dir(self.workspace_root, self.game_dir) / "savepoints.json"
+        path = self._recordings_container() / "savepoints.json"
         with _savepoints_lock:
             entries = _load_savepoints(path)
             if replace_id:
@@ -633,6 +673,8 @@ class PlaySession:
                 "forkedFrom": self.forked_from,
                 "availableActions": self._available_actions(),
                 "replayLog": [dict(entry) for entry in self.replay_log],
+                "recordingsPath": self._relative(self._recordings_container()),
+                "recordingsPathIsDefault": self.recordings_root is None,
             }
             if include_moves:
                 payload["moves"] = list(self.moves)
@@ -750,6 +792,7 @@ def create_session(body: dict[str, Any] = Body(default_factory=dict)) -> dict[st
     workspace_id = str(body.get("workspaceId") or "").strip()
     game_id = str(body.get("gameId") or "").strip()
     savepoint_id = str(body.get("savepointId") or "").strip()
+    recordings_path = str(body.get("recordingsPath") or "").strip() or None
     replay_ops_raw = body.get("replayLog")
     replay_ops = [dict(op) for op in replay_ops_raw] if isinstance(replay_ops_raw, list) else []
     if not workspace_id or (not game_id and not savepoint_id):
@@ -762,7 +805,7 @@ def create_session(body: dict[str, Any] = Body(default_factory=dict)) -> dict[st
             raise HTTPException(status_code=404, detail=f"savepoint not found: {savepoint_id}")
         game_id = str(savepoint.get("game_id") or game_id)
     try:
-        session = PlaySession(workspace_id, root, game_id)
+        session = PlaySession(workspace_id, root, game_id, recordings_path=recordings_path)
         if savepoint is not None:
             session.replay_recipe(
                 list(savepoint.get("replay_log") or []),
@@ -774,6 +817,8 @@ def create_session(body: dict[str, Any] = Body(default_factory=dict)) -> dict[st
             session.replay_recipe(replay_ops, forked_from=str(body.get("forkedFrom") or "history"))
     except HTTPException:
         raise
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
     except Exception as error:
         raise HTTPException(status_code=400, detail=f"could not start game: {error}") from error
     with _sessions_lock:
@@ -1638,6 +1683,23 @@ def _get_session(session_id: str) -> PlaySession:
 @router.get("/sessions/{session_id}")
 def read_session(session_id: str) -> dict[str, Any]:
     return {"session": _get_session(session_id).snapshot()}
+
+
+@router.put("/sessions/{session_id}/recordings-path")
+def set_session_recordings_path(session_id: str, body: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
+    """Override where THIS session's future level dirs/savepoints.json are
+    written (relative to the workspace root), or reset to the default
+    data/Recordings/<game>/ location by passing an empty/missing path. Takes
+    effect starting with the next level dir (a new attempt/level transition);
+    nothing already written on disk is moved."""
+    session = _get_session(session_id)
+    path = body.get("path")
+    try:
+        with session.lock:
+            session.set_recordings_path(str(path) if path is not None else None)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    return {"session": session.snapshot()}
 
 
 @router.post("/sessions/{session_id}/action")

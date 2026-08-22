@@ -15,13 +15,13 @@ set "WORKBENCH_WEB_HOST=%BIND_IP%"
 set "WORKBENCH_WEB_PORT=%WEB_PORT%"
 set "WORKBENCH_API_TARGET=%API_TARGET%"
 
-title MeTTa Workbench Vite Preview %BIND_IP%:%WEB_PORT%
+title MeTTa Workbench Vite Dev Server %BIND_IP%:%WEB_PORT%
 cd /d "%ROOT%\frontend"
-doskey restart=npm run build ^&^& npm run preview
+doskey restart=npm run dev
 
 echo.
 echo ============================================================
-echo  MeTTa Workbench Vite Preview Frontend
+echo  MeTTa Workbench Vite Dev Server (hot-reloading, no build step)
 echo ============================================================
 echo  Working directory:
 echo    %CD%
@@ -32,11 +32,11 @@ echo    WORKBENCH_WEB_PORT=%WORKBENCH_WEB_PORT%
 echo    WORKBENCH_API_TARGET=%WORKBENCH_API_TARGET%
 echo.
 echo  Command being run:
-echo    npm run build && npm run preview
+echo    npm run dev
 echo.
 echo  If you stop it with Ctrl+C:
 echo    type restart
-echo  or rerun: npm run build && npm run preview
+echo  or rerun: npm run dev
 echo  The instance environment above remains set in this window.
 echo  This command window stays open after Vite exits.
 echo ============================================================
@@ -44,13 +44,13 @@ echo.
 
 set "WORKBENCH_CONTROL_API=%WORKBENCH_CONTROL_API%"
 if not defined WORKBENCH_CONTROL_API set "WORKBENCH_CONTROL_API=%API_TARGET%"
-"%ROOT%\..\.venv\Scripts\python.exe" "%ROOT%\scripts\submit_managed_command.py" --api "%WORKBENCH_CONTROL_API%" --service workbench-web --cwd "%CD%" --env WORKBENCH_WEB_HOST --env WORKBENCH_WEB_PORT --env WORKBENCH_API_TARGET -- "%ComSpec%" /d /c "npm.cmd run build && npm.cmd run preview"
+"%ROOT%\..\.venv\Scripts\python.exe" "%ROOT%\scripts\submit_managed_command.py" --api "%WORKBENCH_CONTROL_API%" --service workbench-web --cwd "%CD%" --env WORKBENCH_WEB_HOST --env WORKBENCH_WEB_PORT --env WORKBENCH_API_TARGET -- "%ComSpec%" /d /c "npm.cmd run dev"
 
 echo.
 echo ------------------------------------------------------------
-echo  Vite preview frontend stopped.
+echo  Vite dev server stopped.
 echo  Type: restart
 echo  Full restart command:
-echo    npm run build && npm run preview
+echo    npm run dev
 echo ------------------------------------------------------------
 echo.

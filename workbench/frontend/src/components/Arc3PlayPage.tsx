@@ -64,6 +64,8 @@ type PlaySessionSnapshot = {
   availableActions: PlayAction[];
   replayLog?: ReplayOp[];
   moves?: PlayMove[];
+  recordingsPath?: string;
+  recordingsPathIsDefault?: boolean;
 };
 
 type PlaySavepoint = {
@@ -134,6 +136,7 @@ export function Arc3PlayPage({
   const [error, setError] = useState("");
   const [armedAction, setArmedAction] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [recordingsPathDraft, setRecordingsPathDraft] = useState("");
   const [savepoints, setSavepoints] = useState<PlaySavepoint[]>([]);
   const [recordings, setRecordings] = useState<PlayRecording[]>([]);
   const [importNote, setImportNote] = useState("");
@@ -255,6 +258,14 @@ export function Arc3PlayPage({
     setSelectedGameId(games[0].short_id || games[0].game_id);
   }, [games, selectedGameId]);
 
+  // Keep the editable recordings-path field synced with the current
+  // session's effective path (server-authoritative; blank when it's on
+  // the default data/Recordings/<game>/ location, so "Set" only submits
+  // an explicit override).
+  useEffect(() => {
+    setRecordingsPathDraft(session && !session.recordingsPathIsDefault ? session.recordingsPath || "" : "");
+  }, [session?.id, session?.recordingsPath, session?.recordingsPathIsDefault]);
+
   const loadSavepoints = useCallback(async () => {
     try {
       const payload = await request(`/api/arc3-play/savepoints?workspaceId=${encodeURIComponent(workspaceId)}`);
@@ -326,6 +337,16 @@ export function Arc3PlayPage({
     perform(async () => {
       if (!session) return;
       const payload = await request(`/api/arc3-play/sessions/${encodeURIComponent(session.id)}`);
+      setSession(payload.session as PlaySessionSnapshot);
+    });
+
+  const setRecordingsPath = (path: string | null) =>
+    perform(async () => {
+      if (!session) return;
+      const payload = await request(`/api/arc3-play/sessions/${encodeURIComponent(session.id)}/recordings-path`, {
+        method: "PUT",
+        body: JSON.stringify({ path }),
+      });
       setSession(payload.session as PlaySessionSnapshot);
     });
 
@@ -1104,6 +1125,33 @@ export function Arc3PlayPage({
                     <code>{session.levelDir}</code>
                     <button onClick={() => void copyLevelDir()}>{copied ? "Copied" : "Copy path"}</button>
                     {session.forkedFrom && <small>resumed from save-point {session.forkedFrom}</small>}
+                  </div>
+                  <div className="arc3-play-target arc3-play-recordings-path">
+                    <small title="Where future level dirs + savepoints.json for this session are written. Blank = default data/Recordings/<game>/. Applies to the next attempt/level, not files already on disk.">
+                      RECORDINGS PATH (workspace-relative)
+                    </small>
+                    <input
+                      type="text"
+                      value={recordingsPathDraft}
+                      placeholder={`data/Recordings/${session.gameDirectory} (default)`}
+                      disabled={busy}
+                      onChange={(event) => setRecordingsPathDraft(event.target.value)}
+                    />
+                    <div className="arc3-play-recordings-path-actions">
+                      <button
+                        disabled={busy || recordingsPathDraft.trim() === (session.recordingsPathIsDefault ? "" : session.recordingsPath || "")}
+                        onClick={() => void setRecordingsPath(recordingsPathDraft.trim() || null)}
+                      >
+                        Set
+                      </button>
+                      <button disabled={busy || session.recordingsPathIsDefault} onClick={() => void setRecordingsPath(null)}>
+                        Reset to default
+                      </button>
+                    </div>
+                    <small>
+                      Currently: <code>{session.recordingsPath}</code>
+                      {session.recordingsPathIsDefault ? " (default)" : " (custom)"}
+                    </small>
                   </div>
               {levelMoves.length > 0 && (
                 <div className="arc3-play-move-setup">
