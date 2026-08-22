@@ -136,6 +136,14 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
   const [replayPlaying, setReplayPlaying] = useState(false);
   const [replaySpeedMs, setReplaySpeedMs] = useState(300);
   const [timelineHover, setTimelineHover] = useState<number | null>(null);
+  const [selectedGameId, setSelectedGameId] = useState("");
+  const [filterGameId, setFilterGameId] = useState("");
+  const [expandedMoveDir, setExpandedMoveDir] = useState<string | null>(null);
+  const [moveScanResults, setMoveScanResults] = useState<Record<string, Record<string, string[]> | null>>({});
+  const [moveScanLoading, setMoveScanLoading] = useState<string | null>(null);
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
+  const toggleSection = (key: string) =>
+    setCollapsedSections((current) => ({ ...current, [key]: !current[key] }));
   const boardRef = useRef<HTMLImageElement | null>(null);
   const columnsRef = useRef<HTMLDivElement | null>(null);
   const [colWidths, setColWidths] = useState<{ left: number; right: number }>(() => {
@@ -207,6 +215,12 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
   useEffect(() => {
     void loadGames(false);
   }, [loadGames]);
+
+  useEffect(() => {
+    if (!games.length) return;
+    if (selectedGameId && games.some((game) => (game.short_id || game.game_id) === selectedGameId)) return;
+    setSelectedGameId(games[0].short_id || games[0].game_id);
+  }, [games, selectedGameId]);
 
   const loadSavepoints = useCallback(async () => {
     try {
@@ -630,8 +644,48 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
     [assetUrl],
   );
 
+  const toggleMoveExpand = (directory: string) => {
+    setExpandedMoveDir((current) => (current === directory ? null : directory));
+  };
+
+  const scanMoveDir = useCallback(
+    async (directory: string) => {
+      setMoveScanLoading(directory);
+      try {
+        const response = await fetch(assetUrl(`${directory}/state.json`), { cache: "no-store" });
+        if (!response.ok) {
+          setMoveScanResults((current) => ({ ...current, [directory]: null }));
+          return;
+        }
+        const parsed = await response.json();
+        const results = parsed && typeof parsed === "object" ? parsed.scan?.results : null;
+        setMoveScanResults((current) => ({ ...current, [directory]: results && typeof results === "object" ? results : null }));
+      } catch {
+        setMoveScanResults((current) => ({ ...current, [directory]: null }));
+      } finally {
+        setMoveScanLoading((current) => (current === directory ? null : current));
+      }
+    },
+    [assetUrl],
+  );
+
   const moves = session?.moves || [];
-  const newestFirst = [...moves].reverse();
+  const levelDirRank = new Map((session?.levelDirs || []).map((dir, idx) => [dir, idx] as const));
+  const movesNumeric = [...moves].sort((a, b) => {
+    const levelDirOf = (move: PlayMove) => move.directory.slice(0, move.directory.lastIndexOf("/"));
+    const levelA = levelDirRank.get(levelDirOf(a)) ?? -1;
+    const levelB = levelDirRank.get(levelDirOf(b)) ?? -1;
+    if (levelA !== levelB) return levelA - levelB;
+    return a.index - b.index;
+  });
+  const newestFirst = [...movesNumeric].reverse();
+  const filteredSavepoints = filterGameId ? savepoints.filter((point) => point.game_directory === filterGameId) : savepoints;
+  const filteredRecordings = filterGameId ? recordings.filter((recording) => recording.gameId === filterGameId) : recordings;
+  const sortedRecordings = [...filteredRecordings].sort((a, b) => {
+    const gameCompare = (a.gameId || "").localeCompare(b.gameId || "", undefined, { numeric: true, sensitivity: "base" });
+    if (gameCompare !== 0) return gameCompare;
+    return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" });
+  });
   const levelMoves = session ? moves.filter((move) => move.directory.startsWith(`${session.levelDir}/`)) : [];
   const levelIndexByDir = new Map(levelMoves.map((move, idx) => [move.directory, idx] as const));
   const rewindUndoneDirs = new Set(
@@ -658,47 +712,46 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
             {workspaceLabel} · every move is recorded to data/&lt;game&gt;/level_&lt;n&gt;_&lt;datetime&gt;_&lt;ns&gt;/0..k for B1 -&gt; B2 setups
           </small>
         </div>
+        <div className="arc3-play-game-picker">
+          <select
+            value={selectedGameId}
+            disabled={busy || gamesLoading || !games.length}
+            onChange={(event) => setSelectedGameId(event.target.value)}
+          >
+            {!games.length && <option value="">No games returned by the ARC engine.</option>}
+            {games.map((game) => {
+              const shortId = game.short_id || game.game_id;
+              return (
+                <option key={game.game_id} value={shortId}>
+                  {shortId} — {game.title || game.game_id}
+                </option>
+              );
+            })}
+          </select>
+          <button
+            title="Scope SAVE-POINTS and IMPORTABLES below to the selected game"
+            disabled={!selectedGameId}
+            onClick={() => setFilterGameId((current) => (current === selectedGameId ? "" : selectedGameId))}
+          >
+            {filterGameId === selectedGameId && filterGameId ? "Filter: ON" : "Filter"}
+          </button>
+          <button
+            disabled={busy || !selectedGameId}
+            onClick={() => void startGame(selectedGameId)}
+          >
+            {session && !session.closed && session.gameDirectory === selectedGameId ? "Playing" : "Start new game"}
+          </button>
+          <button onClick={() => void loadGames(true)} disabled={gamesLoading}>
+            {gamesLoading ? "Loading…" : "Refresh"}
+          </button>
+        </div>
         {error && <div className="arc3-play-error">{error}</div>}
       </header>
       <div
         className="arc3-play-columns"
         ref={columnsRef}
-        style={{ gridTemplateColumns: `${colWidths.left}px 6px minmax(0, 1fr) 6px ${colWidths.right}px` }}
+        style={{ gridTemplateColumns: `minmax(0, 1fr) 6px ${colWidths.right}px` }}
       >
-        <section className="arc3-play-games">
-          <div className="arc3-play-section-title">
-            <span>ARC3 GAMES</span>
-            <button onClick={() => void loadGames(true)} disabled={gamesLoading}>
-              {gamesLoading ? "Loading…" : "Refresh"}
-            </button>
-          </div>
-          <div className="arc3-play-game-list">
-            {games.map((game) => {
-              const shortId = game.short_id || game.game_id;
-              const active = session && !session.closed && session.gameDirectory === shortId;
-              return (
-                <button
-                  key={game.game_id}
-                  className={`arc3-play-game ${active ? "active" : ""}`}
-                  disabled={busy}
-                  onClick={() => void startGame(shortId)}
-                >
-                  <b>{shortId}</b>
-                  <small>{game.title || game.game_id}</small>
-                  {active && <em>playing</em>}
-                </button>
-              );
-            })}
-            {!games.length && !gamesLoading && <div className="arc3-play-empty">No games returned by the ARC engine.</div>}
-          </div>
-        </section>
-
-        <div
-          className="arc3-play-col-resizer"
-          title="Drag to resize"
-          onMouseDown={startColumnDrag("left")}
-        />
-
         <section className="arc3-play-board-column">
           {!session && <div className="arc3-play-empty">Pick a game on the left to start playing and recording.</div>}
           {session && (
@@ -962,17 +1015,22 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
 
         <section className="arc3-play-recording">
           <div className="arc3-play-section-title">
-            <span>RECORDING</span>
+            <span>RECORDINGS</span>
+            <button className="arc3-play-collapse-toggle" onClick={() => toggleSection("recordings")}>
+              {collapsedSections.recordings ? "▸ Expand" : "▾ Collapse"}
+            </button>
           </div>
-          {!session && <div className="arc3-play-empty">Recording paths appear once a game starts.</div>}
-          {session && (
+          {!collapsedSections.recordings && (
             <>
-              <div className="arc3-play-target">
-                <small>ACTIVE LEVEL DIR (use as B1 -&gt; B2 setup stateDir)</small>
-                <code>{session.levelDir}</code>
-                <button onClick={() => void copyLevelDir()}>{copied ? "Copied" : "Copy path"}</button>
-                {session.forkedFrom && <small>resumed from save-point {session.forkedFrom}</small>}
-              </div>
+              {!session && <div className="arc3-play-empty">Recording paths appear once a game starts.</div>}
+              {session && (
+                <>
+                  <div className="arc3-play-target">
+                    <small>ACTIVE LEVEL DIR (use as B1 -&gt; B2 setup stateDir)</small>
+                    <code>{session.levelDir}</code>
+                    <button onClick={() => void copyLevelDir()}>{copied ? "Copied" : "Copy path"}</button>
+                    {session.forkedFrom && <small>resumed from save-point {session.forkedFrom}</small>}
+                  </div>
               {levelMoves.length > 0 && (
                 <div className="arc3-play-move-setup">
                   <small>MOVE AS SETUP (bootstrap the same way a B1-&gt;B2 setup scans its dir, but over 0/ 1/ 2/ …)</small>
@@ -1073,23 +1131,61 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
                         {move.data && Object.keys(move.data).length > 0 && (
                           <span className="arc3-play-move-data"> {JSON.stringify(move.data)}</span>
                         )}
+                        <button
+                          className="arc3-play-move-expand"
+                          title="Show this move as a B1->B2 setup (path/scan)"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            toggleMoveExpand(move.directory);
+                          }}
+                        >
+                          {expandedMoveDir === move.directory ? "▾" : "▸"}
+                        </button>
                       </b>
                       <small>
                         state {move.state || "?"} · level {move.level || "?"}
                         {move.level_completed && <em> · completed level {move.level_completed}</em>}
                       </small>
                       <code>{move.directory}</code>
+                      {expandedMoveDir === move.directory && (
+                        <div className="arc3-play-move-setup" onClick={(event) => event.stopPropagation()}>
+                          <div className="arc3-play-move-setup-row">
+                            <button onClick={() => void copyMoveDir(move.directory)}>
+                              {inspectCopied ? "Copied" : "Copy path"}
+                            </button>
+                            <button disabled={moveScanLoading === move.directory} onClick={() => void scanMoveDir(move.directory)}>
+                              {moveScanLoading === move.directory ? "Scanning…" : "Scan"}
+                            </button>
+                          </div>
+                          {moveScanResults[move.directory] && (
+                            <div className="arc3-play-move-scan">
+                              {Object.entries(moveScanResults[move.directory] || {})
+                                .filter(([, paths]) => paths.length > 0)
+                                .map(([bucket, paths]) => (
+                                  <span key={bucket} className="arc3-play-move-scan-bucket">
+                                    {bucket}: {paths.length}
+                                  </span>
+                                ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                   );
                 })}
                 {!newestFirst.length && <div className="arc3-play-empty">No moves recorded yet.</div>}
               </div>
+                </>
+              )}
             </>
           )}
           <div className="arc3-play-savepoints">
             <small>
-              SAVE-POINTS (fork a session to add one)
+              RESTART-POINTS (fork a session to add one)
+              <button className="arc3-play-collapse-toggle" onClick={() => toggleSection("restartPoints")}>
+                {collapsedSections.restartPoints ? "▸ Expand" : "▾ Collapse"}
+              </button>
               <button
                 className="arc3-play-rescan"
                 disabled={busy}
@@ -1099,7 +1195,9 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
                 De-duplicate
               </button>
             </small>
-            {savepoints.map((point) => (
+            {!collapsedSections.restartPoints && (
+              <>
+                {filteredSavepoints.map((point) => (
               <div key={point.id} className="arc3-play-savepoint">
                 <div>
                   <b>
@@ -1146,11 +1244,16 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
                 </div>
               </div>
             ))}
-            {!savepoints.length && <div className="arc3-play-empty">No save-points yet.</div>}
+                {!filteredSavepoints.length && <div className="arc3-play-empty">No save-points yet.</div>}
+              </>
+            )}
           </div>
           <div className="arc3-play-savepoints arc3-play-recordings">
             <small>
-              RECORDINGS (official ARC-AGI-3 JSONL play logs in data/importables/)
+              IMPORTABLES (official ARC-AGI-3 JSONL play logs / release-run logs in data/importables/)
+              <button className="arc3-play-collapse-toggle" onClick={() => toggleSection("importables")}>
+                {collapsedSections.importables ? "▸ Expand" : "▾ Collapse"}
+              </button>
               <button
                 className="arc3-play-rescan"
                 disabled={busy}
@@ -1168,39 +1271,43 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
                 De-duplicate
               </button>
             </small>
-            {importNote && <div className="arc3-play-import-note">{importNote}</div>}
-            {recordings.map((recording) => (
-              <div key={recording.path} className="arc3-play-savepoint">
-                <div className="arc3-play-savepoint-info">
-                  <b>{recording.name}</b>
-                  <small>
-                    {recording.kind === "release-run" ? "release run" : "human recording"} ·{" "}
-                    {recording.gameId || "?"}
-                    {recording.kind === "release-run" && recording.totalActions
-                      ? ` · ${recording.totalActions} actions`
-                      : ` · ${Math.round((recording.sizeBytes || 0) / 1024)} KB`}{" "}
-                    · {recording.path}
-                  </small>
-                </div>
-                <div className="arc3-play-savepoint-buttons">
-                  <button
-                    className="dup"
-                    disabled={busy}
-                    title="Convert to level recordings + a resumable save-point"
-                    onClick={() => void importRecording(recording)}
-                  >
-                    Import
-                  </button>
-                </div>
-              </div>
-            ))}
-            {!recordings.length && (
-              <div className="arc3-play-empty">
-                No importable recordings found.{" "}
-                <button className="arc3-play-rescan" disabled={busy} onClick={() => void loadRecordings()}>
-                  Scan data/importables/
-                </button>
-              </div>
+            {!collapsedSections.importables && (
+              <>
+                {importNote && <div className="arc3-play-import-note">{importNote}</div>}
+                {sortedRecordings.map((recording) => (
+                  <div key={recording.path} className="arc3-play-savepoint">
+                    <div className="arc3-play-savepoint-info">
+                      <b>{recording.name}</b>
+                      <small>
+                        {recording.kind === "release-run" ? "release run" : "human recording"} ·{" "}
+                        {recording.gameId || "?"}
+                        {recording.kind === "release-run" && recording.totalActions
+                          ? ` · ${recording.totalActions} actions`
+                          : ` · ${Math.round((recording.sizeBytes || 0) / 1024)} KB`}{" "}
+                        · {recording.path}
+                      </small>
+                    </div>
+                    <div className="arc3-play-savepoint-buttons">
+                      <button
+                        className="dup"
+                        disabled={busy}
+                        title="Convert to level recordings + a resumable save-point"
+                        onClick={() => void importRecording(recording)}
+                      >
+                        Import
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                {!sortedRecordings.length && (
+                  <div className="arc3-play-empty">
+                    No importable recordings found.{" "}
+                    <button className="arc3-play-rescan" disabled={busy} onClick={() => void loadRecordings()}>
+                      Scan data/importables/
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </section>

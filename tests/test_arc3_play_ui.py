@@ -125,6 +125,44 @@ def test_play_api_supports_fork_savepoints() -> None:
     assert "savepointId" in source
 
 
+def test_play_page_right_column_panels_cleanup() -> None:
+    source = COMPONENT.read_text(encoding="utf-8")
+    # Panels renamed + independently collapsible.
+    assert "RESTART-POINTS" in source
+    assert "IMPORTABLES" in source
+    assert "arc3-play-collapse-toggle" in source
+    assert "toggleSection" in source
+    assert "collapsedSections" in source
+    # Header game picker replaces the old left-column ARC3 GAMES list.
+    assert "arc3-play-game-picker" in source
+    assert "selectedGameId" in source
+    assert '"Filter: ON" : "Filter"' in source
+    assert "Start new game" in source
+    assert "filterGameId" in source
+    assert "filteredSavepoints" in source
+    assert "sortedRecordings" in source
+    # Per-move expand/collapse "Move as Setup" disclosure.
+    assert "arc3-play-move-expand" in source
+    assert "toggleMoveExpand" in source
+    assert "scanMoveDir" in source
+    styles = STYLES.read_text(encoding="utf-8")
+    assert ".arc3-play-game-picker" in styles
+    assert ".arc3-play-collapse-toggle" in styles
+    assert ".arc3-play-move-expand" in styles
+
+
+def test_play_page_moves_ordered_numerically_and_importables_sorted() -> None:
+    source = COMPONENT.read_text(encoding="utf-8")
+    # Moves are sorted by (level order, numeric index) before being reversed
+    # for "newest first" display, instead of relying on raw array order.
+    assert "movesNumeric" in source
+    assert "levelDirRank" in source
+    assert "a.index - b.index" in source
+    # IMPORTABLES list is sorted by game then name, not left in scan order.
+    assert "sortedRecordings" in source
+    assert "localeCompare" in source
+
+
 def test_play_router_is_mounted() -> None:
     source = APP.read_text(encoding="utf-8")
     assert "from arc3_play_api import router as arc3_play_router" in source

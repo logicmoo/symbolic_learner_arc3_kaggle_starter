@@ -13,6 +13,60 @@
   align-items: baseline;
   justify-content: space-between;
   gap: 16px;
+  flex-wrap: wrap;
+}
+
+.arc3-play-game-picker {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.arc3-play-game-picker select {
+  background: rgba(8, 20, 26, 1);
+  color: inherit;
+  border: 1px solid rgba(128, 128, 128, 0.5);
+  border-radius: 4px;
+  padding: 4px 6px;
+  font-size: 0.78rem;
+  max-width: 260px;
+}
+
+.arc3-play-game-picker button {
+  font-size: 0.72rem;
+  padding: 4px 8px;
+  cursor: pointer;
+  background: transparent;
+  color: inherit;
+  border: 1px solid rgba(128, 128, 128, 0.5);
+  border-radius: 4px;
+}
+
+.arc3-play-game-picker button:hover:not(:disabled) {
+  border-color: rgba(0, 116, 217, 0.9);
+}
+
+.arc3-play-collapse-toggle {
+  margin-left: 8px;
+  font-size: 0.66rem;
+  padding: 1px 8px;
+  cursor: pointer;
+  background: transparent;
+  color: inherit;
+  border: 1px solid rgba(128, 128, 128, 0.5);
+  border-radius: 4px;
+}
+
+.arc3-play-move-expand {
+  margin-left: 6px;
+  font-size: 0.7rem;
+  padding: 0 5px;
+  cursor: pointer;
+  background: transparent;
+  color: inherit;
+  border: 1px solid rgba(128, 128, 128, 0.4);
+  border-radius: 3px;
 }
 
 .arc3-play-header h2 {
