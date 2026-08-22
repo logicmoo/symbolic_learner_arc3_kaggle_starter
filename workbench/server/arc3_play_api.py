@@ -19,6 +19,7 @@ apart never collide (the ns suffix disambiguates).
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import json
 import re
 import shutil
@@ -799,8 +800,36 @@ def _list_recording_files(root: Path) -> list[dict[str, Any]]:
                 "name": path.name,
                 "gameId": match.group(1) if match else None,
                 "sizeBytes": path.stat().st_size,
+                "kind": "human-jsonl",
             }
         )
+    # Official agent release-runs: <game>/<timestamp>/workspace/log.txt (+ its
+    # own bundled arclog.py parser), one level below data/importables/release-runs/.
+    release_root = data_root / "release-runs"
+    if release_root.is_dir():
+        for game_dir in sorted(p for p in release_root.iterdir() if p.is_dir()):
+            for run_dir in sorted(p for p in game_dir.iterdir() if p.is_dir()):
+                log_path = run_dir / "workspace" / "log.txt"
+                arclog_path = run_dir / "workspace" / "arclog.py"
+                if not (log_path.is_file() and arclog_path.is_file()):
+                    continue
+                score = None
+                scorecard_path = run_dir / "scorecard.json"
+                if scorecard_path.is_file():
+                    try:
+                        score = json.loads(scorecard_path.read_text(encoding="utf-8")).get("total_actions")
+                    except (OSError, json.JSONDecodeError):
+                        score = None
+                found.append(
+                    {
+                        "path": run_dir.relative_to(root).as_posix(),
+                        "name": f"{game_dir.name}/{run_dir.name}",
+                        "gameId": game_dir.name,
+                        "sizeBytes": log_path.stat().st_size,
+                        "kind": "release-run",
+                        "totalActions": score,
+                    }
+                )
     return found
 
 
@@ -1036,6 +1065,201 @@ def _import_recording(root: Path, rel_path: str, label: str | None) -> dict[str,
     }
 
 
+def _import_release_run(root: Path, rel_dir: str, label: str | None) -> dict[str, Any]:
+    """Import an official ARC-AGI-3 agent release-run directory.
+
+    Shape: <run_dir>/scorecard.json, workspace/log.txt, workspace/arclog.py
+    (the log parser is copied fresh into every run's own workspace, so we
+    load that exact copy dynamically instead of re-implementing parsing --
+    guarantees the same interpretation the agent itself used). Converts into
+    our standard level_*/0..k recording layout + a resumable savepoint, same
+    as the human-JSONL importer.
+    """
+    _ensure_python_path()
+    from image_codec import frame_to_png_bytes
+
+    run_dir = (root / rel_dir).resolve()
+    try:
+        run_dir.relative_to(root)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail="path must live inside the workspace") from error
+    log_path = run_dir / "workspace" / "log.txt"
+    arclog_path = run_dir / "workspace" / "arclog.py"
+    if not log_path.is_file() or not arclog_path.is_file():
+        raise HTTPException(status_code=404, detail=f"not a release-run directory: {rel_dir}")
+
+    spec = importlib.util.spec_from_file_location(f"_arclog_{abs(hash(str(arclog_path)))}", arclog_path)
+    if spec is None or spec.loader is None:
+        raise HTTPException(status_code=400, detail=f"could not load parser at {arclog_path}")
+    arclog_module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = arclog_module  # dataclass() introspects sys.modules by name
+    spec.loader.exec_module(arclog_module)
+    steps = arclog_module.load(str(log_path))
+    if not steps:
+        raise HTTPException(status_code=400, detail="no steps found in log.txt")
+
+    scorecard: dict[str, Any] = {}
+    scorecard_path = run_dir / "scorecard.json"
+    if scorecard_path.is_file():
+        try:
+            scorecard = json.loads(scorecard_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            scorecard = {}
+    envs = scorecard.get("environments") if isinstance(scorecard, dict) else None
+    env_id = envs[0].get("id") if isinstance(envs, list) and envs else None
+    game_id = str(env_id or run_dir.parent.name)
+    game_dir = _game_slug(game_id)
+    session_tag = f"release-{run_dir.parent.name}-{run_dir.name}"
+    import_label = str(label).strip() if label else f"release run {run_dir.parent.name}/{run_dir.name}"
+    _purge_prior_import(root, game_dir, rel_dir)
+
+    def relative(path: Path) -> str:
+        return path.relative_to(root).as_posix()
+
+    level_dirs: list[Path] = []
+    level_moves: list[dict[str, Any]] = []
+    replay_log: list[dict[str, Any]] = []
+    move_total = 0
+    current_dir: Path | None = None
+    current_level = "1"
+
+    def write_node(directory: Path, step: Any, incoming_action: str | None, action_data: dict[str, Any], ordinal: int | None) -> dict[str, Any]:
+        directory.mkdir(parents=True, exist_ok=True)
+        try:
+            png = frame_to_png_bytes(step.settled)
+        except Exception:
+            png = b""
+        if png:
+            (directory / "image.png").write_bytes(png)
+        payload = {
+            "state": step.state,
+            "level": current_level,
+            "level_source": "imported_release_run",
+            "next_level_expected": None,
+            "observation": {
+                "available_actions": list(step.available),
+                "levels_completed": step.levels_completed,
+                "win_levels": step.win_levels,
+                "log_step": step.step,
+            },
+            "step_count": step.step,
+            "game_id": game_id,
+            "game_directory": game_dir,
+            "image_hash": hashlib.sha256(png).hexdigest()[:16] if png else None,
+            "incoming_action": incoming_action,
+            "action_directory": str(ordinal) if ordinal is not None else None,
+            "action_data": action_data,
+            "parent_node": ".." if ordinal is not None else None,
+            "action_path": [str(index) for index in range(ordinal + 1)] if ordinal is not None else [],
+            "recorded_at": _utc_now(),
+            "scan": _scan_setup_dir(directory, root),
+        }
+        (directory / "state.json").write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+        return payload
+
+    def write_recording(reason: str) -> None:
+        if current_dir is None:
+            return
+        manifest = {
+            "kind": "arc3_play_recording",
+            "session_id": session_tag,
+            "game_id": game_id,
+            "game_directory": game_dir,
+            "level": current_level,
+            "level_directory": relative(current_dir),
+            "started_at": _utc_now(),
+            "updated_at": _utc_now(),
+            "last_event": reason,
+            "imported_from": rel_dir,
+            "moves": level_moves,
+        }
+        (current_dir / "recording.json").write_text(json.dumps(manifest, indent=2, ensure_ascii=False), encoding="utf-8")
+
+    def begin_level(step: Any, reason: str) -> None:
+        nonlocal current_dir, level_moves, current_level
+        current_level = str(int(step.levels_completed) + 1)
+        directory = root / "data" / game_dir / _stamped_level_dir_name(current_level)
+        directory.mkdir(parents=True, exist_ok=True)
+        current_dir = directory
+        level_dirs.append(directory)
+        level_moves = []
+        write_node(directory, step, None, {}, None)
+        write_recording(reason)
+
+    begin_level(steps[0], "imported_start")
+    last_completed = steps[0].levels_completed
+
+    for index, step in enumerate(steps[1:], start=1):
+        action = str(step.action).upper()
+        if action == "RESET":
+            replay_log.append({"op": "reset"})
+            begin_level(step, "new_attempt")
+            last_completed = step.levels_completed
+            continue
+        action_data = {key: value for key, value in (("x", step.x), ("y", step.y)) if value is not None}
+        assert current_dir is not None
+        ordinal = len(level_moves)
+        directory = current_dir / str(ordinal)
+        payload = write_node(directory, step, action, action_data, ordinal)
+        move = {
+            "index": ordinal,
+            "action": action,
+            "data": action_data,
+            "directory": relative(directory),
+            "state": payload.get("state"),
+            "level": payload.get("level"),
+            "recorded_at": payload.get("recorded_at"),
+        }
+        level_moves.append(move)
+        move_total += 1
+        replay_log.append({"op": "step", "action": action, "data": action_data, "directory": move["directory"]})
+        completed = step.levels_completed
+        if completed != last_completed and str(step.state or "").upper() != "WIN":
+            move["level_completed"] = current_level
+            write_recording("level_complete")
+            begin_level(step, "level_start")
+        else:
+            write_recording("move")
+        last_completed = completed
+
+    final_state = str(steps[-1].state or "NOT_FINISHED")
+    savepoint = {
+        "id": uuid.uuid4().hex[:12],
+        "kind": "arc3_play_savepoint",
+        "created_at": _utc_now(),
+        "label": import_label,
+        "game_id": game_id,
+        "game_directory": game_dir,
+        "level": current_level,
+        "level_directory": relative(current_dir) if current_dir else None,
+        "move_index": len(level_moves) - 1 if level_moves else None,
+        "state": final_state,
+        "session_id": session_tag,
+        "imported_from": rel_dir,
+        "replay_log": replay_log,
+    }
+    savepoints_path = root / "data" / game_dir / "savepoints.json"
+    with _savepoints_lock:
+        entries = _load_savepoints(savepoints_path)
+        entries.append(savepoint)
+        savepoints_path.parent.mkdir(parents=True, exist_ok=True)
+        savepoints_path.write_text(
+            json.dumps(entries, indent=2, ensure_ascii=False),
+            encoding="utf-8",
+        )
+    return {
+        "imported": {
+            "path": rel_dir,
+            "gameId": game_id,
+            "gameDirectory": game_dir,
+            "moveCount": move_total,
+            "levelDirs": [relative(path) for path in level_dirs],
+            "state": final_state,
+        },
+        "savepoint": {key: value for key, value in savepoint.items() if key != "replay_log"},
+    }
+
+
 @router.get("/recordings")
 def list_recordings(workspaceId: str) -> dict[str, Any]:
     root = _workspace_root(workspaceId)
@@ -1105,6 +1329,9 @@ def import_recording(body: dict[str, Any] = Body(default_factory=dict)) -> dict[
         raise HTTPException(status_code=400, detail="workspaceId and path are required")
     root = _workspace_root(workspace_id)
     label = body.get("label")
+    target = root / rel_path
+    if target.is_dir() and (target / "workspace" / "log.txt").is_file():
+        return _import_release_run(root, rel_path, str(label) if label else None)
     return _import_recording(root, rel_path, str(label) if label else None)
 
 

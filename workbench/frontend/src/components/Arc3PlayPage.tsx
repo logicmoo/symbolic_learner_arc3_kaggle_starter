@@ -79,6 +79,8 @@ type PlayRecording = {
   name: string;
   gameId?: string | null;
   sizeBytes?: number;
+  kind?: "human-jsonl" | "release-run" | null;
+  totalActions?: number | null;
 };
 
 const FRAME_SCALE = 10;
@@ -1172,7 +1174,12 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
                 <div className="arc3-play-savepoint-info">
                   <b>{recording.name}</b>
                   <small>
-                    {recording.gameId || "?"} · {Math.round((recording.sizeBytes || 0) / 1024)} KB · {recording.path}
+                    {recording.kind === "release-run" ? "release run" : "human recording"} ·{" "}
+                    {recording.gameId || "?"}
+                    {recording.kind === "release-run" && recording.totalActions
+                      ? ` · ${recording.totalActions} actions`
+                      : ` · ${Math.round((recording.sizeBytes || 0) / 1024)} KB`}{" "}
+                    · {recording.path}
                   </small>
                 </div>
                 <div className="arc3-play-savepoint-buttons">

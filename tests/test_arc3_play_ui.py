@@ -73,6 +73,8 @@ def test_play_component_has_recorder_contract() -> None:
     assert "dedupe_recordings" in api_source
     assert "_purge_prior_import" in api_source
     assert "_scan_setup_dir" in api_source
+    assert "_import_release_run" in api_source
+    assert "release-runs" in api_source
     assert '"scan": _scan_setup_dir(directory, self.workspace_root)' in api_source
     assert '"scan": _scan_setup_dir(directory, root)' in api_source
     assert "Fork" in source
