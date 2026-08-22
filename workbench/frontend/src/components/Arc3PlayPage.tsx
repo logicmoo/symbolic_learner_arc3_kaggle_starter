@@ -44,6 +44,7 @@ type ReplayOp = {
   action?: string;
   data?: Record<string, number>;
   directory?: string | null;
+  level?: string | null;
 };
 
 type PlaySessionSnapshot = {
@@ -140,6 +141,7 @@ export function Arc3PlayPage({
   const [savepoints, setSavepoints] = useState<PlaySavepoint[]>([]);
   const [recordings, setRecordings] = useState<PlayRecording[]>([]);
   const [importNote, setImportNote] = useState("");
+  const [retainLargestCount, setRetainLargestCount] = useState("10");
   const [rewindOpen, setRewindOpen] = useState(false);
   const [rewindHover, setRewindHover] = useState<number | null>(null);
   const [autoSelect, setAutoSelect] = useState(true);
@@ -561,7 +563,10 @@ export function Arc3PlayPage({
   }, [replayPlaying, replayPos, busy, replayScript, replaySpeedMs]);
 
   // Chapter markers: tick index -> level label, at every position where the
-  // move's directory crosses into a new level_*/attempt directory.
+  // move's directory crosses into a new attempt directory (a fresh
+  // saved_<NNN>/import-named/level_<n>_<rank> dir). The label itself comes
+  // from each op's own "level" field rather than being parsed out of the
+  // directory name, since directory names no longer encode the level.
   const chapterStarts = useMemo(() => {
     const starts = new Map<number, string>();
     if (!replayScript) return starts;
@@ -571,8 +576,7 @@ export function Arc3PlayPage({
       const lastSlash = op.directory.lastIndexOf("/");
       const levelKey = lastSlash >= 0 ? op.directory.slice(0, lastSlash) : op.directory;
       if (levelKey !== prevLevelKey) {
-        const match = levelKey.match(/level_([^_/]+)_/);
-        starts.set(i + 1, match ? match[1] : "?");
+        starts.set(i + 1, op.level || "?");
         prevLevelKey = levelKey;
       }
     });
@@ -647,6 +651,29 @@ export function Arc3PlayPage({
       await loadSavepoints();
     });
 
+  const sortRecordingsBySize = () =>
+    perform(async () => {
+      const gameParam = filterGameId ? `&gameId=${encodeURIComponent(filterGameId)}` : "";
+      const payload = await request(
+        `/api/arc3-play/recordings/sort-by-size?workspaceId=${encodeURIComponent(workspaceId)}${gameParam}`,
+        { method: "POST" },
+      );
+      setImportNote(`sorted by size: renamed ${payload.count ?? 0} imported dir(s)`);
+      await loadSavepoints();
+    });
+
+  const retainLargestRecordings = () =>
+    perform(async () => {
+      const keep = Math.max(0, parseInt(retainLargestCount, 10) || 0);
+      const gameParam = filterGameId ? `&gameId=${encodeURIComponent(filterGameId)}` : "";
+      const payload = await request(
+        `/api/arc3-play/recordings/retain-largest?workspaceId=${encodeURIComponent(workspaceId)}&keep=${keep}${gameParam}`,
+        { method: "POST" },
+      );
+      setImportNote(`retained largest ${keep}: removed ${payload.count ?? 0} smaller imported dir(s)`);
+      await loadSavepoints();
+    });
+
   const duplicateSavepoint = (savepointId: string) =>
     perform(async () => {
       await request(
@@ -675,6 +702,29 @@ export function Arc3PlayPage({
       const info = payload.imported as { moveCount?: number; gameDirectory?: string; state?: string } | undefined;
       setImportNote(
         `imported ${recording.name}: ${info?.moveCount ?? "?"} moves -> ${info?.gameDirectory ?? "?"} (${info?.state ?? "?"})`,
+      );
+      await loadSavepoints();
+    });
+
+  const importAllImportables = (list: PlayRecording[]) =>
+    perform(async () => {
+      setImportNote("");
+      let imported = 0;
+      let failed = 0;
+      for (const recording of list) {
+        try {
+          await request("/api/arc3-play/import-recording", {
+            method: "POST",
+            body: JSON.stringify({ workspaceId, path: recording.path }),
+          });
+          imported += 1;
+        } catch {
+          failed += 1;
+        }
+      }
+      setImportNote(
+        `imported ${imported} of ${list.length} recording${list.length === 1 ? "" : "s"}` +
+          (failed ? ` (${failed} failed)` : ""),
       );
       await loadSavepoints();
     });
@@ -834,7 +884,7 @@ export function Arc3PlayPage({
         <div>
           <h2>{pageDefinition.label || "Play & Record"}</h2>
           <small>
-            {workspaceLabel} · every move is recorded to data/Recordings/&lt;game&gt;/level_&lt;n&gt;_&lt;NNN&gt;/0..k for B1 -&gt; B2 setups
+            {workspaceLabel} · every move is recorded to data/Recordings/&lt;game&gt;/saved_&lt;NNN&gt;/0..k for B1 -&gt; B2 setups
           </small>
         </div>
         <div className="arc3-play-game-picker">
@@ -1174,6 +1224,31 @@ export function Arc3PlayPage({
               >
                 Refresh
               </button>
+              <button
+                className="arc3-play-rescan"
+                disabled={busy}
+                title="Rank imported recording dirs on disk by size (biggest = _size_0001); respects Filter. Never touches live-play saved_<NNN> dirs."
+                onClick={() => void sortRecordingsBySize()}
+              >
+                Sort dirs by size
+              </button>
+              <input
+                type="number"
+                min={0}
+                className="arc3-play-retain-count"
+                aria-label="Number of largest imported recordings to retain"
+                value={retainLargestCount}
+                onChange={(event) => setRetainLargestCount(event.target.value)}
+                disabled={busy}
+              />
+              <button
+                className="arc3-play-rescan"
+                disabled={busy}
+                title="Delete every imported recording dir beyond the N largest (by size); respects Filter. Never touches live-play saved_<NNN> dirs."
+                onClick={() => void retainLargestRecordings()}
+              >
+                Retain N Largest
+              </button>
               <button className="arc3-play-collapse-toggle" onClick={() => toggleSection("recordings")}>
                 {collapsedSections.recordings ? "▸ Expand" : "▾ Collapse"}
               </button>
@@ -1368,7 +1443,7 @@ export function Arc3PlayPage({
           )}
           <div className="arc3-play-savepoints">
             <small>
-              RESTART-POINTS (fork a session to add one)
+              MOVE-LISTS (fork a session to add one)
               <button className="arc3-play-collapse-toggle" onClick={() => toggleSection("restartPoints")}>
                 {collapsedSections.restartPoints ? "▸ Expand" : "▾ Collapse"}
               </button>
@@ -1455,6 +1530,14 @@ export function Arc3PlayPage({
                 onClick={() => void dedupeRecordings()}
               >
                 De-duplicate
+              </button>
+              <button
+                className="arc3-play-rescan"
+                disabled={busy || !sortedRecordings.length}
+                title="Import every recording currently listed below (respects Filter)"
+                onClick={() => void importAllImportables(sortedRecordings)}
+              >
+                Import All Importables
               </button>
             </small>
             {!collapsedSections.importables && (

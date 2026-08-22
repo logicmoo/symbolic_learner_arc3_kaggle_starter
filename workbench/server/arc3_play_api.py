@@ -4,17 +4,19 @@ Hosts real ARC3 environments inside the workbench server so a person can
 enumerate games, pick one, and play it move by move in the web UI. Every
 move is recorded as a B1->B2 consumable setup directory:
 
-    <workspace>/data/<game>/level_<n>_<YYYYmmdd-HHMMSS>_<ns>/
-        image.png            initial frame for this attempt/level
+    <workspace>/data/Recordings/<game>/saved_<NNN>/
+        image.png            initial frame for this attempt
         state.json           initial state payload
-        recording.json       ordered move manifest for this level dir
+        recording.json       ordered move manifest for this attempt dir
+                              (includes the "level" this attempt was on --
+                              the directory name itself no longer encodes it)
         0/  image.png state.json     first move
         1/  image.png state.json     second move
         ...
 
-A new stamped level directory starts on every new attempt (reset) and on
-every detected level transition, so parallel sessions started milliseconds
-apart never collide (the ns suffix disambiguates).
+A new saved_<NNN> directory starts on every new attempt (reset) and on
+every detected level transition; NNN is a game-wide, 0-padded, ever-
+increasing rank so concurrent sessions never collide.
 """
 from __future__ import annotations
 
@@ -91,6 +93,11 @@ def _game_slug(game_id: str) -> str:
     return _slug(match.group(1) if match else value)
 
 
+_RANKED_SAVED_DIR_RE = re.compile(r"^saved_(?P<rank>\d+)$")
+# Legacy naming this rename replaces: level_<level>_<rank> (a mistake from
+# months ago -- the level was redundantly baked into the directory name
+# instead of just recording.json). Still recognized when reading existing
+# workspaces and when computing the next rank, but never written anymore.
 _RANKED_LEVEL_DIR_RE = re.compile(r"^level_(?P<level>[^_]+)_(?P<rank>\d+)$")
 _DATA_ROOT_NON_GAME_DIRS = {"recordings", "importables"}
 
@@ -156,26 +163,70 @@ def _all_game_dirs(root: Path) -> list[Path]:
     return result
 
 
-def _next_ranked_level_dir_name(container: Path, level: str) -> str:
-    """level_<level>_<NNN>, continuing from the highest existing NNN for this
-    level already under container (0-padded to at least 3 digits, starting
-    at 001). Unranked/legacy-named siblings (bare level_1, timestamped
-    level_1_<stamp>_<ns>) are ignored -- they don't participate in or block
-    this numbering."""
-    level_slug = _slug(level)
+def _next_ranked_saved_dir_name(container: Path) -> str:
+    """saved_<NNN>, continuing from the highest existing NNN under container
+    (0-padded to at least 3 digits, starting at 001). Game-wide (not scoped
+    per level) -- which level an attempt was on lives in recording.json, not
+    the directory name. Legacy level_<level>_<rank> siblings (the old, now
+    retired naming) contribute their rank too, so numbering stays strictly
+    increasing across the rename for workspaces that already have them.
+    Unranked/legacy-timestamped siblings (bare level_1, level_1_<stamp>_<ns>)
+    are ignored -- they don't participate in or block this numbering."""
     highest = 0
     if container.is_dir():
         for entry in container.iterdir():
             if not entry.is_dir():
                 continue
-            match = _RANKED_LEVEL_DIR_RE.fullmatch(entry.name)
-            if not match or match.group("level") != level_slug:
+            match = _RANKED_SAVED_DIR_RE.fullmatch(entry.name) or _RANKED_LEVEL_DIR_RE.fullmatch(entry.name)
+            if not match:
                 continue
             try:
                 highest = max(highest, int(match.group("rank")))
             except ValueError:
                 continue
-    return f"level_{level_slug}_{highest + 1:03d}"
+    return f"saved_{highest + 1:03d}"
+
+
+_SIZE_RANK_SUFFIX_RE = re.compile(r"^(?P<base>.+)_size_(?P<rank>\d+)$")
+
+
+def _strip_size_suffix(name: str) -> str:
+    """Undo a previous "Sort dirs by size" rename (see _rerank_imports_by_size_in)
+    so re-ranking after new imports land is idempotent instead of piling up
+    _size_..._size_... suffixes."""
+    match = _SIZE_RANK_SUFFIX_RE.fullmatch(name)
+    return match.group("base") if match else name
+
+
+def _import_instance_dir_name(container: Path, base: str, attempt_index: int) -> str:
+    """Directory name for one attempt/level dir produced by an import: the
+    import's own natural name (source file stem for a human-JSONL import,
+    or the release-run's own timestamp dir name) for the first attempt,
+    then base_attempt2, base_attempt3, ... for further level transitions
+    inside the same import run -- recording.json still records which level
+    each attempt was actually on. A trailing numeric suffix is added on top
+    if that name still collides with something already on disk (e.g. a
+    second, differently-sourced import that happens to share a name)."""
+    slug = _slug(base) or "import"
+    name = slug if attempt_index <= 1 else f"{slug}_attempt{attempt_index}"
+    if not (container / name).exists():
+        return name
+    suffix = 2
+    while (container / f"{name}_{suffix}").exists():
+        suffix += 1
+    return f"{name}_{suffix}"
+
+
+def _iter_recording_dirs(game_root: Path) -> list[Path]:
+    """Every per-attempt recording directory directly under one game root,
+    identified by containing a recording.json (robust regardless of naming
+    convention: the current saved_<NNN> live-play naming, an import's own
+    suggested name, a size-ranked import name, or the retired legacy
+    level_<n>_<rank> naming)."""
+    if not game_root.is_dir():
+        return []
+    entries = [entry for entry in game_root.iterdir() if entry.is_dir() and (entry / "recording.json").is_file()]
+    return sorted(entries, key=lambda entry: entry.name)
 
 
 def _workspace_root(workspace_id: str) -> Path:
@@ -323,7 +374,7 @@ class PlaySession:
     def _begin_level_dir(self, reason: str) -> None:
         level = self.runner.current_level_label()
         container = self._recordings_container()
-        name = _next_ranked_level_dir_name(container, level)
+        name = _next_ranked_saved_dir_name(container)
         directory = container / name
         directory.mkdir(parents=True, exist_ok=True)
         self.level_dir = directory
@@ -406,6 +457,7 @@ class PlaySession:
             else:
                 move = self._record_move(action, x, y)
             op["directory"] = move.get("directory")
+            op["level"] = move.get("level")
             self.replay_log.append(op)
             self._autosave()
             return move
@@ -450,8 +502,8 @@ class PlaySession:
             self._require_open()
             with _engine_lock:
                 self.runner.reset(clear_history=True)
-            self.replay_log.append({"op": "reset"})
             self._begin_level_dir(reason="new_attempt")
+            self.replay_log.append({"op": "reset", "level": self._last_level})
             self._autosave()
 
     def undo(self, count: int = 1) -> dict[str, Any]:
@@ -940,7 +992,7 @@ def duplicate_savepoint(savepoint_id: str, workspaceId: str, gameId: str | None 
 # Official ARC-AGI-3 recordings (arcprize agents SDK / human plays) are JSONL
 # files: one {"timestamp", "data": {frame, state, action_input, ...}} line per
 # frame plus a final scorecard line. The importer converts one offline into
-# the exact same level_*/0..k recording layout the live recorder writes, and
+# the exact same saved_<NNN>/0..k recording layout the live recorder writes, and
 # registers a savepoint whose replay_log can re-drive a real session.
 
 _RECORDING_SKIP_NAMES = {"savepoints.json", "recording.json", "state.json"}
@@ -1018,7 +1070,7 @@ def _purge_prior_import(root: Path, game_dir: str, rel_path: str) -> int:
     """
     removed = 0
     for game_root in _game_dirs_for(root, game_dir):
-        for level_dir in sorted(game_root.glob("level_*")):
+        for level_dir in _iter_recording_dirs(game_root):
             manifest_path = level_dir / "recording.json"
             if not manifest_path.is_file():
                 continue
@@ -1089,6 +1141,8 @@ def _import_recording(root: Path, rel_path: str, label: str | None) -> dict[str,
     move_total = 0
     current_dir: Path | None = None
     current_level = "1"
+    import_base_name = source.stem
+    attempt_index = 0
 
     def write_node(
         directory: Path,
@@ -1154,10 +1208,11 @@ def _import_recording(root: Path, rel_path: str, label: str | None) -> dict[str,
         )
 
     def begin_level(event: dict[str, Any], reason: str, step_count: int) -> None:
-        nonlocal current_dir, level_moves, current_level
+        nonlocal current_dir, level_moves, current_level, attempt_index
         current_level = str(int(event["data"].get("levels_completed") or 0) + 1)
         container = _game_write_dir(root, game_dir)
-        directory = container / _next_ranked_level_dir_name(container, current_level)
+        attempt_index += 1
+        directory = container / _import_instance_dir_name(container, import_base_name, attempt_index)
         directory.mkdir(parents=True, exist_ok=True)
         current_dir = directory
         level_dirs.append(directory)
@@ -1173,8 +1228,8 @@ def _import_recording(root: Path, rel_path: str, label: str | None) -> dict[str,
         action_input = data.get("action_input") or {}
         action_id = int(action_input.get("id") or 0)
         if action_id == 0:
-            replay_log.append({"op": "reset"})
             begin_level(event, "new_attempt", index)
+            replay_log.append({"op": "reset", "level": current_level})
             last_completed = int(data.get("levels_completed") or 0)
             continue
         action = f"ACTION{action_id}"
@@ -1195,7 +1250,7 @@ def _import_recording(root: Path, rel_path: str, label: str | None) -> dict[str,
         }
         level_moves.append(move)
         move_total += 1
-        replay_log.append({"op": "step", "action": action, "data": action_data, "directory": move["directory"]})
+        replay_log.append({"op": "step", "action": action, "data": action_data, "directory": move["directory"], "level": move.get("level")})
         completed = int(data.get("levels_completed") or 0)
         if completed != last_completed and str(data.get("state") or "").upper() != "WIN":
             move["level_completed"] = current_level
@@ -1366,7 +1421,7 @@ def _import_release_run(root: Path, rel_dir: str, label: str | None) -> dict[str
     (the log parser is copied fresh into every run's own workspace, so we
     load that exact copy dynamically instead of re-implementing parsing --
     guarantees the same interpretation the agent itself used). Converts into
-    our standard level_*/0..k recording layout + a resumable savepoint, same
+    our standard saved_<NNN>/0..k recording layout + a resumable savepoint, same
     as the human-JSONL importer.
     """
     _ensure_python_path()
@@ -1416,6 +1471,8 @@ def _import_release_run(root: Path, rel_dir: str, label: str | None) -> dict[str
     move_total = 0
     current_dir: Path | None = None
     current_level = "1"
+    import_base_name = run_dir.name
+    attempt_index = 0
 
     def write_node(directory: Path, step: Any, incoming_action: str | None, action_data: dict[str, Any], ordinal: int | None) -> dict[str, Any]:
         directory.mkdir(parents=True, exist_ok=True)
@@ -1470,11 +1527,12 @@ def _import_release_run(root: Path, rel_dir: str, label: str | None) -> dict[str
         (current_dir / "recording.json").write_text(json.dumps(manifest, indent=2, ensure_ascii=False), encoding="utf-8")
 
     def begin_level(step: Any, reason: str) -> None:
-        nonlocal current_dir, level_moves, current_level
+        nonlocal current_dir, level_moves, current_level, attempt_index
         is_first = not level_dirs
         current_level = str(int(step.levels_completed) + 1)
         container = _game_write_dir(root, game_dir)
-        directory = container / _next_ranked_level_dir_name(container, current_level)
+        attempt_index += 1
+        directory = container / _import_instance_dir_name(container, import_base_name, attempt_index)
         directory.mkdir(parents=True, exist_ok=True)
         current_dir = directory
         level_dirs.append(directory)
@@ -1505,8 +1563,8 @@ def _import_release_run(root: Path, rel_dir: str, label: str | None) -> dict[str
     for index, step in enumerate(steps[1:], start=1):
         action = str(step.action).upper()
         if action == "RESET":
-            replay_log.append({"op": "reset"})
             begin_level(step, "new_attempt")
+            replay_log.append({"op": "reset", "level": current_level})
             last_completed = step.levels_completed
             continue
         action_data = {key: value for key, value in (("x", step.x), ("y", step.y)) if value is not None}
@@ -1547,7 +1605,7 @@ def _import_release_run(root: Path, rel_dir: str, label: str | None) -> dict[str
         }
         level_moves.append(move)
         move_total += 1
-        replay_log.append({"op": "step", "action": action, "data": action_data, "directory": move["directory"]})
+        replay_log.append({"op": "step", "action": action, "data": action_data, "directory": move["directory"], "level": move.get("level")})
         completed = step.levels_completed
         if completed != last_completed and str(step.state or "").upper() != "WIN":
             move["level_completed"] = current_level
@@ -1603,7 +1661,7 @@ def list_recordings(workspaceId: str) -> dict[str, Any]:
 
 def _dedupe_recordings_in(root: Path, game_root: Path) -> list[str]:
     groups: dict[str, list[tuple[float, Path]]] = {}
-    for level_dir in sorted(game_root.glob("level_*")):
+    for level_dir in _iter_recording_dirs(game_root):
         manifest_path = level_dir / "recording.json"
         if not manifest_path.is_file():
             continue
@@ -1645,6 +1703,155 @@ def dedupe_recordings(workspaceId: str, gameId: str | None = None) -> dict[str, 
     for directory in directories:
         if directory.is_dir():
             removed.extend(_dedupe_recordings_in(root, directory))
+    return {"removed": removed, "count": len(removed)}
+
+
+def _dir_size(path: Path) -> int:
+    total = 0
+    for entry in path.rglob("*"):
+        if entry.is_file():
+            try:
+                total += entry.stat().st_size
+            except OSError:
+                pass
+    return total
+
+
+def _ranked_recordings_by_size_in(root: Path, game_root: Path) -> list[tuple[int, Path]]:
+    """Every IMPORTED recording directory in one game root (never live-played
+    saved_<NNN> dirs -- identified by recording.json having "imported_from"),
+    paired with its on-disk size, sorted biggest first."""
+    ranked: list[tuple[int, Path]] = []
+    for entry in _iter_recording_dirs(game_root):
+        manifest_path = entry / "recording.json"
+        try:
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if not manifest.get("imported_from"):
+            continue  # never touch live-played recordings, only imports
+        ranked.append((_dir_size(entry), entry))
+    ranked.sort(key=lambda item: item[0], reverse=True)
+    return ranked
+
+
+def _rewrite_recording_references(root: Path, game_root: Path, rename_map: dict[str, str]) -> None:
+    """After renaming directories per rename_map ({old_relpath: new_relpath}),
+    fix each renamed dir's own recording.json self-reference plus every
+    matching level_directory/replay_log[].directory in that game's
+    savepoints.json."""
+    for new_rel in rename_map.values():
+        manifest_path = root / new_rel / "recording.json"
+        if not manifest_path.is_file():
+            continue
+        try:
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if isinstance(manifest, dict) and manifest.get("level_directory") in rename_map:
+            manifest["level_directory"] = rename_map[manifest["level_directory"]]
+            manifest_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False), encoding="utf-8")
+
+    savepoints_path = game_root / "savepoints.json"
+    if not savepoints_path.is_file():
+        return
+    try:
+        entries = json.loads(savepoints_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return
+    if not isinstance(entries, list):
+        return
+    changed = False
+    for entry in entries:
+        if not isinstance(entry, dict):
+            continue
+        level_directory = entry.get("level_directory")
+        if isinstance(level_directory, str) and level_directory in rename_map:
+            entry["level_directory"] = rename_map[level_directory]
+            changed = True
+        for op in entry.get("replay_log") or []:
+            if not isinstance(op, dict):
+                continue
+            directory = op.get("directory")
+            if not isinstance(directory, str):
+                continue
+            for old_rel, new_rel in rename_map.items():
+                if directory == old_rel or directory.startswith(old_rel + "/"):
+                    op["directory"] = new_rel + directory[len(old_rel):]
+                    changed = True
+                    break
+    if changed:
+        savepoints_path.write_text(json.dumps(entries, indent=2, ensure_ascii=False), encoding="utf-8")
+
+
+def _sort_recordings_by_size_in(root: Path, game_root: Path) -> list[tuple[str, str]]:
+    """Rank every imported recording directory in one game root by on-disk
+    size (biggest first) and rename it to end with _size_<NNNN> -- stripping
+    any previous _size_ suffix first so re-running after new imports land is
+    idempotent instead of piling up suffixes. Live-play saved_<NNN>
+    directories are never touched; this is purely a housekeeping aid for
+    later pruning/retaining imported instances by size (see
+    retain_largest_recordings). Returns [(old_relpath, new_relpath), ...]."""
+    ranked = _ranked_recordings_by_size_in(root, game_root)
+    pairs: list[tuple[str, str, Path, Path]] = []  # (old_rel, new_rel, entry, new_path)
+    for rank, (_size, entry) in enumerate(ranked, start=1):
+        base = _strip_size_suffix(entry.name)
+        new_name = f"{base}_size_{rank:04d}"
+        if entry.name == new_name:
+            continue
+        new_path = entry.parent / new_name
+        old_rel = entry.relative_to(root).as_posix()
+        new_rel = new_path.relative_to(root).as_posix()
+        pairs.append((old_rel, new_rel, entry, new_path))
+
+    # Two-phase (stage under temp names first) so re-ranking never collides
+    # with a directory that hasn't moved yet, same technique used by the
+    # older per-level scripts/rename_level_dirs_by_size.py.
+    staged: list[tuple[Path, Path]] = []
+    for rank, (_old_rel, _new_rel, entry, new_path) in enumerate(pairs, start=1):
+        temp_path = entry.parent / f"{entry.name}.rename_staging_{rank}"
+        entry.rename(temp_path)
+        staged.append((temp_path, new_path))
+    for temp_path, new_path in staged:
+        new_path.parent.mkdir(parents=True, exist_ok=True)
+        temp_path.rename(new_path)
+
+    rename_map = {old_rel: new_rel for old_rel, new_rel, _entry, _new_path in pairs}
+    if rename_map:
+        _rewrite_recording_references(root, game_root, rename_map)
+    return [(old_rel, new_rel) for old_rel, new_rel, _entry, _new_path in pairs]
+
+
+@router.post("/recordings/sort-by-size")
+def sort_recordings_by_size(workspaceId: str, gameId: str | None = None) -> dict[str, Any]:
+    root = _workspace_root(workspaceId)
+    directories = _game_dirs_for(root, _game_slug(gameId)) if gameId else _all_game_dirs(root)
+    renamed: list[dict[str, str]] = []
+    for directory in directories:
+        if directory.is_dir():
+            for old_rel, new_rel in _sort_recordings_by_size_in(root, directory):
+                renamed.append({"from": old_rel, "to": new_rel})
+    return {"renamed": renamed, "count": len(renamed)}
+
+
+@router.post("/recordings/retain-largest")
+def retain_largest_recordings(workspaceId: str, keep: int, gameId: str | None = None) -> dict[str, Any]:
+    """Delete every imported recording directory beyond the `keep` largest
+    (by on-disk size) in each targeted game -- never touches live-play
+    saved_<NNN> directories. Run "Sort dirs by size" first if you want the
+    remaining directories' _size_<NNNN> suffix to reflect the new ranking."""
+    if keep < 0:
+        raise HTTPException(status_code=400, detail="keep must be >= 0")
+    root = _workspace_root(workspaceId)
+    directories = _game_dirs_for(root, _game_slug(gameId)) if gameId else _all_game_dirs(root)
+    removed: list[str] = []
+    for game_root in directories:
+        if not game_root.is_dir():
+            continue
+        ranked = _ranked_recordings_by_size_in(root, game_root)
+        for _size, entry in ranked[keep:]:
+            removed.append(entry.relative_to(root).as_posix())
+            shutil.rmtree(entry, ignore_errors=True)
     return {"removed": removed, "count": len(removed)}
 
 

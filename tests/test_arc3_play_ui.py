@@ -90,11 +90,11 @@ def test_play_component_has_recorder_contract() -> None:
 
 def test_play_api_records_flat_move_dirs() -> None:
     source = API.read_text(encoding="utf-8")
-    # Ranked level dirs: level_<n>_<NNN>, continuing from the highest existing
-    # rank for that level under data/Recordings/<game>/ (0-padded, 001-first).
-    assert 'f"level_{' in source
-    assert "_next_ranked_level_dir_name" in source
-    assert "_RANKED_LEVEL_DIR_RE" in source
+    # Ranked saved dirs: saved_<NNN>, game-wide, continuing from the highest
+    # existing rank under data/Recordings/<game>/ (0-padded, 001-first).
+    assert 'f"saved_{' in source
+    assert "_next_ranked_saved_dir_name" in source
+    assert "_RANKED_SAVED_DIR_RE" in source
     # Live recordings + imports all write under the canonical Recordings/
     # location, not the legacy data/<game>/ path.
     assert "_games_container" in source
@@ -135,7 +135,7 @@ def test_play_api_supports_fork_savepoints() -> None:
 def test_play_page_right_column_panels_cleanup() -> None:
     source = COMPONENT.read_text(encoding="utf-8")
     # Panels renamed + independently collapsible.
-    assert "RESTART-POINTS" in source
+    assert "MOVE-LISTS" in source
     assert "IMPORTABLES" in source
     assert "arc3-play-collapse-toggle" in source
     assert "toggleSection" in source
