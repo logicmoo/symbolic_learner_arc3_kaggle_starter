@@ -48,6 +48,11 @@ def test_play_component_has_recorder_contract() -> None:
     assert "auto-CLICK" in source
     assert "RECORDINGS" in source
     assert "importRecording" in source
+    assert "arc3-play-col-resizer" in source
+    assert "take-back-move" in source
+    assert "step one move" in source
+    assert "Rescan" in source
+    assert "data/importables" in source
     api_source = API.read_text(encoding="utf-8")
     assert "delete_savepoint" in api_source
     assert "duplicate_savepoint" in api_source

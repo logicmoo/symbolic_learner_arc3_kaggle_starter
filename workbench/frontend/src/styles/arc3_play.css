@@ -502,3 +502,50 @@
   color: rgba(46, 204, 64, 0.95);
   padding: 2px 0 4px;
 }
+
+.arc3-play-col-resizer {
+  align-self: stretch;
+  cursor: col-resize;
+  border-radius: 3px;
+  background: rgba(128, 128, 128, 0.18);
+  touch-action: none;
+}
+
+.arc3-play-col-resizer:hover,
+.arc3-play-col-resizer:active {
+  background: rgba(0, 116, 217, 0.6);
+}
+
+.arc3-play-savepoint-buttons .load {
+  border-color: rgba(255, 133, 27, 0.7);
+  color: rgba(255, 178, 102, 1);
+}
+
+.arc3-play-replayer {
+  align-items: center;
+}
+
+.arc3-play-replayer small {
+  opacity: 0.75;
+  margin-right: 4px;
+}
+
+.arc3-play-replayer .resume-step {
+  border-color: rgba(46, 204, 64, 0.7);
+  color: rgba(120, 220, 130, 1);
+}
+
+.arc3-play-rescan {
+  margin-left: 8px;
+  font-size: 0.66rem;
+  padding: 1px 8px;
+  cursor: pointer;
+  background: transparent;
+  color: inherit;
+  border: 1px solid rgba(128, 128, 128, 0.5);
+  border-radius: 4px;
+}
+
+.arc3-play-rescan:hover {
+  border-color: rgba(0, 116, 217, 0.9);
+}

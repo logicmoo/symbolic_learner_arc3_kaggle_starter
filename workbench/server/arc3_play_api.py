@@ -597,6 +597,15 @@ def list_savepoints(workspaceId: str, gameId: str | None = None) -> dict[str, An
     return {"savepoints": entries}
 
 
+@router.get("/savepoints/{savepoint_id}")
+def read_savepoint(savepoint_id: str, workspaceId: str, gameId: str | None = None) -> dict[str, Any]:
+    root = _workspace_root(workspaceId)
+    entry = _find_savepoint(root, savepoint_id, game_dir=_game_slug(gameId) if gameId else None)
+    if entry is None:
+        raise HTTPException(status_code=404, detail=f"savepoint not found: {savepoint_id}")
+    return {"savepoint": entry}
+
+
 @router.delete("/savepoints/{savepoint_id}")
 def delete_savepoint(savepoint_id: str, workspaceId: str, gameId: str | None = None) -> dict[str, Any]:
     root = _workspace_root(workspaceId)
@@ -670,7 +679,7 @@ def _sniff_recording_head(path: Path) -> str | None:
 
 
 def _list_recording_files(root: Path) -> list[dict[str, Any]]:
-    data_root = root / "data"
+    data_root = root / "data" / "importables"
     if not data_root.is_dir():
         return []
     found: list[dict[str, Any]] = []

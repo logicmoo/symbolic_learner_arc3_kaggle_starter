@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
 import { type WorkflowPageDefinition } from "./WorkflowPageHost";
 import "../styles/arc3_play.css";
 
@@ -125,7 +125,57 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
   const [rewindOpen, setRewindOpen] = useState(false);
   const [rewindHover, setRewindHover] = useState<number | null>(null);
   const [autoSelect, setAutoSelect] = useState(true);
+  const [replayScript, setReplayScript] = useState<ReplayOp[] | null>(null);
+  const [replayPos, setReplayPos] = useState(0);
   const boardRef = useRef<HTMLImageElement | null>(null);
+  const columnsRef = useRef<HTMLDivElement | null>(null);
+  const [colWidths, setColWidths] = useState<{ left: number; right: number }>(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("arc3PlayColWidths") || "null") as {
+        left?: number;
+        right?: number;
+      } | null;
+      if (saved && typeof saved.left === "number" && typeof saved.right === "number") {
+        return { left: saved.left, right: saved.right };
+      }
+    } catch {
+      // fall through to defaults
+    }
+    return { left: 220, right: 340 };
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("arc3PlayColWidths", JSON.stringify(colWidths));
+    } catch {
+      // storage unavailable — widths just won't persist
+    }
+  }, [colWidths]);
+
+  const startColumnDrag = (side: "left" | "right") => (event: ReactMouseEvent) => {
+    event.preventDefault();
+    const startX = event.clientX;
+    const startWidth = colWidths[side];
+    const onMove = (move: MouseEvent) => {
+      const delta = move.clientX - startX;
+      setColWidths((current) => {
+        const total = columnsRef.current?.clientWidth ?? 1200;
+        const other = side === "left" ? current.right : current.left;
+        const raw = side === "left" ? startWidth + delta : startWidth - delta;
+        const max = Math.max(140, total - other - 260);
+        const next = Math.min(Math.max(140, raw), max);
+        return side === "left" ? { ...current, left: next } : { ...current, right: next };
+      });
+    };
+    const onUp = () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+      document.body.style.cursor = "";
+    };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    document.body.style.cursor = "col-resize";
+  };
 
   const assetUrl = useCallback(
     (path: string) => `/api/workspaces/${encodeURIComponent(workspaceId)}/asset?path=${encodeURIComponent(path)}`,
@@ -210,6 +260,7 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
         body: JSON.stringify({ workspaceId, gameId }),
       });
       setArmedAction(null);
+      setReplayScript(null);
       setSession(payload.session as PlaySessionSnapshot);
       await loadSavepoints();
     });
@@ -230,6 +281,7 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
         }),
       });
       setArmedAction(null);
+      setReplayScript(null);
       setSession(payload.session as PlaySessionSnapshot);
     });
 
@@ -240,6 +292,7 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
         method: "POST",
         body: JSON.stringify({ action: actionId, x, y }),
       });
+      setReplayScript(null);
       setSession(payload.session as PlaySessionSnapshot);
     });
 
@@ -248,6 +301,7 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
       if (!session) return;
       const payload = await request(`/api/arc3-play/sessions/${encodeURIComponent(session.id)}/reset`, { method: "POST" });
       setArmedAction(null);
+      setReplayScript(null);
       setSession(payload.session as PlaySessionSnapshot);
     });
 
@@ -256,6 +310,7 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
       if (!session) return;
       const payload = await request(`/api/arc3-play/sessions/${encodeURIComponent(session.id)}/restart`, { method: "POST" });
       setArmedAction(null);
+      setReplayScript(null);
       setSession(payload.session as PlaySessionSnapshot);
     });
 
@@ -267,6 +322,7 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
         body: JSON.stringify({ count }),
       });
       setArmedAction(null);
+      setReplayScript(null);
       setSession(payload.session as PlaySessionSnapshot);
     });
 
@@ -290,7 +346,75 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
         body: JSON.stringify({ workspaceId, savepointId }),
       });
       setArmedAction(null);
+      setReplayScript(null);
       setSession(payload.session as PlaySessionSnapshot);
+    });
+
+  const loadSavepoint = (point: PlaySavepoint) =>
+    perform(async () => {
+      // Load = start a fresh session at move zero with the savepoint's
+      // recipe queued, so it can be stepped through one move at a time.
+      const detail = await request(
+        `/api/arc3-play/savepoints/${encodeURIComponent(point.id)}?workspaceId=${encodeURIComponent(workspaceId)}`,
+      );
+      const full = detail.savepoint as PlaySavepoint & { replay_log?: ReplayOp[] };
+      const script = (full.replay_log || []).filter((op) => op.op === "step" || op.op === "reset");
+      if (session && !session.closed) {
+        await request(`/api/arc3-play/sessions/${encodeURIComponent(session.id)}`, { method: "DELETE" }).catch(() => undefined);
+      }
+      const payload = await request("/api/arc3-play/sessions", {
+        method: "POST",
+        body: JSON.stringify({ workspaceId, gameId: full.game_id || full.game_directory }),
+      });
+      setArmedAction(null);
+      setSession(payload.session as PlaySessionSnapshot);
+      setReplayScript(script);
+      setReplayPos(0);
+    });
+
+  const stepReplay = () =>
+    perform(async () => {
+      if (!session || !replayScript || replayPos >= replayScript.length) return;
+      const op = replayScript[replayPos];
+      let payload;
+      if (op.op === "reset") {
+        payload = await request(`/api/arc3-play/sessions/${encodeURIComponent(session.id)}/reset`, { method: "POST" });
+      } else {
+        payload = await request(`/api/arc3-play/sessions/${encodeURIComponent(session.id)}/action`, {
+          method: "POST",
+          body: JSON.stringify({ action: op.action, x: op.data?.x, y: op.data?.y }),
+        });
+      }
+      setSession(payload.session as PlaySessionSnapshot);
+      setReplayPos(replayPos + 1);
+    });
+
+  const takeBackReplay = () =>
+    perform(async () => {
+      if (!session || !replayScript || replayPos <= 0) return;
+      const previous = replayScript[replayPos - 1];
+      if (previous.op === "step" && session.levelMoveCount > 0) {
+        const payload = await request(`/api/arc3-play/sessions/${encodeURIComponent(session.id)}/undo`, {
+          method: "POST",
+          body: JSON.stringify({ count: 1 }),
+        });
+        setSession(payload.session as PlaySessionSnapshot);
+      } else {
+        // Crossed a level/reset boundary: rebuild the session up to the
+        // previous position by replaying the truncated recipe.
+        await request(`/api/arc3-play/sessions/${encodeURIComponent(session.id)}`, { method: "DELETE" }).catch(() => undefined);
+        const payload = await request("/api/arc3-play/sessions", {
+          method: "POST",
+          body: JSON.stringify({
+            workspaceId,
+            gameId: session.gameId || session.gameDirectory,
+            replayLog: replayScript.slice(0, replayPos - 1),
+            forkedFrom: "replay step-back",
+          }),
+        });
+        setSession(payload.session as PlaySessionSnapshot);
+      }
+      setReplayPos(replayPos - 1);
     });
 
   const duplicateSavepoint = (savepointId: string) =>
@@ -414,7 +538,11 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
         </div>
         {error && <div className="arc3-play-error">{error}</div>}
       </header>
-      <div className="arc3-play-columns">
+      <div
+        className="arc3-play-columns"
+        ref={columnsRef}
+        style={{ gridTemplateColumns: `${colWidths.left}px 6px minmax(0, 1fr) 6px ${colWidths.right}px` }}
+      >
         <section className="arc3-play-games">
           <div className="arc3-play-section-title">
             <span>ARC3 GAMES</span>
@@ -442,6 +570,12 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
             {!games.length && !gamesLoading && <div className="arc3-play-empty">No games returned by the ARC engine.</div>}
           </div>
         </section>
+
+        <div
+          className="arc3-play-col-resizer"
+          title="Drag to resize"
+          onMouseDown={startColumnDrag("left")}
+        />
 
         <section className="arc3-play-board-column">
           {!session && <div className="arc3-play-empty">Pick a game on the left to start playing and recording.</div>}
@@ -601,9 +735,46 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
                   End session
                 </button>
               </div>
+              {replayScript && (
+                <div className="arc3-play-actions arc3-play-replayer">
+                  <small>
+                    REPLAY {replayPos}/{replayScript.length}
+                  </small>
+                  <button
+                    className="arc3-play-action reset"
+                    disabled={busy || session.closed || replayPos <= 0}
+                    title="Undo the last replayed move"
+                    onClick={() => void takeBackReplay()}
+                  >
+                    |&lt; take-back-move
+                  </button>
+                  <button
+                    className="arc3-play-action resume-step"
+                    disabled={busy || session.closed || replayPos >= replayScript.length}
+                    title="Play the next recorded move"
+                    onClick={() => void stepReplay()}
+                  >
+                    step one move &gt;|
+                  </button>
+                  <button
+                    className="arc3-play-action end"
+                    disabled={busy}
+                    title="Stop following the recording (keep playing live)"
+                    onClick={() => setReplayScript(null)}
+                  >
+                    Detach
+                  </button>
+                </div>
+              )}
             </>
           )}
         </section>
+
+        <div
+          className="arc3-play-col-resizer"
+          title="Drag to resize"
+          onMouseDown={startColumnDrag("right")}
+        />
 
         <section className="arc3-play-recording">
           <div className="arc3-play-section-title">
@@ -707,6 +878,14 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
                     Resume
                   </button>
                   <button
+                    className="load"
+                    disabled={busy}
+                    title="Load at move 1 to step through it move by move"
+                    onClick={() => void loadSavepoint(point)}
+                  >
+                    Load
+                  </button>
+                  <button
                     className="dup"
                     disabled={busy}
                     title="Duplicate this save-point"
@@ -728,7 +907,17 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
             {!savepoints.length && <div className="arc3-play-empty">No save-points yet.</div>}
           </div>
           <div className="arc3-play-savepoints arc3-play-recordings">
-            <small>RECORDINGS (official ARC-AGI-3 JSONL play logs found under data/)</small>
+            <small>
+              RECORDINGS (official ARC-AGI-3 JSONL play logs in data/importables/)
+              <button
+                className="arc3-play-rescan"
+                disabled={busy}
+                title="Rescan data/importables/ for recordings"
+                onClick={() => void loadRecordings()}
+              >
+                Rescan
+              </button>
+            </small>
             {importNote && <div className="arc3-play-import-note">{importNote}</div>}
             {recordings.map((recording) => (
               <div key={recording.path} className="arc3-play-savepoint">
