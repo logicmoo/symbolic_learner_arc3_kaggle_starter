@@ -52,8 +52,8 @@ def test_play_component_has_recorder_contract() -> None:
     assert "RECORDINGS" in source
     assert "importRecording" in source
     assert "arc3-play-col-resizer" in source
-    assert "take-back-move" in source
-    assert "step one move" in source
+    assert 'Undo {replayPos > 0 && replayScript[replayPos - 1]' in source
+    assert "Next {replayPos < replayScript.length && replayScript[replayPos]" in source
     assert "Watch replay" in source
     assert "replayPlaying" in source
     assert "arc3-play-timeline" in source
@@ -146,7 +146,7 @@ def test_play_page_right_column_panels_cleanup() -> None:
     # Header game picker replaces the old left-column ARC3 GAMES list.
     assert "arc3-play-game-picker" in source
     assert "selectedGameId" in source
-    assert '"Filter: ON" : "Filter"' in source
+    assert "`Only ${filterGameId.slice(0, 4)}` : \"Filter\"" in source
     assert "Start new game" in source
     assert "filterGameId" in source
     assert "filteredSavepoints" in source

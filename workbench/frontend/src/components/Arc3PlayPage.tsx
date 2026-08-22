@@ -1040,7 +1040,7 @@ export function Arc3PlayPage({
             disabled={!selectedGameId}
             onClick={() => setFilterGameId((current) => (current === selectedGameId ? "" : selectedGameId))}
           >
-            {filterGameId === selectedGameId && filterGameId ? "Filter: ON" : "Filter"}
+            {filterGameId === selectedGameId && filterGameId ? `Only ${filterGameId.slice(0, 4)}` : "Filter"}
           </button>
           <button
             disabled={busy || !selectedGameId}
@@ -1255,7 +1255,7 @@ export function Arc3PlayPage({
                     title="Undo the last replayed move"
                     onClick={() => void takeBackReplay()}
                   >
-                    |&lt; take-back-move
+                    |&lt; Undo {replayPos > 0 && replayScript[replayPos - 1] ? actionShort(replayScript[replayPos - 1].action || "") : "move"}
                   </button>
                   <button
                     className={`arc3-play-action watch ${replayPlaying ? "down" : ""}`}
@@ -1271,7 +1271,7 @@ export function Arc3PlayPage({
                     title="Play the next recorded move"
                     onClick={() => void stepReplay()}
                   >
-                    step one move &gt;|
+                    Next {replayPos < replayScript.length && replayScript[replayPos] ? actionShort(replayScript[replayPos].action || "reset") : "move"} &gt;|
                   </button>
                   <select
                     className="arc3-play-replay-speed"
