@@ -712,7 +712,9 @@ def test_b1_b2_use_setup_is_exclusive_and_no_child_cascade() -> None:
     # "Use" collapses every other setup and expands + scans the used one.
     assert "const activateSetupExclusive = (stackIndex: number, imageIndex: number, setup: StackSetup) =>" in source
     assert 'next[`image-${item.id}`] = item.id === setup.id ? "scroll" : "strip";' in source
-    assert "onClick={() => activateSetupExclusive(stackIndex, imageIndex, setup)}" in source
+    assert "onClick={() => activateSetupExclusive(selectedOption.stackIndex, selectedOption.imageIndex, selectedOption.setup)}" in source
+    # Consolidated into one combo box + one "Use" button (was one button per setup).
+    assert 'aria-label="Pick which setup to use"' in source
     # Parent stacks reveal children instead of mass-cascading them: neither the images stack nor
     # each per-group stack carries a collective controlsLabel.
     assert "controlsLabel={groupName}" not in source

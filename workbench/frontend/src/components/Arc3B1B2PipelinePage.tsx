@@ -2368,6 +2368,7 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
   const [initBusy, setInitBusy] = useState(false);
   const [dataDirectory, setDataDirectory] = useState("data");
   const [scanPhase, setScanPhase] = useState("");
+  const [selectedUseKey, setSelectedUseKey] = useState("");
   const [extraModels, setExtraModels] = useState<ModelChoice[]>([]);
   const [modelProbes, setModelProbes] = useState<Record<string, { status: string; latencyMs: number }>>({});
   const [replaceGuesserOnFinish, setReplaceGuesserOnFinish] = useState(false);
@@ -5866,14 +5867,49 @@ export function Arc3B1B2PipelinePage({ pageDefinition, workspaceId, workspaceLab
       <button type="button" aria-pressed={scanPhase === "pingAll"} style={{ ...toolbarBtn, ...depressed(scanPhase === "pingAll") }} onClick={() => void pingAllModels()} disabled={initBusy || scanDataBusy}>Ping All Enabled Models</button>
       <button type="button" aria-pressed={scanPhase === "pingVision"} style={{ ...toolbarBtn, ...depressed(scanPhase === "pingVision") }} onClick={() => void pingVisionModels()} disabled={initBusy || scanDataBusy}>Ping All Vision Models</button>
       <button type="button" aria-pressed={scanPhase === "pingNonVision"} style={{ ...toolbarBtn, ...depressed(scanPhase === "pingNonVision") }} onClick={() => void pingNonVisionModels()} disabled={initBusy || scanDataBusy}>Ping All Non-vision Models</button>
-      {stackColumns.flatMap((stack, stackIndex) => {
-        const setups = stack.setups?.length ? stack.setups : defaultSetups(stack.key);
-        return setups.map((setup, imageIndex) => {
-          const label = setup.label || setup.command || (setup.stateDir ? (setup.stateDir.split("/").pop() || setup.stateDir) : `Setup ${imageIndex + 1}`);
-          const active = scanPhase === `setup:${setup.stateDir || ""}`;
-          return <button key={`hdr-scan-${stack.key}-${imageIndex}`} type="button" aria-pressed={active} style={{ ...toolbarBtn, ...depressed(active) }} title={`Use setup ${setup.stateDir || label} (make it the active setup, collapse the others, and rescan it)`} onClick={() => activateSetupExclusive(stackIndex, imageIndex, setup)} disabled={initBusy || scanDataBusy}>Use {label}</button>;
+      {(() => {
+        const allSetupOptions = stackColumns.flatMap((stack, stackIndex) => {
+          const setups = stack.setups?.length ? stack.setups : defaultSetups(stack.key);
+          return setups.map((setup, imageIndex) => {
+            const label = setup.label || setup.command || (setup.stateDir ? (setup.stateDir.split("/").pop() || setup.stateDir) : `Setup ${imageIndex + 1}`);
+            return {
+              key: `${stackIndex}:${imageIndex}`,
+              stackIndex,
+              imageIndex,
+              setup,
+              label: stackColumns.length > 1 ? `${stack.key || stackIndex} · ${label}` : label,
+            };
+          });
         });
-      })}
+        if (!allSetupOptions.length) return null;
+        const selectedOption = allSetupOptions.find((option) => option.key === selectedUseKey) || allSetupOptions[0];
+        const selectedActive = scanPhase === `setup:${selectedOption.setup.stateDir || ""}`;
+        return (
+          <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+            <select
+              aria-label="Pick which setup to use"
+              value={selectedOption.key}
+              onChange={(event) => setSelectedUseKey(event.target.value)}
+              style={toolbarBtn}
+              disabled={initBusy || scanDataBusy}
+            >
+              {allSetupOptions.map((option) => (
+                <option key={option.key} value={option.key}>{option.label}</option>
+              ))}
+            </select>
+            <button
+              type="button"
+              aria-pressed={selectedActive}
+              style={{ ...toolbarBtn, ...depressed(selectedActive) }}
+              title={`Use setup ${selectedOption.setup.stateDir || selectedOption.label} (make it the active setup, collapse the others, and rescan it)`}
+              onClick={() => activateSetupExclusive(selectedOption.stackIndex, selectedOption.imageIndex, selectedOption.setup)}
+              disabled={initBusy || scanDataBusy}
+            >
+              Use
+            </button>
+          </span>
+        );
+      })()}
     </div>
   );
   return <WorkflowPageHost
