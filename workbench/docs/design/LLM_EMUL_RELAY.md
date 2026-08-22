@@ -199,6 +199,17 @@ declared. A single-worker companion to the admin state endpoint below.
 `GET /llm_emul/docs/design/LLM_EMUL_RELAY.md` returns this very file, live,
 so it never goes stale relative to a separately-copied version.
 
+A doc that physically lives in a *different* directory (outside
+`workbench/docs/`, e.g. a `.copilotignore`'d folder or another package)
+can be **registered** to appear under this same route via
+`register_doc_alias(virtual_rel_path, real_path)` in `api.py`. A file
+target aliases exactly one virtual path; a directory target mounts its
+whole subtree under that virtual prefix. Registration is in-process only
+(there's deliberately no HTTP endpoint that accepts arbitrary filesystem
+paths, so it can't become a read-anything vector from the network), and
+path traversal out of an aliased directory is refused just like the
+normal docs root.
+
 ## Admin / test-controller surface
 
 `/admin/llm_emul/*` is **not** part of the OpenAI-compatible API -- it's
@@ -286,7 +297,7 @@ with `encoding="utf-8-sig"`.
 
 ## Tests
 
-`workbench/server/llm_emul/tests/test_llm_emul_api.py` (43 tests) covers, via a `FakeWorker` double
+`workbench/server/llm_emul/tests/test_llm_emul_api.py` (51 tests) covers, via a `FakeWorker` double
 registered directly into `_connected_workers` (no real WebSocket needed):
 
 - persona listing/lookup, multi-worker aggregation
@@ -300,7 +311,9 @@ registered directly into `_connected_workers` (no real WebSocket needed):
   traversal rejection
 - `/llm_emul/specific_worker/{worker_id}/v1/*` pinning
 - `/llm_emul/docs/{rel_path}` serving real files (design doc and the
-  onboarding guide), 404, and traversal rejection
+  onboarding guide), 404, traversal rejection, and doc aliases
+  (file + whole-directory) mounting docs from another directory
+- token issuance (generate / bring-your-own / register a public key)
 - admin state/runtime_dir/reset/delete-record endpoints, and their
   `/llm_emul/admin/*` alias behaving identically
 

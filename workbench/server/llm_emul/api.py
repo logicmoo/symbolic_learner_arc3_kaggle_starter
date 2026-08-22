@@ -466,8 +466,48 @@ def worker_caps(worker_id: str) -> dict[str, Any]:
 # Serves this feature's own design docs (workbench/docs/**) straight off
 # disk, so e.g. /llm_emul/docs/design/LLM_EMUL_RELAY.md always reflects
 # whatever is currently checked out -- no separate copy to keep in sync.
+#
+# Docs can ALSO be "registered" from another directory: register_doc_alias()
+# maps a virtual path (as requested under /llm_emul/docs/) to a real file
+# or directory that physically lives ELSEWHERE (outside _DOCS_ROOT -- e.g.
+# a .copilotignore'd folder, or another package). This lets a doc kept in
+# one directory appear as if it were part of the already-registered docs
+# tree, without moving or copying it. Registration is in-process only (no
+# HTTP endpoint accepts arbitrary filesystem paths), so it can't be abused
+# as a read-anything vector from the network.
 # ---------------------------------------------------------------------------
 _DOCS_ROOT = Path(__file__).resolve().parent.parent.parent / "docs"
+
+# virtual rel_path (no leading/trailing slash) -> real file or directory.
+_DOC_ALIASES: dict[str, Path] = {}
+
+
+def register_doc_alias(virtual_rel_path: str, real_path: Path | str) -> None:
+    """Register a file or directory that lives outside _DOCS_ROOT so it's
+    served under /llm_emul/docs/<virtual_rel_path>. If real_path is a
+    file, it aliases exactly that one virtual path; if it's a directory,
+    it aliases the whole subtree beneath that virtual prefix."""
+    _DOC_ALIASES[virtual_rel_path.strip("/")] = Path(real_path)
+
+
+def _resolve_doc_alias(rel_path: str) -> Path | None:
+    rel_path = rel_path.strip("/")
+    exact = _DOC_ALIASES.get(rel_path)
+    if exact is not None and exact.is_file():
+        return exact
+    # Longest matching directory prefix wins, so nested aliases behave.
+    for prefix in sorted(_DOC_ALIASES, key=len, reverse=True):
+        target = _DOC_ALIASES[prefix]
+        if not target.is_dir():
+            continue
+        if rel_path == prefix or rel_path.startswith(prefix + "/"):
+            suffix = rel_path[len(prefix):].lstrip("/")
+            if not suffix or ".." in Path(suffix).parts:
+                return None
+            candidate = target / suffix
+            if candidate.is_file():
+                return candidate
+    return None
 
 
 def _substitute_doc_placeholders(text: str, request: Request) -> str:
@@ -490,17 +530,31 @@ def _substitute_doc_placeholders(text: str, request: Request) -> str:
 
 @router.get("/llm_emul/docs/{rel_path:path}")
 def serve_doc(rel_path: str, request: Request) -> Response:
-    if not rel_path or ".." in Path(rel_path).parts or Path(rel_path).is_absolute():
-        raise HTTPException(status_code=400, detail=f"invalid doc path '{rel_path}'")
-    path = _DOCS_ROOT / rel_path
-    if not path.is_file():
-        raise HTTPException(status_code=404, detail=f"no such doc '{rel_path}'")
+    # A registered alias (a doc living outside _DOCS_ROOT) takes priority;
+    # otherwise fall back to the real file under _DOCS_ROOT.
+    path = _resolve_doc_alias(rel_path)
+    if path is None:
+        if not rel_path or ".." in Path(rel_path).parts or Path(rel_path).is_absolute():
+            raise HTTPException(status_code=400, detail=f"invalid doc path '{rel_path}'")
+        path = _DOCS_ROOT / rel_path
+        if not path.is_file():
+            raise HTTPException(status_code=404, detail=f"no such doc '{rel_path}'")
     text = path.read_text(encoding="utf-8")
     if path.suffix == ".md":
         text = _substitute_doc_placeholders(text, request)
     media_type = "text/markdown; charset=utf-8" if path.suffix == ".md" else "text/plain; charset=utf-8"
     return Response(content=text, media_type=media_type)
 
+
+# The onboarding guide is intentionally reachable at several convenient
+# URLs -- the canonical /llm_emul/docs/... route above, plus these bare
+# top-level aliases -- so a link to it works whether someone types the
+# repo-relative path or the served path. All three serve the same live
+# file via serve_doc().
+@router.get("/workbench/docs/LLM_EMUL_ONBOARDING.md")
+@router.get("/docs/LLM_EMUL_ONBOARDING.md")
+def serve_onboarding_doc_aliases(request: Request) -> Response:
+    return serve_doc("LLM_EMUL_ONBOARDING.md", request)
 
 # ---------------------------------------------------------------------------
 # Generic durable storage -- lets a worker "borrow" this server's disk as

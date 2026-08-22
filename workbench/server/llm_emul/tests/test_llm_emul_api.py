@@ -75,6 +75,7 @@ def isolate_llm_emul_state(tmp_path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(llm_emul_api, "_worker_capabilities", {})
     monkeypatch.setattr(llm_emul_api, "_worker_usage", {})
     monkeypatch.setattr(llm_emul_api, "_pending", {})
+    monkeypatch.setattr(llm_emul_api, "_DOC_ALIASES", {})
     # /llm_emul/storage/* derives its root from _RUNTIME_DIR directly, so
     # isolate that too instead of touching the real runtime/llm_emul/ dir.
     monkeypatch.setattr(llm_emul_api, "_RUNTIME_DIR", tmp_path / "runtime")
@@ -215,6 +216,45 @@ def test_serve_doc_404s_for_missing_file(client: TestClient) -> None:
 
 def test_serve_doc_rejects_path_traversal(client: TestClient) -> None:
     assert client.get("/llm_emul/docs/../server/llm_emul_api.py").status_code in (400, 404)
+
+
+def test_serve_doc_file_alias_from_another_directory(client: TestClient, tmp_path) -> None:
+    external = tmp_path / "elsewhere" / "external_note.md"
+    external.parent.mkdir(parents=True)
+    external.write_text("# External\nlives outside the docs tree", encoding="utf-8")
+    llm_emul_api.register_doc_alias("aliased/note.md", external)
+
+    response = client.get("/llm_emul/docs/aliased/note.md")
+    assert response.status_code == 200
+    assert "lives outside the docs tree" in response.text
+    # a non-aliased missing path still 404s normally
+    assert client.get("/llm_emul/docs/aliased/missing.md").status_code == 404
+
+
+def test_serve_doc_directory_alias_mounts_a_whole_subtree(client: TestClient, tmp_path) -> None:
+    ext_dir = tmp_path / "ext_docs"
+    (ext_dir / "sub").mkdir(parents=True)
+    (ext_dir / "sub" / "page.md").write_text("subtree page", encoding="utf-8")
+    llm_emul_api.register_doc_alias("mounted", ext_dir)
+
+    assert client.get("/llm_emul/docs/mounted/sub/page.md").text == "subtree page"
+    # traversal out of an aliased directory is refused
+    assert client.get("/llm_emul/docs/mounted/../secret").status_code in (400, 404)
+
+
+def test_serve_doc_alias_does_not_shadow_real_docs(client: TestClient) -> None:
+    # With no alias registered for it, the real on-disk doc still serves.
+    assert client.get("/llm_emul/docs/design/LLM_EMUL_RELAY.md").status_code == 200
+
+
+def test_onboarding_doc_reachable_at_all_three_urls(client: TestClient) -> None:
+    canonical = client.get("/llm_emul/docs/LLM_EMUL_ONBOARDING.md")
+    assert canonical.status_code == 200
+    for alias in ("/workbench/docs/LLM_EMUL_ONBOARDING.md", "/docs/LLM_EMUL_ONBOARDING.md"):
+        response = client.get(alias)
+        assert response.status_code == 200, alias
+        assert "text/markdown" in response.headers["content-type"]
+        assert response.text == canonical.text
 
 
 def test_specific_worker_prefix_pins_worker_regardless_of_model_field(client: TestClient, short_timeout: None) -> None:
