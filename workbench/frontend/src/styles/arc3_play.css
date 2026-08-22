@@ -8,6 +8,28 @@
   box-sizing: border-box;
 }
 
+/* Fallback "copper" button background for the whole Play page -- only
+   fills in the browser's native default (buttonface) look. The ENTIRE
+   selector is wrapped in :where(...) (not just the ancestor part) so the
+   whole rule has zero specificity -- otherwise "button:disabled" alone
+   still outweighs a plain single class like .arc3-play-rescan and would
+   wrongly override its explicit transparent background. */
+:where(.arc3-play-page button) {
+  background: #b87333;
+  border-color: #8a5a28;
+  color: #2a1a0d;
+}
+
+:where(.arc3-play-page button:hover:not(:disabled)) {
+  background: #c98544;
+  border-color: #9c6830;
+}
+
+:where(.arc3-play-page button:disabled) {
+  background: #6b4a26;
+  color: #4a3520;
+}
+
 .arc3-play-header {
   display: flex;
   align-items: baseline;
@@ -37,13 +59,14 @@
   font-size: 0.72rem;
   padding: 4px 8px;
   cursor: pointer;
-  background: transparent;
-  color: inherit;
-  border: 1px solid rgba(128, 128, 128, 0.5);
+  background: #b87333;
+  color: #2a1a0d;
+  border: 1px solid #8a5a28;
   border-radius: 4px;
 }
 
 .arc3-play-game-picker button:hover:not(:disabled) {
+  background: #c98544;
   border-color: rgba(0, 116, 217, 0.9);
 }
 
@@ -52,9 +75,9 @@
   font-size: 0.66rem;
   padding: 1px 8px;
   cursor: pointer;
-  background: transparent;
-  color: inherit;
-  border: 1px solid rgba(128, 128, 128, 0.5);
+  background: #b87333;
+  color: #2a1a0d;
+  border: 1px solid #8a5a28;
   border-radius: 4px;
 }
 
@@ -63,9 +86,9 @@
   font-size: 0.7rem;
   padding: 0 5px;
   cursor: pointer;
-  background: transparent;
-  color: inherit;
-  border: 1px solid rgba(128, 128, 128, 0.4);
+  background: #b87333;
+  color: #2a1a0d;
+  border: 1px solid #8a5a28;
   border-radius: 3px;
 }
 
@@ -201,8 +224,8 @@
   padding: 8px 10px;
   border: 1px solid rgba(128, 128, 128, 0.35);
   border-radius: 6px;
-  background: transparent;
-  color: inherit;
+  background: #b87333;
+  color: #2a1a0d;
   cursor: pointer;
   text-align: left;
 }
@@ -294,10 +317,10 @@
 
 .arc3-play-action {
   padding: 6px 14px;
-  border: 1px solid rgba(128, 128, 128, 0.45);
+  border: 1px solid #8a5a28;
   border-radius: 6px;
-  background: transparent;
-  color: inherit;
+  background: #b87333;
+  color: #2a1a0d;
   cursor: pointer;
   font-size: 13px;
 }
@@ -500,8 +523,8 @@
   padding: 0.3rem 0.4rem;
   border: 1px solid transparent;
   border-radius: 4px;
-  background: transparent;
-  color: inherit;
+  background: #b87333;
+  color: #2a1a0d;
   cursor: pointer;
   text-align: left;
   font: inherit;
@@ -684,9 +707,9 @@
   font-size: 0.66rem;
   padding: 1px 8px;
   cursor: pointer;
-  background: transparent;
-  color: inherit;
-  border: 1px solid rgba(128, 128, 128, 0.5);
+  background: #b87333;
+  color: #2a1a0d;
+  border: 1px solid #8a5a28;
   border-radius: 4px;
 }
 
