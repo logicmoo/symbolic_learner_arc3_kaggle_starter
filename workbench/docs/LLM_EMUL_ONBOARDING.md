@@ -182,4 +182,6 @@ model completion.
 See [`workbench/docs/design/LLM_EMUL_RELAY.md`](design/LLM_EMUL_RELAY.md)
 (also served live at `GET /llm_emul/docs/design/LLM_EMUL_RELAY.md`) for
 the full technical design if you want more detail than this practical
-guide covers.
+guide covers, and
+[`workbench/docs/LLM_EMUL_AUTOMATION.md`](LLM_EMUL_AUTOMATION.md) for
+running a worker unattended via a recurring heartbeat automation.
