@@ -548,11 +548,12 @@ def serve_doc(rel_path: str, request: Request) -> Response:
 
 # The onboarding guide is intentionally reachable at several convenient
 # URLs -- the canonical /llm_emul/docs/... route above, plus these bare
-# top-level aliases -- so a link to it works whether someone types the
-# repo-relative path or the served path. All three serve the same live
-# file via serve_doc().
+# top-level aliases (including the root path) -- so a link to it works
+# whether someone types the repo-relative path, the served path, or just
+# the bare filename. All serve the same live file via serve_doc().
 @router.get("/workbench/docs/LLM_EMUL_ONBOARDING.md")
 @router.get("/docs/LLM_EMUL_ONBOARDING.md")
+@router.get("/LLM_EMUL_ONBOARDING.md")
 def serve_onboarding_doc_aliases(request: Request) -> Response:
     return serve_doc("LLM_EMUL_ONBOARDING.md", request)
 

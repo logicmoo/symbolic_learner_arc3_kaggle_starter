@@ -250,7 +250,11 @@ def test_serve_doc_alias_does_not_shadow_real_docs(client: TestClient) -> None:
 def test_onboarding_doc_reachable_at_all_three_urls(client: TestClient) -> None:
     canonical = client.get("/llm_emul/docs/LLM_EMUL_ONBOARDING.md")
     assert canonical.status_code == 200
-    for alias in ("/workbench/docs/LLM_EMUL_ONBOARDING.md", "/docs/LLM_EMUL_ONBOARDING.md"):
+    for alias in (
+        "/workbench/docs/LLM_EMUL_ONBOARDING.md",
+        "/docs/LLM_EMUL_ONBOARDING.md",
+        "/LLM_EMUL_ONBOARDING.md",
+    ):
         response = client.get(alias)
         assert response.status_code == 200, alias
         assert "text/markdown" in response.headers["content-type"]
