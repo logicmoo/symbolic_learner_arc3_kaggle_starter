@@ -125,6 +125,10 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
   const [rewindOpen, setRewindOpen] = useState(false);
   const [rewindHover, setRewindHover] = useState<number | null>(null);
   const [autoSelect, setAutoSelect] = useState(true);
+  const [inspectOrdinal, setInspectOrdinal] = useState<number | null>(null);
+  const [inspectScan, setInspectScan] = useState<Record<string, string[]> | null>(null);
+  const [inspectLoading, setInspectLoading] = useState(false);
+  const [inspectCopied, setInspectCopied] = useState(false);
   const [replayScript, setReplayScript] = useState<ReplayOp[] | null>(null);
   const [replayPos, setReplayPos] = useState(0);
   const [replayPlaying, setReplayPlaying] = useState(false);
@@ -593,6 +597,37 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
     }
   };
 
+  const copyMoveDir = async (directory: string) => {
+    try {
+      await navigator.clipboard.writeText(directory);
+      setInspectCopied(true);
+      window.setTimeout(() => setInspectCopied(false), 1500);
+    } catch {
+      setInspectCopied(false);
+    }
+  };
+
+  const loadMoveScan = useCallback(
+    async (directory: string) => {
+      setInspectLoading(true);
+      try {
+        const response = await fetch(assetUrl(`${directory}/state.json`), { cache: "no-store" });
+        if (!response.ok) {
+          setInspectScan(null);
+          return;
+        }
+        const parsed = await response.json();
+        const results = parsed && typeof parsed === "object" ? parsed.scan?.results : null;
+        setInspectScan(results && typeof results === "object" ? results : null);
+      } catch {
+        setInspectScan(null);
+      } finally {
+        setInspectLoading(false);
+      }
+    },
+    [assetUrl],
+  );
+
   const moves = session?.moves || [];
   const newestFirst = [...moves].reverse();
   const levelMoves = session ? moves.filter((move) => move.directory.startsWith(`${session.levelDir}/`)) : [];
@@ -936,6 +971,54 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
                 <button onClick={() => void copyLevelDir()}>{copied ? "Copied" : "Copy path"}</button>
                 {session.forkedFrom && <small>resumed from save-point {session.forkedFrom}</small>}
               </div>
+              {levelMoves.length > 0 && (
+                <div className="arc3-play-move-setup">
+                  <small>MOVE AS SETUP (bootstrap the same way a B1-&gt;B2 setup scans its dir, but over 0/ 1/ 2/ …)</small>
+                  <div className="arc3-play-move-setup-row">
+                    <select
+                      value={inspectOrdinal ?? levelMoves.length - 1}
+                      onChange={(event) => {
+                        const ordinal = Number(event.target.value);
+                        setInspectOrdinal(ordinal);
+                        setInspectScan(null);
+                      }}
+                    >
+                      {levelMoves.map((move, ordinal) => (
+                        <option key={move.directory} value={ordinal}>
+                          {ordinal}/ {actionShort(move.action)}
+                          {ordinal === levelMoves.length - 1 ? " (latest)" : ""}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      disabled={inspectLoading}
+                      onClick={() => {
+                        const ordinal = inspectOrdinal ?? levelMoves.length - 1;
+                        void loadMoveScan(levelMoves[ordinal].directory);
+                      }}
+                    >
+                      {inspectLoading ? "Scanning…" : "Scan"}
+                    </button>
+                    <button onClick={() => void copyMoveDir(levelMoves[inspectOrdinal ?? levelMoves.length - 1].directory)}>
+                      {inspectCopied ? "Copied" : "Copy path"}
+                    </button>
+                  </div>
+                  {inspectScan && (
+                    <div className="arc3-play-move-scan">
+                      {Object.entries(inspectScan)
+                        .filter(([, paths]) => paths.length > 0)
+                        .map(([bucket, paths]) => (
+                          <span key={bucket} className="arc3-play-move-scan-bucket">
+                            {bucket}: {paths.length}
+                          </span>
+                        ))}
+                      {Object.values(inspectScan).every((paths) => paths.length === 0) && (
+                        <span className="arc3-play-move-scan-bucket">only image.png so far</span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
               {session.levelDirs.length > 1 && (
                 <div className="arc3-play-leveldirs">
                   <small>ALL ATTEMPT/LEVEL DIRS THIS SESSION</small>

@@ -651,3 +651,43 @@
   text-align: center;
   opacity: 0.8;
 }
+
+.arc3-play-move-setup {
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(128, 128, 128, 0.25);
+}
+
+.arc3-play-move-setup-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+
+.arc3-play-move-setup-row select {
+  flex: 1;
+  min-width: 0;
+  background: rgba(8, 20, 26, 1);
+  color: inherit;
+  border: 1px solid rgba(128, 128, 128, 0.5);
+  border-radius: 4px;
+  padding: 3px 5px;
+  font-size: 0.72rem;
+}
+
+.arc3-play-move-scan {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.arc3-play-move-scan-bucket {
+  font-size: 0.68rem;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: rgba(0, 116, 217, 0.18);
+  border: 1px solid rgba(0, 116, 217, 0.35);
+}

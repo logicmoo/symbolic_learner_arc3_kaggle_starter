@@ -58,6 +58,8 @@ def test_play_component_has_recorder_contract() -> None:
     assert "seekReplay" in source
     assert "dedupeSavepoints" in source
     assert "dedupeRecordings" in source
+    assert "MOVE AS SETUP" in source
+    assert "loadMoveScan" in source
     assert "Rescan" in source
     assert "data/importables" in source
     api_source = API.read_text(encoding="utf-8")
