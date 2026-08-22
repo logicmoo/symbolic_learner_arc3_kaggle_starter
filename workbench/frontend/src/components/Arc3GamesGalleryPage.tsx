@@ -125,7 +125,12 @@ export function Arc3GamesGalleryPage({ pageDefinition, workspaceLabel, onPlayGam
           const shortId = game.short_id || game.game_id;
           const previewFailed = failedPreviews[shortId];
           return (
-            <article key={game.game_id} className="arc3-gallery-card">
+            <article
+              key={game.game_id}
+              className="arc3-gallery-card"
+              title={onPlayGame ? "Double-click to Play & Record" : undefined}
+              onDoubleClick={onPlayGame ? () => onPlayGame(shortId) : undefined}
+            >
               <div className="arc3-gallery-thumb">
                 {previewFailed ? (
                   <div className="arc3-gallery-thumb-placeholder">No preview</div>

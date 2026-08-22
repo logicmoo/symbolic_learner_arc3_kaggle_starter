@@ -260,6 +260,9 @@ def test_games_gallery_page_exists_and_is_wired_into_navigation() -> None:
     assert "onPlayGame" in gallery_component
     assert 'type="search"' in gallery_component
     assert "Sync from arc-interactive" in gallery_component
+    # Double-clicking a card (not just the Play & Record button) should also
+    # jump straight into Play & Record for that game.
+    assert "onDoubleClick={onPlayGame ? () => onPlayGame(shortId) : undefined}" in gallery_component
 
     gallery_styles = (ROOT / "workbench/frontend/src/styles/arc3_games_gallery.css").read_text(encoding="utf-8")
     assert ".arc3-gallery-grid" in gallery_styles

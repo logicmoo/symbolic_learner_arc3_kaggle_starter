@@ -60,6 +60,7 @@
   border-radius: 8px;
   padding: 8px;
   min-width: 0;
+  cursor: pointer;
 }
 
 .arc3-gallery-thumb {
