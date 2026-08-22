@@ -91,10 +91,83 @@ def _game_slug(game_id: str) -> str:
     return _slug(match.group(1) if match else value)
 
 
-def _stamped_level_dir_name(level: str) -> str:
-    now = datetime.now(timezone.utc)
-    stamp = now.strftime("%Y%m%d-%H%M%S")
-    return f"level_{_slug(level)}_{stamp}_{time.time_ns()}"
+_RANKED_LEVEL_DIR_RE = re.compile(r"^level_(?P<level>[^_]+)_(?P<rank>\d+)$")
+_DATA_ROOT_NON_GAME_DIRS = {"recordings", "importables"}
+
+
+def _games_container(root: Path) -> Path:
+    """The canonical home for every game's recordings: data/Recordings/<game>/.
+
+    All NEW recordings (live play sessions and imports alike) are written
+    here. Some games may still have artifacts at the older, pre-reorg
+    data/<game>/ location -- see _game_dirs_for()/_all_game_dirs(), which
+    read both locations so nothing already on disk is hidden from listings.
+    """
+    return root / "data" / "Recordings"
+
+
+def _game_write_dir(root: Path, game_dir: str) -> Path:
+    """Where a specific game's new recordings/savepoints are written."""
+    return _games_container(root) / game_dir
+
+
+def _game_dirs_for(root: Path, game_dir: str) -> list[Path]:
+    """Every existing directory for one game: new location first, then legacy."""
+    candidates = [_game_write_dir(root, game_dir), root / "data" / game_dir]
+    seen: set[Path] = set()
+    result: list[Path] = []
+    for candidate in candidates:
+        if candidate in seen or not candidate.is_dir():
+            continue
+        seen.add(candidate)
+        result.append(candidate)
+    return result
+
+
+def _all_game_dirs(root: Path) -> list[Path]:
+    """Every per-game directory under data/, new (Recordings/<game>) and
+    legacy (data/<game>) locations combined, deduplicated."""
+    seen: set[Path] = set()
+    result: list[Path] = []
+    recordings_root = _games_container(root)
+    if recordings_root.is_dir():
+        for path in recordings_root.iterdir():
+            if path.is_dir() and path.resolve() not in seen:
+                seen.add(path.resolve())
+                result.append(path)
+    data_root = root / "data"
+    if data_root.is_dir():
+        for path in data_root.iterdir():
+            if (
+                path.is_dir()
+                and path.name.lower() not in _DATA_ROOT_NON_GAME_DIRS
+                and path.resolve() not in seen
+            ):
+                seen.add(path.resolve())
+                result.append(path)
+    return result
+
+
+def _next_ranked_level_dir_name(container: Path, level: str) -> str:
+    """level_<level>_<NNN>, continuing from the highest existing NNN for this
+    level already under container (0-padded to at least 3 digits, starting
+    at 001). Unranked/legacy-named siblings (bare level_1, timestamped
+    level_1_<stamp>_<ns>) are ignored -- they don't participate in or block
+    this numbering."""
+    level_slug = _slug(level)
+    highest = 0
+    if container.is_dir():
+        for entry in container.iterdir():
+            if not entry.is_dir():
+                continue
+            match = _RANKED_LEVEL_DIR_RE.fullmatch(entry.name)
+            if not match or match.group("level") != level_slug:
+                continue
+            try:
+                highest = max(highest, int(match.group("rank")))
+            except ValueError:
+                continue
+    return f"level_{level_slug}_{highest + 1:03d}"
 
 
 def _workspace_root(workspace_id: str) -> Path:
@@ -209,8 +282,9 @@ class PlaySession:
 
     def _begin_level_dir(self, reason: str) -> None:
         level = self.runner.current_level_label()
-        name = _stamped_level_dir_name(level)
-        directory = self.workspace_root / "data" / self.game_dir / name
+        container = _game_write_dir(self.workspace_root, self.game_dir)
+        name = _next_ranked_level_dir_name(container, level)
+        directory = container / name
         directory.mkdir(parents=True, exist_ok=True)
         self.level_dir = directory
         self.level_dirs.append(directory)
@@ -440,7 +514,7 @@ class PlaySession:
         }
 
     def _write_savepoint(self, savepoint: dict[str, Any], replace_id: str | None = None) -> None:
-        path = self.workspace_root / "data" / self.game_dir / "savepoints.json"
+        path = _game_write_dir(self.workspace_root, self.game_dir) / "savepoints.json"
         with _savepoints_lock:
             entries = _load_savepoints(path)
             if replace_id:
@@ -711,11 +785,7 @@ def create_session(body: dict[str, Any] = Body(default_factory=dict)) -> dict[st
 def list_savepoints(workspaceId: str, gameId: str | None = None) -> dict[str, Any]:
     root = _workspace_root(workspaceId)
     entries: list[dict[str, Any]] = []
-    if gameId:
-        directories = [root / "data" / _game_slug(gameId)]
-    else:
-        data_root = root / "data"
-        directories = [path for path in data_root.iterdir() if path.is_dir()] if data_root.is_dir() else []
+    directories = _game_dirs_for(root, _game_slug(gameId)) if gameId else _all_game_dirs(root)
     with _savepoints_lock:
         for directory in directories:
             for entry in _load_savepoints(directory / "savepoints.json"):
@@ -759,11 +829,7 @@ def _dedupe_savepoints_in(path: Path) -> int:
 @router.post("/savepoints/dedupe")
 def dedupe_savepoints(workspaceId: str, gameId: str | None = None) -> dict[str, Any]:
     root = _workspace_root(workspaceId)
-    data_root = root / "data"
-    if gameId:
-        directories = [data_root / _game_slug(gameId)]
-    else:
-        directories = [path for path in data_root.iterdir() if path.is_dir()] if data_root.is_dir() else []
+    directories = _game_dirs_for(root, _game_slug(gameId)) if gameId else _all_game_dirs(root)
     removed = 0
     with _savepoints_lock:
         for directory in directories:
@@ -785,11 +851,7 @@ def read_savepoint(savepoint_id: str, workspaceId: str, gameId: str | None = Non
 @router.delete("/savepoints/{savepoint_id}")
 def delete_savepoint(savepoint_id: str, workspaceId: str, gameId: str | None = None) -> dict[str, Any]:
     root = _workspace_root(workspaceId)
-    data_root = root / "data"
-    if gameId:
-        directories = [data_root / _game_slug(gameId)]
-    else:
-        directories = [path for path in data_root.iterdir() if path.is_dir()] if data_root.is_dir() else []
+    directories = _game_dirs_for(root, _game_slug(gameId)) if gameId else _all_game_dirs(root)
     with _savepoints_lock:
         for directory in directories:
             path = directory / "savepoints.json"
@@ -807,11 +869,7 @@ def delete_savepoint(savepoint_id: str, workspaceId: str, gameId: str | None = N
 @router.post("/savepoints/{savepoint_id}/duplicate", status_code=201)
 def duplicate_savepoint(savepoint_id: str, workspaceId: str, gameId: str | None = None) -> dict[str, Any]:
     root = _workspace_root(workspaceId)
-    data_root = root / "data"
-    if gameId:
-        directories = [data_root / _game_slug(gameId)]
-    else:
-        directories = [path for path in data_root.iterdir() if path.is_dir()] if data_root.is_dir() else []
+    directories = _game_dirs_for(root, _game_slug(gameId)) if gameId else _all_game_dirs(root)
     with _savepoints_lock:
         for directory in directories:
             path = directory / "savepoints.json"
@@ -910,29 +968,31 @@ def _purge_prior_import(root: Path, game_dir: str, rel_path: str) -> int:
 
     Makes re-importing idempotent: clicking Import again on a file that was
     already converted replaces its artifacts instead of piling up duplicates.
+    Checks both the new (data/Recordings/<game>) and legacy (data/<game>)
+    locations, since an earlier import may predate this fix.
     """
     removed = 0
-    game_root = root / "data" / game_dir
-    for level_dir in sorted(game_root.glob("level_*")) if game_root.is_dir() else []:
-        manifest_path = level_dir / "recording.json"
-        if not manifest_path.is_file():
-            continue
-        try:
-            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
-            continue
-        if manifest.get("imported_from") == rel_path:
-            shutil.rmtree(level_dir, ignore_errors=True)
-            removed += 1
-    savepoints_path = game_root / "savepoints.json"
-    with _savepoints_lock:
-        entries = _load_savepoints(savepoints_path)
-        kept = [entry for entry in entries if entry.get("imported_from") != rel_path]
-        if len(kept) != len(entries):
-            savepoints_path.write_text(
-                json.dumps(kept, indent=2, ensure_ascii=False),
-                encoding="utf-8",
-            )
+    for game_root in _game_dirs_for(root, game_dir):
+        for level_dir in sorted(game_root.glob("level_*")):
+            manifest_path = level_dir / "recording.json"
+            if not manifest_path.is_file():
+                continue
+            try:
+                manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                continue
+            if manifest.get("imported_from") == rel_path:
+                shutil.rmtree(level_dir, ignore_errors=True)
+                removed += 1
+        savepoints_path = game_root / "savepoints.json"
+        with _savepoints_lock:
+            entries = _load_savepoints(savepoints_path)
+            kept = [entry for entry in entries if entry.get("imported_from") != rel_path]
+            if len(kept) != len(entries):
+                savepoints_path.write_text(
+                    json.dumps(kept, indent=2, ensure_ascii=False),
+                    encoding="utf-8",
+                )
     return removed
 
 
@@ -1051,7 +1111,8 @@ def _import_recording(root: Path, rel_path: str, label: str | None) -> dict[str,
     def begin_level(event: dict[str, Any], reason: str, step_count: int) -> None:
         nonlocal current_dir, level_moves, current_level
         current_level = str(int(event["data"].get("levels_completed") or 0) + 1)
-        directory = root / "data" / game_dir / _stamped_level_dir_name(current_level)
+        container = _game_write_dir(root, game_dir)
+        directory = container / _next_ranked_level_dir_name(container, current_level)
         directory.mkdir(parents=True, exist_ok=True)
         current_dir = directory
         level_dirs.append(directory)
@@ -1115,7 +1176,7 @@ def _import_recording(root: Path, rel_path: str, label: str | None) -> dict[str,
         "imported_from": rel_path,
         "replay_log": replay_log,
     }
-    savepoints_path = root / "data" / game_dir / "savepoints.json"
+    savepoints_path = _game_write_dir(root, game_dir) / "savepoints.json"
     with _savepoints_lock:
         entries = _load_savepoints(savepoints_path)
         entries.append(savepoint)
@@ -1367,7 +1428,8 @@ def _import_release_run(root: Path, rel_dir: str, label: str | None) -> dict[str
         nonlocal current_dir, level_moves, current_level
         is_first = not level_dirs
         current_level = str(int(step.levels_completed) + 1)
-        directory = root / "data" / game_dir / _stamped_level_dir_name(current_level)
+        container = _game_write_dir(root, game_dir)
+        directory = container / _next_ranked_level_dir_name(container, current_level)
         directory.mkdir(parents=True, exist_ok=True)
         current_dir = directory
         level_dirs.append(directory)
@@ -1466,7 +1528,7 @@ def _import_release_run(root: Path, rel_dir: str, label: str | None) -> dict[str
         "imported_from": rel_dir,
         "replay_log": replay_log,
     }
-    savepoints_path = root / "data" / game_dir / "savepoints.json"
+    savepoints_path = _game_write_dir(root, game_dir) / "savepoints.json"
     with _savepoints_lock:
         entries = _load_savepoints(savepoints_path)
         entries.append(savepoint)
@@ -1533,15 +1595,7 @@ def _dedupe_recordings_in(root: Path, game_root: Path) -> list[str]:
 @router.post("/recordings/dedupe")
 def dedupe_recordings(workspaceId: str, gameId: str | None = None) -> dict[str, Any]:
     root = _workspace_root(workspaceId)
-    data_root = root / "data"
-    if gameId:
-        directories = [data_root / _game_slug(gameId)]
-    else:
-        directories = (
-            [path for path in data_root.iterdir() if path.is_dir() and path.name != "importables"]
-            if data_root.is_dir()
-            else []
-        )
+    directories = _game_dirs_for(root, _game_slug(gameId)) if gameId else _all_game_dirs(root)
     removed: list[str] = []
     for directory in directories:
         if directory.is_dir():
@@ -1564,11 +1618,7 @@ def import_recording(body: dict[str, Any] = Body(default_factory=dict)) -> dict[
 
 
 def _find_savepoint(root: Path, savepoint_id: str, game_dir: str | None = None) -> dict[str, Any] | None:
-    data_root = root / "data"
-    if game_dir:
-        directories = [data_root / game_dir]
-    else:
-        directories = [path for path in data_root.iterdir() if path.is_dir()] if data_root.is_dir() else []
+    directories = _game_dirs_for(root, game_dir) if game_dir else _all_game_dirs(root)
     with _savepoints_lock:
         for directory in directories:
             for entry in _load_savepoints(directory / "savepoints.json"):

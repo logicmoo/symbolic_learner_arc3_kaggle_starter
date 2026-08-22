@@ -90,10 +90,17 @@ def test_play_component_has_recorder_contract() -> None:
 
 def test_play_api_records_flat_move_dirs() -> None:
     source = API.read_text(encoding="utf-8")
-    # Stamped level dirs: level_<n>_<datetime>_<epoch ns> so parallel threads never collide.
+    # Ranked level dirs: level_<n>_<NNN>, continuing from the highest existing
+    # rank for that level under data/Recordings/<game>/ (0-padded, 001-first).
     assert 'f"level_{' in source
-    assert "time.time_ns()" in source
-    # Flat ordinal move dirs 0/ 1/ 2/ under the stamped level dir.
+    assert "_next_ranked_level_dir_name" in source
+    assert "_RANKED_LEVEL_DIR_RE" in source
+    # Live recordings + imports all write under the canonical Recordings/
+    # location, not the legacy data/<game>/ path.
+    assert "_games_container" in source
+    assert "_game_write_dir" in source
+    assert '_game_write_dir(self.workspace_root, self.game_dir)' in source
+    # Flat ordinal move dirs 0/ 1/ 2/ under the level dir.
     assert "self.level_dir / str(ordinal)" in source
     assert "recording.json" in source
     assert "image.png" in source

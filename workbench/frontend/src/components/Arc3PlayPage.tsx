@@ -1096,7 +1096,7 @@ export function Arc3PlayPage({
           </div>
           {!collapsedSections.recordings && (
             <>
-              {!session && <div className="arc3-play-empty">Recording paths appear once a game starts.</div>}
+              {!session && <div className="arc3-play-empty">Recording paths sometimes only appear once a game starts.</div>}
               {session && (
                 <>
                   <div className="arc3-play-target">
