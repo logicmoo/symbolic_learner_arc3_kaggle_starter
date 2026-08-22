@@ -75,6 +75,10 @@ def test_play_component_has_recorder_contract() -> None:
     assert "_scan_setup_dir" in api_source
     assert "_import_release_run" in api_source
     assert "release-runs" in api_source
+    assert "_parse_transcript_actions" in api_source
+    assert "_load_trace_playbook_snapshots" in api_source
+    assert "commentary.md" in api_source
+    assert "vision_prime.md" in api_source
     assert '"scan": _scan_setup_dir(directory, self.workspace_root)' in api_source
     assert '"scan": _scan_setup_dir(directory, root)' in api_source
     assert "Fork" in source

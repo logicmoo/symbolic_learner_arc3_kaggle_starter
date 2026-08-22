@@ -1065,6 +1065,122 @@ def _import_recording(root: Path, rel_path: str, label: str | None) -> dict[str,
     }
 
 
+def _parse_transcript_actions(run_dir: Path) -> list[dict[str, Any]]:
+    """Flatten transcript.jsonl's invocations into one entry per planned
+    action, in order. Each release-run's total planned actions across every
+    invocation lines up 1:1 with its real (non-RESET) steps in log.txt, so
+    this list can be walked in lockstep with arclog's Step list to attach
+    the agent's own commentary/reasoning to the exact move it produced.
+    """
+    transcript_path = run_dir / "transcript.jsonl"
+    if not transcript_path.is_file():
+        return []
+    flattened: list[dict[str, Any]] = []
+    for line in transcript_path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            invocation = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        text = str(invocation.get("text") or "")
+        marker = text.find("[ACTIONS]")
+        commentary = (text[:marker] if marker >= 0 else text).strip()
+        plan_entries: list[dict[str, Any]] = []
+        if marker >= 0:
+            try:
+                plan = json.loads(text[marker + len("[ACTIONS]"):].strip())
+                if isinstance(plan, dict) and isinstance(plan.get("plan"), list):
+                    plan_entries = plan["plan"]
+            except json.JSONDecodeError:
+                plan_entries = []
+        for entry in plan_entries:
+            if not isinstance(entry, dict):
+                continue
+            flattened.append(
+                {
+                    "invocation": invocation.get("invocation"),
+                    "commentary": commentary,
+                    "action": entry.get("action"),
+                    "expect": entry.get("expect"),
+                    "reasoning": entry.get("reasoning"),
+                }
+            )
+    return flattened
+
+
+def _load_trace_playbook_snapshots(run_dir: Path, filename: str = "playbook.md") -> dict[int, str]:
+    """Return {invocation_number: cumulative file content as of the end of
+    that invocation}, reconstructed from write/edit tool-call spans in the
+    run's OTel-style trace files. Trace files are sorted by their earliest
+    span timestamp, which lines up with invocation order 1..N -- this is a
+    persistent, cross-invocation "working memory" file the agent edits and
+    recompacts over the whole run, not a per-step artifact.
+    """
+    traces_root = run_dir / "traces"
+    if not traces_root.is_dir():
+        return {}
+    trace_files: list[Path] = []
+    for workspace_dir in traces_root.iterdir():
+        if workspace_dir.is_dir():
+            trace_files.extend(workspace_dir.glob("*.jsonl"))
+
+    def min_started_at(path: Path) -> float:
+        best = float("inf")
+        try:
+            for line in path.read_text(encoding="utf-8").splitlines():
+                if not line.strip():
+                    continue
+                try:
+                    span = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                started = span.get("started_at")
+                if isinstance(started, (int, float)) and started < best:
+                    best = started
+        except OSError:
+            pass
+        return best
+
+    trace_files.sort(key=min_started_at)
+    snapshots: dict[int, str] = {}
+    content = ""
+    for invocation_number, trace_path in enumerate(trace_files, start=1):
+        changed = False
+        try:
+            lines = trace_path.read_text(encoding="utf-8").splitlines()
+        except OSError:
+            lines = []
+        for line in lines:
+            if not line.strip() or filename not in line:
+                continue
+            try:
+                span = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            attrs = span.get("attributes") or {}
+            if attrs.get("gen_ai.tool.name") not in ("write", "edit"):
+                continue
+            raw_args = attrs.get("gen_ai.tool.call.arguments")
+            args = raw_args
+            if isinstance(raw_args, str):
+                try:
+                    args = json.loads(raw_args)
+                except json.JSONDecodeError:
+                    continue
+            if not isinstance(args, dict) or args.get("path") != filename:
+                continue
+            piece = args.get("content")
+            if not isinstance(piece, str):
+                continue
+            content = f"{content}{piece}" if args.get("append") and content else piece
+            changed = True
+        if changed:
+            snapshots[invocation_number] = content
+    return snapshots
+
+
 def _import_release_run(root: Path, rel_dir: str, label: str | None) -> dict[str, Any]:
     """Import an official ARC-AGI-3 agent release-run directory.
 
@@ -1177,6 +1293,7 @@ def _import_release_run(root: Path, rel_dir: str, label: str | None) -> dict[str
 
     def begin_level(step: Any, reason: str) -> None:
         nonlocal current_dir, level_moves, current_level
+        is_first = not level_dirs
         current_level = str(int(step.levels_completed) + 1)
         directory = root / "data" / game_dir / _stamped_level_dir_name(current_level)
         directory.mkdir(parents=True, exist_ok=True)
@@ -1184,7 +1301,24 @@ def _import_release_run(root: Path, rel_dir: str, label: str | None) -> dict[str
         level_dirs.append(directory)
         level_moves = []
         write_node(directory, step, None, {}, None)
+        if is_first:
+            prime_path = run_dir / "prime.json"
+            if prime_path.is_file():
+                try:
+                    prime = json.loads(prime_path.read_text(encoding="utf-8"))
+                except (OSError, json.JSONDecodeError):
+                    prime = {}
+                description = prime.get("description") if isinstance(prime, dict) else None
+                if isinstance(description, str) and description.strip():
+                    vision_model = prime.get("vision_model") or "vision model"
+                    (directory / "vision_prime.md").write_text(
+                        f"# Opening-frame read ({vision_model})\n\n{description}\n",
+                        encoding="utf-8",
+                    )
         write_recording(reason)
+
+    flattened_actions = _parse_transcript_actions(run_dir)
+    playbook_snapshots = _load_trace_playbook_snapshots(run_dir)
 
     begin_level(steps[0], "imported_start")
     last_completed = steps[0].levels_completed
@@ -1201,6 +1335,28 @@ def _import_release_run(root: Path, rel_dir: str, label: str | None) -> dict[str
         ordinal = len(level_moves)
         directory = current_dir / str(ordinal)
         payload = write_node(directory, step, action, action_data, ordinal)
+        # Agent's own commentary/reasoning for this move (from transcript.jsonl,
+        # flattened 1:1 against non-RESET steps) and, when this move is the
+        # last one its invocation produced, the persistent playbook.md
+        # snapshot as of that point (reconstructed from trace write/edit
+        # spans) -- so stepping through the replay surfaces both as they
+        # actually accrued during the run, not just a single final artifact.
+        flat_index = move_total
+        if flat_index < len(flattened_actions):
+            entry = flattened_actions[flat_index]
+            commentary_lines = [f"# Agent commentary (invocation {entry.get('invocation')})", "", entry.get("commentary") or ""]
+            if entry.get("reasoning"):
+                commentary_lines += ["", "## Reasoning for this action", "", str(entry["reasoning"])]
+            if entry.get("expect"):
+                commentary_lines += ["", "## Predicted cells (x, y, old, new)", "", json.dumps(entry["expect"])]
+            (directory / "commentary.md").write_text("\n".join(commentary_lines).strip() + "\n", encoding="utf-8")
+            invocation_number = entry.get("invocation")
+            is_last_of_invocation = (
+                flat_index + 1 >= len(flattened_actions)
+                or flattened_actions[flat_index + 1].get("invocation") != invocation_number
+            )
+            if is_last_of_invocation and invocation_number in playbook_snapshots:
+                (directory / "playbook.md").write_text(playbook_snapshots[invocation_number], encoding="utf-8")
         move = {
             "index": ordinal,
             "action": action,
