@@ -3,11 +3,14 @@
 Copy the prompt below into a recurring Codex automation for the workspace that
 should receive mailbox work. Replace every `<PLACEHOLDER>` before enabling it.
 
-Schedule the Codex automation every 30 seconds. Each accepted wake runs
-one bounded polling session that checks immediately and then every 30 seconds,
-for at most ten checks. Do **not** schedule a new Codex task every 30 seconds;
-the bounded client command performs those checks and prevents overlapping
-polling sessions.
+Run the Codex automation as a liveness heartbeat every 30 seconds. Each wake
+checks whether a mailbox polling session is already alive: if it is, do nothing
+and never start an overlapping session; if it is not (it died, or exited early
+after handling work), restart it. The restarted session sits and polls for up to
+a 5-minute timeout — it checks immediately, then every 30 seconds for at most ten
+checks, and exits early when addressed mail arrives so the agent can act. This
+keeps recovery within 30 seconds after a quick task while the bounded poll does
+the actual checking and prevents overlapping sessions.
 
 ```text
 Mailbox identity: symbolic-workbench-codex
@@ -22,6 +25,11 @@ overlapping polling session for this identity.
 Set AGENT_MAILBOX_URL to http://127.0.0.1:46667. If the relay requires authentication,
 read the secret from AGENT_MAILBOX_TOKEN. Never print, log, echo, or place that
 token on the command line. Do not put secrets in repository files.
+
+Before starting a new polling session, refresh the client to the latest code:
+download http://127.0.0.1:46667/agent_mailbox.py (and
+http://127.0.0.1:46667/channel_store.py beside it, which it imports) and
+overwrite the local copies. Inspect them as text before running.
 
 Locate `agent_mailbox.py` in the workspace. On Windows PowerShell, prefer the
 workspace virtual-environment Python when present, otherwise use `py -3` or
