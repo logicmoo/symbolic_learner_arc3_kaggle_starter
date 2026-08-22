@@ -647,6 +647,267 @@ def duplicate_savepoint(savepoint_id: str, workspaceId: str, gameId: str | None 
     raise HTTPException(status_code=404, detail=f"savepoint not found: {savepoint_id}")
 
 
+# ---- human recording import ----------------------------------------------
+#
+# Official ARC-AGI-3 recordings (arcprize agents SDK / human plays) are JSONL
+# files: one {"timestamp", "data": {frame, state, action_input, ...}} line per
+# frame plus a final scorecard line. The importer converts one offline into
+# the exact same level_*/0..k recording layout the live recorder writes, and
+# registers a savepoint whose replay_log can re-drive a real session.
+
+_RECORDING_SKIP_NAMES = {"savepoints.json", "recording.json", "state.json"}
+
+
+def _sniff_recording_head(path: Path) -> str | None:
+    try:
+        with path.open("r", encoding="utf-8") as handle:
+            head = handle.readline(131072).strip()
+    except OSError:
+        return None
+    if not head.startswith("{") or '"action_input"' not in head or '"frame"' not in head:
+        return None
+    return head
+
+
+def _list_recording_files(root: Path) -> list[dict[str, Any]]:
+    data_root = root / "data"
+    if not data_root.is_dir():
+        return []
+    found: list[dict[str, Any]] = []
+    for path in sorted(data_root.rglob("*.json")):
+        if path.name in _RECORDING_SKIP_NAMES:
+            continue
+        head = _sniff_recording_head(path)
+        if head is None:
+            continue
+        match = re.search(r'"game_id"\s*:\s*"([^"]+)"', head)
+        found.append(
+            {
+                "path": path.relative_to(root).as_posix(),
+                "name": path.name,
+                "gameId": match.group(1) if match else None,
+                "sizeBytes": path.stat().st_size,
+            }
+        )
+    return found
+
+
+def _import_recording(root: Path, rel_path: str, label: str | None) -> dict[str, Any]:
+    _ensure_python_path()
+    from image_codec import frame_to_png_bytes
+
+    source = (root / rel_path).resolve()
+    try:
+        source.relative_to(root)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail="path must live inside the workspace") from error
+    if not source.is_file():
+        raise HTTPException(status_code=404, detail=f"recording not found: {rel_path}")
+
+    events: list[dict[str, Any]] = []
+    for line in source.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        data = row.get("data") if isinstance(row, dict) else None
+        if isinstance(data, dict) and isinstance(data.get("frame"), list):
+            events.append(row)
+    if not events:
+        raise HTTPException(status_code=400, detail="no frame events found in recording")
+
+    first = events[0]["data"]
+    game_id = str(first.get("game_id") or source.stem)
+    guid = str(first.get("guid") or uuid.uuid4().hex)
+    game_dir = _game_slug(game_id)
+    session_tag = f"import-{guid[:12]}"
+    import_label = str(label).strip() if label else f"human recording {source.stem}"
+
+    def relative(path: Path) -> str:
+        return path.relative_to(root).as_posix()
+
+    def grid_of(event: dict[str, Any]) -> Any:
+        frames = event["data"].get("frame") or []
+        return frames[-1] if frames else []
+
+    level_dirs: list[Path] = []
+    level_moves: list[dict[str, Any]] = []
+    replay_log: list[dict[str, Any]] = []
+    move_total = 0
+    current_dir: Path | None = None
+    current_level = "1"
+
+    def write_node(
+        directory: Path,
+        event: dict[str, Any],
+        incoming_action: str | None,
+        action_data: dict[str, Any],
+        ordinal: int | None,
+        step_count: int,
+    ) -> dict[str, Any]:
+        directory.mkdir(parents=True, exist_ok=True)
+        try:
+            png = frame_to_png_bytes(grid_of(event))
+        except Exception:
+            png = b""
+        if png:
+            (directory / "image.png").write_bytes(png)
+        data = event["data"]
+        observation = {key: value for key, value in data.items() if key != "frame"}
+        observation["frame_count"] = len(data.get("frame") or [])
+        payload = {
+            "state": data.get("state"),
+            "level": current_level,
+            "level_source": "imported_recording",
+            "next_level_expected": None,
+            "observation": observation,
+            "step_count": step_count,
+            "game_id": game_id,
+            "game_directory": game_dir,
+            "image_hash": hashlib.sha256(png).hexdigest()[:16] if png else None,
+            "incoming_action": incoming_action,
+            "action_directory": str(ordinal) if ordinal is not None else None,
+            "action_data": action_data,
+            "parent_node": ".." if ordinal is not None else None,
+            "action_path": [str(index) for index in range(ordinal + 1)] if ordinal is not None else [],
+            "recorded_at": str(event.get("timestamp") or _utc_now()),
+        }
+        (directory / "state.json").write_text(
+            json.dumps(payload, indent=2, ensure_ascii=False),
+            encoding="utf-8",
+        )
+        return payload
+
+    def write_recording(reason: str) -> None:
+        if current_dir is None:
+            return
+        manifest = {
+            "kind": "arc3_play_recording",
+            "session_id": session_tag,
+            "game_id": game_id,
+            "game_directory": game_dir,
+            "level": current_level,
+            "level_directory": relative(current_dir),
+            "started_at": str(events[0].get("timestamp") or _utc_now()),
+            "updated_at": _utc_now(),
+            "last_event": reason,
+            "imported_from": rel_path,
+            "moves": level_moves,
+        }
+        (current_dir / "recording.json").write_text(
+            json.dumps(manifest, indent=2, ensure_ascii=False),
+            encoding="utf-8",
+        )
+
+    def begin_level(event: dict[str, Any], reason: str, step_count: int) -> None:
+        nonlocal current_dir, level_moves, current_level
+        current_level = str(int(event["data"].get("levels_completed") or 0) + 1)
+        directory = root / "data" / game_dir / _stamped_level_dir_name(current_level)
+        directory.mkdir(parents=True, exist_ok=True)
+        current_dir = directory
+        level_dirs.append(directory)
+        level_moves = []
+        write_node(directory, event, None, {}, None, step_count)
+        write_recording(reason)
+
+    begin_level(events[0], "imported_start", 0)
+    last_completed = int(events[0]["data"].get("levels_completed") or 0)
+
+    for index, event in enumerate(events[1:], start=1):
+        data = event["data"]
+        action_input = data.get("action_input") or {}
+        action_id = int(action_input.get("id") or 0)
+        if action_id == 0:
+            replay_log.append({"op": "reset"})
+            begin_level(event, "new_attempt", index)
+            last_completed = int(data.get("levels_completed") or 0)
+            continue
+        action = f"ACTION{action_id}"
+        raw_data = action_input.get("data") or {}
+        action_data = {key: int(raw_data[key]) for key in ("x", "y") if key in raw_data}
+        assert current_dir is not None
+        ordinal = len(level_moves)
+        directory = current_dir / str(ordinal)
+        payload = write_node(directory, event, action, action_data, ordinal, index)
+        move = {
+            "index": ordinal,
+            "action": action,
+            "data": action_data,
+            "directory": relative(directory),
+            "state": payload.get("state"),
+            "level": payload.get("level"),
+            "recorded_at": payload.get("recorded_at"),
+        }
+        level_moves.append(move)
+        move_total += 1
+        replay_log.append({"op": "step", "action": action, "data": action_data, "directory": move["directory"]})
+        completed = int(data.get("levels_completed") or 0)
+        if completed != last_completed and str(data.get("state") or "").upper() != "WIN":
+            move["level_completed"] = current_level
+            write_recording("level_complete")
+            begin_level(event, "level_start", index)
+        else:
+            write_recording("move")
+        last_completed = completed
+
+    final_state = str(events[-1]["data"].get("state") or "NOT_FINISHED")
+    savepoint = {
+        "id": uuid.uuid4().hex[:12],
+        "kind": "arc3_play_savepoint",
+        "created_at": _utc_now(),
+        "label": import_label,
+        "game_id": game_id,
+        "game_directory": game_dir,
+        "level": current_level,
+        "level_directory": relative(current_dir) if current_dir else None,
+        "move_index": len(level_moves) - 1 if level_moves else None,
+        "state": final_state,
+        "session_id": session_tag,
+        "imported_from": rel_path,
+        "replay_log": replay_log,
+    }
+    savepoints_path = root / "data" / game_dir / "savepoints.json"
+    with _savepoints_lock:
+        entries = _load_savepoints(savepoints_path)
+        entries.append(savepoint)
+        savepoints_path.parent.mkdir(parents=True, exist_ok=True)
+        savepoints_path.write_text(
+            json.dumps(entries, indent=2, ensure_ascii=False),
+            encoding="utf-8",
+        )
+    return {
+        "imported": {
+            "path": rel_path,
+            "gameId": game_id,
+            "gameDirectory": game_dir,
+            "moveCount": move_total,
+            "levelDirs": [relative(path) for path in level_dirs],
+            "state": final_state,
+        },
+        "savepoint": {key: value for key, value in savepoint.items() if key != "replay_log"},
+    }
+
+
+@router.get("/recordings")
+def list_recordings(workspaceId: str) -> dict[str, Any]:
+    root = _workspace_root(workspaceId)
+    return {"recordings": _list_recording_files(root)}
+
+
+@router.post("/import-recording", status_code=201)
+def import_recording(body: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
+    workspace_id = str(body.get("workspaceId") or "").strip()
+    rel_path = str(body.get("path") or "").strip()
+    if not workspace_id or not rel_path:
+        raise HTTPException(status_code=400, detail="workspaceId and path are required")
+    root = _workspace_root(workspace_id)
+    label = body.get("label")
+    return _import_recording(root, rel_path, str(label) if label else None)
+
+
 def _find_savepoint(root: Path, savepoint_id: str, game_dir: str | None = None) -> dict[str, Any] | None:
     data_root = root / "data"
     if game_dir:

@@ -46,11 +46,15 @@ def test_play_component_has_recorder_contract() -> None:
     assert "Duplicate" in source
     assert "Delete" in source
     assert "auto-CLICK" in source
+    assert "RECORDINGS" in source
+    assert "importRecording" in source
     api_source = API.read_text(encoding="utf-8")
     assert "delete_savepoint" in api_source
     assert "duplicate_savepoint" in api_source
     assert "auto save (latest)" in api_source
     assert "_autosave" in api_source
+    assert "import_recording" in api_source
+    assert "list_recordings" in api_source
     assert "Fork" in source
     assert "Resume" in source
     assert "End session" in source

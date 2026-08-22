@@ -74,6 +74,13 @@ type PlaySavepoint = {
   move_total?: number;
 };
 
+type PlayRecording = {
+  path: string;
+  name: string;
+  gameId?: string | null;
+  sizeBytes?: number;
+};
+
 const FRAME_SCALE = 10;
 
 async function request(path: string, init?: RequestInit) {
@@ -113,6 +120,8 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
   const [armedAction, setArmedAction] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [savepoints, setSavepoints] = useState<PlaySavepoint[]>([]);
+  const [recordings, setRecordings] = useState<PlayRecording[]>([]);
+  const [importNote, setImportNote] = useState("");
   const [rewindOpen, setRewindOpen] = useState(false);
   const [rewindHover, setRewindHover] = useState<number | null>(null);
   const [autoSelect, setAutoSelect] = useState(true);
@@ -152,6 +161,19 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
   useEffect(() => {
     void loadSavepoints();
   }, [loadSavepoints]);
+
+  const loadRecordings = useCallback(async () => {
+    try {
+      const payload = await request(`/api/arc3-play/recordings?workspaceId=${encodeURIComponent(workspaceId)}`);
+      setRecordings((payload.recordings as PlayRecording[]) || []);
+    } catch {
+      setRecordings([]);
+    }
+  }, [workspaceId]);
+
+  useEffect(() => {
+    void loadRecordings();
+  }, [loadRecordings]);
 
   const perform = useCallback(async (work: () => Promise<void>) => {
     setBusy(true);
@@ -285,6 +307,20 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
       await request(
         `/api/arc3-play/savepoints/${encodeURIComponent(savepointId)}?workspaceId=${encodeURIComponent(workspaceId)}`,
         { method: "DELETE" },
+      );
+      await loadSavepoints();
+    });
+
+  const importRecording = (recording: PlayRecording) =>
+    perform(async () => {
+      setImportNote("");
+      const payload = await request("/api/arc3-play/import-recording", {
+        method: "POST",
+        body: JSON.stringify({ workspaceId, path: recording.path }),
+      });
+      const info = payload.imported as { moveCount?: number; gameDirectory?: string; state?: string } | undefined;
+      setImportNote(
+        `imported ${recording.name}: ${info?.moveCount ?? "?"} moves -> ${info?.gameDirectory ?? "?"} (${info?.state ?? "?"})`,
       );
       await loadSavepoints();
     });
@@ -690,6 +726,31 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
               </div>
             ))}
             {!savepoints.length && <div className="arc3-play-empty">No save-points yet.</div>}
+          </div>
+          <div className="arc3-play-savepoints arc3-play-recordings">
+            <small>RECORDINGS (official ARC-AGI-3 JSONL play logs found under data/)</small>
+            {importNote && <div className="arc3-play-import-note">{importNote}</div>}
+            {recordings.map((recording) => (
+              <div key={recording.path} className="arc3-play-savepoint">
+                <div className="arc3-play-savepoint-info">
+                  <b>{recording.name}</b>
+                  <small>
+                    {recording.gameId || "?"} · {Math.round((recording.sizeBytes || 0) / 1024)} KB · {recording.path}
+                  </small>
+                </div>
+                <div className="arc3-play-savepoint-buttons">
+                  <button
+                    className="dup"
+                    disabled={busy}
+                    title="Convert to level recordings + a resumable save-point"
+                    onClick={() => void importRecording(recording)}
+                  >
+                    Import
+                  </button>
+                </div>
+              </div>
+            ))}
+            {!recordings.length && <div className="arc3-play-empty">No importable recordings found.</div>}
           </div>
         </section>
       </div>
