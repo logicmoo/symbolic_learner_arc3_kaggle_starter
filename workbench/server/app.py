@@ -9,6 +9,7 @@ from fastapi.responses import JSONResponse
 from arc3_play_api import router as arc3_play_router
 from datatype_api import router as datatype_router
 from goal_run_api import router as goal_run_router
+from llm_emul.api import router as llm_emul_router
 from mailbox_api_lib import router as mailbox_router
 from prompt_api import router as prompt_router
 from routes.artifacts import router as artifacts_router
@@ -65,6 +66,10 @@ app.include_router(policy_router, prefix="/api")
 app.include_router(repository_docs_router, prefix="/api")
 app.include_router(system_control_router, prefix="/api")
 app.include_router(service_monitor_router, prefix="/api")
+# No "/api" prefix: this exposes bare /v1/models, /v1/chat/completions, and
+# /llm_emul so it matches a normal OpenAI-compatible backend's baseUrl shape
+# (http://127.0.0.1:8000/v1), the same as any other model backend config.
+app.include_router(llm_emul_router)
 
 
 @app.get("/api/health")
