@@ -1375,6 +1375,7 @@ export function Arc3PlayPage({
               >
                 Import All Movelists
               </button>
+              <span className="arc3-play-actions-break" />
               <button
                 className="arc3-play-rescan"
                 disabled={busy}
