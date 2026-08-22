@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
 import { type WorkflowPageDefinition } from "./WorkflowPageHost";
 import "../styles/arc3_play.css";
 
@@ -127,6 +127,9 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
   const [autoSelect, setAutoSelect] = useState(true);
   const [replayScript, setReplayScript] = useState<ReplayOp[] | null>(null);
   const [replayPos, setReplayPos] = useState(0);
+  const [replayPlaying, setReplayPlaying] = useState(false);
+  const [replaySpeedMs, setReplaySpeedMs] = useState(300);
+  const [timelineHover, setTimelineHover] = useState<number | null>(null);
   const boardRef = useRef<HTMLImageElement | null>(null);
   const columnsRef = useRef<HTMLDivElement | null>(null);
   const [colWidths, setColWidths] = useState<{ left: number; right: number }>(() => {
@@ -261,6 +264,7 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
       });
       setArmedAction(null);
       setReplayScript(null);
+      setReplayPlaying(false);
       setSession(payload.session as PlaySessionSnapshot);
       await loadSavepoints();
     });
@@ -282,6 +286,7 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
       });
       setArmedAction(null);
       setReplayScript(null);
+      setReplayPlaying(false);
       setSession(payload.session as PlaySessionSnapshot);
     });
 
@@ -293,6 +298,7 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
         body: JSON.stringify({ action: actionId, x, y }),
       });
       setReplayScript(null);
+      setReplayPlaying(false);
       setSession(payload.session as PlaySessionSnapshot);
     });
 
@@ -302,6 +308,7 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
       const payload = await request(`/api/arc3-play/sessions/${encodeURIComponent(session.id)}/reset`, { method: "POST" });
       setArmedAction(null);
       setReplayScript(null);
+      setReplayPlaying(false);
       setSession(payload.session as PlaySessionSnapshot);
     });
 
@@ -311,6 +318,7 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
       const payload = await request(`/api/arc3-play/sessions/${encodeURIComponent(session.id)}/restart`, { method: "POST" });
       setArmedAction(null);
       setReplayScript(null);
+      setReplayPlaying(false);
       setSession(payload.session as PlaySessionSnapshot);
     });
 
@@ -323,6 +331,7 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
       });
       setArmedAction(null);
       setReplayScript(null);
+      setReplayPlaying(false);
       setSession(payload.session as PlaySessionSnapshot);
     });
 
@@ -347,6 +356,7 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
       });
       setArmedAction(null);
       setReplayScript(null);
+      setReplayPlaying(false);
       setSession(payload.session as PlaySessionSnapshot);
     });
 
@@ -389,6 +399,41 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
       setReplayPos(replayPos + 1);
     });
 
+  // Auto-play: while replayPlaying, step on a timer that reschedules itself
+  // after each move lands (via the busy/replayPos deps), so Pause always
+  // freezes at the current position and Play resumes from right there.
+  useEffect(() => {
+    if (!replayPlaying || !replayScript || busy) return;
+    if (replayPos >= replayScript.length) {
+      setReplayPlaying(false);
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      void stepReplay();
+    }, replaySpeedMs);
+    return () => window.clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [replayPlaying, replayPos, busy, replayScript, replaySpeedMs]);
+
+  // Chapter markers: tick index -> level label, at every position where the
+  // move's directory crosses into a new level_*/attempt directory.
+  const chapterStarts = useMemo(() => {
+    const starts = new Map<number, string>();
+    if (!replayScript) return starts;
+    let prevLevelKey: string | null = null;
+    replayScript.forEach((op, i) => {
+      if (op.op !== "step" || !op.directory) return;
+      const lastSlash = op.directory.lastIndexOf("/");
+      const levelKey = lastSlash >= 0 ? op.directory.slice(0, lastSlash) : op.directory;
+      if (levelKey !== prevLevelKey) {
+        const match = levelKey.match(/level_([^_/]+)_/);
+        starts.set(i + 1, match ? match[1] : "?");
+        prevLevelKey = levelKey;
+      }
+    });
+    return starts;
+  }, [replayScript]);
+
   const takeBackReplay = () =>
     perform(async () => {
       if (!session || !replayScript || replayPos <= 0) return;
@@ -415,6 +460,46 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
         setSession(payload.session as PlaySessionSnapshot);
       }
       setReplayPos(replayPos - 1);
+    });
+
+  const seekReplay = (target: number) =>
+    perform(async () => {
+      if (!session || !replayScript) return;
+      const clamped = Math.max(0, Math.min(target, replayScript.length));
+      if (clamped === replayPos) return;
+      setReplayPlaying(false);
+      // Uniform for forward or backward jumps: rebuild the session by
+      // replaying the recipe up to the clicked timeline position.
+      await request(`/api/arc3-play/sessions/${encodeURIComponent(session.id)}`, { method: "DELETE" }).catch(() => undefined);
+      const payload = await request("/api/arc3-play/sessions", {
+        method: "POST",
+        body: JSON.stringify({
+          workspaceId,
+          gameId: session.gameId || session.gameDirectory,
+          replayLog: replayScript.slice(0, clamped),
+          forkedFrom: `replay seek ${clamped}`,
+        }),
+      });
+      setSession(payload.session as PlaySessionSnapshot);
+      setReplayPos(clamped);
+    });
+
+  const dedupeSavepoints = () =>
+    perform(async () => {
+      const payload = await request(`/api/arc3-play/savepoints/dedupe?workspaceId=${encodeURIComponent(workspaceId)}`, {
+        method: "POST",
+      });
+      setImportNote(`de-duplicated save-points: removed ${payload.removed ?? 0}`);
+      await loadSavepoints();
+    });
+
+  const dedupeRecordings = () =>
+    perform(async () => {
+      const payload = await request(`/api/arc3-play/recordings/dedupe?workspaceId=${encodeURIComponent(workspaceId)}`, {
+        method: "POST",
+      });
+      setImportNote(`de-duplicated recordings: removed ${payload.count ?? 0} stale level dir(s)`);
+      await loadSavepoints();
     });
 
   const duplicateSavepoint = (savepointId: string) =>
@@ -742,28 +827,90 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
                   </small>
                   <button
                     className="arc3-play-action reset"
-                    disabled={busy || session.closed || replayPos <= 0}
+                    disabled={busy || session.closed || replayPos <= 0 || replayPlaying}
                     title="Undo the last replayed move"
                     onClick={() => void takeBackReplay()}
                   >
                     |&lt; take-back-move
                   </button>
                   <button
+                    className={`arc3-play-action watch ${replayPlaying ? "down" : ""}`}
+                    disabled={busy || session.closed || (!replayPlaying && replayPos >= replayScript.length)}
+                    title={replayPlaying ? "Pause the replay (stays at the current move)" : "Watch: auto-step from the current move"}
+                    onClick={() => setReplayPlaying((playing) => !playing)}
+                  >
+                    {replayPlaying ? "Ⅱ Pause" : "▶ Watch replay"}
+                  </button>
+                  <button
                     className="arc3-play-action resume-step"
-                    disabled={busy || session.closed || replayPos >= replayScript.length}
+                    disabled={busy || session.closed || replayPos >= replayScript.length || replayPlaying}
                     title="Play the next recorded move"
                     onClick={() => void stepReplay()}
                   >
                     step one move &gt;|
                   </button>
+                  <select
+                    className="arc3-play-replay-speed"
+                    value={replaySpeedMs}
+                    disabled={busy}
+                    title="Watch speed"
+                    onChange={(event) => setReplaySpeedMs(Number(event.target.value))}
+                  >
+                    <option value={700}>0.5x</option>
+                    <option value={300}>1x</option>
+                    <option value={120}>2x</option>
+                    <option value={40}>4x</option>
+                  </select>
                   <button
                     className="arc3-play-action end"
                     disabled={busy}
                     title="Stop following the recording (keep playing live)"
-                    onClick={() => setReplayScript(null)}
+                    onClick={() => {
+                      setReplayPlaying(false);
+                      setReplayScript(null);
+                    }}
                   >
                     Detach
                   </button>
+                </div>
+              )}
+              {replayScript && replayScript.length > 0 && (
+                <div className="arc3-play-timeline">
+                  {Array.from({ length: replayScript.length + 1 }, (_, index) => index).map((index) => {
+                    const op = index > 0 ? replayScript[index - 1] : null;
+                    const isCurrent = index === replayPos;
+                    const directory = op && op.op === "step" ? op.directory : null;
+                    const chapterLabel = chapterStarts.get(index);
+                    return (
+                      <button
+                        key={index}
+                        className={`arc3-play-timeline-tick ${op?.op === "reset" ? "reset" : "step"} ${isCurrent ? "current" : ""} ${chapterLabel ? "chapter-start" : ""}`}
+                        title={
+                          chapterLabel
+                            ? `Level ${chapterLabel} begins (move ${index})`
+                            : index === 0
+                              ? "Start"
+                              : `${index}: ${op?.op === "reset" ? "RESET" : op?.action}`
+                        }
+                        onMouseEnter={() => setTimelineHover(index)}
+                        onMouseLeave={() => setTimelineHover((hover) => (hover === index ? null : hover))}
+                        onClick={() => void seekReplay(index)}
+                      >
+                        {chapterLabel && <span className="arc3-play-timeline-chapter-label">L{chapterLabel}</span>}
+                        {timelineHover === index && (
+                          <span className="arc3-play-timeline-preview">
+                            {directory ? (
+                              <img src={assetUrl(`${directory}/image.png`)} alt={`move ${index}`} draggable={false} />
+                            ) : (
+                              <span className="arc3-play-timeline-preview-label">
+                                {index === 0 ? "start" : "reset"}
+                              </span>
+                            )}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </>
@@ -856,7 +1003,17 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
             </>
           )}
           <div className="arc3-play-savepoints">
-            <small>SAVE-POINTS (fork a session to add one)</small>
+            <small>
+              SAVE-POINTS (fork a session to add one)
+              <button
+                className="arc3-play-rescan"
+                disabled={busy}
+                title="Collapse duplicate save-points (same source recording or identical replay recipe)"
+                onClick={() => void dedupeSavepoints()}
+              >
+                De-duplicate
+              </button>
+            </small>
             {savepoints.map((point) => (
               <div key={point.id} className="arc3-play-savepoint">
                 <div>
@@ -917,6 +1074,14 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
               >
                 Rescan
               </button>
+              <button
+                className="arc3-play-rescan"
+                disabled={busy}
+                title="Remove stale level dirs left behind by re-importing the same file"
+                onClick={() => void dedupeRecordings()}
+              >
+                De-duplicate
+              </button>
             </small>
             {importNote && <div className="arc3-play-import-note">{importNote}</div>}
             {recordings.map((recording) => (
@@ -939,7 +1104,14 @@ export function Arc3PlayPage({ pageDefinition, workspaceId, workspaceLabel }: Pr
                 </div>
               </div>
             ))}
-            {!recordings.length && <div className="arc3-play-empty">No importable recordings found.</div>}
+            {!recordings.length && (
+              <div className="arc3-play-empty">
+                No importable recordings found.{" "}
+                <button className="arc3-play-rescan" disabled={busy} onClick={() => void loadRecordings()}>
+                  Scan data/importables/
+                </button>
+              </div>
+            )}
           </div>
         </section>
       </div>

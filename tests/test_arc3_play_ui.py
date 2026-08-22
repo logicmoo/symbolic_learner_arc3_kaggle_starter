@@ -51,6 +51,13 @@ def test_play_component_has_recorder_contract() -> None:
     assert "arc3-play-col-resizer" in source
     assert "take-back-move" in source
     assert "step one move" in source
+    assert "Watch replay" in source
+    assert "replayPlaying" in source
+    assert "arc3-play-timeline" in source
+    assert "chapterStarts" in source
+    assert "seekReplay" in source
+    assert "dedupeSavepoints" in source
+    assert "dedupeRecordings" in source
     assert "Rescan" in source
     assert "data/importables" in source
     api_source = API.read_text(encoding="utf-8")
@@ -60,6 +67,12 @@ def test_play_component_has_recorder_contract() -> None:
     assert "_autosave" in api_source
     assert "import_recording" in api_source
     assert "list_recordings" in api_source
+    assert "dedupe_savepoints" in api_source
+    assert "dedupe_recordings" in api_source
+    assert "_purge_prior_import" in api_source
+    assert "_scan_setup_dir" in api_source
+    assert '"scan": _scan_setup_dir(directory, self.workspace_root)' in api_source
+    assert '"scan": _scan_setup_dir(directory, root)' in api_source
     assert "Fork" in source
     assert "Resume" in source
     assert "End session" in source

@@ -108,6 +108,63 @@ def _jsonable(value: Any) -> Any:
     return module._jsonable(value)
 
 
+# Mirrors Arc3B1B2PipelinePage.tsx's scanSetupStatePath bucketing exactly (same
+# suffix/name rules, same result-object shape) so every recorded move already
+# carries a "scan" block and is natively usable as a B1->B2 SETUP source with
+# no separate manual scan pass required.
+_SCAN_IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".svg"}
+
+
+def _scan_setup_dir(directory: Path, root: Path) -> dict[str, Any]:
+    results: dict[str, list[str]] = {
+        "obj_images": [],
+        "grp_images": [],
+        "sub_images": [],
+        "pl_files": [],
+        "eng_files": [],
+        "json_files": [],
+        "metta_files": [],
+        "prompt_files": [],
+        "unknown_files": [],
+    }
+    if directory.is_dir():
+        for entry in directory.iterdir():
+            if not entry.is_file():
+                continue
+            suffix = entry.suffix.lower()
+            name = entry.name.lower()
+            try:
+                candidate = entry.relative_to(root).as_posix()
+            except ValueError:
+                candidate = entry.as_posix()
+            if suffix in _SCAN_IMAGE_SUFFIXES:
+                if name.startswith("obj"):
+                    results["obj_images"].append(candidate)
+                elif name.startswith("grp"):
+                    results["grp_images"].append(candidate)
+                else:
+                    results["sub_images"].append(candidate)
+            elif suffix == ".pl":
+                results["pl_files"].append(candidate)
+            elif suffix == ".json":
+                results["json_files"].append(candidate)
+            elif suffix == ".metta":
+                results["metta_files"].append(candidate)
+            elif suffix == ".prompt":
+                results["prompt_files"].append(candidate)
+            elif "eng" in name:
+                results["eng_files"].append(candidate)
+            else:
+                results["unknown_files"].append(candidate)
+    for values in results.values():
+        values.sort()
+    try:
+        path = directory.relative_to(root).as_posix()
+    except ValueError:
+        path = directory.as_posix()
+    return {"path": path, "results": results}
+
+
 class PlaySession:
     """One live ARC3 environment plus its flat 0/1/2 move recording."""
 
@@ -184,6 +241,7 @@ class PlaySession:
             "parent_node": ".." if ordinal is not None else None,
             "action_path": [str(index) for index in range(ordinal + 1)] if ordinal is not None else [],
             "recorded_at": _utc_now(),
+            "scan": _scan_setup_dir(directory, self.workspace_root),
         }
         (directory / "state.json").write_text(
             json.dumps(payload, indent=2, ensure_ascii=False),
@@ -597,6 +655,51 @@ def list_savepoints(workspaceId: str, gameId: str | None = None) -> dict[str, An
     return {"savepoints": entries}
 
 
+def _dedupe_key(entry: dict[str, Any]) -> str:
+    imported = entry.get("imported_from")
+    if imported:
+        return f"import:{imported}"
+    return f"log:{json.dumps(entry.get('replay_log') or [], sort_keys=True)}"
+
+
+def _dedupe_savepoints_in(path: Path) -> int:
+    entries = _load_savepoints(path)
+    groups: dict[str, list[dict[str, Any]]] = {}
+    for entry in entries:
+        groups.setdefault(_dedupe_key(entry), []).append(entry)
+    kept: list[dict[str, Any]] = []
+    removed = 0
+    for group in groups.values():
+        if len(group) == 1:
+            kept.append(group[0])
+            continue
+        # Same source recording or byte-identical replay recipe: keep the
+        # newest entry (freshest label/timestamp), drop the rest.
+        group.sort(key=lambda entry: str(entry.get("created_at") or ""))
+        kept.append(group[-1])
+        removed += len(group) - 1
+    if removed:
+        path.write_text(json.dumps(kept, indent=2, ensure_ascii=False), encoding="utf-8")
+    return removed
+
+
+@router.post("/savepoints/dedupe")
+def dedupe_savepoints(workspaceId: str, gameId: str | None = None) -> dict[str, Any]:
+    root = _workspace_root(workspaceId)
+    data_root = root / "data"
+    if gameId:
+        directories = [data_root / _game_slug(gameId)]
+    else:
+        directories = [path for path in data_root.iterdir() if path.is_dir()] if data_root.is_dir() else []
+    removed = 0
+    with _savepoints_lock:
+        for directory in directories:
+            path = directory / "savepoints.json"
+            if path.is_file():
+                removed += _dedupe_savepoints_in(path)
+    return {"removed": removed}
+
+
 @router.get("/savepoints/{savepoint_id}")
 def read_savepoint(savepoint_id: str, workspaceId: str, gameId: str | None = None) -> dict[str, Any]:
     root = _workspace_root(workspaceId)
@@ -701,6 +804,37 @@ def _list_recording_files(root: Path) -> list[dict[str, Any]]:
     return found
 
 
+def _purge_prior_import(root: Path, game_dir: str, rel_path: str) -> int:
+    """Remove level dirs + savepoints from an earlier import of the same source file.
+
+    Makes re-importing idempotent: clicking Import again on a file that was
+    already converted replaces its artifacts instead of piling up duplicates.
+    """
+    removed = 0
+    game_root = root / "data" / game_dir
+    for level_dir in sorted(game_root.glob("level_*")) if game_root.is_dir() else []:
+        manifest_path = level_dir / "recording.json"
+        if not manifest_path.is_file():
+            continue
+        try:
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if manifest.get("imported_from") == rel_path:
+            shutil.rmtree(level_dir, ignore_errors=True)
+            removed += 1
+    savepoints_path = game_root / "savepoints.json"
+    with _savepoints_lock:
+        entries = _load_savepoints(savepoints_path)
+        kept = [entry for entry in entries if entry.get("imported_from") != rel_path]
+        if len(kept) != len(entries):
+            savepoints_path.write_text(
+                json.dumps(kept, indent=2, ensure_ascii=False),
+                encoding="utf-8",
+            )
+    return removed
+
+
 def _import_recording(root: Path, rel_path: str, label: str | None) -> dict[str, Any]:
     _ensure_python_path()
     from image_codec import frame_to_png_bytes
@@ -734,6 +868,7 @@ def _import_recording(root: Path, rel_path: str, label: str | None) -> dict[str,
     game_dir = _game_slug(game_id)
     session_tag = f"import-{guid[:12]}"
     import_label = str(label).strip() if label else f"human recording {source.stem}"
+    _purge_prior_import(root, game_dir, rel_path)
 
     def relative(path: Path) -> str:
         return path.relative_to(root).as_posix()
@@ -783,6 +918,7 @@ def _import_recording(root: Path, rel_path: str, label: str | None) -> dict[str,
             "parent_node": ".." if ordinal is not None else None,
             "action_path": [str(index) for index in range(ordinal + 1)] if ordinal is not None else [],
             "recorded_at": str(event.get("timestamp") or _utc_now()),
+            "scan": _scan_setup_dir(directory, root),
         }
         (directory / "state.json").write_text(
             json.dumps(payload, indent=2, ensure_ascii=False),
@@ -904,6 +1040,61 @@ def _import_recording(root: Path, rel_path: str, label: str | None) -> dict[str,
 def list_recordings(workspaceId: str) -> dict[str, Any]:
     root = _workspace_root(workspaceId)
     return {"recordings": _list_recording_files(root)}
+
+
+def _dedupe_recordings_in(root: Path, game_root: Path) -> list[str]:
+    groups: dict[str, list[tuple[float, Path]]] = {}
+    for level_dir in sorted(game_root.glob("level_*")):
+        manifest_path = level_dir / "recording.json"
+        if not manifest_path.is_file():
+            continue
+        try:
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        imported_from = manifest.get("imported_from")
+        if not imported_from:
+            continue  # never touch live-played recordings, only re-imports
+        groups.setdefault(imported_from, []).append((manifest_path.stat().st_mtime, level_dir))
+
+    removed: list[str] = []
+    for entries in groups.values():
+        if len(entries) <= 1:
+            continue
+        entries.sort(key=lambda item: item[0])
+        # Sequential clustering: a new import run starts whenever the gap
+        # between consecutive level dirs' last-write time exceeds 2 minutes.
+        clusters: list[list[tuple[float, Path]]] = []
+        for item in entries:
+            if clusters and item[0] - clusters[-1][-1][0] <= 120:
+                clusters[-1].append(item)
+            else:
+                clusters.append([item])
+        clusters.sort(key=lambda cluster: cluster[-1][0])
+        for cluster in clusters[:-1]:  # keep only the most recent run
+            for _, path in cluster:
+                shutil.rmtree(path, ignore_errors=True)
+                removed.append(path.relative_to(root).as_posix())
+    return removed
+
+
+@router.post("/recordings/dedupe")
+def dedupe_recordings(workspaceId: str, gameId: str | None = None) -> dict[str, Any]:
+    root = _workspace_root(workspaceId)
+    data_root = root / "data"
+    if gameId:
+        directories = [data_root / _game_slug(gameId)]
+    else:
+        directories = (
+            [path for path in data_root.iterdir() if path.is_dir() and path.name != "importables"]
+            if data_root.is_dir()
+            else []
+        )
+    removed: list[str] = []
+    for directory in directories:
+        if directory.is_dir():
+            removed.extend(_dedupe_recordings_in(root, directory))
+    return {"removed": removed, "count": len(removed)}
 
 
 @router.post("/import-recording", status_code=201)

@@ -549,3 +549,105 @@
 .arc3-play-rescan:hover {
   border-color: rgba(0, 116, 217, 0.9);
 }
+
+.arc3-play-replayer .watch {
+  border-color: rgba(0, 116, 217, 0.7);
+  color: rgba(120, 180, 255, 1);
+}
+
+.arc3-play-replayer .watch.down {
+  background: rgba(0, 116, 217, 0.35);
+  border-color: rgba(0, 116, 217, 0.9);
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.55);
+}
+
+.arc3-play-replay-speed {
+  font-size: 0.7rem;
+  background: rgba(8, 20, 26, 1);
+  color: inherit;
+  border: 1px solid rgba(128, 128, 128, 0.5);
+  border-radius: 4px;
+  padding: 2px 4px;
+}
+
+.arc3-play-timeline {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  overflow: visible;
+  height: 22px;
+  padding: 2px 0 10px;
+  margin-top: 2px;
+}
+
+.arc3-play-timeline-tick {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  border: none;
+  border-right: 1px solid rgba(0, 0, 0, 0.4);
+  padding: 0;
+  cursor: pointer;
+  background: rgba(0, 116, 217, 0.35);
+}
+
+.arc3-play-timeline-tick:last-child {
+  border-right: none;
+}
+
+.arc3-play-timeline-tick.reset {
+  background: rgba(255, 133, 27, 0.55);
+}
+
+.arc3-play-timeline-tick:hover {
+  background: rgba(0, 116, 217, 0.75);
+}
+
+.arc3-play-timeline-tick.current {
+  background: rgba(46, 204, 64, 0.95);
+  box-shadow: 0 0 4px rgba(46, 204, 64, 0.9);
+}
+
+.arc3-play-timeline-tick.chapter-start {
+  border-left: 2px solid rgba(255, 220, 0, 0.9);
+}
+
+.arc3-play-timeline-chapter-label {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 1px;
+  font-size: 0.6rem;
+  color: rgba(255, 220, 0, 0.95);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.arc3-play-timeline-preview {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  border: 1px solid rgb(36, 59, 71);
+  background: rgb(8, 20, 26);
+  border-radius: 4px;
+  padding: 2px;
+  pointer-events: none;
+}
+
+.arc3-play-timeline-preview img {
+  display: block;
+  width: 72px;
+  height: 72px;
+  image-rendering: pixelated;
+}
+
+.arc3-play-timeline-preview-label {
+  display: block;
+  width: 60px;
+  padding: 26px 6px;
+  font-size: 0.65rem;
+  text-align: center;
+  opacity: 0.8;
+}
