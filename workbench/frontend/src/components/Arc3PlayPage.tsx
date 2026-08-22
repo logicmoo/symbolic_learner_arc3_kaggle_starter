@@ -244,12 +244,64 @@ export function Arc3PlayPage({
   }, [loadGames]);
 
   // Deep-link support: the games gallery page's "Play & Record" button
-  // navigates here with ?game=<shortId> so the picker preselects it once
-  // the catalog loads (the effect below still falls back to the first game
-  // if this id turns out to be invalid/unknown).
+  // navigates here with ?game=<shortId>. This preselects the picker AND
+  // turns Filter on for that game AND refreshes the games catalog, then
+  // tries to auto-resume the game's most recent progress: first the
+  // latest matching IMPORTABLES recording (auto-imported, which itself
+  // creates a save-point), else the latest matching RESTART-POINT
+  // (save-point) for the game -- so a double-click from the gallery lands
+  // you back where you left off rather than a blank new session. Runs
+  // once per page load (guarded against React StrictMode's dev-only
+  // double-invoke); if neither a recording nor a save-point exists, the
+  // picker/filter still land correctly and the effect below falls back
+  // to the first catalog game if this id turns out to be invalid/unknown.
+  const deepLinkHandledRef = useRef(false);
   useEffect(() => {
     const requested = new URLSearchParams(window.location.search).get("game");
-    if (requested) setSelectedGameId(requested);
+    if (!requested) return;
+    setSelectedGameId(requested);
+    setFilterGameId(requested);
+    if (deepLinkHandledRef.current) return;
+    deepLinkHandledRef.current = true;
+    void loadGames(true);
+    void (async () => {
+      try {
+        const [savepointsPayload, recordingsPayload] = await Promise.all([
+          request(`/api/arc3-play/savepoints?workspaceId=${encodeURIComponent(workspaceId)}`),
+          request(`/api/arc3-play/recordings?workspaceId=${encodeURIComponent(workspaceId)}`),
+        ]);
+        const freshSavepoints = (savepointsPayload.savepoints as PlaySavepoint[]) || [];
+        const freshRecordings = (recordingsPayload.recordings as PlayRecording[]) || [];
+        setSavepoints(freshSavepoints);
+        setRecordings(freshRecordings);
+
+        const matchingRecordings = freshRecordings.filter((recording) => recording.gameId === requested);
+        const lastRecording = matchingRecordings[matchingRecordings.length - 1];
+        let savepointId: string | null = null;
+        if (lastRecording) {
+          const imported = await request("/api/arc3-play/import-recording", {
+            method: "POST",
+            body: JSON.stringify({ workspaceId, path: lastRecording.path }),
+          });
+          savepointId = (imported.savepoint as { id?: string } | undefined)?.id || null;
+          const refreshed = await request(`/api/arc3-play/savepoints?workspaceId=${encodeURIComponent(workspaceId)}`);
+          setSavepoints((refreshed.savepoints as PlaySavepoint[]) || []);
+        }
+        if (!savepointId) {
+          // Savepoints are already newest-first from the server, so the
+          // first match here is the most recent restart-point.
+          savepointId = freshSavepoints.find((point) => point.game_directory === requested)?.id || null;
+        }
+        if (!savepointId) return;
+        const payload = await request("/api/arc3-play/sessions", {
+          method: "POST",
+          body: JSON.stringify({ workspaceId, savepointId }),
+        });
+        setSession(payload.session as PlaySessionSnapshot);
+      } catch (reason) {
+        setError(reason instanceof Error ? reason.message : String(reason));
+      }
+    })();
   }, []);
 
   useEffect(() => {

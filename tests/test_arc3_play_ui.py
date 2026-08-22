@@ -205,6 +205,25 @@ def test_play_page_reads_deep_link_game_param() -> None:
     assert 'new URLSearchParams(window.location.search).get("game")' in source
 
 
+def test_play_page_deep_link_auto_resumes_recording_or_savepoint() -> None:
+    source = COMPONENT.read_text(encoding="utf-8")
+    # Guarded once-per-load so React StrictMode's dev-only double-invoke of
+    # useEffect doesn't double-import/double-resume.
+    assert "deepLinkHandledRef" in source
+    assert "deepLinkHandledRef.current = true" in source
+    # Sets the picker + Filter for the requested game before anything else.
+    assert "setSelectedGameId(requested)" in source
+    assert "setFilterGameId(requested)" in source
+    # Prefers the last matching IMPORTABLES recording, auto-importing it.
+    assert "matchingRecordings" in source
+    assert '/arc3-play/import-recording' in source
+    # Falls back to the most recent matching RESTART-POINT (savepoint).
+    assert 'point.game_directory === requested' in source
+    # Resumes a live session from whichever savepoint id was found.
+    assert '"/api/arc3-play/sessions"' in source
+    assert "savepointId" in source
+
+
 def test_play_page_recordings_section_can_be_refreshed() -> None:
     source = COMPONENT.read_text(encoding="utf-8")
     assert "refreshRecording" in source
