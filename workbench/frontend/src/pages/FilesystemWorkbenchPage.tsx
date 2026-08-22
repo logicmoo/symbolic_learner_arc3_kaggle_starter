@@ -35,6 +35,7 @@ import {
   WorkflowPageHost,
   type WorkflowPageDefinition,
 } from "../components/WorkflowPageHost";
+import { TaskStatusBar } from "../taskRegistry";
 import "../styles/workflow_layout.css";
 
 const DataCatalogPanel = lazy(() =>
@@ -2832,6 +2833,7 @@ export function FilesystemWorkbenchPage() {
           </span>
         ))}
       </nav>
+      <TaskStatusBar />
       <section
         className={`workspace ${relationshipView ? "artifact-focused" : ""} ${view === "modelPolicy" ? "policy-focused" : ""}`}
         style={{ "--inspector-width": `${inspectorWidth}px` } as CSSProperties}

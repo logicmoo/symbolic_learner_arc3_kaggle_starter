@@ -45,7 +45,12 @@ def formatting_insensitive_source(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_app_launches_filesystem_workbench_page() -> None:
     source = APP.read_text(encoding="utf-8")
     assert 'import { FilesystemWorkbenchPage } from "./pages/FilesystemWorkbenchPage"' in source
-    assert "return <FilesystemWorkbenchPage />" in source
+    assert "<FilesystemWorkbenchPage />" in source
+    # Wrapped in the workbench-wide task registry so long-running actions
+    # (e.g. Play & Record imports) can report status near the breadcrumbs
+    # regardless of which page is active.
+    assert 'import { TaskRegistryProvider } from "./taskRegistry"' in source
+    assert "<TaskRegistryProvider>" in source
 
 
 def test_removed_workflow_v2_route_redirects_to_the_active_workflow_page() -> None:

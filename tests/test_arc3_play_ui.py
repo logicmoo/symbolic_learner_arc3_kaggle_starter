@@ -5,6 +5,9 @@ ROOT = Path(__file__).resolve().parents[1]
 COMPONENT = ROOT / "workbench/frontend/src/components/Arc3PlayPage.tsx"
 STYLES = ROOT / "workbench/frontend/src/styles/arc3_play.css"
 WORKBENCH = ROOT / "workbench/frontend/src/pages/FilesystemWorkbenchPage.tsx"
+WORKBENCH_STYLES = ROOT / "workbench/frontend/src/styles/workbench.css"
+TASK_REGISTRY = ROOT / "workbench/frontend/src/taskRegistry.tsx"
+APP_TSX = ROOT / "workbench/frontend/src/App.tsx"
 PAGE = ROOT / "workbench/workspaces/arc3_random_player/design/workflow_pages/arc3_play.workflow_page.json"
 API = ROOT / "workbench/server/arc3_play_api.py"
 APP = ROOT / "workbench/server/app.py"
@@ -235,7 +238,7 @@ def test_play_page_resume_populates_scrubbable_timeline() -> None:
     assert "setReplayPos(script.length)" in source
     # resumeSavepoint (the "Resume" button on a save-point) must use the
     # same helper, not silently clear the timeline.
-    assert "applyResumedSession(payload.session as PlaySessionSnapshot);\n    });" in source
+    assert "applyResumedSession(resumed);" in source
 
 
 def test_play_page_recordings_section_can_be_refreshed() -> None:
@@ -274,19 +277,48 @@ def test_play_page_has_clear_buttons_for_recordings_and_movelists() -> None:
     assert ".arc3-play-rescan.danger" in styles
 
 
-def test_play_page_has_a_visible_task_registry_not_just_a_silent_flag() -> None:
-    source = COMPONENT.read_text(encoding="utf-8")
+def test_workbench_has_a_shared_task_registry_like_breadcrumbs() -> None:
+    """The busy/finished-task status is a workbench-wide concept -- like the
+    breadcrumb trail -- rendered once near it, not scoped to one page, so it
+    survives navigating away mid-task (e.g. leaving Play while an import
+    keeps running) and every page's long-running actions can report to it."""
+    registry_source = TASK_REGISTRY.read_text(encoding="utf-8")
     # Each long-running action registers itself when it starts and removes
-    # itself when it stops, instead of one opaque global busy boolean --
-    # a task that never calls stopBusy stays visibly stuck with its elapsed
+    # itself when it stops, instead of one opaque global busy boolean -- a
+    # task that never calls stopBusy stays visibly stuck with its elapsed
     # time, which is the signal that something is wrong.
-    assert "const startBusy = useCallback" in source
-    assert "const stopBusy = useCallback" in source
-    assert "activeTasks" in source
-    assert "taskLog" in source
-    assert "formatElapsed" in source
-    # Finished tasks report how long they actually ran for.
-    assert "ran for {formatElapsed(taskLog[0].endedAt - taskLog[0].startedAt)}" in source
+    assert "export function TaskRegistryProvider" in registry_source
+    assert "export function useTaskRegistry" in registry_source
+    assert "export function TaskStatusBar" in registry_source
+    assert "const startBusy = useCallback" in registry_source
+    assert "const stopBusy = useCallback" in registry_source
+    assert "activeTasks" in registry_source
+    assert "taskLog" in registry_source
+    assert "export function formatElapsed" in registry_source
+    # Finished tasks report how long they actually ran for, plus what they did.
+    assert "ran for" in registry_source
+    assert "lastFinished.detail" in registry_source
+
+    app_source = APP_TSX.read_text(encoding="utf-8")
+    assert "TaskRegistryProvider" in app_source
+
+    workbench_source = WORKBENCH.read_text(encoding="utf-8")
+    assert "<TaskStatusBar" in workbench_source
+    assert 'import { TaskStatusBar } from "../taskRegistry"' in workbench_source
+
+    workbench_styles = WORKBENCH_STYLES.read_text(encoding="utf-8")
+    assert ".workbench-task-status" in workbench_styles
+
+
+def test_play_page_consumes_the_shared_task_registry() -> None:
+    source = COMPONENT.read_text(encoding="utf-8")
+    assert 'import { useTaskRegistry } from "../taskRegistry"' in source
+    assert "useTaskRegistry()" in source
+    # Play wraps the shared perform() to keep its own error banner + the
+    # "unknown play session" recovery behavior, without duplicating the task
+    # registry itself.
+    assert "sharedPerform" in source
+    assert "unknown play session" in source
 
 
 def test_play_page_recordings_path_can_be_set_from_the_right_panel() -> None:

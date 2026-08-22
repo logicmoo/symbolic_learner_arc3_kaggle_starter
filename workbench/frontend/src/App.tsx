@@ -1,5 +1,10 @@
 import { FilesystemWorkbenchPage } from "./pages/FilesystemWorkbenchPage";
+import { TaskRegistryProvider } from "./taskRegistry";
 
 export function App() {
-  return <FilesystemWorkbenchPage />;
+  return (
+    <TaskRegistryProvider>
+      <FilesystemWorkbenchPage />
+    </TaskRegistryProvider>
+  );
 }

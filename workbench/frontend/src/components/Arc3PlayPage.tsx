@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
 import { type WorkflowPageDefinition } from "./WorkflowPageHost";
 import { Arc3B1B2PipelinePage, type ModelChoice, type WorkspaceFileRecord } from "./Arc3B1B2PipelinePage";
+import { useTaskRegistry } from "../taskRegistry";
 import "../styles/arc3_play.css";
 
 type Props = {
@@ -46,9 +47,6 @@ type ReplayOp = {
   directory?: string | null;
   level?: string | null;
 };
-
-type BusyTask = { id: string; label: string; startedAt: number };
-type FinishedTask = BusyTask & { endedAt: number; status: "done" | "error" };
 
 type PlaySessionSnapshot = {
   id: string;
@@ -136,13 +134,10 @@ export function Arc3PlayPage({
   const [games, setGames] = useState<GameInfo[]>([]);
   const [gamesLoading, setGamesLoading] = useState(false);
   const [session, setSession] = useState<PlaySessionSnapshot | null>(null);
-  // Every long-running action registers itself here when it starts (via
-  // startBusy) and removes itself when it stops (via stopBusy), instead of
-  // one opaque global flag -- if a task never calls stopBusy (e.g. an
-  // engine-replay hang), it stays visibly stuck in this list with its
-  // elapsed time, which is exactly the signal that something is wrong.
-  const [activeTasks, setActiveTasks] = useState<BusyTask[]>([]);
-  const [taskLog, setTaskLog] = useState<FinishedTask[]>([]);
+  // Long-running actions register with the workbench-wide task registry
+  // (rendered near the breadcrumb trail) instead of a page-local busy flag,
+  // so the status/report survives navigating away from Play mid-task.
+  const { activeTasks, perform: sharedPerform } = useTaskRegistry();
   const busy = activeTasks.length > 0;
   const [error, setError] = useState("");
   const [armedAction, setArmedAction] = useState<string | null>(null);
@@ -369,33 +364,14 @@ export function Arc3PlayPage({
     void loadRecordings();
   }, [loadRecordings]);
 
-  const startBusy = useCallback((label: string): string => {
-    const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    setActiveTasks((current) => [...current, { id, label, startedAt: Date.now() }]);
-    return id;
-  }, []);
-
-  const stopBusy = useCallback((id: string, status: "done" | "error") => {
-    setActiveTasks((current) => {
-      const task = current.find((entry) => entry.id === id);
-      if (task) {
-        setTaskLog((log) => [{ ...task, endedAt: Date.now(), status }, ...log].slice(0, 8));
-      }
-      return current.filter((entry) => entry.id !== id);
-    });
-  }, []);
-
   const perform = useCallback(
-    async (work: () => Promise<void>, label?: string) => {
-      const taskId = startBusy(label || "action");
+    async (work: () => Promise<string | void>, label?: string) => {
       setError("");
       try {
-        await work();
-        stopBusy(taskId, "done");
+        await sharedPerform(work, label);
       } catch (reason) {
         const message = reason instanceof Error ? reason.message : String(reason);
         setError(message);
-        stopBusy(taskId, "error");
         if (message.includes("unknown play session")) {
           // Backend lost the session (e.g. reload) — flip to closed so
           // START SESSION and fork-from-history become available.
@@ -403,24 +379,8 @@ export function Arc3PlayPage({
         }
       }
     },
-    [startBusy, stopBusy],
+    [sharedPerform],
   );
-
-  const [nowTick, setNowTick] = useState(() => Date.now());
-  useEffect(() => {
-    if (!activeTasks.length) return;
-    const timer = window.setInterval(() => setNowTick(Date.now()), 1000);
-    return () => window.clearInterval(timer);
-  }, [activeTasks.length]);
-
-  const formatElapsed = (ms: number): string => {
-    const clamped = Math.max(0, ms);
-    if (clamped < 1000) return `${Math.round(clamped)}ms`;
-    const totalSeconds = Math.round(clamped / 1000);
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    return minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
-  };
 
   const startGame = (gameId: string) =>
     perform(async () => {
@@ -441,16 +401,20 @@ export function Arc3PlayPage({
       setArmedAction(null);
       setReplayScript(null);
       setReplayPlaying(false);
-      setSession(payload.session as PlaySessionSnapshot);
+      const started = payload.session as PlaySessionSnapshot;
+      setSession(started);
       await loadSavepoints();
-    });
+      return `started ${started.gameDirectory} · ${started.levelDir}`;
+    }, `Start ${gameId}`);
 
   const refreshRecording = () =>
     perform(async () => {
-      if (!session) return;
+      if (!session) return "no active session to refresh";
       const payload = await request(`/api/arc3-play/sessions/${encodeURIComponent(session.id)}`);
-      setSession(payload.session as PlaySessionSnapshot);
-    });
+      const refreshed = payload.session as PlaySessionSnapshot;
+      setSession(refreshed);
+      return `${refreshed.moveCount} move(s) · level ${refreshed.level ?? "?"} · ${refreshed.levelDir}`;
+    }, "Refresh recording");
 
   const setRecordingsPath = (path: string | null) =>
     perform(async () => {
@@ -459,15 +423,17 @@ export function Arc3PlayPage({
         method: "PUT",
         body: JSON.stringify({ path }),
       });
-      setSession(payload.session as PlaySessionSnapshot);
-    });
+      const updated = payload.session as PlaySessionSnapshot;
+      setSession(updated);
+      return path ? `recordings path set to ${path}` : "recordings path reset to default";
+    }, "Set recordings path");
 
   const playFromMove = (move: PlayMove) =>
     perform(async () => {
       if (!session) return;
       const log = session.replayLog || [];
       const cut = log.findIndex((entry) => entry.directory === move.directory);
-      if (cut < 0) return;
+      if (cut < 0) return "move not found in this session's history";
       const payload = await request("/api/arc3-play/sessions", {
         method: "POST",
         body: JSON.stringify({
@@ -481,7 +447,8 @@ export function Arc3PlayPage({
       setReplayScript(null);
       setReplayPlaying(false);
       setSession(payload.session as PlaySessionSnapshot);
-    });
+      return `replaying from move ${move.index}`;
+    }, "Play from move");
 
   const sendAction = (actionId: string, x?: number, y?: number) =>
     perform(async () => {
@@ -492,8 +459,10 @@ export function Arc3PlayPage({
       });
       setReplayScript(null);
       setReplayPlaying(false);
-      setSession(payload.session as PlaySessionSnapshot);
-    });
+      const updated = payload.session as PlaySessionSnapshot;
+      setSession(updated);
+      return `${actionId}${x !== undefined ? ` (${x},${y})` : ""} · move ${updated.moveCount} · ${updated.state ?? "?"}`;
+    }, `Action ${actionId}`);
 
   const resetAttempt = () =>
     perform(async () => {
@@ -502,8 +471,10 @@ export function Arc3PlayPage({
       setArmedAction(null);
       setReplayScript(null);
       setReplayPlaying(false);
-      setSession(payload.session as PlaySessionSnapshot);
-    });
+      const updated = payload.session as PlaySessionSnapshot;
+      setSession(updated);
+      return `restarted level ${updated.level ?? "?"} · ${updated.levelDir}`;
+    }, "Restart level");
 
   const restartGame = () =>
     perform(async () => {
@@ -512,8 +483,10 @@ export function Arc3PlayPage({
       setArmedAction(null);
       setReplayScript(null);
       setReplayPlaying(false);
-      setSession(payload.session as PlaySessionSnapshot);
-    });
+      const updated = payload.session as PlaySessionSnapshot;
+      setSession(updated);
+      return `restarted ${updated.gameDirectory} · ${updated.levelDir}`;
+    }, "Restart game");
 
   const undoMove = (count: number) =>
     perform(async () => {
@@ -525,8 +498,10 @@ export function Arc3PlayPage({
       setArmedAction(null);
       setReplayScript(null);
       setReplayPlaying(false);
-      setSession(payload.session as PlaySessionSnapshot);
-    });
+      const updated = payload.session as PlaySessionSnapshot;
+      setSession(updated);
+      return `undid ${count} move(s) · now at move ${updated.moveCount}`;
+    }, `Undo ${count} move${count === 1 ? "" : "s"}`);
 
   const forkSavepoint = () =>
     perform(async () => {
@@ -536,7 +511,8 @@ export function Arc3PlayPage({
         body: JSON.stringify({}),
       });
       await loadSavepoints();
-    });
+      return `move-list saved at move ${session.moveCount}`;
+    }, "Fork move-list");
 
   const resumeSavepoint = (savepointId: string) =>
     perform(async () => {
@@ -549,8 +525,10 @@ export function Arc3PlayPage({
       });
       setArmedAction(null);
       setReplayPlaying(false);
-      applyResumedSession(payload.session as PlaySessionSnapshot);
-    });
+      const resumed = payload.session as PlaySessionSnapshot;
+      applyResumedSession(resumed);
+      return `resumed ${resumed.gameDirectory} · ${resumed.moveCount} move(s)`;
+    }, "Resume move-list");
 
   const loadSavepoint = (point: PlaySavepoint) =>
     perform(async () => {
@@ -572,7 +550,8 @@ export function Arc3PlayPage({
       setSession(payload.session as PlaySessionSnapshot);
       setReplayScript(script);
       setReplayPos(0);
-    });
+      return `loaded ${script.length} move(s) for step-through replay`;
+    }, "Load move-list");
 
   const stepReplay = () =>
     perform(async () => {
@@ -589,7 +568,8 @@ export function Arc3PlayPage({
       }
       setSession(payload.session as PlaySessionSnapshot);
       setReplayPos(replayPos + 1);
-    });
+      return `step ${replayPos + 1}/${replayScript.length}`;
+    }, "Step replay");
 
   // Auto-play: while replayPlaying, step on a timer that reschedules itself
   // after each move lands (via the busy/replayPos deps), so Pause always
@@ -654,13 +634,14 @@ export function Arc3PlayPage({
         setSession(payload.session as PlaySessionSnapshot);
       }
       setReplayPos(replayPos - 1);
-    });
+      return `back to move ${replayPos - 1}`;
+    }, "Take back");
 
   const seekReplay = (target: number) =>
     perform(async () => {
       if (!session || !replayScript) return;
       const clamped = Math.max(0, Math.min(target, replayScript.length));
-      if (clamped === replayPos) return;
+      if (clamped === replayPos) return "already at that move";
       setReplayPlaying(false);
       // Uniform for forward or backward jumps: rebuild the session by
       // replaying the recipe up to the clicked timeline position.
@@ -676,15 +657,18 @@ export function Arc3PlayPage({
       });
       setSession(payload.session as PlaySessionSnapshot);
       setReplayPos(clamped);
-    });
+      return `jumped to move ${clamped}`;
+    }, "Seek replay");
 
   const dedupeSavepoints = () =>
     perform(async () => {
       const payload = await request(`/api/arc3-play/savepoints/dedupe?workspaceId=${encodeURIComponent(workspaceId)}`, {
         method: "POST",
       });
-      setImportNote(`de-duplicated save-points: removed ${payload.removed ?? 0}`);
+      const note = `de-duplicated save-points: removed ${payload.removed ?? 0}`;
+      setImportNote(note);
       await loadSavepoints();
+      return note;
     }, "De-duplicate move-lists");
 
   const dedupeRecordings = () =>
@@ -692,8 +676,10 @@ export function Arc3PlayPage({
       const payload = await request(`/api/arc3-play/recordings/dedupe?workspaceId=${encodeURIComponent(workspaceId)}`, {
         method: "POST",
       });
-      setImportNote(`de-duplicated recordings: removed ${payload.count ?? 0} stale level dir(s)`);
+      const note = `de-duplicated recordings: removed ${payload.count ?? 0} stale level dir(s)`;
+      setImportNote(note);
       await loadSavepoints();
+      return note;
     }, "De-duplicate recordings");
 
   const sortRecordingsBySize = () =>
@@ -703,8 +689,10 @@ export function Arc3PlayPage({
         `/api/arc3-play/recordings/sort-by-size?workspaceId=${encodeURIComponent(workspaceId)}${gameParam}`,
         { method: "POST" },
       );
-      setImportNote(`sorted by size: renamed ${payload.count ?? 0} imported dir(s)`);
+      const note = `sorted by size: renamed ${payload.count ?? 0} imported dir(s)`;
+      setImportNote(note);
       await loadSavepoints();
+      return note;
     }, "Sort dirs by size");
 
   const retainLargestRecordings = () =>
@@ -715,32 +703,38 @@ export function Arc3PlayPage({
         `/api/arc3-play/recordings/retain-largest?workspaceId=${encodeURIComponent(workspaceId)}&keep=${keep}${gameParam}`,
         { method: "POST" },
       );
-      setImportNote(`retained largest ${keep}: removed ${payload.count ?? 0} smaller imported dir(s)`);
+      const note = `retained largest ${keep}: removed ${payload.count ?? 0} smaller imported dir(s)`;
+      setImportNote(note);
       await loadSavepoints();
+      return note;
     }, "Retain N largest");
 
   const clearRecordings = () =>
     perform(async () => {
-      if (!window.confirm("Delete every Recording directory for this Filter scope? This cannot be undone.")) return;
+      if (!window.confirm("Delete every Recording directory for this Filter scope? This cannot be undone.")) return "cancelled";
       const gameParam = filterGameId ? `&gameId=${encodeURIComponent(filterGameId)}` : "";
       const payload = await request(
         `/api/arc3-play/recordings/clear?workspaceId=${encodeURIComponent(workspaceId)}${gameParam}`,
         { method: "POST" },
       );
-      setImportNote(`cleared recordings: removed ${payload.count ?? 0} dir(s)`);
+      const note = `cleared recordings: removed ${payload.count ?? 0} dir(s)`;
+      setImportNote(note);
       await loadSavepoints();
+      return note;
     }, "Clear recordings");
 
   const clearSavepoints = () =>
     perform(async () => {
-      if (!window.confirm("Delete every move-list (save-point) for this Filter scope? This cannot be undone.")) return;
+      if (!window.confirm("Delete every move-list (save-point) for this Filter scope? This cannot be undone.")) return "cancelled";
       const gameParam = filterGameId ? `&gameId=${encodeURIComponent(filterGameId)}` : "";
       const payload = await request(
         `/api/arc3-play/savepoints/clear?workspaceId=${encodeURIComponent(workspaceId)}${gameParam}`,
         { method: "POST" },
       );
-      setImportNote(`cleared move-lists: removed ${payload.count ?? 0}`);
+      const note = `cleared move-lists: removed ${payload.count ?? 0}`;
+      setImportNote(note);
       await loadSavepoints();
+      return note;
     }, "Clear move-lists");
 
   const duplicateSavepoint = (savepointId: string) =>
@@ -750,7 +744,8 @@ export function Arc3PlayPage({
         { method: "POST" },
       );
       await loadSavepoints();
-    });
+      return "move-list duplicated";
+    }, "Duplicate move-list");
 
   const deleteSavepoint = (savepointId: string) =>
     perform(async () => {
@@ -759,7 +754,8 @@ export function Arc3PlayPage({
         { method: "DELETE" },
       );
       await loadSavepoints();
-    });
+      return "move-list deleted";
+    }, "Delete move-list");
 
   const importRecording = (recording: PlayRecording) =>
     perform(async () => {
@@ -769,10 +765,10 @@ export function Arc3PlayPage({
         body: JSON.stringify({ workspaceId, path: recording.path }),
       });
       const info = payload.imported as { moveCount?: number; gameDirectory?: string; state?: string } | undefined;
-      setImportNote(
-        `imported ${recording.name}: ${info?.moveCount ?? "?"} moves -> ${info?.gameDirectory ?? "?"} (${info?.state ?? "?"})`,
-      );
+      const note = `imported ${recording.name}: ${info?.moveCount ?? "?"} moves -> ${info?.gameDirectory ?? "?"} (${info?.state ?? "?"})`;
+      setImportNote(note);
       await loadSavepoints();
+      return note;
     }, `Import ${recording.name}`);
 
   const importAllImportables = (list: PlayRecording[]) =>
@@ -791,11 +787,12 @@ export function Arc3PlayPage({
           failed += 1;
         }
       }
-      setImportNote(
+      const note =
         `imported ${imported} of ${list.length} recording${list.length === 1 ? "" : "s"}` +
-          (failed ? ` (${failed} failed)` : ""),
-      );
+        (failed ? ` (${failed} failed)` : "");
+      setImportNote(note);
       await loadSavepoints();
+      return note;
     }, `Import All Importables (${list.length} recording${list.length === 1 ? "" : "s"})`);
 
   const importAllImportablesAsMovelists = (list: PlayRecording[]) =>
@@ -814,11 +811,12 @@ export function Arc3PlayPage({
           failed += 1;
         }
       }
-      setImportNote(
+      const note =
         `imported ${imported} of ${list.length} move-list${list.length === 1 ? "" : "s"} (no images/state written)` +
-          (failed ? ` (${failed} failed)` : ""),
-      );
+        (failed ? ` (${failed} failed)` : "");
+      setImportNote(note);
       await loadSavepoints();
+      return note;
     }, `Import All Importables as move-lists (${list.length})`);
 
   const importAllRecordingsMoves = () =>
@@ -828,8 +826,10 @@ export function Arc3PlayPage({
         `/api/arc3-play/recordings/import-movelists?workspaceId=${encodeURIComponent(workspaceId)}${gameParam}`,
         { method: "POST" },
       );
-      setImportNote(`created ${payload.created ?? 0} move-list(s) from existing Recordings`);
+      const note = `created ${payload.created ?? 0} move-list(s) from existing Recordings`;
+      setImportNote(note);
       await loadSavepoints();
+      return note;
     }, "Import All Recordings' Moves");
 
   const importAllMovelistsAsRecordings = () =>
@@ -857,6 +857,7 @@ export function Arc3PlayPage({
         if (Number(payload.count ?? 0) === 0 && remaining > 0) break; // no progress this round -- stop instead of spinning
       }
       await loadSavepoints();
+      return `materialized ${totalMaterialized} Recording(s)` + (remaining ? ` (${remaining} still pending)` : "");
     }, "Import All Movelists (materializing Recordings)");
 
   const endSession = () =>
@@ -865,7 +866,8 @@ export function Arc3PlayPage({
       const payload = await request(`/api/arc3-play/sessions/${encodeURIComponent(session.id)}`, { method: "DELETE" });
       setArmedAction(null);
       setSession(payload.session as PlaySessionSnapshot);
-    });
+      return `session closed at move ${session.moveCount}`;
+    }, "End session");
 
   const handleActionButton = (action: PlayAction) => {
     if (!action.enabled || busy || !session || session.closed) return;
@@ -1046,25 +1048,13 @@ export function Arc3PlayPage({
           >
             {session && !session.closed && session.gameDirectory === selectedGameId ? "Playing" : "Start new game"}
           </button>
-          <button onClick={() => void loadGames(true)} disabled={gamesLoading}>
+          <button
+            onClick={() => void perform(async () => { await loadGames(true); return "games list refreshed"; }, "Refresh games")}
+            disabled={gamesLoading}
+          >
             {gamesLoading ? "Loading…" : "Refresh"}
           </button>
         </div>
-        {activeTasks.length > 0 && (
-          <div className="arc3-play-busy">
-            {activeTasks.map((task) => (
-              <div key={task.id} title={`started ${new Date(task.startedAt).toLocaleTimeString()}`}>
-                Working: {task.label} ({formatElapsed(nowTick - task.startedAt)})
-              </div>
-            ))}
-          </div>
-        )}
-        {activeTasks.length === 0 && taskLog[0] && (
-          <div className={`arc3-play-busy-done ${taskLog[0].status === "error" ? "failed" : ""}`}>
-            {taskLog[0].label} — {taskLog[0].status === "error" ? "stopped (error)" : "finished"} at{" "}
-            {new Date(taskLog[0].endedAt).toLocaleTimeString()} (ran for {formatElapsed(taskLog[0].endedAt - taskLog[0].startedAt)})
-          </div>
-        )}
         {error && <div className="arc3-play-error">{error}</div>}
       </header>
       <div
@@ -1712,7 +1702,7 @@ export function Arc3PlayPage({
                 className="arc3-play-rescan"
                 disabled={busy}
                 title="Rescan data/importables/ for recordings"
-                onClick={() => void loadRecordings()}
+                onClick={() => void perform(async () => { await loadRecordings(); return "importables list rescanned"; }, "Rescan importables")}
               >
                 Rescan
               </button>
