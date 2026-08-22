@@ -132,6 +132,11 @@ const Arc3PlayPage = lazy(() =>
     default: module.Arc3PlayPage,
   })),
 );
+const Arc3GamesGalleryPage = lazy(() =>
+  import("../components/Arc3GamesGalleryPage").then((module) => ({
+    default: module.Arc3GamesGalleryPage,
+  })),
+);
 const ChatPage = lazy(() =>
   import("../components/ChatPage").then((module) => ({
     default: module.ChatPage,
@@ -388,6 +393,7 @@ type View =
   | "arc3TwoImageProlog"
   | "arc3B1B2Pipeline"
   | "arc3Play"
+  | "arc3GamesGallery"
   | "chat"
   | "workflowPageBuilder"
   | "canvas"
@@ -430,6 +436,7 @@ const WORKBENCH_VIEWS: Set<View> = new Set([
   "arc3TwoImageProlog",
   "arc3B1B2Pipeline",
   "arc3Play",
+  "arc3GamesGallery",
   "chat",
   "workflowPageBuilder",
   "canvas",
@@ -474,6 +481,7 @@ const viewFromLocation = (): View | null => {
   if (value === "two-image-prolog" || value === "twoimageprolog" || value === "arc3-two-image-prolog") return "arc3TwoImageProlog";
   if (value === "b1-b2-pipeline" || value === "b1b2pipeline" || value === "arc3-b1-b2-pipeline") return "arc3B1B2Pipeline";
   if (value === "play" || value === "arc3-play" || value === "arc3play" || value === "play-record") return "arc3Play";
+  if (value === "games" || value === "arc3-games" || value === "arc3games" || value === "games-gallery" || value === "arc3-games-gallery") return "arc3GamesGallery";
   if (value === "workflow-page-builder" || value === "workflowpagebuilder" || value === "page-builder") return "workflowPageBuilder";
   if (value === "workflowv2" || value === "workflows-v2" || value === "workflow-v2") return "canvas";
   if (value === "editor") return "canvas";
@@ -660,6 +668,7 @@ const viewLabel = (view: View) =>
       arc3TwoImageProlog: "Two-Image Prolog",
       arc3B1B2Pipeline: "B1 → B2 Pipeline",
       arc3Play: "Play & Record",
+      arc3GamesGallery: "ARC3 Games",
       workflowPageBuilder: "Workflow Page Builder",
       workflowRuns: "Workflow Runs",
       evidence: "Evidence & provenance",
@@ -3574,6 +3583,18 @@ export function FilesystemWorkbenchPage() {
                   b1b2Models={workflowRunnerModels}
                   b1b2Files={snapshot?.files || []}
                   onB1B2PageDefinitionSaved={refreshSnapshot}
+                />
+              ) : workflowPageForView.renderer === "arc3_games_gallery" ? (
+                <Arc3GamesGalleryPage
+                  pageDefinition={workflowPageForView}
+                  workspaceId={workspace.id}
+                  workspaceLabel={workspace.label}
+                  onPlayGame={(gameShortId) => {
+                    setView("arc3Play");
+                    const url = new URL(window.location.href);
+                    url.searchParams.set("game", gameShortId);
+                    window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
+                  }}
                 />
               ) : workflowPageForView.renderer === "arc3_b1_b2_pipeline" ? (
                 <Arc3B1B2PipelinePage

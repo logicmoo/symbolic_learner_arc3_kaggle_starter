@@ -32,11 +32,14 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, Body, HTTPException
+from fastapi.responses import FileResponse
 
 router = APIRouter(prefix="/arc3-play", tags=["arc3-play"])
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _PYTHON_ROOT = _REPO_ROOT / "python"
+_THUMBNAIL_CACHE_DIR = Path(__file__).resolve().parent / "environment_thumbnails"
+_THUMBNAIL_SCALE = 4
 
 _engine_lock = threading.Lock()
 _catalog_cache: tuple[float, list[dict[str, Any]]] | None = None
@@ -584,12 +587,81 @@ def _game_catalog(refresh: bool = False) -> list[dict[str, Any]]:
     return games
 
 
+def _find_game(game_id: str) -> dict[str, Any] | None:
+    catalog = _game_catalog()
+    return next(
+        (game for game in catalog if game.get("short_id") == game_id or game.get("game_id") == game_id),
+        None,
+    )
+
+
+def _thumbnail_path(short_id: str) -> Path:
+    safe = re.sub(r"[^A-Za-z0-9_.-]", "_", short_id) or "unknown"
+    return _THUMBNAIL_CACHE_DIR / f"{safe}.png"
+
+
+def _render_game_preview_png(full_game_id: str) -> bytes:
+    """Instantiate the game briefly (offline, no action-tree side effects) and
+    PNG-encode its initial frame -- a lightweight one-shot render, not a full
+    ``Arc3Runner`` play session (which would also start writing action-tree
+    state to disk for every one of the 278+ catalog games)."""
+    _ensure_python_path()
+    import arc_agi
+    from image_codec import extract_latest_frame, frame_to_png_bytes
+
+    with _engine_lock:
+        arcade = arc_agi.Arcade(operation_mode=arc_agi.OperationMode.OFFLINE)
+        env = arcade.make(full_game_id, include_frame_data=True, render_mode=None)
+        if env is None:
+            raise RuntimeError(f"could not create environment for {full_game_id}")
+        frame = extract_latest_frame(getattr(env, "observation_space", None), env)
+        return frame_to_png_bytes(frame, scale=_THUMBNAIL_SCALE)
+
+
 # ---- routes -------------------------------------------------------------
 
 
 @router.get("/games")
 def list_games(refresh: bool = False) -> dict[str, Any]:
     return {"games": _game_catalog(refresh=refresh)}
+
+
+@router.post("/games/sync")
+def sync_games_from_arc_interactive() -> dict[str, Any]:
+    """Notice + import any new games from a sibling ``../arc-interactive``
+    checkout (if present) into the local environment_files cache, then bust
+    the catalog cache so the next /games list reflects them immediately."""
+    _ensure_python_path()
+    from arc_interactive_sync import DEFAULT_DEST, DEFAULT_SOURCE, sync_summary
+
+    with _engine_lock:
+        summary = sync_summary(DEFAULT_SOURCE, DEFAULT_DEST)
+    if summary["copied"] or not _catalog_cache:
+        _game_catalog(refresh=True)
+    return summary
+
+
+@router.get("/games/{game_id}/preview")
+def game_preview(game_id: str, refresh: bool = False) -> FileResponse:
+    game = _find_game(game_id)
+    if game is None:
+        raise HTTPException(status_code=404, detail=f"unknown game: {game_id}")
+    short_id = str(game.get("short_id") or game_id)
+    full_id = str(game.get("game_id") or game_id)
+    cache_path = _thumbnail_path(short_id)
+    if refresh and cache_path.is_file():
+        cache_path.unlink(missing_ok=True)
+    if not cache_path.is_file():
+        try:
+            png_bytes = _render_game_preview_png(full_id)
+        except HTTPException:
+            raise
+        except Exception as error:
+            raise HTTPException(status_code=502, detail=f"could not render preview for {full_id}: {error}") from error
+        cache_path.parent.mkdir(parents=True, exist_ok=True)
+        cache_path.write_bytes(png_bytes)
+    return FileResponse(cache_path, media_type="image/png")
+
 
 
 @router.get("/sessions")

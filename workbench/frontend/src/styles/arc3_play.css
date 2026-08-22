@@ -131,6 +131,12 @@
   opacity: 0.8;
 }
 
+.arc3-play-section-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .arc3-play-game-list {
   display: flex;
   flex-direction: column;

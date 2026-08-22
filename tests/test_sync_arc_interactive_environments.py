@@ -4,11 +4,14 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+PYTHON_ROOT = ROOT / "python"
 SCRIPTS = ROOT / "scripts"
+if str(PYTHON_ROOT) not in sys.path:
+    sys.path.insert(0, str(PYTHON_ROOT))
 if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
 
-import sync_arc_interactive_environments as sync_mod  # noqa: E402
+import arc_interactive_sync as sync_mod  # noqa: E402
 
 
 def _make_version_dir(root: Path, stem: str, version: str, *, well_formed: bool = True) -> Path:
@@ -92,6 +95,54 @@ def test_plan_sync_raises_for_missing_source(tmp_path: Path) -> None:
         pass
 
 
-def test_sync_script_defaults_point_at_sibling_arc_interactive_repo() -> None:
+def test_sync_defaults_point_at_sibling_arc_interactive_repo() -> None:
     assert sync_mod.DEFAULT_SOURCE == ROOT.parent / "arc-interactive" / "environment_files"
     assert sync_mod.DEFAULT_DEST == ROOT / "workbench" / "server" / "environment_files"
+
+
+def test_sync_summary_copies_and_reports_when_source_available(tmp_path: Path) -> None:
+    source = tmp_path / "source"
+    dest = tmp_path / "dest"
+    _make_version_dir(source, "ez01", "63be02fb")
+    _make_version_dir(source, "ez02", "63be02fb")
+
+    summary = sync_mod.sync_summary(source, dest)
+
+    assert summary["available"] is True
+    assert summary["copied"] == 2
+    assert summary["alreadyPresent"] == 0
+    assert summary["malformed"] == 0
+    assert summary["newStems"] == ["ez01", "ez02"]
+    assert (dest / "ez01" / "63be02fb" / "metadata.json").is_file()
+
+    # Idempotent: a second call finds everything already present.
+    second = sync_mod.sync_summary(source, dest)
+    assert second["copied"] == 0
+    assert second["alreadyPresent"] == 2
+
+
+def test_sync_summary_reports_unavailable_for_missing_source(tmp_path: Path) -> None:
+    missing_source = tmp_path / "does-not-exist"
+    dest = tmp_path / "dest"
+
+    summary = sync_mod.sync_summary(missing_source, dest)
+
+    assert summary == {
+        "available": False,
+        "source": str(missing_source),
+        "dest": str(dest),
+        "copied": 0,
+        "alreadyPresent": 0,
+        "malformed": 0,
+        "newStems": [],
+    }
+
+
+def test_cli_script_delegates_to_shared_sync_module() -> None:
+    source = (SCRIPTS / "sync_arc_interactive_environments.py").read_text(encoding="utf-8")
+    assert "from arc_interactive_sync import" in source
+    assert "DEFAULT_DEST" in source
+    assert "DEFAULT_SOURCE" in source
+    assert "apply_sync" in source
+    assert "plan_sync" in source
+

@@ -254,6 +254,7 @@ workbench/arc3_random_player/
 # Vendored framework + downloaded game source + agent recordings
 vendor/
 environment_files/
+environment_thumbnails/
 recordings/
 logs.log
 

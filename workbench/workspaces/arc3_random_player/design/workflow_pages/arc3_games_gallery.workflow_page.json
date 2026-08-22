@@ -1,0 +1,48 @@
+{
+  "kind": "workflow_page",
+  "id": "arc3.games_gallery",
+  "label": "ARC3 Games",
+  "description": "Browse every ARC3 game the engine has discovered (official arcprize games plus any imported from a sibling arc-interactive checkout) with a one-image preview per game, and jump straight into Play & Record.",
+  "glyph": "\u229e",
+  "menuPlacement": "middle",
+  "order": 34,
+  "routeView": "arc3GamesGallery",
+  "renderer": "arc3_games_gallery",
+  "layout": {
+    "kind": "three_column_accordion",
+    "columns": [
+      { "id": "left", "label": "FILTERS", "role": "data", "members": [] },
+      {
+        "id": "center",
+        "label": "GALLERY",
+        "role": "authoring",
+        "members": [
+          { "id": "arc3_games_gallery_grid", "label": "ARC3 Games Gallery", "component": "Arc3GamesGalleryGrid", "initialDisplayMode": "scroll" }
+        ]
+      },
+      {
+        "id": "right",
+        "label": "SOURCE",
+        "role": "details",
+        "members": [
+          {
+            "id": "arc3_games_gallery_page_source",
+            "label": "Current Page Specification",
+            "component": "ResourceSourceEditor",
+            "initialDisplayMode": "strip",
+            "resource": {
+              "kind": "workflow_page",
+              "id": "arc3.games_gallery"
+            },
+            "options": {
+              "format": "json",
+              "editable": true,
+              "validateBeforeApply": true,
+              "applyOnSave": true
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

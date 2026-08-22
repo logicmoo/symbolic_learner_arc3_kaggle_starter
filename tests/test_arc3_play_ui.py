@@ -167,3 +167,84 @@ def test_play_router_is_mounted() -> None:
     source = APP.read_text(encoding="utf-8")
     assert "from arc3_play_api import router as arc3_play_router" in source
     assert 'app.include_router(arc3_play_router, prefix="/api")' in source
+
+
+def test_play_page_embeds_b1b2_runner_stack_in_left_column() -> None:
+    source = COMPONENT.read_text(encoding="utf-8")
+    assert 'import { Arc3B1B2PipelinePage, type ModelChoice, type WorkspaceFileRecord } from "./Arc3B1B2PipelinePage";' in source
+    assert "b1b2PageDefinition" in source
+    assert "b1b2Models" in source
+    assert "b1b2Files" in source
+    assert "onB1B2PageDefinitionSaved" in source
+    assert "b1b2CenterOnlyDefinition" in source
+    assert "<Arc3B1B2PipelinePage" in source
+    assert "arc3-play-b1b2-column" in source
+
+    b1b2_source = (ROOT / "workbench/frontend/src/components/Arc3B1B2PipelinePage.tsx").read_text(encoding="utf-8")
+    assert "export type ModelChoice" in b1b2_source
+    assert "export type WorkspaceFileRecord" in b1b2_source
+    assert "export type Props" in b1b2_source
+
+    styles = STYLES.read_text(encoding="utf-8")
+    assert ".arc3-play-b1b2-column" in styles
+
+    workbench_source = WORKBENCH.read_text(encoding="utf-8")
+    assert "b1b2PageDefinitionForPlay" in workbench_source
+    assert "b1b2PageDefinition={b1b2PageDefinitionForPlay}" in workbench_source
+
+
+def test_play_page_reads_deep_link_game_param() -> None:
+    source = COMPONENT.read_text(encoding="utf-8")
+    assert 'new URLSearchParams(window.location.search).get("game")' in source
+
+
+def test_play_page_recordings_section_can_be_refreshed() -> None:
+    source = COMPONENT.read_text(encoding="utf-8")
+    assert "refreshRecording" in source
+    assert "arc3-play-section-actions" in source
+    styles = STYLES.read_text(encoding="utf-8")
+    assert ".arc3-play-section-actions" in styles
+
+
+def test_games_gallery_page_exists_and_is_wired_into_navigation() -> None:
+    gallery_component = (ROOT / "workbench/frontend/src/components/Arc3GamesGalleryPage.tsx").read_text(encoding="utf-8")
+    assert "export function Arc3GamesGalleryPage(" in gallery_component
+    assert "/api/arc3-play/games" in gallery_component
+    assert "/preview" in gallery_component
+    assert "/api/arc3-play/games/sync" in gallery_component
+    assert "onPlayGame" in gallery_component
+    assert 'type="search"' in gallery_component
+    assert "Sync from arc-interactive" in gallery_component
+
+    gallery_styles = (ROOT / "workbench/frontend/src/styles/arc3_games_gallery.css").read_text(encoding="utf-8")
+    assert ".arc3-gallery-grid" in gallery_styles
+    assert ".arc3-gallery-thumb" in gallery_styles
+
+    gallery_page_json = (
+        ROOT / "workbench/workspaces/arc3_random_player/design/workflow_pages/arc3_games_gallery.workflow_page.json"
+    ).read_text(encoding="utf-8")
+    assert '"id": "arc3.games_gallery"' in gallery_page_json
+    assert '"routeView": "arc3GamesGallery"' in gallery_page_json
+    assert '"renderer": "arc3_games_gallery"' in gallery_page_json
+
+    workbench_source = WORKBENCH.read_text(encoding="utf-8")
+    assert 'import("../components/Arc3GamesGalleryPage")' in workbench_source
+    assert "default: module.Arc3GamesGalleryPage," in workbench_source
+    assert '"arc3GamesGallery"' in workbench_source
+    assert 'workflowPageForView.renderer === "arc3_games_gallery"' in workbench_source
+    assert "<Arc3GamesGalleryPage" in workbench_source
+    assert "onPlayGame={(gameShortId) => {" in workbench_source
+
+
+def test_arc3_play_api_serves_per_game_preview_images_and_sync_action() -> None:
+    source = API.read_text(encoding="utf-8")
+    assert '"/games/{game_id}/preview"' in source
+    assert '"/games/sync"' in source
+    assert "_THUMBNAIL_CACHE_DIR" in source
+    assert "def _thumbnail_path" in source
+    assert "def _render_game_preview_png" in source
+    assert "extract_latest_frame" in source
+    assert "frame_to_png_bytes" in source
+    assert "from arc_interactive_sync import" in source
+    assert "sync_summary" in source
+

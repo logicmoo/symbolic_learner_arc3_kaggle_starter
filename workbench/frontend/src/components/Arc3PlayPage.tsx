@@ -240,6 +240,15 @@ export function Arc3PlayPage({
     void loadGames(false);
   }, [loadGames]);
 
+  // Deep-link support: the games gallery page's "Play & Record" button
+  // navigates here with ?game=<shortId> so the picker preselects it once
+  // the catalog loads (the effect below still falls back to the first game
+  // if this id turns out to be invalid/unknown).
+  useEffect(() => {
+    const requested = new URLSearchParams(window.location.search).get("game");
+    if (requested) setSelectedGameId(requested);
+  }, []);
+
   useEffect(() => {
     if (!games.length) return;
     if (selectedGameId && games.some((game) => (game.short_id || game.game_id) === selectedGameId)) return;
@@ -311,6 +320,13 @@ export function Arc3PlayPage({
       setReplayPlaying(false);
       setSession(payload.session as PlaySessionSnapshot);
       await loadSavepoints();
+    });
+
+  const refreshRecording = () =>
+    perform(async () => {
+      if (!session) return;
+      const payload = await request(`/api/arc3-play/sessions/${encodeURIComponent(session.id)}`);
+      setSession(payload.session as PlaySessionSnapshot);
     });
 
   const playFromMove = (move: PlayMove) =>
@@ -1064,9 +1080,19 @@ export function Arc3PlayPage({
         <section className="arc3-play-recording">
           <div className="arc3-play-section-title">
             <span>RECORDINGS</span>
-            <button className="arc3-play-collapse-toggle" onClick={() => toggleSection("recordings")}>
-              {collapsedSections.recordings ? "▸ Expand" : "▾ Collapse"}
-            </button>
+            <span className="arc3-play-section-actions">
+              <button
+                className="arc3-play-rescan"
+                title="Reload the current session's recorded moves from disk"
+                disabled={!session || busy}
+                onClick={() => void refreshRecording()}
+              >
+                Refresh
+              </button>
+              <button className="arc3-play-collapse-toggle" onClick={() => toggleSection("recordings")}>
+                {collapsedSections.recordings ? "▸ Expand" : "▾ Collapse"}
+              </button>
+            </span>
           </div>
           {!collapsedSections.recordings && (
             <>
