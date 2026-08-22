@@ -414,7 +414,9 @@ export function Arc3PlayPage({
   }, [activeTasks.length]);
 
   const formatElapsed = (ms: number): string => {
-    const totalSeconds = Math.max(0, Math.round(ms / 1000));
+    const clamped = Math.max(0, ms);
+    if (clamped < 1000) return `${Math.round(clamped)}ms`;
+    const totalSeconds = Math.round(clamped / 1000);
     const minutes = Math.floor(totalSeconds / 60);
     const seconds = totalSeconds % 60;
     return minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
@@ -1060,7 +1062,7 @@ export function Arc3PlayPage({
         {activeTasks.length === 0 && taskLog[0] && (
           <div className={`arc3-play-busy-done ${taskLog[0].status === "error" ? "failed" : ""}`}>
             {taskLog[0].label} — {taskLog[0].status === "error" ? "stopped (error)" : "finished"} at{" "}
-            {new Date(taskLog[0].endedAt).toLocaleTimeString()}
+            {new Date(taskLog[0].endedAt).toLocaleTimeString()} (ran for {formatElapsed(taskLog[0].endedAt - taskLog[0].startedAt)})
           </div>
         )}
         {error && <div className="arc3-play-error">{error}</div>}

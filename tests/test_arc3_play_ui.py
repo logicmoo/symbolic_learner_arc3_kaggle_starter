@@ -285,6 +285,8 @@ def test_play_page_has_a_visible_task_registry_not_just_a_silent_flag() -> None:
     assert "activeTasks" in source
     assert "taskLog" in source
     assert "formatElapsed" in source
+    # Finished tasks report how long they actually ran for.
+    assert "ran for {formatElapsed(taskLog[0].endedAt - taskLog[0].startedAt)}" in source
 
 
 def test_play_page_recordings_path_can_be_set_from_the_right_panel() -> None:
