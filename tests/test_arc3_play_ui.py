@@ -55,6 +55,11 @@ def test_play_component_has_recorder_contract() -> None:
     assert 'Undo {replayPos > 0 && replayScript[replayPos - 1]' in source
     assert "Next {replayPos < replayScript.length && replayScript[replayPos]" in source
     assert "Watch replay" in source
+    assert 'onClick={() => void seekReplay(0)}' in source
+    assert "Beginning" in source
+    assert "Next Level" in source
+    assert "nextChapterIndex" in source
+    assert "Near Last" in source
     assert "replayPlaying" in source
     assert "arc3-play-timeline" in source
     assert "chapterStarts" in source

@@ -608,6 +608,16 @@ export function Arc3PlayPage({
     return starts;
   }, [replayScript]);
 
+  // The next chapter (level/attempt) boundary strictly after the current
+  // replay position, for the "Next Level" seek button.
+  const nextChapterIndex = useMemo(() => {
+    let next: number | null = null;
+    chapterStarts.forEach((_label, index) => {
+      if (index > replayPos && (next === null || index < next)) next = index;
+    });
+    return next;
+  }, [chapterStarts, replayPos]);
+
   const takeBackReplay = () =>
     perform(async () => {
       if (!session || !replayScript || replayPos <= 0) return;
@@ -1250,6 +1260,14 @@ export function Arc3PlayPage({
                     REPLAY {replayPos}/{replayScript.length}
                   </small>
                   <button
+                    className="arc3-play-action"
+                    disabled={busy || session.closed || replayPlaying || replayPos <= 0}
+                    title="Jump back to the very start of this move-list"
+                    onClick={() => void seekReplay(0)}
+                  >
+                    Beginning
+                  </button>
+                  <button
                     className="arc3-play-action reset"
                     disabled={busy || session.closed || replayPos <= 0 || replayPlaying}
                     title="Undo the last replayed move"
@@ -1285,6 +1303,22 @@ export function Arc3PlayPage({
                     <option value={120}>2x</option>
                     <option value={40}>4x</option>
                   </select>
+                  <button
+                    className="arc3-play-action"
+                    disabled={busy || session.closed || replayPlaying || nextChapterIndex === null}
+                    title="Jump to the start of the next level/attempt"
+                    onClick={() => void seekReplay(nextChapterIndex ?? replayPos)}
+                  >
+                    Next Level
+                  </button>
+                  <button
+                    className="arc3-play-action"
+                    disabled={busy || session.closed || replayPlaying || replayPos >= replayScript.length - 1}
+                    title="Jump to just before the last recorded move"
+                    onClick={() => void seekReplay(Math.max(0, replayScript.length - 1))}
+                  >
+                    Near Last
+                  </button>
                   <button
                     className="arc3-play-action end"
                     disabled={busy}
