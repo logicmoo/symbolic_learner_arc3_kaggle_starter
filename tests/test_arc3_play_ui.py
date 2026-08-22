@@ -258,6 +258,33 @@ def test_play_page_has_movelist_recording_cross_import_actions() -> None:
     assert "/api/arc3-play/import-movelist" in source
     assert "importAllRecordingsMoves" in source
     assert "/api/arc3-play/recordings/import-movelists" in source
+    # Materializing loops the bounded endpoint while there's remaining work,
+    # instead of one call blocking for an unbounded time on large move-lists.
+    assert "payload.remaining" in source
+
+
+def test_play_page_has_clear_buttons_for_recordings_and_movelists() -> None:
+    source = COMPONENT.read_text(encoding="utf-8")
+    assert "clearRecordings" in source
+    assert "/api/arc3-play/recordings/clear" in source
+    assert "clearSavepoints" in source
+    assert "/api/arc3-play/savepoints/clear" in source
+    assert "window.confirm(" in source
+    styles = STYLES.read_text(encoding="utf-8")
+    assert ".arc3-play-rescan.danger" in styles
+
+
+def test_play_page_has_a_visible_task_registry_not_just_a_silent_flag() -> None:
+    source = COMPONENT.read_text(encoding="utf-8")
+    # Each long-running action registers itself when it starts and removes
+    # itself when it stops, instead of one opaque global busy boolean --
+    # a task that never calls stopBusy stays visibly stuck with its elapsed
+    # time, which is the signal that something is wrong.
+    assert "const startBusy = useCallback" in source
+    assert "const stopBusy = useCallback" in source
+    assert "activeTasks" in source
+    assert "taskLog" in source
+    assert "formatElapsed" in source
 
 
 def test_play_page_recordings_path_can_be_set_from_the_right_panel() -> None:
@@ -323,4 +350,17 @@ def test_arc3_play_api_serves_per_game_preview_images_and_sync_action() -> None:
     assert "frame_to_png_bytes" in source
     assert "from arc_interactive_sync import" in source
     assert "sync_summary" in source
+
+
+def test_materialize_movelists_is_bounded_per_call() -> None:
+    source = API.read_text(encoding="utf-8")
+    # A real engine replay writes a full image+state per move, so a handful
+    # of large move-lists can legitimately take minutes; each call must be
+    # bounded so one request can never block for an unbounded time, and must
+    # report how much work is left so the frontend can keep calling until done.
+    assert "def materialize_movelists(workspaceId: str, gameId: str | None = None, maxMoves: int = 400)" in source
+    assert '"remaining": remaining' in source
+    assert "/recordings/clear" in source
+    assert "/savepoints/clear" in source
+
 

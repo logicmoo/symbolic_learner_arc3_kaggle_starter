@@ -84,6 +84,24 @@
   max-width: 50%;
 }
 
+.arc3-play-busy {
+  color: #f0b429;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.arc3-play-busy-done {
+  color: #63c974;
+  font-size: 13px;
+}
+
+.arc3-play-busy-done.failed {
+  color: #ff6b6b;
+}
+
 .arc3-play-columns {
   display: grid;
   grid-template-columns: 220px minmax(0, 1fr) 340px;
@@ -642,6 +660,16 @@
 
 .arc3-play-rescan:hover {
   border-color: rgba(0, 116, 217, 0.9);
+}
+
+.arc3-play-rescan.danger {
+  border-color: rgba(255, 107, 107, 0.6);
+  color: #ff6b6b;
+}
+
+.arc3-play-rescan.danger:hover {
+  border-color: rgba(255, 107, 107, 1);
+  background: rgba(255, 107, 107, 0.1);
 }
 
 .arc3-play-replayer .watch {

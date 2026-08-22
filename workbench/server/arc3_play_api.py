@@ -2079,6 +2079,41 @@ def retain_largest_recordings(workspaceId: str, keep: int, gameId: str | None = 
     return {"removed": removed, "count": len(removed)}
 
 
+@router.post("/recordings/clear")
+def clear_recordings(workspaceId: str, gameId: str | None = None) -> dict[str, Any]:
+    """Delete EVERY Recording directory for the targeted game(s) -- both
+    live-play saved_<NNN> dirs and imported ones alike. Does not touch
+    savepoints.json (MOVE-LISTS); see /savepoints/clear for that."""
+    root = _workspace_root(workspaceId)
+    directories = _game_dirs_for(root, _game_slug(gameId)) if gameId else _all_game_dirs(root)
+    removed: list[str] = []
+    for game_root in directories:
+        if not game_root.is_dir():
+            continue
+        for entry in _iter_recording_dirs(game_root):
+            removed.append(entry.relative_to(root).as_posix())
+            shutil.rmtree(entry, ignore_errors=True)
+    return {"removed": removed, "count": len(removed)}
+
+
+@router.post("/savepoints/clear")
+def clear_savepoints(workspaceId: str, gameId: str | None = None) -> dict[str, Any]:
+    """Delete EVERY MOVE-LIST (savepoint) for the targeted game(s). Does not
+    touch Recording directories; see /recordings/clear for that."""
+    root = _workspace_root(workspaceId)
+    directories = _game_dirs_for(root, _game_slug(gameId)) if gameId else _all_game_dirs(root)
+    removed = 0
+    for game_root in directories:
+        savepoints_path = game_root / "savepoints.json"
+        if not savepoints_path.is_file():
+            continue
+        with _savepoints_lock:
+            entries = _load_savepoints(savepoints_path)
+            removed += len(entries)
+            savepoints_path.write_text("[]", encoding="utf-8")
+    return {"count": removed}
+
+
 def _savepoint_from_recording(root: Path, game_dir: str, entry: Path) -> dict[str, Any] | None:
     """Derive a MOVE-LIST (savepoint) from one existing Recording directory's
     own recording.json -- its "moves" list, replayed as a flat sequence of
@@ -2160,15 +2195,24 @@ def import_movelists_from_recordings(workspaceId: str, gameId: str | None = None
 
 
 @router.post("/recordings/materialize-movelists")
-def materialize_movelists(workspaceId: str, gameId: str | None = None) -> dict[str, Any]:
+def materialize_movelists(workspaceId: str, gameId: str | None = None, maxMoves: int = 400) -> dict[str, Any]:
     """RECORDINGS panel's "Import All Movelists": for every MOVE-LIST whose
     referenced Recording directory doesn't exist on disk (movelist-only
     imports via /import-movelist, or a directory since deleted), replay its
     move-list through a fresh session -- writing a brand-new saved_<NNN>
-    Recording -- and repoint the savepoint's level_directory at it."""
+    Recording -- and repoint the savepoint's level_directory at it.
+
+    Bounded by maxMoves (total replayed moves across this one call, default
+    400): a real engine replay writes a full image+state per move, so a
+    handful of large move-lists can legitimately take minutes; capping each
+    call keeps every request fast and visibly progressing (the response's
+    "remaining" count is >0 when there's more to do -- call again to
+    continue) instead of one request blocking for an unbounded time."""
     root = _workspace_root(workspaceId)
     directories = _game_dirs_for(root, _game_slug(gameId)) if gameId else _all_game_dirs(root)
     materialized: list[dict[str, str]] = []
+    budget = max(1, maxMoves)
+    remaining = 0
     for game_root in directories:
         savepoints_path = game_root / "savepoints.json"
         if not savepoints_path.is_file():
@@ -2182,6 +2226,9 @@ def materialize_movelists(workspaceId: str, gameId: str | None = None) -> dict[s
             replay_log = entry.get("replay_log") or []
             if not replay_log:
                 continue
+            if budget <= 0:
+                remaining += 1
+                continue
             game_id = str(entry.get("game_id") or entry.get("game_directory") or "")
             if not game_id:
                 continue
@@ -2192,6 +2239,7 @@ def materialize_movelists(workspaceId: str, gameId: str | None = None) -> dict[s
                 session.close()
             except Exception:
                 continue
+            budget -= len(replay_log)
             with _savepoints_lock:
                 current = _load_savepoints(savepoints_path)
                 for item in current:
@@ -2200,7 +2248,7 @@ def materialize_movelists(workspaceId: str, gameId: str | None = None) -> dict[s
                         item["move_index"] = len(replay_log) - 1
                 savepoints_path.write_text(json.dumps(current, indent=2, ensure_ascii=False), encoding="utf-8")
             materialized.append({"savepointId": str(entry.get("id")), "levelDirectory": new_level_dir})
-    return {"materialized": materialized, "count": len(materialized)}
+    return {"materialized": materialized, "count": len(materialized), "remaining": remaining}
 
 
 @router.post("/import-recording", status_code=201)

@@ -329,3 +329,40 @@ def test_import_movelists_from_recordings_skips_dirs_that_already_have_one(tmp_p
     assert created_second == 0
     savepoints_after = json.loads((game_root / "savepoints.json").read_text(encoding="utf-8"))
     assert len(savepoints_after) == 1
+
+
+def test_clear_recordings_deletes_every_recording_dir_for_a_game(tmp_path: Path, monkeypatch) -> None:
+    import workspace_api
+
+    monkeypatch.setattr(workspace_api, "_workspace_roots", lambda: [tmp_path.parent])
+    root = tmp_path
+    game_root = root / "data" / "Recordings" / "ar25"
+    _write_recording_dir(game_root, "saved_001", size=10, imported=False)
+    _write_recording_dir(game_root, "my_import", size=10, imported=True)
+    other_game_root = root / "data" / "Recordings" / "ka59"
+    _write_recording_dir(other_game_root, "saved_001", size=10, imported=False)
+
+    result = arc3_play_api.clear_recordings(workspaceId=root.name, gameId="ar25")
+
+    assert result["count"] == 2
+    assert not game_root.exists() or not list(game_root.iterdir())
+    # A different game is untouched.
+    assert (other_game_root / "saved_001").is_dir()
+
+
+def test_clear_savepoints_empties_savepoints_json_for_a_game(tmp_path: Path, monkeypatch) -> None:
+    import workspace_api
+
+    monkeypatch.setattr(workspace_api, "_workspace_roots", lambda: [tmp_path.parent])
+    root = tmp_path
+    game_root = root / "data" / "Recordings" / "ar25"
+    game_root.mkdir(parents=True)
+    (game_root / "savepoints.json").write_text(
+        json.dumps([{"id": "a"}, {"id": "b"}]),
+        encoding="utf-8",
+    )
+
+    result = arc3_play_api.clear_savepoints(workspaceId=root.name, gameId="ar25")
+
+    assert result["count"] == 2
+    assert json.loads((game_root / "savepoints.json").read_text(encoding="utf-8")) == []

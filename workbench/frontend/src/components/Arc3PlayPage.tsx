@@ -47,6 +47,9 @@ type ReplayOp = {
   level?: string | null;
 };
 
+type BusyTask = { id: string; label: string; startedAt: number };
+type FinishedTask = BusyTask & { endedAt: number; status: "done" | "error" };
+
 type PlaySessionSnapshot = {
   id: string;
   workspaceId: string;
@@ -133,7 +136,14 @@ export function Arc3PlayPage({
   const [games, setGames] = useState<GameInfo[]>([]);
   const [gamesLoading, setGamesLoading] = useState(false);
   const [session, setSession] = useState<PlaySessionSnapshot | null>(null);
-  const [busy, setBusy] = useState(false);
+  // Every long-running action registers itself here when it starts (via
+  // startBusy) and removes itself when it stops (via stopBusy), instead of
+  // one opaque global flag -- if a task never calls stopBusy (e.g. an
+  // engine-replay hang), it stays visibly stuck in this list with its
+  // elapsed time, which is exactly the signal that something is wrong.
+  const [activeTasks, setActiveTasks] = useState<BusyTask[]>([]);
+  const [taskLog, setTaskLog] = useState<FinishedTask[]>([]);
+  const busy = activeTasks.length > 0;
   const [error, setError] = useState("");
   const [armedAction, setArmedAction] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -359,23 +369,56 @@ export function Arc3PlayPage({
     void loadRecordings();
   }, [loadRecordings]);
 
-  const perform = useCallback(async (work: () => Promise<void>) => {
-    setBusy(true);
-    setError("");
-    try {
-      await work();
-    } catch (reason) {
-      const message = reason instanceof Error ? reason.message : String(reason);
-      setError(message);
-      if (message.includes("unknown play session")) {
-        // Backend lost the session (e.g. reload) — flip to closed so
-        // START SESSION and fork-from-history become available.
-        setSession((current) => (current ? { ...current, closed: true } : current));
-      }
-    } finally {
-      setBusy(false);
-    }
+  const startBusy = useCallback((label: string): string => {
+    const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    setActiveTasks((current) => [...current, { id, label, startedAt: Date.now() }]);
+    return id;
   }, []);
+
+  const stopBusy = useCallback((id: string, status: "done" | "error") => {
+    setActiveTasks((current) => {
+      const task = current.find((entry) => entry.id === id);
+      if (task) {
+        setTaskLog((log) => [{ ...task, endedAt: Date.now(), status }, ...log].slice(0, 8));
+      }
+      return current.filter((entry) => entry.id !== id);
+    });
+  }, []);
+
+  const perform = useCallback(
+    async (work: () => Promise<void>, label?: string) => {
+      const taskId = startBusy(label || "action");
+      setError("");
+      try {
+        await work();
+        stopBusy(taskId, "done");
+      } catch (reason) {
+        const message = reason instanceof Error ? reason.message : String(reason);
+        setError(message);
+        stopBusy(taskId, "error");
+        if (message.includes("unknown play session")) {
+          // Backend lost the session (e.g. reload) — flip to closed so
+          // START SESSION and fork-from-history become available.
+          setSession((current) => (current ? { ...current, closed: true } : current));
+        }
+      }
+    },
+    [startBusy, stopBusy],
+  );
+
+  const [nowTick, setNowTick] = useState(() => Date.now());
+  useEffect(() => {
+    if (!activeTasks.length) return;
+    const timer = window.setInterval(() => setNowTick(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [activeTasks.length]);
+
+  const formatElapsed = (ms: number): string => {
+    const totalSeconds = Math.max(0, Math.round(ms / 1000));
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+  };
 
   const startGame = (gameId: string) =>
     perform(async () => {
@@ -640,7 +683,7 @@ export function Arc3PlayPage({
       });
       setImportNote(`de-duplicated save-points: removed ${payload.removed ?? 0}`);
       await loadSavepoints();
-    });
+    }, "De-duplicate move-lists");
 
   const dedupeRecordings = () =>
     perform(async () => {
@@ -649,7 +692,7 @@ export function Arc3PlayPage({
       });
       setImportNote(`de-duplicated recordings: removed ${payload.count ?? 0} stale level dir(s)`);
       await loadSavepoints();
-    });
+    }, "De-duplicate recordings");
 
   const sortRecordingsBySize = () =>
     perform(async () => {
@@ -660,7 +703,7 @@ export function Arc3PlayPage({
       );
       setImportNote(`sorted by size: renamed ${payload.count ?? 0} imported dir(s)`);
       await loadSavepoints();
-    });
+    }, "Sort dirs by size");
 
   const retainLargestRecordings = () =>
     perform(async () => {
@@ -672,7 +715,31 @@ export function Arc3PlayPage({
       );
       setImportNote(`retained largest ${keep}: removed ${payload.count ?? 0} smaller imported dir(s)`);
       await loadSavepoints();
-    });
+    }, "Retain N largest");
+
+  const clearRecordings = () =>
+    perform(async () => {
+      if (!window.confirm("Delete every Recording directory for this Filter scope? This cannot be undone.")) return;
+      const gameParam = filterGameId ? `&gameId=${encodeURIComponent(filterGameId)}` : "";
+      const payload = await request(
+        `/api/arc3-play/recordings/clear?workspaceId=${encodeURIComponent(workspaceId)}${gameParam}`,
+        { method: "POST" },
+      );
+      setImportNote(`cleared recordings: removed ${payload.count ?? 0} dir(s)`);
+      await loadSavepoints();
+    }, "Clear recordings");
+
+  const clearSavepoints = () =>
+    perform(async () => {
+      if (!window.confirm("Delete every move-list (save-point) for this Filter scope? This cannot be undone.")) return;
+      const gameParam = filterGameId ? `&gameId=${encodeURIComponent(filterGameId)}` : "";
+      const payload = await request(
+        `/api/arc3-play/savepoints/clear?workspaceId=${encodeURIComponent(workspaceId)}${gameParam}`,
+        { method: "POST" },
+      );
+      setImportNote(`cleared move-lists: removed ${payload.count ?? 0}`);
+      await loadSavepoints();
+    }, "Clear move-lists");
 
   const duplicateSavepoint = (savepointId: string) =>
     perform(async () => {
@@ -704,7 +771,7 @@ export function Arc3PlayPage({
         `imported ${recording.name}: ${info?.moveCount ?? "?"} moves -> ${info?.gameDirectory ?? "?"} (${info?.state ?? "?"})`,
       );
       await loadSavepoints();
-    });
+    }, `Import ${recording.name}`);
 
   const importAllImportables = (list: PlayRecording[]) =>
     perform(async () => {
@@ -727,7 +794,7 @@ export function Arc3PlayPage({
           (failed ? ` (${failed} failed)` : ""),
       );
       await loadSavepoints();
-    });
+    }, `Import All Importables (${list.length} recording${list.length === 1 ? "" : "s"})`);
 
   const importAllImportablesAsMovelists = (list: PlayRecording[]) =>
     perform(async () => {
@@ -750,7 +817,7 @@ export function Arc3PlayPage({
           (failed ? ` (${failed} failed)` : ""),
       );
       await loadSavepoints();
-    });
+    }, `Import All Importables as move-lists (${list.length})`);
 
   const importAllRecordingsMoves = () =>
     perform(async () => {
@@ -761,18 +828,34 @@ export function Arc3PlayPage({
       );
       setImportNote(`created ${payload.created ?? 0} move-list(s) from existing Recordings`);
       await loadSavepoints();
-    });
+    }, "Import All Recordings' Moves");
 
   const importAllMovelistsAsRecordings = () =>
     perform(async () => {
       const gameParam = filterGameId ? `&gameId=${encodeURIComponent(filterGameId)}` : "";
-      const payload = await request(
-        `/api/arc3-play/recordings/materialize-movelists?workspaceId=${encodeURIComponent(workspaceId)}${gameParam}`,
-        { method: "POST" },
-      );
-      setImportNote(`materialized ${payload.count ?? 0} Recording(s) from move-lists`);
+      let totalMaterialized = 0;
+      let remaining = 1;
+      let rounds = 0;
+      // Each call is bounded (maxMoves budget server-side) so a handful of
+      // large move-lists can't block one request for an unbounded time;
+      // keep calling while there's more to do, capped so a genuine problem
+      // can't loop forever either.
+      while (remaining > 0 && rounds < 25) {
+        const payload = await request(
+          `/api/arc3-play/recordings/materialize-movelists?workspaceId=${encodeURIComponent(workspaceId)}${gameParam}`,
+          { method: "POST" },
+        );
+        totalMaterialized += Number(payload.count ?? 0);
+        remaining = Number(payload.remaining ?? 0);
+        rounds += 1;
+        setImportNote(
+          `materialized ${totalMaterialized} Recording(s) from move-lists so far` +
+            (remaining ? ` (${remaining} more pending, still working…)` : ""),
+        );
+        if (Number(payload.count ?? 0) === 0 && remaining > 0) break; // no progress this round -- stop instead of spinning
+      }
       await loadSavepoints();
-    });
+    }, "Import All Movelists (materializing Recordings)");
 
   const endSession = () =>
     perform(async () => {
@@ -965,6 +1048,21 @@ export function Arc3PlayPage({
             {gamesLoading ? "Loading…" : "Refresh"}
           </button>
         </div>
+        {activeTasks.length > 0 && (
+          <div className="arc3-play-busy">
+            {activeTasks.map((task) => (
+              <div key={task.id} title={`started ${new Date(task.startedAt).toLocaleTimeString()}`}>
+                Working: {task.label} ({formatElapsed(nowTick - task.startedAt)})
+              </div>
+            ))}
+          </div>
+        )}
+        {activeTasks.length === 0 && taskLog[0] && (
+          <div className={`arc3-play-busy-done ${taskLog[0].status === "error" ? "failed" : ""}`}>
+            {taskLog[0].label} — {taskLog[0].status === "error" ? "stopped (error)" : "finished"} at{" "}
+            {new Date(taskLog[0].endedAt).toLocaleTimeString()}
+          </div>
+        )}
         {error && <div className="arc3-play-error">{error}</div>}
       </header>
       <div
@@ -1310,6 +1408,14 @@ export function Arc3PlayPage({
               >
                 Retain N Largest
               </button>
+              <button
+                className="arc3-play-rescan danger"
+                disabled={busy}
+                title="Delete EVERY Recording directory for this Filter scope (live-play and imported alike). Does not touch move-lists."
+                onClick={() => void clearRecordings()}
+              >
+                Clear
+              </button>
               <button className="arc3-play-collapse-toggle" onClick={() => toggleSection("recordings")}>
                 {collapsedSections.recordings ? "▸ Expand" : "▾ Collapse"}
               </button>
@@ -1531,6 +1637,14 @@ export function Arc3PlayPage({
                 onClick={() => void dedupeSavepoints()}
               >
                 De-duplicate
+              </button>
+              <button
+                className="arc3-play-rescan danger"
+                disabled={busy}
+                title="Delete EVERY move-list (save-point) for this Filter scope. Does not touch Recording directories."
+                onClick={() => void clearSavepoints()}
+              >
+                Clear
               </button>
             </small>
             {!collapsedSections.restartPoints && (
