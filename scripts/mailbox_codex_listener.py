@@ -2,8 +2,8 @@
 
 Implements the first cut of ``mailbox_channel/docs/WORKBENCH_CODEX_WORKER.md``:
 register ``workbench-codex-worker`` (+ presence), give it a cursor on its own
-mailbox and ``server_events``, and poll those together over REST. SNET Mattermost
-channel subscriptions are a later addition.
+mailbox and ``server_events_log``, and poll those together over REST. SNET
+Mattermost channel subscriptions are a later addition.
 
 The Codex-listener automation calls this on each tick. The agent *is* the
 responder: a tick runs ``poll`` (usually in the background, bounded by a timer)
@@ -42,7 +42,7 @@ DEFAULT_PEER = "symbolic-workbench-user"
 # The shared channel both the workbench user and the agent post to; it is also the
 # Chat page's default display channel.
 SHARED_USER_CHANNEL = "symbolic-workbench-user"
-EVENT_CHANNEL = "server_events"
+EVENT_CHANNEL = "server_events_log"
 RELAY_URL = os.environ.get("AGENT_MAILBOX_URL") or "http://127.0.0.1:46667"
 API_BASE = os.environ.get("WORKBENCH_API_BASE", "http://127.0.0.1:8000")
 RELAY_HOST = "127.0.0.1"
@@ -64,9 +64,10 @@ def default_sources(agent: str) -> list[str]:
     """The poll set for the chat loop.
 
     Includes the shared user channel, the agent's own mailbox, and
-    ``server_events`` - lifecycle events are surfaced too so the agent can read
-    them and decide whether to react. Only the agent's own posts are filtered out
-    (to avoid reacting to itself); that decision lives in the poll, not here.
+    ``server_events_log`` - lifecycle events are surfaced too so the agent can
+    read them and decide whether to react. Only the agent's own posts are
+    filtered out (to avoid reacting to itself); that decision lives in the
+    poll, not here.
     """
     ordered = [SHARED_USER_CHANNEL, agent, EVENT_CHANNEL]
     seen: set[str] = set()
@@ -224,23 +225,23 @@ def ensure_relay(
 ) -> dict[str, Any]:
     """Make sure the mailbox relay (mailbox_server) is listening on :46667."""
     if check():
-        return {"service": "channel-relay", "state": "running", "action": "none"}
+        return {"service": "mailbox_server", "state": "running", "action": "none"}
     # Prefer the workbench service supervisor so the relay is tracked/reconciled.
     try:
         import urllib.request
 
         request = urllib.request.Request(
-            f"{API_BASE}/api/system/services/channel-relay/start", method="POST"
+            f"{API_BASE}/api/system/services/mailbox_server/start", method="POST"
         )
         with urllib.request.urlopen(request, timeout=5):
-            return {"service": "channel-relay", "state": "starting", "action": "service-monitor"}
+            return {"service": "mailbox_server", "state": "starting", "action": "service-monitor"}
     except Exception:
         pass
     launcher = _relay_launcher()
     if not launcher.exists():
-        return {"service": "channel-relay", "state": "down", "action": "missing-launcher", "launcher": str(launcher)}
+        return {"service": "mailbox_server", "state": "down", "action": "missing-launcher", "launcher": str(launcher)}
     pid = spawn([str(launcher)], launcher.parent)
-    return {"service": "channel-relay", "state": "starting", "action": "launched", "pid": pid}
+    return {"service": "mailbox_server", "state": "starting", "action": "launched", "pid": pid}
 
 
 def status_snapshot(agent: str, *, sources: Sequence[str], cursor: str, base_url: str = RELAY_URL) -> dict[str, Any]:

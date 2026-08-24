@@ -5,9 +5,8 @@
   (services (
     (workbench-api ((start true) (hiddenWindow false) (hideFromProcessViewer false)))
     (workbench-web ((start true) (hiddenWindow false) (hideFromProcessViewer false)))
-    (channel-relay ((start true) (hiddenWindow false) (hideFromProcessViewer false)))
+    (mailbox_server ((start true) (hiddenWindow false) (hideFromProcessViewer false)))
     (clawrouter ((start true) (hiddenWindow false) (hideFromProcessViewer false)))
     (omniroute ((start true) (hiddenWindow false) (hideFromProcessViewer false)))
-    (freerouter ((start true) (hiddenWindow false) (hideFromProcessViewer false)))
   ))
 )

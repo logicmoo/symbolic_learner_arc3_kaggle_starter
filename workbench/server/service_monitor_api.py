@@ -55,7 +55,7 @@ class ServiceDefinition:
 
 MANAGED_SERVICES = (
     ServiceDefinition(
-        "channel-relay", "Mailbox Channel Relay Proxy", "Standalone mailbox and chat-platform bridging proxy daemon.", 46667, "/health",
+        "mailbox_server", "Mailbox Channel Relay Proxy", "Standalone mailbox and chat-platform bridging proxy daemon.", 46667, "/health",
         ROOT.parent / "mailbox_channel" / "mailbox-server.cmd", True,
         ("mailbox-server", "mailbox_channel"),
     ),
@@ -68,11 +68,6 @@ MANAGED_SERVICES = (
         "omniroute", "OmniRoute", "Local multi-provider routing gateway.", 20128, "/",
         ROOT / "workbench" / "scripts" / "run_omniroute.bat", True,
         ("omniroute", "omni-route"),
-    ),
-    ServiceDefinition(
-        "freerouter", "FreeRouter", "Local gateway pinned to OpenRouter's free route.", 18800, "/health",
-        ROOT / "workbench" / "scripts" / "run_freerouter.bat", True,
-        ("freerouter",),
     ),
 )
 
@@ -472,9 +467,8 @@ def _validate_submitted_command(service_id: str, cwd: Path, command: list[str]) 
     allowed = {
         "clawrouter": "@blockrun/clawrouter" in text,
         "omniroute": "omniroute" in text,
-        "freerouter": "freerouter" in cwd_text and "server.js" in text,
         "workbench-web": cwd.name.lower() == "frontend" and "npm" in text and "dev" in text and "vite" in text,
-        "channel-relay": "mailbox_channel" in cwd_text and "mailbox_channels.server" in text,
+        "mailbox_server": "mailbox_channel" in cwd_text and "mailbox_channels.server" in text,
     }
     if not allowed.get(service_id, False):
         raise HTTPException(status_code=400, detail="Submitted command does not match the managed service contract")
@@ -488,9 +482,8 @@ def _validated_environment(service_id: str, value: Any) -> dict[str, str]:
     allowed = {
         "clawrouter": {"CLAWROUTER_PORT"},
         "omniroute": {"PORT", "DASHBOARD_PORT"},
-        "freerouter": {"CLAWROUTER_PORT"},
         "workbench-web": {"WORKBENCH_WEB_HOST", "WORKBENCH_WEB_PORT", "WORKBENCH_API_TARGET"},
-        "channel-relay": {"PYTHONPATH"},
+        "mailbox_server": {"PYTHONPATH"},
     }.get(service_id, set())
     unexpected = set(value) - allowed
     if unexpected:

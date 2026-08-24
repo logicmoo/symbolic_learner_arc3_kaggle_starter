@@ -251,7 +251,7 @@
   (inputs ((action_table Array) (memory Object) (game_id Text) (state Text) (seed Number) (current_image Image)))
   (outputs ((proposal Object)))
   (bindings ((prompts ([] structured_json_response arc3_random.propose_action)) (separator "\n\n")))
-  (modelSelection ((models ([] openrouter/free)) (strategy single)))
+  (modelSelection ((models ([] asicloud-asi1-mini)) (strategy single)))
   (parameters ((inputBinding action_table) (outputBinding proposal))) (parents ([] arc3_random.propose_action))
 )
 (
@@ -304,7 +304,7 @@
   (description "Use a configured model to produce a richer evidence-backed critique.")
   (implementation llm.complete) (inputs ((before Object) (after Object))) (outputs ((assessment Object)))
   (bindings ((prompts ([] structured_json_response arc3_random.critique_transition)) (separator "\n\n")))
-  (modelSelection ((models ([] openrouter/free)) (strategy single)))
+  (modelSelection ((models ([] asicloud-asi1-mini)) (strategy single)))
   (parameters ((inputBinding before) (outputBinding assessment))) (parents ([] arc3_random.assess_transition))
 )
 (

@@ -83,7 +83,6 @@ def stop_targets(web_port: int, api_port: int) -> int:
     targets = (
         Target("ClawRouter", 3456, ("clawrouter", "run_clawrouter.bat")),
         Target("OmniRoute", 20128, ("omniroute", "omni-route", "run_omniroute.bat")),
-        Target("FreeRouter", 18800, ("freerouter", "run_freerouter.bat")),
         Target("Workbench API", api_port, ("run_api_server", "uvicorn", "workbench.server")),
         Target("Workbench Web", web_port, ("vite", "run_vite_server.bat")),
         Target("Mailbox Channel Relay", 46667, ("mailbox-server", "mailbox_channel")),
@@ -97,9 +96,9 @@ def stop_targets(web_port: int, api_port: int) -> int:
         for entry in ledger if isinstance(entry, dict) and str(entry.get("pid") or "").isdigit()
     }
     service_ids = {
-        "ClawRouter": "clawrouter", "OmniRoute": "omniroute", "FreeRouter": "freerouter",
+        "ClawRouter": "clawrouter", "OmniRoute": "omniroute",
         "Workbench API": "workbench-api", "Workbench Web": "workbench-web",
-        "Mailbox Channel Relay": "channel-relay",
+        "Mailbox Channel Relay": "mailbox_server",
     }
     failures = 0
     for target in targets:

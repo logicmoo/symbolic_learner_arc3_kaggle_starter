@@ -22,8 +22,9 @@ def test_shutdown_targets_only_declared_workbench_listener_ports(monkeypatch) ->
     assert stop_workbench.stop_targets(17777, 16666) == 0
 
     source = (ROOT / "workbench" / "scripts" / "stop_workbench.py").read_text(encoding="utf-8")
-    for port in (3456, 20128, 18800, 46667):
+    for port in (3456, 20128, 46667):
         assert f", {port}," in source
+    assert ", 18800," not in source
     assert '["taskkill", "/PID", str(pid), "/T", "/F"]' in source
     assert '"python.exe"' not in source
     assert '"node.exe"' not in source
@@ -32,7 +33,7 @@ def test_shutdown_targets_only_declared_workbench_listener_ports(monkeypatch) ->
 def test_launcher_routes_mailbox_relay_through_startup_policy_and_pid_ledger() -> None:
     demo = (ROOT / "workbench" / "run_demo.bat").read_text(encoding="utf-8")
     starter = (ROOT / "workbench" / "scripts" / "start_with_policy.py").read_text(encoding="utf-8")
-    assert "--service channel-relay" in demo
+    assert "--service mailbox_server" in demo
     assert "mailbox-server.cmd" in demo
     assert "PROCESS_LEDGER" in starter
     assert "_record_started_process(args.service, process, list(args.command), args.cwd)" in starter
@@ -41,18 +42,19 @@ def test_launcher_routes_mailbox_relay_through_startup_policy_and_pid_ledger() -
     service = (ROOT / "workbench" / "workspaces" / "shared_library_system" / "design" / "services" / "channel_relay.managed_service.metta").read_text(encoding="utf-8")
     policy = (ROOT / "workbench" / "workspaces" / "shared_library_system" / "policies" / "workbench_startup.workbench_startup_policy.metta").read_text(encoding="utf-8")
     assert "(defaultStartup ((start true)" in service
-    assert "(channel-relay ((start true)" in policy
+    assert "(mailbox_server ((start true)" in policy
 
 
 def test_every_long_running_demo_service_uses_the_python_process_launcher() -> None:
     demo = (ROOT / "workbench" / "run_demo.bat").read_text(encoding="utf-8")
     for service in (
-        "channel-relay", "clawrouter", "omniroute", "freerouter",
+        "mailbox_server", "clawrouter", "omniroute",
         "workbench-api", "workbench-web",
     ):
         assert f'"%ROOT%scripts\\start_with_policy.py" --service {service}' in demo
-    assert demo.count('-- "%ComSpec%" /d /c') == 6
-    assert demo.count('--cwd "%ROOT%."') == 6
+    assert "--service freerouter" not in demo
+    assert demo.count('-- "%ComSpec%" /d /c') == 5
+    assert demo.count('--cwd "%ROOT%."') == 5
     assert '--cwd "%ROOT%"' not in demo
 
 
@@ -60,9 +62,8 @@ def test_managed_batch_files_submit_expanded_final_commands_to_api() -> None:
     expected = {
         "run_clawrouter.bat": ("--service clawrouter", "npx.cmd --yes @blockrun/clawrouter --port %CLAWROUTER_PORT%"),
         "run_omniroute.bat": ("--service omniroute", "serve --port %OMNIROUTE_PORT%"),
-        "run_freerouter.bat": ("--service freerouter", "node dist\\server.js"),
         "run_vite_server.bat": ("--service workbench-web", "npm.cmd run dev"),
-        "run_channel_relay.bat": ("--service channel-relay", "-m mailbox_channels.server"),
+        "run_channel_relay.bat": ("--service mailbox_server", "-m mailbox_channels.server"),
     }
     scripts = ROOT / "workbench" / "scripts"
     for filename, fragments in expected.items():
@@ -116,9 +117,9 @@ def test_api_submitted_commands_forward_only_service_allowlisted_environment() -
     assert "_validated_environment" in monitor
     assert '"omniroute": {"PORT", "DASHBOARD_PORT"}' in monitor
     assert '"workbench-web": {"WORKBENCH_WEB_HOST", "WORKBENCH_WEB_PORT", "WORKBENCH_API_TARGET"}' in monitor
-    assert '"channel-relay": {"PYTHONPATH"}' in monitor
+    assert '"mailbox_server": {"PYTHONPATH"}' in monitor
     assert "env={**os.environ, **environment}" in monitor
     demo = (ROOT / "workbench" / "run_demo.bat").read_text(encoding="utf-8")
-    assert demo.count("wait_for_managed_service.py") == 4
+    assert demo.count("wait_for_managed_service.py") == 3
     waiter = (ROOT / "workbench" / "scripts" / "wait_for_managed_service.py").read_text(encoding="utf-8")
     assert "exited before becoming healthy" in waiter

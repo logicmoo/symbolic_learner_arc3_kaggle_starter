@@ -135,7 +135,7 @@ function TypedValueInput({datatype,value,options,onChange,placeholder}:{datatype
 }
 
 export function OperationPlayground({workspaceId,operation,variants,models=[],workflowStep,onWorkflowStepChange,selectedImplementationVariant,onImplementationVariantChange,onDefaultImplementationChange,inputValues,expectedInputNames,onInvocationComplete,collapsed=false,onCollapsedChange}:{workspaceId:string;operation:OperationDef;variants:OperationImplementationDef[];models?:RunnerModel[];workflowStep?:Record<string,unknown>;onWorkflowStepChange?:(step:Record<string,unknown>)=>void;selectedImplementationVariant?:string;onImplementationVariantChange?:(implementationVariant:string)=>void;onDefaultImplementationChange?:(implementationVariant:string)=>void;inputValues?:Record<string,unknown>;expectedInputNames?:string[];onInvocationComplete?:(outputs:Record<string,unknown>)=>void;collapsed?:boolean;onCollapsedChange?:(collapsed:boolean)=>void}){
- const fallback:OperationImplementationDef={id:`${operation.id}.automatic_llm_fallback`,label:"Automatic LLM fallback (openrouter/free)",implementation:"llm.complete"};
+ const fallback:OperationImplementationDef={id:`${operation.id}.automatic_llm_fallback`,label:"Automatic LLM fallback (ASICloud asi1-mini)",implementation:"llm.complete"};
  const direct:OperationImplementationDef|null=operation.implementation?{id:operation.id,label:operation.label||operation.id,implementation:operation.implementation}:null;
  const concreteVariants=variants.length?variants:direct?[direct]:[];
  const runnableVariants=[...concreteVariants,fallback];
@@ -167,7 +167,7 @@ export function OperationPlayground({workspaceId,operation,variants,models=[],wo
  const selected=runnableVariants.find(item=>item.id===invocationVariant)||null;
  const humanForm=selected?.implementation==="human.await_input"?(selected.parameters?.form||{}):{};
  const humanFields=Object.entries(humanForm);
- const deducedModel=selected?.modelSelection?.models?.[0]||(selected?.id===fallback.id?"openrouter/free":"");
+ const deducedModel=selected?.modelSelection?.models?.[0]||(selected?.id===fallback.id?"asicloud-asi1-mini":"");
  const[selectedModel,setSelectedModel]=useState(deducedModel);
  const clearInvocationResult=()=>{setResult(null);setError(null);setDebugLogPath(null);setDebugLog("")};
  const updateInput=(name:string,value:string)=>{setRawInputs(current=>({...current,[name]:value}));setPopulationMessage(null);clearInvocationResult()};

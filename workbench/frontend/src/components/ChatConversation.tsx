@@ -45,6 +45,7 @@ type Props = {
   pollMs?: number;
   showMailboxPicker?: boolean;
   onError?: (message: string) => void;
+  initialInput?: string;
 };
 
 function formatTime(value?: string): string {
@@ -75,6 +76,7 @@ export function ChatConversation({
   pollMs = 3000,
   showMailboxPicker = true,
   onError,
+  initialInput = "",
 }: Props) {
   const [you, setYou] = useState(user);
   const [mailbox, setMailbox] = useState(peer);
@@ -84,7 +86,10 @@ export function ChatConversation({
   const [mailboxes, setMailboxes] = useState<MailboxOption[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
-  const [input, setInput] = useState("");
+  const [input, setInput] = useState(initialInput);
+  useEffect(() => {
+    if (initialInput) setInput(initialInput);
+  }, [initialInput]);
   const [sending, setSending] = useState(false);
   const [ready, setReady] = useState(false);
   const [errorText, setErrorText] = useState("");

@@ -10,12 +10,17 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { ChatDock } from "../components/ChatDock";
+import { PageUiTools } from "../components/PageUiTools";
 import { PddlPlanImportPanel } from "../components/PddlPlanImportPanel";
 import {
   HumanInputForm,
   RuntimeHistoryView,
 } from "../components/RuntimeHistoryView";
 import { jsonValueToMetta } from "../lib/mettaResourceCodec";
+import { markAllWorkbenchPageSessionsForRestart, readWorkbenchPageSession, writeWorkbenchPageSession } from "../lib/pageSessionState";
+import { rememberWorkspaceLastPage, resolveWorkspaceOpeningPage } from "../lib/workspacePagePreferences";
+import { acknowledgeUiRestartRecovery, failUiRestart, onUIRestart, permitUiReload, registerOnUIRestart, useUiRestartStatus } from "../lib/uiRestartLifecycle";
+import "../lib/surgicalUiReloaderClient";
 import {
   ResourceEnablementBadge,
   enablementClass,
@@ -92,6 +97,9 @@ const RepositoryDocsPage = lazy(() =>
   import("../components/RepositoryDocsPage").then((module) => ({
     default: module.RepositoryDocsPage,
   })),
+);
+const PluginManagerPage = lazy(() =>
+  import("../components/PluginManagerPage").then((module) => ({ default: module.PluginManagerPage })),
 );
 const WorkspaceSettingsPanel = lazy(() =>
   import("../components/WorkspaceSettingsPanel").then((module) => ({
@@ -414,6 +422,7 @@ type View =
   | "checks"
   | "setup"
   | "processes"
+  | "plugins"
   | "goals"
   | "plans"
   | "goalRuns"
@@ -457,6 +466,7 @@ const WORKBENCH_VIEWS: Set<View> = new Set([
   "checks",
   "setup",
   "processes",
+  "plugins",
   "goals",
   "plans",
   "goalRuns",
@@ -476,7 +486,8 @@ const viewFromLocation = (): View | null => {
   const rawValue = parameters.get("view") || parameters.get("menu");
   if (!rawValue) return parameters.has("state") ? "states" : null;
   const value = rawValue.trim().toLowerCase();
-  if (value === "workflows" || value === "workflow") return "currentWorkflow";
+  if (value === "workflows" || value === "workflow") return "canvas";
+  if (value === "current-workflow") return "currentWorkflow";
   if (value === "english-workflow" || value === "englishworkflow") return "englishWorkflow";
   if (value === "visual-image-diff" || value === "visualimagediff" || value === "image-diff") return "visualImageDiff";
   if (value === "two-image-prolog" || value === "twoimageprolog" || value === "arc3-two-image-prolog") return "arc3TwoImageProlog";
@@ -491,6 +502,14 @@ const viewFromLocation = (): View | null => {
 };
 const workspaceFromLocation = () =>
   new URLSearchParams(window.location.search).get("workspace")?.trim() || null;
+const workspaceOpeningViewFromLocation = (inheritedWorkspaceIds: string[] = []): View => {
+  const explicitView = viewFromLocation();
+  if (explicitView) return explicitView;
+  const workspaceId = workspaceFromLocation();
+  if (!workspaceId) return "overview";
+  const preferred = resolveWorkspaceOpeningPage(workspaceId, inheritedWorkspaceIds);
+  return WORKBENCH_VIEWS.has(preferred as View) ? preferred as View : "setup";
+};
 const workflowFromLocation = () =>
   new URLSearchParams(window.location.search).get("workflow")?.trim() || null;
 const llmsPageFromLocation = (): "browse" | "discover" | "override" => {
@@ -597,7 +616,7 @@ const WORKSPACE_RESOURCE_COUNTING_STORAGE_KEY =
   "workbench.workspaceResourceCountingEnabled";
 
 export const NAVIGATION_V2: Array<{
-  group: "WORKSPACE" | "WORKFLOWS" | "CAPABILITIES" | "KNOWLEDGE" | "RUNTIME" | "SYSTEM";
+  group: "WORKSPACE" | "WORKFLOWS" | "CAPABILITIES" | "KNOWLEDGE" | "RUNTIME" | "SYSTEM" | "PLUGINS";
   items: Array<{ label: string; view: View; glyph: string }>;
 }> = [
   {
@@ -612,6 +631,7 @@ export const NAVIGATION_V2: Array<{
   {
     group: "WORKFLOWS",
     items: [
+      { label: "Workflow Canvas", view: "canvas", glyph: "⌘" },
       { label: "Current Workflow", view: "currentWorkflow", glyph: "⌘" },
       { label: "Page Builder", view: "workflowPageBuilder", glyph: "▦" },
     ],
@@ -655,6 +675,10 @@ export const NAVIGATION_V2: Array<{
       { label: "Processes", view: "processes", glyph: "◌" },
       { label: "Settings", view: "setup", glyph: "⚒" },
     ],
+  },
+  {
+    group: "PLUGINS",
+    items: [{ label: "Plugins", view: "plugins", glyph: "⬡" }],
   },
 ];
 const viewLabel = (view: View) =>
@@ -735,15 +759,19 @@ const slug = (value: string) =>
     .replace(/^_+|_+$/g, "") || "workflow";
 
 export function FilesystemWorkbenchPage() {
+  const uiRestartStatus = useUiRestartStatus();
+  useEffect(() => {
+    acknowledgeUiRestartRecovery();
+  }, []);
   const [llmsTopMenuMode, setLlmsTopMenuMode] = useState<
     "browse" | "discover" | "override"
   >(() => llmsPageFromLocation());
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]),
     [workspace, setWorkspace] = useState<Workspace | null>(null),
     [snapshot, setSnapshot] = useState<Snapshot | null>(null),
-    [view, setViewState] = useState<View>(() => viewFromLocation() || "canvas");
+    [view, setViewState] = useState<View>(() => workspaceOpeningViewFromLocation());
   const [viewTrail, setViewTrail] = useState<BreadcrumbEntry[]>(() => {
-    const initial = viewFromLocation() || "canvas";
+    const initial = workspaceOpeningViewFromLocation();
     return [
       { view: initial, label: viewLabel(initial), url: window.location.href },
     ];
@@ -772,6 +800,7 @@ export function FilesystemWorkbenchPage() {
     else url.searchParams.delete("llmsPage");
     url.searchParams.delete("menu");
     url.searchParams.delete("resource");
+    url.searchParams.delete("edit");
     if (next !== "sourceCode") url.searchParams.delete("sourceLanguage");
     if (next !== "states") url.searchParams.delete("state");
     window.history.replaceState(
@@ -803,6 +832,7 @@ export function FilesystemWorkbenchPage() {
     if (next === "llms") url.searchParams.set("llmsPage", "browse");
     else url.searchParams.delete("llmsPage");
     url.searchParams.set("resource", id);
+    url.searchParams.delete("edit");
     url.searchParams.delete("state");
     window.history.replaceState(
       null,
@@ -1347,7 +1377,7 @@ export function FilesystemWorkbenchPage() {
             (row.path === requestedWorkflow ||
               row.document.id === requestedWorkflow),
         ) || next.workflows.find((row) => row.document);
-      const restoredView = viewFromLocation();
+      const restoredView = viewFromLocation() || workspaceOpeningViewFromLocation(next.workspace.effectiveIncludes || []);
       if (first?.document) {
         setWorkflowPath(first.path);
         setWorkflowSource(JSON.stringify(first.document, null, 2));
@@ -1362,13 +1392,13 @@ export function FilesystemWorkbenchPage() {
           ),
         );
         setSelectedStepId(first.document.steps[0]?.id || null);
-        setViewState(restoredView || "canvas");
+        setViewState(restoredView);
       } else {
         setWorkflowPath("");
         setWorkflowSource("");
         setRunInputs("{}");
         setSelectedStepId(null);
-        setViewState(restoredView || "data");
+        setViewState(restoredView);
       }
       setRun(null);
       setSelectedArtifactId(null);
@@ -1691,7 +1721,17 @@ export function FilesystemWorkbenchPage() {
       return;
     setRestarting(true);
     setError(null);
+    let restartToken = "";
     try {
+      if (!workspace) throw new Error("A workspace must be active before restarting the UI.");
+      const restart = await onUIRestart({
+        reason: "server-restart",
+        workspaceId: workspace.id,
+        pageId: view,
+        href: window.location.href,
+      });
+      restartToken = restart.token;
+      markAllWorkbenchPageSessionsForRestart(restart.requestedAt);
       const accepted = await request("/api/system/restart", {
         method: "POST",
         body: "{}",
@@ -1704,6 +1744,7 @@ export function FilesystemWorkbenchPage() {
           if (response.ok) {
             const health = (await response.json()) as { instanceId?: string };
             if (health.instanceId && health.instanceId !== previous) {
+              if (!permitUiReload(restart.token)) throw new Error("The UI reload guard rejected a duplicate or stale reload request.");
               window.location.reload();
               return;
             }
@@ -1716,6 +1757,7 @@ export function FilesystemWorkbenchPage() {
         "The servers did not return within 20 seconds. Check their command windows.",
       );
     } catch (reason) {
+      if (restartToken) failUiRestart(restartToken, reason);
       setError(reason instanceof Error ? reason.message : String(reason));
       setRestarting(false);
     }
@@ -1893,6 +1935,31 @@ export function FilesystemWorkbenchPage() {
     );
   }, [workspaceResourceCountingEnabled]);
   useEffect(() => {
+    if (!workspace) return;
+    rememberWorkspaceLastPage(workspace.id, view === "editor" || view === "workflowRuns" ? "canvas" : view);
+    const pageId = view;
+    const stage = document.querySelector<HTMLElement>(".main-stage");
+    const saved = readWorkbenchPageSession(workspace.id, pageId);
+    const restoreFrame = window.requestAnimationFrame(() => {
+      if (stage && saved) stage.scrollTop = saved.scrollTop;
+    });
+    const persist = () => writeWorkbenchPageSession(workspace.id, pageId, {
+      href: window.location.href,
+      scrollTop: stage?.scrollTop || 0,
+    });
+    stage?.addEventListener("scroll", persist, { passive: true });
+    window.addEventListener("beforeunload", persist);
+    const unregisterRestart = registerOnUIRestart(`page:${workspace.id}:${pageId}`, persist);
+    persist();
+    return () => {
+      window.cancelAnimationFrame(restoreFrame);
+      stage?.removeEventListener("scroll", persist);
+      window.removeEventListener("beforeunload", persist);
+      unregisterRestart();
+      persist();
+    };
+  }, [workspace?.id, view]);
+  useEffect(() => {
     const takeoverEnabled = view === "canvas";
     document.body.classList.toggle(
       "shell-takeover-resource",
@@ -1928,7 +1995,7 @@ export function FilesystemWorkbenchPage() {
   }, []);
   useEffect(() => {
     const restoreLocation = () => {
-      setViewState(viewFromLocation() || "canvas");
+      setViewState(workspaceOpeningViewFromLocation());
       setLlmsTopMenuMode(llmsPageFromLocation());
       loadRequestedWorkspace();
     };
@@ -2649,6 +2716,16 @@ export function FilesystemWorkbenchPage() {
       : browserKind === "runtime"
         ? "Runtime records"
         : `${NAVIGATION_V2.flatMap((section) => section.items).find((item) => item.view === view)?.label || "Workspace"} resources`;
+  const restartPending = restarting || uiRestartStatus.pending;
+  const restartButtonLabel = uiRestartStatus.phase === "preparing"
+    ? "Saving UI state…"
+    : uiRestartStatus.phase === "prepared"
+      ? "Restart pending…"
+      : uiRestartStatus.phase === "reloading"
+        ? "Reloading UI…"
+        : restarting
+          ? "Restarting API…"
+          : "Restart App";
   const navSelected = (target: View) =>
     target === "canvas"
       ? view === "canvas" ||
@@ -2759,10 +2836,10 @@ export function FilesystemWorkbenchPage() {
           <button
             className="server-restart-button"
             title="Restart UI and API servers"
-            disabled={restarting}
+            disabled={restartPending}
             onClick={restartServers}
           >
-            {restarting ? "Restarting…" : "↻ Restart"}
+            {restartPending ? restartButtonLabel : "↻ Restart"}
           </button>
           <button
             className="icon-button"
@@ -3040,6 +3117,12 @@ export function FilesystemWorkbenchPage() {
               ))
             )}
           </nav>
+          <PageUiTools
+            pageId={view}
+            pageLabel={viewLabel(view)}
+            workspaceId={workspace.id}
+            onOpenChat={() => setView("chat")}
+          />
           {workflowCombinedView&&<ThreeStateAccordionStack id="center-stack" controlsLabel="CENTER STACK">
           {workflow&&englishWorkflowOperation&&(()=>{
             const operation=englishWorkflowOperation;
@@ -3978,6 +4061,7 @@ export function FilesystemWorkbenchPage() {
                 onSaved={refreshSnapshot}
               />
             )}{" "}
+            {view === "plugins" && <PluginManagerPage />}{" "}
             {view === "setup" && (
               <WorkspaceSettingsPanel
                 workspace={workspace}
@@ -4001,10 +4085,10 @@ export function FilesystemWorkbenchPage() {
             <button
               type="button"
               className="topbar-panel-restore"
-              disabled={restarting}
+              disabled={restartPending}
               onClick={restartServers}
             >
-              {restarting ? "Restarting…" : "Restart App"}
+              {restartButtonLabel}
             </button>
             <button
               type="button"

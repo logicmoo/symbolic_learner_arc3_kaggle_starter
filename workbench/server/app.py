@@ -19,6 +19,7 @@ from operation_api import router as operation_router
 from operation_library import legacy_catalog_view, load_shared_operation_documents
 from model_policy_todo_api import router as model_policy_todo_router
 from policy_api import router as policy_router
+from plugin_api import install_plugins, router as plugin_router
 from repository_docs_api import router as repository_docs_router
 from system_control_api import INSTANCE_ID, router as system_control_router
 from service_monitor_api import router as service_monitor_router, schedule_startup_reconciliation
@@ -65,6 +66,8 @@ app.include_router(policy_router, prefix="/api")
 app.include_router(repository_docs_router, prefix="/api")
 app.include_router(system_control_router, prefix="/api")
 app.include_router(service_monitor_router, prefix="/api")
+app.include_router(plugin_router, prefix="/api")
+install_plugins(app)
 
 
 @app.get("/api/health")

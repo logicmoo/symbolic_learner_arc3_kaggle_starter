@@ -162,7 +162,7 @@ def test_operation_playground_formats_structured_datatype_contracts() -> None:
 def test_operation_playground_offers_automatic_llm_fallback() -> None:
     source = _text("OperationPlayground.tsx")
     assert ".automatic_llm_fallback" in source
-    assert "Automatic LLM fallback (openrouter/free)" in source
+    assert "Automatic LLM fallback (ASICloud asi1-mini)" in source
     assert "const concreteVariants=variants.length?variants:direct?[direct]:[]" in source
     assert "const runnableVariants=[...concreteVariants,fallback]" in source
     assert "RUN WITH · WORKFLOW CASCADE" in source
@@ -256,6 +256,10 @@ def test_universal_shell_keeps_tabs_compare_inspector_and_docks() -> None:
         "artifact-navigator-content",
     ):
         assert token in source
+    assert 'artifact-pane-side left' in source
+    assert 'artifact-pane-side right' in source
+    assert '>LEFT</em>' in source
+    assert '>RIGHT</em>' in source
 
 
 def test_universal_tree_is_collapsible_and_independently_scrollable() -> None:

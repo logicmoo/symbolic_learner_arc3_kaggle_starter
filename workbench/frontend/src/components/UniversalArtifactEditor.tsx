@@ -185,7 +185,7 @@ export function UniversalArtifactEditor({
         <div className={tabsClassName}>
           {tabs.map(tab => <div className={`operation-document-tab ${tab.key===activeKey?"active":""}`} key={tab.key}>
             <button onClick={()=>onActivate(tab.key)} title={tab.subtitle || tab.label}>
-              <span>{tab.kind}</span><b>{tab.label}</b>{tab.dirty&&<i>●</i>}
+              <span>{tab.kind}</span><b>{tab.label}</b>{tab.key===activeKey&&compareKey?<em className="artifact-pane-side left">LEFT</em>:null}{tab.key===compareKey?<em className="artifact-pane-side right">RIGHT</em>:null}{tab.dirty&&<i>●</i>}
             </button>
             <button className="close" onClick={()=>onClose(tab.key)}>×</button>
           </div>)}

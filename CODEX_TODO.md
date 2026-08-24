@@ -42,6 +42,32 @@ values here.
 
 ## Completed and validated
 
+- [x] Repair the Models `+ Backend`/`+ model`/`+ preset` creation flow so new
+  documents are immediately dirty and therefore expose Save. Every pending
+  save now has a logical **Save in workspace** selector populated from the
+  workspace registry; the backend/model/system is written to that workspace's
+  canonical lifecycle directory without exposing or asking for a disk path.
+  Cross-workspace saves keep the resulting resource open under its destination
+  workspace identity. Focused UI contract tests and the frontend production
+  build passed on 2026-08-24.
+
+- [x] Add the shared `enullm-8801` OpenAI-compatible backend resource for the
+  local emullm relay at `http://127.0.0.1:8801/v1`, with LLM completion and
+  vision capabilities, keyless configuration, the requested `yourelf.same`
+  default model, and filesystem categories. Backend catalog parsing and focused
+  resource validation passed on 2026-08-24.
+
+- [x] Add filesystem-backed Workbench plugin discovery under
+  `workbench/plugins`, a Plugins navigation submenu/page with manual refresh
+  and persisted `startup`/`disabled` scan policy, and the first `web_proxy`
+  plugin. The proxy exposes the allowlisted local emullm relay at
+  `/web-proxy/http/127.0.0.1:8801/`, forwards GET/POST/PUT/PATCH/DELETE/OPTIONS/
+  HEAD plus bidirectional WebSockets, and rejects non-manifest targets. Live
+  smoke validation preserved the upstream GET status/content type and returned
+  HTTP 200 from a proxied relay POST. Focused backend/navigation tests: 65
+  passed; frontend production build and `git diff --check` passed on
+  2026-08-24.
+
 - [x] Re-hosted Overview inside the standard resource-page shell so it behaves
   like other pages (for example Events): normal page body container, top menu
   row placement, and persistent docs/help context on the right instead of the
@@ -1344,3 +1370,57 @@ Preserve the canonical checkout and its `codex/workbench-navigation-v2` branch.
   now consolidated into the left data nodes only, with inline edit plus upload
   (`UP`) on that same node. Live default-port verification confirmed
   `dataDetailNodes:0` with matching left data/upload counts (`36/36`).
+- [x] Move workspace resource persistence into the shared Resource Source
+  editor instead of keeping a Models-only Save destination selector. The
+  reusable control supplies Save, Save As, Reload, and Load From; accepts the
+  active workspace plus a workspace-relative resource path; remembers the
+  original workspace for later reloads; and orders destinations as current,
+  inherited hierarchy, separator, other libraries, then other workspaces.
+  Models now uses this common control for backends, models, presets, and
+  systems. Frontend production build passed on 2026-08-24.
+- [x] Derive each Backend's rich editor as an aggregate instead of presenting
+  one undifferentiated source document. Backend tabs now expose File (shared
+  workspace file lifecycle and JSON/MeTTa/tree source), Resource (structured
+  Configuration plus resolved/inherited JSON), Backend Actions (discovery,
+  enablement, defaults, capabilities, and example actions), and the Universal
+  Execution Runner with backend inspect/readiness/validation Operations.
+  Frontend production build passed on 2026-08-24.
+- [x] Make the focused Models editor resource URL-addressable with `edit=<id>`.
+  Selecting the EMULLM backend now synchronizes `edit=enullm-8801`; loading a
+  Models URL with that parameter reopens the same backend. Navigation away
+  clears stale `edit` state while the legacy `resource` link remains accepted.
+- [x] Make backend source editing conspicuous from the derived Resource view.
+  The document toolbar now exposes a prominent Edit button that reveals File
+  mode, and the resolved/inherited JSON panel has a direct Edit JSON / MeTTa
+  action rather than requiring users to discover the small File tab.
+- [x] Make the Backend aggregate visibly and semantically tabbed. The editor
+  now has a labeled EDITORS tab strip, connected tab/panel borders, a strong
+  active-tab treatment, hover affordances, and tablist/tab ARIA semantics.
+- [x] Distinguish every shared Resource Source file action by storage channel.
+  Workspace resources use Save To Workspace, Save To Other Workspace, Reload
+  From Origin, and Load From Workspace. Native browser file handles use Load,
+  Save, Save As, and Reload Local File. Portable client transfer uses Upload
+  and Download without falsely claiming a persistent reloadable path.
+- [x] Expose Backend enablement directly in the derived Resource tab. The tab
+  shows whether state is declared locally or resolved and provides an explicit
+  Enable Backend / Disable Backend action without requiring Backend Actions.
+- [x] Label split-comparison document tabs by pane in the upper tab menu. When
+  split view is active, the primary focused document is marked LEFT and the
+  comparison document is marked RIGHT with distinct visual badges.
+- [x] Give the Backend aggregate two display modes. Tabs shows one derived
+  editor at a time; Stack aligns File, Resource, Backend Actions, and Universal
+  Execution Runner vertically in one scrolling document. Selecting a named
+  editor while stacked returns to Tabs focused on that editor.
+## User/UI preferences
+
+- [x] Relink the active Workflow Canvas in the WORKFLOWS menu and make
+  workspace opening deterministic. Explicit `view=` wins; otherwise a local
+  workspace preference or last-page history wins, followed by inherited
+  workspace preferences and the configurable system fallback (Overview by
+  default). First visits therefore resolve through inheritance/system rather
+  than falling into the legacy canvas route, while invalid saved page IDs open
+  Settings for repair. Canvas URLs now round-trip as Canvas instead of
+  reopening Current Workflow.
+- [x] Add a browser-persisted User/UI Settings preference for placing shared Resource Source save/load controls above or below editor text areas; apply changes live without modifying workspace resources.
+- [x] Add a shared per-page UI tools contract: show currently available UI configuration, open a context-filled Codex UI conversation, and retain page URL, scroll position, and tool state per workspace/page for safe session reloads.
+- [x] Replace broad Vite/UI restart behavior with an allowlisted, debounced surgical reloader that calls `onUIRestart`, flushes all visited-page session records, and permits one browser reload per restart token; manual restart no longer touches `vite.config.ts`.

@@ -21,7 +21,11 @@ doskey restart=npm run dev
 
 echo.
 echo ============================================================
-echo  MeTTa Workbench Vite Dev Server (hot-reloading, no build step)
+echo  MeTTa Workbench Vite Dev Server (surgical reloads, no broad HMR)
+echo ============================================================
+echo  Reload policy: only frontend/src CSS/TS/TSX and index.html.
+echo  Changes are debounced into one full reload. Runtime,
+echo  workspace, test, build, and log changes do not reload the UI.
 echo ============================================================
 echo  Working directory:
 echo    %CD%

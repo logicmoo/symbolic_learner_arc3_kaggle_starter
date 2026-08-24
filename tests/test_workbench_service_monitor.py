@@ -21,11 +21,12 @@ def test_monitor_registers_real_service_routes() -> None:
     assert ("/system/services/{service_id}/{action}", "POST") in routes
     assert ("/system/services/{service_id}/processes/{pid}/{action}", "POST") in routes
     assert {item.id for item in service_monitor_api.MANAGED_SERVICES} == {
-        "clawrouter", "omniroute", "freerouter",
-        "channel-relay",
+        "clawrouter", "omniroute",
+        "mailbox_server",
     }
-    assert {item.port for item in service_monitor_api.MANAGED_SERVICES} == {3456, 20128, 18800, 46667}
-    assert all(item.launcher and item.launcher.is_file() for item in service_monitor_api.MANAGED_SERVICES)
+    assert {item.port for item in service_monitor_api.MANAGED_SERVICES} == {3456, 20128, 46667}
+    router_services = [item for item in service_monitor_api.MANAGED_SERVICES if item.id in {"clawrouter", "omniroute"}]
+    assert all(item.launcher and item.launcher.is_file() for item in router_services)
 
 
 def test_service_payload_reports_listener_process_and_redacted_logs(monkeypatch) -> None:

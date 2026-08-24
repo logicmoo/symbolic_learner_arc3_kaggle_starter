@@ -64,10 +64,8 @@ def test_visual_learning_workflow_owns_an_application_workspace() -> None:
     assert not (WORKSPACES / "default" / "design" / "workflows" / "vision_learn_by_observation.workflow.metta").exists()
 
 
-def test_openrouter_probe_never_prints_the_key() -> None:
-    source = (ROOT / "tests" / "test_openrouter.py").read_text(encoding="utf-8")
-    assert 'print("my_api_key used:"' not in source
-    assert "its value will not be displayed" in source
+def test_retired_router_probe_is_removed() -> None:
+    assert not (ROOT / "tests" / "test_openrouter.py").exists()
 def test_arc3_random_player_workflow_resolves_shared_operations() -> None:
     from workspace_api import workspace_snapshot
 

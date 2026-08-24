@@ -22,7 +22,6 @@ from resource_store import get_filesystem_provider
 router = APIRouter()
 INSTANCE_ID = uuid4().hex
 SERVER_DIR = Path(__file__).resolve().parent
-VITE_CONFIG = SERVER_DIR.parent / "frontend" / "vite.config.ts"
 
 
 @router.get("/system/resource-provider")
@@ -123,13 +122,9 @@ def update_workspace_model_selection(
     }
 
 
-def trigger_development_restart(
-    api_marker: Path = Path(__file__).resolve(),
-    web_marker: Path = VITE_CONFIG,
-) -> None:
-    """Touch files watched by the Uvicorn and Vite development servers."""
+def trigger_api_restart(api_marker: Path = Path(__file__).resolve()) -> None:
+    """Restart only the API; the browser owns its controlled UI reload lifecycle."""
     time.sleep(0.25)
-    web_marker.touch()
     api_marker.touch()
 
 
@@ -149,5 +144,5 @@ def restart_development_servers(
 ) -> dict[str, str]:
     if not _is_loopback(request.client.host if request.client else None):
         raise HTTPException(status_code=403, detail="Server restart is available only locally")
-    background_tasks.add_task(trigger_development_restart)
+    background_tasks.add_task(trigger_api_restart)
     return {"status": "restarting", "instanceId": INSTANCE_ID}

@@ -26,45 +26,6 @@
       ],
       "notes": "No reliable public capability metadata found during this pass; keep backend-declared values until curated evidence is added."
     },
-    "freerouter-auto-free": {
-      "sources": [
-        "https://openrouter.ai/api/v1/models"
-      ],
-      "capabilities": {
-        "text": true,
-        "vision": true,
-        "multimodal": true,
-        "audio": true,
-        "tools": true,
-        "json": true,
-        "reasoning": true
-      },
-      "limits": {
-        "contextWindow": 2000000,
-        "maxOutputTokens": null
-      },
-      "notes": "Sourced from OpenRouter public model registry.",
-      "providerMetadata": {
-        "publicModelId": "openrouter/auto",
-        "publicModelName": "Auto Router",
-        "publicArchitecture": {
-          "modality": "text+image+file+audio+video->text+image",
-          "input_modalities": [
-            "text",
-            "image",
-            "audio",
-            "file",
-            "video"
-          ],
-          "output_modalities": [
-            "text",
-            "image"
-          ],
-          "tokenizer": "Router",
-          "instruct_type": null
-        }
-      }
-    },
     "https.llm.c.singularitynet.io.v1-asi1-mini": {
       "sources": [
         "lookup:unresolved"
@@ -636,40 +597,6 @@
         "lookup:unresolved"
       ],
       "notes": "No reliable public capability metadata found during this pass; keep backend-declared values until curated evidence is added."
-    },
-    "openrouter-body-builder": {
-      "sources": [
-        "https://openrouter.ai/api/v1/models"
-      ],
-      "capabilities": {
-        "text": true,
-        "vision": false,
-        "multimodal": false,
-        "audio": false,
-        "tools": false,
-        "json": false,
-        "reasoning": false
-      },
-      "limits": {
-        "contextWindow": 128000,
-        "maxOutputTokens": null
-      },
-      "notes": "Sourced from OpenRouter public model registry.",
-      "providerMetadata": {
-        "publicModelId": "openrouter/bodybuilder",
-        "publicModelName": "Body Builder (beta)",
-        "publicArchitecture": {
-          "modality": "text->text",
-          "input_modalities": [
-            "text"
-          ],
-          "output_modalities": [
-            "text"
-          ],
-          "tokenizer": "Router",
-          "instruct_type": null
-        }
-      }
     },
     "snet-asi1": {
       "sources": [

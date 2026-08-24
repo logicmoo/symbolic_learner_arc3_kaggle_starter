@@ -7,5 +7,5 @@ if exist "%RELAY_ROOT%\.venv\Scripts\python.exe" set "RELAY_PYTHON=%RELAY_ROOT%\
 set "WORKBENCH_CONTROL_API=%WORKBENCH_CONTROL_API%"
 if not defined WORKBENCH_CONTROL_API set "WORKBENCH_CONTROL_API=http://127.0.0.1:8000"
 set "PYTHONPATH=%RELAY_ROOT%\src;%PYTHONPATH%"
-"%~dp0..\..\.venv\Scripts\python.exe" "%~dp0submit_managed_command.py" --api "%WORKBENCH_CONTROL_API%" --service channel-relay --cwd "%RELAY_ROOT%" --env PYTHONPATH -- "%RELAY_PYTHON%" -m mailbox_channels.server
+"%~dp0..\..\.venv\Scripts\python.exe" "%~dp0submit_managed_command.py" --api "%WORKBENCH_CONTROL_API%" --service mailbox_server --cwd "%RELAY_ROOT%" --env PYTHONPATH -- "%RELAY_PYTHON%" -m mailbox_channels.server
 exit /b %ERRORLEVEL%

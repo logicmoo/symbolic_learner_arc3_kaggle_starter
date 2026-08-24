@@ -1,0 +1,30 @@
+{
+  "command": "RESTART",
+  "scan": {
+    "path": "data/SILO_1",
+    "results": {
+      "obj_images": [],
+      "grp_images": [],
+      "sub_images": [
+        "data/SILO_1/C_current_image.png",
+        "data/SILO_1/C_parent_image.png",
+        "data/SILO_1/current_image.png",
+        "data/SILO_1/parent_image.jpg",
+        "data/SILO_1/parent_image.png"
+      ],
+      "pl_files": [],
+      "eng_files": [],
+      "json_files": [
+        "data/SILO_1/state.json"
+      ],
+      "metta_files": [],
+      "prompt_files": [],
+      "unknown_files": [
+        "data/SILO_1/C_1_PROMPT.txt",
+        "data/SILO_1/C_COMMAND.txt",
+        "data/SILO_1/C_GENERATED.txt",
+        "data/SILO_1/level_1.rar"
+      ]
+    }
+  }
+}

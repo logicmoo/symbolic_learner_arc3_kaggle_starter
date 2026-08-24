@@ -61,10 +61,12 @@ The launcher performs first-run setup, starts the API and web development
 servers in separate command windows, waits until they are ready, and opens the
 selected web address.
 
-You do not need to deploy anything. Changes under `workbench\frontend\src`
-refresh in the browser through Vite. Changes under `workbench\server` restart
-the FastAPI backend through Uvicorn. Close the two server windows for an
-instance when done.
+You do not need to deploy anything. The workbench disables broad component HMR:
+only CSS/TS/TSX changes under `workbench\frontend\src` and `index.html` enter
+the debounced surgical UI-restart lifecycle, which flushes page session state
+before one full reload. Runtime, workspace, test, build-output, and log changes
+do not reload the UI. Changes under `workbench\server` restart the FastAPI
+backend through Uvicorn. Close the two server windows for an instance when done.
 
 Requirements:
 

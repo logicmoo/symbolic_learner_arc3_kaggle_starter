@@ -1,10 +1,16 @@
 # Repo / Project specific
 .Git4*/
+workbench/plugins/
 
 # Python-generated files
 __pycache__/
+.pytmp/
 *.py[oc]
 *.bak
+
+HIDE_*/
+.HIDE_*/
+.agentbridge/
 build/
 dist/
 .bash_history

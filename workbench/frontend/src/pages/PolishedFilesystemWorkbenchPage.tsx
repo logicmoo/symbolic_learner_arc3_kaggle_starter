@@ -134,7 +134,7 @@ function isLlmBackend(record: RecordFile<BackendDef>) {
   if (!backend) return false;
   const provider = backend.provider.toLowerCase();
   const capabilities = (backend.capabilities || []).join(" ").toLowerCase();
-  return capabilities.includes("llm") || /openai|anthropic|openrouter|ollama|unsloth|llm|model/.test(provider);
+  return capabilities.includes("llm") || /openai|anthropic|ollama|unsloth|llm|model/.test(provider);
 }
 
 function backendModel(backend?: BackendDef) {

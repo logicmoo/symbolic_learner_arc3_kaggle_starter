@@ -1,0 +1,12 @@
+{
+  "analysis_python": "/Users/ryanbrown/code/arc3-thinharness/analysis_venv/bin/python3",
+  "arcengine": {
+    "import_blocked": true,
+    "output": "stdout:\n\nstderr:\nTraceback (most recent call last):\n  File \"<string>\", line 1, in <module>\nModuleNotFoundError: No module named 'arcengine'"
+  },
+  "arc_agi": {
+    "import_blocked": true,
+    "output": "stdout:\n\nstderr:\nTraceback (most recent call last):\n  File \"<string>\", line 1, in <module>\nModuleNotFoundError: No module named 'arc_agi'"
+  },
+  "contained": true
+}

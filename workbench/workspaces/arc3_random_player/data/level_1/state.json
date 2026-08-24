@@ -3,6 +3,7 @@
   "level": "1",
   "level_source": "default",
   "next_level_expected": null,
+  "command": "RESET",
   "observation": {
     "game_id": "ls20-9607627b",
     "state": "NOT_FINISHED",

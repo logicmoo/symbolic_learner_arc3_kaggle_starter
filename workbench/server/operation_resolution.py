@@ -120,7 +120,7 @@ def _model_execution_parameters(
     """Resolve an operation's selected model into provider call parameters.
 
     A selection may name a model resource from the effective model library or
-    use a provider-qualified remote model name such as ``openrouter/free``.
+    use a configured filesystem model ID such as ``asicloud-asi1-mini``.
     The latter deliberately works without requiring a generated model catalog.
     """
     selected_models = model_selection.get("models") or []

@@ -30,7 +30,7 @@ metadata.
 
 The Codex Workbench presence is `symbolic-workbench-codex`; its configured
 peers include `omegaclaw-core-codex`, `omegaclaw-min`, and the
-transport-neutral `channel-relay`.
+transport-neutral `mailbox_server`.
 
 ## OmegaClaw
 

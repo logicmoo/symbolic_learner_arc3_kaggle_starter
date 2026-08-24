@@ -123,7 +123,7 @@ def test_pddl_vocabulary_maps_plans_to_workflows() -> None:
     assert "| Plan | Workflow |" in docs
     assert "| Ground action | Workflow step |" in docs
     assert 'label:"Planning"' in compact
-    assert 'group:"WORKFLOWS",items:[{label:"CurrentWorkflow",view:"currentWorkflow",glyph:"⌘"},{label:"PageBuilder",view:"workflowPageBuilder",glyph:"▦"}' in compact
+    assert 'group:"WORKFLOWS",items:[{label:"WorkflowCanvas",view:"canvas",glyph:"⌘"},{label:"CurrentWorkflow",view:"currentWorkflow",glyph:"⌘"},{label:"PageBuilder",view:"workflowPageBuilder",glyph:"▦"}' in compact
     assert 'data-workflow-page-resource={entry.id}' in compact
     assert 'data-workflow-page-placement={entry.menuPlacement}' in compact
     assert "planProvenance" in page

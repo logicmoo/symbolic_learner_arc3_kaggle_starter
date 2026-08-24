@@ -44,5 +44,42 @@
     "UP"
   ],
   "before": "../image.png",
-  "after": "./image.png"
+  "after": "./image.png",
+  "scan": {
+    "path": "data/level_1/LEFT/LEFT/DOWN/LEFT/UP/UP/UP/UP/RIGHT/RIGHT/RIGHT/UP/UP",
+    "results": {
+      "obj_images": [],
+      "grp_images": [],
+      "sub_images": [
+        "data/level_1/LEFT/LEFT/DOWN/LEFT/UP/UP/UP/UP/RIGHT/RIGHT/RIGHT/UP/UP/image.png"
+      ],
+      "pl_files": [
+        "data/level_1/LEFT/LEFT/DOWN/LEFT/UP/UP/UP/UP/RIGHT/RIGHT/RIGHT/UP/UP/differences.pl",
+        "data/level_1/LEFT/LEFT/DOWN/LEFT/UP/UP/UP/UP/RIGHT/RIGHT/RIGHT/UP/UP/objects.pl",
+        "data/level_1/LEFT/LEFT/DOWN/LEFT/UP/UP/UP/UP/RIGHT/RIGHT/RIGHT/UP/UP/rules.pl",
+        "data/level_1/LEFT/LEFT/DOWN/LEFT/UP/UP/UP/UP/RIGHT/RIGHT/RIGHT/UP/UP/similarities.pl",
+        "data/level_1/LEFT/LEFT/DOWN/LEFT/UP/UP/UP/UP/RIGHT/RIGHT/RIGHT/UP/UP/turtle_from_image.pl"
+      ],
+      "eng_files": [
+        "data/level_1/LEFT/LEFT/DOWN/LEFT/UP/UP/UP/UP/RIGHT/RIGHT/RIGHT/UP/UP/differences.english",
+        "data/level_1/LEFT/LEFT/DOWN/LEFT/UP/UP/UP/UP/RIGHT/RIGHT/RIGHT/UP/UP/objects.english",
+        "data/level_1/LEFT/LEFT/DOWN/LEFT/UP/UP/UP/UP/RIGHT/RIGHT/RIGHT/UP/UP/rules.english"
+      ],
+      "json_files": [
+        "data/level_1/LEFT/LEFT/DOWN/LEFT/UP/UP/UP/UP/RIGHT/RIGHT/RIGHT/UP/UP/action_history.json",
+        "data/level_1/LEFT/LEFT/DOWN/LEFT/UP/UP/UP/UP/RIGHT/RIGHT/RIGHT/UP/UP/arc3_state_analysis.json",
+        "data/level_1/LEFT/LEFT/DOWN/LEFT/UP/UP/UP/UP/RIGHT/RIGHT/RIGHT/UP/UP/current_hypotheses.json",
+        "data/level_1/LEFT/LEFT/DOWN/LEFT/UP/UP/UP/UP/RIGHT/RIGHT/RIGHT/UP/UP/current_identities.json",
+        "data/level_1/LEFT/LEFT/DOWN/LEFT/UP/UP/UP/UP/RIGHT/RIGHT/RIGHT/UP/UP/state.json"
+      ],
+      "metta_files": [
+        "data/level_1/LEFT/LEFT/DOWN/LEFT/UP/UP/UP/UP/RIGHT/RIGHT/RIGHT/UP/UP/action_history.metta",
+        "data/level_1/LEFT/LEFT/DOWN/LEFT/UP/UP/UP/UP/RIGHT/RIGHT/RIGHT/UP/UP/arc3_state_analysis.metta",
+        "data/level_1/LEFT/LEFT/DOWN/LEFT/UP/UP/UP/UP/RIGHT/RIGHT/RIGHT/UP/UP/current_hypotheses.metta",
+        "data/level_1/LEFT/LEFT/DOWN/LEFT/UP/UP/UP/UP/RIGHT/RIGHT/RIGHT/UP/UP/current_identities.metta"
+      ],
+      "prompt_files": [],
+      "unknown_files": []
+    }
+  }
 }

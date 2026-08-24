@@ -1,0 +1,12 @@
+{
+  "id": "web_proxy",
+  "label": "Web Proxy",
+  "description": "Reverse proxy for explicitly allowed local HTTP and WebSocket services.",
+  "version": "1.0.0",
+  "entrypoint": "plugin.py",
+  "scan": "startup",
+  "routePrefix": "/web-proxy",
+  "allowedTargets": [
+    "http://127.0.0.1:8801"
+  ]
+}

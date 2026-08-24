@@ -4,6 +4,8 @@ import {HierarchyResourceEditor} from "./HierarchyResourceEditor";
 import {ArtifactTreeBranch} from "./ArtifactTreeBranch";
 import {ExampleExecutePanel,type ExampleExecute} from "./ExampleExecutePanel";
 import {ResourceSourceEditor} from "./ResourceSourceEditor";
+import type {WorkspaceResourceLocation} from "./WorkspaceResourceFileControls";
+import {mettaDocumentToJson} from "../lib/mettaResourceCodec";
 import {ModelResourcePlayground} from "./ModelResourcePlayground";
 import {ResourceExecutionPlayground} from "./ResourceExecutionPlayground";
 import {relationshipIds} from "./resourceRelationships";
@@ -13,7 +15,7 @@ import "../styles/models_editor.css";
 
 type Source="shared"|"workspace";
 type NodeKind="system"|"backend"|"model"|"preset";
-type RecordFile<T>={path:string;source?:Source;workspaceId?:string;document?:T;error?:string;resolved?:Resolution};
+type RecordFile<T>={path:string;source?:Source;workspaceId?:string;document?:T;error?:string;resolved?:Resolution;isNew?:boolean};
 type BackendDef={kind:"backend";id:string;label?:string;description?:string;provider:string;official?:boolean;enabled?:boolean;capabilities?:string[];configuration?:Record<string,unknown>;modelDefaults?:Record<string,unknown>;example_execute?:ExampleExecute};
 type SystemDef={kind:"system";id:string;label?:string;description?:string;provider:string;systemType?:"runtime"|"llm_caller"|"agent"|"mcp"|"plugin"|string;enabled?:boolean;capabilities?:string[];configuration?:Record<string,unknown>;example_execute?:ExampleExecute};
 type ModelDef={kind:"model"|"profile";id:string;label?:string;description?:string;parents?:string[];inherits?:string;model?:string;enabled?:boolean;capabilities?:string[];defaults?:Record<string,unknown>;environment?:Record<string,unknown>;example_execute?:ExampleExecute};
@@ -34,7 +36,7 @@ const recordKey=(record:RecordFile<ModelResource>)=>`${record.workspaceId||recor
 function flattenObject(obj:any,prefix="",result:Record<string,any>={}){for(const key in obj){const value=obj[key],name=prefix?`${prefix}.${key}`:key;if(value&&typeof value==="object"&&!Array.isArray(value)){flattenObject(value,name,result)}else{result[name]=value}}return result}
 async function request(path:string,init?:RequestInit){const r=await fetch(path,{cache:"no-store",headers:{"Content-Type":"application/json",...(init?.headers||{})},...init});const text=await r.text();let p:any;try{p=JSON.parse(text)}catch{throw new Error(text||r.statusText)}if(!r.ok)throw new Error(p.error||p.detail||r.statusText);return p;}
 function parseJsonObject(text:string){const trimmed=text.trim();if(!trimmed)return null;const attempts=[trimmed];if(trimmed.startsWith("```"))attempts.push(trimmed.replace(/^```[a-zA-Z]*\s*/,"").replace(/\s*```$/,"").trim());for(const candidate of attempts){try{const parsed=JSON.parse(candidate);if(parsed&&typeof parsed==="object"&&!Array.isArray(parsed))return parsed as Record<string,unknown>}catch{}}return null}
-function isLlmBackend(record:RecordFile<BackendDef>){const item=record.document;if(!item)return false;const caps=(item.capabilities||[]).join(" ").toLowerCase();return caps.includes("llm")||/openai|anthropic|openrouter|groq|ollama|unsloth|llm/.test(item.provider.toLowerCase());}
+function isLlmBackend(record:RecordFile<BackendDef>){const item=record.document;if(!item)return false;const caps=(item.capabilities||[]).join(" ").toLowerCase();return caps.includes("llm")||/openai|anthropic|groq|ollama|unsloth|llm/.test(item.provider.toLowerCase());}
 function num(v:unknown,fallback:number){return typeof v==="number"&&Number.isFinite(v)?v:fallback;}
 const modelParent=(document:ModelDef)=>document.inherits||relationshipIds(document.parents)[0]||"";
 
@@ -65,9 +67,32 @@ function SystemConfigForm({source,onChange}:{source:string;onChange:(value:strin
  </div>;
 }
 
+function BackendConfigForm({source,onChange}:{source:string;onChange:(value:string)=>void}){
+ const doc=useMemo<BackendDef|null>(()=>{try{const parsed=JSON.parse(source) as ModelResource;return parsed.kind==="backend"?parsed:null}catch{return null}},[source]);
+ if(!doc)return <div className="demo-notice"><b>Invalid Backend resource</b><span>Fix this item in File mode before configuring it.</span></div>;
+ const configuration=doc.configuration||{};const modelDefaults=doc.modelDefaults||{};
+ const update=(patch:Partial<BackendDef>)=>onChange(JSON.stringify({...doc,...patch},null,2));
+ const updateConfiguration=(name:string,value:unknown)=>update({configuration:{...configuration,[name]:value}});
+ const updateDefault=(name:string,value:unknown)=>update({modelDefaults:{...modelDefaults,[name]:value}});
+ return <div className="model-config-form backend-config-form">
+  <label><span>ID</span><input value={doc.id} onChange={event=>update({id:event.target.value})}/></label>
+  <label><span>LABEL</span><input value={doc.label||""} onChange={event=>update({label:event.target.value})}/></label>
+  <label><span>PROVIDER</span><input value={doc.provider||""} onChange={event=>update({provider:event.target.value})}/></label>
+  <label><span>ADAPTER</span><input value={String(configuration.adapter||"")} onChange={event=>updateConfiguration("adapter",event.target.value)}/></label>
+  <label className="wide"><span>BASE URL</span><input value={String(configuration.baseUrl||"")} onChange={event=>updateConfiguration("baseUrl",event.target.value)}/></label>
+  <label><span>DEFAULT MODEL</span><input value={String(configuration.defaultModel||"")} onChange={event=>updateConfiguration("defaultModel",event.target.value)}/></label>
+  <label><span>TIMEOUT SECONDS</span><input type="number" min="1" value={num(configuration.timeoutSeconds,300)} onChange={event=>updateConfiguration("timeoutSeconds",Number(event.target.value))}/></label>
+  <label><span>DEFAULT TEMPERATURE</span><input type="number" step="0.01" value={num(modelDefaults.temperature,0)} onChange={event=>updateDefault("temperature",Number(event.target.value))}/></label>
+  <label className="wide"><span>DESCRIPTION</span><textarea value={doc.description||""} onChange={event=>update({description:event.target.value})}/></label>
+  <label className="wide"><span>CAPABILITIES · one per line</span><textarea value={(doc.capabilities||[]).join("\n")} onChange={event=>update({capabilities:event.target.value.split(/\r?\n|,/).map(value=>value.trim()).filter(Boolean)})}/></label>
+ </div>;
+}
+
 export function LlmModelsEditor({workspaceId,catalogMode="models",topMenuMode="browse"}:{workspaceId:string;catalogMode?:"systems"|"models";topMenuMode?:"browse"|"discover"|"override"}){
  const[snapshot,setSnapshot]=useState<Snapshot|null>(null),[layout,setLayout]=useState<Layout>("tiles"),[openDocs,setOpenDocs]=useState<OpenDocument[]>([]),[activeKey,setActiveKey]=useState<string|null>(null),[compareKey,setCompareKey]=useState<string|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState<string|null>(null),[discovery,setDiscovery]=useState<{backendId:string;models:DiscoveredModel[]}|null>(null),[discoverySelection,setDiscoverySelection]=useState<Set<string>>(new Set()),[discoveryFilter,setDiscoveryFilter]=useState(""),[discoverySort,setDiscoverySort]=useState<{key:string;dir:"asc"|"desc"}>({key:"id",dir:"asc"}),[overrideWorkerModelId,setOverrideWorkerModelId]=useState(""),[overrideFetchRaw,setOverrideFetchRaw]=useState("");
  const[overrideSource,setOverrideSource]=useState(DEFAULT_MODEL_OVERRIDE_SOURCE),[overrideDirty,setOverrideDirty]=useState(false),[overrideStatus,setOverrideStatus]=useState("");
+ const[backendEditorModes,setBackendEditorModes]=useState<Record<string,"file"|"resource"|"actions"|"runner">>({});
+ const[backendEditorLayouts,setBackendEditorLayouts]=useState<Record<string,"stack"|"tabs">>({});
  const load=async()=>{const next=await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/snapshot`) as Snapshot;setSnapshot(next);return next};
  useEffect(()=>{setOpenDocs([]);setActiveKey(null);setCompareKey(null);void load().catch(r=>setError(String(r)))},[workspaceId]);
  const systems=useMemo(()=>snapshot?.systems||[],[snapshot]);const backends=useMemo(()=>(snapshot?.backends||[]).filter(isLlmBackend),[snapshot]);const nodes=catalogMode==="systems"?[]:snapshot?.models||[];
@@ -80,19 +105,21 @@ export function LlmModelsEditor({workspaceId,catalogMode="models",topMenuMode="b
  const exampleFor=(document:ModelResource|null):ExampleExecute|null=>{let current=document;const visited=new Set<string>();while(current&&!visited.has(current.id)){visited.add(current.id);if(current.example_execute)return current.example_execute;if(current.kind==="backend"||current.kind==="system")return null;const parent=items.find(item=>item.id===modelParent(current as ModelDef))?.record.document as ModelResource|undefined;current=parent||null}return null};
  const roots=catalogMode==="systems"?systems.filter(x=>x.document).map(record=>({kind:"system" as const,id:record.document!.id,label:record.document!.label||record.document!.id,record})):backends.filter(x=>x.document).map(record=>({kind:"backend" as const,id:record.document!.id,label:record.document!.label||record.document!.id,record}));
  const perform=async(work:()=>Promise<void>)=>{setBusy(true);setError(null);try{await work()}catch(r){setError(r instanceof Error?r.message:String(r))}finally{setBusy(false)}};
- const open=(record:RecordFile<ModelResource>)=>{const key=recordKey(record);setOpenDocs(current=>current.some(doc=>doc.key===key)?current:[...current,{key,record,source:record.document?JSON.stringify(record.document,null,2):"",dirty:false}]);setActiveKey(key)};
+ const open=(record:RecordFile<ModelResource>)=>{const key=recordKey(record);setOpenDocs(current=>current.some(doc=>doc.key===key)?current:[...current,{key,record,source:record.document?JSON.stringify(record.document,null,2):"",dirty:Boolean(record.isNew)}]);setActiveKey(key)};
  const close=(key:string)=>{setOpenDocs(current=>{const index=current.findIndex(doc=>doc.key===key);const next=current.filter(doc=>doc.key!==key);if(activeKey===key)setActiveKey(next[Math.max(0,index-1)]?.key||next[0]?.key||null);if(compareKey===key)setCompareKey(null);return next})};
- useEffect(()=>{if(snapshot&&openDocs.length===0){const requestedId=new URLSearchParams(window.location.search).get("resource");const pool=catalogMode==="systems"?systems:[...backends,...nodes];const requested=pool.find(row=>row.document?.id===requestedId);if(requested)open(requested as RecordFile<ModelResource>);else if(catalogMode==="systems"&&systems[0])open(systems[0] as RecordFile<ModelResource>);else if(topMenuMode==="discover"&&backends[0])open(backends[0] as RecordFile<ModelResource>);else if(nodes[0])open(nodes[0] as RecordFile<ModelResource>);else if(backends[0])open(backends[0] as RecordFile<ModelResource>)}},[snapshot,topMenuMode]);
+ useEffect(()=>{if(snapshot&&openDocs.length===0){const parameters=new URLSearchParams(window.location.search);const requestedId=parameters.get("edit")||parameters.get("resource");const pool=catalogMode==="systems"?systems:[...backends,...nodes];const requested=pool.find(row=>row.document?.id===requestedId);if(requested)open(requested as RecordFile<ModelResource>);else if(catalogMode==="systems"&&systems[0])open(systems[0] as RecordFile<ModelResource>);else if(topMenuMode==="discover"&&backends[0])open(backends[0] as RecordFile<ModelResource>);else if(nodes[0])open(nodes[0] as RecordFile<ModelResource>);else if(backends[0])open(backends[0] as RecordFile<ModelResource>)}},[snapshot,topMenuMode]);
  const updateSource=(key:string,source:string)=>setOpenDocs(current=>current.map(doc=>doc.key===key?{...doc,source,dirty:true}:doc));
  const active=openDocs.find(doc=>doc.key===activeKey)||null;
+ useEffect(()=>{const focusedId=active?.record.document?.id;const url=new URL(window.location.href);if(focusedId)url.searchParams.set("edit",focusedId);else url.searchParams.delete("edit");if(url.href!==window.location.href)window.history.replaceState({},"",url)},[activeKey,active?.record.document?.id]);
  const chooseComparison=()=>{if(compareKey){setCompareKey(null);return}const other=[...openDocs].reverse().find(doc=>doc.key!==activeKey);if(other)setCompareKey(other.key)};
- const saveDoc=(doc:OpenDocument)=>perform(async()=>{let document:ModelResource;try{document=JSON.parse(doc.source) as ModelResource}catch{throw new Error("Resource source is invalid")};if((document.kind==="backend"||document.kind==="system")&&!document.provider)throw new Error(`${document.kind==="system"?"System":"Backend"} requires provider`);if(document.kind!=="backend"&&document.kind!=="system"){const parent=modelParent(document);if(!parent)throw new Error("Model requires a parent");document={...document,kind:"model",parents:[parent]};delete document.inherits}const original=doc.record.path;const directory=document.kind==="system"?"design/systems":document.kind==="backend"?"design/backends":"design/models";const path=workspaceId==="shared"||doc.record.source==="workspace"?original:`${directory}/${slug(document.id)}.${document.kind}.json`;await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/file`,{method:"PUT",body:JSON.stringify({path,content:JSON.stringify(document,null,2)})});const next=await load();const pool:RecordFile<ModelResource>[]=[...(next.systems||[]),...(next.backends||[]),...(next.models||[])];const saved=pool.find(row=>row.document?.id===document.id);if(saved){const newKey=recordKey(saved);setOpenDocs(current=>current.map(item=>item.key===doc.key?{key:newKey,record:saved,source:JSON.stringify(saved.document,null,2),dirty:false}:item));if(activeKey===doc.key)setActiveKey(newKey);if(compareKey===doc.key)setCompareKey(newKey)}});
+ const saveDoc=(doc:OpenDocument,location?:WorkspaceResourceLocation)=>perform(async()=>{let document:ModelResource;try{document=JSON.parse(doc.source) as ModelResource}catch{throw new Error("Resource source is invalid")};if((document.kind==="backend"||document.kind==="system")&&!document.provider)throw new Error(`${document.kind==="system"?"System":"Backend"} requires provider`);if(document.kind!=="backend"&&document.kind!=="system"){const parent=modelParent(document);if(!parent)throw new Error("Model requires a parent");document={...document,kind:"model",parents:[parent]};delete document.inherits}const targetWorkspaceId=location?.workspaceId||workspaceId;const directory=document.kind==="system"?"design/systems":document.kind==="backend"?"design/backends":"design/models";const path=location?.path||(!doc.record.isNew?doc.record.path:`${directory}/${slug(document.id)}.${document.kind}.json`);const result=await request(`/api/workspaces/${encodeURIComponent(targetWorkspaceId)}/file`,{method:"PUT",body:JSON.stringify({path,content:JSON.stringify(document,null,2)})});if(targetWorkspaceId===workspaceId){const next=await load();const pool:RecordFile<ModelResource>[]=[...(next.systems||[]),...(next.backends||[]),...(next.models||[])];const saved=pool.find(row=>row.document?.id===document.id);if(saved){const newKey=recordKey(saved);setOpenDocs(current=>current.map(item=>item.key===doc.key?{key:newKey,record:saved,source:JSON.stringify(saved.document,null,2),dirty:false}:item));if(activeKey===doc.key)setActiveKey(newKey);if(compareKey===doc.key)setCompareKey(newKey)}}else{const saved:RecordFile<ModelResource>={path:String(result.file?.path||path),source:"workspace",workspaceId:targetWorkspaceId,document};const newKey=recordKey(saved);setOpenDocs(current=>current.map(item=>item.key===doc.key?{key:newKey,record:saved,source:JSON.stringify(document,null,2),dirty:false}:item));if(activeKey===doc.key)setActiveKey(newKey);if(compareKey===doc.key)setCompareKey(newKey)}});
+ const loadDoc=(doc:OpenDocument,location:WorkspaceResourceLocation)=>perform(async()=>{const payload=await request(`/api/workspaces/${encodeURIComponent(location.workspaceId)}/file?path=${encodeURIComponent(location.path)}`);const raw=String(payload.file?.content||"");let source=raw;let document:ModelResource;try{document=JSON.parse(raw) as ModelResource}catch{source=mettaDocumentToJson(raw);document=JSON.parse(source) as ModelResource}const record:RecordFile<ModelResource>={path:String(payload.file?.path||location.path),source:location.workspaceId==="shared_library_system"?"shared":"workspace",workspaceId:location.workspaceId,document};const newKey=recordKey(record);setOpenDocs(current=>current.map(item=>item.key===doc.key?{key:newKey,record,source:JSON.stringify(document,null,2),dirty:false}:item));if(activeKey===doc.key)setActiveKey(newKey);if(compareKey===doc.key)setCompareKey(newKey)});
  const setResourceEnabled=(doc:OpenDocument,document:ModelResource,enabled:boolean)=>{
   const source=JSON.stringify({...document,enabled},null,2);
   return saveDoc({...doc,source,dirty:true});
  };
- const newBackend=()=>{const systemMode=catalogMode==="systems";const id=`${systemMode?"system":"backend"}-${Date.now().toString(36)}`;const document:ModelResource=systemMode?{kind:"system",id,label:"New System",description:"Configure a runtime, agent, MCP server, or plugin.",provider:"system",systemType:"plugin",enabled:true,capabilities:["system.execute"],configuration:{}}:{kind:"backend",id,label:"New LLM Backend",description:"Configure the provider endpoint before pulling models.",provider:"openai",enabled:true,capabilities:["llm"],configuration:{baseUrl:"",apiKeyEnvironmentVariable:""},modelDefaults:{}};open({path:systemMode?`design/systems/${slug(id)}.system.json`:`design/backends/${slug(id)}.backend.json`,source:workspaceId==="shared"?"shared":"workspace",workspaceId,document})};
- const newChild=(parent:CatalogItem,role:"model"|"preset")=>{const id=`${parent.id}-${role}`;const document:ModelDef={kind:"model",id,label:`${parent.label} ${role}`,parents:[parent.id],enabled:true,defaults:{temperature:0,topP:1,maxOutputTokens:12000,reasoningEffort:"medium",timeoutSeconds:300}};open({path:`design/models/${slug(id)}.model.json`,source:workspaceId==="shared"?"shared":"workspace",workspaceId,document})};
+ const newBackend=()=>{const systemMode=catalogMode==="systems";const id=`${systemMode?"system":"backend"}-${Date.now().toString(36)}`;const document:ModelResource=systemMode?{kind:"system",id,label:"New System",description:"Configure a runtime, agent, MCP server, or plugin.",provider:"system",systemType:"plugin",enabled:true,capabilities:["system.execute"],configuration:{}}:{kind:"backend",id,label:"New LLM Backend",description:"Configure the provider endpoint before pulling models.",provider:"openai",enabled:true,capabilities:["llm"],configuration:{baseUrl:"",apiKeyEnvironmentVariable:""},modelDefaults:{}};open({path:systemMode?`design/systems/${slug(id)}.system.json`:`design/backends/${slug(id)}.backend.json`,source:workspaceId==="shared"?"shared":"workspace",workspaceId,document,isNew:true})};
+ const newChild=(parent:CatalogItem,role:"model"|"preset")=>{const id=`${parent.id}-${role}`;const document:ModelDef={kind:"model",id,label:`${parent.label} ${role}`,parents:[parent.id],enabled:true,defaults:{temperature:0,topP:1,maxOutputTokens:12000,reasoningEffort:"medium",timeoutSeconds:300}};open({path:`design/models/${slug(id)}.model.json`,source:workspaceId==="shared"?"shared":"workspace",workspaceId,document,isNew:true})};
  const pullModels=(backendId:string)=>perform(async()=>{const result=await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/models/discover/${encodeURIComponent(backendId)}`);setDiscovery({backendId,models:result.models||[]});setDiscoverySelection(new Set())});
  const purgeAndReload=async()=>{setSnapshot(null);setOpenDocs([]);setActiveKey(null);setCompareKey(null);setDiscovery(null);setDiscoverySelection(new Set());await load()};
  const importModels=(backendId:string)=>perform(async()=>{if(!discovery)return;const models=discovery.models.filter(model=>model.status!=="missing"&&discoverySelection.has(model.id));if(!models.length)throw new Error("Select at least one new or changed model");await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/models/import/${encodeURIComponent(backendId)}`,{method:"POST",body:JSON.stringify({models,overwrite:true})});await purgeAndReload()});
@@ -113,6 +140,10 @@ export function LlmModelsEditor({workspaceId,catalogMode="models",topMenuMode="b
   }
   const backend = document?.kind === "backend";
   const system = document?.kind === "system";
+  const backendEditorMode=backend?(backendEditorModes[doc.key]||"resource"):null;
+  const backendEditorLayout=backend?(backendEditorLayouts[doc.key]||"tabs"):null;
+  const showBackendSection=(section:"file"|"resource"|"actions"|"runner")=>backendEditorLayout==="stack"||backendEditorMode===section;
+  const selectBackendSection=(section:"file"|"resource"|"actions"|"runner")=>{setBackendEditorModes(current=>({...current,[doc.key]:section}));setBackendEditorLayouts(current=>({...current,[doc.key]:"tabs"}))};
   const backendId = document?.id || "";
   const resourceEnabled = document
     ? (typeof document.enabled === "boolean"
@@ -210,21 +241,20 @@ export function LlmModelsEditor({workspaceId,catalogMode="models",topMenuMode="b
        <small>{displayResourcePath(doc.record.path)}</small>
       </div>
       <div className="model-editor-actions">
-       {doc.dirty && <button className="primary" onClick={() => saveDoc(doc)} disabled={busy}>Save Changes</button>}
-       {document && <button
+       {backend && <button className="backend-edit-source" onClick={()=>selectBackendSection("file")} aria-pressed={backendEditorLayout==="tabs"&&backendEditorMode==="file"}>{backendEditorLayout==="tabs"&&backendEditorMode==="file"?"Editing File":"Edit"}</button>}
+       {document && !backend && <button
         className={resourceEnabled ? "disable-resource" : "enable-resource"}
         onClick={() => setResourceEnabled(doc, document, !resourceEnabled)}
         disabled={busy}
         aria-pressed={!resourceEnabled}
         title={`${resourceEnabled ? "Disable" : "Enable"} this ${document.kind} resource`}
        >{resourceEnabled ? "Disable Resource" : "Enable Resource"}</button>}
-       {backend && catalogMode === "models" && <button onClick={() => pullModels(backendId)} disabled={busy}>Pull Models</button>}
        {!secondary && <button onClick={chooseComparison}>{compareKey ? "Close Split" : "Split View"}</button>}
        <button className="danger" onClick={() => close(doc.key)}>Close</button>
       </div>
      </div>
 
-     {backend && discoveryForThis && (
+     {backend && showBackendSection("actions") && discoveryForThis && (
       <div className="model-discovery">
        <div className="llm-subhead">
         <b>{topMenuMode==="discover"?"DISCOVER PUBLIC PROPERTIES":"DISCOVERED MODELS"}</b>
@@ -289,10 +319,27 @@ export function LlmModelsEditor({workspaceId,catalogMode="models",topMenuMode="b
       </div>
      )}
 
-     <div className="model-visible-editor">
+     {backend && <nav className="backend-aggregate-tabs" aria-label="Backend editor modes" role="tablist">
+      <span className="backend-tabs-label">EDITORS</span>
+      <button role="tab" aria-selected={backendEditorLayout==="tabs"&&backendEditorMode==="file"} className={backendEditorLayout==="tabs"&&backendEditorMode==="file"?"active":""} onClick={()=>selectBackendSection("file")}>File</button>
+      <button role="tab" aria-selected={backendEditorLayout==="tabs"&&backendEditorMode==="resource"} className={backendEditorLayout==="tabs"&&backendEditorMode==="resource"?"active":""} onClick={()=>selectBackendSection("resource")}>Resource</button>
+      <button role="tab" aria-selected={backendEditorLayout==="tabs"&&backendEditorMode==="actions"} className={backendEditorLayout==="tabs"&&backendEditorMode==="actions"?"active":""} onClick={()=>selectBackendSection("actions")}>Backend Actions</button>
+      <button role="tab" aria-selected={backendEditorLayout==="tabs"&&backendEditorMode==="runner"} className={backendEditorLayout==="tabs"&&backendEditorMode==="runner"?"active":""} onClick={()=>selectBackendSection("runner")}>Universal Execution Runner</button>
+      <span className="backend-view-mode"><b>DISPLAY</b><button className={backendEditorLayout==="stack"?"active":""} aria-pressed={backendEditorLayout==="stack"} onClick={()=>setBackendEditorLayouts(current=>({...current,[doc.key]:"stack"}))}>↕ Stack</button><button className={backendEditorLayout==="tabs"?"active":""} aria-pressed={backendEditorLayout==="tabs"} onClick={()=>setBackendEditorLayouts(current=>({...current,[doc.key]:"tabs"}))}>▣ Tabs</button></span>
+     </nav>}
+
+     {(!backend||showBackendSection("file")) && <div className={`model-visible-editor ${backendEditorLayout==="stack"?"backend-stacked-section":""}`}>
       <div className="studio-section-label">RESOURCE SOURCE</div>
-      <ResourceSourceEditor value={doc.source} onChange={src => updateSource(doc.key, src)} showEnablement={false} />
-     </div>
+      <ResourceSourceEditor value={doc.source} onChange={src => updateSource(doc.key, src)} showEnablement={false} fileControls={{
+       currentWorkspaceId:workspaceId,
+       workspaceId:workspaceId,
+       originWorkspaceId:doc.record.workspaceId||workspaceId,
+       relativePath:doc.record.path,
+       dirty:doc.dirty,
+       onSave:location=>saveDoc(doc,location),
+       onLoad:location=>loadDoc(doc,location),
+      }} />
+     </div>}
 
      {!backend && !system && document && (
       <div className="model-config-panes">
@@ -320,12 +367,19 @@ export function LlmModelsEditor({workspaceId,catalogMode="models",topMenuMode="b
       </div>
      )}
 
-     {backend && document && (
-      <div className="backend-inheritance-summary">
-       <div className="studio-section-label">BACKEND DEFAULTS & CAPABILITIES</div>
-       <pre>{JSON.stringify({ provider: (document as BackendDef).provider, official: (document as BackendDef).official, enabled: (document as BackendDef).enabled, capabilities: (document as BackendDef).capabilities, modelDefaults: (document as BackendDef).modelDefaults }, null, 2)}</pre>
-      </div>
-     )}
+     {backend && showBackendSection("resource") && document && <div className="model-config-panes backend-resource-editor">
+      <div className="backend-resource-status"><div><span>RESOURCE STATE</span><b>{resourceEnabled?"Enabled":"Disabled"}</b><small>{typeof document.enabled==="boolean"?"Declared by this backend resource":"Resolved through inheritance/defaults"}</small></div><button className={resourceEnabled?"disable-resource":"enable-resource"} onClick={()=>setResourceEnabled(doc,document,!resourceEnabled)} disabled={busy}>{resourceEnabled?"Disable Backend":"Enable Backend"}</button></div>
+      <div className="model-config-pane"><div className="studio-section-label">CONFIGURATION</div><BackendConfigForm source={doc.source} onChange={src=>updateSource(doc.key,src)}/></div>
+      <div className="model-config-pane resolved-inheritance"><div className="resolved-resource-heading"><div className="studio-section-label">RESOLVED / INHERITED RESOURCE JSON</div><button onClick={()=>selectBackendSection("file")}>Edit JSON / MeTTa</button></div><pre>{JSON.stringify({...doc.record.resolved,provider:(document as BackendDef).provider,official:(document as BackendDef).official,enabled:(document as BackendDef).enabled,capabilities:(document as BackendDef).capabilities,configuration:(document as BackendDef).configuration,modelDefaults:(document as BackendDef).modelDefaults},null,2)}</pre></div>
+     </div>}
+
+     {backend && showBackendSection("actions") && document && <section className="backend-actions-editor">
+      <div className="llm-subhead"><div><span>BACKEND ACTIONS</span><b>Discover, enable, inspect, and maintain this backend</b></div></div>
+      <div className="backend-action-buttons"><button onClick={()=>pullModels(document.id)} disabled={busy}>Pull Models</button><button onClick={()=>setResourceEnabled(doc,document,!resourceEnabled)} disabled={busy}>{resourceEnabled?"Disable Backend":"Enable Backend"}</button></div>
+      <div className="backend-inheritance-summary"><div className="studio-section-label">BACKEND DEFAULTS & CAPABILITIES</div><pre>{JSON.stringify({provider:(document as BackendDef).provider,official:(document as BackendDef).official,enabled:(document as BackendDef).enabled,capabilities:(document as BackendDef).capabilities,modelDefaults:(document as BackendDef).modelDefaults},null,2)}</pre></div>
+     </section>}
+
+     {backend && showBackendSection("runner") && document && resourceEnabled && <ResourceExecutionPlayground workspaceId={workspaceId} resource={document} operationIds={["backend_inspect","backend_check_readiness","resource_validate"]}/>}
 
      {!backend && !system && document && resourceEnabled && (
       <ModelResourcePlayground workspaceId={workspaceId} model={document} resolved={doc.record.resolved as Record<string,unknown>|undefined} models={nodes.filter(row=>row.document).map(row=>({id:row.document!.id,label:row.document!.label,enabled:row.document!.enabled}))}/>
@@ -335,7 +389,7 @@ export function LlmModelsEditor({workspaceId,catalogMode="models",topMenuMode="b
       <ResourceExecutionPlayground workspaceId={workspaceId} resource={document}/>
      )}
 
-     {exampleFor(document) && (
+     {exampleFor(document) && (!backend||showBackendSection("actions")) && (
       <div className="model-playground">
        <div className="studio-section-label">PLAYGROUND / EXAMPLE INVOKE</div>
        <ExampleExecutePanel contract={exampleFor(document)!} onExecute={args => executeModelExample(document!.id, args)} />

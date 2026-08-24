@@ -17,7 +17,7 @@
   (outputs (
     (prediction Object)
   ))
-  (modelSelection ((models ([] openrouter/free)) (strategy single)))
+  (modelSelection ((models ([] asicloud-asi1-mini)) (strategy single)))
   (parameters ())
 )
 
@@ -39,6 +39,6 @@
   (outputs (
     (grade Object)
   ))
-  (modelSelection ((models ([] openrouter/free)) (strategy single)))
+  (modelSelection ((models ([] asicloud-asi1-mini)) (strategy single)))
   (parameters ())
 )

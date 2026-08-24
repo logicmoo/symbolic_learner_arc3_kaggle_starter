@@ -184,10 +184,10 @@ def test_policy_can_add_a_new_managed_process_without_code(monkeypatch) -> None:
 
 def test_each_managed_service_is_an_independent_resource() -> None:
     configured = service_monitor_api._read_managed_service_resources()
-    assert set(configured) >= {"workbench-api", "workbench-web", "channel-relay", "clawrouter", "omniroute", "freerouter"}
+    assert set(configured) >= {"workbench-api", "workbench-web", "mailbox_server", "clawrouter", "omniroute", "freerouter"}
     assert all(document["kind"] == "managed_service" for document in configured.values())
     assert all(document["singleton"] is True for document in configured.values())
-    assert configured["channel-relay"]["defaultStartup"] == {"start": True, "hiddenWindow": False}
+    assert configured["mailbox_server"]["defaultStartup"] == {"start": True, "hiddenWindow": False}
     assert configured["omniroute"]["defaultStartup"] == {"start": True, "hiddenWindow": False}
     policy = service_monitor_api._read_policy_resource()
     assert set(policy["services"]["omniroute"]) == {"start", "hiddenWindow", "hideFromProcessViewer"}

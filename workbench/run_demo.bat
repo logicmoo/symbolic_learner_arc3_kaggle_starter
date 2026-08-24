@@ -48,8 +48,6 @@ set "CLAWROUTER_URL=http://127.0.0.1:%CLAWROUTER_PORT%"
 set "CLAWROUTER_HEALTH_URL=%CLAWROUTER_URL%/health"
 set "OMNIROUTE_PORT=20128"
 set "OMNIROUTE_URL=http://127.0.0.1:%OMNIROUTE_PORT%"
-set "FREEROUTER_PORT=18800"
-set "FREEROUTER_URL=http://127.0.0.1:%FREEROUTER_PORT%"
 set "CHANNEL_RELAY_PORT=46667"
 set "CHANNEL_RELAY_URL=http://127.0.0.1:%CHANNEL_RELAY_PORT%"
 set "CHANNEL_RELAY_DIR=%REPO_ROOT%\..\mailbox_channel"
@@ -113,12 +111,12 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "try { $r=Invoke-WebReque
 if errorlevel 1 (
   if exist "%CHANNEL_RELAY_DIR%\mailbox-server.cmd" (
     echo Starting the Mailbox Channel Relay when enabled in System Settings...
-    "%WORKBENCH_PYTHON%" "%ROOT%scripts\start_with_policy.py" --service channel-relay --cwd "%ROOT%." -- "%ComSpec%" /d /c scripts\run_channel_relay.bat "%CHANNEL_RELAY_DIR%"
+    "%WORKBENCH_PYTHON%" "%ROOT%scripts\start_with_policy.py" --service mailbox_server --cwd "%ROOT%." -- "%ComSpec%" /d /c scripts\run_channel_relay.bat "%CHANNEL_RELAY_DIR%"
     if errorlevel 3 (
       echo Mailbox Channel Relay startup is disabled in System Settings.
     ) else (
       echo Waiting for Mailbox Channel Relay...
-      "%WORKBENCH_PYTHON%" "%ROOT%scripts\wait_for_managed_service.py" --service channel-relay --url "%CHANNEL_RELAY_URL%/health" --timeout 90
+      "%WORKBENCH_PYTHON%" "%ROOT%scripts\wait_for_managed_service.py" --service mailbox_server --url "%CHANNEL_RELAY_URL%/health" --timeout 90
       if errorlevel 1 echo WARNING: Mailbox Channel Relay did not answer yet.
     )
   ) else (
@@ -165,22 +163,6 @@ if exist "%WORKBENCH_PYTHON%" (
   if errorlevel 1 echo WARNING: OmniRoute endpoint-key setup failed. Configure it under Settings.
 )
 
-echo Checking FreeRouter on 127.0.0.1:%FREEROUTER_PORT%...
-powershell -NoProfile -ExecutionPolicy Bypass -Command "try { $r=Invoke-WebRequest -UseBasicParsing '%FREEROUTER_URL%/health' -TimeoutSec 3; if ($r.StatusCode -eq 200) { exit 0 } } catch {}; exit 1" >nul 2>nul
-if errorlevel 1 (
-  echo Starting the local FreeRouter gateway on 127.0.0.1:%FREEROUTER_PORT%...
-  "%WORKBENCH_PYTHON%" "%ROOT%scripts\start_with_policy.py" --service freerouter --cwd "%ROOT%." -- "%ComSpec%" /d /c scripts\run_freerouter.bat
-  if errorlevel 3 (
-    echo FreeRouter startup is disabled in System Settings.
-  ) else (
-    echo Waiting for FreeRouter...
-    "%WORKBENCH_PYTHON%" "%ROOT%scripts\wait_for_managed_service.py" --service freerouter --url "%FREEROUTER_URL%/health" --timeout 180
-    if errorlevel 1 echo WARNING: FreeRouter did not answer yet. Check its configured process window.
-  )
-) else (
-  echo FreeRouter is already running.
-)
-
 echo Starting the live-editing web interface on %BIND_IP%:%WEB_PORT%...
 "%WORKBENCH_PYTHON%" "%ROOT%scripts\start_with_policy.py" --service workbench-web --cwd "%ROOT%." -- "%ComSpec%" /d /c scripts\run_vite_server.bat %BIND_IP% %WEB_PORT% %API_URL%
 
@@ -197,12 +179,11 @@ echo The workbench is running locally at %WEB_URL%
 echo API documentation is at %API_URL%/docs
 echo ClawRouter is at %CLAWROUTER_URL%/v1 using blockrun/free by default.
 echo OmniRoute is at %OMNIROUTE_URL%/v1 using auto/best-free by default.
-echo FreeRouter is at %FREEROUTER_URL%/v1 using OpenRouter's free route.
 echo Mailbox Channel Relay is at %CHANNEL_RELAY_URL% when enabled in System Settings.
 echo Edit files under workbench\frontend\src or workbench\server;
 echo the appropriate process reloads automatically.
 echo Each API/Vite window shows the exact command to rerun after Ctrl+C.
-echo Close the API, Vite, ClawRouter, OmniRoute, and FreeRouter windows for this instance when you are finished.
+echo Close the API, Vite, ClawRouter, and OmniRoute windows for this instance when you are finished.
 echo.
 pause
 exit /b 0

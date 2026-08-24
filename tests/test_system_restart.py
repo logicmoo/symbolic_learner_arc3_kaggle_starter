@@ -5,7 +5,7 @@ from pathlib import Path
 import system_control_api
 
 
-def test_restart_trigger_touches_both_development_server_markers(
+def test_restart_trigger_touches_only_api_marker(
     tmp_path: Path, monkeypatch,
 ) -> None:
     api_marker = tmp_path / "api.py"
@@ -16,10 +16,10 @@ def test_restart_trigger_touches_both_development_server_markers(
     before_web = web_marker.stat().st_mtime_ns
     monkeypatch.setattr(system_control_api.time, "sleep", lambda _seconds: None)
 
-    system_control_api.trigger_development_restart(api_marker, web_marker)
+    system_control_api.trigger_api_restart(api_marker)
 
     assert api_marker.stat().st_mtime_ns >= before_api
-    assert web_marker.stat().st_mtime_ns >= before_web
+    assert web_marker.stat().st_mtime_ns == before_web
 
 
 def test_restart_endpoint_is_registered_in_active_app() -> None:

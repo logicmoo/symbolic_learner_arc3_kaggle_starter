@@ -70,7 +70,7 @@ def automatic_llm_fallback(operation: dict[str, Any]) -> dict[str, Any]:
         "implementation": "llm.complete",
         "inputs": inputs,
         "outputs": outputs,
-        "modelSelection": {"models": ["openrouter/free"], "strategy": "single"},
+        "modelSelection": {"models": ["asicloud-asi1-mini"], "strategy": "single"},
         "parameters": parameters,
         "parents": [operation_id],
         "virtual": True,

@@ -95,6 +95,7 @@ def test_navigation_v2_has_required_groups_and_labels() -> None:
     ):
         assert f'label: "{label}"' in source
     assert 'label: "Current Workflow", view: "currentWorkflow"' in source
+    assert 'label: "Workflow Canvas", view: "canvas"' in source
     assert 'group: "WORKFLOWS"' in source
     assert 'workflowNavigationEntries.map' in source
     assert 'data-workflow-page-placement={entry.menuPlacement}' in source
@@ -119,7 +120,8 @@ def test_navigation_views_are_deep_linkable_for_visual_acceptance() -> None:
     assert 'url.searchParams.set("view",next==="canvas"?"workflows":next)' in compact
     assert 'window.addEventListener("popstate",restoreLocation)' in compact
     assert 'constrestoredView=viewFromLocation()' in compact
-    assert 'setViewState(restoredView||"canvas")' in compact
+    assert 'setViewState(restoredView)' in compact
+    assert 'workspaceOpeningViewFromLocation(next.workspace.effectiveIncludes||[])' in compact
     assert 'constrequested=workspaceFromLocation()' in compact
     assert 'requested===currentWorkspaceId.current' in compact
     assert 'loadRequestedWorkspace()' in compact
@@ -225,6 +227,7 @@ def test_navigation_reuses_current_rich_editors() -> None:
         for token in tokens:
             assert token.replace(" ", "") in compact
     assert 'label: "Current Workflow", view: "currentWorkflow"' in source
+    assert 'label: "Workflow Canvas", view: "canvas"' in source
     assert 'setView("canvas")' in source
     assert 'workflowCombinedView&&workflowColumnsHost&&createPortal(<sectionclassName="canvas-view"' in compact
     assert 'className="editor-surface"' in compact
@@ -245,7 +248,7 @@ def test_source_code_language_tabs_are_deep_linkable() -> None:
 def test_workflow_authoring_pages_are_first_class_left_navigation_items() -> None:
     source = ACTIVE_PAGE.read_text(encoding="utf-8")
     compact = "".join(source.split())
-    assert 'group:"WORKFLOWS",items:[{label:"CurrentWorkflow",view:"currentWorkflow",glyph:"⌘"},{label:"PageBuilder",view:"workflowPageBuilder",glyph:"▦"}' in compact
+    assert 'group:"WORKFLOWS",items:[{label:"WorkflowCanvas",view:"canvas",glyph:"⌘"},{label:"CurrentWorkflow",view:"currentWorkflow",glyph:"⌘"},{label:"PageBuilder",view:"workflowPageBuilder",glyph:"▦"}' in compact
     assert 'snapshot?.workflowPages' in source
     assert 'workflowNavigationEntries.map' in source
     assert 'data-workflow-page-resource={entry.id}' in source

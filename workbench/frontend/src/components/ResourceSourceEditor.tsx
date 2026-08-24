@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import { jsonDocumentToMetta, mettaDocumentToJson } from "../lib/mettaResourceCodec";
+import { useUserUiPreferences } from "../lib/uiPreferences";
+import { WorkspaceResourceFileControls, type WorkspaceResourceFileControlsProps } from "./WorkspaceResourceFileControls";
 import "../styles/operation_editor.css";
 
-type Props = { value: string; onChange: (json: string) => void; onValidityChange?: (valid: boolean) => void; className?: string; style?: CSSProperties; label?: string; showEnablement?: boolean; disabled?: boolean };
+type Props = { value: string; onChange: (json: string) => void; onValidityChange?: (valid: boolean) => void; className?: string; style?: CSSProperties; label?: string; showEnablement?: boolean; disabled?: boolean; fileControls?: Omit<WorkspaceResourceFileControlsProps, "disabled" | "content" | "onClientContent"> };
 
 type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue };
 type JsonObject = { [key: string]: JsonValue };
@@ -312,7 +314,8 @@ function updateJsonAtPath(root: JsonObject, path: string, updater: (target: Json
   return cloned;
 }
 
-export function ResourceSourceEditor({ value, onChange, onValidityChange, className = "", style, label = "Edit this resource directly", showEnablement = true, disabled = false }: Props) {
+export function ResourceSourceEditor({ value, onChange, onValidityChange, className = "", style, label = "Edit this resource directly", showEnablement = true, disabled = false, fileControls }: Props) {
+  const { resourceSourceFileControlsPlacement } = useUserUiPreferences();
   const [format, setFormat] = useState<"metta" | "json" | "tree">("metta");
   const [metta, setMetta] = useState("");
   const [jsonDraft, setJsonDraft] = useState(value);
@@ -343,6 +346,15 @@ export function ResourceSourceEditor({ value, onChange, onValidityChange, classN
       if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("A resource document must be a JSON object");
       setMetta(jsonDocumentToMetta(next)); emittedJson.current = next; onChange(next); setError(""); onValidityChange?.(true);
     } catch (reason) { setError(reason instanceof Error ? reason.message : String(reason)); onValidityChange?.(false); }
+  };
+  const loadClientContent = (content: string) => {
+    try {
+      const parsed = JSON.parse(content);
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("A resource document must be a JSON object");
+      onChange(`${JSON.stringify(parsed, null, 2)}\n`);
+    } catch {
+      onChange(mettaDocumentToJson(content));
+    }
   };
   let resource: Record<string, unknown> | null = null;
   try { const parsed = JSON.parse(value); if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) resource = parsed; } catch { /* Invalid source remains editable. */ }
@@ -557,8 +569,13 @@ export function ResourceSourceEditor({ value, onChange, onValidityChange, classN
     </div>;
   };
 
+  const renderedFileControls = fileControls
+    ? <WorkspaceResourceFileControls {...fileControls} content={format === "metta" ? metta : jsonDraft} onClientContent={loadClientContent} disabled={disabled} />
+    : null;
+
   return <div className="operation-json-block resource-source-editor">
     <div className="llm-subhead"><div><span>RESOURCE SOURCE</span><b>{label}</b></div><div className="source-format-tabs">{showEnablement&&resource&&<button disabled={disabled} className={`resource-enable-action ${resourceEnabled?"disable-resource":"enable-resource"}`} onClick={()=>setEnabled(!resourceEnabled)}>{resourceEnabled?"Disable Resource":"Enable Resource"}</button>}<button disabled={disabled} className={format === "metta" ? "active" : ""} onClick={() => setFormat("metta")}>MeTTa</button><button disabled={disabled} className={format === "json" ? "active" : ""} onClick={() => setFormat("json")}>JSON</button><button disabled={disabled} className={format === "tree" ? "active" : ""} onClick={() => setFormat("tree")}>Tree</button></div></div>
+    {resourceSourceFileControlsPlacement === "above" ? renderedFileControls : null}
     {format === "tree"
       ? <div className={`json-tree-browser operation-visible-editor ${className}`.trim()} style={style}>
         <div className="json-tree-toolbar">
@@ -583,5 +600,6 @@ export function ResourceSourceEditor({ value, onChange, onValidityChange, classN
       </div>
       : <textarea className={`raw-json-editor operation-visible-editor ${className}`.trim()} style={style} value={format === "metta" ? metta : jsonDraft} aria-invalid={Boolean(error)} disabled={disabled} onChange={event => format === "metta" ? editMetta(event.target.value) : editJson(event.target.value)} />}
     {error && <div className="validation bad">Invalid {format === "metta" ? "MeTTa" : "JSON"} syntax: {error}. Draft preserved; synchronization and saving are paused until this is fixed.</div>}
+    {resourceSourceFileControlsPlacement === "below" ? renderedFileControls : null}
   </div>;
 }

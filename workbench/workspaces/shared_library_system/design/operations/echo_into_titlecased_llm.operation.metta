@@ -16,7 +16,7 @@
   ))
   (modelSelection (
     (models ([]
-      openrouter/free
+      asicloud-asi1-mini
     ))
     (strategy single)
   ))

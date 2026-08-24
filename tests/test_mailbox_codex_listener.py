@@ -50,7 +50,7 @@ def test_default_sources_include_shared_channel_agent_and_events() -> None:
     assert listener.default_sources("github-copilot-facilitator-agent") == [
         "symbolic-workbench-user",
         "github-copilot-facilitator-agent",
-        "server_events",
+        "server_events_log",
     ]
 
 
@@ -91,15 +91,15 @@ def test_unread_across_sources_tags_source_and_skips_audit(monkeypatch: pytest.M
             {"id": "1", "from": "user", "to": "github-copilot-facilitator-agent", "text": "hi"},
             {"id": "2", "from": "user", "to": "github-copilot-facilitator-agent", "text": "copy", "audit_of": "1"},
         ],
-        "server_events": [{"id": "e1", "to": "server_events", "text": "started"}],
+        "server_events_log": [{"id": "e1", "to": "server_events_log", "text": "started"}],
     })
     monkeypatch.setattr(listener, "_mailbox", fake)
     unread = listener.unread_across_sources(
-        sources=["github-copilot-facilitator-agent", "server_events"],
+        sources=["github-copilot-facilitator-agent", "server_events_log"],
         cursor="github-copilot-facilitator-agent",
     )
     assert [message["id"] for message in unread] == ["1", "e1"]
-    assert {message["source"] for message in unread} == {"github-copilot-facilitator-agent", "server_events"}
+    assert {message["source"] for message in unread} == {"github-copilot-facilitator-agent", "server_events_log"}
 
 
 def test_unread_across_sources_excludes_self(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -125,12 +125,12 @@ def test_register_worker_registers_and_inits_cursors(monkeypatch: pytest.MonkeyP
     result = listener.register_worker(
         "github-copilot-facilitator-agent",
         presence="github-copilot-facilitator-agent-app",
-        sources=["github-copilot-facilitator-agent", "server_events"],
+        sources=["github-copilot-facilitator-agent", "server_events_log"],
     )
     assert fake.registered == [("github-copilot-facilitator-agent", "github-copilot-facilitator-agent-app")]
     assert fake.cursors == [
         ("github-copilot-facilitator-agent", "github-copilot-facilitator-agent", "now"),
-        ("server_events", "github-copilot-facilitator-agent", "now"),
+        ("server_events_log", "github-copilot-facilitator-agent", "now"),
     ]
     assert result["agent"] == "github-copilot-facilitator-agent"
 
