@@ -1,0 +1,12 @@
+{
+  "kind": "workspace",
+  "id": "arc3_random_player_V2",
+  "label": "ARC3 Random Player V2",
+  "description": "A real ARC3 learning workspace that rotates games, explores actions, critiques outcomes, and retains evidence for later play.",
+  "includes": [
+    {
+      "workspaceId": "shared_library_arc3",
+      "includeInherited": true
+    }
+  ]
+}
