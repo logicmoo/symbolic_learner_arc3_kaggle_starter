@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
+import CodeMirror from "@uiw/react-codemirror";
+import { json } from "@codemirror/lang-json";
 import { jsonDocumentToMetta, mettaDocumentToJson } from "../lib/mettaResourceCodec";
 import { useUserUiPreferences } from "../lib/uiPreferences";
 import { WorkspaceResourceFileControls, type WorkspaceResourceFileControlsProps } from "./WorkspaceResourceFileControls";
@@ -598,7 +600,18 @@ export function ResourceSourceEditor({ value, onChange, onValidityChange, classN
           <button type="button" onClick={() => setContextMenu(null)}>Cancel</button>
         </div> : null}
       </div>
-      : <textarea className={`raw-json-editor operation-visible-editor ${className}`.trim()} style={style} value={format === "metta" ? metta : jsonDraft} aria-invalid={Boolean(error)} disabled={disabled} onChange={event => format === "metta" ? editMetta(event.target.value) : editJson(event.target.value)} />}
+      : <div className={`raw-json-editor operation-visible-editor ${className}`.trim()} style={style} aria-invalid={Boolean(error)}>
+          <CodeMirror
+            value={format === "metta" ? metta : jsonDraft}
+            height="100%"
+            theme="dark"
+            editable={!disabled}
+            readOnly={disabled}
+            basicSetup={{ lineNumbers: true, foldGutter: true, highlightActiveLine: !disabled }}
+            extensions={format === "json" ? [json()] : []}
+            onChange={value => format === "metta" ? editMetta(value) : editJson(value)}
+          />
+        </div>}
     {error && <div className="validation bad">Invalid {format === "metta" ? "MeTTa" : "JSON"} syntax: {error}. Draft preserved; synchronization and saving are paused until this is fixed.</div>}
     {resourceSourceFileControlsPlacement === "below" ? renderedFileControls : null}
   </div>;
