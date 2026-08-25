@@ -22,7 +22,7 @@
 .repository-filter-line>input{padding:9px 10px;border:1px solid #263b46;border-radius:4px;background:#0d1b23;color:#d7e0e5}
 
 /* Let the unified editor fill the document view height on the docs page. */
-.repository-doc-view{display:flex;flex-direction:column}
+.repository-doc-view{display:flex;flex-direction:column;overflow:hidden}
 .repository-doc-view>.repository-doc-path{flex:0 0 auto}
 .repository-doc-view>.repository-image-view{flex:0 0 auto}
 .repository-doc-view>.resource-source-editor.fill{flex:1 1 auto;min-height:0}
