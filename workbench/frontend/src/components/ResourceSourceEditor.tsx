@@ -27,7 +27,7 @@ function textLanguageExtension(id: string): Extension[] {
   return (TEXT_LANGUAGES.find((entry) => entry.id === id) || TEXT_LANGUAGES[0]).extension();
 }
 
-type Props = { value: string; onChange: (json: string) => void; onValidityChange?: (valid: boolean) => void; className?: string; style?: CSSProperties; label?: string; showEnablement?: boolean; disabled?: boolean; contentReadOnly?: boolean; fileControls?: Omit<WorkspaceResourceFileControlsProps, "disabled" | "content" | "onClientContent"> };
+type Props = { value: string; onChange: (json: string) => void; onValidityChange?: (valid: boolean) => void; className?: string; style?: CSSProperties; label?: string; showEnablement?: boolean; disabled?: boolean; contentReadOnly?: boolean; stacked?: boolean; fileControls?: Omit<WorkspaceResourceFileControlsProps, "disabled" | "content" | "onClientContent"> };
 
 type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue };
 type JsonObject = { [key: string]: JsonValue };
@@ -336,12 +336,11 @@ function updateJsonAtPath(root: JsonObject, path: string, updater: (target: Json
   return cloned;
 }
 
-export function ResourceSourceEditor({ value, onChange, onValidityChange, className = "", style, label = "Edit this resource directly", showEnablement = true, disabled = false, contentReadOnly = false, fileControls }: Props) {
+export function ResourceSourceEditor({ value, onChange, onValidityChange, className = "", style, label = "Edit this resource directly", showEnablement = true, disabled = false, contentReadOnly = false, stacked = false, fileControls }: Props) {
   const { resourceSourceFileControlsPlacement } = useUserUiPreferences();
   const editingLocked = disabled || contentReadOnly;
-  const [format, setFormat] = useState<"metta" | "json" | "tree" | "text">("metta");
+  const [format, setFormat] = useState<"metta" | "json" | "tree" | "text" | "markdown">("metta");
   const [textLang, setTextLang] = useState<string>("plain");
-  const [markdownRender, setMarkdownRender] = useState<"off" | "below" | "above">("off");
   const [metta, setMetta] = useState("");
   const [jsonDraft, setJsonDraft] = useState(value);
   const [error, setError] = useState("");
@@ -607,10 +606,11 @@ export function ResourceSourceEditor({ value, onChange, onValidityChange, classN
     : null;
 
   return <div className="operation-json-block resource-source-editor">
-    <div className="llm-subhead"><div><span>RESOURCE SOURCE</span><b>{label}</b></div><div className="source-format-tabs">{showEnablement&&resource&&<button disabled={disabled} className={`resource-enable-action ${resourceEnabled?"disable-resource":"enable-resource"}`} onClick={()=>setEnabled(!resourceEnabled)}>{resourceEnabled?"Disable Resource":"Enable Resource"}</button>}<button disabled={disabled} className={format === "metta" ? "active" : ""} onClick={() => setFormat("metta")}>MeTTa</button><button disabled={disabled} className={format === "json" ? "active" : ""} onClick={() => setFormat("json")}>JSON</button><button disabled={disabled} className={format === "tree" ? "active" : ""} onClick={() => setFormat("tree")}>Tree</button><button disabled={disabled} className={format === "text" ? "active" : ""} onClick={() => { setError(""); setFormat("text"); }}>Text</button>{format === "text" ? <select className="rse-text-lang" disabled={disabled} value={textLang} onChange={event => setTextLang(event.target.value)} title="How CodeMirror renders this text">{TEXT_LANGUAGES.map(entry => <option key={entry.id} value={entry.id}>{entry.label}</option>)}</select> : null}<span className="rse-markdown-render" title="Render the text as Markdown alongside the source"><b>MARKDOWN</b><button disabled={disabled} className={markdownRender === "off" ? "active" : ""} onClick={() => setMarkdownRender("off")}>Off</button><button disabled={disabled} className={markdownRender === "above" ? "active" : ""} onClick={() => setMarkdownRender("above")}>Above</button><button disabled={disabled} className={markdownRender === "below" ? "active" : ""} onClick={() => setMarkdownRender("below")}>Below</button></span></div></div>
+    <div className="llm-subhead"><div><span>RESOURCE SOURCE</span><b>{label}</b></div><div className="source-format-tabs">{showEnablement&&resource&&<button disabled={disabled} className={`resource-enable-action ${resourceEnabled?"disable-resource":"enable-resource"}`} onClick={()=>setEnabled(!resourceEnabled)}>{resourceEnabled?"Disable Resource":"Enable Resource"}</button>}<button disabled={disabled} className={format === "metta" ? "active" : ""} onClick={() => setFormat("metta")}>MeTTa</button><button disabled={disabled} className={format === "json" ? "active" : ""} onClick={() => setFormat("json")}>JSON</button><button disabled={disabled} className={format === "tree" ? "active" : ""} onClick={() => setFormat("tree")}>Tree</button><button disabled={disabled} className={format === "text" ? "active" : ""} onClick={() => { setError(""); setFormat("text"); }}>Text</button>{format === "text" ? <select className="rse-text-lang" disabled={disabled} value={textLang} onChange={event => setTextLang(event.target.value)} title="How CodeMirror renders this text">{TEXT_LANGUAGES.map(entry => <option key={entry.id} value={entry.id}>{entry.label}</option>)}</select> : null}<button disabled={disabled} className={format === "markdown" ? "active" : ""} onClick={() => { setError(""); setFormat("markdown"); }}>Markdown</button></div></div>
     {resourceSourceFileControlsPlacement === "above" ? renderedFileControls : null}
-    {markdownRender === "above" ? <div className="markdown-render operation-visible-editor"><MarkdownDocument content={jsonDraft} /></div> : null}
-    {format === "tree"
+    {format === "markdown"
+      ? <div className="markdown-render operation-visible-editor" style={style}><MarkdownDocument content={jsonDraft} /></div>
+      : format === "tree"
       ? <div className={`json-tree-browser operation-visible-editor ${className}`.trim()} style={style}>
         <div className="json-tree-toolbar">
           <span>Path <code>{selectedTreePath}</code>{treeSelectionType ? <> · <b>{treeSelectionType}</b></> : null}</span>
@@ -644,7 +644,7 @@ export function ResourceSourceEditor({ value, onChange, onValidityChange, classN
             onChange={value => format === "metta" ? editMetta(value) : format === "text" ? editText(value) : editJson(value)}
           />
         </div>}
-    {markdownRender === "below" ? <div className="markdown-render operation-visible-editor"><MarkdownDocument content={jsonDraft} /></div> : null}
+    {stacked && format !== "markdown" ? <div className="markdown-render operation-visible-editor" style={style}><MarkdownDocument content={jsonDraft} /></div> : null}
     {error && format !== "text" && <div className="validation bad">Invalid {format === "metta" ? "MeTTa" : "JSON"} syntax: {error}. Draft preserved; synchronization and saving are paused until this is fixed.</div>}
     {resourceSourceFileControlsPlacement === "below" ? renderedFileControls : null}
   </div>;

@@ -344,7 +344,7 @@ export function LlmModelsEditor({workspaceId,catalogMode="models",topMenuMode="b
 
      {(!editable||showBackendSection("file")) && <div className={`model-visible-editor ${backendEditorLayout==="stack"?"backend-stacked-section":""}`}>
       <div className="studio-section-label">RESOURCE SOURCE</div>
-      <ResourceSourceEditor value={doc.source} onChange={src => updateSource(doc.key, src)} showEnablement={false} fileControls={{
+      <ResourceSourceEditor value={doc.source} onChange={src => updateSource(doc.key, src)} showEnablement={false} stacked={backendEditorLayout==="stack"} fileControls={{
        currentWorkspaceId:workspaceId,
        workspaceId:workspaceId,
        originWorkspaceId:doc.record.workspaceId||workspaceId,
