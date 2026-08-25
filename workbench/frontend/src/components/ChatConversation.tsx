@@ -120,7 +120,7 @@ export type ChatMessage = {
   raw?: unknown;
 };
 
-export type MailboxOption = { id: string; kind?: string; messages?: number; name?: string | null; global_name?: string | null; origin?: string };
+export type MailboxOption = { id: string; kind?: string; source?: string; messages?: number; name?: string | null; global_name?: string | null; origin?: string };
 
 type CursorInfo = {
   mailbox: string;
@@ -1277,7 +1277,20 @@ export function ChatConversation({
   const mailboxCounts = new Map(mailboxes.map((c) => [c.id, c.messages] as const));
   const mailboxGlobals = new Map(mailboxes.map((c) => [c.id, c.global_name] as const));
   const mailboxOrigins = new Map(mailboxes.map((c) => [c.id, c.origin] as const));
+  const mailboxKinds = new Map(mailboxes.map((c) => [c.id, c.kind] as const));
+  const mailboxSources = new Map(mailboxes.map((c) => [c.id, c.source] as const));
   const originLabel = (o?: string) => (o === "workbench" ? "Workbench server" : "ws_collab");
+  // A colored property tag for a stream, shown inline in the combobox options
+  // (Chrome honors per-<option> color). Highlights streams whose kind/source/
+  // origin differs from a plain writable ws_collab stream.
+  const streamTag = (id: string): { text: string; color: string } | null => {
+    const kind = mailboxKinds.get(id);
+    const source = mailboxSources.get(id);
+    if (kind === "merge") return { text: "merge", color: "#48b7a8" };
+    if (source === "virtual") return { text: "virtual", color: "#c88ce0" };
+    if (mailboxOrigins.get(id) === "workbench") return { text: "workbench", color: "#e0a458" };
+    return null;
+  };
   // The TO agent's explicit subscription setting on the viewed mailbox (if any).
   const targetRecord = agents.find((a) => a.id === target) as Record<string, unknown> | undefined;
   const targetSubs = (targetRecord?.subscriptions ?? null) as Record<string, string> | null;
@@ -1288,11 +1301,11 @@ export function ChatConversation({
     const globalName = mailboxGlobals.get(id);
     const withGlobal = globalName && globalName !== id ? `${base} · ${globalName}` : base;
     const count = mailboxCounts.get(id);
-    const withCount = typeof count === "number" ? `${withGlobal} · ${count}` : withGlobal;
-    return mailboxOrigins.get(id) === "workbench" ? `⇄ ${withCount}` : withCount;
+    return typeof count === "number" ? `${withGlobal} · ${count}` : withGlobal;
   };
   // Render mailbox <option>s grouped into <optgroup>s by origin so ws_collab
   // streams are visually separated from the workbench server's own streams.
+  // Each option carries a colored (virtual)/(merge)/(workbench) property tag.
   const mailboxOptions = (ids: string[]) => {
     const groups = new Map<string, string[]>();
     for (const id of ids) {
@@ -1306,9 +1319,14 @@ export function ChatConversation({
       .filter((o) => groups.has(o))
       .map((o) => (
         <optgroup key={o} label={originLabel(o)}>
-          {groups.get(o)!.map((id) => (
-            <option key={id} value={id}>{mailboxLabel(id)}</option>
-          ))}
+          {groups.get(o)!.map((id) => {
+            const tag = streamTag(id);
+            return (
+              <option key={id} value={id} style={tag ? { color: tag.color } : undefined}>
+                {mailboxLabel(id)}{tag ? ` (${tag.text})` : ""}
+              </option>
+            );
+          })}
         </optgroup>
       ));
   };
