@@ -2,3 +2,9 @@
 # nested plugin repo as a submodule/gitlink. Already-tracked plugin source is
 # unaffected; new plugin repos stay independent.
 /*/
+
+# web_proxy is first-party source of this repository, not a nested repo, so it
+# is exempt. Without this a new file beside its tracked plugin.py is silently
+# excluded -- which already lost ADMIN.md, the file its manifest names in
+# "docs".
+!/web_proxy/
