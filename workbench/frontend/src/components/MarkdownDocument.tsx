@@ -13,11 +13,15 @@ export function MarkdownDocument({
   content,
   onOpenDocs,
   onNavigateMarkdown,
+  navigateAllLocal = false,
   className,
 }: {
   content: string;
   onOpenDocs?: (filter: string) => void;
   onNavigateMarkdown?: (href: string) => void;
+  /** When true, any non-external link (not just *.md) navigates in-viewer via
+   *  onNavigateMarkdown — lets the docs page resolve its own relative repo links. */
+  navigateAllLocal?: boolean;
   className?: string;
 }) {
   return (
@@ -27,8 +31,9 @@ export function MarkdownDocument({
         components={{
           a: ({ node: _node, href = "", ...props }) => {
             const docsSearch = href.startsWith("?docs=");
-            const localMarkdown = !/^(https?:|mailto:|#)/i.test(href)
-              && href.split("#", 1)[0].toLowerCase().endsWith(".md");
+            const external = /^(https?:|mailto:|#)/i.test(href);
+            const localMarkdown = !external
+              && (navigateAllLocal || href.split("#", 1)[0].toLowerCase().endsWith(".md"));
             return <a
               {...props}
               href={href}
