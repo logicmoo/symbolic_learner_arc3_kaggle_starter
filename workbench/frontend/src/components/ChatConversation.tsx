@@ -16,6 +16,20 @@ export const DEFAULT_CHAT_PEER = "symbolic-workbench-user";
 const ORGANIZE_BASE = ["from", "to", "type", "author", "mailboxName"] as const;
 const ORGANIZE_SKIP = new Set(["id", "text", "raw", "timestamp", "mailboxId", "authorName"]);
 const FIELD_LABELS: Record<string, string> = { mailboxName: "mailbox" };
+// How a bubble field is rendered.
+const BUBBLE_STYLES: [string, string][] = [
+  ["text", "plain"],
+  ["label", "key: value"],
+  ["chip", "chip"],
+  ["bubble", "colored bubble"],
+];
+// How a message body is rendered.
+const RENDER_MODES: [string, string][] = [
+  ["markdown", "Markdown"],
+  ["json", "JSON"],
+  ["metta", "MeTTa"],
+  ["raw", "raw text"],
+];
 
 export type ChatMessage = {
   id: string;
@@ -103,6 +117,108 @@ export function ChatConversation({
   const [fillField, setFillField] = useState<string>("from");
   // Layout & color options are tucked behind a collapsible header (collapsed by default).
   const [showDisplay, setShowDisplay] = useState(false);
+  // The fields each bubble shows in its header — editable; each entry pairs a field
+  // with how it's displayed (plain text, key+value, chip, or an inner colored
+  // bubble tinted by the value). Starts with the fields the bubble showed before.
+  const [bubbleFields, setBubbleFields] = useState<{ field: string; style: string }[]>([
+    { field: "from", style: "text" },
+    { field: "type", style: "chip" },
+    { field: "timestamp", style: "text" },
+  ]);
+  // Default body rendering, plus ordered override rules ("reasons") that win over
+  // it: the first rule whose field matches (a value, or any value when blank)
+  // decides the mode for that message.
+  const [renderMode, setRenderMode] = useState<string>("markdown");
+  const [renderRules, setRenderRules] = useState<{ field: string; value: string; mode: string }[]>([]);
+
+  // The whole view (merges, placement, colors, bubble fields, render rules, and the
+  // selected mailbox) persists to localStorage per workspace and is saved the instant
+  // anything changes; it is loaded once on mount before the first save.
+  const viewKey = useMemo(() => {
+    let ws = "default";
+    try {
+      ws = new URLSearchParams(window.location.search).get("workspace") || "default";
+    } catch {
+      /* ignore */
+    }
+    return `wscollab.chat.view:${ws}`;
+  }, []);
+  const viewHydrated = useRef(false);
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(viewKey);
+      if (raw) {
+        const v = JSON.parse(raw) as Record<string, unknown>;
+        if (typeof v.placement === "string") setPlacement(v.placement as typeof placement);
+        if (typeof v.placementField === "string") setPlacementField(v.placementField);
+        if (typeof v.borderMode === "string") setBorderMode(v.borderMode as typeof borderMode);
+        if (typeof v.borderField === "string") setBorderField(v.borderField);
+        if (typeof v.fillMode === "string") setFillMode(v.fillMode as typeof fillMode);
+        if (typeof v.fillField === "string") setFillField(v.fillField);
+        if (v.mergeMode === "by-timestamp" || v.mergeMode === "sequential") setMergeMode(v.mergeMode);
+        if (typeof v.showDisplay === "boolean") setShowDisplay(v.showDisplay);
+        if (Array.isArray(v.mergeMailboxes)) {
+          setMergeMailboxes((v.mergeMailboxes as unknown[]).filter((x): x is string => typeof x === "string"));
+        }
+        if (Array.isArray(v.bubbleFields)) {
+          setBubbleFields(
+            (v.bubbleFields as unknown[])
+              .map((e) => (e && typeof e === "object" ? (e as Record<string, unknown>) : null))
+              .filter((e): e is Record<string, unknown> => !!e && typeof e.field === "string")
+              .map((e) => ({ field: String(e.field), style: typeof e.style === "string" ? e.style : "text" })),
+          );
+        }
+        if (typeof v.renderMode === "string") setRenderMode(v.renderMode);
+        if (Array.isArray(v.renderRules)) {
+          setRenderRules(
+            (v.renderRules as unknown[])
+              .map((e) => (e && typeof e === "object" ? (e as Record<string, unknown>) : null))
+              .filter((e): e is Record<string, unknown> => !!e && typeof e.field === "string")
+              .map((e) => ({
+                field: String(e.field),
+                value: typeof e.value === "string" ? e.value : "",
+                mode: typeof e.mode === "string" ? e.mode : "markdown",
+              })),
+          );
+        }
+        if (typeof v.mailbox === "string" && v.mailbox) {
+          setMailbox(v.mailbox);
+          setTarget(v.mailbox);
+        }
+      }
+    } catch {
+      /* ignore a corrupt saved view */
+    }
+    viewHydrated.current = true;
+  }, [viewKey]);
+  useEffect(() => {
+    if (!viewHydrated.current) return;
+    try {
+      window.localStorage.setItem(
+        viewKey,
+        JSON.stringify({
+          placement,
+          placementField,
+          borderMode,
+          borderField,
+          fillMode,
+          fillField,
+          mergeMode,
+          showDisplay,
+          mergeMailboxes,
+          bubbleFields,
+          renderMode,
+          renderRules,
+          mailbox,
+        }),
+      );
+    } catch {
+      /* ignore storage quota errors */
+    }
+  }, [
+    viewKey, placement, placementField, borderMode, borderField, fillMode, fillField,
+    mergeMode, showDisplay, mergeMailboxes, bubbleFields, renderMode, renderRules, mailbox,
+  ]);
   const [target, setTarget] = useState(peer);
   const [sendMailbox, setSendMailbox] = useState("");
   const [agents, setAgents] = useState<AgentOption[]>([]);
@@ -526,6 +642,132 @@ export function ChatConversation({
       return style.borderColor || style.background ? style : undefined;
     },
     [borderMode, borderField, borderHueIndex, fillMode, fillField, fillHueIndex, fieldValue],
+  );
+
+  // Fields offered for the per-bubble display list: the organizable fields plus a
+  // few display-only ones (timestamp, id), and always whatever is already chosen.
+  const bubbleFieldChoices = useMemo(() => {
+    const set = new Set<string>([...fieldStats.fields, "timestamp", "id"]);
+    for (const e of bubbleFields) set.add(e.field);
+    const pref = ["from", "author", "type", "timestamp", "to", "send_to", "id", "mailboxName"];
+    return [...set].sort((a, b) => {
+      const ia = pref.indexOf(a);
+      const ib = pref.indexOf(b);
+      if (ia !== -1 || ib !== -1) return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+      return a.localeCompare(b);
+    });
+  }, [fieldStats.fields, bubbleFields]);
+
+  // Stable hue for a value (for the "colored bubble" style), drawn from the palette.
+  const hueForValue = useCallback((v: string): number => {
+    let h = 0;
+    for (let i = 0; i < v.length; i++) h = (h * 31 + v.charCodeAt(i)) >>> 0;
+    return COLOR_HUES[h % COLOR_HUES.length];
+  }, []);
+
+  // Render one field on a bubble according to its chosen display style.
+  const renderBubbleField = useCallback(
+    (m: ChatMessage, entry: { field: string; style: string }, key: string) => {
+      const { field, style } = entry;
+      let display: string;
+      if (field === "from") {
+        display = m.authorName || m.author || m.from || "";
+        const via = m.author && m.from && m.author !== m.from ? m.from : "";
+        if (style === "text" || style === "label") {
+          return (
+            <span key={key} className="chat-message-from">
+              {display}
+              {via ? <span className="chat-message-via"> via {via}</span> : null}
+            </span>
+          );
+        }
+      } else if (field === "timestamp") {
+        display = m.timestamp ? formatTime(m.timestamp) : "";
+      } else {
+        display = fieldValue(m, field);
+      }
+      if (!display) return null;
+      const label = FIELD_LABELS[field] ?? field;
+      if (style === "bubble") {
+        const h = hueForValue(display);
+        return (
+          <span
+            key={key}
+            className="chat-bubble-tag"
+            style={{ borderColor: `hsl(${h} 65% 58%)`, background: `hsl(${h} 60% 45% / 0.22)` }}
+            title={label}
+          >
+            {display}
+          </span>
+        );
+      }
+      if (style === "chip") {
+        return (
+          <span key={key} className="chat-message-type" title={label}>
+            {display}
+          </span>
+        );
+      }
+      if (style === "label") {
+        return (
+          <span key={key} className="chat-message-field">
+            <span className="chat-message-field-key">{label}</span> {display}
+          </span>
+        );
+      }
+      return (
+        <span key={key} className="chat-message-field-text" title={label}>
+          {display}
+        </span>
+      );
+    },
+    [fieldValue, hueForValue],
+  );
+
+  // The effective render mode for a message: the first matching override rule, else
+  // the default. A rule matches when its field equals its value (case-insensitive),
+  // or — when the value is blank — whenever the field has any value.
+  const effectiveMode = useCallback(
+    (m: ChatMessage): string => {
+      for (const r of renderRules) {
+        if (!r.field) continue;
+        const v = fieldValue(m, r.field);
+        const match = r.value ? v.toLowerCase() === r.value.toLowerCase() : v !== "";
+        if (match) return r.mode;
+      }
+      return renderMode;
+    },
+    [renderRules, renderMode, fieldValue],
+  );
+
+  const renderBody = useCallback(
+    (m: ChatMessage) => {
+      const mode = effectiveMode(m);
+      const record = m.raw && typeof m.raw === "object" ? m.raw : { from: m.from, to: m.to, type: m.type, text: m.text };
+      if (mode === "raw") {
+        return <pre className="chat-message-raw">{m.text || "(no text)"}</pre>;
+      }
+      if (mode === "json") {
+        return <pre className="chat-message-json">{JSON.stringify(record, null, 2)}</pre>;
+      }
+      if (mode === "metta") {
+        let text: string;
+        try {
+          text = jsonDocumentToMetta(JSON.stringify(record));
+        } catch {
+          text = JSON.stringify(record, null, 2);
+        }
+        return <pre className="chat-message-json">{text}</pre>;
+      }
+      return m.text ? (
+        <MarkdownDocument className="chat-message-body" content={m.text} />
+      ) : (
+        <div className="chat-message-empty">
+          {m.mailboxName ? `(${m.type || "message"} in ${m.mailboxName} — inspect JSON)` : "(no text — inspect JSON)"}
+        </div>
+      );
+    },
+    [effectiveMode],
   );
 
   // Messages without text default to the JSON view; the toggle flips from the effective state.
@@ -1146,6 +1388,127 @@ export function ChatConversation({
               </select>
             )}
           </label>
+          {bubbleFields.map((entry, index) => (
+            <label className="chat-control chat-mbrow" key={`bubble-field-${index}`}>
+              <span className="chat-label">{index === 0 ? "Fields" : "＋ Field"}</span>
+              <select
+                value={entry.field}
+                onChange={(e) => setBubbleFields((rows) => rows.map((r, j) => (j === index ? { ...r, field: e.target.value } : r)))}
+                aria-label={`Bubble field ${index + 1}`}
+              >
+                {bubbleFieldChoices.map((k) => (
+                  <option key={k} value={k}>{FIELD_LABELS[k] ?? k}</option>
+                ))}
+              </select>
+              <select
+                value={entry.style}
+                onChange={(e) => setBubbleFields((rows) => rows.map((r, j) => (j === index ? { ...r, style: e.target.value } : r)))}
+                aria-label={`Bubble field ${index + 1} style`}
+                title="How this field is displayed on the bubble"
+              >
+                {BUBBLE_STYLES.map(([v, lbl]) => (
+                  <option key={v} value={v}>{lbl}</option>
+                ))}
+              </select>
+              <span className="chat-mbrow-actions">
+                <button
+                  type="button"
+                  className="chat-mbact"
+                  title="Move up"
+                  disabled={index === 0}
+                  onClick={() => setBubbleFields((rows) => { if (index === 0) return rows; const a = [...rows]; [a[index - 1], a[index]] = [a[index], a[index - 1]]; return a; })}
+                >
+                  ↑
+                </button>
+                <button
+                  type="button"
+                  className="chat-mbact"
+                  title="Move down"
+                  disabled={index === bubbleFields.length - 1}
+                  onClick={() => setBubbleFields((rows) => { if (index >= rows.length - 1) return rows; const a = [...rows]; [a[index + 1], a[index]] = [a[index], a[index + 1]]; return a; })}
+                >
+                  ↓
+                </button>
+                <button
+                  type="button"
+                  className="chat-mbact"
+                  title="Remove this field from the bubble"
+                  onClick={() => setBubbleFields((rows) => rows.filter((_, j) => j !== index))}
+                >
+                  ✕
+                </button>
+              </span>
+            </label>
+          ))}
+          <label className="chat-control chat-mbrow">
+            <button
+              type="button"
+              className="chat-label"
+              title="Show another field on each bubble"
+              onClick={() => setBubbleFields((rows) => { const used = new Set(rows.map((r) => r.field)); const next = bubbleFieldChoices.find((k) => !used.has(k)) || "type"; return [...rows, { field: next, style: "text" }]; })}
+            >
+              ＋ Add field
+            </button>
+          </label>
+          {renderRules.map((r, index) => (
+            <label className="chat-control chat-mbrow" key={`render-rule-${index}`}>
+              <span className="chat-label">{index === 0 ? "Render if" : "else if"}</span>
+              <select
+                value={r.field}
+                onChange={(e) => setRenderRules((rows) => rows.map((x, j) => (j === index ? { ...x, field: e.target.value } : x)))}
+                aria-label={`Render rule ${index + 1} field`}
+              >
+                <option value="">(field)</option>
+                {fieldStats.fields.map((k) => (
+                  <option key={k} value={k}>{FIELD_LABELS[k] ?? k}</option>
+                ))}
+              </select>
+              <input
+                className="chat-rule-value"
+                value={r.value}
+                onChange={(e) => setRenderRules((rows) => rows.map((x, j) => (j === index ? { ...x, value: e.target.value } : x)))}
+                placeholder="= value (blank = any)"
+                aria-label={`Render rule ${index + 1} value`}
+              />
+              <select
+                value={r.mode}
+                onChange={(e) => setRenderRules((rows) => rows.map((x, j) => (j === index ? { ...x, mode: e.target.value } : x)))}
+                aria-label={`Render rule ${index + 1} mode`}
+              >
+                {RENDER_MODES.map(([v, lbl]) => (
+                  <option key={v} value={v}>{lbl}</option>
+                ))}
+              </select>
+              <span className="chat-mbrow-actions">
+                <button
+                  type="button"
+                  className="chat-mbact"
+                  title="Remove this render rule"
+                  onClick={() => setRenderRules((rows) => rows.filter((_, j) => j !== index))}
+                >
+                  ✕
+                </button>
+              </span>
+            </label>
+          ))}
+          <label className="chat-control chat-mbrow">
+            <button
+              type="button"
+              className="chat-label"
+              title="Add a rule that overrides the default rendering"
+              onClick={() => setRenderRules((rows) => [...rows, { field: "type", value: "", mode: "json" }])}
+            >
+              ＋ Add render rule
+            </button>
+          </label>
+          <label className="chat-control chat-mbrow">
+            <span className="chat-label" title="Default body rendering (overridden by any matching rule above)">Render</span>
+            <select value={renderMode} onChange={(e) => setRenderMode(e.target.value)} aria-label="Default render mode">
+              {RENDER_MODES.map(([v, lbl]) => (
+                <option key={v} value={v}>{lbl}</option>
+              ))}
+            </select>
+          </label>
             </>
           )}
           <div className="chat-make">
@@ -1228,16 +1591,7 @@ export function ChatConversation({
             style={messageColorStyle(message)}
           >
             <div className="chat-message-meta">
-              <span className="chat-message-from">{message.authorName || message.author || message.from}</span>
-              {message.author && message.from && message.author !== message.from && (
-                <span className="chat-message-via">via {message.from}</span>
-              )}
-              {message.type && message.type !== "message" && (
-                <span className="chat-message-type">{message.type}</span>
-              )}
-              {message.timestamp && (
-                <span className="chat-message-time">{formatTime(message.timestamp)}</span>
-              )}
+              {bubbleFields.map((entry, i) => renderBubbleField(message, entry, `bf-${i}`))}
               <button
                 type="button"
                 className="chat-json-toggle"
@@ -1257,16 +1611,8 @@ export function ChatConversation({
                 {"\u270e"}
               </button>
             </div>
-            {message.text ? (
-              <MarkdownDocument className="chat-message-body" content={message.text} />
-            ) : (
-              <div className="chat-message-empty">
-                {message.mailboxName
-                  ? `(${message.type || "message"} in ${message.mailboxName} — inspect JSON)`
-                  : "(no text — inspect JSON)"}
-              </div>
-            )}
-            {(expanded[message.id] ?? !message.text) && entryEditKey !== bubbleKey(message) && (
+            {renderBody(message)}
+            {(expanded[message.id] ?? (effectiveMode(message) === "markdown" && !message.text)) && entryEditKey !== bubbleKey(message) && (
               <pre className="chat-message-json">
                 {JSON.stringify(message.raw ?? message, null, 2)}
               </pre>

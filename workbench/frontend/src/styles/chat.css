@@ -201,6 +201,17 @@
   cursor: default;
 }
 
+.chat-control input.chat-rule-value {
+  flex: 1;
+  min-width: 0;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 3px 6px;
+  font-size: 11px;
+}
+
 .chat-control {
   display: flex;
   align-items: center;
@@ -629,6 +640,34 @@
 .chat-message-type {
   color: var(--amber);
   border-color: color-mix(in srgb, var(--amber) 45%, var(--line));
+}
+
+.chat-message-field-text {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.chat-message-field {
+  font-size: 11px;
+  color: var(--text);
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.chat-message-field-key {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+
+.chat-bubble-tag {
+  font-size: 10px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  color: var(--text);
 }
 
 .chat-json-toggle {
