@@ -93,6 +93,8 @@ export function ChatConversation({
   const [borderField, setBorderField] = useState<"from" | "to" | "type" | "author" | "mailboxName">("mailboxName");
   const [fillMode, setFillMode] = useState<"sender" | "uniform" | "field">("sender");
   const [fillField, setFillField] = useState<"from" | "to" | "type" | "author" | "mailboxName">("from");
+  // Layout & color options are tucked behind a collapsible header (collapsed by default).
+  const [showDisplay, setShowDisplay] = useState(false);
   const [target, setTarget] = useState(peer);
   const [sendMailbox, setSendMailbox] = useState("");
   const [agents, setAgents] = useState<AgentOption[]>([]);
@@ -992,6 +994,18 @@ export function ChatConversation({
             )}
           </label>
           <label className="chat-control chat-mbrow">
+            <button
+              type="button"
+              className="chat-label"
+              title="Show or hide message layout and color options"
+              onClick={() => setShowDisplay((v) => !v)}
+            >
+              {showDisplay ? "▾ Layout & color" : "▸ Layout & color"}
+            </button>
+          </label>
+          {showDisplay && (
+            <>
+          <label className="chat-control chat-mbrow">
             <span className="chat-label" title="Where to place message bubbles">Place</span>
             <select
               value={placement}
@@ -1072,6 +1086,8 @@ export function ChatConversation({
               </select>
             )}
           </label>
+            </>
+          )}
           <div className="chat-make">
             <input
               value={newEntry}
