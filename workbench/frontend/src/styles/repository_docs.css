@@ -20,9 +20,3 @@
 .repository-visibility-controls{display:flex;gap:4px;padding:0 12px 8px}.repository-visibility-controls button{flex:1;border:1px solid #263b46;border-radius:3px;background:#0d1b23;color:#718691;padding:6px;font:700 8px ui-monospace,monospace;cursor:pointer}.repository-visibility-controls button.active{border-color:#bf8d55;background:#2b2418;color:#e8bd7c}
 .repository-filter-line{display:grid;grid-template-columns:48px minmax(0,1fr);align-items:center;gap:6px;margin:0 12px 7px}.repository-filter-line>span{color:#718691;font:700 7px ui-monospace,monospace;letter-spacing:.08em}.repository-filter-line>input{min-width:0;margin:0!important}.repository-filter-line.exclusion>span{color:#bf8d55}.repository-filter-line.exclusion>input{border-color:#493b2a}
 .repository-filter-line>input{padding:9px 10px;border:1px solid #263b46;border-radius:4px;background:#0d1b23;color:#d7e0e5}
-
-/* Let the unified editor fill the document view height on the docs page. */
-.repository-doc-view{display:flex;flex-direction:column;overflow:hidden}
-.repository-doc-view>.repository-doc-path{flex:0 0 auto}
-.repository-doc-view>.repository-image-view{flex:0 0 auto}
-.repository-doc-view>.resource-source-editor.fill{flex:1 1 auto;min-height:0}

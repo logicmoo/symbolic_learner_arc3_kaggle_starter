@@ -1,5 +1,13 @@
 import {useEffect,useMemo,useState} from "react";
-import {ResourceSourceEditor} from "./ResourceSourceEditor";
+import CodeMirror from "@uiw/react-codemirror";
+import {css} from "@codemirror/lang-css";
+import {html} from "@codemirror/lang-html";
+import {javascript} from "@codemirror/lang-javascript";
+import {json} from "@codemirror/lang-json";
+import {markdown} from "@codemirror/lang-markdown";
+import {python} from "@codemirror/lang-python";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import {replaceWorkbenchLocation} from "../lib/workbenchNavigation";
 import "../styles/repository_docs.css";
 
@@ -25,6 +33,7 @@ function resolvePath(current:string,href:string){
  for(const part of clean.split("/")){if(!part||part===".")continue;if(part==="..")parts.pop();else parts.push(part)}
  return parts.join("/");
 }
+function syntaxExtensions(path:string){const suffix=path.toLowerCase().split(".").pop();if(suffix==="json"||suffix==="ipynb")return[json()];if(suffix==="md")return[markdown()];if(suffix==="py")return[python()];if(["js","mjs","ts","tsx"].includes(suffix||""))return[javascript({typescript:suffix==="ts"||suffix==="tsx",jsx:suffix==="tsx"})];if(suffix==="css")return[css()];if(suffix==="html")return[html()];return[]}
 function buildFileTree(entries:FileEntry[]){
  const root:FileTreeNode={name:"Repository",path:"",directories:new Map(),files:[]};
  for(const entry of entries){let node=root;const parts=entry.path.split("/");for(const part of parts.slice(0,-1)){const path=node.path?`${node.path}/${part}`:part;let child=node.directories.get(part);if(!child){child={name:part,path,directories:new Map(),files:[]};node.directories.set(part,child)}node=child}node.files.push(entry)}
@@ -91,21 +100,11 @@ export function RepositoryDocsPage({initialFilter=""}:{initialFilter?:string}){
   <article className="repository-doc-view markdown-body">
    {error&&<div className="backend-error">{error}</div>}
    {opened?<>
-    <div className="repository-doc-path">{history.length>0&&<button onClick={back}>← Back</button>}<span>FILESYSTEM DOCUMENT</span><code>{opened.path}</code><div className="repository-reveal-actions"><button onClick={()=>revealOpened("tree")}>Find in Tree</button><button onClick={()=>revealOpened("navigator")}>Find in Navigator</button><button onClick={()=>revealOpened("paths")}>Find in Full Paths</button></div><button className="repository-tree-return" onClick={()=>{setOpened(null);setHistory([]);setError("");recordLocation("Docs",{docsFile:null})}}>Close document</button></div>
-        {opened.format==="image"
-      ? <figure className="repository-image-view"><img src={`/api/repository/asset?path=${encodeURIComponent(opened.path)}`} alt={opened.path}/><figcaption>{opened.path}</figcaption></figure>
-      : <ResourceSourceEditor
-          value={editDraft}
-          onChange={setEditDraft}
-          path={opened.path}
-          onSave={()=>void save()}
-          saving={saving}
-          showEnablement={false}
-          label={opened.path.split("/").pop()||"File"}
-          navigateAllLocal
-          fill
-          onNavigateMarkdown={(href)=>{const path=resolvePath(opened.path,href);recordLocation(path,{docsFile:path});void load(path,true);}}
-        />}
+    <div className="repository-doc-path">{history.length>0&&<button onClick={back}>← Back</button>}<span>FILESYSTEM DOCUMENT</span><code>{opened.path}</code><div className="repository-reveal-actions"><button onClick={()=>revealOpened("tree")}>Find in Tree</button><button onClick={()=>revealOpened("navigator")}>Find in Navigator</button><button onClick={()=>revealOpened("paths")}>Find in Full Paths</button></div>{opened.format==="markdown"&&!editMode&&<button onClick={()=>setEditMode(true)}>Edit source</button>}<button className="repository-tree-return" onClick={()=>{setOpened(null);setHistory([]);setError("");recordLocation("Docs",{docsFile:null})}}>Close document</button></div>
+    {opened.format==="image"?<figure className="repository-image-view"><img src={`/api/repository/asset?path=${encodeURIComponent(opened.path)}`} alt={opened.path}/><figcaption>{opened.path}</figcaption></figure>:editable&&editMode?<section className="repository-file-editor"><header><div><span>EDITABLE FILE</span><b>{opened.path.split(".").pop()?.toUpperCase()||"TEXT"}</b></div><div className="repository-editor-actions">{opened.format==="markdown"&&<button onClick={()=>setEditMode(false)}>Rendered preview</button>}<button disabled={saving||editDraft===opened.content} onClick={()=>void save()}>{saving?"Saving…":"Save to filesystem"}</button></div></header><CodeMirror value={editDraft} extensions={syntaxExtensions(opened.path)} theme="dark" height="100%" onChange={setEditDraft} aria-label={`Edit ${opened.path}`}/></section>:opened.format==="markdown"?<ReactMarkdown remarkPlugins={[remarkGfm]} components={{a:({node:_node,href="",...props})=>{
+     const local=!/^(https?:|mailto:|#)/i.test(href);
+     return <a {...props} href={local?"#":href} target={local?undefined:"_blank"} rel={local?undefined:"noreferrer"} onClick={local?(event=>{event.preventDefault();event.stopPropagation();const path=resolvePath(opened.path,href);recordLocation(path,{docsFile:path});void load(path,true)}):undefined}/>;
+   }}}>{opened.content}</ReactMarkdown>:<pre className="repository-source-view"><code>{opened.content}</code></pre>}
    </>:<div className="studio-empty">The filesystem tree remains available on the left. Select an exposed file to open it here.</div>}
   </article>
  </section>;
