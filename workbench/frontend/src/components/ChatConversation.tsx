@@ -392,13 +392,24 @@ export function ChatConversation({
     return "";
   }, []);
 
-  // The union of organizable fields: the base set plus any primitive-valued keys
-  // discovered on the current messages (or their raw records), sorted for stability.
-  const availableFields = useMemo(() => {
-    const set = new Set<string>(ORGANIZE_BASE);
+  // The organizable fields (base set + primitive keys discovered on messages or
+  // their raw records), plus the distinct-value count per field. Counts are capped
+  // at 17 so we can render ">16" without unbounded sets.
+  const fieldStats = useMemo(() => {
+    const values = new Map<string, Set<string>>();
+    const ensure = (k: string) => {
+      let s = values.get(k);
+      if (!s) {
+        s = new Set<string>();
+        values.set(k, s);
+      }
+      return s;
+    };
+    for (const b of ORGANIZE_BASE) ensure(b);
     const consider = (k: string, v: unknown) => {
       if (ORGANIZE_SKIP.has(k) || v === null || v === undefined || typeof v === "object") return;
-      set.add(k);
+      const s = ensure(k);
+      if (s.size <= 16) s.add(String(v)); // stop growing past 17 → renders as ">16"
     };
     for (const m of messages) {
       const rec = m as unknown as Record<string, unknown>;
@@ -409,18 +420,27 @@ export function ChatConversation({
       }
     }
     const base = ORGANIZE_BASE as readonly string[];
-    const extras = [...set].filter((k) => !base.includes(k)).sort();
-    return [...base, ...extras];
+    const extras = [...values.keys()].filter((k) => !base.includes(k)).sort();
+    const counts = new Map<string, number>();
+    for (const [k, s] of values) counts.set(k, s.size);
+    return { fields: [...base, ...extras], counts };
   }, [messages]);
 
   // Render <option>s for a field picker, always including the current value even
   // if it hasn't been discovered yet (so growing the list never resets the choice).
-  const fieldOptions = (current: string) =>
-    (availableFields.includes(current) ? availableFields : [current, ...availableFields]).map((f) => (
-      <option key={f} value={f}>
-        {FIELD_LABELS[f] ?? f}
-      </option>
-    ));
+  // Each label carries the distinct-value count seen so far (">16" once capped).
+  const fieldOptions = (current: string) => {
+    const list = fieldStats.fields.includes(current) ? fieldStats.fields : [current, ...fieldStats.fields];
+    return list.map((f) => {
+      const c = fieldStats.counts.get(f);
+      const suffix = c === undefined ? "" : c > 16 ? " (>16)" : ` (${c})`;
+      return (
+        <option key={f} value={f}>
+          {(FIELD_LABELS[f] ?? f) + suffix}
+        </option>
+      );
+    });
+  };
 
   const fieldPlacement = useMemo(() => {
     const map = new Map<string, string>();
