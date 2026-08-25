@@ -6,6 +6,8 @@ import {relationshipIds} from "./resourceRelationships";
 import {CategorizedArtifactTree,categoryPaths} from "./CategorizedArtifactTree";
 import type {ArtifactTreeCommand} from "./ArtifactTreeBranch";
 import {ResourceSourceEditor} from "./ResourceSourceEditor";
+import {UniversalArtifactEditor} from "./UniversalArtifactEditor";
+import {SuperControlDepthProvider} from "./subControlRegistry";
 import {ResourceEnablementBadge,enablementClass,resolveResourceEnablement} from "./resourceEnablement";
 import {displayResourcePath} from "./resourcePath";
 import {jsonValueToMetta} from "../lib/mettaResourceCodec";
@@ -61,9 +63,7 @@ export function OperationLibraryEditor({workspaceId,sourceLanguage}:{workspaceId
   const togglePrompt=(id:string)=>updatePrompts(selectedPrompts.includes(id)?selectedPrompts.filter(x=>x!==id):[...selectedPrompts,id]);
   const togglePromptProfile=(id:string)=>{if(!selectedImplementation)return;const promptProfiles=selectedPromptProfiles.includes(id)?selectedPromptProfiles.filter(x=>x!==id):[...selectedPromptProfiles,id];const bindings:Record<string,unknown>={...(selectedImplementation.bindings||{}),promptProfiles};delete bindings.promptProfile;patchImpl({bindings})};
   const movePrompt=(index:number,delta:number)=>{const next=[...selectedPrompts],to=index+delta;if(to<0||to>=next.length)return;[next[index],next[to]]=[next[to],next[index]];updatePrompts(next)};
-  return <section className={`operation-editor-document ${secondary?"secondary":"primary"}`} key={doc.key}>
-   <div className="operation-editor-toolbar"><div><span>{isImplementation?"OPERATION IMPLEMENTATION":"ABSTRACT OPERATION"}{doc.dirty?" · UNSAVED":""}</span><h2>{document?.label||document?.id||displayResourcePath(doc.record.path)}</h2><small>{doc.record.source} · {displayResourcePath(doc.record.path)}</small></div><div className="operation-editor-actions">{document&&<button className={document.enabled===false?"enable-resource":"disable-resource"} onClick={()=>updateSource(doc.key,JSON.stringify({...document,enabled:document.enabled===false},null,2))}>{document.enabled===false?"Enable Resource":"Disable Resource"}</button>}{!secondary&&<button onClick={chooseComparison}>{compareKey?"Single pane":"Split view"}</button>}<button className="primary" onClick={()=>saveDoc(doc)} disabled={busy||!document}>Save</button></div></div>
-   <div className="operation-editor-scroll">
+  const body=<div className="operation-editor-scroll">
     {!document&&<div className="demo-notice"><b>Invalid resource</b><span>Fix the source before saving this resource.</span></div>}
     {abstract&&<><div className="operation-abstract-summary"><div><span>ROLE</span><b>{abstract.role||"abstract_stage"}</b></div><div><span>DEFAULT IMPLEMENTATION</span><select value={directRoute?abstract.id:abstract.preferredChild||""} disabled={Boolean(directRoute)} onChange={e=>setDefaultImplementation(e.target.value)}>{directRoute?<option value={abstract.id}>Direct — {directRoute}</option>:<option value="">planner-selected</option>}{variants.map(row=>{const impl=row.document!;const language=impl.implementation.startsWith("python")?"Python":impl.implementation.startsWith("prolog")?"Prolog":impl.implementation.startsWith("metta")?"MeTTa":impl.implementation.startsWith("llm")?"LLM":"Implementation";return <option key={impl.id} value={impl.id}>{language} — {impl.label||impl.id}</option>})}</select></div><div><span>INPUTS</span><code>{Object.keys(abstract.inputs||{}).join(", ")||"—"}</code></div><div><span>OUTPUTS</span><code>{Object.keys(abstract.outputs||{}).join(", ")||"—"}</code></div></div><OperationPlayground workspaceId={workspaceId} operation={abstract} variants={variants.filter(row=>row.document).map(row=>row.document!)} models={(snapshot?.models||[]).filter(row=>row.document).map(row=>({id:row.document!.id,label:row.document!.label,enabled:row.document!.enabled}))} onDefaultImplementationChange={setDefaultImplementation}/></>}
     {selectedImplementation&&<div className="implementation-summary"><div><span>ROUTE</span><b>{selectedImplementation.implementation}</b></div><div><span>IMPLEMENTS</span><b>{relationshipIds(selectedImplementation.parents).join(", ")}</b></div>{selectedImplementation.python&&<div className="wide"><span>PYTHON SOURCE</span><code>{String(selectedImplementation.python.module||selectedImplementation.python.file||"configured source")}{selectedImplementation.python.className?` · ${String(selectedImplementation.python.className)}`:""}{selectedImplementation.python.callable?` :: ${String(selectedImplementation.python.callable)}`:""}</code></div>}{selectedImplementation.prolog&&<div className="wide"><span>SWI-PROLOG SOURCE</span><code>{String(selectedImplementation.prolog.predicate||"predicate")} / {String(selectedImplementation.prolog.arity||"?")}</code></div>}{selectedImplementation.metta&&<div className="wide"><span>METTA SOURCE</span><code>{jsonValueToMetta(selectedImplementation.metta)}</code></div>}</div>}
@@ -71,8 +71,34 @@ export function OperationLibraryEditor({workspaceId,sourceLanguage}:{workspaceId
     {selectedImplementation?.implementation.startsWith("llm")&&promptProfiles.length>0&&<div className="operation-llm-config"><div className="llm-subhead"><div><span>PROMPT PROFILES</span><b>Reusable ordered prompt compositions, independent of the selected model or preset</b></div></div><div className="operation-model-list compact">{promptProfiles.map(row=>{const item=row.document!,checked=selectedPromptProfiles.includes(item.id);return <label className={`operation-model-option ${checked?"selected":""}`} key={item.id}><input type="checkbox" checked={checked} onChange={()=>togglePromptProfile(item.id)}/><span><b>{item.label||item.id}</b><small>{item.prompts.length} prompts · {item.description||row.path}</small></span></label>})}</div></div>}
     {selectedImplementation?.implementation.startsWith("llm")&&<div className="operation-llm-config"><div className="llm-subhead"><div><span>MODEL / PRESET DISPATCH</span><b>Models and reusable invocation presets allowed for this implementation</b></div></div><div className="operation-model-list compact">{enabledModels.map(row=>{const item=row.document!,checked=selectedModels.includes(item.id);return <label className={`operation-model-option ${checked?"selected":""}`} key={item.id}><input type="checkbox" checked={checked} onChange={()=>toggleModel(item.id)}/><span><b>{item.label||item.id}</b><small>{item.kind} · {row.resolved?.model||item.model||"inherited model"}</small></span></label>})}</div><div className="llm-subhead"><div><span>PROMPT COMPOSITION</span><b>Ordered prompts used by this implementation</b></div></div><div className="operation-model-list compact">{prompts.map(row=>{const item=row.document!,checked=selectedPrompts.includes(item.id),index=selectedPrompts.indexOf(item.id);return <div className={`operation-model-option ${checked?"selected":""}`} key={item.id}><input type="checkbox" checked={checked} onChange={()=>togglePrompt(item.id)}/><span><b>{item.label||item.id}</b><small>{item.description||row.path}</small></span>{checked&&<em><button onClick={()=>movePrompt(index,-1)} disabled={index===0}>↑</button> {index+1} <button onClick={()=>movePrompt(index,1)} disabled={index===selectedPrompts.length-1}>↓</button></em>}</div>})}</div></div>}
     <ResourceSourceEditor value={doc.source} onChange={value=>updateSource(doc.key,value)} label="Edit the selected item directly" showEnablement={false} />
-   </div>
-  </section>};
+   </div>;
+  const kindLabel=isImplementation?"OPERATION IMPLEMENTATION":"ABSTRACT OPERATION";
+  const actions=<>{document&&<button className={document.enabled===false?"enable-resource":"disable-resource"} onClick={()=>updateSource(doc.key,JSON.stringify({...document,enabled:document.enabled===false},null,2))}>{document.enabled===false?"Enable Resource":"Disable Resource"}</button>}{!secondary&&<button onClick={chooseComparison}>{compareKey?"Single pane":"Split view"}</button>}<button className="primary" onClick={()=>saveDoc(doc)} disabled={busy||!document}>Save</button></>;
+  // The operation document is now a tab inside the Super Control, which sits
+  // exactly where the old bespoke toolbar/document control used to be. The rest
+  // of this page -- heading, hierarchy, and document tabs -- stays outside it.
+  // A comparison pane renders at depth 1 so it does not draw a second strip.
+  const control=<UniversalArtifactEditor
+   key={doc.key}
+   className={`operation-document-super ${secondary?"secondary":"primary"}`}
+   eyebrow={kindLabel}
+   category={kindLabel}
+   title={document?.label||document?.id||displayResourcePath(doc.record.path)}
+   description={`${doc.record.source} · ${displayResourcePath(doc.record.path)}`}
+   workspaceId={workspaceId}
+   hideNavigator
+   leftPane={null}
+   tabs={[{key:doc.key,kind:isImplementation?"IMPL":"OPERATION",label:document?.label||document?.id||displayResourcePath(doc.record.path),dirty:doc.dirty,subtitle:displayResourcePath(doc.record.path)}]}
+   activeKey={doc.key}
+   compareKey={null}
+   onActivate={()=>setActiveKey(doc.key)}
+   onClose={()=>close(doc.key)}
+   headerActions={<div className="operation-editor-actions">{actions}</div>}
+   appearance="embedded"
+   content={{text:doc.source,onChange:value=>updateSource(doc.key,value),path:displayResourcePath(doc.record.path)}}
+   renderEditor={()=>body}
+  />;
+  return secondary?<SuperControlDepthProvider value={1}>{control}</SuperControlDepthProvider>:control};
 
  if(!snapshot)return <section className="resource-view"><div className="studio-empty">Loading operation library…</div></section>;
  const toggleOperation=(id:string)=>setCollapsedOperations(current=>{const next=new Set(current);if(next.has(id))next.delete(id);else next.add(id);return next});
