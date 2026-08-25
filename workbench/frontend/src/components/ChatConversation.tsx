@@ -9,6 +9,14 @@ import "../styles/chat.css";
 export const DEFAULT_CHAT_USER = "symbolic-workbench-user";
 export const DEFAULT_CHAT_PEER = "symbolic-workbench-user";
 
+// Fields the user can organize (place/color) messages by. This base set always
+// shows; any additional primitive-valued keys seen on messages (or their raw
+// record) are added dynamically as new traffic arrives — the current choice is
+// never changed when the list grows.
+const ORGANIZE_BASE = ["from", "to", "type", "author", "mailboxName"] as const;
+const ORGANIZE_SKIP = new Set(["id", "text", "raw", "timestamp", "mailboxId", "authorName"]);
+const FIELD_LABELS: Record<string, string> = { mailboxName: "mailbox" };
+
 export type ChatMessage = {
   id: string;
   timestamp?: string;
@@ -86,13 +94,13 @@ export function ChatConversation({
   // field gets its own lane (assigned left/right/center/full as it first appears).
   // Default: lane by stream name — the first stream seen justifies left.
   const [placement, setPlacement] = useState<"sender" | "left" | "right" | "center" | "full" | "field">("field");
-  const [placementField, setPlacementField] = useState<"from" | "to" | "type" | "author" | "mailboxName">("mailboxName");
+  const [placementField, setPlacementField] = useState<string>("mailboxName");
   // Message color has two independent channels — the bubble border and the fill —
   // each "by sender", a uniform tint, or "field" (each distinct value gets a hue).
   const [borderMode, setBorderMode] = useState<"sender" | "uniform" | "field">("sender");
-  const [borderField, setBorderField] = useState<"from" | "to" | "type" | "author" | "mailboxName">("mailboxName");
+  const [borderField, setBorderField] = useState<string>("mailboxName");
   const [fillMode, setFillMode] = useState<"sender" | "uniform" | "field">("sender");
-  const [fillField, setFillField] = useState<"from" | "to" | "type" | "author" | "mailboxName">("from");
+  const [fillField, setFillField] = useState<string>("from");
   // Layout & color options are tucked behind a collapsible header (collapsed by default).
   const [showDisplay, setShowDisplay] = useState(false);
   const [target, setTarget] = useState(peer);
@@ -370,6 +378,50 @@ export function ChatConversation({
 
   // Assign a placement lane (pos-left/right/center/full) to each distinct value of
   // the chosen field, in order of first appearance, cycling through the four lanes.
+  // Read a field off a message, falling back to its raw record so newly-appearing
+  // fields (that only live in raw) are still organizable.
+  const fieldValue = useCallback((m: ChatMessage, field: string): string => {
+    const rec = m as unknown as Record<string, unknown>;
+    const top = rec[field];
+    if (top !== undefined && top !== null && top !== "") return String(top);
+    const raw = rec.raw;
+    if (raw && typeof raw === "object") {
+      const rv = (raw as Record<string, unknown>)[field];
+      if (rv !== undefined && rv !== null) return String(rv);
+    }
+    return "";
+  }, []);
+
+  // The union of organizable fields: the base set plus any primitive-valued keys
+  // discovered on the current messages (or their raw records), sorted for stability.
+  const availableFields = useMemo(() => {
+    const set = new Set<string>(ORGANIZE_BASE);
+    const consider = (k: string, v: unknown) => {
+      if (ORGANIZE_SKIP.has(k) || v === null || v === undefined || typeof v === "object") return;
+      set.add(k);
+    };
+    for (const m of messages) {
+      const rec = m as unknown as Record<string, unknown>;
+      for (const k of Object.keys(rec)) consider(k, rec[k]);
+      const raw = rec.raw;
+      if (raw && typeof raw === "object") {
+        for (const [k, v] of Object.entries(raw as Record<string, unknown>)) consider(k, v);
+      }
+    }
+    const base = ORGANIZE_BASE as readonly string[];
+    const extras = [...set].filter((k) => !base.includes(k)).sort();
+    return [...base, ...extras];
+  }, [messages]);
+
+  // Render <option>s for a field picker, always including the current value even
+  // if it hasn't been discovered yet (so growing the list never resets the choice).
+  const fieldOptions = (current: string) =>
+    (availableFields.includes(current) ? availableFields : [current, ...availableFields]).map((f) => (
+      <option key={f} value={f}>
+        {FIELD_LABELS[f] ?? f}
+      </option>
+    ));
+
   const fieldPlacement = useMemo(() => {
     const map = new Map<string, string>();
     if (placement !== "field") return map;
@@ -383,10 +435,10 @@ export function ChatConversation({
       for (const mb of [mailbox, ...mergeMailboxes].filter(Boolean)) assign(String(mb));
     }
     for (const m of messages) {
-      assign(String((m as unknown as Record<string, unknown>)[placementField] ?? ""));
+      assign(fieldValue(m, placementField));
     }
     return map;
-  }, [messages, placement, placementField, mailbox, mergeMailboxes]);
+  }, [messages, placement, placementField, mailbox, mergeMailboxes, fieldValue]);
 
   const placementClass = useCallback(
     (m: ChatMessage): string => {
@@ -400,12 +452,12 @@ export function ChatConversation({
         case "full":
           return "pos-full";
         case "field":
-          return fieldPlacement.get(String((m as unknown as Record<string, unknown>)[placementField] ?? "")) || "";
+          return fieldPlacement.get(fieldValue(m, placementField)) || "";
         default:
           return "";
       }
     },
-    [placement, placementField, fieldPlacement],
+    [placement, placementField, fieldPlacement, fieldValue],
   );
 
   // Same idea for color: each distinct value of the chosen field gets a hue, in
@@ -413,7 +465,7 @@ export function ChatConversation({
   // through a fixed palette. Border and fill are computed independently.
   const COLOR_HUES = [200, 280, 20, 140, 330, 50, 100, 250, 0, 170];
   const buildHueIndex = useCallback(
-    (active: boolean, field: "from" | "to" | "type" | "author" | "mailboxName") => {
+    (active: boolean, field: string) => {
       const map = new Map<string, number>();
       if (!active) return map;
       const put = (k: string) => {
@@ -422,10 +474,10 @@ export function ChatConversation({
       if (field === "mailboxName") {
         for (const mb of [mailbox, ...mergeMailboxes].filter(Boolean)) put(String(mb));
       }
-      for (const m of messages) put(String((m as unknown as Record<string, unknown>)[field] ?? ""));
+      for (const m of messages) put(fieldValue(m, field));
       return map;
     },
-    [messages, mailbox, mergeMailboxes],
+    [messages, mailbox, mergeMailboxes, fieldValue],
   );
   const borderHueIndex = useMemo(
     () => buildHueIndex(borderMode === "field", borderField),
@@ -442,18 +494,18 @@ export function ChatConversation({
       if (borderMode === "uniform") {
         style.borderColor = "var(--line)";
       } else if (borderMode === "field") {
-        const idx = borderHueIndex.get(String((m as unknown as Record<string, unknown>)[borderField] ?? "")) ?? 0;
+        const idx = borderHueIndex.get(fieldValue(m, borderField)) ?? 0;
         style.borderColor = `hsl(${COLOR_HUES[idx % COLOR_HUES.length]} 65% 58%)`;
       }
       if (fillMode === "uniform") {
         style.background = "var(--panel2)";
       } else if (fillMode === "field") {
-        const idx = fillHueIndex.get(String((m as unknown as Record<string, unknown>)[fillField] ?? "")) ?? 0;
+        const idx = fillHueIndex.get(fieldValue(m, fillField)) ?? 0;
         style.background = `hsl(${COLOR_HUES[idx % COLOR_HUES.length]} 60% 45% / 0.16)`;
       }
       return style.borderColor || style.background ? style : undefined;
     },
-    [borderMode, borderField, borderHueIndex, fillMode, fillField, fillHueIndex],
+    [borderMode, borderField, borderHueIndex, fillMode, fillField, fillHueIndex, fieldValue],
   );
 
   // Messages without text default to the JSON view; the toggle flips from the effective state.
@@ -1022,15 +1074,11 @@ export function ChatConversation({
             {placement === "field" && (
               <select
                 value={placementField}
-                onChange={(event) => setPlacementField(event.target.value as typeof placementField)}
+                onChange={(event) => setPlacementField(event.target.value)}
                 aria-label="Placement field"
                 title="Each distinct value of this field gets its own lane"
               >
-                <option value="from">from</option>
-                <option value="to">to</option>
-                <option value="type">type</option>
-                <option value="author">author</option>
-                <option value="mailboxName">mailbox</option>
+                {fieldOptions(placementField)}
               </select>
             )}
           </label>
@@ -1048,15 +1096,11 @@ export function ChatConversation({
             {borderMode === "field" && (
               <select
                 value={borderField}
-                onChange={(event) => setBorderField(event.target.value as typeof borderField)}
+                onChange={(event) => setBorderField(event.target.value)}
                 aria-label="Border field"
                 title="Each distinct value of this field gets its own border hue"
               >
-                <option value="from">from</option>
-                <option value="to">to</option>
-                <option value="type">type</option>
-                <option value="author">author</option>
-                <option value="mailboxName">mailbox</option>
+                {fieldOptions(borderField)}
               </select>
             )}
           </label>
@@ -1074,15 +1118,11 @@ export function ChatConversation({
             {fillMode === "field" && (
               <select
                 value={fillField}
-                onChange={(event) => setFillField(event.target.value as typeof fillField)}
+                onChange={(event) => setFillField(event.target.value)}
                 aria-label="Fill field"
                 title="Each distinct value of this field gets its own fill hue"
               >
-                <option value="from">from</option>
-                <option value="to">to</option>
-                <option value="type">type</option>
-                <option value="author">author</option>
-                <option value="mailboxName">mailbox</option>
+                {fieldOptions(fillField)}
               </select>
             )}
           </label>
