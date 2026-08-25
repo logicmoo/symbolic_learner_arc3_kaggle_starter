@@ -120,7 +120,7 @@ export type ChatMessage = {
   raw?: unknown;
 };
 
-export type MailboxOption = { id: string; kind?: string; messages?: number; name?: string | null; global_name?: string | null };
+export type MailboxOption = { id: string; kind?: string; messages?: number; name?: string | null; global_name?: string | null; origin?: string };
 
 type CursorInfo = {
   mailbox: string;
@@ -299,6 +299,18 @@ export function ChatConversation({
     setMailbox(next);
     setTarget(next);
   }, []);
+
+  // Once the directory has loaded, ensure the viewed mailbox is a real stream.
+  // A fresh workspace opens on the peer identity ("symbolic-workbench-user"),
+  // which is not a stream and shows nothing — fall back to the shared
+  // "conversation" stream (or the first available) so streams show up.
+  useEffect(() => {
+    if (!viewHydrated.current || !mailboxes.length) return;
+    const realIds = mailboxes.map((m) => m.id);
+    if (realIds.includes(mailbox)) return;
+    const preferred = realIds.includes("conversation") ? "conversation" : realIds[0];
+    if (preferred) setMailbox(preferred);
+  }, [mailboxes, mailbox]);
 
   const fetchDirectory = useCallback(async () => {
     try {
@@ -1264,6 +1276,8 @@ export function ChatConversation({
   const mailboxNames = new Map(mailboxes.map((c) => [c.id, c.name] as const));
   const mailboxCounts = new Map(mailboxes.map((c) => [c.id, c.messages] as const));
   const mailboxGlobals = new Map(mailboxes.map((c) => [c.id, c.global_name] as const));
+  const mailboxOrigins = new Map(mailboxes.map((c) => [c.id, c.origin] as const));
+  const originLabel = (o?: string) => (o === "workbench" ? "Workbench server" : "ws_collab");
   // The TO agent's explicit subscription setting on the viewed mailbox (if any).
   const targetRecord = agents.find((a) => a.id === target) as Record<string, unknown> | undefined;
   const targetSubs = (targetRecord?.subscriptions ?? null) as Record<string, string> | null;
@@ -1274,7 +1288,29 @@ export function ChatConversation({
     const globalName = mailboxGlobals.get(id);
     const withGlobal = globalName && globalName !== id ? `${base} · ${globalName}` : base;
     const count = mailboxCounts.get(id);
-    return typeof count === "number" ? `${withGlobal} · ${count}` : withGlobal;
+    const withCount = typeof count === "number" ? `${withGlobal} · ${count}` : withGlobal;
+    return mailboxOrigins.get(id) === "workbench" ? `⇄ ${withCount}` : withCount;
+  };
+  // Render mailbox <option>s grouped into <optgroup>s by origin so ws_collab
+  // streams are visually separated from the workbench server's own streams.
+  const mailboxOptions = (ids: string[]) => {
+    const groups = new Map<string, string[]>();
+    for (const id of ids) {
+      const o = mailboxOrigins.get(id) || "ws_collab";
+      const list = groups.get(o) ?? [];
+      list.push(id);
+      groups.set(o, list);
+    }
+    const order = ["ws_collab", "workbench", ...[...groups.keys()].filter((k) => k !== "ws_collab" && k !== "workbench")];
+    return order
+      .filter((o) => groups.has(o))
+      .map((o) => (
+        <optgroup key={o} label={originLabel(o)}>
+          {groups.get(o)!.map((id) => (
+            <option key={id} value={id}>{mailboxLabel(id)}</option>
+          ))}
+        </optgroup>
+      ));
   };
 
   return (
@@ -1301,9 +1337,7 @@ export function ChatConversation({
             <button type="button" className="chat-label" onClick={() => void inspectId("SEND-TO", sendMailbox)}>Send-to</button>
             <select value={sendMailbox} onChange={(event) => setSendMailbox(event.target.value)} aria-label="Send mailbox">
               <option value="">(none)</option>
-              {sendChoices.map((id) => (
-                <option key={id} value={id}>{mailboxLabel(id)}</option>
-              ))}
+              {mailboxOptions(sendChoices)}
             </select>
           </label>
           <div className="chat-require">
@@ -1366,9 +1400,7 @@ export function ChatConversation({
           <label className="chat-control chat-mbrow">
             <button type="button" className="chat-label" onClick={() => void inspectId("MAILBOX", mailbox)}>Mailbox</button>
             <select value={mailbox} onChange={(event) => selectMailbox(event.target.value)} aria-label="Viewed mailbox">
-              {mailboxChoices.map((id) => (
-                <option key={id} value={id}>{mailboxLabel(id)}</option>
-              ))}
+              {mailboxOptions(mailboxChoices)}
             </select>
             <span className="chat-mbrow-actions">
               {target && (
@@ -1395,9 +1427,7 @@ export function ChatConversation({
                 aria-label={`Merged mailbox ${index + 1}`}
               >
                 <option value="">(none)</option>
-                {mailboxChoices.map((id) => (
-                  <option key={id} value={id}>{mailboxLabel(id)}</option>
-                ))}
+                {mailboxOptions(mailboxChoices)}
               </select>
               <span className="chat-mbrow-actions">
                 <button type="button" className="chat-mbact" title="Move cursor to beginning" disabled={cursorBusy || !mb || !target} onClick={() => void moveCursor("beginning", mb)}>⏮</button>
