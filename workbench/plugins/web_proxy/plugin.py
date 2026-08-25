@@ -149,6 +149,59 @@ async def _probe_target(target: str) -> dict[str, Any]:
         return {"target": target, "reachable": False, "status": 0, "detail": detail}
 
 
+async def _relay_websocket(websocket: WebSocket, http_url: str) -> None:
+    """Relay a client WebSocket to ``http_url`` in both directions.
+
+    Shared by the explicit proxy route and by mounted paths, so a mounted
+    service that is WebSocket-first works exactly like a proxied one.
+    """
+
+    ws_url = ("wss://" if http_url.startswith("https://") else "ws://") + http_url.split("://", 1)[1]
+    requested_protocols = [
+        value.strip()
+        for value in websocket.headers.get("sec-websocket-protocol", "").split(",")
+        if value.strip()
+    ]
+    try:
+        async with websockets.connect(
+            ws_url,
+            additional_headers=_filtered_headers(websocket.headers.items(), websocket=True),
+            subprotocols=requested_protocols or None,
+            max_size=None,
+        ) as upstream:
+            await websocket.accept(subprotocol=upstream.subprotocol)
+
+            async def client_to_upstream() -> None:
+                while True:
+                    message = await websocket.receive()
+                    if message["type"] == "websocket.disconnect":
+                        await upstream.close()
+                        return
+                    if message.get("bytes") is not None:
+                        await upstream.send(message["bytes"])
+                    elif message.get("text") is not None:
+                        await upstream.send(message["text"])
+
+            async def upstream_to_client() -> None:
+                async for message in upstream:
+                    if isinstance(message, bytes):
+                        await websocket.send_bytes(message)
+                    else:
+                        await websocket.send_text(message)
+
+            tasks = [asyncio.create_task(client_to_upstream()), asyncio.create_task(upstream_to_client())]
+            done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+            for task in pending:
+                task.cancel()
+            for task in done:
+                task.result()
+    except (WebSocketDisconnect, websockets.ConnectionClosed):
+        return
+    except Exception:  # noqa: BLE001 - any relay failure closes the client cleanly
+        if websocket.client_state.name != "DISCONNECTED":
+            await websocket.close(code=1011)
+
+
 def create_admin_router(manifest: dict[str, Any]) -> APIRouter:
     """Build the Web Proxy administration and setup page as its own router."""
 
@@ -359,11 +412,30 @@ def _mount_router(mounts: list[dict[str, str]], settings: ProxySettings) -> APIR
                 media_type=upstream_response.headers.get("content-type"),
             )
 
+        async def relay_mounted(
+            websocket: WebSocket,
+            remainder: str = "",
+            _upstream: str = upstream,
+        ) -> None:
+            """Relay a WebSocket through a mounted path.
+
+            The mounted service may be WebSocket-first, so an upgrade has to
+            cross this proxy as faithfully as its HTTP requests do.
+            """
+
+            http_url = f"{_upstream}/{remainder.lstrip('/')}" if remainder else _upstream
+            query = urlencode(list(websocket.query_params.multi_items()))
+            if query:
+                http_url = f"{http_url}?{query}"
+            await _relay_websocket(websocket, http_url)
+
         methods = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"]
         router.add_api_route(base, proxy_mounted, methods=methods, include_in_schema=False)
         router.add_api_route(
             f"{base}/{{remainder:path}}", proxy_mounted, methods=methods, include_in_schema=False
         )
+        router.add_api_websocket_route(base, relay_mounted)
+        router.add_api_websocket_route(f"{base}/{{remainder:path}}", relay_mounted)
         _REGISTERED_MOUNTS.add(base)
     return router
 
@@ -371,7 +443,7 @@ def _mount_router(mounts: list[dict[str, str]], settings: ProxySettings) -> APIR
 def create_router(manifest: dict[str, Any]) -> APIRouter:
     global _MANIFEST, _SETTINGS
     _MANIFEST = dict(manifest)
-    prefix = str(manifest.get("routePrefix") or "/web-proxy").rstrip("/")
+    prefix = str(manifest.get("routePrefix") or "/web_proxy").rstrip("/")
     settings = ProxySettings(manifest)
     _SETTINGS = settings
     router = APIRouter()
@@ -413,50 +485,7 @@ def create_router(manifest: dict[str, Any]) -> APIRouter:
         except HTTPException:
             await websocket.close(code=1008)
             return
-        ws_url = ("wss://" if http_url.startswith("https://") else "ws://") + http_url.split("://", 1)[1]
-        requested_protocols = [
-            value.strip()
-            for value in websocket.headers.get("sec-websocket-protocol", "").split(",")
-            if value.strip()
-        ]
-        try:
-            async with websockets.connect(
-                ws_url,
-                additional_headers=_filtered_headers(websocket.headers.items(), websocket=True),
-                subprotocols=requested_protocols or None,
-                max_size=None,
-            ) as upstream:
-                await websocket.accept(subprotocol=upstream.subprotocol)
-
-                async def client_to_upstream() -> None:
-                    while True:
-                        message = await websocket.receive()
-                        if message["type"] == "websocket.disconnect":
-                            await upstream.close()
-                            return
-                        if message.get("bytes") is not None:
-                            await upstream.send(message["bytes"])
-                        elif message.get("text") is not None:
-                            await upstream.send(message["text"])
-
-                async def upstream_to_client() -> None:
-                    async for message in upstream:
-                        if isinstance(message, bytes):
-                            await websocket.send_bytes(message)
-                        else:
-                            await websocket.send_text(message)
-
-                tasks = [asyncio.create_task(client_to_upstream()), asyncio.create_task(upstream_to_client())]
-                done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
-                for task in pending:
-                    task.cancel()
-                for task in done:
-                    task.result()
-        except (WebSocketDisconnect, websockets.ConnectionClosed):
-            return
-        except Exception:
-            if websocket.client_state.name != "DISCONNECTED":
-                await websocket.close(code=1011)
+        await _relay_websocket(websocket, http_url)
 
     # Serve any mount already persisted in the manifest from a previous session.
     router.include_router(_mount_router(settings.mounts(), settings))

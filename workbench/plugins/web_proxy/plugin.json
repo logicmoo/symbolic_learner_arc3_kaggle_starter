@@ -6,8 +6,8 @@
   "version": "1.0.0",
   "entrypoint": "plugin.py",
   "scan": "startup",
-  "routePrefix": "/web-proxy",
-  "path": "/web-proxy/admin",
+  "routePrefix": "/web_proxy",
+  "adminPage": "/web_proxy/admin",
   "docs": "ADMIN.md",
   "kind": "custom",
   "allowedTargets": [
@@ -47,7 +47,7 @@
         "id": "configure",
         "label": "Configure Web Proxy",
         "kind": "configure",
-        "descriptor": "/web-proxy/admin",
+        "descriptor": "/web_proxy/admin",
         "glyph": "\u21c4",
         "group": "PLUGINS"
       }
