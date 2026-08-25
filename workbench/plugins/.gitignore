@@ -1,0 +1,4 @@
+# Ignore every immediate plugin subdirectory so `git add` can never absorb a
+# nested plugin repo as a submodule/gitlink. Already-tracked plugin source is
+# unaffected; new plugin repos stay independent.
+/*/
