@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { MarkdownDocument } from "./MarkdownDocument";
 import { jsonDocumentToMetta, mettaDocumentToJson } from "../lib/mettaResourceCodec";
 import "../styles/chat.css";
@@ -82,6 +82,17 @@ export function ChatConversation({
   const [mailbox, setMailbox] = useState(peer);
   const [mergeMailboxes, setMergeMailboxes] = useState<string[]>([]);
   const [mergeMode, setMergeMode] = useState<"by-timestamp" | "sequential">("by-timestamp");
+  // Message placement: fixed side, or "field" = each distinct value of the chosen
+  // field gets its own lane (assigned left/right/center/full as it first appears).
+  // Default: lane by stream name — the first stream seen justifies left.
+  const [placement, setPlacement] = useState<"sender" | "left" | "right" | "center" | "full" | "field">("field");
+  const [placementField, setPlacementField] = useState<"from" | "to" | "type" | "author" | "mailboxName">("mailboxName");
+  // Message color has two independent channels — the bubble border and the fill —
+  // each "by sender", a uniform tint, or "field" (each distinct value gets a hue).
+  const [borderMode, setBorderMode] = useState<"sender" | "uniform" | "field">("sender");
+  const [borderField, setBorderField] = useState<"from" | "to" | "type" | "author" | "mailboxName">("mailboxName");
+  const [fillMode, setFillMode] = useState<"sender" | "uniform" | "field">("sender");
+  const [fillField, setFillField] = useState<"from" | "to" | "type" | "author" | "mailboxName">("from");
   const [target, setTarget] = useState(peer);
   const [sendMailbox, setSendMailbox] = useState("");
   const [agents, setAgents] = useState<AgentOption[]>([]);
@@ -171,7 +182,10 @@ export function ChatConversation({
       const batches = await Promise.all(
         viewed.map(async (mb) => {
           const payload = await readJson(await fetch(`/ws_collab/v1/mailbox/messages?${buildParams(mb).toString()}`));
-          return (payload.messages as ChatMessage[]) || [];
+          const msgs = (payload.messages as ChatMessage[]) || [];
+          // Tag each message with the stream it came from so placement/color can
+          // lane by stream name regardless of what the server stamped.
+          return msgs.map((m) => ({ ...m, mailboxId: mb, mailboxName: mb }));
         }),
       );
       let merged = batches.flat();
@@ -351,6 +365,94 @@ export function ChatConversation({
       onError?.(message);
     }
   }, [mailbox, mergeMailboxes, fetchDirectory, onError]);
+
+  // Assign a placement lane (pos-left/right/center/full) to each distinct value of
+  // the chosen field, in order of first appearance, cycling through the four lanes.
+  const fieldPlacement = useMemo(() => {
+    const map = new Map<string, string>();
+    if (placement !== "field") return map;
+    const cycle = ["pos-left", "pos-right", "pos-center", "pos-full"];
+    const assign = (key: string) => {
+      if (!map.has(key)) map.set(key, cycle[map.size % cycle.length]);
+    };
+    // Seed lanes in stream order so the first (viewed) stream justifies left,
+    // then the merge rows, before falling back to message order for other fields.
+    if (placementField === "mailboxName") {
+      for (const mb of [mailbox, ...mergeMailboxes].filter(Boolean)) assign(String(mb));
+    }
+    for (const m of messages) {
+      assign(String((m as unknown as Record<string, unknown>)[placementField] ?? ""));
+    }
+    return map;
+  }, [messages, placement, placementField, mailbox, mergeMailboxes]);
+
+  const placementClass = useCallback(
+    (m: ChatMessage): string => {
+      switch (placement) {
+        case "left":
+          return "pos-left";
+        case "right":
+          return "pos-right";
+        case "center":
+          return "pos-center";
+        case "full":
+          return "pos-full";
+        case "field":
+          return fieldPlacement.get(String((m as unknown as Record<string, unknown>)[placementField] ?? "")) || "";
+        default:
+          return "";
+      }
+    },
+    [placement, placementField, fieldPlacement],
+  );
+
+  // Same idea for color: each distinct value of the chosen field gets a hue, in
+  // order of first appearance (stream-seeded for the mailbox field), cycling
+  // through a fixed palette. Border and fill are computed independently.
+  const COLOR_HUES = [200, 280, 20, 140, 330, 50, 100, 250, 0, 170];
+  const buildHueIndex = useCallback(
+    (active: boolean, field: "from" | "to" | "type" | "author" | "mailboxName") => {
+      const map = new Map<string, number>();
+      if (!active) return map;
+      const put = (k: string) => {
+        if (!map.has(k)) map.set(k, map.size);
+      };
+      if (field === "mailboxName") {
+        for (const mb of [mailbox, ...mergeMailboxes].filter(Boolean)) put(String(mb));
+      }
+      for (const m of messages) put(String((m as unknown as Record<string, unknown>)[field] ?? ""));
+      return map;
+    },
+    [messages, mailbox, mergeMailboxes],
+  );
+  const borderHueIndex = useMemo(
+    () => buildHueIndex(borderMode === "field", borderField),
+    [buildHueIndex, borderMode, borderField],
+  );
+  const fillHueIndex = useMemo(
+    () => buildHueIndex(fillMode === "field", fillField),
+    [buildHueIndex, fillMode, fillField],
+  );
+
+  const messageColorStyle = useCallback(
+    (m: ChatMessage): CSSProperties | undefined => {
+      const style: CSSProperties = {};
+      if (borderMode === "uniform") {
+        style.borderColor = "var(--line)";
+      } else if (borderMode === "field") {
+        const idx = borderHueIndex.get(String((m as unknown as Record<string, unknown>)[borderField] ?? "")) ?? 0;
+        style.borderColor = `hsl(${COLOR_HUES[idx % COLOR_HUES.length]} 65% 58%)`;
+      }
+      if (fillMode === "uniform") {
+        style.background = "var(--panel2)";
+      } else if (fillMode === "field") {
+        const idx = fillHueIndex.get(String((m as unknown as Record<string, unknown>)[fillField] ?? "")) ?? 0;
+        style.background = `hsl(${COLOR_HUES[idx % COLOR_HUES.length]} 60% 45% / 0.16)`;
+      }
+      return style.borderColor || style.background ? style : undefined;
+    },
+    [borderMode, borderField, borderHueIndex, fillMode, fillField, fillHueIndex],
+  );
 
   // Messages without text default to the JSON view; the toggle flips from the effective state.
   const toggleRaw = (id: string, defaultOpen = false) =>
@@ -889,6 +991,87 @@ export function ChatConversation({
               </button>
             )}
           </label>
+          <label className="chat-control chat-mbrow">
+            <span className="chat-label" title="Where to place message bubbles">Place</span>
+            <select
+              value={placement}
+              onChange={(event) => setPlacement(event.target.value as typeof placement)}
+              aria-label="Message placement"
+            >
+              <option value="sender">by sender (you right)</option>
+              <option value="left">all left</option>
+              <option value="right">all right</option>
+              <option value="center">centered</option>
+              <option value="full">full width</option>
+              <option value="field">by field…</option>
+            </select>
+            {placement === "field" && (
+              <select
+                value={placementField}
+                onChange={(event) => setPlacementField(event.target.value as typeof placementField)}
+                aria-label="Placement field"
+                title="Each distinct value of this field gets its own lane"
+              >
+                <option value="from">from</option>
+                <option value="to">to</option>
+                <option value="type">type</option>
+                <option value="author">author</option>
+                <option value="mailboxName">mailbox</option>
+              </select>
+            )}
+          </label>
+          <label className="chat-control chat-mbrow">
+            <span className="chat-label" title="Bubble border color">Border</span>
+            <select
+              value={borderMode}
+              onChange={(event) => setBorderMode(event.target.value as typeof borderMode)}
+              aria-label="Border color"
+            >
+              <option value="sender">by sender (you/them)</option>
+              <option value="uniform">uniform</option>
+              <option value="field">by field…</option>
+            </select>
+            {borderMode === "field" && (
+              <select
+                value={borderField}
+                onChange={(event) => setBorderField(event.target.value as typeof borderField)}
+                aria-label="Border field"
+                title="Each distinct value of this field gets its own border hue"
+              >
+                <option value="from">from</option>
+                <option value="to">to</option>
+                <option value="type">type</option>
+                <option value="author">author</option>
+                <option value="mailboxName">mailbox</option>
+              </select>
+            )}
+          </label>
+          <label className="chat-control chat-mbrow">
+            <span className="chat-label" title="Bubble fill color">Fill</span>
+            <select
+              value={fillMode}
+              onChange={(event) => setFillMode(event.target.value as typeof fillMode)}
+              aria-label="Fill color"
+            >
+              <option value="sender">by sender (you/them)</option>
+              <option value="uniform">uniform</option>
+              <option value="field">by field…</option>
+            </select>
+            {fillMode === "field" && (
+              <select
+                value={fillField}
+                onChange={(event) => setFillField(event.target.value as typeof fillField)}
+                aria-label="Fill field"
+                title="Each distinct value of this field gets its own fill hue"
+              >
+                <option value="from">from</option>
+                <option value="to">to</option>
+                <option value="type">type</option>
+                <option value="author">author</option>
+                <option value="mailboxName">mailbox</option>
+              </select>
+            )}
+          </label>
           <div className="chat-make">
             <input
               value={newEntry}
@@ -964,8 +1147,9 @@ export function ChatConversation({
           <div
             key={`${message.id}|${message.timestamp || ""}`}
             className={`chat-message ${message.from === you ? "mine" : "theirs"}${
-              entryEditKey === bubbleKey(message) ? " editing" : ""
-            }`}
+              placement !== "sender" ? " " + placementClass(message) : ""
+            }${entryEditKey === bubbleKey(message) ? " editing" : ""}`}
+            style={messageColorStyle(message)}
           >
             <div className="chat-message-meta">
               <span className="chat-message-from">{message.authorName || message.author || message.from}</span>

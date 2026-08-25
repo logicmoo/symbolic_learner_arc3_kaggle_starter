@@ -507,6 +507,25 @@
   background: color-mix(in srgb, var(--violet) 12%, var(--panel2));
 }
 
+/* Placement lanes override align-self regardless of mine/theirs. */
+.chat-message.pos-left {
+  align-self: flex-start;
+}
+
+.chat-message.pos-right {
+  align-self: flex-end;
+}
+
+.chat-message.pos-center {
+  align-self: center;
+}
+
+.chat-message.pos-full {
+  align-self: stretch;
+  max-width: none;
+  width: 100%;
+}
+
 /* A bubble being edited grows and tints amber: it IS the editor. */
 .chat-message.editing {
   max-width: 98%;
