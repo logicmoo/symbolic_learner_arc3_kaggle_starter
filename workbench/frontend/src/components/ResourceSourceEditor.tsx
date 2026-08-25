@@ -9,7 +9,7 @@ import { useUserUiPreferences } from "../lib/uiPreferences";
 import { WorkspaceResourceFileControls, type WorkspaceResourceFileControlsProps } from "./WorkspaceResourceFileControls";
 import "../styles/operation_editor.css";
 
-type Props = { value: string; onChange: (json: string) => void; onValidityChange?: (valid: boolean) => void; className?: string; style?: CSSProperties; label?: string; showEnablement?: boolean; disabled?: boolean; path?: string; onSave?: () => void; saving?: boolean; onNavigateMarkdown?: (href: string) => void; navigateAllLocal?: boolean; fileControls?: Omit<WorkspaceResourceFileControlsProps, "disabled" | "content" | "onClientContent"> };
+type Props = { value: string; onChange: (json: string) => void; onValidityChange?: (valid: boolean) => void; className?: string; style?: CSSProperties; label?: string; showEnablement?: boolean; disabled?: boolean; path?: string; onSave?: () => void; saving?: boolean; onNavigateMarkdown?: (href: string) => void; navigateAllLocal?: boolean; fill?: boolean; fileControls?: Omit<WorkspaceResourceFileControlsProps, "disabled" | "content" | "onClientContent"> };
 
 type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue };
 type JsonObject = { [key: string]: JsonValue };
@@ -318,7 +318,7 @@ function updateJsonAtPath(root: JsonObject, path: string, updater: (target: Json
   return cloned;
 }
 
-export function ResourceSourceEditor({ value, onChange, onValidityChange, className = "", style, label = "Edit this resource directly", showEnablement = true, disabled = false, path, onSave, saving = false, onNavigateMarkdown, navigateAllLocal = false, fileControls }: Props) {
+export function ResourceSourceEditor({ value, onChange, onValidityChange, className = "", style, label = "Edit this resource directly", showEnablement = true, disabled = false, path, onSave, saving = false, onNavigateMarkdown, navigateAllLocal = false, fill = false, fileControls }: Props) {
   const { resourceSourceFileControlsPlacement } = useUserUiPreferences();
   const [format, setFormat] = useState<"metta" | "json" | "tree" | "markdown" | "text">("metta");
   const [metta, setMetta] = useState("");
@@ -607,7 +607,7 @@ export function ResourceSourceEditor({ value, onChange, onValidityChange, classN
     { id: "text", label: "Text", show: true },
     { id: "markdown", label: "Markdown", show: true },
   ];
-  return <div className="operation-json-block resource-source-editor">
+  return <div className={`operation-json-block resource-source-editor${fill ? " fill" : ""}`}>
     <div className="llm-subhead"><div><span>RESOURCE SOURCE</span><b>{label}</b></div><div className="source-format-tabs">{showEnablement&&resource&&<button disabled={disabled} className={`resource-enable-action ${resourceEnabled?"disable-resource":"enable-resource"}`} onClick={()=>setEnabled(!resourceEnabled)}>{resourceEnabled?"Disable Resource":"Enable Resource"}</button>}{tabPolicies.filter(t=>t.show).map(t=><button key={t.id} disabled={disabled} className={format===t.id?"active":""} onClick={()=>setFormat(t.id)}>{t.label}</button>)}{onSave?<button disabled={disabled||saving} className="resource-enable-action" onClick={()=>onSave()}>{saving?"Saving...":"Save"}</button>:null}</div></div>
     {resourceSourceFileControlsPlacement === "above" ? renderedFileControls : null}
     {format === "tree"

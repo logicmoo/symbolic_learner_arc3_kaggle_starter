@@ -103,6 +103,7 @@ export function RepositoryDocsPage({initialFilter=""}:{initialFilter?:string}){
           showEnablement={false}
           label={opened.path.split("/").pop()||"File"}
           navigateAllLocal
+          fill
           onNavigateMarkdown={(href)=>{const path=resolvePath(opened.path,href);recordLocation(path,{docsFile:path});void load(path,true);}}
         />}
    </>:<div className="studio-empty">The filesystem tree remains available on the left. Select an exposed file to open it here.</div>}

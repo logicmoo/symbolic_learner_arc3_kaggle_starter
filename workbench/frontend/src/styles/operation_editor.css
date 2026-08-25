@@ -37,3 +37,8 @@
 
 /* TEMP marker: spot the unified ResourceSourceEditor wherever it is used. */
 .resource-source-editor{border:4px dashed #ff2fb0 !important;border-radius:22px !important;box-shadow:0 0 0 3px #00e5ff inset;box-sizing:border-box}
+
+/* fill mode: the editor grows to fill a flex-column host (e.g. the docs page). */
+.resource-source-editor.fill{display:flex;flex-direction:column;min-height:0;height:100%}
+.resource-source-editor.fill>.llm-subhead,.resource-source-editor.fill>.validation{flex:0 0 auto}
+.resource-source-editor.fill .operation-visible-editor{flex:1 1 auto;height:auto;min-height:0;max-height:none}
