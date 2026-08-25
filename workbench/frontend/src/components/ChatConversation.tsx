@@ -23,7 +23,7 @@ export type ChatMessage = {
   raw?: unknown;
 };
 
-export type MailboxOption = { id: string; kind?: string; messages?: number; name?: string | null };
+export type MailboxOption = { id: string; kind?: string; messages?: number; name?: string | null; global_name?: string | null };
 
 type CursorInfo = {
   mailbox: string;
@@ -80,6 +80,8 @@ export function ChatConversation({
 }: Props) {
   const [you, setYou] = useState(user);
   const [mailbox, setMailbox] = useState(peer);
+  const [mergeMailboxes, setMergeMailboxes] = useState<string[]>([]);
+  const [mergeMode, setMergeMode] = useState<"by-timestamp" | "sequential">("by-timestamp");
   const [target, setTarget] = useState(peer);
   const [sendMailbox, setSendMailbox] = useState("");
   const [agents, setAgents] = useState<AgentOption[]>([]);
@@ -156,14 +158,36 @@ export function ChatConversation({
 
   const fetchMessages = useCallback(async () => {
     try {
-      const params = new URLSearchParams({ filter: "1", limit: "300" });
-      if (requireTo && target) params.set("to", target);
-      if (requireFrom && you) params.set("from", you);
-      if (requireMailbox && mailbox) params.set("mailbox", mailbox);
-      if (requireSendTo && sendMailbox) params.set("send_to", sendMailbox);
-      if (requireText && textQuery) params.set("text", textQuery);
-      const payload = await readJson(await fetch(`/ws_collab/v1/mailbox/messages?${params.toString()}`));
-      setMessages((payload.messages as ChatMessage[]) || []);
+      const viewed = Array.from(new Set([mailbox, ...mergeMailboxes].filter(Boolean)));
+      const buildParams = (mb: string) => {
+        const params = new URLSearchParams({ filter: "1", limit: "300" });
+        if (requireTo && target) params.set("to", target);
+        if (requireFrom && you) params.set("from", you);
+        if (requireMailbox && mb) params.set("mailbox", mb);
+        if (requireSendTo && sendMailbox) params.set("send_to", sendMailbox);
+        if (requireText && textQuery) params.set("text", textQuery);
+        return params;
+      };
+      const batches = await Promise.all(
+        viewed.map(async (mb) => {
+          const payload = await readJson(await fetch(`/ws_collab/v1/mailbox/messages?${buildParams(mb).toString()}`));
+          return (payload.messages as ChatMessage[]) || [];
+        }),
+      );
+      let merged = batches.flat();
+      if (viewed.length > 1) {
+        const seen = new Set<string>();
+        merged = merged.filter((message) => {
+          if (!message.id) return true;
+          if (seen.has(message.id)) return false;
+          seen.add(message.id);
+          return true;
+        });
+        if (mergeMode === "by-timestamp") {
+          merged.sort((a, b) => String(a.timestamp || "").localeCompare(String(b.timestamp || "")));
+        }
+      }
+      setMessages(merged);
       setReady(true);
       setErrorText("");
     } catch (error) {
@@ -172,7 +196,7 @@ export function ChatConversation({
       onError?.(message);
     }
   }, [
-    mailbox, you, target, sendMailbox,
+    mailbox, mergeMailboxes, mergeMode, you, target, sendMailbox,
     requireTo, requireFrom, requireMailbox, requireSendTo, requireText, textQuery,
     onError,
   ]);
@@ -645,6 +669,7 @@ export function ChatConversation({
   // annotated, and show how many entries recent traffic holds for each mailbox.
   const mailboxNames = new Map(mailboxes.map((c) => [c.id, c.name] as const));
   const mailboxCounts = new Map(mailboxes.map((c) => [c.id, c.messages] as const));
+  const mailboxGlobals = new Map(mailboxes.map((c) => [c.id, c.global_name] as const));
   // The TO agent's explicit subscription setting on the viewed mailbox (if any).
   const targetRecord = agents.find((a) => a.id === target) as Record<string, unknown> | undefined;
   const targetSubs = (targetRecord?.subscriptions ?? null) as Record<string, string> | null;
@@ -652,8 +677,10 @@ export function ChatConversation({
   const mailboxLabel = (id: string) => {
     const name = mailboxNames.get(id);
     const base = name && name !== id ? `${name} · ${id}` : id;
+    const globalName = mailboxGlobals.get(id);
+    const withGlobal = globalName && globalName !== id ? `${base} · ${globalName}` : base;
     const count = mailboxCounts.get(id);
-    return typeof count === "number" ? `${base} · ${count}` : base;
+    return typeof count === "number" ? `${withGlobal} · ${count}` : withGlobal;
   };
 
   return (
@@ -673,14 +700,6 @@ export function ChatConversation({
             <select value={target} onChange={(event) => setTarget(event.target.value)} aria-label="Addressed agent">
               {agentChoices.map((id) => (
                 <option key={id} value={id}>{id}</option>
-              ))}
-            </select>
-          </label>
-          <label className="chat-control">
-            <button type="button" className="chat-label" onClick={() => void inspectId("MAILBOX", mailbox)}>Mailbox</button>
-            <select value={mailbox} onChange={(event) => selectMailbox(event.target.value)} aria-label="Viewed mailbox">
-              {mailboxChoices.map((id) => (
-                <option key={id} value={id}>{mailboxLabel(id)}</option>
               ))}
             </select>
           </label>
@@ -750,6 +769,58 @@ export function ChatConversation({
               aria-label="Text expression"
             />
           </div>
+          <label className="chat-control">
+            <button type="button" className="chat-label" onClick={() => void inspectId("MAILBOX", mailbox)}>Mailbox</button>
+            <select value={mailbox} onChange={(event) => selectMailbox(event.target.value)} aria-label="Viewed mailbox">
+              {mailboxChoices.map((id) => (
+                <option key={id} value={id}>{mailboxLabel(id)}</option>
+              ))}
+            </select>
+          </label>
+          {mergeMailboxes.map((mb, index) => (
+            <label className="chat-control" key={`merge-row-${index}`}>
+              <span className="chat-label">＋ Mailbox</span>
+              <select
+                value={mb}
+                onChange={(event) => setMergeMailboxes((rows) => rows.map((row, j) => (j === index ? event.target.value : row)))}
+                aria-label={`Merged mailbox ${index + 1}`}
+              >
+                <option value="">(none)</option>
+                {mailboxChoices.map((id) => (
+                  <option key={id} value={id}>{mailboxLabel(id)}</option>
+                ))}
+              </select>
+              <button
+                type="button"
+                className="chat-label"
+                title="Remove this mailbox from the view"
+                onClick={() => setMergeMailboxes((rows) => rows.filter((_, j) => j !== index))}
+              >
+                ✕
+              </button>
+            </label>
+          ))}
+          <label className="chat-control">
+            <button
+              type="button"
+              className="chat-label"
+              title="Add another mailbox to merge into the view"
+              onClick={() => setMergeMailboxes((rows) => [...rows, ""])}
+            >
+              ＋ Add mailbox
+            </button>
+            {mergeMailboxes.length > 0 && (
+              <select
+                value={mergeMode}
+                onChange={(event) => setMergeMode(event.target.value as "by-timestamp" | "sequential")}
+                aria-label="Merge mode"
+                title="How to combine the selected mailboxes"
+              >
+                <option value="by-timestamp">by timestamp</option>
+                <option value="sequential">one after another</option>
+              </select>
+            )}
+          </label>
           <div className="chat-make">
             <input
               value={newEntry}
