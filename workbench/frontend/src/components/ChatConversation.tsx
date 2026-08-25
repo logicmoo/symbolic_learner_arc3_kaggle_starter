@@ -120,7 +120,7 @@ export type ChatMessage = {
   raw?: unknown;
 };
 
-export type MailboxOption = { id: string; kind?: string; source?: string; definition?: string; messages?: number; name?: string | null; global_name?: string | null; origin?: string };
+export type MailboxOption = { id: string; kind?: string; source?: string; definition?: string; writable?: boolean; messages?: number; name?: string | null; global_name?: string | null; origin?: string };
 
 type CursorInfo = {
   mailbox: string;
@@ -1280,6 +1280,7 @@ export function ChatConversation({
   const mailboxKinds = new Map(mailboxes.map((c) => [c.id, c.kind] as const));
   const mailboxSources = new Map(mailboxes.map((c) => [c.id, c.source] as const));
   const mailboxDefs = new Map(mailboxes.map((c) => [c.id, c.definition] as const));
+  const mailboxWritable = new Map(mailboxes.map((c) => [c.id, c.writable] as const));
   const originLabel = (o?: string) => (o === "workbench" ? "Workbench server" : "ws_collab");
   // A colored property tag for a stream, shown inline in the combobox options
   // (Chrome honors per-<option> color). Tags are additive so a single stream can
@@ -1300,6 +1301,7 @@ export function ChatConversation({
     } else if (source === "jsonl") {
       texts.push("jsonl");
     }
+    if (mailboxWritable.get(id) === false) texts.push("read-only");
     if (origin === "workbench") texts.push("workbench");
     if (!texts.length) return null;
     const color =
