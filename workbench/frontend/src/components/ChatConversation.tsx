@@ -40,8 +40,10 @@ type ViewSettings = {
   placementField: string;
   borderMode: string;
   borderField: string;
+  borderColor: string;
   fillMode: string;
   fillField: string;
+  fillColor: string;
   bubbleFields: { field: string; style: string }[];
   renderMode: string;
   renderRules: { field: string; value: string; mode: string }[];
@@ -51,8 +53,10 @@ const DEFAULT_VIEW: ViewSettings = {
   placementField: "mailboxName",
   borderMode: "sender",
   borderField: "mailboxName",
+  borderColor: "#4eabda",
   fillMode: "sender",
   fillField: "from",
+  fillColor: "#2b3a44",
   bubbleFields: [
     { field: "from", style: "text" },
     { field: "type", style: "chip" },
@@ -85,8 +89,10 @@ function coerceView(v: Record<string, unknown>): ViewSettings {
     placementField: str(v.placementField, DEFAULT_VIEW.placementField),
     borderMode: str(v.borderMode, DEFAULT_VIEW.borderMode),
     borderField: str(v.borderField, DEFAULT_VIEW.borderField),
+    borderColor: str(v.borderColor, DEFAULT_VIEW.borderColor),
     fillMode: str(v.fillMode, DEFAULT_VIEW.fillMode),
     fillField: str(v.fillField, DEFAULT_VIEW.fillField),
+    fillColor: str(v.fillColor, DEFAULT_VIEW.fillColor),
     bubbleFields: bf.length ? bf : DEFAULT_VIEW.bubbleFields,
     renderMode: str(v.renderMode, DEFAULT_VIEW.renderMode),
     renderRules: rr,
@@ -658,13 +664,13 @@ export function ChatConversation({
       const v = effectiveView(m);
       const style: CSSProperties = {};
       if (v.borderMode === "uniform") {
-        style.borderColor = "var(--line)";
+        style.borderColor = v.borderColor || "var(--line)";
       } else if (v.borderMode === "field") {
         const idx = fieldIndex.get(v.borderField)?.get(fieldValue(m, v.borderField)) ?? 0;
         style.borderColor = `hsl(${COLOR_HUES[idx % COLOR_HUES.length]} 65% 58%)`;
       }
       if (v.fillMode === "uniform") {
-        style.background = "var(--panel2)";
+        style.background = v.fillColor || "var(--panel2)";
       } else if (v.fillMode === "field") {
         const idx = fieldIndex.get(v.fillField)?.get(fieldValue(m, v.fillField)) ?? 0;
         style.background = `hsl(${COLOR_HUES[idx % COLOR_HUES.length]} 60% 45% / 0.16)`;
@@ -1418,6 +1424,16 @@ export function ChatConversation({
                 {fieldOptions(activeView.borderField)}
               </select>
             )}
+            {activeView.borderMode === "uniform" && (
+              <input
+                type="color"
+                className="chat-color"
+                value={activeView.borderColor || "#4eabda"}
+                onChange={(event) => patchActive({ borderColor: event.target.value })}
+                aria-label="Border color value"
+                title="Pick the uniform border color"
+              />
+            )}
           </label>
           <label className="chat-control chat-mbrow">
             <span className="chat-label" title="Bubble fill color">Fill</span>
@@ -1439,6 +1455,16 @@ export function ChatConversation({
               >
                 {fieldOptions(activeView.fillField)}
               </select>
+            )}
+            {activeView.fillMode === "uniform" && (
+              <input
+                type="color"
+                className="chat-color"
+                value={activeView.fillColor || "#2b3a44"}
+                onChange={(event) => patchActive({ fillColor: event.target.value })}
+                aria-label="Fill color value"
+                title="Pick the uniform fill color"
+              />
             )}
           </label>
           {activeView.bubbleFields.map((entry, index) => (

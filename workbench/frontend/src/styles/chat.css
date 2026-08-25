@@ -218,6 +218,17 @@
   max-width: 60%;
 }
 
+.chat-control input.chat-color {
+  flex: 0 0 auto;
+  width: 34px;
+  height: 22px;
+  padding: 0;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
 .chat-control {
   display: flex;
   align-items: center;
