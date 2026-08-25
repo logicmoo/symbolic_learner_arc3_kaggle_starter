@@ -233,7 +233,7 @@ export function LlmModelsEditor({workspaceId,catalogMode="models",topMenuMode="b
   };
 
   return (
-   <div className={"model-editor-scroll " + (secondary ? "secondary" : "")}>
+   <div className={"model-editor-scroll " + (secondary ? "secondary " : "") + (backendEditorLayout==="stack" ? "stack-mode" : "tabs-mode")}>
     <div className="model-editor-document">
      <div className="model-editor-toolbar">
       <div className="model-editor-identity">
