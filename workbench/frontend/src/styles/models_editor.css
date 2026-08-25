@@ -40,3 +40,13 @@
 .model-editor-scroll.stack-mode .json-tree-browser{height:auto!important;max-height:none!important;overflow:visible!important}
 .model-editor-scroll.stack-mode .json-tree-root{flex:0 0 auto!important;height:auto!important;max-height:none!important;overflow:visible!important}
 .model-editor-scroll.stack-mode .resolved-inheritance pre,.model-editor-scroll.stack-mode .backend-inheritance-summary pre{max-height:none!important;overflow:visible!important}
+
+/* Self-split of one tab into two single-tab panes, in a chosen direction. */
+.model-editor-panes.split{display:flex!important;gap:1px}
+.model-editor-panes.split.split-right{flex-direction:row}
+.model-editor-panes.split.split-left{flex-direction:row-reverse}
+.model-editor-panes.split.split-down{flex-direction:column}
+.model-editor-panes.split.split-up{flex-direction:column-reverse}
+.model-editor-panes.split>.model-editor-document{flex:1 1 0;min-width:0;min-height:0}
+.model-split-controls{display:inline-flex;align-items:center;gap:3px}
+.model-split-controls>b{font:700 7px ui-monospace,monospace;letter-spacing:.12em;color:#6f8792;margin-right:2px}
