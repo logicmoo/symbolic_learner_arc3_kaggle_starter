@@ -43,3 +43,6 @@
 .json-tree-children>.json-tree-node:not(:last-child)::before{content:"";position:absolute;left:0;top:0;bottom:0;width:1px;background:#3f6472;pointer-events:none}
 .json-tree-children>.json-tree-node::after{content:"";position:absolute;left:0;top:0;width:16px;height:16px;border-left:1px solid #3f6472;border-bottom:1px solid #3f6472;border-bottom-left-radius:12px;pointer-events:none}
 .json-tree-children>.json-tree-node:last-child::after{border-bottom-left-radius:14px}
+
+/* Plain Text language picker in the source-format tab bar. */
+.source-format-tabs .rse-text-lang{margin-left:6px;border:1px solid #304651;background:#0c1a22;color:#b8cbd3;border-radius:4px;padding:5px 7px;font:700 8px ui-monospace,monospace;cursor:pointer}
