@@ -165,6 +165,7 @@ async function readJson(response: Response): Promise<Record<string, unknown>> {
 const TAG_COLORS: Record<string, string> = {
   jsonl: "#7aa2d6",
   "json-file": "#8f8fd6",
+  disk: "#b0855b",
   merge: "#48b7a8",
   virtual: "#c88ce0",
   http: "#6fbf73",
@@ -648,7 +649,33 @@ export function ChatConversation({
     }
   }, [mailbox, mergeMailboxes, fetchDirectory, onError]);
 
-  // Assign a placement lane (pos-left/right/center/full) to each distinct value of
+  // Register a JSON/JSONL file under the server state dir as a durable, read-only
+  // "disk:" virtual stream so its contents can be inspected in chat. Runtime only —
+  // no restart needed (persisted in virtual_mailboxes.json).
+  const registerDiskFile = useCallback(async () => {
+    const file = (window.prompt("Register a JSON/JSONL file (under the server state dir) as a virtual stream.\n\nFile name:", "field_cache_config.json") || "").trim();
+    if (!file) return;
+    const base = file.replace(/\.[^.]+$/, "").replace(/[^A-Za-z0-9._-]/g, "-").slice(0, 60);
+    const name = (window.prompt("Name the virtual stream:", base) || "").trim();
+    if (!name) return;
+    try {
+      await readJson(
+        await fetch("/ws_collab/v1/mailbox/create", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: name, source: `disk:${file}`, purpose: `disk file ${file}` }),
+        }),
+      );
+      await fetchDirectory();
+      setMailbox(name);
+      setTarget(name);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      setErrorText(message);
+      onError?.(message);
+    }
+  }, [fetchDirectory, onError]);
+
   // the chosen field, in order of first appearance, cycling through the four lanes.
   // Read a field off a message, falling back to its raw record so newly-appearing
   // fields (that only live in raw) are still organizable.
@@ -1470,8 +1497,12 @@ export function ChatConversation({
       names.push("merge");
     } else if (source === "virtual") {
       names.push("virtual");
-      if (def.startsWith("disk:")) names.push(def.endsWith(".jsonl") ? "jsonl" : "json-file");
-      else if (def.startsWith("http")) names.push("http");
+      if (def.startsWith("disk:")) {
+        names.push("disk");
+        names.push(def.endsWith(".jsonl") ? "jsonl" : "json-file");
+      } else if (def.startsWith("http")) {
+        names.push("http");
+      }
     } else if (source === "jsonl") {
       names.push("jsonl");
     }
@@ -1632,6 +1663,14 @@ export function ChatConversation({
               onClick={() => setMergeMailboxes((rows) => [...rows, ""])}
             >
               ＋ Add mailbox
+            </button>
+            <button
+              type="button"
+              className="chat-mbact"
+              title="Register a JSON/JSONL file (under the server state dir) as a read-only virtual stream"
+              onClick={() => void registerDiskFile()}
+            >
+              📄 Add file stream
             </button>
             {mergeMailboxes.length > 0 && (
               <select
