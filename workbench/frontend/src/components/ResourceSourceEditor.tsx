@@ -9,7 +9,7 @@ import { useUserUiPreferences } from "../lib/uiPreferences";
 import { WorkspaceResourceFileControls, type WorkspaceResourceFileControlsProps } from "./WorkspaceResourceFileControls";
 import "../styles/operation_editor.css";
 
-type Props = { value: string; onChange: (json: string) => void; onValidityChange?: (valid: boolean) => void; className?: string; style?: CSSProperties; label?: string; showEnablement?: boolean; disabled?: boolean; path?: string; onSave?: () => void; saving?: boolean; onNavigateMarkdown?: (href: string) => void; navigateAllLocal?: boolean; fill?: boolean; fileControls?: Omit<WorkspaceResourceFileControlsProps, "disabled" | "content" | "onClientContent"> };
+type Props = { value: string; onChange: (json: string) => void; onValidityChange?: (valid: boolean) => void; className?: string; style?: CSSProperties; label?: string; showEnablement?: boolean; disabled?: boolean; path?: string; onSave?: () => void; saving?: boolean; onNavigateMarkdown?: (href: string) => void; navigateAllLocal?: boolean; fill?: boolean; extraTabs?: { id: string; label: string; render: () => ReactNode }[]; fileControls?: Omit<WorkspaceResourceFileControlsProps, "disabled" | "content" | "onClientContent"> };
 
 type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue };
 type JsonObject = { [key: string]: JsonValue };
@@ -318,9 +318,9 @@ function updateJsonAtPath(root: JsonObject, path: string, updater: (target: Json
   return cloned;
 }
 
-export function ResourceSourceEditor({ value, onChange, onValidityChange, className = "", style, label = "Edit this resource directly", showEnablement = true, disabled = false, path, onSave, saving = false, onNavigateMarkdown, navigateAllLocal = false, fill = false, fileControls }: Props) {
+export function ResourceSourceEditor({ value, onChange, onValidityChange, className = "", style, label = "Edit this resource directly", showEnablement = true, disabled = false, path, onSave, saving = false, onNavigateMarkdown, navigateAllLocal = false, fill = false, extraTabs = [], fileControls }: Props) {
   const { resourceSourceFileControlsPlacement } = useUserUiPreferences();
-  const [format, setFormat] = useState<"metta" | "json" | "tree" | "markdown" | "text">("metta");
+  const [format, setFormat] = useState<string>("metta");
   const [display, setDisplay] = useState<"tabs" | "stack">("tabs");
   const [metta, setMetta] = useState("");
   const [jsonDraft, setJsonDraft] = useState(value);
@@ -601,14 +601,17 @@ export function ResourceSourceEditor({ value, onChange, onValidityChange, classN
 
   // Each tab's existence will later be gated by a detection policy; for now every
   // tab is offered (show: true). `structured` still drives the sensible default tab.
-  const tabPolicies: { id: "metta" | "json" | "tree" | "text" | "markdown"; label: string; show: boolean }[] = [
+  const tabPolicies: { id: string; label: string; show: boolean }[] = [
     { id: "metta", label: "MeTTa", show: true },
     { id: "json", label: "JSON", show: true },
     { id: "tree", label: "Tree", show: true },
     { id: "text", label: "Text", show: true },
     { id: "markdown", label: "Markdown", show: true },
+    ...extraTabs.map((t) => ({ id: t.id, label: t.label, show: true })),
   ];
-  const renderFormatBody = (fmt: "metta" | "json" | "tree" | "markdown" | "text") => {
+  const renderFormatBody = (fmt: string) => {
+    const extra = extraTabs.find((t) => t.id === fmt);
+    if (extra) return extra.render();
     if (fmt === "tree") return <div className={`json-tree-browser operation-visible-editor ${className}`.trim()} style={style}>
         <div className="json-tree-toolbar">
           <span>Path <code>{selectedTreePath}</code>{treeSelectionType ? <> &middot; <b>{treeSelectionType}</b></> : null}</span>
