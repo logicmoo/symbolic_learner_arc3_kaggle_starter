@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { defineConfig, loadEnv, type Plugin } from "vite";
+import { defineConfig, loadEnv, type Plugin, type ProxyOptions } from "vite";
 import react from "@vitejs/plugin-react";
 
 const HERE = fileURLToPath(new URL(".", import.meta.url));
@@ -37,13 +37,41 @@ function pluginProxyPrefixes(): string[] {
   return [...prefixes];
 }
 
-function pluginProxy(apiTarget: string): Record<string, unknown> {
+function pluginProxy(apiTarget: string): Record<string, ProxyOptions> {
   return Object.fromEntries(
     pluginProxyPrefixes().map((prefix) => [
       prefix,
-      { target: apiTarget, changeOrigin: true, ws: true },
+      { target: apiTarget, changeOrigin: true, ws: true } satisfies ProxyOptions,
     ]),
   );
+}
+
+// Anything the dev/preview server does not own itself resolves against the API.
+// A plugin route, a mounted redirect, or any other backend path therefore works
+// from the web port without being enumerated here. The exclusions are the paths
+// Vite must keep serving: the app shell, its module graph, and its assets.
+const VITE_OWNED = [
+  "$",
+  "\\?",
+  "@vite",
+  "@id",
+  "@fs",
+  "@react-refresh",
+  "__vite",
+  "src/",
+  "node_modules/",
+  "assets/",
+  "index\\.html",
+  "favicon\\.ico",
+].join("|");
+const API_FALLBACK = `^/(?!${VITE_OWNED}).+`;
+
+function apiProxy(apiTarget: string): Record<string, ProxyOptions> {
+  return {
+    "/api": { target: apiTarget, changeOrigin: true },
+    ...pluginProxy(apiTarget),
+    [API_FALLBACK]: { target: apiTarget, changeOrigin: true, ws: true },
+  };
 }
 
 function surgicalUiReloader(): Plugin {
@@ -89,25 +117,13 @@ export default defineConfig(({ mode }) => {
           "**/*.log",
         ],
       },
-      proxy: {
-        "/api": {
-          target: apiTarget,
-          changeOrigin: true,
-        },
-        ...pluginProxy(apiTarget),
-      },
+      proxy: apiProxy(apiTarget),
     },
     preview: {
       host,
       port,
       strictPort: true,
-      proxy: {
-        "/api": {
-          target: apiTarget,
-          changeOrigin: true,
-        },
-        ...pluginProxy(apiTarget),
-      },
+      proxy: apiProxy(apiTarget),
     },
   };
 });

@@ -61,7 +61,7 @@ values here.
   `workbench/plugins`, a Plugins navigation submenu/page with manual refresh
   and persisted `startup`/`disabled` scan policy, and the first `web_proxy`
   plugin. The proxy exposes the allowlisted local emullm relay at
-  `/web-proxy/http/127.0.0.1:8801/`, forwards GET/POST/PUT/PATCH/DELETE/OPTIONS/
+  `/web_proxy/http/127.0.0.1:8801/`, forwards GET/POST/PUT/PATCH/DELETE/OPTIONS/
   HEAD plus bidirectional WebSockets, and rejects non-manifest targets. Live
   smoke validation preserved the upstream GET status/content type and returned
   HTTP 200 from a proxied relay POST. Focused backend/navigation tests: 65
@@ -105,10 +105,73 @@ values here.
   guard in `tests/test_windows_dependency_bootstrap.py`; decide the intended
   policy before changing it.
 
-- [ ] Known follow-up: `workbench/plugins/ws_collab` holds only a specification
-  document and no `plugin.json`, so it is not a discoverable plugin and has no
-  configure page. Add a manifest and entrypoint when that work is implemented
-  rather than registering a placeholder.
+- [x] Move the plugin administration declaration out of `admin.json` and into
+  `plugin.json`, which is now the only manifest. A plugin declares `configPage`
+  (an absolute URL to a page it serves itself, embedded by the workbench) or
+  `adminPage` (an API path serving a descriptor the workbench renders natively).
+  `plugin-install` declares initialization requirements, `plugin-init` lists
+  commands one plugin asks another to run, and `ui.pages` installs menu entries
+  in the workbench navigation. Each plugin may export `resolve_ui_pages` to say
+  where its own pages live, and `apply_plugin_init` to accept commands; a target
+  may return an `APIRouter` for the loader to mount so plugins never touch the
+  application object. `web_proxy` gained persisted `mounts` that relay HTTP and
+  WebSockets, and WS_COLLAB uses `plugin-init` to mount `/ws_collab` onto its
+  standalone server. Renamed the `web-proxy` route to `web_proxy` so every
+  plugin prefix equals its id.
+
+  Fixed while doing this: both hand-merged manifests were invalid JSON (a `//`
+  comment and a missing comma), `web_proxy` had a duplicated `label` and had
+  lost `allowedTargets`, the loader's injected plugin-directory `path` silently
+  overwrote the declared administration path so the configure page answered 404,
+  and the WS_COLLAB console built `/v1/v1/auth/whoami` when served from inside a
+  versioned mount.
+
+  The Vite dev/preview proxy is now generated from the plugin manifests and
+  their persisted mounts, and anything the web server does not own falls back to
+  the API, so a new plugin route needs no config edit. The API root redirects to
+  the web interface using `WORKBENCH_WEB_URL`.
+
+  Validation on 2026-08-25: `tests/test_web_proxy_plugin.py` 15 passed; frontend
+  production build passed. Live UI verified: both plugins load, install their
+  menu entries, list clickable URLs, the native configure page saves to
+  `plugin.json`, and the WS_COLLAB console reaches WebSocket transport through
+  Vite → API → web_proxy mount → the standalone server.
+
+- [x] Add `cadence=on-activation` to the WS_COLLAB worker monitor
+  (`workbench/plugins/ws_collab/ws_collab/workers.py`), resolving the tension
+  between the health monitor (warn ~60s, overdue ~120s, unresponsive ~300s) and
+  the doctrine's ban on agent keep-alive loops: an agent that only runs when its
+  recurring automation fires was previously guaranteed to be flagged as a
+  failure. A worker now declares `meta.cadence = "on-activation"` at
+  registration. Its state is still tracked truthfully, but its alerts become
+  severity `info` with `confirmation_required` false, it gets no unresponsive
+  TTS announcement, and it is excluded from the all-workers-down team-failure
+  check, which is now judged only over continuous-cadence workers. `cadence` is
+  exposed on `GET /workers` and on every alert. Designed jointly with the `zira`
+  agent over the WS_COLLAB conversation stream, which proposed exactly this
+  combination and rejected simply raising the global thresholds because that
+  hides real failures.
+
+  Rewrote the WS_COLLAB long-running prompt (published as version 2 through
+  `POST /ws_collab/v1/prompt`, version 1 preserved in durable history; also
+  written to `emullm/.git/long_running_prompt.txt`). It now documents that
+  **Copilot's own built-in Workflows cron is the approved recurring launcher**,
+  with a worked `save_workflow` example, and that one minute is the floor
+  because cron's smallest field is minutes - so a 10s or 30s cycle is not
+  achievable and must be reported rather than simulated. OS schedulers,
+  watchdogs, self-revival scripts, and wrapper loops remain prohibited. It also
+  distinguishes the two activation shapes (bounded monitor vs persistent
+  worker), explains mechanically how a persistent worker holds its turn, and
+  corrects the WebSocket contract: the client sends `ping` and the server
+  answers `pong`; the server's own `ping` must not be answered.
+
+  Validation on 2026-08-25: `tests/test_workers.py` 20 passed (16 existing plus
+  4 new covering declaration, informational alerts, continuous workers still
+  raising danger, and team-failure exclusion); full ws_collab suite 252 passed
+  with 1 pre-existing failure (`test_event_store.py` hits a Windows
+  atomic-replace `PermissionError` in `jsonl_store.py`, untouched by this work).
+  Verified live after restarting the 8802 server: registration reports
+  `cadence: on-activation` and it appears on the worker roster.
 
 - [x] Re-hosted Overview inside the standard resource-page shell so it behaves
   like other pages (for example Events): normal page body container, top menu

@@ -40,6 +40,7 @@ set "CONNECT_IP=%BIND_IP%"
 if "%CONNECT_IP%"=="0.0.0.0" set "CONNECT_IP=127.0.0.1"
 
 set "WEB_URL=http://%CONNECT_IP%:%WEB_PORT%/"
+set "WORKBENCH_WEB_URL=%WEB_URL%"
 set "API_URL=http://%CONNECT_IP%:%API_PORT%"
 set "API_HEALTH_URL=%API_URL%/api/health"
 set "WORKBENCH_CONTROL_API=%API_URL%"

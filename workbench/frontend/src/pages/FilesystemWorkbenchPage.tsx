@@ -41,6 +41,7 @@ import {
   type WorkflowPageDefinition,
 } from "../components/WorkflowPageHost";
 import { TaskStatusBar } from "../taskRegistry";
+import { usePluginMenu, type PluginMenuEntry } from "../components/usePluginMenu";
 import "../styles/workflow_layout.css";
 
 const DataCatalogPanel = lazy(() =>
@@ -4091,6 +4092,7 @@ export function FilesystemWorkbenchPage() {
               />
             )}{" "}
             {view === "plugins" && <PluginManagerPage />}{" "}
+            {view === "pluginPage" && <PluginHostedPage entry={pluginPage} />}{" "}
             {view === "setup" && (
               <WorkspaceSettingsPanel
                 workspace={workspace}

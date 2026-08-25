@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+import os
 from typing import Any
 
 from fastapi import Body, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 
 from arc3_play_api import router as arc3_play_router
 from datatype_api import router as datatype_router
@@ -29,6 +30,7 @@ from workspace_api import router as workspace_router
 
 
 app = FastAPI(title="MeTTaSymbolicLearnerWorkbench API", version="0.6.2")
+DEFAULT_WEB_URL = "http://127.0.0.1:5173/"
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
@@ -68,6 +70,18 @@ app.include_router(system_control_router, prefix="/api")
 app.include_router(service_monitor_router, prefix="/api")
 app.include_router(plugin_router, prefix="/api")
 install_plugins(app)
+
+
+@app.get("/", include_in_schema=False)
+def workbench_home() -> RedirectResponse:
+    """Send the API root to the web interface.
+
+    The API and the web interface are two ports of one workbench, so opening the
+    API port lands on the application instead of an empty 404. ``WORKBENCH_WEB_URL``
+    overrides the target when the web interface is not on its default port.
+    """
+
+    return RedirectResponse(os.environ.get("WORKBENCH_WEB_URL") or DEFAULT_WEB_URL)
 
 
 @app.get("/api/health")

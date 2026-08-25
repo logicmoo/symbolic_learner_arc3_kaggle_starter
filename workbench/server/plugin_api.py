@@ -88,6 +88,9 @@ def _scan(*, register: bool) -> list[dict[str, Any]]:
             configured = policy.get(plugin_id, {}) if isinstance(policy, dict) else {}
             scan_mode = str(configured.get("scan", manifest.get("scan", "startup")))
             item = {**manifest, "id": plugin_id, "scan": scan_mode, "path": str(manifest_path.parent), "loaded": plugin_id in _loaded}
+            # ``path`` now names the plugin directory, so the manifest's own
+            # declared administration path is preserved under its own key.
+            item["declaredPath"] = str(manifest.get("path") or "")
             # The administration link, desktop UI pages, and initialization
             # requirements are read from the plugin directory, so the Plugins
             # page can build them without importing or calling the plugin.
