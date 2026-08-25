@@ -1,5 +1,5 @@
 import {useEffect,useMemo,useState} from "react";
-import {UniversalResourceEditor} from "./UniversalResourceEditor";
+import {ResourceSourceEditor} from "./ResourceSourceEditor";
 import {replaceWorkbenchLocation} from "../lib/workbenchNavigation";
 import "../styles/repository_docs.css";
 
@@ -92,18 +92,19 @@ export function RepositoryDocsPage({initialFilter=""}:{initialFilter?:string}){
    {error&&<div className="backend-error">{error}</div>}
    {opened?<>
     <div className="repository-doc-path">{history.length>0&&<button onClick={back}>← Back</button>}<span>FILESYSTEM DOCUMENT</span><code>{opened.path}</code><div className="repository-reveal-actions"><button onClick={()=>revealOpened("tree")}>Find in Tree</button><button onClick={()=>revealOpened("navigator")}>Find in Navigator</button><button onClick={()=>revealOpened("paths")}>Find in Full Paths</button></div><button className="repository-tree-return" onClick={()=>{setOpened(null);setHistory([]);setError("");recordLocation("Docs",{docsFile:null})}}>Close document</button></div>
-    <UniversalResourceEditor
-      path={opened.path}
-      format={opened.format}
-      value={editDraft}
-      original={opened.content}
-      onChange={setEditDraft}
-      onSave={()=>void save()}
-      saving={saving}
-      imageSrc={opened.format==="image"?`/api/repository/asset?path=${encodeURIComponent(opened.path)}`:undefined}
-      navigateAllLocal
-      onNavigateMarkdown={(href)=>{const path=resolvePath(opened.path,href);recordLocation(path,{docsFile:path});void load(path,true);}}
-    />
+        {opened.format==="image"
+      ? <figure className="repository-image-view"><img src={`/api/repository/asset?path=${encodeURIComponent(opened.path)}`} alt={opened.path}/><figcaption>{opened.path}</figcaption></figure>
+      : <ResourceSourceEditor
+          value={editDraft}
+          onChange={setEditDraft}
+          path={opened.path}
+          onSave={()=>void save()}
+          saving={saving}
+          showEnablement={false}
+          label={opened.path.split("/").pop()||"File"}
+          navigateAllLocal
+          onNavigateMarkdown={(href)=>{const path=resolvePath(opened.path,href);recordLocation(path,{docsFile:path});void load(path,true);}}
+        />}
    </>:<div className="studio-empty">The filesystem tree remains available on the left. Select an exposed file to open it here.</div>}
   </article>
  </section>;

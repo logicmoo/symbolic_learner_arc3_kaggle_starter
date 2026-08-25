@@ -31,3 +31,6 @@
 .operation-visible-editor>.cm-theme,.operation-visible-editor .cm-editor{height:100%}
 .operation-visible-editor .cm-scroller{overflow:auto;font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace}
 .operation-visible-editor .cm-editor.cm-focused{outline:none}
+
+/* Markdown render tab inside the resource-source editor box. */
+.operation-visible-editor>.relationship-markdown{height:100%;overflow:auto;padding:12px 16px;margin:0}
