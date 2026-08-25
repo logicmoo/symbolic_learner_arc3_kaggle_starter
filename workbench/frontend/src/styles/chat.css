@@ -944,7 +944,7 @@
 }
 .chat-streampick-opt {
   display: flex; align-items: center; gap: 6px; width: 100%;
-  text-align: left; padding: 4px 8px; border: 0; cursor: pointer;
+  text-align: left; padding: 4px 8px 4px 18px; border: 0; cursor: pointer;
   background: transparent; color: var(--text);
 }
 .chat-streampick-opt:hover { background: rgba(127, 127, 127, 0.16); }
