@@ -46,8 +46,8 @@ export type UniversalArtifactEditorProps = {
   onActivate: (key: string) => void;
   onClose: (key: string) => void;
 
-  /** Resource-specific editor body. Operations may render Python/Prolog/MeTTa/LLM panels here. */
-  renderEditor: (key: string, secondary: boolean) => ReactNode;
+  /** Resource-specific editor body. Operations may render Python/Prolog/MeTTa/LLM panels here. The third arg is the current display view. */
+  renderEditor: (key: string, secondary: boolean, view?: "single" | "full") => ReactNode;
   emptyEditor?: ReactNode;
 
   /** Common inspector extension: dependencies, used-by, coverage, provenance, etc. */
@@ -65,6 +65,13 @@ export type UniversalArtifactEditorProps = {
   workspaceClassName?: string;
   tabsClassName?: string;
   panesClassName?: string;
+
+  /** Page-selectable display: "single" shows the active tab as the whole thing; "full" is the multi-tab Super Control. Defaults to "full". */
+  initialView?: "single" | "full";
+  /** Hide the runtime File⇄Super Control toggle when true. */
+  lockView?: boolean;
+  /** Omit the left hierarchy navigator column (for filesystem hosts that bring their own browser). */
+  hideNavigator?: boolean;
 };
 
 /**
@@ -109,9 +116,13 @@ export function UniversalArtifactEditor({
   workspaceClassName = "operation-editor-workspace",
   tabsClassName = "operation-document-tabs",
   panesClassName = "operation-editor-panes",
+  initialView = "full",
+  lockView = false,
+  hideNavigator = false,
 }: UniversalArtifactEditorProps) {
   const activeTab = tabs.find(tab => tab.key === activeKey) || null;
   const compareTab = tabs.find(tab => tab.key === compareKey) || null;
+  const [view, setView] = useState<"single" | "full">(initialView);
   const trail = breadcrumb?.length
     ? breadcrumb
     : [category || title, activeTab?.label || "Select artifact"];
@@ -137,6 +148,18 @@ export function UniversalArtifactEditor({
     [bottomPanels, bottomPanelId],
   );
 
+  if (view === "single") {
+    return <section className={`universal-artifact-editor uae-single ${className}`.trim()} data-editor-baseline={UNIVERSAL_ARTIFACT_EDITOR_BASELINE}>
+      <div className="uae-single-bar">
+        <div className="uae-single-heading"><span>{eyebrow}</span><b>{activeTab?.label || title}</b></div>
+        <div className="uae-single-actions">{headerActions}{!lockView && <button type="button" className="uae-view-toggle" onClick={() => setView("full")} title="Show the full Super Control with all tabs">▣ Super Control</button>}</div>
+      </div>
+      {notice}
+      {error && <div className="backend-error"><b>{title}</b><span>{error}</span>{onDismissError && <button onClick={onDismissError}>×</button>}</div>}
+      <div className="uae-single-body">{activeKey ? renderEditor(activeKey, false, "single") : (emptyEditor || <div className="studio-empty">Select a specification or variant.</div>)}</div>
+    </section>;
+  }
+
   return <section
     className={`resource-view operation-hierarchy-page generic-hierarchy-editor universal-artifact-editor ${className}`.trim()}
     data-editor-baseline={UNIVERSAL_ARTIFACT_EDITOR_BASELINE}
@@ -147,7 +170,7 @@ export function UniversalArtifactEditor({
 
     <div className="resource-heading artifact-editor-heading">
       <div><span>{eyebrow}</span><h1>{title}</h1><p>{description}</p></div>
-      {headerActions && <div className="studio-actions">{headerActions}</div>}
+      {(headerActions || !lockView) && <div className="studio-actions">{!lockView && <button type="button" className="uae-view-toggle" onClick={() => setView("single")} title="Collapse to the single editable file view">⛶ Editable File</button>}{headerActions}</div>}
     </div>
 
     {notice}
@@ -164,8 +187,8 @@ export function UniversalArtifactEditor({
       {inspector && <div className="artifact-inspector-extension">{inspector}</div>}
     </div>
 
-    <div className={`operation-hierarchy-layout artifact-editor-body ${navigatorCollapsed?"navigator-collapsed":"navigator-expanded"}`}>
-      <div className={`${treeClassName} artifact-navigator`.trim()}>
+    <div className={`operation-hierarchy-layout artifact-editor-body ${hideNavigator?"navigator-hidden":navigatorCollapsed?"navigator-collapsed":"navigator-expanded"}`}>
+      {!hideNavigator && <div className={`${treeClassName} artifact-navigator`.trim()}>
         <div className="artifact-navigator-toolbar">
           <span>HIERARCHY</span>
           <div className="artifact-navigator-actions">
@@ -179,7 +202,7 @@ export function UniversalArtifactEditor({
         </div>
         {viewControlsOpen && <TreeViewControls kinds={treeKinds} rules={visibilityRules} onChange={updateVisibilityRules} showParents={showParents} onShowParentsChange={setShowParents} onBranchAction={commandBranches} />}
         <ArtifactTreeCommandContext.Provider value={treeCommand}><div className="artifact-navigator-content" ref={treeRef}><CategorizedArtifactNodes onlyCategories={false} categoryCommand={categoryCommand} workspaceId={workspaceId} categoryTree={categoryTree}>{leftPane}</CategorizedArtifactNodes></div></ArtifactTreeCommandContext.Provider>
-      </div>
+      </div>}
       <div className={workspaceClassName}>
         <TreePaneResizer />
         <div className={tabsClassName}>
@@ -191,8 +214,8 @@ export function UniversalArtifactEditor({
           </div>)}
         </div>
         <div className={`${panesClassName} ${compareKey?"split":"single"}`}>
-          {activeKey ? renderEditor(activeKey,false) : (emptyEditor || <div className="studio-empty">Select a specification or variant.</div>)}
-          {compareKey ? renderEditor(compareKey,true) : null}
+          {activeKey ? renderEditor(activeKey,false,"full") : (emptyEditor || <div className="studio-empty">Select a specification or variant.</div>)}
+          {compareKey ? renderEditor(compareKey,true,"full") : null}
         </div>
       </div>
     </div>

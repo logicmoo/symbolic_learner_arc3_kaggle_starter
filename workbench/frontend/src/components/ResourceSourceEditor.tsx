@@ -8,26 +8,147 @@ import { javascript } from "@codemirror/lang-javascript";
 import { python } from "@codemirror/lang-python";
 import { css } from "@codemirror/lang-css";
 import { html } from "@codemirror/lang-html";
+import { StreamLanguage } from "@codemirror/language";
+import { shell } from "@codemirror/legacy-modes/mode/shell";
+import { yaml } from "@codemirror/legacy-modes/mode/yaml";
+import { toml } from "@codemirror/legacy-modes/mode/toml";
+import { xml } from "@codemirror/legacy-modes/mode/xml";
+import { c, cpp, java, csharp, scala, kotlin, dart, objectiveC } from "@codemirror/legacy-modes/mode/clike";
+import { rust } from "@codemirror/legacy-modes/mode/rust";
+import { go } from "@codemirror/legacy-modes/mode/go";
+import { ruby } from "@codemirror/legacy-modes/mode/ruby";
+import { perl } from "@codemirror/legacy-modes/mode/perl";
+import { powerShell } from "@codemirror/legacy-modes/mode/powershell";
+import { swift } from "@codemirror/legacy-modes/mode/swift";
+import { r } from "@codemirror/legacy-modes/mode/r";
+import { lua } from "@codemirror/legacy-modes/mode/lua";
+import { haskell } from "@codemirror/legacy-modes/mode/haskell";
+import { groovy } from "@codemirror/legacy-modes/mode/groovy";
+import { julia } from "@codemirror/legacy-modes/mode/julia";
+import { clojure } from "@codemirror/legacy-modes/mode/clojure";
+import { scheme } from "@codemirror/legacy-modes/mode/scheme";
+import { erlang } from "@codemirror/legacy-modes/mode/erlang";
+import { elm } from "@codemirror/legacy-modes/mode/elm";
+import { coffeeScript } from "@codemirror/legacy-modes/mode/coffeescript";
+import { sass } from "@codemirror/legacy-modes/mode/sass";
+import { dockerFile } from "@codemirror/legacy-modes/mode/dockerfile";
+import { cmake } from "@codemirror/legacy-modes/mode/cmake";
+import { nginx } from "@codemirror/legacy-modes/mode/nginx";
+import { properties } from "@codemirror/legacy-modes/mode/properties";
+import { diff } from "@codemirror/legacy-modes/mode/diff";
+import { verilog } from "@codemirror/legacy-modes/mode/verilog";
+import { vhdl } from "@codemirror/legacy-modes/mode/vhdl";
+import { standardSQL } from "@codemirror/legacy-modes/mode/sql";
+import { stex } from "@codemirror/legacy-modes/mode/stex";
 import { jsonDocumentToMetta, mettaDocumentToJson } from "../lib/mettaResourceCodec";
 import { useUserUiPreferences } from "../lib/uiPreferences";
 import { WorkspaceResourceFileControls, type WorkspaceResourceFileControlsProps } from "./WorkspaceResourceFileControls";
 import { MarkdownDocument } from "./MarkdownDocument";
 import "../styles/operation_editor.css";
 
+const streamLang = (mode: Parameters<typeof StreamLanguage.define>[0]): Extension[] => [StreamLanguage.define(mode)];
 const TEXT_LANGUAGES: { id: string; label: string; extension: () => Extension[] }[] = [
   { id: "plain", label: "Plain Text", extension: () => [] },
   { id: "markdown", label: "Markdown", extension: () => [markdown()] },
   { id: "json", label: "JSON", extension: () => [json()] },
-  { id: "javascript", label: "JavaScript", extension: () => [javascript()] },
+  { id: "javascript", label: "JavaScript / TS", extension: () => [javascript({ jsx: true, typescript: true })] },
   { id: "python", label: "Python", extension: () => [python()] },
   { id: "css", label: "CSS", extension: () => [css()] },
   { id: "html", label: "HTML", extension: () => [html()] },
+  { id: "xml", label: "XML", extension: () => streamLang(xml) },
+  { id: "yaml", label: "YAML", extension: () => streamLang(yaml) },
+  { id: "toml", label: "TOML", extension: () => streamLang(toml) },
+  { id: "ini", label: "INI / Properties", extension: () => streamLang(properties) },
+  { id: "shell", label: "Shell", extension: () => streamLang(shell) },
+  { id: "powershell", label: "PowerShell", extension: () => streamLang(powerShell) },
+  { id: "dockerfile", label: "Dockerfile", extension: () => streamLang(dockerFile) },
+  { id: "sql", label: "SQL", extension: () => streamLang(standardSQL) },
+  { id: "diff", label: "Diff / Patch", extension: () => streamLang(diff) },
+  { id: "c", label: "C", extension: () => streamLang(c) },
+  { id: "cpp", label: "C++", extension: () => streamLang(cpp) },
+  { id: "java", label: "Java", extension: () => streamLang(java) },
+  { id: "csharp", label: "C#", extension: () => streamLang(csharp) },
+  { id: "kotlin", label: "Kotlin", extension: () => streamLang(kotlin) },
+  { id: "scala", label: "Scala", extension: () => streamLang(scala) },
+  { id: "dart", label: "Dart", extension: () => streamLang(dart) },
+  { id: "objectivec", label: "Objective-C", extension: () => streamLang(objectiveC) },
+  { id: "go", label: "Go", extension: () => streamLang(go) },
+  { id: "rust", label: "Rust", extension: () => streamLang(rust) },
+  { id: "ruby", label: "Ruby", extension: () => streamLang(ruby) },
+  { id: "perl", label: "Perl", extension: () => streamLang(perl) },
+  { id: "swift", label: "Swift", extension: () => streamLang(swift) },
+  { id: "r", label: "R", extension: () => streamLang(r) },
+  { id: "lua", label: "Lua", extension: () => streamLang(lua) },
+  { id: "haskell", label: "Haskell", extension: () => streamLang(haskell) },
+  { id: "groovy", label: "Groovy", extension: () => streamLang(groovy) },
+  { id: "julia", label: "Julia", extension: () => streamLang(julia) },
+  { id: "clojure", label: "Clojure", extension: () => streamLang(clojure) },
+  { id: "scheme", label: "Scheme / Lisp", extension: () => streamLang(scheme) },
+  { id: "erlang", label: "Erlang", extension: () => streamLang(erlang) },
+  { id: "elm", label: "Elm", extension: () => streamLang(elm) },
+  { id: "coffeescript", label: "CoffeeScript", extension: () => streamLang(coffeeScript) },
+  { id: "sass", label: "Sass", extension: () => streamLang(sass) },
+  { id: "cmake", label: "CMake", extension: () => streamLang(cmake) },
+  { id: "nginx", label: "Nginx", extension: () => streamLang(nginx) },
+  { id: "verilog", label: "Verilog", extension: () => streamLang(verilog) },
+  { id: "vhdl", label: "VHDL", extension: () => streamLang(vhdl) },
+  { id: "latex", label: "LaTeX", extension: () => streamLang(stex) },
 ];
 function textLanguageExtension(id: string): Extension[] {
   return (TEXT_LANGUAGES.find((entry) => entry.id === id) || TEXT_LANGUAGES[0]).extension();
 }
+const EXTENSION_TEXT_LANGUAGE: Record<string, string> = {
+  md: "markdown", markdown: "markdown", mdx: "markdown", txt: "plain", text: "plain", log: "plain",
+  json: "json", jsonl: "json", geojson: "json", ipynb: "json", webmanifest: "json",
+  js: "javascript", jsx: "javascript", mjs: "javascript", cjs: "javascript", ts: "javascript", tsx: "javascript", mts: "javascript", cts: "javascript",
+  py: "python", pyi: "python", pyw: "python",
+  css: "css", less: "css", scss: "sass", sass: "sass",
+  html: "html", htm: "html", xhtml: "html", vue: "html", svelte: "html",
+  xml: "xml", svg: "xml", xsd: "xml", xsl: "xml", plist: "xml", rss: "xml",
+  yaml: "yaml", yml: "yaml",
+  toml: "toml",
+  ini: "ini", cfg: "ini", conf: "ini", properties: "ini", env: "ini",
+  sh: "shell", bash: "shell", zsh: "shell", ksh: "shell",
+  ps1: "powershell", psm1: "powershell", psd1: "powershell",
+  sql: "sql",
+  diff: "diff", patch: "diff",
+  c: "c", h: "c",
+  cpp: "cpp", cc: "cpp", cxx: "cpp", hpp: "cpp", hh: "cpp", hxx: "cpp",
+  java: "java",
+  cs: "csharp",
+  kt: "kotlin", kts: "kotlin",
+  scala: "scala", sc: "scala",
+  dart: "dart",
+  mm: "objectivec",
+  go: "go",
+  rs: "rust",
+  rb: "ruby", gemspec: "ruby",
+  pl: "perl", pm: "perl",
+  swift: "swift",
+  r: "r",
+  lua: "lua",
+  hs: "haskell",
+  groovy: "groovy", gradle: "groovy",
+  jl: "julia",
+  clj: "clojure", cljs: "clojure", cljc: "clojure", edn: "clojure",
+  scm: "scheme", ss: "scheme", lisp: "scheme", el: "scheme",
+  erl: "erlang", hrl: "erlang",
+  elm: "elm",
+  coffee: "coffeescript",
+  tex: "latex", sty: "latex",
+  v: "verilog", sv: "verilog", svh: "verilog",
+  vhd: "vhdl", vhdl: "vhdl",
+};
+export function textLanguageForFilename(name: string): string {
+  const base = (name.split(/[\\/]/).at(-1) || "").toLowerCase();
+  if (base === "dockerfile" || base.startsWith("dockerfile.")) return "dockerfile";
+  if (base === "makefile" || base === "cmakelists.txt") return "cmake";
+  if (base === ".gitignore" || base === ".dockerignore" || base === ".npmrc" || base === ".editorconfig") return "ini";
+  const ext = base.includes(".") ? base.split(".").at(-1)! : "";
+  return EXTENSION_TEXT_LANGUAGE[ext] || "plain";
+}
 
-type Props = { value: string; onChange: (json: string) => void; onValidityChange?: (valid: boolean) => void; className?: string; style?: CSSProperties; label?: string; showEnablement?: boolean; disabled?: boolean; contentReadOnly?: boolean; stacked?: boolean; fileControls?: Omit<WorkspaceResourceFileControlsProps, "disabled" | "content" | "onClientContent"> };
+type Props = { value: string; onChange: (json: string) => void; onValidityChange?: (valid: boolean) => void; className?: string; style?: CSSProperties; label?: string; showEnablement?: boolean; disabled?: boolean; contentReadOnly?: boolean; stacked?: boolean; defaultFormat?: "metta" | "json" | "tree" | "text" | "markdown"; defaultTextLang?: string; fileControls?: Omit<WorkspaceResourceFileControlsProps, "disabled" | "content" | "onClientContent"> };
 
 type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue };
 type JsonObject = { [key: string]: JsonValue };
@@ -336,11 +457,11 @@ function updateJsonAtPath(root: JsonObject, path: string, updater: (target: Json
   return cloned;
 }
 
-export function ResourceSourceEditor({ value, onChange, onValidityChange, className = "", style, label = "Edit this resource directly", showEnablement = true, disabled = false, contentReadOnly = false, stacked = false, fileControls }: Props) {
+export function ResourceSourceEditor({ value, onChange, onValidityChange, className = "", style, label = "Edit this resource directly", showEnablement = true, disabled = false, contentReadOnly = false, stacked = false, defaultFormat, defaultTextLang, fileControls }: Props) {
   const { resourceSourceFileControlsPlacement } = useUserUiPreferences();
   const editingLocked = disabled || contentReadOnly;
-  const [format, setFormat] = useState<"metta" | "json" | "tree" | "text" | "markdown">("metta");
-  const [textLang, setTextLang] = useState<string>("plain");
+  const [format, setFormat] = useState<"metta" | "json" | "tree" | "text" | "markdown">(defaultFormat ?? "metta");
+  const [textLang, setTextLang] = useState<string>(defaultTextLang ?? "plain");
   const [metta, setMetta] = useState("");
   const [jsonDraft, setJsonDraft] = useState(value);
   const [error, setError] = useState("");
@@ -355,7 +476,10 @@ export function ResourceSourceEditor({ value, onChange, onValidityChange, classN
     setJsonDraft(value);
     if (!value) { setMetta(""); setError(""); onValidityChange?.(true); return; }
     try { setMetta(jsonDocumentToMetta(value)); setError(""); onValidityChange?.(true); }
-    catch (reason) { setError(reason instanceof Error ? reason.message : String(reason)); onValidityChange?.(false); }
+    catch (reason) {
+      if (format === "text" || format === "markdown") { setError(""); onValidityChange?.(true); }
+      else { setError(reason instanceof Error ? reason.message : String(reason)); onValidityChange?.(false); }
+    }
   }, [value]);
 
   const editMetta = (next: string) => {
@@ -645,7 +769,7 @@ export function ResourceSourceEditor({ value, onChange, onValidityChange, classN
           />
         </div>}
     {stacked && format !== "markdown" ? <div className="markdown-render operation-visible-editor" style={style}><MarkdownDocument content={jsonDraft} /></div> : null}
-    {error && format !== "text" && <div className="validation bad">Invalid {format === "metta" ? "MeTTa" : "JSON"} syntax: {error}. Draft preserved; synchronization and saving are paused until this is fixed.</div>}
+    {error && (format === "metta" || format === "json") && <div className="validation bad">Invalid {format === "metta" ? "MeTTa" : "JSON"} syntax: {error}. Draft preserved; synchronization and saving are paused until this is fixed.</div>}
     {resourceSourceFileControlsPlacement === "below" ? renderedFileControls : null}
   </div>;
 }

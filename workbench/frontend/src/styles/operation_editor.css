@@ -32,6 +32,20 @@
 .operation-visible-editor .cm-scroller{overflow:auto;font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace}
 .operation-visible-editor .cm-editor.cm-focused{outline:none}
 
+.operation-hierarchy-layout.navigator-hidden{grid-template-columns:minmax(0,1fr)}
+.uae-single{display:flex;flex-direction:column;min-height:0;height:100%;overflow:hidden}
+.uae-single-bar{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 12px;border-bottom:1px solid var(--line);background:#0c161e}
+.uae-single-heading{display:flex;flex-direction:column;min-width:0}
+.uae-single-heading span{font:600 7px ui-monospace,monospace;letter-spacing:.12em;color:#69818e}
+.uae-single-heading b{font-size:12px;color:#cdd9df;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.uae-single-actions{display:flex;gap:6px;align-items:center}
+.uae-view-toggle{border:1px solid #2d4652;background:#12232c;color:#90a5af;border-radius:4px;padding:7px 10px;font:700 8px ui-monospace,monospace;cursor:pointer;white-space:nowrap}
+.uae-view-toggle:hover{border-color:#3c95a6;color:#bfe9ef}
+.uae-single-body{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.uae-single-body>.resource-source-editor{flex:1;min-height:0;display:flex;flex-direction:column}
+.uae-single-body>.resource-source-editor>.llm-subhead{flex:0 0 auto}
+.uae-single-body .operation-visible-editor{flex:1 1 auto;min-height:0;height:auto;max-height:none;resize:none}
+
 /* ===== TEMP DEBUG marker: locate the BACKEND editor panel (remove later) ===== */
 .model-editor-scroll{position:relative!important;border:6px dashed #39ff14!important;outline:4px dotted #ff00ff!important;outline-offset:-12px!important;border-radius:22px!important;box-shadow:inset 0 0 0 3px #ff8800,0 0 0 4px #ff0000!important}
 .model-editor-scroll::before{content:"DEBUG: model-editor-scroll"!important;position:absolute!important;top:-2px!important;right:10px!important;z-index:99999!important;padding:2px 10px!important;font:700 11px/1.4 monospace!important;color:#000!important;background:#39ff14!important;border:2px solid #ff00ff!important;border-radius:0 0 8px 8px!important;pointer-events:none!important}
