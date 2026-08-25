@@ -1,0 +1,26 @@
+/* Super Control: parent "anything editor" that hosts renderer tabs over one resource. */
+.super-control{display:flex;flex-direction:column;min-height:0;height:100%;overflow:hidden}
+.super-control-bar{display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--line);background:#0b171f}
+.super-control-title{font:700 8px ui-monospace,monospace;letter-spacing:.14em;color:#6f8792}
+.super-view-toggle{margin-left:auto;border:1px solid #2a867a;background:#133c3b;color:#8df4e2;border-radius:4px;padding:7px 10px;font:700 8px ui-monospace,monospace;cursor:pointer}
+.backend-view-mode .super-view-toggle{margin-left:8px}
+
+.super-file-toolbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:6px 12px;border-bottom:1px solid #1b303a;background:#09141b}
+.super-file-toolbar button{border:1px solid #344d58;background:#11212a;color:#8fa7b0;border-radius:4px;padding:6px 9px;font:700 8px ui-monospace,monospace;cursor:pointer}
+.super-file-toolbar button:hover{border-color:#4e6d78;background:#162a34}
+.super-file-toolbar button:disabled{opacity:.45;cursor:default}
+
+.super-file-body,.super-single{flex:1 1 auto;min-height:0;overflow:auto}
+.super-stack{flex:1 1 auto;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:10px;padding:10px}
+.super-stack-section{min-height:0}
+
+.super-split{flex:1 1 auto;min-height:0;display:flex;gap:2px;padding:2px}
+.super-split.split-right{flex-direction:row}
+.super-split.split-left{flex-direction:row-reverse}
+.super-split.split-down{flex-direction:column}
+.super-split.split-up{flex-direction:column-reverse}
+.super-split>.super-pane{flex:1 1 0;min-width:0;min-height:0;display:flex;flex-direction:column;border:1px solid #22343e;border-radius:5px;overflow:hidden;background:#0b161e}
+.super-pane-tabs{display:flex;gap:2px;padding:4px;border-bottom:1px solid #1b303a;background:#09141b;overflow-x:auto;scrollbar-width:thin}
+.super-pane-tabs button{border:1px solid #2d4652;background:#0d1c25;color:#8fa7b0;border-radius:4px;padding:5px 8px;font:700 7px ui-monospace,monospace;cursor:pointer;white-space:nowrap}
+.super-pane-tabs button.active{border-color:#3c8179;background:#102b2d;color:#8df4e2}
+.super-pane-body{flex:1 1 auto;min-height:0;overflow:auto}
