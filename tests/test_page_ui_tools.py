@@ -38,6 +38,39 @@ def test_ui_assistance_chat_uses_codex_and_prepared_draft():
     assert "initialInput?: string" in conversation
 
 
+def test_chat_file_tab_embeds_super_control_and_selection_controls_source():
+    page = (FRONTEND / "components" / "ChatPage.tsx").read_text(encoding="utf-8")
+    conversation = (FRONTEND / "components" / "ChatConversation.tsx").read_text(encoding="utf-8")
+    shell = (FRONTEND / "pages" / "FilesystemWorkbenchPage.tsx").read_text(encoding="utf-8")
+
+    assert 'import { SuperControl, type StandardSuperControlRequest }' in conversation
+    assert '<SuperControl appearance="embedded" control={streamSuperControl}' in conversation
+    assert 'aria-pressed={autoScroll}' in conversation
+    assert "setAutoScrollEnabled(false)" in conversation
+    assert "selectedMessageKey === bubbleKey(message)" in conversation
+    assert "buildStreamFile(nextSelected)" in conversation
+    assert 'kind: "chat_stream"' in conversation
+    assert "records," in conversation
+    assert "chat-filepane-text" not in conversation
+    assert "workspaceId={workspaceId}" in page
+    assert "<ChatPage workspaceId={workspace.id}" in shell
+
+
+def test_chat_from_and_to_allow_explicit_null_endpoints():
+    page = (FRONTEND / "components" / "ChatPage.tsx").read_text(encoding="utf-8")
+    conversation = (FRONTEND / "components" / "ChatConversation.tsx").read_text(encoding="utf-8")
+
+    assert 'inspectId("FROM", you)' in conversation
+    assert ">From</button>" in conversation
+    assert 'aria-label="From agent identity"' in conversation
+    assert 'aria-label="To agent identity"' in conversation
+    assert conversation.count('<option value="">(none/null)</option>') == 2
+    assert '"(none/null)"' in conversation
+    assert "!you || !target" in conversation
+    assert "Select FROM and TO to send" in conversation
+    assert "messages come FROM" in page
+
+
 def test_surgical_ui_reloader_enters_restart_lifecycle():
     vite = (ROOT / "workbench" / "frontend" / "vite.config.ts").read_text(encoding="utf-8")
     client = (FRONTEND / "lib" / "surgicalUiReloaderClient.ts").read_text(encoding="utf-8")

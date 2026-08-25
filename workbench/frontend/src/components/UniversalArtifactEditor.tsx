@@ -1,10 +1,25 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { ArtifactTreeCommandContext, type ArtifactTreeCommand } from "./ArtifactTreeBranch";
 import { RepeatSwitch, TreeViewControls } from "./TreeViewControls";
 import { DEFAULT_TREE_VISIBILITY_RULES, type TreeVisibilityRules, useArtifactTreeFilter } from "./useArtifactTreeFilter";
 import { CategorizedArtifactNodes } from "./CategorizedArtifactTree";
 import { TreePaneResizer } from "./TreePaneResizer";
+import { ResourceSourceEditor } from "./ResourceSourceEditor";
+import { MarkdownDocument } from "./MarkdownDocument";
+import { ResourceExecutionPlayground } from "./ResourceExecutionPlayground";
+import {
+  describeOperationDocument,
+  OperationDocumentControl,
+  type OperationSuperControlRequest,
+} from "./OperationDocumentControl";
+import {
+  builtinSubControls,
+  fetchSubControls,
+  selectSubControls,
+  type SubControlDescriptor,
+} from "../lib/subControls";
 import "../styles/operation_editor.css";
+import "../styles/super_control.css";
 
 export const UNIVERSAL_ARTIFACT_EDITOR_BASELINE = "current-rich-editor";
 
@@ -23,7 +38,8 @@ export type UniversalArtifactBottomPanel = {
   badge?: string | number;
 };
 
-export type UniversalArtifactEditorProps = {
+export type UniversalArtifactPageProps = {
+  appearance?: "page";
   workspaceId?: string;
   categoryTree?: string;
   eyebrow: string;
@@ -74,6 +90,283 @@ export type UniversalArtifactEditorProps = {
   hideNavigator?: boolean;
 };
 
+export type UniversalArtifactEmbeddedProps = {
+  appearance: "embedded";
+  control: EmbeddedSuperControlRequest;
+  className?: string;
+};
+
+export type SuperControlProps = UniversalArtifactPageProps | UniversalArtifactEmbeddedProps;
+export type UniversalArtifactEditorProps = SuperControlProps;
+
+type StandardControlId = "file" | "markdown" | "resource" | "runner";
+type StandardResource = { kind: string; id: string; label?: string; enabled?: boolean; [key: string]: unknown };
+type SuperControlDisplayMode = "tabs" | "stacked" | "single" | "split-v" | "split-h";
+type SuperControlTabSet = "all" | "ctx";
+export type StandardSuperControlAction = {
+  id: string;
+  label: string;
+  disabled?: boolean;
+  onInvoke: () => void;
+};
+export type StandardSuperControlRequest = {
+  kind: "standard";
+  workspaceId: string;
+  source: string;
+  sourceScope: string;
+  path: string;
+  title: string;
+  dirty: boolean;
+  secondary: boolean;
+  busy: boolean;
+  resource: StandardResource | null;
+  initialControlId?: StandardControlId;
+  onChange: (value: string) => void;
+  onSave: () => void;
+  saveLabel?: string;
+  actions?: StandardSuperControlAction[];
+};
+type EmbeddedSuperControlRequest = OperationSuperControlRequest | StandardSuperControlRequest;
+
+const OPERATION_DOCUMENT_CONTROL_ID = "operation-document";
+const CONTENT_BACKED_CONTROL_IDS = new Set<StandardControlId>([
+  "file",
+  "markdown",
+  "resource",
+  "runner",
+]);
+
+function hasControlRenderer(control: SubControlDescriptor): boolean {
+  return CONTENT_BACKED_CONTROL_IDS.has(control.id as StandardControlId);
+}
+
+function uniqueControls(controls: SubControlDescriptor[]): SubControlDescriptor[] {
+  const seen = new Set<string>();
+  return controls.filter(control => {
+    if (seen.has(control.id)) return false;
+    seen.add(control.id);
+    return true;
+  });
+}
+
+function parsedJsonObject(source: string): Record<string, unknown> | null {
+  try {
+    const parsed = JSON.parse(source);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      ? parsed as Record<string, unknown>
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function metadataText(resource: Record<string, unknown>, key: string): string {
+  const value = resource[key];
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function resourceHeader(source: string, fallback: string) {
+  const resource = parsedJsonObject(source);
+  if (!resource) return { title: fallback, resolved: false };
+  const id = metadataText(resource, "id");
+  const label = metadataText(resource, "label");
+  const discriminator = metadataText(resource, "kind")
+    || metadataText(resource, "type")
+    || metadataText(resource, "subkind")
+    || metadataText(resource, "role")
+    || "resource";
+  const kind = discriminator.replace(/[_-]+/g, " ").toUpperCase();
+  const identity = label
+    ? `${label}${id && id !== label ? ` (${id})` : ""}`
+    : id || fallback;
+  return { title: `${kind} - ${identity}`, resolved: true };
+}
+
+function EmbeddedSuperControl({
+  control,
+  className = "",
+}: {
+  control: EmbeddedSuperControlRequest;
+  className?: string;
+}) {
+  const isOperation = control.kind === "operation";
+  const operationMetadata = isOperation ? describeOperationDocument(control.source, control.path) : null;
+  const resource = operationMetadata?.document || (!isOperation ? control.resource : null);
+  const fallbackTitle = operationMetadata?.title || (!isOperation ? control.title : control.path);
+  const header = resourceHeader(control.source, fallbackTitle);
+  const [availableControls, setAvailableControls] = useState<SubControlDescriptor[]>(() => builtinSubControls());
+  const [displayMode, setDisplayMode] = useState<SuperControlDisplayMode>("tabs");
+  const [tabSet, setTabSet] = useState<SuperControlTabSet>("ctx");
+  const [activeControlId, setActiveControlId] = useState(
+    control.kind === "operation" ? OPERATION_DOCUMENT_CONTROL_ID : control.initialControlId || "file",
+  );
+  const [singleControlId, setSingleControlId] = useState<string>("file");
+  const [secondaryControlId, setSecondaryControlId] = useState<string>("resource");
+  useEffect(() => {
+    let cancelled = false;
+    void fetchSubControls().then(controls => {
+      if (!cancelled) setAvailableControls(controls);
+    });
+    return () => { cancelled = true; };
+  }, []);
+  const specialControl = useMemo<SubControlDescriptor | null>(
+    () => control.kind === "operation" && operationMetadata
+      ? { id: OPERATION_DOCUMENT_CONTROL_ID, label: operationMetadata.tabLabel, source: "operation" }
+      : null,
+    [control.kind, operationMetadata?.tabLabel],
+  );
+  const contextualControls = useMemo(
+    () => selectSubControls(availableControls.filter(hasControlRenderer), {
+      resourceKind: resource?.kind || null,
+      capabilities: resource && Array.isArray((resource as Record<string, unknown>).capabilities)
+        ? ((resource as Record<string, unknown>).capabilities as unknown[]).filter((value): value is string => typeof value === "string")
+        : [],
+    }),
+    [availableControls, resource],
+  );
+  const selectedControls = useMemo(
+    () => uniqueControls([
+      ...(specialControl ? [specialControl] : []),
+      ...(tabSet === "all" ? availableControls.filter(hasControlRenderer) : contextualControls),
+    ]),
+    [availableControls, contextualControls, specialControl, tabSet],
+  );
+  useEffect(() => {
+    if (!selectedControls.length) return;
+    const ids = selectedControls.map(entry => entry.id);
+    const defaultId = ids.includes("file") ? "file" : ids[0];
+    if (!ids.includes(activeControlId)) setActiveControlId(defaultId);
+    if (!ids.includes(singleControlId)) setSingleControlId(defaultId);
+    if (!ids.includes(secondaryControlId) || secondaryControlId === singleControlId) {
+      setSecondaryControlId(ids.find(id => id !== singleControlId) || defaultId);
+    }
+  }, [activeControlId, secondaryControlId, selectedControls, singleControlId]);
+  const sourceEditor = ({
+    readOnly = false,
+    label = control.path,
+  }: {
+    readOnly?: boolean;
+    label?: string;
+  } = {}) => <ResourceSourceEditor
+        value={control.source}
+        onChange={readOnly ? () => {} : control.onChange}
+        contentReadOnly={readOnly}
+        showEnablement={false}
+        label={label}
+        sourcePath={control.path}
+        resourceMetadata={resource || undefined}
+      />;
+  const renderControl = (id: string): ReactNode => {
+    switch (id) {
+      case OPERATION_DOCUMENT_CONTROL_ID:
+        return isOperation
+          ? <OperationDocumentControl request={control} />
+          : <div className="studio-empty">This operation editor is not available for the current resource.</div>;
+      case "file":
+      case "resource":
+        return sourceEditor();
+      case "markdown":
+        return <div className="markdown-render operation-editor-scroll">
+          <MarkdownDocument content={control.source} onChange={control.onChange} editable />
+        </div>;
+      case "runner":
+        return resource
+          ? <ResourceExecutionPlayground workspaceId={control.workspaceId} resource={resource} />
+          : <div className="studio-empty">Fix the resource source before opening the runner.</div>;
+      default: {
+        return null;
+      }
+    }
+  };
+  const controlOptions = selectedControls.map(entry =>
+    <option key={entry.id} value={entry.id}>{entry.label}</option>,
+  );
+  const singleBody = displayMode === "single"
+    ? <div className="super-control-body super-control-single">{renderControl(singleControlId)}</div>
+    : null;
+  const splitBody = displayMode === "split-v" || displayMode === "split-h"
+    ? <div className={`super-control-body super-control-split ${displayMode}`}>
+        <div className="super-control-pane" data-pane="primary">{renderControl(singleControlId)}</div>
+        <div className="super-control-pane" data-pane="secondary">{renderControl(secondaryControlId)}</div>
+      </div>
+    : null;
+  const stackedBody = displayMode === "stacked"
+    ? <div className="super-control-body super-control-stack">
+        {selectedControls.map(entry => <section className="super-control-stack-section" key={entry.id}>
+          <h3>{entry.label}</h3>
+          <div className="super-control-stack-section-body">{renderControl(entry.id)}</div>
+        </section>)}
+      </div>
+    : null;
+
+  return <section
+    className={`super-control super-control-embedded ${control.secondary ? "secondary" : "primary"} ${className}`.trim()}
+    data-editor-baseline={UNIVERSAL_ARTIFACT_EDITOR_BASELINE}
+    data-appearance="embedded"
+  >
+    <div className="operation-editor-toolbar">
+      <div>
+        <span>SUPER CONTROL{control.dirty ? <i className="super-control-state"> · UNSAVED</i> : null}</span>
+        <h2>{header.title}</h2>
+        <small>{control.sourceScope} · {control.path}{!header.resolved ? " · identity unresolved" : ""}</small>
+      </div>
+      <div className="operation-editor-actions">
+        {control.kind === "operation" && operationMetadata?.document && control.onToggleEnabled && <button
+          className={operationMetadata.document.enabled === false ? "enable-resource" : "disable-resource"}
+          onClick={control.onToggleEnabled}
+        >
+          {operationMetadata.document.enabled === false ? "Enable Resource" : "Disable Resource"}
+        </button>}
+        <div className="super-control-tab-set" role="group" aria-label="Super Control tab set">
+          <b>TABS</b>
+          <span className="super-control-tab-set-buttons">
+            <button type="button" className={tabSet === "all" ? "active" : ""} aria-pressed={tabSet === "all"} onClick={() => setTabSet("all")}>ALL</button>
+            <button type="button" className={tabSet === "ctx" ? "active" : ""} aria-pressed={tabSet === "ctx"} onClick={() => setTabSet("ctx")}>CTX</button>
+          </span>
+        </div>
+        <label className="super-control-mode-switcher">
+          <span>DISPLAY</span>
+          <select aria-label="Super Control display mode" value={displayMode} onChange={event => setDisplayMode(event.target.value as SuperControlDisplayMode)}>
+            <option value="tabs">Tabs</option>
+            <option value="stacked">Stacked</option>
+            <option value="single">Single</option>
+            <option value="split-v">SplitV</option>
+            <option value="split-h">SplitH</option>
+          </select>
+        </label>
+        {(displayMode === "single" || displayMode === "split-v" || displayMode === "split-h") && <label className="super-control-pane-selector">
+          <span>{displayMode === "single" ? "TAB" : displayMode === "split-v" ? "LEFT" : "TOP"}</span>
+          <select aria-label="Primary Super Control tab" value={singleControlId} onChange={event => setSingleControlId(event.target.value)}>{controlOptions}</select>
+        </label>}
+        {(displayMode === "split-v" || displayMode === "split-h") && <label className="super-control-pane-selector">
+          <span>{displayMode === "split-v" ? "RIGHT" : "BOTTOM"}</span>
+          <select aria-label="Secondary Super Control tab" value={secondaryControlId} onChange={event => setSecondaryControlId(event.target.value)}>{controlOptions}</select>
+        </label>}
+        <button className="primary" onClick={control.onSave} disabled={control.busy || !resource}>{control.kind === "standard" ? control.saveLabel || "Save" : "Save"}</button>
+        {control.kind === "standard" && control.actions?.map(action => <button
+          key={action.id}
+          disabled={action.disabled}
+          onClick={action.onInvoke}
+        >{action.label}</button>)}
+      </div>
+    </div>
+    {displayMode === "tabs" && <nav className="super-control-tabs" aria-label="Super Control editors" role="tablist">
+      <span className="super-control-tabs-label">EDITORS</span>
+      {selectedControls.map(entry => <button
+        key={entry.id}
+        role="tab"
+        aria-selected={activeControlId === entry.id}
+        className={activeControlId === entry.id ? "active" : ""}
+        onClick={() => setActiveControlId(entry.id)}
+      >{entry.label}{entry.id === OPERATION_DOCUMENT_CONTROL_ID && control.dirty ? <i className="dirty">●</i> : null}</button>)}
+    </nav>}
+    {displayMode === "tabs" && <div className="super-control-body super-control-tabbed">{renderControl(activeControlId)}</div>}
+    {stackedBody}
+    {singleBody}
+    {splitBody}
+  </section>;
+}
+
 /**
  * Universal Artifact Editor.
  *
@@ -87,7 +380,12 @@ export type UniversalArtifactEditorProps = {
  *
  * Artifact-family adapters add capabilities; they must not remove baseline behavior.
  */
-export function UniversalArtifactEditor({
+export function SuperControl(props: SuperControlProps) {
+  if (props.appearance === "embedded") {
+    return <EmbeddedSuperControl control={props.control} className={props.className} />;
+  }
+
+  const {
   workspaceId,
   categoryTree,
   eyebrow,
@@ -119,7 +417,7 @@ export function UniversalArtifactEditor({
   initialView = "full",
   lockView = false,
   hideNavigator = false,
-}: UniversalArtifactEditorProps) {
+  } = props;
   const activeTab = tabs.find(tab => tab.key === activeKey) || null;
   const compareTab = tabs.find(tab => tab.key === compareKey) || null;
   const [view, setView] = useState<"single" | "full">(initialView);
@@ -149,7 +447,7 @@ export function UniversalArtifactEditor({
   );
 
   if (view === "single") {
-    return <section className={`universal-artifact-editor uae-single ${className}`.trim()} data-editor-baseline={UNIVERSAL_ARTIFACT_EDITOR_BASELINE}>
+    return <section className={`super-control uae-single ${className}`.trim()} data-editor-baseline={UNIVERSAL_ARTIFACT_EDITOR_BASELINE}>
       <div className="uae-single-bar">
         <div className="uae-single-heading"><span>{eyebrow}</span><b>{activeTab?.label || title}</b></div>
         <div className="uae-single-actions">{headerActions}{!lockView && <button type="button" className="uae-view-toggle" onClick={() => setView("full")} title="Show the full Super Control with all tabs">▣ Super Control</button>}</div>
@@ -161,7 +459,7 @@ export function UniversalArtifactEditor({
   }
 
   return <section
-    className={`resource-view operation-hierarchy-page generic-hierarchy-editor universal-artifact-editor ${className}`.trim()}
+    className={`resource-view operation-hierarchy-page generic-hierarchy-editor super-control ${className}`.trim()}
     data-editor-baseline={UNIVERSAL_ARTIFACT_EDITOR_BASELINE}
   >
     <div className="artifact-breadcrumb" aria-label="Artifact breadcrumb">
@@ -234,3 +532,6 @@ export function UniversalArtifactEditor({
     {footer}
   </section>;
 }
+
+/** Compatibility export for incrementally migrated artifact-family adapters. */
+export const UniversalArtifactEditor = SuperControl;

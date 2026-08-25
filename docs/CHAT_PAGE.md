@@ -22,9 +22,22 @@ through the same call):
   `*_entry` registry records latest-per-id already wins, so the original just
   becomes traceable history.
 
+## Chat and File tabs
+
+The **File** tab renders the canonical SuperControl. With no selected message,
+its source is one JSON resource containing every record in the visible stream.
+Selecting a chat bubble changes the SuperControl source to that node's complete
+raw record; selecting it again returns to the whole-stream JSON.
+
+Chat auto-scroll is explicit. It starts enabled, turns off when the user scrolls
+away from the bottom or selects a message node, and resumes only through the
+**Auto-scroll** toggle. Selecting a node never gets displaced by newly arriving
+messages.
+
 ## Pickers (top banner)
 
-- **YOU** — the agent identity you write as (`from` on sent records).
+- **FROM** — the agent identity written to `from` on sent records (the former
+  YOU control).
 - **TO** — the agent you address (`to`), and the agent whose cursor and
   subscription the bars below operate on.
 - **CHANNEL** — the channel the view centres on. Labels show
@@ -33,7 +46,10 @@ through the same call):
   `channel_id`, so the message lands on that channel (addressing an agent with
   a SEND-TO channel auto-subscribes it server-side).
 
-Clicking a picker's label (YOU / TO / CHANNEL / SEND-TO) opens the entity's
+FROM, TO, and optional stream targets can explicitly be **(none/null)**. Sending
+is disabled until both FROM and TO identify an agent.
+
+Clicking a picker's label (FROM / TO / CHANNEL / SEND-TO) opens the entity's
 stored JSON entry for editing — Save posts it to the `server_agents_registry` /
 `server_channels_registry` blackboard.
 
@@ -45,7 +61,7 @@ channel. Each depressed button ANDs one required match:
 | Button | Requires |
 | --- | --- |
 | `TO` | `record.to` equals the TO picker |
-| `FROM` | `record.from` equals the YOU picker |
+| `FROM` | `record.from` equals the FROM picker |
 | `CHANNEL` | the record involves the CHANNEL picker (`from`, `to` or `channel_id`) |
 | `SEND-TO` | `record.channel_id` equals the SEND-TO picker |
 | `TEXT` | the text expression matches (case-insensitive substring, or `/regex/`) |
@@ -76,7 +92,7 @@ which re-runs the subscription sync after each edit.
 
 ## Composer and channel config
 
-Enter sends (Shift+Enter for a newline). Messages go `YOU → TO`, routed via
+Enter sends (Shift+Enter for a newline). Messages go `FROM → TO`, routed via
 SEND-TO when set. The channel-config editor below edits the
 `channel_config` record for the send channel (or viewed channel when SEND-TO
 is empty).

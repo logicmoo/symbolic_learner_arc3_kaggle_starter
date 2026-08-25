@@ -19,6 +19,7 @@ export type WorkspaceResourceFileControlsProps = {
   relativePath: string;
   dirty?: boolean;
   disabled?: boolean;
+  allowLoadDifferent?: boolean;
   onSave: (location: WorkspaceResourceLocation) => Promise<void> | void;
   onLoad: (location: WorkspaceResourceLocation) => Promise<void> | void;
   content: string;
@@ -47,6 +48,7 @@ export function WorkspaceResourceFileControls({
   relativePath,
   dirty = false,
   disabled = false,
+  allowLoadDifferent = true,
   onSave,
   onLoad,
   content,
@@ -146,17 +148,17 @@ export function WorkspaceResourceFileControls({
       <button type="button" className={dirty ? "primary" : ""} disabled={disabled || busy || !currentLocation.path} onClick={() => void run(() => onSave(currentLocation))}>Save To Workspace</button>
       <button type="button" disabled={disabled || busy} onClick={() => setMode(mode === "saveAs" ? null : "saveAs")}>Save To Other Workspace…</button>
       <button type="button" disabled={disabled || busy || !originLocation.path} onClick={() => void run(() => onLoad(originLocation))}>Reload From Origin</button>
-      <button type="button" disabled={disabled || busy} onClick={() => setMode(mode === "loadFrom" ? null : "loadFrom")}>Load From Workspace…</button>
+      {allowLoadDifferent && <button type="button" disabled={disabled || busy} onClick={() => setMode(mode === "loadFrom" ? null : "loadFrom")}>Load From Workspace…</button>}
     </div></div>
     <div className="workspace-resource-file-channel"><span>LOCAL DISK · NATIVE FILE</span><div className="workspace-resource-file-actions">
-      <button type="button" disabled={disabled || busy} onClick={loadLocalFile}>Load…</button>
+      {allowLoadDifferent && <button type="button" disabled={disabled || busy} onClick={loadLocalFile}>Load…</button>}
       <button type="button" disabled={disabled || busy || !localFileHandle} onClick={() => saveLocalFile(false)}>Save</button>
       <button type="button" disabled={disabled || busy} onClick={() => saveLocalFile(true)}>Save As…</button>
       <button type="button" disabled={disabled || busy || !localFileHandle} onClick={reloadLocalFile}>Reload Local File</button>
       <small>{localFileHandle?.name || "No local file handle"}</small>
     </div></div>
     <div className="workspace-resource-file-channel"><span>CLIENT TRANSFER</span><div className="workspace-resource-file-actions">
-      <label className="resource-client-upload">Upload<input ref={uploadRef} type="file" accept=".json,.metta,.txt,text/plain,application/json" disabled={disabled || busy} onChange={event => uploadClientFile(event.target.files?.[0])}/></label>
+      {allowLoadDifferent && <label className="resource-client-upload">Upload<input ref={uploadRef} type="file" accept=".json,.metta,.txt,text/plain,application/json" disabled={disabled || busy} onChange={event => uploadClientFile(event.target.files?.[0])}/></label>}
       <button type="button" disabled={disabled || busy} onClick={downloadClientFile}>Download</button>
     </div>
     {mode && <div className="workspace-resource-file-picker">

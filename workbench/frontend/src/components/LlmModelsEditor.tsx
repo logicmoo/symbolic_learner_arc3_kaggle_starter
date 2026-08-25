@@ -15,6 +15,9 @@ import "../styles/models_editor.css";
 
 type Source="shared"|"workspace";
 type NodeKind="system"|"backend"|"model"|"preset";
+type ModelEditorControlId="file"|"resource"|"actions"|"runner";
+type ModelEditorDisplayMode="tabs"|"stacked"|"single"|"split-v"|"split-h";
+type ModelEditorTabSet="all"|"ctx";
 type RecordFile<T>={path:string;source?:Source;workspaceId?:string;document?:T;error?:string;resolved?:Resolution;isNew?:boolean};
 type BackendDef={kind:"backend";id:string;label?:string;description?:string;provider:string;official?:boolean;enabled?:boolean;capabilities?:string[];configuration?:Record<string,unknown>;modelDefaults?:Record<string,unknown>;example_execute?:ExampleExecute};
 type SystemDef={kind:"system";id:string;label?:string;description?:string;provider:string;systemType?:"runtime"|"llm_caller"|"agent"|"mcp"|"plugin"|string;enabled?:boolean;capabilities?:string[];configuration?:Record<string,unknown>;example_execute?:ExampleExecute};
@@ -91,8 +94,10 @@ function BackendConfigForm({source,onChange}:{source:string;onChange:(value:stri
 export function LlmModelsEditor({workspaceId,catalogMode="models",topMenuMode="browse"}:{workspaceId:string;catalogMode?:"systems"|"models";topMenuMode?:"browse"|"discover"|"override"}){
  const[snapshot,setSnapshot]=useState<Snapshot|null>(null),[layout,setLayout]=useState<Layout>("tiles"),[openDocs,setOpenDocs]=useState<OpenDocument[]>([]),[activeKey,setActiveKey]=useState<string|null>(null),[compareKey,setCompareKey]=useState<string|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState<string|null>(null),[discovery,setDiscovery]=useState<{backendId:string;models:DiscoveredModel[]}|null>(null),[discoverySelection,setDiscoverySelection]=useState<Set<string>>(new Set()),[discoveryFilter,setDiscoveryFilter]=useState(""),[discoverySort,setDiscoverySort]=useState<{key:string;dir:"asc"|"desc"}>({key:"id",dir:"asc"}),[overrideWorkerModelId,setOverrideWorkerModelId]=useState(""),[overrideFetchRaw,setOverrideFetchRaw]=useState("");
  const[overrideSource,setOverrideSource]=useState(DEFAULT_MODEL_OVERRIDE_SOURCE),[overrideDirty,setOverrideDirty]=useState(false),[overrideStatus,setOverrideStatus]=useState("");
- const[backendEditorModes,setBackendEditorModes]=useState<Record<string,"file"|"resource"|"inheritance"|"actions"|"runner">>({});
- const[backendEditorLayouts,setBackendEditorLayouts]=useState<Record<string,"stack"|"tabs">>({});
+ const[backendEditorModes,setBackendEditorModes]=useState<Record<string,ModelEditorControlId>>({});
+ const[backendSecondaryEditorModes,setBackendSecondaryEditorModes]=useState<Record<string,ModelEditorControlId>>({});
+ const[backendEditorDisplayModes,setBackendEditorDisplayModes]=useState<Record<string,ModelEditorDisplayMode>>({});
+ const[backendEditorTabSets,setBackendEditorTabSets]=useState<Record<string,ModelEditorTabSet>>({});
  const[splitOrientation,setSplitOrientation]=useState<"left"|"right"|"up"|"down">("right");
  const load=async()=>{const next=await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/snapshot`) as Snapshot;setSnapshot(next);return next};
  useEffect(()=>{setOpenDocs([]);setActiveKey(null);setCompareKey(null);void load().catch(r=>setError(String(r)))},[workspaceId]);
@@ -145,16 +150,43 @@ export function LlmModelsEditor({workspaceId,catalogMode="models",topMenuMode="b
   const editable=!!document;
   const inSplit=!!compareKey;
   const paneStateKey=secondary?`${doc.key}#2`:doc.key;
-  const backendEditorMode=editable?(backendEditorModes[paneStateKey]||(secondary?"file":"resource")):null;
-  const backendEditorLayout=editable?(inSplit?"tabs":(backendEditorLayouts[paneStateKey]||"tabs")):null;
-  const showBackendSection=(section:"file"|"resource"|"inheritance"|"actions"|"runner")=>backendEditorLayout==="stack"||backendEditorMode===section;
-  const selectBackendSection=(section:"file"|"resource"|"inheritance"|"actions"|"runner")=>{setBackendEditorModes(current=>({...current,[paneStateKey]:section}));setBackendEditorLayouts(current=>({...current,[paneStateKey]:"tabs"}))};
+  const availableEditorControls:ModelEditorControlId[]=["file","resource",...(backend?["actions" as const]:[]),"runner"];
+  const backendEditorTabSet=backendEditorTabSets[paneStateKey]||"ctx";
+  const selectedEditorControls=availableEditorControls;
+  const backendEditorMode=editable&&selectedEditorControls.includes(backendEditorModes[paneStateKey])
+   ? backendEditorModes[paneStateKey]
+   : secondary?"file":"resource";
+  const defaultSecondaryMode=selectedEditorControls.find(control=>control!==backendEditorMode)||backendEditorMode;
+  const backendSecondaryEditorMode=editable&&selectedEditorControls.includes(backendSecondaryEditorModes[paneStateKey])
+   ? backendSecondaryEditorModes[paneStateKey]
+   : defaultSecondaryMode;
+  const backendEditorDisplayMode=editable?(inSplit?"tabs":(backendEditorDisplayModes[paneStateKey]||"tabs")):"single";
+  const showBackendSection=(section:ModelEditorControlId)=>backendEditorDisplayMode==="stacked"
+   || backendEditorMode===section
+   || ((backendEditorDisplayMode==="split-v"||backendEditorDisplayMode==="split-h")&&backendSecondaryEditorMode===section);
+  const selectBackendSection=(section:ModelEditorControlId)=>{setBackendEditorModes(current=>({...current,[paneStateKey]:section}));setBackendEditorDisplayModes(current=>({...current,[paneStateKey]:"tabs"}))};
   const backendId = document?.id || "";
   const resourceEnabled = document
     ? (typeof document.enabled === "boolean"
       ? document.enabled
       : (typeof doc.record.resolved?.enabled === "boolean" ? doc.record.resolved.enabled : true))
     : false;
+   const resolvedSource = document
+    ? backend
+     ? JSON.stringify({...doc.record.resolved,provider:(document as BackendDef).provider,official:(document as BackendDef).official,enabled:(document as BackendDef).enabled,capabilities:(document as BackendDef).capabilities,configuration:(document as BackendDef).configuration,modelDefaults:(document as BackendDef).modelDefaults},null,2)
+     : system
+       ? JSON.stringify(doc.record.resolved || {provider:(document as SystemDef).provider,systemType:(document as SystemDef).systemType,capabilities:document.capabilities||[]},null,2)
+       : JSON.stringify(doc.record.resolved || {},null,2)
+    : "";
+   const inheritedParentId = document
+    ? doc.record.resolved?.parentId
+      || (!backend && !system ? modelParent(document as ModelDef) : "")
+      || doc.record.resolved?.backendId
+    : "";
+   const inheritedParent = inheritedParentId ? items.find(item=>item.id===inheritedParentId) : null;
+   const inheritedParentHref = inheritedParentId
+    ? `?workspace=${encodeURIComponent(workspaceId)}&view=${catalogMode==="systems"?"systems":"llms"}&edit=${encodeURIComponent(inheritedParentId)}`
+    : "";
   const discoveryForThis = (discovery && discovery.backendId === backendId) ? discovery : null;
   const discoveredModels = discoveryForThis?.models || [];
 
@@ -237,8 +269,8 @@ export function LlmModelsEditor({workspaceId,catalogMode="models",topMenuMode="b
   };
 
   return (
-   <div className={"model-editor-scroll " + (secondary ? "secondary " : "") + (backendEditorLayout==="stack" ? "stack-mode" : "tabs-mode")}>
-    <div className="model-editor-document">
+   <div className={"model-editor-scroll " + (secondary ? "secondary " : "") + (backendEditorDisplayMode==="stacked" ? "stack-mode" : "tabs-mode")}>
+    <div className={`model-editor-document model-control-${backendEditorDisplayMode}`}>
      <div className="model-editor-toolbar">
       <div className="model-editor-identity">
        <span className={"model-kind-badge " + (document?.kind || "")}>{document?.kind?.toUpperCase()}</span>
@@ -246,7 +278,7 @@ export function LlmModelsEditor({workspaceId,catalogMode="models",topMenuMode="b
        <small>{displayResourcePath(doc.record.path)}</small>
       </div>
       <div className="model-editor-actions">
-       {backend && <button className="backend-edit-source" onClick={()=>selectBackendSection("file")} aria-pressed={backendEditorLayout==="tabs"&&backendEditorMode==="file"}>{backendEditorLayout==="tabs"&&backendEditorMode==="file"?"Editing File":"Edit"}</button>}
+       {backend && <button className="backend-edit-source" onClick={()=>selectBackendSection("file")} aria-pressed={backendEditorDisplayMode==="tabs"&&backendEditorMode==="file"}>{backendEditorDisplayMode==="tabs"&&backendEditorMode==="file"?"Editing File":"Edit File"}</button>}
        {document && !backend && <button
         className={resourceEnabled ? "disable-resource" : "enable-resource"}
         onClick={() => setResourceEnabled(doc, document, !resourceEnabled)}
@@ -254,15 +286,31 @@ export function LlmModelsEditor({workspaceId,catalogMode="models",topMenuMode="b
         aria-pressed={!resourceEnabled}
         title={`${resourceEnabled ? "Disable" : "Enable"} this ${document.kind} resource`}
        >{resourceEnabled ? "Disable Resource" : "Enable Resource"}</button>}
-       {!secondary && (compareKey
-         ? <span className="model-split-controls"><b>SPLIT</b>
-             <button className={splitOrientation==="left"?"active":""} onClick={()=>setSplitOrientation("left")} title="Other pane on the left">⬅</button>
-             <button className={splitOrientation==="right"?"active":""} onClick={()=>setSplitOrientation("right")} title="Other pane on the right">➡</button>
-             <button className={splitOrientation==="up"?"active":""} onClick={()=>setSplitOrientation("up")} title="Other pane above">⬆</button>
-             <button className={splitOrientation==="down"?"active":""} onClick={()=>setSplitOrientation("down")} title="Other pane below">⬇</button>
-             <button onClick={chooseComparison}>Restore</button>
-           </span>
-         : <button onClick={chooseComparison}>Split View</button>)}
+       <div className="super-control-tab-set" role="group" aria-label="Model Super Control tab set">
+        <b>TABS</b>
+        <span className="super-control-tab-set-buttons">
+         <button type="button" className={backendEditorTabSet==="all"?"active":""} aria-pressed={backendEditorTabSet==="all"} onClick={()=>setBackendEditorTabSets(current=>({...current,[paneStateKey]:"all"}))}>ALL</button>
+         <button type="button" className={backendEditorTabSet==="ctx"?"active":""} aria-pressed={backendEditorTabSet==="ctx"} onClick={()=>setBackendEditorTabSets(current=>({...current,[paneStateKey]:"ctx"}))}>CTX</button>
+        </span>
+       </div>
+       <label className="super-control-mode-switcher">
+        <span>DISPLAY</span>
+        <select aria-label="Model Super Control display mode" value={backendEditorDisplayMode} onChange={event=>setBackendEditorDisplayModes(current=>({...current,[paneStateKey]:event.target.value as ModelEditorDisplayMode}))}>
+         <option value="tabs">Tabs</option>
+         <option value="stacked">Stacked</option>
+         <option value="single">Single</option>
+         <option value="split-v">SplitV</option>
+         <option value="split-h">SplitH</option>
+        </select>
+       </label>
+       {(backendEditorDisplayMode==="single"||backendEditorDisplayMode==="split-v"||backendEditorDisplayMode==="split-h")&&<label className="super-control-pane-selector">
+        <span>{backendEditorDisplayMode==="single"?"TAB":backendEditorDisplayMode==="split-v"?"LEFT":"TOP"}</span>
+        <select aria-label="Primary Model Super Control tab" value={backendEditorMode} onChange={event=>setBackendEditorModes(current=>({...current,[paneStateKey]:event.target.value as ModelEditorControlId}))}>{selectedEditorControls.map(control=><option key={control} value={control}>{control==="file"?"File":control==="resource"?"Resource & Inheritance":control==="actions"?"Backend Actions":"Universal Execution Runner"}</option>)}</select>
+       </label>}
+       {(backendEditorDisplayMode==="split-v"||backendEditorDisplayMode==="split-h")&&<label className="super-control-pane-selector">
+        <span>{backendEditorDisplayMode==="split-v"?"RIGHT":"BOTTOM"}</span>
+        <select aria-label="Secondary Model Super Control tab" value={backendSecondaryEditorMode} onChange={event=>setBackendSecondaryEditorModes(current=>({...current,[paneStateKey]:event.target.value as ModelEditorControlId}))}>{selectedEditorControls.map(control=><option key={control} value={control}>{control==="file"?"File":control==="resource"?"Resource & Inheritance":control==="actions"?"Backend Actions":"Universal Execution Runner"}</option>)}</select>
+       </label>}
        <button className="danger" onClick={() => close(doc.key)}>Close</button>
       </div>
      </div>
@@ -332,19 +380,17 @@ export function LlmModelsEditor({workspaceId,catalogMode="models",topMenuMode="b
       </div>
      )}
 
-     {editable && <nav className="backend-aggregate-tabs" aria-label="Editor modes" role="tablist">
+     {editable && backendEditorDisplayMode==="tabs" && <nav className="backend-aggregate-tabs" aria-label="Editor modes" role="tablist">
       <span className="backend-tabs-label">EDITORS</span>
-      <button role="tab" aria-selected={backendEditorLayout==="tabs"&&backendEditorMode==="file"} className={backendEditorLayout==="tabs"&&backendEditorMode==="file"?"active":""} onClick={()=>selectBackendSection("file")}>File</button>
-      <button role="tab" aria-selected={backendEditorLayout==="tabs"&&backendEditorMode==="resource"} className={backendEditorLayout==="tabs"&&backendEditorMode==="resource"?"active":""} onClick={()=>selectBackendSection("resource")}>Resource</button>
-      <button role="tab" aria-selected={backendEditorLayout==="tabs"&&backendEditorMode==="inheritance"} className={backendEditorLayout==="tabs"&&backendEditorMode==="inheritance"?"active":""} onClick={()=>selectBackendSection("inheritance")}>Inheritance</button>
-      {backend && <button role="tab" aria-selected={backendEditorLayout==="tabs"&&backendEditorMode==="actions"} className={backendEditorLayout==="tabs"&&backendEditorMode==="actions"?"active":""} onClick={()=>selectBackendSection("actions")}>Backend Actions</button>}
-      <button role="tab" aria-selected={backendEditorLayout==="tabs"&&backendEditorMode==="runner"} className={backendEditorLayout==="tabs"&&backendEditorMode==="runner"?"active":""} onClick={()=>selectBackendSection("runner")}>Universal Execution Runner</button>
-      {!inSplit && <span className="backend-view-mode"><b>DISPLAY</b><button className={backendEditorLayout==="stack"?"active":""} aria-pressed={backendEditorLayout==="stack"} onClick={()=>setBackendEditorLayouts(current=>({...current,[paneStateKey]:"stack"}))}>↕ Stack</button><button className={backendEditorLayout==="tabs"?"active":""} aria-pressed={backendEditorLayout==="tabs"} onClick={()=>setBackendEditorLayouts(current=>({...current,[paneStateKey]:"tabs"}))}>▣ Tabs</button></span>}
+      <button role="tab" aria-selected={backendEditorMode==="file"} className={backendEditorMode==="file"?"active":""} onClick={()=>selectBackendSection("file")}>File</button>
+      <button role="tab" aria-selected={backendEditorMode==="resource"} className={backendEditorMode==="resource"?"active":""} onClick={()=>selectBackendSection("resource")}>Resource &amp; Inheritance</button>
+      {backend && <button role="tab" aria-selected={backendEditorMode==="actions"} className={backendEditorMode==="actions"?"active":""} onClick={()=>selectBackendSection("actions")}>Backend Actions</button>}
+      <button role="tab" aria-selected={backendEditorMode==="runner"} className={backendEditorMode==="runner"?"active":""} onClick={()=>selectBackendSection("runner")}>Universal Execution Runner</button>
      </nav>}
 
-     {(!editable||showBackendSection("file")) && <div className={`model-visible-editor ${backendEditorLayout==="stack"?"backend-stacked-section":""}`}>
+     {(!editable||showBackendSection("file")) && <div className={`model-visible-editor ${backendEditorDisplayMode==="stacked"?"backend-stacked-section":""}`}>
       <div className="studio-section-label">RESOURCE SOURCE</div>
-      <ResourceSourceEditor value={doc.source} onChange={src => updateSource(doc.key, src)} showEnablement={false} stacked={backendEditorLayout==="stack"} fileControls={{
+      <ResourceSourceEditor value={doc.source} onChange={src => updateSource(doc.key, src)} showEnablement={false} stacked={backendEditorDisplayMode==="stacked"} fileControls={{
        currentWorkspaceId:workspaceId,
        workspaceId:workspaceId,
        originWorkspaceId:doc.record.workspaceId||workspaceId,
@@ -355,48 +401,40 @@ export function LlmModelsEditor({workspaceId,catalogMode="models",topMenuMode="b
       }} />
      </div>}
 
-     {!backend && !system && document && showBackendSection("resource") && (
-      <div className="model-config-panes">
+     {editable && document && showBackendSection("resource") && <section className={`model-control-pane model-resource-inheritance ${backendEditorDisplayMode==="stacked"?"backend-stacked-section":""}`} data-model-control="resource">
+      {!backend && !system && <div className="model-config-panes">
        <div className="model-config-pane">
         <div className="studio-section-label">CONFIGURATION</div>
         <ConfigForm source={doc.source} onChange={src => updateSource(doc.key, src)} items={items} />
        </div>
-      </div>
-     )}
-
-     {system && document && showBackendSection("resource") && (
-      <div className="model-config-panes">
+      </div>}
+      {system && <div className="model-config-panes">
        <div className="model-config-pane">
         <div className="studio-section-label">SYSTEM CONFIGURATION</div>
         <SystemConfigForm source={doc.source} onChange={src => updateSource(doc.key, src)} />
        </div>
-      </div>
-     )}
-
-     {backend && showBackendSection("resource") && document && <div className="model-config-panes backend-resource-editor">
-      <div className="backend-resource-status"><div><span>RESOURCE STATE</span><b>{resourceEnabled?"Enabled":"Disabled"}</b><small>{typeof document.enabled==="boolean"?"Declared by this backend resource":"Resolved through inheritance/defaults"}</small></div><button className={resourceEnabled?"disable-resource":"enable-resource"} onClick={()=>setResourceEnabled(doc,document,!resourceEnabled)} disabled={busy}>{resourceEnabled?"Disable Backend":"Enable Backend"}</button></div>
-      <div className="model-config-pane"><div className="studio-section-label">CONFIGURATION</div><BackendConfigForm source={doc.source} onChange={src=>updateSource(doc.key,src)}/></div>
-     </div>}
-
-     {editable && document && showBackendSection("inheritance") && (() => {
-      const resolvedSource = backend
-       ? JSON.stringify({...doc.record.resolved,provider:(document as BackendDef).provider,official:(document as BackendDef).official,enabled:(document as BackendDef).enabled,capabilities:(document as BackendDef).capabilities,configuration:(document as BackendDef).configuration,modelDefaults:(document as BackendDef).modelDefaults},null,2)
-       : system
-       ? JSON.stringify(doc.record.resolved || {provider:(document as SystemDef).provider,systemType:(document as SystemDef).systemType,capabilities:document.capabilities||[]},null,2)
-       : JSON.stringify(doc.record.resolved || {},null,2);
-      return <div className={`model-visible-editor ${backendEditorLayout==="stack"?"backend-stacked-section":""}`}>
-       <div className="studio-section-label">RESOLVED / INHERITED RESOURCE — read-only source, saveable 3 ways (workspace · local disk · download)</div>
+      </div>}
+      {backend && <div className="model-config-panes backend-resource-editor">
+       <div className="backend-resource-status"><div><span>RESOURCE STATE</span><b>{resourceEnabled?"Enabled":"Disabled"}</b><small>{typeof document.enabled==="boolean"?"Declared by this backend resource":"Resolved through inheritance/defaults"}</small></div><button className={resourceEnabled?"disable-resource":"enable-resource"} onClick={()=>setResourceEnabled(doc,document,!resourceEnabled)} disabled={busy}>{resourceEnabled?"Disable Backend":"Enable Backend"}</button></div>
+       <div className="model-config-pane"><div className="studio-section-label">CONFIGURATION</div><BackendConfigForm source={doc.source} onChange={src=>updateSource(doc.key,src)}/></div>
+      </div>}
+      <div className="model-visible-editor resolved-resource-editor">
+       <div className="resolved-resource-heading">
+        <div className="studio-section-label">RESOLVED / INHERITED RESOURCE — read-only · save or reload origin only</div>
+        {inheritedParentId&&<a href={inheritedParentHref} onClick={event=>{if(!inheritedParent)return;event.preventDefault();open(inheritedParent.record as RecordFile<ModelResource>)}}>Edit parent · {inheritedParent?.label||inheritedParentId}</a>}
+       </div>
        <ResourceSourceEditor value={resolvedSource} onChange={()=>{}} contentReadOnly showEnablement={false} label="Resolved / inherited resource" fileControls={{
-        currentWorkspaceId:workspaceId,
-        workspaceId:workspaceId,
-        originWorkspaceId:doc.record.workspaceId||workspaceId,
-        relativePath:doc.record.path,
-        dirty:false,
-        onSave:location=>saveInherited(doc,resolvedSource,location),
-        onLoad:location=>loadDoc(doc,location),
+         currentWorkspaceId:workspaceId,
+         workspaceId:workspaceId,
+         originWorkspaceId:doc.record.workspaceId||workspaceId,
+         relativePath:doc.record.path,
+         dirty:false,
+         allowLoadDifferent:false,
+         onSave:location=>saveInherited(doc,resolvedSource,location),
+         onLoad:location=>loadDoc(doc,location),
        }} />
-      </div>;
-     })()}
+      </div>
+     </section>}
 
      {backend && showBackendSection("actions") && document && <section className="backend-actions-editor">
       <div className="llm-subhead"><div><span>BACKEND ACTIONS</span><b>Discover, enable, inspect, and maintain this backend</b></div></div>
@@ -428,6 +466,6 @@ export function LlmModelsEditor({workspaceId,catalogMode="models",topMenuMode="b
  if(!snapshot)return <section className="resource-view"><div className="studio-empty">Loading model catalog…</div></section>;
  const leftPane=<div className={`inheritance-tree ${layout}`}>{roots.map(root=>renderTree(root))}</div>;
  const tabs=openDocs.map(doc=>({key:doc.key,kind:doc.record.document?.kind?.toUpperCase()||"ITEM",label:doc.record.document?.label||doc.record.document?.id||doc.record.path,dirty:doc.dirty}));
- const actions=<div className="layout-switch"><button onClick={newBackend}>{catalogMode==="systems"?"+ System":"+ Backend"}</button>{discovery&&<button onClick={()=>setDiscoverySelection(new Set(discovery.models.map(model=>model.id)))} disabled={busy||discoverySelection.size===discovery.models.length}>Select all discovered</button>}<button className={layout==="tiles"?"active":""} onClick={()=>setLayout("tiles")}>▦ Tiles</button><button className={layout==="list"?"active":""} onClick={()=>setLayout("list")}>☷ List</button></div>;
+ const actions=<div className="layout-switch"><button onClick={newBackend}>{catalogMode==="systems"?"+ System":"+ Backend"}</button>{discovery&&<button onClick={()=>setDiscoverySelection(new Set(discovery.models.map(model=>model.id)))} disabled={busy||discoverySelection.size===discovery.models.length}>Select all discovered</button>}{compareKey?<span className="model-split-controls"><b>COMPARE</b><button className={splitOrientation==="left"?"active":""} onClick={()=>setSplitOrientation("left")} title="Other document on the left">⬅</button><button className={splitOrientation==="right"?"active":""} onClick={()=>setSplitOrientation("right")} title="Other document on the right">➡</button><button className={splitOrientation==="up"?"active":""} onClick={()=>setSplitOrientation("up")} title="Other document above">⬆</button><button className={splitOrientation==="down"?"active":""} onClick={()=>setSplitOrientation("down")} title="Other document below">⬇</button><button onClick={chooseComparison}>Single document</button></span>:<button disabled={openDocs.length<2} onClick={chooseComparison}>Compare documents</button>}<button className={layout==="tiles"?"active":""} onClick={()=>setLayout("tiles")}>▦ Tiles</button><button className={layout==="list"?"active":""} onClick={()=>setLayout("list")}>☷ List</button></div>;
  return <HierarchyResourceEditor workspaceId={workspaceId} categoryTree="models" eyebrow={catalogMode==="systems"?"CALLABLE SYSTEMS":"MODEL CATALOG"} title={catalogMode==="systems"?"Systems":"Models & presets"} description={catalogMode==="systems"?"Configure callable execution systems. Python, SWI-Prolog, MeTTa, the LLM caller, OmegaClaw, and Codex are peers at this level.":"Models inherit model backends; reusable presets inherit models or other presets and override invocation defaults without containing prompts."} headerActions={actions} error={error} onDismissError={()=>setError(null)} leftPane={leftPane} tabs={tabs} activeKey={activeKey} compareKey={compareKey} onActivate={setActiveKey} onClose={close} renderEditor={(key,secondary)=>{const doc=openDocs.find(item=>item.key===key);return doc?renderEditor(doc,secondary):null}} emptyEditor={<div className="studio-empty">{catalogMode==="systems"?"Select a system.":"Select a model or preset."}</div>} className="llm-model-editor model-hierarchy-page" treeClassName={`model-tree-pane ${layout}`} workspaceClassName="model-editor-workspace" tabsClassName="model-document-tabs" panesClassName={`model-editor-panes split-${splitOrientation}`}/>;
 }

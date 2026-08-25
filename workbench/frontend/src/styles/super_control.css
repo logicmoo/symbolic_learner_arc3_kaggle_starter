@@ -1,0 +1,400 @@
+/* SuperControl owns the layout of every instance. */
+.super-control.super-control-embedded {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #0c161e;
+}
+
+.super-control.super-control-embedded.secondary {
+  border-left: 1px solid var(--line);
+  background: #0b151d;
+}
+
+.super-control-embedded > .operation-editor-toolbar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 13px;
+  border-bottom: 1px solid var(--line);
+  background: #0c161ef5;
+  backdrop-filter: blur(6px);
+}
+
+.super-control-embedded > .operation-editor-toolbar > div:first-child {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.super-control-embedded > .operation-editor-toolbar span {
+  font: 700 7px ui-monospace, monospace;
+  letter-spacing: .12em;
+  color: var(--cyan);
+}
+
+.super-control-embedded > .operation-editor-toolbar h2 {
+  margin: 3px 0 2px;
+  font: 500 18px Georgia, serif;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.super-control-embedded > .operation-editor-toolbar small {
+  font: 7px ui-monospace, monospace;
+  color: #627985;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.super-control-embedded .operation-editor-actions {
+  display: flex !important;
+  flex-direction: row !important;
+  justify-content: flex-end;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.super-control-embedded .operation-editor-actions button {
+  border: 1px solid #344d58;
+  border-radius: 3px;
+  background: #11212a;
+  color: #8fa7b0;
+  padding: 7px 9px;
+  font: 700 7px ui-monospace, monospace;
+}
+
+.super-control-embedded .operation-editor-actions button:hover {
+  border-color: #4e6d78;
+  background: #162a34;
+}
+
+.super-control-tab-set {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.super-control-tab-set > b,
+.super-control-mode-switcher > span,
+.super-control-pane-selector > span {
+  font: 700 6px ui-monospace, monospace !important;
+  letter-spacing: .12em !important;
+  color: #6f8792 !important;
+}
+
+.super-control-tab-set > b {
+  margin-right: 2px;
+}
+
+.super-control-tab-set-buttons {
+  display: inline-flex;
+}
+
+.super-control-embedded .super-control-tab-set-buttons > button {
+  min-width: 42px;
+  min-height: 29px;
+  border-radius: 0;
+  margin-left: -1px;
+  padding: 5px 8px;
+}
+
+.super-control-embedded .super-control-tab-set-buttons > button:first-child {
+  margin-left: 0;
+  border-radius: 3px 0 0 3px;
+}
+
+.super-control-embedded .super-control-tab-set-buttons > button:last-child {
+  border-radius: 0 3px 3px 0;
+}
+
+.super-control-embedded .super-control-tab-set-buttons > button.active {
+  position: relative;
+  z-index: 1;
+  border-color: #3c8179;
+  background: #102b2d;
+  color: #8df4e2;
+}
+
+.super-control-mode-switcher,
+.super-control-pane-selector {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.super-control-mode-switcher select,
+.super-control-pane-selector select {
+  min-height: 29px;
+  max-width: 190px;
+  border: 1px solid #344d58;
+  border-radius: 3px;
+  background: #11212a;
+  color: #a8bbc3;
+  padding: 5px 25px 5px 8px;
+  font: 700 7px ui-monospace, monospace;
+  cursor: pointer;
+}
+
+.super-control-mode-switcher select {
+  border-color: #3c8179;
+  background: #102b2d;
+  color: #8df4e2;
+}
+
+.super-control-embedded .super-control-state {
+  color: var(--amber);
+}
+
+.super-control-tabs {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: flex-end;
+  gap: 0;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 10px 12px 0;
+  border-bottom: 2px solid #315761;
+  background: linear-gradient(#0b1921, #08141b);
+  scrollbar-width: thin;
+  scrollbar-color: #35505d #0a151d;
+}
+
+.super-control-tabs .super-control-tabs-label {
+  align-self: center;
+  margin: 0 12px 10px 0;
+  font: 700 7px ui-monospace, monospace;
+  letter-spacing: .16em;
+  color: #6f8792;
+  white-space: nowrap;
+}
+
+.super-control-tabs button {
+  border: 1px solid #344d58;
+  border-radius: 5px 5px 0 0;
+  background: #0d1c25;
+  color: #8fa7b0;
+  padding: 10px 14px;
+  font: 700 8px ui-monospace, monospace;
+  margin-bottom: -2px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.super-control-tabs button + button {
+  margin-left: 3px;
+}
+
+.super-control-tabs button:hover {
+  color: #c0d0d6;
+  background: #142630;
+}
+
+.super-control-tabs button.active {
+  border-color: #3c8179;
+  border-bottom-color: #102b2d;
+  color: #8df4e2;
+  background: #102b2d;
+  box-shadow: inset 0 3px #4ad6c1;
+}
+
+.super-control-tabs button .dirty {
+  margin-left: 6px;
+  color: var(--amber);
+}
+
+.super-control-body {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  overflow: hidden;
+}
+
+.super-control-body > * {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  max-height: 100%;
+}
+
+.super-control-body > .operation-editor-scroll,
+.super-control-pane > .operation-editor-scroll {
+  overflow: auto;
+}
+
+.super-control-body > .resource-source-editor,
+.super-control-pane > .resource-source-editor,
+.super-control-stack-section-body > .resource-source-editor {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 12px 14px;
+}
+
+.super-control-body > .resource-source-editor > .llm-subhead,
+.super-control-body > .resource-source-editor > .validation,
+.super-control-pane > .resource-source-editor > .llm-subhead,
+.super-control-pane > .resource-source-editor > .validation,
+.super-control-stack-section-body > .resource-source-editor > .llm-subhead,
+.super-control-stack-section-body > .resource-source-editor > .validation {
+  flex: 0 0 auto;
+}
+
+.super-control-body > .resource-source-editor > .operation-visible-editor,
+.super-control-pane > .resource-source-editor > .operation-visible-editor,
+.super-control-stack-section-body > .resource-source-editor > .operation-visible-editor {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 0;
+  max-height: none;
+  resize: none;
+  border: 1px solid #3f6472;
+  border-radius: 5px;
+}
+
+.super-control-body > .resource-source-editor > .operation-visible-editor > .cm-theme,
+.super-control-body > .resource-source-editor > .operation-visible-editor .cm-editor,
+.super-control-pane > .resource-source-editor > .operation-visible-editor > .cm-theme,
+.super-control-pane > .resource-source-editor > .operation-visible-editor .cm-editor {
+  height: 100%;
+}
+
+.super-control-single,
+.super-control-pane {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  overflow: hidden;
+}
+
+.super-control-pane > * {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  max-height: 100%;
+}
+
+.super-control-split {
+  display: grid;
+  gap: 1px;
+  background: var(--line);
+}
+
+.super-control-split.split-v {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.super-control-split.split-h {
+  grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.super-control-pane {
+  background: #0c161e;
+}
+
+.super-control-stack {
+  display: block;
+  overflow: auto;
+  padding: 12px 14px 28px;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.super-control-stack > .super-control-stack-section {
+  min-height: 0;
+  max-height: none;
+  margin-bottom: 14px;
+  border: 1px solid #28424c;
+  background: #0b171f;
+}
+
+.super-control-stack-section > h3 {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  margin: 0;
+  border-bottom: 1px solid #28424c;
+  background: #10212a;
+  color: #8df4e2;
+  padding: 8px 11px;
+  font: 700 8px ui-monospace, monospace;
+  letter-spacing: .08em;
+}
+
+.super-control-stack-section-body {
+  min-width: 0;
+  min-height: 120px;
+}
+
+.super-control-stack .operation-editor-scroll,
+.super-control-stack .resource-source-editor {
+  overflow: visible !important;
+}
+
+.super-control-stack .operation-visible-editor {
+  height: auto !important;
+  max-height: none !important;
+  min-height: 0 !important;
+  overflow: visible !important;
+  resize: none !important;
+}
+
+.super-control-stack .operation-visible-editor > .cm-theme,
+.super-control-stack .operation-visible-editor .cm-editor {
+  height: auto !important;
+  max-height: none !important;
+}
+
+.super-control-stack .operation-visible-editor .cm-scroller,
+.super-control-stack .json-tree-browser,
+.super-control-stack .json-tree-root {
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+.super-control-tabs::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.super-control-tabs::-webkit-scrollbar-track {
+  background: #0a151d;
+}
+
+.super-control-tabs::-webkit-scrollbar-thumb {
+  border: 2px solid #0a151d;
+  border-radius: 8px;
+  background: #35505d;
+}
+
+.super-control-tabs::-webkit-scrollbar-thumb:hover {
+  background: #4b6977;
+}
+
+@media (max-width: 780px) {
+  .super-control-embedded > .operation-editor-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .super-control-embedded .operation-editor-actions {
+    justify-content: flex-start;
+  }
+
+  .super-control-split.split-v {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}

@@ -8,10 +8,10 @@ import { MarkdownDocument } from "./MarkdownDocument";
 import { UI_ASSISTANCE_CHAT_DRAFT_EVENT, UI_ASSISTANCE_CHAT_DRAFT_KEY } from "../lib/pageSessionState";
 import "../styles/chat.css";
 
-// Full-page chat surface. The YOU / TO / MAILBOX / SEND-TO controls live in the
+// Full-page chat surface. The FROM / TO / MAILBOX / SEND-TO controls live in the
 // shared ChatConversation, so the page is just a titled wrapper around it plus
 // the Help panel (docs/CHAT_PAGE.md) toggled from the top banner.
-export function ChatPage() {
+export function ChatPage({ workspaceId }: { workspaceId: string }) {
   const [uiAssistanceDraft, setUiAssistanceDraft] = useState(() => {
     const draft = window.sessionStorage.getItem(UI_ASSISTANCE_CHAT_DRAFT_KEY) || "";
     window.sessionStorage.removeItem(UI_ASSISTANCE_CHAT_DRAFT_KEY);
@@ -60,7 +60,7 @@ export function ChatPage() {
             </button>
           </div>
           <p>
-            Talk over the shared mailbox. Pick who you are (YOU) and who you address (TO)
+            Talk over the shared mailbox. Pick who messages come FROM and who they address (TO)
             from the agents, the mailbox to view (MAILBOX) and post into (SEND-TO) from the
             mailboxes — all editable, and any message can be inspected as raw JSON. The
             require-match bar filters the whole log: only depressed fields must match.
@@ -69,6 +69,7 @@ export function ChatPage() {
       </header>
       <div className="chat-page-body">
         <ChatConversation
+          workspaceId={workspaceId}
           user={DEFAULT_CHAT_USER}
           peer={uiAssistanceDraft ? "symbolic-workbench-codex" : DEFAULT_CHAT_PEER}
           initialInput={uiAssistanceDraft}

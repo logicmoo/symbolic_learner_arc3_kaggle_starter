@@ -51,11 +51,11 @@ def test_backend_uses_derived_aggregate_editor_modes() -> None:
     source = SOURCE.read_text(encoding="utf-8")
     assert '"file"|"resource"|"actions"|"runner"' in source
     assert '>File</button>' in source
-    assert '>Resource</button>' in source
+    assert '>Resource &amp; Inheritance</button>' in source
     assert '>Backend Actions</button>' in source
     assert '>Universal Execution Runner</button>' in source
     assert "BackendConfigForm" in source
-    assert "RESOLVED / INHERITED RESOURCE JSON" in source
+    assert "RESOLVED / INHERITED RESOURCE" in source
     assert 'operationIds={["backend_inspect","backend_check_readiness","resource_validate"]}' in source
 
 
@@ -69,8 +69,7 @@ def test_focused_model_resource_is_addressable_with_edit_query_parameter() -> No
 def test_backend_resource_view_reveals_clear_edit_source_actions() -> None:
     source = SOURCE.read_text(encoding="utf-8")
     assert 'backend-edit-source' in source
-    assert 'backendEditorLayout==="tabs"&&backendEditorMode==="file"?"Editing File":"Edit"' in source
-    assert '>Edit JSON / MeTTa</button>' in source
+    assert 'backendEditorDisplayMode==="tabs"&&backendEditorMode==="file"?"Editing File":"Edit File"' in source
 
 
 def test_backend_aggregate_is_semantically_a_tabbed_editor() -> None:
@@ -100,10 +99,25 @@ def test_backend_resource_tab_exposes_enablement_action() -> None:
     assert 'setResourceEnabled(doc,document,!resourceEnabled)' in source
 
 
-def test_backend_views_support_vertical_stack_and_tab_modes() -> None:
+def test_backend_views_use_super_control_display_and_tab_set_controls() -> None:
     source = SOURCE.read_text(encoding="utf-8")
-    assert 'Record<string,"stack"|"tabs">' in source
-    assert 'backendEditorLayout==="stack"||backendEditorMode===section' in source
-    assert '>↕ Stack</button>' in source
-    assert '>▣ Tabs</button>' in source
-    assert 'setBackendEditorLayouts(current=>({...current,[doc.key]:"tabs"}))' in source
+    assert 'type ModelEditorDisplayMode="tabs"|"stacked"|"single"|"split-v"|"split-h"' in source
+    assert 'aria-label="Model Super Control display mode"' in source
+    assert 'aria-label="Model Super Control tab set"' in source
+    assert '>ALL</button>' in source
+    assert '>CTX</button>' in source
+    assert "backend-view-mode" not in source
+    assert ">↕ Stack</button>" not in source
+    assert ">▣ Tabs</button>" not in source
+
+
+def test_resource_and_inheritance_are_one_tab_with_restricted_reload_controls() -> None:
+    source = SOURCE.read_text(encoding="utf-8")
+    controls = FILE_CONTROLS.read_text(encoding="utf-8")
+
+    assert "Resource &amp; Inheritance" in source
+    assert '>Inheritance</button>' not in source
+    assert 'allowLoadDifferent:false' in source
+    assert "Edit parent ·" in source
+    assert "Reload From Origin" in controls
+    assert "allowLoadDifferent &&" in controls

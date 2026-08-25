@@ -1,7 +1,4 @@
-// Sub-control (tab) enumeration API for the Super Control (UniversalArtifactEditor).
-// When a control is made it enumerates its tabs from here rather than hardcoding them.
-// For now this returns the full list of all known sub-controls. Later, a type/capability
-// descriptor can filter this down (see editor_consolidation_plan.md: tabsFor(descriptor)).
+// Sub-control (tab) enumeration and context-selection API for Super Control.
 
 export type SubControlDescriptor = {
   /** Stable id used to look up the renderer for this tab. */
@@ -10,17 +7,14 @@ export type SubControlDescriptor = {
   label: string;
   /** "builtin" or the contributing plugin id. */
   source?: string;
+  /** Resource kinds or capabilities for which the selector may return this tab. */
+  contexts?: string[];
 };
 
-// For now the API returns the full list of surfaces we are eliminating (from
-// editor_inventory.md). Each becomes a tab in the Super Control; renderers are wired in
-// progressively. Later this list is type/capability filtered and merged with plugin
-// contributions fetched over REST.
 const SURFACES_BEING_ELIMINATED: SubControlDescriptor[] = [
   { id: "file", label: "File", source: "builtin" },
   { id: "markdown", label: "Markdown", source: "builtin" },
-  { id: "resource", label: "Resource", source: "builtin" },
-  { id: "inheritance", label: "Inheritance", source: "builtin" },
+  { id: "resource", label: "Resource & Inheritance", source: "builtin" },
   { id: "runner", label: "Universal Execution Runner", source: "builtin" },
   { id: "prompt-library", label: "Prompt Library", source: "builtin" },
   { id: "policy-library", label: "Policy Library", source: "builtin" },
@@ -55,9 +49,40 @@ export function builtinSubControls(): SubControlDescriptor[] {
   return [...SURFACES_BEING_ELIMINATED];
 }
 
+const RESOURCE_CONTEXT_CONTROL_IDS = new Set(["file", "markdown", "resource", "runner"]);
+
+export type SubControlSelectorContext = {
+  resourceKind?: string | null;
+  capabilities?: string[];
+};
+
+/**
+ * Return only controls selected for the current resource context.
+ *
+ * Core resource editors are available for every parsed resource. Contributed
+ * controls opt into CTX by declaring matching resource kinds/capabilities or
+ * the wildcard context. Controls without context declarations remain visible
+ * through ALL but are not guessed into CTX.
+ */
+export function selectSubControls(
+  available: SubControlDescriptor[],
+  context: SubControlSelectorContext,
+): SubControlDescriptor[] {
+  const tokens = new Set([
+    context.resourceKind || "",
+    ...(context.capabilities || []),
+  ].map(value => value.trim().toLowerCase()).filter(Boolean));
+  return available.filter(control => {
+    if (RESOURCE_CONTEXT_CONTROL_IDS.has(control.id)) {
+      return control.id !== "runner" || Boolean(context.resourceKind);
+    }
+    return Boolean(control.contexts?.some(value => value === "*" || tokens.has(value.trim().toLowerCase())));
+  });
+}
+
 /**
  * The Control calls this over REST to enumerate its sub-controls: the built-in list
- * (for now, the surfaces we are eliminating) merged with any a plugin contributes via
+ * merged with any a plugin contributes via
  * `plugin.subControls` on /api/plugins. Falls back to the built-in list on error.
  */
 export async function fetchSubControls(): Promise<SubControlDescriptor[]> {
@@ -65,8 +90,16 @@ export async function fetchSubControls(): Promise<SubControlDescriptor[]> {
     const response = await fetch("/api/plugins", { cache: "no-store" });
     if (!response.ok) throw new Error(`plugins ${response.status}`);
     const payload = await response.json();
-    const contributed: SubControlDescriptor[] = (payload.plugins || []).flatMap((plugin: { id?: string; subControls?: Array<{ id?: string; label?: string }> }) =>
-      (plugin.subControls || []).map(entry => ({ id: String(entry.id), label: String(entry.label || entry.id), source: String(plugin.id || "plugin") })),
+    const contributed: SubControlDescriptor[] = (payload.plugins || []).flatMap((plugin: {
+      id?: string;
+      subControls?: Array<{ id?: string; label?: string; contexts?: string[] }>;
+    }) =>
+      (plugin.subControls || []).map(entry => ({
+        id: String(entry.id),
+        label: String(entry.label || entry.id),
+        source: String(plugin.id || "plugin"),
+        contexts: Array.isArray(entry.contexts) ? entry.contexts.map(String) : undefined,
+      })),
     );
     const merged = [...SURFACES_BEING_ELIMINATED];
     for (const entry of contributed) if (entry.id && !merged.some(existing => existing.id === entry.id)) merged.push(entry);

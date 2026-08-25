@@ -1,23 +1,23 @@
 import {useEffect,useMemo,useState} from "react";
-import {OperationPlayground} from "./OperationPlayground";
 import {DEFAULT_TREE_VISIBILITY_RULES,type TreeVisibilityRules,useArtifactTreeFilter} from "./useArtifactTreeFilter";
 import {RepeatSwitch,TreeViewControls} from "./TreeViewControls";
 import {relationshipIds} from "./resourceRelationships";
 import {CategorizedArtifactTree,categoryPaths} from "./CategorizedArtifactTree";
 import type {ArtifactTreeCommand} from "./ArtifactTreeBranch";
-import {ResourceSourceEditor} from "./ResourceSourceEditor";
+import {SuperControl} from "./UniversalArtifactEditor";
+import type {
+  OperationDef,
+  OperationImplementationDef,
+  OperationResource,
+  OperationSuperControlRequest,
+} from "./OperationDocumentControl";
 import {ResourceEnablementBadge,enablementClass,resolveResourceEnablement} from "./resourceEnablement";
 import {displayResourcePath} from "./resourcePath";
-import {jsonValueToMetta} from "../lib/mettaResourceCodec";
 import {TreePaneResizer} from "./TreePaneResizer";
 import "../styles/operation_editor.css";
 
 type Source="shared"|"workspace";
-type ModelStrategy="single"|"parallel"|"compare"|"fallback";
 type RecordFile<T>={path:string;source?:Source;workspaceId?:string;document?:T;error?:string;resolved?:{enabled?:boolean;backendId?:string;defaults?:Record<string,unknown>;model?:string}};
-type OperationDef={kind:"operation";id:string;parents?:string[];label?:string;description?:string;categories?:string[];enabled?:boolean;role?:string;implementation?:string;inputs?:Record<string,string>;outputs?:Record<string,string>;children?:string[];preferredChild?:string};
-type OperationImplementationDef={kind:"operation";id:string;parents:string[];label?:string;description?:string;categories?:string[];enabled?:boolean;implementation:string;inputs?:Record<string,string>;outputs?:Record<string,string>;parameters?:Record<string,unknown>;bindings?:Record<string,unknown>;python?:Record<string,unknown>;prolog?:Record<string,unknown>;metta?:Record<string,unknown>;modelSelection?:{models?:string[];strategy?:ModelStrategy}};
-type OperationResource=OperationDef|OperationImplementationDef;
 type ModelDef={kind:"model";id:string;label?:string;parents:string[];model?:string;enabled?:boolean;defaults?:Record<string,unknown>};
 type PromptDef={kind:"prompt";id:string;label?:string;description?:string;text?:string|string[];variables?:string[]};
 type PromptProfileDef={kind:"prompt_profile";id:string;label?:string;description?:string;prompts:string[];separator?:string};
@@ -52,27 +52,25 @@ export function OperationLibraryEditor({workspaceId,sourceLanguage}:{workspaceId
  const chooseComparison=()=>{if(compareKey){setCompareKey(null);return}const other=[...openDocs].reverse().find(doc=>doc.key!==activeKey);if(other)setCompareKey(other.key)};
  const saveDoc=(doc:OpenDocument)=>perform(async()=>{let document:OperationResource;try{document=JSON.parse(doc.source) as OperationResource}catch{throw new Error("Operation resource source is invalid")};if(document.kind!=="operation")throw new Error("Operation resource requires kind='operation'");const original=doc.record.path;const path=workspaceId==="shared"||doc.record.source==="workspace"?original:`design/operations/${slug(document.id)}.operation.json`;await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/file`,{method:"PUT",body:JSON.stringify({path,content:JSON.stringify(document,null,2)})});const next=await load();const pool:RecordFile<OperationResource>[]=[...(next.operations||[]),...(next.operationImplementations||[])];const saved=pool.find(row=>row.document?.id===document.id);if(saved){const newKey=recordKey(saved);setOpenDocs(current=>current.map(item=>item.key===doc.key?{key:newKey,record:saved,source:JSON.stringify(saved.document,null,2),dirty:false}:item));if(activeKey===doc.key)setActiveKey(newKey);if(compareKey===doc.key)setCompareKey(newKey)}});
 
- const renderEditor=(doc:OpenDocument,secondary=false)=>{let document:OperationResource|null=null;try{document=doc.source?JSON.parse(doc.source) as OperationResource:null}catch{document=null}const isImplementation=Boolean(document&&relationshipIds(document.parents).length);const abstract=document&&!isImplementation?document as OperationDef:null;const selectedImplementation=document&&isImplementation?document as OperationImplementationDef:null;const parentOperation=selectedImplementation?(snapshot?.operations||[]).find(row=>row.document&&relationshipIds(selectedImplementation.parents).includes(row.document.id))?.document:null;const selectedModels=selectedImplementation?.modelSelection?.models||[];const implementationBindings=(selectedImplementation?.bindings||{}) as Record<string,unknown>;const selectedPrompts=Array.isArray(implementationBindings.prompts)?implementationBindings.prompts as string[]:[];const selectedPromptProfiles=Array.isArray(implementationBindings.promptProfiles)?implementationBindings.promptProfiles as string[]:implementationBindings.promptProfile?[String(implementationBindings.promptProfile)]:[];const variants=abstract?(children.get(abstract.id)||[]):[];const directRoute=abstract?.implementation&&variants.length===0?abstract.implementation:null;
-  const patchAbstract=(patch:Partial<OperationDef>)=>{if(!abstract)return;updateSource(doc.key,JSON.stringify({...abstract,...patch},null,2))};
-  const setDefaultImplementation=(id:string)=>{if(!abstract)return;const children=abstract.children?.length?abstract.children:variants.map(row=>row.document?.id).filter(Boolean) as string[];patchAbstract({preferredChild:id||undefined,children})};
-  const patchImpl=(patch:Partial<OperationImplementationDef>)=>{if(!selectedImplementation)return;updateSource(doc.key,JSON.stringify({...selectedImplementation,...patch},null,2))};
-  const toggleModel=(id:string)=>{if(!selectedImplementation)return;const models=selectedModels.includes(id)?selectedModels.filter(x=>x!==id):[...selectedModels,id];patchImpl({modelSelection:{models,strategy:selectedImplementation.modelSelection?.strategy||"single"}})};
-  const updatePrompts=(ids:string[])=>{if(!selectedImplementation)return;patchImpl({bindings:{...(selectedImplementation.bindings||{}),prompts:ids,separator:selectedImplementation.bindings?.separator||"\n\n"}})};
-  const togglePrompt=(id:string)=>updatePrompts(selectedPrompts.includes(id)?selectedPrompts.filter(x=>x!==id):[...selectedPrompts,id]);
-  const togglePromptProfile=(id:string)=>{if(!selectedImplementation)return;const promptProfiles=selectedPromptProfiles.includes(id)?selectedPromptProfiles.filter(x=>x!==id):[...selectedPromptProfiles,id];const bindings:Record<string,unknown>={...(selectedImplementation.bindings||{}),promptProfiles};delete bindings.promptProfile;patchImpl({bindings})};
-  const movePrompt=(index:number,delta:number)=>{const next=[...selectedPrompts],to=index+delta;if(to<0||to>=next.length)return;[next[index],next[to]]=[next[to],next[index]];updatePrompts(next)};
-  return <section className={`operation-editor-document ${secondary?"secondary":"primary"}`} key={doc.key}>
-   <div className="operation-editor-toolbar"><div><span>{isImplementation?"OPERATION IMPLEMENTATION":"ABSTRACT OPERATION"}{doc.dirty?" · UNSAVED":""}</span><h2>{document?.label||document?.id||displayResourcePath(doc.record.path)}</h2><small>{doc.record.source} · {displayResourcePath(doc.record.path)}</small></div><div className="operation-editor-actions">{document&&<button className={document.enabled===false?"enable-resource":"disable-resource"} onClick={()=>updateSource(doc.key,JSON.stringify({...document,enabled:document.enabled===false},null,2))}>{document.enabled===false?"Enable Resource":"Disable Resource"}</button>}{!secondary&&<button onClick={chooseComparison}>{compareKey?"Single pane":"Split view"}</button>}<button className="primary" onClick={()=>saveDoc(doc)} disabled={busy||!document}>Save</button></div></div>
-   <div className="operation-editor-scroll">
-    {!document&&<div className="demo-notice"><b>Invalid resource</b><span>Fix the source before saving this resource.</span></div>}
-    {abstract&&<><div className="operation-abstract-summary"><div><span>ROLE</span><b>{abstract.role||"abstract_stage"}</b></div><div><span>DEFAULT IMPLEMENTATION</span><select value={directRoute?abstract.id:abstract.preferredChild||""} disabled={Boolean(directRoute)} onChange={e=>setDefaultImplementation(e.target.value)}>{directRoute?<option value={abstract.id}>Direct — {directRoute}</option>:<option value="">planner-selected</option>}{variants.map(row=>{const impl=row.document!;const language=impl.implementation.startsWith("python")?"Python":impl.implementation.startsWith("prolog")?"Prolog":impl.implementation.startsWith("metta")?"MeTTa":impl.implementation.startsWith("llm")?"LLM":"Implementation";return <option key={impl.id} value={impl.id}>{language} — {impl.label||impl.id}</option>})}</select></div><div><span>INPUTS</span><code>{Object.keys(abstract.inputs||{}).join(", ")||"—"}</code></div><div><span>OUTPUTS</span><code>{Object.keys(abstract.outputs||{}).join(", ")||"—"}</code></div></div><OperationPlayground workspaceId={workspaceId} operation={abstract} variants={variants.filter(row=>row.document).map(row=>row.document!)} models={(snapshot?.models||[]).filter(row=>row.document).map(row=>({id:row.document!.id,label:row.document!.label,enabled:row.document!.enabled}))} onDefaultImplementationChange={setDefaultImplementation}/></>}
-    {selectedImplementation&&<div className="implementation-summary"><div><span>ROUTE</span><b>{selectedImplementation.implementation}</b></div><div><span>IMPLEMENTS</span><b>{relationshipIds(selectedImplementation.parents).join(", ")}</b></div>{selectedImplementation.python&&<div className="wide"><span>PYTHON SOURCE</span><code>{String(selectedImplementation.python.module||selectedImplementation.python.file||"configured source")}{selectedImplementation.python.className?` · ${String(selectedImplementation.python.className)}`:""}{selectedImplementation.python.callable?` :: ${String(selectedImplementation.python.callable)}`:""}</code></div>}{selectedImplementation.prolog&&<div className="wide"><span>SWI-PROLOG SOURCE</span><code>{String(selectedImplementation.prolog.predicate||"predicate")} / {String(selectedImplementation.prolog.arity||"?")}</code></div>}{selectedImplementation.metta&&<div className="wide"><span>METTA SOURCE</span><code>{jsonValueToMetta(selectedImplementation.metta)}</code></div>}</div>}
-    {selectedImplementation&&parentOperation&&<OperationPlayground key={`${parentOperation.id}:${selectedImplementation.id}`} workspaceId={workspaceId} operation={parentOperation} variants={[selectedImplementation]} models={(snapshot?.models||[]).filter(row=>row.document).map(row=>({id:row.document!.id,label:row.document!.label,enabled:row.document!.enabled}))}/>}
-    {selectedImplementation?.implementation.startsWith("llm")&&promptProfiles.length>0&&<div className="operation-llm-config"><div className="llm-subhead"><div><span>PROMPT PROFILES</span><b>Reusable ordered prompt compositions, independent of the selected model or preset</b></div></div><div className="operation-model-list compact">{promptProfiles.map(row=>{const item=row.document!,checked=selectedPromptProfiles.includes(item.id);return <label className={`operation-model-option ${checked?"selected":""}`} key={item.id}><input type="checkbox" checked={checked} onChange={()=>togglePromptProfile(item.id)}/><span><b>{item.label||item.id}</b><small>{item.prompts.length} prompts · {item.description||row.path}</small></span></label>})}</div></div>}
-    {selectedImplementation?.implementation.startsWith("llm")&&<div className="operation-llm-config"><div className="llm-subhead"><div><span>MODEL / PRESET DISPATCH</span><b>Models and reusable invocation presets allowed for this implementation</b></div></div><div className="operation-model-list compact">{enabledModels.map(row=>{const item=row.document!,checked=selectedModels.includes(item.id);return <label className={`operation-model-option ${checked?"selected":""}`} key={item.id}><input type="checkbox" checked={checked} onChange={()=>toggleModel(item.id)}/><span><b>{item.label||item.id}</b><small>{item.kind} · {row.resolved?.model||item.model||"inherited model"}</small></span></label>})}</div><div className="llm-subhead"><div><span>PROMPT COMPOSITION</span><b>Ordered prompts used by this implementation</b></div></div><div className="operation-model-list compact">{prompts.map(row=>{const item=row.document!,checked=selectedPrompts.includes(item.id),index=selectedPrompts.indexOf(item.id);return <div className={`operation-model-option ${checked?"selected":""}`} key={item.id}><input type="checkbox" checked={checked} onChange={()=>togglePrompt(item.id)}/><span><b>{item.label||item.id}</b><small>{item.description||row.path}</small></span>{checked&&<em><button onClick={()=>movePrompt(index,-1)} disabled={index===0}>↑</button> {index+1} <button onClick={()=>movePrompt(index,1)} disabled={index===selectedPrompts.length-1}>↓</button></em>}</div>})}</div></div>}
-    <ResourceSourceEditor value={doc.source} onChange={value=>updateSource(doc.key,value)} label="Edit the selected item directly" showEnablement={false} />
-   </div>
-  </section>};
+ const renderEditor=(doc:OpenDocument,secondary=false)=>{let document:OperationResource|null=null;try{document=doc.source?JSON.parse(doc.source) as OperationResource:null}catch{document=null}const isImplementation=Boolean(document&&relationshipIds(document.parents).length);const abstract=document&&!isImplementation?document as OperationDef:null;const selectedImplementation=document&&isImplementation?document as OperationImplementationDef:null;const parentOperation=selectedImplementation?(snapshot?.operations||[]).find(row=>row.document&&relationshipIds(selectedImplementation.parents).includes(row.document.id))?.document:null;const variants=abstract?(children.get(abstract.id)||[]):[];const control:OperationSuperControlRequest={
+  kind:"operation",
+  workspaceId,
+  source:doc.source,
+  sourceScope:doc.record.source||"resource",
+  path:displayResourcePath(doc.record.path),
+  dirty:doc.dirty,
+  secondary,
+  busy,
+  variants:variants.flatMap(row=>row.document?[row.document]:[]),
+  parentOperation,
+  models:enabledModels.flatMap(row=>row.document?[{id:row.document.id,label:row.document.label,kind:row.document.kind,model:row.resolved?.model||row.document.model,enabled:row.document.enabled}]:[]),
+  prompts:prompts.flatMap(row=>row.document?[{id:row.document.id,label:row.document.label,description:row.document.description}]:[]),
+  promptProfiles:promptProfiles.flatMap(row=>row.document?[{id:row.document.id,label:row.document.label,description:row.document.description,prompts:row.document.prompts}]:[]),
+  onChange:value=>updateSource(doc.key,value),
+  onSave:()=>saveDoc(doc),
+  onToggleEnabled:document?()=>updateSource(doc.key,JSON.stringify({...document,enabled:document.enabled===false},null,2)):undefined,
+ };
+ return <SuperControl key={doc.key} appearance="embedded" control={control} className="operation-document-super"/>};
 
  if(!snapshot)return <section className="resource-view"><div className="studio-empty">Loading operation library…</div></section>;
  const toggleOperation=(id:string)=>setCollapsedOperations(current=>{const next=new Set(current);if(next.has(id))next.delete(id);else next.add(id);return next});
@@ -96,7 +94,7 @@ export function OperationLibraryEditor({workspaceId,sourceLanguage}:{workspaceId
    </div>
    <div className="operation-editor-workspace">
     <TreePaneResizer />
-    <div className="operation-document-tabs">{openDocs.map(doc=><div className={`operation-document-tab ${doc.key===activeKey?"active":""}`} key={doc.key}><button onClick={()=>setActiveKey(doc.key)}><span>{relationshipIds(doc.record.document?.parents).length?"IMPL":"OPERATION"}</span><b>{doc.record.document?.label||doc.record.document?.id||doc.record.path}</b>{doc.dirty&&<i>●</i>}</button><button className="close" onClick={()=>close(doc.key)}>×</button></div>)}</div>
+    <div className="operation-document-tabs">{openDocs.map(doc=><div className={`operation-document-tab ${doc.key===activeKey?"active":""}`} key={doc.key}><button onClick={()=>setActiveKey(doc.key)}><span>{relationshipIds(doc.record.document?.parents).length?"IMPL":"OPERATION"}</span><b>{doc.record.document?.label||doc.record.document?.id||doc.record.path}</b>{doc.dirty&&<i>●</i>}</button><button className="close" onClick={()=>close(doc.key)}>×</button></div>)}<button type="button" className="operation-compare-toggle" disabled={openDocs.length<2} onClick={chooseComparison}>{comparison?"Single document":"Compare documents"}</button></div>
     <div className={`operation-editor-panes ${comparison?"split":"single"}`}>
       {active?renderEditor(active):<div className="studio-empty">Select a operation or implementation.</div>}
       {comparison&&renderEditor(comparison,true)}

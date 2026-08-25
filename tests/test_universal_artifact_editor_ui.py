@@ -9,11 +9,19 @@ def _text(name: str) -> str:
     return (COMPONENTS / name).read_text(encoding="utf-8")
 
 
+def _operation_surface_text() -> str:
+    return "\n".join((
+        _text("OperationLibraryEditor.tsx"),
+        _text("OperationDocumentControl.tsx"),
+        _text("UniversalArtifactEditor.tsx"),
+    ))
+
+
 def test_universal_editor_keeps_compatibility_chrome_for_adapted_panels() -> None:
     universal = _text("UniversalArtifactEditor.tsx")
     compatibility = _text("HierarchyResourceEditor.tsx")
     assert 'UNIVERSAL_ARTIFACT_EDITOR_BASELINE = "current-rich-editor"' in universal
-    assert "UniversalArtifactEditor as HierarchyResourceEditor" in compatibility
+    assert "SuperControl as HierarchyResourceEditor" in compatibility
     for component in (
         "DataCatalogPanel.tsx",
         "PromptLibraryEditor.tsx",
@@ -39,7 +47,7 @@ def test_design_resource_editors_share_the_universal_execution_runner() -> None:
 
 
 def test_operations_preserve_rich_baseline_features() -> None:
-    source = _text("OperationLibraryEditor.tsx")
+    source = _operation_surface_text()
     required = (
         "DEFAULT IMPLEMENTATION",
         "PYTHON SOURCE",
@@ -47,7 +55,7 @@ def test_operations_preserve_rich_baseline_features() -> None:
         "METTA SOURCE",
         "MODEL / PRESET DISPATCH",
         "PROMPT COMPOSITION",
-        "Split view",
+        "Compare documents",
         "operation-document-tabs",
         "operation-tree-children",
         "echo_into_titlecased",
@@ -57,9 +65,83 @@ def test_operations_preserve_rich_baseline_features() -> None:
         assert token in source, f"rich Operations baseline feature disappeared: {token}"
 
 
+def test_operations_delegate_the_document_and_source_tabs_to_super_control() -> None:
+    operations = _text("OperationLibraryEditor.tsx")
+    universal = _text("UniversalArtifactEditor.tsx")
+    operation_control = _text("OperationDocumentControl.tsx")
+    styles = (ROOT / "workbench" / "frontend" / "src" / "styles" / "super_control.css").read_text(encoding="utf-8")
+
+    assert '<SuperControl key={doc.key} appearance="embedded" control={control}' in operations
+    assert "ResourceSourceEditor" not in operations
+    assert "ABSTRACT OPERATION" in operation_control
+    assert "ResourceSourceEditor" not in operation_control
+    assert 'const OPERATION_DOCUMENT_CONTROL_ID = "operation-document"' in universal
+    assert "CONTENT_BACKED_CONTROL_IDS" in universal
+    assert "availableControls.filter(hasControlRenderer)" in universal
+    assert "<ResourceSourceEditor" in universal
+    assert "<MarkdownDocument" in universal
+    assert "<ResourceExecutionPlayground" in universal
+    assert "fetchSubControls" in universal
+    assert "SubControlBody" not in universal
+    assert '"operation-library"' not in universal
+    assert "super-control-tabs" in universal
+    assert ".super-control-body > .resource-source-editor" in styles
+    assert 'import "../styles/super_control.css";' in universal
+    assert "background: linear-gradient(#0b1921, #08141b);" in styles
+    assert "box-shadow: inset 0 3px #4ad6c1;" in styles
+    assert "border: 1px solid #3f6472;" in styles
+
+
+def test_topics_use_only_the_standard_super_control_editors() -> None:
+    topics = _text("TopicsResourceEditor.tsx")
+    universal = _text("UniversalArtifactEditor.tsx")
+    sub_controls = (ROOT / "workbench" / "frontend" / "src" / "lib" / "subControls.ts").read_text(encoding="utf-8")
+
+    assert "<SuperControl" in topics
+    assert 'appearance="embedded"' in topics
+    assert 'kind: "standard"' in topics
+    assert 'initialControlId: "resource"' in topics
+    assert "ResourceSourceEditor" not in topics
+    assert "operation-abstract-summary" not in topics
+    assert 'control.kind === "operation" && operationMetadata?.document && control.onToggleEnabled && <button' in universal
+    assert "TOPIC_DOCUMENT_CONTROL_ID" not in universal
+    assert "TOPIC_DOCUMENT_CONTROL_ID" not in topics
+    for control_id in ("file", "markdown", "resource", "runner"):
+        assert f'"{control_id}"' in universal
+    assert '"inheritance"' not in universal
+    assert 'label: "Resource & Inheritance"' in sub_controls
+
+
+def test_super_control_hides_registered_tabs_without_renderers() -> None:
+    universal = _text("UniversalArtifactEditor.tsx")
+
+    assert "CONTENT_BACKED_CONTROL_IDS" in universal
+    assert "availableControls.filter(hasControlRenderer)" in universal
+    assert "registered tab has no renderer" not in universal
+
+
+def test_super_control_banner_has_display_selector_and_tab_set_buttons() -> None:
+    universal = _text("UniversalArtifactEditor.tsx")
+
+    assert 'aria-label="Super Control display mode"' in universal
+    for value, label in (
+        ("tabs", "Tabs"),
+        ("stacked", "Stacked"),
+        ("single", "Single"),
+        ("split-v", "SplitV"),
+        ("split-h", "SplitH"),
+    ):
+        assert f'<option value="{value}">{label}</option>' in universal
+    assert 'role="group" aria-label="Super Control tab set"' in universal
+    assert 'aria-pressed={tabSet === "all"}' in universal
+    assert 'onClick={() => setTabSet("all")}>ALL</button>' in universal
+    assert 'aria-pressed={tabSet === "ctx"}' in universal
+    assert 'onClick={() => setTabSet("ctx")}>CTX</button>' in universal
+
+
 def test_prompt_profiles_are_independent_editable_operation_bindings() -> None:
     prompts = _text("PromptLibraryEditor.tsx")
-    operations = _text("OperationLibraryEditor.tsx")
+    operations = _operation_surface_text()
     for token in (
         'kind:"prompt_profile"',
         "+ Prompt profile",
@@ -78,7 +160,7 @@ def test_prompt_profiles_are_independent_editable_operation_bindings() -> None:
 
 
 def test_operations_tree_supports_global_and_per_operation_folding() -> None:
-    source = _text("OperationLibraryEditor.tsx")
+    source = _operation_surface_text()
     for token in (
         "Operations & implementations",
         "OPERATION CONTRACT SYSTEM",
@@ -94,7 +176,7 @@ def test_operations_tree_supports_global_and_per_operation_folding() -> None:
     assert "TreeViewControls" in source
     assert "RepeatSwitch" in source
     assert 'commandBranches("expand","all")' in source
-    assert 'document.enabled===false?"Enable Resource":"Disable Resource"' in source
+    assert 'operationMetadata.document.enabled === false ? "Enable Resource" : "Disable Resource"' in source
 
 
 def test_every_generic_resource_source_is_enableable() -> None:
@@ -139,7 +221,7 @@ def test_operation_playground_exposes_typed_inputs_variant_switching_and_results
     assert "aria-expanded={defaultsOpen}" in source
     assert "onDefaultImplementationChange" in source
     assert "Use the editor Save button to persist it" in source
-    assert "onDefaultImplementationChange={setDefaultImplementation}" in _text("OperationLibraryEditor.tsx")
+    assert "onDefaultImplementationChange={setDefaultImplementation}" in _text("OperationDocumentControl.tsx")
     assert 'className="operation-cascade-toggle"' in source
     assert "aria-expanded={cascadeOpen}" in source
     assert 'cascadeOpen?"Collapse":"Change overrides"' in source
@@ -217,7 +299,7 @@ def test_operation_playground_displays_persisted_complete_debug_trace() -> None:
 
 def test_operation_playground_runs_direct_routes_and_accepts_plain_any_values() -> None:
     source = _text("OperationPlayground.tsx")
-    editor = _text("OperationLibraryEditor.tsx")
+    editor = _operation_surface_text()
     assert "operation.implementation?" in source
     assert "direct?[direct]:[]" in source
     assert 'if(/^any$/i.test(datatype.trim()))' in source
@@ -230,7 +312,7 @@ def test_other_artifact_families_keep_their_variant_controls() -> None:
     assert "PREFERRED ALTERNATIVE" in _text("PromptLibraryEditor.tsx")
     models = _text("LlmModelsEditor.tsx")
     assert "INHERITS FROM" in models
-    assert "RESOLVED INHERITANCE" in models
+    assert "RESOLVED / INHERITED RESOURCE" in models
     for component in ("DataCatalogPanel.tsx", "PromptLibraryEditor.tsx", "GoalPlanLibraryEditor.tsx", "LlmModelsEditor.tsx"):
         assert "ArtifactTreeBranch" in _text(component)
 
@@ -391,11 +473,11 @@ def test_first_class_categories_are_visually_distinct_from_virtual_folders() -> 
 
 
 def test_operation_implementations_inherit_parent_playground() -> None:
-    operations = _text("OperationLibraryEditor.tsx")
+    operations = _operation_surface_text()
     playground = _text("OperationPlayground.tsx")
     assert "parentOperation=selectedImplementation" in operations
     assert "relationshipIds(selectedImplementation.parents)" in operations
-    assert "selectedImplementation&&parentOperation&&<OperationPlayground" in operations
+    assert "selectedImplementation && request.parentOperation && <OperationPlayground" in operations
     assert "variants={[selectedImplementation]}" in operations
     assert "runnableVariants.some(item=>item.id===operation.preferredChild)" in playground
     assert "invocationVariant=runnableVariants.length===1?runnableVariants[0].id:variant" in playground

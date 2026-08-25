@@ -2,7 +2,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import CodeMirror from "@uiw/react-codemirror";
 import type { Extension } from "@codemirror/state";
-import { json } from "@codemirror/lang-json";
+import { foldAll, foldCode, unfoldAll, unfoldCode } from "@codemirror/language";
+import type { EditorView } from "@codemirror/view";
+import { json, jsonLanguage } from "@codemirror/lang-json";
 import { markdown } from "@codemirror/lang-markdown";
 import { javascript } from "@codemirror/lang-javascript";
 import { python } from "@codemirror/lang-python";
@@ -148,7 +150,133 @@ export function textLanguageForFilename(name: string): string {
   return EXTENSION_TEXT_LANGUAGE[ext] || "plain";
 }
 
-type Props = { value: string; onChange: (json: string) => void; onValidityChange?: (valid: boolean) => void; className?: string; style?: CSSProperties; label?: string; showEnablement?: boolean; disabled?: boolean; contentReadOnly?: boolean; stacked?: boolean; defaultFormat?: "metta" | "json" | "tree" | "text" | "markdown"; defaultTextLang?: string; fileControls?: Omit<WorkspaceResourceFileControlsProps, "disabled" | "content" | "onClientContent"> };
+type SourceFormat = "metta" | "json" | "tree" | "text" | "markdown";
+type Props = {
+  value: string;
+  onChange: (json: string) => void;
+  onValidityChange?: (valid: boolean) => void;
+  className?: string;
+  style?: CSSProperties;
+  label?: string;
+  sourcePath?: string;
+  resourceMetadata?: Record<string, unknown>;
+  showEnablement?: boolean;
+  disabled?: boolean;
+  contentReadOnly?: boolean;
+  stacked?: boolean;
+  defaultFormat?: SourceFormat;
+  defaultTextLang?: string;
+  fileControls?: Omit<WorkspaceResourceFileControlsProps, "disabled" | "content" | "onClientContent">;
+};
+
+type SourceMode = { format: SourceFormat; textLanguage: string };
+
+const LANGUAGE_ALIASES: Record<string, string> = {
+  md: "markdown",
+  markdown: "markdown",
+  mdx: "markdown",
+  js: "javascript",
+  jsx: "javascript",
+  ts: "javascript",
+  tsx: "javascript",
+  node: "javascript",
+  py: "python",
+  python3: "python",
+  pwsh: "powershell",
+  ps: "powershell",
+  yml: "yaml",
+  cxx: "cpp",
+  cc: "cpp",
+  cs: "csharp",
+  golang: "go",
+  rb: "ruby",
+  sh: "shell",
+  bash: "shell",
+  zsh: "shell",
+  metta: "clojure",
+  lisp: "clojure",
+};
+
+function normalizedLanguage(value: string): string {
+  const token = value.trim().toLowerCase().replace(/^text\//, "").replace(/^application\//, "");
+  const normalized = LANGUAGE_ALIASES[token] || token;
+  return TEXT_LANGUAGES.some(language => language.id === normalized) ? normalized : "plain";
+}
+
+function isJsonContent(value: string): boolean {
+  const trimmed = value.trim();
+  if (!trimmed) return false;
+  try {
+    JSON.parse(trimmed);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function looksLikeMarkdown(value: string): boolean {
+  return /^(?: {0,3}#{1,6}\s+\S| {0,3}(?:[-*+]|\d+\.)\s+\S| {0,3}>\s+\S|```|~~~|---\s*$)/m.test(value)
+    || /\[[^\]]+\]\([^)]+\)|\*\*[^*\n]+\*\*|__[^_\n]+__/.test(value);
+}
+
+function shebangLanguage(value: string): string {
+  const firstLine = value.split(/\r?\n/, 1)[0]?.trim().toLowerCase() || "";
+  if (!firstLine.startsWith("#!")) return "";
+  if (/\bpython/.test(firstLine)) return "python";
+  if (/\b(?:node|deno|bun)\b/.test(firstLine)) return "javascript";
+  if (/\b(?:pwsh|powershell)\b/.test(firstLine)) return "powershell";
+  if (/\bruby\b/.test(firstLine)) return "ruby";
+  if (/\bperl\b/.test(firstLine)) return "perl";
+  if (/\b(?:bash|zsh|ksh|sh)\b/.test(firstLine)) return "shell";
+  return "";
+}
+
+function contentLanguage(value: string): string {
+  const trimmed = value.trim();
+  if (/^<!doctype\s+html|^<html[\s>]/i.test(trimmed)) return "html";
+  if (/^<\?xml\b/i.test(trimmed)) return "xml";
+  if (/^(?:select|insert|update|delete|create|alter)\b[\s\S]*\b(?:from|into|table)\b/im.test(trimmed)) return "sql";
+  if (/^(?:from\s+\S+\s+import|import\s+\S+|def\s+\w+\s*\(|class\s+\w+\s*[:(])/m.test(trimmed)) return "python";
+  if (/^(?:const|let|var|function|export|import)\s+[\w{*]|=>/m.test(trimmed)) return "javascript";
+  if (/^(?:package\s+main|func\s+\w+\s*\()/m.test(trimmed)) return "go";
+  if (/^(?:fn\s+\w+|use\s+\w+::|impl(?:<[^>]+>)?\s+\w+)/m.test(trimmed)) return "rust";
+  if (/^---\s*$[\s\S]*^\w[\w.-]*:\s+/m.test(trimmed)) return "yaml";
+  return "";
+}
+
+function metadataLanguage(metadata?: Record<string, unknown>): string {
+  if (!metadata) return "";
+  for (const key of ["language", "syntax", "lexer", "format", "mimeType", "mime_type"]) {
+    const value = metadata[key];
+    if (typeof value !== "string") continue;
+    const detected = normalizedLanguage(value);
+    if (detected !== "plain") return detected;
+  }
+  return "";
+}
+
+export function detectResourceSourceMode(
+  value: string,
+  sourcePath = "",
+  metadata?: Record<string, unknown>,
+  defaultFormat?: SourceFormat,
+  defaultTextLanguage?: string,
+): SourceMode {
+  if (isJsonContent(value)) return { format: "metta", textLanguage: "clojure" };
+  const pathLanguage = textLanguageForFilename(sourcePath);
+  const detectedLanguage = shebangLanguage(value)
+    || metadataLanguage(metadata)
+    || (looksLikeMarkdown(value) ? "markdown" : "")
+    || (pathLanguage !== "plain" ? pathLanguage : "")
+    || contentLanguage(value)
+    || normalizedLanguage(defaultTextLanguage || "");
+  if (detectedLanguage === "markdown") return { format: "text", textLanguage: "markdown" };
+  if (/\.metta$/i.test(sourcePath)) return { format: "metta", textLanguage: "clojure" };
+  return {
+    format: defaultFormat || "text",
+    textLanguage: detectedLanguage || "plain",
+  };
+}
 
 type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue };
 type JsonObject = { [key: string]: JsonValue };
@@ -457,11 +585,28 @@ function updateJsonAtPath(root: JsonObject, path: string, updater: (target: Json
   return cloned;
 }
 
-export function ResourceSourceEditor({ value, onChange, onValidityChange, className = "", style, label = "Edit this resource directly", showEnablement = true, disabled = false, contentReadOnly = false, stacked = false, defaultFormat, defaultTextLang, fileControls }: Props) {
+export function ResourceSourceEditor({
+  value,
+  onChange,
+  onValidityChange,
+  className = "",
+  style,
+  label = "Edit this resource directly",
+  sourcePath = "",
+  resourceMetadata,
+  showEnablement = true,
+  disabled = false,
+  contentReadOnly = false,
+  stacked = false,
+  defaultFormat,
+  defaultTextLang,
+  fileControls,
+}: Props) {
   const { resourceSourceFileControlsPlacement } = useUserUiPreferences();
   const editingLocked = disabled || contentReadOnly;
-  const [format, setFormat] = useState<"metta" | "json" | "tree" | "text" | "markdown">(defaultFormat ?? "metta");
-  const [textLang, setTextLang] = useState<string>(defaultTextLang ?? "plain");
+  const initialMode = detectResourceSourceMode(value, sourcePath || label, resourceMetadata, defaultFormat, defaultTextLang);
+  const [format, setFormat] = useState<SourceFormat>(initialMode.format);
+  const [textLang, setTextLang] = useState<string>(initialMode.textLanguage);
   const [metta, setMetta] = useState("");
   const [jsonDraft, setJsonDraft] = useState(value);
   const [error, setError] = useState("");
@@ -470,21 +615,65 @@ export function ResourceSourceEditor({ value, onChange, onValidityChange, classN
   const [treeRenderNormal, setTreeRenderNormal] = useState(false);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; path: string } | null>(null);
   const emittedJson = useRef<string | null>(null);
+  const sourceModel = useRef<"json" | "raw">(isJsonContent(value) ? "json" : "raw");
+  const codeMirrorView = useRef<EditorView | null>(null);
+  const foldPreference = useRef<"expanded" | "collapsed" | null>(null);
 
   useEffect(() => {
-    if (value === emittedJson.current) { emittedJson.current = null; setJsonDraft(value); return; }
+    if (value === emittedJson.current) {
+      emittedJson.current = null;
+      if (sourceModel.current === "raw" && format === "metta") {
+        setMetta(value);
+        try { setJsonDraft(mettaDocumentToJson(value)); } catch { setJsonDraft(value); }
+      } else {
+        setJsonDraft(value);
+      }
+      return;
+    }
     setJsonDraft(value);
     if (!value) { setMetta(""); setError(""); onValidityChange?.(true); return; }
-    try { setMetta(jsonDocumentToMetta(value)); setError(""); onValidityChange?.(true); }
+    try {
+      setMetta(jsonDocumentToMetta(value));
+      sourceModel.current = "json";
+      setError("");
+      onValidityChange?.(true);
+    }
     catch (reason) {
-      if (format === "text" || format === "markdown") { setError(""); onValidityChange?.(true); }
-      else { setError(reason instanceof Error ? reason.message : String(reason)); onValidityChange?.(false); }
+      if (format === "metta") {
+        try {
+          const converted = mettaDocumentToJson(value);
+          setMetta(value);
+          setJsonDraft(converted);
+          sourceModel.current = "raw";
+          setError("");
+          onValidityChange?.(true);
+          return;
+        } catch {
+          // The source remains editable below with the original parse error.
+        }
+      }
+      if (format === "text" || format === "markdown") {
+        sourceModel.current = "raw";
+        setError("");
+        onValidityChange?.(true);
+      } else {
+        setError(reason instanceof Error ? reason.message : String(reason));
+        onValidityChange?.(false);
+      }
     }
   }, [value]);
 
   const editMetta = (next: string) => {
     setMetta(next);
-    try { const json = mettaDocumentToJson(next); setJsonDraft(json); emittedJson.current = json; onChange(json); setError(""); onValidityChange?.(true); }
+    try {
+      const json = mettaDocumentToJson(next);
+      setJsonDraft(json);
+      const emitted = sourceModel.current === "raw" ? next : json;
+      emittedJson.current = emitted;
+      onChange(emitted);
+      setError("");
+      onValidityChange?.(true);
+    }
     catch (reason) { setError(reason instanceof Error ? reason.message : String(reason)); onValidityChange?.(false); }
   };
   const editJson = (next: string) => {
@@ -492,7 +681,13 @@ export function ResourceSourceEditor({ value, onChange, onValidityChange, classN
     try {
       const parsed = JSON.parse(next);
       if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("A resource document must be a JSON object");
-      setMetta(jsonDocumentToMetta(next)); emittedJson.current = next; onChange(next); setError(""); onValidityChange?.(true);
+      const nextMetta = jsonDocumentToMetta(next);
+      setMetta(nextMetta);
+      const emitted = sourceModel.current === "raw" && /\.metta$/i.test(sourcePath || label) ? nextMetta : next;
+      emittedJson.current = emitted;
+      onChange(emitted);
+      setError("");
+      onValidityChange?.(true);
     } catch (reason) { setError(reason instanceof Error ? reason.message : String(reason)); onValidityChange?.(false); }
   };
   const editText = (next: string) => {
@@ -516,15 +711,26 @@ export function ResourceSourceEditor({ value, onChange, onValidityChange, classN
   try { const parsed = JSON.parse(value); if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) resource = parsed; } catch { /* Invalid source remains editable. */ }
   const resourceEnabled = resource?.enabled !== false;
   const setEnabled = (enabled: boolean) => { if (!disabled && resource) onChange(JSON.stringify({ ...resource, enabled }, null, 2)); };
+  const codeMirrorJsonTree = useMemo(() => {
+    const tree = jsonLanguage.parser.parse(jsonDraft);
+    let valid = tree.length === jsonDraft.length;
+    tree.iterate({
+      enter(node) {
+        if (node.type.isError) valid = false;
+      },
+    });
+    return valid ? tree : null;
+  }, [jsonDraft]);
   const parsedTreeRoot = useMemo(() => {
+    if (!codeMirrorJsonTree) return null;
     try {
-      const parsed = JSON.parse(value);
+      const parsed = JSON.parse(jsonDraft);
       if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return null;
       return parsed as JsonObject;
     } catch {
       return null;
     }
-  }, [value]);
+  }, [codeMirrorJsonTree, jsonDraft]);
   const allExpandablePaths = useMemo(() => {
     const paths = new Set<string>();
     if (parsedTreeRoot) collectExpandablePaths(parsedTreeRoot, "$", paths);
@@ -606,6 +812,23 @@ export function ResourceSourceEditor({ value, onChange, onValidityChange, classN
       next.add(selectedTreePath);
       return next;
     });
+  };
+
+  const runCodeMirrorFold = (command: (view: EditorView) => boolean) => {
+    const view = codeMirrorView.current;
+    if (view) command(view);
+  };
+
+  const expandWholeTree = () => {
+    foldPreference.current = "expanded";
+    setTreeExpandedPaths(new Set(allExpandablePaths));
+    runCodeMirrorFold(unfoldAll);
+  };
+
+  const collapseWholeTree = () => {
+    foldPreference.current = "collapsed";
+    setTreeExpandedPaths(new Set(["$"]));
+    runCodeMirrorFold(foldAll);
   };
 
   const writeTreeDocument = (nextRoot: JsonObject) => {
@@ -733,9 +956,15 @@ export function ResourceSourceEditor({ value, onChange, onValidityChange, classN
     <div className="llm-subhead"><div><span>RESOURCE SOURCE</span><b>{label}</b></div><div className="source-format-tabs">{showEnablement&&resource&&<button disabled={disabled} className={`resource-enable-action ${resourceEnabled?"disable-resource":"enable-resource"}`} onClick={()=>setEnabled(!resourceEnabled)}>{resourceEnabled?"Disable Resource":"Enable Resource"}</button>}<button disabled={disabled} className={format === "metta" ? "active" : ""} onClick={() => setFormat("metta")}>MeTTa</button><button disabled={disabled} className={format === "json" ? "active" : ""} onClick={() => setFormat("json")}>JSON</button><button disabled={disabled} className={format === "tree" ? "active" : ""} onClick={() => setFormat("tree")}>Tree</button><button disabled={disabled} className={format === "text" ? "active" : ""} onClick={() => { setError(""); setFormat("text"); }}>Text</button>{format === "text" ? <select className="rse-text-lang" disabled={disabled} value={textLang} onChange={event => setTextLang(event.target.value)} title="How CodeMirror renders this text">{TEXT_LANGUAGES.map(entry => <option key={entry.id} value={entry.id}>{entry.label}</option>)}</select> : null}<button disabled={disabled} className={format === "markdown" ? "active" : ""} onClick={() => { setError(""); setFormat("markdown"); }}>Markdown</button></div></div>
     {resourceSourceFileControlsPlacement === "above" ? renderedFileControls : null}
     {format === "markdown"
-      ? <div className="markdown-render operation-visible-editor" style={style}><MarkdownDocument content={jsonDraft} /></div>
+      ? <div className="markdown-render operation-visible-editor" style={style}>
+          <MarkdownDocument content={jsonDraft} onChange={editText} editable={!editingLocked} />
+        </div>
       : format === "tree"
-      ? <div className={`json-tree-browser operation-visible-editor ${className}`.trim()} style={style}>
+      ? <div
+          className={`json-tree-browser operation-visible-editor ${className}`.trim()}
+          style={style}
+          data-codemirror-json-tree={codeMirrorJsonTree ? "ready" : "invalid"}
+        >
         <div className="json-tree-toolbar">
           <span>Path <code>{selectedTreePath}</code>{treeSelectionType ? <> · <b>{treeSelectionType}</b></> : null}</span>
           <div>
@@ -745,9 +974,11 @@ export function ResourceSourceEditor({ value, onChange, onValidityChange, classN
             <button type="button" disabled={disabled || !parsedTreeRoot} onClick={() => expandSelectedBranch()}>Expand branch</button>
             <button type="button" disabled={disabled || !parsedTreeRoot} onClick={() => collapseSelectedBranch()}>Collapse branch</button>
             <button type="button" disabled={disabled || !parsedTreeRoot} onClick={() => collapseSelectedChildren()}>Collapse children</button>
-            <button type="button" disabled={disabled || !parsedTreeRoot} onClick={() => setTreeExpandedPaths(new Set(allExpandablePaths))}>Expand all</button>
-            <button type="button" disabled={disabled || !parsedTreeRoot} onClick={() => setTreeExpandedPaths(new Set(["$"]))}>Collapse all</button>
           </div>
+        </div>
+        <div className="json-tree-fold-overlay" aria-label="JSON tree fold controls">
+          <button type="button" disabled={disabled || !parsedTreeRoot} onClick={expandWholeTree}>Expand All</button>
+          <button type="button" disabled={disabled || !parsedTreeRoot} onClick={collapseWholeTree}>Collapse All</button>
         </div>
         {parsedTreeRoot ? <div className="json-tree-root">{renderTreeNode(parsedTreeRoot, "$", "$")}</div> : <div className="validation bad">Tree mode needs valid JSON object source. Fix syntax in JSON or MeTTa mode first.</div>}
         {contextMenu && parsedTreeRoot ? <div className="json-tree-context-menu" style={{ left: contextMenu.x, top: contextMenu.y }}>
@@ -757,18 +988,35 @@ export function ResourceSourceEditor({ value, onChange, onValidityChange, classN
         </div> : null}
       </div>
       : <div className={`raw-json-editor operation-visible-editor ${className}`.trim()} style={style} aria-invalid={Boolean(error)}>
-          <CodeMirror
-            value={format === "metta" ? metta : jsonDraft}
-            height="100%"
+         {format === "json" && <div className="codemirror-fold-overlay" aria-label="JSON fold controls">
+           <button type="button" onMouseDown={event => event.preventDefault()} onClick={() => runCodeMirrorFold(unfoldCode)}>Expand</button>
+           <button type="button" onMouseDown={event => event.preventDefault()} onClick={() => runCodeMirrorFold(foldCode)}>Collapse</button>
+           <button type="button" onMouseDown={event => event.preventDefault()} onClick={expandWholeTree}>Expand all</button>
+           <button type="button" onMouseDown={event => event.preventDefault()} onClick={collapseWholeTree}>Collapse all</button>
+         </div>}
+         <CodeMirror
+           value={format === "metta" ? metta : jsonDraft}
+           height="100%"
             theme="dark"
             editable={!editingLocked}
             readOnly={editingLocked}
             basicSetup={{ lineNumbers: true, foldGutter: true, highlightActiveLine: !editingLocked }}
-            extensions={format === "json" ? [json()] : format === "text" ? textLanguageExtension(textLang) : []}
+            extensions={format === "metta" ? streamLang(clojure) : format === "json" ? [json()] : format === "text" ? textLanguageExtension(textLang) : []}
+            onCreateEditor={view => {
+              codeMirrorView.current = view;
+              if (format === "json" && foldPreference.current) {
+                window.requestAnimationFrame(() => {
+                  if (foldPreference.current === "collapsed") foldAll(view);
+                  else unfoldAll(view);
+                });
+              }
+            }}
             onChange={value => format === "metta" ? editMetta(value) : format === "text" ? editText(value) : editJson(value)}
           />
         </div>}
-    {stacked && format !== "markdown" ? <div className="markdown-render operation-visible-editor" style={style}><MarkdownDocument content={jsonDraft} /></div> : null}
+    {stacked && format !== "markdown" ? <div className="markdown-render operation-visible-editor" style={style}>
+      <MarkdownDocument content={jsonDraft} onChange={editText} editable={!editingLocked} />
+    </div> : null}
     {error && (format === "metta" || format === "json") && <div className="validation bad">Invalid {format === "metta" ? "MeTTa" : "JSON"} syntax: {error}. Draft preserved; synchronization and saving are paused until this is fixed.</div>}
     {resourceSourceFileControlsPlacement === "below" ? renderedFileControls : null}
   </div>;

@@ -1529,3 +1529,63 @@ Preserve the canonical checkout and its `codex/workbench-navigation-v2` branch.
 - [x] Add a browser-persisted User/UI Settings preference for placing shared Resource Source save/load controls above or below editor text areas; apply changes live without modifying workspace resources.
 - [x] Add a shared per-page UI tools contract: show currently available UI configuration, open a context-filled Codex UI conversation, and retain page URL, scroll position, and tool state per workspace/page for safe session reloads.
 - [x] Replace broad Vite/UI restart behavior with an allowlisted, debounced surgical reloader that calls `onUIRestart`, flushes all visited-page session records, and permits one browser reload per restart token; manual restart no longer touches `vite.config.ts`.
+- [x] Replace the selected Operations document control with an embedded
+  `UniversalArtifactEditor` Super Control. The rich Abstract Operation or
+  Operation Implementation surface is now the first Super Control tab, and
+  `ResourceSourceEditor` is mounted only by the shared Resource tab instead of
+  remaining duplicated in `OperationLibraryEditor`. Operations supplies typed
+  resource data and callbacks; Super Control owns renderer selection and its
+  CSS. Operations contributes no other tabs: the existing File, Markdown,
+  Resource & Inheritance, and Universal Execution Runner editors remain owned by
+  Super Control, while library/model/policy/plugin pages are not injected.
+  Validation on
+  2026-08-26: 9 focused UI contract tests passed, the frontend production build
+  passed, and live browser checks confirmed zero source editors on the Abstract
+  Operation tab and exactly one on the Resource tab.
+- [x] Replace the selected Topics document control with an embedded standard
+  Super Control while keeping the taxonomy heading and tree outside. Topics
+  contributes no special editor tab; it supplies only its filesystem resource
+  text, metadata, Save/Delete actions, and an initial Resource selection. File,
+  Markdown, Resource & Inheritance, and Universal Execution Runner remain the
+  only tabs.
+  Resource & Inheritance combines editable resource controls with the resolved
+  read-only view. The latter supports save/export and reload-from-origin, never
+  loading a different resource, and links to its real parent for editing.
+- [x] Make embedded Super Control import and own the Models-style toolbar,
+  editor-tab, source-border, scrollbar, and responsive CSS so hosts do not need
+  to load component styling.
+- [ ] Implement the documented Super Control display contract: Tabs, Stacked,
+  Single, SplitV, and SplitH, with independently selected panes where required.
+  ALL must expose every registered content-backed tab; CTX must use the
+  content-backed subset of the selector API result. Registered controls without
+  real renderers stay hidden rather than producing empty placeholder tabs.
+  Expose ALL and CTX as persistent segmented buttons in the banner beside the
+  DISPLAY selector, not as editor tabs or a pull-down.
+  Mode changes must preserve dirty resource state, and every non-Tabs
+  mode must retain a visible action that restores Tabs. Tabs mode must expose a
+  pull-down selector for switching directly to every other display mode.
+  Single must initially show the context-selected default tab, normally File
+  through `ResourceSourceEditor`. Put the switcher in the Super Control header
+  action slot currently occupied by the one-off Split view button; do not add a
+  separate control row or absorb host-level document comparison.
+- [ ] Make parsed JSON identity displays consistently include the stable `id`
+  plus available `kind`, `type`, `subkind`, or equivalent role metadata. A
+  human label may supplement but must not hide resource identity, and parse
+  failures must be explicit. For one JSON object, derive the Super Control
+  header as `KIND - Label (id)`, omit `(id)` when it equals the label, and use
+  `KIND - id` when no separate label exists.
+- [ ] Make `ResourceSourceEditor` choose a CodeMirror syntax mode from the source
+  format, resource metadata, and filename extension. Normal source views remain
+  editable; explicitly resolved/inherited views remain read-only. MeTTa must use
+  a Lisp- or Clojure-compatible lexer when no dedicated MeTTa lexer is present.
+  Content detection takes precedence over extension: JSON-parsable documents
+  default to the MeTTa representation, while detected Markdown uses the
+  CodeMirror Markdown lexer even without a Markdown filename suffix. Run every
+  opened source through file-type detection using content, path/extension,
+  shebang markers, and resource metadata, then load the best CodeMirror language
+  extension; use plain text only when no language is confidently identified.
+- [ ] Base the JSON Tree presentation on CodeMirror's parsed JSON structure and
+  folding state. Give every object/array node a clickable expand/collapse
+  disclosure and add persistent overlaid Expand/Collapse controls for the whole
+  tree and selected branch. Tree, JSON, and MeTTa views must remain synchronized
+  and folding must never mutate source.

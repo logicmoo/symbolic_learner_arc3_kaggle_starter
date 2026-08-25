@@ -6,7 +6,7 @@ FRONTEND = Path(__file__).resolve().parents[1] / "workbench" / "frontend" / "src
 
 def test_active_resource_editors_share_metta_json_source_editor() -> None:
     expected = {
-        "components/OperationLibraryEditor.tsx",
+        "components/UniversalArtifactEditor.tsx",
         "components/DataCatalogPanel.tsx",
         "components/GoalPlanLibraryEditor.tsx",
         "components/PromptLibraryEditor.tsx",
@@ -17,11 +17,15 @@ def test_active_resource_editors_share_metta_json_source_editor() -> None:
     for relative in expected:
         source = (FRONTEND / relative).read_text(encoding="utf-8")
         assert "ResourceSourceEditor" in source, relative
+    operations = (FRONTEND / "components/OperationLibraryEditor.tsx").read_text(encoding="utf-8")
+    assert "ResourceSourceEditor" not in operations
+    assert 'appearance="embedded"' in operations
 
 
 def test_resource_source_editor_defaults_to_metta_and_keeps_json_available() -> None:
     source = (FRONTEND / "components/ResourceSourceEditor.tsx").read_text(encoding="utf-8")
-    assert 'useState<"metta" | "json" | "tree">("metta")' in source
+    assert 'if (isJsonContent(value)) return { format: "metta", textLanguage: "clojure" };' in source
+    assert "useState<SourceFormat>(initialMode.format)" in source
     assert '>MeTTa</button>' in source
     assert '>JSON</button>' in source
     assert '>Tree</button>' in source

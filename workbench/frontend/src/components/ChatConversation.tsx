@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { MarkdownDocument } from "./MarkdownDocument";
-import { jsonDocumentToMetta, mettaDocumentToJson, mettaToJsonValue } from "../lib/mettaResourceCodec";
+import { SuperControl, type StandardSuperControlRequest } from "./UniversalArtifactEditor";
+import { jsonDocumentToMetta, mettaDocumentToJson } from "../lib/mettaResourceCodec";
 import "../styles/chat.css";
 
 // The workbench user identity and the agent they talk to. Both sides of this pair
@@ -136,6 +137,7 @@ type CursorInfo = {
 export type AgentOption = { id: string; [key: string]: unknown };
 
 type Props = {
+  workspaceId?: string;
   user?: string;
   peer?: string;
   className?: string;
@@ -236,7 +238,7 @@ function StreamPicker({
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
       >
-        <span className="chat-streampick-cur">{cur ? cur.label : "(none)"}</span>
+        <span className="chat-streampick-cur">{cur ? cur.label : "(none/null)"}</span>
         {cur ? chips(cur.tags) : null}
         <span className="chat-streampick-caret">▾</span>
       </button>
@@ -244,7 +246,7 @@ function StreamPicker({
         <div className="chat-streampick-menu" role="listbox">
           {allowNone && (
             <button type="button" className={`chat-streampick-opt${value ? "" : " is-sel"}`} onClick={() => { onChange(""); setOpen(false); }}>
-              <span className="chat-streampick-optlbl">(none)</span>
+              <span className="chat-streampick-optlbl">(none/null)</span>
             </button>
           )}
           {order
@@ -275,11 +277,12 @@ function StreamPicker({
 }
 
 // Shared chat surface used by both the full Chat page and the floatable mini-dock.
-// Four editable combos drive it: YOU/TO pick agents, MAILBOX (view) and SEND-TO
-// (send_to) pick mailboxes. YOU/TO are enumerated with first-class agents; the
+// Four editable combos drive it: FROM/TO pick agents, MAILBOX (view) and SEND-TO
+// (send_to) pick mailboxes. FROM/TO are enumerated with first-class agents; the
 // mailbox combos list the mailbox documents. Every message carries its raw
 // record so it can be inspected as JSON.
 export function ChatConversation({
+  workspaceId = "shared_library_system",
   user = DEFAULT_CHAT_USER,
   peer = DEFAULT_CHAT_PEER,
   className,
@@ -393,8 +396,10 @@ export function ChatConversation({
   // editable JSON/MeTTa document (a snapshot of the records currently in view).
   const [paneTab, setPaneTab] = useState<"chat" | "file">("chat");
   const [streamFileText, setStreamFileText] = useState("");
-  const [streamFileFormat, setStreamFileFormat] = useState<"json" | "metta">("json");
+  const [streamFileBaseline, setStreamFileBaseline] = useState("");
   const [streamFileNote, setStreamFileNote] = useState("");
+  const [selectedMessageKey, setSelectedMessageKey] = useState<string | null>(null);
+  const [autoScroll, setAutoScroll] = useState(true);
   // Require-match bar: the list looks EVERYWHERE in the log; each depressed
   // button ANDs its picker's value in as a required match. Only MAILBOX is
   // required by default (classic mailbox view).
@@ -509,6 +514,8 @@ export function ChatConversation({
     setReady(false);
     setMessages([]);
     stickBottomRef.current = true;
+    setAutoScroll(true);
+    setSelectedMessageKey(null);
     fetchMessages();
     const timer = window.setInterval(() => {
       if (active) fetchMessages();
@@ -527,12 +534,25 @@ export function ChatConversation({
   const handleScroll = () => {
     const node = listRef.current;
     if (!node) return;
-    stickBottomRef.current = node.scrollHeight - node.scrollTop - node.clientHeight < 48;
+    const atBottom = node.scrollHeight - node.scrollTop - node.clientHeight < 48;
+    if (!atBottom && stickBottomRef.current) {
+      stickBottomRef.current = false;
+      setAutoScroll(false);
+    }
+  };
+
+  const setAutoScrollEnabled = (enabled: boolean) => {
+    stickBottomRef.current = enabled;
+    setAutoScroll(enabled);
+    if (enabled) {
+      const node = listRef.current;
+      if (node) node.scrollTop = node.scrollHeight;
+    }
   };
 
   const send = useCallback(async () => {
     const text = input.trim();
-    if (!text || sending) return;
+    if (!text || sending || !you || !target) return;
     setSending(true);
     try {
       const body: Record<string, unknown> = { text, to: target, sender: you };
@@ -547,6 +567,7 @@ export function ChatConversation({
       );
       setInput("");
       stickBottomRef.current = true;
+      setAutoScroll(true);
       await fetchMessages();
       void fetchDirectory(); // refresh picker counts/lastMessageAt right away
     } catch (error) {
@@ -1179,39 +1200,48 @@ export function ChatConversation({
     const streams = Array.from(new Set([mailbox, ...mergeMailboxes].filter(Boolean)));
     return streams.length ? streams.join("+") : "stream";
   };
-  // Rebuild the file document from the records currently in view. Each bubble's
-  // raw record is used (falling back to the message itself) so the file mirrors
-  // exactly what is on screen — works for virtual streams (e.g. server-agents) too.
-  const buildStreamFile = useCallback((format: "json" | "metta") => {
-    const records = messages.map((m) => (m.raw && typeof m.raw === "object" ? m.raw : m));
-    const json = JSON.stringify(records, null, 2);
-    setStreamFileText(format === "metta" ? jsonDocumentToMetta(json) : json);
-    setStreamFileNote(`${records.length} record${records.length === 1 ? "" : "s"} in view`);
-  }, [messages]);
+  // Rebuild the source from either the selected node or the complete visible
+  // stream. The full stream uses a resource envelope so SuperControl can retain
+  // stable identity while exposing every record.
+  const buildStreamFile = useCallback((message?: ChatMessage | null) => {
+    const records = messages.map((entry) => (entry.raw && typeof entry.raw === "object" ? entry.raw : entry));
+    const raw = message?.raw && typeof message.raw === "object" ? message.raw : message;
+    const document = raw
+      ? {
+          ...(raw as Record<string, unknown>),
+          id: String((raw as Record<string, unknown>).id || message?.id || "selected-message"),
+          type: String((raw as Record<string, unknown>).type || message?.type || "chat_message"),
+        }
+      : {
+          kind: "chat_stream",
+          id: viewedStreamName(),
+          label: `${viewedStreamName()} visible stream`,
+          records,
+        };
+    const json = `${JSON.stringify(document, null, 2)}\n`;
+    setStreamFileText(json);
+    setStreamFileBaseline(json);
+    setStreamFileNote(message
+      ? `Selected message ${message.id}`
+      : `${records.length} record${records.length === 1 ? "" : "s"} in view`);
+  }, [messages, mailbox, mergeMailboxes]);
+
+  const selectStreamNode = (message: ChatMessage) => {
+    const key = bubbleKey(message);
+    const nextSelected = selectedMessageKey === key ? null : message;
+    setSelectedMessageKey(nextSelected ? key : null);
+    setAutoScrollEnabled(false);
+    buildStreamFile(nextSelected);
+  };
 
   const openStreamFile = () => {
     try {
-      buildStreamFile("json");
-      setStreamFileFormat("json");
+      const selected = messages.find(message => bubbleKey(message) === selectedMessageKey) || null;
+      buildStreamFile(selected);
     } catch (error) {
       setStreamFileNote(error instanceof Error ? error.message : String(error));
     }
     setPaneTab("file");
-  };
-
-  const toggleStreamFileFormat = () => {
-    try {
-      if (streamFileFormat === "json") {
-        setStreamFileText(jsonDocumentToMetta(streamFileText));
-        setStreamFileFormat("metta");
-      } else {
-        setStreamFileText(JSON.stringify(mettaToJsonValue(streamFileText), null, 2));
-        setStreamFileFormat("json");
-      }
-      setStreamFileNote("");
-    } catch (error) {
-      setStreamFileNote(error instanceof Error ? error.message : String(error));
-    }
   };
 
   const copyStreamFile = async () => {
@@ -1224,14 +1254,65 @@ export function ChatConversation({
   };
 
   const downloadStreamFile = () => {
-    const extension = streamFileFormat === "metta" ? "metta" : "json";
-    const blob = new Blob([streamFileText], { type: extension === "json" ? "application/json" : "text/plain" });
+    const blob = new Blob([streamFileText], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `${viewedStreamName()}.${extension}`;
+    link.download = `${viewedStreamName()}${selectedMessageKey ? ".selected" : ""}.json`;
     link.click();
     URL.revokeObjectURL(url);
+    setStreamFileBaseline(streamFileText);
+  };
+
+  const selectedStreamMessage = messages.find(message => bubbleKey(message) === selectedMessageKey) || null;
+  const streamFileResource = useMemo(() => {
+    try {
+      const parsed = JSON.parse(streamFileText) as Record<string, unknown>;
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return null;
+      return {
+        ...parsed,
+        kind: String(parsed.kind || parsed.type || "chat_message"),
+        id: String(parsed.id || selectedStreamMessage?.id || viewedStreamName()),
+      };
+    } catch {
+      return null;
+    }
+  }, [streamFileText, selectedStreamMessage?.id, mailbox, mergeMailboxes]);
+  const streamSuperControl: StandardSuperControlRequest = {
+    kind: "standard",
+    workspaceId,
+    source: streamFileText,
+    sourceScope: selectedStreamMessage ? "selected chat node" : "visible chat stream",
+    path: `runtime/chat/${viewedStreamName()}${selectedStreamMessage ? `/${selectedStreamMessage.id}` : ""}.json`,
+    title: selectedStreamMessage ? `Selected message ${selectedStreamMessage.id}` : `${viewedStreamName()} stream`,
+    dirty: streamFileText !== streamFileBaseline,
+    secondary: false,
+    busy: false,
+    resource: streamFileResource,
+    initialControlId: "file",
+    onChange: value => {
+      setStreamFileText(value);
+      setStreamFileNote("Source changed");
+    },
+    onSave: downloadStreamFile,
+    saveLabel: "Download snapshot",
+    actions: [
+      {
+        id: "refresh",
+        label: selectedStreamMessage ? "Refresh selected node" : "Refresh whole stream",
+        onInvoke: () => buildStreamFile(selectedStreamMessage),
+      },
+      {
+        id: "whole-stream",
+        label: "Whole stream",
+        disabled: !selectedStreamMessage,
+        onInvoke: () => {
+          setSelectedMessageKey(null);
+          buildStreamFile(null);
+        },
+      },
+      { id: "copy", label: "Copy", onInvoke: () => void copyStreamFile() },
+    ],
   };
 
   const fetchConfig = useCallback(async () => {
@@ -1366,9 +1447,9 @@ export function ChatConversation({
   );
 
   // Selects need the current value present as an option even before lists load.
-  // Clicking a picker label (YOU/TO/MAILBOX/SEND-TO) opens an editable JSON view
+  // Clicking a picker label (FROM/TO/MAILBOX/SEND-TO) opens an editable JSON view
   // of whatever that picker points at; clicking the same label again hides it.
-  // YOU/TO show the agent record as returned by /ws_collab/v1/mailbox/agents (cursors
+  // FROM/TO show the agent record as returned by /ws_collab/v1/mailbox/agents (cursors
   // included); the mailbox labels show the mailbox record. Save posts the edited
   // JSON to the server_registry_agents blackboard (agents are stored objects;
   // server channels are only a live view of what the IRC/Mattermost server says
@@ -1387,7 +1468,7 @@ export function ChatConversation({
         setInspect(null);
         return;
       }
-      const kind = label === "YOU" || label === "TO" ? ("agent" as const) : ("mailbox" as const);
+      const kind = label === "FROM" || label === "TO" ? ("agent" as const) : ("mailbox" as const);
       const record =
         kind === "agent"
           ? agents.find((a) => a.id === id) ?? { id }
@@ -1534,8 +1615,9 @@ export function ChatConversation({
       {showMailboxPicker && (
         <div className="chat-controls">
           <label className="chat-control">
-            <button type="button" className="chat-label" onClick={() => void inspectId("YOU", you)}>You/From</button>
-            <select value={you} onChange={(event) => setYou(event.target.value)} aria-label="Your agent identity">
+            <button type="button" className="chat-label" onClick={() => void inspectId("FROM", you)}>From</button>
+            <select value={you} onChange={(event) => {const value=event.target.value;setYou(value);if(!value)setRequireFrom(false)}} aria-label="From agent identity">
+              <option value="">(none/null)</option>
               {agentChoices.map((id) => (
                 <option key={id} value={id}>{id}</option>
               ))}
@@ -1543,7 +1625,8 @@ export function ChatConversation({
           </label>
           <label className="chat-control">
             <button type="button" className="chat-label" onClick={() => void inspectId("TO", target)}>To</button>
-            <select value={target} onChange={(event) => setTarget(event.target.value)} aria-label="Addressed agent">
+            <select value={target} onChange={(event) => {const value=event.target.value;setTarget(value);if(!value)setRequireTo(false)}} aria-label="To agent identity">
+              <option value="">(none/null)</option>
               {agentChoices.map((id) => (
                 <option key={id} value={id}>{id}</option>
               ))}
@@ -1570,7 +1653,7 @@ export function ChatConversation({
               type="button"
               className={`chat-require-btn${requireFrom ? " active" : ""}`}
               aria-pressed={requireFrom}
-              title="Require record.from to equal the YOU picker"
+              title="Require record.from to equal the FROM picker"
               onClick={() => setRequireFrom((v) => !v)}
             >
               FROM
@@ -2028,6 +2111,8 @@ export function ChatConversation({
       <div className="chat-tabs" role="tablist">
         <button type="button" role="tab" aria-selected={paneTab === "chat"} className={`chat-tab${paneTab === "chat" ? " is-active" : ""}`} onClick={() => setPaneTab("chat")}>Chat</button>
         <button type="button" role="tab" aria-selected={paneTab === "file"} className={`chat-tab${paneTab === "file" ? " is-active" : ""}`} onClick={() => { if (paneTab !== "file") openStreamFile(); }}>File</button>
+        <button type="button" className={`chat-autoscroll${autoScroll ? " active" : ""}`} aria-pressed={autoScroll} onClick={() => setAutoScrollEnabled(!autoScroll)}>Auto-scroll · {autoScroll ? "On" : "Off"}</button>
+        {selectedStreamMessage&&<span className="chat-selected-node">Source · {selectedStreamMessage.id}</span>}
       </div>
       {paneTab === "chat" && (
       <div className="chat-messages" ref={listRef} onScroll={handleScroll}>
@@ -2039,8 +2124,13 @@ export function ChatConversation({
             key={`${message.id}|${message.timestamp || ""}`}
             className={`chat-message ${message.from === you ? "mine" : "theirs"}${
               placementClass(message) ? " " + placementClass(message) : ""
-            }${entryEditKey === bubbleKey(message) ? " editing" : ""}`}
+            }${entryEditKey === bubbleKey(message) ? " editing" : ""}${selectedMessageKey === bubbleKey(message) ? " selected" : ""}`}
             style={messageColorStyle(message)}
+            role="button"
+            tabIndex={0}
+            aria-pressed={selectedMessageKey === bubbleKey(message)}
+            onClick={event=>{if((event.target as HTMLElement).closest("button,input,textarea,select,a"))return;selectStreamNode(message)}}
+            onKeyDown={event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();selectStreamNode(message)}}}
           >
             <div className="chat-message-meta">
               {effectiveView(message).bubbleFields.map((entry, i) => renderBubbleField(message, entry, `bf-${i}`))}
@@ -2107,21 +2197,8 @@ export function ChatConversation({
       )}
       {paneTab === "file" && (
         <div className="chat-filepane">
-          <div className="chat-filepane-bar">
-            <span className="chat-filepane-name">{`${viewedStreamName()}.${streamFileFormat === "metta" ? "metta" : "json"}`}</span>
-            <button type="button" onClick={() => { try { buildStreamFile(streamFileFormat); } catch (error) { setStreamFileNote(error instanceof Error ? error.message : String(error)); } }}>Refresh from view</button>
-            <button type="button" onClick={toggleStreamFileFormat}>{streamFileFormat === "json" ? "MeTTa" : "JSON"}</button>
-            <button type="button" onClick={copyStreamFile}>Copy</button>
-            <button type="button" onClick={downloadStreamFile}>Save as..</button>
-            {streamFileNote && <span className="chat-filepane-note">{streamFileNote}</span>}
-          </div>
-          <textarea
-            className="chat-filepane-text"
-            value={streamFileText}
-            spellCheck={false}
-            onChange={(event) => setStreamFileText(event.target.value)}
-            aria-label="Visible stream as file"
-          />
+          {streamFileNote&&<div className="chat-filepane-note">{streamFileNote}</div>}
+          <SuperControl appearance="embedded" control={streamSuperControl} className="chat-file-super-control" />
         </div>
       )}
       {errorText && <div className="chat-error">{errorText}</div>}
@@ -2130,11 +2207,11 @@ export function ChatConversation({
           value={input}
           onChange={(event) => setInput(event.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={`Message ${target}… (Enter to send, Shift+Enter for newline)`}
+          placeholder={you&&target?`Message ${target}… (Enter to send, Shift+Enter for newline)`:"Select FROM and TO to send"}
           rows={2}
           disabled={sending}
         />
-        <button className="chat-send" onClick={send} disabled={sending || !input.trim()}>
+        <button className="chat-send" onClick={send} disabled={sending || !input.trim() || !you || !target}>
           {sending ? "Sending…" : "Send"}
         </button>
       </div>

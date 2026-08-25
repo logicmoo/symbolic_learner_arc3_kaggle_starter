@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { jsonDocumentToMetta } from "../lib/mettaResourceCodec";
-import { ResourceSourceEditor } from "./ResourceSourceEditor";
 import { ArtifactTreeBranch } from "./ArtifactTreeBranch";
 import { TreePaneResizer } from "./TreePaneResizer";
+import { SuperControl, type StandardSuperControlRequest } from "./UniversalArtifactEditor";
 import "../styles/operation_editor.css";
 
 type Source = "shared" | "workspace";
@@ -151,7 +151,38 @@ export function TopicsResourceEditor({ workspaceId }: { workspaceId: string }) {
     });
   };
 
-  const doc = selected?.document || null;
+  let doc: TopicDoc | null = null;
+  try {
+    doc = source ? JSON.parse(source) as TopicDoc : null;
+  } catch {
+    doc = null;
+  }
+  const selectedPath = selectedKey === NEW_KEY
+    ? `design/categories/${fileSlug(doc?.id || "topic")}.artifact_category.metta`
+    : selected?.path || "";
+  const control: StandardSuperControlRequest | null = selected
+    ? {
+        kind: "standard",
+        workspaceId,
+        source,
+        sourceScope: selected.source || "workspace",
+        path: selectedPath,
+        title: doc?.label || doc?.id || selected.document?.label || selected.document?.id || "Topic",
+        dirty,
+        secondary: false,
+        busy,
+        resource: doc,
+        initialControlId: "resource",
+        onChange: (value) => { setSource(value); setDirty(true); },
+        onSave: save,
+        actions: [{
+          id: "delete",
+          label: "Delete",
+          disabled: busy || selectedKey === NEW_KEY,
+          onInvoke: remove,
+        }],
+      }
+    : null;
 
   return (
     <section className="resource-view operation-hierarchy-page">
@@ -194,37 +225,15 @@ export function TopicsResourceEditor({ workspaceId }: { workspaceId: string }) {
         </div>
         <div className="operation-editor-workspace">
           <TreePaneResizer />
-          {!selected ? (
+          {!control ? (
             <div className="studio-empty">Select a topic on the left, or create a new one.</div>
           ) : (
-            <section className="operation-editor-document primary" style={{ flex: 1, minHeight: 0 }}>
-              <div className="operation-editor-toolbar">
-                <div>
-                  <span>{selectedKey === NEW_KEY ? "NEW TOPIC" : "TOPIC"}{dirty ? " · UNSAVED" : ""}</span>
-                  <h2>{doc?.label || doc?.id}</h2>
-                  <small>{selectedKey === NEW_KEY ? `will write design/categories/${fileSlug(doc?.id || "topic")}.artifact_category.metta` : `${selected.source || "workspace"} · ${selected.path}`}</small>
-                </div>
-                <div className="operation-editor-actions">
-                  <button className="primary" disabled={busy} onClick={save}>Save</button>
-                  <button disabled={busy || selectedKey === NEW_KEY} onClick={remove}>Delete</button>
-                </div>
-              </div>
-              <div className="operation-editor-scroll">
-                {doc && (
-                  <div className="operation-abstract-summary">
-                    <div><span>PATH</span><code>{doc.path}</code></div>
-                    <div><span>TREES</span><code>{(doc.trees || []).join(", ") || "—"}</code></div>
-                    <div><span>KINDS</span><code>{(doc.query?.kinds || []).join(", ") || "—"}</code></div>
-                    <div><span>PARENT MODE</span><code>{doc.parentMode || "user"}</code></div>
-                  </div>
-                )}
-                <ResourceSourceEditor
-                  value={source}
-                  onChange={(value) => { setSource(value); setDirty(true); }}
-                  label="Edit this topic resource directly"
-                />
-              </div>
-            </section>
+            <SuperControl
+              key={selectedKey}
+              appearance="embedded"
+              control={control}
+              className="topic-document-super"
+            />
           )}
         </div>
       </div>

@@ -29,12 +29,14 @@
     "react-dom": "latest",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",
+    "turndown": "^7.2.4",
     "typescript": "latest",
     "vite": "latest"
   },
   "devDependencies": {
     "@types/node": "^26.3.0",
     "@types/react": "latest",
-    "@types/react-dom": "latest"
+    "@types/react-dom": "latest",
+    "@types/turndown": "^5.0.6"
   }
 }

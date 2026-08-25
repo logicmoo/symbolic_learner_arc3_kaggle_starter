@@ -3652,7 +3652,7 @@ export function FilesystemWorkbenchPage() {
             )}
             {view === "chat" && (
               <Suspense fallback={<div className="studio-empty">Loading chat…</div>}>
-                <ChatPage />
+                <ChatPage workspaceId={workspace.id} />
               </Suspense>
             )}
             {workflowPageForView && (
