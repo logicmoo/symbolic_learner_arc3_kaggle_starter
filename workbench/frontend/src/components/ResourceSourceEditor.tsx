@@ -321,6 +321,7 @@ function updateJsonAtPath(root: JsonObject, path: string, updater: (target: Json
 export function ResourceSourceEditor({ value, onChange, onValidityChange, className = "", style, label = "Edit this resource directly", showEnablement = true, disabled = false, path, onSave, saving = false, onNavigateMarkdown, navigateAllLocal = false, fill = false, fileControls }: Props) {
   const { resourceSourceFileControlsPlacement } = useUserUiPreferences();
   const [format, setFormat] = useState<"metta" | "json" | "tree" | "markdown" | "text">("metta");
+  const [display, setDisplay] = useState<"tabs" | "stack">("tabs");
   const [metta, setMetta] = useState("");
   const [jsonDraft, setJsonDraft] = useState(value);
   const [error, setError] = useState("");
@@ -607,17 +608,12 @@ export function ResourceSourceEditor({ value, onChange, onValidityChange, classN
     { id: "text", label: "Text", show: true },
     { id: "markdown", label: "Markdown", show: true },
   ];
-  return <div className={`operation-json-block resource-source-editor${fill ? " fill" : ""}`}>
-    <div className="llm-subhead"><div><span>RESOURCE SOURCE</span><b>{label}</b></div><div className="source-format-tabs">{showEnablement&&resource&&<button disabled={disabled} className={`resource-enable-action ${resourceEnabled?"disable-resource":"enable-resource"}`} onClick={()=>setEnabled(!resourceEnabled)}>{resourceEnabled?"Disable Resource":"Enable Resource"}</button>}{tabPolicies.filter(t=>t.show).map(t=><button key={t.id} disabled={disabled} className={format===t.id?"active":""} onClick={()=>setFormat(t.id)}>{t.label}</button>)}{onSave?<button disabled={disabled||saving} className="resource-enable-action" onClick={()=>onSave()}>{saving?"Saving...":"Save"}</button>:null}</div></div>
-    {resourceSourceFileControlsPlacement === "above" ? renderedFileControls : null}
-    {format === "tree"
-      ? <div className={`json-tree-browser operation-visible-editor ${className}`.trim()} style={style}>
+  const renderFormatBody = (fmt: "metta" | "json" | "tree" | "markdown" | "text") => {
+    if (fmt === "tree") return <div className={`json-tree-browser operation-visible-editor ${className}`.trim()} style={style}>
         <div className="json-tree-toolbar">
-          <span>Path <code>{selectedTreePath}</code>{treeSelectionType ? <> · <b>{treeSelectionType}</b></> : null}</span>
+          <span>Path <code>{selectedTreePath}</code>{treeSelectionType ? <> &middot; <b>{treeSelectionType}</b></> : null}</span>
           <div>
-            <button type="button" className={treeRenderNormal ? "active" : ""} disabled={disabled || !parsedTreeRoot} onClick={() => setTreeRenderNormal((previous) => !previous)}>
-              {treeRenderNormal ? "Enhanced labels" : "Normal labels"}
-            </button>
+            <button type="button" className={treeRenderNormal ? "active" : ""} disabled={disabled || !parsedTreeRoot} onClick={() => setTreeRenderNormal((previous) => !previous)}>{treeRenderNormal ? "Enhanced labels" : "Normal labels"}</button>
             <button type="button" disabled={disabled || !parsedTreeRoot} onClick={() => expandSelectedBranch()}>Expand branch</button>
             <button type="button" disabled={disabled || !parsedTreeRoot} onClick={() => collapseSelectedBranch()}>Collapse branch</button>
             <button type="button" disabled={disabled || !parsedTreeRoot} onClick={() => collapseSelectedChildren()}>Collapse children</button>
@@ -631,23 +627,17 @@ export function ResourceSourceEditor({ value, onChange, onValidityChange, classN
           <button type="button" disabled={contextMenu.path === "$"} onClick={() => { deleteAtPath(contextMenu.path); setContextMenu(null); }}>Delete element</button>
           <button type="button" onClick={() => setContextMenu(null)}>Cancel</button>
         </div> : null}
-      </div>
-      : format === "markdown"
-        ? <div className={`raw-json-editor operation-visible-editor ${className}`.trim()} style={style}><MarkdownDocument content={jsonDraft} navigateAllLocal={navigateAllLocal} onNavigateMarkdown={onNavigateMarkdown} /></div>
-        : format === "text"
-          ? <div className={`raw-json-editor operation-visible-editor ${className}`.trim()} style={style}><CodeMirror value={jsonDraft} height="100%" theme="dark" editable={!disabled} readOnly={disabled} basicSetup={{ lineNumbers: true, foldGutter: true, highlightActiveLine: !disabled }} extensions={syntaxExtensionsFor(path || "")} onChange={editText} /></div>
-          : <div className={`raw-json-editor operation-visible-editor ${className}`.trim()} style={style} aria-invalid={Boolean(error)}>
-          <CodeMirror
-            value={format === "metta" ? metta : jsonDraft}
-            height="100%"
-            theme="dark"
-            editable={!disabled}
-            readOnly={disabled}
-            basicSetup={{ lineNumbers: true, foldGutter: true, highlightActiveLine: !disabled }}
-            extensions={format === "json" ? [json()] : []}
-            onChange={value => format === "metta" ? editMetta(value) : editJson(value)}
-          />
-        </div>}
+      </div>;
+    if (fmt === "markdown") return <div className={`raw-json-editor operation-visible-editor ${className}`.trim()} style={style}><MarkdownDocument content={jsonDraft} navigateAllLocal={navigateAllLocal} onNavigateMarkdown={onNavigateMarkdown} /></div>;
+    if (fmt === "text") return <div className={`raw-json-editor operation-visible-editor ${className}`.trim()} style={style}><CodeMirror value={jsonDraft} height="100%" theme="dark" editable={!disabled} readOnly={disabled} basicSetup={{ lineNumbers: true, foldGutter: true, highlightActiveLine: !disabled }} extensions={syntaxExtensionsFor(path || "")} onChange={editText} /></div>;
+    return <div className={`raw-json-editor operation-visible-editor ${className}`.trim()} style={style} aria-invalid={Boolean(error)}><CodeMirror value={fmt === "metta" ? metta : jsonDraft} height="100%" theme="dark" editable={!disabled} readOnly={disabled} basicSetup={{ lineNumbers: true, foldGutter: true, highlightActiveLine: !disabled }} extensions={fmt === "json" ? [json()] : []} onChange={value => fmt === "metta" ? editMetta(value) : editJson(value)} /></div>;
+  };
+  return <div className={`operation-json-block resource-source-editor${fill ? " fill" : ""}`}>
+    <div className="llm-subhead"><div><span>RESOURCE SOURCE</span><b>{label}</b></div><div className="source-format-tabs"><button disabled={disabled} className="resource-enable-action" title="Switch tabbed / stacked view" onClick={()=>setDisplay(d=>d==="tabs"?"stack":"tabs")}>{display==="tabs"?"Stack":"Tabs"}</button>{showEnablement&&resource&&<button disabled={disabled} className={`resource-enable-action ${resourceEnabled?"disable-resource":"enable-resource"}`} onClick={()=>setEnabled(!resourceEnabled)}>{resourceEnabled?"Disable Resource":"Enable Resource"}</button>}{tabPolicies.filter(t=>t.show).map(t=><button key={t.id} disabled={disabled} className={display==="tabs"&&format===t.id?"active":""} onClick={()=>{if(display==="stack"){const el=document.getElementById(`rse-sec-${t.id}`);if(el)el.scrollIntoView({behavior:"smooth",block:"start"});}else{setFormat(t.id);}}}>{t.label}</button>)}{onSave?<button disabled={disabled||saving} className="resource-enable-action" onClick={()=>onSave()}>{saving?"Saving...":"Save"}</button>:null}</div></div>
+    {resourceSourceFileControlsPlacement === "above" ? renderedFileControls : null}
+    {display === "stack"
+      ? <div className="rse-stack">{tabPolicies.filter(t => t.show).map(t => <section key={t.id} id={`rse-sec-${t.id}`} className="rse-stack-section"><div className="rse-stack-header">{t.label}</div>{renderFormatBody(t.id)}</section>)}</div>
+      : renderFormatBody(format)}
     {error && <div className="validation bad">Invalid {format === "metta" ? "MeTTa" : "JSON"} syntax: {error}. Draft preserved; synchronization and saving are paused until this is fixed.</div>}
     {resourceSourceFileControlsPlacement === "below" ? renderedFileControls : null}
   </div>;
