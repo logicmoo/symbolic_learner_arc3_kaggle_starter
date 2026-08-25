@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:ws_collab": "vite build --config vite.ws_collab.config.ts",
     "preview": "vite preview"
   },
   "dependencies": {

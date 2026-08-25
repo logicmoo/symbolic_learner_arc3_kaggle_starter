@@ -138,8 +138,8 @@ export function ChatConversation({
   const fetchDirectory = useCallback(async () => {
     try {
       const [agentPayload, mailboxPayload] = await Promise.all([
-        readJson(await fetch("/api/mailbox/agents")),
-        readJson(await fetch("/api/mailbox/mailboxes")),
+        readJson(await fetch("/ws_collab/v1/mailbox/agents")),
+        readJson(await fetch("/ws_collab/v1/mailbox/mailboxes")),
       ]);
       setAgents((agentPayload.agents as AgentOption[]) || []);
       setMailboxes((mailboxPayload.mailboxes as MailboxOption[]) || []);
@@ -162,7 +162,7 @@ export function ChatConversation({
       if (requireMailbox && mailbox) params.set("mailbox", mailbox);
       if (requireSendTo && sendMailbox) params.set("send_to", sendMailbox);
       if (requireText && textQuery) params.set("text", textQuery);
-      const payload = await readJson(await fetch(`/api/mailbox/messages?${params.toString()}`));
+      const payload = await readJson(await fetch(`/ws_collab/v1/mailbox/messages?${params.toString()}`));
       setMessages((payload.messages as ChatMessage[]) || []);
       setReady(true);
       setErrorText("");
@@ -215,10 +215,10 @@ export function ChatConversation({
     setSending(true);
     try {
       const body: Record<string, unknown> = { text, to: target, sender: you };
-      const routed = sendMailbox.trim();
+      const routed = sendMailbox.trim() || mailbox;
       if (routed) body.send_to = routed;
       await readJson(
-        await fetch("/api/mailbox/send", {
+        await fetch("/ws_collab/v1/mailbox/send", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
@@ -249,7 +249,7 @@ export function ChatConversation({
     if (!id) return;
     try {
       await readJson(
-        await fetch("/api/mailbox/agents", {
+        await fetch("/ws_collab/v1/mailbox/agents", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ id }),
@@ -271,7 +271,7 @@ export function ChatConversation({
     if (!id) return;
     try {
       await readJson(
-        await fetch("/api/mailbox/mailboxes", {
+        await fetch("/ws_collab/v1/mailbox/mailboxes", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ id }),
@@ -295,7 +295,7 @@ export function ChatConversation({
     setExpanded((prev) => ({ ...prev, [id]: !(prev[id] ?? defaultOpen) }));
 
   // Per-entry ✎ editor: the bubble becomes the editor. Save posts the COMPLETE
-  // record to /api/mailbox/record, either rewriting its log line (in-place) or
+  // record to /ws_collab/v1/mailbox/record, either rewriting its log line (in-place) or
   // appending the edit as the newest record and marking the old one
   // replaced-by: entry_<n> (at-end). Like the other JSON editors it has a
   // MeTTa mode (mettaResourceCodec), Reload discards edits, Save as..
@@ -382,7 +382,7 @@ export function ChatConversation({
     setEntryEditBusy(true);
     try {
       const payload = await readJson(
-        await fetch("/api/mailbox/record", {
+        await fetch("/ws_collab/v1/mailbox/record", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ id: entryEditId, record, mode }),
@@ -406,7 +406,7 @@ export function ChatConversation({
     }
     try {
       const payload = await readJson(
-        await fetch(`/api/mailbox/mailbox-config?mailbox=${encodeURIComponent(configMailbox)}`),
+        await fetch(`/ws_collab/v1/mailbox/mailbox-config?mailbox=${encodeURIComponent(configMailbox)}`),
       );
       setConfigText(JSON.stringify(payload.config ?? {}, null, 2));
       setConfigError("");
@@ -437,7 +437,7 @@ export function ChatConversation({
     setConfigBusy(true);
     try {
       const payload = await readJson(
-        await fetch("/api/mailbox/mailbox-config", {
+        await fetch("/ws_collab/v1/mailbox/mailbox-config", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ mailbox: configMailbox, config: parsed }),
@@ -465,7 +465,7 @@ export function ChatConversation({
     }
     try {
       const query = `mailbox=${encodeURIComponent(mailbox)}&agent=${encodeURIComponent(target)}`;
-      const payload = await readJson(await fetch(`/api/mailbox/cursor?${query}`));
+      const payload = await readJson(await fetch(`/ws_collab/v1/mailbox/cursor?${query}`));
       setCursorInfo(payload as CursorInfo);
     } catch {
       setCursorInfo(null);
@@ -484,8 +484,8 @@ export function ChatConversation({
         const query = `mailbox=${encodeURIComponent(mailbox)}&agent=${encodeURIComponent(target)}`;
         const payload = await readJson(
           start === "remove"
-            ? await fetch(`/api/mailbox/cursor?${query}`, { method: "DELETE" })
-            : await fetch("/api/mailbox/cursor", {
+            ? await fetch(`/ws_collab/v1/mailbox/cursor?${query}`, { method: "DELETE" })
+            : await fetch("/ws_collab/v1/mailbox/cursor", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ mailbox, agent: target, start }),
@@ -512,7 +512,7 @@ export function ChatConversation({
       setSubBusy(true);
       try {
         await readJson(
-          await fetch("/api/mailbox/subscription", {
+          await fetch("/ws_collab/v1/mailbox/subscription", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ agent: target, mailbox, state }),
@@ -533,13 +533,13 @@ export function ChatConversation({
   // Selects need the current value present as an option even before lists load.
   // Clicking a picker label (YOU/TO/MAILBOX/SEND-TO) opens an editable JSON view
   // of whatever that picker points at; clicking the same label again hides it.
-  // YOU/TO show the agent record as returned by /api/mailbox/agents (cursors
+  // YOU/TO show the agent record as returned by /ws_collab/v1/mailbox/agents (cursors
   // included); the mailbox labels show the mailbox record. Save posts the edited
   // JSON to the server_registry_agents blackboard (agents are stored objects;
   // server channels are only a live view of what the IRC/Mattermost server says
   // we are on, not something stored here). Reload re-queries the record.
   const loadEntity = useCallback(async (kind: "agent" | "mailbox", id: string) => {
-    const endpoint = kind === "agent" ? "/api/mailbox/agents" : "/api/mailbox/mailboxes";
+    const endpoint = kind === "agent" ? "/ws_collab/v1/mailbox/agents" : "/ws_collab/v1/mailbox/mailboxes";
     const payload = await readJson(await fetch(endpoint));
     const list = (payload[kind === "agent" ? "agents" : "mailboxes"] as Array<Record<string, unknown>>) || [];
     return list.find((item) => item.id === id) ?? { id };
@@ -595,7 +595,7 @@ export function ChatConversation({
     setInspectBusy(true);
     try {
       const payload = await readJson(
-        await fetch("/api/mailbox/entity", {
+        await fetch("/ws_collab/v1/mailbox/entity", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ kind: inspect.kind, id: inspect.id, entry: parsed }),
