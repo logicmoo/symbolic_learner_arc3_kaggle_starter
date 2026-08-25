@@ -34,3 +34,6 @@
 
 /* Markdown render tab inside the resource-source editor box. */
 .operation-visible-editor>.relationship-markdown{height:100%;overflow:auto;padding:12px 16px;margin:0}
+
+/* TEMP marker: spot the unified ResourceSourceEditor wherever it is used. */
+.resource-source-editor{border:4px dashed #ff2fb0 !important;border-radius:22px !important;box-shadow:0 0 0 3px #00e5ff inset;box-sizing:border-box}
