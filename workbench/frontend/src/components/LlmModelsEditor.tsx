@@ -140,8 +140,9 @@ export function LlmModelsEditor({workspaceId,catalogMode="models",topMenuMode="b
   }
   const backend = document?.kind === "backend";
   const system = document?.kind === "system";
-  const backendEditorMode=backend?(backendEditorModes[doc.key]||"resource"):null;
-  const backendEditorLayout=backend?(backendEditorLayouts[doc.key]||"tabs"):null;
+  const editable=!!document;
+  const backendEditorMode=editable?(backendEditorModes[doc.key]||"resource"):null;
+  const backendEditorLayout=editable?(backendEditorLayouts[doc.key]||"tabs"):null;
   const showBackendSection=(section:"file"|"resource"|"actions"|"runner")=>backendEditorLayout==="stack"||backendEditorMode===section;
   const selectBackendSection=(section:"file"|"resource"|"actions"|"runner")=>{setBackendEditorModes(current=>({...current,[doc.key]:section}));setBackendEditorLayouts(current=>({...current,[doc.key]:"tabs"}))};
   const backendId = document?.id || "";
@@ -319,16 +320,16 @@ export function LlmModelsEditor({workspaceId,catalogMode="models",topMenuMode="b
       </div>
      )}
 
-     {backend && <nav className="backend-aggregate-tabs" aria-label="Backend editor modes" role="tablist">
+     {editable && <nav className="backend-aggregate-tabs" aria-label="Editor modes" role="tablist">
       <span className="backend-tabs-label">EDITORS</span>
       <button role="tab" aria-selected={backendEditorLayout==="tabs"&&backendEditorMode==="file"} className={backendEditorLayout==="tabs"&&backendEditorMode==="file"?"active":""} onClick={()=>selectBackendSection("file")}>File</button>
       <button role="tab" aria-selected={backendEditorLayout==="tabs"&&backendEditorMode==="resource"} className={backendEditorLayout==="tabs"&&backendEditorMode==="resource"?"active":""} onClick={()=>selectBackendSection("resource")}>Resource</button>
-      <button role="tab" aria-selected={backendEditorLayout==="tabs"&&backendEditorMode==="actions"} className={backendEditorLayout==="tabs"&&backendEditorMode==="actions"?"active":""} onClick={()=>selectBackendSection("actions")}>Backend Actions</button>
+      {backend && <button role="tab" aria-selected={backendEditorLayout==="tabs"&&backendEditorMode==="actions"} className={backendEditorLayout==="tabs"&&backendEditorMode==="actions"?"active":""} onClick={()=>selectBackendSection("actions")}>Backend Actions</button>}
       <button role="tab" aria-selected={backendEditorLayout==="tabs"&&backendEditorMode==="runner"} className={backendEditorLayout==="tabs"&&backendEditorMode==="runner"?"active":""} onClick={()=>selectBackendSection("runner")}>Universal Execution Runner</button>
       <span className="backend-view-mode"><b>DISPLAY</b><button className={backendEditorLayout==="stack"?"active":""} aria-pressed={backendEditorLayout==="stack"} onClick={()=>setBackendEditorLayouts(current=>({...current,[doc.key]:"stack"}))}>↕ Stack</button><button className={backendEditorLayout==="tabs"?"active":""} aria-pressed={backendEditorLayout==="tabs"} onClick={()=>setBackendEditorLayouts(current=>({...current,[doc.key]:"tabs"}))}>▣ Tabs</button></span>
      </nav>}
 
-     {(!backend||showBackendSection("file")) && <div className={`model-visible-editor ${backendEditorLayout==="stack"?"backend-stacked-section":""}`}>
+     {(!editable||showBackendSection("file")) && <div className={`model-visible-editor ${backendEditorLayout==="stack"?"backend-stacked-section":""}`}>
       <div className="studio-section-label">RESOURCE SOURCE</div>
       <ResourceSourceEditor value={doc.source} onChange={src => updateSource(doc.key, src)} showEnablement={false} fileControls={{
        currentWorkspaceId:workspaceId,
@@ -341,7 +342,7 @@ export function LlmModelsEditor({workspaceId,catalogMode="models",topMenuMode="b
       }} />
      </div>}
 
-     {!backend && !system && document && (
+     {!backend && !system && document && showBackendSection("resource") && (
       <div className="model-config-panes">
        <div className="model-config-pane">
         <div className="studio-section-label">CONFIGURATION</div>
@@ -354,7 +355,7 @@ export function LlmModelsEditor({workspaceId,catalogMode="models",topMenuMode="b
       </div>
      )}
 
-     {system && document && (
+     {system && document && showBackendSection("resource") && (
       <div className="model-config-panes">
        <div className="model-config-pane">
         <div className="studio-section-label">SYSTEM CONFIGURATION</div>
@@ -381,15 +382,15 @@ export function LlmModelsEditor({workspaceId,catalogMode="models",topMenuMode="b
 
      {backend && showBackendSection("runner") && document && resourceEnabled && <ResourceExecutionPlayground workspaceId={workspaceId} resource={document} operationIds={["backend_inspect","backend_check_readiness","resource_validate"]}/>}
 
-     {!backend && !system && document && resourceEnabled && (
+     {!backend && !system && document && resourceEnabled && showBackendSection("runner") && (
       <ModelResourcePlayground workspaceId={workspaceId} model={document} resolved={doc.record.resolved as Record<string,unknown>|undefined} models={nodes.filter(row=>row.document).map(row=>({id:row.document!.id,label:row.document!.label,enabled:row.document!.enabled}))}/>
      )}
 
-     {system && document && resourceEnabled && (
+     {system && document && resourceEnabled && showBackendSection("runner") && (
       <ResourceExecutionPlayground workspaceId={workspaceId} resource={document}/>
      )}
 
-     {exampleFor(document) && (!backend||showBackendSection("actions")) && (
+     {exampleFor(document) && showBackendSection(backend?"actions":"runner") && (
       <div className="model-playground">
        <div className="studio-section-label">PLAYGROUND / EXAMPLE INVOKE</div>
        <ExampleExecutePanel contract={exampleFor(document)!} onExecute={args => executeModelExample(document!.id, args)} />
