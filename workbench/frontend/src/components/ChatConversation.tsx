@@ -1359,6 +1359,16 @@ export function ChatConversation({
                 <option key={id} value={id}>{`${mailboxLabel(id)}${mailboxViews[id] ? " ✓" : ""}`}</option>
               ))}
             </select>
+            {scope && mailboxViews[scope] && (
+              <button
+                type="button"
+                className="chat-mbact"
+                title="Delete this mailbox's override and revert it to the workspace default"
+                onClick={() => setMailboxViews((m) => { const n = { ...m }; delete n[scope]; return n; })}
+              >
+                ⟲ Reset
+              </button>
+            )}
           </label>
           {showDisplay && (
             <>
