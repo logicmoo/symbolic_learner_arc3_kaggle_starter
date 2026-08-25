@@ -7,7 +7,7 @@ import { useUserUiPreferences } from "../lib/uiPreferences";
 import { WorkspaceResourceFileControls, type WorkspaceResourceFileControlsProps } from "./WorkspaceResourceFileControls";
 import "../styles/operation_editor.css";
 
-type Props = { value: string; onChange: (json: string) => void; onValidityChange?: (valid: boolean) => void; className?: string; style?: CSSProperties; label?: string; showEnablement?: boolean; disabled?: boolean; fileControls?: Omit<WorkspaceResourceFileControlsProps, "disabled" | "content" | "onClientContent"> };
+type Props = { value: string; onChange: (json: string) => void; onValidityChange?: (valid: boolean) => void; className?: string; style?: CSSProperties; label?: string; showEnablement?: boolean; disabled?: boolean; contentReadOnly?: boolean; fileControls?: Omit<WorkspaceResourceFileControlsProps, "disabled" | "content" | "onClientContent"> };
 
 type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue };
 type JsonObject = { [key: string]: JsonValue };
@@ -316,8 +316,9 @@ function updateJsonAtPath(root: JsonObject, path: string, updater: (target: Json
   return cloned;
 }
 
-export function ResourceSourceEditor({ value, onChange, onValidityChange, className = "", style, label = "Edit this resource directly", showEnablement = true, disabled = false, fileControls }: Props) {
+export function ResourceSourceEditor({ value, onChange, onValidityChange, className = "", style, label = "Edit this resource directly", showEnablement = true, disabled = false, contentReadOnly = false, fileControls }: Props) {
   const { resourceSourceFileControlsPlacement } = useUserUiPreferences();
+  const editingLocked = disabled || contentReadOnly;
   const [format, setFormat] = useState<"metta" | "json" | "tree">("metta");
   const [metta, setMetta] = useState("");
   const [jsonDraft, setJsonDraft] = useState(value);
@@ -461,7 +462,7 @@ export function ResourceSourceEditor({ value, onChange, onValidityChange, classN
   };
 
   const addKeyAtPath = (path: string) => {
-    if (disabled || !parsedTreeRoot) return;
+    if (editingLocked || !parsedTreeRoot) return;
     const node = getNodeAtPath(parsedTreeRoot, path);
     if (!node || typeof node !== "object" || Array.isArray(node)) return;
     const key = window.prompt("New key name");
@@ -482,7 +483,7 @@ export function ResourceSourceEditor({ value, onChange, onValidityChange, classN
   };
 
   const deleteAtPath = (path: string) => {
-    if (disabled || !parsedTreeRoot || path === "$") return;
+    if (editingLocked || !parsedTreeRoot || path === "$") return;
     if (!window.confirm(`Delete ${path}?`)) return;
     const updated = updateJsonAtPath(parsedTreeRoot, path, () => null);
     if (updated) writeTreeDocument(updated);
@@ -605,9 +606,9 @@ export function ResourceSourceEditor({ value, onChange, onValidityChange, classN
             value={format === "metta" ? metta : jsonDraft}
             height="100%"
             theme="dark"
-            editable={!disabled}
-            readOnly={disabled}
-            basicSetup={{ lineNumbers: true, foldGutter: true, highlightActiveLine: !disabled }}
+            editable={!editingLocked}
+            readOnly={editingLocked}
+            basicSetup={{ lineNumbers: true, foldGutter: true, highlightActiveLine: !editingLocked }}
             extensions={format === "json" ? [json()] : []}
             onChange={value => format === "metta" ? editMetta(value) : editJson(value)}
           />

@@ -91,7 +91,7 @@ function BackendConfigForm({source,onChange}:{source:string;onChange:(value:stri
 export function LlmModelsEditor({workspaceId,catalogMode="models",topMenuMode="browse"}:{workspaceId:string;catalogMode?:"systems"|"models";topMenuMode?:"browse"|"discover"|"override"}){
  const[snapshot,setSnapshot]=useState<Snapshot|null>(null),[layout,setLayout]=useState<Layout>("tiles"),[openDocs,setOpenDocs]=useState<OpenDocument[]>([]),[activeKey,setActiveKey]=useState<string|null>(null),[compareKey,setCompareKey]=useState<string|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState<string|null>(null),[discovery,setDiscovery]=useState<{backendId:string;models:DiscoveredModel[]}|null>(null),[discoverySelection,setDiscoverySelection]=useState<Set<string>>(new Set()),[discoveryFilter,setDiscoveryFilter]=useState(""),[discoverySort,setDiscoverySort]=useState<{key:string;dir:"asc"|"desc"}>({key:"id",dir:"asc"}),[overrideWorkerModelId,setOverrideWorkerModelId]=useState(""),[overrideFetchRaw,setOverrideFetchRaw]=useState("");
  const[overrideSource,setOverrideSource]=useState(DEFAULT_MODEL_OVERRIDE_SOURCE),[overrideDirty,setOverrideDirty]=useState(false),[overrideStatus,setOverrideStatus]=useState("");
- const[backendEditorModes,setBackendEditorModes]=useState<Record<string,"file"|"resource"|"actions"|"runner">>({});
+ const[backendEditorModes,setBackendEditorModes]=useState<Record<string,"file"|"resource"|"inheritance"|"actions"|"runner">>({});
  const[backendEditorLayouts,setBackendEditorLayouts]=useState<Record<string,"stack"|"tabs">>({});
  const load=async()=>{const next=await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/snapshot`) as Snapshot;setSnapshot(next);return next};
  useEffect(()=>{setOpenDocs([]);setActiveKey(null);setCompareKey(null);void load().catch(r=>setError(String(r)))},[workspaceId]);
@@ -114,6 +114,7 @@ export function LlmModelsEditor({workspaceId,catalogMode="models",topMenuMode="b
  const chooseComparison=()=>{if(compareKey){setCompareKey(null);return}const other=[...openDocs].reverse().find(doc=>doc.key!==activeKey);if(other)setCompareKey(other.key)};
  const saveDoc=(doc:OpenDocument,location?:WorkspaceResourceLocation)=>perform(async()=>{let document:ModelResource;try{document=JSON.parse(doc.source) as ModelResource}catch{throw new Error("Resource source is invalid")};if((document.kind==="backend"||document.kind==="system")&&!document.provider)throw new Error(`${document.kind==="system"?"System":"Backend"} requires provider`);if(document.kind!=="backend"&&document.kind!=="system"){const parent=modelParent(document);if(!parent)throw new Error("Model requires a parent");document={...document,kind:"model",parents:[parent]};delete document.inherits}const targetWorkspaceId=location?.workspaceId||workspaceId;const directory=document.kind==="system"?"design/systems":document.kind==="backend"?"design/backends":"design/models";const path=location?.path||(!doc.record.isNew?doc.record.path:`${directory}/${slug(document.id)}.${document.kind}.json`);const result=await request(`/api/workspaces/${encodeURIComponent(targetWorkspaceId)}/file`,{method:"PUT",body:JSON.stringify({path,content:JSON.stringify(document,null,2)})});if(targetWorkspaceId===workspaceId){const next=await load();const pool:RecordFile<ModelResource>[]=[...(next.systems||[]),...(next.backends||[]),...(next.models||[])];const saved=pool.find(row=>row.document?.id===document.id);if(saved){const newKey=recordKey(saved);setOpenDocs(current=>current.map(item=>item.key===doc.key?{key:newKey,record:saved,source:JSON.stringify(saved.document,null,2),dirty:false}:item));if(activeKey===doc.key)setActiveKey(newKey);if(compareKey===doc.key)setCompareKey(newKey)}}else{const saved:RecordFile<ModelResource>={path:String(result.file?.path||path),source:"workspace",workspaceId:targetWorkspaceId,document};const newKey=recordKey(saved);setOpenDocs(current=>current.map(item=>item.key===doc.key?{key:newKey,record:saved,source:JSON.stringify(document,null,2),dirty:false}:item));if(activeKey===doc.key)setActiveKey(newKey);if(compareKey===doc.key)setCompareKey(newKey)}});
  const loadDoc=(doc:OpenDocument,location:WorkspaceResourceLocation)=>perform(async()=>{const payload=await request(`/api/workspaces/${encodeURIComponent(location.workspaceId)}/file?path=${encodeURIComponent(location.path)}`);const raw=String(payload.file?.content||"");let source=raw;let document:ModelResource;try{document=JSON.parse(raw) as ModelResource}catch{source=mettaDocumentToJson(raw);document=JSON.parse(source) as ModelResource}const record:RecordFile<ModelResource>={path:String(payload.file?.path||location.path),source:location.workspaceId==="shared_library_system"?"shared":"workspace",workspaceId:location.workspaceId,document};const newKey=recordKey(record);setOpenDocs(current=>current.map(item=>item.key===doc.key?{key:newKey,record,source:JSON.stringify(document,null,2),dirty:false}:item));if(activeKey===doc.key)setActiveKey(newKey);if(compareKey===doc.key)setCompareKey(newKey)});
+ const saveInherited=(doc:OpenDocument,content:string,location?:WorkspaceResourceLocation)=>perform(async()=>{const targetWorkspaceId=location?.workspaceId||workspaceId;const base=(doc.record.path.split("/").at(-1)||"resource.json").replace(/\.(json|metta)$/,"");const path=location?.path||`design/resolved/${base}.resolved.json`;await request(`/api/workspaces/${encodeURIComponent(targetWorkspaceId)}/file`,{method:"PUT",body:JSON.stringify({path,content})})});
  const setResourceEnabled=(doc:OpenDocument,document:ModelResource,enabled:boolean)=>{
   const source=JSON.stringify({...document,enabled},null,2);
   return saveDoc({...doc,source,dirty:true});
@@ -143,8 +144,8 @@ export function LlmModelsEditor({workspaceId,catalogMode="models",topMenuMode="b
   const editable=!!document;
   const backendEditorMode=editable?(backendEditorModes[doc.key]||"resource"):null;
   const backendEditorLayout=editable?(backendEditorLayouts[doc.key]||"tabs"):null;
-  const showBackendSection=(section:"file"|"resource"|"actions"|"runner")=>backendEditorLayout==="stack"||backendEditorMode===section;
-  const selectBackendSection=(section:"file"|"resource"|"actions"|"runner")=>{setBackendEditorModes(current=>({...current,[doc.key]:section}));setBackendEditorLayouts(current=>({...current,[doc.key]:"tabs"}))};
+  const showBackendSection=(section:"file"|"resource"|"inheritance"|"actions"|"runner")=>backendEditorLayout==="stack"||backendEditorMode===section;
+  const selectBackendSection=(section:"file"|"resource"|"inheritance"|"actions"|"runner")=>{setBackendEditorModes(current=>({...current,[doc.key]:section}));setBackendEditorLayouts(current=>({...current,[doc.key]:"tabs"}))};
   const backendId = document?.id || "";
   const resourceEnabled = document
     ? (typeof document.enabled === "boolean"
@@ -324,6 +325,7 @@ export function LlmModelsEditor({workspaceId,catalogMode="models",topMenuMode="b
       <span className="backend-tabs-label">EDITORS</span>
       <button role="tab" aria-selected={backendEditorLayout==="tabs"&&backendEditorMode==="file"} className={backendEditorLayout==="tabs"&&backendEditorMode==="file"?"active":""} onClick={()=>selectBackendSection("file")}>File</button>
       <button role="tab" aria-selected={backendEditorLayout==="tabs"&&backendEditorMode==="resource"} className={backendEditorLayout==="tabs"&&backendEditorMode==="resource"?"active":""} onClick={()=>selectBackendSection("resource")}>Resource</button>
+      <button role="tab" aria-selected={backendEditorLayout==="tabs"&&backendEditorMode==="inheritance"} className={backendEditorLayout==="tabs"&&backendEditorMode==="inheritance"?"active":""} onClick={()=>selectBackendSection("inheritance")}>Inheritance</button>
       {backend && <button role="tab" aria-selected={backendEditorLayout==="tabs"&&backendEditorMode==="actions"} className={backendEditorLayout==="tabs"&&backendEditorMode==="actions"?"active":""} onClick={()=>selectBackendSection("actions")}>Backend Actions</button>}
       <button role="tab" aria-selected={backendEditorLayout==="tabs"&&backendEditorMode==="runner"} className={backendEditorLayout==="tabs"&&backendEditorMode==="runner"?"active":""} onClick={()=>selectBackendSection("runner")}>Universal Execution Runner</button>
       <span className="backend-view-mode"><b>DISPLAY</b><button className={backendEditorLayout==="stack"?"active":""} aria-pressed={backendEditorLayout==="stack"} onClick={()=>setBackendEditorLayouts(current=>({...current,[doc.key]:"stack"}))}>↕ Stack</button><button className={backendEditorLayout==="tabs"?"active":""} aria-pressed={backendEditorLayout==="tabs"} onClick={()=>setBackendEditorLayouts(current=>({...current,[doc.key]:"tabs"}))}>▣ Tabs</button></span>
@@ -348,10 +350,6 @@ export function LlmModelsEditor({workspaceId,catalogMode="models",topMenuMode="b
         <div className="studio-section-label">CONFIGURATION</div>
         <ConfigForm source={doc.source} onChange={src => updateSource(doc.key, src)} items={items} />
        </div>
-       <div className="model-config-pane resolved-inheritance">
-        <div className="studio-section-label">RESOLVED INHERITANCE</div>
-        <pre>{JSON.stringify(doc.record.resolved || {}, null, 2)}</pre>
-       </div>
       </div>
      )}
 
@@ -361,18 +359,33 @@ export function LlmModelsEditor({workspaceId,catalogMode="models",topMenuMode="b
         <div className="studio-section-label">SYSTEM CONFIGURATION</div>
         <SystemConfigForm source={doc.source} onChange={src => updateSource(doc.key, src)} />
        </div>
-       <div className="model-config-pane resolved-inheritance">
-        <div className="studio-section-label">RESOLVED SYSTEM</div>
-        <pre>{JSON.stringify(doc.record.resolved || {provider:(document as SystemDef).provider,systemType:(document as SystemDef).systemType,capabilities:document.capabilities||[]}, null, 2)}</pre>
-       </div>
       </div>
      )}
 
      {backend && showBackendSection("resource") && document && <div className="model-config-panes backend-resource-editor">
       <div className="backend-resource-status"><div><span>RESOURCE STATE</span><b>{resourceEnabled?"Enabled":"Disabled"}</b><small>{typeof document.enabled==="boolean"?"Declared by this backend resource":"Resolved through inheritance/defaults"}</small></div><button className={resourceEnabled?"disable-resource":"enable-resource"} onClick={()=>setResourceEnabled(doc,document,!resourceEnabled)} disabled={busy}>{resourceEnabled?"Disable Backend":"Enable Backend"}</button></div>
       <div className="model-config-pane"><div className="studio-section-label">CONFIGURATION</div><BackendConfigForm source={doc.source} onChange={src=>updateSource(doc.key,src)}/></div>
-      <div className="model-config-pane resolved-inheritance"><div className="resolved-resource-heading"><div className="studio-section-label">RESOLVED / INHERITED RESOURCE JSON</div><button onClick={()=>selectBackendSection("file")}>Edit JSON / MeTTa</button></div><pre>{JSON.stringify({...doc.record.resolved,provider:(document as BackendDef).provider,official:(document as BackendDef).official,enabled:(document as BackendDef).enabled,capabilities:(document as BackendDef).capabilities,configuration:(document as BackendDef).configuration,modelDefaults:(document as BackendDef).modelDefaults},null,2)}</pre></div>
      </div>}
+
+     {editable && document && showBackendSection("inheritance") && (() => {
+      const resolvedSource = backend
+       ? JSON.stringify({...doc.record.resolved,provider:(document as BackendDef).provider,official:(document as BackendDef).official,enabled:(document as BackendDef).enabled,capabilities:(document as BackendDef).capabilities,configuration:(document as BackendDef).configuration,modelDefaults:(document as BackendDef).modelDefaults},null,2)
+       : system
+       ? JSON.stringify(doc.record.resolved || {provider:(document as SystemDef).provider,systemType:(document as SystemDef).systemType,capabilities:document.capabilities||[]},null,2)
+       : JSON.stringify(doc.record.resolved || {},null,2);
+      return <div className={`model-visible-editor ${backendEditorLayout==="stack"?"backend-stacked-section":""}`}>
+       <div className="studio-section-label">RESOLVED / INHERITED RESOURCE — read-only source, saveable 3 ways (workspace · local disk · download)</div>
+       <ResourceSourceEditor value={resolvedSource} onChange={()=>{}} contentReadOnly showEnablement={false} label="Resolved / inherited resource" fileControls={{
+        currentWorkspaceId:workspaceId,
+        workspaceId:workspaceId,
+        originWorkspaceId:doc.record.workspaceId||workspaceId,
+        relativePath:doc.record.path,
+        dirty:false,
+        onSave:location=>saveInherited(doc,resolvedSource,location),
+        onLoad:location=>loadDoc(doc,location),
+       }} />
+      </div>;
+     })()}
 
      {backend && showBackendSection("actions") && document && <section className="backend-actions-editor">
       <div className="llm-subhead"><div><span>BACKEND ACTIONS</span><b>Discover, enable, inspect, and maintain this backend</b></div></div>
