@@ -212,6 +212,12 @@
   font-size: 11px;
 }
 
+.chat-control select.chat-scope {
+  flex: 0 1 auto;
+  margin-left: 8px;
+  max-width: 60%;
+}
+
 .chat-control {
   display: flex;
   align-items: center;

@@ -16,6 +16,8 @@ export const DEFAULT_CHAT_PEER = "symbolic-workbench-user";
 const ORGANIZE_BASE = ["from", "to", "type", "author", "mailboxName"] as const;
 const ORGANIZE_SKIP = new Set(["id", "text", "raw", "timestamp", "mailboxId", "authorName"]);
 const FIELD_LABELS: Record<string, string> = { mailboxName: "mailbox" };
+// Palette of hues for field-based coloring.
+const COLOR_HUES = [200, 280, 20, 140, 330, 50, 100, 250, 0, 170];
 // How a bubble field is rendered.
 const BUBBLE_STYLES: [string, string][] = [
   ["text", "plain"],
@@ -30,6 +32,66 @@ const RENDER_MODES: [string, string][] = [
   ["metta", "MeTTa"],
   ["raw", "raw text"],
 ];
+
+// A display profile. There is one fallthrough default plus optional per-mailbox
+// overrides; each message renders using its own mailbox's profile, else the default.
+type ViewSettings = {
+  placement: string;
+  placementField: string;
+  borderMode: string;
+  borderField: string;
+  fillMode: string;
+  fillField: string;
+  bubbleFields: { field: string; style: string }[];
+  renderMode: string;
+  renderRules: { field: string; value: string; mode: string }[];
+};
+const DEFAULT_VIEW: ViewSettings = {
+  placement: "field",
+  placementField: "mailboxName",
+  borderMode: "sender",
+  borderField: "mailboxName",
+  fillMode: "sender",
+  fillField: "from",
+  bubbleFields: [
+    { field: "from", style: "text" },
+    { field: "type", style: "chip" },
+    { field: "timestamp", style: "text" },
+  ],
+  renderMode: "markdown",
+  renderRules: [],
+};
+// Validate a parsed object into a ViewSettings, filling gaps from the default.
+function coerceView(v: Record<string, unknown>): ViewSettings {
+  const str = (x: unknown, d: string) => (typeof x === "string" ? x : d);
+  const bf = Array.isArray(v.bubbleFields)
+    ? (v.bubbleFields as unknown[])
+        .map((e) => (e && typeof e === "object" ? (e as Record<string, unknown>) : null))
+        .filter((e): e is Record<string, unknown> => !!e && typeof e.field === "string")
+        .map((e) => ({ field: String(e.field), style: typeof e.style === "string" ? e.style : "text" }))
+    : DEFAULT_VIEW.bubbleFields;
+  const rr = Array.isArray(v.renderRules)
+    ? (v.renderRules as unknown[])
+        .map((e) => (e && typeof e === "object" ? (e as Record<string, unknown>) : null))
+        .filter((e): e is Record<string, unknown> => !!e && typeof e.field === "string")
+        .map((e) => ({
+          field: String(e.field),
+          value: typeof e.value === "string" ? e.value : "",
+          mode: typeof e.mode === "string" ? e.mode : "markdown",
+        }))
+    : [];
+  return {
+    placement: str(v.placement, DEFAULT_VIEW.placement),
+    placementField: str(v.placementField, DEFAULT_VIEW.placementField),
+    borderMode: str(v.borderMode, DEFAULT_VIEW.borderMode),
+    borderField: str(v.borderField, DEFAULT_VIEW.borderField),
+    fillMode: str(v.fillMode, DEFAULT_VIEW.fillMode),
+    fillField: str(v.fillField, DEFAULT_VIEW.fillField),
+    bubbleFields: bf.length ? bf : DEFAULT_VIEW.bubbleFields,
+    renderMode: str(v.renderMode, DEFAULT_VIEW.renderMode),
+    renderRules: rr,
+  };
+}
 
 export type ChatMessage = {
   id: string;
@@ -104,32 +166,15 @@ export function ChatConversation({
   const [mailbox, setMailbox] = useState(peer);
   const [mergeMailboxes, setMergeMailboxes] = useState<string[]>([]);
   const [mergeMode, setMergeMode] = useState<"by-timestamp" | "sequential">("by-timestamp");
-  // Message placement: fixed side, or "field" = each distinct value of the chosen
-  // field gets its own lane (assigned left/right/center/full as it first appears).
-  // Default: lane by stream name — the first stream seen justifies left.
-  const [placement, setPlacement] = useState<"sender" | "left" | "right" | "center" | "full" | "field">("field");
-  const [placementField, setPlacementField] = useState<string>("mailboxName");
-  // Message color has two independent channels — the bubble border and the fill —
-  // each "by sender", a uniform tint, or "field" (each distinct value gets a hue).
-  const [borderMode, setBorderMode] = useState<"sender" | "uniform" | "field">("sender");
-  const [borderField, setBorderField] = useState<string>("mailboxName");
-  const [fillMode, setFillMode] = useState<"sender" | "uniform" | "field">("sender");
-  const [fillField, setFillField] = useState<string>("from");
+  // Display settings live in a ViewSettings profile: a fallthrough `defaultView`
+  // plus optional per-mailbox overrides in `mailboxViews`. Each message renders by
+  // its own mailbox's profile when present, else the default. `scope` selects which
+  // profile the editor edits ("" = default, else a mailbox id).
+  const [defaultView, setDefaultView] = useState<ViewSettings>(DEFAULT_VIEW);
+  const [mailboxViews, setMailboxViews] = useState<Record<string, ViewSettings>>({});
+  const [scope, setScope] = useState<string>("");
   // Layout & color options are tucked behind a collapsible header (collapsed by default).
   const [showDisplay, setShowDisplay] = useState(false);
-  // The fields each bubble shows in its header — editable; each entry pairs a field
-  // with how it's displayed (plain text, key+value, chip, or an inner colored
-  // bubble tinted by the value). Starts with the fields the bubble showed before.
-  const [bubbleFields, setBubbleFields] = useState<{ field: string; style: string }[]>([
-    { field: "from", style: "text" },
-    { field: "type", style: "chip" },
-    { field: "timestamp", style: "text" },
-  ]);
-  // Default body rendering, plus ordered override rules ("reasons") that win over
-  // it: the first rule whose field matches (a value, or any value when blank)
-  // decides the mode for that message.
-  const [renderMode, setRenderMode] = useState<string>("markdown");
-  const [renderRules, setRenderRules] = useState<{ field: string; value: string; mode: string }[]>([]);
 
   // The whole view (merges, placement, colors, bubble fields, render rules, and the
   // selected mailbox) persists to localStorage per workspace and is saved the instant
@@ -149,37 +194,19 @@ export function ChatConversation({
       const raw = window.localStorage.getItem(viewKey);
       if (raw) {
         const v = JSON.parse(raw) as Record<string, unknown>;
-        if (typeof v.placement === "string") setPlacement(v.placement as typeof placement);
-        if (typeof v.placementField === "string") setPlacementField(v.placementField);
-        if (typeof v.borderMode === "string") setBorderMode(v.borderMode as typeof borderMode);
-        if (typeof v.borderField === "string") setBorderField(v.borderField);
-        if (typeof v.fillMode === "string") setFillMode(v.fillMode as typeof fillMode);
-        if (typeof v.fillField === "string") setFillField(v.fillField);
+        if (v.defaultView && typeof v.defaultView === "object") setDefaultView(coerceView(v.defaultView as Record<string, unknown>));
+        if (v.mailboxViews && typeof v.mailboxViews === "object") {
+          const out: Record<string, ViewSettings> = {};
+          for (const [k, val] of Object.entries(v.mailboxViews as Record<string, unknown>)) {
+            if (val && typeof val === "object") out[k] = coerceView(val as Record<string, unknown>);
+          }
+          setMailboxViews(out);
+        }
+        if (typeof v.scope === "string") setScope(v.scope);
         if (v.mergeMode === "by-timestamp" || v.mergeMode === "sequential") setMergeMode(v.mergeMode);
         if (typeof v.showDisplay === "boolean") setShowDisplay(v.showDisplay);
         if (Array.isArray(v.mergeMailboxes)) {
           setMergeMailboxes((v.mergeMailboxes as unknown[]).filter((x): x is string => typeof x === "string"));
-        }
-        if (Array.isArray(v.bubbleFields)) {
-          setBubbleFields(
-            (v.bubbleFields as unknown[])
-              .map((e) => (e && typeof e === "object" ? (e as Record<string, unknown>) : null))
-              .filter((e): e is Record<string, unknown> => !!e && typeof e.field === "string")
-              .map((e) => ({ field: String(e.field), style: typeof e.style === "string" ? e.style : "text" })),
-          );
-        }
-        if (typeof v.renderMode === "string") setRenderMode(v.renderMode);
-        if (Array.isArray(v.renderRules)) {
-          setRenderRules(
-            (v.renderRules as unknown[])
-              .map((e) => (e && typeof e === "object" ? (e as Record<string, unknown>) : null))
-              .filter((e): e is Record<string, unknown> => !!e && typeof e.field === "string")
-              .map((e) => ({
-                field: String(e.field),
-                value: typeof e.value === "string" ? e.value : "",
-                mode: typeof e.mode === "string" ? e.mode : "markdown",
-              })),
-          );
         }
         if (typeof v.mailbox === "string" && v.mailbox) {
           setMailbox(v.mailbox);
@@ -196,29 +223,12 @@ export function ChatConversation({
     try {
       window.localStorage.setItem(
         viewKey,
-        JSON.stringify({
-          placement,
-          placementField,
-          borderMode,
-          borderField,
-          fillMode,
-          fillField,
-          mergeMode,
-          showDisplay,
-          mergeMailboxes,
-          bubbleFields,
-          renderMode,
-          renderRules,
-          mailbox,
-        }),
+        JSON.stringify({ defaultView, mailboxViews, scope, mergeMode, showDisplay, mergeMailboxes, mailbox }),
       );
     } catch {
       /* ignore storage quota errors */
     }
-  }, [
-    viewKey, placement, placementField, borderMode, borderField, fillMode, fillField,
-    mergeMode, showDisplay, mergeMailboxes, bubbleFields, renderMode, renderRules, mailbox,
-  ]);
+  }, [viewKey, defaultView, mailboxViews, scope, mergeMode, showDisplay, mergeMailboxes, mailbox]);
   const [target, setTarget] = useState(peer);
   const [sendMailbox, setSendMailbox] = useState("");
   const [agents, setAgents] = useState<AgentOption[]>([]);
@@ -558,27 +568,72 @@ export function ChatConversation({
     });
   };
 
-  const fieldPlacement = useMemo(() => {
-    const map = new Map<string, string>();
-    if (placement !== "field") return map;
-    const cycle = ["pos-left", "pos-right", "pos-center", "pos-full"];
-    const assign = (key: string) => {
-      if (!map.has(key)) map.set(key, cycle[map.size % cycle.length]);
+  // The profile currently being edited, and a patcher that writes to the default
+  // or the scoped mailbox override (forking from the default the first time).
+  const activeView = (scope && mailboxViews[scope]) || defaultView;
+  const patchActive = useCallback(
+    (patch: Partial<ViewSettings>) => {
+      if (scope) setMailboxViews((m) => ({ ...m, [scope]: { ...(m[scope] ?? defaultView), ...patch } }));
+      else setDefaultView((v) => ({ ...v, ...patch }));
+    },
+    [scope, defaultView],
+  );
+
+  // Resolve the profile for a message: its mailbox override, else the default.
+  const effectiveView = useCallback(
+    (m: ChatMessage): ViewSettings => {
+      const id = m.mailboxId || m.mailboxName || "";
+      return (id && mailboxViews[id]) || defaultView;
+    },
+    [mailboxViews, defaultView],
+  );
+
+  // Every field any profile lanes or colors by, so we can precompute value indices.
+  const laneFields = useMemo(() => {
+    const set = new Set<string>();
+    for (const v of [defaultView, ...Object.values(mailboxViews)]) {
+      if (v.placement === "field") set.add(v.placementField);
+      if (v.borderMode === "field") set.add(v.borderField);
+      if (v.fillMode === "field") set.add(v.fillField);
+    }
+    return set;
+  }, [defaultView, mailboxViews]);
+
+  // Per-field value→index maps (stream-seeded for mailboxName) driving lanes & hues.
+  const fieldIndex = useMemo(() => {
+    const maps = new Map<string, Map<string, number>>();
+    const ensure = (f: string) => {
+      let mm = maps.get(f);
+      if (!mm) {
+        mm = new Map<string, number>();
+        maps.set(f, mm);
+      }
+      return mm;
     };
-    // Seed lanes in stream order so the first (viewed) stream justifies left,
-    // then the merge rows, before falling back to message order for other fields.
-    if (placementField === "mailboxName") {
-      for (const mb of [mailbox, ...mergeMailboxes].filter(Boolean)) assign(String(mb));
+    for (const f of laneFields) {
+      const mm = ensure(f);
+      if (f === "mailboxName") {
+        for (const mb of [mailbox, ...mergeMailboxes].filter(Boolean)) {
+          const k = String(mb);
+          if (!mm.has(k)) mm.set(k, mm.size);
+        }
+      }
     }
     for (const m of messages) {
-      assign(fieldValue(m, placementField));
+      for (const f of laneFields) {
+        const mm = ensure(f);
+        const k = fieldValue(m, f);
+        if (!mm.has(k)) mm.set(k, mm.size);
+      }
     }
-    return map;
-  }, [messages, placement, placementField, mailbox, mergeMailboxes, fieldValue]);
+    return maps;
+  }, [laneFields, messages, mailbox, mergeMailboxes, fieldValue]);
 
+  const LANES = ["pos-left", "pos-right", "pos-center", "pos-full"];
   const placementClass = useCallback(
     (m: ChatMessage): string => {
-      switch (placement) {
+      const v = effectiveView(m);
+      switch (v.placement) {
         case "left":
           return "pos-left";
         case "right":
@@ -587,68 +642,43 @@ export function ChatConversation({
           return "pos-center";
         case "full":
           return "pos-full";
-        case "field":
-          return fieldPlacement.get(fieldValue(m, placementField)) || "";
+        case "field": {
+          const idx = fieldIndex.get(v.placementField)?.get(fieldValue(m, v.placementField)) ?? 0;
+          return LANES[idx % LANES.length];
+        }
         default:
           return "";
       }
     },
-    [placement, placementField, fieldPlacement, fieldValue],
-  );
-
-  // Same idea for color: each distinct value of the chosen field gets a hue, in
-  // order of first appearance (stream-seeded for the mailbox field), cycling
-  // through a fixed palette. Border and fill are computed independently.
-  const COLOR_HUES = [200, 280, 20, 140, 330, 50, 100, 250, 0, 170];
-  const buildHueIndex = useCallback(
-    (active: boolean, field: string) => {
-      const map = new Map<string, number>();
-      if (!active) return map;
-      const put = (k: string) => {
-        if (!map.has(k)) map.set(k, map.size);
-      };
-      if (field === "mailboxName") {
-        for (const mb of [mailbox, ...mergeMailboxes].filter(Boolean)) put(String(mb));
-      }
-      for (const m of messages) put(fieldValue(m, field));
-      return map;
-    },
-    [messages, mailbox, mergeMailboxes, fieldValue],
-  );
-  const borderHueIndex = useMemo(
-    () => buildHueIndex(borderMode === "field", borderField),
-    [buildHueIndex, borderMode, borderField],
-  );
-  const fillHueIndex = useMemo(
-    () => buildHueIndex(fillMode === "field", fillField),
-    [buildHueIndex, fillMode, fillField],
+    [effectiveView, fieldIndex, fieldValue],
   );
 
   const messageColorStyle = useCallback(
     (m: ChatMessage): CSSProperties | undefined => {
+      const v = effectiveView(m);
       const style: CSSProperties = {};
-      if (borderMode === "uniform") {
+      if (v.borderMode === "uniform") {
         style.borderColor = "var(--line)";
-      } else if (borderMode === "field") {
-        const idx = borderHueIndex.get(fieldValue(m, borderField)) ?? 0;
+      } else if (v.borderMode === "field") {
+        const idx = fieldIndex.get(v.borderField)?.get(fieldValue(m, v.borderField)) ?? 0;
         style.borderColor = `hsl(${COLOR_HUES[idx % COLOR_HUES.length]} 65% 58%)`;
       }
-      if (fillMode === "uniform") {
+      if (v.fillMode === "uniform") {
         style.background = "var(--panel2)";
-      } else if (fillMode === "field") {
-        const idx = fillHueIndex.get(fieldValue(m, fillField)) ?? 0;
+      } else if (v.fillMode === "field") {
+        const idx = fieldIndex.get(v.fillField)?.get(fieldValue(m, v.fillField)) ?? 0;
         style.background = `hsl(${COLOR_HUES[idx % COLOR_HUES.length]} 60% 45% / 0.16)`;
       }
       return style.borderColor || style.background ? style : undefined;
     },
-    [borderMode, borderField, borderHueIndex, fillMode, fillField, fillHueIndex, fieldValue],
+    [effectiveView, fieldIndex, fieldValue],
   );
 
   // Fields offered for the per-bubble display list: the organizable fields plus a
   // few display-only ones (timestamp, id), and always whatever is already chosen.
   const bubbleFieldChoices = useMemo(() => {
     const set = new Set<string>([...fieldStats.fields, "timestamp", "id"]);
-    for (const e of bubbleFields) set.add(e.field);
+    for (const e of activeView.bubbleFields) set.add(e.field);
     const pref = ["from", "author", "type", "timestamp", "to", "send_to", "id", "mailboxName"];
     return [...set].sort((a, b) => {
       const ia = pref.indexOf(a);
@@ -656,7 +686,7 @@ export function ChatConversation({
       if (ia !== -1 || ib !== -1) return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
       return a.localeCompare(b);
     });
-  }, [fieldStats.fields, bubbleFields]);
+  }, [fieldStats.fields, activeView.bubbleFields]);
 
   // Stable hue for a value (for the "colored bubble" style), drawn from the palette.
   const hueForValue = useCallback((v: string): number => {
@@ -729,15 +759,16 @@ export function ChatConversation({
   // or — when the value is blank — whenever the field has any value.
   const effectiveMode = useCallback(
     (m: ChatMessage): string => {
-      for (const r of renderRules) {
+      const v = effectiveView(m);
+      for (const r of v.renderRules) {
         if (!r.field) continue;
-        const v = fieldValue(m, r.field);
-        const match = r.value ? v.toLowerCase() === r.value.toLowerCase() : v !== "";
+        const val = fieldValue(m, r.field);
+        const match = r.value ? val.toLowerCase() === r.value.toLowerCase() : val !== "";
         if (match) return r.mode;
       }
-      return renderMode;
+      return v.renderMode;
     },
-    [renderRules, renderMode, fieldValue],
+    [effectiveView, fieldValue],
   );
 
   const renderBody = useCallback(
@@ -1316,14 +1347,26 @@ export function ChatConversation({
             >
               {showDisplay ? "▾ Layout & color" : "▸ Layout & color"}
             </button>
+            <select
+              className="chat-scope"
+              value={scope}
+              onChange={(event) => setScope(event.target.value)}
+              aria-label="Settings scope"
+              title="Which profile these settings come from and are saved to"
+            >
+              <option value="">workspace default</option>
+              {[...new Set([mailbox, ...mergeMailboxes].filter(Boolean))].map((id) => (
+                <option key={id} value={id}>{`${mailboxLabel(id)}${mailboxViews[id] ? " ✓" : ""}`}</option>
+              ))}
+            </select>
           </label>
           {showDisplay && (
             <>
           <label className="chat-control chat-mbrow">
             <span className="chat-label" title="Where to place message bubbles">Place</span>
             <select
-              value={placement}
-              onChange={(event) => setPlacement(event.target.value as typeof placement)}
+              value={activeView.placement}
+              onChange={(event) => patchActive({ placement: event.target.value })}
               aria-label="Message placement"
             >
               <option value="sender">by sender (you right)</option>
@@ -1333,67 +1376,67 @@ export function ChatConversation({
               <option value="full">full width</option>
               <option value="field">by field…</option>
             </select>
-            {placement === "field" && (
+            {activeView.placement === "field" && (
               <select
-                value={placementField}
-                onChange={(event) => setPlacementField(event.target.value)}
+                value={activeView.placementField}
+                onChange={(event) => patchActive({ placementField: event.target.value })}
                 aria-label="Placement field"
                 title="Each distinct value of this field gets its own lane"
               >
-                {fieldOptions(placementField)}
+                {fieldOptions(activeView.placementField)}
               </select>
             )}
           </label>
           <label className="chat-control chat-mbrow">
             <span className="chat-label" title="Bubble border color">Border</span>
             <select
-              value={borderMode}
-              onChange={(event) => setBorderMode(event.target.value as typeof borderMode)}
+              value={activeView.borderMode}
+              onChange={(event) => patchActive({ borderMode: event.target.value })}
               aria-label="Border color"
             >
               <option value="sender">by sender (you/them)</option>
               <option value="uniform">uniform</option>
               <option value="field">by field…</option>
             </select>
-            {borderMode === "field" && (
+            {activeView.borderMode === "field" && (
               <select
-                value={borderField}
-                onChange={(event) => setBorderField(event.target.value)}
+                value={activeView.borderField}
+                onChange={(event) => patchActive({ borderField: event.target.value })}
                 aria-label="Border field"
                 title="Each distinct value of this field gets its own border hue"
               >
-                {fieldOptions(borderField)}
+                {fieldOptions(activeView.borderField)}
               </select>
             )}
           </label>
           <label className="chat-control chat-mbrow">
             <span className="chat-label" title="Bubble fill color">Fill</span>
             <select
-              value={fillMode}
-              onChange={(event) => setFillMode(event.target.value as typeof fillMode)}
+              value={activeView.fillMode}
+              onChange={(event) => patchActive({ fillMode: event.target.value })}
               aria-label="Fill color"
             >
               <option value="sender">by sender (you/them)</option>
               <option value="uniform">uniform</option>
               <option value="field">by field…</option>
             </select>
-            {fillMode === "field" && (
+            {activeView.fillMode === "field" && (
               <select
-                value={fillField}
-                onChange={(event) => setFillField(event.target.value)}
+                value={activeView.fillField}
+                onChange={(event) => patchActive({ fillField: event.target.value })}
                 aria-label="Fill field"
                 title="Each distinct value of this field gets its own fill hue"
               >
-                {fieldOptions(fillField)}
+                {fieldOptions(activeView.fillField)}
               </select>
             )}
           </label>
-          {bubbleFields.map((entry, index) => (
+          {activeView.bubbleFields.map((entry, index) => (
             <label className="chat-control chat-mbrow" key={`bubble-field-${index}`}>
               <span className="chat-label">{index === 0 ? "Fields" : "＋ Field"}</span>
               <select
                 value={entry.field}
-                onChange={(e) => setBubbleFields((rows) => rows.map((r, j) => (j === index ? { ...r, field: e.target.value } : r)))}
+                onChange={(e) => patchActive({ bubbleFields: activeView.bubbleFields.map((r, j) => (j === index ? { ...r, field: e.target.value } : r)) })}
                 aria-label={`Bubble field ${index + 1}`}
               >
                 {bubbleFieldChoices.map((k) => (
@@ -1402,7 +1445,7 @@ export function ChatConversation({
               </select>
               <select
                 value={entry.style}
-                onChange={(e) => setBubbleFields((rows) => rows.map((r, j) => (j === index ? { ...r, style: e.target.value } : r)))}
+                onChange={(e) => patchActive({ bubbleFields: activeView.bubbleFields.map((r, j) => (j === index ? { ...r, style: e.target.value } : r)) })}
                 aria-label={`Bubble field ${index + 1} style`}
                 title="How this field is displayed on the bubble"
               >
@@ -1416,7 +1459,7 @@ export function ChatConversation({
                   className="chat-mbact"
                   title="Move up"
                   disabled={index === 0}
-                  onClick={() => setBubbleFields((rows) => { if (index === 0) return rows; const a = [...rows]; [a[index - 1], a[index]] = [a[index], a[index - 1]]; return a; })}
+                  onClick={() => patchActive({ bubbleFields: (() => { const a = [...activeView.bubbleFields]; [a[index - 1], a[index]] = [a[index], a[index - 1]]; return a; })() })}
                 >
                   ↑
                 </button>
@@ -1424,8 +1467,8 @@ export function ChatConversation({
                   type="button"
                   className="chat-mbact"
                   title="Move down"
-                  disabled={index === bubbleFields.length - 1}
-                  onClick={() => setBubbleFields((rows) => { if (index >= rows.length - 1) return rows; const a = [...rows]; [a[index + 1], a[index]] = [a[index], a[index + 1]]; return a; })}
+                  disabled={index === activeView.bubbleFields.length - 1}
+                  onClick={() => patchActive({ bubbleFields: (() => { const a = [...activeView.bubbleFields]; [a[index + 1], a[index]] = [a[index], a[index + 1]]; return a; })() })}
                 >
                   ↓
                 </button>
@@ -1433,7 +1476,7 @@ export function ChatConversation({
                   type="button"
                   className="chat-mbact"
                   title="Remove this field from the bubble"
-                  onClick={() => setBubbleFields((rows) => rows.filter((_, j) => j !== index))}
+                  onClick={() => patchActive({ bubbleFields: activeView.bubbleFields.filter((_, j) => j !== index) })}
                 >
                   ✕
                 </button>
@@ -1445,17 +1488,17 @@ export function ChatConversation({
               type="button"
               className="chat-label"
               title="Show another field on each bubble"
-              onClick={() => setBubbleFields((rows) => { const used = new Set(rows.map((r) => r.field)); const next = bubbleFieldChoices.find((k) => !used.has(k)) || "type"; return [...rows, { field: next, style: "text" }]; })}
+              onClick={() => { const used = new Set(activeView.bubbleFields.map((r) => r.field)); const next = bubbleFieldChoices.find((k) => !used.has(k)) || "type"; patchActive({ bubbleFields: [...activeView.bubbleFields, { field: next, style: "text" }] }); }}
             >
               ＋ Add field
             </button>
           </label>
-          {renderRules.map((r, index) => (
+          {activeView.renderRules.map((r, index) => (
             <label className="chat-control chat-mbrow" key={`render-rule-${index}`}>
               <span className="chat-label">{index === 0 ? "Render if" : "else if"}</span>
               <select
                 value={r.field}
-                onChange={(e) => setRenderRules((rows) => rows.map((x, j) => (j === index ? { ...x, field: e.target.value } : x)))}
+                onChange={(e) => patchActive({ renderRules: activeView.renderRules.map((x, j) => (j === index ? { ...x, field: e.target.value } : x)) })}
                 aria-label={`Render rule ${index + 1} field`}
               >
                 <option value="">(field)</option>
@@ -1466,13 +1509,13 @@ export function ChatConversation({
               <input
                 className="chat-rule-value"
                 value={r.value}
-                onChange={(e) => setRenderRules((rows) => rows.map((x, j) => (j === index ? { ...x, value: e.target.value } : x)))}
+                onChange={(e) => patchActive({ renderRules: activeView.renderRules.map((x, j) => (j === index ? { ...x, value: e.target.value } : x)) })}
                 placeholder="= value (blank = any)"
                 aria-label={`Render rule ${index + 1} value`}
               />
               <select
                 value={r.mode}
-                onChange={(e) => setRenderRules((rows) => rows.map((x, j) => (j === index ? { ...x, mode: e.target.value } : x)))}
+                onChange={(e) => patchActive({ renderRules: activeView.renderRules.map((x, j) => (j === index ? { ...x, mode: e.target.value } : x)) })}
                 aria-label={`Render rule ${index + 1} mode`}
               >
                 {RENDER_MODES.map(([v, lbl]) => (
@@ -1484,7 +1527,7 @@ export function ChatConversation({
                   type="button"
                   className="chat-mbact"
                   title="Remove this render rule"
-                  onClick={() => setRenderRules((rows) => rows.filter((_, j) => j !== index))}
+                  onClick={() => patchActive({ renderRules: activeView.renderRules.filter((_, j) => j !== index) })}
                 >
                   ✕
                 </button>
@@ -1496,14 +1539,14 @@ export function ChatConversation({
               type="button"
               className="chat-label"
               title="Add a rule that overrides the default rendering"
-              onClick={() => setRenderRules((rows) => [...rows, { field: "type", value: "", mode: "json" }])}
+              onClick={() => patchActive({ renderRules: [...activeView.renderRules, { field: "type", value: "", mode: "json" }] })}
             >
               ＋ Add render rule
             </button>
           </label>
           <label className="chat-control chat-mbrow">
             <span className="chat-label" title="Default body rendering (overridden by any matching rule above)">Render</span>
-            <select value={renderMode} onChange={(e) => setRenderMode(e.target.value)} aria-label="Default render mode">
+            <select value={activeView.renderMode} onChange={(e) => patchActive({ renderMode: e.target.value })} aria-label="Default render mode">
               {RENDER_MODES.map(([v, lbl]) => (
                 <option key={v} value={v}>{lbl}</option>
               ))}
@@ -1586,12 +1629,12 @@ export function ChatConversation({
           <div
             key={`${message.id}|${message.timestamp || ""}`}
             className={`chat-message ${message.from === you ? "mine" : "theirs"}${
-              placement !== "sender" ? " " + placementClass(message) : ""
+              placementClass(message) ? " " + placementClass(message) : ""
             }${entryEditKey === bubbleKey(message) ? " editing" : ""}`}
             style={messageColorStyle(message)}
           >
             <div className="chat-message-meta">
-              {bubbleFields.map((entry, i) => renderBubbleField(message, entry, `bf-${i}`))}
+              {effectiveView(message).bubbleFields.map((entry, i) => renderBubbleField(message, entry, `bf-${i}`))}
               <button
                 type="button"
                 className="chat-json-toggle"
