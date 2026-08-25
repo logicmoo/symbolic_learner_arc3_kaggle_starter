@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { MarkdownDocument } from "./MarkdownDocument";
-import { jsonDocumentToMetta, mettaDocumentToJson } from "../lib/mettaResourceCodec";
+import { jsonDocumentToMetta, mettaDocumentToJson, mettaToJsonValue } from "../lib/mettaResourceCodec";
 import "../styles/chat.css";
 
 // The workbench user identity and the agent they talk to. Both sides of this pair
@@ -388,6 +388,12 @@ export function ChatConversation({
   const [entryEditFormat, setEntryEditFormat] = useState<"json" | "metta">("json");
   const [entryEditNote, setEntryEditNote] = useState("");
   const [entryEditBusy, setEntryEditBusy] = useState(false);
+  // "Chat" vs "File" tab: the File tab shows the entire visible stream as an
+  // editable JSON/MeTTa document (a snapshot of the records currently in view).
+  const [paneTab, setPaneTab] = useState<"chat" | "file">("chat");
+  const [streamFileText, setStreamFileText] = useState("");
+  const [streamFileFormat, setStreamFileFormat] = useState<"json" | "metta">("json");
+  const [streamFileNote, setStreamFileNote] = useState("");
   // Require-match bar: the list looks EVERYWHERE in the log; each depressed
   // button ANDs its picker's value in as a required match. Only MAILBOX is
   // required by default (classic mailbox view).
@@ -1139,6 +1145,66 @@ export function ChatConversation({
     } finally {
       setEntryEditBusy(false);
     }
+  };
+
+  // ---- Stream-as-file (the "File" tab) -----------------------------------
+  const viewedStreamName = () => {
+    const streams = Array.from(new Set([mailbox, ...mergeMailboxes].filter(Boolean)));
+    return streams.length ? streams.join("+") : "stream";
+  };
+  // Rebuild the file document from the records currently in view. Each bubble's
+  // raw record is used (falling back to the message itself) so the file mirrors
+  // exactly what is on screen — works for virtual streams (e.g. server-agents) too.
+  const buildStreamFile = useCallback((format: "json" | "metta") => {
+    const records = messages.map((m) => (m.raw && typeof m.raw === "object" ? m.raw : m));
+    const json = JSON.stringify(records, null, 2);
+    setStreamFileText(format === "metta" ? jsonDocumentToMetta(json) : json);
+    setStreamFileNote(`${records.length} record${records.length === 1 ? "" : "s"} in view`);
+  }, [messages]);
+
+  const openStreamFile = () => {
+    try {
+      buildStreamFile("json");
+      setStreamFileFormat("json");
+    } catch (error) {
+      setStreamFileNote(error instanceof Error ? error.message : String(error));
+    }
+    setPaneTab("file");
+  };
+
+  const toggleStreamFileFormat = () => {
+    try {
+      if (streamFileFormat === "json") {
+        setStreamFileText(jsonDocumentToMetta(streamFileText));
+        setStreamFileFormat("metta");
+      } else {
+        setStreamFileText(JSON.stringify(mettaToJsonValue(streamFileText), null, 2));
+        setStreamFileFormat("json");
+      }
+      setStreamFileNote("");
+    } catch (error) {
+      setStreamFileNote(error instanceof Error ? error.message : String(error));
+    }
+  };
+
+  const copyStreamFile = async () => {
+    try {
+      await navigator.clipboard.writeText(streamFileText);
+      setStreamFileNote("copied to clipboard");
+    } catch {
+      setStreamFileNote("copy failed");
+    }
+  };
+
+  const downloadStreamFile = () => {
+    const extension = streamFileFormat === "metta" ? "metta" : "json";
+    const blob = new Blob([streamFileText], { type: extension === "json" ? "application/json" : "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${viewedStreamName()}.${extension}`;
+    link.click();
+    URL.revokeObjectURL(url);
   };
 
   const fetchConfig = useCallback(async () => {
@@ -1920,6 +1986,11 @@ export function ChatConversation({
           )}
         </div>
       )}
+      <div className="chat-tabs" role="tablist">
+        <button type="button" role="tab" aria-selected={paneTab === "chat"} className={`chat-tab${paneTab === "chat" ? " is-active" : ""}`} onClick={() => setPaneTab("chat")}>Chat</button>
+        <button type="button" role="tab" aria-selected={paneTab === "file"} className={`chat-tab${paneTab === "file" ? " is-active" : ""}`} onClick={() => { if (paneTab !== "file") openStreamFile(); }}>File</button>
+      </div>
+      {paneTab === "chat" && (
       <div className="chat-messages" ref={listRef} onScroll={handleScroll}>
         {ready && messages.length === 0 && (
           <div className="chat-empty">No messages match the required filters.</div>
@@ -1994,6 +2065,26 @@ export function ChatConversation({
           </div>
         ))}
       </div>
+      )}
+      {paneTab === "file" && (
+        <div className="chat-filepane">
+          <div className="chat-filepane-bar">
+            <span className="chat-filepane-name">{`${viewedStreamName()}.${streamFileFormat === "metta" ? "metta" : "json"}`}</span>
+            <button type="button" onClick={() => { try { buildStreamFile(streamFileFormat); } catch (error) { setStreamFileNote(error instanceof Error ? error.message : String(error)); } }}>Refresh from view</button>
+            <button type="button" onClick={toggleStreamFileFormat}>{streamFileFormat === "json" ? "MeTTa" : "JSON"}</button>
+            <button type="button" onClick={copyStreamFile}>Copy</button>
+            <button type="button" onClick={downloadStreamFile}>Save as..</button>
+            {streamFileNote && <span className="chat-filepane-note">{streamFileNote}</span>}
+          </div>
+          <textarea
+            className="chat-filepane-text"
+            value={streamFileText}
+            spellCheck={false}
+            onChange={(event) => setStreamFileText(event.target.value)}
+            aria-label="Visible stream as file"
+          />
+        </div>
+      )}
       {errorText && <div className="chat-error">{errorText}</div>}
       <div className="chat-composer">
         <textarea
