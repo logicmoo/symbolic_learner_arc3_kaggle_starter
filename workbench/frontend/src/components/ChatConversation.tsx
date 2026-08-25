@@ -47,6 +47,11 @@ type ViewSettings = {
   bubbleFields: { field: string; style: string }[];
   renderMode: string;
   renderRules: { field: string; value: string; mode: string }[];
+  // Where the render-rule value autocomplete pulls candidates from:
+  // "view" = distinct values in the currently loaded messages (in memory),
+  // "cache" = the global on-disk field cache merged across viewed streams,
+  // "stream" = the on-disk field cache for the edited/primary stream only.
+  valueSource: string;
 };
 const DEFAULT_VIEW: ViewSettings = {
   placement: "field",
@@ -64,6 +69,7 @@ const DEFAULT_VIEW: ViewSettings = {
   ],
   renderMode: "markdown",
   renderRules: [],
+  valueSource: "view",
 };
 // Validate a parsed object into a ViewSettings, filling gaps from the default.
 function coerceView(v: Record<string, unknown>): ViewSettings {
@@ -96,6 +102,7 @@ function coerceView(v: Record<string, unknown>): ViewSettings {
     bubbleFields: bf.length ? bf : DEFAULT_VIEW.bubbleFields,
     renderMode: str(v.renderMode, DEFAULT_VIEW.renderMode),
     renderRules: rr,
+    valueSource: str(v.valueSource, DEFAULT_VIEW.valueSource),
   };
 }
 
@@ -240,6 +247,9 @@ export function ChatConversation({
   const [agents, setAgents] = useState<AgentOption[]>([]);
   const [mailboxes, setMailboxes] = useState<MailboxOption[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  // On-disk field cache fetched per viewed stream: stream → field → candidate values.
+  // Populated lazily when a profile's value autocomplete uses "cache" or "stream".
+  const [cacheFields, setCacheFields] = useState<Record<string, Record<string, string[]>>>({});
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [input, setInput] = useState(initialInput);
   useEffect(() => {
@@ -583,6 +593,97 @@ export function ChatConversation({
       else setDefaultView((v) => ({ ...v, ...patch }));
     },
     [scope, defaultView],
+  );
+
+  // Distinct values per field seen in the currently loaded messages (in memory),
+  // capped so a noisy field can't grow unbounded. Feeds the "view" candidate source.
+  const viewValues = useMemo(() => {
+    const out = new Map<string, string[]>();
+    const seen = new Map<string, Set<string>>();
+    const consider = (k: string, v: unknown) => {
+      if (ORGANIZE_SKIP.has(k) || v === null || v === undefined || typeof v === "object") return;
+      let s = seen.get(k);
+      if (!s) {
+        s = new Set<string>();
+        seen.set(k, s);
+        out.set(k, []);
+      }
+      const sv = String(v);
+      if (!s.has(sv) && s.size < 200) {
+        s.add(sv);
+        out.get(k)!.push(sv);
+      }
+    };
+    for (const m of messages) {
+      const rec = m as unknown as Record<string, unknown>;
+      for (const k of Object.keys(rec)) consider(k, rec[k]);
+      const raw = rec.raw;
+      if (raw && typeof raw === "object") {
+        for (const [k, v] of Object.entries(raw as Record<string, unknown>)) consider(k, v);
+      }
+    }
+    return out;
+  }, [messages]);
+
+  // The stream the "stream" candidate source resolves to: the edited profile's
+  // scope when scoped, else the primary viewed mailbox.
+  const activeStream = scope || mailbox;
+
+  // Lazily load the on-disk field cache for every viewed stream whenever any active
+  // profile needs it ("cache"/"stream" source). Never blocks rendering; best-effort.
+  useEffect(() => {
+    const needsCache = [defaultView, ...Object.values(mailboxViews)].some(
+      (v) => v.valueSource === "cache" || v.valueSource === "stream",
+    );
+    if (!needsCache) return;
+    const streams = Array.from(new Set([mailbox, ...mergeMailboxes].filter(Boolean)));
+    if (!streams.length) return;
+    let cancelled = false;
+    (async () => {
+      const next: Record<string, Record<string, string[]>> = {};
+      for (const s of streams) {
+        try {
+          const payload = await readJson(
+            await fetch(`/ws_collab/v1/mailbox/field-values?mailbox=${encodeURIComponent(s)}`),
+          );
+          const fields = (payload.fields as Record<string, { values?: unknown[] }>) || {};
+          const map: Record<string, string[]> = {};
+          for (const [f, info] of Object.entries(fields)) {
+            map[f] = Array.isArray(info?.values) ? info.values.map((x) => String(x)) : [];
+          }
+          next[s] = map;
+        } catch {
+          // best-effort per stream
+        }
+      }
+      if (!cancelled) setCacheFields(next);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [defaultView, mailboxViews, mailbox, mergeMailboxes]);
+
+  // Candidate values for a field under the active profile's chosen source.
+  const valueCandidates = useCallback(
+    (field: string): string[] => {
+      if (!field) return [];
+      const src = activeView.valueSource;
+      if (src === "view") return viewValues.get(field) ?? [];
+      if (src === "stream") return cacheFields[activeStream]?.[field] ?? [];
+      // "cache": merge the field across all viewed streams' on-disk caches.
+      const seen = new Set<string>();
+      const out: string[] = [];
+      for (const map of Object.values(cacheFields)) {
+        for (const v of map[field] ?? []) {
+          if (!seen.has(v)) {
+            seen.add(v);
+            out.push(v);
+          }
+        }
+      }
+      return out;
+    },
+    [activeView.valueSource, viewValues, cacheFields, activeStream],
   );
 
   // Resolve the profile for a message: its mailbox override, else the default.
@@ -1529,6 +1630,18 @@ export function ChatConversation({
               ＋ Add field
             </button>
           </label>
+          <label className="chat-control chat-mbrow">
+            <span className="chat-label" title="Where the render-rule value suggestions come from">Value suggestions</span>
+            <select
+              value={activeView.valueSource}
+              onChange={(e) => patchActive({ valueSource: e.target.value })}
+              aria-label="Value suggestion source"
+            >
+              <option value="view">Current view (in memory)</option>
+              <option value="cache">Saved cache (all streams)</option>
+              <option value="stream">{`This stream only (${activeStream || "—"})`}</option>
+            </select>
+          </label>
           {activeView.renderRules.map((r, index) => (
             <label className="chat-control chat-mbrow" key={`render-rule-${index}`}>
               <span className="chat-label">{index === 0 ? "Render if" : "else if"}</span>
@@ -1545,10 +1658,16 @@ export function ChatConversation({
               <input
                 className="chat-rule-value"
                 value={r.value}
+                list={`chat-rvals-${index}`}
                 onChange={(e) => patchActive({ renderRules: activeView.renderRules.map((x, j) => (j === index ? { ...x, value: e.target.value } : x)) })}
                 placeholder="= value (blank = any)"
                 aria-label={`Render rule ${index + 1} value`}
               />
+              <datalist id={`chat-rvals-${index}`}>
+                {valueCandidates(r.field).map((v) => (
+                  <option key={v} value={v} />
+                ))}
+              </datalist>
               <select
                 value={r.mode}
                 onChange={(e) => patchActive({ renderRules: activeView.renderRules.map((x, j) => (j === index ? { ...x, mode: e.target.value } : x)) })}
