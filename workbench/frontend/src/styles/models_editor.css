@@ -31,3 +31,12 @@
 /* Tabs mode: visible border around the source-editor box (CodeMirror + Tree). */
 .model-editor-scroll.tabs-mode .model-visible-editor .operation-visible-editor{border:1px solid #3f6472;border-radius:5px}
 
+
+/* Stack mode: editor-like components grow to full content length; only the outer
+   .model-editor-scroll (the scroll near the border) scrolls. */
+.model-editor-scroll.stack-mode .operation-visible-editor{height:auto!important;max-height:none!important;min-height:0!important;overflow:visible!important;resize:none!important}
+.model-editor-scroll.stack-mode .operation-visible-editor>.cm-theme,.model-editor-scroll.stack-mode .operation-visible-editor .cm-editor{height:auto!important;max-height:none!important}
+.model-editor-scroll.stack-mode .operation-visible-editor .cm-scroller{overflow:visible!important;max-height:none!important}
+.model-editor-scroll.stack-mode .json-tree-browser{height:auto!important;max-height:none!important;overflow:visible!important}
+.model-editor-scroll.stack-mode .json-tree-root{flex:0 0 auto!important;height:auto!important;max-height:none!important;overflow:visible!important}
+.model-editor-scroll.stack-mode .resolved-inheritance pre,.model-editor-scroll.stack-mode .backend-inheritance-summary pre{max-height:none!important;overflow:visible!important}
