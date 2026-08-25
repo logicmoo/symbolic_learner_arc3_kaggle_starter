@@ -918,3 +918,40 @@
   font-size: 11px;
   color: var(--muted);
 }
+
+/* Custom mailbox combobox (StreamPicker) — lets each property tag carry its own
+   color, which a native <select><option> cannot do. */
+.chat-streampick { position: relative; flex: 1; min-width: 0; }
+.chat-streampick-btn {
+  display: flex; align-items: center; gap: 4px; width: 100%;
+  text-align: left; padding: 3px 6px; cursor: pointer;
+  background: var(--panel); color: var(--text);
+  border: 1px solid var(--line); border-radius: 4px;
+}
+.chat-streampick-btn:hover { border-color: var(--cyan); }
+.chat-streampick-cur { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.chat-streampick-caret { margin-left: auto; opacity: 0.6; }
+.chat-streampick-menu {
+  position: absolute; z-index: 60; top: calc(100% + 2px); left: 0; right: 0;
+  max-height: 340px; overflow: auto;
+  background: var(--panel2); border: 1px solid var(--line); border-radius: 4px;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.45);
+}
+.chat-streampick-grphdr {
+  position: sticky; top: 0; z-index: 1;
+  padding: 4px 8px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em;
+  color: var(--muted); background: var(--panel2);
+}
+.chat-streampick-opt {
+  display: flex; align-items: center; gap: 6px; width: 100%;
+  text-align: left; padding: 4px 8px; border: 0; cursor: pointer;
+  background: transparent; color: var(--text);
+}
+.chat-streampick-opt:hover { background: rgba(127, 127, 127, 0.16); }
+.chat-streampick-opt.is-sel { background: rgba(127, 127, 127, 0.24); }
+.chat-streampick-optlbl { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chat-tag {
+  flex: none; font-size: 10px; line-height: 1; padding: 2px 6px;
+  border: 1px solid currentColor; border-radius: 999px; white-space: nowrap;
+  text-transform: uppercase; letter-spacing: 0.03em;
+}

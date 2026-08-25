@@ -161,6 +161,118 @@ async function readJson(response: Response): Promise<Record<string, unknown>> {
   return payload;
 }
 
+// Each stream property renders as its own colored chip in the mailbox picker.
+const TAG_COLORS: Record<string, string> = {
+  jsonl: "#7aa2d6",
+  "json-file": "#8f8fd6",
+  merge: "#48b7a8",
+  virtual: "#c88ce0",
+  http: "#6fbf73",
+  workbench: "#e0a458",
+  "read-only": "#d98c8c",
+};
+
+type StreamTag = { text: string; color: string };
+type StreamDescription = { label: string; groupKey: string; groupLabel: string; tags: StreamTag[] };
+
+// A combobox replacement for the mailbox pickers: a native <select> can only
+// color a whole <option> one color, so to give each property tag its own color
+// we render a custom dropdown whose rows carry independently-colored chips.
+function StreamPicker({
+  value,
+  ids,
+  ariaLabel,
+  allowNone,
+  describe,
+  onChange,
+}: {
+  value: string;
+  ids: string[];
+  ariaLabel: string;
+  allowNone?: boolean;
+  describe: (id: string) => StreamDescription;
+  onChange: (value: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (event: MouseEvent) => {
+      if (ref.current && !ref.current.contains(event.target as Node)) setOpen(false);
+    };
+    const onKey = (event: globalThis.KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+  const groups = new Map<string, { label: string; ids: string[] }>();
+  for (const id of ids) {
+    const d = describe(id);
+    const g = groups.get(d.groupKey) ?? { label: d.groupLabel, ids: [] };
+    g.ids.push(id);
+    groups.set(d.groupKey, g);
+  }
+  const order = ["ws_collab", "workbench", ...[...groups.keys()].filter((k) => k !== "ws_collab" && k !== "workbench")];
+  const cur = value ? describe(value) : null;
+  const chips = (tags: StreamTag[]) =>
+    tags.map((t) => (
+      <span key={t.text} className="chat-tag" style={{ color: t.color, borderColor: t.color }}>
+        {t.text}
+      </span>
+    ));
+  return (
+    <div className="chat-streampick" ref={ref}>
+      <button
+        type="button"
+        className="chat-streampick-btn"
+        aria-label={ariaLabel}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+      >
+        <span className="chat-streampick-cur">{cur ? cur.label : "(none)"}</span>
+        {cur ? chips(cur.tags) : null}
+        <span className="chat-streampick-caret">▾</span>
+      </button>
+      {open && (
+        <div className="chat-streampick-menu" role="listbox">
+          {allowNone && (
+            <button type="button" className={`chat-streampick-opt${value ? "" : " is-sel"}`} onClick={() => { onChange(""); setOpen(false); }}>
+              <span className="chat-streampick-optlbl">(none)</span>
+            </button>
+          )}
+          {order
+            .filter((k) => groups.has(k))
+            .map((k) => (
+              <div key={k} className="chat-streampick-grp">
+                <div className="chat-streampick-grphdr">{groups.get(k)!.label}</div>
+                {groups.get(k)!.ids.map((id) => {
+                  const d = describe(id);
+                  return (
+                    <button
+                      key={id}
+                      type="button"
+                      className={`chat-streampick-opt${id === value ? " is-sel" : ""}`}
+                      onClick={() => { onChange(id); setOpen(false); }}
+                    >
+                      <span className="chat-streampick-optlbl">{d.label}</span>
+                      {chips(d.tags)}
+                    </button>
+                  );
+                })}
+              </div>
+            ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Shared chat surface used by both the full Chat page and the floatable mini-dock.
 // Four editable combos drive it: YOU/TO pick agents, MAILBOX (view) and SEND-TO
 // (send_to) pick mailboxes. YOU/TO are enumerated with first-class agents; the
@@ -1282,34 +1394,24 @@ export function ChatConversation({
   const mailboxDefs = new Map(mailboxes.map((c) => [c.id, c.definition] as const));
   const mailboxWritable = new Map(mailboxes.map((c) => [c.id, c.writable] as const));
   const originLabel = (o?: string) => (o === "workbench" ? "Workbench server" : "ws_collab");
-  // A colored property tag for a stream, shown inline in the combobox options
-  // (Chrome honors per-<option> color). Tags are additive so a single stream can
-  // read e.g. "(virtual) (json-file)" for a disk-backed virtual, or
-  // "(json-file) (workbench)" for the workbench log. Color is by primary property.
-  const streamTag = (id: string): { text: string; color: string } | null => {
+  // The property tags for a stream (each rendered as its own colored chip).
+  const streamTags = (id: string): StreamTag[] => {
     const kind = mailboxKinds.get(id);
     const source = mailboxSources.get(id);
     const def = String(mailboxDefs.get(id) || "").toLowerCase();
-    const origin = mailboxOrigins.get(id);
-    const texts: string[] = [];
+    const names: string[] = [];
     if (kind === "merge") {
-      texts.push("merge");
+      names.push("merge");
     } else if (source === "virtual") {
-      texts.push("virtual");
-      if (def.startsWith("disk:")) texts.push(def.endsWith(".jsonl") ? "jsonl" : "json-file");
-      else if (def.startsWith("http")) texts.push("http");
+      names.push("virtual");
+      if (def.startsWith("disk:")) names.push(def.endsWith(".jsonl") ? "jsonl" : "json-file");
+      else if (def.startsWith("http")) names.push("http");
     } else if (source === "jsonl") {
-      texts.push("jsonl");
+      names.push("jsonl");
     }
-    if (mailboxWritable.get(id) === false) texts.push("read-only");
-    if (origin === "workbench") texts.push("workbench");
-    if (!texts.length) return null;
-    const color =
-      origin === "workbench" ? "#e0a458"
-      : kind === "merge" ? "#48b7a8"
-      : source === "virtual" ? "#c88ce0"
-      : "#7aa2d6";
-    return { text: texts.map((t) => `(${t})`).join(" "), color };
+    if (mailboxWritable.get(id) === false) names.push("read-only");
+    if (mailboxOrigins.get(id) === "workbench") names.push("workbench");
+    return names.map((t) => ({ text: t, color: TAG_COLORS[t] || "#9aa4b2" }));
   };
   // The TO agent's explicit subscription setting on the viewed mailbox (if any).
   const targetRecord = agents.find((a) => a.id === target) as Record<string, unknown> | undefined;
@@ -1323,32 +1425,11 @@ export function ChatConversation({
     const count = mailboxCounts.get(id);
     return typeof count === "number" ? `${withGlobal} · ${count}` : withGlobal;
   };
-  // Render mailbox <option>s grouped into <optgroup>s by origin so ws_collab
-  // streams are visually separated from the workbench server's own streams.
-  // Each option carries a colored (virtual)/(merge)/(workbench) property tag.
-  const mailboxOptions = (ids: string[]) => {
-    const groups = new Map<string, string[]>();
-    for (const id of ids) {
-      const o = mailboxOrigins.get(id) || "ws_collab";
-      const list = groups.get(o) ?? [];
-      list.push(id);
-      groups.set(o, list);
-    }
-    const order = ["ws_collab", "workbench", ...[...groups.keys()].filter((k) => k !== "ws_collab" && k !== "workbench")];
-    return order
-      .filter((o) => groups.has(o))
-      .map((o) => (
-        <optgroup key={o} label={originLabel(o)}>
-          {groups.get(o)!.map((id) => {
-            const tag = streamTag(id);
-            return (
-              <option key={id} value={id} style={tag ? { color: tag.color } : undefined}>
-                {mailboxLabel(id)}{tag ? ` ${tag.text}` : ""}
-              </option>
-            );
-          })}
-        </optgroup>
-      ));
+  // Everything the StreamPicker needs to render one option: label, origin group,
+  // and the per-property colored chips.
+  const describeStream = (id: string): StreamDescription => {
+    const origin = mailboxOrigins.get(id) || "ws_collab";
+    return { label: mailboxLabel(id), groupKey: origin, groupLabel: originLabel(origin), tags: streamTags(id) };
   };
 
   return (
@@ -1373,10 +1454,7 @@ export function ChatConversation({
           </label>
           <label className="chat-control">
             <button type="button" className="chat-label" onClick={() => void inspectId("SEND-TO", sendMailbox)}>Send-to</button>
-            <select value={sendMailbox} onChange={(event) => setSendMailbox(event.target.value)} aria-label="Send mailbox">
-              <option value="">(none)</option>
-              {mailboxOptions(sendChoices)}
-            </select>
+            <StreamPicker value={sendMailbox} ids={sendChoices} ariaLabel="Send mailbox" allowNone describe={describeStream} onChange={setSendMailbox} />
           </label>
           <div className="chat-require">
             <span className="chat-require-label" title="The list looks EVERYWHERE in the log; each depressed button requires its picker's value to match (AND).">
@@ -1437,9 +1515,7 @@ export function ChatConversation({
           </div>
           <label className="chat-control chat-mbrow">
             <button type="button" className="chat-label" onClick={() => void inspectId("MAILBOX", mailbox)}>Mailbox</button>
-            <select value={mailbox} onChange={(event) => selectMailbox(event.target.value)} aria-label="Viewed mailbox">
-              {mailboxOptions(mailboxChoices)}
-            </select>
+            <StreamPicker value={mailbox} ids={mailboxChoices} ariaLabel="Viewed mailbox" describe={describeStream} onChange={selectMailbox} />
             <span className="chat-mbrow-actions">
               {target && (
                 <span className="chat-mbrow-cursor" title={`Cursor for ${target} on this mailbox`}>
@@ -1459,14 +1535,14 @@ export function ChatConversation({
           {mergeMailboxes.map((mb, index) => (
             <label className="chat-control chat-mbrow" key={`merge-row-${index}`}>
               <span className="chat-label">＋ Mailbox</span>
-              <select
+              <StreamPicker
                 value={mb}
-                onChange={(event) => setMergeMailboxes((rows) => rows.map((row, j) => (j === index ? event.target.value : row)))}
-                aria-label={`Merged mailbox ${index + 1}`}
-              >
-                <option value="">(none)</option>
-                {mailboxOptions(mailboxChoices)}
-              </select>
+                ids={mailboxChoices}
+                ariaLabel={`Merged mailbox ${index + 1}`}
+                allowNone
+                describe={describeStream}
+                onChange={(v) => setMergeMailboxes((rows) => rows.map((row, j) => (j === index ? v : row)))}
+              />
               <span className="chat-mbrow-actions">
                 <button type="button" className="chat-mbact" title="Move cursor to beginning" disabled={cursorBusy || !mb || !target} onClick={() => void moveCursor("beginning", mb)}>⏮</button>
                 <button type="button" className="chat-mbact" title="Move cursor to now" disabled={cursorBusy || !mb || !target} onClick={() => void moveCursor("now", mb)}>⏭</button>
