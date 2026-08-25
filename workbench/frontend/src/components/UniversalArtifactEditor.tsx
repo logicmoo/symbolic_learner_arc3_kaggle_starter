@@ -1,18 +1,10 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { ArtifactTreeCommandContext, type ArtifactTreeCommand } from "./ArtifactTreeBranch";
 import { RepeatSwitch, TreeViewControls } from "./TreeViewControls";
 import { DEFAULT_TREE_VISIBILITY_RULES, type TreeVisibilityRules, useArtifactTreeFilter } from "./useArtifactTreeFilter";
 import { CategorizedArtifactNodes } from "./CategorizedArtifactTree";
 import { TreePaneResizer } from "./TreePaneResizer";
-import { ResourceSourceEditor, textLanguageForFilename } from "./ResourceSourceEditor";
-import { MarkdownDocument } from "./MarkdownDocument";
-import { fetchSubControls, type SubControlDescriptor } from "../lib/subControls";
-import { SubControlBody, SubControlProvider, SuperControlDepthProvider, useSuperControlDepth } from "./subControlRegistry";
 import "../styles/operation_editor.css";
-import "../styles/super_control.css";
-
-/** The host page's own editor body, always the first tab. */
-const HOST_SUB_CONTROL = "__host__";
 
 export const UNIVERSAL_ARTIFACT_EDITOR_BASELINE = "current-rich-editor";
 
@@ -80,39 +72,6 @@ export type UniversalArtifactEditorProps = {
   lockView?: boolean;
   /** Omit the left hierarchy navigator column (for filesystem hosts that bring their own browser). */
   hideNavigator?: boolean;
-
-  /**
-   * Renderers the host supplies for enumerated sub-controls it can serve itself.
-   * Keyed by sub-control id, these take precedence over the shared registry, so
-   * a host that already holds the document (its source, dirty state, and change
-   * handler) draws that tab instead of a generic stand-in.
-   */
-  subControlRenderers?: Record<string, () => ReactNode>;
-
-  /**
-   * How the host wants this Super Control presented. The host declares the look
-   * and the Super Control's own stylesheet supplies it; a host never styles a
-   * Super Control itself.
-   */
-  appearance?: "page" | "embedded" | "bare";
-
-  /**
-   * The content the host is editing, as data rather than markup.
-   *
-   * The host supplies the text; the Super Control decides which of its
-   * sub-controls can render it and wires them up. That is why a host passes
-   * `content` instead of drawing a File, Markdown, or Resource view itself.
-   */
-  content?: SuperControlContent;
-};
-
-export type SuperControlContent = {
-  text: string;
-  onChange?: (value: string) => void;
-  /** Path or name, used for labelling and language detection. */
-  path?: string;
-  /** Read-only content still gets rendered, just not edited. */
-  readOnly?: boolean;
 };
 
 /**
@@ -160,47 +119,10 @@ export function UniversalArtifactEditor({
   initialView = "full",
   lockView = false,
   hideNavigator = false,
-  subControlRenderers = {},
-  appearance = "page",
-  content,
 }: UniversalArtifactEditorProps) {
   const activeTab = tabs.find(tab => tab.key === activeKey) || null;
   const compareTab = tabs.find(tab => tab.key === compareKey) || null;
   const [view, setView] = useState<"single" | "full">(initialView);
-  // Only the outermost Super Control draws the sub-control strip: a sub-control
-  // may itself be a Super Control page, and drawing it again would recurse.
-  const depth = useSuperControlDepth();
-  const outermost = depth === 0;
-  const [subControls, setSubControls] = useState<SubControlDescriptor[]>([]);
-  const [subControlId, setSubControlId] = useState<string>(HOST_SUB_CONTROL);
-  useEffect(() => {
-    if (!outermost) return;
-    let cancelled = false;
-    void fetchSubControls().then(list => { if (!cancelled) setSubControls(list); });
-    return () => { cancelled = true; };
-  }, [outermost]);
-  const activeSubControl = subControls.find(entry => entry.id === subControlId) || null;
-  // The host hands over content, not markup: the Super Control decides which of
-  // its sub-controls can render that text and wires them up here.
-  const contentRenderers = useMemo<Record<string, () => ReactNode>>(() => {
-    if (!content) return {} as Record<string, () => ReactNode>;
-    const change = content.readOnly || !content.onChange ? () => {} : content.onChange;
-    const label = content.path || activeTab?.label || title;
-    const source = (format?: "text") => <ResourceSourceEditor
-      value={content.text}
-      onChange={change}
-      contentReadOnly={content.readOnly}
-      showEnablement={false}
-      label={label}
-      {...(format === "text" ? { defaultFormat: "text" as const, defaultTextLang: textLanguageForFilename(label) } : {})}
-    />;
-    return {
-      file: () => source("text"),
-      resource: () => source(),
-      markdown: () => <div className="markdown-render"><MarkdownDocument content={content.text} /></div>,
-    };
-  }, [content, activeTab?.label, title]);
-  const renderers = { ...contentRenderers, ...subControlRenderers };
   const trail = breadcrumb?.length
     ? breadcrumb
     : [category || title, activeTab?.label || "Select artifact"];
@@ -241,7 +163,6 @@ export function UniversalArtifactEditor({
   return <section
     className={`resource-view operation-hierarchy-page generic-hierarchy-editor universal-artifact-editor ${className}`.trim()}
     data-editor-baseline={UNIVERSAL_ARTIFACT_EDITOR_BASELINE}
-    data-appearance={appearance}
   >
     <div className="artifact-breadcrumb" aria-label="Artifact breadcrumb">
       {trail.map((item,index)=><span key={`${item}:${index}`}><b>{item}</b>{index<trail.length-1&&<i>›</i>}</span>)}
@@ -292,29 +213,9 @@ export function UniversalArtifactEditor({
             <button className="close" onClick={()=>onClose(tab.key)}>×</button>
           </div>)}
         </div>
-        {outermost && subControls.length > 0 && <nav className="backend-aggregate-tabs sub-control-tabs" aria-label="Sub-controls" role="tablist">
-          <span className="backend-tabs-label">EDITORS</span>
-          <button role="tab" aria-selected={subControlId===HOST_SUB_CONTROL} className={subControlId===HOST_SUB_CONTROL?"active":""} onClick={()=>setSubControlId(HOST_SUB_CONTROL)}>{category || eyebrow}</button>
-          {subControls.map(entry => <button
-            key={entry.id}
-            role="tab"
-            aria-selected={subControlId===entry.id}
-            className={subControlId===entry.id?"active":""}
-            title={entry.source==="builtin"?entry.label:`${entry.label} · ${entry.source}`}
-            onClick={()=>setSubControlId(entry.id)}
-          >{entry.label}</button>)}
-        </nav>}
-        <div className={`${panesClassName} ${compareKey&&!activeSubControl?"split":"single"}`}>
-          {activeSubControl
-            ? (renderers[activeSubControl.id]
-                ? renderers[activeSubControl.id]()
-                : <SubControlProvider value={{workspaceId,activeKey,activeLabel:activeTab?.label ?? null}}>
-                    <SuperControlDepthProvider value={depth+1}><SubControlBody descriptor={activeSubControl} /></SuperControlDepthProvider>
-                  </SubControlProvider>)
-            : <>
-                {activeKey ? renderEditor(activeKey,false,"full") : (emptyEditor || <div className="studio-empty">Select a specification or variant.</div>)}
-                {compareKey ? renderEditor(compareKey,true,"full") : null}
-              </>}
+        <div className={`${panesClassName} ${compareKey?"split":"single"}`}>
+          {activeKey ? renderEditor(activeKey,false,"full") : (emptyEditor || <div className="studio-empty">Select a specification or variant.</div>)}
+          {compareKey ? renderEditor(compareKey,true,"full") : null}
         </div>
       </div>
     </div>
