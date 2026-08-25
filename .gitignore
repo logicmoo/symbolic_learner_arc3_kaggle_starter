@@ -1,6 +1,6 @@
 # Repo / Project specific
 .Git4*/
-workbench/plugins/
+
 
 # Python-generated files
 __pycache__/

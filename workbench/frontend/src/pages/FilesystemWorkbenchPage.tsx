@@ -101,6 +101,9 @@ const RepositoryDocsPage = lazy(() =>
 const PluginManagerPage = lazy(() =>
   import("../components/PluginManagerPage").then((module) => ({ default: module.PluginManagerPage })),
 );
+const PluginHostedPage = lazy(() =>
+  import("../components/PluginHostedPage").then((module) => ({ default: module.PluginHostedPage })),
+);
 const WorkspaceSettingsPanel = lazy(() =>
   import("../components/WorkspaceSettingsPanel").then((module) => ({
     default: module.WorkspaceSettingsPanel,
@@ -423,6 +426,7 @@ type View =
   | "setup"
   | "processes"
   | "plugins"
+  | "pluginPage"
   | "goals"
   | "plans"
   | "goalRuns"
@@ -467,6 +471,7 @@ const WORKBENCH_VIEWS: Set<View> = new Set([
   "setup",
   "processes",
   "plugins",
+  "pluginPage",
   "goals",
   "plans",
   "goalRuns",
@@ -1009,6 +1014,8 @@ export function FilesystemWorkbenchPage() {
   const workflowPageForView = workflowPageDefinitions.find(
     (definition) => definition.routeView === view,
   );
+  const { pluginMenu } = usePluginMenu();
+  const [pluginPage, setPluginPage] = useState<PluginMenuEntry | null>(null);
   const b1b2PageDefinitionForPlay = workflowPageDefinitions.find(
     (definition) => definition.routeView === "arc3B1B2Pipeline",
   );
@@ -2951,6 +2958,28 @@ export function FilesystemWorkbenchPage() {
                   <small>{item.label}</small>
                 </button>
               ))}
+              {pluginMenu
+                .filter((entry) => entry.group === section.group)
+                .map((entry) => (
+                  <button
+                    key={`plugin-page:${entry.pluginId}:${entry.id}`}
+                    data-plugin-page={`${entry.pluginId}:${entry.id}`}
+                    title={entry.address}
+                    disabled={!entry.available}
+                    className={`rail-icon ${
+                      view === "pluginPage" && pluginPage?.pluginId === entry.pluginId && pluginPage?.id === entry.id
+                        ? "selected"
+                        : ""
+                    }`}
+                    onClick={() => {
+                      setPluginPage(entry);
+                      setView("pluginPage");
+                    }}
+                  >
+                    <span>{entry.glyph}</span>
+                    <small>{entry.label}</small>
+                  </button>
+                ))}
             </div>
           ))}
           <div className="rail-bottom">

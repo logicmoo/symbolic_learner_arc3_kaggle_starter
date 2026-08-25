@@ -2,6 +2,9 @@
   "plugins": {
     "web_proxy": {
       "scan": "startup"
+    },
+    "ws_collab": {
+      "scan": "startup"
     }
   }
 }

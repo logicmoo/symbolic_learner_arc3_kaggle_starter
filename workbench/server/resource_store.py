@@ -70,6 +70,30 @@ class FilesystemProvider:
             self._revision += 1
             self._json_cache.pop(physical.resolve(), None)
 
+    def read_config_json(self, path: Path) -> Any:
+        """Read a plain JSON configuration file with no MeTTa mirroring.
+
+        Plugin manifests and similar application configuration are not workspace
+        resources: they must never be redirected to a ``.metta`` sibling the way
+        ``read_json`` redirects resource documents.
+        """
+        self._record("read", path)
+        return json.loads(path.read_text(encoding="utf-8-sig"))
+
+    def write_config_json(self, path: Path, document: Any) -> None:
+        """Write a plain JSON configuration file with no MeTTa mirroring."""
+        with self._cache_lock:
+            self._revision += 1
+        self._record("write", path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        # Repository text files use LF, including on Windows.
+        path.write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8", newline="\n")
+
+    def config_file_exists(self, path: Path) -> bool:
+        """Report whether a plain configuration file exists, ignoring MeTTa mirrors."""
+        self._record("metadata", path)
+        return path.is_file()
+
     @staticmethod
     def _logical_json_path(path: Path) -> Path:
         return path.with_suffix(".json") if path.suffix.lower() == ".metta" else path

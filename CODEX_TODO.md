@@ -68,6 +68,48 @@ values here.
   passed; frontend production build and `git diff --check` passed on
   2026-08-24.
 
+- [x] Give every Workbench plugin an administration/configure page. A plugin
+  now publishes `admin.json` beside `plugin.json`; the scanner reads that file
+  from disk without importing the plugin, so the Plugins page constructs the
+  configure link, desktop `ui.pages`, and the initialization readiness report
+  from the filesystem alone. The declared `path` is served by the plugin's own
+  router on the API port and mirrored beneath `/api` for the browser, exposing
+  `GET <path>`, `PUT <path>/settings`, `POST <path>/initialize`, and
+  `POST <path>/actions/{action}`. Descriptors are data, rendered natively by
+  `PluginAdminPanel`; a plugin exporting neither `create_admin_router` nor its
+  own admin route receives `plugin_admin.generic_admin_router`, so no plugin is
+  left without a configure page. Plugin initialization is declarative
+  (`init.requires`, `init.files`, `init.install`, `init.steps`) plus an optional
+  `initialize(manifest)` hook the loader calls before `create_router` and the
+  page can re-run. `web_proxy` gained a real configure page with live target
+  probing, an editable outbound allowlist, and transport settings that the
+  running proxy re-reads from `plugin.json`.
+
+  Fixed while doing this: plugin JSON was being written through the workspace
+  resource API, which redirects every `.json` path to a `.metta` sibling, so
+  configure-page edits silently produced `plugin.metta` and lost the manifest.
+  Plugin configuration now uses new `read_config_json`/`write_config_json`/
+  `config_file_exists` provider methods that never mirror to MeTTa and write LF.
+
+  Validation on 2026-08-25: `tests/test_web_proxy_plugin.py` 11 passed;
+  full suite 602 passed with only the pre-existing failures/errors unchanged
+  (temp-dir `PermissionError` collection errors, `docs/CHAT_PAGE.md` back-link,
+  `arc3_play_api.py` provider-boundary offenders, missing operation topics);
+  frontend production build and `git diff --check` passed. Live UI verified end
+  to end: configure page opened from the Plugins card, initialization checks,
+  target probe, and a save that persisted to `plugin.json` and re-rendered.
+
+- [ ] Known follow-up: the API dev server reloads only on `workbench/server`
+  Python changes, so editing a plugin entrypoint under `workbench/plugins`
+  needs an API restart. Widening `reload_dirs` conflicts with the deliberate
+  guard in `tests/test_windows_dependency_bootstrap.py`; decide the intended
+  policy before changing it.
+
+- [ ] Known follow-up: `workbench/plugins/ws_collab` holds only a specification
+  document and no `plugin.json`, so it is not a discoverable plugin and has no
+  configure page. Add a manifest and entrypoint when that work is implemented
+  rather than registering a placeholder.
+
 - [x] Re-hosted Overview inside the standard resource-page shell so it behaves
   like other pages (for example Events): normal page body container, top menu
   row placement, and persistent docs/help context on the right instead of the

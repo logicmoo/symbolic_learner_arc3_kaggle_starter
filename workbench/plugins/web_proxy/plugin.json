@@ -2,11 +2,55 @@
   "id": "web_proxy",
   "label": "Web Proxy",
   "description": "Reverse proxy for explicitly allowed local HTTP and WebSocket services.",
+  "summary": "Review proxy reachability, edit the outbound allowlist, and probe every allowed target.",
   "version": "1.0.0",
   "entrypoint": "plugin.py",
   "scan": "startup",
   "routePrefix": "/web-proxy",
+  "path": "/web-proxy/admin",
+  "docs": "ADMIN.md",
+  "kind": "custom",
   "allowedTargets": [
     "http://127.0.0.1:8801"
-  ]
+  ],
+  "mounts": [
+    {
+      "path": "/ws_collab",
+      "redirect": "http://127.0.0.1:8802/ws_collab",
+      "description": "Redirects /ws_collab to the Workspace Collab plugin.",
+      "requestedBy": "ws_collab"
+    }
+  ],
+  "requestTimeoutSeconds": 0,
+  "followRedirects": false,
+  "plugin-install": {
+    "requires": [
+      "httpx",
+      "websockets"
+    ],
+    "install": null,
+    "files": [
+      {
+        "path": "plugin.json",
+        "description": "Manifest holding the outbound allowlist, mounted redirects, and transport settings."
+      }
+    ],
+    "steps": [
+      "Install the httpx and websockets packages into the repository .venv.",
+      "List every origin this proxy may reach under Allowed targets.",
+      "Probe the targets and confirm each one answers."
+    ]
+  },
+  "ui": {
+    "pages": [
+      {
+        "id": "configure",
+        "label": "Configure Web Proxy",
+        "kind": "configure",
+        "descriptor": "/web-proxy/admin",
+        "glyph": "\u21c4",
+        "group": "PLUGINS"
+      }
+    ]
+  }
 }

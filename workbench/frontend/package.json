@@ -32,6 +32,7 @@
     "vite": "latest"
   },
   "devDependencies": {
+    "@types/node": "^26.3.0",
     "@types/react": "latest",
     "@types/react-dom": "latest"
   }
