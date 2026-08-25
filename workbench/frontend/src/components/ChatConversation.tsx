@@ -120,7 +120,7 @@ export type ChatMessage = {
   raw?: unknown;
 };
 
-export type MailboxOption = { id: string; kind?: string; source?: string; messages?: number; name?: string | null; global_name?: string | null; origin?: string };
+export type MailboxOption = { id: string; kind?: string; source?: string; definition?: string; messages?: number; name?: string | null; global_name?: string | null; origin?: string };
 
 type CursorInfo = {
   mailbox: string;
@@ -1279,17 +1279,35 @@ export function ChatConversation({
   const mailboxOrigins = new Map(mailboxes.map((c) => [c.id, c.origin] as const));
   const mailboxKinds = new Map(mailboxes.map((c) => [c.id, c.kind] as const));
   const mailboxSources = new Map(mailboxes.map((c) => [c.id, c.source] as const));
+  const mailboxDefs = new Map(mailboxes.map((c) => [c.id, c.definition] as const));
   const originLabel = (o?: string) => (o === "workbench" ? "Workbench server" : "ws_collab");
   // A colored property tag for a stream, shown inline in the combobox options
-  // (Chrome honors per-<option> color). Highlights streams whose kind/source/
-  // origin differs from a plain writable ws_collab stream.
+  // (Chrome honors per-<option> color). Tags are additive so a single stream can
+  // read e.g. "(virtual) (json-file)" for a disk-backed virtual, or
+  // "(json-file) (workbench)" for the workbench log. Color is by primary property.
   const streamTag = (id: string): { text: string; color: string } | null => {
     const kind = mailboxKinds.get(id);
     const source = mailboxSources.get(id);
-    if (kind === "merge") return { text: "merge", color: "#48b7a8" };
-    if (source === "virtual") return { text: "virtual", color: "#c88ce0" };
-    if (mailboxOrigins.get(id) === "workbench") return { text: "workbench", color: "#e0a458" };
-    return null;
+    const def = String(mailboxDefs.get(id) || "").toLowerCase();
+    const origin = mailboxOrigins.get(id);
+    const texts: string[] = [];
+    if (kind === "merge") {
+      texts.push("merge");
+    } else if (source === "virtual") {
+      texts.push("virtual");
+      if (def.startsWith("disk:")) texts.push(def.endsWith(".jsonl") ? "jsonl" : "json-file");
+      else if (def.startsWith("http")) texts.push("http");
+    } else if (source === "jsonl") {
+      texts.push("jsonl");
+    }
+    if (origin === "workbench") texts.push("workbench");
+    if (!texts.length) return null;
+    const color =
+      origin === "workbench" ? "#e0a458"
+      : kind === "merge" ? "#48b7a8"
+      : source === "virtual" ? "#c88ce0"
+      : "#7aa2d6";
+    return { text: texts.map((t) => `(${t})`).join(" "), color };
   };
   // The TO agent's explicit subscription setting on the viewed mailbox (if any).
   const targetRecord = agents.find((a) => a.id === target) as Record<string, unknown> | undefined;
@@ -1323,7 +1341,7 @@ export function ChatConversation({
             const tag = streamTag(id);
             return (
               <option key={id} value={id} style={tag ? { color: tag.color } : undefined}>
-                {mailboxLabel(id)}{tag ? ` (${tag.text})` : ""}
+                {mailboxLabel(id)}{tag ? ` ${tag.text}` : ""}
               </option>
             );
           })}
