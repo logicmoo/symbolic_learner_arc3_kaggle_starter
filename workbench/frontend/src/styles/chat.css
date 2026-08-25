@@ -157,6 +157,50 @@
   background: var(--panel2);
 }
 
+/* Mailbox rows (the primary picker + each merge row) span both columns so they
+   stack one-per-row below the YOU/TO and SEND-TO/filters rows. */
+.chat-mbrow {
+  grid-column: 1 / -1;
+}
+
+.chat-mbrow-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+
+.chat-mbrow-cursor {
+  font-size: 10px;
+  color: var(--muted, #9aa4b2);
+  white-space: nowrap;
+  text-transform: none;
+  letter-spacing: 0;
+  min-width: 34px;
+  text-align: right;
+}
+
+.chat-mbact {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 2px 6px;
+  cursor: pointer;
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+.chat-mbact:hover {
+  border-color: var(--cyan);
+  color: var(--cyan);
+}
+
+.chat-mbact:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
 .chat-control {
   display: flex;
   align-items: center;

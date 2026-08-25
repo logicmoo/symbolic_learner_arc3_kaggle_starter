@@ -314,6 +314,44 @@ export function ChatConversation({
     }
   }, [newEntry, fetchDirectory, onError]);
 
+  // "Save as stream": promote the current merge combo (primary + merge rows) into
+  // a durable server-side virtual merge mailbox that anyone can then consume.
+  const saveMerge = useCallback(async () => {
+    const seen = new Set<string>();
+    const parts: string[] = [];
+    for (const raw of [mailbox, ...mergeMailboxes]) {
+      const v = (raw || "").trim();
+      if (v && !seen.has(v)) {
+        seen.add(v);
+        parts.push(v);
+      }
+    }
+    if (parts.length < 2) {
+      setErrorText("Add at least one more mailbox before saving the merge as a stream.");
+      return;
+    }
+    const suggested = `merge-${parts[0]}`.slice(0, 60).replace(/[^A-Za-z0-9._-]/g, "-");
+    const name = (window.prompt("Save this merged view as a new virtual stream named:", suggested) || "").trim();
+    if (!name) return;
+    try {
+      await readJson(
+        await fetch("/ws_collab/v1/mailbox/create", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: name, source: `merge:${parts.join(",")}`, purpose: `merge of ${parts.join(", ")}` }),
+        }),
+      );
+      await fetchDirectory();
+      setMergeMailboxes([]);
+      setMailbox(name);
+      setTarget(name);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      setErrorText(message);
+      onError?.(message);
+    }
+  }, [mailbox, mergeMailboxes, fetchDirectory, onError]);
+
   // Messages without text default to the JSON view; the toggle flips from the effective state.
   const toggleRaw = (id: string, defaultOpen = false) =>
     setExpanded((prev) => ({ ...prev, [id]: !(prev[id] ?? defaultOpen) }));
@@ -501,21 +539,21 @@ export function ChatConversation({
   }, [fetchCursor]);
 
   const moveCursor = useCallback(
-    async (start: "beginning" | "now" | "remove") => {
-      if (!mailbox || !target) return;
+    async (start: "beginning" | "now" | "remove", mb: string = mailbox) => {
+      if (!mb || !target) return;
       setCursorBusy(true);
       try {
-        const query = `mailbox=${encodeURIComponent(mailbox)}&agent=${encodeURIComponent(target)}`;
+        const query = `mailbox=${encodeURIComponent(mb)}&agent=${encodeURIComponent(target)}`;
         const payload = await readJson(
           start === "remove"
             ? await fetch(`/ws_collab/v1/mailbox/cursor?${query}`, { method: "DELETE" })
             : await fetch("/ws_collab/v1/mailbox/cursor", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ mailbox, agent: target, start }),
+                body: JSON.stringify({ mailbox: mb, agent: target, start }),
               }),
         );
-        setCursorInfo(payload as CursorInfo);
+        if (mb === mailbox) setCursorInfo(payload as CursorInfo);
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         setErrorText(message);
@@ -688,7 +726,7 @@ export function ChatConversation({
       {showMailboxPicker && (
         <div className="chat-controls">
           <label className="chat-control">
-            <button type="button" className="chat-label" onClick={() => void inspectId("YOU", you)}>You</button>
+            <button type="button" className="chat-label" onClick={() => void inspectId("YOU", you)}>You/From</button>
             <select value={you} onChange={(event) => setYou(event.target.value)} aria-label="Your agent identity">
               {agentChoices.map((id) => (
                 <option key={id} value={id}>{id}</option>
@@ -769,16 +807,31 @@ export function ChatConversation({
               aria-label="Text expression"
             />
           </div>
-          <label className="chat-control">
+          <label className="chat-control chat-mbrow">
             <button type="button" className="chat-label" onClick={() => void inspectId("MAILBOX", mailbox)}>Mailbox</button>
             <select value={mailbox} onChange={(event) => selectMailbox(event.target.value)} aria-label="Viewed mailbox">
               {mailboxChoices.map((id) => (
                 <option key={id} value={id}>{mailboxLabel(id)}</option>
               ))}
             </select>
+            <span className="chat-mbrow-actions">
+              {target && (
+                <span className="chat-mbrow-cursor" title={`Cursor for ${target} on this mailbox`}>
+                  {cursorInfo
+                    ? cursorInfo.initialized
+                      ? `▸${cursorInfo.entry_next ?? "?"}/${cursorInfo.entries_total ?? "?"}`
+                      : "no cursor"
+                    : "…"}
+                </span>
+              )}
+              <button type="button" className="chat-mbact" title="Move cursor to beginning" disabled={cursorBusy || !target} onClick={() => void moveCursor("beginning", mailbox)}>⏮</button>
+              <button type="button" className="chat-mbact" title="Move cursor to now" disabled={cursorBusy || !target} onClick={() => void moveCursor("now", mailbox)}>⏭</button>
+              <button type="button" className="chat-mbact" title="Remove cursor" disabled={cursorBusy || !(cursorInfo && cursorInfo.initialized)} onClick={() => void moveCursor("remove", mailbox)}>⌫</button>
+              <button type="button" className="chat-mbact" title="Show this mailbox's JSON (definition, members for a merge)" disabled={!mailbox} onClick={() => void inspectId("MAILBOX", mailbox)}>{"{ }"}</button>
+            </span>
           </label>
           {mergeMailboxes.map((mb, index) => (
-            <label className="chat-control" key={`merge-row-${index}`}>
+            <label className="chat-control chat-mbrow" key={`merge-row-${index}`}>
               <span className="chat-label">＋ Mailbox</span>
               <select
                 value={mb}
@@ -790,17 +843,22 @@ export function ChatConversation({
                   <option key={id} value={id}>{mailboxLabel(id)}</option>
                 ))}
               </select>
-              <button
-                type="button"
-                className="chat-label"
-                title="Remove this mailbox from the view"
-                onClick={() => setMergeMailboxes((rows) => rows.filter((_, j) => j !== index))}
-              >
-                ✕
-              </button>
+              <span className="chat-mbrow-actions">
+                <button type="button" className="chat-mbact" title="Move cursor to beginning" disabled={cursorBusy || !mb || !target} onClick={() => void moveCursor("beginning", mb)}>⏮</button>
+                <button type="button" className="chat-mbact" title="Move cursor to now" disabled={cursorBusy || !mb || !target} onClick={() => void moveCursor("now", mb)}>⏭</button>
+                <button type="button" className="chat-mbact" title="Show this mailbox's JSON (definition, members for a merge)" disabled={!mb} onClick={() => void inspectId("MAILBOX", mb)}>{"{ }"}</button>
+                <button
+                  type="button"
+                  className="chat-mbact"
+                  title="Remove this mailbox row from the view"
+                  onClick={() => setMergeMailboxes((rows) => rows.filter((_, j) => j !== index))}
+                >
+                  ✕
+                </button>
+              </span>
             </label>
           ))}
-          <label className="chat-control">
+          <label className="chat-control chat-mbrow">
             <button
               type="button"
               className="chat-label"
@@ -820,6 +878,16 @@ export function ChatConversation({
                 <option value="sequential">one after another</option>
               </select>
             )}
+            {mergeMailboxes.some((mb) => mb.trim()) && (
+              <button
+                type="button"
+                className="chat-mbact"
+                title="Save this merged view as a new virtual stream on the server"
+                onClick={() => void saveMerge()}
+              >
+                💾 Save as stream
+              </button>
+            )}
           </label>
           <div className="chat-make">
             <input
@@ -835,31 +903,6 @@ export function ChatConversation({
               Make new mailbox
             </button>
           </div>
-          {mailbox && target && (
-            <div className="chat-cursor">
-              <span className="chat-cursor-label">
-                Cursor · {target} on {mailboxLabel(mailbox)}:{" "}
-                {cursorInfo
-                  ? cursorInfo.initialized
-                    ? `${cursorInfo.entry_next ?? "?"} next · ${cursorInfo.entries_consumed ?? 0}/${cursorInfo.entries_total ?? "?"} entries consumed · ${cursorInfo.behind} bytes behind`
-                    : `no cursor set (mailbox holds ${cursorInfo.entries_total ?? 0} entries)`
-                  : "…"}
-              </span>
-              <button type="button" disabled={cursorBusy} onClick={() => void moveCursor("beginning")}>
-                ⏮ Beginning
-              </button>
-              <button type="button" disabled={cursorBusy} onClick={() => void moveCursor("now")}>
-                Now ⏭
-              </button>
-              <button
-                type="button"
-                disabled={cursorBusy || !(cursorInfo && cursorInfo.initialized)}
-                onClick={() => void moveCursor("remove")}
-              >
-                ✕ Remove
-              </button>
-            </div>
-          )}
           {mailbox && target && (
             <div className="chat-sub">
               <span className="chat-sub-label" title="Explicit subscription intent; 'Remove setting' reverts to the default (cursor holders count as subscribed).">
