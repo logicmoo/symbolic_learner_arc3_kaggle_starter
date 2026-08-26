@@ -1,15 +1,25 @@
 # Repo / Project specific
 .Git4*/
-
+workbench/workspaces/*/policies/
 
 # Python-generated files
 __pycache__/
 .pytmp/
 *.py[oc]
 *.bak
+*.rar
+
 
 HIDE_*/
+hide_*/
 .HIDE_*/
+.hide_*/
+
+*_HIDE/
+*_hide/
+*_HIDE.*
+*_hide.*
+
 .agentbridge/
 build/
 dist/
