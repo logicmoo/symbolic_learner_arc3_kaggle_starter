@@ -23,6 +23,30 @@ type PluginInitialization = {
   ready: boolean;
   checks: { kind: string; name: string; satisfied: boolean; detail?: string }[];
 };
+type PluginInstall = {
+  requires?: string[];
+  install?: string | null;
+  files?: (string | { path: string; description?: string })[];
+  steps?: string[];
+};
+type PluginUninstall = {
+  uninstall?: string | null;
+  steps?: string[];
+};
+type PluginLifecycleHooks = Record<string, string | null>;
+type PluginLifecycle = {
+  standalone?: boolean;
+  hooks?: PluginLifecycleHooks;
+  note?: string;
+};
+type PluginApiSection = {
+  method?: string;
+  path?: string;
+  description?: string;
+  address?: string;
+} | null;
+type PluginApi = Record<string, PluginApiSection | string | undefined> & { note?: string };
+type PluginMount = { path: string; redirect: string; description?: string; requestedBy?: string };
 type Plugin = {
   id: string;
   label?: string;
@@ -30,6 +54,7 @@ type Plugin = {
   version?: string;
   routePrefix?: string;
   allowedTargets?: string[];
+  mounts?: PluginMount[];
   scan: "startup" | "disabled";
   loaded: boolean;
   path: string;
@@ -42,8 +67,25 @@ type Plugin = {
   uiPages?: PluginUiPage[];
   initCommandResults?: PluginInitCommandResult[];
   initialization?: PluginInitialization;
+  "plugin-install"?: PluginInstall;
+  "plugin-uninstall"?: PluginUninstall;
+  "plugin-lifecycle"?: PluginLifecycle;
+  "plugin-api"?: PluginApi;
+  apiSections?: Record<string, PluginApiSection>;
 };
 type PluginResponse = { plugins: Plugin[]; policyPath: string; manifestName?: string };
+/** Phases whose invocation could stop or restart a plugin's own process --
+ * never rendered as a one-click link, only as a labelled, non-clickable entry. */
+const DESTRUCTIVE_API_SECTIONS = new Set(["restart", "shutdown"]);
+/** The six lifecycle phases, each with its "your turn"/"everyone's turn is done" hook name. */
+const LIFECYCLE_PHASES = [
+  "install",
+  "uninstall",
+  "workbenchStartup",
+  "workbenchShutdown",
+  "workspaceStartup",
+  "workspaceShutdown",
+] as const;
 
 export function PluginManagerPage() {
   const [catalog, setCatalog] = useState<PluginResponse | null>(null);
@@ -86,6 +128,30 @@ export function PluginManagerPage() {
     }
   };
 
+  const [lifecycleResults, setLifecycleResults] = useState<
+    Record<string, { hook: string | null; ok: boolean; detail?: string }>
+  >({});
+  const [lifecycleBusy, setLifecycleBusy] = useState<string | null>(null);
+  const runLifecyclePhase = async (pluginId: string, phase: string) => {
+    const key = `${pluginId}:${phase}`;
+    setLifecycleBusy(key);
+    try {
+      const response = await fetch(`/api/plugins/${encodeURIComponent(pluginId)}/lifecycle/${encodeURIComponent(phase)}`, {
+        method: "POST",
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.detail || response.statusText);
+      setLifecycleResults((current) => ({ ...current, [key]: payload }));
+    } catch (reason) {
+      setLifecycleResults((current) => ({
+        ...current,
+        [key]: { hook: null, ok: false, detail: reason instanceof Error ? reason.message : String(reason) },
+      }));
+    } finally {
+      setLifecycleBusy(null);
+    }
+  };
+
   const selected = catalog?.plugins.find((plugin) => plugin.id === openPage?.pluginId);
   const manifestName = catalog?.manifestName || "plugin.json";
 
@@ -117,7 +183,10 @@ export function PluginManagerPage() {
             <header>
               <div>
                 <span>{plugin.loaded ? "LOADED" : plugin.scan.toUpperCase()}</span>
-                <h2>{plugin.label || plugin.id}</h2>
+                <h2>
+                  {plugin.label || plugin.id}
+                  {plugin.version && <small className="plugin-version"> v{plugin.version}</small>}
+                </h2>
               </div>
               <select
                 aria-label={`${plugin.label || plugin.id} scan policy`}
@@ -164,6 +233,116 @@ export function PluginManagerPage() {
                 </dd>
               </dl>
             ))}
+            {(plugin.mounts || []).map((mount) => (
+              <dl key={mount.path}>
+                <dt>Mount</dt>
+                <dd>
+                  <code>{mount.path}</code> → <code>{mount.redirect}</code>
+                  {mount.requestedBy && <small> (requested by {mount.requestedBy})</small>}
+                </dd>
+              </dl>
+            ))}
+            {plugin["plugin-install"] && (
+              <fieldset className="plugin-admin-section">
+                <legend>Setup</legend>
+                {(plugin["plugin-install"].requires || []).length > 0 && (
+                  <p>Requires: {(plugin["plugin-install"].requires || []).join(", ")}</p>
+                )}
+                {plugin["plugin-install"].install && (
+                  <pre className="plugin-admin-install">{plugin["plugin-install"].install}</pre>
+                )}
+                {(plugin["plugin-install"].steps || []).length > 0 && (
+                  <ol className="plugin-admin-steps">
+                    {(plugin["plugin-install"].steps || []).map((step, index) => (
+                      <li key={index}>{step}</li>
+                    ))}
+                  </ol>
+                )}
+              </fieldset>
+            )}
+            {plugin["plugin-uninstall"] && (
+              <fieldset className="plugin-admin-section">
+                <legend>Uninstall</legend>
+                {plugin["plugin-uninstall"].uninstall && (
+                  <pre className="plugin-admin-install">{plugin["plugin-uninstall"].uninstall}</pre>
+                )}
+                {(plugin["plugin-uninstall"].steps || []).length > 0 && (
+                  <ol className="plugin-admin-steps">
+                    {(plugin["plugin-uninstall"].steps || []).map((step, index) => (
+                      <li key={index}>{step}</li>
+                    ))}
+                  </ol>
+                )}
+              </fieldset>
+            )}
+            {plugin["plugin-lifecycle"] && (
+              <fieldset className="plugin-admin-section">
+                <legend>
+                  Lifecycle {plugin["plugin-lifecycle"].standalone ? "(standalone)" : "(embedded)"}
+                </legend>
+                <ul className="plugin-lifecycle-list">
+                  {LIFECYCLE_PHASES.flatMap((phase) => [phase, `${phase}After`]).map((phaseKey) => {
+                    const hooks = plugin["plugin-lifecycle"]?.hooks || {};
+                    if (!(phaseKey in hooks)) return null;
+                    const hookName = hooks[phaseKey];
+                    const key = `${plugin.id}:${phaseKey}`;
+                    const result = lifecycleResults[key];
+                    return (
+                      <li key={phaseKey}>
+                        <code>{phaseKey}</code>
+                        <span>{hookName ? `→ ${hookName}` : "— (stub)"}</span>
+                        <button
+                          disabled={lifecycleBusy === key}
+                          title={hookName ? `Call ${hookName} on this plugin now` : "No hook is declared for this phase"}
+                          onClick={() => void runLifecyclePhase(plugin.id, phaseKey)}
+                        >
+                          {lifecycleBusy === key ? "Running…" : "Run"}
+                        </button>
+                        {result && (
+                          <small className={result.ok ? "plugin-ready" : "plugin-incomplete"}>
+                            {result.detail || (result.ok ? "ok" : "not called")}
+                          </small>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+                {plugin["plugin-lifecycle"].note && <p>{plugin["plugin-lifecycle"].note}</p>}
+              </fieldset>
+            )}
+            {plugin.apiSections && Object.keys(plugin.apiSections).length > 0 && (
+              <fieldset className="plugin-admin-section">
+                <legend>API sections</legend>
+                <ul className="plugin-api-list">
+                  {Object.entries(plugin.apiSections).map(([name, section]) => {
+                    if (!section) {
+                      return (
+                        <li key={name}>
+                          <b>{name}</b> <small>not available</small>
+                        </li>
+                      );
+                    }
+                    const address = section.address || section.path || "";
+                    const clickable = section.method === "GET" && !DESTRUCTIVE_API_SECTIONS.has(name);
+                    return (
+                      <li key={name}>
+                        <b>{name}</b>
+                        <small>{section.method}</small>
+                        {clickable ? (
+                          <a href={address} target="_blank" rel="noreferrer">
+                            <code>{address}</code>
+                          </a>
+                        ) : (
+                          <code>{address}</code>
+                        )}
+                        {section.description && <small>{section.description}</small>}
+                      </li>
+                    );
+                  })}
+                </ul>
+                {plugin["plugin-api"]?.note && <p>{String(plugin["plugin-api"].note)}</p>}
+              </fieldset>
+            )}
             <ul className="plugin-page-links">
               {(plugin.uiPages || []).map((page) => {
                 const address = page.address || page.apiDescriptor || page.descriptor;

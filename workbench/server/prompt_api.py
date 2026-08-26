@@ -14,7 +14,7 @@ from prompt_library import (
     resolve_prompt_implementation,
     resolve_prompt_profile,
 )
-from resource_relationships import synchronize_parent_backlinks
+from resource_relationships import synchronize_implementation_backlinks
 from resource_store import get_filesystem_provider
 from workspace_api import _resolve_workspace, _safe_child, invalidate_workspace_discovery
 
@@ -81,7 +81,7 @@ def update_prompt_resource(
         if str(updated.get("id") or "") != prompt_id:
             raise ValueError("Prompt id cannot be changed by this editor")
         resources.write_json_resource(path, updated)
-        relationship_sync = synchronize_parent_backlinks(root, updated, previous, resources)
+        relationship_sync = synchronize_implementation_backlinks(root, updated, previous, resources)
         invalidate_workspace_discovery()
         return {
             "workspace": workspace,

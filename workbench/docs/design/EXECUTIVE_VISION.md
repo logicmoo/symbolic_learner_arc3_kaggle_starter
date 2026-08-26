@@ -27,7 +27,7 @@ The workbench separates concerns that are usually collapsed into one model call:
 1. A human or model writes an English semantic specification.
 2. A constrained compiler produces a typed workflow using cataloged operations.
 3. Preflight validates bindings, values, memory, branches, loops, reevaluations, and budgets.
-4. Semantic operations resolve later to Python, Prolog, LLM calls, human input, services, or newly generated implementation children.
+4. Semantic operations resolve later to Python, Prolog, LLM calls, human input, services, or newly generated implementation specializations.
 5. Runtime freezes those choices and records inputs, outputs, evidence, events, and policy decisions.
 6. Validators, Coaches, or humans can redirect execution at explicit checkpoints.
 7. Learned evidence returns to AtomSpace-backed memory without erasing its provenance.

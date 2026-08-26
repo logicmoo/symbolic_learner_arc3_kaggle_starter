@@ -13,7 +13,8 @@ from urllib.error import HTTPError
 from operation_api import invoke_operation, read_operation_debug_log
 from operation_library import DEFAULT_WORKSPACES_ROOT, load_shared_operation_documents, resolve_operation_implementation
 from operation_resolution import _prompt_composition_prefix, materialize_workflow_step
-from prompt_library import prompt_hierarchy, resolve_prompt_profile
+from prompt_library import prompt_hierarchy, resolve_prompt_implementation, resolve_prompt_profile
+from resource_relationships import implements_resource, specializes_resource
 from workflow_providers import _llm_complete, _llm_response_text, _load_python_module, _python_callable
 
 
@@ -591,18 +592,19 @@ def test_user_request_materializes_as_human_input() -> None:
     assert preview["outputs"]["form"]["value"]["prompt"] == "How many objects are visible?"
 
 
-def test_implementation_parent_link_is_sufficient_for_resolution(tmp_path: Path) -> None:
+def test_bidirectional_implementation_link_resolves(tmp_path: Path) -> None:
     directory = tmp_path / "shared_library_system" / "design" / "operations"
     directory.mkdir(parents=True)
     (directory / "echo.operation.json").write_text(json.dumps({
         "kind": "operation", "id": "shared.echo", "inputs": {"value": "Any"}, "outputs": {"value": "Any"},
+        "specializations": specializes_resource("shared.echo.prolog"),
     }), encoding="utf-8")
     implementations = tmp_path / "shared_library_system" / "design" / "operation_implementations"
     implementations.mkdir(parents=True)
     (implementations / "echo_prolog.operation_implementation.json").write_text(json.dumps({
         "kind": "operation_implementation",
         "id": "shared.echo.prolog",
-        "parents": ["shared.echo"],
+        "implements": implements_resource("shared.echo"),
         "implementation": "prolog.source",
     }), encoding="utf-8")
 
@@ -611,6 +613,80 @@ def test_implementation_parent_link_is_sufficient_for_resolution(tmp_path: Path)
     )
 
     assert resolved["implementation"]["id"] == "shared.echo.prolog"
+
+
+def test_partial_specializations_resolve_through_preferred_runnable_descendant(tmp_path: Path) -> None:
+    directory = tmp_path / "shared_library_system" / "design" / "operations"
+    directory.mkdir(parents=True)
+    (directory / "job.operation.json").write_text(json.dumps({
+        "kind": "operation",
+        "id": "job",
+        "inputs": {"value": "Text"},
+        "specializations": specializes_resource("job.partial"),
+        "preferredSpecialization": "job.partial",
+    }), encoding="utf-8")
+    (directory / "job.partial.operation.json").write_text(json.dumps({
+        "kind": "operation",
+        "id": "job.partial",
+        "implements": implements_resource("job"),
+        "specializations": specializes_resource("job.python"),
+        "preferredSpecialization": "job.python",
+        "description": "Partially implements the job but has no route.",
+    }), encoding="utf-8")
+    (directory / "job.python.operation.json").write_text(json.dumps({
+        "kind": "operation",
+        "id": "job.python",
+        "implements": implements_resource("job.partial"),
+        "implementation": "python.callable",
+    }), encoding="utf-8")
+
+    resolved = resolve_operation_implementation(
+        tmp_path / "shared_library_system",
+        "job",
+        workspaces_root=tmp_path,
+    )
+
+    assert resolved["implementation"]["id"] == "job.python"
+    assert resolved["selectedSpecialization"] == "job.partial"
+    assert resolved["resolutionPath"] == ["job", "job.partial", "job.python"]
+    assert resolved["implementation"]["inputs"] == {"value": "Text"}
+    assert resolved["implementation"]["id"] == "job.python"
+    assert "job.partial:inputs.value" in resolved["inheritanceResolution"]["borrowed"]
+
+
+def test_partial_prompt_specializations_resolve_to_concrete_text(tmp_path: Path) -> None:
+    directory = tmp_path / "shared_library_system" / "design" / "prompts"
+    directory.mkdir(parents=True)
+    (directory / "request.prompt.json").write_text(json.dumps({
+        "kind": "prompt",
+        "id": "request",
+        "inputs": {"value": "Text"},
+        "specializations": specializes_resource("request.partial"),
+        "preferredSpecialization": "request.partial",
+    }), encoding="utf-8")
+    (directory / "request.partial.prompt.json").write_text(json.dumps({
+        "kind": "prompt",
+        "id": "request.partial",
+        "implements": implements_resource("request"),
+        "specializations": specializes_resource("request.default"),
+        "preferredSpecialization": "request.default",
+    }), encoding="utf-8")
+    (directory / "request.default.prompt.json").write_text(json.dumps({
+        "kind": "prompt",
+        "id": "request.default",
+        "implements": implements_resource("request.partial"),
+        "text": ["Return {{value}}."],
+    }), encoding="utf-8")
+
+    resolved = resolve_prompt_implementation(
+        tmp_path / "shared_library_system",
+        "request",
+        workspaces_root=tmp_path,
+    )
+
+    assert resolved["implementation"]["id"] == "request.default"
+    assert resolved["implementation"]["inputs"] == {"value": "Text"}
+    assert resolved["resolutionPath"] == ["request", "request.partial", "request.default"]
 
 
 def test_operation_playground_preserves_provider_rate_limit(monkeypatch: pytest.MonkeyPatch) -> None:

@@ -3,8 +3,13 @@
   (id https.llm.c.singularitynet.io.v1-nousresearch_hermes-4-70b)
   (label nousresearch/hermes-4-70b)
   (description "Discovered from SingularityNET LLM.")
-  (parents ([]
-    https.llm.c.singularitynet.io.v1
+  (implements (
+    (https.llm.c.singularitynet.io.v1 (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
   (model nousresearch/hermes-4-70b)
   (enabled true)

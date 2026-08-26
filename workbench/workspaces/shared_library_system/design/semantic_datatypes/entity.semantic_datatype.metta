@@ -3,11 +3,40 @@
   (id entity)
   (label Entity)
   (description "A stable thing or candidate object represented independently of any concrete encoding.")
-  (children ([]
-    image_region
-    object_properties
+  (specializations (
+    (image_region (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        specializations
+        preferredSpecialization
+      ))
+    ))
+    (object_properties (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        specializations
+        preferredSpecialization
+      ))
+    ))
   ))
-  (parents ([]
-    information
+  (implements (
+    (information (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
 )

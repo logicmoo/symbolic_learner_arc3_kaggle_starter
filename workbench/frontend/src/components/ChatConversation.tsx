@@ -121,7 +121,34 @@ export type ChatMessage = {
   raw?: unknown;
 };
 
-export type MailboxOption = { id: string; kind?: string; source?: string; definition?: string; writable?: boolean; messages?: number; name?: string | null; global_name?: string | null; origin?: string };
+export type MailboxOption = {
+  [key: string]: unknown;
+  id: string;
+  kind?: string;
+  source?: string;
+  definition?: string;
+  writable?: boolean;
+  messages?: number;
+  unread?: number;
+  activityPerMinute?: number;
+  activityPerHour?: number;
+  lastActivityAt?: number | null;
+  cursorOffset?: number;
+  cursorInitialized?: boolean;
+  lastReadMessageId?: string | null;
+  nextUnreadMessageId?: string | null;
+  server?: string;
+  name?: string | null;
+  global_name?: string | null;
+  origin?: string;
+};
+
+type MailboxSortMode = "name" | "activity-minute" | "activity-hour" | "unread";
+type MailboxOpenMode = "last-read" | "end-mark-read";
+type FieldCacheConfig = {
+  defaultLimit: number | null;
+  records: Record<string, Record<string, unknown>>;
+};
 
 type CursorInfo = {
   mailbox: string;
@@ -133,6 +160,8 @@ type CursorInfo = {
   entries_consumed?: number;
   entry_next?: string;
   entries_total?: number;
+  last_read_id?: string | null;
+  next_unread_id?: string | null;
 };
 export type AgentOption = { id: string; [key: string]: unknown };
 
@@ -146,6 +175,8 @@ type Props = {
   onError?: (message: string) => void;
   initialInput?: string;
 };
+
+type AutoScrollPolicy = "always-on" | "allow-off";
 
 function formatTime(value?: string): string {
   if (!value) return "";
@@ -161,6 +192,33 @@ async function readJson(response: Response): Promise<Record<string, unknown>> {
     throw new Error(String(detail));
   }
   return payload;
+}
+
+async function requestMailboxCursor(
+  mailbox: string,
+  agent: string,
+  start?: "beginning" | "now" | "remove",
+): Promise<CursorInfo> {
+  const query = `mailbox=${encodeURIComponent(mailbox)}&agent=${encodeURIComponent(agent)}`;
+  const endpoints = ["/ws_collab/v1/mailbox/cursor", "/api/mailbox/cursor"];
+  let lastError: unknown = null;
+  for (const endpoint of endpoints) {
+    try {
+      const response = start === "remove"
+        ? await fetch(`${endpoint}?${query}`, { method: "DELETE" })
+        : start
+          ? await fetch(endpoint, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ mailbox, agent, start }),
+            })
+          : await fetch(`${endpoint}?${query}`);
+      return await readJson(response) as unknown as CursorInfo;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error("Mailbox cursor is unavailable");
 }
 
 // Each stream property renders as its own colored chip in the mailbox picker.
@@ -220,7 +278,7 @@ function StreamPicker({
     g.ids.push(id);
     groups.set(d.groupKey, g);
   }
-  const order = ["ws_collab", "workbench", ...[...groups.keys()].filter((k) => k !== "ws_collab" && k !== "workbench")];
+  const order = [...groups.keys()].sort((left, right) => left.localeCompare(right));
   const cur = value ? describe(value) : null;
   const chips = (tags: StreamTag[]) =>
     tags.map((t) => (
@@ -295,6 +353,13 @@ export function ChatConversation({
   const [mailbox, setMailbox] = useState(peer);
   const [mergeMailboxes, setMergeMailboxes] = useState<string[]>([]);
   const [mergeMode, setMergeMode] = useState<"by-timestamp" | "sequential">("by-timestamp");
+  const [mailboxSortMode, setMailboxSortMode] = useState<MailboxSortMode>("activity-hour");
+  const [mailboxGroupField, setMailboxGroupField] = useState("server");
+  const [mailboxOpenMode, setMailboxOpenMode] = useState<MailboxOpenMode>("last-read");
+  const [advanceCursorOnView, setAdvanceCursorOnView] = useState(false);
+  const [showMailboxListSettings, setShowMailboxListSettings] = useState(false);
+  const [showRequireMatchSettings, setShowRequireMatchSettings] = useState(false);
+  const [mailboxSelectionRevision, setMailboxSelectionRevision] = useState(0);
   // Display settings live in a ViewSettings profile: a fallthrough `defaultView`
   // plus optional per-mailbox overrides in `mailboxViews`. Each message renders by
   // its own mailbox's profile when present, else the default. `scope` selects which
@@ -304,6 +369,21 @@ export function ChatConversation({
   const [scope, setScope] = useState<string>("");
   // Layout & color options are tucked behind a collapsible header (collapsed by default).
   const [showDisplay, setShowDisplay] = useState(false);
+  // Auto-scroll has a workspace default and an optional setting for each stream.
+  // "Always on" deliberately wins over either value, so an operator can keep a
+  // live monitoring view pinned to the newest message.
+  const [autoScrollPolicy, setAutoScrollPolicy] = useState<AutoScrollPolicy>("allow-off");
+  const [autoScrollDefault, setAutoScrollDefault] = useState(true);
+  const [autoScrollByMailbox, setAutoScrollByMailbox] = useState<Record<string, boolean>>({});
+  // Selecting a message to inspect it (File tab) should only pause auto-scroll
+  // locally for the current view; it must never rewrite the persisted
+  // workspace default or per-stream override. This checkbox lets the operator
+  // opt out of that local pause entirely, and is itself a saved preference.
+  const [pauseAutoScrollOnSelect, setPauseAutoScrollOnSelect] = useState(true);
+  // Tracks whether the current "off" state came from selecting a node (local,
+  // non-persisted) so the UI can offer a dedicated resume action that never
+  // touches autoScrollDefault/autoScrollByMailbox.
+  const [selectionAutoScrollPaused, setSelectionAutoScrollPaused] = useState(false);
 
   // The whole view (merges, placement, colors, bubble fields, render rules, and the
   // selected mailbox) persists to localStorage per workspace and is saved the instant
@@ -333,6 +413,23 @@ export function ChatConversation({
         }
         if (typeof v.scope === "string") setScope(v.scope);
         if (v.mergeMode === "by-timestamp" || v.mergeMode === "sequential") setMergeMode(v.mergeMode);
+        if (["name", "activity-minute", "activity-hour", "unread"].includes(String(v.mailboxSortMode))) {
+          setMailboxSortMode(v.mailboxSortMode as MailboxSortMode);
+        }
+        if (typeof v.mailboxGroupField === "string" && v.mailboxGroupField) setMailboxGroupField(v.mailboxGroupField);
+        if (v.mailboxOpenMode === "last-read" || v.mailboxOpenMode === "end-mark-read") setMailboxOpenMode(v.mailboxOpenMode);
+        if (typeof v.advanceCursorOnView === "boolean") setAdvanceCursorOnView(v.advanceCursorOnView);
+        if (v.autoScrollPolicy === "always-on" || v.autoScrollPolicy === "allow-off") {
+          setAutoScrollPolicy(v.autoScrollPolicy);
+        }
+        if (typeof v.autoScrollDefault === "boolean") setAutoScrollDefault(v.autoScrollDefault);
+        if (v.autoScrollByMailbox && typeof v.autoScrollByMailbox === "object") {
+          setAutoScrollByMailbox(Object.fromEntries(
+            Object.entries(v.autoScrollByMailbox as Record<string, unknown>)
+              .filter(([, value]) => typeof value === "boolean") as [string, boolean][],
+          ));
+        }
+        if (typeof v.pauseAutoScrollOnSelect === "boolean") setPauseAutoScrollOnSelect(v.pauseAutoScrollOnSelect);
         if (typeof v.showDisplay === "boolean") setShowDisplay(v.showDisplay);
         if (Array.isArray(v.mergeMailboxes)) {
           setMergeMailboxes((v.mergeMailboxes as unknown[]).filter((x): x is string => typeof x === "string"));
@@ -352,20 +449,43 @@ export function ChatConversation({
     try {
       window.localStorage.setItem(
         viewKey,
-        JSON.stringify({ defaultView, mailboxViews, scope, mergeMode, showDisplay, mergeMailboxes, mailbox }),
+        JSON.stringify({
+          defaultView,
+          mailboxViews,
+          scope,
+          mergeMode,
+          showDisplay,
+          mergeMailboxes,
+          mailbox,
+          mailboxSortMode,
+          mailboxGroupField,
+          mailboxOpenMode,
+          advanceCursorOnView,
+          autoScrollPolicy,
+          autoScrollDefault,
+          autoScrollByMailbox,
+          pauseAutoScrollOnSelect,
+        }),
       );
     } catch {
       /* ignore storage quota errors */
     }
-  }, [viewKey, defaultView, mailboxViews, scope, mergeMode, showDisplay, mergeMailboxes, mailbox]);
+  }, [
+    viewKey, defaultView, mailboxViews, scope, mergeMode, showDisplay, mergeMailboxes, mailbox,
+    mailboxSortMode, mailboxGroupField, mailboxOpenMode, advanceCursorOnView,
+    autoScrollPolicy, autoScrollDefault, autoScrollByMailbox, pauseAutoScrollOnSelect,
+  ]);
   const [target, setTarget] = useState(peer);
   const [sendMailbox, setSendMailbox] = useState("");
   const [agents, setAgents] = useState<AgentOption[]>([]);
   const [mailboxes, setMailboxes] = useState<MailboxOption[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   // On-disk field cache fetched per viewed stream: stream → field → candidate values.
-  // Populated lazily when a profile's value autocomplete uses "cache" or "stream".
+  // Chat-bubble observations power rendering suggestions; mailbox-definition
+  // observations independently power mailbox picker sorting/grouping.
   const [cacheFields, setCacheFields] = useState<Record<string, Record<string, string[]>>>({});
+  const [mailboxDefinitionFields, setMailboxDefinitionFields] = useState<Record<string, Record<string, string[]>>>({});
+  const [fieldCacheConfig, setFieldCacheConfig] = useState<FieldCacheConfig>({ defaultLimit: null, records: {} });
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [input, setInput] = useState(initialInput);
   useEffect(() => {
@@ -394,7 +514,7 @@ export function ChatConversation({
   const [entryEditBusy, setEntryEditBusy] = useState(false);
   // "Chat" vs "File" tab: the File tab shows the entire visible stream as an
   // editable JSON/MeTTa document (a snapshot of the records currently in view).
-  const [paneTab, setPaneTab] = useState<"chat" | "file">("chat");
+  const [paneTab, setPaneTab] = useState<"chat" | "file" | "config">("chat");
   const [streamFileText, setStreamFileText] = useState("");
   const [streamFileBaseline, setStreamFileBaseline] = useState("");
   const [streamFileNote, setStreamFileNote] = useState("");
@@ -412,6 +532,13 @@ export function ChatConversation({
   const [textQuery, setTextQuery] = useState("");
   const listRef = useRef<HTMLDivElement | null>(null);
   const stickBottomRef = useRef(true);
+  const pendingMailboxNavigation = useRef<{ mailbox: string; mode: MailboxOpenMode } | null>(null);
+  const cursorAdvanceTimer = useRef<number | null>(null);
+  const markViewedRef = useRef<() => void>(() => {});
+  const personalCursor = you || user || DEFAULT_CHAT_USER;
+  const hasStreamAutoScrollSetting = Object.prototype.hasOwnProperty.call(autoScrollByMailbox, mailbox);
+  const configuredAutoScroll = autoScrollPolicy === "always-on"
+    || (hasStreamAutoScrollSetting ? autoScrollByMailbox[mailbox] : autoScrollDefault);
 
   // The config editor tracks the mailbox messages are sent on (SEND-TO mailbox if
   // set, otherwise the viewed mailbox).
@@ -420,9 +547,11 @@ export function ChatConversation({
   // Switching the viewed mailbox re-points addressing to it by default; the "To"
   // field can then be overridden to address anyone independently.
   const selectMailbox = useCallback((next: string) => {
+    pendingMailboxNavigation.current = { mailbox: next, mode: mailboxOpenMode };
     setMailbox(next);
     setTarget(next);
-  }, []);
+    setMailboxSelectionRevision((revision) => revision + 1);
+  }, [mailboxOpenMode]);
 
   // Once the directory has loaded, ensure the viewed mailbox is a real stream.
   // A fresh workspace opens on the peer identity ("symbolic-workbench-user"),
@@ -438,16 +567,106 @@ export function ChatConversation({
 
   const fetchDirectory = useCallback(async () => {
     try {
-      const [agentPayload, mailboxPayload] = await Promise.all([
+      const needActivity = mailboxSortMode === "activity-minute" || mailboxSortMode === "activity-hour";
+      const directoryParams = new URLSearchParams({ agent: personalCursor });
+      if (needActivity) directoryParams.set("include_activity", "1");
+      // Every plugin that can expose a mailbox directory is queried and merged —
+      // the ws_collab relay (the live, richer source: unread counts, activity,
+      // dynamic + virtual mailboxes) and the core /api mailbox_channels surface
+      // (legacy/other-plugin mailboxes) — so no plugin's mailboxes are dropped
+      // just because another plugin also answered.
+      const emptyMailboxes = { mailboxes: [] } as Record<string, unknown>;
+      const [agentPayload, relayMailboxPayload, apiMailboxPayload] = await Promise.all([
         readJson(await fetch("/ws_collab/v1/mailbox/agents")),
-        readJson(await fetch("/ws_collab/v1/mailbox/mailboxes")),
+        fetch(`/ws_collab/v1/mailbox/mailboxes?${directoryParams.toString()}`)
+          .then(readJson)
+          .catch(() => emptyMailboxes),
+        fetch(`/api/mailbox/mailboxes?agent=${encodeURIComponent(personalCursor)}`)
+          .then(readJson)
+          .catch(() => emptyMailboxes),
       ]);
       setAgents((agentPayload.agents as AgentOption[]) || []);
-      setMailboxes((mailboxPayload.mailboxes as MailboxOption[]) || []);
+      const combined = new Map<string, MailboxOption>();
+      // Apply the core/legacy source first, then let the ws_collab relay (the
+      // richer, live source) win on id collisions.
+      for (const option of (apiMailboxPayload.mailboxes as MailboxOption[]) || []) combined.set(option.id, option);
+      for (const option of (relayMailboxPayload.mailboxes as MailboxOption[]) || []) combined.set(option.id, option);
+      const enriched = await Promise.all([...combined.values()].map(async (option) => {
+        let next = option;
+        if (typeof next.unread !== "number") {
+          try {
+            const query = `mailbox=${encodeURIComponent(option.id)}&agent=${encodeURIComponent(personalCursor)}`;
+            const cursor = await readJson(await fetch(`/ws_collab/v1/mailbox/cursor?${query}`)) as unknown as CursorInfo;
+            next = {
+              ...next,
+              unread: cursor.behind,
+              cursorOffset: cursor.offset,
+              cursorInitialized: cursor.initialized,
+              lastReadMessageId: cursor.last_read_id,
+              nextUnreadMessageId: cursor.next_unread_id,
+            };
+          } catch {
+            // Keep directory metadata when the relay has no cursor endpoint.
+          }
+        }
+        if (needActivity && typeof next[mailboxSortMode === "activity-minute" ? "activityPerMinute" : "activityPerHour"] !== "number") {
+          try {
+            const payload = await readJson(await fetch(`/ws_collab/v1/mailbox/messages?mailbox=${encodeURIComponent(option.id)}&limit=300`));
+            const records = (payload.messages as ChatMessage[]) || [];
+            const now = Date.now();
+            const timestamps = records.map((message) => new Date(message.timestamp || "").getTime()).filter(Number.isFinite);
+            next = {
+              ...next,
+              activityPerMinute: timestamps.filter((stamp) => stamp >= now - 60_000).length,
+              activityPerHour: timestamps.filter((stamp) => stamp >= now - 3_600_000).length,
+            };
+          } catch {
+            // Activity stays unknown when the relay cannot expose the stream.
+          }
+        }
+        return next;
+      }));
+      let observedLimit: number | null = null;
+      try {
+        const payload = await readJson(
+          await fetch("/ws_collab/v1/mailbox/field-values?mailbox=*&observation=mailbox_definition"),
+        );
+        observedLimit = Number.isFinite(Number(payload.cached_limit)) ? Number(payload.cached_limit) : null;
+        const streams = (payload.streams as Record<string, { fields?: Record<string, { values?: unknown[] }> }>) || {};
+        setMailboxDefinitionFields(Object.fromEntries(Object.entries(streams).map(([stream, entry]) => [
+          stream,
+          Object.fromEntries(Object.entries(entry.fields || {}).map(([field, metadata]) => [
+            field,
+            (metadata.values || []).map(String),
+          ])),
+        ])));
+      } catch {
+        // Keep the last known mailbox-definition observation cache.
+      }
+      try {
+        const payload = await readJson(
+          await fetch("/ws_collab/v1/mailbox/messages?mailbox=field_cache_config&limit=300"),
+        );
+        const records = Object.fromEntries(((payload.messages as ChatMessage[]) || []).flatMap((message) => {
+          const raw = message.raw && typeof message.raw === "object" && !Array.isArray(message.raw)
+            ? message.raw as Record<string, unknown>
+            : null;
+          const id = String(raw?.id || message.id || "");
+          return id && raw ? [[id, raw]] : [];
+        }));
+        const configuredLimit = Number(records.default_limit?.value);
+        setFieldCacheConfig({
+          defaultLimit: Number.isFinite(configuredLimit) ? configuredLimit : observedLimit,
+          records,
+        });
+      } catch {
+        // Keep the last known on-disk cache configuration.
+      }
+      setMailboxes(enriched);
     } catch {
       // Directory is best-effort; keep whatever we already have.
     }
-  }, []);
+  }, [mailboxSortMode, personalCursor]);
 
   // Debounce the text expression so typing doesn't refetch per keystroke.
   useEffect(() => {
@@ -513,9 +732,14 @@ export function ChatConversation({
     let active = true;
     setReady(false);
     setMessages([]);
-    stickBottomRef.current = true;
-    setAutoScroll(true);
+    const openingAtEnd = (pendingMailboxNavigation.current?.mailbox === mailbox
+      ? pendingMailboxNavigation.current.mode
+      : mailboxOpenMode) === "end-mark-read";
+    const shouldAutoScroll = autoScrollPolicy === "always-on" ? true : configuredAutoScroll;
+    stickBottomRef.current = shouldAutoScroll;
+    setAutoScroll(shouldAutoScroll);
     setSelectedMessageKey(null);
+    setSelectionAutoScrollPaused(false);
     fetchMessages();
     const timer = window.setInterval(() => {
       if (active) fetchMessages();
@@ -524,7 +748,7 @@ export function ChatConversation({
       active = false;
       window.clearInterval(timer);
     };
-  }, [fetchMessages, pollMs]);
+  }, [fetchMessages, pollMs, mailbox, mailboxOpenMode, mailboxSelectionRevision, autoScrollPolicy, configuredAutoScroll]);
 
   useEffect(() => {
     const node = listRef.current;
@@ -535,13 +759,47 @@ export function ChatConversation({
     const node = listRef.current;
     if (!node) return;
     const atBottom = node.scrollHeight - node.scrollTop - node.clientHeight < 48;
-    if (!atBottom && stickBottomRef.current) {
+    if (!atBottom && stickBottomRef.current && autoScrollPolicy !== "always-on") {
       stickBottomRef.current = false;
       setAutoScroll(false);
     }
+    if (atBottom && advanceCursorOnView) markViewedRef.current();
   };
 
   const setAutoScrollEnabled = (enabled: boolean) => {
+    const next = autoScrollPolicy === "always-on" ? true : enabled;
+    if (hasStreamAutoScrollSetting) {
+      setAutoScrollByMailbox((settings) => ({ ...settings, [mailbox]: next }));
+    } else {
+      setAutoScrollDefault(next);
+    }
+    // This is the deliberate persisted-override control, so any local
+    // selection-driven pause is superseded by it.
+    setSelectionAutoScrollPaused(false);
+    stickBottomRef.current = next;
+    setAutoScroll(next);
+    if (next) {
+      const node = listRef.current;
+      if (node) node.scrollTop = node.scrollHeight;
+    }
+  };
+
+  const setUseStreamAutoScrollSetting = (useStreamSetting: boolean) => {
+    setAutoScrollByMailbox((settings) => {
+      if (useStreamSetting) return { ...settings, [mailbox]: autoScroll };
+      const next = { ...settings };
+      delete next[mailbox];
+      return next;
+    });
+  };
+
+  // Restore auto-scroll to whatever is persisted (policy/default/per-stream
+  // override) for the current mailbox. This is purely local: it never writes
+  // to autoScrollDefault or autoScrollByMailbox, so it can safely be used to
+  // undo a selection-driven pause without altering saved settings.
+  const resumeAutoScroll = () => {
+    setSelectionAutoScrollPaused(false);
+    const enabled = autoScrollPolicy === "always-on" ? true : configuredAutoScroll;
     stickBottomRef.current = enabled;
     setAutoScroll(enabled);
     if (enabled) {
@@ -549,6 +807,13 @@ export function ChatConversation({
       if (node) node.scrollTop = node.scrollHeight;
     }
   };
+
+  useEffect(() => {
+    const enabled = autoScrollPolicy === "always-on" ? true : configuredAutoScroll;
+    stickBottomRef.current = enabled;
+    setAutoScroll(enabled);
+    if (enabled && listRef.current) listRef.current.scrollTop = listRef.current.scrollHeight;
+  }, [autoScrollPolicy, configuredAutoScroll, mailbox]);
 
   const send = useCallback(async () => {
     const text = input.trim();
@@ -822,7 +1087,7 @@ export function ChatConversation({
       for (const s of streams) {
         try {
           const payload = await readJson(
-            await fetch(`/ws_collab/v1/mailbox/field-values?mailbox=${encodeURIComponent(s)}`),
+            await fetch(`/ws_collab/v1/mailbox/field-values?mailbox=${encodeURIComponent(s)}&observation=chat_bubble`),
           );
           const fields = (payload.fields as Record<string, { values?: unknown[] }>) || {};
           const map: Record<string, string[]> = {};
@@ -1230,7 +1495,20 @@ export function ChatConversation({
     const key = bubbleKey(message);
     const nextSelected = selectedMessageKey === key ? null : message;
     setSelectedMessageKey(nextSelected ? key : null);
-    setAutoScrollEnabled(false);
+    if (nextSelected) {
+      // Inspecting a message pauses scrolling locally only; it must never
+      // rewrite the persisted workspace default or per-stream override
+      // (that would silently change auto-scroll for other streams too).
+      if (pauseAutoScrollOnSelect) {
+        stickBottomRef.current = false;
+        setAutoScroll(false);
+        setSelectionAutoScrollPaused(true);
+      }
+    } else if (selectionAutoScrollPaused) {
+      // Deselecting restores whatever is persisted for this stream, without
+      // writing to it.
+      resumeAutoScroll();
+    }
     buildStreamFile(nextSelected);
   };
 
@@ -1372,21 +1650,19 @@ export function ChatConversation({
     }
   }, [configMailbox, configText]);
 
-  // Cursor control: while looking at a mailbox with "To" set to an agent, show
-  // where that agent's cursor sits on the mailbox and allow repositioning it.
+  // Cursor control always reflects the current workbench user's personal read
+  // position; TO remains independent message addressing.
   const fetchCursor = useCallback(async () => {
-    if (!mailbox || !target) {
+    if (!mailbox || !personalCursor) {
       setCursorInfo(null);
       return;
     }
     try {
-      const query = `mailbox=${encodeURIComponent(mailbox)}&agent=${encodeURIComponent(target)}`;
-      const payload = await readJson(await fetch(`/ws_collab/v1/mailbox/cursor?${query}`));
-      setCursorInfo(payload as CursorInfo);
+      setCursorInfo(await requestMailboxCursor(mailbox, personalCursor));
     } catch {
       setCursorInfo(null);
     }
-  }, [mailbox, target]);
+  }, [mailbox, personalCursor]);
 
   useEffect(() => {
     fetchCursor();
@@ -1394,20 +1670,12 @@ export function ChatConversation({
 
   const moveCursor = useCallback(
     async (start: "beginning" | "now" | "remove", mb: string = mailbox) => {
-      if (!mb || !target) return;
+      if (!mb || !personalCursor) return;
       setCursorBusy(true);
       try {
-        const query = `mailbox=${encodeURIComponent(mb)}&agent=${encodeURIComponent(target)}`;
-        const payload = await readJson(
-          start === "remove"
-            ? await fetch(`/ws_collab/v1/mailbox/cursor?${query}`, { method: "DELETE" })
-            : await fetch("/ws_collab/v1/mailbox/cursor", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ mailbox: mb, agent: target, start }),
-              }),
-        );
-        if (mb === mailbox) setCursorInfo(payload as CursorInfo);
+        const payload = await requestMailboxCursor(mb, personalCursor, start);
+        if (mb === mailbox) setCursorInfo(payload);
+        void fetchDirectory();
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         setErrorText(message);
@@ -1416,8 +1684,50 @@ export function ChatConversation({
         setCursorBusy(false);
       }
     },
-    [mailbox, target, onError],
+    [mailbox, personalCursor, onError, fetchDirectory],
   );
+
+  useEffect(() => {
+    markViewedRef.current = () => {
+      if (!advanceCursorOnView || !mailbox) return;
+      if (cursorAdvanceTimer.current !== null) window.clearTimeout(cursorAdvanceTimer.current);
+      cursorAdvanceTimer.current = window.setTimeout(() => {
+        cursorAdvanceTimer.current = null;
+        void moveCursor("now", mailbox);
+      }, 300);
+    };
+    return () => {
+      if (cursorAdvanceTimer.current !== null) window.clearTimeout(cursorAdvanceTimer.current);
+    };
+  }, [advanceCursorOnView, mailbox, moveCursor]);
+
+  useEffect(() => {
+    const pending = pendingMailboxNavigation.current;
+    const node = listRef.current;
+    if (!pending || pending.mailbox !== mailbox || !ready || paneTab !== "chat" || !node) return;
+    const option = mailboxes.find((item) => item.id === mailbox);
+    const cursorKnown = typeof option?.unread === "number" || cursorInfo?.mailbox === mailbox;
+    if (pending.mode === "last-read" && !cursorKnown) return;
+    window.requestAnimationFrame(() => {
+      if (pending.mode === "end-mark-read") {
+        node.scrollTop = node.scrollHeight;
+        stickBottomRef.current = true;
+        setAutoScroll(true);
+        void moveCursor("now", mailbox);
+      } else {
+        const lastReadId = option?.lastReadMessageId || cursorInfo?.last_read_id;
+        const messageNode = lastReadId
+          ? [...node.querySelectorAll<HTMLElement>("[data-message-id]")].find((item) => item.dataset.messageId === lastReadId)
+          : null;
+        if (messageNode) messageNode.scrollIntoView({ block: "center" });
+        else if ((option?.unread ?? cursorInfo?.behind ?? 0) === 0) node.scrollTop = node.scrollHeight;
+        else node.scrollTop = 0;
+        stickBottomRef.current = false;
+        setAutoScroll(false);
+      }
+      pendingMailboxNavigation.current = null;
+    });
+  }, [cursorInfo, mailbox, mailboxes, messages, moveCursor, paneTab, ready]);
 
   // Subscription control: set/clear the explicit subscribed|unsubscribed intent
   // for the TO agent on the viewed mailbox ("remove" reverts to the default
@@ -1549,18 +1859,18 @@ export function ChatConversation({
     };
   }, [cursorInfo, inspect, loadEntity]);
 
-  // Combo boxes list alphabetically (case-insensitive); dedup keeps the
-  // currently-selected values present even when the directory lags.
+  // Dedup keeps currently-selected values present while the directory lags.
+  // Mailboxes then use the arrangement selected in the collapsible Chat control.
   const alpha = (a: string, b: string) => a.toLowerCase().localeCompare(b.toLowerCase());
   const agentChoices = Array.from(new Set([you, target, ...agents.map((a) => a.id)].filter(Boolean))).sort(alpha);
-  const mailboxChoices = Array.from(new Set([mailbox, ...mailboxes.map((c) => c.id)].filter(Boolean))).sort(alpha);
-  const sendChoices = Array.from(new Set([sendMailbox, ...mailboxes.map((c) => c.id)].filter(Boolean))).sort(alpha);
 
   // Mailbox options carry a readable name resolved from the identifier directory
-  // (bootstrapped onto server_identifiers_registry), so opaque bridge ids get
-  // annotated, and show how many entries recent traffic holds for each mailbox.
+  // and live personal-cursor/activity metadata.
   const mailboxNames = new Map(mailboxes.map((c) => [c.id, c.name] as const));
-  const mailboxCounts = new Map(mailboxes.map((c) => [c.id, c.messages] as const));
+  const mailboxUnread = new Map(mailboxes.map((c) => [c.id, c.unread] as const));
+  const mailboxActivityMinute = new Map(mailboxes.map((c) => [c.id, c.activityPerMinute] as const));
+  const mailboxActivityHour = new Map(mailboxes.map((c) => [c.id, c.activityPerHour] as const));
+  const mailboxServers = new Map(mailboxes.map((c) => [c.id, c.server] as const));
   const mailboxGlobals = new Map(mailboxes.map((c) => [c.id, c.global_name] as const));
   const mailboxOrigins = new Map(mailboxes.map((c) => [c.id, c.origin] as const));
   const mailboxKinds = new Map(mailboxes.map((c) => [c.id, c.kind] as const));
@@ -1568,6 +1878,48 @@ export function ChatConversation({
   const mailboxDefs = new Map(mailboxes.map((c) => [c.id, c.definition] as const));
   const mailboxWritable = new Map(mailboxes.map((c) => [c.id, c.writable] as const));
   const originLabel = (o?: string) => (o === "workbench" ? "Workbench server" : "ws_collab");
+  const mailboxName = (id: string) => String(mailboxNames.get(id) || id);
+  const mailboxById = new Map(mailboxes.map((option) => [option.id, option] as const));
+  const cachedGroupFields = [...new Set(Object.values(mailboxDefinitionFields).flatMap((fields) => Object.keys(fields)))];
+  const cachedBubbleFields = [...new Set(Object.values(cacheFields).flatMap((fields) => Object.keys(fields)))];
+  const configuredGroupFields = [...new Set(Object.values(fieldCacheConfig.records).flatMap((record) => {
+    const value = record.value && typeof record.value === "object" && !Array.isArray(record.value)
+      ? record.value as Record<string, unknown>
+      : record;
+    const observation = value.mailbox_definition && typeof value.mailbox_definition === "object" && !Array.isArray(value.mailbox_definition)
+      ? value.mailbox_definition as Record<string, unknown>
+      : value;
+    const fields = observation.fields && typeof observation.fields === "object" && !Array.isArray(observation.fields)
+      ? Object.keys(observation.fields as Record<string, unknown>)
+      : [];
+    const named = String(observation.field || observation.name || "").trim();
+    return [...fields, ...(named ? [named] : [])];
+  }))];
+  const groupFieldOptions = [
+    "server",
+    mailboxGroupField,
+    ...[...new Set(mailboxes.flatMap((option) => Object.entries(option)
+      .filter(([key, value]) => key !== "id" && value !== null && ["string", "number", "boolean"].includes(typeof value))
+      .map(([key]) => key)))].filter((key) => key !== "server").sort(alpha),
+    ...cachedGroupFields.sort(alpha),
+    ...configuredGroupFields.sort(alpha),
+    "none",
+  ].filter((field, index, values) => values.indexOf(field) === index);
+  const fieldLabel = (field: string) => field === "none"
+    ? "None"
+    : field.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/[_-]+/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+  const mailboxMetric = (id: string) => mailboxSortMode === "activity-minute"
+    ? mailboxActivityMinute.get(id) || 0
+    : mailboxSortMode === "activity-hour"
+      ? mailboxActivityHour.get(id) || 0
+      : mailboxSortMode === "unread"
+        ? mailboxUnread.get(id) || 0
+        : 0;
+  const compareMailboxes = (left: string, right: string) => mailboxSortMode === "name"
+    ? alpha(mailboxName(left), mailboxName(right)) || alpha(left, right)
+    : mailboxMetric(right) - mailboxMetric(left) || alpha(mailboxName(left), mailboxName(right)) || alpha(left, right);
+  const mailboxChoices = Array.from(new Set([mailbox, ...mailboxes.map((c) => c.id)].filter(Boolean))).sort(compareMailboxes);
+  const sendChoices = Array.from(new Set([sendMailbox, ...mailboxes.map((c) => c.id)].filter(Boolean))).sort(compareMailboxes);
   // The property tags for a stream (each rendered as its own colored chip).
   const streamTags = (id: string): StreamTag[] => {
     const kind = mailboxKinds.get(id);
@@ -1589,7 +1941,14 @@ export function ChatConversation({
     }
     if (mailboxWritable.get(id) === false) names.push("read-only");
     if (mailboxOrigins.get(id) === "workbench") names.push("workbench");
-    return names.map((t) => ({ text: t, color: TAG_COLORS[t] || "#9aa4b2" }));
+    const tags = names.map((t) => ({ text: t, color: TAG_COLORS[t] || "#9aa4b2" }));
+    const unread = mailboxUnread.get(id);
+    const perMinute = mailboxActivityMinute.get(id);
+    const perHour = mailboxActivityHour.get(id);
+    if (typeof unread === "number" && unread > 0) tags.push({ text: `${unread} unread`, color: "#e0a458" });
+    if (typeof perMinute === "number" && perMinute > 0) tags.push({ text: `${perMinute}/min`, color: "#48b7a8" });
+    else if (typeof perHour === "number" && perHour > 0) tags.push({ text: `${perHour}/hr`, color: "#7aa2d6" });
+    return tags;
   };
   // The TO agent's explicit subscription setting on the viewed mailbox (if any).
   const targetRecord = agents.find((a) => a.id === target) as Record<string, unknown> | undefined;
@@ -1600,21 +1959,91 @@ export function ChatConversation({
     const base = name && name !== id ? `${name} · ${id}` : id;
     const globalName = mailboxGlobals.get(id);
     const withGlobal = globalName && globalName !== id ? `${base} · ${globalName}` : base;
-    const count = mailboxCounts.get(id);
-    return typeof count === "number" ? `${withGlobal} · ${count}` : withGlobal;
+    const unread = mailboxUnread.get(id);
+    return typeof unread === "number" ? `${withGlobal} · ${unread}` : withGlobal;
   };
   // Everything the StreamPicker needs to render one option: label, origin group,
   // and the per-property colored chips.
   const describeStream = (id: string): StreamDescription => {
     const origin = mailboxOrigins.get(id) || "ws_collab";
-    return { label: mailboxLabel(id), groupKey: origin, groupLabel: originLabel(origin), tags: streamTags(id) };
+    const option = mailboxById.get(id);
+    const cachedValues = mailboxDefinitionFields[id]?.[mailboxGroupField] || [];
+    const rawGroupValue = mailboxGroupField === "server"
+      ? mailboxServers.get(id) || originLabel(origin)
+      : mailboxGroupField === "origin"
+        ? originLabel(origin)
+        : option?.[mailboxGroupField] ?? (cachedValues.length ? cachedValues.join(" · ") : undefined);
+    const groupValue = mailboxGroupField === "none" ? "All streams" : String(rawGroupValue ?? "(none)");
+    return {
+      label: mailboxLabel(id),
+      groupKey: mailboxGroupField === "none" ? "all" : `${mailboxGroupField}:${groupValue}`,
+      groupLabel: groupValue,
+      tags: streamTags(id),
+    };
   };
 
   return (
     <div className={`chat-conversation ${className ?? ""}`.trim()}>
       {showMailboxPicker && (
-        <div className="chat-controls">
-          <label className="chat-control">
+        <div className={`chat-controls${showRequireMatchSettings ? "" : " is-match-collapsed"}`}>
+          <div className="chat-require-summary">
+            <button
+              type="button"
+              className="chat-require-summary-toggle"
+              aria-expanded={showRequireMatchSettings}
+              onClick={() => setShowRequireMatchSettings((open) => !open)}
+            >
+              {showRequireMatchSettings ? "▾" : "▸"} Require match
+            </button>
+            <button type="button" className={`chat-require-btn${requireFrom ? " active" : ""}`} aria-pressed={requireFrom} onClick={() => setRequireFrom((value) => !value)}>FROM</button>
+            <button type="button" className={`chat-require-btn${requireTo ? " active" : ""}`} aria-pressed={requireTo} onClick={() => setRequireTo((value) => !value)}>TO</button>
+            <button type="button" className={`chat-require-btn${requireMailbox ? " active" : ""}`} aria-pressed={requireMailbox} onClick={() => setRequireMailbox((value) => !value)}>MAILBOX</button>
+            <button type="button" className={`chat-require-btn${requireSendTo ? " active" : ""}`} aria-pressed={requireSendTo} onClick={() => setRequireSendTo((value) => !value)}>SEND-TO</button>
+            <button type="button" className={`chat-require-btn${requireText ? " active" : ""}`} aria-pressed={requireText} onClick={() => setRequireText((value) => !value)}>TEXT</button>
+            <input className="chat-require-input" value={textExpr} onChange={(event) => setTextExpr(event.target.value)} placeholder="text expression — substring or /regex/" aria-label="Text expression" />
+          </div>
+          <div className="chat-tabs chat-control--tabs" role="tablist">
+            <button type="button" role="tab" aria-selected={paneTab === "chat"} className={`chat-tab${paneTab === "chat" ? " is-active" : ""}`} onClick={() => setPaneTab("chat")}>Chat</button>
+            <button type="button" role="tab" aria-selected={paneTab === "file"} className={`chat-tab${paneTab === "file" ? " is-active" : ""}`} onClick={() => { if (paneTab !== "file") openStreamFile(); }}>File</button>
+            <button type="button" role="tab" aria-selected={paneTab === "config"} className={`chat-tab${paneTab === "config" ? " is-active" : ""}`} onClick={() => setPaneTab("config")}>Config</button>
+            <label className="chat-autoscroll-stream-setting" title="Use an auto-scroll setting for this stream instead of the workspace default">
+              <input
+                type="checkbox"
+                checked={hasStreamAutoScrollSetting}
+                onChange={(event) => setUseStreamAutoScrollSetting(event.target.checked)}
+              />
+              <span>{`Use ${mailboxLabel(mailbox)} Setting`}</span>
+            </label>
+            <label className="chat-autoscroll-policy">
+              <span>Auto-scroll policy</span>
+              <select value={autoScrollPolicy} onChange={(event) => setAutoScrollPolicy(event.target.value as AutoScrollPolicy)} aria-label="Auto-scroll policy">
+                <option value="always-on">Always on</option>
+                <option value="allow-off">Allow off</option>
+              </select>
+            </label>
+            <button type="button" className={`chat-autoscroll${autoScroll ? " active" : ""}`} aria-pressed={autoScroll} disabled={autoScrollPolicy === "always-on"} onClick={() => setAutoScrollEnabled(!autoScroll)}>
+              Auto-scroll · {autoScroll ? "On" : "Off"}
+            </button>
+            <label className="chat-autoscroll-pause-on-select" title="Pause auto-scroll locally while a message is selected, without changing the saved auto-scroll setting for any stream">
+              <input
+                type="checkbox"
+                checked={pauseAutoScrollOnSelect}
+                onChange={(event) => setPauseAutoScrollOnSelect(event.target.checked)}
+              />
+              <span>Pause on select</span>
+            </label>
+            {selectedStreamMessage && (
+              <span className="chat-selected-node">
+                Source · {selectedStreamMessage.id}
+                {selectionAutoScrollPaused && (
+                  <button type="button" className="chat-resume-autoscroll" onClick={resumeAutoScroll} title="Resume auto-scroll for this stream without changing any saved setting">
+                    Resume auto-scroll
+                  </button>
+                )}
+              </span>
+            )}
+          </div>
+          <label className="chat-control chat-address-from-to chat-match-detail">
             <button type="button" className="chat-label" onClick={() => void inspectId("FROM", you)}>From</button>
             <select value={you} onChange={(event) => {const value=event.target.value;setYou(value);if(!value)setRequireFrom(false)}} aria-label="From agent identity">
               <option value="">(none/null)</option>
@@ -1623,7 +2052,7 @@ export function ChatConversation({
               ))}
             </select>
           </label>
-          <label className="chat-control">
+          <label className="chat-control chat-address-from-to chat-match-detail">
             <button type="button" className="chat-label" onClick={() => void inspectId("TO", target)}>To</button>
             <select value={target} onChange={(event) => {const value=event.target.value;setTarget(value);if(!value)setRequireTo(false)}} aria-label="To agent identity">
               <option value="">(none/null)</option>
@@ -1632,73 +2061,16 @@ export function ChatConversation({
               ))}
             </select>
           </label>
-          <label className="chat-control">
+          <label className="chat-control chat-address-send chat-match-detail">
             <button type="button" className="chat-label" onClick={() => void inspectId("SEND-TO", sendMailbox)}>Send-to</button>
             <StreamPicker value={sendMailbox} ids={sendChoices} ariaLabel="Send mailbox" allowNone describe={describeStream} onChange={setSendMailbox} />
           </label>
-          <div className="chat-require">
-            <span className="chat-require-label" title="The list looks EVERYWHERE in the log; each depressed button requires its picker's value to match (AND).">
-              Require match
-            </span>
-            <button
-              type="button"
-              className={`chat-require-btn${requireTo ? " active" : ""}`}
-              aria-pressed={requireTo}
-              title="Require record.to to equal the TO picker"
-              onClick={() => setRequireTo((v) => !v)}
-            >
-              TO
-            </button>
-            <button
-              type="button"
-              className={`chat-require-btn${requireFrom ? " active" : ""}`}
-              aria-pressed={requireFrom}
-              title="Require record.from to equal the FROM picker"
-              onClick={() => setRequireFrom((v) => !v)}
-            >
-              FROM
-            </button>
-            <button
-              type="button"
-              className={`chat-require-btn${requireMailbox ? " active" : ""}`}
-              aria-pressed={requireMailbox}
-              title="Require the record to involve the MAILBOX picker (from, to or send_to)"
-              onClick={() => setRequireMailbox((v) => !v)}
-            >
-              MAILBOX
-            </button>
-            <button
-              type="button"
-              className={`chat-require-btn${requireSendTo ? " active" : ""}`}
-              aria-pressed={requireSendTo}
-              title="Require record.send_to to equal the SEND-TO picker"
-              onClick={() => setRequireSendTo((v) => !v)}
-            >
-              SEND-TO
-            </button>
-            <button
-              type="button"
-              className={`chat-require-btn${requireText ? " active" : ""}`}
-              aria-pressed={requireText}
-              title="Require the text expression below to match (substring, or /regex/)"
-              onClick={() => setRequireText((v) => !v)}
-            >
-              TEXT
-            </button>
-            <input
-              className="chat-require-input"
-              value={textExpr}
-              onChange={(event) => setTextExpr(event.target.value)}
-              placeholder="text expression — substring or /regex/"
-              aria-label="Text expression"
-            />
-          </div>
-          <label className="chat-control chat-mbrow">
+          <label className="chat-control chat-mbrow chat-mailbox-primary">
             <button type="button" className="chat-label" onClick={() => void inspectId("MAILBOX", mailbox)}>Mailbox</button>
             <StreamPicker value={mailbox} ids={mailboxChoices} ariaLabel="Viewed mailbox" describe={describeStream} onChange={selectMailbox} />
             <span className="chat-mbrow-actions">
-              {target && (
-                <span className="chat-mbrow-cursor" title={`Cursor for ${target} on this mailbox`}>
+              {personalCursor && (
+                <span className="chat-mbrow-cursor" title={`Personal cursor for ${personalCursor} on this mailbox`}>
                   {cursorInfo
                     ? cursorInfo.initialized
                       ? `▸${cursorInfo.entry_next ?? "?"}/${cursorInfo.entries_total ?? "?"}`
@@ -1706,14 +2078,52 @@ export function ChatConversation({
                     : "…"}
                 </span>
               )}
-              <button type="button" className="chat-mbact" title="Move cursor to beginning" disabled={cursorBusy || !target} onClick={() => void moveCursor("beginning", mailbox)}>⏮</button>
-              <button type="button" className="chat-mbact" title="Move cursor to now" disabled={cursorBusy || !target} onClick={() => void moveCursor("now", mailbox)}>⏭</button>
+              <button type="button" className="chat-mbact" title="Move personal cursor to beginning" disabled={cursorBusy || !personalCursor} onClick={() => void moveCursor("beginning", mailbox)}>⏮</button>
+              <button type="button" className="chat-mbact" title="Move personal cursor to now" disabled={cursorBusy || !personalCursor} onClick={() => void moveCursor("now", mailbox)}>⏭</button>
               <button type="button" className="chat-mbact" title="Remove cursor" disabled={cursorBusy || !(cursorInfo && cursorInfo.initialized)} onClick={() => void moveCursor("remove", mailbox)}>⌫</button>
+              <button type="button" className={`chat-mbact${showMailboxListSettings ? " active" : ""}`} aria-expanded={showMailboxListSettings} title="Arrange mailbox list" onClick={() => setShowMailboxListSettings((value) => !value)}>☷</button>
               <button type="button" className="chat-mbact" title="Show this mailbox's JSON (definition, members for a merge)" disabled={!mailbox} onClick={() => void inspectId("MAILBOX", mailbox)}>{"{ }"}</button>
             </span>
           </label>
+          {showMailboxListSettings && (
+            <section className="chat-mailbox-arranger chat-stream-configuration chat-match-detail" aria-label="Mailbox list arrangement">
+              <header>
+                <b>Mailbox list</b>
+                <span>Numbers are messages past {personalCursor}'s cursor.</span>
+                <small>
+                  Field cache · mailbox definitions {cachedGroupFields.length} · chat bubbles {cachedBubbleFields.length} · limit {fieldCacheConfig.defaultLimit ?? "?"} · {Object.keys(fieldCacheConfig.records).length} config records
+                </small>
+              </header>
+              <label>
+                <span>Sort</span>
+                <select value={mailboxSortMode} onChange={(event) => setMailboxSortMode(event.target.value as MailboxSortMode)}>
+                  <option value="name">Name</option>
+                  <option value="activity-minute">Activity · per minute</option>
+                  <option value="activity-hour">Activity · per hour</option>
+                  <option value="unread">Unread messages</option>
+                </select>
+              </label>
+              <label>
+                <span>Group by</span>
+                <select value={mailboxGroupField} onChange={(event) => setMailboxGroupField(event.target.value)}>
+                  {groupFieldOptions.map((field) => <option key={field} value={field}>{fieldLabel(field)}</option>)}
+                </select>
+              </label>
+              <label>
+                <span>When selected</span>
+                <select value={mailboxOpenMode} onChange={(event) => setMailboxOpenMode(event.target.value as MailboxOpenMode)}>
+                  <option value="last-read">Resume at last read</option>
+                  <option value="end-mark-read">Go to end and mark read</option>
+                </select>
+              </label>
+              <label className="chat-mailbox-arranger-check">
+                <input type="checkbox" checked={advanceCursorOnView} onChange={(event) => setAdvanceCursorOnView(event.target.checked)} />
+                <span>Advance cursor when the end is viewed</span>
+              </label>
+            </section>
+          )}
           {mergeMailboxes.map((mb, index) => (
-            <label className="chat-control chat-mbrow" key={`merge-row-${index}`}>
+            <label className="chat-control chat-mbrow chat-mailbox-merged" key={`merge-row-${index}`}>
               <span className="chat-label">＋ Mailbox</span>
               <StreamPicker
                 value={mb}
@@ -1724,8 +2134,8 @@ export function ChatConversation({
                 onChange={(v) => setMergeMailboxes((rows) => rows.map((row, j) => (j === index ? v : row)))}
               />
               <span className="chat-mbrow-actions">
-                <button type="button" className="chat-mbact" title="Move cursor to beginning" disabled={cursorBusy || !mb || !target} onClick={() => void moveCursor("beginning", mb)}>⏮</button>
-                <button type="button" className="chat-mbact" title="Move cursor to now" disabled={cursorBusy || !mb || !target} onClick={() => void moveCursor("now", mb)}>⏭</button>
+                <button type="button" className="chat-mbact" title="Move personal cursor to beginning" disabled={cursorBusy || !mb || !personalCursor} onClick={() => void moveCursor("beginning", mb)}>⏮</button>
+                <button type="button" className="chat-mbact" title="Move personal cursor to now" disabled={cursorBusy || !mb || !personalCursor} onClick={() => void moveCursor("now", mb)}>⏭</button>
                 <button type="button" className="chat-mbact" title="Show this mailbox's JSON (definition, members for a merge)" disabled={!mb} onClick={() => void inspectId("MAILBOX", mb)}>{"{ }"}</button>
                 <button
                   type="button"
@@ -1738,7 +2148,7 @@ export function ChatConversation({
               </span>
             </label>
           ))}
-          <label className="chat-control chat-mbrow">
+          <label className="chat-control chat-mbrow chat-mailbox-add">
             <button
               type="button"
               className="chat-label"
@@ -1777,14 +2187,14 @@ export function ChatConversation({
               </button>
             )}
           </label>
-          <label className="chat-control chat-mbrow">
+          <label className="chat-control chat-mbrow chat-stream-configuration chat-match-detail">
             <button
               type="button"
               className="chat-label"
               title="Show or hide message layout and color options"
               onClick={() => setShowDisplay((v) => !v)}
             >
-              {showDisplay ? "▾ Layout & color" : "▸ Layout & color"}
+              {showDisplay ? "▾" : "▸"} {`Stream configuration panel for ${mailboxLabel(mailbox)}`}
             </button>
             <select
               className="chat-scope"
@@ -1810,7 +2220,7 @@ export function ChatConversation({
             )}
           </label>
           {showDisplay && (
-            <>
+            <div className="chat-display-settings chat-match-detail">
           <label className="chat-control chat-mbrow">
             <span className="chat-label" title="Where to place message bubbles">Place</span>
             <select
@@ -2039,9 +2449,9 @@ export function ChatConversation({
               ))}
             </select>
           </label>
-            </>
+            </div>
           )}
-          <div className="chat-make">
+          <div className="chat-make chat-match-detail">
             <input
               value={newEntry}
               onChange={(event) => setNewEntry(event.target.value)}
@@ -2056,7 +2466,7 @@ export function ChatConversation({
             </button>
           </div>
           {mailbox && target && (
-            <div className="chat-sub">
+            <div className="chat-sub chat-match-detail">
               <span className="chat-sub-label" title="Explicit subscription intent; 'Remove setting' reverts to the default (cursor holders count as subscribed).">
                 Subscription · {target} on {mailboxLabel(mailbox)}:{" "}
                 {subSetting ?? (cursorInfo && cursorInfo.initialized ? "(default: subscribed via cursor)" : "(no setting)")}
@@ -2083,7 +2493,7 @@ export function ChatConversation({
             </div>
           )}
           {inspect && (
-            <div className="chat-inspect">
+            <div className="chat-inspect chat-match-detail">
               <div className="chat-inspect-head">
                 <span>{inspect.label} · {inspect.id}</span>
                 {inspectNote && <span className="chat-inspect-note">{inspectNote}</span>}
@@ -2106,14 +2516,16 @@ export function ChatConversation({
               />
             </div>
           )}
+          <div className="chat-controls-divider" aria-hidden="true" />
         </div>
       )}
-      <div className="chat-tabs" role="tablist">
-        <button type="button" role="tab" aria-selected={paneTab === "chat"} className={`chat-tab${paneTab === "chat" ? " is-active" : ""}`} onClick={() => setPaneTab("chat")}>Chat</button>
-        <button type="button" role="tab" aria-selected={paneTab === "file"} className={`chat-tab${paneTab === "file" ? " is-active" : ""}`} onClick={() => { if (paneTab !== "file") openStreamFile(); }}>File</button>
-        <button type="button" className={`chat-autoscroll${autoScroll ? " active" : ""}`} aria-pressed={autoScroll} onClick={() => setAutoScrollEnabled(!autoScroll)}>Auto-scroll · {autoScroll ? "On" : "Off"}</button>
-        {selectedStreamMessage&&<span className="chat-selected-node">Source · {selectedStreamMessage.id}</span>}
-      </div>
+      {!showMailboxPicker && (
+        <div className="chat-tabs" role="tablist">
+          <button type="button" role="tab" aria-selected={paneTab === "chat"} className={`chat-tab${paneTab === "chat" ? " is-active" : ""}`} onClick={() => setPaneTab("chat")}>Chat</button>
+          <button type="button" role="tab" aria-selected={paneTab === "file"} className={`chat-tab${paneTab === "file" ? " is-active" : ""}`} onClick={() => { if (paneTab !== "file") openStreamFile(); }}>File</button>
+          <button type="button" role="tab" aria-selected={paneTab === "config"} className={`chat-tab${paneTab === "config" ? " is-active" : ""}`} onClick={() => setPaneTab("config")}>Config</button>
+        </div>
+      )}
       {paneTab === "chat" && (
       <div className="chat-messages" ref={listRef} onScroll={handleScroll}>
         {ready && messages.length === 0 && (
@@ -2122,6 +2534,8 @@ export function ChatConversation({
         {messages.map((message) => (
           <div
             key={`${message.id}|${message.timestamp || ""}`}
+            data-message-id={message.id}
+            data-mailbox-id={message.mailboxId || ""}
             className={`chat-message ${message.from === you ? "mine" : "theirs"}${
               placementClass(message) ? " " + placementClass(message) : ""
             }${entryEditKey === bubbleKey(message) ? " editing" : ""}${selectedMessageKey === bubbleKey(message) ? " selected" : ""}`}
@@ -2201,6 +2615,28 @@ export function ChatConversation({
           <SuperControl appearance="embedded" control={streamSuperControl} className="chat-file-super-control" />
         </div>
       )}
+      {paneTab === "config" && (
+        <div className="chat-config" role="tabpanel" aria-label="Mailbox configuration">
+          <div className="chat-config-head">
+            <span className="chat-config-title">Mailbox config — {mailboxLabel(configMailbox)}</span>
+            <button type="button" onClick={fetchConfig} disabled={configBusy}>
+              Reload
+            </button>
+            <button type="button" onClick={applyConfig} disabled={configBusy || !configText.trim()}>
+              {configBusy ? "Applying…" : "Apply"}
+            </button>
+          </div>
+          <textarea
+            className="chat-config-editor"
+            value={configText}
+            onChange={(event) => setConfigText(event.target.value)}
+            spellCheck={false}
+            aria-label="Mailbox config JSON"
+          />
+          {configError && <div className="chat-error">{configError}</div>}
+          {configNote && <div className="chat-config-note">{configNote}</div>}
+        </div>
+      )}
       {errorText && <div className="chat-error">{errorText}</div>}
       <div className="chat-composer">
         <textarea
@@ -2214,27 +2650,6 @@ export function ChatConversation({
         <button className="chat-send" onClick={send} disabled={sending || !input.trim() || !you || !target}>
           {sending ? "Sending…" : "Send"}
         </button>
-      </div>
-      <div className="chat-config">
-        <div className="chat-config-head">
-          <span className="chat-config-title">Mailbox config — {mailboxLabel(configMailbox)}</span>
-          <button type="button" onClick={fetchConfig} disabled={configBusy}>
-            Reload
-          </button>
-          <button type="button" onClick={applyConfig} disabled={configBusy || !configText.trim()}>
-            {configBusy ? "Applying…" : "Apply"}
-          </button>
-        </div>
-        <textarea
-          className="chat-config-editor"
-          value={configText}
-          onChange={(event) => setConfigText(event.target.value)}
-          rows={8}
-          spellCheck={false}
-          aria-label="Mailbox config JSON"
-        />
-        {configError && <div className="chat-error">{configError}</div>}
-        {configNote && <div className="chat-config-note">{configNote}</div>}
       </div>
     </div>
   );

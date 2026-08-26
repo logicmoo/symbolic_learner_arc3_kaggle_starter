@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from resource_relationships import implements_resource
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -36,8 +37,8 @@ def test_shared_snet_backend_uses_environment_backed_credentials() -> None:
         "path": "design/models/legacy.model.json",
         "source": "workspace",
         "workspaceId": "test",
-        "document": {"kind": "model", "id": "legacy-snet-model", "parents": ["snet"], "model": "asi1"},
+        "document": {"kind": "model", "id": "snet-asi1", "implements": implements_resource("snet"), "model": "asi1"},
     }
     resolved = resolve_model_records(SHARED_WORKSPACE, [legacy_model])[0]["resolved"]
     assert resolved["backendId"] == "https.llm.c.singularitynet.io.v1"
-    assert resolved["inheritance"] == ["https.llm.c.singularitynet.io.v1", "legacy-snet-model"]
+    assert resolved["inheritance"] == ["https.llm.c.singularitynet.io.v1", "snet-asi1"]

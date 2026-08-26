@@ -46,7 +46,8 @@ def test_chat_file_tab_embeds_super_control_and_selection_controls_source():
     assert 'import { SuperControl, type StandardSuperControlRequest }' in conversation
     assert '<SuperControl appearance="embedded" control={streamSuperControl}' in conversation
     assert 'aria-pressed={autoScroll}' in conversation
-    assert "setAutoScrollEnabled(false)" in conversation
+    assert "setSelectionAutoScrollPaused(true)" in conversation
+    assert "resumeAutoScroll()" in conversation
     assert "selectedMessageKey === bubbleKey(message)" in conversation
     assert "buildStreamFile(nextSelected)" in conversation
     assert 'kind: "chat_stream"' in conversation

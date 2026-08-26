@@ -9,7 +9,12 @@
     (requireExplanation true)
     (replanOnContradiction true)
   ))
-  (parents ([]
-    observe_infer_act
+  (implements (
+    (observe_infer_act (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
 )

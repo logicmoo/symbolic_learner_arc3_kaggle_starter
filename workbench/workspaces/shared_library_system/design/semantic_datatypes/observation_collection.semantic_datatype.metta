@@ -3,7 +3,12 @@
   (id observation_collection)
   (label "Observation Collection")
   (description "A collection of semantic observations.")
-  (parents ([]
-    information
+  (implements (
+    (information (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
 )

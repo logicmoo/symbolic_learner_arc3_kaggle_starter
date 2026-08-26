@@ -10,6 +10,7 @@ if str(SERVER) not in sys.path:
 
 from datatype_library import interface_type_inventory, load_workspace_concrete_datatype_records, load_workspace_datatype_records, load_workspace_representation_records, resolve_datatype_representation
 from representation_planner import plan_representation_conversion
+from resource_relationships import relationship_ids
 
 
 SHARED = ROOT / "workbench" / "workspaces" / "shared_library_system"
@@ -21,8 +22,8 @@ def test_image_is_abstract_datatype_with_multiple_representations() -> None:
     datatypes = {record["document"]["id"]: record["document"] for record in load_workspace_datatype_records(SHARED) if record.get("document")}
     image = datatypes["image"]
     assert image["kind"] == "semantic_datatype"
-    assert image["preferredChild"] == "bitmap"
-    assert {"bitmap", "logo_program", "scene_graph", "natural_language"}.issubset(image["children"])
+    assert image["preferredSpecialization"] == "bitmap"
+    assert {"bitmap", "logo_program", "scene_graph", "natural_language"}.issubset(image["specializations"])
 
 
 def test_object_is_a_first_class_semantic_datatype() -> None:
@@ -30,53 +31,53 @@ def test_object_is_a_first_class_semantic_datatype() -> None:
     representations = {record["document"]["id"]: record["document"] for record in load_workspace_representation_records(SHARED) if record.get("document")}
     object_type = datatypes["object"]
     assert object_type["kind"] == "semantic_datatype"
-    assert object_type["parents"] == ["information"]
-    assert object_type["preferredChild"] == "json_object"
-    assert object_type["children"] == ["json_object", "python_object"]
-    assert "object" in datatypes["information"]["children"]
-    assert "object" in representations["json_object"]["parents"]
-    assert "object" in representations["python_object"]["parents"]
+    assert relationship_ids(object_type["implements"]) == ["information"]
+    assert object_type["preferredSpecialization"] == "json_object"
+    assert relationship_ids(object_type["specializations"]) == ["json_object", "python_object"]
+    assert "object" in datatypes["information"]["specializations"]
+    assert "object" in representations["json_object"]["implements"]
+    assert "object" in representations["python_object"]["implements"]
 
 
 def test_semantic_datatype_hierarchy_is_explicit_and_bidirectional() -> None:
     datatypes = {record["document"]["id"]: record["document"] for record in load_workspace_datatype_records(SHARED) if record.get("document")}
-    assert datatypes["identity_map"]["parents"] == ["information"]
-    assert "identity_map" in datatypes["information"]["children"]
-    assert datatypes["human_intervention"]["parents"] == ["intervention"]
-    assert "human_intervention" in datatypes["intervention"]["children"]
-    assert datatypes["objectified_observation"]["parents"] == ["observation"]
-    assert "objectified_observation" in datatypes["observation"]["children"]
+    assert relationship_ids(datatypes["identity_map"]["implements"]) == ["information"]
+    assert "identity_map" in datatypes["information"]["specializations"]
+    assert relationship_ids(datatypes["human_intervention"]["implements"]) == ["intervention"]
+    assert "human_intervention" in datatypes["intervention"]["specializations"]
+    assert relationship_ids(datatypes["objectified_observation"]["implements"]) == ["observation"]
+    assert "objectified_observation" in datatypes["observation"]["specializations"]
 
 
 def test_numeric_document_and_program_contract_types_are_declared() -> None:
     datatypes = {record["document"]["id"]: record["document"] for record in load_workspace_datatype_records(SHARED) if record.get("document")}
-    assert datatypes["number"]["parents"] == ["information"]
-    assert datatypes["file_reference"]["parents"] == ["information"]
-    assert datatypes["program"]["parents"] == ["information"]
-    assert set(datatypes["program"]["children"]) == {"prolog_program", "turtle_program_set"}
-    assert datatypes["prolog_program"]["parents"] == ["program"]
-    assert datatypes["turtle_program_set"]["parents"] == ["program"]
-    assert {"number", "file_reference", "program"}.issubset(datatypes["information"]["children"])
+    assert relationship_ids(datatypes["number"]["implements"]) == ["information"]
+    assert relationship_ids(datatypes["file_reference"]["implements"]) == ["information"]
+    assert relationship_ids(datatypes["program"]["implements"]) == ["information"]
+    assert set(datatypes["program"]["specializations"]) == {"prolog_program", "turtle_program_set"}
+    assert relationship_ids(datatypes["prolog_program"]["implements"]) == ["program"]
+    assert relationship_ids(datatypes["turtle_program_set"]["implements"]) == ["program"]
+    assert {"number", "file_reference", "program"}.issubset(datatypes["information"]["specializations"])
 
 
 def test_evidence_and_reasoning_contract_types_are_declared() -> None:
     datatypes = {record["document"]["id"]: record["document"] for record in load_workspace_datatype_records(SHARED) if record.get("document")}
     expected = {"artifact_bundle", "change_description", "evidence", "evidence_bundle", "hypothesis_set", "rule_set"}
     assert expected.issubset(datatypes)
-    assert expected.issubset(datatypes["information"]["children"])
-    assert datatypes["evidence"]["children"] == ["transition_evidence"]
-    assert datatypes["transition_evidence"]["parents"] == ["evidence"]
+    assert expected.issubset(datatypes["information"]["specializations"])
+    assert relationship_ids(datatypes["evidence"]["specializations"]) == ["transition_evidence"]
+    assert relationship_ids(datatypes["transition_evidence"]["implements"]) == ["evidence"]
 
 
 def test_bitmap_encodings_are_independent_concrete_datatypes() -> None:
     representations = {record["document"]["id"]: record["document"] for record in load_workspace_representation_records(SHARED) if record.get("document")}
     bitmap = representations["bitmap"]
-    assert bitmap["parents"] == ["image"]
-    assert set(bitmap["children"]) == {"png", "jpeg", "bmp"}
+    assert relationship_ids(bitmap["implements"]) == ["image"]
+    assert set(bitmap["specializations"]) == {"png", "jpeg", "bmp"}
     concrete = {record["document"]["id"]: record["document"] for record in load_workspace_concrete_datatype_records(SHARED) if record.get("document")}
     assert concrete["png"]["kind"] == "concrete_datatype"
-    assert concrete["png"]["parents"] == ["bitmap"]
-    assert concrete["json"]["parents"] == ["json_object", "object_list", "scene_graph"]
+    assert relationship_ids(concrete["png"]["implements"]) == ["bitmap"]
+    assert relationship_ids(concrete["json"]["implements"]) == ["json_object", "object_list", "scene_graph"]
 
 
 def test_workspace_inherits_shared_representations() -> None:

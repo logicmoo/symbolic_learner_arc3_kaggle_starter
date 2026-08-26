@@ -2,13 +2,54 @@
   (kind representation_datatype)
   (id bitmap)
   (label "Bitmap Image")
-  (parents ([]
-    image
+  (implements (
+    (image (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
-  (children ([]
-    png
-    jpeg
-    bmp
+  (specializations (
+    (png (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        specializations
+        preferredSpecialization
+      ))
+    ))
+    (jpeg (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        specializations
+        preferredSpecialization
+      ))
+    ))
+    (bmp (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        specializations
+        preferredSpecialization
+      ))
+    ))
   ))
-  (preferredChild png)
+  (preferredSpecialization png)
 )

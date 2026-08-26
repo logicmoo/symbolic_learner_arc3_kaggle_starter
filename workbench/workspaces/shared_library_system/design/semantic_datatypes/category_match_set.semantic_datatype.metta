@@ -3,5 +3,12 @@
   (id category_match_set)
   (label "Category Match Set")
   (description "The resources selected by evaluating an Artifact Category query.")
-  (parents ([] information))
+  (implements (
+    (information (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
+  ))
 )

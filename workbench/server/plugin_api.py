@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, Body, FastAPI, HTTPException
+from starlette.routing import Match
 
 from plugin_admin import (
     MANIFEST_NAME,
@@ -68,18 +69,80 @@ def _resolved_pages(manifest: dict[str, Any], admin: dict[str, Any]) -> list[dic
     return [_ui_page(page) for page in pages]
 
 
+def _route_is_registered(path: str) -> bool:
+    """Is ``path`` actually handled by a route mounted on the running app?
+
+    True both for a route a plugin mounted directly (an embedded plugin's own
+    ``create_router`` path) and for a ``web_proxy`` mount's catch-all route
+    that forwards a standalone plugin's prefix onward -- either way, a
+    request to ``path`` would reach something real, not 404.
+    """
+
+    if _app is None:
+        return False
+    scope = {"type": "http", "path": path, "method": "GET", "path_params": {}, "root_path": ""}
+    for route in _app.routes:
+        try:
+            match, _ = route.matches(scope)
+        except Exception:  # noqa: BLE001 - a route that cannot evaluate this scope is not a match
+            continue
+        if match is not Match.NONE:
+            return True
+    return False
+
+
+def _resolve_api_section(plugin_id: str, entry: Any) -> dict[str, Any] | None:
+    """Resolve one declared ``plugin-api`` section to the address a caller should use.
+
+    A section's declared ``path`` is usually already the plugin-prefixed,
+    through-the-workbench path (``/mailbox_chat/health``). Some routes are
+    instead genuinely shared across several plugin prefixes and a bare,
+    absolute-from-root path (see EMU_LLM's ``/mailbox/...`` shim routes,
+    which also answer at ``/llm_emul/mailbox/...``, ``/ws_collab/v1/mailbox/...``,
+    and ``/mailbox_chat/v1/mailbox/...``). When a declared path is not already
+    prefixed with this plugin's own id, we overlay it onto our own
+    absolute-from-root address space by prepending ``/<plugin_id>`` -- but we
+    prefer that only when a route is actually registered there; otherwise the
+    bare path, as declared, is what really answers.
+    """
+
+    if not isinstance(entry, dict):
+        return None
+    path = str(entry.get("path") or "")
+    if not path:
+        return None
+    prefix = f"/{plugin_id}"
+    if path == prefix or path.startswith(f"{prefix}/"):
+        address = path
+    else:
+        prefixed = f"{prefix}{path}" if path.startswith("/") else f"{prefix}/{path}"
+        address = prefixed if _route_is_registered(prefixed) else path
+    return {**entry, "address": address}
+
+
+def _resolved_api_sections(plugin_id: str, manifest: dict[str, Any]) -> dict[str, Any]:
+    declared = manifest.get("plugin-api")
+    if not isinstance(declared, dict):
+        return {}
+    return {name: _resolve_api_section(plugin_id, entry) for name, entry in declared.items() if name != "note"}
+
+
 def _scan(*, register: bool) -> list[dict[str, Any]]:
     global _catalog
     policy = _policy().get("plugins", {})
     catalog: list[dict[str, Any]] = []
     resources = get_filesystem_provider()
     manifest_paths = [
-        directory / "plugin.json"
+        directory / MANIFEST_NAME
         # Plugin manifests are plain configuration, so they are probed with the
         # provider's configuration API: the resource API would resolve a
         # .json path onto a .metta sibling.
         for directory in resources.iterdir(PLUGINS_ROOT)
-        if resources.is_dir(directory) and json_file_exists(directory / "plugin.json")
+        if (
+            not directory.name.casefold().startswith("hide_")
+            and resources.is_dir(directory)
+            and json_file_exists(directory / MANIFEST_NAME)
+        )
     ]
     for manifest_path in sorted(manifest_paths):
         try:
@@ -162,6 +225,11 @@ def _scan(*, register: bool) -> list[dict[str, Any]]:
             catalog.append(failed)
     if register:
         _run_init_commands(catalog)
+    # Resolved after plugin-init mounts are applied, so a standalone plugin's
+    # prefixed route (added to _app by _run_init_commands above) is already
+    # registered by the time we check for it here.
+    for item in catalog:
+        item["apiSections"] = _resolved_api_sections(str(item.get("id") or ""), item)
     _catalog = catalog
     return catalog
 
@@ -209,10 +277,111 @@ def _run_init_commands(catalog: list[dict[str, Any]]) -> None:
             item["initCommandResults"] = results
 
 
+def _call_lifecycle_hook(item: dict[str, Any], module: Any, hook_phase: str, *, reason: str) -> dict[str, Any] | None:
+    """Call one declared hook on one plugin's module, if it names one it exports.
+
+    Returns ``None`` when there is nothing to call (no module loaded, no hook
+    declared for this phase, or the module does not export the named
+    function) so a caller can tell "nothing to do" apart from a real result.
+    """
+
+    if module is None:
+        return None
+    hooks = (item.get("plugin-lifecycle") or {}).get("hooks") or {}
+    hook_name = hooks.get(hook_phase)
+    if not hook_name or not hasattr(module, hook_name):
+        return None
+    standalone = bool((item.get("plugin-lifecycle") or {}).get("standalone"))
+    notice = {**item, "lifecyclePhase": hook_phase, "lifecycleReason": reason, "standalone": standalone}
+    try:
+        detail = getattr(module, hook_name)(notice)
+        return {"id": item.get("id"), "phase": hook_phase, "hook": hook_name, "ok": True,
+                "detail": detail if isinstance(detail, str) else ""}
+    except Exception as error:  # noqa: BLE001 - reported, never fatal
+        return {"id": item.get("id"), "phase": hook_phase, "hook": hook_name, "ok": False, "detail": str(error)}
+
+
+def run_lifecycle_phase(phase: str, *, reason: str = "") -> list[dict[str, Any]]:
+    """Run one declared lifecycle phase's two sub-hooks for every loaded plugin.
+
+    Looks up ``plugin-lifecycle.hooks.<phase>`` (the "your turn" hook) and
+    ``plugin-lifecycle.hooks.<phase>After`` (the "everyone's turn is done"
+    hook) on each loaded plugin's manifest, and calls the named function on
+    its module if the module exports it. A plugin that leaves a hook ``null``
+    (the common case today -- only ``workbenchStartup``/``workbenchStartupAfter``
+    are wired to a real function anywhere) is simply skipped.
+
+    This is a notification, not a command: the hook is called with the
+    catalog item plus ``lifecyclePhase``/``lifecycleReason``/``standalone`` so
+    a plugin can decide what, if anything, it needs to do. In particular a
+    standalone plugin (its own separate process) must not treat a
+    ``workbenchShutdown`` notification as "restart yourself too" -- only the
+    embedded workbench API process is restarting, not the plugin's own
+    process, so a standalone plugin's own lifecycle is unaffected unless it
+    explicitly decides otherwise.
+
+    Errors are reported per plugin rather than raised, since one plugin's
+    broken hook must never block the workbench's own restart or shutdown.
+    """
+
+    results: list[dict[str, Any]] = []
+
+    def _call_round(hook_phase: str) -> None:
+        for item in _catalog:
+            outcome = _call_lifecycle_hook(item, _modules.get(item.get("id")), hook_phase, reason=reason)
+            if outcome is not None:
+                results.append(outcome)
+
+    _call_round(phase)
+    _call_round(f"{phase}After")
+    return results
+
+
+def run_workbench_shutdown(reason: str = "restart") -> list[dict[str, Any]]:
+    """The one phase a self-restart runs: ``workbenchShutdown`` then ``workbenchShutdownAfter``.
+
+    Deliberately does not touch install, uninstall, or workspace-* phases --
+    restarting our own embedded API process is none of those things.
+    """
+
+    return run_lifecycle_phase("workbenchShutdown", reason=reason)
+
+
 def install_plugins(app: FastAPI) -> None:
     global _app
     _app = app
     _scan(register=True)
+
+
+@router.post("/{plugin_id}/lifecycle/{phase}")
+def run_plugin_lifecycle_phase(plugin_id: str, phase: str) -> dict[str, Any]:
+    """Manually call one declared lifecycle hook for one plugin.
+
+    Lets a person exercise any ``plugin-lifecycle.hooks`` entry from the
+    Plugins page instead of waiting for its one real trigger today (a
+    workbench self-restart, for ``workbenchShutdown``/``workbenchShutdownAfter``)
+    or for a future automatic trigger of the other phases. A ``null``/missing
+    hook, an unloaded plugin, or a hook the module does not export is
+    reported back as "nothing to call", never silently ignored or a 500.
+    """
+
+    item = next((entry for entry in _catalog if entry.get("id") == plugin_id), None)
+    if item is None:
+        raise HTTPException(status_code=404, detail=f"Unknown plugin: {plugin_id}")
+    hooks = (item.get("plugin-lifecycle") or {}).get("hooks") or {}
+    if phase not in hooks:
+        raise HTTPException(status_code=400, detail=f"'{plugin_id}' declares no '{phase}' lifecycle phase")
+    module = _modules.get(plugin_id)
+    outcome = _call_lifecycle_hook(item, module, phase, reason="manual")
+    if outcome is not None:
+        return outcome
+    hook_name = hooks.get(phase)
+    if not hook_name:
+        return {"id": plugin_id, "phase": phase, "hook": None, "ok": False, "detail": "No hook is declared for this phase."}
+    if module is None:
+        return {"id": plugin_id, "phase": phase, "hook": hook_name, "ok": False, "detail": "Plugin is not loaded."}
+    return {"id": plugin_id, "phase": phase, "hook": hook_name, "ok": False,
+            "detail": f"Plugin does not export a function named '{hook_name}'."}
 
 
 @router.get("")

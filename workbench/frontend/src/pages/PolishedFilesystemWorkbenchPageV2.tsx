@@ -52,8 +52,7 @@ type ResourceDef = {
   description?: string;
   provider?: string;
   implementation?: string;
-  parents?: string[];
-  inherits?: string;
+  implements?: Record<string, unknown>;
   model?: string;
   enabled?: boolean;
   inputs?: Record<string, unknown>;
@@ -158,7 +157,7 @@ function GenericResourceEditor({workspaceId, title, eyebrow, records, directory,
         {records.map(record => <button className="resource-row" key={`${record.workspaceId}:${record.path}`} onClick={() => select(record)} onDoubleClick={() => select(record)}>
           <b>{record.document?.label || record.document?.id || record.path}</b>
           <code>{record.document?.kind || "invalid"}</code>
-          <span>{record.document?.inherits || record.document?.parents?.join(", ") || record.document?.provider || "—"}</span>
+          <span>{Object.keys(record.document?.implements || {}).join(", ") || record.document?.provider || "—"}</span>
           <span>{record.source}</span>
           <em>{record.error ? "error" : "ready"}</em>
         </button>)}

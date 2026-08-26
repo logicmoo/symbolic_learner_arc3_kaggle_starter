@@ -2,10 +2,25 @@
   (kind concrete_datatype)
   (id json)
   (label Json)
-  (parents ([]
-    json_object
-    object_list
-    scene_graph
+  (implements (
+    (json_object (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
+    (object_list (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
+    (scene_graph (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
   (mimeTypes ([]
     application/json

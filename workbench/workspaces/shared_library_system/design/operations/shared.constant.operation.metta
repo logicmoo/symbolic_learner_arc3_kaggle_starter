@@ -23,9 +23,21 @@
       ))
     ))
   ))
-  (children ([]
-    shared.constant.workbench
+  (specializations (
+    (shared.constant.workbench (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        specializations
+        preferredSpecialization
+      ))
+    ))
   ))
-  (preferredChild shared.constant.workbench)
+  (preferredSpecialization shared.constant.workbench)
   (kind operation)
 )

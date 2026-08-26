@@ -3,8 +3,13 @@
   (id https.llm.c.singularitynet.io.v1-qwen_qwen3.5-35b-a3b)
   (label qwen/qwen3.5-35b-a3b)
   (description "Discovered from SingularityNET LLM.")
-  (parents ([]
-    https.llm.c.singularitynet.io.v1
+  (implements (
+    (https.llm.c.singularitynet.io.v1 (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
   (model qwen/qwen3.5-35b-a3b)
   (enabled false)

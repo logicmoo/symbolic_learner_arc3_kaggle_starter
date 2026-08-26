@@ -3,7 +3,12 @@
   (id objectified_observation)
   (label "Objectified Observation")
   (description "An observation enriched with stable entities and synchronized representations.")
-  (parents ([]
-    observation
+  (implements (
+    (observation (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
 )

@@ -4,11 +4,28 @@
   (label "Turtle Program")
   (language logo)
   (description "Movement-based Turtle/LOGO program representation retained as a first-class alias used by existing operations.")
-  (parents ([]
-    image
+  (implements (
+    (image (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
-  (children ([]
-    turtle_source
+  (specializations (
+    (turtle_source (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        specializations
+        preferredSpecialization
+      ))
+    ))
   ))
-  (preferredChild turtle_source)
+  (preferredSpecialization turtle_source)
 )

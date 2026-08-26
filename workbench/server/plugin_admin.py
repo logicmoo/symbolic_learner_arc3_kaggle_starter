@@ -473,7 +473,7 @@ def normalized_ui_pages(declared: Any, manifest: Mapping[str, Any], admin_link: 
         if not isinstance(entry, Mapping):
             continue
         descriptor_path = str(entry.get("descriptor") or admin_link)
-        external = descriptor_path.startswith(("http://", "https://"))
+        external = bool(entry.get("external")) or descriptor_path.startswith(("http://", "https://"))
         if not external and not descriptor_path.startswith("/"):
             descriptor_path = f"{admin_prefix(manifest)}/{descriptor_path.lstrip('/')}"
         pages.append({

@@ -14,7 +14,12 @@
     "Preserve punctuation and spacing except where capitalization requires a change."
     "Output only the transformed text."
   ))
-  (parents ([]
-    titlecase_received_text
+  (implements (
+    (titlecase_received_text (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
 )

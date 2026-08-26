@@ -7,8 +7,13 @@
     sample-demos
     systems-workbench
   ))
-  (parents ([]
-    sample.request_number
+  (implements (
+    (sample.request_number (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
   (implementation system.workbench)
   (parameters (

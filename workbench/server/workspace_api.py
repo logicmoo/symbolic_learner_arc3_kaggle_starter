@@ -32,7 +32,7 @@ from model_library import load_model_library_records, resolve_model_records
 from prompt_library import load_prompt_library_records, load_workspace_prompt_records
 from policy_library import load_workspace_policy_records, policy_hierarchy
 from resource_convention import canonical_resource_path, infer_resource_kind
-from resource_relationships import relationship_ids, synchronize_parent_backlinks
+from resource_relationships import relationship_ids, synchronize_implementation_backlinks
 from operation_library import DEFAULT_WORKSPACES_ROOT, load_workspace_operation_implementation_records, load_workspace_operation_records
 from workspace_inheritance import (
     SHARED_WORKSPACE_ID,
@@ -131,7 +131,7 @@ def _resource_ids_for_layer(
     *,
     accepted_kinds: set[str],
     default_kind: str | None = None,
-    require_parents: bool | None = None,
+    require_implements: bool | None = None,
 ) -> set[str]:
     resources = get_filesystem_provider()
     ids: set[str] = set()
@@ -146,10 +146,10 @@ def _resource_ids_for_layer(
             normalized_kind = str(document.get("kind") or default_kind or "").replace("-", "_")
             if accepted_kinds and normalized_kind not in accepted_kinds:
                 continue
-            parent_ids = relationship_ids(document.get("parents"))
-            if require_parents is True and not parent_ids:
+            implemented_ids = relationship_ids(document.get("implements"))
+            if require_implements is True and not implemented_ids:
                 continue
-            if require_parents is False and parent_ids:
+            if require_implements is False and implemented_ids:
                 continue
             resource_id = str(document.get("id") or "").strip()
             if not resource_id:
@@ -164,7 +164,7 @@ def _resource_count_breakdown(
     *,
     accepted_kinds: set[str],
     default_kind: str | None = None,
-    require_parents: bool | None = None,
+    require_implements: bool | None = None,
 ) -> dict[str, int]:
     layers = effective_workspace_layers(root, root.parent)
     local_layer_index = next(
@@ -181,7 +181,7 @@ def _resource_count_breakdown(
             directories,
             accepted_kinds=accepted_kinds,
             default_kind=default_kind,
-            require_parents=require_parents,
+            require_implements=require_implements,
         )
         for layer in layers
     ]
@@ -254,7 +254,7 @@ def _workspace_from_directory(root: Path, *, include_counts: bool = True) -> dic
                 ),
                 accepted_kinds={"operation", "operation_implementation"},
                 default_kind="operation",
-                require_parents=False,
+                require_implements=False,
             ),
             "datatypes": _resource_count_breakdown(
                 root,
@@ -283,7 +283,7 @@ def _workspace_from_directory(root: Path, *, include_counts: bool = True) -> dic
                 ),
                 accepted_kinds={"prompt"},
                 default_kind="prompt",
-                require_parents=False,
+                require_implements=False,
             ),
         }
         if include_counts
@@ -716,9 +716,9 @@ def _load_prompt_library(workspace: dict[str, Any]) -> dict[str, list[dict[str, 
     profiles = _with_artifact_categories(workspace, hierarchy["promptProfiles"], "prompts")
     by_prompt: dict[str, list[dict[str, Any]]] = {}
     for record in implementations:
-        for parent in relationship_ids((record.get("document") or {}).get("parents")):
+        for parent in relationship_ids((record.get("document") or {}).get("implements")):
             by_prompt.setdefault(parent, []).append(record)
-    library["hierarchy"] = {"prompts": prompts, "promptImplementations": implementations, "promptProfiles": profiles, "implementationsByPrompt": by_prompt}
+    library["hierarchy"] = {"prompts": prompts, "promptImplementations": implementations, "promptProfiles": profiles, "specializationsByResource": by_prompt}
     return library
 
 
@@ -1450,7 +1450,7 @@ def write_workspace_file(workspace_id: str, body: dict[str, Any] = Body(...)) ->
             raise ValueError(f"canonical target already exists: {target.relative_to(root).as_posix()}")
         resources.write_text(target, content)
         if requested.suffix.lower() == ".json":
-            relationship_sync = synchronize_parent_backlinks(root, document, previous_document, resources)
+            relationship_sync = synchronize_implementation_backlinks(root, document, previous_document, resources)
         if target != requested and resources.is_file(requested):
             resources.delete(requested)
         invalidate_workspace_discovery()

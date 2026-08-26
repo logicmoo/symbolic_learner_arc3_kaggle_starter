@@ -27,6 +27,32 @@ def test_web_proxy_plugin_is_discovered_and_loaded() -> None:
     assert plugin["allowedTargets"] == ["http://127.0.0.1:8801"]
 
 
+def test_plugin_scanner_skips_hidden_and_manifestless_entries(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    plugin_api = importlib.import_module("plugin_api")
+    visible = tmp_path / "visible"
+    visible.mkdir()
+    (visible / "plugin.json").write_text(
+        json.dumps({"id": "visible", "scan": "disabled"}),
+        encoding="utf-8",
+    )
+    for name in ("HIDE_broken", "HiDe_also_broken"):
+        hidden = tmp_path / name
+        hidden.mkdir()
+        (hidden / "plugin.json").write_text("{not valid json", encoding="utf-8")
+    (tmp_path / "missing_manifest").mkdir()
+    (tmp_path / "loose_object").write_text("not a plugin", encoding="utf-8")
+
+    monkeypatch.setattr(plugin_api, "PLUGINS_ROOT", tmp_path)
+    monkeypatch.setattr(plugin_api, "POLICY_PATH", tmp_path / "plugins.json")
+
+    catalog = plugin_api._scan(register=False)
+
+    assert [plugin["id"] for plugin in catalog] == ["visible"]
+
+
 def test_web_proxy_rejects_targets_outside_manifest_allowlist() -> None:
     app_module = importlib.import_module("app")
     with TestClient(app_module.app) as client:

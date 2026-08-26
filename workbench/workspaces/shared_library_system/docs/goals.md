@@ -8,9 +8,9 @@ Goals describe desired outcomes independently of the strategy used to pursue the
 
 - Specifications and alternatives live in `design/goals/` and may share a file, with each resource as a separate top-level form.
 - Separate files use `<id>.goal.metta` for both roots and alternatives.
-- Every alternative declares `(parents ([] <goal-id>))`.
-- Every specification lists its alternatives in `children`.
-- `preferredChild` identifies the preferred alternative.
+- Every alternative declares an `implements` map with its parent Goal and borrow/exclude policy.
+- Every specification lists its alternatives in `specializations`.
+- `preferredSpecialization` identifies the preferred alternative.
 
 Shared goals are inherited by project workspaces. Saving an inherited goal from a project creates a workspace-local override instead of modifying Shared.
 

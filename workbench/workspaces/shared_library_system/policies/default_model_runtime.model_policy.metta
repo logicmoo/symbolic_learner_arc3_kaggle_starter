@@ -14,9 +14,33 @@
     (maxFailureRate 0.2)
     (continueConcurrentPingsOnFailure true)
   ))
-  (children ([]
-    balanced_model_runtime
-    economy_model_runtime
+  (specializations (
+    (balanced_model_runtime (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        specializations
+        preferredSpecialization
+      ))
+    ))
+    (economy_model_runtime (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        specializations
+        preferredSpecialization
+      ))
+    ))
   ))
-  (preferredChild balanced_model_runtime)
+  (preferredSpecialization balanced_model_runtime)
 )

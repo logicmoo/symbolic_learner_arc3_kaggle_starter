@@ -64,6 +64,75 @@ def test_repository_filesystem_index_separates_exposed_and_sensitive_files(tmp_p
     assert all("content" not in item for item in payload["unexposed"])
 
 
+def test_repository_filesystem_index_applies_start_include_and_exclude_masks(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(repository_docs_api, "REPOSITORY_ROOT", tmp_path)
+    for relative in (
+        "docs/root.md",
+        "workbench/docs/guide.md",
+        "workbench/docs/generated/skip.md",
+        "runtime/docs/runtime.md",
+        "workbench/src/app.py",
+    ):
+        target = tmp_path / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(relative, encoding="utf-8")
+
+    payload = repository_docs_api.list_repository_filesystem(
+        directory=".",
+        include="**/docs/",
+        exclude="runtime/|generated/",
+    )
+
+    assert [item["path"] for item in payload["files"]] == [
+        "docs/root.md",
+        "workbench/docs/guide.md",
+    ]
+    assert payload["scope"] == "."
+    assert payload["include"] == "**/docs/"
+    assert payload["exclude"] == "runtime/|generated/"
+    assert payload["scanRoots"] == ["docs", "workbench/docs"]
+
+
+def test_repository_filesystem_index_reuses_cache_until_forced_refresh(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(repository_docs_api, "REPOSITORY_ROOT", tmp_path)
+    repository_docs_api._clear_filesystem_index_cache()
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    (docs / "guide.md").write_text("# Guide", encoding="utf-8")
+
+    first = repository_docs_api.list_repository_filesystem(
+        directory=".",
+        include="docs/",
+        refresh=True,
+    )
+    assert first["cached"] is False
+
+    provider = repository_docs_api.get_filesystem_provider()
+    monkeypatch.setattr(
+        provider,
+        "rglob",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("cache should avoid filesystem scan")),
+    )
+    cached = repository_docs_api.list_repository_filesystem(
+        directory=".",
+        include="docs/",
+    )
+    assert cached["cached"] is True
+
+    with pytest.raises(AssertionError, match="cache should avoid filesystem scan"):
+        repository_docs_api.list_repository_filesystem(
+            directory=".",
+            include="docs/",
+            refresh=True,
+        )
+
+
 def test_repository_json_and_metta_files_can_be_updated(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setattr(repository_docs_api, "REPOSITORY_ROOT", tmp_path)
     json_file = tmp_path / "config.json"
@@ -92,8 +161,12 @@ def test_help_view_intercepts_repository_markdown_links() -> None:
     source = (ROOT / "workbench" / "frontend" / "src" / "components" / "HelpDocumentTabs.tsx").read_text(encoding="utf-8")
     assert "/api/repository/markdown?path=" in source
     assert "resolveMarkdownPath(document.path,href)" in source
-    assert "event.preventDefault()" in source
     assert "← Back" in source
+    # Link clicks are intercepted by the shared markdown renderer, which the
+    # help view delegates to via onNavigateRepositoryDoc (see MarkdownDocument).
+    shared = (ROOT / "workbench" / "frontend" / "src" / "components" / "MarkdownDocument.tsx").read_text(encoding="utf-8")
+    assert "MarkdownDocument" in source
+    assert "event.preventDefault()" in shared
 
 
 def test_repository_markdown_index_and_ui_links(tmp_path: Path, monkeypatch) -> None:
@@ -116,17 +189,27 @@ def test_repository_markdown_index_and_ui_links(tmp_path: Path, monkeypatch) -> 
 
     components = ROOT / "workbench" / "frontend" / "src" / "components"
     help_source = (components / "HelpDocumentTabs.tsx").read_text(encoding="utf-8")
+    markdown_source = (components / "MarkdownDocument.tsx").read_text(encoding="utf-8")
     docs_source = (components / "RepositoryDocsPage.tsx").read_text(encoding="utf-8")
     assert 'label:"Datatype Guide",repositoryPath:"docs/DATATYPES_MANIFEST_EXPLAINED.md"' in help_source
     assert "/api/repository/filesystem-index" in docs_source
+    assert "DOC_SCAN_DIRECTORIES" in docs_source
+    assert "DOC_SCAN_INCLUDE_MASKS" in docs_source
+    assert "DOC_SCAN_EXCLUDE_MASKS" in docs_source
+    assert 'aria-label="Repository scan start directory"' in docs_source
+    assert 'aria-label="Repository scan include masks"' in docs_source
+    assert 'aria-label="Repository scan exclude masks"' in docs_source
+    assert 'initialFilter||"**/docs/"' in docs_source
+    assert "docsInclude" in docs_source
+    assert "docsExclude" in docs_source
+    assert '&refresh=${force?"true":"false"}' in docs_source
+    assert "refresh(scanDirectory,filter,exclusions,true)" in docs_source
     assert "/api/repository/file?path=" in docs_source
-    assert 'opened.format==="markdown"' in docs_source
-    assert 'history.length>0&&<button onClick={back}>← Back</button>' in docs_source
-    assert 'href={local?"#":href}' in docs_source
-    assert "event.stopPropagation()" in docs_source
     assert 'refreshing?"Refreshing...":"Refresh"' in docs_source
-    assert "current.checksum!==opened.checksum" in docs_source
-    assert 'initialFilter||".md|.metta|.json"' in docs_source
+    assert "indexed.checksum!==document.checksum" in docs_source
+    assert "dirtyChanged" in docs_source
+    assert "reloadable" in docs_source
+    assert 'initialFilter||"**/docs/"' in docs_source
     assert "Contents of unexposed files never reach the browser" in docs_source
     assert "function buildFileTree" in docs_source
     assert "<FileTree node={tree}" in docs_source
@@ -140,17 +223,25 @@ def test_repository_markdown_index_and_ui_links(tmp_path: Path, monkeypatch) -> 
     assert "Unexposed Full Path" in docs_source
     assert "repository-full-paths" in docs_source
     assert 'method:"PUT"' in docs_source
-    assert "Save to filesystem" in docs_source
-    assert "Edit source" in docs_source
-    assert "Rendered preview" in docs_source
-    assert "@uiw/react-codemirror" in docs_source
+    assert "repository-open-document-tabs" in docs_source
+    assert 'aria-label="Open filesystem documents"' in docs_source
+    assert "openDocs.map" in docs_source
+    assert "document.draft!==document.content" in docs_source
+    assert "closeDocument(document.path)" in docs_source
+    assert '<SuperControl appearance="embedded" control={repositoryControl(document)}' in docs_source
+    assert "FILESYSTEM DOCUMENT" not in docs_source
+    assert "saveLabel" not in docs_source
+    docs_styles = (ROOT / "workbench/frontend/src/styles/repository_docs.css").read_text(encoding="utf-8")
+    assert ".repository-doc-view.has-documents" in docs_styles
+    assert ".repository-document-workspace" in docs_styles
+    assert "width:100%;height:100%" in docs_styles
+    super_control = (components / "UniversalArtifactEditor.tsx").read_text(encoding="utf-8")
+    assert 'className="primary" onClick={control.onSave}' in super_control
     assert "/api/repository/asset?path=" in docs_source
     assert "Find in Tree" in docs_source
     assert "Find in Navigator" in docs_source
     assert "Find in Full Paths" in docs_source
     assert "data-repository-path" in docs_source
-    assert 'split("|")' in docs_source
-    assert ".md|.txt" in docs_source
     assert "File Name" in docs_source
     assert "File Size" in docs_source
     assert "Directory Name" in docs_source
@@ -161,22 +252,22 @@ def test_repository_markdown_index_and_ui_links(tmp_path: Path, monkeypatch) -> 
     assert "Hide\"} .dotfiles" in docs_source
     assert "isInDotDirectory" in docs_source
     assert "isDotFile" in docs_source
-    assert 'useState("runtime/|venv/")' in docs_source
     assert "setHideDotDirectories]=useState(true)" in docs_source
     assert "setHideDotFiles]=useState(true)" in docs_source
-    assert "Exclude repository files" in docs_source
     assert "directoryMetrics" in docs_source
     assert 'useState<"tree"|"navigator"|"paths">' in docs_source
     assert 'initialPanel==="tree"||initialPanel==="navigator"?initialPanel:"paths"' in docs_source
     assert "function FilesystemNavigator" in docs_source
     assert "filesystem-breadcrumbs" in docs_source
     assert "Parent directory" in docs_source
-    assert "Close document" in docs_source
+    assert 'aria-label={`Close ${document.path}`}' in docs_source
     assert "ignored_names=IGNORED_DIRECTORIES" in (SERVER / "repository_docs_api.py").read_text(encoding="utf-8")
+    assert "scrollbar-gutter:stable" in docs_styles
+    assert "padding-right:16px" in docs_styles
     data_docs = (ROOT / "workbench" / "workspaces" / "shared_library_system" / "docs" / "data.md").read_text(encoding="utf-8")
     assert "[Browse Data documents](?docs=data)" in data_docs
     assert "[Browse datatype documents](?docs=datatype)" in data_docs
-    assert 'new CustomEvent("workbench:open-docs"' in help_source
+    assert 'new CustomEvent("workbench:open-docs"' in markdown_source
     page_source = (ROOT / "workbench" / "frontend" / "src" / "pages" / "FilesystemWorkbenchPage.tsx").read_text(encoding="utf-8")
     styles = (ROOT / "workbench" / "frontend" / "src" / "styles" / "workbench.css").read_text(encoding="utf-8")
     assert 'classList.toggle("docs-focused", view === "docs")' in page_source

@@ -20,7 +20,12 @@
     (runtime auto)
     (benchmark on)
   ))
-  (parents ([]
-    default_model_runtime
+  (implements (
+    (default_model_runtime (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
 )

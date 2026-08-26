@@ -4,7 +4,7 @@
 
 Policies are filesystem-backed MeTTa resources that control runtime eligibility, health interpretation, testing, and other workbench decisions without rewriting the resources they govern.
 
-Policy resources may remain under `policies/`, where policy definitions, observations, jobs, events, and benchmark results form a related operational family. A policy alternative uses the same `kind` as its parent and declares that relationship through `parents`; there are no separate variant kinds or variant directories.
+Policy resources may remain under `policies/`, where policy definitions, observations, jobs, events, and benchmark results form a related operational family. A policy alternative uses the same `kind` as the implemented policy and declares that relationship through `implements`; there are no separate variant kinds or variant directories.
 
 ## Model policy
 

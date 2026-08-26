@@ -2,9 +2,19 @@
   (kind concrete_datatype)
   (id markdown)
   (label Markdown)
-  (parents ([]
-    natural_language
-    plain_text
+  (implements (
+    (natural_language (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
+    (plain_text (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
   (mimeTypes ([]
     text/markdown

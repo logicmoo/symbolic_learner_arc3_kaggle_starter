@@ -3,9 +3,19 @@
   (id executable_view)
   (label "Executable View")
   (description "An executable program or procedure that reconstructs or transforms the represented information, including Turtle/LOGO-style views.")
-  (parents ([]
-    information
-    image
+  (implements (
+    (information (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
+    (image (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
-  (children ([]))
+  (specializations ())
 )

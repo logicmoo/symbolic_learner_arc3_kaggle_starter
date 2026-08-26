@@ -6,10 +6,22 @@
     segmentation
     vision
   ))
-  (children ([]
-    vision.extract_scene_objects.automatic_llm
+  (specializations (
+    (vision.extract_scene_objects.automatic_llm (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        specializations
+        preferredSpecialization
+      ))
+    ))
   ))
-  (preferredChild vision.extract_scene_objects.automatic_llm)
+  (preferredSpecialization vision.extract_scene_objects.automatic_llm)
   (inputs (
     (current_image Image)
     (previous_image Image)

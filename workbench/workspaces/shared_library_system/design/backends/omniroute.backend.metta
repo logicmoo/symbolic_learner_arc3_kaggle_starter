@@ -6,10 +6,26 @@
   (official true)
   (description "Local OmniRoute OpenAI-compatible gateway. run_workbench.bat starts it on port 20128 and provisions its endpoint key into the inherited workspace credential store.")
   (enabled true)
-  (children ([]
-    omniroute-free-router
+  (specializations (
+    (omniroute-free-router (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        specializations
+        preferredSpecialization
+      ))
+    ))
   ))
-  (capabilities ([] llm.complete llm.reasoning llm.vision))
+  (capabilities ([]
+    llm.complete
+    llm.reasoning
+    llm.vision
+  ))
   (configuration (
     (adapter openai_chat_completions)
     (baseUrl http://localhost:20128/v1)

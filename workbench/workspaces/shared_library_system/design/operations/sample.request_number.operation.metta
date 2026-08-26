@@ -42,8 +42,20 @@
       ))
     ))
   ))
-  (children ([]
-    sample.request_number.workbench
+  (specializations (
+    (sample.request_number.workbench (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        specializations
+        preferredSpecialization
+      ))
+    ))
   ))
-  (preferredChild sample.request_number.workbench)
+  (preferredSpecialization sample.request_number.workbench)
 )

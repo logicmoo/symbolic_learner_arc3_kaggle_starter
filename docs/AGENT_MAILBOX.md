@@ -200,6 +200,38 @@ The complete REST, Codex, OmegaClaw, MeTTaClaw, and workflow integration guide
 is maintained by the sibling `C:\snet\PeTTa\repos\mailbox_channel\README.md`
 project. This Workbench is only a client and external-service controller.
 
+## Live speech-to-text into the mailbox
+
+[`scripts/stt_mailbox_listener.py`](../scripts/stt_mailbox_listener.py)
+listens on one or more real audio input devices, transcribes speech locally
+and offline with [Vosk](https://alphacephei.com/vosk/), and posts each
+finalized utterance into the shared mailbox with `send()`, so spoken words
+appear in the Chat UI exactly like a typed message. It writes directly to the
+local mailbox store (via the `mailbox_chat`/`mailbox_channels` client's
+`send()`), so no relay/server process needs to be running.
+
+```powershell
+python scripts/stt_mailbox_listener.py --list-devices
+python scripts/stt_mailbox_listener.py --device 1 --to symbolic-workbench-user
+python scripts/stt_mailbox_listener.py --device 1 --device 20 --sender voice-stt-listener --partial
+```
+
+- `--device` accepts a device index (from `--list-devices`) or a
+  case-insensitive substring of the device name; repeat it to transcribe
+  several devices concurrently (each in its own thread with its own
+  recognizer).
+- `--to` selects the mailbox recipient(s); it defaults to
+  `symbolic-workbench-user`, the Chat page's default-displayed channel.
+- `--sender` sets the mailbox `from` identity (default `voice-stt-listener`).
+- `--model` (or `STT_VOSK_MODEL_DIR`) points at a Vosk model directory;
+  it defaults to `~/.cache/ws_collab_models/vosk-model-small-en-us-0.15`
+  and exits with download instructions if that directory is missing.
+- `--partial` also posts interim (not-yet-finalized) results as
+  `stt_partial` messages; only finalized `stt_transcript` messages are sent
+  by default.
+- Install the extra with `python -m pip install -e ".[stt]"` (adds
+  `sounddevice` and `vosk`) if they are not already present.
+
 ## Codex heartbeat automation
 
 The repository-owned source of truth for the Workbench mailbox heartbeat is

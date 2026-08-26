@@ -12,17 +12,52 @@
     (properties (
       (id Text)
       (observation Text)
-      (supports ([] Text))
-      (contradicts ([] Text))
+      (supports ([]
+        Text
+      ))
+      (contradicts ([]
+        Text
+      ))
       (confidence Number)
-      (artifactRefs ([] Text))
+      (artifactRefs ([]
+        Text
+      ))
     ))
   ))
-  (children ([]
-    prolog_fact_set
-    symbolic_fact_set
+  (specializations (
+    (prolog_fact_set (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        specializations
+        preferredSpecialization
+      ))
+    ))
+    (symbolic_fact_set (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        specializations
+        preferredSpecialization
+      ))
+    ))
   ))
-  (parents ([]
-    evidence
+  (implements (
+    (evidence (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
 )

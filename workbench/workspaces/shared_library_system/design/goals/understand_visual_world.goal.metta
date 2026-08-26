@@ -11,11 +11,35 @@
     (domain vision)
     (shared true)
   ))
-  (children ([]
-    understand_visual_world.explore_safely
-    understand_visual_world.explain_dynamics
+  (specializations (
+    (understand_visual_world.explore_safely (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        specializations
+        preferredSpecialization
+      ))
+    ))
+    (understand_visual_world.explain_dynamics (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        specializations
+        preferredSpecialization
+      ))
+    ))
   ))
-  (preferredChild understand_visual_world.explain_dynamics)
+  (preferredSpecialization understand_visual_world.explain_dynamics)
 )
 
 (
@@ -28,8 +52,13 @@
     (primaryMetric explained_transition_coverage)
     (riskTolerance medium)
   ))
-  (parents ([]
-    understand_visual_world
+  (implements (
+    (understand_visual_world (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
 )
 
@@ -43,7 +72,12 @@
     (primaryMetric information_gain)
     (riskTolerance low)
   ))
-  (parents ([]
-    understand_visual_world
+  (implements (
+    (understand_visual_world (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
 )

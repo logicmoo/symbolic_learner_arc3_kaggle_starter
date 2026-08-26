@@ -3,11 +3,28 @@
   (id svg)
   (label SVG)
   (language image/svg+xml)
-  (parents ([]
-    image
+  (implements (
+    (image (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
-  (children ([]
-    svg_xml
+  (specializations (
+    (svg_xml (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        specializations
+        preferredSpecialization
+      ))
+    ))
   ))
-  (preferredChild svg_xml)
+  (preferredSpecialization svg_xml)
 )

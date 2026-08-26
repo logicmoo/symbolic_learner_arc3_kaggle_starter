@@ -2,13 +2,47 @@
   (kind representation_datatype)
   (id plain_text)
   (label "Plain Text")
-  (parents ([]
-    information
-    text
+  (implements (
+    (information (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
+    (text (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
-  (children ([]
-    utf8_text
-    markdown
+  (specializations (
+    (utf8_text (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        specializations
+        preferredSpecialization
+      ))
+    ))
+    (markdown (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        specializations
+        preferredSpecialization
+      ))
+    ))
   ))
-  (preferredChild utf8_text)
+  (preferredSpecialization utf8_text)
 )

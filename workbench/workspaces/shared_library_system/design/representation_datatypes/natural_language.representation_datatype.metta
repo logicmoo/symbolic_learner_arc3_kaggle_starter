@@ -3,13 +3,47 @@
   (id natural_language)
   (label "Natural-Language Description")
   (language natural_language)
-  (parents ([]
-    image
-    text
+  (implements (
+    (image (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
+    (text (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
-  (children ([]
-    markdown
-    text_plain
+  (specializations (
+    (markdown (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        specializations
+        preferredSpecialization
+      ))
+    ))
+    (text_plain (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        specializations
+        preferredSpecialization
+      ))
+    ))
   ))
-  (preferredChild markdown)
+  (preferredSpecialization markdown)
 )

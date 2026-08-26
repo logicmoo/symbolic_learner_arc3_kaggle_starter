@@ -24,7 +24,12 @@
     (free true)
     (localProxy true)
   ))
-  (parents ([]
-    clawrouter
+  (implements (
+    (clawrouter (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
 )

@@ -3,7 +3,12 @@
   (id file_reference)
   (label "File Reference")
   (description "A durable reference to a filesystem or provider-backed resource, independent of the referenced file's content type.")
-  (parents ([]
-    information
+  (implements (
+    (information (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
 )

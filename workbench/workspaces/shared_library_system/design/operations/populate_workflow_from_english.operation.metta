@@ -23,8 +23,22 @@
     (preflight_proposals Array)
     (validation_report Object)
   ))
-  (children ([] workflow.populate_from_english.json))
-  (preferredChild workflow.populate_from_english.json)
+  (specializations (
+    (workflow.populate_from_english.json (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        specializations
+        preferredSpecialization
+      ))
+    ))
+  ))
+  (preferredSpecialization workflow.populate_from_english.json)
 )
 (
   (kind operation)
@@ -35,7 +49,14 @@
     systems-llm
   ))
   (implementation llm.complete)
-  (parents ([] workflow.populate_from_english))
+  (implements (
+    (workflow.populate_from_english (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
+  ))
   (inputs (
     (english_specification Text)
     (effective_operation_catalog Array)
@@ -53,11 +74,18 @@
     (validation_report Object)
   ))
   (bindings (
-    (prompts ([] workflow.generate_from_english))
-    (promptVariants ((workflow.generate_from_english workflow.generate_from_english.json)))
+    (prompts ([]
+      workflow.generate_from_english
+    ))
+    (promptVariants (
+      (workflow.generate_from_english workflow.generate_from_english.json)
+    ))
     (separator "\n\n")
   ))
-  (modelSelection ((models ([])) (strategy policy)))
+  (modelSelection (
+    (models ([]))
+    (strategy policy)
+  ))
   (parameters (
     (outputBinding workflow)
     (outputFormat json)

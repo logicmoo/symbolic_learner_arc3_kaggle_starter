@@ -12,6 +12,7 @@ import { createPortal } from "react-dom";
 import { ChatDock } from "../components/ChatDock";
 import { PageUiTools } from "../components/PageUiTools";
 import { PddlPlanImportPanel } from "../components/PddlPlanImportPanel";
+import { relationshipIds } from "../components/resourceRelationships";
 import {
   HumanInputForm,
   RuntimeHistoryView,
@@ -42,6 +43,7 @@ import {
 } from "../components/WorkflowPageHost";
 import { TaskStatusBar } from "../taskRegistry";
 import { usePluginMenu, type PluginMenuEntry } from "../components/usePluginMenu";
+import { TsxSourceLocationPopup } from "../components/TsxSourceLocationPopup";
 import "../styles/workflow_layout.css";
 
 const DataCatalogPanel = lazy(() =>
@@ -297,9 +299,9 @@ type OperationResource = {
   categories?: string[];
   topics?: string[];
   implementation?: string;
-  parents?: string[];
-  children?: string[];
-  preferredChild?: string;
+  implements?: Record<string, unknown>;
+  specializations?: Record<string, unknown>;
+  preferredSpecialization?: string;
   enabled?: boolean;
   inputs?: Record<string, DatatypeContract>;
   outputs?: Record<string, DatatypeContract>;
@@ -506,8 +508,33 @@ const viewFromLocation = (): View | null => {
   if (value === "backends") return "llms";
   return [...WORKBENCH_VIEWS].find((candidate) => candidate.toLowerCase() === value) || null;
 };
-const workspaceFromLocation = () =>
-  new URLSearchParams(window.location.search).get("workspace")?.trim() || null;
+/** Remembers the last workspace that actually loaded, so a link that omits
+ * ?workspace= (an external plugin page opened in a new tab, for example)
+ * resumes it instead of forcing the chooser. */
+const LAST_WORKSPACE_STORAGE_KEY = "workbench.lastWorkspaceId";
+const rememberWorkspaceId = (workspaceId: string) => {
+  try {
+    localStorage.setItem(LAST_WORKSPACE_STORAGE_KEY, workspaceId);
+  } catch {
+    // Storage can be unavailable (private browsing, quota); the chooser is the fallback.
+  }
+};
+const forgetWorkspaceId = () => {
+  try {
+    localStorage.removeItem(LAST_WORKSPACE_STORAGE_KEY);
+  } catch {
+    // Nothing to clean up if storage was never available.
+  }
+};
+const workspaceFromLocation = () => {
+  const explicit = new URLSearchParams(window.location.search).get("workspace")?.trim();
+  if (explicit) return explicit;
+  try {
+    return localStorage.getItem(LAST_WORKSPACE_STORAGE_KEY)?.trim() || "default";
+  } catch {
+    return "default";
+  }
+};
 const workspaceOpeningViewFromLocation = (inheritedWorkspaceIds: string[] = []): View => {
   const explicitView = viewFromLocation();
   if (explicitView) return explicitView;
@@ -620,6 +647,9 @@ const isWorkbenchTheme = (value: string | null): value is WorkbenchTheme =>
   WORKBENCH_THEMES.some((theme) => theme.id === value);
 const WORKSPACE_RESOURCE_COUNTING_STORAGE_KEY =
   "workbench.workspaceResourceCountingEnabled";
+/** Once a rail section's plugin-contributed pages exceed this many, collapse
+ * them behind a toggle instead of always showing every one inline. */
+const PLUGIN_MENU_COLLAPSE_THRESHOLD = 5;
 
 export const NAVIGATION_V2: Array<{
   group: "WORKSPACE" | "WORKFLOWS" | "CAPABILITIES" | "KNOWLEDGE" | "RUNTIME" | "SYSTEM" | "PLUGINS";
@@ -788,7 +818,10 @@ export function FilesystemWorkbenchPage() {
   const currentWorkspaceId = useRef<string | null>(null);
   const setView = (
     next: View,
-    options?: { llmsPage?: "browse" | "discover" | "override" },
+    options?: {
+      llmsPage?: "browse" | "discover" | "override";
+      pluginPage?: PluginMenuEntry;
+    },
   ) => {
     setViewState(next);
     if (next === "states") {
@@ -804,6 +837,13 @@ export function FilesystemWorkbenchPage() {
     if (next === "llms")
       url.searchParams.set("llmsPage", options?.llmsPage || llmsTopMenuMode);
     else url.searchParams.delete("llmsPage");
+    if (next === "pluginPage" && options?.pluginPage) {
+      url.searchParams.set("pluginId", options.pluginPage.pluginId);
+      url.searchParams.set("pluginPage", options.pluginPage.id);
+    } else if (next !== "pluginPage") {
+      url.searchParams.delete("pluginId");
+      url.searchParams.delete("pluginPage");
+    }
     url.searchParams.delete("menu");
     url.searchParams.delete("resource");
     url.searchParams.delete("edit");
@@ -968,6 +1008,9 @@ export function FilesystemWorkbenchPage() {
     const saved = localStorage.getItem("workbench.theme");
     return isWorkbenchTheme(saved) ? saved : "midnight";
   });
+  const [debugUiEnabled, setDebugUiEnabled] = useState(
+    () => localStorage.getItem("workbench.debugUiEnabled") !== "false",
+  );
   const [workspaceResourceCountingEnabled, setWorkspaceResourceCountingEnabled] =
     useState(() => {
       const saved = localStorage.getItem(
@@ -988,6 +1031,15 @@ export function FilesystemWorkbenchPage() {
       Math.min(
         520,
         Number(localStorage.getItem("workbench.resourceBrowserWidth")) || 250,
+      ),
+    ),
+  );
+  const [navigationWidth, setNavigationWidth] = useState(() =>
+    Math.max(
+      150,
+      Math.min(
+        420,
+        Number(localStorage.getItem("workbench.navigationWidth")) || 220,
       ),
     ),
   );
@@ -1017,6 +1069,17 @@ export function FilesystemWorkbenchPage() {
   );
   const { pluginMenu } = usePluginMenu();
   const [pluginPage, setPluginPage] = useState<PluginMenuEntry | null>(null);
+  const [expandedPluginGroups, setExpandedPluginGroups] = useState<Record<string, boolean>>({});
+  useEffect(() => {
+    if (view !== "pluginPage" || pluginPage || pluginMenu.length === 0) return;
+    const params = new URL(window.location.href).searchParams;
+    const pluginId = params.get("pluginId");
+    const pageId = params.get("pluginPage");
+    const restored = pluginMenu.find(
+      (entry) => entry.pluginId === pluginId && entry.id === pageId,
+    );
+    if (restored) setPluginPage(restored);
+  }, [pluginMenu, pluginPage, view]);
   const b1b2PageDefinitionForPlay = workflowPageDefinitions.find(
     (definition) => definition.routeView === "arc3B1B2Pipeline",
   );
@@ -1346,6 +1409,7 @@ export function FilesystemWorkbenchPage() {
       const next = snapshotPayload as unknown as Snapshot;
       setWorkspace(next.workspace);
       currentWorkspaceId.current = next.workspace.id;
+      rememberWorkspaceId(next.workspace.id);
       const workspaceUrl = new URL(window.location.href);
       workspaceUrl.searchParams.set("workspace", next.workspace.id);
       window.history.replaceState(
@@ -1477,6 +1541,7 @@ export function FilesystemWorkbenchPage() {
     );
     setWorkspace(null);
     currentWorkspaceId.current = null;
+    forgetWorkspaceId();
     setSnapshot(null);
     setRun(null);
   };
@@ -1844,10 +1909,35 @@ export function FilesystemWorkbenchPage() {
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", stop);
   };
+  const beginNavigationResize = (
+    event: ReactPointerEvent<HTMLDivElement>,
+  ) => {
+    event.preventDefault();
+    const startX = event.clientX,
+      startWidth = navigationWidth;
+    const move = (pointer: PointerEvent) =>
+      setNavigationWidth(
+        Math.max(150, Math.min(420, startWidth + pointer.clientX - startX)),
+      );
+    const stop = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", stop);
+      document.body.classList.remove("resizing-panel");
+    };
+    document.body.classList.add("resizing-panel");
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", stop);
+  };
   const hasActiveTextSelection = () => {
     const selection = window.getSelection();
     return Boolean(selection && !selection.isCollapsed && selection.toString());
   };
+  useEffect(() => {
+    localStorage.setItem(
+      "workbench.navigationWidth",
+      String(Math.round(navigationWidth)),
+    );
+  }, [navigationWidth]);
   useEffect(() => {
     localStorage.setItem(
       "workbench.resourceBrowserWidth",
@@ -1936,6 +2026,12 @@ export function FilesystemWorkbenchPage() {
     document.documentElement.dataset.workbenchTheme = theme;
     localStorage.setItem("workbench.theme", theme);
   }, [theme]);
+  useEffect(() => {
+    localStorage.setItem(
+      "workbench.debugUiEnabled",
+      debugUiEnabled ? "true" : "false",
+    );
+  }, [debugUiEnabled]);
   useEffect(() => {
     localStorage.setItem(
       WORKSPACE_RESOURCE_COUNTING_STORAGE_KEY,
@@ -2327,7 +2423,7 @@ export function FilesystemWorkbenchPage() {
     RecordFile<OperationResource>[]
   >();
   for (const record of operationLibrary.operationImplementations) {
-    for (const parentId of record.document?.parents || []) {
+    for (const parentId of relationshipIds(record.document?.implements)) {
       const rows = implementationsByOperation.get(parentId) || [];
       rows.push(record);
       implementationsByOperation.set(parentId, rows);
@@ -2487,7 +2583,7 @@ export function FilesystemWorkbenchPage() {
                   </small>
                 </span>
                 <em>
-                  {operation.preferredChild === variant.id
+                  {operation.preferredSpecialization === variant.id
                     ? "preferred"
                     : "alternative"}
                 </em>
@@ -2753,7 +2849,8 @@ export function FilesystemWorkbenchPage() {
       ?.scrollIntoView({ behavior: "smooth", block: "start" });
 
   return (
-    <main className="workbench" data-view={view}>
+    <main className={`workbench ${debugUiEnabled ? "tsx-debug-enabled" : ""}`} data-view={view}>
+      {debugUiEnabled && <TsxSourceLocationPopup />}
       <header className="topbar">
         <div className="brand">
           <span className="brand-mark">M</span>
@@ -2842,6 +2939,14 @@ export function FilesystemWorkbenchPage() {
         </div>
         <div className="toolbar">
           <button
+            type="button"
+            className={`debug-ui-toggle ${debugUiEnabled ? "active" : ""}`}
+            aria-pressed={debugUiEnabled}
+            onClick={() => setDebugUiEnabled(value => !value)}
+          >
+            {debugUiEnabled ? "Debug UI On" : "Debug UI Off"}
+          </button>
+          <button
             className="server-restart-button"
             title="Restart UI and API servers"
             disabled={restartPending}
@@ -2921,7 +3026,7 @@ export function FilesystemWorkbenchPage() {
       <TaskStatusBar />
       <section
         className={`workspace ${relationshipView ? "artifact-focused" : ""} ${view === "modelPolicy" ? "policy-focused" : ""}`}
-        style={{ "--inspector-width": `${inspectorWidth}px` } as CSSProperties}
+        style={{ "--inspector-width": `${inspectorWidth}px`, "--nav-rail-width": `${navigationWidth}px` } as CSSProperties}
       >
         <aside className="rail navigation-v2">
           {NAVIGATION_V2.map((section) => (
@@ -2959,28 +3064,66 @@ export function FilesystemWorkbenchPage() {
                   <small>{item.label}</small>
                 </button>
               ))}
-              {pluginMenu
-                .filter((entry) => entry.group === section.group)
-                .map((entry) => (
-                  <button
-                    key={`plugin-page:${entry.pluginId}:${entry.id}`}
-                    data-plugin-page={`${entry.pluginId}:${entry.id}`}
-                    title={entry.address}
-                    disabled={!entry.available}
-                    className={`rail-icon ${
-                      view === "pluginPage" && pluginPage?.pluginId === entry.pluginId && pluginPage?.id === entry.id
-                        ? "selected"
-                        : ""
-                    }`}
-                    onClick={() => {
-                      setPluginPage(entry);
-                      setView("pluginPage");
-                    }}
-                  >
-                    <span>{entry.glyph}</span>
-                    <small>{entry.label}</small>
-                  </button>
-                ))}
+              {(() => {
+                const sectionPluginEntries = pluginMenu.filter(
+                  (entry) => entry.group === section.group,
+                );
+                const hasSelectedEntry = sectionPluginEntries.some(
+                  (entry) =>
+                    view === "pluginPage" &&
+                    pluginPage?.pluginId === entry.pluginId &&
+                    pluginPage?.id === entry.id,
+                );
+                const overThreshold =
+                  sectionPluginEntries.length > PLUGIN_MENU_COLLAPSE_THRESHOLD;
+                const explicitToggle = expandedPluginGroups[section.group];
+                const expanded =
+                  explicitToggle !== undefined
+                    ? explicitToggle
+                    : !overThreshold || hasSelectedEntry;
+                return (
+                  <>
+                    {expanded &&
+                      sectionPluginEntries.map((entry) => (
+                        <button
+                          key={`plugin-page:${entry.pluginId}:${entry.id}`}
+                          data-plugin-page={`${entry.pluginId}:${entry.id}`}
+                          title={entry.address}
+                          disabled={!entry.available}
+                          className={`rail-icon ${
+                            view === "pluginPage" && pluginPage?.pluginId === entry.pluginId && pluginPage?.id === entry.id
+                              ? "selected"
+                              : ""
+                          }`}
+                          onClick={() => {
+                            setPluginPage(entry);
+                            setView("pluginPage", { pluginPage: entry });
+                          }}
+                        >
+                          <span>{entry.glyph}</span>
+                          <small>{entry.label}</small>
+                        </button>
+                      ))}
+                    {overThreshold && (
+                      <button
+                        className="rail-icon rail-plugin-group-toggle"
+                        data-plugin-group-toggle={section.group}
+                        onClick={() =>
+                          setExpandedPluginGroups((previous) => ({
+                            ...previous,
+                            [section.group]: !expanded,
+                          }))
+                        }
+                      >
+                        <span>{expanded ? "▲" : "▾"}</span>
+                        <small>
+                          {expanded ? "Collapse" : `${sectionPluginEntries.length} more`}
+                        </small>
+                      </button>
+                    )}
+                  </>
+                );
+              })()}
             </div>
           ))}
           <div className="rail-bottom">
@@ -2994,6 +3137,31 @@ export function FilesystemWorkbenchPage() {
             </button>
           </div>
         </aside>
+        <div
+          className="navigation-resizer"
+          role="separator"
+          aria-label="Resize App Menu"
+          aria-orientation="vertical"
+          aria-valuemin={150}
+          aria-valuemax={420}
+          aria-valuenow={Math.round(navigationWidth)}
+          tabIndex={0}
+          onPointerDown={beginNavigationResize}
+          onDoubleClick={() => setNavigationWidth(220)}
+          onKeyDown={event => {
+            const step = event.shiftKey ? 25 : 10;
+            if (event.key === "ArrowLeft") {
+              event.preventDefault();
+              setNavigationWidth(width => Math.max(150, width - step));
+            } else if (event.key === "ArrowRight") {
+              event.preventDefault();
+              setNavigationWidth(width => Math.min(420, width + step));
+            } else if (event.key === "Home") {
+              event.preventDefault();
+              setNavigationWidth(220);
+            }
+          }}
+        />
         <aside className="stages-panel">
           <div className="panel-label">
             <span>RESOURCE BROWSER</span>

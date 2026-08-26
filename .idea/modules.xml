@@ -3,7 +3,13 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/arc-agi-3-agents.iml" filepath="$PROJECT_DIR$/.idea/arc-agi-3-agents.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/coplex.iml" filepath="$PROJECT_DIR$/.idea/coplex.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/emullm.iml" filepath="$PROJECT_DIR$/.idea/emullm.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/emullm@1.iml" filepath="$PROJECT_DIR$/.idea/emullm@1.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/emullm@2.iml" filepath="$PROJECT_DIR$/.idea/emullm@2.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/logicmoo-world-workbench.iml" filepath="$PROJECT_DIR$/.idea/logicmoo-world-workbench.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/mailbox-mailbox-relay-bridging-proxy.iml" filepath="$PROJECT_DIR$/.idea/mailbox-mailbox-relay-bridging-proxy.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/ws_collab.iml" filepath="$PROJECT_DIR$/.idea/ws_collab.iml" />
     </modules>
   </component>
 </project>

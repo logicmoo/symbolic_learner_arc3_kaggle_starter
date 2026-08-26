@@ -27,12 +27,12 @@ def _select_variant(
     parent = documents.get(parent_id)
     if not parent:
         raise ValueError(f"resource not found: {parent_id}")
-    variant_id = requested_id or parent.get("preferredChild")
+    variant_id = requested_id or parent.get("preferredSpecialization")
     if not variant_id:
-        children = parent.get("children") or []
-        variant_id = children[0] if children else None
+        specializations = parent.get("specializations") or []
+        variant_id = specializations[0] if specializations else None
     variant = documents.get(str(variant_id or ""))
-    if not variant or parent_id not in (variant.get("parents") or []):
+    if not variant or parent_id not in (variant.get("implements") or []):
         raise ValueError(f"valid variant required for {parent_id}")
     return variant
 

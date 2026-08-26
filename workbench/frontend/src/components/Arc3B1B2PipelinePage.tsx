@@ -913,7 +913,7 @@ const snetVisionModelMetta = (modelId: string) => `(
   (id ${snetModelResourceId(modelId)})
   (label ${modelId})
   (description "Discovered from SingularityNET LLM.")
-  (parents ([]
+  (implements ([]
     ${SNET_BACKEND_ID}
   ))
   (model ${modelId})

@@ -120,6 +120,47 @@ def test_super_control_hides_registered_tabs_without_renderers() -> None:
     assert "registered tab has no renderer" not in universal
 
 
+def test_resource_and_inheritance_restores_structured_resource_fields() -> None:
+    universal = _text("UniversalArtifactEditor.tsx")
+    fields = _text("ResourceFieldsEditor.tsx")
+    styles = (ROOT / "workbench/frontend/src/styles/super_control.css").read_text(encoding="utf-8")
+
+    assert "super-control-resource-inheritance" in universal
+    assert "<ResourceFieldsEditor" in universal
+    assert "RESOURCE FIELDS" in fields
+    assert "<span>ENABLED</span>" in fields
+    assert 'type="checkbox"' in fields
+    assert "<span>IMPLEMENTS</span>" in fields
+    assert "Edit implemented resource ·" in fields
+    assert "resourceImplementedIds" in fields
+    assert "Resolved implementation ·" in universal
+    assert "super-control-resource-source" in universal
+    assert ".resource-fields-editor input" in styles
+    assert "+ Specialization" in fields
+    assert "<span>SPECIALIZATIONS</span>" in fields
+    assert "<span>PREFERRED ALTERNATIVE</span>" in fields
+    assert 'update("preferredSpecialization"' in fields
+
+
+def test_operation_resource_editor_creates_preferred_specialization_documents() -> None:
+    operations = _text("OperationLibraryEditor.tsx")
+    fields = _text("ResourceFieldsEditor.tsx")
+
+    assert "const createSpecialization=" in operations
+    assert "implements:implementsResource(parent.id)" in operations
+    assert "specializations:nextSpecializations" in operations
+    assert "preferredSpecialization:(parent as OperationDef).preferredSpecialization||id" in operations
+    assert "topics:parent.topics" in operations
+    assert "isNew:true" in operations
+    assert "dirty:Boolean(record.isNew)" in operations
+    assert "onCreateSpecialization:document?()=>createSpecialization(doc,document)" in operations
+    assert "<span>BORROW</span>" in fields
+    assert "<span>LEND</span>" in fields
+    assert "<span>WITHHOLD</span>" in fields
+    assert "DERIVED IMPLEMENTATION" in fields
+    assert "deriveResourceAbstractness" in fields
+
+
 def test_super_control_banner_has_display_selector_and_tab_set_buttons() -> None:
     universal = _text("UniversalArtifactEditor.tsx")
 
@@ -236,9 +277,37 @@ def test_operation_playground_formats_structured_datatype_contracts() -> None:
     assert "function datatypeLabel(contract:DatatypeContract)" in source
     assert "contract.representation" in source
     assert "datatypeLabel(datatype)" in source
-    assert source.index("if(isTextDatatype(datatype))return <textarea") < source.index(
+    assert source.index("if(isTextDatatype(datatype))return <AutoGrowingTextarea") < source.index(
         'if(/image|bitmap|png|jpe?g/i.test(datatype))return <div className="operation-image-input"'
     )
+
+
+def test_tab_runner_input_editors_grow_to_content_within_the_page() -> None:
+    auto_grow = _text("AutoGrowingTextarea.tsx")
+    styles = (ROOT / "workbench/frontend/src/styles/operation_playground.css").read_text(encoding="utf-8")
+
+    assert "node.scrollHeight" in auto_grow
+    assert "boundary?.getBoundingClientRect().bottom" in auto_grow
+    assert "window.innerHeight" in auto_grow
+    assert 'node.style.overflowY = contentHeight > available ? "auto" : "hidden"' in auto_grow
+    assert "ResizeObserver" in auto_grow
+    for class_name in (
+        "tab-input-editor",
+        "tab-input-editor--opted-in",
+        "tab-input-editor--auto-grow",
+        "tab-input-editor--manual-resize",
+    ):
+        assert class_name in auto_grow or class_name in _text("OperationPlayground.tsx")
+    assert "textarea.tab-input-editor--auto-grow{max-height:calc(100dvh - 24px)}" in styles
+    assert "textarea.tab-input-editor--manual-resize{resize:vertical}" in styles
+    for component in (
+        "ResourceExecutionPlayground.tsx",
+        "OperationPlayground.tsx",
+    ):
+        assert "AutoGrowingTextarea" in _text(component), component
+        assert "tab-input-editor--opted-in" in _text(component), component
+    for component in ("ModelResourcePlayground.tsx", "ExampleExecutePanel.tsx"):
+        assert "AutoGrowingTextarea" not in _text(component), component
 
 
 def test_operation_playground_offers_automatic_llm_fallback() -> None:
@@ -308,10 +377,13 @@ def test_operation_playground_runs_direct_routes_and_accepts_plain_any_values() 
 
 
 def test_other_artifact_families_keep_their_variant_controls() -> None:
-    assert "PREFERRED REPRESENTATION" in _text("DataCatalogPanel.tsx")
+    datatypes = _text("DataCatalogPanel.tsx")
+    assert "PREFERRED REPRESENTATION" in datatypes
+    assert "<ResourceFieldsEditor" in datatypes
+    assert "relatedResources={relatedResources}" in datatypes
     assert "PREFERRED ALTERNATIVE" in _text("PromptLibraryEditor.tsx")
     models = _text("LlmModelsEditor.tsx")
-    assert "INHERITS FROM" in models
+    assert "IMPLEMENTS" in models
     assert "RESOLVED / INHERITED RESOURCE" in models
     for component in ("DataCatalogPanel.tsx", "PromptLibraryEditor.tsx", "GoalPlanLibraryEditor.tsx", "LlmModelsEditor.tsx"):
         assert "ArtifactTreeBranch" in _text(component)
@@ -374,8 +446,8 @@ def test_all_artifact_trees_share_filter_and_parent_path_controls() -> None:
     assert "descendantVisible" in filtering
     assert "info.head.hidden = !showParents" in filtering
     assert "MutationObserver(applyFilter)" in filtering
-    assert "children: _children" in filtering
-    assert "preferredChild: _preferredChild" in filtering
+    assert "specializations: _specializations" in filtering
+    assert "preferredSpecialization: _preferredSpecialization" in filtering
     assert "searchableData(element)" in filtering
     assert "dataset.treeSearch" in filtering
     assert "searchValue" in _text("ArtifactTreeBranch.tsx")
@@ -436,9 +508,9 @@ def test_universal_tree_exposes_composable_tri_state_view_controls() -> None:
     assert "tree-repeat-permanent" in universal
     assert "RepeatSwitch value={visibilityRules.repeats}" in universal
     assert '`top-${kind}`' in controls
-    assert '`child-${kind}`' in controls
-    assert '`childless-${kind}`' in controls
-    assert "Childless ${plural(title(kind))}" in controls
+    assert '`specialization-${kind}`' in controls
+    assert '`unspecialized-${kind}`' in controls
+    assert "Unspecialized ${plural(title(kind))}" in controls
     assert "setAll" in controls
     assert "roleKeys.map(key => [key, value])" in controls
     assert 'aria-label="Tree View Controls"' in controls
@@ -475,11 +547,11 @@ def test_first_class_categories_are_visually_distinct_from_virtual_folders() -> 
 def test_operation_implementations_inherit_parent_playground() -> None:
     operations = _operation_surface_text()
     playground = _text("OperationPlayground.tsx")
-    assert "parentOperation=selectedImplementation" in operations
-    assert "relationshipIds(selectedImplementation.parents)" in operations
-    assert "selectedImplementation && request.parentOperation && <OperationPlayground" in operations
+    assert "implementedOperation=selectedImplementation" in operations
+    assert "relationshipIds(selectedImplementation.implements)" in operations
+    assert "selectedImplementation && request.implementedOperation && <OperationPlayground" in operations
     assert "variants={[selectedImplementation]}" in operations
-    assert "runnableVariants.some(item=>item.id===operation.preferredChild)" in playground
+    assert "runnableVariants.some(item=>item.id===operation.preferredSpecialization)" in playground
     assert "invocationVariant=runnableVariants.length===1?runnableVariants[0].id:variant" in playground
     assert "run(invocationVariant)" in playground
     assert "implementationVariant?{implementationVariant}" in playground

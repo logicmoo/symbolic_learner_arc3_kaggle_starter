@@ -2,11 +2,28 @@
   (kind representation_datatype)
   (id scene_graph)
   (label "Scene Graph")
-  (parents ([]
-    image
+  (implements (
+    (image (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
-  (children ([]
-    json
+  (specializations (
+    (json (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        specializations
+        preferredSpecialization
+      ))
+    ))
   ))
-  (preferredChild json)
+  (preferredSpecialization json)
 )

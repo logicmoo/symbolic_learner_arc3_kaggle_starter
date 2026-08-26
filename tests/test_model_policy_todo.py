@@ -1,4 +1,5 @@
 from pathlib import Path
+from resource_relationships import relationship_ids
 import sys
 import json
 
@@ -84,8 +85,8 @@ def test_shared_policy_examples_form_a_resolvable_reference_graph() -> None:
         "model_health_observation", "model_ping_job", "model_ping_event",
         "benchmark_policy", "benchmark_result",
     }
-    assert by_id["default_model_runtime"]["preferredChild"] in by_id
-    assert by_id["balanced_model_runtime"]["parents"] == ["default_model_runtime"]
+    assert by_id["default_model_runtime"]["preferredSpecialization"] in by_id
+    assert relationship_ids(by_id["balanced_model_runtime"]["implements"]) == ["default_model_runtime"]
     assert by_id["economy_model_runtime"]["enabled"] is False
     assert by_id["openai:gpt-5.6"]["vendorId"] == "openai"
     assert by_id["example_openai_gpt_5_6_ping"]["jobId"] == "example_vendor_ping"

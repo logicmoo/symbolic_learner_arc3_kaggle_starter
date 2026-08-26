@@ -23,7 +23,9 @@ Endpoints (mounted under ``/api``):
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from pathlib import Path
+from urllib.parse import urlparse
 from typing import Any
 
 from fastapi import APIRouter, Body, HTTPException, Query
@@ -34,10 +36,81 @@ try:  # The client ships as an installed package (mailbox_channel/src/mailbox_ch
     from mailbox_channels import connector_registry
     from mailbox_channels import subscriptions as _subscriptions
 except Exception:  # pragma: no cover - client absent in some envs
-    _mailbox_client = None
-    channel_store = None
-    connector_registry = None
-    _subscriptions = None
+    try:
+        # Fall back to the bundled mailbox_chat plugin copy (same on-disk
+        # mailbox format, different module/function names) so mailboxes
+        # written by local tools such as scripts/stt_mailbox_listener.py
+        # still surface here — and, merged in the UI, in the chat mailbox
+        # chooser — even when the sibling mailbox_channels package is not
+        # installed in this environment.
+        import sys as _sys
+
+        _bundled_src = Path(__file__).resolve().parents[1] / "plugins" / "mailbox_chat" / "src"
+        if _bundled_src.is_dir() and str(_bundled_src) not in _sys.path:
+            _sys.path.insert(0, str(_bundled_src))
+        from mailbox_chat import agent_mailbox as _bundled_agent_mailbox
+        from mailbox_chat import connector_registry
+        from mailbox_chat import subscriptions as _subscriptions
+        from mailbox_chat import mailbox_store as _mailbox_store
+
+        # mailbox_chat.agent_mailbox.mailbox_dir() defaults to Path.cwd()/"mailbox",
+        # which is wrong here: this API can be launched with any working directory
+        # (e.g. workbench/server/), while every other consumer of this mailbox
+        # (scripts/agent_mailbox.py, scripts/stt_mailbox_listener.py) is documented
+        # to run "from the repository root". Anchor the default to the repo root
+        # instead of the process cwd so they always agree on the same directory;
+        # AGENT_MAILBOX_DIR still overrides for everyone.
+        import os as _os
+
+        _repo_root_mailbox_dir = Path(__file__).resolve().parents[2] / "mailbox"
+
+        def _default_mailbox_root() -> Path:
+            configured = _os.environ.get("AGENT_MAILBOX_DIR")
+            if configured:
+                return Path(configured).expanduser().resolve()
+            return _repo_root_mailbox_dir
+
+        class _ChannelStoreShim:
+            """Adapts ``mailbox_chat.mailbox_store``'s naming to the
+            ``mailbox_channels.channel_store`` API this module was written
+            against — both are per-mailbox JSON document stores."""
+
+            load_channel = staticmethod(_mailbox_store.load_mailbox)
+            save_channel = staticmethod(_mailbox_store.save_mailbox)
+            channel_path = staticmethod(_mailbox_store.mailbox_path)
+            channel_ids = staticmethod(_mailbox_store.mailbox_ids)
+            ordered_messages = staticmethod(_mailbox_store.ordered_messages)
+            get_entry = staticmethod(_mailbox_store.get_entry)
+            put_entry = staticmethod(_mailbox_store.put_entry)
+            delete_entry = staticmethod(_mailbox_store.delete_entry)
+            get_cursor = staticmethod(_mailbox_store.get_cursor)
+            set_cursor = staticmethod(_mailbox_store.set_cursor)
+            delete_cursors = staticmethod(_mailbox_store.delete_cursors)
+            AGENTS_REGISTRY = _mailbox_store.AGENTS_REGISTRY
+            IDENTIFIERS_REGISTRY = _mailbox_store.IDENTIFIERS_REGISTRY
+            CHANNELS_REGISTRY = _mailbox_store.MAILBOXES_REGISTRY
+
+        class _MailboxClientShim:
+            """Adapts ``mailbox_chat.agent_mailbox`` to the subset of the
+            ``mailbox_channels.agent_mailbox`` surface this module calls."""
+
+            mailbox_dir = staticmethod(_default_mailbox_root)
+            DEFAULT_SENDER = _bundled_agent_mailbox.DEFAULT_SENDER
+
+            @staticmethod
+            def send(to: str, text: str, *, sender: str, channel_id: str | None = None,
+                      root: Path | None = None) -> dict[str, Any]:
+                return _bundled_agent_mailbox.send(
+                    to, text, sender=sender, mailbox_id=channel_id, root=root,
+                )
+
+        channel_store = _ChannelStoreShim()
+        _mailbox_client = _MailboxClientShim()
+    except Exception:  # pragma: no cover - bundled copy absent/incompatible
+        _mailbox_client = None
+        channel_store = None
+        connector_registry = None
+        _subscriptions = None
 
 router = APIRouter()
 
@@ -118,6 +191,28 @@ def _iter_mailbox_records(root: Path, mailbox_id: str) -> list[dict[str, Any]]:
     return [record for _key, record in channel_store.ordered_messages(document)]
 
 
+def _timestamp_epoch(value: Any) -> float | None:
+    if isinstance(value, (int, float)):
+        return float(value)
+    text = str(value or "").strip()
+    if not text:
+        return None
+    try:
+        return datetime.fromisoformat(text.replace("Z", "+00:00")).timestamp()
+    except ValueError:
+        return None
+
+
+def _mailbox_server(document: dict[str, Any]) -> str:
+    declared = str(document.get("server") or document.get("origin") or "").strip()
+    if declared:
+        return declared
+    definition = str(document.get("definition") or "").strip()
+    if definition.startswith(("http://", "https://")):
+        return urlparse(definition).netloc or "remote"
+    return str(document.get("source") or "local")
+
+
 # ── directory: agents and mailboxes ──────────────────────────────────────────
 
 @router.get("/mailbox/agents")
@@ -148,7 +243,7 @@ def mailbox_add_agent(payload: dict[str, Any] = Body(...)) -> dict[str, Any]:
 
 
 @router.get("/mailbox/mailboxes")
-def mailbox_list() -> dict[str, Any]:
+def mailbox_list(agent: str | None = Query(None)) -> dict[str, Any]:
     """List mailboxes — every per-mailbox ``.json`` document in the store.
 
     Registry documents (``sub_kind == "ordered_id_channel"``) are not mailboxes
@@ -157,15 +252,33 @@ def mailbox_list() -> dict[str, Any]:
     _require_client()
     root = _root()
     mailboxes = []
+    now = datetime.now(timezone.utc).timestamp()
     for mid in channel_store.channel_ids(root):
         document = channel_store.load_channel(root, mid)
         if document.get("sub_kind") == "ordered_id_channel":
             continue
+        records = _iter_mailbox_records(root, mid)
+        timestamps = [stamp for record in records if (stamp := _timestamp_epoch(record.get("timestamp"))) is not None]
+        cursor = _cursor_info(root, mid, agent) if agent else None
         mailboxes.append({
             "id": mid,
             "kind": document.get("sub_kind") or "mailbox",
-            "messages": len(document.get("messages") or {}),
+            "messages": len(records),
             "name": document.get("name"),
+            "global_name": document.get("global_name"),
+            "source": document.get("source"),
+            "definition": document.get("definition"),
+            "writable": document.get("writable"),
+            "origin": document.get("origin") or "workbench",
+            "server": _mailbox_server(document),
+            "lastActivityAt": max(timestamps) if timestamps else None,
+            "activityPerMinute": sum(stamp >= now - 60 for stamp in timestamps),
+            "activityPerHour": sum(stamp >= now - 3600 for stamp in timestamps),
+            "unread": cursor["behind"] if cursor else len(records),
+            "cursorOffset": cursor["offset"] if cursor else 0,
+            "cursorInitialized": cursor["initialized"] if cursor else False,
+            "lastReadMessageId": cursor.get("last_read_id") if cursor else None,
+            "nextUnreadMessageId": cursor.get("next_unread_id") if cursor else (records[0].get("id") if records else None),
         })
     return {"mailboxes": mailboxes}
 
@@ -352,9 +465,12 @@ def mailbox_set_config(payload: dict[str, Any] = Body(...)) -> dict[str, Any]:
 # ── cursor inspect / move / clear ────────────────────────────────────────────
 
 def _cursor_info(root: Path, mailbox: str, agent: str) -> dict[str, Any]:
-    total = _mailbox_message_count(root, mailbox)
+    records = _iter_mailbox_records(root, mailbox)
+    total = len(records)
     state = channel_store.get_cursor(root, agent, mailbox)
-    consumed = int((state or {}).get("consumed") or 0)
+    consumed = min(total, max(0, int((state or {}).get("consumed") or 0)))
+    last_read = records[consumed - 1] if consumed > 0 else None
+    next_unread = records[consumed] if consumed < total else None
     return {
         "mailbox": mailbox,
         "agent": agent,
@@ -365,6 +481,10 @@ def _cursor_info(root: Path, mailbox: str, agent: str) -> dict[str, Any]:
         "entries_consumed": consumed,
         "entry_next": (state or {}).get("next"),
         "entries_total": total,
+        "last_read_id": (last_read or {}).get("id"),
+        "last_read_timestamp": (last_read or {}).get("timestamp"),
+        "next_unread_id": (next_unread or {}).get("id"),
+        "next_unread_timestamp": (next_unread or {}).get("timestamp"),
     }
 
 

@@ -3,5 +3,12 @@
   (id prompt_resource)
   (label "Prompt Resource")
   (description "A prompt specification or inherited prompt variant before rendering.")
-  (parents ([] information))
+  (implements (
+    (information (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
+  ))
 )

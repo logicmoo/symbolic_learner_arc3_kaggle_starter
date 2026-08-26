@@ -23,9 +23,10 @@ function filesBelow(directory, result = []) {
 }
 
 function ids(value) {
-  const values = Array.isArray(value) ? value : typeof value === "string" ? [value] : [];
-  return [...new Set(values.map(String).filter(value => value.trim()))];
+  if (!value || typeof value !== "object" || Array.isArray(value)) return [];
+  return Object.keys(value).filter(value => value.trim());
 }
+const specializationPolicy = () => ({ lend: ["*"], withhold: ["id", "label", "description", "implements", "specializations", "preferredSpecialization"] });
 
 const records = [];
 for (const file of filesBelow(workspaceRoot)) {
@@ -44,19 +45,19 @@ for (const record of records) {
 }
 
 for (const parent of records) {
-  if (!Array.isArray(parent.document.children)) continue;
-  parent.document.children = ids(parent.document.children).filter(childId => {
-    const child = byWorkspaceAndId.get(`${parent.workspace}:${childId}`) ?? byWorkspaceAndId.get(`shared:${childId}`);
-    return child && ids(child.document.parents).includes(parent.document.id);
-  });
+  if (!parent.document.specializations || Array.isArray(parent.document.specializations)) continue;
+  parent.document.specializations = Object.fromEntries(ids(parent.document.specializations).filter(specializationId => {
+    const specialization = byWorkspaceAndId.get(`${parent.workspace}:${specializationId}`) ?? byWorkspaceAndId.get(`shared:${specializationId}`);
+    return specialization && ids(specialization.document.implements).includes(parent.document.id);
+  }).map(specializationId => [specializationId, parent.document.specializations[specializationId]]));
 }
 
 for (const child of records) {
   const family = families[child.document.kind];
-  if (!family && !child.document.parents) continue;
-  child.document.parents = ids(child.document.parents);
+  if (!family && !child.document.implements) continue;
+  const implementedIds = ids(child.document.implements);
 
-  for (const parentId of child.document.parents) {
+  for (const parentId of implementedIds) {
     const parent = byWorkspaceAndId.get(`${child.workspace}:${parentId}`) ?? byWorkspaceAndId.get(`shared:${parentId}`);
     const allowedParentKinds = family
       ? [family.parentKind, ...(child.document.kind === "semantic_datatype" ? ["semantic_datatype"] : [])]
@@ -64,8 +65,8 @@ for (const child of records) {
     if (!parent || !allowedParentKinds.includes(parent.document.kind)) {
       throw new Error(`${child.document.kind}:${child.document.id} points to invalid parent:${parentId}`);
     }
-    parent.document.children = ids(parent.document.children);
-    if (!parent.document.children.includes(child.document.id)) parent.document.children.push(child.document.id);
+    parent.document.specializations = parent.document.specializations && !Array.isArray(parent.document.specializations) ? parent.document.specializations : {};
+    parent.document.specializations[child.document.id] ??= specializationPolicy();
   }
 }
 
@@ -75,4 +76,4 @@ for (const record of records) {
   fs.writeFileSync(record.file, `${JSON.stringify(record.document, null, 2)}\n`, "utf8");
   changed += 1;
 }
-console.log(`Synchronized flat parent/child relationships in ${changed} resource files.`);
+console.log(`Synchronized flat implements/specializations relationships in ${changed} resource files.`);

@@ -3,5 +3,12 @@
   (id planned_workflow)
   (label "Planned Workflow")
   (description "An ordered or partially ordered workflow produced by planning.")
-  (parents ([] information))
+  (implements (
+    (information (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
+  ))
 )

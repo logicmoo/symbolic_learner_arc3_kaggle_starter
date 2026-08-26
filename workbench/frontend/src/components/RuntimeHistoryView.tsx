@@ -4,6 +4,7 @@ import { jsonValueToMetta } from "../lib/mettaResourceCodec";
 import { WorkflowRunsControl } from "./WorkflowRunsControl";
 import { ThreeStateAccordionMember, ThreeStateAccordionStack, type AccordionDisplayMode } from "./ThreeStateAccordion";
 import { replaceWorkbenchLocation } from "../lib/workbenchNavigation";
+import { relationshipIds } from "./resourceRelationships";
 
 const WorkflowRunnerTodoReference = lazy(() =>
   import("./WorkflowRunnerTodoReference").then((module) => ({
@@ -2654,7 +2655,7 @@ export function RuntimeHistoryView({
     [workflows],
   );
   const isRootResource = (doc: Record<string, any>) =>
-    !Array.isArray(doc.parents) || doc.parents.length === 0;
+    relationshipIds(doc.implements).length === 0;
   const goalSpecs = goalDocs.filter(
     (doc) => doc.kind === "goal" && isRootResource(doc),
   );
@@ -2677,8 +2678,8 @@ export function RuntimeHistoryView({
   const availablePlanSpecs = planSpecs.filter(
     (plan) =>
       (!goalId || (plan.goals || []).includes(goalId)) &&
-      (plan.children || []).some((childId: string) =>
-        workflowIds.has(planDocs.find((doc) => doc.id === childId)?.workflow),
+      (plan.specializations || []).some((specializationId: string) =>
+        workflowIds.has(planDocs.find((doc) => doc.id === specializationId)?.workflow),
       ),
   );
   const [inputs, setInputs] = useState("{}");
@@ -2693,14 +2694,14 @@ export function RuntimeHistoryView({
     [workflowDraftStatus, setWorkflowDraftStatus] = useState(""),
     [workflowDraftDirty, setWorkflowDraftDirty] = useState(false);
   const goalVariants = goalDocs.filter((doc) =>
-    (doc.parents || []).includes(goalId),
+    relationshipIds(doc.implements).includes(goalId),
   );
   const planVariants = planDocs.filter(
     (doc) =>
-      (doc.parents || []).includes(planId) && workflowIds.has(doc.workflow),
+      relationshipIds(doc.implements).includes(planId) && workflowIds.has(doc.workflow),
   );
   const contextVariants = contextDocs.filter((doc) =>
-    (doc.parents || []).includes(contextId),
+    relationshipIds(doc.implements).includes(contextId),
   );
   const selectedPlanVariant = planVariants.find(
     (doc) => doc.id === planVariantId,
@@ -2874,7 +2875,7 @@ export function RuntimeHistoryView({
   useEffect(() => {
     const parent = goalSpecs.find((doc) => doc.id === goalId);
     const preferred = goalVariants.find(
-      (doc) => doc.id === parent?.preferredChild,
+      (doc) => doc.id === parent?.preferredSpecialization,
     );
     if (!goalVariants.some((doc) => doc.id === goalVariantId))
       setGoalVariantId(String(preferred?.id || goalVariants[0]?.id || ""));
@@ -2882,7 +2883,7 @@ export function RuntimeHistoryView({
   useEffect(() => {
     const parent = planSpecs.find((doc) => doc.id === planId);
     const preferred = planVariants.find(
-      (doc) => doc.id === parent?.preferredChild,
+      (doc) => doc.id === parent?.preferredSpecialization,
     );
     if (!planVariants.some((doc) => doc.id === planVariantId))
       setPlanVariantId(String(preferred?.id || planVariants[0]?.id || ""));
@@ -2890,7 +2891,7 @@ export function RuntimeHistoryView({
   useEffect(() => {
     const parent = contextSpecs.find((doc) => doc.id === contextId);
     const preferred = contextVariants.find(
-      (doc) => doc.id === parent?.preferredChild,
+      (doc) => doc.id === parent?.preferredSpecialization,
     );
     if (!contextId) setContextVariantId("");
     else if (!contextVariants.some((doc) => doc.id === contextVariantId))

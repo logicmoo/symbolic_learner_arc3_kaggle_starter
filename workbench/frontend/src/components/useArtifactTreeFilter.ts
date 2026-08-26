@@ -82,7 +82,7 @@ export function useArtifactTreeFilter(rules?: TreeVisibilityRules) {
         try {
           const parsed = JSON.parse(source);
           if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return source;
-          const { children: _children, preferredChild: _preferredChild, ...ownFields } = parsed as Record<string, unknown>;
+          const { specializations: _specializations, preferredSpecialization: _preferredSpecialization, ...ownFields } = parsed as Record<string, unknown>;
           return JSON.stringify(ownFields);
         } catch { return source; }
       };
@@ -98,9 +98,9 @@ export function useArtifactTreeFilter(rules?: TreeVisibilityRules) {
         const parentRaw = parentElement ? parsedSearchValue(parentElement) : {};
         const parentDocument = documentValue(parentRaw);
         const parentKind = typeof parentDocument.kind === "string" ? parentDocument.kind : null;
-        const declaredChildren = Array.isArray(raw.children) ? raw.children : Array.isArray(document.children) ? document.children : [];
+        const declaredSpecializations = Array.isArray(raw.specializations) ? raw.specializations : Array.isArray(document.specializations) ? document.specializations : [];
         const roles = kind
-          ? [`${parentKind === kind ? "child" : "top"}-${kind}`, ...(declaredChildren.length === 0 ? [`childless-${kind}`] : [])]
+          ? [`${parentKind === kind ? "specialization" : "top"}-${kind}`, ...(declaredSpecializations.length === 0 ? [`unspecialized-${kind}`] : [])]
           : ["other"];
         const enabled = !Boolean(head?.querySelector(".resource-disabled"));
         const searchMatch = Boolean(query) && `${searchableData(element).toLocaleLowerCase()} ${searchableText(head)}`.includes(query);

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { relationshipIds } from "./resourceRelationships";
+import { implementsResource, relationshipIds, specializesResource } from "./resourceRelationships";
 
 type RecordFile<T> = {
   path: string;
@@ -17,7 +17,7 @@ type PromptDef = {
   inputs?: Record<string, unknown>;
   outputs?: Record<string, unknown>;
   text?: string | string[];
-  children?: string[]; preferredChild?: string;
+  specializations?: Record<string, unknown>; preferredSpecialization?: string;
   [key: string]: unknown;
 };
 
@@ -26,7 +26,7 @@ type PromptImplementation = {
   id: string;
   label?: string;
   description?: string;
-  parents: string[];
+  implements: Record<string, unknown>;
   version?: number;
   targets?: string[];
   locale?: string;
@@ -70,7 +70,7 @@ export function PromptHierarchyPanel({workspaceId}: {workspaceId: string}) {
     const map = new Map<string, RecordFile<PromptImplementation>[]>();
     for (const prompt of prompts) if (prompt.document) map.set(prompt.document.id, []);
     for (const implementation of implementations) {
-      for (const parent of relationshipIds(implementation.document?.parents)) {
+      for (const parent of relationshipIds(implementation.document?.implements)) {
         map.get(parent)?.push(implementation);
       }
     }
@@ -96,7 +96,7 @@ export function PromptHierarchyPanel({workspaceId}: {workspaceId: string}) {
       label: "New Prompt",
       inputs: {input: "information"},
       outputs: {output: "information"},
-      children: ["new_prompt.default"], preferredChild: "new_prompt.default",
+      specializations: specializesResource("new_prompt.default"), preferredSpecialization: "new_prompt.default",
     };
     setSelected({path:"",source:"workspace",workspaceId,document});
     setSource(JSON.stringify(document, null, 2));
@@ -108,13 +108,13 @@ export function PromptHierarchyPanel({workspaceId}: {workspaceId: string}) {
     const parent = selected?.document?.kind === "prompt"
       ? selected.document.id
       : selected?.document?.kind === "prompt_implementation"
-        ? relationshipIds(selected.document.parents)[0]
+        ? relationshipIds(selected.document.implements)[0]
         : prompts[0]?.document?.id || "prompt";
     const document: PromptImplementation = {
       kind: "prompt_implementation",
       id: `${parent}.new_variant`,
       label: `${parent} — New Variant`,
-      parents: [parent],
+      implements: implementsResource(parent),
       version: 1,
       targets: ["generic-chat"],
       text: ["Write the prompt implementation here."],
@@ -164,7 +164,7 @@ export function PromptHierarchyPanel({workspaceId}: {workspaceId: string}) {
   const parentPromptId = selected?.document?.kind === "prompt"
     ? selected.document.id
     : selected?.document?.kind === "prompt_implementation"
-      ? relationshipIds(selected.document.parents)[0] || null
+      ? relationshipIds(selected.document.implements)[0] || null
       : null;
 
   return <section className="resource-view">
@@ -184,13 +184,13 @@ export function PromptHierarchyPanel({workspaceId}: {workspaceId: string}) {
         <div className="resource-row resource-head"><span>Prompt / implementation</span><span>Kind</span><span>Target</span><span>Source</span><span>Version</span></div>
         {prompts.map(prompt => {
           const doc = prompt.document;
-          const children = doc ? (byPrompt.get(doc.id) || []) : [];
+          const specializations = doc ? (byPrompt.get(doc.id) || []) : [];
           return <div key={`${prompt.workspaceId}:${prompt.path}`}>
             <button className="resource-row" onClick={() => select(prompt)} onDoubleClick={() => select(prompt)}>
-              <b>{doc?.label || doc?.id || prompt.path}</b><code>abstract</code><span>{doc?.preferredChild || "inline"}</span><span>{prompt.source}</span><em>contract</em>
+              <b>{doc?.label || doc?.id || prompt.path}</b><code>abstract</code><span>{doc?.preferredSpecialization || "inline"}</span><span>{prompt.source}</span><em>contract</em>
             </button>
-            {children.map(child => <button className="resource-row" style={{paddingLeft:28}} key={`${child.workspaceId}:${child.path}`} onClick={() => select(child)} onDoubleClick={() => select(child)}>
-              <b>↳ {child.document?.label || child.document?.id || child.path}</b><code>implementation</code><span>{(child.document?.targets || []).join(", ") || "generic"}</span><span>{child.source}</span><em>v{child.document?.version || 1}</em>
+            {specializations.map(specialization => <button className="resource-row" style={{paddingLeft:28}} key={`${specialization.workspaceId}:${specialization.path}`} onClick={() => select(specialization)} onDoubleClick={() => select(specialization)}>
+              <b>↳ {specialization.document?.label || specialization.document?.id || specialization.path}</b><code>specialization</code><span>{(specialization.document?.targets || []).join(", ") || "generic"}</span><span>{specialization.source}</span><em>v{specialization.document?.version || 1}</em>
             </button>)}
           </div>;
         })}

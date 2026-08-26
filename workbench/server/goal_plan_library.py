@@ -25,8 +25,8 @@ def _validate(value: Any, path: Path, kinds: set[str], base_kind: str) -> dict[s
     if not str(value.get("id") or "").strip():
         raise ValueError(f"Resource requires id: {path}")
     declared_kind = str(value["kind"])
-    if declared_kind.endswith(("_variant", "_interpretation")) and not relationship_ids(value.get("parents")):
-        raise ValueError(f"Variant requires parents: {path}")
+    if declared_kind.endswith(("_variant", "_interpretation")) and not relationship_ids(value.get("implements")):
+        raise ValueError(f"Variant requires implements: {path}")
     value["kind"] = base_kind
     return value
 
@@ -62,10 +62,10 @@ def load_workspace_symbolic_records(workspace_root: Path, family: str, *, worksp
 
 
 def symbolic_hierarchy(records: list[dict[str, Any]], parent_kind: str) -> dict[str, Any]:
-    parents = [record for record in records if not relationship_ids((record.get("document") or {}).get("parents"))]
-    variants = [record for record in records if relationship_ids((record.get("document") or {}).get("parents"))]
+    parents = [record for record in records if not relationship_ids((record.get("document") or {}).get("implements"))]
+    variants = [record for record in records if relationship_ids((record.get("document") or {}).get("implements"))]
     by_parent: dict[str, list[dict[str, Any]]] = {}
     for record in variants:
-        for parent in relationship_ids(record["document"].get("parents")):
+        for parent in relationship_ids(record["document"].get("implements")):
             by_parent.setdefault(parent, []).append(record)
-    return {"specifications": parents, "variants": variants, "variantsBySpecification": by_parent}
+    return {"specifications": parents, "variants": variants, "specializationsByResource": by_parent}

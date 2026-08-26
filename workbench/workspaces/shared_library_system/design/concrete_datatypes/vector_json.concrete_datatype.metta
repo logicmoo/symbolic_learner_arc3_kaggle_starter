@@ -2,8 +2,13 @@
   (kind concrete_datatype)
   (id vector_json)
   (label "Vector Json")
-  (parents ([]
-    latent_embedding
+  (implements (
+    (latent_embedding (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
   (mimeTypes ([]
     application/json

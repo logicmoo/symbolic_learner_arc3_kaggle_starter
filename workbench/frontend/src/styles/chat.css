@@ -157,10 +157,105 @@
   background: var(--panel2);
 }
 
+/* The controls deliberately read top-to-bottom as configuration, creation,
+   subscription, addressing, mailbox selection, then the chat/file header. */
+.chat-require-summary {
+  grid-column: 1 / -1;
+  order: -10;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--cyan);
+}
+
+.chat-require-summary-toggle {
+  min-width: 118px;
+  padding: 4px 7px;
+  border: 0;
+  background: transparent;
+  color: var(--cyan);
+  font: 700 10px ui-monospace, monospace;
+  letter-spacing: 0.06em;
+  text-align: left;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.chat-controls.is-match-collapsed .chat-match-detail {
+  display: none;
+}
+
+.chat-display-settings {
+  grid-column: 1 / -1;
+  order: 51;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 10px;
+}
+
+.chat-control--tabs {
+  grid-column: 1 / -1;
+  order: 70;
+}
+
+.chat-make {
+  order: 10;
+}
+
+.chat-sub {
+  order: 20;
+}
+
+.chat-address-from-to {
+  order: 30;
+}
+
+.chat-address-send {
+  order: 40;
+}
+
+.chat-stream-configuration {
+  order: 50;
+}
+
+.chat-mailbox-add {
+  order: 80;
+}
+
+.chat-mailbox-primary {
+  order: 80;
+}
+
+.chat-mailbox-merged {
+  order: 90;
+}
+
+.chat-controls-divider {
+  grid-column: 1 / -1;
+  order: 60;
+  height: 0;
+  margin: 2px -10px;
+  border-top: 2px solid var(--line);
+}
+
 /* Mailbox rows (the primary picker + each merge row) span both columns so they
    stack one-per-row below the YOU/TO and SEND-TO/filters rows. */
 .chat-mbrow {
   grid-column: 1 / -1;
+}
+
+.chat-mbrow.chat-mailbox-primary {
+  grid-column: 1;
+}
+
+.chat-mbrow.chat-mailbox-add {
+  grid-column: 2;
 }
 
 .chat-mbrow-actions {
@@ -196,9 +291,75 @@
   color: var(--cyan);
 }
 
+.chat-mbact.active {
+  border-color: var(--cyan);
+  color: var(--cyan);
+  background: color-mix(in srgb, var(--cyan) 12%, var(--panel));
+}
+
 .chat-mbact:disabled {
   opacity: 0.4;
   cursor: default;
+}
+
+.chat-mailbox-arranger {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(150px, 1fr) minmax(140px, 1fr) minmax(190px, 1.2fr) minmax(190px, 1.2fr);
+  gap: 6px 10px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel);
+}
+
+.chat-mailbox-arranger header {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.chat-mailbox-arranger header b {
+  color: var(--cyan);
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.chat-mailbox-arranger header span {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.chat-mailbox-arranger header small {
+  margin-left: auto;
+  color: var(--muted);
+  font: 9px ui-monospace, monospace;
+}
+
+.chat-mailbox-arranger label {
+  display: grid;
+  gap: 3px;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.chat-mailbox-arranger select {
+  min-width: 0;
+  width: 100%;
+}
+
+.chat-mailbox-arranger .chat-mailbox-arranger-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-top: 14px;
+  color: var(--text);
+}
+
+.chat-mailbox-arranger-check input {
+  margin: 0;
 }
 
 .chat-control input.chat-rule-value {
@@ -865,9 +1026,11 @@
 .chat-config {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  min-height: 0;
   gap: 4px;
-  border-top: 1px solid var(--line);
-  padding-top: 6px;
+  padding: 8px 10px;
+  background: var(--panel2);
 }
 
 .chat-config-head {
@@ -902,9 +1065,11 @@
 }
 
 .chat-config-editor {
+  flex: 1;
+  min-height: 0;
   width: 100%;
   box-sizing: border-box;
-  resize: vertical;
+  resize: none;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--panel);
@@ -958,7 +1123,7 @@
 }
 
 /* Chat / File tab switcher and the stream-as-file pane. */
-.chat-tabs { display: flex; gap: 2px; padding: 4px 8px 0; border-bottom: 1px solid var(--line); }
+.chat-tabs { display: flex; align-items: center; gap: 2px; padding: 4px 8px 0; border-bottom: 1px solid var(--line); }
 .chat-tab {
   padding: 4px 12px; cursor: pointer; font-size: 12px;
   background: transparent; color: var(--muted);
@@ -971,6 +1136,10 @@
   border-color: var(--line); border-bottom: 1px solid var(--panel); margin-bottom: -1px;
 }
 .chat-filepane { display: flex; flex-direction: column; flex: 1; min-height: 0; }
-.chat-autoscroll{margin-left:auto;align-self:center;border:1px solid var(--line);border-radius:4px;background:var(--panel2);color:var(--muted);padding:4px 9px;font:700 10px ui-monospace,monospace;cursor:pointer}.chat-autoscroll.active{border-color:var(--cyan);color:var(--cyan);background:color-mix(in srgb,var(--cyan) 10%,var(--panel2))}.chat-selected-node{align-self:center;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 8px;color:var(--amber);font:700 9px ui-monospace,monospace}
+.chat-autoscroll-stream-setting { display:flex; align-items:center; gap:5px; margin-left:auto; color:var(--text); font:700 10px ui-monospace,monospace; text-transform:uppercase; letter-spacing:.04em; white-space:nowrap; cursor:pointer; }
+.chat-autoscroll-stream-setting input { margin:0; }
+.chat-autoscroll-policy { display:flex; align-items:center; gap:5px; color:var(--muted); font:10px ui-monospace,monospace; white-space:nowrap; }
+.chat-autoscroll-policy select { min-width:94px; padding:3px 5px; background:var(--panel2); border:1px solid var(--line); border-radius:4px; color:var(--text); font:10px ui-monospace,monospace; }
+.chat-autoscroll{align-self:center;border:1px solid var(--line);border-radius:4px;background:var(--panel2);color:var(--muted);padding:4px 9px;font:700 10px ui-monospace,monospace;cursor:pointer}.chat-autoscroll.active{border-color:var(--cyan);color:var(--cyan);background:color-mix(in srgb,var(--cyan) 10%,var(--panel2))}.chat-autoscroll:disabled{opacity:.65;cursor:default}.chat-selected-node{align-self:center;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 8px;color:var(--amber);font:700 9px ui-monospace,monospace}
 .chat-filepane-note{font-size:11px;color:var(--muted)}.chat-filepane>.chat-filepane-note{flex:0 0 auto;padding:5px 8px;border-bottom:1px solid var(--line);background:var(--panel2)}
 .chat-filepane>.chat-file-super-control{flex:1 1 auto;min-height:0}

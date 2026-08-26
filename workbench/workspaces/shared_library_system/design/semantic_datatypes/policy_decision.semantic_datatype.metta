@@ -3,5 +3,12 @@
   (id policy_decision)
   (label "Policy Decision")
   (description "An evaluated policy outcome together with its inheritance and explanatory inputs.")
-  (parents ([] information))
+  (implements (
+    (information (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
+  ))
 )

@@ -2,8 +2,13 @@
   (kind concrete_datatype)
   (id text_plain)
   (label "Text Plain")
-  (parents ([]
-    natural_language
+  (implements (
+    (natural_language (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
   (mimeTypes ([]
     text/plain

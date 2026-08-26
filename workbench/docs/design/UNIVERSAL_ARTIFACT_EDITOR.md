@@ -84,6 +84,23 @@ Content detection takes precedence over the filename extension:
 
 Every source opened in `ResourceSourceEditor` must pass through file-type detection. The detector considers the content, filename and full path, shebang or other language markers, and available resource metadata, then loads the best matching CodeMirror language extension. This applies to arbitrary source files, not only recognized workbench resource suffixes. If no language can be identified confidently, the editor falls back to plain text without modifying or rejecting the source.
 
+## Tab Input Editor Growth
+
+Runner input textareas in tab pages carry the stable `tab-input-editor` class.
+Their supported growth mechanisms are explicit modifier classes:
+
+- `tab-input-editor--opted-in` marks a field explicitly selected for this
+  combined growth behavior.
+- `tab-input-editor--auto-grow` expands to the content height, capped at the
+  nearest tab/page boundary.
+- `tab-input-editor--manual-resize` preserves the native vertical resize handle.
+
+The Operations typed-value input and Universal Runner resource input are the
+initial explicit opt-ins. Each carries both growth modifiers. When its content
+exceeds the available page height it stops growing and gains an internal
+vertical scrollbar. Other editors retain their existing growth behavior until
+they are separately opted in.
+
 ## JSON Tree and Folding
 
 For JSON-parsable source, `ResourceSourceEditor` provides a tree presentation derived from CodeMirror's parsed JSON structure. Object and array nodes have clickable disclosure controls that expand or collapse that node without changing the JSON document.

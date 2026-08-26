@@ -38,7 +38,12 @@
     (outputBinding text)
     (timeoutSeconds 30)
   ))
-  (parents ([]
-    echo_into_titlecased
+  (implements (
+    (echo_into_titlecased (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
 )

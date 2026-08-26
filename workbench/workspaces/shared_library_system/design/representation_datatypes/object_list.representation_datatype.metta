@@ -2,12 +2,41 @@
   (kind representation_datatype)
   (id object_list)
   (label "Object List")
-  (parents ([]
-    image
+  (implements (
+    (image (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
-  (children ([]
-    json
-    prolog_facts
+  (specializations (
+    (json (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        specializations
+        preferredSpecialization
+      ))
+    ))
+    (prolog_facts (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        specializations
+        preferredSpecialization
+      ))
+    ))
   ))
-  (preferredChild json)
+  (preferredSpecialization json)
 )

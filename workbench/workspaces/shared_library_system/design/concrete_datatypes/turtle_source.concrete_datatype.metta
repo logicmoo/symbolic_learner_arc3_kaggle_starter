@@ -2,8 +2,13 @@
   (kind concrete_datatype)
   (id turtle_source)
   (label "Turtle Source")
-  (parents ([]
-    turtle_program
+  (implements (
+    (turtle_program (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
   (mimeTypes ([]
     text/x-logo

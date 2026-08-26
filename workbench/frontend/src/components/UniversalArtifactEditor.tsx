@@ -5,6 +5,7 @@ import { DEFAULT_TREE_VISIBILITY_RULES, type TreeVisibilityRules, useArtifactTre
 import { CategorizedArtifactNodes } from "./CategorizedArtifactTree";
 import { TreePaneResizer } from "./TreePaneResizer";
 import { ResourceSourceEditor } from "./ResourceSourceEditor";
+import { ResourceFieldsEditor, resourceImplementedIds } from "./ResourceFieldsEditor";
 import { MarkdownDocument } from "./MarkdownDocument";
 import { ResourceExecutionPlayground } from "./ResourceExecutionPlayground";
 import {
@@ -120,9 +121,11 @@ export type StandardSuperControlRequest = {
   secondary: boolean;
   busy: boolean;
   resource: StandardResource | null;
+  relatedResources?: StandardResource[];
   initialControlId?: StandardControlId;
   onChange: (value: string) => void;
   onSave: () => void;
+  onCreateSpecialization?: () => void;
   saveLabel?: string;
   actions?: StandardSuperControlAction[];
 };
@@ -135,6 +138,129 @@ const CONTENT_BACKED_CONTROL_IDS = new Set<StandardControlId>([
   "resource",
   "runner",
 ]);
+
+// Every mounted Super Control mirrors its active editor tab through `tab`
+// URL search parameters: clicking a tab records it (replaceState, so history
+// entries are not spammed) and notifies every other mounted instance, while
+// back/forward restores whatever tabs the entry was on.
+//
+// Addressing: instances are ordered by mount order and addressed by their
+// distance from the LAST Super Control on the page (0 = last, 1 = one before
+// it, ...) or by the file name they edit.
+//   tab=Markdown            -> every mounted instance
+//   tab0=Markdown           -> the last instance on the page
+//   tab2=File               -> the third-from-last instance
+//   tab=README.md:Markdown  -> instances editing README.md (name address)
+//   tab=0:Markdown          -> value form of the ordinal address
+// Parameters may repeat; for one instance the last matching directive wins.
+const TAB_URL_PARAM = "tab";
+const TAB_SYNC_EVENT = "workbench:super-control-tab";
+
+type SuperControlRegistryEntry = { token: symbol; notify: () => void };
+const superControlRegistry: SuperControlRegistryEntry[] = [];
+
+function notifySuperControlRegistry() {
+  for (const entry of [...superControlRegistry]) entry.notify();
+}
+
+function registerSuperControl(entry: SuperControlRegistryEntry): () => void {
+  superControlRegistry.push(entry);
+  notifySuperControlRegistry();
+  return () => {
+    const index = superControlRegistry.indexOf(entry);
+    if (index >= 0) superControlRegistry.splice(index, 1);
+    notifySuperControlRegistry();
+  };
+}
+
+/** Distance from the last mounted instance: 0 = last on the page. */
+function superControlReverseOrdinal(token: symbol): number {
+  const index = superControlRegistry.findIndex(entry => entry.token === token);
+  return index < 0 ? -1 : superControlRegistry.length - 1 - index;
+}
+
+/** Case-insensitive names an instance answers to: file name with and without extension. */
+function addressNamesFor(path: string): string[] {
+  const basename = (path || "").replace(/\\/g, "/").split("/").at(-1) || "";
+  const bare = basename.replace(/\.[^.]+$/, "");
+  return [...new Set([basename, bare].map(value => value.trim().toLowerCase()).filter(Boolean))];
+}
+
+type TabDirective = { address: string | null; tab: string };
+
+function parseTabDirective(key: string, raw: string): TabDirective | null {
+  const value = raw.trim();
+  const keyMatch = /^tab(\d*)$/i.exec(key.trim());
+  if (!keyMatch || !value) return null;
+  if (keyMatch[1]) return { address: keyMatch[1], tab: value.toLowerCase() };
+  const named = /^([^:]+):(.+)$/.exec(value);
+  if (named) return { address: named[1].trim().toLowerCase(), tab: named[2].trim().toLowerCase() };
+  const prefixed = /^(\d+)(.*\D.*)$/.exec(value);
+  return prefixed
+    ? { address: prefixed[1], tab: prefixed[2].trim().toLowerCase() }
+    : { address: null, tab: value.toLowerCase() };
+}
+
+function tabDirectivesFromLocation(): TabDirective[] {
+  const directives: TabDirective[] = [];
+  for (const [key, raw] of new URLSearchParams(window.location.search)) {
+    const directive = parseTabDirective(key, raw);
+    if (directive) directives.push(directive);
+  }
+  return directives;
+}
+
+function directiveAddressesInstance(address: string | null, reverseOrdinal: number, names: string[]): boolean {
+  if (address === null) return true;
+  if (/^\d+$/.test(address)) return reverseOrdinal >= 0 && Number(address) === reverseOrdinal;
+  return names.includes(address);
+}
+
+function matchControlId(controls: SubControlDescriptor[], wanted: string): string | null {
+  if (!wanted) return null;
+  const match = controls.find(entry => entry.id.toLowerCase() === wanted)
+    || controls.find(entry => entry.label.trim().toLowerCase() === wanted);
+  return match ? match.id : null;
+}
+
+function wantedTabFor(reverseOrdinal: number, names: string[], controls: SubControlDescriptor[]): string | null {
+  let wanted: string | null = null;
+  for (const directive of tabDirectivesFromLocation()) {
+    if (!directiveAddressesInstance(directive.address, reverseOrdinal, names)) continue;
+    const id = matchControlId(controls, directive.tab);
+    if (id) wanted = id;
+  }
+  return wanted;
+}
+
+function recordTabInLocation(token: symbol, names: string[], id: string) {
+  const url = new URL(window.location.href);
+  const reverseOrdinal = superControlReverseOrdinal(token);
+  const single = superControlRegistry.length <= 1;
+  // Keep directives addressed to other instances; drop plain (all-instance)
+  // directives and anything addressing this instance, which this click
+  // supersedes. With a single mounted instance collapse to the plain form.
+  const keptNumbered: Array<[string, string]> = [];
+  const keptValues: string[] = [];
+  for (const [key, raw] of [...url.searchParams.entries()]) {
+    const directive = parseTabDirective(key, raw);
+    if (!directive) continue;
+    if (single || directive.address === null) continue;
+    if (directiveAddressesInstance(directive.address, reverseOrdinal, names)) continue;
+    if (/^tab\d+$/i.test(key.trim())) keptNumbered.push([key.trim().toLowerCase(), raw]);
+    else keptValues.push(raw.trim());
+  }
+  for (const key of [...new Set([...url.searchParams.keys()])]) {
+    if (/^tab\d*$/i.test(key.trim())) url.searchParams.delete(key);
+  }
+  for (const [key, value] of keptNumbered) url.searchParams.set(key, value);
+  for (const value of keptValues) url.searchParams.append(TAB_URL_PARAM, value);
+  if (single) url.searchParams.set(TAB_URL_PARAM, id);
+  else if (reverseOrdinal >= 0) url.searchParams.set(`tab${reverseOrdinal}`, id);
+  else url.searchParams.append(TAB_URL_PARAM, id);
+  window.history.replaceState(window.history.state, "", url);
+  window.dispatchEvent(new Event(TAB_SYNC_EVENT));
+}
 
 function hasControlRenderer(control: SubControlDescriptor): boolean {
   return CONTENT_BACKED_CONTROL_IDS.has(control.id as StandardControlId);
@@ -191,14 +317,30 @@ function EmbeddedSuperControl({
 }) {
   const isOperation = control.kind === "operation";
   const operationMetadata = isOperation ? describeOperationDocument(control.source, control.path) : null;
-  const resource = operationMetadata?.document || (!isOperation ? control.resource : null);
+  const resource = parsedJsonObject(control.source)
+    || (operationMetadata?.document ? { ...operationMetadata.document } : null)
+    || (!isOperation && control.resource ? { ...control.resource } : null);
+  const runnableResource = resource
+    && typeof resource.kind === "string"
+    && typeof resource.id === "string"
+    ? { ...resource, kind: resource.kind, id: resource.id }
+    : null;
   const fallbackTitle = operationMetadata?.title || (!isOperation ? control.title : control.path);
   const header = resourceHeader(control.source, fallbackTitle);
   const [availableControls, setAvailableControls] = useState<SubControlDescriptor[]>(() => builtinSubControls());
   const [displayMode, setDisplayMode] = useState<SuperControlDisplayMode>("tabs");
   const [tabSet, setTabSet] = useState<SuperControlTabSet>("ctx");
-  const [activeControlId, setActiveControlId] = useState(
-    control.kind === "operation" ? OPERATION_DOCUMENT_CONTROL_ID : control.initialControlId || "file",
+  const registrationToken = useMemo(() => Symbol("super-control"), []);
+  const addressNames = useMemo(() => addressNamesFor(control.path), [control.path]);
+  const [registryVersion, setRegistryVersion] = useState(0);
+  useEffect(
+    () => registerSuperControl({ token: registrationToken, notify: () => setRegistryVersion(version => version + 1) }),
+    [registrationToken],
+  );
+  const reverseOrdinal = superControlReverseOrdinal(registrationToken);
+  const [activeControlId, setActiveControlId] = useState(() =>
+    wantedTabFor(-1, addressNamesFor(control.path), builtinSubControls())
+    || (control.kind === "operation" ? OPERATION_DOCUMENT_CONTROL_ID : control.initialControlId || "file"),
   );
   const [singleControlId, setSingleControlId] = useState<string>("file");
   const [secondaryControlId, setSecondaryControlId] = useState<string>("resource");
@@ -217,7 +359,7 @@ function EmbeddedSuperControl({
   );
   const contextualControls = useMemo(
     () => selectSubControls(availableControls.filter(hasControlRenderer), {
-      resourceKind: resource?.kind || null,
+      resourceKind: typeof resource?.kind === "string" ? resource.kind : null,
       capabilities: resource && Array.isArray((resource as Record<string, unknown>).capabilities)
         ? ((resource as Record<string, unknown>).capabilities as unknown[]).filter((value): value is string => typeof value === "string")
         : [],
@@ -241,6 +383,21 @@ function EmbeddedSuperControl({
       setSecondaryControlId(ids.find(id => id !== singleControlId) || defaultId);
     }
   }, [activeControlId, secondaryControlId, selectedControls, singleControlId]);
+  useEffect(() => {
+    const apply = () => {
+      const wanted = wantedTabFor(superControlReverseOrdinal(registrationToken), addressNames, selectedControls);
+      if (!wanted) return;
+      setActiveControlId(current => (current === wanted ? current : wanted));
+      setSingleControlId(current => (current === wanted ? current : wanted));
+    };
+    apply();
+    window.addEventListener("popstate", apply);
+    window.addEventListener(TAB_SYNC_EVENT, apply);
+    return () => {
+      window.removeEventListener("popstate", apply);
+      window.removeEventListener(TAB_SYNC_EVENT, apply);
+    };
+  }, [selectedControls, addressNames, registrationToken, registryVersion]);
   const sourceEditor = ({
     readOnly = false,
     label = control.path,
@@ -256,6 +413,55 @@ function EmbeddedSuperControl({
         sourcePath={control.path}
         resourceMetadata={resource || undefined}
       />;
+  const inheritedImplementation = control.kind === "operation" ? control.implementedOperation : null;
+  const implementedIds = resource
+    ? resourceImplementedIds(resource).length > 0
+      ? resourceImplementedIds(resource)
+      : inheritedImplementation?.id
+        ? [inheritedImplementation.id]
+        : []
+    : [];
+  const resourceHref = (id: string) => {
+    const params = new URLSearchParams(window.location.search);
+    params.set("resource", id);
+    return `?${params.toString()}`;
+  };
+  const resourceAndInheritance = resource
+    ? <div className="operation-editor-scroll super-control-resource-inheritance">
+        <ResourceFieldsEditor
+          resource={resource}
+          relatedResources={control.relatedResources}
+          sourceScope={control.sourceScope}
+          onChange={control.onChange}
+          resourceHref={resourceHref}
+          onCreateSpecialization={control.onCreateSpecialization}
+        />
+        <section className="super-control-inheritance-section">
+          <div className="llm-subhead">
+            <div>
+              <span>INHERITANCE</span>
+              <b>{implementedIds.length > 0 ? "Implemented resources and resolved source" : "Family root resource"}</b>
+            </div>
+          </div>
+          {implementedIds.length > 0
+            ? <div className="super-control-parent-links">
+                {implementedIds.map(id => <a key={id} href={resourceHref(id)}>Edit implemented resource · {id}</a>)}
+              </div>
+            : <div className="studio-empty super-control-no-parent">This resource does not implement another resource.</div>}
+          {inheritedImplementation && <ResourceSourceEditor
+            value={JSON.stringify(inheritedImplementation, null, 2)}
+            onChange={() => {}}
+            contentReadOnly
+            showEnablement={false}
+            label={`Resolved implementation · ${inheritedImplementation.label || inheritedImplementation.id}`}
+            resourceMetadata={inheritedImplementation}
+          />}
+        </section>
+        <section className="super-control-resource-source">
+          {sourceEditor({ label: "Resource source" })}
+        </section>
+      </div>
+    : <div className="studio-empty">Fix the resource source before editing its fields or inheritance.</div>;
   const renderControl = (id: string): ReactNode => {
     switch (id) {
       case OPERATION_DOCUMENT_CONTROL_ID:
@@ -263,15 +469,16 @@ function EmbeddedSuperControl({
           ? <OperationDocumentControl request={control} />
           : <div className="studio-empty">This operation editor is not available for the current resource.</div>;
       case "file":
-      case "resource":
         return sourceEditor();
+      case "resource":
+        return resourceAndInheritance;
       case "markdown":
         return <div className="markdown-render operation-editor-scroll">
           <MarkdownDocument content={control.source} onChange={control.onChange} editable />
         </div>;
       case "runner":
-        return resource
-          ? <ResourceExecutionPlayground workspaceId={control.workspaceId} resource={resource} />
+        return runnableResource
+          ? <ResourceExecutionPlayground workspaceId={control.workspaceId} resource={runnableResource} />
           : <div className="studio-empty">Fix the resource source before opening the runner.</div>;
       default: {
         return null;
@@ -306,7 +513,10 @@ function EmbeddedSuperControl({
   >
     <div className="operation-editor-toolbar">
       <div>
-        <span>SUPER CONTROL{control.dirty ? <i className="super-control-state"> · UNSAVED</i> : null}</span>
+        <span>SUPER CONTROL{reverseOrdinal >= 0 ? <i
+          className="super-control-state"
+          title={`Addressable in the URL as tab${reverseOrdinal}=<TabName>${addressNames[0] ? ` or tab=${addressNames[0]}:<TabName>` : ""}; plain tab=<TabName> targets every Super Control.`}
+        > · #{reverseOrdinal}</i> : null}{control.dirty ? <i className="super-control-state"> · UNSAVED</i> : null}</span>
         <h2>{header.title}</h2>
         <small>{control.sourceScope} · {control.path}{!header.resolved ? " · identity unresolved" : ""}</small>
       </div>
@@ -336,13 +546,13 @@ function EmbeddedSuperControl({
         </label>
         {(displayMode === "single" || displayMode === "split-v" || displayMode === "split-h") && <label className="super-control-pane-selector">
           <span>{displayMode === "single" ? "TAB" : displayMode === "split-v" ? "LEFT" : "TOP"}</span>
-          <select aria-label="Primary Super Control tab" value={singleControlId} onChange={event => setSingleControlId(event.target.value)}>{controlOptions}</select>
+          <select aria-label="Primary Super Control tab" value={singleControlId} onChange={event => { setSingleControlId(event.target.value); recordTabInLocation(registrationToken, addressNames, event.target.value); }}>{controlOptions}</select>
         </label>}
         {(displayMode === "split-v" || displayMode === "split-h") && <label className="super-control-pane-selector">
           <span>{displayMode === "split-v" ? "RIGHT" : "BOTTOM"}</span>
           <select aria-label="Secondary Super Control tab" value={secondaryControlId} onChange={event => setSecondaryControlId(event.target.value)}>{controlOptions}</select>
         </label>}
-        <button className="primary" onClick={control.onSave} disabled={control.busy || !resource}>{control.kind === "standard" ? control.saveLabel || "Save" : "Save"}</button>
+        <button className="primary" onClick={control.onSave} disabled={control.busy || (control.kind === "operation" && !resource)}>{control.kind === "standard" ? control.saveLabel || "Save" : "Save"}</button>
         {control.kind === "standard" && control.actions?.map(action => <button
           key={action.id}
           disabled={action.disabled}
@@ -357,7 +567,7 @@ function EmbeddedSuperControl({
         role="tab"
         aria-selected={activeControlId === entry.id}
         className={activeControlId === entry.id ? "active" : ""}
-        onClick={() => setActiveControlId(entry.id)}
+        onClick={() => { setActiveControlId(entry.id); recordTabInLocation(registrationToken, addressNames, entry.id); }}
       >{entry.label}{entry.id === OPERATION_DOCUMENT_CONTROL_ID && control.dirty ? <i className="dirty">●</i> : null}</button>)}
     </nav>}
     {displayMode === "tabs" && <div className="super-control-body super-control-tabbed">{renderControl(activeControlId)}</div>}

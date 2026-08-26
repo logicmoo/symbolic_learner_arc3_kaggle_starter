@@ -17,6 +17,7 @@ from model_selection_settings import (
     write_system_model_selection,
     write_workspace_model_selection,
 )
+from plugin_api import run_workbench_shutdown
 from resource_store import get_filesystem_provider
 
 router = APIRouter()
@@ -123,7 +124,16 @@ def update_workspace_model_selection(
 
 
 def trigger_api_restart(api_marker: Path = Path(__file__).resolve()) -> None:
-    """Restart only the API; the browser owns its controlled UI reload lifecycle."""
+    """Restart only the API; the browser owns its controlled UI reload lifecycle.
+
+    A self-restart runs exactly one lifecycle phase -- ``workbenchShutdown``,
+    then ``workbenchShutdownAfter`` -- and nothing else (no install,
+    uninstall, or workspace-* phase). This is a notification, not a command:
+    a plugin running in standalone mode (its own separate process) must not
+    treat it as "restart yourself too", since only the embedded API process
+    is restarting here, not the plugin's own process.
+    """
+    run_workbench_shutdown(reason="restart")
     time.sleep(0.25)
     api_marker.touch()
 

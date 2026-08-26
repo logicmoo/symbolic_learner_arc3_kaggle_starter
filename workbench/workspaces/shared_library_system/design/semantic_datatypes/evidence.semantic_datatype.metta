@@ -3,10 +3,27 @@
   (id evidence)
   (label Evidence)
   (description "Information that supports, contradicts, or qualifies a hypothesis, rule, or conclusion.")
-  (children ([]
-    transition_evidence
+  (specializations (
+    (transition_evidence (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        specializations
+        preferredSpecialization
+      ))
+    ))
   ))
-  (parents ([]
-    information
+  (implements (
+    (information (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
 )

@@ -41,14 +41,14 @@ def load_workspace_policy_records(workspace_root: Path, *, workspaces_root: Path
     return sorted(combined.values(), key=lambda record: str((record.get("document") or {}).get("label") or record["path"]).lower())
 
 def policy_hierarchy(records: list[dict[str, Any]]) -> dict[str, Any]:
-    roots: list[dict[str, Any]] = []; variants: list[dict[str, Any]] = []; children: dict[str, list[dict[str, Any]]] = {}
+    roots: list[dict[str, Any]] = []; variants: list[dict[str, Any]] = []; specializations: dict[str, list[dict[str, Any]]] = {}
     for record in records:
-        document = record.get("document") or {}; parents = relationship_ids(document.get("parents"))
+        document = record.get("document") or {}; parents = relationship_ids(document.get("implements"))
         if document.get("kind") == "model_policy_variant" and parents:
             variants.append(record)
-            for parent in parents: children.setdefault(parent, []).append(record)
+            for parent in parents: specializations.setdefault(parent, []).append(record)
         else: roots.append(record)
-    return {"roots": roots, "variants": variants, "variantsByParent": children}
+    return {"roots": roots, "variants": variants, "specializationsByResource": specializations}
 
 def _documents(records: list[dict[str, Any]], kind: str) -> list[dict[str, Any]]:
     return [record["document"] for record in records if (record.get("document") or {}).get("kind") == kind]
@@ -75,7 +75,8 @@ def _capability_map(document: dict[str, Any], documents_by_id: dict[str, dict[st
             return {str(value): True for value in values}
         if isinstance(values, dict):
             return {str(key): bool(value) for key, value in values.items()}
-        current = documents_by_id.get(str(current.get("inherits") or ""), {})
+        implemented_ids = relationship_ids(current.get("implements"))
+        current = documents_by_id.get(implemented_ids[0], {}) if implemented_ids else {}
     return {}
 
 

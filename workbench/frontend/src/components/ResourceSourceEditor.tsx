@@ -42,6 +42,7 @@ import { verilog } from "@codemirror/legacy-modes/mode/verilog";
 import { vhdl } from "@codemirror/legacy-modes/mode/vhdl";
 import { standardSQL } from "@codemirror/legacy-modes/mode/sql";
 import { stex } from "@codemirror/legacy-modes/mode/stex";
+import { prolog } from "../lib/prologMode";
 import { jsonDocumentToMetta, mettaDocumentToJson } from "../lib/mettaResourceCodec";
 import { useUserUiPreferences } from "../lib/uiPreferences";
 import { WorkspaceResourceFileControls, type WorkspaceResourceFileControlsProps } from "./WorkspaceResourceFileControls";
@@ -95,6 +96,7 @@ const TEXT_LANGUAGES: { id: string; label: string; extension: () => Extension[] 
   { id: "verilog", label: "Verilog", extension: () => streamLang(verilog) },
   { id: "vhdl", label: "VHDL", extension: () => streamLang(vhdl) },
   { id: "latex", label: "LaTeX", extension: () => streamLang(stex) },
+  { id: "prolog", label: "Prolog", extension: () => streamLang(prolog) },
 ];
 function textLanguageExtension(id: string): Extension[] {
   return (TEXT_LANGUAGES.find((entry) => entry.id === id) || TEXT_LANGUAGES[0]).extension();
@@ -125,7 +127,8 @@ const EXTENSION_TEXT_LANGUAGE: Record<string, string> = {
   go: "go",
   rs: "rust",
   rb: "ruby", gemspec: "ruby",
-  pl: "perl", pm: "perl",
+  pl: "prolog", pro: "prolog", prolog: "prolog",
+  pm: "perl",
   swift: "swift",
   r: "r",
   lua: "lua",
@@ -264,10 +267,14 @@ export function detectResourceSourceMode(
 ): SourceMode {
   if (isJsonContent(value)) return { format: "metta", textLanguage: "clojure" };
   const pathLanguage = textLanguageForFilename(sourcePath);
+  // A known file extension is a stronger, more reliable signal than sniffing
+  // the content, so it is checked before looksLikeMarkdown(): a well-commented
+  // source file (a Prolog docstring with bullet points, say) can otherwise
+  // look enough like Markdown to override its real, known language.
   const detectedLanguage = shebangLanguage(value)
     || metadataLanguage(metadata)
-    || (looksLikeMarkdown(value) ? "markdown" : "")
     || (pathLanguage !== "plain" ? pathLanguage : "")
+    || (looksLikeMarkdown(value) ? "markdown" : "")
     || contentLanguage(value)
     || normalizedLanguage(defaultTextLanguage || "");
   if (detectedLanguage === "markdown") return { format: "text", textLanguage: "markdown" };
@@ -951,9 +958,26 @@ export function ResourceSourceEditor({
   const renderedFileControls = fileControls
     ? <WorkspaceResourceFileControls {...fileControls} content={format === "metta" ? metta : jsonDraft} onClientContent={loadClientContent} disabled={disabled} />
     : null;
+  const codeMirrorLanguage = format === "metta"
+    ? "clojure"
+    : format === "json"
+      ? "json"
+      : format === "markdown"
+        ? "markdown"
+        : textLang;
+  const selectCodeMirrorLanguage = (language: string) => {
+    if (format === "text") {
+      setTextLang(language);
+      return;
+    }
+    if (language === codeMirrorLanguage) return;
+    setTextLang(language);
+    setError("");
+    setFormat("text");
+  };
 
   return <div className="operation-json-block resource-source-editor">
-    <div className="llm-subhead"><div><span>RESOURCE SOURCE</span><b>{label}</b></div><div className="source-format-tabs">{showEnablement&&resource&&<button disabled={disabled} className={`resource-enable-action ${resourceEnabled?"disable-resource":"enable-resource"}`} onClick={()=>setEnabled(!resourceEnabled)}>{resourceEnabled?"Disable Resource":"Enable Resource"}</button>}<button disabled={disabled} className={format === "metta" ? "active" : ""} onClick={() => setFormat("metta")}>MeTTa</button><button disabled={disabled} className={format === "json" ? "active" : ""} onClick={() => setFormat("json")}>JSON</button><button disabled={disabled} className={format === "tree" ? "active" : ""} onClick={() => setFormat("tree")}>Tree</button><button disabled={disabled} className={format === "text" ? "active" : ""} onClick={() => { setError(""); setFormat("text"); }}>Text</button>{format === "text" ? <select className="rse-text-lang" disabled={disabled} value={textLang} onChange={event => setTextLang(event.target.value)} title="How CodeMirror renders this text">{TEXT_LANGUAGES.map(entry => <option key={entry.id} value={entry.id}>{entry.label}</option>)}</select> : null}<button disabled={disabled} className={format === "markdown" ? "active" : ""} onClick={() => { setError(""); setFormat("markdown"); }}>Markdown</button></div></div>
+    <div className="llm-subhead"><div><span>RESOURCE SOURCE</span><b>{label}</b></div><div className="source-format-tabs">{showEnablement&&resource&&<button disabled={disabled} className={`resource-enable-action ${resourceEnabled?"disable-resource":"enable-resource"}`} onClick={()=>setEnabled(!resourceEnabled)}>{resourceEnabled?"Disable Resource":"Enable Resource"}</button>}<button disabled={disabled} className={format === "metta" ? "active" : ""} onClick={() => setFormat("metta")}>MeTTa</button><button disabled={disabled} className={format === "json" ? "active" : ""} onClick={() => setFormat("json")}>JSON</button><button disabled={disabled} className={format === "tree" ? "active" : ""} onClick={() => setFormat("tree")}>Tree</button><button disabled={disabled} className={format === "text" ? "active" : ""} onClick={() => { setError(""); setFormat("text"); }}>Text</button><button disabled={disabled} className={format === "markdown" ? "active" : ""} onClick={() => { setError(""); setFormat("markdown"); }}>Markdown</button>{format !== "tree" ? <select className="rse-text-lang" aria-label="CodeMirror language" disabled={disabled} value={codeMirrorLanguage} onChange={event => selectCodeMirrorLanguage(event.target.value)} title="CodeMirror syntax highlighting; choosing another lexer opens Text view">{TEXT_LANGUAGES.map(entry => <option key={entry.id} value={entry.id}>{entry.label}</option>)}</select> : null}</div></div>
     {resourceSourceFileControlsPlacement === "above" ? renderedFileControls : null}
     {format === "markdown"
       ? <div className="markdown-render operation-visible-editor" style={style}>

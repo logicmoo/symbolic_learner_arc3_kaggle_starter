@@ -3,5 +3,12 @@
   (id atomspace_change)
   (label "AtomSpace Change")
   (description "A structured assertion or retraction and the Event caused by changing an AtomSpace.")
-  (parents ([] information))
+  (implements (
+    (information (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
+  ))
 )

@@ -13,12 +13,19 @@
       (id Text)
       (instruction Text)
       (rationale Text)
-      (distinguishes ([] Text))
+      (distinguishes ([]
+        Text
+      ))
       (expectedInformationGain Number)
       (risk Number)
     ))
   ))
-  (parents ([]
-    information
+  (implements (
+    (information (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
 )

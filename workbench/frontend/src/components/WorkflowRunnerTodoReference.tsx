@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ThreeStateAccordionMember, type AccordionDisplayMode } from "./ThreeStateAccordion";
+import { MermaidDiagram } from "./MermaidDiagram";
 
 type TodoPayload = { markdown: string; specificationPath: string; mockupAvailable: boolean; mockups?: Array<{view:string;description:string;available:boolean;url:string}> };
 
@@ -29,7 +30,19 @@ export function WorkflowRunnerTodoReference({
     {error && <div className="demo-notice"><b>Reference unavailable</b><span>{error}</span></div>}
     {todo && <div className="workflow-runner-reference-body">
       <div className="workflow-runner-mockups">{(todo.mockups||[]).filter(item=>item.available).map(item=><figure key={item.view}><figcaption><b>{item.view}</b><span>{item.description}</span></figcaption><a className="workflow-runner-mockup" href={item.url} target="_blank" rel="noreferrer"><img src={item.url} alt={`${item.view} workflow runner design reference`} /></a></figure>)}</div>
-      <article className="markdown-body"><ReactMarkdown remarkPlugins={[remarkGfm]}>{todo.markdown}</ReactMarkdown><small>{todo.specificationPath}</small></article>
+      <article className="markdown-body"><ReactMarkdown remarkPlugins={[remarkGfm]} components={{
+        pre: ({ node: _node, children, ...props }) => {
+          const child = Array.isArray(children) ? children[0] : children;
+          const codeProps = (child as { props?: { className?: string; children?: unknown } } | null)?.props;
+          const isMermaid = /(?:^|\s)language-mermaid(?:\s|$)/.test(codeProps?.className || "");
+          if (isMermaid) {
+            const codeChildren = codeProps?.children;
+            const code = Array.isArray(codeChildren) ? codeChildren.join("") : String(codeChildren ?? "");
+            return <MermaidDiagram code={code} />;
+          }
+          return <pre {...props}>{children}</pre>;
+        },
+      }}>{todo.markdown}</ReactMarkdown><small>{todo.specificationPath}</small></article>
     </div>}
   </ThreeStateAccordionMember>;
 }

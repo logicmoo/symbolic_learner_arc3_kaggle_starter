@@ -30,7 +30,16 @@
     (inputBinding text)
     (outputBinding text)
   ))
-  (parents ([]
-    echo_into_titlecased
+  (implements (
+    (echo_into_titlecased (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
+  ))
+  (categories ([]
+    sample-demos
+    systems/systems-llm
   ))
 )

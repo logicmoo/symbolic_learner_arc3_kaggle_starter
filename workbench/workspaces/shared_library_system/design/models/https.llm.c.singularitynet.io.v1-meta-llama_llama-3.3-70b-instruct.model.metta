@@ -3,8 +3,13 @@
   (id https.llm.c.singularitynet.io.v1-meta-llama_llama-3.3-70b-instruct)
   (label meta-llama/llama-3.3-70b-instruct)
   (description "Discovered from SingularityNET LLM.")
-  (parents ([]
-    https.llm.c.singularitynet.io.v1
+  (implements (
+    (https.llm.c.singularitynet.io.v1 (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
   (model meta-llama/llama-3.3-70b-instruct)
   (enabled true)

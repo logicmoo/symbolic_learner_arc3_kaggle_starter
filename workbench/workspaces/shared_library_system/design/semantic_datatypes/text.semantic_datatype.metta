@@ -3,12 +3,41 @@
   (id text)
   (label Text)
   (description "Textual information independent of language, markup, file encoding, or model-oriented prompt representation.")
-  (children ([]
-    natural_language
-    plain_text
+  (specializations (
+    (natural_language (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        specializations
+        preferredSpecialization
+      ))
+    ))
+    (plain_text (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        specializations
+        preferredSpecialization
+      ))
+    ))
   ))
-  (preferredChild plain_text)
-  (parents ([]
-    information
+  (preferredSpecialization plain_text)
+  (implements (
+    (information (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
 )

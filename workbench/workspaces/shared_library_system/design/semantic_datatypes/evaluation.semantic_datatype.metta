@@ -3,11 +3,40 @@
   (id evaluation)
   (label Evaluation)
   (description "A semantic assessment, score, validation result, or comparison.")
-  (children ([]
-    prolog_fact_set
-    system_readiness
+  (specializations (
+    (prolog_fact_set (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        specializations
+        preferredSpecialization
+      ))
+    ))
+    (system_readiness (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        specializations
+        preferredSpecialization
+      ))
+    ))
   ))
-  (parents ([]
-    information
+  (implements (
+    (information (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
 )

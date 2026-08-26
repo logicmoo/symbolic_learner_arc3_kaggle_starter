@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from resource_store import get_filesystem_provider
+from resource_relationships import relationship_ids
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -26,7 +27,7 @@ def test_titlecase_llm_implementation_is_a_sample_topic() -> None:
     path = WORKSPACES / "shared_library_system" / "design" / "operations" / "echo_into_titlecased_llm.operation.metta"
     document = get_filesystem_provider().read_json(path)
     assert document["kind"] == "operation"
-    assert document["parents"] == ["echo_into_titlecased"]
+    assert relationship_ids(document["implements"]) == ["echo_into_titlecased"]
     assert "sample-demos" in document["topics"]
 
 

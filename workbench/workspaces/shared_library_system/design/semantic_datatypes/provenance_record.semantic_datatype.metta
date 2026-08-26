@@ -3,7 +3,12 @@
   (id provenance_record)
   (label "Provenance Record")
   (description "Semantic provenance describing where information came from and how it was produced.")
-  (parents ([]
-    information
+  (implements (
+    (information (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
 )

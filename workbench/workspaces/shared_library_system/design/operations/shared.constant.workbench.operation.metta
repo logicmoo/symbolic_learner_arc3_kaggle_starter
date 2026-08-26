@@ -8,8 +8,13 @@
     sample-demos
     systems-workbench
   ))
-  (parents ([]
-    shared.constant
+  (implements (
+    (shared.constant (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
   (implementation system.workbench)
   (parameters (

@@ -2,8 +2,13 @@
   (kind concrete_datatype)
   (id numpy)
   (label Numpy)
-  (parents ([]
-    latent_embedding
+  (implements (
+    (latent_embedding (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
   (mimeTypes ([]
     application/x-npy

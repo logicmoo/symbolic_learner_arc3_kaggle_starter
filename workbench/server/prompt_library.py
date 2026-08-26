@@ -6,7 +6,7 @@ from typing import Any
 
 from operation_library import DEFAULT_WORKSPACES_ROOT, SHARED_WORKSPACE_ID
 from workspace_inheritance import effective_workspace_layers, layer_source
-from resource_relationships import points_to, relationship_ids
+from resource_relationships import points_to, relationship_ids, resolve_inherited_document
 from resource_store import get_filesystem_provider
 
 PROMPT_DIRECTORY = "prompts"
@@ -41,21 +41,13 @@ def _validate_prompt(value: Any, path: Path) -> dict[str, Any]:
         value["separator"] = separator
         return value
 
-    if raw_kind == PROMPT_IMPLEMENTATION_KIND and not relationship_ids(value.get("parents")):
-        raise ValueError(f"Legacy prompt implementation requires parents: {path}")
-    if relationship_ids(value.get("parents")):
-        text = value.get("text")
-        if not isinstance(text, (str, list)):
-            raise ValueError(f"Prompt implementation requires text as a string or list of strings: {path}")
-        if isinstance(text, list) and not all(isinstance(item, str) for item in text):
-            raise ValueError(f"Prompt text list must contain only strings: {path}")
-    else:
-        # Backwards compatible: an abstract prompt may still carry inline text.
-        text = value.get("text")
-        if text is not None and not isinstance(text, (str, list)):
-            raise ValueError(f"Prompt text must be a string or list of strings: {path}")
-        if isinstance(text, list) and not all(isinstance(item, str) for item in text):
-            raise ValueError(f"Prompt text list must contain only strings: {path}")
+    if raw_kind == PROMPT_IMPLEMENTATION_KIND and not relationship_ids(value.get("implements")):
+        raise ValueError(f"Legacy prompt implementation requires implements: {path}")
+    text = value.get("text")
+    if text is not None and not isinstance(text, (str, list)):
+        raise ValueError(f"Prompt text must be a string or list of strings: {path}")
+    if isinstance(text, list) and not all(isinstance(item, str) for item in text):
+        raise ValueError(f"Prompt text list must contain only strings: {path}")
 
     return value
 
@@ -124,7 +116,7 @@ def load_shared_prompt_records(workspaces_root: Path = DEFAULT_WORKSPACES_ROOT) 
         record
         for record in load_shared_prompt_resource_records(workspaces_root)
         if (record.get("document") or {}).get("kind") == PROMPT_KIND
-        and not relationship_ids((record.get("document") or {}).get("parents"))
+        and not relationship_ids((record.get("document") or {}).get("implements"))
     ]
 
 
@@ -135,7 +127,7 @@ def load_shared_prompt_implementation_records(
         record
         for record in load_shared_prompt_resource_records(workspaces_root)
         if (record.get("document") or {}).get("kind") == PROMPT_KIND
-        and relationship_ids((record.get("document") or {}).get("parents"))
+        and relationship_ids((record.get("document") or {}).get("implements"))
     ]
 
 
@@ -144,7 +136,7 @@ def load_workspace_local_prompt_records(workspace_root: Path) -> list[dict[str, 
         record
         for record in load_workspace_local_prompt_resource_records(workspace_root)
         if (record.get("document") or {}).get("kind") == PROMPT_KIND
-        and not relationship_ids((record.get("document") or {}).get("parents"))
+        and not relationship_ids((record.get("document") or {}).get("implements"))
     ]
 
 
@@ -157,7 +149,7 @@ def load_workspace_prompt_records(
         record
         for record in _effective_prompt_resources(workspace_root, workspaces_root=workspaces_root)
         if (record.get("document") or {}).get("kind") == PROMPT_KIND
-        and not relationship_ids((record.get("document") or {}).get("parents"))
+        and not relationship_ids((record.get("document") or {}).get("implements"))
     ]
 
 
@@ -170,7 +162,7 @@ def load_workspace_prompt_implementation_records(
         record
         for record in _effective_prompt_resources(workspace_root, workspaces_root=workspaces_root)
         if (record.get("document") or {}).get("kind") == PROMPT_KIND
-        and relationship_ids((record.get("document") or {}).get("parents"))
+        and relationship_ids((record.get("document") or {}).get("implements"))
     ]
 
 
@@ -232,37 +224,125 @@ def resolve_prompt_implementation(
         raise KeyError(f"prompt not found: {prompt_id}")
 
     prompt = prompt_record["document"]
-    variants = relationship_ids(prompt.get("children"))
-    chosen = requested or prompt.get("preferredChild") or (variants[0] if variants else None)
-
-    if not chosen:
-        if prompt.get("text") is not None:
-            return {
-                "prompt": prompt,
-                "promptRecord": prompt_record,
-                "implementation": prompt,
-                "implementationRecord": prompt_record,
-                "inline": True,
-            }
-        raise ValueError(f"prompt has no implementation variant: {prompt_id}")
-
-    if variants and chosen not in variants:
-        raise ValueError(f"prompt implementation {chosen} is not allowed by prompt {prompt_id}")
-
-    implementation_record = implementations.get(str(chosen))
-    if not implementation_record:
-        raise KeyError(f"prompt implementation not found: {chosen}")
-    implementation = implementation_record["document"]
-    if not points_to(implementation, "parents", prompt_id):
-        raise ValueError(f"prompt implementation {chosen} does not implement {prompt_id}")
-
-    return {
-        "prompt": prompt,
-        "promptRecord": prompt_record,
-        "implementation": implementation,
-        "implementationRecord": implementation_record,
-        "inline": False,
+    all_records = {**prompts, **implementations}
+    documents_by_id = {
+        resource_id: record["document"]
+        for resource_id, record in all_records.items()
+        if record.get("document")
     }
+
+    def inheritance_resolution(document: dict[str, Any]) -> dict[str, Any]:
+        resolution = resolve_inherited_document(document, documents_by_id)
+        blockers = [
+            *resolution["conflicts"],
+            *resolution["missingResources"],
+            *resolution["missingBacklinks"],
+        ]
+        if blockers:
+            raise ValueError(f"prompt inheritance is unresolved for {document.get('id')}: {'; '.join(blockers)}")
+        return resolution
+
+    def has_text(document: dict[str, Any]) -> bool:
+        text = inheritance_resolution(document)["document"].get("text")
+        return isinstance(text, str) and bool(text.strip()) or isinstance(text, list) and bool(text)
+
+    def specialization_ids(resource_id: str) -> list[str]:
+        record = all_records.get(resource_id)
+        if not record:
+            return []
+        document = record.get("document") or {}
+        declared = relationship_ids(document.get("specializations"))
+        reverse = [
+            candidate_id
+            for candidate_id, candidate in implementations.items()
+            if points_to(candidate.get("document") or {}, "implements", resource_id)
+        ]
+        ordered = list(dict.fromkeys([*declared, *reverse]))
+        preferred = str(document.get("preferredSpecialization") or "")
+        return ([preferred] if preferred in ordered else []) + [candidate for candidate in ordered if candidate != preferred]
+
+    def resolve_candidate(candidate_id: str, trail: tuple[str, ...]) -> tuple[dict[str, Any], list[str]] | None:
+        if candidate_id in trail:
+            raise ValueError(f"prompt specialization cycle: {' -> '.join((*trail, candidate_id))}")
+        record = all_records.get(candidate_id)
+        if not record:
+            return None
+        document = record.get("document") or {}
+        path = [*trail, candidate_id]
+        if has_text(document):
+            return record, path
+        for specialization_id in specialization_ids(candidate_id):
+            resolved = resolve_candidate(specialization_id, tuple(path))
+            if resolved:
+                return resolved
+        return None
+
+    reachable: set[str] = set()
+
+    def collect(resource_id: str, trail: tuple[str, ...] = ()) -> None:
+        if resource_id in trail:
+            raise ValueError(f"prompt specialization cycle: {' -> '.join((*trail, resource_id))}")
+        for specialization_id in specialization_ids(resource_id):
+            if specialization_id in reachable:
+                continue
+            reachable.add(specialization_id)
+            collect(specialization_id, (*trail, resource_id))
+
+    collect(prompt_id)
+    if requested == prompt_id:
+        if not has_text(prompt):
+            raise ValueError(f"prompt {prompt_id} has no inline text")
+        inheritance = inheritance_resolution(prompt)
+        return {
+            "prompt": prompt,
+            "promptRecord": prompt_record,
+            "implementation": inheritance["document"],
+            "declaredImplementation": prompt,
+            "implementationRecord": prompt_record,
+            "inheritanceResolution": inheritance,
+            "resolutionPath": [prompt_id],
+            "inline": True,
+        }
+    if requested and requested not in reachable:
+        raise ValueError(f"prompt implementation {requested} is not allowed by prompt {prompt_id}")
+
+    starts = [requested] if requested else specialization_ids(prompt_id)
+    for candidate_id in starts:
+        if not candidate_id:
+            continue
+        resolved = resolve_candidate(candidate_id, (prompt_id,))
+        if not resolved:
+            continue
+        implementation_record, resolution_path = resolved
+        implementation = implementation_record["document"]
+        inheritance = inheritance_resolution(implementation)
+        return {
+            "prompt": prompt,
+            "promptRecord": prompt_record,
+            "implementation": inheritance["document"],
+            "declaredImplementation": implementation,
+            "implementationRecord": implementation_record,
+            "inheritanceResolution": inheritance,
+            "selectedSpecialization": candidate_id,
+            "resolutionPath": resolution_path,
+            "inline": False,
+        }
+
+    if has_text(prompt):
+        inheritance = inheritance_resolution(prompt)
+        return {
+            "prompt": prompt,
+            "promptRecord": prompt_record,
+            "implementation": inheritance["document"],
+            "declaredImplementation": prompt,
+            "implementationRecord": prompt_record,
+            "inheritanceResolution": inheritance,
+            "resolutionPath": [prompt_id],
+            "inline": True,
+        }
+    if requested:
+        raise ValueError(f"prompt specialization {requested} has no concrete descendant")
+    raise ValueError(f"prompt has no concrete specialization: {prompt_id}")
 
 
 def prompt_hierarchy(
@@ -278,7 +358,7 @@ def prompt_hierarchy(
     by_prompt: dict[str, list[dict[str, Any]]] = {}
     for record in implementations:
         document = record.get("document") or {}
-        for parent in relationship_ids(document.get("parents")):
+        for parent in relationship_ids(document.get("implements")):
             by_prompt.setdefault(parent, []).append(record)
     for values in by_prompt.values():
         values.sort(key=lambda item: str((item.get("document") or {}).get("label") or item["path"]).lower())
@@ -286,7 +366,7 @@ def prompt_hierarchy(
         "prompts": prompts,
         "promptImplementations": implementations,
         "promptProfiles": profiles,
-        "implementationsByPrompt": by_prompt,
+        "specializationsByResource": by_prompt,
     }
 
 

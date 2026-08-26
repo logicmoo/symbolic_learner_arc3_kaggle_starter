@@ -3,8 +3,13 @@
   (id https.llm.c.singularitynet.io.v1-mistralai_mistral-nemo)
   (label mistralai/mistral-nemo)
   (description "Discovered from SingularityNET LLM.")
-  (parents ([]
-    https.llm.c.singularitynet.io.v1
+  (implements (
+    (https.llm.c.singularitynet.io.v1 (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
   (model mistralai/mistral-nemo)
   (enabled true)

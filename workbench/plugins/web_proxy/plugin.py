@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 from collections.abc import Iterable
+from fnmatch import fnmatch
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlencode, urlsplit
@@ -52,6 +53,31 @@ def _origin_of(url: str) -> str:
     return f"{parsed.scheme}://{parsed.netloc}".rstrip("/")
 
 
+def _origin_allowed(origin: str, allowed_targets: Iterable[str]) -> bool:
+    """Does ``origin`` satisfy an exact entry or a wildcard pattern in ``allowed_targets``?
+
+    An entry with no ``*``/``?`` must match exactly. An entry containing one
+    (for example ``*://127.0.0.1:*/*``, allowing any scheme and any port on
+    localhost) is matched with ``fnmatch`` against the bare origin -- a
+    trailing ``/*`` or ``/**`` path wildcard is trimmed first, since ``origin``
+    here never includes a path of its own.
+    """
+
+    for entry in allowed_targets:
+        if "*" not in entry and "?" not in entry:
+            if origin == entry:
+                return True
+            continue
+        pattern = entry
+        for suffix in ("/**", "/*"):
+            if pattern.endswith(suffix):
+                pattern = pattern[: -len(suffix)]
+                break
+        if fnmatch(origin, pattern):
+            return True
+    return False
+
+
 def _target_url(
     scheme: str,
     authority: str,
@@ -62,7 +88,7 @@ def _target_url(
     if scheme not in {"http", "https"}:
         raise HTTPException(status_code=400, detail="Only http and https targets are supported")
     origin = f"{scheme}://{authority}".rstrip("/")
-    if origin not in allowed_targets:
+    if not _origin_allowed(origin, allowed_targets):
         raise HTTPException(status_code=403, detail=f"Proxy target is not allowed: {origin}")
     target = f"{origin}/{path.lstrip('/')}"
     return f"{target}?{query}" if query else target
@@ -211,7 +237,10 @@ def create_admin_router(manifest: dict[str, Any]) -> APIRouter:
     async def describe() -> dict[str, Any]:
         current = settings.current()
         targets = sorted(settings.allowed_targets())
-        probes = await asyncio.gather(*(_probe_target(target) for target in targets)) if targets else []
+        # A wildcard pattern (e.g. "*://127.0.0.1:*/*") is not a concrete
+        # address, so it is counted as allowed but not probed for reachability.
+        probeable = [target for target in targets if "*" not in target and "?" not in target]
+        probes = await asyncio.gather(*(_probe_target(target) for target in probeable)) if probeable else []
         for probe in probes:
             last_probe[probe["target"]] = probe
         reachable = [probe for probe in probes if probe["reachable"]]
@@ -221,8 +250,8 @@ def create_admin_router(manifest: dict[str, Any]) -> APIRouter:
                                 detail="" if targets else "No target is allowed, so every proxied request returns 403."),
             plugin_admin.status(
                 "Reachable now",
-                f"{len(reachable)} of {len(targets)}",
-                "ok" if targets and len(reachable) == len(targets) else "warn" if targets else "neutral",
+                f"{len(reachable)} of {len(probeable)}",
+                "ok" if probeable and len(reachable) == len(probeable) else "warn" if probeable else "neutral",
             ),
             plugin_admin.status(
                 "Request timeout",
@@ -308,7 +337,7 @@ def create_admin_router(manifest: dict[str, Any]) -> APIRouter:
         return plugin_admin.write_manifest_values(manifest, updates)
 
     async def probe_action(_body: dict[str, Any]) -> dict[str, Any]:
-        targets = sorted(settings.allowed_targets())
+        targets = [target for target in sorted(settings.allowed_targets()) if "*" not in target and "?" not in target]
         probes = await asyncio.gather(*(_probe_target(target) for target in targets)) if targets else []
         return {"probed": len(probes), "results": probes}
 

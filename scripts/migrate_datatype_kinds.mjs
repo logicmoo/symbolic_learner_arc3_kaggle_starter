@@ -8,6 +8,8 @@ const concreteDirectory = path.join(shared, "concrete_datatypes");
 const configDirectory = path.join(shared, "config");
 const concreteId = id => id === "plain_text" ? "text_plain" : id;
 const ids = value => [...new Set((Array.isArray(value) ? value : []).map(String).filter(Boolean))];
+const implementationMap = values => Object.fromEntries(ids(values).map(id => [id, { borrow: ["*"], exclude: [] }]));
+const specializationMap = values => Object.fromEntries(ids(values).map(id => [id, { lend: ["*"], withhold: ["id", "label", "description", "implements", "specializations", "preferredSpecialization"] }]));
 const title = value => value.split("_").map(word => word ? word[0].toUpperCase() + word.slice(1) : word).join(" ");
 const semanticParentOverrides = {
   human_intervention: ["intervention"],
@@ -22,10 +24,10 @@ for (const name of fs.readdirSync(semanticDirectory).filter(name => name.endsWit
   if (document.kind !== "datatype" && document.kind !== "semantic_datatype") continue;
     document.kind = "semantic_datatype";
     if (document.extends) {
-      document.parents = ids([...(document.parents ?? []), ...ids(document.extends)]);
+      document.implements = implementationMap([...Object.keys(document.implements ?? {}), ...ids(document.extends)]);
       delete document.extends;
     }
-    if (document.id !== "information") document.parents = semanticParentOverrides[document.id] ?? ["information"];
+    if (document.id !== "information") document.implements = implementationMap(semanticParentOverrides[document.id] ?? ["information"]);
   const target = path.join(semanticDirectory, `${document.id}.semantic_datatype.json`);
   fs.writeFileSync(target, `${JSON.stringify(document, null, 2)}\n`);
   if (target !== source) fs.unlinkSync(source);
@@ -39,16 +41,17 @@ for (const name of fs.readdirSync(representationDirectory).filter(name => name.e
   document.kind = "representation_datatype";
   const encodings = Array.isArray(document.encodings) ? document.encodings : null;
   if (encodings) {
-    document.children = encodings.map(encoding => concreteId(String(encoding.id))).filter(Boolean);
-    if (document.children.length) document.preferredChild ??= document.children[0];
+    const specializationIds = encodings.map(encoding => concreteId(String(encoding.id))).filter(Boolean);
+    document.specializations = specializationMap(specializationIds);
+    if (specializationIds.length) document.preferredSpecialization ??= specializationIds[0];
     delete document.encodings;
   }
 
   for (const encoding of encodings ?? []) {
     if (!encoding?.id) continue;
     const id = concreteId(String(encoding.id));
-    const current = concrete.get(id) ?? { kind: "concrete_datatype", id, label: title(id), parents: [], mimeTypes: [], extensions: [] };
-    current.parents = ids([...current.parents, document.id]);
+    const current = concrete.get(id) ?? { kind: "concrete_datatype", id, label: title(id), implements: {}, mimeTypes: [], extensions: [] };
+    current.implements = implementationMap([...Object.keys(current.implements), document.id]);
     current.mimeTypes = ids([...current.mimeTypes, ...(encoding.mimeTypes ?? [])]);
     current.extensions = ids([...current.extensions, ...(encoding.extensions ?? [])]);
     concrete.set(id, current);

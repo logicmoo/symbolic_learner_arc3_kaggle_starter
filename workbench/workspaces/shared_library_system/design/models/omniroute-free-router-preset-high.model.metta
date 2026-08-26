@@ -2,8 +2,13 @@
   (kind model)
   (id omniroute-free-router-preset-high)
   (label "OmniRoute Best Free Router Preset High")
-  (parents ([]
-    omniroute-free-router
+  (implements (
+    (omniroute-free-router (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
   (enabled true)
   (defaults (

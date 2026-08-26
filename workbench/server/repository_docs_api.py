@@ -4,9 +4,12 @@ import hashlib
 import json
 import os
 import re
+import subprocess
+import threading
+import time
 from datetime import datetime, timezone
 from fnmatch import fnmatch
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import FileResponse
@@ -16,10 +19,16 @@ from workflow_providers import _llm_complete
 
 router = APIRouter(prefix="/repository", tags=["repository-docs"])
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
-IGNORED_DIRECTORIES = {".git", ".venv", "node_modules", "dist", "build", "__pycache__", "action_trees", ".pytest_cache"}
+IGNORED_DIRECTORIES = {".git", ".venv", ".codex-tmp", "node_modules", "dist", "build", "__pycache__", "action_trees", ".pytest_cache"}
 VIEWABLE_SUFFIXES = {".md", ".py", ".json", ".metta", ".toml", ".txt", ".bat", ".pl", ".html", ".css", ".tsx", ".ts", ".js", ".mjs", ".yml", ".yaml", ".ipynb"}
 IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg"}
 VIEWABLE_NAMES = {"Makefile", ".gitattributes", ".gitignore", ".env.example"}
+FILESYSTEM_INDEX_CACHE_TTL_SECONDS = 30.0
+_filesystem_index_cache_lock = threading.RLock()
+_filesystem_index_cache: dict[
+    tuple[str, str, str],
+    tuple[float, int, dict[str, object]],
+] = {}
 SENSITIVE_PATTERNS = {
     ".env", ".env.*", "*.key", "*.pem", "*.p12", "*.pfx", "*.jks",
     "id_rsa", "id_dsa", "id_ecdsa", "id_ed25519", "credentials.json",
@@ -93,22 +102,214 @@ def _entry(target: Path, *, exposed: bool, reason: str | None = None) -> dict[st
     return entry
 
 
+def _repository_scan_root(directory: str) -> tuple[Path, str]:
+    resources = get_filesystem_provider()
+    normalized = directory.strip().replace("\\", "/").strip("/")
+    try:
+        target = resources.resolve(REPOSITORY_ROOT, normalized or ".")
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail="Scan directory must stay inside the repository") from error
+    if not resources.is_dir(target):
+        raise HTTPException(status_code=404, detail=f"Repository directory does not exist: {normalized or '.'}")
+    return target, normalized
+
+
+def _scan_masks(raw: str) -> list[str]:
+    masks = [value.strip().replace("\\", "/") for value in raw.split("|")]
+    for mask in masks:
+        if not mask:
+            continue
+        path = PurePosixPath(mask.strip("/"))
+        if path.is_absolute() or ".." in path.parts:
+            raise HTTPException(status_code=400, detail="Scan masks must stay inside the start directory")
+    return [mask for mask in masks if mask]
+
+
+def _matches_scan_mask(path: str, mask: str) -> bool:
+    normalized_path = path.replace("\\", "/")
+    normalized_mask = mask.strip("/")
+    if any(token in normalized_mask for token in "*?[]"):
+        candidate = PurePosixPath(normalized_path.strip("/"))
+        return candidate.match(normalized_mask) or PurePosixPath(f"_/{candidate}").match(normalized_mask)
+    return normalized_mask.lower() in normalized_path.lower()
+
+
+def _git_repository_scan_roots(
+    start: Path,
+    directory_masks: list[str],
+    exclude_masks: list[str],
+) -> list[Path]:
+    if not (REPOSITORY_ROOT / ".git").is_dir():
+        return []
+    try:
+        start_relative = start.relative_to(REPOSITORY_ROOT).as_posix()
+    except ValueError:
+        return []
+    prefix = "" if start_relative == "." else f"{start_relative}/"
+    pathspecs = [
+        f":(glob){prefix}{mask.strip('/')}/**"
+        for mask in directory_masks
+    ]
+    try:
+        completed = subprocess.run(
+            ["git", "-C", str(REPOSITORY_ROOT), "ls-files", "--cached", "--others", "--exclude-standard", "--", *pathspecs],
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return []
+    roots: set[Path] = set()
+    for raw in completed.stdout.splitlines():
+        target = REPOSITORY_ROOT / raw
+        if not target.is_file():
+            continue
+        parent = target.parent
+        while parent != start and start in parent.parents:
+            relative = f"{parent.relative_to(start).as_posix()}/"
+            if any(_matches_scan_mask(relative, mask) for mask in directory_masks):
+                if not any(_matches_scan_mask(relative, mask) for mask in exclude_masks):
+                    roots.add(parent)
+                break
+            parent = parent.parent
+
+    # Nested plugin repositories and disabled vendor trees may not be expanded
+    # by the outer Git index. Probe their one-level package roots directly.
+    terminal_names = {
+        PurePosixPath(mask.strip("/")).name
+        for mask in directory_masks
+        if not any(token in PurePosixPath(mask.strip("/")).name for token in "*?[]")
+    }
+    resources = get_filesystem_provider()
+    collections = [
+        REPOSITORY_ROOT / "workbench" / "plugins",
+        REPOSITORY_ROOT / "workbench" / "workspaces",
+        REPOSITORY_ROOT / "vendor",
+    ]
+    for name in terminal_names:
+        direct = start / name
+        if resources.is_dir(direct):
+            relative = f"{direct.relative_to(start).as_posix()}/"
+            if not any(_matches_scan_mask(relative, mask) for mask in exclude_masks):
+                roots.add(direct)
+        for collection in collections:
+            if not resources.is_dir(collection) or (collection != start and start not in collection.parents):
+                continue
+            for child in resources.iterdir(collection):
+                candidate = child / name
+                if not resources.is_dir(candidate):
+                    continue
+                relative = f"{candidate.relative_to(start).as_posix()}/"
+                if any(_matches_scan_mask(relative, mask) for mask in directory_masks) and not any(
+                    _matches_scan_mask(relative, mask) for mask in exclude_masks
+                ):
+                    roots.add(candidate)
+    return sorted(roots, key=lambda path: path.as_posix().lower())
+
+
+def _repository_scan_roots(start: Path, include: str, exclude: str) -> tuple[list[Path], list[str], list[str]]:
+    include_masks = _scan_masks(include)
+    exclude_masks = _scan_masks(exclude)
+    directory_masks = [mask for mask in include_masks if mask.endswith("/")]
+    if not directory_masks:
+        return [start], include_masks, exclude_masks
+    indexed_roots = _git_repository_scan_roots(start, directory_masks, exclude_masks)
+    if indexed_roots:
+        return indexed_roots, include_masks, exclude_masks
+    matches: list[Path] = []
+    for directory, names, _files in os.walk(start):
+        current = Path(directory)
+        retained: list[str] = []
+        for name in names:
+            child = current / name
+            if name in IGNORED_DIRECTORIES:
+                continue
+            relative = f"{child.relative_to(start).as_posix()}/"
+            if any(_matches_scan_mask(relative, mask) for mask in exclude_masks):
+                continue
+            if any(_matches_scan_mask(relative, mask) for mask in directory_masks):
+                matches.append(child)
+                # The matched root is indexed below; no need to discover nested
+                # roots inside it as a separate scan.
+                continue
+            retained.append(name)
+        names[:] = retained
+    return sorted(set(matches), key=lambda path: path.as_posix().lower()), include_masks, exclude_masks
+
+
+def _clear_filesystem_index_cache() -> None:
+    with _filesystem_index_cache_lock:
+        _filesystem_index_cache.clear()
+
+
 @router.get("/filesystem-index")
-def list_repository_filesystem() -> dict[str, object]:
+def list_repository_filesystem(
+    directory: str = "",
+    include: str = "",
+    exclude: str = "",
+    refresh: bool = False,
+) -> dict[str, object]:
     """Inventory browser-safe files and disclose exclusions without file contents."""
     resources = get_filesystem_provider()
+    start, normalized = _repository_scan_root(directory)
+    normalized_include = "|".join(_scan_masks(include))
+    normalized_exclude = "|".join(_scan_masks(exclude))
+    cache_key = (str(start).lower(), normalized_include, normalized_exclude)
+    revision = resources.revision
+    now = time.monotonic()
+    if not refresh:
+        with _filesystem_index_cache_lock:
+            cached = _filesystem_index_cache.get(cache_key)
+        if cached and cached[1] == revision and now - cached[0] <= FILESYSTEM_INDEX_CACHE_TTL_SECONDS:
+            return {**cached[2], "cached": True}
+    scan_roots, include_masks, exclude_masks = _repository_scan_roots(
+        start,
+        normalized_include,
+        normalized_exclude,
+    )
+    file_include_masks = [mask for mask in include_masks if not mask.endswith("/")]
     files: list[dict[str, object]] = []
     unexposed: list[dict[str, object]] = []
-    for target in resources.rglob(REPOSITORY_ROOT, "*", ignored_names=IGNORED_DIRECTORIES):
-        relative = target.relative_to(REPOSITORY_ROOT)
-        reason = _exclusion_reason(relative)
-        if reason:
-            unexposed.append(_entry(target, exposed=False, reason=reason))
-        else:
-            files.append(_entry(target, exposed=True))
+    seen: set[Path] = set()
+    for scan_root in scan_roots:
+        for target in resources.rglob(scan_root, "*", ignored_names=IGNORED_DIRECTORIES):
+            if target in seen:
+                continue
+            seen.add(target)
+            relative = target.relative_to(REPOSITORY_ROOT)
+            relative_text = relative.as_posix()
+            if file_include_masks and not any(_matches_scan_mask(relative_text, mask) for mask in file_include_masks):
+                continue
+            if any(_matches_scan_mask(relative_text, mask) for mask in exclude_masks):
+                continue
+            reason = _exclusion_reason(relative)
+            if reason:
+                unexposed.append(_entry(target, exposed=False, reason=reason))
+            else:
+                files.append(_entry(target, exposed=True))
     files.sort(key=lambda item: str(item["path"]).lower())
     unexposed.sort(key=lambda item: str(item["path"]).lower())
-    return {"root": str(REPOSITORY_ROOT), "files": files, "unexposed": unexposed}
+    payload: dict[str, object] = {
+        "root": str(REPOSITORY_ROOT),
+        "scope": normalized,
+        "include": "|".join(include_masks),
+        "exclude": "|".join(exclude_masks),
+        "scanRoots": [path.relative_to(REPOSITORY_ROOT).as_posix() for path in scan_roots],
+        "files": files,
+        "unexposed": unexposed,
+        "cached": False,
+    }
+    with _filesystem_index_cache_lock:
+        expired_keys = [
+            key
+            for key, cached in _filesystem_index_cache.items()
+            if time.monotonic() - cached[0] > FILESYSTEM_INDEX_CACHE_TTL_SECONDS
+        ]
+        for key in expired_keys:
+            _filesystem_index_cache.pop(key, None)
+        _filesystem_index_cache[cache_key] = (time.monotonic(), revision, payload)
+    return payload
 
 
 @router.get("/markdown-index")
@@ -232,6 +433,7 @@ def update_repository_file(payload: RepositoryFileUpdate, path: str = Query(...,
         except json.JSONDecodeError as error:
             raise HTTPException(status_code=422, detail=f"Invalid JSON at line {error.lineno}, column {error.colno}") from error
     resources.write_text(target, payload.content)
+    _clear_filesystem_index_cache()
     return read_repository_file(path)
 
 
@@ -307,4 +509,5 @@ def summarize_repository_files(payload: RepositorySummaryRequest) -> dict[str, s
     target_output = REPOSITORY_ROOT / relative_output
     content = "[← Back to repository README](../../../README.md)\n\n" + markdown + "\n"
     resources.write_text(target_output, content)
+    _clear_filesystem_index_cache()
     return read_repository_file(relative_output.as_posix())

@@ -72,7 +72,7 @@ The app also exposes health, analysis, SQLite-backed legacy run/event/operation 
 
 ## Filesystem Resource Kinds
 
-Canonical first-class resources include `workflow`, `goal`, `planning_strategy`, `atomspace`, `operation`, `semantic_datatype`, `representation_datatype`, `concrete_datatype`, `prompt`, `prompt_profile`, `backend`, `model`, `system`, model-policy resources, and benchmark resources. Same-family variants normally keep the same kind and become implicit alternatives through `parents`. Loaders still accept legacy variant kinds and directories such as `operation_implementation`, `prompt_implementation`, `goal_variant`, `plan_variant`, `context_variant`, and `profile` so older workspaces remain readable; new saves use the lifecycle-first canonical directories.
+Canonical first-class resources include `workflow`, `goal`, `planning_strategy`, `atomspace`, `operation`, `semantic_datatype`, `representation_datatype`, `concrete_datatype`, `prompt`, `prompt_profile`, `backend`, `model`, `system`, model-policy resources, and benchmark resources. Same-family variants normally keep the same kind and become implicit specializations through `implements`. General resources list their alternatives in `specializations`; new saves use the lifecycle-first canonical directories.
 
 Shared inheritance plus workspace override resolution exists for Goals, Planning Strategies, AtomSpaces, Operations, Datatypes, Source Code, Systems, Models/Presets, and Policies. Goal Runs and execution evidence are deliberately SQLite runtime records; artifact records serve as durable workflow state snapshots.
 
@@ -86,7 +86,7 @@ Before and after Navigation V2:
 
 - [x] `App.tsx` still launches the page containing `OperationLibraryEditor`.
 - [x] Operations opens the existing `OperationLibraryEditor`, not a replacement.
-- [x] Abstract operations remain parents and implementations remain children.
+- [x] Abstract operations remain contracts and implementations remain specializations.
 - [x] Default implementation selection edits the abstract operation document.
 - [x] Python, SWI-Prolog, MeTTa, model/preset dispatch, and prompt-composition panels remain available.
 - [x] Persistent tabs open, activate, show dirty state, close, and retain unsaved drafts.

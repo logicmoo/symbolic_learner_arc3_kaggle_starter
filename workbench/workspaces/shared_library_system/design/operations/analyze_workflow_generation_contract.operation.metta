@@ -24,8 +24,22 @@
     (workflow Object)
     (order_used Array)
   ))
-  (children ([] workflow.analyze_generation_contract.json))
-  (preferredChild workflow.analyze_generation_contract.json)
+  (specializations (
+    (workflow.analyze_generation_contract.json (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        specializations
+        preferredSpecialization
+      ))
+    ))
+  ))
+  (preferredSpecialization workflow.analyze_generation_contract.json)
 )
 (
   (kind operation)
@@ -36,7 +50,14 @@
     systems-llm
   ))
   (implementation llm.complete)
-  (parents ([] workflow.analyze_generation_contract))
+  (implements (
+    (workflow.analyze_generation_contract (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
+  ))
   (inputs (
     (english_specification Text)
     (generation_steps Array)
@@ -55,11 +76,18 @@
     (order_used Array)
   ))
   (bindings (
-    (prompts ([] workflow.analyze_generation_contract))
-    (promptVariants ((workflow.analyze_generation_contract workflow.analyze_generation_contract.json)))
+    (prompts ([]
+      workflow.analyze_generation_contract
+    ))
+    (promptVariants (
+      (workflow.analyze_generation_contract workflow.analyze_generation_contract.json)
+    ))
     (separator "\n\n")
   ))
-  (modelSelection ((models ([])) (strategy policy)))
+  (modelSelection (
+    (models ([]))
+    (strategy policy)
+  ))
   (parameters (
     (parseJson true)
     (responseFormat json_object)

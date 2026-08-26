@@ -11,8 +11,13 @@
     .logo
     .txt
   ))
-  (parents ([]
-    image
+  (implements (
+    (image (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
-  (children ([]))
+  (specializations ())
 )

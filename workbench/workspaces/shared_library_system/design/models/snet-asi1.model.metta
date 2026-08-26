@@ -3,8 +3,13 @@
   (id snet-asi1)
   (label "SingularityNET asi1")
   (description "The asi1 model served by the SingularityNET OpenAI-compatible LLM backend.")
-  (parents ([]
-    https.llm.c.singularitynet.io.v1
+  (implements (
+    (https.llm.c.singularitynet.io.v1 (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
   (model asi1)
   (enabled true)

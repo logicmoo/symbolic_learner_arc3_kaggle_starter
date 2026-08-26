@@ -36,14 +36,14 @@ export function ArtifactTreeBranch({ label, header, children, className = "opera
   const branchRef = useRef<HTMLDivElement>(null);
   const hasChildren = children !== undefined && children !== null;
   const kind = resourceKind(searchValue);
-  const role = kind ? `${parentKind === kind ? "child" : "top"}-${kind}` : "other";
+  const role = kind ? `${parentKind === kind ? "specialization" : "top"}-${kind}` : "other";
   const controlled = displayMode !== undefined && onDisplayModeChange !== undefined;
 
   useEffect(() => {
     if (!command || controlled) return;
     const disabled = Boolean(branchRef.current?.querySelector(":scope > .artifact-tree-branch-head .resource-disabled"));
     const matches = !command.target || command.target === role
-      || (command.target === `childless-${kind}` && !hasChildren)
+      || (command.target === `unspecialized-${kind}` && !hasChildren)
       || (command.target === "enabled" && !disabled)
       || (command.target === "disabled" && disabled)
       || (command.target === "search" && branchRef.current?.classList.contains("tree-search-match"));

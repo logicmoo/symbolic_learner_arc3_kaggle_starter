@@ -3,8 +3,13 @@
   (id https.llm.c.singularitynet.io.v1-openai_gpt-oss-20b)
   (label openai/gpt-oss-20b)
   (description "Discovered from SingularityNET LLM.")
-  (parents ([]
-    https.llm.c.singularitynet.io.v1
+  (implements (
+    (https.llm.c.singularitynet.io.v1 (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
   (model openai/gpt-oss-20b)
   (enabled true)

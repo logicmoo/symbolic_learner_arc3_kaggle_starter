@@ -113,6 +113,85 @@ def test_navigation_v2_has_required_groups_and_labels() -> None:
     assert 'label: "Artifacts", view: "knowledgeArtifacts"' in source
 
 
+def test_plugin_contributed_rail_items_collapse_past_a_threshold() -> None:
+    source = ACTIVE_PAGE.read_text(encoding="utf-8")
+    assert "PLUGIN_MENU_COLLAPSE_THRESHOLD = 5" in source
+    assert "sectionPluginEntries.length > PLUGIN_MENU_COLLAPSE_THRESHOLD" in source
+    assert "data-plugin-group-toggle={section.group}" in source
+    # The currently open plugin page must stay visible even when its group is collapsed.
+    assert "hasSelectedEntry" in source
+    assert (
+        "explicitToggle !== undefined ? explicitToggle : !overThreshold || hasSelectedEntry"
+        in source
+    )
+
+
+def test_navigation_scrollbar_reserves_space_inside_the_app_menu() -> None:
+    styles = (ROOT / "workbench/frontend/src/styles/workbench.css").read_text(encoding="utf-8")
+
+    assert ".rail.navigation-v2" in styles
+    assert "box-sizing: border-box" in styles
+    assert "scrollbar-gutter: stable" in styles
+    assert ".rail.navigation-v2::-webkit-scrollbar" in styles
+
+
+def test_navigation_menu_is_resizable_and_persistent() -> None:
+    source = ACTIVE_PAGE.read_text(encoding="utf-8")
+    styles = (ROOT / "workbench/frontend/src/styles/workbench.css").read_text(encoding="utf-8")
+
+    assert "workbench.navigationWidth" in source
+    assert "beginNavigationResize" in source
+    assert 'aria-label="Resize App Menu"' in source
+    assert "setNavigationWidth(220)" in source
+    assert '"--nav-rail-width": `${navigationWidth}px`' in source
+    assert ".navigation-resizer" in styles
+    assert "left:calc(var(--nav-rail-width,220px) - 4px)" in styles
+    assert "var(--nav-rail-width,220px) + var(--resource-browser-width,250px)" in styles
+    assert ".rail.navigation-v2 .rail-icon{min-height:30px" in styles
+    assert '.workbench[data-view="docs"] .workspace{grid-template-columns:var(--nav-rail-width,220px)' in styles
+    assert "body.docs-focused .workspace{grid-template-columns:var(--nav-rail-width,220px)" in styles
+
+
+def test_acceptance_debug_outlines_cover_all_control_types() -> None:
+    styles = (ROOT / "workbench/frontend/src/styles/workbench.css").read_text(encoding="utf-8")
+
+    for selector in (
+        ".workbench.tsx-debug-enabled button",
+        ".workbench.tsx-debug-enabled input",
+        ".workbench.tsx-debug-enabled select",
+        ".workbench.tsx-debug-enabled textarea",
+        '.workbench.tsx-debug-enabled [contenteditable="true"]',
+        '.workbench.tsx-debug-enabled [role="separator"]',
+    ):
+        assert selector in styles
+    assert "RETAIN THROUGH 2026-09-02" in styles
+    assert ".workbench.tsx-debug-enabled [class]" in styles
+    assert "outline:1px dashed #b36bff" in styles
+    popup = (ROOT / "workbench/frontend/src/components/TsxSourceLocationPopup.tsx").read_text(encoding="utf-8")
+    assert 'closest("[data-tsx-source]")' in popup
+    assert "target.location" in popup
+    assert "event.clientX" in popup
+    assert "event.clientY" in popup
+    assert "pointermove" in popup
+    assert "translateX(-100%)" in popup
+    assert "<TsxSourceLocationPopup />" in ACTIVE_PAGE.read_text(encoding="utf-8")
+    assert "[data-tsx-source-popup]" in styles
+    vite = (ROOT / "workbench/frontend/vite.config.ts").read_text(encoding="utf-8")
+    assert "workbench-tsx-source-locations" in vite
+    assert 'from "@babel/parser"' in vite
+    assert 'node.type === "JSXOpeningElement"' in vite
+    assert 'id.split("?", 1)[0]' in vite
+    assert 'replaceAll("\\\\", "/").toLowerCase()' in vite
+    assert "data-tsx-source" in vite
+    assert "normalizedSourceId.slice(normalizedSourceRoot.length + 1)" in vite
+    assert "opening.loc?.start.line" in vite
+    page = ACTIVE_PAGE.read_text(encoding="utf-8")
+    assert "workbench.debugUiEnabled" in page
+    assert "Debug UI On" in page
+    assert "Debug UI Off" in page
+    assert 'debugUiEnabled && <TsxSourceLocationPopup />' in page
+
+
 def test_navigation_views_are_deep_linkable_for_visual_acceptance() -> None:
     source = ACTIVE_PAGE.read_text(encoding="utf-8")
     compact = "".join(source.split())
@@ -356,7 +435,7 @@ def test_workflow_step_controls_do_not_leak_into_operation_pages() -> None:
     page = ACTIVE_PAGE.read_text(encoding="utf-8")
     playground = (ROOT / "workbench" / "frontend" / "src" / "components" / "OperationPlayground.tsx").read_text(encoding="utf-8")
     styles = (ROOT / "workbench" / "frontend" / "src" / "styles" / "workbench.css").read_text(encoding="utf-8")
-    assert '<main className="workbench" data-view={view}>' in page
+    assert '<main className={`workbench ${debugUiEnabled ? "tsx-debug-enabled" : ""}`} data-view={view}>' in page
     assert 'Workflow Step controls are only available in Workflow Editor.' in page
     assert 'workflowStep?"▶ Run Workflow Step":"▶ Run Operation"' in playground
     assert ':not([data-view="workflowRuns"]) .automated-runner-tools' in styles

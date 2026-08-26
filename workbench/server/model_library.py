@@ -11,7 +11,7 @@ from backend_library import BACKEND_DIRECTORIES, MODEL_CATALOG_DIRECTORY, backen
 from operation_library import DEFAULT_WORKSPACES_ROOT
 from workspace_inheritance import effective_workspace_layers, layer_source
 from resource_store import get_filesystem_provider
-from resource_relationships import relationship_ids
+from resource_relationships import relationship_ids, resolve_inherited_document
 
 SHARED_WORKSPACE_ID = "shared_library_system"
 # ``profile`` and the old profile directories remain read-only compatibility
@@ -53,14 +53,9 @@ def _validate_model(value: Any, path: Path) -> dict[str, Any]:
         raise ValueError(f"Model/preset definition must declare kind='model' (legacy kind='profile' is accepted): {path}")
     if not str(value.get("id") or "").strip():
         raise ValueError(f"Model/preset definition requires id: {path}")
-    parents = relationship_ids(value.get("parents"))
-    legacy_parent = str(value.get("inherits") or "").strip()
-    if not parents and legacy_parent:
-        value["parents"] = [legacy_parent]
-        parents = [legacy_parent]
-    if not parents:
-        raise ValueError(f"Model definition requires parents: {path}")
-    value.pop("inherits", None)
+    implemented_ids = relationship_ids(value.get("implements"))
+    if not implemented_ids:
+        raise ValueError(f"Model definition requires implements: {path}")
     value["kind"] = "model"
     defaults = value.get("defaults")
     if defaults is not None and not isinstance(defaults, dict):
@@ -209,61 +204,90 @@ def resolve_model_records(
         if (record.get("document") or {}).get("id")
     }
 
-    def resolve(node_id: str, trail: tuple[str, ...] = ()) -> dict[str, Any]:
+    documents_by_id = {
+        str((record.get("document") or {}).get("id")): record["document"]
+        for record in [*backend_records, *records]
+        if (record.get("document") or {}).get("id")
+    }
+    for identifier, record in backends.items():
+        if record.get("document"):
+            documents_by_id.setdefault(identifier, record["document"])
+
+    def ancestor_ids(node_id: str, trail: tuple[str, ...] = ()) -> list[str]:
+        if node_id in trail:
+            raise ValueError(f"Model/preset inheritance cycle: {' -> '.join((*trail, node_id))}")
+        document = documents_by_id.get(node_id)
+        if not document:
+            raise ValueError(f"Model/preset inherits unavailable item: {node_id}")
+        result: list[str] = []
+        for implemented_id in relationship_ids(document.get("implements")):
+            result.extend(ancestor_ids(implemented_id, (*trail, node_id)))
+            result.append(implemented_id)
+        return list(dict.fromkeys(result))
+
+    def resolve(node_id: str) -> dict[str, Any]:
         if not node_id or node_id not in nodes:
             raise ValueError(f"Model/preset has no resolvable id: {node_id!r}")
-        if node_id in trail:
-            raise ValueError(
-                f"Model/preset inheritance cycle: {' -> '.join((*trail, node_id))}"
-            )
         record = nodes[node_id]
         node = record.get("document") or {}
-        parent_ids = relationship_ids(node.get("parents"))
-        parent_id = parent_ids[0] if parent_ids else ""
-        own_defaults = dict(node.get("defaults") or {})
-        own_model = node.get("model")
-
-        backend_record = backends.get(parent_id)
-        if backend_record:
+        implemented_ids = relationship_ids(node.get("implements"))
+        if not implemented_ids:
+            raise ValueError(f"Model/preset {node_id} has no implemented resource")
+        inheritance_resolution = resolve_inherited_document(node, documents_by_id)
+        blockers = [
+            *inheritance_resolution["conflicts"],
+            *inheritance_resolution["missingResources"],
+            *inheritance_resolution["missingBacklinks"],
+        ]
+        if blockers:
+            raise ValueError(f"Model/preset inheritance is unresolved for {node_id}: {'; '.join(blockers)}")
+        effective = inheritance_resolution["document"]
+        ancestors = ancestor_ids(node_id)
+        backend_candidates: dict[str, dict[str, Any]] = {}
+        for ancestor_id in ancestors:
+            backend_record = backends.get(ancestor_id)
+            if not backend_record:
+                continue
             backend = backend_record.get("document") or {}
-            canonical_backend_id = str(backend.get("id") or parent_id)
-            configuration = dict(backend.get("configuration") or {})
-            inherited_defaults = dict(backend.get("modelDefaults") or {})
-            return {
-                "parentId": parent_id,
-                "parentKind": "backend",
-                "backendId": canonical_backend_id,
-                "backendSource": backend_record.get("source"),
-                "backendPath": backend_record.get("path"),
-                "backend": backend,
-                "inheritance": [canonical_backend_id, node_id],
-                "configuration": configuration,
-                "model": own_model or configuration.get("defaultModel"),
-                "defaults": {**inherited_defaults, **own_defaults},
-                "enabled": backend.get("enabled", True) is not False
-                and node.get("enabled", True) is not False,
-            }
-
-        parent_record = nodes.get(parent_id)
-        if parent_record:
-            parent = resolve(parent_id, (*trail, node_id))
-            parent_kind = str(
-                (parent_record.get("document") or {}).get("kind") or "model"
+            canonical_id = str(backend.get("id") or ancestor_id)
+            backend_candidates[canonical_id] = backend_record
+        if len(backend_candidates) != 1:
+            raise ValueError(
+                f"Model/preset {node_id} must resolve exactly one backend; found {sorted(backend_candidates)}"
             )
-            return {
-                **parent,
-                "parentId": parent_id,
-                "parentKind": parent_kind,
-                "inheritance": [*parent.get("inheritance", []), node_id],
-                "model": own_model or parent.get("model"),
-                "defaults": {**dict(parent.get("defaults") or {}), **own_defaults},
-                "enabled": bool(parent.get("enabled", False))
-                and node.get("enabled", True) is not False,
-            }
-
-        raise ValueError(
-            f"Model/preset {node_id} inherits unavailable item: {parent_id}"
+        canonical_backend_id, backend_record = next(iter(backend_candidates.items()))
+        backend = backend_record.get("document") or {}
+        configuration = dict(effective.get("configuration") or {})
+        defaults = {
+            **dict(effective.get("modelDefaults") or {}),
+            **dict(effective.get("defaults") or {}),
+        }
+        enabled = all(
+            documents_by_id.get(resource_id, {}).get("enabled", True) is not False
+            for resource_id in [*ancestors, node_id]
         )
+        parent_id = implemented_ids[0]
+        parent_document = documents_by_id.get(parent_id) or {}
+        normalized_ancestors = [
+            str((backends[resource_id].get("document") or {}).get("id") or resource_id)
+            if resource_id in backends else resource_id
+            for resource_id in ancestors
+        ]
+        normalized_ancestors = list(dict.fromkeys(normalized_ancestors))
+        return {
+            "parentId": parent_id,
+            "parentKind": str(parent_document.get("kind") or "model"),
+            "backendId": canonical_backend_id,
+            "backendSource": backend_record.get("source"),
+            "backendPath": backend_record.get("path"),
+            "backend": backend,
+            "inheritance": [*normalized_ancestors, node_id],
+            "inheritanceResolution": inheritance_resolution,
+            "configuration": configuration,
+            "model": effective.get("model") or configuration.get("defaultModel"),
+            "defaults": defaults,
+            "enabled": enabled,
+        }
 
     resolved: list[dict[str, Any]] = []
     override_rows = _model_override_rows(workspace_root, workspaces_root=workspaces_root)

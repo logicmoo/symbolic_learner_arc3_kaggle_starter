@@ -66,6 +66,10 @@ test = [
   "httpx>=0.27",
   "websockets>=12",
 ]
+stt = [
+  "sounddevice>=0.5",
+  "vosk>=0.3.45",
+]
 all = [
   "arc-agi>=0.9.9",
   "openai>=1.0",
@@ -82,6 +86,8 @@ all = [
   "pandas>=2.2",
   "pyarrow>=15",
   "pytest>=8.0",
+  "sounddevice>=0.5",
+  "vosk>=0.3.45",
 ]
 
 [project.urls]
@@ -90,7 +96,7 @@ Repository = "https://github.com/logicmoo/symbolic_learner_arc3_kaggle_starter"
 Issues = "https://github.com/logicmoo/symbolic_learner_arc3_kaggle_starter/issues"
 
 [tool.setuptools]
-packages = ["object_memory", "webui", "worldworkbench", "worldworkbench.adapters"]
+packages = ["llm_task_harness", "object_memory", "webui", "worldworkbench", "worldworkbench.adapters"]
 py-modules = [
   "action_tree",
   "arc3_runner",
@@ -121,9 +127,11 @@ include-package-data = true
 
 [tool.setuptools.package-dir]
 "" = "python"
+llm_task_harness = "workbench/plugins/llm_task_harness"
 webui = "webui"
 
 [tool.setuptools.package-data]
+llm_task_harness = ["plugin.json", "README.md", "static/*.html"]
 webui = ["static/*.html"]
 
 [tool.pytest.ini_options]

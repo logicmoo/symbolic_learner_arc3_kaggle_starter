@@ -21,7 +21,12 @@
     "Do not explain the transformation."
     "Return only the converted text."
   ))
-  (parents ([]
-    titlecase_received_text
+  (implements (
+    (titlecase_received_text (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
 )

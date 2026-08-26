@@ -44,7 +44,12 @@
     (parseJson true)
     (responseFormat json_object)
   ))
-  (parents ([]
-    vision.extract_scene_objects
+  (implements (
+    (vision.extract_scene_objects (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
 )

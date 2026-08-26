@@ -5,7 +5,7 @@ type Workflow = {
   planProvenance?: { planner?: string; domain?: string; problem?: string; sourcePlan?: string };
   steps: Array<{ id: string; [key: string]: unknown }>;
 };
-type OperationRecord = { document?: { id?: string; label?: string; parents?: unknown[]; inputs?: Record<string, unknown> } };
+type OperationRecord = { document?: { id?: string; label?: string; implements?: Record<string, unknown>; inputs?: Record<string, unknown> } };
 type GroundedAction = { name: string; arguments: string[] };
 
 const groundedActions = (source: string): GroundedAction[] => {
@@ -41,7 +41,7 @@ export function PddlPlanImportPanel({ workspaceId, workflow, onImported }: { wor
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.detail || payload.error || response.statusText);
       const records = (payload.operations || []) as OperationRecord[];
-      setOperations(records.flatMap(record => record.document?.id && !(record.document.parents || []).length ? [{ id: record.document.id, label: record.document.label || record.document.id, inputPorts: Object.keys(record.document.inputs || {}) }] : []).sort((a, b) => a.label.localeCompare(b.label)));
+      setOperations(records.flatMap(record => record.document?.id && !Object.keys(record.document.implements || {}).length ? [{ id: record.document.id, label: record.document.label || record.document.id, inputPorts: Object.keys(record.document.inputs || {}) }] : []).sort((a, b) => a.label.localeCompare(b.label)));
     } catch (reason) { setMessage(`Operation catalog unavailable: ${reason instanceof Error ? reason.message : String(reason)}`); }
   };
   const convert = async () => {

@@ -117,16 +117,17 @@ The abstract Operation owns the stable input/output contract, its executable exa
       ))
     ))
   ))
-  (children ([]
-    echo_into_titlecased_llm
-    echo_into_titlecased_prolog
-    echo_into_titlecased_python
+  (specializations (
+    (echo_into_titlecased_llm (
+      (lend ([] "*"))
+      (withhold ([] id label description implements specializations preferredSpecialization))
+    ))
   ))
-  (preferredChild echo_into_titlecased_llm)
+  (preferredSpecialization echo_into_titlecased_llm)
 )
 ```
 
-The LLM child selects a concrete model, binds the abstract Prompt, and declares which named input becomes the user content and which named output receives the model response:
+The LLM specialization selects a concrete model, binds the abstract Prompt, and declares which named input becomes the user content and which named output receives the model response:
 
 ```metta
 (
@@ -145,11 +146,13 @@ The LLM child selects a concrete model, binds the abstract Prompt, and declares 
     (inputBinding text)
     (outputBinding text)
   ))
-  (parents ([] echo_into_titlecased))
+  (implements (
+    (echo_into_titlecased ((borrow ([] "*")) (exclude ([]))))
+  ))
 )
 ```
 
-`titlecase_received_text` is an abstract Prompt. Its `preferredChild` selects the default concrete wording while allowing model-specific alternatives:
+`titlecase_received_text` is an abstract Prompt. Its `preferredSpecialization` selects the default concrete wording while allowing model-specific alternatives:
 
 ```metta
 (
@@ -157,13 +160,13 @@ The LLM child selects a concrete model, binds the abstract Prompt, and declares 
   (id titlecase_received_text)
   (inputs ((text text)))
   (outputs ((text text)))
-  (children ([]
-    titlecase_received_text.default
-    titlecase_received_text.gpt5
-    titlecase_received_text.multi_modal.claude
-    titlecase_received_text.text_only.claude
+  (specializations (
+    (titlecase_received_text.default (
+      (lend ([] "*"))
+      (withhold ([] id label description implements specializations preferredSpecialization))
+    ))
   ))
-  (preferredChild titlecase_received_text.default)
+  (preferredSpecialization titlecase_received_text.default)
 )
 
 (
@@ -175,7 +178,9 @@ The LLM child selects a concrete model, binds the abstract Prompt, and declares 
     "Preserve punctuation."
     "Return only the transformed text."
   ))
-  (parents ([] titlecase_received_text))
+  (implements (
+    (titlecase_received_text ((borrow ([] "*")) (exclude ([]))))
+  ))
 )
 ```
 

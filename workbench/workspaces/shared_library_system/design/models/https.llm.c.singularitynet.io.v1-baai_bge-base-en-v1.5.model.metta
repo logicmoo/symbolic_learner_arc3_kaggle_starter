@@ -3,8 +3,13 @@
   (id https.llm.c.singularitynet.io.v1-baai_bge-base-en-v1.5)
   (label BAAI/bge-base-en-v1.5)
   (description "Discovered from SingularityNET LLM.")
-  (parents ([]
-    https.llm.c.singularitynet.io.v1
+  (implements (
+    (https.llm.c.singularitynet.io.v1 (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
   (model BAAI/bge-base-en-v1.5)
   (enabled true)

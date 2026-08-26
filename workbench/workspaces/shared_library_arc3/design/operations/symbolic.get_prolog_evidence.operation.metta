@@ -14,18 +14,45 @@
     (bundle ArtifactBundle)
     (validation Evidence)
   ))
-  (children ([]
-    symbolic.get_prolog_evidence.prompted_llm
-    symbolic.get_prolog_evidence.python
+  (specializations (
+    (symbolic.get_prolog_evidence.prompted_llm (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        specializations
+        preferredSpecialization
+      ))
+    ))
+    (symbolic.get_prolog_evidence.python (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        specializations
+        preferredSpecialization
+      ))
+    ))
   ))
-  (preferredChild symbolic.get_prolog_evidence.prompted_llm)
+  (preferredSpecialization symbolic.get_prolog_evidence.prompted_llm)
   (example_execute (
     (action symbolic.get_prolog_evidence)
     (arguments (
       (bundle (
         (datatype ArtifactBundle)
         (label "ARC3 artifact bundle")
-        (default ((node "") (registry "")))
+        (default (
+          (node "")
+          (registry "")
+        ))
       ))
     ))
   ))
@@ -63,8 +90,13 @@
     (parseJson true)
     (responseFormat json_object)
   ))
-  (parents ([]
-    symbolic.get_prolog_evidence
+  (implements (
+    (symbolic.get_prolog_evidence (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
 )
 (
@@ -90,7 +122,12 @@
     (file python/visual_image_diff_operations.py)
     (callable collect_prolog_evidence)
   ))
-  (parents ([]
-    symbolic.get_prolog_evidence
+  (implements (
+    (symbolic.get_prolog_evidence (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
 )

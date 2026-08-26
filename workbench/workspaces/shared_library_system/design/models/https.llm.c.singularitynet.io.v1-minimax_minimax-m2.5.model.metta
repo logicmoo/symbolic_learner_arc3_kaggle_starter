@@ -3,8 +3,13 @@
   (id https.llm.c.singularitynet.io.v1-minimax_minimax-m2.5)
   (label minimax/minimax-m2.5)
   (description "Discovered from SingularityNET LLM.")
-  (parents ([]
-    https.llm.c.singularitynet.io.v1
+  (implements (
+    (https.llm.c.singularitynet.io.v1 (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
   (model minimax/minimax-m2.5)
   (enabled true)

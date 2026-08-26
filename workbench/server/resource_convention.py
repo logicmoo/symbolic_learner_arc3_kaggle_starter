@@ -106,7 +106,7 @@ def infer_resource_kind(path: Path, document: dict[str, Any]) -> str:
     if parent in {"backends", "models", "profiles"}:
         if document.get("provider"):
             return "backend"
-        if document.get("inherits") or document.get("parents"):
+        if document.get("implements"):
             return "model"
         return "model"
     if parent == "systems":

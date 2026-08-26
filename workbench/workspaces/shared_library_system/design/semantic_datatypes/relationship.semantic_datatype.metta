@@ -3,11 +3,40 @@
   (id relationship)
   (label Relationship)
   (description "A semantic relationship between entities or other information objects.")
-  (children ([]
-    prolog_fact_set
-    symbolic_fact_set
+  (specializations (
+    (prolog_fact_set (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        specializations
+        preferredSpecialization
+      ))
+    ))
+    (symbolic_fact_set (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        specializations
+        preferredSpecialization
+      ))
+    ))
   ))
-  (parents ([]
-    information
+  (implements (
+    (information (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
 )

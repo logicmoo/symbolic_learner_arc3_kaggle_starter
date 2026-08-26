@@ -8,6 +8,7 @@ same way they do in production.
 from __future__ import annotations
 
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 from fastapi import FastAPI
@@ -71,10 +72,39 @@ def test_cursor_shape_and_move(client: TestClient) -> None:
     mailbox = mailbox_api_lib._mailbox_doc_for(mailbox_api_lib._root(), "peer-agent")
     info = client.get("/api/mailbox/cursor", params={"mailbox": mailbox, "agent": "user-agent"}).json()
     for key in ("mailbox", "agent", "initialized", "offset", "size", "behind",
-                "entries_consumed", "entry_next", "entries_total"):
+                "entries_consumed", "entry_next", "entries_total", "last_read_id",
+                "next_unread_id"):
         assert key in info
     moved = client.post("/api/mailbox/cursor", json={"mailbox": mailbox, "agent": "user-agent", "start": "now"}).json()
     assert moved["initialized"] is True
+
+
+def test_mailbox_directory_reports_activity_and_messages_past_personal_cursor(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    records = [
+        {"id": "first", "timestamp": "2999-01-01T00:00:00+00:00", "text": "first"},
+        {"id": "second", "timestamp": "2999-01-01T00:00:01+00:00", "text": "second"},
+    ]
+    document = {"messages": {"entry_1": records[0], "entry_2": records[1]}, "server": "relay-a"}
+    store = SimpleNamespace(
+        channel_ids=lambda _root: ["team"],
+        load_channel=lambda _root, _mailbox: document,
+        ordered_messages=lambda _document: [(f"entry_{index}", record) for index, record in enumerate(records, 1)],
+        get_cursor=lambda _root, _agent, _mailbox: {"consumed": 1, "next": "entry_2"},
+    )
+    monkeypatch.setattr(mailbox_api_lib, "_mailbox_client", SimpleNamespace(mailbox_dir=lambda: tmp_path))
+    monkeypatch.setattr(mailbox_api_lib, "channel_store", store)
+
+    row = mailbox_api_lib.mailbox_list(agent="user-agent")["mailboxes"][0]
+    assert row["unread"] == 1
+    assert row["activityPerMinute"] >= 2
+    assert row["activityPerHour"] >= 2
+    assert row["cursorOffset"] == 1
+    assert row["lastReadMessageId"] == "first"
+    assert row["nextUnreadMessageId"] == "second"
+    assert row["server"] == "relay-a"
 
 
 def test_record_edit_in_place_and_at_end(client: TestClient) -> None:

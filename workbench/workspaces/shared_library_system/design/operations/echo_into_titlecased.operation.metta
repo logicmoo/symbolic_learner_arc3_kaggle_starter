@@ -24,10 +24,59 @@
       ))
     ))
   ))
-  (children ([]
-    echo_into_titlecased_llm
-    echo_into_titlecased_prolog
-    echo_into_titlecased_python
+  (specializations (
+    (echo_into_titlecased_llm (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        specializations
+        preferredSpecialization
+      ))
+    ))
+    (echo_into_titlecased_prolog (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        specializations
+        preferredSpecialization
+      ))
+    ))
+    (echo_into_titlecased_python (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        specializations
+        preferredSpecialization
+      ))
+    ))
+    (echo_into_titlecased.specialization (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        specializations
+        preferredSpecialization
+      ))
+    ))
   ))
-  (preferredChild echo_into_titlecased_python)
+  (preferredSpecialization echo_into_titlecased_python)
 )

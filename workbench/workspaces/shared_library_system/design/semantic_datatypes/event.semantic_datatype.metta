@@ -3,7 +3,12 @@
   (id event)
   (label Event)
   (description "A semantic event or occurrence observed or inferred in a world.")
-  (parents ([]
-    information
+  (implements (
+    (information (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
 )

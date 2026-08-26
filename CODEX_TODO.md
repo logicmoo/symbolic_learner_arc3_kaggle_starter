@@ -14,6 +14,26 @@ values here.
 
 ## Current recovery state
 
+- UI acceptance-debug invariant through **2026-09-02**: keep the labeled,
+  colored borders for `DEBUG A · APP MENU`, `DEBUG B · DOCS INDEX`,
+  `DEBUG C · DOCS SCAN CONTROLS`, `DEBUG D · FILE LIST SCROLLER`, and
+  `DEBUG E · DOCUMENT / SUPERCONTROL`. The user is using these persistent
+  colors to identify layout shells while hammering out sizing and scrolling.
+  Every interactive control is also outlined by type for the same period:
+  button (pink), input (yellow), select (cyan), textarea (orange),
+  content-editable (violet), and resize separator (green).
+  Every rendered descendant carrying a TSX `className` also receives a violet
+  dashed rounded outline so component/layout boundaries remain visible. Exact
+  compile-time `src/**/*.tsx:line` locations remain stamped onto JSX DOM elements
+  as `data-tsx-source`; hovering shows that exact location beside the mouse with
+  viewport-edge flipping. A persisted top-bar `Debug UI On/Off`
+  button enables or disables both the colored layer and location popup.
+  The filename overlap was never caused by this popup: it came from a stale
+  174px Docs grid column underneath a 220px app menu. Keep all focused-page
+  layouts bound to `--nav-rail-width`; do not move the popup to compensate.
+  Do not remove, neutralize, or restyle them before that date unless the user
+  explicitly asks.
+
 - Workflow UI invariant: every grouped accordion surface must be rendered by
   `ThreeStateAccordionStack`, and every direct member must use that stack's ID.
   Do not imitate stacking with wrapper divs, page grids, positioning, or CSS
@@ -41,6 +61,169 @@ values here.
   never copy its secrets into this ledger
 
 ## Completed and validated
+
+- [x] Add the repository-native `llm_task_harness` plugin and Python runtime.
+  The plugin contributes a real deep-linkable task console, native admin
+  settings, durable task/event/transcript storage, approval and human-input
+  pauses, cancellation/recovery, guarded workspace tools, dynamic extension
+  tools, and iterative read-only subagents. Execution is disabled by default;
+  enabled process/test calls are documented as host-code authority rather than
+  an OS sandbox. Security hardening covers denied secrets and task roots,
+  scoped filesystem/Git access, context limits, bounded output/environment/DNS
+  work, public-address-pinned HTTP, process-tree termination, and request-scoped
+  provider cancellation. On 2026-08-27 the reusable runtime was consolidated
+  from `python/llm_task_harness.py` into the canonical plugin as `runtime.py`,
+  with `__init__.py` preserving the public API; the built wheel now contains
+  the runtime, entrypoint, manifest, documentation, and console together under
+  `llm_task_harness/`. Tests stay in `tests/` and durable state stays in
+  `runtime/llm_task_harness/` by repository convention. Verified initially on
+  2026-08-26 and again after consolidation: the focused runtime/plugin
+  suite passes (72 passed, 2 Windows symlink-privilege skips), the frontend
+  production build and repository/scoped diff checks pass, and the active app
+  restores `pluginId=llm_task_harness&pluginPage=task-console` after reload with
+  `/llm_task_harness/ui` loaded and execution visibly disabled. Independent
+  plugin and security reviews found no reproducible release blockers. The full
+  repository run reached 928 passed and 2 skipped with 31 failures in unrelated
+  pre-existing
+  model-catalog, resource-discovery, legacy UI assertion, documentation,
+  operation-playground, web-proxy, and service-registry areas.
+- [x] ChatConversation's mailbox chooser now merges mailbox directories from
+  every plugin that exposes one instead of only the first source that answers.
+  `fetchDirectory` in `ChatConversation.tsx` fetches `/ws_collab/v1/mailbox/mailboxes`
+  and `/api/mailbox/mailboxes` concurrently (each tolerating the other being
+  down) and unions both by mailbox id, letting the live ws_collab relay win on
+  id collisions. `workbench/server/mailbox_api_lib.py` (the `/api/mailbox/*`
+  surface) previously went dark (503) whenever the sibling `mailbox_channels`
+  package wasn't installed; it now falls back to the bundled `mailbox_chat`
+  plugin copy (`workbench/plugins/mailbox_chat/src/mailbox_chat/`) via a thin
+  `_ChannelStoreShim`/`_MailboxClientShim` adapting its `mailbox_store`/
+  `agent_mailbox` naming to the API this module was written against. This is
+  the same on-disk store `scripts/stt_mailbox_listener.py` and
+  `scripts/agent_mailbox.py` write to (defaults to `<repo>/mailbox/`, now
+  gitignored), so mailboxes/transcripts created by those tools show up in the
+  Chat UI's mailbox chooser without a running mailbox_channels relay. Verified
+  on 2026-08-26: `mailbox_api_lib.mailbox_list()` returns the real
+  `symbolic-workbench-user` mailbox created by an earlier STT test; targeted
+  pytest (`test_mailbox_api_lib.py`, `test_page_ui_tools.py`,
+  `test_chat_autoscroll_settings_ui.py`, 19 tests) and `npm run build` both
+  pass.
+  Follow-up fix: `mailbox_chat.agent_mailbox.mailbox_dir()` itself defaults to
+  `Path.cwd() / "mailbox"`, which only lines up with the repo-root `mailbox/`
+  store when a process happens to be launched from the repository root. The
+  live dev API server is started with `os.chdir(SERVER_ROOT)`
+  (`workbench/scripts/run_api_server.py`), so `/api/mailbox/mailboxes` still
+  came back empty against the real running server even though the direct
+  Python check above passed. `mailbox_api_lib.py`'s fallback block now pins
+  the shim's `mailbox_dir` to `<repo_root>/mailbox` (falling back to
+  `AGENT_MAILBOX_DIR` when set) instead of delegating to the bundled client's
+  cwd-relative default, and `scripts/stt_mailbox_listener.py` now sets the
+  same `AGENT_MAILBOX_DIR` default before importing the bundled client, so
+  both agree on one location no matter their invocation cwd. Audited the other
+  `scan: startup` plugins (`ws_collab`, `emullm`, `llm_task_harness`) and the
+  Codex-specific `.codex/mailbox/agent_mailbox.py` / `mailbox_poll_watchdog.py`
+  pair: all already anchor their storage off `Path(__file__)`/the manifest
+  path rather than cwd, so only the bundled `mailbox_chat` copy's two direct
+  consumers needed this fix. Verified on 2026-08-27 against the actual running
+  dev server (not just a direct import): restarted the live API process (the
+  `/api/system/restart` file-watcher trigger did not pick up the change, so
+  the process was stopped and relaunched via `run_api_server.py`) and
+  `GET http://127.0.0.1:8000/api/mailbox/mailboxes` now returns
+  `symbolic-workbench-user` and `server_outbound_relay_agent_to_mailbox`; the
+  19 targeted tests above still pass unchanged (they always pin
+  `AGENT_MAILBOX_DIR` explicitly so this bug never surfaced there).
+- [x] Add `scripts/stt_mailbox_listener.py`: a live, offline speech-to-text
+  bridge that listens on one or more real audio input devices (enumerated via
+  `sounddevice`) and posts each finalized utterance into the shared mailbox
+  through the bundled `mailbox_chat`/`mailbox_channels` `send()` client (no
+  relay server required), defaulting to the `symbolic-workbench-user` channel
+  the Chat page displays by default. Transcription runs fully local/offline
+  with Vosk (`vosk-model-small-en-us-0.15`, cached under
+  `~/.cache/ws_collab_models`). Documented in `docs/AGENT_MAILBOX.md`; added a
+  `stt` pyproject extra (`sounddevice`, `vosk`). Verified on 2026-08-26: real
+  device enumeration and a live 3s capture on the Intel Smart Sound mic array
+  opened and streamed without error; a Windows-SAPI-synthesized WAV fed
+  through the Vosk recognizer transcribed exactly ("testing one two three the
+  quick brown fox"); and a direct `send()` call produced a correctly
+  structured `stt_transcript` record in the local mailbox store.
+- [x] Rework the ChatConversation header into a two-region layout. The persistent
+  Require Match line owns the filter buttons and collapses only New Object,
+  Subscription, From/To, Send-to, and the selected stream's configuration panel.
+  Below a fixed divider, Chat/File owns the per-stream auto-scroll override and
+  global policy, while Mailbox and Add Mailbox share one row above the scrolling
+  conversation. The real mailbox configuration editor is hosted by a Config tab
+  beside Chat and File instead of remaining as a bottom panel. Focused Chat UI
+  tests, the frontend production build, diff check, and live expanded/collapsed
+  geometry and Config-tab verification passed on 2026-08-26.
+- [x] Add a collapsible Chat-page mailbox arranger. Mailbox choices support Name,
+  per-minute activity, per-hour activity, and personal-unread sorting; Group by
+  is schema-driven and defaults to the discovered `server` field. Option numbers
+  are messages beyond the current FROM identity's personal cursor. Stream open
+  behavior is selectable between resume-at-last-read and go-to-end-and-mark-read,
+  with optional cursor advancement when the end is viewed. The Workbench API
+  supplies bulk activity/cursor metadata and the UI falls back to the ws_collab
+  relay when the optional local mailbox client is unavailable. Workbench also
+  tracks `field_cache_config` records and each stream's cached field-value data;
+  discovered cached fields automatically populate Group by and cached values
+  determine the stream's group.
+  Focused tests and the frontend production build passed; live browser
+  verification showed discovered grouping fields, cursor-relative unread badges,
+  per-minute/per-hour activity tags, 30 cached fields, cache limit 16, and two
+  live cache-config records on 2026-08-26.
+- [x] Standardize the bidirectional specialization relationship on
+  `specializations` (the general resource's lend/withhold policy map) and
+  `implements` (each specialization's borrow/exclude policy map). Maintained loaders,
+  editors, APIs, scripts, tests, documentation, and filesystem MeTTa resources
+  no longer use generic `children`, `parents`, or `inherits` fields for this
+  relationship. Genuine runtime/UI tree parent-child structures are unchanged.
+  `implements` is the upward inheritance edge to conceptual parent contracts.
+  Effective inheritance is borrow intersect lend, minus exclude and withhold,
+  followed by local overrides. Parents withhold identity and relationship fields
+  by default. The complete contract is documented in
+  `workbench/docs/design/SPECIALIZATION_INHERITANCE_MODEL.md`.
+- [x] Support partial specializations throughout family resolvers and editors.
+  Do not classify every resource with `implements` as concrete. Derive and expose
+  UI-only abstract/partial/concrete/runnable status from the current draft, resolved
+  inheritance, and family-specific unresolved behavior, bindings, constraints,
+  and execution route. Show the missing obligations; do not persist an
+  authoritative abstractness flag. Allow runtime resolution to traverse deeper
+  specialization chains until the job is runnable.
+  Treat this status as contextual and reversible: an `implements` parent may
+  supply required pieces, so removing or disabling that parent can make a
+  previously runnable resource abstract. Invalidate affected descendants and
+  explain the lost parent or obligation.
+  Operation and Prompt resolution now traverses deeper preferred specializations
+  until runnable; Models and Datatypes use negotiated multi-parent inheritance
+  with conflict and cycle detection. The rich Operation and Datatype editors
+  expose live BORROW/EXCLUDE, LEND/WITHHOLD, provenance, missing obligations,
+  and derived status. Focused validation passed (107-test cross-family suite,
+  59-test final regression suite, and 33 additional Operation tests); frontend
+  production build passed; live family APIs returned successfully; and browser
+  verification showed runnable-through-preferred Operation status and
+  concrete-through-preferred Datatype status on 2026-08-26.
+- [x] Standardize every maintained specialization pointer on the
+  single canonical persisted field `preferredSpecialization`. Frontend editors,
+  backend resolution, scripts, tests, documentation, and 42 filesystem MeTTa
+  resources now read and write only that name; no legacy alias fallback remains.
+  Artifact-specific UI labels such as Preferred Alternative or Default
+  Implementation remain presentation text over the same canonical field.
+- [ ] Add policy-selectable `specializationPriorities` profiles (for example
+  `bySpeed` and `byAccuracy`) as ordered specialization-ID lists. Keep
+  `preferredSpecialization` singular as the deterministic fallback.
+
+- [x] Rebuild the Docs filesystem page as the sole main page with a left
+  Tree/Navigator/Full Paths document host and persistent open-document tabs.
+  Every open file owns a separately mounted embedded SuperControl, preserving
+  its display/editor state, draft, dirty marker, close action, and filesystem
+  persistence callback while inactive. The active document fills the complete
+  right-side allocation. The obsolete nested `FILESYSTEM DOCUMENT` pseudo-page
+  is removed. Start/INCLUDE/EXCLUDE masks now execute in the backend; the
+  `**/docs/` scan uses Git-indexed roots and measures about 0.5 seconds cold
+  instead of 7-10 seconds. Its complete index is cached for 30 seconds by
+  normalized start/include/exclude scope and filesystem revision, reducing
+  repeated reads to about 16ms. Explicit Scan/Refresh bypasses the cache, and
+  repository writes invalidate it. The app menu and Docs layout share the persisted
+  `--nav-rail-width`, preventing the menu from overlapping filename prefixes,
+  and all Docs file browsers reserve a real scrollbar gutter.
 
 - [x] Repair the Models `+ Backend`/`+ model`/`+ preset` creation flow so new
   documents are immediately dirty and therefore expose Save. Every pending
@@ -104,6 +287,13 @@ values here.
   needs an API restart. Widening `reload_dirs` conflicts with the deliberate
   guard in `tests/test_windows_dependency_bootstrap.py`; decide the intended
   policy before changing it.
+
+- [x] Harden plugin discovery so every entry whose name begins with `hide_`
+  (case-insensitive) is skipped before manifest parsing, and only directories
+  containing `plugin.json` are considered plugins. Manifest-less directories
+  and loose filesystem objects are ignored. Validation on 2026-08-26:
+  `tests/test_web_proxy_plugin.py` passed (16 tests) with an external pytest
+  base directory. The running Workbench was not restarted.
 
 - [x] Move the plugin administration declaration out of `admin.json` and into
   `plugin.json`, which is now the only manifest. A plugin declares `configPage`
@@ -1215,7 +1405,7 @@ Preserve the canonical checkout and its `codex/workbench-navigation-v2` branch.
   navigation, workflow-resource, and shell-snapshot validation: 81 passed;
   frontend production build and `git diff --check` passed. Full repository
   validation reached 636 passed with one unrelated pre-existing datatype
-  backlink failure (`information.children` is missing `system_contract`) on
+  backlink failure (`information.specializations` is missing `system_contract`) on
   2026-08-17.
 - [x] Make the eleven Visual Image Diff pipeline Prompts model-provider
   neutral. Removed embedded OpenAI, Groq, and OpenRouter profile IDs from the

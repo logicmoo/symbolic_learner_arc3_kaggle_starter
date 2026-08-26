@@ -14,6 +14,7 @@ import {
   type NodeProps,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
+import { relationshipIds } from "./resourceRelationships";
 import {
   ThreeStateAccordionMember,
   ThreeStateAccordionStack,
@@ -188,7 +189,7 @@ function VisualPipelineFlowNode({ data }: NodeProps<VisualFlowNode>) {
 const VISUAL_FLOW_NODE_TYPES = { visualPipeline: VisualPipelineFlowNode };
 
 type OperationCatalogItem = OperationDef & {
-  parents?: string[];
+  implements?: Record<string, unknown>;
   modelSelection?: { models?: string[]; strategy?: string };
 };
 
@@ -438,14 +439,14 @@ function resolveVisualImageDiffOperationBinding(
     ? operations.find((candidate) => candidate.id === entry.operationId)
     : undefined;
   const variants = operation
-    ? operationImplementations.filter((candidate): candidate is OperationCatalogItem & OperationImplementationDef => Boolean(candidate.implementation && candidate.parents?.includes(operation.id)))
+    ? operationImplementations.filter((candidate): candidate is OperationCatalogItem & OperationImplementationDef => Boolean(candidate.implementation && relationshipIds(candidate.implements).includes(operation.id)))
     : [];
   const directImplementation = operation?.implementation && (!entry.implementationId || operation.id === entry.implementationId)
     ? operation as OperationCatalogItem & OperationImplementationDef
     : undefined;
   const selectedImplementation = directImplementation
     || variants.find((candidate) => candidate.id === entry.implementationId)
-    || variants.find((candidate) => candidate.id === operation?.preferredChild)
+    || variants.find((candidate) => candidate.id === operation?.preferredSpecialization)
     || variants.find((candidate) => candidate.implementation === "llm.complete");
   const promptResources = entry.kind === "group" ? promptEntries(entry.steps || []).flatMap((step) => {
     const resource = prompts.find((candidate) => candidate.id === step.promptId);

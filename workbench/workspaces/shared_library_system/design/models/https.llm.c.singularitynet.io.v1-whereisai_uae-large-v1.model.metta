@@ -3,8 +3,13 @@
   (id https.llm.c.singularitynet.io.v1-whereisai_uae-large-v1)
   (label WhereIsAI/UAE-Large-V1)
   (description "Discovered from SingularityNET LLM.")
-  (parents ([]
-    https.llm.c.singularitynet.io.v1
+  (implements (
+    (https.llm.c.singularitynet.io.v1 (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
   (model WhereIsAI/UAE-Large-V1)
   (enabled true)

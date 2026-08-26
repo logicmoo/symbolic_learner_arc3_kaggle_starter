@@ -43,8 +43,11 @@ The matching MeTTa map contains exactly the same semantic kind. Multiple maps ma
 (
   (kind operation)
   (id echo_into_titlecased_python)
-  (parents ([]
-    echo_into_titlecased
+  (implements (
+    (echo_into_titlecased (
+      (borrow ([] "*"))
+      (exclude ([]))
+    ))
   ))
 )
 ```
@@ -53,7 +56,7 @@ The matching MeTTa map contains exactly the same semantic kind. Multiple maps ma
 
 A `operation` is the stable semantic stage identity. It defines the contract and the set of allowed implementation variants. It does not itself name Python, Prolog, MeTTa, or an LLM provider.
 
-An `operation` with a same-kind parent is one concrete way to perform that parent operation. Several child operations may implement the same abstract operation.
+An `operation` with a same-kind `implements` entry specializes that contract. The child declares what it borrows or excludes, and the parent declares what it lends or withholds.
 
 ```text
 echo_into_titlecased.operation.metta
@@ -71,6 +74,6 @@ A workflow step therefore points to the abstract operation:
 )
 ```
 
-The parent operation lists implementations in `children` and selects its default with `preferredChild`. A step may request an allowed child explicitly with `implementationVariant`; otherwise the preferred child is selected.
+The abstract operation lists implementations in `specializations` and selects its default with `preferredSpecialization`. Each specialization points back with `implements`. A step may request an allowed specialization explicitly with `implementationVariant`; otherwise the preferred specialization is selected.
 
 Directories and declared kinds are both part of the resource contract. Validate a changed resource through its loader and tests; do not run broad rewriting or normalization over hand-authored workspace MeTTa.

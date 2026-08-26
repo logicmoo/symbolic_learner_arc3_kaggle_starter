@@ -2,8 +2,13 @@
   (kind concrete_datatype)
   (id bmp)
   (label Bmp)
-  (parents ([]
-    bitmap
+  (implements (
+    (bitmap (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
   (mimeTypes ([]
     image/bmp

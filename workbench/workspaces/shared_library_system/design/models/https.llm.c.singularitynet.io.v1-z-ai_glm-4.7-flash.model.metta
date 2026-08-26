@@ -3,8 +3,13 @@
   (id https.llm.c.singularitynet.io.v1-z-ai_glm-4.7-flash)
   (label z-ai/glm-4.7-flash)
   (description "Discovered from SingularityNET LLM.")
-  (parents ([]
-    https.llm.c.singularitynet.io.v1
+  (implements (
+    (https.llm.c.singularitynet.io.v1 (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
   (model z-ai/glm-4.7-flash)
   (enabled true)

@@ -3,8 +3,13 @@
   (id asicloud-asi1-mini)
   (label "Free asi1-mini")
   (description "Discovered from ASICloud.")
-  (parents ([]
-    https.inference.asicloud.cudos.org.v1
+  (implements (
+    (https.inference.asicloud.cudos.org.v1 (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
   (model asi1-mini)
   (enabled true)

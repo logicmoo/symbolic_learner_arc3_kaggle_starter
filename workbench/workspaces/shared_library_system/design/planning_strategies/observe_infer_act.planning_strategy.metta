@@ -6,19 +6,48 @@
   (goals ([]
     understand_visual_world
   ))
-  (children ([]
-    observe_infer_act.conservative_loop
-    observe_infer_act.fast_probe
+  (specializations (
+    (observe_infer_act.conservative_loop (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        specializations
+        preferredSpecialization
+      ))
+    ))
+    (observe_infer_act.fast_probe (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        specializations
+        preferredSpecialization
+      ))
+    ))
   ))
-  (preferredChild observe_infer_act.conservative_loop)
+  (preferredSpecialization observe_infer_act.conservative_loop)
 )
 (
   (kind planning_strategy)
   (id observe_infer_act.conservative_loop)
   (label "Observe, Infer, Act / Conservative Loop")
   (description "Prefer verified observations and bounded iteration before committing an action.")
-  (parents ([]
-    observe_infer_act
+  (implements (
+    (observe_infer_act (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
 )
 (
@@ -26,7 +55,12 @@
   (id observe_infer_act.fast_probe)
   (label "Observe, Infer, Act / Fast Probe")
   (description "Prefer a small informative action early, then revise the Workflow from the resulting evidence.")
-  (parents ([]
-    observe_infer_act
+  (implements (
+    (observe_infer_act (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
 )

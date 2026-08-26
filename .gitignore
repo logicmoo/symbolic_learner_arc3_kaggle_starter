@@ -252,6 +252,10 @@ __pycache__/
 runtime/
 node_modules/
 workbench/data/
+# Default local agent-mailbox store (mailbox_channels / mailbox_chat fallback
+# client, scripts/agent_mailbox.py, scripts/stt_mailbox_listener.py). Set
+# AGENT_MAILBOX_DIR to relocate; this repo-root default is machine-local state.
+/mailbox/
 workbench/workspaces/*/runtime/.credentials
 # Accidental legacy launch root; canonical project lives under workbench/workspaces/.
 workbench/arc3_random_player/

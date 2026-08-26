@@ -3,11 +3,40 @@
   (id world_model)
   (label "World Model")
   (description "A revisable semantic model of entities, state, dynamics, constraints, evidence, and uncertainty.")
-  (children ([]
-    prolog_fact_set
-    symbolic_fact_set
+  (specializations (
+    (prolog_fact_set (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        specializations
+        preferredSpecialization
+      ))
+    ))
+    (symbolic_fact_set (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        specializations
+        preferredSpecialization
+      ))
+    ))
   ))
-  (parents ([]
-    information
+  (implements (
+    (information (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
 )

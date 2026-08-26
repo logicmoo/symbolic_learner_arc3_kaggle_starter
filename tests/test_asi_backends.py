@@ -27,7 +27,7 @@ def test_shared_asi_backends_load_with_expected_credentials_and_endpoints() -> N
     assert asicloud["configuration"]["baseUrl"] == "https://inference.asicloud.cudos.org/v1"
     assert asicloud["configuration"]["apiKeyEnvironmentVariable"] == "ASI_API_KEY"
     assert asicloud["configuration"]["defaultModel"] == "asi1-mini"
-    assert "asicloud-asi1-mini" in asicloud["children"]
+    assert "asicloud-asi1-mini" in asicloud["specializations"]
 
     models = {
         str((record.get("document") or {}).get("id")): record

@@ -9,13 +9,61 @@
   (outputs (
     (text text)
   ))
-  (children ([]
-    titlecase_received_text.default
-    titlecase_received_text.gpt5
-    titlecase_received_text.multi_modal.claude
-    titlecase_received_text.text_only.claude
+  (specializations (
+    (titlecase_received_text.default (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        specializations
+        preferredSpecialization
+      ))
+    ))
+    (titlecase_received_text.gpt5 (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        specializations
+        preferredSpecialization
+      ))
+    ))
+    (titlecase_received_text.multi_modal.claude (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        specializations
+        preferredSpecialization
+      ))
+    ))
+    (titlecase_received_text.text_only.claude (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        specializations
+        preferredSpecialization
+      ))
+    ))
   ))
-  (preferredChild titlecase_received_text.default)
+  (preferredSpecialization titlecase_received_text.default)
   (example_execute (
     (action prompt.render)
     (arguments (

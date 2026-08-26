@@ -3,5 +3,12 @@
   (id policy)
   (label Policy)
   (description "A declarative workbench policy whose effective decision may be inherited and evaluated.")
-  (parents ([] information))
+  (implements (
+    (information (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
+  ))
 )

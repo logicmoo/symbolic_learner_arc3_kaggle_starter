@@ -20,8 +20,8 @@ Goal + AtomSpaces + Planning Strategy
 
 Resource relationships are:
 
-- `goal` → child `goal` resources linked through `parents`
-- `planning_strategy` → child `planning_strategy` resources linked through `parents`
+- `goal` → specialized `goal` resources linked through `implements`
+- `planning_strategy` → specialized `planning_strategy` resources linked through `implements`
 - legacy plan and explicit variant kinds are accepted only as read-compatible aliases
 - a strategy variant may select or generate a `workflow`
 - Goal Runs reference the selected Goal interpretation, Planning Strategy alternative, resolved runtime Context, Workflow, and Workflow Run

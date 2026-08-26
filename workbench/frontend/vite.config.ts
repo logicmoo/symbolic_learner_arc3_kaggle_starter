@@ -1,6 +1,7 @@
 import { readFileSync, readdirSync } from "node:fs";
-import { resolve } from "node:path";
+import { relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { parse } from "@babel/parser";
 import { defineConfig, loadEnv, type Plugin, type ProxyOptions } from "vite";
 import react from "@vitejs/plugin-react";
 
@@ -96,6 +97,64 @@ function surgicalUiReloader(): Plugin {
   };
 }
 
+function tsxSourceLocations(): Plugin {
+  const sourceRoot = resolve(HERE, "src");
+  const normalizedSourceRoot = sourceRoot.replaceAll("\\", "/").toLowerCase();
+  return {
+    name: "workbench-tsx-source-locations",
+    enforce: "pre",
+    transform(code, id) {
+      const sourceId = id.split("?", 1)[0];
+      const normalizedSourceId = sourceId.replaceAll("\\", "/");
+      if (!normalizedSourceId.endsWith(".tsx") || !normalizedSourceId.toLowerCase().startsWith(normalizedSourceRoot)) return;
+      const source = parse(code, {
+        sourceType: "module",
+        sourceFilename: sourceId,
+        plugins: ["typescript", "jsx"],
+      });
+      const displayPath = `src/${normalizedSourceId.slice(normalizedSourceRoot.length + 1)}`;
+      const insertions: Array<{ position: number; value: string }> = [];
+      const visit = (node: { type: string; [key: string]: unknown }) => {
+        if (node.type === "JSXOpeningElement") {
+          const opening = node as unknown as {
+            name: { type: string; name?: string; end?: number };
+            attributes: Array<{ type: string; name?: { name?: string } }>;
+            loc?: { start: { line: number } };
+          };
+          const tag = opening.name.type === "JSXIdentifier" ? opening.name.name || "" : "";
+          if (/^[a-z]/.test(tag) && opening.name.end !== undefined && !opening.attributes.some(attribute =>
+            attribute.type === "JSXAttribute" && attribute.name?.name === "data-tsx-source"
+          )) {
+            const line = opening.loc?.start.line || 1;
+            insertions.push({
+              position: opening.name.end,
+              value: ` data-tsx-source=${JSON.stringify(`${displayPath}:${line}`)}`,
+            });
+          }
+        }
+        for (const value of Object.values(node)) {
+          if (Array.isArray(value)) {
+            for (const child of value) {
+              if (child && typeof child === "object" && "type" in child) {
+                visit(child as { type: string; [key: string]: unknown });
+              }
+            }
+          } else if (value && typeof value === "object" && "type" in value) {
+            visit(value as { type: string; [key: string]: unknown });
+          }
+        }
+      };
+      visit(source.program as unknown as { type: string; [key: string]: unknown });
+      if (!insertions.length) return;
+      let transformed = code;
+      for (const insertion of insertions.sort((left, right) => right.position - left.position)) {
+        transformed = `${transformed.slice(0, insertion.position)}${insertion.value}${transformed.slice(insertion.position)}`;
+      }
+      return { code: transformed, map: null };
+    },
+  };
+}
+
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, ".", "");
   const host = env.WORKBENCH_WEB_HOST || "127.0.0.1";
@@ -103,7 +162,7 @@ export default defineConfig(({ mode }) => {
   const apiTarget = env.WORKBENCH_API_TARGET || "http://127.0.0.1:8000";
 
   return {
-    plugins: [react(), surgicalUiReloader()],
+    plugins: [tsxSourceLocations(), react(), surgicalUiReloader()],
     server: {
       host,
       port,

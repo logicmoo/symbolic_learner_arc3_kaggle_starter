@@ -14,16 +14,49 @@
       (id Text)
       (statement Text)
       (confidence Number)
-      (supportingEvidence ([] TransitionEvidence))
-      (contradictingEvidence ([] TransitionEvidence))
+      (supportingEvidence ([]
+        TransitionEvidence
+      ))
+      (contradictingEvidence ([]
+        TransitionEvidence
+      ))
       (status Text)
     ))
   ))
-  (children ([]
-    prolog_fact_set
-    symbolic_fact_set
+  (specializations (
+    (prolog_fact_set (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        specializations
+        preferredSpecialization
+      ))
+    ))
+    (symbolic_fact_set (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        specializations
+        preferredSpecialization
+      ))
+    ))
   ))
-  (parents ([]
-    information
+  (implements (
+    (information (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
 )

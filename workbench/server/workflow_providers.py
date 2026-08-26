@@ -529,9 +529,9 @@ def _resource_tool(inputs: dict[str, Any], parameters: dict[str, Any]) -> dict[s
     if action == "datatype.sample":
         name = str(resource.get("id") or "value").lower()
         sample: Any = "sample text" if any(token in name for token in ("text", "string", "markdown")) else [] if any(token in name for token in ("list", "array", "set")) else {} if any(token in name for token in ("object", "map", "scene", "image")) else None
-        return {"result": {**identity, "sample": sample, "representations": resource.get("children") or resource.get("parents") or []}}
+        return {"result": {**identity, "sample": sample, "representations": resource.get("specializations") or resource.get("implements") or []}}
     if action == "datatype.validate":
-        relationships = resource.get("children") or resource.get("parents") or []
+        relationships = resource.get("specializations") or resource.get("implements") or []
         return {"result": {**identity, "valid": bool(resource.get("id")), "relationships": relationships, "relationshipCount": len(relationships)}}
     if action == "datatype.conversions":
         return {"result": {**identity, "from": resource.get("from"), "to": resource.get("to"), "declaredConversions": resource.get("conversions") or []}}
@@ -544,7 +544,7 @@ def _resource_tool(inputs: dict[str, Any], parameters: dict[str, Any]) -> dict[s
         criteria = resource.get("successCriteria") or []
         return {"result": {**identity, "satisfied": False if criteria else None, "criteria": criteria, "status": "requires evidence" if criteria else "no criteria declared"}}
     if action == "goal.interpret":
-        return {"result": {**identity, "interpretations": resource.get("children") or [], "preferred": resource.get("preferredChild"), "criteria": resource.get("successCriteria") or []}}
+        return {"result": {**identity, "interpretations": resource.get("specializations") or [], "preferred": resource.get("preferredSpecialization"), "criteria": resource.get("successCriteria") or []}}
     if action == "goal.satisfaction":
         criteria = resource.get("successCriteria") or []
         return {"result": {**identity, "criteriaCount": len(criteria), "satisfiedCount": 0, "unknownCount": len(criteria)}}
@@ -555,7 +555,7 @@ def _resource_tool(inputs: dict[str, Any], parameters: dict[str, Any]) -> dict[s
     if action == "planning.validate":
         return {"result": {**identity, "valid": bool(resource.get("id")), "workflowDeclared": bool(resource.get("workflow")), "goals": resource.get("goals") or []}}
     if action == "atomspace.inspect":
-        return {"result": {**identity, "bindings": resource.get("bindings") or [], "parents": resource.get("parents") or [], "eventSemantics": "AtomSpace changes emit Events"}}
+        return {"result": {**identity, "bindings": resource.get("bindings") or [], "implements": resource.get("implements") or [], "eventSemantics": "AtomSpace changes emit Events"}}
     if action == "atomspace.query":
         return {"result": {**identity, "query": resource.get("query") or resource.get("bindings") or [], "matches": [], "readOnly": True}}
     if action == "atomspace.assert":
@@ -586,13 +586,13 @@ def _resource_tool(inputs: dict[str, Any], parameters: dict[str, Any]) -> dict[s
     if action == "policy.evaluate":
         return {"result": {**identity, "effective": resource.get("enabled", True), "rules": resource.get("rules") or resource.get("where") or resource.get("query") or {}}}
     if action == "policy.explain":
-        return {"result": {**identity, "enabled": resource.get("enabled", True), "parents": resource.get("parents") or [], "decisionInputs": resource.get("rules") or resource.get("query") or {}}}
+        return {"result": {**identity, "enabled": resource.get("enabled", True), "implements": resource.get("implements") or [], "decisionInputs": resource.get("rules") or resource.get("query") or {}}}
     if action == "category.preview":
         query = resource.get("query") or {}
         return {"result": {**identity, "trees": resource.get("trees") or [], "path": resource.get("path"), "query": query, "parentMode": resource.get("parentMode") or "unspecified"}}
     if action == "category.matches":
         return {"result": {**identity, "query": resource.get("query") or {}, "matchCount": 0, "matches": [], "note": "Use the active tree catalog to resolve matches."}}
-    return {"result": {**identity, "enabled": resource.get("enabled", True), "keys": sorted(resource), "parents": resource.get("parents") or [], "children": resource.get("children") or []}}
+    return {"result": {**identity, "enabled": resource.get("enabled", True), "keys": sorted(resource), "implements": resource.get("implements") or [], "specializations": resource.get("specializations") or []}}
 
 
 def register_real_providers(registry: OperationRegistry) -> None:

@@ -3,10 +3,27 @@
   (id observation)
   (label Observation)
   (description "Evidence received from an external world, independent of how that evidence is represented.")
-  (parents ([]
-    information
+  (implements (
+    (information (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
-  (children ([]
-    objectified_observation
+  (specializations (
+    (objectified_observation (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        specializations
+        preferredSpecialization
+      ))
+    ))
   ))
 )

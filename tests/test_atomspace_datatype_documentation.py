@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from resource_relationships import relationship_ids
 
 from resource_store import get_filesystem_provider
 
@@ -14,8 +15,8 @@ def test_active_atomspace_datatype_replaces_information_silo() -> None:
     atomspace = resources.read_json(directory / "atomspace.semantic_datatype.json")
     information = resources.read_json(directory / "information.semantic_datatype.json")
     assert atomspace["id"] == "atomspace"
-    assert atomspace["parents"] == ["information"]
-    assert "atomspace" in information["children"]
+    assert relationship_ids(atomspace["implements"]) == ["information"]
+    assert "atomspace" in information["specializations"]
     assert not (directory / "information_silo.semantic_datatype.json").exists()
 
 

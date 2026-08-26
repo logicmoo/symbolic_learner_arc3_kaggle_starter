@@ -4,9 +4,19 @@
   (label "Python Object")
   (language python)
   (description "An in-memory Python object representation used by Python operation implementations.")
-  (parents ([]
-    information
-    object
+  (implements (
+    (information (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
+    (object (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
-  (children ([]))
+  (specializations ())
 )

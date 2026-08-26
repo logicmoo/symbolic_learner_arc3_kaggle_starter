@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any, Callable, Iterable
 
 from metta_resource_codec import json_document_to_metta
-from resource_relationships import points_to, relationship_ids
+from resource_relationships import implements_resource, points_to, relationship_ids, resolve_inherited_document
 from workspace_inheritance import effective_workspace_layers, layer_source
 from resource_store import get_filesystem_provider
 
@@ -72,7 +72,7 @@ def automatic_llm_fallback(operation: dict[str, Any]) -> dict[str, Any]:
         "outputs": outputs,
         "modelSelection": {"models": ["asicloud-asi1-mini"], "strategy": "single"},
         "parameters": parameters,
-        "parents": [operation_id],
+        "implements": implements_resource(operation_id),
         "virtual": True,
     }
 
@@ -87,11 +87,8 @@ def _validate_operation(value: Any, path: Path) -> dict[str, Any]:
     value["kind"] = "operation"
     if not str(value.get("id") or "").strip():
         raise ValueError(f"Operation definition requires id: {path}")
-    if kind == "operation_implementation" and not relationship_ids(value.get("parents")):
-        raise ValueError(f"Legacy operation implementation requires parents: {path}")
-    if relationship_ids(value.get("parents")):
-        if not str(value.get("implementation") or "").strip():
-            raise ValueError(f"Operation implementation requires implementation: {path}")
+    if kind == "operation_implementation" and not relationship_ids(value.get("implements")):
+        raise ValueError(f"Legacy operation implementation requires implements: {path}")
     return value
 
 
@@ -144,19 +141,19 @@ def _effective_resources(workspace_root: Path, *, workspaces_root: Path = DEFAUL
 
 
 def load_shared_operation_records(workspaces_root: Path = DEFAULT_WORKSPACES_ROOT) -> list[dict[str, Any]]:
-    return [r for r in load_shared_operation_resource_records(workspaces_root) if not relationship_ids((r.get("document") or {}).get("parents"))]
+    return [r for r in load_shared_operation_resource_records(workspaces_root) if not relationship_ids((r.get("document") or {}).get("implements"))]
 
 
 def load_shared_operation_implementation_records(workspaces_root: Path = DEFAULT_WORKSPACES_ROOT) -> list[dict[str, Any]]:
-    return [r for r in load_shared_operation_resource_records(workspaces_root) if relationship_ids((r.get("document") or {}).get("parents"))]
+    return [r for r in load_shared_operation_resource_records(workspaces_root) if relationship_ids((r.get("document") or {}).get("implements"))]
 
 
 def load_workspace_operation_records(workspace_root: Path, *, workspaces_root: Path = DEFAULT_WORKSPACES_ROOT) -> list[dict[str, Any]]:
-    return [r for r in _effective_resources(workspace_root, workspaces_root=workspaces_root) if not relationship_ids((r.get("document") or {}).get("parents"))]
+    return [r for r in _effective_resources(workspace_root, workspaces_root=workspaces_root) if not relationship_ids((r.get("document") or {}).get("implements"))]
 
 
 def load_workspace_operation_implementation_records(workspace_root: Path, *, workspaces_root: Path = DEFAULT_WORKSPACES_ROOT) -> list[dict[str, Any]]:
-    return [r for r in _effective_resources(workspace_root, workspaces_root=workspaces_root) if relationship_ids((r.get("document") or {}).get("parents"))]
+    return [r for r in _effective_resources(workspace_root, workspaces_root=workspaces_root) if relationship_ids((r.get("document") or {}).get("implements"))]
 
 
 def resolve_operation_implementation(workspace_root: Path, operation_id: str, requested: str | None = None, *, workspaces_root: Path = DEFAULT_WORKSPACES_ROOT, is_known_route: Callable[[str], bool] | None = None) -> dict[str, Any]:
@@ -168,7 +165,7 @@ def resolve_operation_implementation(workspace_root: Path, operation_id: str, re
     operation = operation_record["document"]
     fallback = automatic_llm_fallback(operation)
     fallback_id = str(fallback["id"])
-    if requested == fallback_id:
+    def fallback_result() -> dict[str, Any]:
         return {
             "operation": operation,
             "operationRecord": operation_record,
@@ -182,60 +179,137 @@ def resolve_operation_implementation(workspace_root: Path, operation_id: str, re
             },
             "fallback": True,
         }
-    declared_variants = relationship_ids(operation.get("children"))
-    reverse_variants = [
-        implementation_id
-        for implementation_id, record in implementations.items()
-        if points_to(record.get("document") or {}, "parents", operation_id)
-    ]
-    variants = list(dict.fromkeys([*declared_variants, *reverse_variants]))
-    if not variants:
-        direct_route = str(operation.get("implementation") or "").strip()
-        # A declared route is only executable when the engine registers a handler
-        # for it. Abstract subject-matter labels (e.g. vision.segment, symbolic.identity)
-        # have no handler, so they must degrade to the automatic LLM fallback rather
-        # than being handed to the engine as an unknown implementation.
-        direct_executable = bool(direct_route) and (is_known_route is None or is_known_route(direct_route))
-        if direct_executable:
-            if requested and requested != operation_id:
-                raise ValueError(f"implementation {requested} is not allowed by operation {operation_id}")
+
+    if requested == fallback_id:
+        return fallback_result()
+
+    all_records = {**operations, **implementations}
+    documents_by_id = {
+        resource_id: record["document"]
+        for resource_id, record in all_records.items()
+        if record.get("document")
+    }
+    inheritance_cache: dict[str, dict[str, Any]] = {}
+
+    def inheritance_resolution(document: dict[str, Any]) -> dict[str, Any]:
+        resource_id = str(document.get("id") or "")
+        if resource_id not in inheritance_cache:
+            inheritance_cache[resource_id] = resolve_inherited_document(document, documents_by_id)
+        resolution = inheritance_cache[resource_id]
+        blockers = [
+            *resolution["conflicts"],
+            *resolution["missingResources"],
+            *resolution["missingBacklinks"],
+        ]
+        if blockers:
+            raise ValueError(f"operation inheritance is unresolved for {resource_id}: {'; '.join(blockers)}")
+        return resolution
+
+    def is_executable(document: dict[str, Any]) -> bool:
+        effective = inheritance_resolution(document)["document"]
+        route = str(effective.get("implementation") or "").strip()
+        if relationship_ids(document.get("implements")):
+            return bool(route)
+        return bool(route) and (is_known_route is None or is_known_route(route))
+
+    def specialization_ids(resource_id: str) -> list[str]:
+        record = all_records.get(resource_id)
+        if not record:
+            return []
+        document = record.get("document") or {}
+        declared = relationship_ids(document.get("specializations"))
+        reverse = [
+            candidate_id
+            for candidate_id, candidate in implementations.items()
+            if points_to(candidate.get("document") or {}, "implements", resource_id)
+        ]
+        ordered = list(dict.fromkeys([*declared, *reverse]))
+        preferred = str(document.get("preferredSpecialization") or "")
+        return ([preferred] if preferred in ordered else []) + [candidate_id for candidate_id in ordered if candidate_id != preferred]
+
+    def resolve_candidate(candidate_id: str, trail: tuple[str, ...]) -> tuple[dict[str, Any], list[str]] | None:
+        if candidate_id in trail:
+            raise ValueError(f"operation specialization cycle: {' -> '.join((*trail, candidate_id))}")
+        record = all_records.get(candidate_id)
+        if not record:
+            return None
+        document = record.get("document") or {}
+        path = [*trail, candidate_id]
+        if is_executable(document):
+            return record, path
+        for specialization_id in specialization_ids(candidate_id):
+            resolved = resolve_candidate(specialization_id, tuple(path))
+            if resolved:
+                return resolved
+        return None
+
+    direct_route = str(operation.get("implementation") or "").strip()
+    if requested == operation_id:
+        if is_executable(operation):
+            inheritance = inheritance_resolution(operation)
             return {
                 "operation": operation,
                 "operationRecord": operation_record,
-                "implementation": operation,
+                "implementation": inheritance["document"],
+                "declaredImplementation": operation,
                 "implementationRecord": operation_record,
+                "inheritanceResolution": inheritance,
                 "direct": True,
+                "resolutionPath": [operation_id],
             }
-        allowed_requests = {fallback_id}
-        if direct_route:
-            allowed_requests.add(operation_id)
-        if requested and requested not in allowed_requests:
-            raise ValueError(f"implementation {requested} is not allowed by operation {operation_id}")
+        raise ValueError(f"operation {operation_id} is not directly runnable")
+
+    direct_specializations = specialization_ids(operation_id)
+    reachable: set[str] = set()
+
+    def collect(resource_id: str, trail: tuple[str, ...] = ()) -> None:
+        if resource_id in trail:
+            raise ValueError(f"operation specialization cycle: {' -> '.join((*trail, resource_id))}")
+        for specialization_id in specialization_ids(resource_id):
+            if specialization_id in reachable:
+                continue
+            reachable.add(specialization_id)
+            collect(specialization_id, (*trail, resource_id))
+
+    collect(operation_id)
+    if requested and requested not in reachable:
+        raise ValueError(f"implementation {requested} is not allowed by operation {operation_id}")
+
+    starts = [requested] if requested else direct_specializations
+    for candidate_id in starts:
+        if not candidate_id:
+            continue
+        resolved = resolve_candidate(candidate_id, (operation_id,))
+        if not resolved:
+            continue
+        record, resolution_path = resolved
+        inheritance = inheritance_resolution(record["document"])
         return {
             "operation": operation,
             "operationRecord": operation_record,
-            "implementation": fallback,
-            "implementationRecord": {
-                "path": "runtime://automatic-llm-fallback",
-                "source": "runtime",
-                "workspaceId": workspace_root.name,
-                "document": fallback,
-                "virtual": True,
-            },
-            "fallback": True,
+            "implementation": inheritance["document"],
+            "declaredImplementation": record["document"],
+            "implementationRecord": record,
+            "inheritanceResolution": inheritance,
+            "selectedSpecialization": candidate_id,
+            "resolutionPath": resolution_path,
         }
-    chosen = requested or operation.get("preferredChild") or (variants[0] if variants else None)
-    if not chosen:
-        raise ValueError(f"operation has no implementation variant: {operation_id}")
-    if chosen not in variants:
-        raise ValueError(f"implementation {chosen} is not allowed by operation {operation_id}")
-    record = implementations.get(str(chosen))
-    if not record:
-        raise KeyError(f"operation implementation not found: {chosen}")
-    implementation = record["document"]
-    if not points_to(implementation, "parents", operation_id):
-        raise ValueError(f"implementation {chosen} does not implement {operation_id}")
-    return {"operation": operation, "operationRecord": operation_record, "implementation": implementation, "implementationRecord": record}
+
+    if is_executable(operation):
+        inheritance = inheritance_resolution(operation)
+        return {
+            "operation": operation,
+            "operationRecord": operation_record,
+            "implementation": inheritance["document"],
+            "declaredImplementation": operation,
+            "implementationRecord": operation_record,
+            "inheritanceResolution": inheritance,
+            "direct": True,
+            "resolutionPath": [operation_id],
+        }
+    if requested:
+        raise ValueError(f"operation specialization {requested} has no runnable descendant")
+    return fallback_result()
 
 
 def load_shared_operation_documents(workspaces_root: Path = DEFAULT_WORKSPACES_ROOT) -> list[dict[str, Any]]:
@@ -257,6 +331,6 @@ def legacy_catalog_view(documents: Iterable[dict[str, Any]]) -> list[dict[str, A
         outputs = document.get("outputs") or {}
         left = " + ".join(inputs) or "∅"
         right = " + ".join(outputs) or "∅"
-        routes = str(document.get("preferredChild") or document.get("implementation") or "")
+        routes = str(document.get("preferredSpecialization") or document.get("implementation") or "")
         result.append({"id": document["id"], "label": document.get("label") or document["id"], "ports": f"{left} → {right}", "routes": routes, "definition": document, "source": "workbench/workspaces/shared_library_system/design/operations"})
     return sorted(result, key=lambda item: str(item["label"]).lower())

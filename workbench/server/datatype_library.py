@@ -14,7 +14,7 @@ from operation_library import (
     load_workspace_operation_implementation_records,
     load_workspace_operation_records,
 )
-from resource_relationships import points_to, relationship_ids
+from resource_relationships import points_to, relationship_ids, resolve_inherited_document
 from workspace_inheritance import effective_workspace_layers, layer_source
 from resource_store import get_filesystem_provider
 
@@ -32,7 +32,7 @@ def _type_key(value: Any) -> str:
 
 
 def _implemented_datatypes(document: dict[str, Any]) -> list[str]:
-    return relationship_ids(document.get("parents"))
+    return relationship_ids(document.get("implements"))
 
 
 def _read_resource(path: Path, expected_kind: str) -> dict[str, Any]:
@@ -53,7 +53,7 @@ def _validate_resource(value: Any, path: Path, expected_kind: str) -> dict[str, 
     if not str(value.get("id") or "").strip():
         raise ValueError(f"{expected_kind} definition requires id: {path}")
     if expected_kind == REPRESENTATION_KIND and not _implemented_datatypes(value):
-        raise ValueError(f"Datatype representation requires parents: {path}")
+        raise ValueError(f"Datatype representation requires implements: {path}")
     return value
 
 
@@ -107,8 +107,8 @@ def resolve_datatype_representation(workspace_root: Path, datatype_id: str, requ
     if not datatype_record:
         raise KeyError(f"datatype not found: {datatype_id}")
     datatype = datatype_record["document"]
-    variants = relationship_ids(datatype.get("children"))
-    chosen = requested or datatype.get("preferredChild") or (variants[0] if variants else None)
+    variants = relationship_ids(datatype.get("specializations"))
+    chosen = requested or datatype.get("preferredSpecialization") or (variants[0] if variants else None)
     if not chosen:
         raise ValueError(f"datatype has no representation variant: {datatype_id}")
     canonical_variants = {_type_key(variant): variant for variant in variants}
@@ -119,12 +119,38 @@ def resolve_datatype_representation(workspace_root: Path, datatype_id: str, requ
     if not representation_record:
         raise KeyError(f"datatype representation not found: {chosen}")
     representation = representation_record["document"]
-    if not points_to(representation, "parents", str(datatype.get("id"))):
+    if not points_to(representation, "implements", str(datatype.get("id"))):
         raise ValueError(f"representation {chosen} does not implement {datatype_id}")
+    records = [
+        *datatypes.values(),
+        *representations.values(),
+        *load_workspace_concrete_datatype_records(workspace_root, workspaces_root=workspaces_root),
+    ]
+    documents_by_id = {
+        str((record.get("document") or {}).get("id")): record["document"]
+        for record in records
+        if (record.get("document") or {}).get("id")
+    }
+    datatype_resolution = resolve_inherited_document(datatype, documents_by_id)
+    representation_resolution = resolve_inherited_document(representation, documents_by_id)
+    blockers = [
+        *datatype_resolution["conflicts"],
+        *datatype_resolution["missingResources"],
+        *datatype_resolution["missingBacklinks"],
+        *representation_resolution["conflicts"],
+        *representation_resolution["missingResources"],
+        *representation_resolution["missingBacklinks"],
+    ]
+    if blockers:
+        raise ValueError(f"datatype inheritance is unresolved for {datatype_id}: {'; '.join(blockers)}")
     return {
-        "datatype": datatype,
+        "datatype": datatype_resolution["document"],
+        "declaredDatatype": datatype,
         "datatypeRecord": datatype_record,
-        "representation": representation,
+        "datatypeInheritance": datatype_resolution,
+        "representation": representation_resolution["document"],
+        "declaredRepresentation": representation,
+        "representationInheritance": representation_resolution,
         "representationRecord": representation_record,
     }
 
@@ -144,7 +170,7 @@ def representation_graph(workspace_root: Path, *, workspaces_root: Path = DEFAUL
         "concreteDatatypes": concrete_datatypes,
         "representationIdsByDatatype": {key: sorted(values) for key, values in sorted(by_datatype.items())},
         "concreteIdsByRepresentation": {
-            str((record.get("document") or {}).get("id")): relationship_ids((record.get("document") or {}).get("children"))
+            str((record.get("document") or {}).get("id")): relationship_ids((record.get("document") or {}).get("specializations"))
             for record in representations
             if (record.get("document") or {}).get("id")
         },

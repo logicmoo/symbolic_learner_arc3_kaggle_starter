@@ -3,7 +3,12 @@
   (id goal)
   (label Goal)
   (description "A semantic desired outcome, success condition, or objective.")
-  (parents ([]
-    information
+  (implements (
+    (information (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
 )

@@ -3,7 +3,12 @@
   (id boolean)
   (label Boolean)
   (description "A truth value independent of its serialized or runtime representation.")
-  (parents ([]
-    information
+  (implements (
+    (information (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
 )

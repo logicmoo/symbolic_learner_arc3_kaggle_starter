@@ -3,12 +3,41 @@
   (id object)
   (label Object)
   (description "A structured symbolic value independent of its in-memory or serialized representation.")
-  (children ([]
-    json_object
-    python_object
+  (specializations (
+    (json_object (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        specializations
+        preferredSpecialization
+      ))
+    ))
+    (python_object (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        specializations
+        preferredSpecialization
+      ))
+    ))
   ))
-  (preferredChild json_object)
-  (parents ([]
-    information
+  (preferredSpecialization json_object)
+  (implements (
+    (information (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
 )

@@ -3,18 +3,70 @@
   (id prolog_fact_set)
   (label "Prolog Fact Set")
   (language prolog)
-  (parents ([]
-    information
-    entity_collection
-    relationship
-    world_state
-    world_model
-    transition_evidence
-    hypothesis
-    evaluation
+  (implements (
+    (information (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
+    (entity_collection (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
+    (relationship (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
+    (world_state (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
+    (world_model (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
+    (transition_evidence (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
+    (hypothesis (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
+    (evaluation (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
-  (children ([]
-    prolog_source
+  (specializations (
+    (prolog_source (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        specializations
+        preferredSpecialization
+      ))
+    ))
   ))
-  (preferredChild prolog_source)
+  (preferredSpecialization prolog_source)
 )

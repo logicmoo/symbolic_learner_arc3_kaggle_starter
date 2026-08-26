@@ -23,7 +23,7 @@ export function TreeViewControls({ kinds, rules, onChange, showParents, onShowPa
   const setRule = (key: "search" | "enabled" | "disabled" | "categories", value: TreeVisibilityRule) => onChange({ ...rules, [key]: value });
   const setRole = (key: string, value: TreeVisibilityRule) => onChange({ ...rules, roles: { ...rules.roles, [key]: value } });
   const kindLabels = kinds.map(title);
-  const roleKeys = [...kinds.flatMap(kind => [`top-${kind}`, `child-${kind}`, `childless-${kind}`]), "other"];
+  const roleKeys = [...kinds.flatMap(kind => [`top-${kind}`, `specialization-${kind}`, `unspecialized-${kind}`]), "other"];
   const allValues = [rules.search, rules.enabled, rules.disabled, rules.categories, ...roleKeys.map(key => rules.roles[key] || "unspecified")];
   const masterValue: TreeVisibilityRule = allValues.every(value => value === allValues[0]) ? allValues[0] : "unspecified";
   const setAll = (value: TreeVisibilityRule) => onChange({ ...rules, search: value, enabled: value, disabled: value, categories: value, roles: Object.fromEntries(roleKeys.map(key => [key, value])) });
@@ -41,8 +41,8 @@ export function TreeViewControls({ kinds, rules, onChange, showParents, onShowPa
       {card("other", <ThreePositionSwitch label={`Non-${kindLabels.join("/") || "Typed"}`} value={rules.roles.other || "unspecified"} onChange={value => setRole("other", value)} onExpand={() => onBranchAction("expand", "other")} onCollapse={() => onBranchAction("collapse", "other")} />)}
       {kinds.flatMap(kind => ([
         card(`top-${kind}`, <ThreePositionSwitch label={`Top ${plural(title(kind))}`} value={rules.roles[`top-${kind}`] || "unspecified"} onChange={value => setRole(`top-${kind}`, value)} onExpand={() => onBranchAction("expand", `top-${kind}`)} onCollapse={() => onBranchAction("collapse", `top-${kind}`)} />),
-        card(`child-${kind}`, <ThreePositionSwitch label={`Child ${plural(title(kind))}`} value={rules.roles[`child-${kind}`] || "unspecified"} onChange={value => setRole(`child-${kind}`, value)} onExpand={() => onBranchAction("expand", `child-${kind}`)} onCollapse={() => onBranchAction("collapse", `child-${kind}`)} />),
-        card(`childless-${kind}`, <ThreePositionSwitch label={`Childless ${plural(title(kind))}`} value={rules.roles[`childless-${kind}`] || "unspecified"} onChange={value => setRole(`childless-${kind}`, value)} onExpand={() => onBranchAction("expand", `childless-${kind}`)} onCollapse={() => onBranchAction("collapse", `childless-${kind}`)} />),
+        card(`specialization-${kind}`, <ThreePositionSwitch label={`${plural(title(kind))} Specializations`} value={rules.roles[`specialization-${kind}`] || "unspecified"} onChange={value => setRole(`specialization-${kind}`, value)} onExpand={() => onBranchAction("expand", `specialization-${kind}`)} onCollapse={() => onBranchAction("collapse", `specialization-${kind}`)} />),
+        card(`unspecialized-${kind}`, <ThreePositionSwitch label={`Unspecialized ${plural(title(kind))}`} value={rules.roles[`unspecialized-${kind}`] || "unspecified"} onChange={value => setRole(`unspecialized-${kind}`, value)} onExpand={() => onBranchAction("expand", `unspecialized-${kind}`)} onCollapse={() => onBranchAction("collapse", `unspecialized-${kind}`)} />),
       ]))}
     </div>
   </section>;

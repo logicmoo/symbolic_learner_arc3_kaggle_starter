@@ -10,19 +10,20 @@ if str(SERVER) not in sys.path:
 
 from goal_plan_library import load_workspace_symbolic_records, symbolic_hierarchy
 from resource_convention import canonical_resource_path
+from resource_relationships import implements_resource, relationship_ids, specializes_resource
 from resource_store import get_filesystem_provider
 from goal_run_api import start_goal_run
 
 
-def _write(root: Path, workspace: str, directory: str, name: str, document: str) -> None:
+def _write(root: Path, workspace: str, directory: str, name: str, document: str | dict) -> None:
     target = root / workspace / directory / name
     target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_text(document, encoding="utf-8")
+    target.write_text(document if isinstance(document, str) else json.dumps(document), encoding="utf-8")
 
 
 def test_goal_resources_inherit_shared_and_allow_workspace_overrides(tmp_path: Path) -> None:
     _write(tmp_path, "shared_library_system", "goals", "learn.goal.json", '{"kind":"goal","id":"learn","label":"Shared"}')
-    _write(tmp_path, "shared_library_system", "goals", "safe.goal.json", '{"kind":"goal","id":"safe","parents":["learn"]}')
+    _write(tmp_path, "shared_library_system", "goals", "safe.goal.json", {"kind": "goal", "id": "safe", "implements": implements_resource("learn")})
     _write(tmp_path, "project", "goals", "learn.goal.json", '{"kind":"goal","id":"learn","label":"Override"}')
     records = load_workspace_symbolic_records(tmp_path / "project", "goal", workspaces_root=tmp_path)
     by_id = {record["document"]["id"]: record for record in records}
@@ -30,16 +31,16 @@ def test_goal_resources_inherit_shared_and_allow_workspace_overrides(tmp_path: P
     assert by_id["learn"]["document"]["label"] == "Override"
     assert by_id["safe"]["source"] == "shared"
     hierarchy = symbolic_hierarchy(records, "goal")
-    assert hierarchy["variantsBySpecification"]["learn"][0]["document"]["id"] == "safe"
+    assert hierarchy["specializationsByResource"]["learn"][0]["document"]["id"] == "safe"
 
 
 def test_plan_variant_uses_parent_link_and_base_kind_suffix(tmp_path: Path) -> None:
     _write(tmp_path, "shared_library_system", "planning_strategies", "route.planning_strategy.json", '{"kind":"planning_strategy","id":"route"}')
-    _write(tmp_path, "shared_library_system", "planning_strategies", "route.fast.planning_strategy.json", '{"kind":"planning_strategy","id":"route.fast","parents":["route"]}')
+    _write(tmp_path, "shared_library_system", "planning_strategies", "route.fast.planning_strategy.json", {"kind": "planning_strategy", "id": "route.fast", "implements": implements_resource("route")})
     records = load_workspace_symbolic_records(tmp_path / "shared_library_system", "plan", workspaces_root=tmp_path)
     hierarchy = symbolic_hierarchy(records, "plan")
-    assert hierarchy["variantsBySpecification"]["route"][0]["document"]["kind"] == "planning_strategy"
-    path = canonical_resource_path(Path("planning_strategies/draft.json"), {"kind": "planning_strategy", "id": "route.fast", "parents": ["route"]})
+    assert hierarchy["specializationsByResource"]["route"][0]["document"]["kind"] == "planning_strategy"
+    path = canonical_resource_path(Path("planning_strategies/draft.json"), {"kind": "planning_strategy", "id": "route.fast", "implements": implements_resource("route")})
     assert path.as_posix() == "planning_strategies/route.fast.planning_strategy.json"
 
 
@@ -60,7 +61,7 @@ def test_shared_design_examples_are_domain_neutral_and_runnable() -> None:
     documents = [document for directory in design_dirs for path in directory.glob("*.metta") for document in resources.read_json_documents(path.with_suffix(".json"))]
     assert not any("arc3" in json.dumps(document).lower() for document in documents)
     workflow_ids = {document["id"] for document in documents if document.get("kind") == "workflow"}
-    referenced = {document["workflow"] for document in documents if document.get("kind") == "planning_strategy" and document.get("parents") and document.get("workflow")}
+    referenced = {document["workflow"] for document in documents if document.get("kind") == "planning_strategy" and document.get("implements") and document.get("workflow")}
     assert referenced <= workflow_ids
 
 
@@ -69,18 +70,18 @@ def test_shared_workspace_contains_bidirectional_context_examples() -> None:
     contexts = load_workspace_symbolic_records(shared, "context")
     by_id = {record["document"]["id"]: record["document"] for record in contexts}
     assert {document["kind"] for document in by_id.values()} == {"atomspace"}
-    assert by_id["vision_analysis"]["children"] == ["vision_analysis.default"]
-    assert by_id["vision_analysis.default"]["parents"] == ["vision_analysis"]
+    assert relationship_ids(by_id["vision_analysis"]["specializations"]) == ["vision_analysis.default"]
+    assert relationship_ids(by_id["vision_analysis.default"]["implements"]) == ["vision_analysis"]
 
 
 def test_goal_run_api_accepts_atomspace_context_kind(monkeypatch, tmp_path: Path) -> None:
     workspace = tmp_path / "project"
-    _write(tmp_path, "project", "design/goals", "learn.goal.json", '{"kind":"goal","id":"learn","children":["learn.safe"],"preferredChild":"learn.safe"}')
-    _write(tmp_path, "project", "design/goals", "learn.safe.goal.json", '{"kind":"goal","id":"learn.safe","parents":["learn"]}')
-    _write(tmp_path, "project", "design/planning_strategies", "route.planning_strategy.json", '{"kind":"planning_strategy","id":"route","goals":["learn"],"children":["route.safe"],"preferredChild":"route.safe"}')
-    _write(tmp_path, "project", "design/planning_strategies", "route.safe.planning_strategy.json", '{"kind":"planning_strategy","id":"route.safe","parents":["route"],"workflow":"run"}')
-    _write(tmp_path, "project", "design/atomspaces", "memory.atomspace.json", '{"kind":"atomspace","id":"memory","children":["memory.default"],"preferredChild":"memory.default"}')
-    _write(tmp_path, "project", "design/atomspaces", "memory.default.atomspace.json", '{"kind":"atomspace","id":"memory.default","parents":["memory"]}')
+    _write(tmp_path, "project", "design/goals", "learn.goal.json", {"kind": "goal", "id": "learn", "specializations": specializes_resource("learn.safe"), "preferredSpecialization": "learn.safe"})
+    _write(tmp_path, "project", "design/goals", "learn.safe.goal.json", {"kind": "goal", "id": "learn.safe", "implements": implements_resource("learn")})
+    _write(tmp_path, "project", "design/planning_strategies", "route.planning_strategy.json", {"kind": "planning_strategy", "id": "route", "goals": ["learn"], "specializations": specializes_resource("route.safe"), "preferredSpecialization": "route.safe"})
+    _write(tmp_path, "project", "design/planning_strategies", "route.safe.planning_strategy.json", {"kind": "planning_strategy", "id": "route.safe", "implements": implements_resource("route"), "workflow": "run"})
+    _write(tmp_path, "project", "design/atomspaces", "memory.atomspace.json", {"kind": "atomspace", "id": "memory", "specializations": specializes_resource("memory.default"), "preferredSpecialization": "memory.default"})
+    _write(tmp_path, "project", "design/atomspaces", "memory.default.atomspace.json", {"kind": "atomspace", "id": "memory.default", "implements": implements_resource("memory")})
     monkeypatch.setattr("goal_run_api._resolve_workspace", lambda _workspace_id: {"root": str(workspace)})
     monkeypatch.setattr("goal_run_api._workflow_document", lambda _workspace, _workflow_id: {"id": "run", "steps": []})
     monkeypatch.setattr("goal_run_api.engine.get_workflow", lambda _workflow_id: {"id": "run", "version": 1})
@@ -92,7 +93,7 @@ def test_goal_run_api_accepts_atomspace_context_kind(monkeypatch, tmp_path: Path
 
 def test_goal_plan_editor_preserves_rich_hierarchy_features() -> None:
     source = (ROOT / "workbench" / "frontend" / "src" / "components" / "GoalPlanLibraryEditor.tsx").read_text(encoding="utf-8")
-    for token in ("HierarchyResourceEditor", "PREFERRED ALTERNATIVE", "Split view", "+ Alternative", "+ Abstract", "ResourceSourceEditor", "preferredChild"):
+    for token in ("HierarchyResourceEditor", "PREFERRED ALTERNATIVE", "Split view", "+ Alternative", "+ Abstract", "ResourceSourceEditor", "preferredSpecialization"):
         assert token in source
     assert 'const endpoint = family === "plan" ? "plans" : directory' in source
 
@@ -100,14 +101,15 @@ def test_goal_plan_editor_preserves_rich_hierarchy_features() -> None:
 def test_goal_plan_and_context_pages_load_their_shared_right_panel_docs() -> None:
     components = ROOT / "workbench" / "frontend" / "src" / "components"
     help_source = (components / "HelpDocumentTabs.tsx").read_text(encoding="utf-8")
+    markdown_source = (components / "MarkdownDocument.tsx").read_text(encoding="utf-8")
     page_source = (ROOT / "workbench" / "frontend" / "src" / "pages" / "FilesystemWorkbenchPage.tsx").read_text(encoding="utf-8")
     help_compact = "".join(help_source.split())
     page_compact = "".join(page_source.split())
     assert '{id:"goals",label:"Goals",path:"docs/goals.md"}' in help_compact
     assert '{id:"plans",label:"Planning",path:"docs/plans.md"}' in help_compact
     assert '{id:"contexts",label:"AtomSpaces",path:"docs/contexts.md"}' in help_compact
-    assert 'ReactMarkdown' in help_source
-    assert 'remarkGfm' in help_source
+    assert "MarkdownDocument" in help_source
+    assert "remarkGfm" in markdown_source
     assert '<pre className="mini-code relationship-markdown">' not in help_source
     assert 'view==="goals"?"goals":view==="plans"?"plans"' in page_compact
     assert 'view==="goals"||view==="plans"' in page_compact

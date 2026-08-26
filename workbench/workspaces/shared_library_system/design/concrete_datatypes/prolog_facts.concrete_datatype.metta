@@ -2,8 +2,13 @@
   (kind concrete_datatype)
   (id prolog_facts)
   (label "Prolog Facts")
-  (parents ([]
-    object_list
+  (implements (
+    (object_list (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
   (mimeTypes ([]
     text/x-prolog

@@ -2,12 +2,34 @@
   (kind representation_datatype)
   (id json_object)
   (label "JSON Object")
-  (parents ([]
-    information
-    object
+  (implements (
+    (information (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
+    (object (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
-  (children ([]
-    json
+  (specializations (
+    (json (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        specializations
+        preferredSpecialization
+      ))
+    ))
   ))
-  (preferredChild json)
+  (preferredSpecialization json)
 )

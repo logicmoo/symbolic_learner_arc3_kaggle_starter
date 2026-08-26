@@ -2,8 +2,13 @@
   (kind concrete_datatype)
   (id jpeg)
   (label Jpeg)
-  (parents ([]
-    bitmap
+  (implements (
+    (bitmap (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
   (mimeTypes ([]
     image/jpeg

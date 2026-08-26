@@ -5,6 +5,12 @@
     },
     "ws_collab": {
       "scan": "startup"
+    },
+    "emullm": {
+      "scan": "startup"
+    },
+    "llm_task_harness": {
+      "scan": "startup"
     }
   }
 }

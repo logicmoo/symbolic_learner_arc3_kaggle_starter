@@ -2,12 +2,41 @@
   (kind representation_datatype)
   (id latent_embedding)
   (label "Latent Embedding")
-  (parents ([]
-    image
+  (implements (
+    (image (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
-  (children ([]
-    vector_json
-    numpy
+  (specializations (
+    (vector_json (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        specializations
+        preferredSpecialization
+      ))
+    ))
+    (numpy (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        specializations
+        preferredSpecialization
+      ))
+    ))
   ))
-  (preferredChild vector_json)
+  (preferredSpecialization vector_json)
 )

@@ -3,8 +3,13 @@
   (id https.llm.c.singularitynet.io.v1-google_gemma-4-26b-a4b-it)
   (label google/gemma-4-26b-a4b-it)
   (description "Discovered from SingularityNET LLM.")
-  (parents ([]
-    https.llm.c.singularitynet.io.v1
+  (implements (
+    (https.llm.c.singularitynet.io.v1 (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
   (model google/gemma-4-26b-a4b-it)
   (enabled true)

@@ -35,6 +35,12 @@ def test_resource_source_editor_defaults_to_metta_and_keeps_json_available() -> 
     assert "onValidityChange?.(false)" in source
     assert "Draft preserved; synchronization and saving are paused" in source
     assert 'onChange("")' not in source
+    assert 'aria-label="CodeMirror language"' in source
+    assert 'format !== "tree"' in source
+    assert 'format === "metta"' in source and '? "clojure"' in source
+    assert 'format === "json"' in source and '? "json"' in source
+    assert 'format === "markdown"' in source and '? "markdown"' in source
+    assert 'setFormat("text")' in source
 
 
 def test_primary_design_editors_display_physical_metta_paths() -> None:

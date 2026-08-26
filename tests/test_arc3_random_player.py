@@ -7,6 +7,7 @@ from types import SimpleNamespace
 from PIL import Image
 import pytest
 import arc3_random_player as arc3_random_player_module
+from resource_relationships import relationship_ids
 
 from arc3_random_player import (
     RandomArc3Player,
@@ -472,16 +473,16 @@ def test_random_player_workspace_is_discoverable_and_operation_backed(tmp_path: 
         "arc3_random.run_session",
     }
     assert expected_parents <= operations.keys()
-    assert operations["arc3_random.propose_action"]["preferredChild"] == (
+    assert operations["arc3_random.propose_action"]["preferredSpecialization"] == (
         "arc3_random.propose_action.python"
     )
-    assert operations["arc3_random.select_game"]["preferredChild"] == (
+    assert operations["arc3_random.select_game"]["preferredSpecialization"] == (
         "arc3_random.select_game.random"
     )
     assert implementations["arc3_random.select_game.random"]["delegatesTo"] == (
         "collection.random_list_element"
     )
-    assert operations["arc3_random.select_game"]["children"] == [
+    assert relationship_ids(operations["arc3_random.select_game"]["specializations"]) == [
         "arc3_random.select_game.random",
         "arc3_random.select_game.manual",
     ]

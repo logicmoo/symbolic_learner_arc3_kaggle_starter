@@ -43,7 +43,7 @@ type OperationDocument = {
   description?: string;
   categories?: string[];
   topics?: string[];
-  preferredChild?: string;
+  preferredSpecialization?: string;
 };
 
 type ModelChoice = {
@@ -79,7 +79,7 @@ type DatatypeDocument = {
   label?: string;
   description?: string;
   parents?: unknown;
-  preferredChild?: string;
+  preferredSpecialization?: string;
   [key: string]: unknown;
 };
 
@@ -130,7 +130,7 @@ type GenerationContract = {
   promptops: Array<{ operationId: string; promptId: string; label: string; instructions: string; inputBindings: string[]; outputContract: Record<string, string>; modelRequirements: string[]; status: string }>;
   libdt: Array<{ datatypeId: string; kind: string; label: string; description: string }>;
   matchdt: Array<{ requirement: string; datatypeId: string; representationId: string; concreteDatatypeId: string; status: string; rationale: string }>;
-  inventdt: Array<{ requirement: string; datatypeId: string; kind: string; description: string; parents: string[]; constraints: string[]; status: string }>;
+  inventdt: Array<{ requirement: string; datatypeId: string; kind: string; description: string; implements: Record<string, unknown>; constraints: string[]; status: string }>;
   codedt: Array<{ datatypeId: string; representationId: string; concreteDatatypeId: string; encoding: string; validator: string; conversionOperations: string[]; constraints: string[]; status: string }>;
   libwf: Array<{ workflowId: string; label: string; description: string; inputs: Record<string, string>; outputs: Record<string, string> }>;
   matchwf: Array<{ requirement: string; workflowId: string; status: string; rationale: string }>;
@@ -439,7 +439,7 @@ function parseContract(value: unknown): GenerationContract {
       datatypeId,
       kind: String(entry.kind || "semantic_datatype"),
       description: String(entry.description || ""),
-      parents: Array.isArray(entry.parents) ? entry.parents.map(String).filter(Boolean) : [],
+      implements: entry.implements && typeof entry.implements === "object" && !Array.isArray(entry.implements) ? entry.implements as Record<string, unknown> : {},
       constraints: Array.isArray(entry.constraints) ? entry.constraints.map(String).filter(Boolean) : [],
       status: String(entry.status || "proposed"),
     }];

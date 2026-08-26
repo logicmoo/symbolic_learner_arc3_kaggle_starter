@@ -12,9 +12,33 @@
   (official true)
   (description "ASI Alliance OpenAI-compatible inference transport hosted by ASICloud on CUDOS, including the asi1-mini route.")
   (enabled true)
-  (children ([]
-    asicloud-asi1
-    asicloud-asi1-mini
+  (specializations (
+    (asicloud-asi1 (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        specializations
+        preferredSpecialization
+      ))
+    ))
+    (asicloud-asi1-mini (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        specializations
+        preferredSpecialization
+      ))
+    ))
   ))
   (capabilities ([]
     llm.complete

@@ -7,20 +7,65 @@
   (id gallery.curate_resource)
   (label "Gallery Curation Operation")
   (description "Optional, specializable circuit-board-style inspection probe that assembles any upstream collection into a Gallery Resource for humans, AI, and downstream operations without filtering, judging utility, or learning. It is non-blocking by default; a child or workflow may require it. Its Python child is the deterministic implementation available when the task executes.")
-  (inputs ((items Array)))
-  (parameters ((label "Gallery Resource") (title_field "title") (image_field "frame_path") (description_field "description")))
-  (outputs ((gallery Object)))
-  (probePolicy ((defaultRequired false) (defaultBlocking false) (specializable true)))
-  (children ([] gallery.curate_resource.python))
-  (preferredChild gallery.curate_resource.python)
+  (inputs (
+    (items Array)
+  ))
+  (parameters (
+    (label "Gallery Resource")
+    (title_field title)
+    (image_field frame_path)
+    (description_field description)
+  ))
+  (outputs (
+    (gallery Object)
+  ))
+  (probePolicy (
+    (defaultRequired false)
+    (defaultBlocking false)
+    (specializable true)
+  ))
+  (specializations (
+    (gallery.curate_resource.python (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        specializations
+        preferredSpecialization
+      ))
+    ))
+  ))
+  (preferredSpecialization gallery.curate_resource.python)
   (example_execute (
     (action gallery.curate_resource)
-    (arguments ((items ((datatype Array) (label "Items to inspect") (default ([]))))))
+    (arguments (
+      (items (
+        (datatype Array)
+        (label "Items to inspect")
+        (default ([]))
+      ))
+    ))
     (parameters (
-      (label ((datatype Text) (default "Gallery Resource")))
-      (title_field ((datatype Text) (default "title")))
-      (image_field ((datatype Text) (default "frame_path")))
-      (description_field ((datatype Text) (default "description")))
+      (label (
+        (datatype Text)
+        (default "Gallery Resource")
+      ))
+      (title_field (
+        (datatype Text)
+        (default title)
+      ))
+      (image_field (
+        (datatype Text)
+        (default frame_path)
+      ))
+      (description_field (
+        (datatype Text)
+        (default description)
+      ))
     ))
   ))
 )
@@ -34,9 +79,30 @@
   (id gallery.curate_resource.python)
   (label "Gallery Curation Operation / Python")
   (implementation python.callable)
-  (inputs ((items Array)))
-  (outputs ((gallery Object)))
-  (python ((importMode file) (file python/collection_operations.py) (callable curate_gallery_resource)))
-  (parameters ((outputBinding gallery) (label "Gallery Resource") (title_field "title") (image_field "frame_path") (description_field "description")))
-  (parents ([] gallery.curate_resource))
+  (inputs (
+    (items Array)
+  ))
+  (outputs (
+    (gallery Object)
+  ))
+  (python (
+    (importMode file)
+    (file python/collection_operations.py)
+    (callable curate_gallery_resource)
+  ))
+  (parameters (
+    (outputBinding gallery)
+    (label "Gallery Resource")
+    (title_field title)
+    (image_field frame_path)
+    (description_field description)
+  ))
+  (implements (
+    (gallery.curate_resource (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
+  ))
 )

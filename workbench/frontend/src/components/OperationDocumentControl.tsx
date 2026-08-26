@@ -1,5 +1,5 @@
 import { OperationPlayground } from "./OperationPlayground";
-import { relationshipIds } from "./resourceRelationships";
+import { relationshipIds, specializationInheritanceMap, specializesResource } from "./resourceRelationships";
 import { jsonValueToMetta } from "../lib/mettaResourceCodec";
 
 export type ModelStrategy = "single" | "parallel" | "compare" | "fallback";
@@ -7,26 +7,28 @@ export type ModelStrategy = "single" | "parallel" | "compare" | "fallback";
 export type OperationDef = {
   kind: "operation";
   id: string;
-  parents?: string[];
+  implements?: Record<string, unknown>;
   label?: string;
   description?: string;
   categories?: string[];
+  topics?: string[];
   enabled?: boolean;
   role?: string;
   implementation?: string;
   inputs?: Record<string, string>;
   outputs?: Record<string, string>;
-  children?: string[];
-  preferredChild?: string;
+  specializations?: Record<string, unknown>;
+  preferredSpecialization?: string;
 };
 
 export type OperationImplementationDef = {
   kind: "operation";
   id: string;
-  parents: string[];
+  implements: Record<string, unknown>;
   label?: string;
   description?: string;
   categories?: string[];
+  topics?: string[];
   enabled?: boolean;
   implementation: string;
   inputs?: Record<string, string>;
@@ -69,13 +71,15 @@ export type OperationSuperControlRequest = {
   secondary: boolean;
   busy: boolean;
   variants: OperationImplementationDef[];
-  parentOperation?: OperationDef | null;
+  implementedOperation?: OperationDef | null;
+  relatedResources: OperationResource[];
   models: OperationModelChoice[];
   prompts: OperationPromptChoice[];
   promptProfiles: OperationPromptProfileChoice[];
   onChange: (value: string) => void;
   onSave: () => void;
   onToggleEnabled?: () => void;
+  onCreateSpecialization?: () => void;
 };
 
 export function parseOperationResource(source: string): OperationResource | null {
@@ -88,7 +92,7 @@ export function parseOperationResource(source: string): OperationResource | null
 
 export function describeOperationDocument(source: string, fallback: string) {
   const document = parseOperationResource(source);
-  const isImplementation = Boolean(document && relationshipIds(document.parents).length);
+  const isImplementation = Boolean(document && relationshipIds(document.implements).length);
   return {
     document,
     isImplementation,
@@ -99,7 +103,7 @@ export function describeOperationDocument(source: string, fallback: string) {
 
 export function OperationDocumentControl({ request }: { request: OperationSuperControlRequest }) {
   const document = parseOperationResource(request.source);
-  const isImplementation = Boolean(document && relationshipIds(document.parents).length);
+  const isImplementation = Boolean(document && relationshipIds(document.implements).length);
   const abstract = document && !isImplementation ? document as OperationDef : null;
   const selectedImplementation = document && isImplementation ? document as OperationImplementationDef : null;
   const selectedModels = selectedImplementation?.modelSelection?.models || [];
@@ -121,10 +125,11 @@ export function OperationDocumentControl({ request }: { request: OperationSuperC
   };
   const setDefaultImplementation = (id: string) => {
     if (!abstract) return;
-    const children = abstract.children?.length
-      ? abstract.children
-      : request.variants.map(variant => variant.id);
-    patchAbstract({ preferredChild: id || undefined, children });
+    const declared = specializationInheritanceMap(abstract.specializations);
+    const specializations = Object.keys(declared).length
+      ? declared
+      : Object.assign({}, ...request.variants.map(variant => specializesResource(variant.id)));
+    patchAbstract({ preferredSpecialization: id || undefined, specializations });
   };
   const patchImplementation = (patch: Partial<OperationImplementationDef>) => {
     if (selectedImplementation) request.onChange(JSON.stringify({ ...selectedImplementation, ...patch }, null, 2));
@@ -184,7 +189,7 @@ export function OperationDocumentControl({ request }: { request: OperationSuperC
         <div>
           <span>DEFAULT IMPLEMENTATION</span>
           <select
-            value={directRoute ? abstract.id : abstract.preferredChild || ""}
+            value={directRoute ? abstract.id : abstract.preferredSpecialization || ""}
             disabled={Boolean(directRoute)}
             onChange={event => setDefaultImplementation(event.target.value)}
           >
@@ -220,7 +225,7 @@ export function OperationDocumentControl({ request }: { request: OperationSuperC
     </>}
     {selectedImplementation && <div className="implementation-summary">
       <div><span>ROUTE</span><b>{selectedImplementation.implementation}</b></div>
-      <div><span>IMPLEMENTS</span><b>{relationshipIds(selectedImplementation.parents).join(", ")}</b></div>
+      <div><span>IMPLEMENTS</span><b>{relationshipIds(selectedImplementation.implements).join(", ")}</b></div>
       {selectedImplementation.python && <div className="wide">
         <span>PYTHON SOURCE</span>
         <code>
@@ -238,10 +243,10 @@ export function OperationDocumentControl({ request }: { request: OperationSuperC
         <code>{jsonValueToMetta(selectedImplementation.metta)}</code>
       </div>}
     </div>}
-    {selectedImplementation && request.parentOperation && <OperationPlayground
-      key={`${request.parentOperation.id}:${selectedImplementation.id}`}
+    {selectedImplementation && request.implementedOperation && <OperationPlayground
+      key={`${request.implementedOperation.id}:${selectedImplementation.id}`}
       workspaceId={request.workspaceId}
-      operation={request.parentOperation}
+      operation={request.implementedOperation}
       variants={[selectedImplementation]}
       models={request.models.map(model => ({ id: model.id, label: model.label, enabled: model.enabled }))}
     />}
