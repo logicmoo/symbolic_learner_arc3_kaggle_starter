@@ -308,8 +308,10 @@ ensures the process is running (spawning it on demand, idempotently) before
 returning an empty router. Its `install`/`plugin-install` phase is a
 standalone install of its own nested project (its own
 `requirements.txt`/`pyproject.toml`, its own venv), not something the
-workbench installs on its behalf. `llm_task_harness` has no standalone mode
-and is always embedded, so it needs the workbench startup/shutdown phases (it
+workbench installs on its behalf. `pycoplex` is dual-mode: its embedded router
+always registers, and by default it also launches a standalone mirror of the
+same routes on its own port behind the `/pycoplex` mount, so it uses the
+workbench startup/shutdown phases (it
 already implements `initialize` for the first) but is not workspace-scoped
 today. `web_proxy` is the one plugin that is *inherently* embedded-only —
 described in its own manifest as only adding routes to whichever process

@@ -96,7 +96,7 @@ Repository = "https://github.com/logicmoo/symbolic_learner_arc3_kaggle_starter"
 Issues = "https://github.com/logicmoo/symbolic_learner_arc3_kaggle_starter/issues"
 
 [tool.setuptools]
-packages = ["llm_task_harness", "object_memory", "webui", "worldworkbench", "worldworkbench.adapters"]
+packages = ["pycoplex", "object_memory", "webui", "worldworkbench", "worldworkbench.adapters"]
 py-modules = [
   "action_tree",
   "arc3_runner",
@@ -127,11 +127,11 @@ include-package-data = true
 
 [tool.setuptools.package-dir]
 "" = "python"
-llm_task_harness = "workbench/plugins/llm_task_harness"
+pycoplex = "workbench/plugins/pycoplex"
 webui = "webui"
 
 [tool.setuptools.package-data]
-llm_task_harness = ["plugin.json", "README.md", "static/*.html"]
+pycoplex = ["plugin.json", "README.md", "static/*.html"]
 webui = ["static/*.html"]
 
 [tool.pytest.ini_options]

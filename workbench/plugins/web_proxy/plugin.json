@@ -13,18 +13,23 @@
   "allowedTargets": [
     "*://127.0.0.1:*/*"
   ],
+  "plugin-init": [],
+  "servicesEndpoint": {
+    "path": "/api/plugins/web_proxy/endpoints",
+    "description": "Workbench enumerator of the proxy's own routes and every mount it serves. web_proxy is the proxy itself -- the one plugin that is never proxied."
+  },
   "mounts": [
     {
-      "path": "/ws_collab",
-      "redirect": "http://127.0.0.1:8802",
-      "description": "Redirects /ws_collab to the Workspace Collab plugin.",
-      "requestedBy": "ws_collab"
+      "path": "/pycoplex",
+      "redirect": "http://127.0.0.1:8850",
+      "description": "Redirects /pycoplex to the standalone harness server (same routes as the embedded router, on its own port).",
+      "requestedBy": "pycoplex"
     },
     {
-      "path": "/llm_emul",
-      "redirect": "http://127.0.0.1:8801/llm_emul",
-      "description": "Redirects /llm_emul to the Workspace Emulation Router plugin.",
-      "requestedBy": "emullm"
+      "path": "/coplex",
+      "redirect": "http://127.0.0.1:8840",
+      "description": "Redirects /coplex to the standalone swipl REST server (prolog/coplex_server.pl).",
+      "requestedBy": "coplex"
     },
     {
       "path": "/emullm",
@@ -37,6 +42,12 @@
       "redirect": "http://127.0.0.1:46667",
       "description": "Redirects /mailbox_chat to the Mailbox Chat relay.",
       "requestedBy": "mailbox_chat"
+    },
+    {
+      "path": "/ws_collab",
+      "redirect": "http://127.0.0.1:8802",
+      "description": "Redirects /ws_collab to the Workspace Collab plugin.",
+      "requestedBy": "ws_collab"
     }
   ],
   "plugin-lifecycle": {
@@ -55,7 +66,7 @@
       "workspaceShutdown": null,
       "workspaceShutdownAfter": null
     },
-    "note": "Has no standalone process of its own -- it only adds routes to whichever process embeds it, so it needs the workbench startup/shutdown phases but is not workspace-scoped. workbenchStartupAfter (apply_plugin_init) is the one 'everyone's turn is done' hook actually wired up today: it runs once every plugin has loaded and declared its plugin-init requests, and mounts each one -- this is how /ws_collab, /llm_emul, and /mailbox_chat get proxied without web_proxy knowing about those plugins in advance."
+    "note": "Has no standalone process of its own -- it only adds routes to whichever process embeds it, so it needs the workbench startup/shutdown phases but is not workspace-scoped. workbenchStartupAfter (apply_plugin_init) is the one 'everyone's turn is done' hook actually wired up today: it runs once every plugin has loaded and declared its plugin-init requests, and mounts each one -- this is how /ws_collab, /emullm, and /mailbox_chat get proxied without web_proxy knowing about those plugins in advance."
   },
   "plugin-api": {
     "status": {

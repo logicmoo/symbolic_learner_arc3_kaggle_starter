@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent as ReactMouseEvent } from "react";
 import { MarkdownDocument } from "./MarkdownDocument";
 import { SuperControl, type StandardSuperControlRequest } from "./UniversalArtifactEditor";
 import { jsonDocumentToMetta, mettaDocumentToJson } from "../lib/mettaResourceCodec";
@@ -138,6 +138,8 @@ export type MailboxOption = {
   lastReadMessageId?: string | null;
   nextUnreadMessageId?: string | null;
   server?: string;
+  serverProtocol?: string;
+  serverAddress?: string;
   name?: string | null;
   global_name?: string | null;
   origin?: string;
@@ -145,6 +147,155 @@ export type MailboxOption = {
 
 type MailboxSortMode = "name" | "activity-minute" | "activity-hour" | "unread";
 type MailboxOpenMode = "last-read" | "end-mark-read";
+
+// Every plugin server that declares a top-level `mailboxEndpoint` in its
+// plugin.json is queried for its mailbox list; ws_collab is only the fallback
+// when the catalog is unreachable or nothing declares the ws_collab protocol.
+// The same catalog pass also collects each plugin's `servicesEndpoint` (the
+// Services tab) and any declared websocket (the WebSockets tab).
+const WS_COLLAB_MAILBOX_BASE = "/ws_collab/v1/mailbox";
+type MailboxServerEndpoint = { plugin: string; address: string; protocol: string };
+type PluginServiceEndpoint = { plugin: string; address: string; description: string };
+type PluginWebsocketEndpoint = { plugin: string; address: string; source: "declared" | "scanned" | "manual" };
+
+// Minimum adjustable column width (px) for the list tabs; Ctrl+Alt+Plus
+// snaps every column down to this.
+const SOURCE_COL_MIN = 56;
+
+// URL-addressable names for the chat pane's static tabs (?subview=<Name>).
+const SUBVIEW_BY_TAB: Record<string, string> = {
+  chat: "Chat",
+  file: "File",
+  sources: "Sources",
+  mailboxes: "Mailboxes",
+  services: "Services",
+  apis: "Endpoints",
+  websockets: "WebSockets",
+  configfiles: "ConfigFiles",
+  chatgroups: "ChatGroups",
+  config: "SourceProperties",
+};
+type PluginEndpointCatalog = {
+  directories: MailboxServerEndpoint[];
+  services: PluginServiceEndpoint[];
+  websockets: PluginWebsocketEndpoint[];
+  configs: PluginConfigFile[];
+};
+// One discovered configuration file: the root plugins.json or a plugin.json.
+// These are the pipeline's start — they declare the services, endpoints,
+// websockets, and mailbox directories every other list is built from.
+type PluginConfigFile = {
+  plugin: string;
+  path: string;
+  scan: string;
+  loaded: boolean;
+  error: string;
+  label: string;
+  declares: string[];
+  manifest: Record<string, unknown>;
+};
+
+/** file:// URI for an absolute filesystem path (Windows drive paths included). */
+function fileUri(path: string): string {
+  return `file:///${path.replace(/\\/g, "/").replace(/^\/+/, "")}`;
+}
+
+async function discoverPluginEndpoints(): Promise<PluginEndpointCatalog> {
+  const catalog: PluginEndpointCatalog = { directories: [], services: [], websockets: [], configs: [] };
+  try {
+    const payload = await readJson(await fetch("/api/plugins"));
+    const policyPath = String(payload.policyPath || "");
+    if (policyPath) {
+      catalog.configs.push({
+        plugin: "plugins.json",
+        path: policyPath,
+        scan: "root",
+        loaded: true,
+        error: "",
+        label: "workbench plugin registry",
+        declares: ["startupScan", "skipScan", "pluginsFound"],
+        manifest: { policyPath },
+      });
+    }
+    for (const plugin of (payload.plugins as Array<Record<string, unknown>>) || []) {
+      const id = String(plugin.id || "");
+      const mailbox = plugin.mailboxEndpoint as Record<string, unknown> | null | undefined;
+      const address = mailbox && typeof mailbox.address === "string" ? mailbox.address : "";
+      if (address) {
+        catalog.directories.push({
+          plugin: id || address,
+          address,
+          protocol: String(mailbox?.protocol || "ws_collab"),
+        });
+        const websocket = mailbox && typeof mailbox.websocket === "string" ? mailbox.websocket : "";
+        if (websocket) catalog.websockets.push({ plugin: id || address, address: websocket, source: "declared" });
+      }
+      const services = plugin.servicesEndpoint as Record<string, unknown> | null | undefined;
+      const servicesAddress = services && typeof services.address === "string" ? services.address : "";
+      if (servicesAddress) {
+        catalog.services.push({
+          plugin: id || servicesAddress,
+          address: servicesAddress,
+          description: String(services?.description || ""),
+        });
+      }
+      const declares = [
+        ...(address ? ["mailboxEndpoint"] : []),
+        ...(mailbox && typeof mailbox.websocket === "string" && mailbox.websocket ? ["websocket"] : []),
+        ...(servicesAddress ? ["servicesEndpoint"] : []),
+      ];
+      catalog.configs.push({
+        plugin: id || String(plugin.path || "?"),
+        path: String(plugin.path || ""),
+        scan: String(plugin.scan || ""),
+        loaded: Boolean(plugin.loaded),
+        error: String(plugin.error || ""),
+        label: String(plugin.label || id),
+        declares,
+        manifest: plugin,
+      });
+    }
+  } catch {
+    // Catalog discovery is best-effort; the ws_collab fallback below still answers.
+  }
+  if (!catalog.directories.some((endpoint) => endpoint.protocol === "ws_collab")) {
+    catalog.directories.unshift({ plugin: "ws_collab", address: `${WS_COLLAB_MAILBOX_BASE}/mailboxes`, protocol: "ws_collab" });
+  }
+  return catalog;
+}
+
+async function discoverMailboxEndpoints(): Promise<MailboxServerEndpoint[]> {
+  return (await discoverPluginEndpoints()).directories;
+}
+
+/** A path names a websocket when it ends with `ws` preceded by a non-letter (…/ws, …_ws, …-ws) or uses a ws(s):// scheme. */
+function looksLikeWebsocketPath(path: string): boolean {
+  const bare = path.split("?")[0].trim();
+  return /^wss?:\/\//i.test(bare) || /[^a-zA-Z]ws$/i.test(bare);
+}
+
+/** The address to hand to `new WebSocket(...)`: ws(s):// kept verbatim, paths joined to this origin. */
+function websocketConnectUrl(address: string): string {
+  if (/^wss?:\/\//i.test(address)) return address;
+  const scheme = window.location.protocol === "https:" ? "wss:" : "ws:";
+  return `${scheme}//${window.location.host}${address.startsWith("/") ? address : `/${address}`}`;
+}
+
+/** Normalize one service-list entry (endpoints/tools/services shapes) for display. */
+function serviceEntryParts(entry: Record<string, unknown>, index: number): { method: string; path: string; description: string } {
+  const method = Array.isArray(entry.methods)
+    ? (entry.methods as unknown[]).join(",")
+    : String(entry.method || entry.kind || entry.risk || "GET");
+  const path = String(entry.path || entry.url || entry.name || `entry-${index}`);
+  return { method: method.toUpperCase(), path, description: String(entry.description || "") };
+}
+
+/** Sibling-route base (…/messages, …/cursor) for a mailbox's server; null for directory-only protocols. */
+function mailboxApiBase(option: MailboxOption | null | undefined): string | null {
+  if (!option || !option.serverAddress) return WS_COLLAB_MAILBOX_BASE;
+  if ((option.serverProtocol || "ws_collab") !== "ws_collab") return null;
+  return String(option.serverAddress).replace(/\/mailboxes(?:\?.*)?$/, "");
+}
 type FieldCacheConfig = {
   defaultLimit: number | null;
   records: Record<string, Record<string, unknown>>;
@@ -354,7 +505,7 @@ export function ChatConversation({
   const [mergeMailboxes, setMergeMailboxes] = useState<string[]>([]);
   const [mergeMode, setMergeMode] = useState<"by-timestamp" | "sequential">("by-timestamp");
   const [mailboxSortMode, setMailboxSortMode] = useState<MailboxSortMode>("activity-hour");
-  const [mailboxGroupField, setMailboxGroupField] = useState("server");
+  const [mailboxGroupField, setMailboxGroupField] = useState("kind");
   const [mailboxOpenMode, setMailboxOpenMode] = useState<MailboxOpenMode>("last-read");
   const [advanceCursorOnView, setAdvanceCursorOnView] = useState(false);
   const [showMailboxListSettings, setShowMailboxListSettings] = useState(false);
@@ -514,7 +665,38 @@ export function ChatConversation({
   const [entryEditBusy, setEntryEditBusy] = useState(false);
   // "Chat" vs "File" tab: the File tab shows the entire visible stream as an
   // editable JSON/MeTTa document (a snapshot of the records currently in view).
-  const [paneTab, setPaneTab] = useState<"chat" | "file" | "config">("chat");
+  // Static tabs plus one dynamic tab per opened "dodad" (a stream, service
+  // directory, or websocket connection); dynamic tabs are closeable.
+  // The selected static tab is mirrored into the page URL as
+  // ?subview=<Name> and honored again on a fresh load or back/forward.
+  const [paneTab, setPaneTab] = useState<string>(() => {
+    if (typeof window === "undefined") return "sources";
+    const wanted = (new URLSearchParams(window.location.search).get("subview") || "").trim().toLowerCase();
+    const match = Object.entries(SUBVIEW_BY_TAB).find(([, label]) => label.toLowerCase() === wanted);
+    return match ? match[0] : "sources";
+  });
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    const label = SUBVIEW_BY_TAB[paneTab];
+    if (label) url.searchParams.set("subview", label);
+    else url.searchParams.delete("subview"); // dynamic tabs are not addressable
+    if (url.href !== window.location.href) window.history.replaceState(window.history.state, "", url);
+  }, [paneTab]);
+  useEffect(() => {
+    const onPop = () => {
+      const wanted = (new URLSearchParams(window.location.search).get("subview") || "").trim().toLowerCase();
+      const match = Object.entries(SUBVIEW_BY_TAB).find(([, label]) => label.toLowerCase() === wanted);
+      if (match) setPaneTab(match[0]);
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+  type DynamicPane = { key: string; kind: string; label: string; address?: string; streamId?: string; plugin?: string };
+  const [dynamicPanes, setDynamicPanes] = useState<DynamicPane[]>([]);
+  // Multiselect in the Sources tab: double-click opens one stream; the
+  // checked set can be monitored together (first = viewed, rest merged).
+  const [sourceSelection, setSourceSelection] = useState<string[]>([]);
   const [streamFileText, setStreamFileText] = useState("");
   const [streamFileBaseline, setStreamFileBaseline] = useState("");
   const [streamFileNote, setStreamFileNote] = useState("");
@@ -553,6 +735,35 @@ export function ChatConversation({
     setMailboxSelectionRevision((revision) => revision + 1);
   }, [mailboxOpenMode]);
 
+  // Sources tab interactions: single click toggles membership in the
+  // multiselect, double-click opens one stream immediately, and "Monitor"
+  // turns the checked set into the viewed mailbox + merged rows so the same
+  // selection lands in the MAILBOX combobox and ＋Mailbox rows.
+  const toggleSourceSelection = useCallback((id: string) => {
+    setSourceSelection((current) => current.includes(id)
+      ? current.filter((entry) => entry !== id)
+      : [...current, id]);
+  }, []);
+  const openSource = useCallback((id: string) => {
+    selectMailbox(id);
+    setMergeMailboxes([]);
+    setSourceSelection([id]);
+    setPaneTab("chat");
+  }, [selectMailbox]);
+  const monitorSelectedSources = useCallback(() => {
+    const picked = sourceSelection;
+    if (!picked.length) return;
+    selectMailbox(picked[0]);
+    setMergeMailboxes(picked.slice(1));
+    setPaneTab("chat");
+  }, [sourceSelection, selectMailbox]);
+
+  // Dynamic tabs: opening any list item spawns (or focuses) its own tab.
+  const openDynamicPane = useCallback((pane: { key: string; kind: string; label: string; address?: string; streamId?: string; plugin?: string }) => {
+    setDynamicPanes((current) => current.some((entry) => entry.key === pane.key) ? current : [...current, pane]);
+    setPaneTab(pane.key);
+  }, []);
+
   // Once the directory has loaded, ensure the viewed mailbox is a real stream.
   // A fresh workspace opens on the peer identity ("symbolic-workbench-user"),
   // which is not a stream and shows nothing — fall back to the shared
@@ -565,6 +776,31 @@ export function ChatConversation({
     if (preferred) setMailbox(preferred);
   }, [mailboxes, mailbox]);
 
+  // Ref so fetchMessages can resolve a mailbox's server base without
+  // re-creating its callback whenever the directory refreshes.
+  const mailboxesRef = useRef<MailboxOption[]>([]);
+  useEffect(() => { mailboxesRef.current = mailboxes; }, [mailboxes]);
+  const [directoryRefreshing, setDirectoryRefreshing] = useState(false);
+  // Mailbox directory servers discovered from the plugin catalog (each plugin
+  // declaring a mailboxEndpoint) — the combo starts with these and the person
+  // can query one directory or all of them.
+  const [directorySources, setDirectorySources] = useState<MailboxServerEndpoint[]>([]);
+  const [directorySource, setDirectorySource] = useState<string>("all");
+  // Plugin services + websockets enumerated once from the catalog for the
+  // Services and WebSockets tabs.
+  const [pluginServices, setPluginServices] = useState<PluginServiceEndpoint[]>([]);
+  const [pluginWebsockets, setPluginWebsockets] = useState<PluginWebsocketEndpoint[]>([]);
+  // The configuration files (plugins.json + every plugin.json) the whole
+  // pipeline starts from — they declare the services/endpoints/websockets.
+  const [pluginConfigs, setPluginConfigs] = useState<PluginConfigFile[]>([]);
+  useEffect(() => {
+    void discoverPluginEndpoints().then((catalog) => {
+      setPluginServices(catalog.services);
+      setPluginWebsockets(catalog.websockets);
+      setPluginConfigs(catalog.configs);
+    });
+  }, []);
+
   const fetchDirectory = useCallback(async () => {
     try {
       const needActivity = mailboxSortMode === "activity-minute" || mailboxSortMode === "activity-hour";
@@ -576,27 +812,62 @@ export function ChatConversation({
       // (legacy/other-plugin mailboxes) — so no plugin's mailboxes are dropped
       // just because another plugin also answered.
       const emptyMailboxes = { mailboxes: [] } as Record<string, unknown>;
-      const [agentPayload, relayMailboxPayload, apiMailboxPayload] = await Promise.all([
-        readJson(await fetch("/ws_collab/v1/mailbox/agents")),
-        fetch(`/ws_collab/v1/mailbox/mailboxes?${directoryParams.toString()}`)
-          .then(readJson)
-          .catch(() => emptyMailboxes),
-        fetch(`/api/mailbox/mailboxes?agent=${encodeURIComponent(personalCursor)}`)
-          .then(readJson)
-          .catch(() => emptyMailboxes),
+      // Ask every plugin server that declares a `mailboxEndpoint` for its
+      // mailbox list, plus the core /api mailbox surface, so no server's
+      // mailboxes are dropped just because another server also answered.
+      const endpoints = await discoverMailboxEndpoints();
+      setDirectorySources((current) => {
+        const merged = new Map(current.map((entry) => [entry.plugin, entry]));
+        for (const entry of endpoints) merged.set(entry.plugin, entry);
+        return [...merged.values()];
+      });
+      const queried = directorySource === "all"
+        ? endpoints
+        : endpoints.filter((endpoint) => endpoint.plugin === directorySource);
+      const includeCore = directorySource === "all" || directorySource === "workbench";
+      const [agentPayload, apiMailboxPayload, ...serverPayloads] = await Promise.all([
+        fetch("/ws_collab/v1/mailbox/agents").then(readJson).catch(() => ({ agents: [] } as Record<string, unknown>)),
+        includeCore
+          ? fetch(`/api/mailbox/mailboxes?agent=${encodeURIComponent(personalCursor)}`)
+            .then(readJson)
+            .catch(() => emptyMailboxes)
+          : Promise.resolve(emptyMailboxes),
+        ...queried.map((endpoint) =>
+          fetch(`${endpoint.address}${endpoint.address.includes("?") ? "&" : "?"}${directoryParams.toString()}`)
+            .then(readJson)
+            .catch(() => emptyMailboxes)),
       ]);
       setAgents((agentPayload.agents as AgentOption[]) || []);
       const combined = new Map<string, MailboxOption>();
-      // Apply the core/legacy source first, then let the ws_collab relay (the
-      // richer, live source) win on id collisions.
-      for (const option of (apiMailboxPayload.mailboxes as MailboxOption[]) || []) combined.set(option.id, option);
-      for (const option of (relayMailboxPayload.mailboxes as MailboxOption[]) || []) combined.set(option.id, option);
+      // Core /api mailboxes first; each declaring plugin server then refines or
+      // adds entries (later servers win id collisions but keep earlier
+      // metadata). Every option is tagged with the server it came from.
+      for (const option of (apiMailboxPayload.mailboxes as MailboxOption[]) || []) {
+        if (option && typeof option.id === "string" && option.id) {
+          combined.set(option.id, { ...option, server: option.server ? String(option.server) : "workbench" });
+        }
+      }
+      queried.forEach((endpoint, index) => {
+        const raw = (serverPayloads[index]?.mailboxes as unknown[]) || [];
+        for (const entry of raw) {
+          const option = (typeof entry === "string" ? { id: entry } : entry) as MailboxOption;
+          if (!option || typeof option.id !== "string" || !option.id) continue;
+          combined.set(option.id, {
+            ...(combined.get(option.id) || {}),
+            ...option,
+            server: option.server ? String(option.server) : endpoint.plugin,
+            serverProtocol: endpoint.protocol,
+            serverAddress: endpoint.address,
+          });
+        }
+      });
       const enriched = await Promise.all([...combined.values()].map(async (option) => {
         let next = option;
-        if (typeof next.unread !== "number") {
+        const base = mailboxApiBase(option);
+        if (base && typeof next.unread !== "number") {
           try {
             const query = `mailbox=${encodeURIComponent(option.id)}&agent=${encodeURIComponent(personalCursor)}`;
-            const cursor = await readJson(await fetch(`/ws_collab/v1/mailbox/cursor?${query}`)) as unknown as CursorInfo;
+            const cursor = await readJson(await fetch(`${base}/cursor?${query}`)) as unknown as CursorInfo;
             next = {
               ...next,
               unread: cursor.behind,
@@ -609,9 +880,9 @@ export function ChatConversation({
             // Keep directory metadata when the relay has no cursor endpoint.
           }
         }
-        if (needActivity && typeof next[mailboxSortMode === "activity-minute" ? "activityPerMinute" : "activityPerHour"] !== "number") {
+        if (base && needActivity && typeof next[mailboxSortMode === "activity-minute" ? "activityPerMinute" : "activityPerHour"] !== "number") {
           try {
-            const payload = await readJson(await fetch(`/ws_collab/v1/mailbox/messages?mailbox=${encodeURIComponent(option.id)}&limit=300`));
+            const payload = await readJson(await fetch(`${base}/messages?mailbox=${encodeURIComponent(option.id)}&limit=300`));
             const records = (payload.messages as ChatMessage[]) || [];
             const now = Date.now();
             const timestamps = records.map((message) => new Date(message.timestamp || "").getTime()).filter(Number.isFinite);
@@ -666,7 +937,18 @@ export function ChatConversation({
     } catch {
       // Directory is best-effort; keep whatever we already have.
     }
-  }, [mailboxSortMode, personalCursor]);
+  }, [mailboxSortMode, personalCursor, directorySource]);
+
+  // Manual refresh of the mailbox directory (re-queries every declaring
+  // plugin server); the 15s poll keeps running independently.
+  const refreshDirectory = useCallback(async () => {
+    setDirectoryRefreshing(true);
+    try {
+      await fetchDirectory();
+    } finally {
+      setDirectoryRefreshing(false);
+    }
+  }, [fetchDirectory]);
 
   // Debounce the text expression so typing doesn't refetch per keystroke.
   useEffect(() => {
@@ -688,7 +970,11 @@ export function ChatConversation({
       };
       const batches = await Promise.all(
         viewed.map(async (mb) => {
-          const payload = await readJson(await fetch(`/ws_collab/v1/mailbox/messages?${buildParams(mb).toString()}`));
+          const option = mailboxesRef.current.find((candidate) => candidate.id === mb);
+          const base = mailboxApiBase(option);
+          // Directory-only servers (e.g. registry protocol) expose no browsable stream.
+          if (!base) return [] as ChatMessage[];
+          const payload = await readJson(await fetch(`${base}/messages?${buildParams(mb).toString()}`));
           const msgs = (payload.messages as ChatMessage[]) || [];
           // Tag each message with the stream it came from so placement/color can
           // lane by stream name regardless of what the server stamped.
@@ -727,6 +1013,176 @@ export function ChatConversation({
     const timer = window.setInterval(fetchDirectory, 15000);
     return () => window.clearInterval(timer);
   }, [fetchDirectory]);
+
+  // ---- Services tab: enumerate every plugin's servicesEndpoint entries ----
+  const [serviceEntries, setServiceEntries] = useState<Record<string, Array<Record<string, unknown>>>>({});
+  const [servicesBusy, setServicesBusy] = useState(false);
+  // Which kind of source the Sources tab lists: the union or one list.
+  const [sourceKind, setSourceKind] = useState<string>("all");
+  // Per-kind list-tab combos: which plugin's services/APIs, which ws origin.
+  const [serviceSource, setServiceSource] = useState<string>("all");
+  const [wsOrigin, setWsOrigin] = useState<string>("all");
+  // Draft for the per-tab "enter a source" input (ws URL, endpoint URL, or id).
+  const [sourceEntryDraft, setSourceEntryDraft] = useState("");
+  // Adjustable column widths for every list tab (px); null keeps the default
+  // fr grid. Ctrl+Alt+Plus collapses every column to the minimum width.
+  const [sourceColWidths, setSourceColWidths] = useState<number[] | null>(null);
+  useEffect(() => {
+    const onKey = (event: globalThis.KeyboardEvent) => {
+      if (event.ctrlKey && event.altKey && (event.key === "+" || event.key === "=" || event.code === "NumpadAdd")) {
+        event.preventDefault();
+        setSourceColWidths(Array(6).fill(SOURCE_COL_MIN));
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+  const startColumnResize = useCallback((event: ReactMouseEvent<HTMLElement>, index: number) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const head = (event.currentTarget as HTMLElement).closest(".chat-source-colhead");
+    if (!head) return;
+    const widths = sourceColWidths
+      ?? [...head.children].map((cell) => (cell as HTMLElement).getBoundingClientRect().width);
+    const startX = event.clientX;
+    const startWidth = widths[index];
+    const onMove = (move: MouseEvent) => {
+      const next = widths.slice();
+      next[index] = Math.max(SOURCE_COL_MIN, Math.round(startWidth + (move.clientX - startX)));
+      setSourceColWidths(next);
+    };
+    const onUp = () => {
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+    };
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+  }, [sourceColWidths]);
+  // Clickable column sort shared by every list tab.
+  const [sourceSort, setSourceSort] = useState<{ column: "type" | "name" | "endpoint" | "props" | "from" | "comment"; direction: 1 | -1 }>({ column: "name", direction: 1 });
+  const loadServiceEntries = useCallback(async (services: PluginServiceEndpoint[]) => {
+    setServicesBusy(true);
+    try {
+      const results = await Promise.all(services.map(async (service) => {
+        try {
+          const payload = await readJson(await fetch(service.address));
+          const list = (payload.endpoints || payload.tools || payload.services || []) as Array<Record<string, unknown>>;
+          return [service.plugin, Array.isArray(list) ? list : []] as const;
+        } catch {
+          return [service.plugin, []] as const;
+        }
+      }));
+      setServiceEntries(Object.fromEntries(results));
+      return results;
+    } finally {
+      setServicesBusy(false);
+    }
+  }, []);
+  useEffect(() => {
+    const wantsServices = ["services", "apis", "sources"].includes(paneTab)
+      || dynamicPanes.some((pane) => pane.kind === "service" && pane.key === paneTab);
+    if (wantsServices && pluginServices.length) void loadServiceEntries(pluginServices);
+  }, [paneTab, pluginServices, loadServiceEntries, dynamicPanes]);
+
+  // ---- WebSockets tab: declared websockets + a rescan that greps every
+  // plugin's service list for ws-looking paths (…/ws) or ws(s):// urls ----
+  const [websocketsBusy, setWebsocketsBusy] = useState(false);
+  const scanWebsockets = useCallback(async () => {
+    setWebsocketsBusy(true);
+    try {
+      const catalog = await discoverPluginEndpoints();
+      setPluginServices(catalog.services);
+      setPluginConfigs(catalog.configs);
+      const merged = new Map<string, PluginWebsocketEndpoint>();
+      for (const endpoint of catalog.websockets) merged.set(`${endpoint.plugin}:${endpoint.address}`, endpoint);
+      const results = await loadServiceEntries(catalog.services);
+      for (const [plugin, entries] of results) {
+        for (const [index, entry] of entries.entries()) {
+          for (const candidate of [String(entry.url || ""), String(entry.path || "")]) {
+            if (candidate && looksLikeWebsocketPath(candidate)) {
+              const key = `${plugin}:${candidate}`;
+              if (!merged.has(key)) merged.set(key, { plugin, address: candidate, source: "scanned" });
+              break;
+            }
+          }
+          void index;
+        }
+      }
+      setPluginWebsockets([...merged.values()]);
+    } finally {
+      setWebsocketsBusy(false);
+    }
+  }, [loadServiceEntries]);
+
+  // ---- Live websocket connections: any inbound frame refreshes the view ----
+  const websocketRefs = useRef<Record<string, WebSocket>>({});
+  const wsFramesRef = useRef<Record<string, Array<{ at: string; data: string }>>>({});
+  const [, setWsFramesVersion] = useState(0);
+  const [websocketStates, setWebsocketStates] = useState<Record<string, string>>({});
+  // Naming convention for each websocket log: the server's location plus who
+  // connected — "<address> ⇄ <agent>@<ip>#<connection-id>".
+  const clientIdentityRef = useRef<{ ip: string }>({ ip: "" });
+  useEffect(() => {
+    void fetch("/api/whoami").then(readJson).then((payload) => {
+      clientIdentityRef.current = { ip: String(payload.ip || "") };
+    }).catch(() => { /* log names fall back to the agent name alone */ });
+  }, []);
+  const [websocketLogNames, setWebsocketLogNames] = useState<Record<string, string>>({});
+  // Per-websocket-pane frame ordering: frames flow downward (chat-like,
+  // stick to bottom) unless the pane is switched to "add from top".
+  const [wsAddFromTop, setWsAddFromTop] = useState<Record<string, boolean>>({});
+  const toggleWebsocket = useCallback((endpoint: PluginWebsocketEndpoint) => {
+    const key = `ws:${endpoint.plugin}:${endpoint.address}`;
+    const existing = websocketRefs.current[key];
+    if (existing) {
+      try { existing.close(); } catch { /* already closing */ }
+      delete websocketRefs.current[key];
+      setWebsocketStates((current) => ({ ...current, [key]: "closed" }));
+      return;
+    }
+    try {
+      const socket = new WebSocket(websocketConnectUrl(endpoint.address));
+      const connectionId = Math.random().toString(16).slice(2, 6);
+      const who = `${personalCursor}${clientIdentityRef.current.ip ? `@${clientIdentityRef.current.ip}` : ""}#${connectionId}`;
+      setWebsocketLogNames((current) => ({ ...current, [key]: `${endpoint.address} ⇄ ${who}` }));
+      websocketRefs.current[key] = socket;
+      setWebsocketStates((current) => ({ ...current, [key]: "connecting" }));
+      socket.onopen = () => setWebsocketStates((current) => ({ ...current, [key]: "connected" }));
+      socket.onerror = () => setWebsocketStates((current) => ({ ...current, [key]: "error" }));
+      socket.onclose = () => {
+        delete websocketRefs.current[key];
+        setWebsocketStates((current) => ({ ...current, [key]: current[key] === "error" ? "error" : "closed" }));
+      };
+      let timer = 0;
+      socket.onmessage = (event) => {
+        const frames = wsFramesRef.current[key] || (wsFramesRef.current[key] = []);
+        frames.push({
+          at: new Date().toISOString(),
+          data: typeof event.data === "string" ? event.data.slice(0, 2000) : "[binary frame]",
+        });
+        if (frames.length > 300) frames.splice(0, frames.length - 300);
+        setWsFramesVersion((version) => version + 1);
+        window.clearTimeout(timer);
+        timer = window.setTimeout(() => { void fetchMessages(); void fetchDirectory(); }, 250);
+      };
+    } catch {
+      setWebsocketStates((current) => ({ ...current, [key]: "error" }));
+    }
+  }, [fetchMessages, fetchDirectory, personalCursor]);
+  const closeDynamicPane = useCallback((key: string) => {
+    setDynamicPanes((current) => current.filter((pane) => pane.key !== key));
+    const socket = websocketRefs.current[key];
+    if (socket) {
+      try { socket.close(); } catch { /* closing */ }
+      delete websocketRefs.current[key];
+    }
+    setPaneTab((current) => (current === key ? "sources" : current));
+  }, []);
+  useEffect(() => () => {
+    for (const socket of Object.values(websocketRefs.current)) {
+      try { socket.close(); } catch { /* shutting down */ }
+    }
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -1896,6 +2352,7 @@ export function ChatConversation({
     return [...fields, ...(named ? [named] : [])];
   }))];
   const groupFieldOptions = [
+    "kind",
     "server",
     mailboxGroupField,
     ...[...new Set(mailboxes.flatMap((option) => Object.entries(option)
@@ -1967,12 +2424,19 @@ export function ChatConversation({
   const describeStream = (id: string): StreamDescription => {
     const origin = mailboxOrigins.get(id) || "ws_collab";
     const option = mailboxById.get(id);
+    // Source kind mirrors the list tabs: disk-backed streams are configfiles,
+    // merges are chatgroups, everything else is a mailbox (or its own kind).
+    const streamKind = origin.startsWith("disk:") ? "configfile"
+      : origin.startsWith("merge:") ? "chatgroup"
+      : String(option?.kind || "mailbox");
     const cachedValues = mailboxDefinitionFields[id]?.[mailboxGroupField] || [];
-    const rawGroupValue = mailboxGroupField === "server"
-      ? mailboxServers.get(id) || originLabel(origin)
-      : mailboxGroupField === "origin"
-        ? originLabel(origin)
-        : option?.[mailboxGroupField] ?? (cachedValues.length ? cachedValues.join(" · ") : undefined);
+    const rawGroupValue = mailboxGroupField === "kind"
+      ? streamKind
+      : mailboxGroupField === "server"
+        ? mailboxServers.get(id) || originLabel(origin)
+        : mailboxGroupField === "origin"
+          ? originLabel(origin)
+          : option?.[mailboxGroupField] ?? (cachedValues.length ? cachedValues.join(" · ") : undefined);
     const groupValue = mailboxGroupField === "none" ? "All streams" : String(rawGroupValue ?? "(none)");
     return {
       label: mailboxLabel(id),
@@ -2005,7 +2469,20 @@ export function ChatConversation({
           <div className="chat-tabs chat-control--tabs" role="tablist">
             <button type="button" role="tab" aria-selected={paneTab === "chat"} className={`chat-tab${paneTab === "chat" ? " is-active" : ""}`} onClick={() => setPaneTab("chat")}>Chat</button>
             <button type="button" role="tab" aria-selected={paneTab === "file"} className={`chat-tab${paneTab === "file" ? " is-active" : ""}`} onClick={() => { if (paneTab !== "file") openStreamFile(); }}>File</button>
-            <button type="button" role="tab" aria-selected={paneTab === "config"} className={`chat-tab${paneTab === "config" ? " is-active" : ""}`} onClick={() => setPaneTab("config")}>Config</button>
+            <button type="button" role="tab" aria-selected={paneTab === "sources"} className={`chat-tab${paneTab === "sources" ? " is-active" : ""}`} onClick={() => setPaneTab("sources")}>Sources</button>
+            <button type="button" role="tab" aria-selected={paneTab === "configfiles"} className={`chat-tab${paneTab === "configfiles" ? " is-active" : ""}`} onClick={() => setPaneTab("configfiles")}>ConfigFiles</button>
+            <button type="button" role="tab" aria-selected={paneTab === "services"} className={`chat-tab${paneTab === "services" ? " is-active" : ""}`} onClick={() => setPaneTab("services")}>Services</button>
+            <button type="button" role="tab" aria-selected={paneTab === "apis"} className={`chat-tab${paneTab === "apis" ? " is-active" : ""}`} onClick={() => setPaneTab("apis")}>Endpoints</button>
+            <button type="button" role="tab" aria-selected={paneTab === "websockets"} className={`chat-tab${paneTab === "websockets" ? " is-active" : ""}`} onClick={() => setPaneTab("websockets")}>WebSockets</button>
+            <button type="button" role="tab" aria-selected={paneTab === "mailboxes"} className={`chat-tab${paneTab === "mailboxes" ? " is-active" : ""}`} onClick={() => setPaneTab("mailboxes")}>Mailboxes</button>
+            <button type="button" role="tab" aria-selected={paneTab === "chatgroups"} className={`chat-tab${paneTab === "chatgroups" ? " is-active" : ""}`} onClick={() => setPaneTab("chatgroups")}>ChatGroups</button>
+            <button type="button" role="tab" aria-selected={paneTab === "config"} className={`chat-tab${paneTab === "config" ? " is-active" : ""}`} onClick={() => setPaneTab("config")}>Source Properties</button>
+            {dynamicPanes.map((pane) => (
+              <span key={pane.key} className={`chat-tab chat-tab-dynamic${paneTab === pane.key ? " is-active" : ""}`}>
+                <button type="button" role="tab" aria-selected={paneTab === pane.key} onClick={() => setPaneTab(pane.key)}>{pane.label}</button>
+                <button type="button" className="chat-tab-close" aria-label={`Close ${pane.label}`} onClick={() => closeDynamicPane(pane.key)}>×</button>
+              </span>
+            ))}
             <label className="chat-autoscroll-stream-setting" title="Use an auto-scroll setting for this stream instead of the workspace default">
               <input
                 type="checkbox"
@@ -2066,8 +2543,15 @@ export function ChatConversation({
             <StreamPicker value={sendMailbox} ids={sendChoices} ariaLabel="Send mailbox" allowNone describe={describeStream} onChange={setSendMailbox} />
           </label>
           <label className="chat-control chat-mbrow chat-mailbox-primary">
-            <button type="button" className="chat-label" onClick={() => void inspectId("MAILBOX", mailbox)}>Mailbox</button>
-            <StreamPicker value={mailbox} ids={mailboxChoices} ariaLabel="Viewed mailbox" describe={describeStream} onChange={selectMailbox} />
+            <button
+              type="button"
+              className="chat-label"
+              title="Pick from the full Sources list (the combo beside this shows the same sources grouped by kind)"
+              onClick={() => setPaneTab("sources")}
+            >
+              Source
+            </button>
+            <StreamPicker value={mailbox} ids={mailboxChoices} ariaLabel="Viewed source" describe={describeStream} onChange={selectMailbox} />
             <span className="chat-mbrow-actions">
               {personalCursor && (
                 <span className="chat-mbrow-cursor" title={`Personal cursor for ${personalCursor} on this mailbox`}>
@@ -2081,6 +2565,22 @@ export function ChatConversation({
               <button type="button" className="chat-mbact" title="Move personal cursor to beginning" disabled={cursorBusy || !personalCursor} onClick={() => void moveCursor("beginning", mailbox)}>⏮</button>
               <button type="button" className="chat-mbact" title="Move personal cursor to now" disabled={cursorBusy || !personalCursor} onClick={() => void moveCursor("now", mailbox)}>⏭</button>
               <button type="button" className="chat-mbact" title="Remove cursor" disabled={cursorBusy || !(cursorInfo && cursorInfo.initialized)} onClick={() => void moveCursor("remove", mailbox)}>⌫</button>
+              <select
+                className="chat-directory-source"
+                title="Which plugin server's mailbox directory to query (list comes from the plugin catalog)"
+                aria-label="Mailbox directory server"
+                value={directorySource}
+                onChange={(event) => setDirectorySource(event.target.value)}
+              >
+                <option value="all" title="Query every directory server below">all directories</option>
+                <option value="workbench" title="/api/mailbox/mailboxes">workbench — /api/mailbox/mailboxes</option>
+                {directorySources.map((source) => (
+                  <option key={source.plugin} value={source.plugin} title={source.address}>
+                    {source.plugin} — {source.address}
+                  </option>
+                ))}
+              </select>
+              <button type="button" className={`chat-mbact${directoryRefreshing ? " active" : ""}`} title="Refresh the mailbox list from the selected directory server(s)" disabled={directoryRefreshing} onClick={() => void refreshDirectory()}>{directoryRefreshing ? "…" : "↻"}</button>
               <button type="button" className={`chat-mbact${showMailboxListSettings ? " active" : ""}`} aria-expanded={showMailboxListSettings} title="Arrange mailbox list" onClick={() => setShowMailboxListSettings((value) => !value)}>☷</button>
               <button type="button" className="chat-mbact" title="Show this mailbox's JSON (definition, members for a merge)" disabled={!mailbox} onClick={() => void inspectId("MAILBOX", mailbox)}>{"{ }"}</button>
             </span>
@@ -2523,7 +3023,20 @@ export function ChatConversation({
         <div className="chat-tabs" role="tablist">
           <button type="button" role="tab" aria-selected={paneTab === "chat"} className={`chat-tab${paneTab === "chat" ? " is-active" : ""}`} onClick={() => setPaneTab("chat")}>Chat</button>
           <button type="button" role="tab" aria-selected={paneTab === "file"} className={`chat-tab${paneTab === "file" ? " is-active" : ""}`} onClick={() => { if (paneTab !== "file") openStreamFile(); }}>File</button>
-          <button type="button" role="tab" aria-selected={paneTab === "config"} className={`chat-tab${paneTab === "config" ? " is-active" : ""}`} onClick={() => setPaneTab("config")}>Config</button>
+          <button type="button" role="tab" aria-selected={paneTab === "sources"} className={`chat-tab${paneTab === "sources" ? " is-active" : ""}`} onClick={() => setPaneTab("sources")}>Sources</button>
+          <button type="button" role="tab" aria-selected={paneTab === "configfiles"} className={`chat-tab${paneTab === "configfiles" ? " is-active" : ""}`} onClick={() => setPaneTab("configfiles")}>ConfigFiles</button>
+          <button type="button" role="tab" aria-selected={paneTab === "services"} className={`chat-tab${paneTab === "services" ? " is-active" : ""}`} onClick={() => setPaneTab("services")}>Services</button>
+          <button type="button" role="tab" aria-selected={paneTab === "apis"} className={`chat-tab${paneTab === "apis" ? " is-active" : ""}`} onClick={() => setPaneTab("apis")}>Endpoints</button>
+          <button type="button" role="tab" aria-selected={paneTab === "websockets"} className={`chat-tab${paneTab === "websockets" ? " is-active" : ""}`} onClick={() => setPaneTab("websockets")}>WebSockets</button>
+          <button type="button" role="tab" aria-selected={paneTab === "mailboxes"} className={`chat-tab${paneTab === "mailboxes" ? " is-active" : ""}`} onClick={() => setPaneTab("mailboxes")}>Mailboxes</button>
+          <button type="button" role="tab" aria-selected={paneTab === "chatgroups"} className={`chat-tab${paneTab === "chatgroups" ? " is-active" : ""}`} onClick={() => setPaneTab("chatgroups")}>ChatGroups</button>
+          <button type="button" role="tab" aria-selected={paneTab === "config"} className={`chat-tab${paneTab === "config" ? " is-active" : ""}`} onClick={() => setPaneTab("config")}>Source Properties</button>
+          {dynamicPanes.map((pane) => (
+            <span key={pane.key} className={`chat-tab chat-tab-dynamic${paneTab === pane.key ? " is-active" : ""}`}>
+              <button type="button" role="tab" aria-selected={paneTab === pane.key} onClick={() => setPaneTab(pane.key)}>{pane.label}</button>
+              <button type="button" className="chat-tab-close" aria-label={`Close ${pane.label}`} onClick={() => closeDynamicPane(pane.key)}>×</button>
+            </span>
+          ))}
         </div>
       )}
       {paneTab === "chat" && (
@@ -2609,14 +3122,475 @@ export function ChatConversation({
         ))}
       </div>
       )}
-      {paneTab === "file" && (
-        <div className="chat-filepane">
-          {streamFileNote&&<div className="chat-filepane-note">{streamFileNote}</div>}
-          <SuperControl appearance="embedded" control={streamSuperControl} className="chat-file-super-control" />
-        </div>
-      )}
-      {paneTab === "config" && (
-        <div className="chat-config" role="tabpanel" aria-label="Mailbox configuration">
+      {["sources", "mailboxes", "configfiles", "chatgroups", "services", "apis", "websockets"].includes(paneTab) && (() => {
+        // The Sources list is the union of every list the chat knows about:
+        // mailboxes (disk-backed ones tagged configfile, merges tagged
+        // chatgroup), plugin service directories (source-makers), the API
+        // entries those services published, and websockets. Every list tab is
+        // this same list — same columns everywhere — locked to one kind.
+        const forcedKind = paneTab === "mailboxes" ? "mailbox"
+          : paneTab === "configfiles" ? "configfile"
+          : paneTab === "chatgroups" ? "chatgroup"
+          : paneTab === "services" ? "service"
+          : paneTab === "apis" ? "endpoint"
+          : paneTab === "websockets" ? "websocket"
+          : sourceKind;
+        type SourceRow = {
+          id: string; label: string; kind: string; server: string;
+          fqn: string; unread?: number; streamId?: string; location: string;
+          props: string[]; comment: string; from: string; origin?: string; wsAddress?: string;
+        };
+        const serverLocation = (server: string): string => {
+          if (server === "workbench") return "/api/mailbox/mailboxes";
+          return directorySources.find((entry) => entry.plugin === server)?.address || server;
+        };
+        // The Endpoint column always shows a real URI/URL: http(s) for API
+        // paths, ws(s) for websockets, and scheme://rest for the workbench's
+        // internal disk:/merge: stream origins.
+        const toUri = (value: string): string => {
+          if (!value) return value;
+          if (value.startsWith("disk:")) return `disk://${value.slice(5).replace(/^\/+/, "")}`;
+          if (value.startsWith("merge:")) return `merge://${value.slice(6).replace(/^\/+/, "")}`;
+          if (/^[a-z][a-z0-9+.-]*:\/\//i.test(value)) return value;
+          return `${window.location.origin}${value.startsWith("/") ? value : `/${value}`}`;
+        };
+        const sizeEstimate = (record: Record<string, unknown>): string => {
+          const raw = Number(record.size ?? record.bytes ?? record.sizeBytes ?? record.approxBytes ?? NaN);
+          if (!Number.isFinite(raw) || raw <= 0) return "";
+          if (raw >= 1024 * 1024) return `~${(raw / (1024 * 1024)).toFixed(1)} MB`;
+          if (raw >= 1024) return `~${Math.round(raw / 1024)} KB`;
+          return `~${raw} B`;
+        };
+        const rows: SourceRow[] = [
+          // Pipeline start: the configuration files everything else is
+          // declared in. NOT built from the mailbox directory.
+          ...pluginConfigs.map((config): SourceRow => {
+            const manifestPath = config.scan === "root" || config.path.toLowerCase().endsWith(".json")
+              ? config.path
+              : `${config.path}\\plugin.json`;
+            return {
+              id: `config:${config.plugin}`,
+              label: config.plugin,
+              kind: "configfile",
+              server: config.plugin,
+              fqn: manifestPath,
+              location: fileUri(manifestPath),
+              props: [
+                config.scan === "root" ? "registry" : `scan ${config.scan || "startup"}`,
+                config.error ? "error" : config.loaded ? "loaded" : "not loaded",
+                ...config.declares,
+              ],
+              comment: config.error || config.label || `${config.plugin} manifest`,
+              from: config.scan === "root" ? "workbench" : "plugins.json startupScan",
+            };
+          }),
+          ...mailboxes.map((m): SourceRow => {
+            const origin = String(m.source || "");
+            const kind = origin.startsWith("merge:") ? "chatgroup" : String(m.kind || "mailbox");
+            const props: string[] = [];
+            const est = sizeEstimate(m as Record<string, unknown>);
+            if (est) props.push(est);
+            if (typeof m.messages === "number") props.push(`${m.messages} msgs`);
+            if (typeof m.unread === "number" && m.unread > 0) props.push(`unread ${m.unread}`);
+            if (typeof m.activityPerHour === "number" && m.activityPerHour > 0) props.push(`${m.activityPerHour}/h`);
+            if (m.writable === false) props.push("read-only");
+            if (m.serverProtocol && m.serverProtocol !== "ws_collab") props.push(String(m.serverProtocol));
+            const declaredComment = String((m as Record<string, unknown>).purpose || (m as Record<string, unknown>).description || "");
+            const comment = declaredComment
+              || (origin.startsWith("disk:") ? `disk-backed stream (${origin.slice(5)})`
+                : kind === "chatgroup" ? `merged view of ${origin.slice(6) || "several streams"}`
+                : `${kind} stream on ${String(m.server || "the workbench")}`);
+            return {
+              id: `stream:${m.id}`,
+              label: String(m.name || m.id),
+              kind,
+              server: String(m.server || ""),
+              fqn: String(m.global_name || `${String(m.server || "workbench")}/${m.id}`),
+              unread: typeof m.unread === "number" ? m.unread : undefined,
+              streamId: m.id,
+              location: toUri(origin.startsWith("disk:") || origin.startsWith("merge:") ? origin : serverLocation(String(m.server || ""))),
+              props,
+              comment,
+              from: `${String(m.server || "workbench")} directory`,
+            };
+          }),
+          ...pluginServices.map((service): SourceRow => ({
+            id: `service:${service.plugin}`,
+            label: `${service.plugin} services`,
+            kind: "service",
+            server: service.plugin,
+            fqn: `${service.plugin}${service.address}`,
+            location: toUri(service.address),
+            props: serviceEntries[service.plugin] ? [`${serviceEntries[service.plugin].length} endpoints`] : [],
+            comment: service.description || `source-maker: publishes ${service.plugin}'s endpoint list`,
+            from: "plugin catalog (servicesEndpoint)",
+          })),
+          ...pluginServices.flatMap((service): SourceRow[] =>
+            (serviceEntries[service.plugin] || []).map((entry, index) => {
+              const parts = serviceEntryParts(entry, index);
+              const est = sizeEstimate(entry);
+              const fqn = parts.path.startsWith(`/${service.plugin}/`) || parts.path === `/${service.plugin}`
+                ? parts.path.slice(1)
+                : `${service.plugin}${parts.path.startsWith("/") ? "" : "/"}${parts.path}`;
+              return {
+                id: `endpoint:${service.plugin}:${index}`,
+                label: parts.path,
+                kind: "endpoint",
+                server: service.plugin,
+                fqn,
+                location: toUri(parts.path),
+                props: [parts.method, ...(est ? [est] : [])].filter(Boolean),
+                comment: parts.description || `endpoint published by ${service.plugin}`,
+                from: `${service.plugin} services (${service.address})`,
+              };
+            })),
+          ...pluginWebsockets.map((endpoint): SourceRow => {
+            const key = `ws:${endpoint.plugin}:${endpoint.address}`;
+            return {
+              id: key,
+              label: endpoint.plugin,
+              kind: "websocket",
+              server: endpoint.plugin,
+              origin: endpoint.source,
+              fqn: /^wss?:\/\//i.test(endpoint.address) ? endpoint.address : `${endpoint.plugin}${endpoint.address}`,
+              location: websocketConnectUrl(endpoint.address),
+              wsAddress: endpoint.address,
+              props: [websocketStates[key] || "idle"],
+              comment: endpoint.source === "declared"
+                ? `declared in ${endpoint.plugin}'s plugin.json`
+                : endpoint.source === "manual"
+                  ? "entered by hand"
+                  : `found in ${endpoint.plugin}'s service list`,
+              from: endpoint.source === "declared"
+                ? `${endpoint.plugin} plugin.json`
+                : endpoint.source === "manual"
+                  ? "entered by hand"
+                  : `${endpoint.plugin} service list scan`,
+            };
+          }),
+        ];
+        const kinds = ["all", ...[...new Set(rows.map((row) => row.kind))].sort()];
+        const sortKeyOf = (row: SourceRow): string => (
+          sourceSort.column === "type" ? row.kind
+          : sourceSort.column === "endpoint" ? row.location
+          : sourceSort.column === "props" ? row.props.join(" ")
+          : sourceSort.column === "from" ? row.from
+          : sourceSort.column === "comment" ? row.comment
+          : row.label
+        );
+        const visible = rows.filter((row) => forcedKind === "all" || row.kind === forcedKind)
+          .filter((row) => !["services", "apis"].includes(paneTab) || serviceSource === "all" || row.server === serviceSource)
+          .filter((row) => paneTab !== "websockets" || wsOrigin === "all" || row.origin === wsOrigin)
+          .sort((a, b) => sourceSort.direction * sortKeyOf(a).localeCompare(sortKeyOf(b)));
+        const headerCell = (column: typeof sourceSort.column, label: string) => (
+          <button
+            type="button"
+            className={`chat-source-colsort${sourceSort.column === column ? " is-active" : ""}`}
+            onClick={() => setSourceSort((current) => current.column === column
+              ? { column, direction: current.direction === 1 ? -1 : 1 }
+              : { column, direction: 1 })}
+          >
+            {label}{sourceSort.column === column ? (sourceSort.direction === 1 ? " ▲" : " ▼") : ""}
+          </button>
+        );
+        const openRow = (row: SourceRow) => {
+          if (row.streamId) {
+            openDynamicPane({ key: `stream:${row.streamId}`, kind: row.kind, label: row.label, streamId: row.streamId });
+            return;
+          }
+          if (row.kind === "service" || row.kind === "endpoint") {
+            openDynamicPane({ key: `service:${row.server}`, kind: "service", label: `${row.server} ⚙`, plugin: row.server });
+            return;
+          }
+          if (row.kind === "configfile") {
+            openDynamicPane({ key: `config:${row.server}`, kind: "configfile", label: `${row.server} json`, plugin: row.server });
+            return;
+          }
+          if (row.kind === "websocket") {
+            const endpoint = { plugin: row.server, address: row.wsAddress || row.location, source: "scanned" as const };
+            const key = `ws:${endpoint.plugin}:${endpoint.address}`;
+            if (!websocketRefs.current[key]) toggleWebsocket(endpoint);
+            openDynamicPane({ key, kind: "websocket", label: `${row.server} ⇄`, address: endpoint.address, plugin: row.server });
+          }
+        };
+        // "Enter a source" — every list tab accepts a hand-typed source of
+        // its own kind; the union tab infers the kind from the value's shape.
+        const addSourceEntry = (raw: string) => {
+          const value = raw.trim();
+          if (!value) return;
+          const kind = paneTab === "websockets" ? "websocket"
+            : paneTab === "services" || paneTab === "apis" ? "service"
+            : paneTab === "chatgroups" ? "chatgroup"
+            : paneTab === "mailboxes" ? "mailbox"
+            : value.startsWith("disk:") ? "mailbox"
+            : value.startsWith("merge:") ? "chatgroup"
+            : looksLikeWebsocketPath(value) ? "websocket"
+            : /^https?:\/\//i.test(value) || value.startsWith("/") ? "service"
+            : "mailbox";
+          if (kind === "websocket") {
+            const endpoint: PluginWebsocketEndpoint = { plugin: "manual", address: value, source: "manual" };
+            setPluginWebsockets((current) => current.some((entry) => entry.address === value) ? current : [...current, endpoint]);
+            const key = `ws:manual:${value}`;
+            if (!websocketRefs.current[key]) toggleWebsocket(endpoint);
+            openDynamicPane({ key, kind: "websocket", label: "manual ⇄", address: value, plugin: "manual" });
+            return;
+          }
+          if (kind === "service") {
+            const name = (() => {
+              try {
+                const url = new URL(value, window.location.origin);
+                return url.pathname.split("/").filter(Boolean)[0] || url.host || "manual";
+              } catch {
+                return value.split("/").filter(Boolean)[0] || "manual";
+              }
+            })();
+            const service: PluginServiceEndpoint = { plugin: name, address: value, description: "entered by hand" };
+            const next = pluginServices.some((entry) => entry.address === value)
+              ? pluginServices
+              : [...pluginServices, service];
+            setPluginServices(next);
+            void loadServiceEntries(next);
+            return;
+          }
+          const streamId = kind === "chatgroup" && !value.startsWith("merge:") ? `merge:${value}` : value;
+          selectMailbox(streamId);
+          openDynamicPane({ key: `stream:${streamId}`, kind, label: streamId, streamId });
+        };
+        const entryPlaceholder = paneTab === "websockets" ? "ws://host/path or /path/ws"
+          : paneTab === "services" || paneTab === "apis" ? "endpoint URL, e.g. /coplex/tools"
+          : paneTab === "configfiles" ? "disk:file.json opens a stream; manifests come from the scan"
+          : paneTab === "chatgroups" ? "a+b (becomes merge:a+b)"
+          : paneTab === "mailboxes" ? "mailbox id or disk:file.json"
+          : "id, /endpoint URL, or ws://…";
+        return (
+          <div
+            className="chat-sources-pane"
+            role="list"
+            aria-label="All sources"
+            style={sourceColWidths ? { "--source-cols": sourceColWidths.map((width) => `${width}px`).join(" ") } as CSSProperties : undefined}
+          >
+            <header className="chat-sources-header">
+              <b>{visible.length} sources</b>
+              {paneTab === "sources" && (
+                <select
+                  className="chat-directory-source"
+                  aria-label="Source kind"
+                  title="Which list to show: everything or one kind"
+                  value={sourceKind}
+                  onChange={(event) => setSourceKind(event.target.value)}
+                >
+                  {kinds.map((kind) => <option key={kind} value={kind}>{kind === "all" ? "all kinds" : kind}</option>)}
+                </select>
+              )}
+              {["mailboxes", "chatgroups"].includes(paneTab) && (
+                <select
+                  className="chat-directory-source"
+                  aria-label="Mailbox directory server"
+                  title="Which plugin server's mailbox directory to query"
+                  value={directorySource}
+                  onChange={(event) => setDirectorySource(event.target.value)}
+                >
+                  <option value="all">all directories</option>
+                  <option value="workbench" title="/api/mailbox/mailboxes">workbench — /api/mailbox/mailboxes</option>
+                  {directorySources.map((source) => (
+                    <option key={source.plugin} value={source.plugin} title={source.address}>
+                      {source.plugin} — {source.address}
+                    </option>
+                  ))}
+                </select>
+              )}
+              {["services", "apis"].includes(paneTab) && (
+                <select
+                  className="chat-directory-source"
+                  aria-label={paneTab === "apis" ? "Endpoint service" : "Service plugin"}
+                  title={paneTab === "apis" ? "Which service's published endpoints to list" : "Which plugin's service directory to list"}
+                  value={serviceSource}
+                  onChange={(event) => setServiceSource(event.target.value)}
+                >
+                  <option value="all">{paneTab === "apis" ? "all services" : "all plugins"}</option>
+                  {pluginServices.map((service) => (
+                    <option key={service.plugin} value={service.plugin} title={service.address}>
+                      {service.plugin} — {service.address}
+                    </option>
+                  ))}
+                </select>
+              )}
+              {paneTab === "websockets" && (
+                <select
+                  className="chat-directory-source"
+                  aria-label="WebSocket origin"
+                  title="How the websocket was found: declared in plugin.json or scanned from service lists"
+                  value={wsOrigin}
+                  onChange={(event) => setWsOrigin(event.target.value)}
+                >
+                  <option value="all">all origins</option>
+                  <option value="declared">declared (plugin.json)</option>
+                  <option value="scanned">scanned (service lists)</option>
+                </select>
+              )}
+              {paneTab !== "sources" && <span className="chat-source-server">{forcedKind}</span>}
+              <form
+                className="chat-source-add"
+                onSubmit={(event) => { event.preventDefault(); addSourceEntry(sourceEntryDraft); setSourceEntryDraft(""); }}
+              >
+                <input
+                  value={sourceEntryDraft}
+                  onChange={(event) => setSourceEntryDraft(event.target.value)}
+                  placeholder={entryPlaceholder}
+                  aria-label="Enter a source"
+                  title="Type a source and press Enter — websocket URLs connect, endpoint URLs load as services, ids open as streams"
+                />
+                <button type="submit" disabled={!sourceEntryDraft.trim()}>+ Add</button>
+              </form>
+              <span>click to multi-select · double-click opens</span>
+              <button type="button" disabled={!sourceSelection.length} onClick={monitorSelectedSources}>
+                Monitor{sourceSelection.length ? ` ${sourceSelection.length}` : ""} selected
+              </button>
+              <button type="button" disabled={!sourceSelection.length} onClick={() => setSourceSelection([])}>Clear</button>
+              {paneTab === "sources" && (
+                <button
+                  type="button"
+                  title="Refresh everything: mailbox directories, service APIs, and the websocket scan"
+                  disabled={directoryRefreshing || servicesBusy || websocketsBusy}
+                  onClick={() => { void refreshDirectory(); void scanWebsockets(); }}
+                >
+                  {directoryRefreshing || servicesBusy || websocketsBusy ? "…" : "↻ all"}
+                </button>
+              )}
+              {["mailboxes", "chatgroups"].includes(paneTab) && (
+                <button
+                  type="button"
+                  title="Re-query the selected mailbox directory server(s)"
+                  disabled={directoryRefreshing}
+                  onClick={() => void refreshDirectory()}
+                >
+                  {directoryRefreshing ? "…" : "↻ directory"}
+                </button>
+              )}
+              {paneTab === "configfiles" && (
+                <button
+                  type="button"
+                  title="Rescan plugins.json and every discovered plugin.json manifest"
+                  disabled={servicesBusy}
+                  onClick={() => void discoverPluginEndpoints().then((catalog) => {
+                    setPluginConfigs(catalog.configs);
+                    setPluginServices(catalog.services);
+                  })}
+                >
+                  ↻ manifests
+                </button>
+              )}
+              {paneTab === "services" && (
+                <button
+                  type="button"
+                  title="Rediscover service directories from the plugin manifests and reload their endpoint lists"
+                  disabled={servicesBusy}
+                  onClick={() => void discoverPluginEndpoints().then((catalog) => {
+                    setPluginConfigs(catalog.configs);
+                    setPluginServices(catalog.services);
+                    return loadServiceEntries(catalog.services);
+                  })}
+                >
+                  {servicesBusy ? "…" : "↻ services"}
+                </button>
+              )}
+              {paneTab === "apis" && (
+                <button
+                  type="button"
+                  title="Gather all endpoints: rediscover every service and re-fetch each one's published endpoint list"
+                  disabled={servicesBusy}
+                  onClick={() => void discoverPluginEndpoints().then((catalog) => {
+                    setPluginConfigs(catalog.configs);
+                    setPluginServices(catalog.services);
+                    return loadServiceEntries(catalog.services);
+                  })}
+                >
+                  {servicesBusy ? "…" : "↻ endpoints"}
+                </button>
+              )}
+              {paneTab === "websockets" && (
+                <button
+                  type="button"
+                  title="Rescan: declared websockets plus ws-looking paths in every service list"
+                  disabled={websocketsBusy}
+                  onClick={() => void scanWebsockets()}
+                >
+                  {websocketsBusy ? "scanning…" : "↻ rescan"}
+                </button>
+              )}
+            </header>
+            {rows.length === 0 && <div className="chat-empty">Loading the source directory…</div>}
+            {visible.length > 0 && (
+              <div className="chat-source-row chat-source-cols chat-source-colhead">
+                {([
+                  ["type", "type"],
+                  ["name", "name"],
+                  ["endpoint", "endpoint"],
+                  ["props", "properties"],
+                  ["from", "discovered from"],
+                  ["comment", "comments"],
+                ] as const).map(([key, label], index) => (
+                  <span key={key} className={`chat-source-colcell${key === "name" ? " chat-source-col-main" : ""}`}>
+                    {headerCell(key, label)}
+                    <span
+                      className="chat-col-resizer"
+                      title="Drag to resize this column · Ctrl+Alt+Plus shrinks all columns to minimum"
+                      onMouseDown={(event) => startColumnResize(event, index)}
+                    />
+                  </span>
+                ))}
+              </div>
+            )}
+            {visible.map((row) => (
+              <div
+                key={row.id}
+                role="listitem"
+                className={`chat-source-row chat-source-cols${row.streamId && sourceSelection.includes(row.streamId) ? " is-selected" : ""}`}
+                title={row.streamId ? "Click to select; double-click to open this source's tab" : "Double-click to open this source's tab"}
+                onClick={() => { if (row.streamId) toggleSourceSelection(row.streamId); }}
+                onDoubleClick={() => openRow(row)}
+              >
+                <span className="chat-source-col-kind">{row.kind}</span>
+                <span className="chat-source-col-main">
+                  {row.streamId
+                    ? <input type="checkbox" tabIndex={-1} readOnly checked={sourceSelection.includes(row.streamId)} />
+                    : <span className="chat-source-kind-glyph">{row.kind === "service" ? "⚙" : "⇄"}</span>}
+                  <b>{row.label}</b>
+                  <code title={row.fqn}>— {row.fqn}</code>
+                  {typeof row.unread === "number" && row.unread > 0 ? <i className="chat-source-unread">{row.unread}</i> : null}
+                </span>
+                <code className="chat-source-col-location" title={row.location}>{row.location}</code>
+                <small className="chat-source-col-props" title={row.props.join(" · ")}>{row.props.join(" · ")}</small>
+                <small className="chat-source-col-from" title={row.from}>{row.from}</small>
+                <small className="chat-source-col-comment" title={row.comment}>{row.comment}</small>
+              </div>
+            ))}
+          </div>
+        );
+      })()}
+      {paneTab === "config" && (() => {
+        // Source Properties: the mailbox-config editor plus the JSON of
+        // whatever is being inspected (the multiselect, else the viewed
+        // mailbox) — one tab, both surfaces.
+        const streamIds = sourceSelection.length ? sourceSelection : (mailbox ? [mailbox] : []);
+        const inspected = {
+          selection: streamIds,
+          viewedMailbox: mailbox || null,
+          mergedMailboxes: mergeMailboxes.filter(Boolean),
+          sources: streamIds.map((id) => mailboxes.find((entry) => entry.id === id) || { id, missing: true }),
+          directoryServers: directorySources,
+          services: pluginServices,
+          websockets: pluginWebsockets,
+        };
+        const inspectedText = JSON.stringify(inspected, null, 2);
+        return (
+        <div className="chat-config" role="tabpanel" aria-label="Source properties and mailbox configuration">
+          <header className="chat-sources-header">
+            <b>Source Properties</b>
+            <span>{streamIds.length ? `${streamIds.length} inspected` : "nothing selected — select sources or open a stream"}</span>
+            <button type="button" onClick={() => { void navigator.clipboard?.writeText(inspectedText); }}>Copy JSON</button>
+          </header>
+          <pre className="chat-source-properties">{inspectedText}</pre>
           <div className="chat-config-head">
             <span className="chat-config-title">Mailbox config — {mailboxLabel(configMailbox)}</span>
             <button type="button" onClick={fetchConfig} disabled={configBusy}>
@@ -2635,6 +3609,106 @@ export function ChatConversation({
           />
           {configError && <div className="chat-error">{configError}</div>}
           {configNote && <div className="chat-config-note">{configNote}</div>}
+        </div>
+        );
+      })()}
+      {dynamicPanes.map((pane) => paneTab === pane.key ? (
+        <div key={pane.key} className="chat-sources-pane" role="tabpanel" aria-label={pane.label}>
+          {pane.kind === "websocket" && pane.address && pane.plugin ? (() => {
+            const state = websocketStates[pane.key] || "idle";
+            const frames = wsFramesRef.current[pane.key] || [];
+            const addFromTop = !!wsAddFromTop[pane.key];
+            const ordered = addFromTop ? frames.slice().reverse() : frames;
+            return (
+              <>
+                <header className="chat-sources-header">
+                  <b>{pane.plugin}</b>
+                  <code>{websocketLogNames[pane.key] || pane.address}</code>
+                  <small>{state}</small>
+                  <select
+                    className="chat-directory-source"
+                    aria-label="Frame order"
+                    title="Where newly received frames appear"
+                    value={addFromTop ? "top" : "bottom"}
+                    onChange={(event) => setWsAddFromTop((current) => ({ ...current, [pane.key]: event.target.value === "top" }))}
+                  >
+                    <option value="bottom">newest at bottom</option>
+                    <option value="top">add from top</option>
+                  </select>
+                  <button type="button" onClick={() => toggleWebsocket({ plugin: pane.plugin || "", address: pane.address || "", source: "declared" })}>
+                    {websocketRefs.current[pane.key] ? "Disconnect" : "Connect"}
+                  </button>
+                  <button type="button" onClick={() => { wsFramesRef.current[pane.key] = []; setWsFramesVersion((version) => version + 1); }}>Clear</button>
+                </header>
+                <div
+                  className="chat-messages chat-ws-messages"
+                  ref={(element) => { if (element && !addFromTop) element.scrollTop = element.scrollHeight; }}
+                >
+                  {!frames.length && <div className="chat-empty">No frames received yet.</div>}
+                  {ordered.map((frame, index) => {
+                    // A websocket log is JSON-first: parseable frames render
+                    // as pretty-printed JSON bubbles, the rest as raw text.
+                    let parsed: unknown = null;
+                    let isJson = false;
+                    try { parsed = JSON.parse(frame.data); isJson = true; } catch { /* raw frame */ }
+                    return (
+                      <div key={`${frame.at}-${index}`} className="chat-message theirs chat-ws-bubble">
+                        <div className="chat-message-meta">
+                          <span className="chat-message-from">{pane.plugin}</span>
+                          <span className="chat-message-type" title={frame.at}>{frame.at.slice(11, 19)}</span>
+                        </div>
+                        {isJson
+                          ? <pre className="chat-message-json">{JSON.stringify(parsed, null, 2)}</pre>
+                          : <pre className="chat-message-raw">{frame.data}</pre>}
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            );
+          })() : pane.kind === "service" && pane.plugin ? (() => {
+            const service = pluginServices.find((entry) => entry.plugin === pane.plugin);
+            const entries = serviceEntries[pane.plugin] || [];
+            return (
+              <>
+                <header className="chat-sources-header">
+                  <b>{pane.plugin} services</b>
+                  {service && <code>{service.address}</code>}
+                  <button type="button" disabled={servicesBusy} onClick={() => void loadServiceEntries(pluginServices)}>{servicesBusy ? "…" : "↻"}</button>
+                </header>
+                {!entries.length && <div className="chat-empty">No entries loaded yet.</div>}
+                {entries.map((entry, index) => serviceEntryParts(entry, index)).map((parts, index) => (
+                  <div key={index} className="chat-source-row chat-service-cols is-static">
+                    <code className="chat-service-method">{parts.method}</code>
+                    <b>{parts.path}</b>
+                    <small>{parts.description}</small>
+                  </div>
+                ))}
+              </>
+            );
+          })() : (() => {
+            const record = pane.streamId
+              ? mailboxes.find((entry) => entry.id === pane.streamId)
+              : pane.kind === "configfile"
+                ? pluginConfigs.find((config) => config.plugin === pane.plugin)?.manifest
+                : undefined;
+            return (
+              <>
+                <header className="chat-sources-header">
+                  <b>{pane.label}</b>
+                  <span>{pane.kind}</span>
+                  {pane.streamId && <button type="button" onClick={() => openSource(pane.streamId || "")}>Open in Chat</button>}
+                </header>
+                <pre className="chat-source-properties">{JSON.stringify(record || { id: pane.streamId || pane.plugin, missing: true }, null, 2)}</pre>
+              </>
+            );
+          })()}
+        </div>
+      ) : null)}
+      {paneTab === "file" && (
+        <div className="chat-filepane">
+          {streamFileNote&&<div className="chat-filepane-note">{streamFileNote}</div>}
+          <SuperControl appearance="embedded" control={streamSuperControl} className="chat-file-super-control" />
         </div>
       )}
       {errorText && <div className="chat-error">{errorText}</div>}

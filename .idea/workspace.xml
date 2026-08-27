@@ -8,296 +8,23 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="edb8fea1-73c1-4416-9e9a-8ac50d562623" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/AGENTS.md" beforeDir="false" afterPath="$PROJECT_DIR$/AGENTS.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/CODEX_TODO.md" beforeDir="false" afterPath="$PROJECT_DIR$/CODEX_TODO.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/AGENT_MAILBOX.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/AGENT_MAILBOX.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/pyproject.toml" beforeDir="false" afterPath="$PROJECT_DIR$/pyproject.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/migrate_datatype_kinds.mjs" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/migrate_datatype_kinds.mjs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/sync_resource_relationships.mjs" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/sync_resource_relationships.mjs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_arc3_random_player.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_arc3_random_player.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_asi_backends.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_asi_backends.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_atomspace_datatype_documentation.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_atomspace_datatype_documentation.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_bidirectional_resource_relationships.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_bidirectional_resource_relationships.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_datatype_representations.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_datatype_representations.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_goal_plan_resources.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_goal_plan_resources.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_mailbox_api_lib.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_mailbox_api_lib.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_metta_resource_editor_ui.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_metta_resource_editor_ui.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_model_policy_backend.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_model_policy_backend.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_model_policy_todo.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_model_policy_todo.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_navigation_v2_ui.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_navigation_v2_ui.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_operation_categories.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_operation_categories.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_operation_playground.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_operation_playground.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_page_ui_tools.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_page_ui_tools.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_policy_resources.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_policy_resources.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_repository_markdown_navigation.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_repository_markdown_navigation.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_resource_relationship_sync.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_resource_relationship_sync.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_snet_backend.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_snet_backend.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_universal_artifact_editor_ui.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_universal_artifact_editor_ui.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_visual_image_diff_ui.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_visual_image_diff_ui.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/tests/test_web_proxy_plugin.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_web_proxy_plugin.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_workspace_inheritance.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_workspace_inheritance.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/vendor/ARC-AGI-3-Agents/agents/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/vendor/ARC-AGI-3-Agents/agents/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/docs/DATA_REPRESENTATIONS.md" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/docs/DATA_REPRESENTATIONS.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/docs/design/CODEX_CURRENT_IMPLEMENTATION_INVENTORY.md" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/docs/design/CODEX_CURRENT_IMPLEMENTATION_INVENTORY.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/docs/design/EXECUTIVE_VISION.md" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/docs/design/EXECUTIVE_VISION.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/docs/design/FILESYSTEM_RESOURCE_MODEL.md" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/docs/design/FILESYSTEM_RESOURCE_MODEL.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/docs/design/GOALS_AND_PLANS_ARCHITECTURE.md" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/docs/design/GOALS_AND_PLANS_ARCHITECTURE.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/docs/design/SEMANTIC_WORKFLOW_TO_RUNTIME_IMPLEMENTATION.md" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/docs/design/SEMANTIC_WORKFLOW_TO_RUNTIME_IMPLEMENTATION.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/docs/design/UNIVERSAL_ARTIFACT_EDITOR.md" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/docs/design/UNIVERSAL_ARTIFACT_EDITOR.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/frontend/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/package-lock.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/frontend/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/frontend/src/components/Arc3B1B2PipelinePage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/src/components/Arc3B1B2PipelinePage.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/frontend/src/components/ArtifactTreeBranch.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/src/components/ArtifactTreeBranch.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/workbench/frontend/src/components/ChatConversation.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/src/components/ChatConversation.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/frontend/src/components/DataCatalogPanel.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/src/components/DataCatalogPanel.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/frontend/src/components/GoalPlanLibraryEditor.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/src/components/GoalPlanLibraryEditor.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/frontend/src/components/LlmModelsEditor.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/src/components/LlmModelsEditor.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/workbench/frontend/src/components/MarkdownDocument.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/src/components/MarkdownDocument.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/frontend/src/components/OperationDocumentControl.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/src/components/OperationDocumentControl.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/frontend/src/components/OperationLibraryEditor.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/src/components/OperationLibraryEditor.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/frontend/src/components/OperationPlayground.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/src/components/OperationPlayground.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/frontend/src/components/PddlPlanImportPanel.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/src/components/PddlPlanImportPanel.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/frontend/src/components/PluginManagerPage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/src/components/PluginManagerPage.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/frontend/src/components/PolicyLibraryEditor.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/src/components/PolicyLibraryEditor.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/frontend/src/components/PromptHierarchyPanel.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/src/components/PromptHierarchyPanel.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/frontend/src/components/PromptLibraryEditor.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/src/components/PromptLibraryEditor.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/frontend/src/components/RepositoryDocsPage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/src/components/RepositoryDocsPage.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/frontend/src/components/ResourceExecutionPlayground.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/src/components/ResourceExecutionPlayground.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/frontend/src/components/ResourceSourceEditor.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/src/components/ResourceSourceEditor.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/frontend/src/components/RuntimeHistoryView.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/src/components/RuntimeHistoryView.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/frontend/src/components/TreeViewControls.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/src/components/TreeViewControls.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/frontend/src/components/UniversalArtifactEditor.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/src/components/UniversalArtifactEditor.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/frontend/src/components/VisualImageDiffPage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/src/components/VisualImageDiffPage.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/frontend/src/components/WorkflowGenerationRuntime.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/src/components/WorkflowGenerationRuntime.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/frontend/src/components/WorkflowRunnerTodoReference.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/src/components/WorkflowRunnerTodoReference.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/frontend/src/components/resourceRelationships.ts" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/src/components/resourceRelationships.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/frontend/src/components/useArtifactTreeFilter.ts" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/src/components/useArtifactTreeFilter.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/frontend/src/pages/FilesystemWorkbenchPage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/src/pages/FilesystemWorkbenchPage.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/frontend/src/pages/PolishedFilesystemWorkbenchPageV2.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/src/pages/PolishedFilesystemWorkbenchPageV2.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/workbench/frontend/src/styles/chat.css" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/src/styles/chat.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/frontend/src/styles/help_tabs.css" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/src/styles/help_tabs.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/frontend/src/styles/operation_editor.css" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/src/styles/operation_editor.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/frontend/src/styles/operation_playground.css" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/src/styles/operation_playground.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/frontend/src/styles/repository_docs.css" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/src/styles/repository_docs.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/frontend/src/styles/super_control.css" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/src/styles/super_control.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/frontend/src/styles/workbench.css" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/src/styles/workbench.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/frontend/vite.config.ts" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/vite.config.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/workbench/plugins/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/plugins/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/workbench/plugins/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/plugins/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/src/mailbox_chat/server.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/src/mailbox_chat/server.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/workbench/plugins/plugins.json" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/plugins/plugins.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/workbench/plugins/web_proxy/plugin.json" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/plugins/web_proxy/plugin.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/plugins/web_proxy/plugin.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/plugins/web_proxy/plugin.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/server/datatype_library.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/server/datatype_library.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/server/goal_plan_library.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/server/goal_plan_library.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/server/goal_run_api.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/server/goal_run_api.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/server/mailbox_api_lib.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/server/mailbox_api_lib.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/server/model_discovery.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/server/model_discovery.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/server/model_library.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/server/model_library.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/server/operation_library.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/server/operation_library.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/server/operation_resolution.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/server/operation_resolution.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/plugins/ws_collab/plugin.json" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/plugins/ws_collab/plugin.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/server/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/server/app.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/workbench/server/plugin_admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/server/plugin_admin.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/workbench/server/plugin_api.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/server/plugin_api.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/server/policy_library.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/server/policy_library.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/server/prompt_api.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/server/prompt_api.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/server/prompt_library.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/server/prompt_library.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/server/repository_docs_api.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/server/repository_docs_api.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/server/resource_convention.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/server/resource_convention.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/server/resource_relationships.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/server/resource_relationships.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/server/system_control_api.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/server/system_control_api.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/server/workflow_providers.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/server/workflow_providers.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/server/workspace_api.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/server/workspace_api.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/arc3_random_player/design/models/asicloud-asi1.model.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/arc3_random_player/design/models/asicloud-asi1.model.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/arc3_random_player/design/models/https.llm.c.singularitynet.io.v1-google_gemma-4-26b-a4b-it.model.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/arc3_random_player/design/models/https.llm.c.singularitynet.io.v1-google_gemma-4-26b-a4b-it.model.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/arc3_random_player/design/models/https.llm.c.singularitynet.io.v1-qwen_qwen3.8-27b.model.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/arc3_random_player/design/models/https.llm.c.singularitynet.io.v1-qwen_qwen3.8-27b.model.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/arc3_random_player/design/prompts/critique_arc3_transition.prompt.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/arc3_random_player/design/prompts/critique_arc3_transition.prompt.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/arc3_random_player/design/prompts/propose_arc3_action.prompt.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/arc3_random_player/design/prompts/propose_arc3_action.prompt.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/arc3_random_player/design/prompts/select_arc3_game.prompt.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/arc3_random_player/design/prompts/select_arc3_game.prompt.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/arc3_random_player_V2/design/prompts/critique_arc3_transition.prompt.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/arc3_random_player_V2/design/prompts/critique_arc3_transition.prompt.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/arc3_random_player_V2/design/prompts/propose_arc3_action.prompt.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/arc3_random_player_V2/design/prompts/propose_arc3_action.prompt.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/arc3_random_player_V2/design/prompts/select_arc3_game.prompt.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/arc3_random_player_V2/design/prompts/select_arc3_game.prompt.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/generate_count_to_ten/design/models/asicloud-asi1.model.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/generate_count_to_ten/design/models/asicloud-asi1.model.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/generate_count_to_ten/design/models/https.llm.c.singularitynet.io.v1-asi1-mini.model.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/generate_count_to_ten/design/models/https.llm.c.singularitynet.io.v1-asi1-mini.model.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/generate_count_to_ten/design/models/https.llm.c.singularitynet.io.v1-google_gemma-3-27b-it.model.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/generate_count_to_ten/design/models/https.llm.c.singularitynet.io.v1-google_gemma-3-27b-it.model.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/generate_count_to_ten/design/models/https.llm.c.singularitynet.io.v1-meta-llama_llama-3.3-70b-instruct.model.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/generate_count_to_ten/design/models/https.llm.c.singularitynet.io.v1-meta-llama_llama-3.3-70b-instruct.model.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/generate_count_to_ten/design/models/https.llm.c.singularitynet.io.v1-minimax_minimax-m2.5.model.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/generate_count_to_ten/design/models/https.llm.c.singularitynet.io.v1-minimax_minimax-m2.5.model.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/generate_count_to_ten/design/models/https.llm.c.singularitynet.io.v1-minimax_minimax-m2.7.model.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/generate_count_to_ten/design/models/https.llm.c.singularitynet.io.v1-minimax_minimax-m2.7.model.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/generate_count_to_ten/design/models/https.llm.c.singularitynet.io.v1-mistralai_mistral-nemo.model.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/generate_count_to_ten/design/models/https.llm.c.singularitynet.io.v1-mistralai_mistral-nemo.model.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/generate_count_to_ten/design/models/https.llm.c.singularitynet.io.v1-qwen_qwen3-32b.model.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/generate_count_to_ten/design/models/https.llm.c.singularitynet.io.v1-qwen_qwen3-32b.model.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/generate_count_to_ten/design/models/https.llm.c.singularitynet.io.v1-qwen_qwen3.5-35b-a3b.model.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/generate_count_to_ten/design/models/https.llm.c.singularitynet.io.v1-qwen_qwen3.5-35b-a3b.model.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/image_perception_to_recognizable_memory_and_arc3/design/operations/arc3_random_player.operation.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/image_perception_to_recognizable_memory_and_arc3/design/operations/arc3_random_player.operation.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/image_perception_to_recognizable_memory_and_arc3/design/prompts/critique_arc3_transition.prompt.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/image_perception_to_recognizable_memory_and_arc3/design/prompts/critique_arc3_transition.prompt.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/image_perception_to_recognizable_memory_and_arc3/design/prompts/propose_arc3_action.prompt.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/image_perception_to_recognizable_memory_and_arc3/design/prompts/propose_arc3_action.prompt.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/image_perception_to_recognizable_memory_and_arc3/design/prompts/select_arc3_game.prompt.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/image_perception_to_recognizable_memory_and_arc3/design/prompts/select_arc3_game.prompt.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_arc3/design/operations/arc3_random_player.operation.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_arc3/design/operations/arc3_random_player.operation.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_arc3/design/operations/symbolic.get_prolog_evidence.operation.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_arc3/design/operations/symbolic.get_prolog_evidence.operation.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/atomspaces/vision_analysis.atomspace.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/atomspaces/vision_analysis.atomspace.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/atomspaces/vision_analysis.default.atomspace.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/atomspaces/vision_analysis.default.atomspace.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/backends/asicloud.backend.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/backends/asicloud.backend.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/backends/clawrouter.backend.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/backends/clawrouter.backend.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/backends/omniroute.backend.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/backends/omniroute.backend.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/backends/snet.backend.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/backends/snet.backend.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/concrete_datatypes/bmp.concrete_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/concrete_datatypes/bmp.concrete_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/concrete_datatypes/jpeg.concrete_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/concrete_datatypes/jpeg.concrete_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/concrete_datatypes/json.concrete_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/concrete_datatypes/json.concrete_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/concrete_datatypes/markdown.concrete_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/concrete_datatypes/markdown.concrete_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/concrete_datatypes/numpy.concrete_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/concrete_datatypes/numpy.concrete_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/concrete_datatypes/png.concrete_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/concrete_datatypes/png.concrete_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/concrete_datatypes/prolog_facts.concrete_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/concrete_datatypes/prolog_facts.concrete_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/concrete_datatypes/prolog_source.concrete_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/concrete_datatypes/prolog_source.concrete_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/concrete_datatypes/svg_xml.concrete_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/concrete_datatypes/svg_xml.concrete_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/concrete_datatypes/text_plain.concrete_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/concrete_datatypes/text_plain.concrete_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/concrete_datatypes/turtle_source.concrete_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/concrete_datatypes/turtle_source.concrete_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/concrete_datatypes/utf8_text.concrete_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/concrete_datatypes/utf8_text.concrete_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/concrete_datatypes/vector_json.concrete_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/concrete_datatypes/vector_json.concrete_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/goals/understand_visual_world.goal.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/goals/understand_visual_world.goal.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/models/asicloud-asi1-mini.model.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/models/asicloud-asi1-mini.model.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/models/asicloud-asi1.model.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/models/asicloud-asi1.model.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/models/clawrouter-free-router.model.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/models/clawrouter-free-router.model.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/models/https.llm.c.singularitynet.io.v1-asi1-mini.model.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/models/https.llm.c.singularitynet.io.v1-asi1-mini.model.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/models/https.llm.c.singularitynet.io.v1-asi1.model.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/models/https.llm.c.singularitynet.io.v1-asi1.model.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/models/https.llm.c.singularitynet.io.v1-baai_bge-base-en-v1.5.model.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/models/https.llm.c.singularitynet.io.v1-baai_bge-base-en-v1.5.model.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/models/https.llm.c.singularitynet.io.v1-google_gemma-3-27b-it.model.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/models/https.llm.c.singularitynet.io.v1-google_gemma-3-27b-it.model.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/models/https.llm.c.singularitynet.io.v1-google_gemma-4-31b-it.model.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/models/https.llm.c.singularitynet.io.v1-google_gemma-4-31b-it.model.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/models/https.llm.c.singularitynet.io.v1-meta-llama_llama-3.3-70b-instruct.model.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/models/https.llm.c.singularitynet.io.v1-meta-llama_llama-3.3-70b-instruct.model.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/models/https.llm.c.singularitynet.io.v1-minimax_minimax-m2.5.model.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/models/https.llm.c.singularitynet.io.v1-minimax_minimax-m2.5.model.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/models/https.llm.c.singularitynet.io.v1-minimax_minimax-m2.7.model.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/models/https.llm.c.singularitynet.io.v1-minimax_minimax-m2.7.model.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/models/https.llm.c.singularitynet.io.v1-minimax_minimax-m3-f.model.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/models/https.llm.c.singularitynet.io.v1-minimax_minimax-m3-f.model.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/models/https.llm.c.singularitynet.io.v1-minimax_minimax-m3.model.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/models/https.llm.c.singularitynet.io.v1-minimax_minimax-m3.model.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/models/https.llm.c.singularitynet.io.v1-mistralai_mistral-nemo.model.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/models/https.llm.c.singularitynet.io.v1-mistralai_mistral-nemo.model.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/models/https.llm.c.singularitynet.io.v1-nousresearch_hermes-4-70b.model.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/models/https.llm.c.singularitynet.io.v1-nousresearch_hermes-4-70b.model.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/models/https.llm.c.singularitynet.io.v1-openai_gpt-oss-120b.model.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/models/https.llm.c.singularitynet.io.v1-openai_gpt-oss-120b.model.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/models/https.llm.c.singularitynet.io.v1-openai_gpt-oss-20b.model.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/models/https.llm.c.singularitynet.io.v1-openai_gpt-oss-20b.model.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/models/https.llm.c.singularitynet.io.v1-qwen_qwen3-32b.model.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/models/https.llm.c.singularitynet.io.v1-qwen_qwen3-32b.model.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/models/https.llm.c.singularitynet.io.v1-qwen_qwen3.5-35b-a3b.model.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/models/https.llm.c.singularitynet.io.v1-qwen_qwen3.5-35b-a3b.model.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/models/https.llm.c.singularitynet.io.v1-whereisai_uae-large-v1.model.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/models/https.llm.c.singularitynet.io.v1-whereisai_uae-large-v1.model.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/models/https.llm.c.singularitynet.io.v1-z-ai_glm-4.7-flash.model.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/models/https.llm.c.singularitynet.io.v1-z-ai_glm-4.7-flash.model.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/models/omniroute-free-router-preset-high.model.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/models/omniroute-free-router-preset-high.model.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/models/omniroute_routers.model.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/models/omniroute_routers.model.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/models/snet-asi1.model.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/models/snet-asi1.model.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/operations/analyze_workflow_generation_contract.operation.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/operations/analyze_workflow_generation_contract.operation.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/operations/echo_into_titlecased.operation.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/operations/echo_into_titlecased.operation.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/operations/echo_into_titlecased_llm.operation.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/operations/echo_into_titlecased_llm.operation.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/operations/echo_into_titlecased_prolog.operation.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/operations/echo_into_titlecased_prolog.operation.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/operations/echo_into_titlecased_python.operation.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/operations/echo_into_titlecased_python.operation.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/operations/inspection_gallery.operation.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/operations/inspection_gallery.operation.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/operations/populate_workflow_from_english.operation.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/operations/populate_workflow_from_english.operation.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/operations/random_list_element.operation.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/operations/random_list_element.operation.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/operations/sample.request_number.operation.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/operations/sample.request_number.operation.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/operations/sample.request_number.workbench.operation.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/operations/sample.request_number.workbench.operation.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/operations/shared.constant.operation.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/operations/shared.constant.operation.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/operations/shared.constant.workbench.operation.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/operations/shared.constant.workbench.operation.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/operations/vision.extract_scene_objects.automatic_llm.operation.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/operations/vision.extract_scene_objects.automatic_llm.operation.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/operations/vision.extract_scene_objects.operation.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/operations/vision.extract_scene_objects.operation.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/planning_strategies/observe_infer_act.planning_strategy.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/planning_strategies/observe_infer_act.planning_strategy.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/prompts/analyze_workflow_generation_contract.json.prompt.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/prompts/analyze_workflow_generation_contract.json.prompt.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/prompts/analyze_workflow_generation_contract.prompt.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/prompts/analyze_workflow_generation_contract.prompt.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/prompts/generate_workflow_from_english.json.prompt.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/prompts/generate_workflow_from_english.json.prompt.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/prompts/generate_workflow_from_english.metta.prompt.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/prompts/generate_workflow_from_english.metta.prompt.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/prompts/generate_workflow_from_english.prompt.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/prompts/generate_workflow_from_english.prompt.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/prompts/plan_workflow_memory_and_values.default.prompt.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/prompts/plan_workflow_memory_and_values.default.prompt.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/prompts/plan_workflow_memory_and_values.prompt.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/prompts/plan_workflow_memory_and_values.prompt.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/prompts/titlecase_received_text.default.prompt.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/prompts/titlecase_received_text.default.prompt.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/prompts/titlecase_received_text.gpt5.prompt.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/prompts/titlecase_received_text.gpt5.prompt.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/prompts/titlecase_received_text.multi_modal.claude.prompt.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/prompts/titlecase_received_text.multi_modal.claude.prompt.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/prompts/titlecase_received_text.prompt.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/prompts/titlecase_received_text.prompt.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/prompts/titlecase_received_text.text_only.claude.prompt.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/prompts/titlecase_received_text.text_only.claude.prompt.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/representation_datatypes/bitmap.representation_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/representation_datatypes/bitmap.representation_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/representation_datatypes/executable_view.representation_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/representation_datatypes/executable_view.representation_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/representation_datatypes/image_region.representation_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/representation_datatypes/image_region.representation_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/representation_datatypes/json_object.representation_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/representation_datatypes/json_object.representation_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/representation_datatypes/latent_embedding.representation_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/representation_datatypes/latent_embedding.representation_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/representation_datatypes/logo_program.representation_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/representation_datatypes/logo_program.representation_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/representation_datatypes/natural_language.representation_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/representation_datatypes/natural_language.representation_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/representation_datatypes/object_list.representation_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/representation_datatypes/object_list.representation_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/representation_datatypes/object_properties.representation_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/representation_datatypes/object_properties.representation_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/representation_datatypes/plain_text.representation_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/representation_datatypes/plain_text.representation_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/representation_datatypes/prolog_fact_set.representation_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/representation_datatypes/prolog_fact_set.representation_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/representation_datatypes/python_object.representation_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/representation_datatypes/python_object.representation_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/representation_datatypes/scene_graph.representation_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/representation_datatypes/scene_graph.representation_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/representation_datatypes/svg.representation_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/representation_datatypes/svg.representation_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/representation_datatypes/symbolic_fact_set.representation_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/representation_datatypes/symbolic_fact_set.representation_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/representation_datatypes/turtle_program.representation_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/representation_datatypes/turtle_program.representation_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/artifact.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/artifact.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/artifact_bundle.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/artifact_bundle.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/artifact_category.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/artifact_category.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/artifact_inspection.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/artifact_inspection.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/atom.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/atom.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/atomspace.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/atomspace.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/atomspace_change.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/atomspace_change.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/atomspace_query_result.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/atomspace_query_result.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/boolean.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/boolean.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/category_match_set.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/category_match_set.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/change_description.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/change_description.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/conversion_inventory.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/conversion_inventory.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/data_inspection.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/data_inspection.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/data_value.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/data_value.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/datatype_contract.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/datatype_contract.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/datatype_sample.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/datatype_sample.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/demonstration_step.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/demonstration_step.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/entity.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/entity.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/entity_collection.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/entity_collection.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/evaluation.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/evaluation.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/event.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/event.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/evidence.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/evidence.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/evidence_bundle.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/evidence_bundle.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/file_reference.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/file_reference.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/goal.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/goal.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/goal_interpretation.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/goal_interpretation.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/goal_satisfaction.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/goal_satisfaction.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/goal_set.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/goal_set.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/human_intervention.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/human_intervention.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/hypothesis.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/hypothesis.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/hypothesis_set.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/hypothesis_set.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/identity_map.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/identity_map.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/image.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/image.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/information.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/information.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/intervention.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/intervention.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/learning_memory.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/learning_memory.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/number.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/number.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/object.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/object.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/object_representation_bundle.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/object_representation_bundle.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/objectified_observation.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/objectified_observation.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/observation.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/observation.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/observation_collection.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/observation_collection.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/planned_workflow.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/planned_workflow.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/planning_strategy.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/planning_strategy.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/policy.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/policy.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/policy_decision.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/policy_decision.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/program.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/program.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/prolog_program.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/prolog_program.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/prompt_composition.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/prompt_composition.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/prompt_resource.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/prompt_resource.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/provenance_record.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/provenance_record.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/relationship.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/relationship.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/resource.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/resource.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/resource_validation.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/resource_validation.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/rule_set.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/rule_set.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/simulation_request.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/simulation_request.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/simulation_result.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/simulation_result.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/string.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/string.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/suggested_experiment.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/suggested_experiment.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/system_contract.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/system_contract.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/system_inspection.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/system_inspection.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/system_readiness.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/system_readiness.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/text.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/text.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/transition_evidence.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/transition_evidence.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/turtle_program_set.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/turtle_program_set.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/world_analysis_state.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/world_analysis_state.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/world_dynamics.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/world_dynamics.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/world_model.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/world_model.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/world_state.semantic_datatype.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/design/semantic_datatypes/world_state.semantic_datatype.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/docs/contexts.md" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/docs/contexts.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/docs/goals.md" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/docs/goals.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/docs/json_resource_convention.md" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/docs/json_resource_convention.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/docs/operations.md" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/docs/operations.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/docs/plans.md" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/docs/plans.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/docs/policies.md" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/docs/policies.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/policies/balanced_model_runtime.model_policy_variant.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/policies/balanced_model_runtime.model_policy_variant.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/policies/default_model_runtime.model_policy.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/policies/default_model_runtime.model_policy.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/policies/economy_model_runtime.model_policy_variant.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/shared_library_system/policies/economy_model_runtime.model_policy_variant.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/vision_learn_by_observation/design/planning_strategies/observe_infer_act.fast_probe.planning_strategy.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/vision_learn_by_observation/design/planning_strategies/observe_infer_act.fast_probe.planning_strategy.metta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/workspaces/vision_observe_choose_record/design/planning_strategies/observe_infer_act.conservative_loop.planning_strategy.metta" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/workspaces/vision_observe_choose_record/design/planning_strategies/observe_infer_act.conservative_loop.planning_strategy.metta" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -310,7 +37,7 @@
     </persistenceIdMap>
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="45028" />
+    <option name="cachedIndexableFilesCount" value="49799" />
     <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
   </component>
   <component name="FlaskConsoleOptions" custom-start-script="import sys; print('Python %s on %s' % (sys.version, sys.platform)); sys.path.extend([WORKING_DIR_AND_PYTHON_PATHS])&#10;from flask.cli import ScriptInfo, NoAppException&#10;for module in [&quot;main.py&quot;, &quot;wsgi.py&quot;, &quot;app.py&quot;]:&#10;    try: locals().update(ScriptInfo(app_import_path=module, create_app=None).load_app().make_shell_context()); print(&quot;\nFlask App: %s&quot; % app.import_name); break&#10;    except NoAppException: pass">
@@ -335,21 +62,21 @@
     <decayedCancelled>
       <entry key="MS100" value="1.0" />
       <entry key="MS500" value="1.0" />
-      <entry key="S2" value="1.0" />
-      <entry key="S5" value="1.0000004750833682" />
-      <entry key="S10" value="1.001148914704681" />
-      <entry key="S30" value="1.2721994857639882" />
-      <entry key="S60" value="2.2667490212217514" />
-      <entry key="M2" value="4.179216891946719" />
-      <entry key="M5" value="8.951083314786217" />
-      <entry key="M10" value="14.135899560529076" />
-      <entry key="M15" value="17.022010088997806" />
-      <entry key="M30" value="20.89314936723609" />
-      <entry key="H1" value="23.758094912641827" />
-      <entry key="H2" value="26.746609754006187" />
-      <entry key="H4" value="30.984878804359063" />
-      <entry key="D1" value="52.353947081948576" />
-      <entry key="W1" value="71.79584946015906" />
+      <entry key="S2" value="1.0000000000004674" />
+      <entry key="S5" value="1.0000121276314866" />
+      <entry key="S10" value="1.004112879189206" />
+      <entry key="S30" value="1.3055615948775585" />
+      <entry key="S60" value="2.2831763678742414" />
+      <entry key="M2" value="4.460236111919421" />
+      <entry key="M5" value="9.952304772619529" />
+      <entry key="M10" value="15.996917822673707" />
+      <entry key="M15" value="19.4983382826791" />
+      <entry key="M30" value="24.33788126004604" />
+      <entry key="H1" value="27.872786480066676" />
+      <entry key="H2" value="31.25039422066269" />
+      <entry key="H4" value="35.70020277418404" />
+      <entry key="D1" value="57.27636374068855" />
+      <entry key="W1" value="76.78086140923965" />
     </decayedCancelled>
     <decayedSelected>
       <entry key="MS100" value="0.0" />
@@ -360,34 +87,34 @@
       <entry key="S30" value="0.0" />
       <entry key="S60" value="0.0" />
       <entry key="M2" value="0.0" />
-      <entry key="M5" value="5.394442096698769E-158" />
-      <entry key="M10" value="3.281530074366952E-79" />
-      <entry key="M15" value="5.992884686797439E-53" />
-      <entry key="M30" value="1.0946797999330947E-26" />
-      <entry key="H1" value="1.479609408433076E-13" />
-      <entry key="H2" value="5.439834328862345E-7" />
-      <entry key="H4" value="0.0010430547805272501" />
-      <entry key="D1" value="0.5674262414437092" />
-      <entry key="W1" value="1.6705901271638148" />
+      <entry key="M5" value="3.6006659519653486E-158" />
+      <entry key="M10" value="2.6809859432099413E-79" />
+      <entry key="M15" value="5.237387250073037E-53" />
+      <entry key="M30" value="1.023355403009463E-26" />
+      <entry key="H1" value="1.4305952395918525E-13" />
+      <entry key="H2" value="5.348974396018069E-7" />
+      <entry key="H4" value="0.0010343071828932055" />
+      <entry key="D1" value="0.5666303339580617" />
+      <entry key="W1" value="1.6702551723189578" />
     </decayedSelected>
     <decayedShown>
-      <entry key="MS100" value="0.9075191553171609" />
-      <entry key="MS500" value="0.9807790039885513" />
-      <entry key="S2" value="0.9951597218200828" />
-      <entry key="S5" value="0.9980615447023558" />
-      <entry key="S10" value="1.000178449775674" />
-      <entry key="S30" value="1.2718329748944193" />
-      <entry key="S60" value="2.266485155412963" />
-      <entry key="M2" value="4.178992584481892" />
-      <entry key="M5" value="8.950857762874524" />
-      <entry key="M10" value="14.135704969380983" />
-      <entry key="M15" value="17.021849878782323" />
-      <entry key="M30" value="20.8930489628394" />
-      <entry key="H1" value="23.758037554092038" />
-      <entry key="H2" value="26.74657833776026" />
-      <entry key="H4" value="30.985903112203427" />
-      <entry key="D1" value="52.92129771184733" />
-      <entry key="W1" value="73.46640887718088" />
+      <entry key="MS100" value="0.14161048566197482" />
+      <entry key="MS500" value="0.6764241155251373" />
+      <entry key="S2" value="0.906890328933609" />
+      <entry key="S5" value="0.9616729027803108" />
+      <entry key="S10" value="0.9847535249390188" />
+      <entry key="S30" value="1.2989770530302966" />
+      <entry key="S60" value="2.279690155093747" />
+      <entry key="M2" value="4.458293304517959" />
+      <entry key="M5" value="9.951343675728568" />
+      <entry key="M10" value="15.996337766850322" />
+      <entry key="M15" value="19.49791357695846" />
+      <entry key="M30" value="24.3376429350141" />
+      <entry key="H1" value="27.872658235792628" />
+      <entry key="H2" value="31.250326794307746" />
+      <entry key="H4" value="35.70120018832328" />
+      <entry key="D1" value="57.842915513581204" />
+      <entry key="W1" value="78.4510854409394" />
     </decayedShown>
   </component>
   <component name="ProjectColorInfo">{
@@ -448,6 +175,7 @@
       <recent name="C:\symbolic_learner_arc3_codex\workbench\workspaces\shared\design\categories" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\snet\PeTTa\repos\symbolic_learner_workbench\workbench\plugins\coplex_stdpy" />
       <recent name="C:\symbolic_learner_arc3_codex\tests" />
     </key>
   </component>
@@ -491,8 +219,8 @@
       <method v="2" />
     </configuration>
     <list>
-      <item itemvalue="Python Debug Server.Unnamed" />
       <item itemvalue="Python.interactive_runner" />
+      <item itemvalue="Python Debug Server.Unnamed" />
     </list>
     <recent_temporary>
       <list>
@@ -529,11 +257,53 @@
       <workItem from="1787430644496" duration="2969000" />
       <workItem from="1787786890213" duration="80000" />
       <workItem from="1787787026524" duration="2000" />
+      <workItem from="1787848859093" duration="4792000" />
     </task>
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="OPEN_GENERIC_TABS">
+      <map>
+        <entry key="56d96773-49bd-4b28-bc9d-e6d20ad817d5" value="TOOL_WINDOW" />
+      </map>
+    </option>
+    <option name="TAB_STATES">
+      <map>
+        <entry key="56d96773-49bd-4b28-bc9d-e6d20ad817d5">
+          <value>
+            <State>
+              <option name="FILTERS">
+                <map>
+                  <entry key="branch">
+                    <value>
+                      <list>
+                        <option value="HEAD" />
+                      </list>
+                    </value>
+                  </entry>
+                  <entry key="structure">
+                    <value>
+                      <list>
+                        <option value="dir:C:/snet/PeTTa/repos/symbolic_learner_workbench/workbench/plugins/coplex_stdpy" />
+                      </list>
+                    </value>
+                  </entry>
+                </map>
+              </option>
+              <option name="SHOW_ONLY_AFFECTED_CHANGES" value="true" />
+            </State>
+          </value>
+        </entry>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/symbolic_learner_arc3_kaggle_starter$interactive_runner.coverage" NAME="interactive_runner Coverage Results" MODIFIED="1785305091337" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/python" />

@@ -1,16 +1,50 @@
 {
-  "plugins": {
+  "startupScan": [
+    "*/*/plugin.json",
+    "*/plugin.json"
+  ],
+  "startupScan_Help": "Glob masks, relative to workbench/plugins, probed for plugin manifests (two levels deep by default).",
+  "skipScan": [
+    "HIDE_*",
+    "*_HIDE"
+  ],
+  "skipScan_Help": "Case-insensitive masks; a manifest whose relative path or any path segment matches is never scanned.",
+  "pluginsFound": {
     "web_proxy": {
-      "scan": "startup"
+      "path": "web_proxy/plugin.json",
+      "scan": "startup",
+      "enabled": true
     },
     "ws_collab": {
-      "scan": "startup"
+      "path": "ws_collab/plugin.json",
+      "scan": "startup",
+      "enabled": true
     },
     "emullm": {
-      "scan": "startup"
+      "path": "emullm/plugin.json",
+      "scan": "startup",
+      "enabled": true
     },
-    "llm_task_harness": {
-      "scan": "startup"
+    "mailbox_chat": {
+      "path": "mailbox_chat/plugin.json",
+      "scan": "startup",
+      "enabled": true
+    },
+    "coplex_stdpy": {
+      "path": "coplex_stdpy/plugin.json",
+      "scan": "startup",
+      "enabled": true
+    },
+    "coplex": {
+      "path": "coplex/plugin.json",
+      "scan": "startup",
+      "enabled": true
+    },
+    "pycoplex": {
+      "path": "coplex_stdpy/plugin.json",
+      "scan": "startup",
+      "enabled": true
     }
-  }
+  },
+  "pluginsFound_Help": "Auto-maintained: every discovered plugin is recorded here. Set enabled: false (or scan: disabled) to keep one unloaded; scan says when to rescan its config."
 }

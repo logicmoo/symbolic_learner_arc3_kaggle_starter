@@ -100,6 +100,25 @@ def health() -> dict[str, str]:
     }
 
 
+@app.get("/api/whoami")
+def whoami(request: Request) -> dict[str, Any]:
+    """Identify the calling connection for client-side log naming.
+
+    Websocket log names are `<server location> ⇄ <agent>@<ip>#<connection>`;
+    the browser cannot see its own address, so this echoes what the server
+    sees (through the Vite proxy this is the proxy's loopback address, which
+    still identifies the machine).
+    """
+
+    client = request.client
+    forwarded = request.headers.get("x-forwarded-for", "").split(",")[0].strip()
+    return {
+        "ip": forwarded or (client.host if client else "unknown"),
+        "port": client.port if client else None,
+        "userAgent": request.headers.get("user-agent", ""),
+    }
+
+
 @app.post("/api/analyze")
 def analyze(body: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
     try:

@@ -53,6 +53,113 @@ def test_plugin_scanner_skips_hidden_and_manifestless_entries(
     assert [plugin["id"] for plugin in catalog] == ["visible"]
 
 
+def test_plugin_scanner_declared_masks_found_list_and_enabled_toggle(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    """plugins.json declares discovery: startupScan masks reach two levels,
+    skipScan masks hide entries case-insensitively, every discovery is
+    recorded in foundList, and "enabled": false there keeps a plugin off."""
+
+    plugin_api = importlib.import_module("plugin_api")
+    top = tmp_path / "top"
+    top.mkdir()
+    (top / "plugin.json").write_text(json.dumps({"id": "top", "scan": "disabled"}), encoding="utf-8")
+    nested = tmp_path / "vendor" / "nested"
+    nested.mkdir(parents=True)
+    (nested / "plugin.json").write_text(json.dumps({"id": "nested", "scan": "disabled"}), encoding="utf-8")
+    secret = tmp_path / "vendor" / "SeCrEt_lab"
+    secret.mkdir()
+    (secret / "plugin.json").write_text(json.dumps({"id": "secret", "scan": "disabled"}), encoding="utf-8")
+    policy_path = tmp_path / "plugins.json"
+    policy_path.write_text(json.dumps({
+        "startupScan": ["*/plugin.json", "*/*/plugin.json"],
+        "skipScan": ["hide_*", "secret_*"],
+        "foundList": {"nested": {"foundPath": "vendor/nested", "rescan": "disabled", "enabled": False}},
+        "plugins": {},
+    }), encoding="utf-8")
+    monkeypatch.setattr(plugin_api, "PLUGINS_ROOT", tmp_path)
+    monkeypatch.setattr(plugin_api, "POLICY_PATH", policy_path)
+
+    catalog = {plugin["id"]: plugin for plugin in plugin_api._scan(register=False)}
+
+    assert set(catalog) == {"top", "nested"}, "two-level discovery minus skipScan matches"
+    assert catalog["nested"]["scan"] == "disabled", "enabled: false in foundList disables the plugin"
+    stored = json.loads(policy_path.read_text(encoding="utf-8"))
+    assert stored["foundList"]["top"] == {"foundPath": "top", "rescan": "disabled", "enabled": True}, "new discovery recorded"
+    assert stored["foundList"]["nested"]["enabled"] is False, "existing toggle preserved"
+    assert "secret" not in stored["foundList"]
+
+
+def test_plugin_mailbox_endpoints_resolve_for_every_declaring_server(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    """Each plugin server's mailbox list is discoverable from the catalog: a
+    top-level `mailboxEndpoint` (string or object) resolves to an address the
+    Chat page can query; plugins without one report null."""
+
+    plugin_api = importlib.import_module("plugin_api")
+    manifests = {
+        "relay": {
+            "id": "relay",
+            "scan": "disabled",
+            "mailboxEndpoint": {
+                "path": "/relay/v1/mailbox/mailboxes",
+                "protocol": "ws_collab",
+                "description": "directory",
+            },
+        },
+        "registryish": {
+            "id": "registryish",
+            "scan": "disabled",
+            "mailboxEndpoint": {"path": "/registryish/v1/registry", "protocol": "registry"},
+        },
+        "terse": {"id": "terse", "scan": "disabled", "mailboxEndpoint": "/terse/mailbox/mailboxes"},
+        "plain": {"id": "plain", "scan": "disabled"},
+    }
+    for name, manifest in manifests.items():
+        directory = tmp_path / name
+        directory.mkdir()
+        (directory / "plugin.json").write_text(json.dumps(manifest), encoding="utf-8")
+    monkeypatch.setattr(plugin_api, "PLUGINS_ROOT", tmp_path)
+    monkeypatch.setattr(plugin_api, "POLICY_PATH", tmp_path / "plugins.json")
+
+    catalog = {plugin["id"]: plugin for plugin in plugin_api._scan(register=False)}
+
+    relay = catalog["relay"]["mailboxEndpoint"]
+    assert relay["address"] == "/relay/v1/mailbox/mailboxes"
+    assert relay["protocol"] == "ws_collab"
+    registryish = catalog["registryish"]["mailboxEndpoint"]
+    assert registryish["address"] == "/registryish/v1/registry"
+    assert registryish["protocol"] == "registry"
+    terse = catalog["terse"]["mailboxEndpoint"]
+    assert terse["address"] == "/terse/mailbox/mailboxes"
+    assert terse["protocol"] == "ws_collab"
+    assert catalog["plain"]["mailboxEndpoint"] is None
+
+
+def test_chat_page_queries_every_declared_mailbox_server() -> None:
+    """The Chat page discovers mailbox servers from the plugin catalog and
+    queries each declared endpoint instead of only ws_collab."""
+
+    source = (
+        ROOT / "workbench" / "frontend" / "src" / "components" / "ChatConversation.tsx"
+    ).read_text(encoding="utf-8")
+    assert "discoverMailboxEndpoints" in source
+    assert "plugin.mailboxEndpoint" in source
+    assert "...endpoints.map((endpoint) =>" in source
+    assert "serverProtocol: endpoint.protocol" in source
+    assert "mailboxApiBase(option)" in source
+    for manifest_name in ("ws_collab", "mailbox_chat", "emullm"):
+        manifest = json.loads(
+            (ROOT / "workbench" / "plugins" / manifest_name / "plugin.json").read_text(encoding="utf-8"),
+        )
+        endpoint = manifest["mailboxEndpoint"]
+        assert endpoint["path"].startswith("/"), manifest_name
+        assert endpoint["protocol"] in ("ws_collab", "registry"), manifest_name
+
+
 def test_web_proxy_rejects_targets_outside_manifest_allowlist() -> None:
     app_module = importlib.import_module("app")
     with TestClient(app_module.app) as client:

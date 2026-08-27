@@ -40,6 +40,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import shutil
 from collections.abc import Awaitable, Callable, Iterable, Mapping, Sequence
 from pathlib import Path
 from typing import Any
@@ -171,11 +172,17 @@ def initialization_report(manifest: Mapping[str, Any]) -> dict[str, Any]:
             found = importlib.util.find_spec(module_name) is not None
         except (ImportError, ValueError):
             found = False
+        kind = "module"
+        if not found and shutil.which(module_name):
+            # A requirement may be an executable on PATH (swipl, node, ...)
+            # rather than a Python module; either satisfies the declaration.
+            found = True
+            kind = "executable"
         checks.append({
-            "kind": "module",
+            "kind": kind,
             "name": module_name,
             "satisfied": found,
-            "detail": "" if found else f"Python module '{module_name}' is not importable.",
+            "detail": "" if found else f"Neither a Python module nor a PATH executable named '{module_name}' was found.",
         })
     for entry in init.get("files", []):
         name = str(entry.get("path") or "").strip()

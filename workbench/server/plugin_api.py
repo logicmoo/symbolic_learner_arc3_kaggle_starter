@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import fnmatch
 import importlib.util
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterator
 
 from fastapi import APIRouter, Body, FastAPI, HTTPException
 from starlette.routing import Match
@@ -19,7 +20,7 @@ from plugin_admin import (
     read_json_file,
     write_json_file,
 )
-from resource_store import get_filesystem_provider
+
 
 
 PLUGINS_ROOT = Path(__file__).resolve().parents[1] / "plugins"
@@ -46,8 +47,92 @@ def _read_json(path: Path) -> dict[str, Any]:
 
 def _policy() -> dict[str, Any]:
     if not json_file_exists(POLICY_PATH):
-        return {"plugins": {}}
+        return {"pluginsFound": {}}
     return _read_json(POLICY_PATH)
+
+
+# plugins.json declares how discovery works, not just per-plugin overrides:
+#   startupScan   glob masks (relative to the plugins root) probed for
+#                 manifests -- two levels deep by default
+#   skipScan      case-insensitive masks; a manifest whose relative path or
+#                 any path segment matches is never scanned (HIDE_* default)
+#   pluginsFound  auto-maintained: every plugin discovery finds is recorded
+#                 here as {"path", "scan", "enabled"} so a person can flip a
+#                 single "enabled": false (or set "scan": "disabled") to keep
+#                 it unloaded; existing entries are never overwritten
+#   *_Help        documentation keys, ignored by the loader
+DEFAULT_STARTUP_SCAN = ["*/*/plugin.json", "*/plugin.json"]
+DEFAULT_SKIP_SCAN = ["HIDE_*"]
+
+
+def _mask_list(policy_doc: dict[str, Any], key: str, default: list[str]) -> list[str]:
+    declared = policy_doc.get(key)
+    if not isinstance(declared, list):
+        return list(default)
+    masks = [str(entry).strip() for entry in declared if str(entry).strip()]
+    return masks or list(default)
+
+
+def _skipped_by_masks(relative: Path, masks: list[str]) -> bool:
+    rel = relative.as_posix().casefold()
+    for mask in masks:
+        lowered = mask.casefold()
+        if fnmatch.fnmatch(rel, lowered):
+            return True
+        if any(fnmatch.fnmatch(part.casefold(), lowered) for part in relative.parts):
+            return True
+    return False
+
+
+def _discover_manifests(policy_doc: dict[str, Any]) -> list[Path]:
+    root = Path(PLUGINS_ROOT)
+    skip = _mask_list(policy_doc, "skipScan", DEFAULT_SKIP_SCAN)
+    seen: set[Path] = set()
+    found: list[Path] = []
+    for mask in _mask_list(policy_doc, "startupScan", DEFAULT_STARTUP_SCAN):
+        try:
+            matches = list(root.glob(mask))
+        except (OSError, ValueError):
+            continue
+        for manifest_path in matches:
+            directory = manifest_path.parent
+            key = directory.resolve()
+            if key in seen:
+                continue
+            if _skipped_by_masks(directory.relative_to(root), skip):
+                continue
+            if not json_file_exists(manifest_path):
+                continue
+            seen.add(key)
+            found.append(manifest_path)
+    return sorted(found)
+
+
+def _plugins_found(policy_doc: dict[str, Any]) -> dict[str, Any]:
+    section = policy_doc.get("pluginsFound")
+    return section if isinstance(section, dict) else {}
+
+
+def _record_plugins_found(policy_doc: dict[str, Any], found: dict[str, dict[str, Any]]) -> None:
+    """Record every discovered plugin in plugins.json's pluginsFound.
+
+    Each first sighting writes ``{"path", "scan", "enabled": true}``; existing
+    entries (including ones a person flipped to ``"enabled": false`` or
+    repointed with ``"scan"``) are left alone.
+    """
+
+    section = policy_doc.get("pluginsFound")
+    if not isinstance(section, dict):
+        section = {}
+        policy_doc["pluginsFound"] = section
+    missing = {pid: stub for pid, stub in found.items() if pid not in section}
+    if not missing:
+        return
+    section.update(missing)
+    try:
+        Path(POLICY_PATH).write_text(json.dumps(policy_doc, indent=2) + "\n", encoding="utf-8")
+    except OSError:
+        pass
 
 
 def _ui_page(page: dict[str, Any]) -> dict[str, Any]:
@@ -114,6 +199,11 @@ def _resolve_api_section(plugin_id: str, entry: Any) -> dict[str, Any] | None:
     prefix = f"/{plugin_id}"
     if path == prefix or path.startswith(f"{prefix}/"):
         address = path
+    elif path.startswith("/api/") or path.startswith(("http://", "https://", "ws://", "wss://")):
+        # The workbench's own /api namespace and absolute URLs are never
+        # overlaid onto a plugin prefix — a standalone plugin's catch-all
+        # mount would otherwise "match" and swallow them.
+        address = path
     else:
         prefixed = f"{prefix}{path}" if path.startswith("/") else f"{prefix}/{path}"
         address = prefixed if _route_is_registered(prefixed) else path
@@ -127,29 +217,87 @@ def _resolved_api_sections(plugin_id: str, manifest: dict[str, Any]) -> dict[str
     return {name: _resolve_api_section(plugin_id, entry) for name, entry in declared.items() if name != "note"}
 
 
+def _resolved_mailbox_endpoint(plugin_id: str, manifest: dict[str, Any]) -> dict[str, Any] | None:
+    """Resolve the optional top-level ``mailboxEndpoint`` manifest property.
+
+    A plugin that serves a mailbox directory declares where its mailbox list
+    answers, either as a bare path string or as ``{path, protocol?,
+    description?}``. The resolved ``address`` is what mailbox-aware pages (the
+    Chat page) query; every declaring plugin is queried, so no server's
+    mailboxes are dropped. ``protocol`` defaults to ``ws_collab`` (a
+    ``{mailboxes: [...]}`` directory whose sibling routes ``/messages``,
+    ``/agents``, ... share the same base); other values (for example
+    ``registry``) mark directory-only sources.
+    """
+
+    declared = manifest.get("mailboxEndpoint")
+    if isinstance(declared, str):
+        declared = {"path": declared}
+    if not isinstance(declared, dict):
+        return None
+    resolved = _resolve_api_section(plugin_id, declared)
+    if resolved is not None:
+        resolved.setdefault("protocol", "ws_collab")
+    return resolved
+
+
+def _resolved_services_endpoint(plugin_id: str, manifest: dict[str, Any]) -> dict[str, Any] | None:
+    """Resolve the optional top-level ``servicesEndpoint`` manifest property.
+
+    Points at wherever the plugin's endpoint list can be fetched: a native
+    self-description (ws_collab's ``/endpoints``), an OpenAPI document, or the
+    workbench enumerator ``/api/plugins/<id>/endpoints`` for embedded routers.
+    The Chat page mounts each one as a queryable, read-only mailbox whose
+    messages are the endpoints themselves.
+    """
+
+    declared = manifest.get("servicesEndpoint")
+    if isinstance(declared, str):
+        declared = {"path": declared}
+    if not isinstance(declared, dict):
+        return None
+    return _resolve_api_section(plugin_id, declared)
+
+
 def _scan(*, register: bool) -> list[dict[str, Any]]:
     global _catalog
-    policy = _policy().get("plugins", {})
+    policy_doc = _policy()
+    plugins_found = _plugins_found(policy_doc)
     catalog: list[dict[str, Any]] = []
-    resources = get_filesystem_provider()
-    manifest_paths = [
-        directory / MANIFEST_NAME
-        # Plugin manifests are plain configuration, so they are probed with the
-        # provider's configuration API: the resource API would resolve a
-        # .json path onto a .metta sibling.
-        for directory in resources.iterdir(PLUGINS_ROOT)
-        if (
-            not directory.name.casefold().startswith("hide_")
-            and resources.is_dir(directory)
-            and json_file_exists(directory / MANIFEST_NAME)
-        )
-    ]
-    for manifest_path in sorted(manifest_paths):
+    manifest_paths = _discover_manifests(policy_doc)
+    root = Path(PLUGINS_ROOT)
+    found: dict[str, dict[str, Any]] = {}
+    seen_ids: dict[str, str] = {}
+    for manifest_path in manifest_paths:
         try:
             manifest = _read_json(manifest_path)
             plugin_id = str(manifest.get("id") or manifest_path.parent.name)
-            configured = policy.get(plugin_id, {}) if isinstance(policy, dict) else {}
-            scan_mode = str(configured.get("scan", manifest.get("scan", "startup")))
+            # One id, one plugin: a second directory declaring an already-seen
+            # id is listed as a duplicate but never loaded or recorded.
+            if plugin_id in seen_ids:
+                catalog.append({
+                    "id": manifest_path.parent.name,
+                    "label": manifest_path.parent.name,
+                    "scan": "disabled",
+                    "loaded": False,
+                    "adminAvailable": False,
+                    "error": f"duplicate plugin id '{plugin_id}' (already provided by {seen_ids[plugin_id]})",
+                    "path": str(manifest_path.parent),
+                })
+                continue
+            seen_ids[plugin_id] = manifest_path.parent.relative_to(root).as_posix()
+            manifest_scan = str(manifest.get("scan", "startup"))
+            found[plugin_id] = {
+                "path": manifest_path.relative_to(root).as_posix(),
+                "scan": manifest_scan,
+                "enabled": True,
+            }
+            entry = plugins_found.get(plugin_id) if isinstance(plugins_found.get(plugin_id), dict) else {}
+            # Effective mode: the pluginsFound entry wins over the manifest;
+            # "enabled": false disables regardless of scan mode.
+            scan_mode = str(entry.get("scan") or manifest_scan)
+            if entry.get("enabled") is False:
+                scan_mode = "disabled"
             item = {**manifest, "id": plugin_id, "scan": scan_mode, "path": str(manifest_path.parent), "loaded": plugin_id in _loaded}
             # ``path`` now names the plugin directory, so the manifest's own
             # declared administration path is preserved under its own key.
@@ -230,6 +378,9 @@ def _scan(*, register: bool) -> list[dict[str, Any]]:
     # registered by the time we check for it here.
     for item in catalog:
         item["apiSections"] = _resolved_api_sections(str(item.get("id") or ""), item)
+        item["mailboxEndpoint"] = _resolved_mailbox_endpoint(str(item.get("id") or ""), item)
+        item["servicesEndpoint"] = _resolved_services_endpoint(str(item.get("id") or ""), item)
+    _record_plugins_found(policy_doc, found)
     _catalog = catalog
     return catalog
 
@@ -253,7 +404,11 @@ def _run_init_commands(catalog: list[dict[str, Any]]) -> None:
             target_id = str(command.get("command") or "")
             module = _modules.get(target_id)
             outcome: dict[str, Any] = {"command": target_id, "path": command.get("path", "")}
-            if target_id in _init_applied.get(item["id"], set()):
+            # One plugin may send several commands to the same target (for
+            # example two web_proxy mounts), so applied-tracking is keyed by
+            # the whole command identity, not just the target plugin.
+            command_key = f"{target_id}:{command.get('path', '')}"
+            if command_key in _init_applied.get(item["id"], set()):
                 continue
             if module is None:
                 outcome |= {"applied": False, "detail": f"Plugin '{target_id}' is not loaded"}
@@ -268,7 +423,7 @@ def _run_init_commands(catalog: list[dict[str, Any]]) -> None:
                         _app.include_router(detail)
                         detail = f"mounted {command.get('path', '')}"
                     outcome |= {"applied": True, "detail": detail if isinstance(detail, str) else ""}
-                    _init_applied.setdefault(item["id"], set()).add(target_id)
+                    _init_applied.setdefault(item["id"], set()).add(command_key)
                 except Exception as error:  # noqa: BLE001 - reported, never fatal
                     outcome |= {"applied": False, "detail": str(error)}
             results.append(outcome)
@@ -384,6 +539,58 @@ def run_plugin_lifecycle_phase(plugin_id: str, phase: str) -> dict[str, Any]:
             "detail": f"Plugin does not export a function named '{hook_name}'."}
 
 
+@router.get("/{plugin_id}/endpoints")
+def list_plugin_endpoints(plugin_id: str) -> dict[str, Any]:
+    """Enumerate the workbench routes registered under one plugin's prefix.
+
+    The universal ``servicesEndpoint`` fallback for embedded plugins (their
+    routers live on this FastAPI app, so this IS their swagger-style list) and
+    for standalone plugins it at least names the proxy mounts. Standalone
+    servers with a richer native self-description (ws_collab's ``/endpoints``)
+    declare that instead.
+    """
+
+    item = next((entry for entry in _catalog if entry.get("id") == plugin_id), None)
+    if item is None:
+        raise HTTPException(status_code=404, detail=f"Unknown plugin: {plugin_id}")
+    prefix = f"/{plugin_id}"
+
+    def _walk(routes: list[Any], base: str) -> Iterator[tuple[Any, str]]:
+        """Yield (route, full_path) pairs, unwrapping lazy router inclusions.
+
+        Newer FastAPI wraps ``include_router`` results in ``_IncludedRouter``
+        entries that expose no ``path`` themselves; the real ``APIRoute``
+        objects live on ``original_router`` and only carry their local path,
+        so the include context's prefix has to be re-applied while walking.
+        """
+
+        for route in routes:
+            inner = getattr(route, "original_router", None)
+            if inner is not None:
+                context = getattr(route, "include_context", None)
+                sub_prefix = str(getattr(context, "prefix", "") or "")
+                yield from _walk(list(getattr(inner, "routes", [])), base + sub_prefix)
+                continue
+            path = getattr(route, "path", None)
+            if isinstance(path, str):
+                yield route, base + path
+
+    endpoints: list[dict[str, Any]] = []
+    for route, path in _walk(list(_app.routes) if _app is not None else [], ""):
+        if path != prefix and not path.startswith(f"{prefix}/"):
+            continue
+        methods = sorted(getattr(route, "methods", None) or [])
+        endpoints.append({
+            "path": path,
+            "methods": [m for m in methods if m != "HEAD"] or ["*"],
+            "name": getattr(route, "name", "") or "",
+            "description": (getattr(route, "endpoint", None).__doc__ or "").strip().split("\n")[0]
+            if getattr(route, "endpoint", None) else "",
+        })
+    endpoints.sort(key=lambda entry: entry["path"])
+    return {"id": plugin_id, "prefix": prefix, "count": len(endpoints), "endpoints": endpoints}
+
+
 @router.get("")
 def list_plugins() -> dict[str, Any]:
     return {
@@ -408,10 +615,11 @@ def configure_plugin(plugin_id: str, body: dict[str, Any] = Body(default_factory
     if scan_mode not in {"startup", "disabled"}:
         raise HTTPException(status_code=400, detail="scan must be startup or disabled")
     policy = _policy()
-    plugins = policy.setdefault("plugins", {})
-    if not isinstance(plugins, dict):
-        plugins = policy["plugins"] = {}
-    plugins[plugin_id] = {"scan": scan_mode}
+    section = policy.setdefault("pluginsFound", {})
+    if not isinstance(section, dict):
+        section = policy["pluginsFound"] = {}
+    entry = section.get(plugin_id) if isinstance(section.get(plugin_id), dict) else {}
+    section[plugin_id] = {**entry, "scan": scan_mode}
     write_json_file(POLICY_PATH, policy)
     return {
         "plugins": _scan(register=scan_mode == "startup"),

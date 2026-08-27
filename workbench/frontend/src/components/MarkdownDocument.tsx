@@ -35,8 +35,8 @@ function normalizedMarkdown(html: string): string {
 
 /** Resolve a relative link in the open document against the `docsFile` URL
  * parameter, preserving that parameter's own path style. With
- * `docsFile=C:\...\task_harness_pl\docs\FOO.md`, a link to `../` resolves to
- * `C:\...\task_harness_pl\README.md` (a directory link opens its README) and
+ * `docsFile=C:\...\coplex\docs\FOO.md`, a link to `../` resolves to
+ * `C:\...\coplex\README.md` (a directory link opens its README) and
  * `01-architecture.md` resolves to `C:\...\docs\01-architecture.md`. Returns
  * null when there is no docsFile parameter to resolve against. */
 function resolveAgainstDocsFile(href: string): string | null {
