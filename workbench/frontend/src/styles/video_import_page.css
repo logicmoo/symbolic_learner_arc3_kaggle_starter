@@ -1,0 +1,32 @@
+/* Video Import v2: uniform section shells (built from the page's own build
+   prompt). */
+
+.vi2-section { margin: 4px 18px; border: 1px solid var(--line, #2a3742); }
+.vi2-section.is-collapsed { opacity: 0.85; }
+.vi2-section-head {
+  display: flex; align-items: center; gap: 8px;
+  padding: 4px 8px; background: var(--panel, #10161d);
+}
+.vi2-section-toggle { border: none; background: none; cursor: pointer; padding: 2px 4px; font-size: 12px; }
+.vi2-section-toggle b { letter-spacing: 0.1em; font-size: 10px; }
+.vi2-section-head small { color: var(--muted, #8aa); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vi2-section-pin { font-size: 10px; padding: 1px 6px; opacity: 0.45; margin-left: auto; }
+.vi2-section-pin.is-pinned { opacity: 1; border-color: #c9a227; }
+.vi2-body { border-top: 1px solid var(--line, #2a3742); padding: 6px; }
+.vi2 .video-import-frames,
+.vi2 .video-import-gallery,
+.vi2 .video-import-trail,
+.vi2 .video-import-member-strips,
+.vi2 .video-import-chain { margin: 4px 0; }
+.vi2 .video-import-item.is-selected { outline: 2px solid #4d8dd6; }
+
+/* Let-the-user-decide picker */
+.video-import-userpick .video-import-frame.is-user-pickable img { cursor: pointer; }
+.video-import-userpick .video-import-frame.is-user-pickable:hover { outline: 2px solid var(--cyan, #27dcc2); outline-offset: 1px; }
+/* The JSON CONFIG section hosts the real embedded SuperControl (UAE). */
+.video-import-config-super { padding: 0 !important; }
+.video-import-config-super .operation-document-super,
+.video-import-config-super [data-appearance="embedded"] { min-height: 380px; }
+/* YOUR PICK is a question — it must be impossible to miss. */
+.video-import-userpick-section { outline: 2px solid var(--cyan, #27dcc2); outline-offset: -1px; border-radius: 4px; animation: vi2-pick-pulse 1.6s ease-in-out infinite; }
+@keyframes vi2-pick-pulse { 0%, 100% { outline-color: var(--cyan, #27dcc2); } 50% { outline-color: #0e5a51; } }

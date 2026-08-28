@@ -3,6 +3,9 @@ from __future__ import annotations
 import fnmatch
 import importlib.util
 import json
+import os
+import urllib.error
+import urllib.request
 from pathlib import Path
 from typing import Any, Iterator
 
@@ -447,13 +450,73 @@ def _call_lifecycle_hook(item: dict[str, Any], module: Any, hook_phase: str, *, 
     if not hook_name or not hasattr(module, hook_name):
         return None
     standalone = bool((item.get("plugin-lifecycle") or {}).get("standalone"))
-    notice = {**item, "lifecyclePhase": hook_phase, "lifecycleReason": reason, "standalone": standalone}
+    # Peek at the plugin's declared status endpoint first, so the phase both
+    # verifies each participating plugin is alive and hands the hook that
+    # verdict (a standalone plugin whose server is down may act differently).
+    status = _peek_plugin_status(item)
+    notice = {**item, "lifecyclePhase": hook_phase, "lifecycleReason": reason, "standalone": standalone,
+              "statusPeek": status}
     try:
         detail = getattr(module, hook_name)(notice)
         return {"id": item.get("id"), "phase": hook_phase, "hook": hook_name, "ok": True,
+                "status": status,
                 "detail": detail if isinstance(detail, str) else ""}
     except Exception as error:  # noqa: BLE001 - reported, never fatal
-        return {"id": item.get("id"), "phase": hook_phase, "hook": hook_name, "ok": False, "detail": str(error)}
+        return {"id": item.get("id"), "phase": hook_phase, "hook": hook_name, "ok": False,
+                "status": status, "detail": str(error)}
+
+
+# The base this API answers on, used to peek at plugin status endpoints from
+# inside lifecycle phases. Overridable for non-default ports/hosts.
+_SELF_BASE = os.environ.get("WORKBENCH_SELF_BASE", "http://127.0.0.1:8000")
+
+
+def _status_probe_address(item: dict[str, Any]) -> str | None:
+    """Where to peek for this plugin's liveness.
+
+    Prefers the manifest's resolved ``plugin-api.status`` section; falls back
+    to the plugin's own route prefix when that root actually answers (many
+    standalone servers serve their status document there).
+    """
+
+    sections = item.get("apiSections")
+    if not isinstance(sections, dict):
+        sections = _resolved_api_sections(str(item.get("id") or ""), item)
+    status = sections.get("status") if isinstance(sections, dict) else None
+    if isinstance(status, dict) and status.get("address"):
+        return str(status["address"])
+    prefix = f"/{item.get('id')}"
+    if _route_is_registered(prefix):
+        return prefix
+    return None
+
+
+def _peek_plugin_status(item: dict[str, Any]) -> dict[str, Any]:
+    """Peek at one plugin's status endpoint and report whether it is alive.
+
+    ``alive`` is ``True`` when the endpoint answered with any non-5xx status
+    (the process behind it is up, even if the exact path is a 404), ``False``
+    when the request failed or answered 5xx (a proxied mount whose standalone
+    server is down surfaces here as a 502), and ``None`` when the plugin
+    declares no status surface at all. Never raises: lifecycle phases must
+    proceed no matter how broken one plugin's server is.
+    """
+
+    address = _status_probe_address(item)
+    if not address:
+        return {"alive": None, "address": None, "detail": "no status endpoint declared"}
+    url = address if address.startswith(("http://", "https://")) else f"{_SELF_BASE}{address}"
+    try:
+        # 8s: status pages that live-probe their own upstreams (web_proxy's
+        # admin document) legitimately take several seconds; dead servers
+        # still fail fast with connection-refused.
+        with urllib.request.urlopen(url, timeout=8) as response:  # noqa: S310 - local liveness probe
+            code = int(response.getcode() or 0)
+        return {"alive": True, "address": address, "detail": f"HTTP {code}"}
+    except urllib.error.HTTPError as error:
+        return {"alive": error.code < 500, "address": address, "detail": f"HTTP {error.code}"}
+    except Exception as error:  # noqa: BLE001 - connection refused, timeout, DNS...
+        return {"alive": False, "address": address, "detail": str(error)}
 
 
 def run_lifecycle_phase(phase: str, *, reason: str = "") -> list[dict[str, Any]]:
@@ -597,6 +660,84 @@ def list_plugins() -> dict[str, Any]:
         "plugins": _scan(register=False),
         "policyPath": str(POLICY_PATH),
         "manifestName": MANIFEST_NAME,
+    }
+
+
+def _assess_plugin(item: dict[str, Any]) -> dict[str, Any]:
+    """Compare where one plugin SHOULD be against where it actually is.
+
+    Expected state comes from its scan policy: a startup plugin should have
+    completed the workbenchStartup phase and (if it has a status surface) be
+    answering on it; a disabled plugin should not be loaded at all. Actual
+    state is the loaded flag, the live status peek, and the initialization
+    report. The verdict names the first mismatch, or "as expected".
+    """
+
+    scan = str(item.get("scan") or "startup")
+    should_load = scan == "startup"
+    expected = {
+        "loaded": should_load,
+        "phase": "workbenchStartupAfter" if should_load else "not loaded",
+        "reason": f"scan={scan}",
+    }
+    loaded = bool(item.get("loaded"))
+    status = _peek_plugin_status(item) if loaded else {"alive": None, "address": _status_probe_address(item), "detail": "not probed (plugin not loaded)"}
+    initialization = item.get("initialization") if isinstance(item.get("initialization"), dict) else {}
+    ready = bool(initialization.get("ready", True))
+    unmet = [
+        f"{check.get('kind')}:{check.get('name')}"
+        for check in (initialization.get("checks") or [])
+        if isinstance(check, dict) and not check.get("satisfied")
+    ]
+    error = str(item.get("error") or "")
+    if not should_load:
+        verdict = "disabled-but-loaded" if loaded else "as expected"
+        phase = "loaded (should be stopped)" if loaded else "not loaded"
+    elif not loaded:
+        verdict = "should-be-loaded"
+        phase = "not loaded"
+    elif status.get("alive") is False:
+        verdict = "loaded-but-server-dead"
+        phase = "workbenchStartupAfter (server unreachable)"
+    elif not ready:
+        verdict = "running-with-unmet-requirements"
+        phase = "workbenchStartupAfter"
+    else:
+        verdict = "as expected"
+        phase = "workbenchStartupAfter" + ("" if status.get("alive") else " (no status surface to verify)")
+    return {
+        "id": item.get("id"),
+        "label": item.get("label") or item.get("id"),
+        "expected": expected,
+        "actual": {
+            "loaded": loaded,
+            "phase": phase,
+            "alive": status.get("alive"),
+            "statusAddress": status.get("address"),
+            "statusDetail": status.get("detail"),
+            "initializationReady": ready,
+            "unmetChecks": unmet,
+            "error": error,
+        },
+        "ok": verdict == "as expected",
+        "verdict": verdict,
+    }
+
+
+@router.get("/assessment")
+def assess_plugins() -> dict[str, Any]:
+    """Assess every plugin: expected phase/state versus what is actually running.
+
+    Peeks at each loaded plugin's status endpoint, so this is heavier than
+    the catalog listing — call it on demand, not on a poll.
+    """
+
+    catalog = _scan(register=False)
+    assessments = [_assess_plugin(item) for item in catalog]
+    return {
+        "assessments": assessments,
+        "okCount": sum(1 for entry in assessments if entry["ok"]),
+        "total": len(assessments),
     }
 
 

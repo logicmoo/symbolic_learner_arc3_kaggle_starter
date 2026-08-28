@@ -2678,7 +2678,7 @@ export function RuntimeHistoryView({
   const availablePlanSpecs = planSpecs.filter(
     (plan) =>
       (!goalId || (plan.goals || []).includes(goalId)) &&
-      (plan.specializations || []).some((specializationId: string) =>
+      relationshipIds(plan.specializations).some((specializationId: string) =>
         workflowIds.has(planDocs.find((doc) => doc.id === specializationId)?.workflow),
       ),
   );

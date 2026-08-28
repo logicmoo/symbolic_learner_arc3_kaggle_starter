@@ -1,0 +1,13 @@
+[
+  {
+    "id": "pixelate-8",
+    "title": "pixelate ×8",
+    "filter": "pixelate",
+    "params": {
+      "colors": 8,
+      "scale": 8
+    },
+    "description": "",
+    "publishedAt": "2026-08-28T04:16:23.319432Z"
+  }
+]

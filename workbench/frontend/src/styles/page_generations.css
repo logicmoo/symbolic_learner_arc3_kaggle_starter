@@ -1,0 +1,52 @@
+/* The page-generation stepper strip (page-upgrade system). */
+.page-generations-strip {
+  display: flex; align-items: center; gap: 8px;
+  margin: 4px 18px; padding: 5px 10px;
+  border: 1px solid var(--line, #2a3742); background: var(--panel, #10161d);
+  font-size: 11px;
+}
+.page-generations-strip > b { letter-spacing: 0.1em; font-size: 10px; color: var(--muted, #8aa); }
+.page-generations-steps { display: flex; gap: 4px; }
+.page-generations-steps button { font-size: 11px; padding: 2px 8px; }
+.page-generations-steps button.is-active { border-color: #4d8dd6; color: #9cc4ee; }
+.page-generations-strip small { color: var(--muted, #8aa); margin-left: auto; }
+
+/* Provenance panel + verdicts. */
+.page-generations-steps button.is-red-herring { border-color: #b66; color: #d99; text-decoration: line-through; }
+.page-generations-provenance {
+  display: flex; gap: 18px; flex-wrap: wrap;
+  margin: 0 18px 4px; padding: 8px 12px;
+  border: 1px dashed var(--line, #2a3742); font-size: 11px;
+}
+.page-generations-provenance b { font-size: 10px; letter-spacing: 0.08em; }
+.page-generations-provenance table td { padding: 1px 8px 1px 0; vertical-align: top; color: var(--muted, #8aa); }
+.page-generations-provenance table td:first-child { color: #667; white-space: nowrap; }
+.page-generations-provenance ol { margin: 4px 0 0 16px; padding: 0; color: var(--muted, #8aa); max-width: 520px; }
+.page-generations-provenance li { margin-bottom: 2px; }
+.page-generations-warning { color: #e99; margin: 4px 0; }
+.verdict-canonical { color: #3fae6a; }
+.verdict-superseded { color: #8aa; }
+.verdict-experimental { color: #c9a227; }
+.verdict-red-herring { color: #e66; }
+/* Shrunk + hidden modes for the generations notice. */
+.page-generations { position: relative; }
+.page-generations-strip.is-compact {
+  justify-content: flex-end; padding: 2px 8px; margin: 2px 18px 0;
+  border-style: dashed; background: none;
+}
+.page-generations-chip { font-size: 10px; padding: 1px 8px; letter-spacing: 0.05em; }
+.page-generations-strip.is-compact button:not(.page-generations-chip) { font-size: 10px; padding: 1px 6px; opacity: 0.6; }
+.page-generations-handle {
+  position: absolute; top: 0; right: 22px; z-index: 30;
+  font-size: 10px; line-height: 1; padding: 0 8px 2px;
+  border: 1px dashed var(--line, #2a3742); border-top: none;
+  background: var(--panel, #10161d); color: var(--muted, #8aa);
+  opacity: 0.5;
+}
+.page-generations-handle:hover { opacity: 1; }
+/* The generations host must preserve the shell's scroll contract: the stage
+   clips overflow, so the wrapper is a height-constrained column and the
+   hosted page is the scroller (vertical + horizontal). */
+.page-generations { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.page-generations > .resource-view { flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: auto; }
+.page-generations-strip, .page-generations-provenance { flex: 0 0 auto; }

@@ -73,6 +73,23 @@ type Plugin = {
   "plugin-api"?: PluginApi;
   apiSections?: Record<string, PluginApiSection>;
 };
+type PluginAssessment = {
+  id: string;
+  label: string;
+  expected: { loaded: boolean; phase: string; reason: string };
+  actual: {
+    loaded: boolean;
+    phase: string;
+    alive: boolean | null;
+    statusAddress?: string | null;
+    statusDetail?: string;
+    initializationReady: boolean;
+    unmetChecks: string[];
+    error?: string;
+  };
+  ok: boolean;
+  verdict: string;
+};
 type PluginResponse = { plugins: Plugin[]; policyPath: string; manifestName?: string };
 /** Phases whose invocation could stop or restart a plugin's own process --
  * never rendered as a one-click link, only as a labelled, non-clickable entry. */
@@ -132,6 +149,22 @@ export function PluginManagerPage() {
     Record<string, { hook: string | null; ok: boolean; detail?: string }>
   >({});
   const [lifecycleBusy, setLifecycleBusy] = useState<string | null>(null);
+  // Assessment: expected phase/state per plugin versus what actually runs.
+  const [assessment, setAssessment] = useState<{ assessments: PluginAssessment[]; okCount: number; total: number } | null>(null);
+  const [assessBusy, setAssessBusy] = useState(false);
+  const loadAssessment = useCallback(async () => {
+    setAssessBusy(true);
+    try {
+      const response = await fetch("/api/plugins/assessment");
+      if (!response.ok) throw new Error(await response.text());
+      setAssessment(await response.json());
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : String(reason));
+    } finally {
+      setAssessBusy(false);
+    }
+  }, []);
+  useEffect(() => void loadAssessment(), [loadAssessment]);
   const runLifecyclePhase = async (pluginId: string, phase: string) => {
     const key = `${pluginId}:${phase}`;
     setLifecycleBusy(key);
@@ -155,30 +188,22 @@ export function PluginManagerPage() {
   const selected = catalog?.plugins.find((plugin) => plugin.id === openPage?.pluginId);
   const manifestName = catalog?.manifestName || "plugin.json";
 
-  return (
-    <section className="resource-view plugin-manager-page">
-      <div className="resource-heading">
-        <div>
-          <span>SYSTEM EXTENSIONS</span>
-          <h1>Plugins</h1>
-          <p>
-            Filesystem plugins discovered beneath <code>workbench/plugins</code>. Each plugin mounts
-            its routes on the workbench API port and declares its pages in{" "}
-            <code>{manifestName}</code>.
-          </p>
-        </div>
-        <button disabled={busy} onClick={() => void load(true)}>
-          {busy ? "Scanning…" : "Refresh plugins"}
-        </button>
-      </div>
-      {error && (
-        <div className="backend-error">
-          <b>Plugin error</b>
-          <span>{error}</span>
-        </div>
-      )}
-      <div className="plugin-catalog">
-        {(catalog?.plugins || []).map((plugin) => (
+  // One tab per plugin plus the combined "All plugins" view; a plugin's tab
+  // shows the same card the common page shows, full width. The selected tab
+  // is mirrored into ?subview= and honored on a fresh load.
+  const [pluginTab, setPluginTab] = useState<string>(() => {
+    if (typeof window === "undefined") return "all";
+    return new URLSearchParams(window.location.search).get("subview") || "all";
+  });
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    if (pluginTab === "all") url.searchParams.delete("subview");
+    else url.searchParams.set("subview", pluginTab);
+    if (url.href !== window.location.href) window.history.replaceState(window.history.state, "", url);
+  }, [pluginTab]);
+
+  const renderCard = (plugin: Plugin) => (
           <article className="plugin-card" key={plugin.id}>
             <header>
               <div>
@@ -389,11 +414,122 @@ export function PluginManagerPage() {
             <small>{plugin.path}</small>
             {plugin.error && <div className="plugin-error">{plugin.error}</div>}
           </article>
-        ))}
-        {!busy && catalog?.plugins.length === 0 && (
-          <div className="studio-empty">No plugin manifests found.</div>
-        )}
+  );
+
+  const shownPlugin = catalog?.plugins.find((plugin) => plugin.id === pluginTab);
+  return (
+    <section className="resource-view plugin-manager-page">
+      <div className="resource-heading">
+        <div>
+          <span>SYSTEM EXTENSIONS</span>
+          <h1>Plugins</h1>
+          <p>
+            Filesystem plugins discovered beneath <code>workbench/plugins</code>. Each plugin mounts
+            its routes on the workbench API port and declares its pages in{" "}
+            <code>{manifestName}</code>.
+          </p>
+        </div>
+        <button disabled={busy} onClick={() => void load(true)}>
+          {busy ? "Scanning…" : "Refresh plugins"}
+        </button>
       </div>
+      {error && (
+        <div className="backend-error">
+          <b>Plugin error</b>
+          <span>{error}</span>
+        </div>
+      )}
+      <div className="plugin-tabs" role="tablist" aria-label="Plugin tabs">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={pluginTab === "all"}
+          className={`plugin-tab${pluginTab === "all" ? " is-active" : ""}`}
+          onClick={() => setPluginTab("all")}
+        >
+          All plugins
+        </button>
+        {(catalog?.plugins || []).map((plugin) => (
+          <button
+            key={plugin.id}
+            type="button"
+            role="tab"
+            aria-selected={pluginTab === plugin.id}
+            className={`plugin-tab${pluginTab === plugin.id ? " is-active" : ""}${plugin.loaded ? "" : " is-unloaded"}`}
+            title={plugin.error || plugin.description || plugin.id}
+            onClick={() => setPluginTab(plugin.id)}
+          >
+            {plugin.label || plugin.id}
+          </button>
+        ))}
+      </div>
+      <section className="plugin-assessment" aria-label="Plugin assessment">
+        <header>
+          <b>
+            Assessment{assessment ? ` — ${assessment.okCount}/${assessment.total} as expected` : ""}
+          </b>
+          <span>where each plugin should be (from its scan policy) versus where it actually is</span>
+          <button disabled={assessBusy} onClick={() => void loadAssessment()}>
+            {assessBusy ? "Assessing…" : "↻ Assess"}
+          </button>
+        </header>
+        {assessment && (
+          <table>
+            <thead>
+              <tr>
+                <th>plugin</th>
+                <th>should be</th>
+                <th>actually</th>
+                <th>server</th>
+                <th>verdict</th>
+              </tr>
+            </thead>
+            <tbody>
+              {assessment.assessments
+                .filter((entry) => pluginTab === "all" || entry.id === pluginTab)
+                .map((entry) => (
+                  <tr key={entry.id} className={entry.ok ? "is-ok" : "is-off"}>
+                    <td><b>{entry.label}</b></td>
+                    <td>
+                      {entry.expected.phase}
+                      <small> ({entry.expected.reason})</small>
+                    </td>
+                    <td>{entry.actual.phase}</td>
+                    <td>
+                      {entry.actual.alive === true && <span className="plugin-ready">alive</span>}
+                      {entry.actual.alive === false && <span className="plugin-incomplete">dead</span>}
+                      {entry.actual.alive === null && <span>—</span>}
+                      {entry.actual.statusAddress && (
+                        <code title={entry.actual.statusDetail || ""}> {entry.actual.statusAddress}</code>
+                      )}
+                    </td>
+                    <td className={entry.ok ? "plugin-ready" : "plugin-incomplete"}>
+                      {entry.verdict}
+                      {entry.actual.unmetChecks.length > 0 && (
+                        <small> unmet: {entry.actual.unmetChecks.join(", ")}</small>
+                      )}
+                      {entry.actual.error && <small> {entry.actual.error}</small>}
+                    </td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        )}
+        {!assessment && <p>{assessBusy ? "Probing every plugin's status endpoint…" : "No assessment yet."}</p>}
+      </section>
+      {pluginTab === "all" && (
+        <div className="plugin-catalog">
+          {(catalog?.plugins || []).map((plugin) => renderCard(plugin))}
+          {!busy && catalog?.plugins.length === 0 && (
+            <div className="studio-empty">No plugin manifests found.</div>
+          )}
+        </div>
+      )}
+      {pluginTab !== "all" && (
+        <div className="plugin-catalog plugin-catalog-single" role="tabpanel" aria-label={shownPlugin?.label || pluginTab}>
+          {shownPlugin ? renderCard(shownPlugin) : <div className="studio-empty">No plugin named {pluginTab}.</div>}
+        </div>
+      )}
       {openPage && (
         <PluginAdminPanel
           key={`${openPage.pluginId}:${openPage.page.id}`}

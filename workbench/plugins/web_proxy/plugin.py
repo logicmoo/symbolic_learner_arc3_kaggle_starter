@@ -434,10 +434,21 @@ def _mount_router(mounts: list[dict[str, str]], settings: ProxySettings) -> APIR
                     content=body,
                     headers=_filtered_headers(request.headers.items()),
                 )
+            headers = _filtered_headers(upstream_response.headers.multi_items())
+            # An upstream redirect names its OWN path space (Location: /admin/).
+            # Rebase root-relative Locations onto the mount so the client's
+            # follow-up request stays inside this proxy instead of escaping to
+            # a path the workbench does not serve.
+            location = headers.get("location") or headers.get("Location")
+            if location and location.startswith("/") and not location.startswith(f"{_base}/") and location != _base:
+                headers = {
+                    name: (f"{_base}{value}" if name.lower() == "location" else value)
+                    for name, value in headers.items()
+                }
             return Response(
                 content=upstream_response.content,
                 status_code=upstream_response.status_code,
-                headers=_filtered_headers(upstream_response.headers.multi_items()),
+                headers=headers,
                 media_type=upstream_response.headers.get("content-type"),
             )
 

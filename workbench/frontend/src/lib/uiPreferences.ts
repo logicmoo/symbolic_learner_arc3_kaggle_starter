@@ -2,8 +2,16 @@ import { useSyncExternalStore } from "react";
 
 export type ResourceSourceFileControlsPlacement = "above" | "below";
 
+export type GenerationsView = "fullest" | "full" | "compact";
+
 export type UserUiPreferences = {
   resourceSourceFileControlsPlacement: ResourceSourceFileControlsPlacement;
+  /** Whether the per-page "UI Config" strip (PageUiTools) is shown at all. */
+  pageUiToolsVisible: boolean;
+  /** Whether page-generation strips (version steppers) are shown at all. */
+  generationsVisible: boolean;
+  /** The one shared view of the generations notice when visible. */
+  generationsView: GenerationsView;
 };
 
 export const USER_UI_PREFERENCES_STORAGE_KEY = "metta-workbench.user-ui-preferences.v1";
@@ -11,6 +19,9 @@ export const USER_UI_PREFERENCES_CHANGED_EVENT = "workbench:user-ui-preferences-
 
 export const DEFAULT_USER_UI_PREFERENCES: UserUiPreferences = {
   resourceSourceFileControlsPlacement: "above",
+  pageUiToolsVisible: true,
+  generationsVisible: true,
+  generationsView: "fullest",
 };
 
 let cachedSource: string | null | undefined;
@@ -23,6 +34,12 @@ function parseUserUiPreferences(source: string | null): UserUiPreferences {
     return {
       resourceSourceFileControlsPlacement:
         candidate.resourceSourceFileControlsPlacement === "below" ? "below" : "above",
+      pageUiToolsVisible: candidate.pageUiToolsVisible !== false,
+      generationsVisible: candidate.generationsVisible !== false,
+      generationsView:
+        candidate.generationsView === "full" || candidate.generationsView === "compact"
+          ? candidate.generationsView
+          : "fullest",
     };
   } catch {
     return DEFAULT_USER_UI_PREFERENCES;

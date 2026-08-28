@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCollapsingHeaderWheel } from "../lib/collapsingHeaderWheel";
 import { ArtifactTreeCommandContext, type ArtifactTreeCommand } from "./ArtifactTreeBranch";
 import { RepeatSwitch, TreeViewControls } from "./TreeViewControls";
 import { DEFAULT_TREE_VISIBILITY_RULES, type TreeVisibilityRules, useArtifactTreeFilter } from "./useArtifactTreeFilter";
@@ -636,6 +637,7 @@ export function SuperControl(props: SuperControlProps) {
     : [category || title, activeTab?.label || "Select artifact"];
   const [bottomPanelId, setBottomPanelId] = useState<string | null>(bottomPanels[0]?.id || null);
   const [navigatorCollapsed, setNavigatorCollapsed] = useState(false);
+  const pageRootRef = useCollapsingHeaderWheel();
   const [viewControlsOpen, setViewControlsOpen] = useState(false);
   const [treeCommand, setTreeCommand] = useState<ArtifactTreeCommand>(null);
   const [categoryCommand, setCategoryCommand] = useState<ArtifactTreeCommand>(null);
@@ -669,6 +671,7 @@ export function SuperControl(props: SuperControlProps) {
   }
 
   return <section
+    ref={pageRootRef}
     className={`resource-view operation-hierarchy-page generic-hierarchy-editor super-control ${className}`.trim()}
     data-editor-baseline={UNIVERSAL_ARTIFACT_EDITOR_BASELINE}
   >

@@ -63,6 +63,7 @@ type PlaySessionSnapshot = {
   levelDirs: string[];
   framePath?: string | null;
   forkedFrom?: string | null;
+  recording?: boolean;
   availableActions: PlayAction[];
   replayLog?: ReplayOp[];
   moves?: PlayMove[];
@@ -364,6 +365,125 @@ export function Arc3PlayPage({
     void loadRecordings();
   }, [loadRecordings]);
 
+  // ---- Prompt silo: an operator bar below the game. Prompts read the
+  // session's level dir (the setup silo) and write output files back into it.
+  const [siloOpen, setSiloOpen] = useState(false);
+  const [siloPrompts, setSiloPrompts] = useState<{ id: string; label: string }[]>([]);
+  const [siloPromptId, setSiloPromptId] = useState("");
+  const [siloModelId, setSiloModelId] = useState("");
+  const [siloLog, setSiloLog] = useState("");
+  const [siloRunning, setSiloRunning] = useState(false);
+  const siloStopRef = useRef(false);
+  useEffect(() => {
+    let cancelled = false;
+    void request(`/api/workspaces/${encodeURIComponent(workspaceId)}/prompt-implementations`)
+      .then((payload) => {
+        if (cancelled) return;
+        const records = ((payload.prompts as Array<Record<string, unknown>>) || [])
+          .map((record) => (record.document || {}) as Record<string, unknown>)
+          .filter((document) => typeof document.id === "string" && document.id)
+          .map((document) => ({ id: String(document.id), label: String(document.label || document.id) }));
+        setSiloPrompts(records);
+        setSiloPromptId((current) => current || records[0]?.id || "");
+      })
+      .catch(() => setSiloPrompts([]));
+    return () => { cancelled = true; };
+  }, [workspaceId]);
+  useEffect(() => {
+    setSiloModelId((current) => current || b1b2Models?.[0]?.id || "");
+  }, [b1b2Models]);
+  const appendSiloLog = (line: string) =>
+    setSiloLog((current) => `${current}${current ? "\n" : ""}${line}`);
+  const runSiloPrompt = useCallback(async (promptId: string): Promise<boolean> => {
+    if (!session || !promptId) return false;
+    const dir = session.levelDir;
+    try {
+      appendSiloLog(`▶ ${promptId} on ${dir}`);
+      const resolved = await request(
+        `/api/workspaces/${encodeURIComponent(workspaceId)}/prompts/${encodeURIComponent(promptId)}/resolve`,
+      );
+      const implementation = (resolved.implementation || {}) as Record<string, unknown>;
+      const rawText = implementation.text;
+      const promptText = Array.isArray(rawText) ? rawText.map(String).join("\n") : String(rawText || "");
+      if (!promptText.trim()) throw new Error(`prompt ${promptId} resolved to empty text`);
+      const filesPayload = await request(
+        `/api/arc3-play/silo/files?workspaceId=${encodeURIComponent(workspaceId)}&dir=${encodeURIComponent(dir)}`,
+      ).catch(() => ({ files: [] }));
+      const names = ((filesPayload.files as Array<{ name: string }>) || []).map((file) => file.name);
+      let stateText = "";
+      try {
+        const response = await fetch(assetUrl(`${dir}/state.json`), { cache: "no-store" });
+        if (response.ok) stateText = await response.text();
+      } catch { /* silo may not have a state.json */ }
+      let image = "";
+      try {
+        const response = await fetch(assetUrl(`${dir}/image.png`), { cache: "no-store" });
+        if (response.ok) {
+          const blob = await response.blob();
+          image = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(String(reader.result || ""));
+            reader.onerror = () => reject(new Error("could not read silo image"));
+            reader.readAsDataURL(blob);
+          });
+        }
+      } catch { /* image is optional */ }
+      const prompt = [
+        promptText,
+        `SETUP SILO: ${dir}`,
+        names.length ? `SILO FILES:\n${names.join("\n")}` : "",
+        stateText ? `STATE.JSON:\n${stateText}` : "",
+      ].filter(Boolean).join("\n\n");
+      if (!siloModelId) throw new Error("pick a model first");
+      const payload = await request(
+        `/api/workspaces/${encodeURIComponent(workspaceId)}/models/${encodeURIComponent(siloModelId)}/invoke`,
+        { method: "POST", body: JSON.stringify({ prompt, image: image || undefined, timeoutSeconds: 180 }) },
+      );
+      const output = typeof payload.text === "string" ? payload.text : JSON.stringify(payload, null, 2);
+      const outName = `${promptId.replace(/[^A-Za-z0-9_.-]/g, "_")}.out.md`;
+      const written = await request("/api/arc3-play/silo/write", {
+        method: "POST",
+        body: JSON.stringify({ workspaceId, dir, name: outName, content: output }),
+      });
+      appendSiloLog(`✓ ${promptId} → ${written.path} (${written.bytes} bytes)`);
+      appendSiloLog(output.length > 4000 ? `${output.slice(0, 4000)}\n… (${output.length} chars)` : output);
+      return true;
+    } catch (reason) {
+      appendSiloLog(`✗ ${promptId}: ${reason instanceof Error ? reason.message : String(reason)}`);
+      return false;
+    }
+  }, [session, workspaceId, siloModelId, assetUrl]);
+  const runSelectedSiloPrompt = async () => {
+    setSiloOpen(true);
+    setSiloRunning(true);
+    try { await runSiloPrompt(siloPromptId); } finally { setSiloRunning(false); }
+  };
+  const runNextSiloPrompt = async () => {
+    const index = siloPrompts.findIndex((prompt) => prompt.id === siloPromptId);
+    const next = siloPrompts[index + 1];
+    if (!next) { appendSiloLog("(no next prompt — at the end of the list)"); setSiloOpen(true); return; }
+    setSiloPromptId(next.id);
+    setSiloOpen(true);
+    setSiloRunning(true);
+    try { await runSiloPrompt(next.id); } finally { setSiloRunning(false); }
+  };
+  const runSiloPromptsToEnd = async () => {
+    setSiloOpen(true);
+    setSiloRunning(true);
+    siloStopRef.current = false;
+    try {
+      const start = Math.max(0, siloPrompts.findIndex((prompt) => prompt.id === siloPromptId));
+      for (let index = start; index < siloPrompts.length; index += 1) {
+        if (siloStopRef.current) { appendSiloLog("■ stopped"); break; }
+        setSiloPromptId(siloPrompts[index].id);
+        const ok = await runSiloPrompt(siloPrompts[index].id);
+        if (!ok) break;
+      }
+    } finally {
+      setSiloRunning(false);
+    }
+  };
+
   const perform = useCallback(
     async (work: () => Promise<string | void>, label?: string) => {
       setError("");
@@ -406,6 +526,17 @@ export function Arc3PlayPage({
       await loadSavepoints();
       return `started ${started.gameDirectory} · ${started.levelDir}`;
     }, `Start ${gameId}`);
+
+  const setRecordingEnabled = (enabled: boolean) =>
+    perform(async () => {
+      if (!session) return;
+      const payload = await request(`/api/arc3-play/sessions/${encodeURIComponent(session.id)}/recording`, {
+        method: "POST",
+        body: JSON.stringify({ enabled }),
+      });
+      setSession(payload.session as PlaySessionSnapshot);
+      return enabled ? "recording attached (fresh level dir)" : "recorder detached";
+    }, enabled ? "Begin recording" : "Detach recorder");
 
   const refreshRecording = () =>
     perform(async () => {
@@ -727,8 +858,15 @@ export function Arc3PlayPage({
         `/api/arc3-play/recordings/clear?workspaceId=${encodeURIComponent(workspaceId)}${gameParam}`,
         { method: "POST" },
       );
-      const note = `cleared recordings: removed ${payload.count ?? 0} dir(s)`;
+      const detached = (payload.detached as string[]) || [];
+      const note = `cleared recordings: removed ${payload.count ?? 0} dir(s)${detached.length ? " · recorder detached (press ⏺ Begin recording to re-attach)" : ""}`;
       setImportNote(note);
+      // The backend detached any live session in scope so cleared dirs are
+      // not immediately recreated; sync the local snapshot's record switch.
+      if (session && detached.includes(session.id)) {
+        const refreshed = await request(`/api/arc3-play/sessions/${encodeURIComponent(session.id)}`).catch(() => null);
+        if (refreshed) setSession(refreshed.session as PlaySessionSnapshot);
+      }
       await loadSavepoints();
       return note;
     }, "Clear recordings");
@@ -1160,6 +1298,16 @@ export function Arc3PlayPage({
                 )}
               </div>
               <div className="arc3-play-actions arc3-play-session-controls">
+                <button
+                  className={`arc3-play-action arc3-play-record ${session.recording !== false ? "down" : ""}`}
+                  disabled={busy || session.closed}
+                  title={session.recording !== false
+                    ? "Recording: every move writes into the level dir. Click to detach the recorder."
+                    : "Detached: moves are NOT recorded. Click to begin recording into a fresh level dir."}
+                  onClick={() => void setRecordingEnabled(session.recording === false)}
+                >
+                  {session.recording !== false ? "⏺ Recording" : "⏺ Begin recording"}
+                </button>
                 {session.closed && (
                   <button
                     className="arc3-play-action"
@@ -1253,6 +1401,81 @@ export function Arc3PlayPage({
                 <button className="arc3-play-action end" disabled={busy || session.closed} onClick={() => void endSession()}>
                   End session
                 </button>
+              </div>
+              <div className="arc3-play-silo">
+                <div className="arc3-play-actions arc3-play-silo-bar">
+                  <button
+                    className="arc3-play-action"
+                    title="Expand/collapse the prompt-silo output area"
+                    onClick={() => setSiloOpen((open) => !open)}
+                  >
+                    {siloOpen ? "▾" : "▸"} Prompt silo
+                  </button>
+                  <select
+                    aria-label="Silo prompt"
+                    title="Prompts read the setup silo's files (state.json, image.png, prior outputs) and write results back into it"
+                    value={siloPromptId}
+                    disabled={siloRunning}
+                    onChange={(event) => setSiloPromptId(event.target.value)}
+                  >
+                    {!siloPrompts.length && <option value="">no prompts in this workspace</option>}
+                    {siloPrompts.map((prompt) => (
+                      <option key={prompt.id} value={prompt.id}>{prompt.label}</option>
+                    ))}
+                  </select>
+                  <select
+                    aria-label="Silo model"
+                    title="Model that executes each prompt"
+                    value={siloModelId}
+                    disabled={siloRunning}
+                    onChange={(event) => setSiloModelId(event.target.value)}
+                  >
+                    {!b1b2Models?.length && <option value="">no models</option>}
+                    {(b1b2Models || []).map((model) => (
+                      <option key={model.id} value={model.id}>{model.label || model.id}</option>
+                    ))}
+                  </select>
+                  <button
+                    className="arc3-play-action"
+                    disabled={siloRunning || !siloPromptId || !siloModelId}
+                    title="Run the selected prompt against this level dir's silo files"
+                    onClick={() => void runSelectedSiloPrompt()}
+                  >
+                    Run prompt
+                  </button>
+                  <button
+                    className="arc3-play-action"
+                    disabled={siloRunning || !siloPrompts.length || !siloModelId}
+                    title="Advance the combobox to the next prompt and run it"
+                    onClick={() => void runNextSiloPrompt()}
+                  >
+                    Run next prompt
+                  </button>
+                  {!siloRunning ? (
+                    <button
+                      className="arc3-play-action"
+                      disabled={!siloPrompts.length || !siloModelId}
+                      title="Run every prompt from the selected one through the end of the list"
+                      onClick={() => void runSiloPromptsToEnd()}
+                    >
+                      Run til end
+                    </button>
+                  ) : (
+                    <button className="arc3-play-action end" onClick={() => { siloStopRef.current = true; }}>
+                      ■ Stop
+                    </button>
+                  )}
+                  <code title="The setup silo the prompts read from and write into">{session.levelDir}</code>
+                </div>
+                {siloOpen && (
+                  <textarea
+                    className="arc3-play-silo-log"
+                    readOnly
+                    value={siloLog}
+                    placeholder="Prompt outputs appear here; each run also writes <prompt>.out.md into the silo dir."
+                    spellCheck={false}
+                  />
+                )}
               </div>
               {replayScript && (
                 <div className="arc3-play-actions arc3-play-replayer">

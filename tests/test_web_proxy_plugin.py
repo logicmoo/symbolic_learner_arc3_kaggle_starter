@@ -24,7 +24,7 @@ def test_web_proxy_plugin_is_discovered_and_loaded() -> None:
     assert plugin["scan"] == "startup"
     assert plugin["loaded"] is True
     assert plugin["routePrefix"] == "/web_proxy"
-    assert plugin["allowedTargets"] == ["http://127.0.0.1:8801"]
+    assert plugin["allowedTargets"] == ["*://127.0.0.1:*/*"]
 
 
 def test_plugin_scanner_skips_hidden_and_manifestless_entries(
@@ -75,7 +75,7 @@ def test_plugin_scanner_declared_masks_found_list_and_enabled_toggle(
     policy_path.write_text(json.dumps({
         "startupScan": ["*/plugin.json", "*/*/plugin.json"],
         "skipScan": ["hide_*", "secret_*"],
-        "foundList": {"nested": {"foundPath": "vendor/nested", "rescan": "disabled", "enabled": False}},
+        "pluginsFound": {"nested": {"path": "vendor/nested/plugin.json", "scan": "disabled", "enabled": False}},
         "plugins": {},
     }), encoding="utf-8")
     monkeypatch.setattr(plugin_api, "PLUGINS_ROOT", tmp_path)
@@ -84,11 +84,11 @@ def test_plugin_scanner_declared_masks_found_list_and_enabled_toggle(
     catalog = {plugin["id"]: plugin for plugin in plugin_api._scan(register=False)}
 
     assert set(catalog) == {"top", "nested"}, "two-level discovery minus skipScan matches"
-    assert catalog["nested"]["scan"] == "disabled", "enabled: false in foundList disables the plugin"
+    assert catalog["nested"]["scan"] == "disabled", "enabled: false in pluginsFound disables the plugin"
     stored = json.loads(policy_path.read_text(encoding="utf-8"))
-    assert stored["foundList"]["top"] == {"foundPath": "top", "rescan": "disabled", "enabled": True}, "new discovery recorded"
-    assert stored["foundList"]["nested"]["enabled"] is False, "existing toggle preserved"
-    assert "secret" not in stored["foundList"]
+    assert stored["pluginsFound"]["top"] == {"path": "top/plugin.json", "scan": "disabled", "enabled": True}, "new discovery recorded"
+    assert stored["pluginsFound"]["nested"]["enabled"] is False, "existing toggle preserved"
+    assert "secret" not in stored["pluginsFound"]
 
 
 def test_plugin_mailbox_endpoints_resolve_for_every_declaring_server(
@@ -148,7 +148,7 @@ def test_chat_page_queries_every_declared_mailbox_server() -> None:
     ).read_text(encoding="utf-8")
     assert "discoverMailboxEndpoints" in source
     assert "plugin.mailboxEndpoint" in source
-    assert "...endpoints.map((endpoint) =>" in source
+    assert "...queried.map((endpoint) =>" in source
     assert "serverProtocol: endpoint.protocol" in source
     assert "mailboxApiBase(option)" in source
     for manifest_name in ("ws_collab", "mailbox_chat", "emullm"):
@@ -163,7 +163,9 @@ def test_chat_page_queries_every_declared_mailbox_server() -> None:
 def test_web_proxy_rejects_targets_outside_manifest_allowlist() -> None:
     app_module = importlib.import_module("app")
     with TestClient(app_module.app) as client:
-        response = client.get("/web_proxy/http/127.0.0.1:9999/health")
+        # The manifest allowlist covers only 127.0.0.1; any other host is refused
+        # before a connection is even attempted.
+        response = client.get("/web_proxy/http/203.0.113.5:9999/health")
     assert response.status_code == 403
     assert "not allowed" in response.json()["error"]
 
@@ -333,3 +335,59 @@ def test_every_plugin_route_prefix_uses_the_plugin_identifier() -> None:
     for manifest_path in sorted((ROOT / "workbench" / "plugins").glob("*/plugin.json")):
         manifest = json.loads(manifest_path.read_text(encoding="utf-8-sig"))
         assert manifest["routePrefix"] == f"/{manifest['id']}", manifest_path
+
+
+def test_lifecycle_phase_peeks_plugin_status_and_reports_liveness(monkeypatch) -> None:
+    """Running a lifecycle phase verifies each participating plugin is alive by
+    peeking at its status endpoint: the hook receives the verdict as
+    ``statusPeek`` and the phase outcome carries it as ``status``."""
+
+    plugin_api = importlib.import_module("plugin_api")
+
+    seen: dict[str, object] = {}
+
+    class FakeModule:
+        @staticmethod
+        def on_shutdown(notice: dict) -> str:
+            seen.update(notice)
+            return "done"
+
+    item = {
+        "id": "probed",
+        "apiSections": {"status": {"address": "/probed/status"}},
+        "plugin-lifecycle": {"standalone": True, "hooks": {"workbenchShutdown": "on_shutdown"}},
+    }
+    monkeypatch.setattr(
+        plugin_api, "_peek_plugin_status",
+        lambda entry: {"alive": True, "address": "/probed/status", "detail": "HTTP 200"},
+    )
+
+    outcome = plugin_api._call_lifecycle_hook(item, FakeModule, "workbenchShutdown", reason="test")
+
+    assert outcome is not None and outcome["ok"] is True
+    assert outcome["status"] == {"alive": True, "address": "/probed/status", "detail": "HTTP 200"}
+    assert seen["statusPeek"] == {"alive": True, "address": "/probed/status", "detail": "HTTP 200"}
+
+
+def test_peek_plugin_status_reports_dead_and_undeclared_plugins(monkeypatch) -> None:
+    """The status peek answers alive=False when the endpoint cannot be reached
+    (a standalone server that is down) and alive=None when the plugin declares
+    no status surface at all — and never raises either way."""
+
+    plugin_api = importlib.import_module("plugin_api")
+
+    def refuse(url: str, timeout: float = 0):  # noqa: ARG001 - signature match
+        raise OSError("connection refused")
+
+    monkeypatch.setattr(plugin_api.urllib.request, "urlopen", refuse)
+    dead = plugin_api._peek_plugin_status({
+        "id": "downer",
+        "apiSections": {"status": {"address": "/downer/status"}},
+    })
+    assert dead["alive"] is False
+    assert "refused" in dead["detail"]
+
+    monkeypatch.setattr(plugin_api, "_route_is_registered", lambda path: False)
+    undeclared = plugin_api._peek_plugin_status({"id": "silent", "apiSections": {}})
+    assert undeclared == {"alive": None, "address": None, "detail": "no status endpoint declared"}
+

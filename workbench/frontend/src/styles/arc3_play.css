@@ -845,3 +845,40 @@
   background: rgba(0, 116, 217, 0.18);
   border: 1px solid rgba(0, 116, 217, 0.35);
 }
+
+/* Prompt silo: operator bar + expandable output below the game. */
+.arc3-play-silo {
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+}
+.arc3-play-silo-bar {
+  align-items: center;
+  flex-wrap: wrap;
+}
+.arc3-play-silo-bar select {
+  max-width: 240px;
+  font-size: 12px;
+}
+.arc3-play-silo-bar code {
+  font-size: 11px;
+  color: var(--muted, #8aa);
+  overflow-wrap: anywhere;
+}
+.arc3-play-silo-log {
+  width: 100%;
+  min-height: 160px;
+  max-height: 40vh;
+  resize: vertical;
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+  background: var(--panel, #10161d);
+  color: inherit;
+  border: 1px solid var(--line, #2a3742);
+  padding: 8px;
+  white-space: pre-wrap;
+}
+.arc3-play-record.down {
+  background: rgba(255, 64, 64, 0.22);
+  border-color: rgba(255, 64, 64, 0.6);
+}

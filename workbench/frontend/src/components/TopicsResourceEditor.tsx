@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useCollapsingHeaderWheel } from "../lib/collapsingHeaderWheel";
 import { jsonDocumentToMetta } from "../lib/mettaResourceCodec";
 import { ArtifactTreeBranch } from "./ArtifactTreeBranch";
 import { TreePaneResizer } from "./TreePaneResizer";
@@ -52,6 +53,7 @@ export function TopicsResourceEditor({ workspaceId }: { workspaceId: string }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
+  const pageRootRef = useCollapsingHeaderWheel();
 
   const load = async () => {
     const payload = await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/artifact-categories`);
@@ -185,7 +187,7 @@ export function TopicsResourceEditor({ workspaceId }: { workspaceId: string }) {
     : null;
 
   return (
-    <section className="resource-view operation-hierarchy-page">
+    <section className="resource-view operation-hierarchy-page" ref={pageRootRef}>
       <div className="resource-heading">
         <div>
           <span>TOPIC TAXONOMY</span>

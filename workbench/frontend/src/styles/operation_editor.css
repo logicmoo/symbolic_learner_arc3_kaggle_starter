@@ -73,3 +73,16 @@
 .json-tree-fold-overlay button{border:1px solid #344d58;border-radius:3px;background:#11212a;color:#9fb3bc;padding:4px 7px;font:700 7px ui-monospace,monospace;cursor:pointer}
 .json-tree-fold-overlay button:hover{border-color:#4e6d78;background:#162a34;color:#d1dde2}
 .json-tree-fold-overlay button:disabled{opacity:.4;cursor:default}
+
+
+/* Collapsing header contract: the page root is a scroller that only
+   overflows by the header block (breadcrumb + heading + inspector strip).
+   Wheel-down scrolls the header out, then the two columns fill the stage
+   and their internal panes keep scrolling as before. */
+.operation-hierarchy-page{overflow-y:auto;overflow-x:hidden}
+.main-stage>.operation-hierarchy-page{height:100%;flex:1 1 auto}
+/* The layout slot is exactly one viewport tall: the page only overflows by
+   the header block. Once the header is scrolled out the columns fill the
+   stage and keep their own internal scrolling (simulated from the outer
+   wheel handler); the right editor column stays where it is. */
+.operation-hierarchy-page>.operation-hierarchy-layout{height:100%;min-height:100%;flex:0 0 auto}

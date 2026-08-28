@@ -21,6 +21,8 @@ import { jsonValueToMetta } from "../lib/mettaResourceCodec";
 import { markAllWorkbenchPageSessionsForRestart, readWorkbenchPageSession, writeWorkbenchPageSession } from "../lib/pageSessionState";
 import { rememberWorkspaceLastPage, resolveWorkspaceOpeningPage } from "../lib/workspacePagePreferences";
 import { acknowledgeUiRestartRecovery, failUiRestart, onUIRestart, permitUiReload, registerOnUIRestart, useUiRestartStatus } from "../lib/uiRestartLifecycle";
+import { updateUserUiPreferences, useUserUiPreferences } from "../lib/uiPreferences";
+import { useGlobalStatus } from "../lib/globalStatus";
 import "../lib/surgicalUiReloaderClient";
 import {
   ResourceEnablementBadge,
@@ -145,6 +147,11 @@ const Arc3B1B2PipelinePage = lazy(() =>
 const Arc3PlayPage = lazy(() =>
   import("../components/Arc3PlayPage").then((module) => ({
     default: module.Arc3PlayPage,
+  })),
+);
+const VideoImportPage = lazy(() =>
+  import("../components/VideoImportFamily").then((module) => ({
+    default: module.VideoImportFamily,
   })),
 );
 const Arc3GamesGalleryPage = lazy(() =>
@@ -408,6 +415,7 @@ type View =
   | "arc3TwoImageProlog"
   | "arc3B1B2Pipeline"
   | "arc3Play"
+  | "videoImport"
   | "arc3GamesGallery"
   | "chat"
   | "workflowPageBuilder"
@@ -453,6 +461,7 @@ const WORKBENCH_VIEWS: Set<View> = new Set([
   "arc3TwoImageProlog",
   "arc3B1B2Pipeline",
   "arc3Play",
+  "videoImport",
   "arc3GamesGallery",
   "chat",
   "workflowPageBuilder",
@@ -501,6 +510,7 @@ const viewFromLocation = (): View | null => {
   if (value === "two-image-prolog" || value === "twoimageprolog" || value === "arc3-two-image-prolog") return "arc3TwoImageProlog";
   if (value === "b1-b2-pipeline" || value === "b1b2pipeline" || value === "arc3-b1-b2-pipeline") return "arc3B1B2Pipeline";
   if (value === "play" || value === "arc3-play" || value === "arc3play" || value === "play-record") return "arc3Play";
+  if (value === "video-import" || value === "videoimport" || value === "youtube-import" || value === "video") return "videoImport";
   if (value === "games" || value === "arc3-games" || value === "arc3games" || value === "games-gallery" || value === "arc3-games-gallery") return "arc3GamesGallery";
   if (value === "workflow-page-builder" || value === "workflowpagebuilder" || value === "page-builder") return "workflowPageBuilder";
   if (value === "workflowv2" || value === "workflows-v2" || value === "workflow-v2") return "canvas";
@@ -688,6 +698,7 @@ export const NAVIGATION_V2: Array<{
     group: "KNOWLEDGE",
     items: [
       { label: "Data", view: "knowledgeData", glyph: "◫" },
+      { label: "Video Import", view: "videoImport", glyph: "▷" },
       { label: "AtomSpaces", view: "contexts", glyph: "⚛" },
       { label: "Artifacts", view: "knowledgeArtifacts", glyph: "▣" },
     ],
@@ -729,6 +740,7 @@ const viewLabel = (view: View) =>
       arc3TwoImageProlog: "Two-Image Prolog",
       arc3B1B2Pipeline: "B1 → B2 Pipeline",
       arc3Play: "Play & Record",
+      videoImport: "Video Import",
       arc3GamesGallery: "ARC3 Games",
       workflowPageBuilder: "Workflow Page Builder",
       workflowRuns: "Workflow Runs",
@@ -796,6 +808,9 @@ const slug = (value: string) =>
 
 export function FilesystemWorkbenchPage() {
   const uiRestartStatus = useUiRestartStatus();
+  const uiPreferences = useUserUiPreferences();
+  const globalStatus = useGlobalStatus();
+  const latestStatus = globalStatus[globalStatus.length - 1] || null;
   useEffect(() => {
     acknowledgeUiRestartRecovery();
   }, []);
@@ -2939,14 +2954,6 @@ export function FilesystemWorkbenchPage() {
         </div>
         <div className="toolbar">
           <button
-            type="button"
-            className={`debug-ui-toggle ${debugUiEnabled ? "active" : ""}`}
-            aria-pressed={debugUiEnabled}
-            onClick={() => setDebugUiEnabled(value => !value)}
-          >
-            {debugUiEnabled ? "Debug UI On" : "Debug UI Off"}
-          </button>
-          <button
             className="server-restart-button"
             title="Restart UI and API servers"
             disabled={restartPending}
@@ -4260,6 +4267,7 @@ export function FilesystemWorkbenchPage() {
               />
             )}{" "}
             {view === "plugins" && <PluginManagerPage />}{" "}
+            {view === "videoImport" && <VideoImportPage workspaceId={workspace.id} />}{" "}
             {view === "pluginPage" && <PluginHostedPage entry={pluginPage} />}{" "}
             {view === "setup" && (
               <WorkspaceSettingsPanel
@@ -4307,6 +4315,35 @@ export function FilesystemWorkbenchPage() {
               }}
             >
               Reset layouts
+            </button>
+            <button
+              type="button"
+              className="topbar-panel-restore"
+              title="Show/hide the per-page UI Config strip (page state + UI options banner)"
+              onClick={() => updateUserUiPreferences({ pageUiToolsVisible: !uiPreferences.pageUiToolsVisible })}
+            >
+              {uiPreferences.pageUiToolsVisible ? "Hide UI Config" : "Show UI Config"}
+            </button>
+            <button
+              type="button"
+              className="topbar-panel-restore"
+              title="Generations notice: Hide when it's in full view; Show reopens it in the fullest mode"
+              onClick={() => {
+                const inFullView = uiPreferences.generationsVisible && uiPreferences.generationsView !== "compact";
+                if (inFullView) updateUserUiPreferences({ generationsVisible: false });
+                else updateUserUiPreferences({ generationsVisible: true, generationsView: "fullest" });
+              }}
+            >
+              {uiPreferences.generationsVisible && uiPreferences.generationsView !== "compact" ? "Hide Generations" : "Show Generations"}
+            </button>
+            <button
+              type="button"
+              className="topbar-panel-restore"
+              title="Show/hide the TSX source-location debug overlay"
+              aria-pressed={debugUiEnabled}
+              onClick={() => setDebugUiEnabled((value) => !value)}
+            >
+              {debugUiEnabled ? "Hide UI Debug" : "Show UI Debug"}
             </button>
             <label className="topbar-theme-switch">
               <span>Theme</span>
@@ -4480,6 +4517,8 @@ export function FilesystemWorkbenchPage() {
                 preferred={
                   view === "goals"
                     ? "goals"
+                    : view === "videoImport"
+                      ? "videoImport"
                     : view === "plans"
                       ? "plans"
                       : view === "data"
@@ -4593,6 +4632,12 @@ export function FilesystemWorkbenchPage() {
         <span>
           <i className="online" /> Backend connected
         </span>
+        <span
+          className="footer-status"
+          title={globalStatus.slice(-5).map((entry) => `${entry.at} [${entry.source}] ${entry.text}`).join("\n") || "no activity yet"}
+        >
+          {latestStatus ? `${latestStatus.at} · ${latestStatus.source} · ${latestStatus.text}` : "idle"}
+        </span>
         <span>
           {workspace.id === "shared" ? "Shared library" : workspace.id}
         </span>
@@ -4601,7 +4646,6 @@ export function FilesystemWorkbenchPage() {
           {workspace.representationFileCount || 0} representations
         </span>
         <span>{enabledModelCount} enabled models/presets</span>
-        <span>{workspace.promptFileCount || 0} prompts</span>
         <span className="footer-right">filesystem workspace</span>
       </footer>
       <ChatDock onOpenFullPage={() => setView("chat")} />

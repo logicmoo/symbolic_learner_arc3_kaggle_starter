@@ -32,6 +32,12 @@
       "requestedBy": "coplex"
     },
     {
+      "path": "/coplex_stdpy",
+      "redirect": "http://127.0.0.1:8850",
+      "description": "Redirects /coplex_stdpy to the standalone harness server (same routes as the embedded router, on its own port).",
+      "requestedBy": "coplex_stdpy"
+    },
+    {
       "path": "/emullm",
       "redirect": "http://127.0.0.1:8801/emullm",
       "description": "Redirects /emullm to the Workspace Emulation Router plugin.",
@@ -40,7 +46,7 @@
     {
       "path": "/mailbox_chat",
       "redirect": "http://127.0.0.1:46667",
-      "description": "Redirects /mailbox_chat to the Mailbox Chat relay.",
+      "description": "Redirect /mailbox_chat to the mailbox_chat REST/WebSocket relay.",
       "requestedBy": "mailbox_chat"
     },
     {

@@ -13,6 +13,8 @@ type Props = {
 export function PageUiTools({ pageId, pageLabel, workspaceId, onOpenChat }: Props) {
   const [optionsOpen, setOptionsOpenState] = useState(() => Boolean(readWorkbenchPageSession(workspaceId, pageId)?.ui.optionsOpen));
   const preferences = useUserUiPreferences();
+  // The whole strip is closeable from the topbar (next to Reset layouts).
+  if (!preferences.pageUiToolsVisible) return null;
 
   const openUiChat = () => {
     const prompt = [

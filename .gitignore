@@ -310,3 +310,16 @@ workbench-ui-current.png
 /workbench/plugins/mailbox_chat/.idea/inspectionProfiles/Project_Default.xml
 /workbench/plugins/mailbox_chat/.idea/vcs.xml
 /workbench/plugins/mailbox_chat/.idea/workspace.xml
+
+# Video Import media (downloaded videos, extracted frames, previews) — never
+# commit; the skill files, LUTs, and small JSON catalogs stay tracked.
+workbench/workspaces/*/data/VideoImports/*
+!workbench/workspaces/*/data/VideoImports/filter_skills/
+!workbench/workspaces/*/data/VideoImports/filter_skills/**
+!workbench/workspaces/*/data/VideoImports/luts/
+!workbench/workspaces/*/data/VideoImports/luts/**
+!workbench/workspaces/*/data/VideoImports/download_catalog.json
+!workbench/workspaces/*/data/VideoImports/filter_catalog.json
+!workbench/workspaces/*/data/VideoImports/filter_flags.json
+__pycache__/
+*.pyc

@@ -321,6 +321,10 @@ class PlaySession:
         self.lock = threading.RLock()
         self.closed = False
         self._autosave_id = uuid.uuid4().hex[:12]
+        # Whether game moves are written to the recorder. A new session starts
+        # attached (record button pressed); Clear detaches it and only the
+        # Begin-recording control re-attaches (into a fresh level dir).
+        self.recording = True
         # Optional per-session override of where recordings/savepoints are
         # written (relative to workspace_root); None means the default
         # data/Recordings/<game>/ location. See set_recordings_path().
@@ -371,8 +375,28 @@ class PlaySession:
         resolved.mkdir(parents=True, exist_ok=True)
         self.recordings_root = resolved
 
+    def set_recording(self, enabled: bool) -> None:
+        """Attach or detach the recorder.
+
+        Detaching stops all disk writes (level dirs, nodes, recording.json,
+        autosaves) while the game keeps playing. Re-attaching begins a fresh
+        level dir so a detached stretch never dirties an old recording.
+        """
+        with self.lock:
+            self._require_open()
+            if enabled and not self.recording:
+                self.recording = True
+                self._begin_level_dir(reason="recording_resumed")
+            elif not enabled:
+                self.recording = False
+
     def _begin_level_dir(self, reason: str) -> None:
         level = self.runner.current_level_label()
+        if not self.recording:
+            # Detached: track the level marker but touch nothing on disk.
+            self._level_moves = []
+            self._last_level = level
+            return
         container = self._recordings_container()
         name = _next_ranked_saved_dir_name(container)
         directory = container / name
@@ -419,6 +443,8 @@ class PlaySession:
         return payload
 
     def _write_recording(self, reason: str = "move") -> None:
+        if not self.recording:
+            return
         manifest = {
             "kind": "arc3_play_recording",
             "session_id": self.id,
@@ -466,17 +492,22 @@ class PlaySession:
         ordinal = len(self._level_moves)
         directory = self.level_dir / str(ordinal)
         data = {key: value for key, value in (("x", x), ("y", y)) if value is not None}
-        payload = self._write_node(
-            directory,
-            incoming_action=str(action).upper(),
-            action_data=data,
-            ordinal=ordinal,
-        )
+        if self.recording:
+            payload = self._write_node(
+                directory,
+                incoming_action=str(action).upper(),
+                action_data=data,
+                ordinal=ordinal,
+            )
+        else:
+            # Detached: the move happens and is tracked in memory, but nothing
+            # is written to the recorder.
+            payload = {**self.runner._state_payload(), "recorded_at": _utc_now()}
         move = {
             "index": ordinal,
             "action": str(action).upper(),
             "data": data,
-            "directory": self._relative(directory),
+            "directory": self._relative(directory) if self.recording else None,
             "state": payload.get("state"),
             "level": payload.get("level"),
             "recorded_at": payload.get("recorded_at"),
@@ -508,9 +539,10 @@ class PlaySession:
 
     def undo(self, count: int = 1) -> dict[str, Any]:
         # Artificial rewind: games are deterministic, so RESET the current
-        # level, replay every recorded move except the last `count`, and
-        # drop the rewound move directories so the recording position
-        # points at the earlier move again.
+        # level and replay every recorded move except the last `count`.
+        # While recording, the rewind BRANCHES: the previous play's level dir
+        # is left untouched and the replayed moves are re-recorded into a
+        # fresh level dir, so nothing already on disk is overwritten.
         with self.lock:
             self._require_open()
             if not self._level_moves:
@@ -518,31 +550,47 @@ class PlaySession:
             count = max(1, min(int(count), len(self._level_moves)))
             replay = list(self._level_moves[:-count])
             rewound = list(self._level_moves[-count:])
+            branched = [dict(move) for move in replay]
             with _engine_lock:
                 self.runner.reset(clear_history=True)
-                for move in replay:
+            if self.recording:
+                self._begin_level_dir(reason="undo_branch")
+            with _engine_lock:
+                for index, move in enumerate(branched):
                     data = move.get("data") or {}
                     self.runner.step(
                         move["action"], x=data.get("x"), y=data.get("y")
                     )
-            for move in rewound:
-                shutil.rmtree(
-                    self.level_dir / str(move["index"]), ignore_errors=True
-                )
-            self._level_moves = replay
+                    if self.recording:
+                        directory = self.level_dir / str(index)
+                        payload = self._write_node(
+                            directory,
+                            incoming_action=str(move["action"]).upper(),
+                            action_data=dict(data),
+                            ordinal=index,
+                        )
+                        move["directory"] = self._relative(directory)
+                        move["recorded_at"] = payload.get("recorded_at")
+            self._level_moves = branched
             for move in reversed(rewound):
                 if self.moves and self.moves[-1] is move:
                     self.moves.pop()
                 if self.replay_log and self.replay_log[-1].get("op") == "step":
                     self.replay_log.pop()
+            # The main move log keeps object identity with _level_moves, so
+            # swap the replayed tail for the branched copies.
+            if branched and len(self.moves) >= len(branched) and all(
+                self.moves[-len(branched) + offset] is replay[offset] for offset in range(len(branched))
+            ):
+                self.moves[-len(branched):] = branched
             # Verify the deterministic replay landed on the recorded frame.
             verified: bool | None = None
             try:
                 png = self._frame_png()
                 digest = hashlib.sha256(png).hexdigest()[:16] if png else None
                 expected_dir = (
-                    self.level_dir / str(replay[-1]["index"])
-                    if replay
+                    self.level_dir / str(branched[-1]["index"])
+                    if branched
                     else self.level_dir
                 )
                 expected = json.loads(
@@ -620,7 +668,10 @@ class PlaySession:
 
     def _autosave(self) -> None:
         # Rolling backup: one savepoint per session, overwritten after every
-        # move so the latest position is always resumable.
+        # move so the latest position is always resumable. Skipped while the
+        # recorder is detached — nothing may touch the recordings dir then.
+        if not self.recording:
+            return
         if not any(entry.get("op") == "step" for entry in self.replay_log):
             return
         savepoint = self._savepoint_payload(self._autosave_id, "auto save (latest)")
@@ -723,6 +774,7 @@ class PlaySession:
                 "levelDirs": [self._relative(path) for path in self.level_dirs],
                 "framePath": self._relative(frame_path) if frame_path.is_file() else None,
                 "forkedFrom": self.forked_from,
+                "recording": self.recording,
                 "availableActions": self._available_actions(),
                 "replayLog": [dict(entry) for entry in self.replay_log],
                 "recordingsPath": self._relative(self._recordings_container()),
@@ -2083,7 +2135,11 @@ def retain_largest_recordings(workspaceId: str, keep: int, gameId: str | None = 
 def clear_recordings(workspaceId: str, gameId: str | None = None) -> dict[str, Any]:
     """Delete EVERY Recording directory for the targeted game(s) -- both
     live-play saved_<NNN> dirs and imported ones alike. Does not touch
-    savepoints.json (MOVE-LISTS); see /savepoints/clear for that."""
+    savepoints.json (MOVE-LISTS); see /savepoints/clear for that.
+
+    Any live session in scope is DETACHED from the recorder (its record
+    switch turns off) so cleared dirs are not immediately recreated; the
+    Begin-recording control re-attaches it."""
     root = _workspace_root(workspaceId)
     directories = _game_dirs_for(root, _game_slug(gameId)) if gameId else _all_game_dirs(root)
     removed: list[str] = []
@@ -2093,7 +2149,18 @@ def clear_recordings(workspaceId: str, gameId: str | None = None) -> dict[str, A
         for entry in _iter_recording_dirs(game_root):
             removed.append(entry.relative_to(root).as_posix())
             shutil.rmtree(entry, ignore_errors=True)
-    return {"removed": removed, "count": len(removed)}
+    with _sessions_lock:
+        sessions = list(_sessions.values())
+    detached: list[str] = []
+    wanted_dir = _game_slug(gameId) if gameId else None
+    for session in sessions:
+        if session.closed or session.workspace_id != workspaceId:
+            continue
+        if wanted_dir and session.game_dir != wanted_dir:
+            continue
+        session.recording = False
+        detached.append(session.id)
+    return {"removed": removed, "count": len(removed), "detached": detached}
 
 
 @router.post("/savepoints/clear")
@@ -2322,6 +2389,69 @@ def set_session_recordings_path(session_id: str, body: dict[str, Any] = Body(def
             session.set_recordings_path(str(path) if path is not None else None)
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
+    return {"session": session.snapshot()}
+
+
+@router.get("/silo/files")
+def silo_files(workspaceId: str, dir: str) -> dict[str, Any]:
+    """List the files in one setup-silo directory (a session level dir)."""
+    root = _workspace_root(workspaceId)
+    try:
+        directory = _safe_workspace_child(root, dir)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    if not directory.is_dir():
+        return {"dir": dir, "files": []}
+    files = [
+        {
+            "name": entry.name,
+            "bytes": entry.stat().st_size,
+            "path": entry.relative_to(root).as_posix(),
+        }
+        for entry in sorted(directory.iterdir())
+        if entry.is_file()
+    ]
+    return {"dir": dir, "files": files}
+
+
+@router.post("/silo/write")
+def silo_write(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
+    """Write one prompt-output file into a setup-silo directory.
+
+    The prompt operators on the Play page read silo files and write more (or
+    the same) files back; this is their only write surface, constrained to a
+    single flat file name inside the workspace."""
+    workspace_id = str(body.get("workspaceId") or "")
+    directory_rel = str(body.get("dir") or "")
+    name = str(body.get("name") or "").strip()
+    content = body.get("content")
+    if not workspace_id or not directory_rel or not name:
+        raise HTTPException(status_code=400, detail="workspaceId, dir, and name are required")
+    if any(sep in name for sep in ("/", "\\", "..")):
+        raise HTTPException(status_code=400, detail="name must be a flat file name")
+    if not isinstance(content, str):
+        raise HTTPException(status_code=400, detail="content must be a string")
+    root = _workspace_root(workspace_id)
+    try:
+        directory = _safe_workspace_child(root, directory_rel)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    directory.mkdir(parents=True, exist_ok=True)
+    target = directory / name
+    target.write_text(content, encoding="utf-8")
+    return {"path": target.relative_to(root).as_posix(), "bytes": len(content.encode("utf-8"))}
+
+
+@router.post("/sessions/{session_id}/recording")
+def set_session_recording(session_id: str, body: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
+    """Attach (enabled: true) or detach (enabled: false) the session's recorder."""
+    session = _get_session(session_id)
+    try:
+        session.set_recording(bool(body.get("enabled")))
+    except HTTPException:
+        raise
+    except Exception as error:
+        raise HTTPException(status_code=400, detail=f"recording toggle failed: {error}") from error
     return {"session": session.snapshot()}
 
 

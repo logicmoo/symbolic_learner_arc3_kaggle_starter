@@ -12,3 +12,15 @@
 .markdown-wysiwyg-toolbar button:hover{border-color:#4e6d78;background:#162a34;color:#d1dde2}
 .markdown-wysiwyg-surface{flex:1 1 auto;min-height:180px;max-height:none;outline:none;cursor:text}
 .markdown-wysiwyg-surface:focus{box-shadow:inset 0 0 0 1px #3c8179}
+
+/* Layout contract: ___ / I I I — the outer legs never scroll themselves.
+   The help panel is a fixed column (head + tabs + provenance foot stay put);
+   ONLY its markdown content scrolls. */
+.inspector { display: flex; flex-direction: column; overflow: hidden; }
+.inspector > .inspector-head { flex: 0 0 auto; }
+.inspector > .inspect-section, .inspector > .help-doc-inspector { flex: 1 1 auto; min-height: 0; }
+.help-doc-inspector { min-height: 0; }
+.help-doc-inspector > .help-doc-tabs { flex: 0 0 auto; }
+.help-doc-inspector > .inspect-section.relationship-guide { flex: 1 1 auto; min-height: 0; overflow: hidden; display: flex; flex-direction: column; }
+.help-doc-inspector .relationship-markdown { flex: 1 1 auto; min-height: 0; max-height: none; overflow: auto; }
+.help-doc-inspector > .provenance-foot { flex: 0 0 auto; }

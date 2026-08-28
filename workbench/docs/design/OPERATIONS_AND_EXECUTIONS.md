@@ -4,6 +4,28 @@
 
 An Operation is a durable, inspectable capability specification. It may be executed now or later through an implementation ladder: Codex or another capable agent, an LLM, progressively smaller specialized models, an ILP/program-synthesis system, or deterministic code. The abstract Operation remains the stable contract; a same-kind child is a selectable implementation alternative.
 
+## Operations are the workbench's skills system
+
+An Operation is what other ecosystems call a *skill*: a named, declared
+capability the workbench can call directly — no model has to decide anything
+for a deterministic implementation to run. The Video Import page's prepass
+filters are the lightweight, file-based end of the same idea: drop a Python
+file exporting `SKILL` metadata plus `apply(image, params)` into
+`data/VideoImports/filter_skills/` and the workbench discovers, lists, and
+executes it itself (built-ins, published parameter presets in
+`filter_catalog.json`, `.cube` LUTs in `data/VideoImports/luts/`, and
+downloaded libraries such as the MIT `pilgram` wrapper all surface through
+`GET /api/video-import/filters` and run through `POST
+/api/video-import/filter`). Skills graduate into the operations library as
+resources — see `design/operations/image_filter_skills.operation.metta`
+(`skill.apply_image_filter` and its specializations) in the shared library —
+where they gain the full Operation contract: typed inputs/outputs, topics,
+specialization alternatives, playground invocation, and durable Executions.
+The distinction to keep: a *skill/Operation* is called by the workbench (or a
+workflow) on its own; a model only enters when an implementation explicitly
+routes to one (for example the Video Import page's turtle-program generation,
+which is a model-backed step by design).
+
 An Execution is one runtime attempt to invoke that Operation. The Workbench preserves:
 
 - declared inputs and parameter values;
