@@ -2,13 +2,14 @@
 .Git4*/
 workbench/workspaces/*/policies/
 
+.tmp_pytest_*/
 # Python-generated files
 __pycache__/
 .pytmp/
 *.py[oc]
 *.bak
 *.rar
-
+.idea/
 
 HIDE_*/
 hide_*/
@@ -302,3 +303,4 @@ workbench-ui-current.png
 .DS_Store
 .idea/
 .vscode/
+/.tmp_pytest_ren/test_plugin_scanner_skips_hidd0/loose_object

@@ -7,24 +7,30 @@
     <option name="selectedModelId" value="auto" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="edb8fea1-73c1-4416-9e9a-8ac50d562623" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+    <list default="true" id="edb8fea1-73c1-4416-9e9a-8ac50d562623" name="Changes" comment="Catchup missing files">
+      <change afterPath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/tests/test_resolver_files.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pyproject.toml" beforeDir="false" afterPath="$PROJECT_DIR$/pyproject.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_web_proxy_plugin.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_web_proxy_plugin.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/frontend/src/components/ChatConversation.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/src/components/ChatConversation.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/frontend/src/components/MarkdownDocument.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/src/components/MarkdownDocument.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/frontend/src/styles/chat.css" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/frontend/src/styles/chat.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/plugins/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/plugins/.gitignore" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/plugins/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/plugins/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/plugin.json" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/plugin.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/src/mailbox_chat/adapters/discord_adapter.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/src/mailbox_chat/adapters/discord_adapter.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/src/mailbox_chat/adapters/irc_adapter.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/src/mailbox_chat/adapters/irc_adapter.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/src/mailbox_chat/adapters/mattermost_adapter.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/src/mailbox_chat/adapters/mattermost_adapter.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/src/mailbox_chat/adapters/slack_adapter.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/src/mailbox_chat/adapters/slack_adapter.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/src/mailbox_chat/agent_mailbox.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/src/mailbox_chat/agent_mailbox.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/src/mailbox_chat/bootstrap_config.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/src/mailbox_chat/bootstrap_config.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/src/mailbox_chat/chat_admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/src/mailbox_chat/chat_admin.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/src/mailbox_chat/discovery_admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/src/mailbox_chat/discovery_admin.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/src/mailbox_chat/identifier_directory.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/src/mailbox_chat/identifier_directory.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/src/mailbox_chat/mailbox_relay.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/src/mailbox_chat/mailbox_relay.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/src/mailbox_chat/resources/REFERENCE.md" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/src/mailbox_chat/resources/REFERENCE.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/src/mailbox_chat/server.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/src/mailbox_chat/server.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/plugins/plugins.json" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/plugins/plugins.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/plugins/web_proxy/plugin.json" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/plugins/web_proxy/plugin.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/plugins/ws_collab/plugin.json" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/plugins/ws_collab/plugin.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/server/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/server/app.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/server/plugin_admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/server/plugin_admin.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/server/plugin_api.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/server/plugin_api.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/src/mailbox_chat/subscriptions.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/src/mailbox_chat/subscriptions.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/tests/test_agent_mailbox.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/tests/test_agent_mailbox.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/tests/test_bootstrap_config.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/tests/test_bootstrap_config.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/tests/test_mailbox_relay.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/tests/test_mailbox_relay.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/tests/test_mattermost_admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/tests/test_mattermost_admin.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/tests/test_subscriptions.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/tests/test_subscriptions.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -62,59 +68,59 @@
     <decayedCancelled>
       <entry key="MS100" value="1.0" />
       <entry key="MS500" value="1.0" />
-      <entry key="S2" value="1.0000000000004674" />
-      <entry key="S5" value="1.0000121276314866" />
-      <entry key="S10" value="1.004112879189206" />
-      <entry key="S30" value="1.3055615948775585" />
-      <entry key="S60" value="2.2831763678742414" />
-      <entry key="M2" value="4.460236111919421" />
-      <entry key="M5" value="9.952304772619529" />
-      <entry key="M10" value="15.996917822673707" />
-      <entry key="M15" value="19.4983382826791" />
-      <entry key="M30" value="24.33788126004604" />
-      <entry key="H1" value="27.872786480066676" />
-      <entry key="H2" value="31.25039422066269" />
-      <entry key="H4" value="35.70020277418404" />
-      <entry key="D1" value="57.27636374068855" />
-      <entry key="W1" value="76.78086140923965" />
+      <entry key="S2" value="1.0000080168346277" />
+      <entry key="S5" value="1.0269535517829804" />
+      <entry key="S10" value="1.4469101431295976" />
+      <entry key="S30" value="4.030377764452249" />
+      <entry key="S60" value="5.924792099048458" />
+      <entry key="M2" value="7.387438584463707" />
+      <entry key="M5" value="8.898954644783856" />
+      <entry key="M10" value="9.752510900203605" />
+      <entry key="M15" value="10.113589222968809" />
+      <entry key="M30" value="10.527041958322258" />
+      <entry key="H1" value="10.93826760547908" />
+      <entry key="H2" value="13.41207850531173" />
+      <entry key="H4" value="21.108899554860397" />
+      <entry key="D1" value="57.45137446365279" />
+      <entry key="W1" value="85.5180695598556" />
     </decayedCancelled>
     <decayedSelected>
       <entry key="MS100" value="0.0" />
-      <entry key="MS500" value="0.0" />
-      <entry key="S2" value="0.0" />
-      <entry key="S5" value="0.0" />
-      <entry key="S10" value="0.0" />
-      <entry key="S30" value="0.0" />
-      <entry key="S60" value="0.0" />
-      <entry key="M2" value="0.0" />
-      <entry key="M5" value="3.6006659519653486E-158" />
-      <entry key="M10" value="2.6809859432099413E-79" />
-      <entry key="M15" value="5.237387250073037E-53" />
-      <entry key="M30" value="1.023355403009463E-26" />
-      <entry key="H1" value="1.4305952395918525E-13" />
-      <entry key="H2" value="5.348974396018069E-7" />
-      <entry key="H4" value="0.0010343071828932055" />
-      <entry key="D1" value="0.5666303339580617" />
-      <entry key="W1" value="1.6702551723189578" />
+      <entry key="MS500" value="2.9947798719454852E-105" />
+      <entry key="S2" value="7.397606502877077E-27" />
+      <entry key="S5" value="3.52887675125891E-11" />
+      <entry key="S10" value="5.94043495988207E-6" />
+      <entry key="S30" value="0.018110874248507124" />
+      <entry key="S60" value="0.13457664822883322" />
+      <entry key="M2" value="0.36684690025790484" />
+      <entry key="M5" value="0.6695668465254904" />
+      <entry key="M10" value="0.8182706438126025" />
+      <entry key="M15" value="0.8748454024666745" />
+      <entry key="M30" value="0.935331707185571" />
+      <entry key="H1" value="0.9671254867831646" />
+      <entry key="H2" value="0.9834254278758396" />
+      <entry key="H4" value="0.9919727661563212" />
+      <entry key="D1" value="1.4582524874568905" />
+      <entry key="W1" value="2.6208654318023914" />
     </decayedSelected>
     <decayedShown>
-      <entry key="MS100" value="0.14161048566197482" />
-      <entry key="MS500" value="0.6764241155251373" />
-      <entry key="S2" value="0.906890328933609" />
-      <entry key="S5" value="0.9616729027803108" />
-      <entry key="S10" value="0.9847535249390188" />
-      <entry key="S30" value="1.2989770530302966" />
-      <entry key="S60" value="2.279690155093747" />
-      <entry key="M2" value="4.458293304517959" />
-      <entry key="M5" value="9.951343675728568" />
-      <entry key="M10" value="15.996337766850322" />
-      <entry key="M15" value="19.49791357695846" />
-      <entry key="M30" value="24.3376429350141" />
-      <entry key="H1" value="27.872658235792628" />
-      <entry key="H2" value="31.250326794307746" />
-      <entry key="H4" value="35.70120018832328" />
-      <entry key="D1" value="57.842915513581204" />
-      <entry key="W1" value="78.4510854409394" />
+      <entry key="MS100" value="5.5775845350915544E-5" />
+      <entry key="MS500" value="0.1410227671820639" />
+      <entry key="S2" value="0.6128130124506345" />
+      <entry key="S5" value="0.8490396146449661" />
+      <entry key="S10" value="1.3534272377035397" />
+      <entry key="S30" value="4.012225617020673" />
+      <entry key="S60" value="6.028250443793445" />
+      <entry key="M2" value="7.725491175664353" />
+      <entry key="M5" value="9.54996535616764" />
+      <entry key="M10" value="10.559754342817953" />
+      <entry key="M15" value="10.980637485580594" />
+      <entry key="M30" value="11.45823625428413" />
+      <entry key="H1" value="11.90326065855884" />
+      <entry key="H2" value="14.39441648540957" />
+      <entry key="H4" value="22.100316757061982" />
+      <entry key="D1" value="58.90947180904376" />
+      <entry key="W1" value="88.13889169492116" />
     </decayedShown>
   </component>
   <component name="ProjectColorInfo">{
@@ -141,35 +147,35 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;Python Debug Server.Unnamed.executor&quot;: &quot;Debug&quot;,
-    &quot;Python.interactive_runner.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
-    &quot;ai.playground.ignore.import.keys.banner.in.settings&quot;: &quot;true&quot;,
-    &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
-    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
-    &quot;copilot.chat.legacySessionMetadata.migrated&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
-    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
-    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/snet/PeTTa/repos/symbolic_learner_workbench&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.jshint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.jshint&quot;: &quot;&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;yarn&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;com.github.copilot.settings.completions.CompletionsConfigurable&quot;,
-    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;,
-    &quot;ts.external.directory.path&quot;: &quot;C:\\symbolic_learner_arc3_codex\\vendor\\freerouter\\node_modules\\typescript\\lib&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Python Debug Server.Unnamed.executor": "Debug",
+    "Python.interactive_runner.executor": "Run",
+    "RunOnceActivity.MCP Project settings loaded": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "ai.playground.ignore.import.keys.banner.in.settings": "true",
+    "codeWithMe.voiceChat.enabledByDefault": "false",
+    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
+    "copilot.chat.legacySessionMetadata.migrated": "true",
+    "git-widget-placeholder": "main",
+    "ignore.virus.scanning.warn.message": "true",
+    "junie.onboarding.icon.badge.shown": "true",
+    "last_opened_file_path": "C:/snet/PeTTa/repos/symbolic_learner_workbench",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.jshint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.jshint": "",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "yarn",
+    "settings.editor.selected.configurable": "com.github.copilot.settings.completions.CompletionsConfigurable",
+    "to.speed.mode.migration.done": "true",
+    "ts.external.directory.path": "C:\\Users\\dougl\\AppData\\Local\\JetBrains\\PyCharm2026.2\\ts-go-native-preview\\v7.0.0-dev.jetbrains.20260702.4\\node_modules\\@typescript\\native-preview-win32-x64\\lib",
+    "vue.rearranger.settings.migration": "true"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="C:\symbolic_learner_arc3_codex\workbench\workspaces\shared\design\categories" />
@@ -257,8 +263,25 @@
       <workItem from="1787430644496" duration="2969000" />
       <workItem from="1787786890213" duration="80000" />
       <workItem from="1787787026524" duration="2000" />
-      <workItem from="1787848859093" duration="4792000" />
+      <workItem from="1787848859093" duration="5635000" />
     </task>
+    <task id="LOCAL-00001" summary="Catchup">
+      <option name="closed" value="true" />
+      <created>1787874724298</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1787874724298</updated>
+    </task>
+    <task id="LOCAL-00002" summary="Catchup missing files">
+      <option name="closed" value="true" />
+      <created>1787875154806</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1787875154806</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -304,6 +327,12 @@
         </entry>
       </map>
     </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="Catchup" />
+    <MESSAGE value="Catchup missing files" />
+    <option name="LAST_COMMIT_MESSAGE" value="Catchup missing files" />
+    <option name="GROUP_MULTIFILE_MERGE_BY_DIRECTORY" value="true" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/symbolic_learner_arc3_kaggle_starter$interactive_runner.coverage" NAME="interactive_runner Coverage Results" MODIFIED="1785305091337" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/python" />
