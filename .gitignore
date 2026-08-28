@@ -304,3 +304,9 @@ workbench-ui-current.png
 .idea/
 .vscode/
 /.tmp_pytest_ren/test_plugin_scanner_skips_hidd0/loose_object
+/workbench/plugins/mailbox_chat/.idea/mailbox-mailbox-relay-bridging-proxy.iml
+/workbench/plugins/mailbox_chat/.idea/mailbox-mailbox-relay-bridging-proxy@1.iml
+/workbench/plugins/mailbox_chat/.idea/modules.xml
+/workbench/plugins/mailbox_chat/.idea/inspectionProfiles/Project_Default.xml
+/workbench/plugins/mailbox_chat/.idea/vcs.xml
+/workbench/plugins/mailbox_chat/.idea/workspace.xml
