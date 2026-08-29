@@ -204,13 +204,24 @@ used**: by default everything passes through, and asking is deferred to
 when it matters. The other GROUP kinds (N most unique via farthest-point
 sampling, evenly spread, random, most like/unlike their originals) run
 immediately. "Select group" with the user kind opens a ❓ YOUR PICK section
-IN PLACE (force-opened, scrolled into view, pulsing outline): multi-select
-tiles with ✓ keep chosen / 🗑 remove chosen / use ALL / skip, plus
+IN PLACE (force-opened, scrolled into view, pulsing outline): clicking a
+tile USES THAT ONE ITEM immediately (the default); a multi-select toggle
+switches clicks to selection for ✓ keep chosen / 🗑 remove chosen / use ALL
+/ skip curation, plus
 auto-curation helpers "◼ + all-black" and "▭ + flat/solid" (backend
 `/select-degenerate` flags near-black and solid-color frames) — e.g. select
-all the black scene-transition frames and delete them in one click. A FULL
-run (apply-to-ALL) with the user kind and no selection yet ASKS the GROUP
-question first; "use ALL" is the pass-through answer. One button renders
+all the black scene-transition frames and delete them in one click. Picking
+exactly ONE item flows STRAIGHT into picking its filter: the all-effects
+gallery auto-renders on that item, opens, and scrolls into view. Picking a
+filter tile then shows HOW IT AFFECTS ALL INPUT: the chain auto-applies to
+every frame and the OUTPUT section opens into view — and then the NEXT 77
+render automatically on the output of your item, and so on: the loop
+continues until YOU stop it (the "auto next 77" STATUS toggle turns the
+auto-continue off — then clicking an output frame starts the next round by
+hand — and ■ Stop breaks it immediately). During those full runs
+the let-USER-decide GROUP is a NOP — everything passes through and the
+group is chosen later (explicit `select:user` chain steps still pause).
+One button renders
 the base image through EVERY filter in scope (included / excluded / all)
 into a gallery — one tile per filter — and another renders the picked
 filter across its parameter permutations. The gallery/preview base

@@ -7,30 +7,10 @@
     <option name="selectedModelId" value="auto" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="edb8fea1-73c1-4416-9e9a-8ac50d562623" name="Changes" comment="Catchup missing files">
-      <change afterPath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/tests/test_resolver_files.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+    <list default="true" id="edb8fea1-73c1-4416-9e9a-8ac50d562623" name="Changes" comment="Catchup files">
+      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/plugin.json" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/plugin.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/src/mailbox_chat/adapters/discord_adapter.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/src/mailbox_chat/adapters/discord_adapter.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/src/mailbox_chat/adapters/irc_adapter.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/src/mailbox_chat/adapters/irc_adapter.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/src/mailbox_chat/adapters/mattermost_adapter.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/src/mailbox_chat/adapters/mattermost_adapter.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/src/mailbox_chat/adapters/slack_adapter.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/src/mailbox_chat/adapters/slack_adapter.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/src/mailbox_chat/agent_mailbox.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/src/mailbox_chat/agent_mailbox.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/src/mailbox_chat/bootstrap_config.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/src/mailbox_chat/bootstrap_config.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/src/mailbox_chat/chat_admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/src/mailbox_chat/chat_admin.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/src/mailbox_chat/discovery_admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/src/mailbox_chat/discovery_admin.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/src/mailbox_chat/identifier_directory.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/src/mailbox_chat/identifier_directory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/src/mailbox_chat/mailbox_relay.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/src/mailbox_chat/mailbox_relay.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/src/mailbox_chat/resources/REFERENCE.md" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/src/mailbox_chat/resources/REFERENCE.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/src/mailbox_chat/server.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/src/mailbox_chat/server.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/src/mailbox_chat/subscriptions.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/src/mailbox_chat/subscriptions.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/tests/test_agent_mailbox.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/tests/test_agent_mailbox.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/tests/test_bootstrap_config.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/tests/test_bootstrap_config.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/tests/test_mailbox_relay.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/tests/test_mailbox_relay.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/tests/test_mattermost_admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/tests/test_mattermost_admin.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/tests/test_subscriptions.py" beforeDir="false" afterPath="$PROJECT_DIR$/workbench/plugins/mailbox_chat/tests/test_subscriptions.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -263,7 +243,7 @@
       <workItem from="1787430644496" duration="2969000" />
       <workItem from="1787786890213" duration="80000" />
       <workItem from="1787787026524" duration="2000" />
-      <workItem from="1787848859093" duration="5635000" />
+      <workItem from="1787848859093" duration="7394000" />
     </task>
     <task id="LOCAL-00001" summary="Catchup">
       <option name="closed" value="true" />
@@ -281,7 +261,31 @@
       <option name="project" value="LOCAL" />
       <updated>1787875154806</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="Catchup missing files">
+      <option name="closed" value="true" />
+      <created>1787875216805</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1787875216805</updated>
+    </task>
+    <task id="LOCAL-00004" summary="Catchup files">
+      <option name="closed" value="true" />
+      <created>1787875430457</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1787875430457</updated>
+    </task>
+    <task id="LOCAL-00005" summary="Catchup files">
+      <option name="closed" value="true" />
+      <created>1787875469575</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1787875469575</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -331,7 +335,8 @@
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Catchup" />
     <MESSAGE value="Catchup missing files" />
-    <option name="LAST_COMMIT_MESSAGE" value="Catchup missing files" />
+    <MESSAGE value="Catchup files" />
+    <option name="LAST_COMMIT_MESSAGE" value="Catchup files" />
     <option name="GROUP_MULTIFILE_MERGE_BY_DIRECTORY" value="true" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">

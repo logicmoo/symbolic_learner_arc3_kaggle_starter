@@ -5,9 +5,9 @@
     <mapping directory="$PROJECT_DIR$/workbench/emullm-rewritten" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/workbench/plugins/HIDE_succotash/emullm-rewritten" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/workbench/plugins/coplex" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/workbench/plugins/coplex_stdpy" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/workbench/plugins/emullm" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/workbench/plugins/mailbox_chat" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/workbench/plugins/pycoplex" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/workbench/plugins/ws_collab" vcs="Git" />
   </component>
 </project>

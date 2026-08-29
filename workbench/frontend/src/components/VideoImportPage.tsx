@@ -183,6 +183,10 @@ export function VideoImportPage({ workspaceId }: { workspaceId: string }) {
   const [autoClearAlgorithm, setAutoClearAlgorithm] = useState(false);
   const autoClearAlgorithmRef = useRef(false);
   useEffect(() => { autoClearAlgorithmRef.current = autoClearAlgorithm; }, [autoClearAlgorithm]);
+  // The 77-loop continues automatically after each pick — until YOU stop it.
+  const [autoNext77, setAutoNext77] = useState(true);
+  const autoNext77Ref = useRef(true);
+  useEffect(() => { autoNext77Ref.current = autoNext77; }, [autoNext77]);
   const skipVideoResetRef = useRef(false);
   const prevVideoPathRef = useRef<string | null>(null);
 
@@ -372,7 +376,15 @@ export function VideoImportPage({ workspaceId }: { workspaceId: string }) {
         const chosen = await askUserPick(frames.map((frame) => ({ original: frame.path, current: frame.path })), "GROUP — click the item YOU want used");
         if (!chosen || !chosen.length) return "user pick skipped";
         setKept(new Set(chosen));
-        if (chosen.length === 1) { setPicked(chosen[0]); setPreviewSource("selectedframe"); }
+        if (chosen.length === 1) {
+          setPicked(chosen[0]);
+          setPreviewSource("selectedframe");
+          // THE LOOP: picking one item leads straight to picking its filter —
+          // render ALL effects on it and open that gallery next.
+          say("next: pick the filter — rendering every effect on your item…");
+          window.setTimeout(() => void runGallery({ image: chosen[0] }), 80);
+          return `you picked 1 item — the filter gallery is next`;
+        }
         return `you picked ${chosen.length} item(s)`;
       }
       if (groupKind === "spread" || groupKind === "random") {
@@ -398,12 +410,12 @@ export function VideoImportPage({ workspaceId }: { workspaceId: string }) {
   // ---- let-the-user-decide picker ---------------------------------------------
   // A `select:user` chain step (or the GROUP "user" kind) pauses the pipeline
   // and waits for a click on the item that continues.
-  const [userPick, setUserPick] = useState<{ title: string; frames: Array<{ original: string; current: string }>; chosen: Set<string> } | null>(null);
+  const [userPick, setUserPick] = useState<{ title: string; frames: Array<{ original: string; current: string }>; chosen: Set<string>; multi: boolean } | null>(null);
   const userPickResolver = useRef<((paths: string[] | null) => void) | null>(null);
   const askUserPick = (candidates: Array<{ original: string; current: string }>, title: string) =>
     new Promise<string[] | null>((resolve) => {
       userPickResolver.current = resolve;
-      setUserPick({ title, frames: candidates, chosen: new Set<string>() });
+      setUserPick({ title, frames: candidates, chosen: new Set<string>(), multi: false });
       // The question must be SEEN: force the section open and bring it into view.
       setCollapsedMap((current) => ({ ...current, userpick: false }));
       window.setTimeout(() => {
@@ -487,7 +499,13 @@ export function VideoImportPage({ workspaceId }: { workspaceId: string }) {
       say(`gallery base: ${typeof body.image === "string" ? String(body.image).split("/").pop() : body.video ? "player frame" : "test card"}`);
       const payload = await api("filter-gallery", { ...body, ...(options?.filterId ? { filterId: options.filterId } : { scope: galleryScope }) });
       setGallery(null);
-      watchJob(String(payload.jobId), "gallery", (final) => { setGallery(final.gallery || []); say(`gallery: ${(final.gallery || []).length} tile(s)${final.interrupted ? " (interrupted)" : ""}`); });
+      watchJob(String(payload.jobId), "gallery", (final) => {
+        setGallery(final.gallery || []);
+        // The filter gallery is the next step — open it and bring it into view.
+        setCollapsedMap((current) => ({ ...current, gallery: false }));
+        window.setTimeout(() => document.querySelector(".video-import-gallery")?.scrollIntoView({ behavior: "smooth", block: "start" }), 200);
+        say(`gallery: ${(final.gallery || []).length} tile(s)${final.interrupted ? " (interrupted)" : ""} — click one to add it to the chain`);
+      });
       return `rendering ${payload.count} output(s)…`;
     });
   const [beforeAfter, setBeforeAfter] = useState<{ before: string; after: string; label: string } | null>(null);
@@ -502,6 +520,7 @@ export function VideoImportPage({ workspaceId }: { workspaceId: string }) {
 
   // ---- the stack ---------------------------------------------------------------
   const [output, setOutput] = useState<Array<{ source: string; path: string }>>([]);
+  const lastRunOutputsRef = useRef<Array<{ source: string; path: string }>>([]);
   const [outputMode, setOutputMode] = useState<"preview" | "full" | null>(null);
   const [outputLabel, setOutputLabel] = useState("");
   const [appliedIds, setAppliedIds] = useState<string[]>([]);
@@ -521,20 +540,10 @@ export function VideoImportPage({ workspaceId }: { workspaceId: string }) {
       sourceFrames = await extractAndWait();
       if (!sourceFrames.length) return "extraction produced no frames";
     }
-    // A FULL run over all images requires the GROUP to be named: with the
-    // "user" kind and no selection yet, ask — curate (keep/delete e.g.
-    // all-black scenes) or pass everything through with "use ALL".
-    if (full && groupKind === "user" && !kept?.size) {
-      say("GROUP for the FULL run: curate the set (or use ALL)");
-      const chosen = await askUserPick(sourceFrames.map((frame) => ({ original: frame.path, current: frame.path })), "GROUP for the FULL run — keep/delete, or use ALL");
-      if (stopRef.current) return "stopped at the GROUP question";
-      if (chosen && chosen.length && chosen.length < sourceFrames.length) {
-        const keep = new Set(chosen);
-        sourceFrames = sourceFrames.filter((frame) => keep.has(frame.path));
-        setKept(keep);
-        say(`GROUP: ${sourceFrames.length} frame(s) continue`);
-      }
-    }
+    // GROUP "user" is a NOP at full-run time for now: everything passes
+    // through, and you curate later (Select group / ✂ Keep only) when YOU
+    // decide. Explicit select:user chain steps still pause and ask.
+    if (full && groupKind === "user" && !kept?.size) say("GROUP: let-user-decide is a nop here — all frames pass (curate later)");
     // Preview candidates: first group selection > picked item > spread N.
     let candidates = sourceFrames;
     if (!full) {
@@ -622,12 +631,17 @@ export function VideoImportPage({ workspaceId }: { workspaceId: string }) {
       } catch { /* cosmetic */ }
     }
     snapshot(full ? "FULL output" : "output (sorted)");
-    setOutput(working.map((item) => ({ source: item.original, path: item.current })));
+    const results = working.map((item) => ({ source: item.original, path: item.current }));
+    lastRunOutputsRef.current = results;
+    setOutput(results);
     setOutputMode(full ? "full" : "preview");
     setOutputLabel(labels.join(" → "));
     setAppliedIds([...new Set(ids)]);
     setTrail(levels);
     setProbes([]);
+    // The results are the next thing to look at — open OUTPUT and show it.
+    setCollapsedMap((current) => ({ ...current, output: false }));
+    window.setTimeout(() => document.querySelector(".video-import-output")?.scrollIntoView({ behavior: "smooth", block: "start" }), 200);
     return full
       ? `FULL run: ${applied} filter step(s) over ${working.length} frame(s)`
       : `preview: ${applied} filter step(s), ${working.length} candidate(s) (sorted, none eliminated)`;
@@ -662,7 +676,7 @@ export function VideoImportPage({ workspaceId }: { workspaceId: string }) {
     filterId, filterParams, chain, candidateCount, fullSelectors,
     gallery, output, outputMode, outputLabel, appliedIds, trail, probes,
     members, memberScenes, memberGoal, memberFill, memberMax, memberTarget,
-    autoClearData, autoClearAlgorithm,
+    autoClearData, autoClearAlgorithm, autoNext77,
     collapsedMap, pinnedMap,
   });
   // Apply a snapshot object to the live page (used by mount-restore and the
@@ -704,6 +718,7 @@ export function VideoImportPage({ workspaceId }: { workspaceId: string }) {
     if (typeof s.autoClearData === "boolean") setAutoClearData(s.autoClearData);
     else if (typeof s.autoClear === "boolean") setAutoClearData(s.autoClear);
     if (typeof s.autoClearAlgorithm === "boolean") setAutoClearAlgorithm(s.autoClearAlgorithm);
+    if (typeof s.autoNext77 === "boolean") setAutoNext77(s.autoNext77);
     if (s.collapsedMap && typeof s.collapsedMap === "object") setCollapsedMap(s.collapsedMap);
     if (s.pinnedMap && typeof s.pinnedMap === "object") setPinnedMap(s.pinnedMap);
     return true;
@@ -995,6 +1010,10 @@ export function VideoImportPage({ workspaceId }: { workspaceId: string }) {
           <input type="checkbox" checked={autoClearAlgorithm} onChange={(event) => setAutoClearAlgorithm(event.target.checked)} />
           auto-clear next algorithm
         </label>
+        <label className="video-import-toggle" title="After each effect pick, automatically render all effects on the new output — the loop continues until you turn this off or hit ■ Stop.">
+          <input type="checkbox" checked={autoNext77} onChange={(event) => setAutoNext77(event.target.checked)} />
+          auto next 77
+        </label>
         <button title="Copy the exact page state as JSON" disabled={false} onClick={copyStateJson}>⤓ state</button>
         <button title="Forget the saved state — next load starts clean" onClick={forgetState}>⟲ forget</button>
         <button className="video-import-stop" disabled={!busy && job?.state !== "running"} onClick={stopEverything}>■ Stop</button>
@@ -1172,24 +1191,31 @@ export function VideoImportPage({ workspaceId }: { workspaceId: string }) {
 
       {userPick && (
         <div className="video-import-userpick-section">
-          <Section {...section("userpick", "❓ YOUR PICK", `${userPick.title} · ${userPick.chosen.size ? `${userPick.chosen.size} of ${userPick.frames.length} selected` : `${userPick.frames.length} candidate(s) — click to select`}`, <button onClick={() => settleUserPick(null)}>✕ skip</button>)}>
+          <Section {...section("userpick", "❓ YOUR PICK", `${userPick.title} · ${userPick.multi ? (userPick.chosen.size ? `${userPick.chosen.size} of ${userPick.frames.length} selected` : `multi-select — click tiles, then keep/remove`) : `${userPick.frames.length} candidate(s) — click ONE to use it`}`, <button onClick={() => settleUserPick(null)}>✕ skip</button>)}>
             <div className="vi2-body video-import-frames video-import-userpick">
               {userPick.frames.map((item) => {
                 const on = userPick.chosen.has(item.current);
                 return (
                   <article key={item.current} className={`video-import-frame is-plain is-user-pickable${on ? " is-group-pick" : ""}`}>
-                    <img src={asset(item.current)} alt="candidate" loading="lazy" title={on ? "selected — click to unselect" : "click to select"} onClick={() => setUserPick((current) => {
-                      if (!current) return current;
-                      const chosen = new Set(current.chosen);
-                      if (chosen.has(item.current)) chosen.delete(item.current); else chosen.add(item.current);
-                      return { ...current, chosen };
-                    })} />
-                    <header><small>{on ? "✓ selected" : "click to select"}</small></header>
+                    <img src={asset(item.current)} alt="candidate" loading="lazy" title={userPick.multi ? (on ? "selected — click to unselect" : "click to select") : "click: use THIS one"} onClick={() => {
+                      if (!userPick.multi) { settleUserPick([item.current]); return; }
+                      setUserPick((current) => {
+                        if (!current) return current;
+                        const chosen = new Set(current.chosen);
+                        if (chosen.has(item.current)) chosen.delete(item.current); else chosen.add(item.current);
+                        return { ...current, chosen };
+                      });
+                    }} />
+                    <header><small>{userPick.multi ? (on ? "✓ selected" : "click to select") : "click to use this one"}</small></header>
                   </article>
                 );
               })}
             </div>
             <div className="vi2-body video-import-userpick-actions">
+              <label className="video-import-toggle" title="Off: clicking a tile uses that ONE item immediately. On: clicks select multiple tiles for keep/remove curation.">
+                <input type="checkbox" checked={userPick.multi} onChange={(event) => setUserPick((current) => current ? { ...current, multi: event.target.checked, chosen: event.target.checked ? current.chosen : new Set() } : current)} />
+                multi-select
+              </label>
               <button disabled={!userPick.chosen.size} title="Continue with ONLY the selected items" onClick={() => settleUserPick([...userPick.chosen])}>✓ keep chosen ({userPick.chosen.size})</button>
               <button disabled={!userPick.chosen.size} title="DELETE the selected items — everything else continues" onClick={() => settleUserPick(userPick.frames.map((item) => item.current).filter((path) => !userPick.chosen.has(path)))}>🗑 remove chosen ({userPick.chosen.size})</button>
               <button title="Pass every item through unchanged" onClick={() => settleUserPick(userPick.frames.map((item) => item.current))}>use ALL</button>
@@ -1197,7 +1223,7 @@ export function VideoImportPage({ workspaceId }: { workspaceId: string }) {
                 try {
                   const payload = await api("select-degenerate", { workspaceId, images: userPick.frames.map((item) => item.current), kind: "black" });
                   const found = new Set((payload.selected as string[]) || []);
-                  setUserPick((current) => current ? { ...current, chosen: new Set([...current.chosen, ...found]) } : current);
+                  setUserPick((current) => current ? { ...current, multi: true, chosen: new Set([...current.chosen, ...found]) } : current);
                   say(`◼ ${found.size} all-black frame(s) selected`);
                 } catch (reason) { say(`✗ ${reason instanceof Error ? reason.message : String(reason)}`); }
               })()}>◼ + all-black</button>
@@ -1205,7 +1231,7 @@ export function VideoImportPage({ workspaceId }: { workspaceId: string }) {
                 try {
                   const payload = await api("select-degenerate", { workspaceId, images: userPick.frames.map((item) => item.current), kind: "flat" });
                   const found = new Set((payload.selected as string[]) || []);
-                  setUserPick((current) => current ? { ...current, chosen: new Set([...current.chosen, ...found]) } : current);
+                  setUserPick((current) => current ? { ...current, multi: true, chosen: new Set([...current.chosen, ...found]) } : current);
                   say(`▭ ${found.size} flat frame(s) selected`);
                 } catch (reason) { say(`✗ ${reason instanceof Error ? reason.message : String(reason)}`); }
               })()}>▭ + flat/solid</button>
@@ -1398,11 +1424,24 @@ export function VideoImportPage({ workspaceId }: { workspaceId: string }) {
                           pickFilter(baseId);
                           const stepParams = Object.fromEntries(Object.entries(tile.params || registered.params || {}).map(([key, value]) => [key, String(value)]));
                           if (tile.params) setFilterParams(stepParams);
-                          // The loop: each gallery pick appends to the chain and the whole
-                          // chain re-applies to ALL extracted frames.
+                          // The loop: each gallery pick appends to the chain, the whole
+                          // chain re-applies to ALL extracted frames, and then the NEXT
+                          // 77 effects render on the OUTPUT of your item — and so on.
                           const nextChain = [...chain, { entryId: baseId, params: stepParams }];
                           setChain(nextChain);
-                          void run("Applying chain to ALL frames", () => runStack(true, nextChain));
+                          const baseSource = picked;
+                          void run("Applying chain to ALL frames", async () => {
+                            const message = await runStack(true, nextChain);
+                            const outputs = lastRunOutputsRef.current;
+                            const nextBase = (baseSource && outputs.find((entry) => entry.source === baseSource)) || outputs[0];
+                            if (nextBase && !stopRef.current && autoNext77Ref.current) {
+                              say("…and the next 77: rendering every effect on the new output");
+                              window.setTimeout(() => void runGallery({ image: nextBase.path }), 120);
+                            } else if (nextBase && !autoNext77Ref.current) {
+                              say("auto next 77 is off — click an output frame when you want the next round");
+                            }
+                            return message;
+                          });
                         }} />
                       : <span className="video-import-gallery-error">✗</span>}
                     <small>{tile.title}</small>

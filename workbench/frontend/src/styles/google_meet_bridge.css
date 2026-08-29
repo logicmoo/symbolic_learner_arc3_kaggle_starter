@@ -1,0 +1,35 @@
+/* Google Meet bridge page — the middle-leg surface for the Meet STT subsystem. */
+.google-meet-page { display: flex; flex-direction: column; min-height: 0; overflow-y: auto; }
+.google-meet-columns { padding: 14px 18px 40px; }
+.google-meet-main { display: flex; flex-direction: column; gap: 14px; max-width: 1100px; }
+
+.google-meet-card { border: 1px solid #24404a; border-radius: 6px; background: #0a141b; padding: 12px 14px; }
+.google-meet-card > header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 10px; }
+.google-meet-card > header b { font: 700 9px ui-monospace, monospace; letter-spacing: .12em; color: #8da3ad; }
+.google-meet-card > header small { color: #607985; font: 8px ui-monospace, monospace; }
+.google-meet-card > header a { margin-left: auto; color: var(--cyan, #27dcc2); font: 9px ui-monospace, monospace; text-decoration: none; }
+.google-meet-card.is-online > header b { color: var(--green, #58d68d); }
+.google-meet-card.is-offline > header b { color: var(--amber, #e5b567); }
+
+.google-meet-offline code { display: inline-block; margin: 6px 0; padding: 6px 9px; border: 1px solid #2b414c; border-radius: 4px; background: #0e1c24; color: #aef4e7; font: 9px ui-monospace, monospace; }
+.google-meet-offline p { color: #9cb2bc; font-size: 11px; line-height: 1.5; margin: 6px 0; }
+
+.google-meet-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: 0; }
+.google-meet-stats dt { font: 600 7px ui-monospace, monospace; letter-spacing: .11em; color: #607985; text-transform: uppercase; }
+.google-meet-stats dd { margin: 3px 0 0; font: 10px ui-monospace, monospace; color: #c3d3da; overflow-wrap: anywhere; }
+
+.google-meet-joinrow { display: flex; gap: 8px; flex-wrap: wrap; }
+.google-meet-joinrow input { flex: 1 1 320px; border: 1px solid #2b414c; border-radius: 4px; background: #0e1c24; color: #d5e1e6; padding: 8px 10px; font: 10px ui-monospace, monospace; }
+.google-meet-joinrow button { border: 1px solid #2a867a; border-radius: 4px; background: #133c3b; color: #8df4e2; padding: 8px 12px; font: 600 9px ui-monospace, monospace; cursor: pointer; white-space: nowrap; }
+.google-meet-joinrow button:disabled { opacity: .45; cursor: default; }
+.google-meet-note { display: block; margin-top: 8px; color: var(--cyan, #27dcc2); font: 9px ui-monospace, monospace; }
+.google-meet-hint { color: #7e939e; font-size: 10.5px; line-height: 1.55; margin: 10px 0 0; }
+.google-meet-hint code { color: #aec8d2; }
+
+.google-meet-captions-card { min-height: 220px; }
+.google-meet-captions { max-height: 44vh; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+.google-meet-caption { display: grid; grid-template-columns: 64px 130px 1fr; gap: 10px; padding: 6px 8px; border: 1px solid #182c36; border-radius: 4px; background: #0c161e; align-items: baseline; }
+.google-meet-caption small { color: #56707c; font: 8px ui-monospace, monospace; }
+.google-meet-caption b { color: var(--cyan, #27dcc2); font: 600 10px ui-monospace, monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.google-meet-caption span { color: #d5e1e6; font-size: 12px; line-height: 1.45; }
+.google-meet-empty { color: #607985; font-size: 11px; }

@@ -1,0 +1,15 @@
+{
+  "kind": "managed_service",
+  "id": "meet_caption_bridge",
+  "label": "Google Meet STT Bridge",
+  "description": "STT subsystem using Google Meet's live captions: keeps a servant meeting open (auto-join, room mic on, captions on), posts every finished caption line into the agent mailbox like the Vosk listener, and relays mailbox replies into the Meet chat. Mailbox commands on the 'google-meet' recipient: /join <url>, /new. Optional --companion keeps a muted second account in the call.",
+  "port": 48699,
+  "healthPath": "/health",
+  "launcher": "workbench/scripts/run_meet_bridge.bat",
+  "commandPatterns": ["meet_caption_bridge"],
+  "controllable": true,
+  "allowKill": true,
+  "allowRelaunch": true,
+  "singleton": true,
+  "defaultStartup": { "start": false, "hidden": false }
+}

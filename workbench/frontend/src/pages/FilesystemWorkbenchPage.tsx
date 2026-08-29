@@ -154,6 +154,11 @@ const VideoImportPage = lazy(() =>
     default: module.VideoImportFamily,
   })),
 );
+const GoogleMeetBridgePage = lazy(() =>
+  import("../components/GoogleMeetBridgePage").then((module) => ({
+    default: module.GoogleMeetBridgePage,
+  })),
+);
 const Arc3GamesGalleryPage = lazy(() =>
   import("../components/Arc3GamesGalleryPage").then((module) => ({
     default: module.Arc3GamesGalleryPage,
@@ -450,6 +455,7 @@ type View =
   | "benchmarks"
   | "contexts"
   | "runtimeContexts"
+  | "googleMeet"
   | "docs";
 type BreadcrumbEntry = { view: View; label: string; url: string };
 type TopbarSwitch = { key: string; label: string; active?: boolean; onClick: () => void };
@@ -496,6 +502,7 @@ const WORKBENCH_VIEWS: Set<View> = new Set([
   "benchmarks",
   "contexts",
   "runtimeContexts",
+  "googleMeet",
   "docs",
 ]);
 const viewFromLocation = (): View | null => {
@@ -511,6 +518,7 @@ const viewFromLocation = (): View | null => {
   if (value === "b1-b2-pipeline" || value === "b1b2pipeline" || value === "arc3-b1-b2-pipeline") return "arc3B1B2Pipeline";
   if (value === "play" || value === "arc3-play" || value === "arc3play" || value === "play-record") return "arc3Play";
   if (value === "video-import" || value === "videoimport" || value === "youtube-import" || value === "video") return "videoImport";
+  if (value === "google-meet" || value === "googlemeet" || value === "meet") return "googleMeet";
   if (value === "games" || value === "arc3-games" || value === "arc3games" || value === "games-gallery" || value === "arc3-games-gallery") return "arc3GamesGallery";
   if (value === "workflow-page-builder" || value === "workflowpagebuilder" || value === "page-builder") return "workflowPageBuilder";
   if (value === "workflowv2" || value === "workflows-v2" || value === "workflow-v2") return "canvas";
@@ -711,6 +719,7 @@ export const NAVIGATION_V2: Array<{
       { label: "Events", view: "events", glyph: "△" },
       { label: "States", view: "states", glyph: "▣" },
       { label: "Logs", view: "logs", glyph: "▤" },
+      { label: "Google Meet", view: "googleMeet", glyph: "◈" },
     ],
   },
   {
@@ -4268,6 +4277,7 @@ export function FilesystemWorkbenchPage() {
             )}{" "}
             {view === "plugins" && <PluginManagerPage />}{" "}
             {view === "videoImport" && <VideoImportPage workspaceId={workspace.id} />}{" "}
+            {view === "googleMeet" && <GoogleMeetBridgePage />}{" "}
             {view === "pluginPage" && <PluginHostedPage entry={pluginPage} />}{" "}
             {view === "setup" && (
               <WorkspaceSettingsPanel
@@ -4519,6 +4529,8 @@ export function FilesystemWorkbenchPage() {
                     ? "goals"
                     : view === "videoImport"
                       ? "videoImport"
+                    : view === "googleMeet"
+                      ? "googleMeet"
                     : view === "plans"
                       ? "plans"
                       : view === "data"

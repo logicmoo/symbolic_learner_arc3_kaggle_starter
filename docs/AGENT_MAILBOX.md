@@ -232,6 +232,53 @@ python scripts/stt_mailbox_listener.py --device 1 --device 20 --sender voice-stt
 - Install the extra with `python -m pip install -e ".[stt]"` (adds
   `sounddevice` and `vosk`) if they are not already present.
 
+## Google Meet caption bridge (the better STT subsystem)
+
+[`scripts/meet_caption_bridge.py`](../scripts/meet_caption_bridge.py) is a
+second STT subsystem with far better recognition: it uses **Google Meet's own
+live captions** instead of local Vosk. It is registered on the Processes page
+as the managed service **Google Meet STT Bridge**
+(`meet_caption_bridge.managed_service.json`, health on
+`http://127.0.0.1:48699/health`, launcher
+`workbench/scripts/run_meet_bridge.bat`) and can be started/stopped from
+there like any other subsystem.
+
+```powershell
+python scripts/meet_caption_bridge.py                 # always-on servant meeting
+python scripts/meet_caption_bridge.py --meet <url>    # join a specific meeting
+python scripts/meet_caption_bridge.py --companion     # + muted 2nd account
+python scripts/meet_caption_bridge.py --forget-sso    # re-pick the account
+```
+
+- With no arguments it keeps a **servant meeting** running unattended: it
+  pops its own Chrome (dedicated profile — sign in ONCE, the SSO session
+  persists until Google expires it), creates an instant meeting, auto-joins
+  with the room mic ON and camera OFF, turns captions on, answers Google's
+  "are you still there?" prompts, auto-admits knockers, and recreates the
+  meeting (posting the fresh link) whenever Google ends it.
+- Every finished caption line lands in the mailbox as `meet-<speaker>` →
+  `symbolic-workbench-user`, exactly like the Vosk listener's messages.
+- The reverse direction: anything sent to the `google-meet` recipient is
+  typed into the Meet's in-call chat (`--speak` also voices it with Windows
+  TTS, out loud on the local machine). Mailbox commands `/join <url>` and
+  `/new` move the bridge to meetings you invite it to, so you and others can
+  talk to it there.
+- `--companion` keeps a second signed-in account (its own SSO profile,
+  port +1) sitting muted AND deaf in the meeting so Google sees 2
+  participants; with a single account the stay-in-call answers +
+  auto-recreate cover it. The companion never unmutes itself and never
+  plays back meeting audio (both would risk an echo loop back into the
+  room mic) — it is hands-off during Google sign-in and only takes over
+  join/mute maintenance after the operator has personally reached the
+  call at least once.
+- `/say <text>` makes the companion **speak into the meeting** without a
+  virtual-audio-cable driver: its `getUserMedia` is patched (CDP-injected,
+  companion tab only) so Meet's "microphone" is really a WebAudio
+  `MediaStreamDestination`; the text is synthesized locally with Windows
+  SAPI to a WAV, then decoded and played straight into that destination.
+  The real room microphone is never touched. Requires `--companion` to be
+  running and already joined.
+
 ## Codex heartbeat automation
 
 The repository-owned source of truth for the Workbench mailbox heartbeat is
