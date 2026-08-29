@@ -271,40 +271,64 @@ def wait_for_meet_tab(cdp: str, timeout: float = 900.0, require_room: bool = Fal
 # --------------------------------------------------------------------------
 # IN: caption scraping
 # --------------------------------------------------------------------------
-# Layered selector strategy: Meet's class names churn, so try the known ones
-# first and fall back to the captions region's visible rows.
+# Meet's own CSS class names churn across releases, so guessing specific
+# classes (the old approach) silently breaks and, worse, can silently DROP
+# captions when a text-pattern heuristic misfires with no visible error.
+# Instead: find the captions region using only its stable semantic
+# aria-label/role (never a class name), verified by picking whichever
+# candidate region actually holds the MOST text — never a narrower/wrong
+# match. Then track each caption ROW by DOM ELEMENT IDENTITY (a stable key
+# assigned the first time that exact node is seen, kept on `window` across
+# polls) rather than by guessing from its text content — a row is either a
+# brand new DOM node (new utterance) or the SAME node still growing
+# (interim speech), which is unambiguous and survives any class-name churn
+# because it depends on nothing but the region's own generic child
+# structure and the browser's DOM identity, both of which are stable.
 CAPTIONS_JS = r"""
 (() => {
-  const rows = [];
-  const push = (speaker, text) => {
-    speaker = (speaker || "Speaker").trim();
-    text = (text || "").replace(/\s+/g, " ").trim();
-    if (text) rows.push({ speaker, text });
-  };
-  // Strategy 1: current known caption row classes.
-  document.querySelectorAll("div.nMcdL").forEach((row) => {
-    const name = row.querySelector(".NWpY1d, .zs7s8d")?.textContent;
-    const text = row.querySelector(".bh44bd, .iTTPOb")?.textContent
-      || [...row.childNodes].filter(n => n !== row.firstElementChild).map(n => n.textContent).join(" ");
-    push(name, text);
-  });
-  if (rows.length) return JSON.stringify({ ok: true, rows });
-  // Strategy 2: the captions region (aria-label localizations vary; try a few).
-  const region = document.querySelector(
-    'div[aria-label*="aption" i], div[role="region"][aria-label*="ubtitle" i]');
-  if (region) {
-    [...region.querySelectorAll(":scope div")].forEach((row) => {
-      if (row.childElementCount >= 1 && row.firstElementChild) {
-        const name = row.firstElementChild.textContent;
-        const rest = row.textContent.slice((name || "").length);
-        if (rest.trim().length > 1 && (name || "").length < 60) push(name, rest);
-      }
-    });
-    if (rows.length) return JSON.stringify({ ok: true, rows: rows.slice(-4) });
-    return JSON.stringify({ ok: true, rows: [], note: "region found, no rows (captions quiet?)" });
+  const candidates = [...document.querySelectorAll(
+    'div[aria-label*="aption" i], div[role="region"][aria-label*="ubtitle" i], div[role="region"][aria-label*="aption" i]'
+  )];
+  let region = null, bestLen = -1;
+  for (const c of candidates) {
+    const len = (c.innerText || "").length;
+    if (len > bestLen) { region = c; bestLen = len; }
   }
-  const inCall = !!document.querySelector('button[aria-label*="captions" i], [data-is-muted]');
-  return JSON.stringify({ ok: false, note: inCall ? "captions look OFF - press c in the Meet" : "not in a call yet?" });
+  if (!region) {
+    const inCall = !!document.querySelector('button[aria-label*="captions" i], [data-is-muted]');
+    return JSON.stringify({ ok: false, note: inCall ? "captions look OFF - press c in the Meet" : "not in a call yet?" });
+  }
+  window.__meetCaptionRows = window.__meetCaptionRows || new Map();
+  const seen = window.__meetCaptionRows;
+  const rowEls = [...region.children].filter(el => (el.innerText || "").trim().length > 0);
+  const rows = [];
+  const liveKeys = [];
+  rowEls.forEach((rowEl) => {
+    let info = seen.get(rowEl);
+    if (!info) {
+      info = { key: `row-${seen.size}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}` };
+      seen.set(rowEl, info);
+    }
+    liveKeys.push(info.key);
+    // Best-effort speaker split: if this row has more than one child
+    // element, treat the first as the speaker name and the rest as the
+    // caption text — a generic structural guess, never a class-name
+    // dependency. If it doesn't cleanly apply, fall back to the row's
+    // whole text under a generic "Speaker" label rather than dropping it.
+    let speaker = "Speaker";
+    let text = (rowEl.innerText || "").trim();
+    if (rowEl.children.length > 1) {
+      const nameText = (rowEl.children[0].innerText || "").trim();
+      const restText = [...rowEl.children].slice(1).map((c) => c.innerText || "").join(" ").replace(/\s+/g, " ").trim();
+      if (nameText && restText && nameText.length < 60) { speaker = nameText; text = restText; }
+    }
+    text = text.replace(/\s+/g, " ").trim();
+    if (text) rows.push({ key: info.key, speaker, text });
+  });
+  // Forget rows no longer present at all, so this Map never grows
+  // unbounded across a long meeting.
+  for (const el of [...seen.keys()]) { if (!rowEls.includes(el)) seen.delete(el); }
+  return JSON.stringify({ ok: true, rows, liveKeys });
 })()
 """
 
@@ -391,59 +415,56 @@ def autojoin_js(policy: str) -> str:
 
 
 class CaptionTracker:
-    """Finalize caption lines: Meet grows a line in place, then replaces it.
-
-    A line is emitted when it stops changing for `settle` seconds, or when the
-    speaker's current text no longer extends it (a new utterance started).
+    """Finalize caption rows by DOM ELEMENT IDENTITY, not by guessed text or
+    speaker patterns. CAPTIONS_JS assigns each row a stable `key` the first
+    time that exact DOM node is seen (kept on `window` across polls); the
+    SAME key reappearing means Meet is still growing that same row (interim
+    speech), while a key that stops appearing means the row is gone from
+    the captions region — permanently, since nothing brings a scrolled-off
+    row back — so it's finalized immediately rather than waiting out
+    `settle` and losing it. This is unambiguous and survives Meet's CSS
+    class churn entirely, since it depends only on DOM node identity.
     """
 
     def __init__(self, settle: float) -> None:
         self.settle = settle
-        self.live: dict[str, tuple[str, float]] = {}
+        self.live: dict[str, tuple[str, str, float]] = {}  # key -> (speaker, text, since)
         self.recent: list[str] = []
-        self.emitted: dict[str, str] = {}  # speaker -> full text already emitted
+        self.emitted: dict[str, str] = {}  # key -> full text already emitted
 
-    def update(self, rows: list[dict[str, str]], emit) -> None:
+    def update(self, rows: list[dict[str, str]], live_keys: list[str], emit) -> None:
         now = time.time()
-        seen: set[str] = set()
+        live_set = set(live_keys)
         for row in rows:
-            speaker, text = row["speaker"], row["text"]
-            seen.add(speaker)
-            current = self.live.get(speaker)
-            if current is None:
-                self.live[speaker] = (text, now)
-            elif text == current[0]:
-                if now - current[1] >= self.settle:
-                    self._emit(speaker, current[0], emit)
-                    self.live.pop(speaker, None)
-            elif text.startswith(current[0]) or current[0].startswith(text) or len(text) >= len(current[0]) * 0.6:
-                self.live[speaker] = (text, now)
-            else:
-                self._emit(speaker, current[0], emit)
-                self.emitted.pop(speaker, None)  # a brand-new caption block began
-                self.live[speaker] = (text, now)
-        for speaker in list(self.live):
-            if speaker not in seen:
-                text, since = self.live[speaker]
-                if now - since >= self.settle:
-                    self._emit(speaker, text, emit)
-                    self.emitted.pop(speaker, None)
-                    self.live.pop(speaker, None)
+            key, speaker, text = row["key"], row["speaker"], row["text"]
+            current = self.live.get(key)
+            if current is None or text != current[1]:
+                self.live[key] = (speaker, text, now)
+            elif now - current[2] >= self.settle:
+                self._emit(key, speaker, text, emit)
+                self.live.pop(key, None)
+        # A row no longer present in the region at all will never grow or
+        # be seen again — finalize it right away instead of waiting.
+        for key in list(self.live):
+            if key not in live_set:
+                speaker, text, _ = self.live.pop(key)
+                self._emit(key, speaker, text, emit)
+                self.emitted.pop(key, None)
 
-    def _emit(self, speaker: str, text: str, emit) -> None:
+    def _emit(self, key: str, speaker: str, text: str, emit) -> None:
         # Meet GROWS one caption row for a long monologue; emit only what is
-        # NEW since the last emission for this speaker, never the whole wall.
-        prior = self.emitted.get(speaker, "")
+        # NEW since the last emission for THIS row, never the whole wall.
+        prior = self.emitted.get(key, "")
         delta = text[len(prior):].strip() if prior and text.startswith(prior) else text
         if len(delta) < 2:
-            self.emitted[speaker] = text
+            self.emitted[key] = text
             return
-        key = f"{speaker}::{delta}"
-        if key in self.recent:
+        dedupe_key = f"{key}::{delta}"
+        if dedupe_key in self.recent:
             return
-        self.recent.append(key)
+        self.recent.append(dedupe_key)
         del self.recent[:-40]
-        self.emitted[speaker] = text
+        self.emitted[key] = text
         emit(speaker, delta)
 
 
@@ -886,7 +907,14 @@ def main() -> None:
         status["captionCount"] = int(status.get("captionCount") or 0) + 1
         status["lastCaptionAt"] = time.strftime("%Y-%m-%dT%H:%M:%S")
         with captions_lock:
-            captions_log.append({"at": time.time(), "iso": status["lastCaptionAt"], "speaker": speaker, "text": text})
+            # Tag each line with the meeting it was captured in — switch_to()
+            # can hop the bridge to a different room without clearing this
+            # ring buffer, so consumers need a way to tell old-meeting lines
+            # apart from the current one (e.g. a "which meeting" dropdown).
+            captions_log.append({
+                "at": time.time(), "iso": status["lastCaptionAt"], "speaker": speaker, "text": text,
+                "meetingUrl": holder.get("url"),
+            })
             del captions_log[:-200]
         print(f"[caption] {line}")
 
@@ -897,6 +925,39 @@ def main() -> None:
     status: dict[str, Any] = {"ok": True, "service": "meet_caption_bridge", "meetingUrl": holder.get("url"), "lastCaptionAt": None, "captionCount": 0, "outbox": args.outbox, "recipients": recipients}
     captions_log: list[dict[str, Any]] = []  # ring buffer for the ws_collab STT driver
     captions_lock = threading.Lock()
+
+    # ---- debug/status ring buffer — "other things" the admin UI can show
+    # beside captions: autojoin verdicts, mic-select attempts, dialog
+    # handling, /say and /join outcomes. `log()` prints exactly as a plain
+    # print(...) would (same console output) and additionally remembers the
+    # line here so a UI has something real to show, never fabricated.
+    debug_log: list[dict[str, Any]] = []
+    debug_lock = threading.Lock()
+
+    def log(text: str, *, err: bool = False) -> None:
+        print(text, file=sys.stderr if err else None)
+        with debug_lock:
+            debug_log.append({"at": time.time(), "iso": time.strftime("%Y-%m-%dT%H:%M:%S"), "text": text})
+            del debug_log[:-200]
+
+    def _controlled_clients() -> list[dict[str, Any]]:
+        """Every participant the bridge actively drives, and which device
+        stands in for their mic/speaker — HOST is real hardware and is
+        never automated, so it is deliberately not listed here."""
+        clients: list[dict[str, Any]] = []
+        if args.companion:
+            mic = args.mic_select_device or "(WebAudio synthetic mic patch)"
+            if args.mic_select_device and not holder.get("companion_mic_confirmed"):
+                mic += " — attempting, not yet confirmed by Meet"
+            speak = (f"device #{tts_output_device_index} (virtual cable)" if tts_output_device_index is not None
+                     else "(WebAudio synthetic speaker patch)")
+            clients.append({
+                "role": "companion",
+                "state": "in-call" if holder.get("companion_tab") else "not-yet-joined",
+                "mic": mic,
+                "speak": speak,
+            })
+        return clients
 
     def _health_server() -> None:
         from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -913,10 +974,68 @@ def main() -> None:
                         since = 0.0
                     with captions_lock:
                         rows = [row for row in captions_log if row["at"] > since]
-                    body = json.dumps({"captions": rows, "now": time.time(), "meetingUrl": holder.get("url")}).encode("utf-8")
+                        # Every meeting URL this buffer has ever seen a caption
+                        # for — lets a "which meeting" dropdown list rooms even
+                        # ones the current `since` window doesn't include.
+                        meetings = sorted({row.get("meetingUrl") for row in captions_log if row.get("meetingUrl")})
+                    body = json.dumps({
+                        "captions": rows, "now": time.time(), "meetingUrl": holder.get("url"), "meetings": meetings,
+                    }).encode("utf-8")
                 else:
-                    body = json.dumps({**status, "meetingUrl": holder.get("url")}).encode("utf-8")
+                    with debug_lock:
+                        debug_rows = list(debug_log[-50:])
+                    body = json.dumps({
+                        **status, "meetingUrl": holder.get("url"), "clients": _controlled_clients(),
+                        "debug": debug_rows,
+                    }).encode("utf-8")
                 self.send_response(200)
+                self.send_header("content-type", "application/json")
+                self.send_header("access-control-allow-origin", "*")
+                self.send_header("content-length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+
+            def do_OPTIONS(self) -> None:  # noqa: N802
+                # CORS preflight — needed for every request the admin UI
+                # makes, not just POST /command: its shared api() helper
+                # always attaches an Authorization header (meant for
+                # ws_collab's own API), which turns even a plain GET
+                # /health or /captions into a "non-simple" request that the
+                # browser preflights first. Must echo "authorization" here
+                # or the browser silently blocks the real request afterward
+                # ("Failed to fetch", no server-side clue at all).
+                self.send_response(204)
+                self.send_header("access-control-allow-origin", "*")
+                self.send_header("access-control-allow-methods", "GET, POST, OPTIONS")
+                self.send_header("access-control-allow-headers", "content-type, authorization")
+                self.send_header("content-length", "0")
+                self.end_headers()
+
+            def do_POST(self) -> None:  # noqa: N802
+                # POST /command {"command": "/join <url>" | "/new" | "/say <text>"}
+                # — lets a UI (the ws_collab admin's Google Meet page) drive
+                # the bridge directly over HTTP, without going through the
+                # mailbox_chat mailbox `out_loop` otherwise depends on.
+                parsed = urlparse(self.path)
+                if parsed.path.rstrip("/") != "/command":
+                    self.send_response(404)
+                    self.send_header("access-control-allow-origin", "*")
+                    self.send_header("content-length", "0")
+                    self.end_headers()
+                    return
+                try:
+                    length = int(self.headers.get("content-length") or 0)
+                    raw = self.rfile.read(length) if length else b"{}"
+                    payload = json.loads(raw or b"{}")
+                    command = str(payload.get("command") or "").strip()
+                    verdict = handle_command(command) if command else "empty-command"
+                    if verdict is None:
+                        verdict = "unrecognized-command"
+                    status_code, body_obj = 200, {"ok": True, "verdict": verdict}
+                except Exception as error:  # noqa: BLE001
+                    status_code, body_obj = 400, {"ok": False, "error": str(error)}
+                body = json.dumps(body_obj).encode("utf-8")
+                self.send_response(status_code)
                 self.send_header("content-type", "application/json")
                 self.send_header("access-control-allow-origin", "*")
                 self.send_header("content-length", str(len(body)))
@@ -1039,7 +1158,7 @@ def main() -> None:
                     " : 'elsewhere'"))
                 if state == "in-call" and not operator_joined:
                     operator_joined = True
-                    print("[companion] you're in — taking over: staying muted, deaf, and present.")
+                    log("[companion] you're in — taking over: staying muted, deaf, and present.")
                 if state == "signin" and not operator_joined:
                     if not told_waiting:
                         told_waiting = True
@@ -1082,17 +1201,21 @@ def main() -> None:
                 if state == "in-call" and args.mic_select_device and not mic_selected:
                     try:
                         mic_verdict = companion_tab.evaluate(SELECT_MIC_DEVICE_JS % json.dumps(args.mic_select_device.lower()))
-                        print(f"[companion] mic-select: {mic_verdict}")
+                        log(f"[companion] mic-select: {mic_verdict}")
                         if isinstance(mic_verdict, str) and mic_verdict.startswith("mic-selected:"):
                             mic_selected = True
+                            # Surface for /health's "controlled clients" list —
+                            # confirms Meet actually adopted the device, not
+                            # just that we attempted it.
+                            holder["companion_mic_confirmed"] = True
                     except Exception as error:  # noqa: BLE001
-                        print(f"[companion] mic-select failed: {error}", file=sys.stderr)
+                        log(f"[companion] mic-select failed: {error}", err=True)
                 # While say_into_meeting() owns the mic (holder["speaking_until"]
                 # in the future), don't fight it with a mute click.
                 if time.time() >= float(holder.get("speaking_until") or 0):
                     verdict = companion_tab.evaluate(autojoin_js("muted"))
                     if verdict in ("join-clicked", "stayed-in-call", "muted", "admitted"):
-                        print(f"[companion] {verdict}")
+                        log(f"[companion] {verdict}")
                 # The companion is deaf as well as mute: silence every media
                 # element so its tab never replays the meeting into the room
                 # (the live mic would re-capture it as an echo). Always on.
@@ -1100,7 +1223,7 @@ def main() -> None:
             except Exception as error:  # noqa: BLE001
                 companion_tab = None
                 holder["companion_tab"] = None
-                print(f"[companion] {error}", file=sys.stderr)
+                log(f"[companion] {error}", err=True)
                 stop.wait(3)
             stop.wait(3)
 
@@ -1140,21 +1263,21 @@ def main() -> None:
 
                     play_wav_bytes_to_device(_base64.b64decode(b64), tts_output_device_index)
                     verdict = f"spoke-via-device-{tts_output_device_index}"
-                    print(f"[say] {unmute_verdict}/{verdict}: {text[:80]}")
+                    log(f"[say] {unmute_verdict}/{verdict}: {text[:80]}")
                     stop.wait(duration + 0.2)
                 else:
                     verdict = tab.evaluate(SPEAK_INTO_MEETING_JS % json.dumps(b64), await_promise=True, timeout=30)
-                    print(f"[say] {unmute_verdict}/{verdict}: {text[:80]}")
+                    log(f"[say] {unmute_verdict}/{verdict}: {text[:80]}")
                     if isinstance(verdict, str) and verdict.startswith("speaking"):
                         stop.wait(duration + 0.2)
             except Exception as error:  # noqa: BLE001
-                print(f"[say] failed: {error}", file=sys.stderr)
+                log(f"[say] failed: {error}", err=True)
             finally:
                 holder["speaking_until"] = 0.0
                 try:
                     tab.evaluate(autojoin_js("muted"))
                 except Exception as error:  # noqa: BLE001
-                    print(f"[say] re-mute failed: {error}", file=sys.stderr)
+                    log(f"[say] re-mute failed: {error}", err=True)
 
     def switch_to(target_url: str | None) -> None:
         """Leave for another meeting: /join <url> or /new (fresh servant room)."""
@@ -1193,8 +1316,35 @@ def main() -> None:
                 requests.get(f"{cdp_endpoint}/json/close/{old_id}", timeout=5)
             except Exception:
                 pass
-        print(f"[bridge] now bridging: {holder['url']}")
+        log(f"[bridge] now bridging: {holder['url']}")
         announce(f"Meet bridge moved — now in: {holder['url']}", {"source": "google-meet-bridge", "meetingUrl": holder["url"]})
+
+    def handle_command(command: str) -> str | None:
+        """Recognize /join <url>, /new (+ aliases /meet /servant), and /say
+        <text>; return a short verdict string if `command` was one of those
+        and has been acted on, or None if it isn't a recognized control
+        command (caller should fall back to its own default behavior, e.g.
+        posting the text into Meet chat as a normal line). Shared by the
+        mailbox-driven out_loop and the bridge's own HTTP /command endpoint
+        (used by the ws_collab admin UI) so both paths behave identically.
+        """
+        lowered = command.lower()
+        if lowered.startswith("/join"):
+            parts = command.split(None, 1)
+            target = parts[1].strip() if len(parts) > 1 else None
+            switch_to(target)
+            return f"joined:{target}" if target else "new-servant-meeting"
+        if lowered in ("/new", "/meet", "/servant"):
+            switch_to(None)
+            return "new-servant-meeting"
+        if lowered.startswith("/say"):
+            parts = command.split(None, 1)
+            spoken = parts[1].strip() if len(parts) > 1 else ""
+            if spoken:
+                threading.Thread(target=say_into_meeting, args=(spoken,), daemon=True).start()
+                return "speaking"
+            return "say-empty"
+        return None
 
     def out_loop() -> None:
         """mailbox -> Meet chat (+ optional TTS), plus /join and /new commands."""
@@ -1209,19 +1359,7 @@ def main() -> None:
                 if not text:
                     continue
                 command = text.strip()
-                lowered = command.lower()
-                if lowered.startswith("/join"):
-                    parts = command.split(None, 1)
-                    switch_to(parts[1].strip() if len(parts) > 1 else None)
-                    continue
-                if lowered in ("/new", "/meet", "/servant"):
-                    switch_to(None)
-                    continue
-                if lowered.startswith("/say"):
-                    parts = command.split(None, 1)
-                    spoken = parts[1].strip() if len(parts) > 1 else ""
-                    if spoken:
-                        threading.Thread(target=say_into_meeting, args=(spoken,), daemon=True).start()
+                if handle_command(command) is not None:
                     continue
                 sender = str(message.get("from") or message.get("sender") or "workbench")
                 line = f"[{sender}] {text}"
@@ -1250,6 +1388,7 @@ def main() -> None:
     autojoin_at = 0.0
     last_autojoin_verdict = ""
     lost_since: float | None = None
+    fallback_logged_keys: set[str] = set()
     try:
         while True:
             tab = holder["tab"]
@@ -1276,7 +1415,14 @@ def main() -> None:
                         switch_to(None)
                 continue
             if payload.get("ok"):
-                tracker.update(payload.get("rows") or [], emit)
+                # Log once PER ROW KEY (not every poll — a still-growing row
+                # would otherwise spam this every ~0.4s) when the speaker/
+                # text split heuristic didn't cleanly apply for that row.
+                for r in payload.get("rows") or []:
+                    if r.get("speaker") == "Speaker" and r.get("key") not in fallback_logged_keys:
+                        fallback_logged_keys.add(r["key"])
+                        log(f"[captions] speaker-split fallback used: {r.get('text', '')[:100]!r}")
+                tracker.update(payload.get("rows") or [], payload.get("liveKeys") or [], emit)
                 note = payload.get("note") or ""
             else:
                 note = payload.get("note") or "captions not found"
@@ -1296,10 +1442,10 @@ def main() -> None:
                 try:
                     verdict = tab.evaluate(autojoin_js("keep"))
                     if verdict not in ("in-call", "waiting-prejoin") and verdict != last_autojoin_verdict:
-                        print(f"[bridge] autojoin: {verdict}")
+                        log(f"[bridge] autojoin: {verdict}")
                     last_autojoin_verdict = verdict
                 except Exception as error:  # noqa: BLE001
-                    print(f"[bridge] autojoin failed: {error}", file=sys.stderr)
+                    log(f"[bridge] autojoin failed: {error}", err=True)
             time.sleep(args.poll)
     except KeyboardInterrupt:
         pass
