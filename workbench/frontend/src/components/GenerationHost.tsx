@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ComponentType } from "react";
 import { GLOBAL_GENERATION_POLICIES, readGenerationParam, writeGenerationParam, type PageFamily } from "../lib/pageGenerations";
 import { updateUserUiPreferences, useUserUiPreferences } from "../lib/uiPreferences";
 import "../styles/page_generations.css";
@@ -14,7 +14,20 @@ import "../styles/page_generations.css";
  * button switches to "Show Generations" — and showing again reopens the
  * notice in the fullest mode.
  */
-export function GenerationHost({ family, workspaceId }: { family: PageFamily; workspaceId: string }) {
+export function GenerationHost({
+  family,
+  workspaceId,
+  extraProps,
+}: {
+  family: PageFamily;
+  workspaceId: string;
+  /** Extra props forwarded to whichever generation is currently active --
+   * for families whose component accepts more than just `workspaceId` (e.g.
+   * Video Import's `onChainSummaryChange`, used by the host page to render a
+   * "what we've built so far" summary elsewhere on the page). Optional so
+   * families with a plain `{ workspaceId }` component need nothing extra. */
+  extraProps?: Record<string, unknown>;
+}) {
   const total = family.generations.length;
   const [generation, setGeneration] = useState(() => readGenerationParam(total));
   // The ONE shared view of the generations notice, persisted in the user
@@ -24,7 +37,11 @@ export function GenerationHost({ family, workspaceId }: { family: PageFamily; wo
   const setView = (next: "fullest" | "full" | "compact") => updateUserUiPreferences({ generationsView: next });
   useEffect(() => { writeGenerationParam(generation); }, [generation]);
   const active = family.generations[Math.min(total, Math.max(1, generation)) - 1];
-  const Component = active.component;
+  // Widened locally so a family whose generation component accepts more than
+  // just `workspaceId` (declared PageGeneration.component type) can still
+  // receive its extra props here, without loosening that type for every
+  // other family's generations.
+  const Component = active.component as ComponentType<{ workspaceId: string } & Record<string, unknown>>;
   const policies = [...GLOBAL_GENERATION_POLICIES, ...(family.policies || [])];
   const allTheWayGone = () => updateUserUiPreferences({ generationsVisible: false });
   const reduce = () => {
@@ -33,7 +50,7 @@ export function GenerationHost({ family, workspaceId }: { family: PageFamily; wo
     else allTheWayGone();
   };
   if (!generationsVisible) {
-    return <div className="page-generations"><Component key={active.generation} workspaceId={workspaceId} /></div>;
+    return <div className="page-generations"><Component key={active.generation} workspaceId={workspaceId} {...(extraProps || {})} /></div>;
   }
   return (
     <div className="page-generations">
@@ -115,7 +132,7 @@ export function GenerationHost({ family, workspaceId }: { family: PageFamily; wo
           </div>
         </div>
       )}
-      <Component key={active.generation} workspaceId={workspaceId} />
+      <Component key={active.generation} workspaceId={workspaceId} {...(extraProps || {})} />
     </div>
   );
 }

@@ -13,6 +13,7 @@ import { ChatDock } from "../components/ChatDock";
 import { PageUiTools } from "../components/PageUiTools";
 import { PddlPlanImportPanel } from "../components/PddlPlanImportPanel";
 import { relationshipIds } from "../components/resourceRelationships";
+import type { VideoImportChainSummaryStep } from "../components/VideoImportPage";
 import {
   HumanInputForm,
   RuntimeHistoryView,
@@ -456,7 +457,16 @@ type View =
   | "contexts"
   | "runtimeContexts"
   | "googleMeet"
-  | "docs";
+  | "docs"
+  // A pseudo-view: the workspace chooser screen, shown OVER an already-loaded
+  // workspace (which stays fully loaded in memory) without tearing it down.
+  // Deliberately excluded from WORKBENCH_VIEWS below -- it is not a real,
+  // navigable workbench page (no sidebar entry, never a workspace's
+  // "preferred opening page"), just a transient overlay state. URL shape:
+  // ?workspace=<currentId>&view=changeWorkspace -- "workspace" keeps naming
+  // whatever's already loaded (nothing is torn down just by opening this),
+  // "view" is the one signal that the chooser overlay should show.
+  | "changeWorkspace";
 type BreadcrumbEntry = { view: View; label: string; url: string };
 type TopbarSwitch = { key: string; label: string; active?: boolean; onClick: () => void };
 const WORKBENCH_VIEWS: Set<View> = new Set([
@@ -511,6 +521,7 @@ const viewFromLocation = (): View | null => {
   if (!rawValue) return parameters.has("state") ? "states" : null;
   const value = rawValue.trim().toLowerCase();
   if (value === "workflows" || value === "workflow") return "canvas";
+  if (value === "workspace-chooser" || value === "workspacechooser" || value === "chooser" || value === "changeworkspace" || value === "change-workspace") return "changeWorkspace";
   if (value === "current-workflow") return "currentWorkflow";
   if (value === "english-workflow" || value === "englishworkflow") return "englishWorkflow";
   if (value === "visual-image-diff" || value === "visualimagediff" || value === "image-diff") return "visualImageDiff";
@@ -840,6 +851,10 @@ export function FilesystemWorkbenchPage() {
   const breadcrumbNavigation = useRef(false);
   const loadingWorkspaceId = useRef<string | null>(null);
   const currentWorkspaceId = useRef<string | null>(null);
+  /** The view that was active right before showWorkspaceChooser() opened the
+   * chooser overlay, so cancelling (or re-picking the same workspace) can
+   * return there instead of just landing on the workspace's default page. */
+  const preChooserView = useRef<View | null>(null);
   const setView = (
     next: View,
     options?: {
@@ -1093,6 +1108,9 @@ export function FilesystemWorkbenchPage() {
   );
   const { pluginMenu } = usePluginMenu();
   const [pluginPage, setPluginPage] = useState<PluginMenuEntry | null>(null);
+  // Fed by VideoImportPage via onChainSummaryChange, rendered as a "what
+  // we've built so far" panel above Documentation while on that view.
+  const [videoImportChainSummary, setVideoImportChainSummary] = useState<VideoImportChainSummaryStep[]>([]);
   const [expandedPluginGroups, setExpandedPluginGroups] = useState<Record<string, boolean>>({});
   useEffect(() => {
     if (view !== "pluginPage" || pluginPage || pluginMenu.length === 0) return;
@@ -1473,7 +1491,14 @@ export function FilesystemWorkbenchPage() {
             (row.path === requestedWorkflow ||
               row.document.id === requestedWorkflow),
         ) || next.workflows.find((row) => row.document);
-      const restoredView = viewFromLocation() || workspaceOpeningViewFromLocation(next.workspace.effectiveIncludes || []);
+      // "changeWorkspace" left over in the URL (switching workspace FROM
+      // the chooser) is not a real page to restore into -- fall through to
+      // the workspace's own preferred opening page instead.
+      const explicitView = viewFromLocation();
+      const restoredView =
+        explicitView && explicitView !== "changeWorkspace"
+          ? explicitView
+          : workspaceOpeningViewFromLocation(next.workspace.effectiveIncludes || []);
       if (first?.document) {
         setWorkflowPath(first.path);
         setWorkflowSource(JSON.stringify(first.document, null, 2));
@@ -1530,7 +1555,15 @@ export function FilesystemWorkbenchPage() {
     if (
       !requested ||
       requested === currentWorkspaceId.current ||
-      loadingWorkspaceId.current !== null
+      loadingWorkspaceId.current !== null ||
+      // A direct call already in flight (e.g. switchToWorkspace()'s
+      // closeWorkspace() + loadWorkspace() pair) sets `busy` in the same
+      // synchronous tick/batch that nulls `workspace`, which is what would
+      // otherwise trigger THIS effect too -- without this guard, closing the
+      // outgoing workspace races a second, unwanted load of whatever
+      // workspaceFromLocation() falls back to (the remembered/default
+      // workspace) against the actually-requested target.
+      busy
     )
       return;
     const match = workspaces.find((item) => item.id === requested);
@@ -1549,6 +1582,59 @@ export function FilesystemWorkbenchPage() {
   const showWorkspaceChooser = () => {
     const url = new URL(window.location.href);
     [
+      "resource",
+      "run",
+      "goalRun",
+      "runStep",
+      "runEvent",
+      "runtimeRecord",
+      "state",
+    ].forEach((parameter) => url.searchParams.delete(parameter));
+    // Overlay the chooser via the "view" the same way every other nav click
+    // does -- NOT by clearing "workspace"/workspace/snapshot/run state. The
+    // currently loaded workspace stays fully intact in memory: if the user
+    // re-picks the SAME workspace from the chooser there is nothing to
+    // reload, no active run/draft state to tear down, and no lifecycle
+    // "switch" to run at all.
+    if (view !== "changeWorkspace") preChooserView.current = view;
+    url.searchParams.set("view", "changeWorkspace");
+    window.history.replaceState(
+      null,
+      "",
+      `${url.pathname}${url.search}${url.hash}`,
+    );
+    setViewState("changeWorkspace");
+  };
+  /** Leaves the chooser screen without touching the loaded workspace --
+   * used when the user cancels, or re-picks the workspace already loaded. */
+  const closeWorkspaceChooser = () => {
+    const url = new URL(window.location.href);
+    url.searchParams.delete("view");
+    window.history.replaceState(
+      null,
+      "",
+      `${url.pathname}${url.search}${url.hash}`,
+    );
+    setViewState(
+      preChooserView.current ||
+        (workspace
+          ? workspaceOpeningViewFromLocation(workspace.effectiveIncludes || [])
+          : "overview"),
+    );
+    preChooserView.current = null;
+  };
+  /** Leaves the current workspace entirely -- no workspace stays set
+   * afterward, which lands back on the workspace chooser (the `!workspace`
+   * render branch below), same as a fresh visit with nothing remembered yet.
+   * This is also the lifecycle seam for a genuine switch: switchToWorkspace()
+   * calls this first, then loads the new workspace, so anything that needs
+   * to run when actually leaving a workspace (not just re-picking the same
+   * one from the overlay, which never calls this) has one obvious place to
+   * go. Also usable standalone (e.g. an explicit "Close workspace" action)
+   * to drop back to the chooser without picking anything new yet. */
+  const closeWorkspace = () => {
+    const url = new URL(window.location.href);
+    [
       "workspace",
       "resource",
       "run",
@@ -1558,6 +1644,7 @@ export function FilesystemWorkbenchPage() {
       "runtimeRecord",
       "state",
     ].forEach((parameter) => url.searchParams.delete(parameter));
+    url.searchParams.delete("view");
     window.history.replaceState(
       null,
       "",
@@ -1568,6 +1655,36 @@ export function FilesystemWorkbenchPage() {
     forgetWorkspaceId();
     setSnapshot(null);
     setRun(null);
+    setSelectedArtifactId(null);
+    setValidation(null);
+    preChooserView.current = null;
+  };
+  /** A workspace switch tears down the current one's loaded snapshot, run,
+   * and in-progress draft state, so confirm before actually doing it --
+   * skipped entirely when re-picking the workspace that's already loaded
+   * (closeWorkspaceChooser() handles that with no teardown at all). */
+  const switchToWorkspace = (item: Workspace) => {
+    if (!workspace) {
+      // Nothing loaded yet (fresh visit) -- nothing to lose, nothing to confirm.
+      loadWorkspace(item);
+      return;
+    }
+    if (item.id === workspace.id) {
+      closeWorkspaceChooser();
+      return;
+    }
+    const runWarning =
+      run?.status === "running"
+        ? " The active workflow run in this workspace will be interrupted."
+        : "";
+    if (
+      !window.confirm(
+        `Switch to workspace "${item.label}"? Unsaved edits in "${workspace.label}" will be lost.${runWarning}`,
+      )
+    )
+      return;
+    closeWorkspace();
+    loadWorkspace(item);
   };
   const createWorkspace = () =>
     perform(async () => {
@@ -2228,7 +2345,7 @@ export function FilesystemWorkbenchPage() {
     selectedRuntime?.status,
   ]);
 
-  if (!workspace) {
+  if (!workspace || view === "changeWorkspace") {
     const visibleWorkspaces = workspaces.filter((item) => !item.hidden);
     return (
       <main className="workbench-shell">
@@ -2239,6 +2356,16 @@ export function FilesystemWorkbenchPage() {
               <b>MeTTa Symbolic Learner Workbench</b>
               <small>Choose a filesystem workspace</small>
             </div>
+            {workspace && (
+              <button
+                type="button"
+                className="workspace-chooser-cancel"
+                onClick={closeWorkspaceChooser}
+                title={`Back to "${workspace.label}" without switching`}
+              >
+                Cancel
+              </button>
+            )}
           </div>
           {!workspaceResourceCountingEnabled && (
             <div className="demo-notice">
@@ -2326,12 +2453,12 @@ export function FilesystemWorkbenchPage() {
                 tabIndex={0}
                 onClick={() => {
                   if (hasActiveTextSelection()) return;
-                  loadWorkspace(item);
+                  switchToWorkspace(item);
                 }}
                 onKeyDown={(event) => {
                   if (event.key !== "Enter" && event.key !== " ") return;
                   event.preventDefault();
-                  loadWorkspace(item);
+                  switchToWorkspace(item);
                 }}
               >
                 <span className="workspace-kind">
@@ -4276,7 +4403,7 @@ export function FilesystemWorkbenchPage() {
               />
             )}{" "}
             {view === "plugins" && <PluginManagerPage />}{" "}
-            {view === "videoImport" && <VideoImportPage workspaceId={workspace.id} />}{" "}
+            {view === "videoImport" && <VideoImportPage workspaceId={workspace.id} onChainSummaryChange={setVideoImportChainSummary} />}{" "}
             {view === "googleMeet" && <GoogleMeetBridgePage />}{" "}
             {view === "pluginPage" && <PluginHostedPage entry={pluginPage} />}{" "}
             {view === "setup" && (
@@ -4517,6 +4644,25 @@ export function FilesystemWorkbenchPage() {
               {relationshipView ? "shared markdown" : "real data"}
             </div>
           </div>
+          {view === "videoImport" && (
+            <div className="inspector-video-import-chain">
+              <b>BUILT SO FAR · {videoImportChainSummary.length} step(s)</b>
+              {videoImportChainSummary.length ? (
+                <ol>
+                  {videoImportChainSummary.map((step) => (
+                    <li key={step.index}>
+                      <span className="inspector-video-import-chain-label">{step.label}</span>
+                      {step.detail && <span className="inspector-video-import-chain-detail">{step.detail}</span>}
+                    </li>
+                  ))}
+                </ol>
+              ) : (
+                <p className="hint">
+                  Nothing added yet — click a gallery tile or use ＋ Chain to add the first effect.
+                </p>
+              )}
+            </div>
+          )}
           {relationshipView ? (
             <Suspense
               fallback={

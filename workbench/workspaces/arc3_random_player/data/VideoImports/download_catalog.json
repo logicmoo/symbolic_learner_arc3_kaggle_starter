@@ -416,6 +416,20 @@
         ],
         "framesDir": "data/VideoImports/guess-the-201-animated-characters-3-seconds-each/frames",
         "at": "2026-08-28T20:23:37.560078Z"
+      },
+      {
+        "kind": "frames",
+        "mode": "scenes",
+        "count": 111,
+        "elapsedSeconds": 48.0,
+        "everySeconds": null,
+        "perScene": 1,
+        "window": [
+          0.0,
+          null
+        ],
+        "framesDir": "data/VideoImports/guess-the-201-animated-characters-3-seconds-each/frames",
+        "at": "2026-08-31T04:59:47.138743Z"
       }
     ]
   },

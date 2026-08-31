@@ -1,4 +1,4 @@
-import { VideoImportPage } from "./VideoImportPage";
+import { VideoImportPage, type VideoImportChainSummaryStep } from "./VideoImportPage";
 import { GenerationHost } from "./GenerationHost";
 import type { PageFamily } from "../lib/pageGenerations";
 
@@ -36,6 +36,18 @@ const family: PageFamily = {
   ],
 };
 
-export function VideoImportFamily({ workspaceId }: { workspaceId: string }) {
-  return <GenerationHost family={family} workspaceId={workspaceId} />;
+export function VideoImportFamily({
+  workspaceId,
+  onChainSummaryChange,
+}: {
+  workspaceId: string;
+  onChainSummaryChange?: (steps: VideoImportChainSummaryStep[]) => void;
+}) {
+  return (
+    <GenerationHost
+      family={family}
+      workspaceId={workspaceId}
+      extraProps={onChainSummaryChange ? { onChainSummaryChange } : undefined}
+    />
+  );
 }

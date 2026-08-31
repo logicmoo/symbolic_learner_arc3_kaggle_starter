@@ -71,6 +71,19 @@
   border-bottom: 1px solid var(--line);
 }
 
+.workspace-chooser-cancel {
+  margin-left: auto;
+  padding: 8px 14px;
+  border: 1px solid #277d74;
+  border-radius: 5px;
+  color: #a8f0e2;
+  background: #103a37;
+  cursor: pointer;
+  font: 600 9px ui-monospace, SFMono-Regular, Consolas, monospace;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
 .workspace-picker-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));

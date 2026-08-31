@@ -198,7 +198,8 @@ def test_navigation_views_are_deep_linkable_for_visual_acceptance() -> None:
     assert 'new URLSearchParams(window.location.search)' in source
     assert 'url.searchParams.set("view",next==="canvas"?"workflows":next)' in compact
     assert 'window.addEventListener("popstate",restoreLocation)' in compact
-    assert 'constrestoredView=viewFromLocation()' in compact
+    assert 'constexplicitView=viewFromLocation()' in compact
+    assert 'explicitView&&explicitView!=="changeWorkspace"' in compact
     assert 'setViewState(restoredView)' in compact
     assert 'workspaceOpeningViewFromLocation(next.workspace.effectiveIncludes||[])' in compact
     assert 'constrequested=workspaceFromLocation()' in compact

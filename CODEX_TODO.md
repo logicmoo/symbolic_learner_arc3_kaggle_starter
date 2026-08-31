@@ -62,6 +62,12 @@ values here.
 
 ## Completed and validated
 
+- [x] Keep the shared hierarchy **Show View** controls and resource tree visible
+  together in separate scroll areas. The bounded settings panel stays above the
+  independently scrolling tree, with explicit layout and stacking order so a
+  long model/resource tree cannot float over the controls. Verified on
+  2026-08-31 in the live Models page, with the focused universal artifact
+  editor tests and frontend production build passing.
 - [x] Add the repository-native `llm_task_harness` plugin and Python runtime.
   The plugin contributes a real deep-linkable task console, native admin
   settings, durable task/event/transcript storage, approval and human-input

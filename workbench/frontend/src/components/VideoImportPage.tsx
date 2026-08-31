@@ -94,7 +94,18 @@ function Section({ id, title, meta, extra, open, pinned, autoCollapse, onToggle,
   );
 }
 
-export function VideoImportPage({ workspaceId }: { workspaceId: string }) {
+export type VideoImportChainSummaryStep = { index: number; label: string; detail: string };
+
+export function VideoImportPage({
+  workspaceId,
+  onChainSummaryChange,
+}: {
+  workspaceId: string;
+  /** Fires whenever the built-up chain changes, so a host page can render a
+   * live "what we've built so far" summary elsewhere (e.g. the right-side
+   * panel) without needing to lift the whole chain/filters state up. */
+  onChainSummaryChange?: (steps: VideoImportChainSummaryStep[]) => void;
+}) {
   // ---- status strip + interrupts ----------------------------------------
   const [log, setLog] = useState<Array<{ at: string; text: string }>>([]);
   const stopRef = useRef(false);
@@ -183,9 +194,12 @@ export function VideoImportPage({ workspaceId }: { workspaceId: string }) {
   const [autoClearAlgorithm, setAutoClearAlgorithm] = useState(false);
   const autoClearAlgorithmRef = useRef(false);
   useEffect(() => { autoClearAlgorithmRef.current = autoClearAlgorithm; }, [autoClearAlgorithm]);
-  // The 77-loop continues automatically after each pick — until YOU stop it.
-  const [autoNext77, setAutoNext77] = useState(true);
-  const autoNext77Ref = useRef(true);
+  // Off by default: the stack should be built up one effect at a time, with
+  // each pick explicitly reviewed before the next 77-effect round renders --
+  // not several selections cascading in automatically. Turn this ON only
+  // when you deliberately want the loop to keep going after each pick.
+  const [autoNext77, setAutoNext77] = useState(false);
+  const autoNext77Ref = useRef(false);
   useEffect(() => { autoNext77Ref.current = autoNext77; }, [autoNext77]);
   const skipVideoResetRef = useRef(false);
   const prevVideoPathRef = useRef<string | null>(null);
@@ -371,7 +385,6 @@ export function VideoImportPage({ workspaceId }: { workspaceId: string }) {
   const selectGroup = () =>
     run("Selecting group", async () => {
       if (frames.length < 2) return "extract at least 2 frames first";
-      const count = Math.max(1, Math.min(frames.length, Number(groupCount) || 6));
       if (groupKind === "user") {
         const chosen = await askUserPick(frames.map((frame) => ({ original: frame.path, current: frame.path })), "GROUP — click the item YOU want used");
         if (!chosen || !chosen.length) return "user pick skipped";
@@ -387,6 +400,7 @@ export function VideoImportPage({ workspaceId }: { workspaceId: string }) {
         }
         return `you picked ${chosen.length} item(s)`;
       }
+      const count = Math.max(1, Math.min(frames.length, Number(groupCount) || 6));
       if (groupKind === "spread" || groupKind === "random") {
         const picks = groupKind === "spread"
           ? new Set(Array.from({ length: count }, (_, at) => frames[Math.min(frames.length - 1, Math.round(at * (frames.length / count)))].path))
@@ -446,6 +460,23 @@ export function VideoImportPage({ workspaceId }: { workspaceId: string }) {
     return { label: entry.title, filter: entry.filter, params, colors: params.colors, scale: params.scale, ...(entry.lutPath ? { lutPath: entry.lutPath } : {}), ...(entry.skillPath ? { skillPath: entry.skillPath } : {}) };
   };
   const [chain, setChain] = useState<ChainStep[]>([]);
+  useEffect(() => {
+    if (!onChainSummaryChange) return;
+    onChainSummaryChange(
+      chain.map((step, index) => {
+        const entry = filters.find((candidate) => candidate.id === step.entryId) || null;
+        const label = step.entryId.startsWith("select:")
+          ? `selector: ${step.entryId.slice("select:".length)}`
+          : entry?.title || step.entryId || "<none>";
+        const detail = Object.entries(step.params)
+          .filter(([, value]) => value !== "")
+          .map(([key, value]) => `${key}: ${value}`)
+          .join(", ");
+        return { index: index + 1, label, detail };
+      }),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chain, filters]);
   const [candidateCount, setCandidateCount] = useState("6");
   const [fullSelectors, setFullSelectors] = useState(false);
   const refreshFilters = (payload: Record<string, any>) => {
@@ -699,7 +730,11 @@ export function VideoImportPage({ workspaceId }: { workspaceId: string }) {
     if (s.galleryScope) setGalleryScope(s.galleryScope);
     if (typeof s.filterId === "string") setFilterId(s.filterId);
     if (s.filterParams && typeof s.filterParams === "object") setFilterParams(s.filterParams);
-    if (Array.isArray(s.chain)) setChain(s.chain);
+    if (Array.isArray(s.chain)) {
+      setChain(s.chain.map((step: ChainStep) => (
+        step.entryId === "select:user" ? { ...step, params: {} } : step
+      )));
+    }
     if (typeof s.candidateCount === "string") setCandidateCount(s.candidateCount);
     if (typeof s.fullSelectors === "boolean") setFullSelectors(s.fullSelectors);
     if (Array.isArray(s.gallery)) setGallery(s.gallery);
@@ -1277,7 +1312,9 @@ export function VideoImportPage({ workspaceId }: { workspaceId: string }) {
                 <option value="like">N most like original{selectorScore("like")}</option>
                 <option value="unlike">N most unlike original{selectorScore("unlike")}</option>
               </select>
-              <label>N <input type="number" min={1} max={frames.length} value={groupCount} disabled={busy} onChange={(event) => setGroupCount(event.target.value)} /></label>
+              {groupKind !== "user" && (
+                <label>N <input type="number" min={1} max={frames.length} value={groupCount} disabled={busy} onChange={(event) => setGroupCount(event.target.value)} /></label>
+              )}
               <button disabled={busy} onClick={() => void selectGroup()}>Select group</button>
               {kept && <><small>{kept.size} selected — feeds the chain preview</small><button disabled={busy} onClick={() => { setFrames((current) => current.filter((frame) => kept.has(frame.path))); setKept(null); }}>✂ Keep only</button><button disabled={busy} onClick={() => setKept(null)}>× Clear</button></>}
             </div>
@@ -1343,6 +1380,14 @@ export function VideoImportPage({ workspaceId }: { workspaceId: string }) {
                 {chain.map((step, index) => {
                   const entry = filters.find((candidate) => candidate.id === step.entryId) || null;
                   const isSelector = step.entryId.startsWith("select:");
+                  // "select:user" pauses the pipeline and asks YOU to click one
+                  // image (see the "YOUR PICK" section) -- it's not a count, so
+                  // it never takes an N parameter like the other selectors do.
+                  // That picked image also becomes the base the next 77-effect
+                  // gallery renders from; if you don't like how an effect
+                  // treated it, keep exploring the gallery or re-run this step
+                  // to pick a different image instead.
+                  const isUserSelector = step.entryId === "select:user";
                   return (
                     <div key={index} className="video-import-chain-step" role="listitem">
                       <b>{index + 1}.</b>
@@ -1351,7 +1396,11 @@ export function VideoImportPage({ workspaceId }: { workspaceId: string }) {
                         disabled={busy}
                         onChange={(event) => {
                           const id = event.target.value;
-                          if (id.startsWith("select:")) { editChain((current) => current.map((existing, at) => (at === index ? { entryId: id, params: { n: "" } } : existing)), index + 1); return; }
+                          if (id.startsWith("select:")) {
+                            const params: Record<string, string> = id === "select:user" ? {} : { n: "" };
+                            editChain((current) => current.map((existing, at) => (at === index ? { entryId: id, params } : existing)), index + 1);
+                            return;
+                          }
                           const pickedEntry = filters.find((candidate) => candidate.id === id);
                           editChain((current) => current.map((existing, at) => (at === index ? { entryId: id, params: Object.fromEntries(Object.entries(pickedEntry?.params || {}).map(([key, value]) => [key, String(value)])) } : existing)), index + 1);
                         }}
@@ -1371,7 +1420,10 @@ export function VideoImportPage({ workspaceId }: { workspaceId: string }) {
                           </option>
                         ))}
                       </select>
-                      {isSelector && (
+                      {isUserSelector && (
+                        <span className="video-import-chain-none">pauses and asks you to pick one image</span>
+                      )}
+                      {isSelector && !isUserSelector && (
                         <>
                           <label>N <input className="video-import-param" type="number" min={1} placeholder="all" value={step.params.n || ""} disabled={busy} onChange={(event) => editChain((current) => current.map((existing, at) => (at === index ? { ...existing, params: { ...existing.params, n: event.target.value } } : existing)))} /></label>
                           {!(Number(step.params.n) >= 1) && <span className="video-import-chain-none">no-op until N is set</span>}
@@ -1407,7 +1459,24 @@ export function VideoImportPage({ workspaceId }: { workspaceId: string }) {
       )}
 
       {gallery && (
-        <Section {...section("gallery", "GALLERY", `${gallery.filter((tile) => tile.path).length} tile(s) · click = add to chain + apply to ALL frames`, <button disabled={busy} onClick={() => setGallery(null)}>× Clear</button>)}>
+        <Section {...section("gallery", "GALLERY", `${gallery.filter((tile) => tile.path).length} tile(s) · click = add to chain + apply to ALL frames`, (
+          <>
+            <button
+              disabled={busy}
+              title="None of these 77 look good — dismiss the gallery and go adjust how frames are extracted instead"
+              onClick={() => {
+                setGallery(null);
+                setCollapsedMap((current) => ({ ...current, player: false }));
+                window.setTimeout(() => {
+                  document.querySelector('[data-section="player"]')?.scrollIntoView({ behavior: "smooth", block: "center" });
+                }, 120);
+              }}
+            >
+              ↑ none good · extract again
+            </button>
+            <button disabled={busy} onClick={() => setGallery(null)}>× Clear</button>
+          </>
+        ))}>
           <div className="vi2-body video-import-gallery" role="list">
             {[...gallery]
               .sort((left, right) => ((filters.find((entry) => entry.id === (right.baseId || right.id))?.votes || 0) - (filters.find((entry) => entry.id === (left.baseId || left.id))?.votes || 0)))

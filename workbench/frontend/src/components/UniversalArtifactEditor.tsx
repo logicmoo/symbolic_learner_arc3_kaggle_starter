@@ -699,7 +699,7 @@ export function SuperControl(props: SuperControlProps) {
     </div>
 
     <div className={`operation-hierarchy-layout artifact-editor-body ${hideNavigator?"navigator-hidden":navigatorCollapsed?"navigator-collapsed":"navigator-expanded"}`}>
-      {!hideNavigator && <div className={`${treeClassName} artifact-navigator`.trim()}>
+      {!hideNavigator && <div className={`${treeClassName} artifact-navigator${viewControlsOpen ? " view-controls-open" : ""}`.trim()}>
         <div className="artifact-navigator-toolbar">
           <span>HIERARCHY</span>
           <div className="artifact-navigator-actions">

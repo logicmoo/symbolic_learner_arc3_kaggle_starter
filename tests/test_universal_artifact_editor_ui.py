@@ -519,10 +519,13 @@ def test_universal_tree_exposes_composable_tri_state_view_controls() -> None:
     assert "[viewControlsOpen,setViewControlsOpen]=useState(false)" in operation_editor
     assert 'aria-label="Tree View Controls"' in universal
     assert 'viewControlsOpen ? "Hide View" : "Show View"' in universal
+    assert 'artifact-navigator${viewControlsOpen ? " view-controls-open" : ""}' in universal
     assert "updateVisibilityRules" in universal
     assert 'commandCategories("expand");commandTree("expand")' in universal
     assert 'commandTree("collapse");commandCategories("collapse")' in universal
     assert ".tree-view-controls" in styles
+    assert ".artifact-navigator.view-controls-open>.tree-view-controls" in styles
+    assert ".artifact-navigator.view-controls-open>.artifact-navigator-content{order:3;display:block" in styles
     assert ".tree-rule-switch" in styles
     assert ".tree-control-band" in styles
     assert "onBranchAction(\"expand\", \"disabled\")" in controls
