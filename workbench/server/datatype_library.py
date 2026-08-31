@@ -107,8 +107,8 @@ def resolve_datatype_representation(workspace_root: Path, datatype_id: str, requ
     if not datatype_record:
         raise KeyError(f"datatype not found: {datatype_id}")
     datatype = datatype_record["document"]
-    variants = relationship_ids(datatype.get("specializations"))
-    chosen = requested or datatype.get("preferredSpecialization") or (variants[0] if variants else None)
+    variants = relationship_ids(datatype.get("implementedBy"))
+    chosen = requested or datatype.get("preferredImplementation") or (variants[0] if variants else None)
     if not chosen:
         raise ValueError(f"datatype has no representation variant: {datatype_id}")
     canonical_variants = {_type_key(variant): variant for variant in variants}
@@ -170,7 +170,7 @@ def representation_graph(workspace_root: Path, *, workspaces_root: Path = DEFAUL
         "concreteDatatypes": concrete_datatypes,
         "representationIdsByDatatype": {key: sorted(values) for key, values in sorted(by_datatype.items())},
         "concreteIdsByRepresentation": {
-            str((record.get("document") or {}).get("id")): relationship_ids((record.get("document") or {}).get("specializations"))
+            str((record.get("document") or {}).get("id")): relationship_ids((record.get("document") or {}).get("implementedBy"))
             for record in representations
             if (record.get("document") or {}).get("id")
         },

@@ -4,12 +4,7 @@
   (label WhereIsAI/UAE-Large-V1)
   (description "Discovered from SingularityNET LLM.")
   (implements (
-    (https.llm.c.singularitynet.io.v1 (
-      (borrow ([]
-        *
-      ))
-      (exclude ([]))
-    ))
+    (https.llm.c.singularitynet.io.v1 ())
   ))
   (model WhereIsAI/UAE-Large-V1)
   (enabled true)
@@ -48,5 +43,16 @@
     (managed true)
     (backendId https.llm.c.singularitynet.io.v1)
     (remoteModelId WhereIsAI/UAE-Large-V1)
+  ))
+  (dependsOn (
+    (https.llm.c.singularitynet.io.v1 ())
+  ))
+  (inheritsFrom (
+    (https.llm.c.singularitynet.io.v1 (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
 )

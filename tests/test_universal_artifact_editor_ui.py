@@ -108,7 +108,6 @@ def test_topics_use_only_the_standard_super_control_editors() -> None:
     assert "TOPIC_DOCUMENT_CONTROL_ID" not in topics
     for control_id in ("file", "markdown", "resource", "runner"):
         assert f'"{control_id}"' in universal
-    assert '"inheritance"' not in universal
     assert 'label: "Resource & Inheritance"' in sub_controls
 
 
@@ -130,30 +129,30 @@ def test_resource_and_inheritance_restores_structured_resource_fields() -> None:
     assert "RESOURCE FIELDS" in fields
     assert "<span>ENABLED</span>" in fields
     assert 'type="checkbox"' in fields
-    assert "<span>IMPLEMENTS</span>" in fields
+    assert "IMPLEMENTS · IMPLEMENTATION / CLASSIFICATION" in fields
     assert "Edit implemented resource ·" in fields
     assert "resourceImplementedIds" in fields
     assert "Resolved implementation ·" in universal
     assert "super-control-resource-source" in universal
     assert ".resource-fields-editor input" in styles
-    assert "+ Specialization" in fields
-    assert "<span>SPECIALIZATIONS</span>" in fields
-    assert "<span>PREFERRED ALTERNATIVE</span>" in fields
-    assert 'update("preferredSpecialization"' in fields
+    assert "+ Implementation" in fields
+    assert "IMPLEMENTED BY · REVERSE IMPLEMENTATION LINKS" in fields
+    assert "<span>PREFERRED IMPLEMENTATION</span>" in fields
+    assert 'update("preferredImplementation"' in fields
 
 
-def test_operation_resource_editor_creates_preferred_specialization_documents() -> None:
+def test_operation_resource_editor_creates_preferred_implementation_documents() -> None:
     operations = _text("OperationLibraryEditor.tsx")
     fields = _text("ResourceFieldsEditor.tsx")
 
-    assert "const createSpecialization=" in operations
+    assert "const createImplementation=" in operations
     assert "implements:implementsResource(parent.id)" in operations
-    assert "specializations:nextSpecializations" in operations
-    assert "preferredSpecialization:(parent as OperationDef).preferredSpecialization||id" in operations
+    assert "inheritsFrom:inheritsFromResource(parent.id)" in operations
+    assert "implementedBy,preferredImplementation:(parent as OperationDef).preferredImplementation||id" in operations
     assert "topics:parent.topics" in operations
     assert "isNew:true" in operations
     assert "dirty:Boolean(record.isNew)" in operations
-    assert "onCreateSpecialization:document?()=>createSpecialization(doc,document)" in operations
+    assert "onCreateImplementation:document?()=>createImplementation(doc,document)" in operations
     assert "<span>BORROW</span>" in fields
     assert "<span>LEND</span>" in fields
     assert "<span>WITHHOLD</span>" in fields
@@ -206,8 +205,8 @@ def test_operations_tree_supports_global_and_per_operation_folding() -> None:
         "Operations & implementations",
         "OPERATION CONTRACT SYSTEM",
         "collapsedOperations",
-        'branchCollapsed?"Unhide Variants":"Hide Variants"',
-        '<b>{branchCollapsed?"Unhide Variants":"Hide Variants"}</b>',
+        'branchCollapsed?"Unhide Implementations":"Hide Implementations"',
+        '<b>{branchCollapsed?"Unhide Implementations":"Hide Implementations"}</b>',
         "tree-branch-toggle",
         "branch-collapsed",
         "commandOperations",
@@ -227,6 +226,16 @@ def test_every_generic_resource_source_is_enableable() -> None:
     assert 'enabled }, null, 2' in source
     assert '"Disable Resource":"Enable Resource"' in source
     assert "showEnablement={false}" in _text("LlmModelsEditor.tsx")
+
+
+def test_generic_resource_fields_separate_dependencies_from_inheritance() -> None:
+    fields = _text("ResourceFieldsEditor.tsx")
+    relationships = _text("resourceRelationships.ts")
+    assert "DEPENDS ON · AVAILABILITY PREREQUISITES" in fields
+    assert "DEPENDED ON BY · SYNCHRONIZED REVERSE LINKS" in fields
+    assert "dependsOnResource" in relationships
+    assert "dependedOnByResource" in relationships
+    assert '"dependsOn", "dependedOnBy"' in relationships
 
 
 def test_operation_playground_exposes_typed_inputs_variant_switching_and_results() -> None:
@@ -381,10 +390,10 @@ def test_other_artifact_families_keep_their_variant_controls() -> None:
     assert "PREFERRED REPRESENTATION" in datatypes
     assert "<ResourceFieldsEditor" in datatypes
     assert "relatedResources={relatedResources}" in datatypes
-    assert "PREFERRED ALTERNATIVE" in _text("PromptLibraryEditor.tsx")
+    assert "PREFERRED IMPLEMENTATION" in _text("PromptLibraryEditor.tsx")
     models = _text("LlmModelsEditor.tsx")
     assert "IMPLEMENTS" in models
-    assert "RESOLVED / INHERITED RESOURCE" in models
+    assert "EDITABLE RESOURCE OVERRIDE" in models
     for component in ("DataCatalogPanel.tsx", "PromptLibraryEditor.tsx", "GoalPlanLibraryEditor.tsx", "LlmModelsEditor.tsx"):
         assert "ArtifactTreeBranch" in _text(component)
 
@@ -405,11 +414,12 @@ def test_universal_shell_keeps_tabs_compare_inspector_and_docks() -> None:
         "TreeViewControls",
         "Collapse hierarchy",
         "Expand hierarchy",
-        "Expand All",
-        "Collapse All",
         "artifact-navigator-content",
     ):
         assert token in source
+    controls = _text("TreeViewControls.tsx")
+    assert "Expand All" in controls
+    assert "Collapse All" in controls
     assert 'artifact-pane-side left' in source
     assert 'artifact-pane-side right' in source
     assert '>LEFT</em>' in source
@@ -438,16 +448,17 @@ def test_all_artifact_trees_share_filter_and_parent_path_controls() -> None:
     universal = _text("UniversalArtifactEditor.tsx")
     operations = _text("OperationLibraryEditor.tsx")
     filtering = _text("useArtifactTreeFilter.ts")
+    controls = _text("TreeViewControls.tsx")
+    assert "Filter tree..." in controls
     for source in (universal, operations):
-        assert "Filter tree…" in source
         assert "useArtifactTreeFilter" in source
     assert "Parent" in _text("TreeViewControls.tsx")
     assert "TreeViewControls" in operations
     assert "descendantVisible" in filtering
     assert "info.head.hidden = !showParents" in filtering
     assert "MutationObserver(applyFilter)" in filtering
-    assert "specializations: _specializations" in filtering
-    assert "preferredSpecialization: _preferredSpecialization" in filtering
+    assert "implementedBy: _implementedBy" in filtering
+    assert "preferredImplementation: _preferredImplementation" in filtering
     assert "searchableData(element)" in filtering
     assert "dataset.treeSearch" in filtering
     assert "searchValue" in _text("ArtifactTreeBranch.tsx")
@@ -491,6 +502,7 @@ def test_universal_tree_exposes_composable_tri_state_view_controls() -> None:
     styles = (ROOT / "workbench/frontend/src/styles/operation_editor.css").read_text(encoding="utf-8")
     assert 'TreeVisibilityRule = "show" | "hide" | "unspecified"' in filtering
     assert 'TreeRepeatMode = "first" | "all" | "last"' in filtering
+    assert 'TreeRelationshipMode = "implementation" | "inheritance" | "dependency"' in filtering
     assert "groupAllows" in filtering
     assert "availabilityStates" in filtering
     assert "activeRules.search === \"show\"" in filtering
@@ -505,20 +517,19 @@ def test_universal_tree_exposes_composable_tri_state_view_controls() -> None:
     for label in ('label="Search"', 'label="All"', "Enabled", "Disabled", "Categories", "Non-"):
         assert label in controls
     assert 'aria-label="Repeated resources"' in controls
-    assert "tree-repeat-permanent" in universal
-    assert "RepeatSwitch value={visibilityRules.repeats}" in universal
+    assert "RepeatSwitch value={rules.repeats}" in controls
     assert '`top-${kind}`' in controls
-    assert '`specialization-${kind}`' in controls
-    assert '`unspecialized-${kind}`' in controls
-    assert "Unspecialized ${plural(title(kind))}" in controls
+    assert '`child-${kind}`' in controls
+    assert '`childless-${kind}`' in controls
+    assert "Childless ${plural(title(kind))}" in controls
     assert "setAll" in controls
     assert "roleKeys.map(key => [key, value])" in controls
     assert 'aria-label="Tree View Controls"' in controls
     assert "[viewControlsOpen, setViewControlsOpen] = useState(false)" in universal
     operation_editor = _text("OperationLibraryEditor.tsx")
     assert "[viewControlsOpen,setViewControlsOpen]=useState(false)" in operation_editor
-    assert 'aria-label="Tree View Controls"' in universal
-    assert 'viewControlsOpen ? "Hide View" : "Show View"' in universal
+    assert 'aria-label="Tree Filter Controls"' in universal
+    assert 'viewControlsOpen ? "Hide Filters" : "Show Filters"' in universal
     assert 'artifact-navigator${viewControlsOpen ? " view-controls-open" : ""}' in universal
     assert "updateVisibilityRules" in universal
     assert 'commandCategories("expand");commandTree("expand")' in universal
@@ -526,14 +537,54 @@ def test_universal_tree_exposes_composable_tri_state_view_controls() -> None:
     assert ".tree-view-controls" in styles
     assert ".artifact-navigator.view-controls-open>.tree-view-controls" in styles
     assert ".artifact-navigator.view-controls-open>.artifact-navigator-content{order:3;display:block" in styles
+    assert "artifact-tree-chip-title" in universal
+    assert ".artifact-tree-chip-title" in styles
+    assert "TREE FILTERS" in controls
+    assert "[collapsed, setCollapsed] = useState(false)" in controls
+    assert 'collapsed ? "▾ Expand" : "▴ Collapse"' in controls
+    assert ".tree-view-controls.is-collapsed" in styles
     assert ".tree-rule-switch" in styles
     assert ".tree-control-band" in styles
+    assert 'aria-label="Tree parent-child relationship"' in universal
+    assert '<option value="implementation">IMPLEMENTS ↔ IMPLEMENTED BY</option>' in universal
+    assert '<option value="inheritance">INHERITS FROM ↔ INHERITED BY</option>' in universal
+    assert '<option value="dependency">DEPENDS ON ↔ DEPENDED ON BY</option>' in universal
+    assert 'leftPane(visibilityRules.relationshipMode)' in universal
+    assert "<span>TREE</span>" in universal
+    assert "IMPLEMENTS ↔ IMPLEMENTED BY" in universal
+    assert "INHERITS FROM ↔ INHERITED BY" in universal
+    assert "DEPENDS ON ↔ DEPENDED ON BY" in universal
+    assert 'aria-label="Resize tree filters and tree"' in controls
+    assert "beginResize" in controls
+    assert "--tree-filter-height" in controls
+    assert ".tree-view-controls-resizer" in styles
     assert "onBranchAction(\"expand\", \"disabled\")" in controls
     assert "onBranchAction(\"collapse\", \"all\")" in controls
     branch = _text("ArtifactTreeBranch.tsx")
     assert 'command.target === "disabled"' in branch
     assert 'command.target === "search"' in branch
     assert "values.some(value => states[value] === \"hide\")" in filtering
+
+
+def test_all_hierarchy_editors_switch_real_relationship_forests() -> None:
+    forest = _text("ResourceRelationshipForest.tsx")
+    assert 'relationshipMode === "implementation"' in forest
+    assert 'relationshipMode === "inheritance"' in forest
+    assert "resource.dependsOn" in forest
+    assert "relationshipParentIds(record.document, relationshipMode)" in forest
+    for component in (
+        "OperationLibraryEditor.tsx",
+        "DataCatalogPanel.tsx",
+        "PromptLibraryEditor.tsx",
+        "PolicyLibraryEditor.tsx",
+    ):
+        source = _text(component)
+        assert "ResourceRelationshipForest" in source
+        assert "relationshipMode" in source
+        assert '"inheritance"?"inheritors":"dependents"' in source
+    operation = _text("OperationLibraryEditor.tsx")
+    assert 'aria-label="Tree parent-child relationship"' in operation
+    assert "relationshipModesEnabled" in operation
 
 
 def test_first_class_categories_are_visually_distinct_from_virtual_folders() -> None:
@@ -554,7 +605,7 @@ def test_operation_implementations_inherit_parent_playground() -> None:
     assert "relationshipIds(selectedImplementation.implements)" in operations
     assert "selectedImplementation && request.implementedOperation && <OperationPlayground" in operations
     assert "variants={[selectedImplementation]}" in operations
-    assert "runnableVariants.some(item=>item.id===operation.preferredSpecialization)" in playground
+    assert "runnableVariants.some(item=>item.id===operation.preferredImplementation)" in playground
     assert "invocationVariant=runnableVariants.length===1?runnableVariants[0].id:variant" in playground
     assert "run(invocationVariant)" in playground
     assert "implementationVariant?{implementationVariant}" in playground

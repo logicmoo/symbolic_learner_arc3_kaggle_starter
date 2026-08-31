@@ -3,12 +3,7 @@
   (id omniroute-free-router-preset-high)
   (label "OmniRoute Best Free Router Preset High")
   (implements (
-    (omniroute-free-router (
-      (borrow ([]
-        *
-      ))
-      (exclude ([]))
-    ))
+    (omniroute-free-router ())
   ))
   (enabled true)
   (defaults (
@@ -21,5 +16,16 @@
   ))
   (categories ([]
     filtered/free
+  ))
+  (dependsOn (
+    (omniroute-free-router ())
+  ))
+  (inheritsFrom (
+    (omniroute-free-router (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
 )

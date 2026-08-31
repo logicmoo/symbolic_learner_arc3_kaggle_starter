@@ -26,12 +26,26 @@ function ids(value) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return [];
   return Object.keys(value).filter(value => value.trim());
 }
-const specializationPolicy = () => ({ lend: ["*"], withhold: ["id", "label", "description", "implements", "specializations", "preferredSpecialization"] });
+const inheritanceGrant = () => ({ lend: ["*"], withhold: ["id", "label", "description", "enabled", "implements", "implementedBy", "preferredImplementation", "inheritsFrom", "inheritedBy", "dependsOn", "dependedOnBy"] });
+const implementationMap = values => Object.fromEntries(ids(values).map(id => [id, {}]));
 
 const records = [];
 for (const file of filesBelow(workspaceRoot)) {
   try {
     const document = JSON.parse(fs.readFileSync(file, "utf8"));
+    if (document?.specializations && !document.implementedBy) {
+      document.implementedBy = implementationMap(document.specializations);
+      document.inheritedBy = document.specializations;
+      delete document.specializations;
+    }
+    if (document?.preferredSpecialization && !document.preferredImplementation) {
+      document.preferredImplementation = document.preferredSpecialization;
+      delete document.preferredSpecialization;
+    }
+    if (document?.implements && !document.inheritsFrom && Object.values(document.implements).some(policy => policy?.borrow || policy?.exclude)) {
+      document.inheritsFrom = document.implements;
+    }
+    if (document?.implements) document.implements = implementationMap(document.implements);
     if (document?.kind && document?.id) records.push({ file, document, original: JSON.stringify(document) });
   } catch {
     // Non-resource and temporarily invalid JSON files are outside this migration.
@@ -45,11 +59,11 @@ for (const record of records) {
 }
 
 for (const parent of records) {
-  if (!parent.document.specializations || Array.isArray(parent.document.specializations)) continue;
-  parent.document.specializations = Object.fromEntries(ids(parent.document.specializations).filter(specializationId => {
-    const specialization = byWorkspaceAndId.get(`${parent.workspace}:${specializationId}`) ?? byWorkspaceAndId.get(`shared:${specializationId}`);
-    return specialization && ids(specialization.document.implements).includes(parent.document.id);
-  }).map(specializationId => [specializationId, parent.document.specializations[specializationId]]));
+  if (!parent.document.implementedBy || Array.isArray(parent.document.implementedBy)) continue;
+  parent.document.implementedBy = Object.fromEntries(ids(parent.document.implementedBy).filter(implementationId => {
+    const implementation = byWorkspaceAndId.get(`${parent.workspace}:${implementationId}`) ?? byWorkspaceAndId.get(`shared:${implementationId}`);
+    return implementation && ids(implementation.document.implements).includes(parent.document.id);
+  }).map(implementationId => [implementationId, {}]));
 }
 
 for (const child of records) {
@@ -65,8 +79,20 @@ for (const child of records) {
     if (!parent || !allowedParentKinds.includes(parent.document.kind)) {
       throw new Error(`${child.document.kind}:${child.document.id} points to invalid parent:${parentId}`);
     }
-    parent.document.specializations = parent.document.specializations && !Array.isArray(parent.document.specializations) ? parent.document.specializations : {};
-    parent.document.specializations[child.document.id] ??= specializationPolicy();
+    parent.document.implementedBy = parent.document.implementedBy && !Array.isArray(parent.document.implementedBy) ? parent.document.implementedBy : {};
+    parent.document.implementedBy[child.document.id] ??= {};
+  }
+  for (const parentId of ids(child.document.inheritsFrom)) {
+    const parent = byWorkspaceAndId.get(`${child.workspace}:${parentId}`) ?? byWorkspaceAndId.get(`shared:${parentId}`);
+    if (!parent) throw new Error(`${child.document.id} inherits from missing resource:${parentId}`);
+    parent.document.inheritedBy ??= {};
+    parent.document.inheritedBy[child.document.id] ??= inheritanceGrant();
+  }
+  for (const dependencyId of ids(child.document.dependsOn)) {
+    const dependency = byWorkspaceAndId.get(`${child.workspace}:${dependencyId}`) ?? byWorkspaceAndId.get(`shared:${dependencyId}`);
+    if (!dependency) throw new Error(`${child.document.id} depends on missing resource:${dependencyId}`);
+    dependency.document.dependedOnBy ??= {};
+    dependency.document.dependedOnBy[child.document.id] ??= {};
   }
 }
 
@@ -76,4 +102,4 @@ for (const record of records) {
   fs.writeFileSync(record.file, `${JSON.stringify(record.document, null, 2)}\n`, "utf8");
   changed += 1;
 }
-console.log(`Synchronized flat implements/specializations relationships in ${changed} resource files.`);
+console.log(`Synchronized implementation, inheritance, and dependency relationships in ${changed} resource files.`);

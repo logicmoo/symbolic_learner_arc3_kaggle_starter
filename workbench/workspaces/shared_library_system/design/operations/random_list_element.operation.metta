@@ -14,7 +14,10 @@
   (outputs (
     (element Any)
   ))
-  (specializations (
+  (implementedBy (
+    (collection.random_list_element.python ())
+  ))
+  (inheritedBy (
     (collection.random_list_element.python (
       (lend ([]
         *
@@ -24,12 +27,12 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
   ))
-  (preferredSpecialization collection.random_list_element.python)
+  (preferredImplementation collection.random_list_element.python)
 )
 (
   (kind operation)
@@ -57,6 +60,9 @@
     (outputBinding element)
   ))
   (implements (
+    (collection.random_list_element ())
+  ))
+  (inheritsFrom (
     (collection.random_list_element (
       (borrow ([]
         *

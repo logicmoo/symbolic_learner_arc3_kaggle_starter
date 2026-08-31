@@ -24,7 +24,10 @@
     (workflow Object)
     (order_used Array)
   ))
-  (specializations (
+  (implementedBy (
+    (workflow.analyze_generation_contract.json ())
+  ))
+  (inheritedBy (
     (workflow.analyze_generation_contract.json (
       (lend ([]
         *
@@ -34,12 +37,12 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
   ))
-  (preferredSpecialization workflow.analyze_generation_contract.json)
+  (preferredImplementation workflow.analyze_generation_contract.json)
 )
 (
   (kind operation)
@@ -51,12 +54,7 @@
   ))
   (implementation llm.complete)
   (implements (
-    (workflow.analyze_generation_contract (
-      (borrow ([]
-        *
-      ))
-      (exclude ([]))
-    ))
+    (workflow.analyze_generation_contract ())
   ))
   (inputs (
     (english_specification Text)
@@ -91,5 +89,13 @@
   (parameters (
     (parseJson true)
     (responseFormat json_object)
+  ))
+  (inheritsFrom (
+    (workflow.analyze_generation_contract (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
 )

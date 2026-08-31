@@ -25,6 +25,12 @@
     (localProxy true)
   ))
   (implements (
+    (clawrouter ())
+  ))
+  (dependsOn (
+    (clawrouter ())
+  ))
+  (inheritsFrom (
     (clawrouter (
       (borrow ([]
         *

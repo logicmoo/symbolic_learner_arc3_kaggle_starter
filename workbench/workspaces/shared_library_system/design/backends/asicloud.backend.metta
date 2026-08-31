@@ -12,34 +12,6 @@
   (official true)
   (description "ASI Alliance OpenAI-compatible inference transport hosted by ASICloud on CUDOS, including the asi1-mini route.")
   (enabled true)
-  (specializations (
-    (asicloud-asi1 (
-      (lend ([]
-        *
-      ))
-      (withhold ([]
-        id
-        label
-        description
-        implements
-        specializations
-        preferredSpecialization
-      ))
-    ))
-    (asicloud-asi1-mini (
-      (lend ([]
-        *
-      ))
-      (withhold ([]
-        id
-        label
-        description
-        implements
-        specializations
-        preferredSpecialization
-      ))
-    ))
-  ))
   (capabilities ([]
     llm.complete
     llm.reasoning
@@ -54,5 +26,41 @@
     (modelEnvironmentVariable WORKBENCH_ASICLOUD_MODEL)
     (defaultAnalysisLevel 3)
     (timeoutSeconds 900)
+  ))
+  (dependedOnBy (
+    (asicloud-asi1-mini ())
+    (asicloud-asi1 ())
+  ))
+  (implementedBy (
+    (asicloud-asi1 ())
+    (asicloud-asi1-mini ())
+  ))
+  (inheritedBy (
+    (asicloud-asi1 (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        implementedBy
+        preferredImplementation
+      ))
+    ))
+    (asicloud-asi1-mini (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        implementedBy
+        preferredImplementation
+      ))
+    ))
   ))
 )

@@ -2678,8 +2678,8 @@ export function RuntimeHistoryView({
   const availablePlanSpecs = planSpecs.filter(
     (plan) =>
       (!goalId || (plan.goals || []).includes(goalId)) &&
-      relationshipIds(plan.specializations).some((specializationId: string) =>
-        workflowIds.has(planDocs.find((doc) => doc.id === specializationId)?.workflow),
+      relationshipIds(plan.implementedBy).some((implementationId: string) =>
+        workflowIds.has(planDocs.find((doc) => doc.id === implementationId)?.workflow),
       ),
   );
   const [inputs, setInputs] = useState("{}");
@@ -2875,7 +2875,7 @@ export function RuntimeHistoryView({
   useEffect(() => {
     const parent = goalSpecs.find((doc) => doc.id === goalId);
     const preferred = goalVariants.find(
-      (doc) => doc.id === parent?.preferredSpecialization,
+      (doc) => doc.id === parent?.preferredImplementation,
     );
     if (!goalVariants.some((doc) => doc.id === goalVariantId))
       setGoalVariantId(String(preferred?.id || goalVariants[0]?.id || ""));
@@ -2883,7 +2883,7 @@ export function RuntimeHistoryView({
   useEffect(() => {
     const parent = planSpecs.find((doc) => doc.id === planId);
     const preferred = planVariants.find(
-      (doc) => doc.id === parent?.preferredSpecialization,
+      (doc) => doc.id === parent?.preferredImplementation,
     );
     if (!planVariants.some((doc) => doc.id === planVariantId))
       setPlanVariantId(String(preferred?.id || planVariants[0]?.id || ""));
@@ -2891,7 +2891,7 @@ export function RuntimeHistoryView({
   useEffect(() => {
     const parent = contextSpecs.find((doc) => doc.id === contextId);
     const preferred = contextVariants.find(
-      (doc) => doc.id === parent?.preferredSpecialization,
+      (doc) => doc.id === parent?.preferredImplementation,
     );
     if (!contextId) setContextVariantId("");
     else if (!contextVariants.some((doc) => doc.id === contextVariantId))

@@ -3,17 +3,20 @@
   (id svg_xml)
   (label "Svg Xml")
   (implements (
-    (svg (
-      (borrow ([]
-        *
-      ))
-      (exclude ([]))
-    ))
+    (svg ())
   ))
   (mimeTypes ([]
     image/svg+xml
   ))
   (extensions ([]
     .svg
+  ))
+  (inheritsFrom (
+    (svg (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
 )

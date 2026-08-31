@@ -4,6 +4,12 @@
   (label "Executable View")
   (description "An executable program or procedure that reconstructs or transforms the represented information, including Turtle/LOGO-style views.")
   (implements (
+    (information ())
+    (image ())
+  ))
+  (implementedBy ())
+  (inheritedBy ())
+  (inheritsFrom (
     (information (
       (borrow ([]
         *
@@ -17,5 +23,4 @@
       (exclude ([]))
     ))
   ))
-  (specializations ())
 )

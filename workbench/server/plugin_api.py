@@ -28,7 +28,7 @@ from plugin_admin import (
 
 PLUGINS_ROOT = Path(__file__).resolve().parents[1] / "plugins"
 POLICY_PATH = PLUGINS_ROOT / "plugins.json"
-API_PREFIX = "/api"
+API_PREFIX = "/workbench"
 router = APIRouter(prefix="/plugins", tags=["plugins"])
 _app: FastAPI | None = None
 _loaded: set[str] = set()
@@ -143,7 +143,7 @@ def _ui_page(page: dict[str, Any]) -> dict[str, Any]:
 
     A plugin that exported ``resolve_ui_pages`` has already set ``address``; the
     rest use the shared resolution, where an absolute descriptor is opened as
-    declared and a path is mirrored beneath ``/api``.
+    declared and a path is mirrored beneath ``/workbench``.
     """
 
     descriptor = str(page.get("descriptor") or "")
@@ -186,8 +186,8 @@ def _resolve_api_section(plugin_id: str, entry: Any) -> dict[str, Any] | None:
     through-the-workbench path (``/mailbox_chat/health``). Some routes are
     instead genuinely shared across several plugin prefixes and a bare,
     absolute-from-root path (see EMU_LLM's ``/mailbox/...`` shim routes,
-    which also answer at ``/llm_emul/mailbox/...``, ``/ws_collab/v1/mailbox/...``,
-    and ``/mailbox_chat/v1/mailbox/...``). When a declared path is not already
+    which also answer at ``/llm_emul/mailbox/...`` and
+    ``/ws_collab/mailbox/...``). When a declared path is not already
     prefixed with this plugin's own id, we overlay it onto our own
     absolute-from-root address space by prepending ``/<plugin_id>`` -- but we
     prefer that only when a route is actually registered there; otherwise the
@@ -202,9 +202,8 @@ def _resolve_api_section(plugin_id: str, entry: Any) -> dict[str, Any] | None:
     prefix = f"/{plugin_id}"
     if path == prefix or path.startswith(f"{prefix}/"):
         address = path
-    elif path.startswith(("/api/", "/workbench/")) or path.startswith(("http://", "https://", "ws://", "wss://")):
-        # The workbench's own core namespaces (/api for plugin-admin mirrors,
-        # /workbench for everything else) and absolute URLs are never
+    elif path.startswith("/workbench/") or path.startswith(("http://", "https://", "ws://", "wss://")):
+        # The workbench's core namespace and absolute URLs are never
         # overlaid onto a plugin prefix — a standalone plugin's catch-all
         # mount would otherwise "match" and swallow them.
         address = path
@@ -345,7 +344,7 @@ def _scan(*, register: bool) -> list[dict[str, Any]]:
                     item["admin"] = {**admin, "kind": "generic"}
                 if admin_router is not None:
                     _app.include_router(admin_router)
-                    # Mirror the same routes beneath /api so the desktop UI
+                    # Mirror the same routes beneath /workbench so the desktop UI
                     # reaches every plugin configure page through one namespace.
                     _app.include_router(admin_router, prefix=API_PREFIX)
                 _modules[plugin_id] = module

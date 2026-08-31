@@ -24,7 +24,13 @@
       ))
     ))
   ))
-  (specializations (
+  (implementedBy (
+    (echo_into_titlecased_llm ())
+    (echo_into_titlecased_prolog ())
+    (echo_into_titlecased_python ())
+    (echo_into_titlecased.specialization ())
+  ))
+  (inheritedBy (
     (echo_into_titlecased_llm (
       (lend ([]
         *
@@ -34,8 +40,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (echo_into_titlecased_prolog (
@@ -47,8 +53,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (echo_into_titlecased_python (
@@ -60,8 +66,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (echo_into_titlecased.specialization (
@@ -73,10 +79,10 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
   ))
-  (preferredSpecialization echo_into_titlecased_python)
+  (preferredImplementation echo_into_titlecased_python)
 )

@@ -55,7 +55,7 @@ def test_backend_uses_derived_aggregate_editor_modes() -> None:
     assert '>Backend Actions</button>' in source
     assert '>Universal Execution Runner</button>' in source
     assert "BackendConfigForm" in source
-    assert "RESOLVED / INHERITED RESOURCE" in source
+    assert "EDITABLE RESOURCE OVERRIDE" in source
     assert 'operationIds={["backend_inspect","backend_check_readiness","resource_validate"]}' in source
 
 
@@ -70,6 +70,37 @@ def test_backend_resource_view_reveals_clear_edit_source_actions() -> None:
     source = SOURCE.read_text(encoding="utf-8")
     assert 'backend-edit-source' in source
     assert 'backendEditorDisplayMode==="tabs"&&backendEditorMode==="file"?"Editing File":"Edit File"' in source
+
+
+def test_resource_inheritance_view_is_editable_and_saves_a_workspace_override() -> None:
+    source = SOURCE.read_text(encoding="utf-8")
+    assert "EDITABLE RESOURCE OVERRIDE" in source
+    assert 'value={doc.source} onChange={source=>updateSource(doc.key,source)}' in source
+    assert "contentReadOnly" not in source
+    assert "onSave:location=>saveDoc(doc,location)" in source
+    assert "Resolved inheritance preview" in source
+
+
+def test_enablement_dialog_can_include_dependencies_and_dependents() -> None:
+    source = SOURCE.read_text(encoding="utf-8")
+    assert "EnablementRequest" in source
+    assert "dependencyIdsFor" in source
+    assert "dependentIdsFor" in source
+    assert "includeDependencies" in source
+    assert "includeDependents" in source
+    assert "Dependencies" in source
+    assert "Dependents" in source
+    assert "Choose which related resources receive the same explicit state." in source
+
+
+def test_model_tree_switches_between_all_three_relationship_graphs() -> None:
+    source = SOURCE.read_text(encoding="utf-8")
+    assert "relationshipParentIds" in source
+    assert 'mode==="implementation"' in source
+    assert '"inheritsFrom" in document?document.inheritsFrom' in source
+    assert "document.dependsOn" in source
+    assert "relationshipForest(relationshipMode)" in source
+    assert "data-relationship-mode={mode}" in source
 
 
 def test_backend_aggregate_is_semantically_a_tabbed_editor() -> None:

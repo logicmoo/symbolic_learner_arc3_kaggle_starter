@@ -4,6 +4,9 @@
   (label "World Dynamics")
   (description "Semantic rules, transition structure, constraints, and causal dynamics of a world.")
   (implements (
+    (information ())
+  ))
+  (inheritsFrom (
     (information (
       (borrow ([]
         *

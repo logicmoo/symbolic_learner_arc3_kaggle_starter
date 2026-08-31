@@ -13,6 +13,18 @@ from typing import Any, Iterable
 from metta_resource_codec import json_document_to_metta, metta_documents_to_json, split_metta_document_spans
 
 
+def _normalize_resource_value(value: Any) -> Any:
+    if not isinstance(value, dict) or not value.get("id") or not value.get("kind"):
+        return value
+    from resource_relationships import normalize_resource_relationships
+
+    return normalize_resource_relationships(value)
+
+
+def _normalize_resource_values(values: list[Any]) -> list[Any]:
+    return [_normalize_resource_value(value) for value in values]
+
+
 class FilesystemProvider:
     """The single compatibility boundary for workspace filesystem access.
 
@@ -164,7 +176,7 @@ class FilesystemProvider:
         physical = self._physical_path(path)
         content = physical.read_text(encoding=encoding)
         if path.suffix.lower() == ".json" and physical.suffix.lower() == ".metta":
-            documents = metta_documents_to_json(content)
+            documents = _normalize_resource_values(metta_documents_to_json(content))
             value: Any = documents[0] if len(documents) == 1 else documents
             return json.dumps(value, indent=2, ensure_ascii=False) + "\n"
         return content
@@ -177,6 +189,10 @@ class FilesystemProvider:
         mirror_value: Any | None = None
         if path.suffix.lower() == ".json" and physical.suffix.lower() == ".metta":
             value = json.loads(content)
+            if isinstance(value, list):
+                value = [_normalize_resource_value(item) for item in value]
+            else:
+                value = _normalize_resource_value(value)
             mirror_value = value
             if isinstance(value, dict) and physical.exists():
                 self.write_json_resource(path, value)
@@ -222,7 +238,9 @@ class FilesystemProvider:
         self._record("cache-miss", path)
         if physical.suffix.lower() == ".metta":
             self._record("read", path)
-            values = metta_documents_to_json(physical.read_text(encoding="utf-8"))
+            values = _normalize_resource_values(
+                metta_documents_to_json(physical.read_text(encoding="utf-8"))
+            )
             with self._cache_lock:
                 self._json_cache[cache_key] = (metadata.st_mtime_ns, metadata.st_size, deepcopy(values))
             return values
@@ -241,11 +259,16 @@ class FilesystemProvider:
             values.extend(value if isinstance(value, list) else [value])
         if not values:
             raise ValueError(f"resource file is empty: {path}")
+        values = _normalize_resource_values(values)
         with self._cache_lock:
             self._json_cache[cache_key] = (metadata.st_mtime_ns, metadata.st_size, deepcopy(values))
         return values
 
     def write_json(self, path: Path, document: Any) -> None:
+        if isinstance(document, list):
+            document = [_normalize_resource_value(item) for item in document]
+        else:
+            document = _normalize_resource_value(document)
         self._invalidate(path)
         if path.suffix.lower() == ".json":
             physical = self._physical_path(path, writing=True)
@@ -261,6 +284,7 @@ class FilesystemProvider:
         self.write_text(path, json.dumps(document, indent=2, ensure_ascii=False) + "\n")
 
     def write_json_resource(self, path: Path, document: dict[str, Any]) -> None:
+        document = _normalize_resource_value(document)
         self._invalidate(path)
         physical = self._physical_path(path, writing=True)
         replacement = json_document_to_metta(document).rstrip("\n")

@@ -5,14 +5,12 @@
   (language logo)
   (description "Movement-based Turtle/LOGO program representation retained as a first-class alias used by existing operations.")
   (implements (
-    (image (
-      (borrow ([]
-        *
-      ))
-      (exclude ([]))
-    ))
+    (image ())
   ))
-  (specializations (
+  (implementedBy (
+    (turtle_source ())
+  ))
+  (inheritedBy (
     (turtle_source (
       (lend ([]
         *
@@ -22,10 +20,18 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
   ))
-  (preferredSpecialization turtle_source)
+  (preferredImplementation turtle_source)
+  (inheritsFrom (
+    (image (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
+  ))
 )

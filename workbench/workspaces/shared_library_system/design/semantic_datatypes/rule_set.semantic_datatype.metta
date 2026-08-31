@@ -4,6 +4,9 @@
   (label "Rule Set")
   (description "A semantic collection of rules independent of the language or executable representation used to encode them.")
   (implements (
+    (information ())
+  ))
+  (inheritsFrom (
     (information (
       (borrow ([]
         *

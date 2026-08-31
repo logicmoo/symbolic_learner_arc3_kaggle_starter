@@ -41,4 +41,4 @@ def test_shared_snet_backend_uses_environment_backed_credentials() -> None:
     }
     resolved = resolve_model_records(SHARED_WORKSPACE, [legacy_model])[0]["resolved"]
     assert resolved["backendId"] == "https.llm.c.singularitynet.io.v1"
-    assert resolved["inheritance"] == ["https.llm.c.singularitynet.io.v1", "snet-asi1"]
+    assert resolved["implementationPath"] == ["https.llm.c.singularitynet.io.v1", "snet-asi1"]

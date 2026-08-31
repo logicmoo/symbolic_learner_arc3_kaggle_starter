@@ -53,7 +53,7 @@ def isolated_plugin(tmp_path: Path) -> tuple[Any, FastAPI, dict[str, Any], Path,
     app.include_router(module.create_router(manifest))
     admin_router = module.create_admin_router(manifest)
     app.include_router(admin_router)
-    app.include_router(admin_router, prefix="/api")
+    app.include_router(admin_router, prefix="/workbench")
     try:
         yield module, app, manifest, manifest_path, repository
     finally:
@@ -130,7 +130,7 @@ def test_pycoplex_admin_descriptor_is_native_and_documented(
     _, app, _, _, _ = isolated_plugin
     with TestClient(app) as client:
         direct = client.get("/pycoplex/admin")
-        mirrored = client.get("/api/pycoplex/admin")
+        mirrored = client.get("/workbench/pycoplex/admin")
     assert direct.status_code == 200
     assert mirrored.status_code == 200
     payload = direct.json()
@@ -163,7 +163,7 @@ def test_pycoplex_rejects_invalid_admin_settings_without_editing_manifest(
     before = manifest.read_text(encoding="utf-8")
     with TestClient(app) as client:
         response = client.put(
-            "/api/pycoplex/admin/settings",
+            "/workbench/pycoplex/admin/settings",
             json={"values": {"modelBaseUrl": "not-a-url", "maxSteps": 0}},
         )
     assert response.status_code == 400
@@ -177,19 +177,19 @@ def test_pycoplex_admin_rejects_ambiguous_booleans_numbers_and_open_network(
     before = manifest.read_text(encoding="utf-8")
     with TestClient(app) as client:
         ambiguous = client.put(
-            "/api/pycoplex/admin/settings",
+            "/workbench/pycoplex/admin/settings",
             json={"values": {"executionEnabled": "definitely"}},
         )
         number = client.put(
-            "/api/pycoplex/admin/settings",
+            "/workbench/pycoplex/admin/settings",
             json={"values": {"maxSteps": "many"}},
         )
         network = client.put(
-            "/api/pycoplex/admin/settings",
+            "/workbench/pycoplex/admin/settings",
             json={"values": {"allowToolNetwork": True, "allowedHosts": []}},
         )
         insecure_model = client.put(
-            "/api/pycoplex/admin/settings",
+            "/workbench/pycoplex/admin/settings",
             json={"values": {"modelBaseUrl": "http://models.example/v1"}},
         )
     assert ambiguous.status_code == 400
@@ -267,7 +267,7 @@ def test_pycoplex_valid_admin_settings_persist_and_hot_update(
     module, app, _, manifest_path, _ = isolated_plugin
     with TestClient(app) as client:
         response = client.put(
-            "/api/pycoplex/admin/settings",
+            "/workbench/pycoplex/admin/settings",
             json={"values": {"defaultModel": "fixture/model", "maxSteps": 17}},
         )
         assert response.status_code == 200, response.text

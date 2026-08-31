@@ -3,14 +3,14 @@
   (id bitmap)
   (label "Bitmap Image")
   (implements (
-    (image (
-      (borrow ([]
-        *
-      ))
-      (exclude ([]))
-    ))
+    (image ())
   ))
-  (specializations (
+  (implementedBy (
+    (png ())
+    (jpeg ())
+    (bmp ())
+  ))
+  (inheritedBy (
     (png (
       (lend ([]
         *
@@ -20,8 +20,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (jpeg (
@@ -33,8 +33,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (bmp (
@@ -46,10 +46,18 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
   ))
-  (preferredSpecialization png)
+  (preferredImplementation png)
+  (inheritsFrom (
+    (image (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
+  ))
 )

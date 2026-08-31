@@ -23,7 +23,11 @@
       ))
     ))
   ))
-  (specializations (
+  (kind operation)
+  (implementedBy (
+    (shared.constant.workbench ())
+  ))
+  (inheritedBy (
     (shared.constant.workbench (
       (lend ([]
         *
@@ -33,11 +37,10 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
   ))
-  (preferredSpecialization shared.constant.workbench)
-  (kind operation)
+  (preferredImplementation shared.constant.workbench)
 )

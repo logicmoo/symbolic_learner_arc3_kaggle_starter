@@ -117,17 +117,20 @@ The abstract Operation owns the stable input/output contract, its executable exa
       ))
     ))
   ))
-  (specializations (
+  (implementedBy (
+    (echo_into_titlecased_llm ())
+  ))
+  (inheritedBy (
     (echo_into_titlecased_llm (
       (lend ([] "*"))
-      (withhold ([] id label description implements specializations preferredSpecialization))
+      (withhold ([] id label description enabled implements implementedBy preferredImplementation inheritsFrom inheritedBy dependsOn dependedOnBy))
     ))
   ))
-  (preferredSpecialization echo_into_titlecased_llm)
+  (preferredImplementation echo_into_titlecased_llm)
 )
 ```
 
-The LLM specialization selects a concrete model, binds the abstract Prompt, and declares which named input becomes the user content and which named output receives the model response:
+The LLM implementation selects a concrete model, binds the abstract Prompt, and declares which named input becomes the user content and which named output receives the model response:
 
 ```metta
 (
@@ -147,12 +150,15 @@ The LLM specialization selects a concrete model, binds the abstract Prompt, and 
     (outputBinding text)
   ))
   (implements (
+    (echo_into_titlecased ())
+  ))
+  (inheritsFrom (
     (echo_into_titlecased ((borrow ([] "*")) (exclude ([]))))
   ))
 )
 ```
 
-`titlecase_received_text` is an abstract Prompt. Its `preferredSpecialization` selects the default concrete wording while allowing model-specific alternatives:
+`titlecase_received_text` is an abstract Prompt. Its `preferredImplementation` selects the default concrete wording while allowing model-specific alternatives:
 
 ```metta
 (
@@ -160,13 +166,16 @@ The LLM specialization selects a concrete model, binds the abstract Prompt, and 
   (id titlecase_received_text)
   (inputs ((text text)))
   (outputs ((text text)))
-  (specializations (
+  (implementedBy (
+    (titlecase_received_text.default ())
+  ))
+  (inheritedBy (
     (titlecase_received_text.default (
       (lend ([] "*"))
-      (withhold ([] id label description implements specializations preferredSpecialization))
+      (withhold ([] id label description enabled implements implementedBy preferredImplementation inheritsFrom inheritedBy dependsOn dependedOnBy))
     ))
   ))
-  (preferredSpecialization titlecase_received_text.default)
+  (preferredImplementation titlecase_received_text.default)
 )
 
 (
@@ -179,6 +188,9 @@ The LLM specialization selects a concrete model, binds the abstract Prompt, and 
     "Return only the transformed text."
   ))
   (implements (
+    (titlecase_received_text ())
+  ))
+  (inheritsFrom (
     (titlecase_received_text ((borrow ([] "*")) (exclude ([]))))
   ))
 )

@@ -3,7 +3,13 @@
   (id evidence)
   (label Evidence)
   (description "Information that supports, contradicts, or qualifies a hypothesis, rule, or conclusion.")
-  (specializations (
+  (implements (
+    (information ())
+  ))
+  (implementedBy (
+    (transition_evidence ())
+  ))
+  (inheritedBy (
     (transition_evidence (
       (lend ([]
         *
@@ -13,12 +19,12 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
   ))
-  (implements (
+  (inheritsFrom (
     (information (
       (borrow ([]
         *

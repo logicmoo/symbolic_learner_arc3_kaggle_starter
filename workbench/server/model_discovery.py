@@ -7,7 +7,13 @@ import urllib.request
 from pathlib import Path
 from typing import Any, Callable
 from resource_store import get_filesystem_provider
-from resource_relationships import implements_resource, relationship_ids
+from resource_relationships import (
+    depends_on_resource,
+    implements_resource,
+    inherits_from_resource,
+    relationship_ids,
+    synchronize_resource_backlinks,
+)
 from workspace_credentials import resolve_workspace_credential
 
 
@@ -96,7 +102,10 @@ def discovered_model_document(backend: dict[str, Any], row: dict[str, Any]) -> d
     resource_id = re.sub(r"[^a-zA-Z0-9._-]+", "_", f"{backend['id']}-{remote_id}").strip("._").lower()
     return {"kind": "model", "id": resource_id, "label": str(row.get("label") or remote_id),
             "description": f"Discovered from {backend.get('label') or backend['id']}.",
-            "implements": implements_resource(str(backend["id"])), "model": remote_id, "enabled": True,
+            "implements": implements_resource(str(backend["id"])),
+            "inheritsFrom": inherits_from_resource(str(backend["id"])),
+            "dependsOn": depends_on_resource(str(backend["id"])),
+            "model": remote_id, "enabled": True,
             "capabilities": row.get("capabilities") or {}, "limits": row.get("limits") or {},
             "pricing": row.get("pricing") or {}, "properties": row.get("properties") or {},
             "providerMetadata": row.get("providerMetadata") or {},
@@ -140,9 +149,17 @@ def import_discovered_models(root: Path, backend: dict[str, Any], models: list[d
             continue
         resource_id = str(document["id"])
         target = directory / f"{resource_id}.model.json"
+        previous = resources.read_json(target) if resources.is_file(target) else None
+        previous_document = previous if isinstance(previous, dict) else None
         temporary = target.with_suffix(target.suffix + ".tmp")
         resources.write_json(temporary, document)
         resources.replace(temporary, target)
+        synchronize_resource_backlinks(
+            root,
+            document,
+            previous_document,
+            resources,
+        )
         imported.append(document)
     return imported
 
@@ -158,5 +175,11 @@ def remove_missing_models(root: Path, backend: dict[str, Any], resource_ids: lis
         except (OSError, json.JSONDecodeError): continue
         discovery = document.get("discovery") or {}; legacy = str(document.get("description") or "").startswith("Discovered from ")
         if backend.get("id") not in relationship_ids(document.get("implements")) or not (discovery.get("managed") is True or legacy): continue
+        synchronize_resource_backlinks(
+            root,
+            {**document, "implements": {}, "inheritsFrom": {}, "dependsOn": {}},
+            document,
+            resources,
+        )
         resources.delete(target); removed.append(safe_id)
     return removed

@@ -11,7 +11,11 @@ from backend_library import BACKEND_DIRECTORIES, MODEL_CATALOG_DIRECTORY, backen
 from operation_library import DEFAULT_WORKSPACES_ROOT
 from workspace_inheritance import effective_workspace_layers, layer_source
 from resource_store import get_filesystem_provider
-from resource_relationships import relationship_ids, resolve_inherited_document
+from resource_relationships import (
+    relationship_ids,
+    resolve_dependency_enablement,
+    resolve_inherited_document,
+)
 
 SHARED_WORKSPACE_ID = "shared_library_system"
 # ``profile`` and the old profile directories remain read-only compatibility
@@ -262,10 +266,7 @@ def resolve_model_records(
             **dict(effective.get("modelDefaults") or {}),
             **dict(effective.get("defaults") or {}),
         }
-        enabled = all(
-            documents_by_id.get(resource_id, {}).get("enabled", True) is not False
-            for resource_id in [*ancestors, node_id]
-        )
+        dependency_resolution = resolve_dependency_enablement(node, documents_by_id)
         parent_id = implemented_ids[0]
         parent_document = documents_by_id.get(parent_id) or {}
         normalized_ancestors = [
@@ -281,12 +282,15 @@ def resolve_model_records(
             "backendSource": backend_record.get("source"),
             "backendPath": backend_record.get("path"),
             "backend": backend,
-            "inheritance": [*normalized_ancestors, node_id],
-            "inheritanceResolution": inheritance_resolution,
+            "implementationPath": [*normalized_ancestors, node_id],
+            "propertyInheritanceResolution": inheritance_resolution,
+            "dependencyResolution": dependency_resolution,
+            "dependencies": dependency_resolution["dependencies"],
+            "blockingDependencies": dependency_resolution["blockingDependencies"],
             "configuration": configuration,
             "model": effective.get("model") or configuration.get("defaultModel"),
             "defaults": defaults,
-            "enabled": enabled,
+            "enabled": dependency_resolution["enabled"],
         }
 
     resolved: list[dict[str, Any]] = []
@@ -300,7 +304,7 @@ def resolve_model_records(
             raw_id = str(raw.get("id") or "")
             record["resolved"] = {
                 "enabled": False,
-                "inheritance": [raw_id] if raw_id else [],
+                "implementationPath": [raw_id] if raw_id else [],
             }
             if not record.get("error"):
                 record["error"] = "Model/preset definition has no valid id"
@@ -309,7 +313,7 @@ def resolve_model_records(
         try:
             record["resolved"] = resolve(node_id)
         except (KeyError, ValueError) as error:
-            record["resolved"] = {"enabled": False, "inheritance": [node_id]}
+            record["resolved"] = {"enabled": False, "implementationPath": [node_id]}
             if not record.get("error"):
                 record["error"] = str(error)
         override = override_rows.get(node_id)

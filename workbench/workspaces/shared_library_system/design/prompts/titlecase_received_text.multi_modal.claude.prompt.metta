@@ -24,6 +24,9 @@
     "Return only the converted text."
   ))
   (implements (
+    (titlecase_received_text ())
+  ))
+  (inheritsFrom (
     (titlecase_received_text (
       (borrow ([]
         *

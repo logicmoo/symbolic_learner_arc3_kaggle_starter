@@ -153,7 +153,7 @@ type MailboxOpenMode = "last-read" | "end-mark-read";
 // when the catalog is unreachable or nothing declares the ws_collab protocol.
 // The same catalog pass also collects each plugin's `servicesEndpoint` (the
 // Services tab) and any declared websocket (the WebSockets tab).
-const WS_COLLAB_MAILBOX_BASE = "/ws_collab/v1/mailbox";
+const WS_COLLAB_MAILBOX_BASE = "/ws_collab/mailbox";
 type MailboxServerEndpoint = { plugin: string; address: string; protocol: string };
 type PluginServiceEndpoint = { plugin: string; address: string; description: string };
 type PluginWebsocketEndpoint = { plugin: string; address: string; source: "declared" | "scanned" | "manual" };
@@ -351,7 +351,7 @@ async function requestMailboxCursor(
   start?: "beginning" | "now" | "remove",
 ): Promise<CursorInfo> {
   const query = `mailbox=${encodeURIComponent(mailbox)}&agent=${encodeURIComponent(agent)}`;
-  const endpoints = ["/ws_collab/v1/mailbox/cursor", "/workbench/mailbox/cursor"];
+  const endpoints = ["/ws_collab/mailbox/cursor", "/workbench/mailbox/cursor"];
   let lastError: unknown = null;
   for (const endpoint of endpoints) {
     try {
@@ -826,7 +826,7 @@ export function ChatConversation({
         : endpoints.filter((endpoint) => endpoint.plugin === directorySource);
       const includeCore = directorySource === "all" || directorySource === "workbench";
       const [agentPayload, apiMailboxPayload, ...serverPayloads] = await Promise.all([
-        fetch("/ws_collab/v1/mailbox/agents").then(readJson).catch(() => ({ agents: [] } as Record<string, unknown>)),
+        fetch("/ws_collab/mailbox/agents").then(readJson).catch(() => ({ agents: [] } as Record<string, unknown>)),
         includeCore
           ? fetch(`/workbench/mailbox/mailboxes?agent=${encodeURIComponent(personalCursor)}`)
             .then(readJson)
@@ -900,7 +900,7 @@ export function ChatConversation({
       let observedLimit: number | null = null;
       try {
         const payload = await readJson(
-          await fetch("/ws_collab/v1/mailbox/field-values?mailbox=*&observation=mailbox_definition"),
+          await fetch("/ws_collab/mailbox/field-values?mailbox=*&observation=mailbox_definition"),
         );
         observedLimit = Number.isFinite(Number(payload.cached_limit)) ? Number(payload.cached_limit) : null;
         const streams = (payload.streams as Record<string, { fields?: Record<string, { values?: unknown[] }> }>) || {};
@@ -916,7 +916,7 @@ export function ChatConversation({
       }
       try {
         const payload = await readJson(
-          await fetch("/ws_collab/v1/mailbox/messages?mailbox=field_cache_config&limit=300"),
+          await fetch("/ws_collab/mailbox/messages?mailbox=field_cache_config&limit=300"),
         );
         const records = Object.fromEntries(((payload.messages as ChatMessage[]) || []).flatMap((message) => {
           const raw = message.raw && typeof message.raw === "object" && !Array.isArray(message.raw)
@@ -1280,7 +1280,7 @@ export function ChatConversation({
       const routed = sendMailbox.trim() || mailbox;
       if (routed) body.send_to = routed;
       await readJson(
-        await fetch("/ws_collab/v1/mailbox/send", {
+        await fetch("/ws_collab/mailbox/send", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
@@ -1312,7 +1312,7 @@ export function ChatConversation({
     if (!id) return;
     try {
       await readJson(
-        await fetch("/ws_collab/v1/mailbox/agents", {
+        await fetch("/ws_collab/mailbox/agents", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ id }),
@@ -1334,7 +1334,7 @@ export function ChatConversation({
     if (!id) return;
     try {
       await readJson(
-        await fetch("/ws_collab/v1/mailbox/mailboxes", {
+        await fetch("/ws_collab/mailbox/mailboxes", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ id }),
@@ -1374,7 +1374,7 @@ export function ChatConversation({
     if (!name) return;
     try {
       await readJson(
-        await fetch("/ws_collab/v1/mailbox/create", {
+        await fetch("/ws_collab/mailbox/create", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ id: name, source: `merge:${parts.join(",")}`, purpose: `merge of ${parts.join(", ")}` }),
@@ -1402,7 +1402,7 @@ export function ChatConversation({
     if (!name) return;
     try {
       await readJson(
-        await fetch("/ws_collab/v1/mailbox/create", {
+        await fetch("/ws_collab/mailbox/create", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ id: name, source: `disk:${file}`, purpose: `disk file ${file}` }),
@@ -1543,7 +1543,7 @@ export function ChatConversation({
       for (const s of streams) {
         try {
           const payload = await readJson(
-            await fetch(`/ws_collab/v1/mailbox/field-values?mailbox=${encodeURIComponent(s)}&observation=chat_bubble`),
+            await fetch(`/ws_collab/mailbox/field-values?mailbox=${encodeURIComponent(s)}&observation=chat_bubble`),
           );
           const fields = (payload.fields as Record<string, { values?: unknown[] }>) || {};
           const map: Record<string, string[]> = {};
@@ -1812,7 +1812,7 @@ export function ChatConversation({
     setExpanded((prev) => ({ ...prev, [id]: !(prev[id] ?? defaultOpen) }));
 
   // Per-entry ✎ editor: the bubble becomes the editor. Save posts the COMPLETE
-  // record to /ws_collab/v1/mailbox/record, either rewriting its log line (in-place) or
+  // record to /ws_collab/mailbox/record, either rewriting its log line (in-place) or
   // appending the edit as the newest record and marking the old one
   // replaced-by: entry_<n> (at-end). Like the other JSON editors it has a
   // MeTTa mode (mettaResourceCodec), Reload discards edits, Save as..
@@ -1899,7 +1899,7 @@ export function ChatConversation({
     setEntryEditBusy(true);
     try {
       const payload = await readJson(
-        await fetch("/ws_collab/v1/mailbox/record", {
+        await fetch("/ws_collab/mailbox/record", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ id: entryEditId, record, mode }),
@@ -2056,7 +2056,7 @@ export function ChatConversation({
     }
     try {
       const payload = await readJson(
-        await fetch(`/ws_collab/v1/mailbox/mailbox-config?mailbox=${encodeURIComponent(configMailbox)}`),
+        await fetch(`/ws_collab/mailbox/mailbox-config?mailbox=${encodeURIComponent(configMailbox)}`),
       );
       setConfigText(JSON.stringify(payload.config ?? {}, null, 2));
       setConfigError("");
@@ -2087,7 +2087,7 @@ export function ChatConversation({
     setConfigBusy(true);
     try {
       const payload = await readJson(
-        await fetch("/ws_collab/v1/mailbox/mailbox-config", {
+        await fetch("/ws_collab/mailbox/mailbox-config", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ mailbox: configMailbox, config: parsed }),
@@ -2194,7 +2194,7 @@ export function ChatConversation({
       setSubBusy(true);
       try {
         await readJson(
-          await fetch("/ws_collab/v1/mailbox/subscription", {
+          await fetch("/ws_collab/mailbox/subscription", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ agent: target, mailbox, state }),
@@ -2215,13 +2215,13 @@ export function ChatConversation({
   // Selects need the current value present as an option even before lists load.
   // Clicking a picker label (FROM/TO/MAILBOX/SEND-TO) opens an editable JSON view
   // of whatever that picker points at; clicking the same label again hides it.
-  // FROM/TO show the agent record as returned by /ws_collab/v1/mailbox/agents (cursors
+  // FROM/TO show the agent record as returned by /ws_collab/mailbox/agents (cursors
   // included); the mailbox labels show the mailbox record. Save posts the edited
   // JSON to the server_registry_agents blackboard (agents are stored objects;
   // server channels are only a live view of what the IRC/Mattermost server says
   // we are on, not something stored here). Reload re-queries the record.
   const loadEntity = useCallback(async (kind: "agent" | "mailbox", id: string) => {
-    const endpoint = kind === "agent" ? "/ws_collab/v1/mailbox/agents" : "/ws_collab/v1/mailbox/mailboxes";
+    const endpoint = kind === "agent" ? "/ws_collab/mailbox/agents" : "/ws_collab/mailbox/mailboxes";
     const payload = await readJson(await fetch(endpoint));
     const list = (payload[kind === "agent" ? "agents" : "mailboxes"] as Array<Record<string, unknown>>) || [];
     return list.find((item) => item.id === id) ?? { id };
@@ -2277,7 +2277,7 @@ export function ChatConversation({
     setInspectBusy(true);
     try {
       const payload = await readJson(
-        await fetch("/ws_collab/v1/mailbox/entity", {
+        await fetch("/ws_collab/mailbox/entity", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ kind: inspect.kind, id: inspect.id, entry: parsed }),

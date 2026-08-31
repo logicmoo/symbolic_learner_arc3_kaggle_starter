@@ -3,7 +3,14 @@
   (id text)
   (label Text)
   (description "Textual information independent of language, markup, file encoding, or model-oriented prompt representation.")
-  (specializations (
+  (implements (
+    (information ())
+  ))
+  (implementedBy (
+    (natural_language ())
+    (plain_text ())
+  ))
+  (inheritedBy (
     (natural_language (
       (lend ([]
         *
@@ -13,8 +20,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (plain_text (
@@ -26,13 +33,13 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
   ))
-  (preferredSpecialization plain_text)
-  (implements (
+  (preferredImplementation plain_text)
+  (inheritsFrom (
     (information (
       (borrow ([]
         *

@@ -4,6 +4,9 @@
   (label "Simulation Result")
   (description "A predicted semantic outcome produced by simulation.")
   (implements (
+    (information ())
+  ))
+  (inheritsFrom (
     (information (
       (borrow ([]
         *

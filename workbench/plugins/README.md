@@ -131,7 +131,7 @@ at `<routePrefix>/admin` and a generated configure page.
 The catalog entry returned by `GET /workbench/plugins` adds:
 
 - `adminPath` — the descriptor link the plugin owns on the API port;
-- `adminApiPath` — the same routes mirrored beneath `/api` for the browser;
+- `adminApiPath` — the same routes mirrored beneath `/workbench` for the browser;
 - `configPage` — the absolute page URL, when the plugin serves its own;
 - `uiPages[]` — the desktop pages, each with a resolved `address`;
 - `initCommandResults[]` — what each `plugin-init` command did;
@@ -155,7 +155,7 @@ filled in. WS_COLLAB uses this to point every page at the console it serves.
 ## The administration contract
 
 The declared `adminPage` is served by the plugin on the API port and mirrored
-under `/api` so the desktop UI reaches every plugin through one proxied
+under `/workbench` so the desktop UI reaches every plugin through one proxied
 namespace:
 
 | Method and path | Purpose |

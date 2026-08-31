@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { implementsResource, relationshipIds, specializesResource } from "./resourceRelationships";
+import { implementedByResource, implementsResource, relationshipIds } from "./resourceRelationships";
 
 type RecordFile<T> = {
   path: string;
@@ -17,7 +17,7 @@ type PromptDef = {
   inputs?: Record<string, unknown>;
   outputs?: Record<string, unknown>;
   text?: string | string[];
-  specializations?: Record<string, unknown>; preferredSpecialization?: string;
+  implementedBy?: Record<string, unknown>; preferredImplementation?: string;
   [key: string]: unknown;
 };
 
@@ -96,7 +96,7 @@ export function PromptHierarchyPanel({workspaceId}: {workspaceId: string}) {
       label: "New Prompt",
       inputs: {input: "information"},
       outputs: {output: "information"},
-      specializations: specializesResource("new_prompt.default"), preferredSpecialization: "new_prompt.default",
+      implementedBy: implementedByResource("new_prompt.default"), preferredImplementation: "new_prompt.default",
     };
     setSelected({path:"",source:"workspace",workspaceId,document});
     setSource(JSON.stringify(document, null, 2));
@@ -184,13 +184,13 @@ export function PromptHierarchyPanel({workspaceId}: {workspaceId: string}) {
         <div className="resource-row resource-head"><span>Prompt / implementation</span><span>Kind</span><span>Target</span><span>Source</span><span>Version</span></div>
         {prompts.map(prompt => {
           const doc = prompt.document;
-          const specializations = doc ? (byPrompt.get(doc.id) || []) : [];
+          const implementations = doc ? (byPrompt.get(doc.id) || []) : [];
           return <div key={`${prompt.workspaceId}:${prompt.path}`}>
             <button className="resource-row" onClick={() => select(prompt)} onDoubleClick={() => select(prompt)}>
-              <b>{doc?.label || doc?.id || prompt.path}</b><code>abstract</code><span>{doc?.preferredSpecialization || "inline"}</span><span>{prompt.source}</span><em>contract</em>
+              <b>{doc?.label || doc?.id || prompt.path}</b><code>abstract</code><span>{doc?.preferredImplementation || "inline"}</span><span>{prompt.source}</span><em>contract</em>
             </button>
-            {specializations.map(specialization => <button className="resource-row" style={{paddingLeft:28}} key={`${specialization.workspaceId}:${specialization.path}`} onClick={() => select(specialization)} onDoubleClick={() => select(specialization)}>
-              <b>↳ {specialization.document?.label || specialization.document?.id || specialization.path}</b><code>specialization</code><span>{(specialization.document?.targets || []).join(", ") || "generic"}</span><span>{specialization.source}</span><em>v{specialization.document?.version || 1}</em>
+            {implementations.map(implementation => <button className="resource-row" style={{paddingLeft:28}} key={`${implementation.workspaceId}:${implementation.path}`} onClick={() => select(implementation)} onDoubleClick={() => select(implementation)}>
+              <b>↳ {implementation.document?.label || implementation.document?.id || implementation.path}</b><code>implementation</code><span>{(implementation.document?.targets || []).join(", ") || "generic"}</span><span>{implementation.source}</span><em>v{implementation.document?.version || 1}</em>
             </button>)}
           </div>;
         })}

@@ -3,7 +3,22 @@
   (id image)
   (label Image)
   (description "A visual scene independent of its concrete representation.")
-  (specializations (
+  (implements (
+    (information ())
+  ))
+  (implementedBy (
+    (bitmap ())
+    (executable_view ())
+    (image_region ())
+    (latent_embedding ())
+    (logo_program ())
+    (natural_language ())
+    (object_list ())
+    (scene_graph ())
+    (svg ())
+    (turtle_program ())
+  ))
+  (inheritedBy (
     (bitmap (
       (lend ([]
         *
@@ -13,8 +28,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (executable_view (
@@ -26,8 +41,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (image_region (
@@ -39,8 +54,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (latent_embedding (
@@ -52,8 +67,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (logo_program (
@@ -65,8 +80,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (natural_language (
@@ -78,8 +93,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (object_list (
@@ -91,8 +106,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (scene_graph (
@@ -104,8 +119,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (svg (
@@ -117,8 +132,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (turtle_program (
@@ -130,13 +145,13 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
   ))
-  (preferredSpecialization bitmap)
-  (implements (
+  (preferredImplementation bitmap)
+  (inheritsFrom (
     (information (
       (borrow ([]
         *

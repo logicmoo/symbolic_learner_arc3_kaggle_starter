@@ -3,7 +3,10 @@
   (id workflow.plan_memory_and_values)
   (label "Plan Workflow Memory and Values")
   (description "Derive explicit memory scopes, value lifecycles, iteration groups, persistence rules, and provenance requirements from a semantic workflow.")
-  (specializations (
+  (implementedBy (
+    (workflow.plan_memory_and_values.default ())
+  ))
+  (inheritedBy (
     (workflow.plan_memory_and_values.default (
       (lend ([]
         *
@@ -13,10 +16,10 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
   ))
-  (preferredSpecialization workflow.plan_memory_and_values.default)
+  (preferredImplementation workflow.plan_memory_and_values.default)
 )

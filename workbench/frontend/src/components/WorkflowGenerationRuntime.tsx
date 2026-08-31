@@ -43,7 +43,7 @@ type OperationDocument = {
   description?: string;
   categories?: string[];
   topics?: string[];
-  preferredSpecialization?: string;
+  preferredImplementation?: string;
 };
 
 type ModelChoice = {
@@ -79,7 +79,7 @@ type DatatypeDocument = {
   label?: string;
   description?: string;
   parents?: unknown;
-  preferredSpecialization?: string;
+  preferredImplementation?: string;
   [key: string]: unknown;
 };
 

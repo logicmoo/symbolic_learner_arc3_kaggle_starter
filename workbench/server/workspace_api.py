@@ -32,7 +32,12 @@ from model_library import load_model_library_records, resolve_model_records
 from prompt_library import load_prompt_library_records, load_workspace_prompt_records
 from policy_library import load_workspace_policy_records, policy_hierarchy
 from resource_convention import canonical_resource_path, infer_resource_kind
-from resource_relationships import relationship_ids, synchronize_implementation_backlinks
+from resource_relationships import (
+    normalize_resource_relationships,
+    relationship_ids,
+    resolve_dependency_enablement,
+    synchronize_resource_backlinks,
+)
 from operation_library import DEFAULT_WORKSPACES_ROOT, load_workspace_operation_implementation_records, load_workspace_operation_records
 from workspace_inheritance import (
     SHARED_WORKSPACE_ID,
@@ -718,7 +723,7 @@ def _load_prompt_library(workspace: dict[str, Any]) -> dict[str, list[dict[str, 
     for record in implementations:
         for parent in relationship_ids((record.get("document") or {}).get("implements")):
             by_prompt.setdefault(parent, []).append(record)
-    library["hierarchy"] = {"prompts": prompts, "promptImplementations": implementations, "promptProfiles": profiles, "specializationsByResource": by_prompt}
+    library["hierarchy"] = {"prompts": prompts, "promptImplementations": implementations, "promptProfiles": profiles, "implementedByResource": by_prompt}
     return library
 
 
@@ -1222,6 +1227,151 @@ def workspace_snapshot(workspace_id: str, scope: str = Query(default="full", pat
     }
 
 
+@router.get("/{workspace_id}/resource-atomspace")
+def workspace_resource_atomspace(workspace_id: str) -> dict[str, Any]:
+    try:
+        workspace = _resolve_workspace_without_counts(workspace_id)
+        workspace_root = Path(workspace["root"])
+        resources = get_filesystem_provider()
+        combined: dict[str, dict[str, Any]] = {}
+        for layer in effective_workspace_layers(workspace_root, DEFAULT_WORKSPACES_ROOT):
+            source = layer_source(layer, workspace_root)
+            for lifecycle in ("design", "policies", "knowledge", "runtime"):
+                root = layer / lifecycle
+                if not resources.is_dir(root):
+                    continue
+                physical_paths = resources.rglob(root, "*.metta")
+                physical_paths.extend(
+                    path
+                    for path in resources.rglob(root, "*.json")
+                    if not path.with_suffix(".metta").exists()
+                )
+                for physical_path in physical_paths:
+                    logical_path = (
+                        physical_path.with_suffix(".json")
+                        if physical_path.suffix.lower() == ".metta"
+                        else physical_path
+                    )
+                    try:
+                        documents = resources.read_json_documents(logical_path)
+                    except (OSError, ValueError, json.JSONDecodeError):
+                        continue
+                    for document in documents:
+                        if (
+                            not isinstance(document, dict)
+                            or not document.get("kind")
+                            or not document.get("id")
+                        ):
+                            continue
+                        normalized = normalize_resource_relationships(document)
+                        atom_id = f"{normalized['kind']}:{normalized['id']}"
+                        combined[atom_id] = {
+                            "key": atom_id,
+                            "id": str(normalized["id"]),
+                            "kind": str(normalized["kind"]),
+                            "label": str(normalized.get("label") or normalized["id"]),
+                            "path": logical_path.relative_to(layer).as_posix(),
+                            "workspaceId": layer.name,
+                            "source": source,
+                            "document": normalized,
+                        }
+
+        by_resource_id: dict[str, list[str]] = {}
+        documents_by_id: dict[str, dict[str, Any]] = {}
+        for atom in combined.values():
+            by_resource_id.setdefault(atom["id"], []).append(atom["key"])
+            documents_by_id[atom["id"]] = atom["document"]
+
+        atoms = []
+        for atom in combined.values():
+            try:
+                availability = resolve_dependency_enablement(
+                    atom["document"], documents_by_id
+                )
+            except ValueError as error:
+                availability = {
+                    "enabled": False,
+                    "declaredEnabled": atom["document"].get("enabled", True) is not False,
+                    "dependencies": relationship_ids(atom["document"].get("dependsOn")),
+                    "blockingDependencies": [],
+                    "missingDependencies": [],
+                    "missingBacklinks": [],
+                    "error": str(error),
+                }
+            atoms.append({
+                key: value
+                for key, value in atom.items()
+                if key != "document"
+            } | {
+                "declaredEnabled": availability["declaredEnabled"],
+                "effectiveEnabled": availability["enabled"],
+                "availability": availability,
+            })
+
+        relationship_fields = (
+            "implements",
+            "implementedBy",
+            "inheritsFrom",
+            "inheritedBy",
+            "dependsOn",
+            "dependedOnBy",
+        )
+        links = []
+        unresolved_targets: set[str] = set()
+        for atom in combined.values():
+            document = atom["document"]
+            for field in relationship_fields:
+                for target_id in relationship_ids(document.get(field)):
+                    targets = by_resource_id.get(target_id) or []
+                    if not targets:
+                        unresolved_targets.add(target_id)
+                        targets = [f"unresolved:{target_id}"]
+                    for target in targets:
+                        links.append({
+                            "id": f"{atom['key']}:{field}:{target}",
+                            "source": atom["key"],
+                            "target": target,
+                            "relationship": field,
+                        })
+            preferred = str(document.get("preferredImplementation") or "")
+            if preferred:
+                targets = by_resource_id.get(preferred) or [f"unresolved:{preferred}"]
+                if preferred not in by_resource_id:
+                    unresolved_targets.add(preferred)
+                for target in targets:
+                    links.append({
+                        "id": f"{atom['key']}:preferredImplementation:{target}",
+                        "source": atom["key"],
+                        "target": target,
+                        "relationship": "preferredImplementation",
+                    })
+        for resource_id in sorted(unresolved_targets):
+            atoms.append({
+                "key": f"unresolved:{resource_id}",
+                "id": resource_id,
+                "kind": "unresolved",
+                "label": resource_id,
+                "path": "",
+                "workspaceId": "",
+                "source": "unresolved",
+                "declaredEnabled": False,
+                "effectiveEnabled": False,
+                "availability": {"enabled": False, "error": "unresolved resource"},
+            })
+        atoms.sort(key=lambda atom: (atom["kind"], atom["label"].lower(), atom["key"]))
+        links.sort(key=lambda link: (link["relationship"], link["source"], link["target"]))
+        return {
+            "workspace": workspace,
+            "atoms": atoms,
+            "links": links,
+            "relationshipFields": [*relationship_fields, "preferredImplementation"],
+        }
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+    except (OSError, ValueError) as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+
 def _collect_shell_files(root: Path, limit: int) -> list[dict[str, Any]]:
     """Collect up to `limit` TEXT_SUFFIXES file records under root.
 
@@ -1440,6 +1590,7 @@ def write_workspace_file(workspace_id: str, body: dict[str, Any] = Body(...)) ->
             document = json.loads(content)
             if not isinstance(document, dict):
                 raise ValueError("JSON resource must contain an object")
+            document = normalize_resource_relationships(document)
             kind = infer_resource_kind(requested, document)
             document["kind"] = kind
             target = canonical_resource_path(requested, document)
@@ -1450,7 +1601,7 @@ def write_workspace_file(workspace_id: str, body: dict[str, Any] = Body(...)) ->
             raise ValueError(f"canonical target already exists: {target.relative_to(root).as_posix()}")
         resources.write_text(target, content)
         if requested.suffix.lower() == ".json":
-            relationship_sync = synchronize_implementation_backlinks(root, document, previous_document, resources)
+            relationship_sync = synchronize_resource_backlinks(root, document, previous_document, resources)
         if target != requested and resources.is_file(requested):
             resources.delete(requested)
         invalidate_workspace_discovery()

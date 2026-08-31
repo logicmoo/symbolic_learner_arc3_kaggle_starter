@@ -4,6 +4,9 @@
   (label "Category Match Set")
   (description "The resources selected by evaluating an Artifact Category query.")
   (implements (
+    (information ())
+  ))
+  (inheritsFrom (
     (information (
       (borrow ([]
         *

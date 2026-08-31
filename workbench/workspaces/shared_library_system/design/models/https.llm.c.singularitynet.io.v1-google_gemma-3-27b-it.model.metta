@@ -4,12 +4,7 @@
   (label google/gemma-3-27b-it)
   (description "Discovered from SingularityNET LLM.")
   (implements (
-    (https.llm.c.singularitynet.io.v1 (
-      (borrow ([]
-        *
-      ))
-      (exclude ([]))
-    ))
+    (https.llm.c.singularitynet.io.v1 ())
   ))
   (model google/gemma-3-27b-it)
   (enabled true)
@@ -48,5 +43,16 @@
     (managed true)
     (backendId https.llm.c.singularitynet.io.v1)
     (remoteModelId google/gemma-3-27b-it)
+  ))
+  (dependsOn (
+    (https.llm.c.singularitynet.io.v1 ())
+  ))
+  (inheritsFrom (
+    (https.llm.c.singularitynet.io.v1 (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
 )

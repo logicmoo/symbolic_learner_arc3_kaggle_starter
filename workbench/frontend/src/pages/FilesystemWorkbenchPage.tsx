@@ -59,6 +59,11 @@ const GoalPlanLibraryEditor = lazy(() =>
     default: module.GoalPlanLibraryEditor,
   })),
 );
+const ResourceAtomspacePage = lazy(() =>
+  import("../components/ResourceAtomspacePage").then((module) => ({
+    default: module.ResourceAtomspacePage,
+  })),
+);
 const LlmModelsEditor = lazy(() =>
   import("../components/LlmModelsEditor").then((module) => ({
     default: module.LlmModelsEditor,
@@ -313,8 +318,8 @@ type OperationResource = {
   topics?: string[];
   implementation?: string;
   implements?: Record<string, unknown>;
-  specializations?: Record<string, unknown>;
-  preferredSpecialization?: string;
+  implementedBy?: Record<string, unknown>;
+  preferredImplementation?: string;
   enabled?: boolean;
   inputs?: Record<string, DatatypeContract>;
   outputs?: Record<string, DatatypeContract>;
@@ -455,6 +460,7 @@ type View =
   | "modelPolicy"
   | "benchmarks"
   | "contexts"
+  | "resourceAtomspace"
   | "runtimeContexts"
   | "googleMeet"
   | "docs"
@@ -511,6 +517,7 @@ const WORKBENCH_VIEWS: Set<View> = new Set([
   "modelPolicy",
   "benchmarks",
   "contexts",
+  "resourceAtomspace",
   "runtimeContexts",
   "googleMeet",
   "docs",
@@ -529,6 +536,7 @@ const viewFromLocation = (): View | null => {
   if (value === "b1-b2-pipeline" || value === "b1b2pipeline" || value === "arc3-b1-b2-pipeline") return "arc3B1B2Pipeline";
   if (value === "play" || value === "arc3-play" || value === "arc3play" || value === "play-record") return "arc3Play";
   if (value === "video-import" || value === "videoimport" || value === "youtube-import" || value === "video") return "videoImport";
+  if (value === "resource-atomspace" || value === "resourceatomspace" || value === "all-resources-atomspace") return "resourceAtomspace";
   if (value === "google-meet" || value === "googlemeet" || value === "meet") return "googleMeet";
   if (value === "games" || value === "arc3-games" || value === "arc3games" || value === "games-gallery" || value === "arc3-games-gallery") return "arc3GamesGallery";
   if (value === "workflow-page-builder" || value === "workflowpagebuilder" || value === "page-builder") return "workflowPageBuilder";
@@ -719,6 +727,7 @@ export const NAVIGATION_V2: Array<{
       { label: "Data", view: "knowledgeData", glyph: "◫" },
       { label: "Video Import", view: "videoImport", glyph: "▷" },
       { label: "AtomSpaces", view: "contexts", glyph: "⚛" },
+      { label: "Resource AtomSpace", view: "resourceAtomspace", glyph: "◎" },
       { label: "Artifacts", view: "knowledgeArtifacts", glyph: "▣" },
     ],
   },
@@ -2628,10 +2637,7 @@ export function FilesystemWorkbenchPage() {
     const status =
       run?.steps.find((step) => step.stepId === item.id)?.status || "defined";
     const active = selectedStepId === item.id;
-    const itemEnablement = resolveResourceEnablement(
-      item,
-      resolveResourceEnablement(workflow),
-    );
+    const itemEnablement = resolveResourceEnablement(item);
     const operationRecord = item.operation
       ? operationById.get(item.operation)
       : undefined;
@@ -2734,7 +2740,7 @@ export function FilesystemWorkbenchPage() {
                   </small>
                 </span>
                 <em>
-                  {operation.preferredSpecialization === variant.id
+                  {operation.preferredImplementation === variant.id
                     ? "preferred"
                     : "alternative"}
                 </em>
@@ -4310,6 +4316,9 @@ export function FilesystemWorkbenchPage() {
                 workspaceId={workspace.id}
                 family="context"
               />
+            )}
+            {view === "resourceAtomspace" && (
+              <ResourceAtomspacePage workspaceId={workspace.id} />
             )}
             {view === "operations" && (
               <OperationLibraryEditor workspaceId={workspace.id} />

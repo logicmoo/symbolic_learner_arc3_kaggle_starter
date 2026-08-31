@@ -4,14 +4,12 @@
   (label SVG)
   (language image/svg+xml)
   (implements (
-    (image (
-      (borrow ([]
-        *
-      ))
-      (exclude ([]))
-    ))
+    (image ())
   ))
-  (specializations (
+  (implementedBy (
+    (svg_xml ())
+  ))
+  (inheritedBy (
     (svg_xml (
       (lend ([]
         *
@@ -21,10 +19,18 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
   ))
-  (preferredSpecialization svg_xml)
+  (preferredImplementation svg_xml)
+  (inheritsFrom (
+    (image (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
+  ))
 )

@@ -510,7 +510,7 @@ def build_admin_router(
     """Build a standalone administration router for a plugin.
 
     The loader mounts the returned router twice: once bare, so the plugin owns
-    its declared link on the API port, and once beneath ``/api`` so the desktop
+    its declared link on the API port, and once beneath ``/workbench`` so the desktop
     UI reaches every plugin's configure page through one proxied namespace.
     """
 
@@ -528,7 +528,7 @@ def resolve_ui_pages(
     manifest: Mapping[str, Any],
     pages: Sequence[Mapping[str, Any]],
     *,
-    api_prefix: str = "/api",
+    api_prefix: str = "/workbench",
 ) -> list[dict[str, Any]]:
     """Resolve declared ``ui.pages`` to addresses the desktop UI can open.
 

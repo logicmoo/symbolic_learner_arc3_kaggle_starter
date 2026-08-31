@@ -4,6 +4,9 @@
   (label "Provenance Record")
   (description "Semantic provenance describing where information came from and how it was produced.")
   (implements (
+    (information ())
+  ))
+  (inheritsFrom (
     (information (
       (borrow ([]
         *

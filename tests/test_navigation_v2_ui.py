@@ -90,6 +90,7 @@ def test_navigation_v2_has_required_groups_and_labels() -> None:
         "Model Policy",
         "Benchmarks",
         "AtomSpaces",
+        "Resource AtomSpace",
         "Processes",
         "Settings",
     ):
@@ -670,10 +671,11 @@ def test_theme_selector_runs_from_darkest_to_lightest() -> None:
 def test_design_trees_show_effective_enablement() -> None:
     components = ROOT / "workbench" / "frontend" / "src" / "components"
     helper = (components / "resourceEnablement.tsx").read_text(encoding="utf-8")
-    assert 'source: "self" | "parent" | "default"' in helper
+    assert 'source: "self" | "dependency" | "default"' in helper
     assert 'resource?.enabled === true' in helper
     assert 'resource?.enabled === false' in helper
-    assert 'inherited ${state.enabled ? "on" : "off"}' in helper
+    assert 'dependencies.some(dependency => !dependency.enabled)' in helper
+    assert '"dependency off"' in helper
     for filename in (
         "OperationLibraryEditor.tsx",
         "DataCatalogPanel.tsx",

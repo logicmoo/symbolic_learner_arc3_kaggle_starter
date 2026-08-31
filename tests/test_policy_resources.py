@@ -21,7 +21,7 @@ def test_shared_policy_directory_loads_real_resources() -> None:
     }
     assert {"anthropic", "groq", "openai", "xai"} <= vendor_ids
     assert {row["document"]["kind"] for row in records} >= {"model_policy", "model_policy_variant", "vendor_policy", "benchmark_policy"}
-    assert len(hierarchy["specializationsByResource"]["default_model_runtime"]) == 2
+    assert len(hierarchy["implementedByResource"]["default_model_runtime"]) == 2
 
 
 def test_workspace_policy_overrides_shared_id(tmp_path: Path) -> None:

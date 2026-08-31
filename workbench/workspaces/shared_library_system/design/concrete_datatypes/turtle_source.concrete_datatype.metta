@@ -3,12 +3,7 @@
   (id turtle_source)
   (label "Turtle Source")
   (implements (
-    (turtle_program (
-      (borrow ([]
-        *
-      ))
-      (exclude ([]))
-    ))
+    (turtle_program ())
   ))
   (mimeTypes ([]
     text/x-logo
@@ -17,5 +12,13 @@
   (extensions ([]
     .logo
     .txt
+  ))
+  (inheritsFrom (
+    (turtle_program (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
 )

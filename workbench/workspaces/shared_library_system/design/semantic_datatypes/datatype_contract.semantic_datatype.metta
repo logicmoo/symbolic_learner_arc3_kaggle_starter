@@ -4,6 +4,9 @@
   (label "Datatype Contract")
   (description "A semantic, representation, or concrete datatype specification and its relationships.")
   (implements (
+    (information ())
+  ))
+  (inheritsFrom (
     (information (
       (borrow ([]
         *

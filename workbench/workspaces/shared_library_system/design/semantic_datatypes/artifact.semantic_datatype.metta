@@ -7,6 +7,9 @@
     knowledge/artifacts
   ))
   (implements (
+    (information ())
+  ))
+  (inheritsFrom (
     (information (
       (borrow ([]
         *

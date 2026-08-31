@@ -446,7 +446,7 @@ function resolveVisualImageDiffOperationBinding(
     : undefined;
   const selectedImplementation = directImplementation
     || variants.find((candidate) => candidate.id === entry.implementationId)
-    || variants.find((candidate) => candidate.id === operation?.preferredSpecialization)
+    || variants.find((candidate) => candidate.id === operation?.preferredImplementation)
     || variants.find((candidate) => candidate.implementation === "llm.complete");
   const promptResources = entry.kind === "group" ? promptEntries(entry.steps || []).flatMap((step) => {
     const resource = prompts.find((candidate) => candidate.id === step.promptId);

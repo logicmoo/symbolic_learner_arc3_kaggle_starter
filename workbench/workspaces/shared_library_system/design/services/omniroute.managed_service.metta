@@ -1,1 +1,48 @@
-((kind managed_service) (id omniroute) (label OmniRoute) (description "Local multi-provider routing gateway.") (port 20128) (healthPath /) (launcher workbench/scripts/run_omniroute.bat) (workingDirectory workbench) (commandPatterns ([] omniroute omni-route)) (controllable true) (allowKill true) (allowRelaunch true) (singleton true) (defaultStartup ((start true) (hiddenWindow false))))
+(
+  (kind managed_service)
+  (id omniroute)
+  (label OmniRoute)
+  (description "Local multi-provider routing gateway.")
+  (port 20128)
+  (healthPath /)
+  (launcher workbench/scripts/run_omniroute.bat)
+  (workingDirectory workbench)
+  (commandPatterns ([]
+    omniroute
+    omni-route
+  ))
+  (controllable true)
+  (allowKill true)
+  (allowRelaunch true)
+  (singleton true)
+  (defaultStartup (
+    (start true)
+    (hiddenWindow false)
+  ))
+  (dependedOnBy (
+    (omniroute-free-router ())
+  ))
+  (implementedBy (
+    (omniroute-free-router ())
+  ))
+  (inheritedBy (
+    (omniroute-free-router (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        enabled
+        implements
+        implementedBy
+        preferredImplementation
+        inheritsFrom
+        inheritedBy
+        dependsOn
+        dependedOnBy
+      ))
+    ))
+  ))
+)

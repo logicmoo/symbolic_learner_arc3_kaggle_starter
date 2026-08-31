@@ -16,7 +16,7 @@ def test_active_atomspace_datatype_replaces_information_silo() -> None:
     information = resources.read_json(directory / "information.semantic_datatype.json")
     assert atomspace["id"] == "atomspace"
     assert relationship_ids(atomspace["implements"]) == ["information"]
-    assert "atomspace" in information["specializations"]
+    assert "atomspace" in information["implementedBy"]
     assert not (directory / "information_silo.semantic_datatype.json").exists()
 
 

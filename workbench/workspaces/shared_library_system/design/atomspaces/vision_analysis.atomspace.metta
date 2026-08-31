@@ -3,7 +3,16 @@
   (id vision_analysis)
   (label "Vision Analysis AtomSpaces")
   (description "Declares the AtomSpaces and runtime bindings available while observing, explaining, and acting in a visual world.")
-  (specializations (
+  (bindings ([]
+    current_scene
+    world_model
+    candidate_rules
+    goal_state
+  ))
+  (implementedBy (
+    (vision_analysis.default ())
+  ))
+  (inheritedBy (
     (vision_analysis.default (
       (lend ([]
         *
@@ -13,16 +22,10 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
   ))
-  (preferredSpecialization vision_analysis.default)
-  (bindings ([]
-    current_scene
-    world_model
-    candidate_rules
-    goal_state
-  ))
+  (preferredImplementation vision_analysis.default)
 )

@@ -74,6 +74,6 @@ A workflow step therefore points to the abstract operation:
 )
 ```
 
-The abstract operation lists implementations in `specializations` and selects its default with `preferredSpecialization`. Each specialization points back with `implements`. A step may request an allowed specialization explicitly with `implementationVariant`; otherwise the preferred specialization is selected.
+The abstract operation lists implementations in `implementedBy` and selects its default with `preferredImplementation`. Each implementation points back with `implements`. Property inheritance, when needed, is declared separately with `inheritsFrom` / `inheritedBy`. A step may request an allowed implementation explicitly with `implementationVariant`; otherwise the preferred implementation is selected.
 
 Directories and declared kinds are both part of the resource contract. Validate a changed resource through its loader and tests; do not run broad rewriting or normalization over hand-authored workspace MeTTa.

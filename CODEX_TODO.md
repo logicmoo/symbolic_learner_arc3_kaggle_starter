@@ -62,10 +62,32 @@ values here.
 
 ## Completed and validated
 
+- [x] Add AtomSpaces -> Resource AtomSpace. The real
+  `/workbench/workspaces/{workspace_id}/resource-atomspace` endpoint materializes
+  all effective filesystem/runtime resources as atoms and all six canonical
+  relationship fields plus `preferredImplementation` as links. The page offers
+  kind/search/relationship filters, selected-atom link inspection, and MeTTa
+  graph output.
+- [x] Add the resource-level `dependsOn` / `dependedOnBy` availability graph,
+  separate from `implements` / `implementedBy` implementation links and from
+  `inheritsFrom` / `inheritedBy` property inheritance. Saves synchronize reverse
+  dependency backlinks, model resolution uses dependencies for effective
+  enabled state, discovery persists both graph directions, generic resource
+  controls expose both fields, and Models enable/disable scope now selects
+  dependencies/dependents rather than inheritance parents/children.
+- [x] Make Models resource overrides directly editable and replace immediate
+  enable/disable writes with a scope chooser for the selected resource,
+  ancestors, and descendants. Enabling a child whose effective state is blocked
+  by a disabled parent selects its parents by default. Model discovery imports
+  and removals now synchronize the mandatory parent-side `implementedBy`
+  backlinks, preventing imported EMULLM children such as
+  `enullm-8801-copilot-headless-2_percent75` from remaining unresolved.
 - [x] Keep the shared hierarchy **Show View** controls and resource tree visible
-  together in separate scroll areas. The bounded settings panel stays above the
-  independently scrolling tree, with explicit layout and stacking order so a
-  long model/resource tree cannot float over the controls. Verified on
+  together as separate bordered chips. The bounded TREE FILTERS chip stays
+  above the independently scrolling TREE chip, with explicit spacing, layout,
+  and stacking order so a long model/resource tree cannot overlap the controls.
+  TREE FILTERS can collapse vertically to its header so TREE receives the
+  released height. Verified on
   2026-08-31 in the live Models page, with the focused universal artifact
   editor tests and frontend production build passing.
 - [x] Add the repository-native `llm_task_harness` plugin and Python runtime.
@@ -95,10 +117,10 @@ values here.
   operation-playground, web-proxy, and service-registry areas.
 - [x] ChatConversation's mailbox chooser now merges mailbox directories from
   every plugin that exposes one instead of only the first source that answers.
-  `fetchDirectory` in `ChatConversation.tsx` fetches `/ws_collab/v1/mailbox/mailboxes`
-  and `/api/mailbox/mailboxes` concurrently (each tolerating the other being
+  `fetchDirectory` in `ChatConversation.tsx` fetches `/ws_collab/mailbox/mailboxes`
+  and `/workbench/mailbox/mailboxes` concurrently (each tolerating the other being
   down) and unions both by mailbox id, letting the live ws_collab relay win on
-  id collisions. `workbench/server/mailbox_api_lib.py` (the `/api/mailbox/*`
+  id collisions. `workbench/server/mailbox_api_lib.py` (the `/workbench/mailbox/*`
   surface) previously went dark (503) whenever the sibling `mailbox_channels`
   package wasn't installed; it now falls back to the bundled `mailbox_chat`
   plugin copy (`workbench/plugins/mailbox_chat/src/mailbox_chat/`) via a thin
@@ -117,7 +139,7 @@ values here.
   `Path.cwd() / "mailbox"`, which only lines up with the repo-root `mailbox/`
   store when a process happens to be launched from the repository root. The
   live dev API server is started with `os.chdir(SERVER_ROOT)`
-  (`workbench/scripts/run_api_server.py`), so `/api/mailbox/mailboxes` still
+  (`workbench/scripts/run_api_server.py`), so `/workbench/mailbox/mailboxes` still
   came back empty against the real running server even though the direct
   Python check above passed. `mailbox_api_lib.py`'s fallback block now pins
   the shim's `mailbox_dir` to `<repo_root>/mailbox` (falling back to
@@ -131,9 +153,9 @@ values here.
   path rather than cwd, so only the bundled `mailbox_chat` copy's two direct
   consumers needed this fix. Verified on 2026-08-27 against the actual running
   dev server (not just a direct import): restarted the live API process (the
-  `/api/system/restart` file-watcher trigger did not pick up the change, so
+  `/workbench/system/restart` file-watcher trigger did not pick up the change, so
   the process was stopped and relaunched via `run_api_server.py`) and
-  `GET http://127.0.0.1:8000/api/mailbox/mailboxes` now returns
+  `GET http://127.0.0.1:8000/workbench/mailbox/mailboxes` now returns
   `symbolic-workbench-user` and `server_outbound_relay_agent_to_mailbox`; the
   19 targeted tests above still pass unchanged (they always pin
   `AGENT_MAILBOX_DIR` explicitly so this bug never surfaced there).
@@ -175,9 +197,9 @@ values here.
   verification showed discovered grouping fields, cursor-relative unread badges,
   per-minute/per-hour activity tags, 30 cached fields, cache limit 16, and two
   live cache-config records on 2026-08-26.
-- [x] Standardize the bidirectional specialization relationship on
-  `specializations` (the general resource's lend/withhold policy map) and
-  `implements` (each specialization's borrow/exclude policy map). Maintained loaders,
+- [x] Migrate the former dual-purpose relationship into `implements` /
+  `implementedBy` for implementation identity and `inheritsFrom` /
+  `inheritedBy` for borrow/exclude and lend/withhold property policies. Maintained loaders,
   editors, APIs, scripts, tests, documentation, and filesystem MeTTa resources
   no longer use generic `children`, `parents`, or `inherits` fields for this
   relationship. Genuine runtime/UI tree parent-child structures are unchanged.
@@ -185,8 +207,8 @@ values here.
   Effective inheritance is borrow intersect lend, minus exclude and withhold,
   followed by local overrides. Parents withhold identity and relationship fields
   by default. The complete contract is documented in
-  `workbench/docs/design/SPECIALIZATION_INHERITANCE_MODEL.md`.
-- [x] Support partial specializations throughout family resolvers and editors.
+  `workbench/docs/design/RESOURCE_RELATIONSHIP_MODEL.md`.
+- [x] Support partial implementations throughout family resolvers and editors.
   Do not classify every resource with `implements` as concrete. Derive and expose
   UI-only abstract/partial/concrete/runnable status from the current draft, resolved
   inheritance, and family-specific unresolved behavior, bindings, constraints,
@@ -197,7 +219,7 @@ values here.
   supply required pieces, so removing or disabling that parent can make a
   previously runnable resource abstract. Invalidate affected descendants and
   explain the lost parent or obligation.
-  Operation and Prompt resolution now traverses deeper preferred specializations
+  Operation and Prompt resolution now traverses deeper preferred implementations
   until runnable; Models and Datatypes use negotiated multi-parent inheritance
   with conflict and cycle detection. The rich Operation and Datatype editors
   expose live BORROW/EXCLUDE, LEND/WITHHOLD, provenance, missing obligations,
@@ -206,15 +228,15 @@ values here.
   production build passed; live family APIs returned successfully; and browser
   verification showed runnable-through-preferred Operation status and
   concrete-through-preferred Datatype status on 2026-08-26.
-- [x] Standardize every maintained specialization pointer on the
-  single canonical persisted field `preferredSpecialization`. Frontend editors,
+- [x] Standardize every maintained implementation pointer on the
+  single canonical persisted field `preferredImplementation`. Frontend editors,
   backend resolution, scripts, tests, documentation, and 42 filesystem MeTTa
   resources now read and write only that name; no legacy alias fallback remains.
   Artifact-specific UI labels such as Preferred Alternative or Default
   Implementation remain presentation text over the same canonical field.
 - [ ] Add policy-selectable `specializationPriorities` profiles (for example
-  `bySpeed` and `byAccuracy`) as ordered specialization-ID lists. Keep
-  `preferredSpecialization` singular as the deterministic fallback.
+  `bySpeed` and `byAccuracy`) as ordered implementation-ID lists. Keep
+  `preferredImplementation` singular as the deterministic fallback.
 
 - [x] Rebuild the Docs filesystem page as the sole main page with a left
   Tree/Navigator/Full Paths document host and persistent open-document tabs.
@@ -262,7 +284,7 @@ values here.
   from disk without importing the plugin, so the Plugins page constructs the
   configure link, desktop `ui.pages`, and the initialization readiness report
   from the filesystem alone. The declared `path` is served by the plugin's own
-  router on the API port and mirrored beneath `/api` for the browser, exposing
+  router on the API port and mirrored beneath `/workbench` for the browser, exposing
   `GET <path>`, `PUT <path>/settings`, `POST <path>/initialize`, and
   `POST <path>/actions/{action}`. Descriptors are data, rendered natively by
   `PluginAdminPanel`; a plugin exporting neither `create_admin_router` nor its
@@ -349,7 +371,7 @@ values here.
   hides real failures.
 
   Rewrote the WS_COLLAB long-running prompt (published as version 2 through
-  `POST /ws_collab/v1/prompt`, version 1 preserved in durable history; also
+  `POST /ws_collab/prompt`, version 1 preserved in durable history; also
   written to `emullm/.git/long_running_prompt.txt`). It now documents that
   **Copilot's own built-in Workflows cron is the approved recurring launcher**,
   with a worked `save_workflow` example, and that one minute is the floor
@@ -661,27 +683,25 @@ values here.
   exit, monitored-port failure detection, and deterministic regression tests.
 - [x] Add a repository-owned Codex heartbeat definition and document its
   mapping to the machine-local installed automation.
-- [x] Move every non-plugin workbench API route from `/api/*` to
-  `/workbench/*`. Plugin routes are untouched everywhere: a plugin's own bare
-  mount (`/web_proxy/...`, `/ws_collab/...`, etc.) and its `/api/{plugin}/admin`
-  mirror (the plugin-admin-mirror mechanism in `plugin_api.py`/`plugin_admin.py`,
-  `API_PREFIX = "/api"`) both still live at `/api`, unchanged, since they are
-  plugin URLs, not core ones. Changed: all 18 `app.include_router(..., prefix=
-  "/api")` calls plus the hardcoded `/api/...` route decorators in
+- [x] Move every workbench-owned API route to `/workbench/*`. Plugin bare
+  mounts remain unchanged (`/web_proxy/...`, `/ws_collab/...`, etc.), while
+  plugin administration mirrors now live at `/workbench/{plugin}/admin` through
+  the `plugin_api.py`/`plugin_admin.py` `API_PREFIX = "/workbench"` contract.
+  Changed: all 18 former `app.include_router(...)` calls plus the hardcoded
+  workbench route decorators in
   `workbench/server/app.py` (health, whoami, analyze, runs, tasks, workflows)
   now use `/workbench`; the self-referencing health-check URL in
   `service_monitor_api.py`'s `_builtin_definitions()`; the mockup URLs in
   `workflow_runner_todo_api.py`; `workbench/scripts/submit_managed_command.py`
   and `scripts/mailbox_codex_listener.py`'s own calls into the workbench API;
   `scripts/capture_workflow_runner_visuals.ps1`; all 51 frontend `.tsx`/`.ts`
-  files that called `/api/...` (bulk `/api/` -> `/workbench/` replace, verified
-  none of them referenced a plugin's own `/api/<plugin>` mirror); the matching
+  files that called the former namespace (bulk replacement verified
+  none of them referenced a plugin's own bare mount); the matching
   test-file assertions (mailbox, workspaces, engine, goal-runs, repository,
   system/services, arc3-play, plugins-meta, plus three stale `app.py`-source
   string assertions and `test_mailbox_api_lib.py`'s OWN isolated-app fixture,
-  which still mounted at `prefix="/api"` even after its call-site assertions
-  were bulk-renamed — caught by a targeted git-stash A/B pytest diff, not by
-  the bulk regex, since `prefix="/api"` has no trailing slash); reference docs
+  which still used the former prefix after its call-site assertions
+  were bulk-renamed — caught by a targeted git-stash A/B pytest diff); reference docs
   (`workbench/README.md`, `docs/AGENT_MAILBOX.md`, `docs/CHAT_PAGE.md`,
   `workbench/docs/VIDEO_IMPORT.md`, `workbench/docs/DATA_REPRESENTATIONS.md`,
   `workbench/docs/design/{OPERATIONS_AND_EXECUTIONS,GOALS_AND_PLANS_ARCHITECTURE,
@@ -689,11 +709,11 @@ values here.
   `workbench/plugins/README.md`); and the workspace `.metta` resources
   (`mailbox.system.metta`, `image_filter_skills.operation.metta`,
   `workbench_api.managed_service.metta`). Left alone (confirmed genuinely
-  unrelated, not this workbench's own `/api`): OmniRoute's own `/api/keys` and
+  unrelated external service contracts): OmniRoute's key and login endpoints,
   `/api/auth/login` on :20128, OpenRouter's `https://openrouter.ai/api/v1`,
   HuggingFace's `/api/models/...`, unsloth studio's own `/api/inference/*` on
-  :8888, and the fully separate standalone `webui/server.py` tool's own
-  `/api/config`. Root `/` no longer 302-redirects the API port to the Vite
+  :8888. The standalone `webui/server.py` tool now follows the same
+  `/workbench/config` convention. Root `/` no longer 302-redirects the API port to the Vite
   port (`http://127.0.0.1:8000/` used to "secretly host" `:5173` via a
   redirect); it now RELAYS instead, proxying HTTP and the HMR WebSocket
   through to Vite so the API port serves byte-identical content with the
@@ -705,7 +725,7 @@ values here.
   relayed; everything else 404s from the API directly. This guard exists
   because the first version relayed everything unmatched, and Vite's own
   `API_FALLBACK` proxy rule sends anything IT doesn't recognize straight back
-  to the API — for a genuinely-removed path like the old `/api/health`,
+  to the API — for a genuinely removed stale path,
   neither side recognized it, so the two catch-alls ping-ponged the request
   between `:8000` and `:5173` until it timed out. Added `GET
   /workbench/endpoints`, a full JSON listing of every registered path+method
@@ -719,7 +739,7 @@ values here.
   the pre-existing missing-module issue, also confirmed via A/B diff); `npm
   run build` succeeds; live-restarted API+Vite and curl-verified `GET
   /workbench/health`, `GET /workbench/plugins`, `GET /workbench/endpoints`
-  (232 entries), `GET /api/web_proxy/admin` (plugin mirror still works), `GET
+  (232 entries), `GET /workbench/web_proxy/admin` (plugin mirror works), `GET
   /` on both `:8000` and `:5173` return 200 with zero redirects
   (`-MaximumRedirection 0`), `@vite/client`/`src/main.tsx` relay correctly
   with `text/javascript`, and a made-up path 404s immediately instead of
@@ -1474,7 +1494,7 @@ Preserve the canonical checkout and its `codex/workbench-navigation-v2` branch.
   navigation, workflow-resource, and shell-snapshot validation: 81 passed;
   frontend production build and `git diff --check` passed. Full repository
   validation reached 636 passed with one unrelated pre-existing datatype
-  backlink failure (`information.specializations` is missing `system_contract`) on
+  backlink failure (`information.implementedBy` is missing `system_contract`) on
   2026-08-17.
 - [x] Make the eleven Visual Image Diff pipeline Prompts model-provider
   neutral. Removed embedded OpenAI, Groq, and OpenRouter profile IDs from the

@@ -1,9 +1,9 @@
 import {
-  DEFAULT_IMPLEMENTATION_INHERITANCE,
-  DEFAULT_SPECIALIZATION_INHERITANCE,
-  implementationInheritanceMap,
+  DEFAULT_INHERITANCE_GRANT,
+  DEFAULT_INHERITANCE_REQUEST,
+  inheritanceGrantMap,
+  inheritanceRequestMap,
   relationshipIds,
-  specializationInheritanceMap,
 } from "./resourceRelationships";
 
 type ResourceDocument = Record<string, unknown>;
@@ -24,7 +24,7 @@ export type ResourceAbstractness = {
   delegatedTo?: string;
 };
 
-const RELATIONSHIP_FIELDS = new Set(["id", "implements", "specializations", "preferredSpecialization"]);
+const RELATIONSHIP_FIELDS = new Set(["id", "enabled", "implements", "implementedBy", "preferredImplementation", "inheritsFrom", "inheritedBy", "dependsOn", "dependedOnBy"]);
 
 function isObject(value: unknown): value is ResourceDocument {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -116,42 +116,42 @@ function resolveFields(
   const withheld: string[] = [];
   const conflicts: string[] = [];
   const missingResources: string[] = [];
-  const implementationPolicies = implementationInheritanceMap(resource.implements);
+  const inheritancePolicies = inheritanceRequestMap(resource.inheritsFrom);
 
-  for (const implementedId of relationshipIds(resource.implements)) {
-    const implemented = byId.get(implementedId);
-    if (!implemented) {
-      missingResources.push(implementedId);
+  for (const inheritedId of relationshipIds(resource.inheritsFrom)) {
+    const inheritedResource = byId.get(inheritedId);
+    if (!inheritedResource) {
+      missingResources.push(inheritedId);
       continue;
     }
-    const parentResolution = resolveFields(implemented, byId, [...trail, resourceId].filter(Boolean));
+    const parentResolution = resolveFields(inheritedResource, byId, [...trail, resourceId].filter(Boolean));
     conflicts.push(...parentResolution.conflicts);
     missingResources.push(...parentResolution.missingResources);
-    const request = implementationPolicies[implementedId] || DEFAULT_IMPLEMENTATION_INHERITANCE;
-    const grants = specializationInheritanceMap(implemented.specializations);
-    if (!grants[resourceId]) conflicts.push(`missing backlink: ${implementedId}.specializations[${resourceId}]`);
-    const grant = grants[resourceId] || DEFAULT_SPECIALIZATION_INHERITANCE;
+    const request = inheritancePolicies[inheritedId] || DEFAULT_INHERITANCE_REQUEST;
+    const grants = inheritanceGrantMap(inheritedResource.inheritedBy);
+    if (!grants[resourceId]) conflicts.push(`missing backlink: ${inheritedId}.inheritedBy[${resourceId}]`);
+    const grant = grants[resourceId] || DEFAULT_INHERITANCE_GRANT;
     for (const [path, value] of Object.entries(flatten(parentResolution.effective))) {
       if (RELATIONSHIP_FIELDS.has(path.split(".")[0])) continue;
       if (!selected(path, request.borrow) || !selected(path, grant.lend)) continue;
       if (selected(path, request.exclude)) {
-        excluded.push(`${implementedId}:${path}`);
+        excluded.push(`${inheritedId}:${path}`);
         continue;
       }
       if (selected(path, grant.withhold)) {
-        withheld.push(`${implementedId}:${path}`);
+        withheld.push(`${inheritedId}:${path}`);
         continue;
       }
       if (path in local) continue;
       if (path in inherited && !sameValue(inherited[path], value)) {
-        conflicts.push(`${path}: ${inheritedSources.get(path)} <> ${implementedId}`);
+        conflicts.push(`${path}: ${inheritedSources.get(path)} <> ${inheritedId}`);
         delete inherited[path];
         inheritedSources.delete(path);
         continue;
       }
       inherited[path] = value;
-      inheritedSources.set(path, implementedId);
-      borrowed.push(`${implementedId}:${path}`);
+      inheritedSources.set(path, inheritedId);
+      borrowed.push(`${inheritedId}:${path}`);
     }
   }
   return {
@@ -247,14 +247,14 @@ export function deriveResourceAbstractness(
   if (missingResources.length) obligations.push(...missingResources.map(id => `available parent ${id}`));
   if (conflicts.length) obligations.push(...conflicts.map(item => `resolve ${item}`));
 
-  const preferredId = String(resource.preferredSpecialization || "");
+  const preferredId = String(resource.preferredImplementation || "");
   let delegated: ResourceAbstractness | null = null;
   if (!marker.runnable && preferredId) {
     const preferred = byId.get(preferredId);
     if (preferred) delegated = deriveResourceAbstractness(preferred, relatedResources, [...trail, resourceId].filter(Boolean));
     else {
       missingResources.push(preferredId);
-      obligations.push(`available preferred specialization ${preferredId}`);
+      obligations.push(`available preferred implementation ${preferredId}`);
     }
   }
 
@@ -273,7 +273,7 @@ export function deriveResourceAbstractness(
   const delegatedTo = runnableThroughPreferred || concreteThroughPreferred ? preferredId : undefined;
   const unresolvedObligations = delegatedTo ? [] : obligations;
   const summary = delegatedTo
-    ? `${status === "runnable" ? "Runnable" : "Concrete"} through preferred specialization ${delegatedTo}.`
+    ? `${status === "runnable" ? "Runnable" : "Concrete"} through preferred implementation ${delegatedTo}.`
     : status === "runnable"
       ? "Required execution behavior resolves."
       : status === "concrete"

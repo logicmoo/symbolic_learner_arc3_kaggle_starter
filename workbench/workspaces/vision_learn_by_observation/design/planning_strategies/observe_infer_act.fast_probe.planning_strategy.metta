@@ -10,6 +10,9 @@
     (replanOnContradiction true)
   ))
   (implements (
+    (observe_infer_act ())
+  ))
+  (inheritsFrom (
     (observe_infer_act (
       (borrow ([]
         *

@@ -3,14 +3,13 @@
   (id latent_embedding)
   (label "Latent Embedding")
   (implements (
-    (image (
-      (borrow ([]
-        *
-      ))
-      (exclude ([]))
-    ))
+    (image ())
   ))
-  (specializations (
+  (implementedBy (
+    (vector_json ())
+    (numpy ())
+  ))
+  (inheritedBy (
     (vector_json (
       (lend ([]
         *
@@ -20,8 +19,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (numpy (
@@ -33,10 +32,18 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
   ))
-  (preferredSpecialization vector_json)
+  (preferredImplementation vector_json)
+  (inheritsFrom (
+    (image (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
+  ))
 )

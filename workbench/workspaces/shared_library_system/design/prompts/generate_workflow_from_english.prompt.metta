@@ -3,7 +3,11 @@
   (id workflow.generate_from_english)
   (label "Generate Workflow from English")
   (description "Author one grounded Workflow object from an English specification without inventing resources.")
-  (specializations (
+  (implementedBy (
+    (workflow.generate_from_english.metta ())
+    (workflow.generate_from_english.json ())
+  ))
+  (inheritedBy (
     (workflow.generate_from_english.metta (
       (lend ([]
         *
@@ -13,8 +17,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (workflow.generate_from_english.json (
@@ -26,10 +30,10 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
   ))
-  (preferredSpecialization workflow.generate_from_english.json)
+  (preferredImplementation workflow.generate_from_english.json)
 )

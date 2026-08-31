@@ -246,24 +246,24 @@ def resolve_prompt_implementation(
         text = inheritance_resolution(document)["document"].get("text")
         return isinstance(text, str) and bool(text.strip()) or isinstance(text, list) and bool(text)
 
-    def specialization_ids(resource_id: str) -> list[str]:
+    def implementation_ids(resource_id: str) -> list[str]:
         record = all_records.get(resource_id)
         if not record:
             return []
         document = record.get("document") or {}
-        declared = relationship_ids(document.get("specializations"))
+        declared = relationship_ids(document.get("implementedBy"))
         reverse = [
             candidate_id
             for candidate_id, candidate in implementations.items()
             if points_to(candidate.get("document") or {}, "implements", resource_id)
         ]
         ordered = list(dict.fromkeys([*declared, *reverse]))
-        preferred = str(document.get("preferredSpecialization") or "")
+        preferred = str(document.get("preferredImplementation") or "")
         return ([preferred] if preferred in ordered else []) + [candidate for candidate in ordered if candidate != preferred]
 
     def resolve_candidate(candidate_id: str, trail: tuple[str, ...]) -> tuple[dict[str, Any], list[str]] | None:
         if candidate_id in trail:
-            raise ValueError(f"prompt specialization cycle: {' -> '.join((*trail, candidate_id))}")
+            raise ValueError(f"prompt implementation cycle: {' -> '.join((*trail, candidate_id))}")
         record = all_records.get(candidate_id)
         if not record:
             return None
@@ -271,8 +271,8 @@ def resolve_prompt_implementation(
         path = [*trail, candidate_id]
         if has_text(document):
             return record, path
-        for specialization_id in specialization_ids(candidate_id):
-            resolved = resolve_candidate(specialization_id, tuple(path))
+        for implementation_id in implementation_ids(candidate_id):
+            resolved = resolve_candidate(implementation_id, tuple(path))
             if resolved:
                 return resolved
         return None
@@ -281,12 +281,12 @@ def resolve_prompt_implementation(
 
     def collect(resource_id: str, trail: tuple[str, ...] = ()) -> None:
         if resource_id in trail:
-            raise ValueError(f"prompt specialization cycle: {' -> '.join((*trail, resource_id))}")
-        for specialization_id in specialization_ids(resource_id):
-            if specialization_id in reachable:
+            raise ValueError(f"prompt implementation cycle: {' -> '.join((*trail, resource_id))}")
+        for implementation_id in implementation_ids(resource_id):
+            if implementation_id in reachable:
                 continue
-            reachable.add(specialization_id)
-            collect(specialization_id, (*trail, resource_id))
+            reachable.add(implementation_id)
+            collect(implementation_id, (*trail, resource_id))
 
     collect(prompt_id)
     if requested == prompt_id:
@@ -299,14 +299,14 @@ def resolve_prompt_implementation(
             "implementation": inheritance["document"],
             "declaredImplementation": prompt,
             "implementationRecord": prompt_record,
-            "inheritanceResolution": inheritance,
-            "resolutionPath": [prompt_id],
+            "propertyInheritanceResolution": inheritance,
+            "implementationPath": [prompt_id],
             "inline": True,
         }
     if requested and requested not in reachable:
         raise ValueError(f"prompt implementation {requested} is not allowed by prompt {prompt_id}")
 
-    starts = [requested] if requested else specialization_ids(prompt_id)
+    starts = [requested] if requested else implementation_ids(prompt_id)
     for candidate_id in starts:
         if not candidate_id:
             continue
@@ -322,9 +322,9 @@ def resolve_prompt_implementation(
             "implementation": inheritance["document"],
             "declaredImplementation": implementation,
             "implementationRecord": implementation_record,
-            "inheritanceResolution": inheritance,
-            "selectedSpecialization": candidate_id,
-            "resolutionPath": resolution_path,
+            "propertyInheritanceResolution": inheritance,
+            "selectedImplementation": candidate_id,
+            "implementationPath": resolution_path,
             "inline": False,
         }
 
@@ -336,13 +336,13 @@ def resolve_prompt_implementation(
             "implementation": inheritance["document"],
             "declaredImplementation": prompt,
             "implementationRecord": prompt_record,
-            "inheritanceResolution": inheritance,
-            "resolutionPath": [prompt_id],
+            "propertyInheritanceResolution": inheritance,
+            "implementationPath": [prompt_id],
             "inline": True,
         }
     if requested:
-        raise ValueError(f"prompt specialization {requested} has no concrete descendant")
-    raise ValueError(f"prompt has no concrete specialization: {prompt_id}")
+        raise ValueError(f"prompt implementation {requested} has no concrete descendant")
+    raise ValueError(f"prompt has no concrete implementation: {prompt_id}")
 
 
 def prompt_hierarchy(
@@ -366,7 +366,7 @@ def prompt_hierarchy(
         "prompts": prompts,
         "promptImplementations": implementations,
         "promptProfiles": profiles,
-        "specializationsByResource": by_prompt,
+        "implementedByResource": by_prompt,
     }
 
 

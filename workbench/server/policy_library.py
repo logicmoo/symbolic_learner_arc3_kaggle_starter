@@ -41,14 +41,14 @@ def load_workspace_policy_records(workspace_root: Path, *, workspaces_root: Path
     return sorted(combined.values(), key=lambda record: str((record.get("document") or {}).get("label") or record["path"]).lower())
 
 def policy_hierarchy(records: list[dict[str, Any]]) -> dict[str, Any]:
-    roots: list[dict[str, Any]] = []; variants: list[dict[str, Any]] = []; specializations: dict[str, list[dict[str, Any]]] = {}
+    roots: list[dict[str, Any]] = []; variants: list[dict[str, Any]] = []; implemented_by: dict[str, list[dict[str, Any]]] = {}
     for record in records:
         document = record.get("document") or {}; parents = relationship_ids(document.get("implements"))
         if document.get("kind") == "model_policy_variant" and parents:
             variants.append(record)
-            for parent in parents: specializations.setdefault(parent, []).append(record)
+            for parent in parents: implemented_by.setdefault(parent, []).append(record)
         else: roots.append(record)
-    return {"roots": roots, "variants": variants, "specializationsByResource": specializations}
+    return {"roots": roots, "variants": variants, "implementedByResource": implemented_by}
 
 def _documents(records: list[dict[str, Any]], kind: str) -> list[dict[str, Any]]:
     return [record["document"] for record in records if (record.get("document") or {}).get("kind") == kind]
@@ -135,7 +135,7 @@ def effective_model_registry(
             "capabilities": _capability_map(document, catalog_documents),
             "limits": {**(document.get("limits") or {}), **{key: value for key, value in (resolved.get("defaults") or {}).items() if key in {"maxOutputTokens", "timeoutSeconds"}}},
             "pricing": document.get("pricing") or {},
-            "properties": {**(document.get("properties") or {}), "catalogKind": document.get("kind"), "inheritance": resolved.get("inheritance") or []},
+            "properties": {**(document.get("properties") or {}), "catalogKind": document.get("kind"), "implementationPath": resolved.get("implementationPath") or []},
             "providerMetadata": document.get("providerMetadata") or {},
         }
         merged = {**generated, **(override or {}), "policy": {**generated["policy"], **((override or {}).get("policy") or {})},

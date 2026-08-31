@@ -3,17 +3,20 @@
   (id text_plain)
   (label "Text Plain")
   (implements (
-    (natural_language (
-      (borrow ([]
-        *
-      ))
-      (exclude ([]))
-    ))
+    (natural_language ())
   ))
   (mimeTypes ([]
     text/plain
   ))
   (extensions ([]
     .txt
+  ))
+  (inheritsFrom (
+    (natural_language (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
 )

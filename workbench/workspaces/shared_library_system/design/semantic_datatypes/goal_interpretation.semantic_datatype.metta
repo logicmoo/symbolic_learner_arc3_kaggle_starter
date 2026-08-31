@@ -4,6 +4,9 @@
   (label "Goal Interpretation")
   (description "A concrete interpretation of a Goal and its success criteria.")
   (implements (
+    (information ())
+  ))
+  (inheritsFrom (
     (information (
       (borrow ([]
         *

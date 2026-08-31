@@ -2,12 +2,14 @@ import { useEffect, useRef, useState } from "react";
 
 export type TreeVisibilityRule = "show" | "hide" | "unspecified";
 export type TreeRepeatMode = "first" | "all" | "last";
+export type TreeRelationshipMode = "implementation" | "inheritance" | "dependency";
 export type TreeVisibilityRules = {
   search: TreeVisibilityRule;
   enabled: TreeVisibilityRule;
   disabled: TreeVisibilityRule;
   categories: TreeVisibilityRule;
   repeats: TreeRepeatMode;
+  relationshipMode: TreeRelationshipMode;
   roles: Record<string, TreeVisibilityRule>;
 };
 
@@ -17,6 +19,7 @@ export const DEFAULT_TREE_VISIBILITY_RULES: TreeVisibilityRules = {
   disabled: "unspecified",
   categories: "unspecified",
   repeats: "all",
+  relationshipMode: "implementation",
   roles: {},
 };
 const LEGACY_FILTERING_RULES: TreeVisibilityRules = { ...DEFAULT_TREE_VISIBILITY_RULES, search: "show" };
@@ -82,7 +85,13 @@ export function useArtifactTreeFilter(rules?: TreeVisibilityRules) {
         try {
           const parsed = JSON.parse(source);
           if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return source;
-          const { specializations: _specializations, preferredSpecialization: _preferredSpecialization, ...ownFields } = parsed as Record<string, unknown>;
+          const {
+            implementedBy: _implementedBy,
+            preferredImplementation: _preferredImplementation,
+            inheritedBy: _inheritedBy,
+            dependedOnBy: _dependedOnBy,
+            ...ownFields
+          } = parsed as Record<string, unknown>;
           return JSON.stringify(ownFields);
         } catch { return source; }
       };
@@ -98,9 +107,16 @@ export function useArtifactTreeFilter(rules?: TreeVisibilityRules) {
         const parentRaw = parentElement ? parsedSearchValue(parentElement) : {};
         const parentDocument = documentValue(parentRaw);
         const parentKind = typeof parentDocument.kind === "string" ? parentDocument.kind : null;
-        const declaredSpecializations = Array.isArray(raw.specializations) ? raw.specializations : Array.isArray(document.specializations) ? document.specializations : [];
+        const childField = activeRules.relationshipMode === "implementation"
+          ? "implementedBy"
+          : activeRules.relationshipMode === "inheritance"
+            ? "inheritedBy"
+            : "dependedOnBy";
+        const declaredChildren = document[childField] && typeof document[childField] === "object"
+          ? Object.keys(document[childField] as Record<string, unknown>)
+          : [];
         const roles = kind
-          ? [`${parentKind === kind ? "specialization" : "top"}-${kind}`, ...(declaredSpecializations.length === 0 ? [`unspecialized-${kind}`] : [])]
+          ? [`${parentKind === kind ? "child" : "top"}-${kind}`, ...(declaredChildren.length === 0 ? [`childless-${kind}`] : [])]
           : ["other"];
         const enabled = !Boolean(head?.querySelector(".resource-disabled"));
         const searchMatch = Boolean(query) && `${searchableData(element).toLocaleLowerCase()} ${searchableText(head)}`.includes(query);

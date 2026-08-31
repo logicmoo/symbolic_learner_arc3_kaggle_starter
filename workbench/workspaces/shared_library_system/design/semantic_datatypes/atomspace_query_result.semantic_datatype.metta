@@ -4,6 +4,9 @@
   (label "AtomSpace Query Result")
   (description "Bindings and matching Atoms returned by an AtomSpace query.")
   (implements (
+    (information ())
+  ))
+  (inheritsFrom (
     (information (
       (borrow ([]
         *

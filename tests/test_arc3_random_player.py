@@ -473,16 +473,16 @@ def test_random_player_workspace_is_discoverable_and_operation_backed(tmp_path: 
         "arc3_random.run_session",
     }
     assert expected_parents <= operations.keys()
-    assert operations["arc3_random.propose_action"]["preferredSpecialization"] == (
+    assert operations["arc3_random.propose_action"]["preferredImplementation"] == (
         "arc3_random.propose_action.python"
     )
-    assert operations["arc3_random.select_game"]["preferredSpecialization"] == (
+    assert operations["arc3_random.select_game"]["preferredImplementation"] == (
         "arc3_random.select_game.random"
     )
     assert implementations["arc3_random.select_game.random"]["delegatesTo"] == (
         "collection.random_list_element"
     )
-    assert relationship_ids(operations["arc3_random.select_game"]["specializations"]) == [
+    assert relationship_ids(operations["arc3_random.select_game"]["implementedBy"]) == [
         "arc3_random.select_game.random",
         "arc3_random.select_game.manual",
     ]

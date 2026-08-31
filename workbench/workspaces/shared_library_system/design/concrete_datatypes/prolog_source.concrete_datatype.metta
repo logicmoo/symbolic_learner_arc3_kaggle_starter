@@ -3,12 +3,7 @@
   (id prolog_source)
   (label "Prolog Source")
   (implements (
-    (prolog_fact_set (
-      (borrow ([]
-        *
-      ))
-      (exclude ([]))
-    ))
+    (prolog_fact_set ())
   ))
   (mimeTypes ([]
     text/x-prolog
@@ -16,5 +11,13 @@
   ))
   (extensions ([]
     .pl
+  ))
+  (inheritsFrom (
+    (prolog_fact_set (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
 )

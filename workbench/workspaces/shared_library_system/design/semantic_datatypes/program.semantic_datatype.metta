@@ -3,7 +3,14 @@
   (id program)
   (label Program)
   (description "Executable or interpretable instructions independent of their source language and storage representation.")
-  (specializations (
+  (implements (
+    (information ())
+  ))
+  (implementedBy (
+    (prolog_program ())
+    (turtle_program_set ())
+  ))
+  (inheritedBy (
     (prolog_program (
       (lend ([]
         *
@@ -13,8 +20,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (turtle_program_set (
@@ -26,12 +33,12 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
   ))
-  (implements (
+  (inheritsFrom (
     (information (
       (borrow ([]
         *

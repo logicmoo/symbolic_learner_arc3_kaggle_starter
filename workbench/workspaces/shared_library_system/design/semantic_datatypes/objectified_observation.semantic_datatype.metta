@@ -4,6 +4,9 @@
   (label "Objectified Observation")
   (description "An observation enriched with stable entities and synchronized representations.")
   (implements (
+    (observation ())
+  ))
+  (inheritsFrom (
     (observation (
       (borrow ([]
         *

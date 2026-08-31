@@ -11,7 +11,11 @@
     (domain vision)
     (shared true)
   ))
-  (specializations (
+  (implementedBy (
+    (understand_visual_world.explore_safely ())
+    (understand_visual_world.explain_dynamics ())
+  ))
+  (inheritedBy (
     (understand_visual_world.explore_safely (
       (lend ([]
         *
@@ -21,8 +25,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (understand_visual_world.explain_dynamics (
@@ -34,12 +38,12 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
   ))
-  (preferredSpecialization understand_visual_world.explain_dynamics)
+  (preferredImplementation understand_visual_world.explain_dynamics)
 )
 
 (
@@ -53,6 +57,9 @@
     (riskTolerance medium)
   ))
   (implements (
+    (understand_visual_world ())
+  ))
+  (inheritsFrom (
     (understand_visual_world (
       (borrow ([]
         *
@@ -73,6 +80,9 @@
     (riskTolerance low)
   ))
   (implements (
+    (understand_visual_world ())
+  ))
+  (inheritsFrom (
     (understand_visual_world (
       (borrow ([]
         *

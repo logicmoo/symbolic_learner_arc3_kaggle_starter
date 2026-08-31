@@ -4,12 +4,7 @@
   (label minimax/minimax-m3)
   (description "Discovered from SingularityNET LLM.")
   (implements (
-    (https.llm.c.singularitynet.io.v1 (
-      (borrow ([]
-        *
-      ))
-      (exclude ([]))
-    ))
+    (https.llm.c.singularitynet.io.v1 ())
   ))
   (model minimax/minimax-m3)
   (enabled true)
@@ -48,5 +43,16 @@
     (managed true)
     (backendId https.llm.c.singularitynet.io.v1)
     (remoteModelId minimax/minimax-m3)
+  ))
+  (dependsOn (
+    (https.llm.c.singularitynet.io.v1 ())
+  ))
+  (inheritsFrom (
+    (https.llm.c.singularitynet.io.v1 (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
 )

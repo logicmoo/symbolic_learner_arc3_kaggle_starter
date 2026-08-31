@@ -4,12 +4,7 @@
   (label asi1)
   (description "Discovered from SingularityNET LLM.")
   (implements (
-    (https.llm.c.singularitynet.io.v1 (
-      (borrow ([]
-        *
-      ))
-      (exclude ([]))
-    ))
+    (https.llm.c.singularitynet.io.v1 ())
   ))
   (model asi1)
   (enabled true)
@@ -48,5 +43,16 @@
     (managed true)
     (backendId https.llm.c.singularitynet.io.v1)
     (remoteModelId asi1)
+  ))
+  (dependsOn (
+    (https.llm.c.singularitynet.io.v1 ())
+  ))
+  (inheritsFrom (
+    (https.llm.c.singularitynet.io.v1 (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
 )

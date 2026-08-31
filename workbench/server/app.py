@@ -260,7 +260,7 @@ _HOP_BY_HOP_HEADERS = {
 # genuinely serves itself (its app shell, module graph, and assets). Relaying
 # is restricted to exactly this set: a request the API doesn't recognize AND
 # Vite wouldn't recognize as its own either (a stale/renamed/typo'd endpoint,
-# for example the old `/api/health`) must 404 here, not relay blindly --
+# for example a stale `/workbench-old/health`) must 404 here, not relay blindly --
 # Vite's OWN dev proxy (`API_FALLBACK` in vite.config.ts) sends anything IT
 # doesn't own back to the API, so an over-broad relay here would ping-pong
 # forever between the two ports for exactly the paths neither side owns.

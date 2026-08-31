@@ -4,6 +4,9 @@
   (label String)
   (description "A sequence of characters used when an operation requires a scalar string rather than general textual content.")
   (implements (
+    (information ())
+  ))
+  (inheritsFrom (
     (information (
       (borrow ([]
         *

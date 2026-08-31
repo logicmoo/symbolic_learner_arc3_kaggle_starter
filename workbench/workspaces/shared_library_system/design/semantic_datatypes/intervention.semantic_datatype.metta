@@ -3,7 +3,13 @@
   (id intervention)
   (label Intervention)
   (description "A semantic action applied to an external or simulated world.")
-  (specializations (
+  (implements (
+    (information ())
+  ))
+  (implementedBy (
+    (human_intervention ())
+  ))
+  (inheritedBy (
     (human_intervention (
       (lend ([]
         *
@@ -13,12 +19,12 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
   ))
-  (implements (
+  (inheritsFrom (
     (information (
       (borrow ([]
         *

@@ -14,35 +14,6 @@
     (bundle ArtifactBundle)
     (validation Evidence)
   ))
-  (specializations (
-    (symbolic.get_prolog_evidence.prompted_llm (
-      (lend ([]
-        *
-      ))
-      (withhold ([]
-        id
-        label
-        description
-        implements
-        specializations
-        preferredSpecialization
-      ))
-    ))
-    (symbolic.get_prolog_evidence.python (
-      (lend ([]
-        *
-      ))
-      (withhold ([]
-        id
-        label
-        description
-        implements
-        specializations
-        preferredSpecialization
-      ))
-    ))
-  ))
-  (preferredSpecialization symbolic.get_prolog_evidence.prompted_llm)
   (example_execute (
     (action symbolic.get_prolog_evidence)
     (arguments (
@@ -56,6 +27,39 @@
       ))
     ))
   ))
+  (implementedBy (
+    (symbolic.get_prolog_evidence.prompted_llm ())
+    (symbolic.get_prolog_evidence.python ())
+  ))
+  (inheritedBy (
+    (symbolic.get_prolog_evidence.prompted_llm (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        implementedBy
+        preferredImplementation
+      ))
+    ))
+    (symbolic.get_prolog_evidence.python (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        implementedBy
+        preferredImplementation
+      ))
+    ))
+  ))
+  (preferredImplementation symbolic.get_prolog_evidence.prompted_llm)
 )
 (
   (kind operation)
@@ -91,6 +95,9 @@
     (responseFormat json_object)
   ))
   (implements (
+    (symbolic.get_prolog_evidence ())
+  ))
+  (inheritsFrom (
     (symbolic.get_prolog_evidence (
       (borrow ([]
         *
@@ -123,6 +130,9 @@
     (callable collect_prolog_evidence)
   ))
   (implements (
+    (symbolic.get_prolog_evidence ())
+  ))
+  (inheritsFrom (
     (symbolic.get_prolog_evidence (
       (borrow ([]
         *

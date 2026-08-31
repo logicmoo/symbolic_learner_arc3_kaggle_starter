@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from resource_relationships import implements_resource, specializes_resource
+from resource_relationships import implemented_by_resource, implements_resource
 
 import pytest
 
@@ -53,7 +53,7 @@ def test_every_resource_family_uses_the_same_included_layers(tmp_path: Path) -> 
     write_json(base / "prompts" / "included.prompt.json", {"kind": "prompt", "id": "included_prompt"})
     write_json(base / "goals" / "included.goal.json", {"kind": "goal", "id": "included_goal"})
     write_json(base / "policies" / "included.vendor_policy.json", {"kind": "vendor_policy", "id": "included_policy"})
-    write_json(base / "models" / "included.backend.json", {"kind": "backend", "id": "included_backend", "provider": "test", "specializations": specializes_resource("included_model")})
+    write_json(base / "models" / "included.backend.json", {"kind": "backend", "id": "included_backend", "provider": "test", "implementedBy": implemented_by_resource("included_model")})
     write_json(base / "models" / "included.model.json", {"kind": "model", "id": "included_model", "implements": implements_resource("included_backend")})
     write_json(base / "workflows" / "included.workflow.json", {"kind": "workflow", "id": "included_workflow", "steps": []})
 

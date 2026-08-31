@@ -251,7 +251,7 @@
     }
 
     async function loadConfig() {
-      const response = await fetch('/api/config');
+      const response = await fetch('/workbench/config');
       const config = await response.json();
       gameInput.value = config.default_game || 'ls20';
       tokenLabel.hidden = !config.token_required;

@@ -39,6 +39,9 @@
     (timeoutSeconds 30)
   ))
   (implements (
+    (echo_into_titlecased ())
+  ))
+  (inheritsFrom (
     (echo_into_titlecased (
       (borrow ([]
         *

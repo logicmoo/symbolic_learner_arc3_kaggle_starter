@@ -42,7 +42,10 @@
       ))
     ))
   ))
-  (specializations (
+  (implementedBy (
+    (sample.request_number.workbench ())
+  ))
+  (inheritedBy (
     (sample.request_number.workbench (
       (lend ([]
         *
@@ -52,10 +55,10 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
   ))
-  (preferredSpecialization sample.request_number.workbench)
+  (preferredImplementation sample.request_number.workbench)
 )

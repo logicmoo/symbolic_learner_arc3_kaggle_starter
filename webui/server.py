@@ -172,7 +172,7 @@ def create_app(
     async def index() -> FileResponse:
         return FileResponse(STATIC_ROOT / "index.html")
 
-    @app.get("/api/config")
+    @app.get("/workbench/config")
     async def config() -> JSONResponse:
         return JSONResponse(
             {

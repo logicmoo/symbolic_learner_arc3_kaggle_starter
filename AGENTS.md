@@ -253,11 +253,26 @@ Reuse existing editors rather than duplicating them:
 
 
 
-Semantic specifications and concrete specializations are separate resources, but use the same family kind and directory. A resource is an implicit specialization when its `implements` policy map names another resource. Those implemented resources are its conceptual inheritance parents. Each child-side entry declares `borrow`/`exclude`; the matching parent-side `specializations` entry declares `lend`/`withhold`. Effective inheritance is the intersection of both permissions, minus both exclusions, followed by local overrides. Parents withhold `id` and relationship fields by default. Do not persist generic `parents` or `children` fields for this relationship.
+Resource relationships use three independent bidirectional map pairs:
 
-Do not equate specialization with concreteness. Abstractness means how much
+- `implements` / `implementedBy` represents implementation, classification,
+  datatype conformance, or abstract-to-concrete relationships. These entries
+  are policy-free.
+- `inheritsFrom` / `inheritedBy` controls ordinary property inheritance. Each
+  child-side entry declares `borrow`/`exclude`; each parent-side entry declares
+  `lend`/`withhold`. Effective inheritance is the intersection of both
+  permissions, minus exclusions, followed by local overrides.
+- `dependsOn` / `dependedOnBy` controls effective enabled state and optional
+  availability propagation.
+
+Never infer one graph from another at runtime. `preferredImplementation`
+selects one key from `implementedBy` as the default child; it is selection
+metadata, not inheritance or availability. Do not persist generic `parents`,
+`children`, or `inherits` fields for these relationships.
+
+Do not equate implementation depth with concreteness. Abstractness means how much
 implementation is still missing for the resource to perform its job. A
-specialization may remain abstract and have deeper specializations; only a fully
+implementation may remain abstract and have deeper implementations; only a fully
 resolved resource with the required behavior and execution bindings is concrete.
 The UI derives abstract/partial/concrete/runnable status from the current draft, resolved
 inheritance, and family-specific requirements. Do not add a persisted

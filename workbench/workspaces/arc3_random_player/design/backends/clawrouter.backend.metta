@@ -6,21 +6,6 @@
   (official true)
   (description "Local-first ClawRouter OpenAI-compatible gateway. run_workbench.bat starts its keyless proxy on port 3456; the default blockrun/free route requires no wallet balance.")
   (enabled false)
-  (specializations (
-    (clawrouter-free-router (
-      (lend ([]
-        *
-      ))
-      (withhold ([]
-        id
-        label
-        description
-        implements
-        specializations
-        preferredSpecialization
-      ))
-    ))
-  ))
   (capabilities ([]
     llm.complete
     llm.reasoning
@@ -40,5 +25,26 @@
     systems/systems-llm
     todo-needs-categorization
     vision
+  ))
+  (dependedOnBy (
+    (clawrouter-free-router ())
+  ))
+  (implementedBy (
+    (clawrouter-free-router ())
+  ))
+  (inheritedBy (
+    (clawrouter-free-router (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        implementedBy
+        preferredImplementation
+      ))
+    ))
   ))
 )

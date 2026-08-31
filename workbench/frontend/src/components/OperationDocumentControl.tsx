@@ -1,5 +1,5 @@
 import { OperationPlayground } from "./OperationPlayground";
-import { relationshipIds, specializationInheritanceMap, specializesResource } from "./resourceRelationships";
+import { implementedByResource, relationshipIds } from "./resourceRelationships";
 import { jsonValueToMetta } from "../lib/mettaResourceCodec";
 
 export type ModelStrategy = "single" | "parallel" | "compare" | "fallback";
@@ -8,6 +8,8 @@ export type OperationDef = {
   kind: "operation";
   id: string;
   implements?: Record<string, unknown>;
+  inheritsFrom?: Record<string, unknown>;
+  dependsOn?: Record<string, unknown>;
   label?: string;
   description?: string;
   categories?: string[];
@@ -17,14 +19,16 @@ export type OperationDef = {
   implementation?: string;
   inputs?: Record<string, string>;
   outputs?: Record<string, string>;
-  specializations?: Record<string, unknown>;
-  preferredSpecialization?: string;
+  implementedBy?: Record<string, unknown>;
+  preferredImplementation?: string;
 };
 
 export type OperationImplementationDef = {
   kind: "operation";
   id: string;
   implements: Record<string, unknown>;
+  inheritsFrom?: Record<string, unknown>;
+  dependsOn?: Record<string, unknown>;
   label?: string;
   description?: string;
   categories?: string[];
@@ -79,7 +83,7 @@ export type OperationSuperControlRequest = {
   onChange: (value: string) => void;
   onSave: () => void;
   onToggleEnabled?: () => void;
-  onCreateSpecialization?: () => void;
+  onCreateImplementation?: () => void;
 };
 
 export function parseOperationResource(source: string): OperationResource | null {
@@ -125,11 +129,10 @@ export function OperationDocumentControl({ request }: { request: OperationSuperC
   };
   const setDefaultImplementation = (id: string) => {
     if (!abstract) return;
-    const declared = specializationInheritanceMap(abstract.specializations);
-    const specializations = Object.keys(declared).length
-      ? declared
-      : Object.assign({}, ...request.variants.map(variant => specializesResource(variant.id)));
-    patchAbstract({ preferredSpecialization: id || undefined, specializations });
+    const implementedBy = relationshipIds(abstract.implementedBy).length
+      ? abstract.implementedBy
+      : Object.assign({}, ...request.variants.map(variant => implementedByResource(variant.id)));
+    patchAbstract({ preferredImplementation: id || undefined, implementedBy });
   };
   const patchImplementation = (patch: Partial<OperationImplementationDef>) => {
     if (selectedImplementation) request.onChange(JSON.stringify({ ...selectedImplementation, ...patch }, null, 2));
@@ -189,7 +192,7 @@ export function OperationDocumentControl({ request }: { request: OperationSuperC
         <div>
           <span>DEFAULT IMPLEMENTATION</span>
           <select
-            value={directRoute ? abstract.id : abstract.preferredSpecialization || ""}
+            value={directRoute ? abstract.id : abstract.preferredImplementation || ""}
             disabled={Boolean(directRoute)}
             onChange={event => setDefaultImplementation(event.target.value)}
           >
@@ -226,6 +229,7 @@ export function OperationDocumentControl({ request }: { request: OperationSuperC
     {selectedImplementation && <div className="implementation-summary">
       <div><span>ROUTE</span><b>{selectedImplementation.implementation}</b></div>
       <div><span>IMPLEMENTS</span><b>{relationshipIds(selectedImplementation.implements).join(", ")}</b></div>
+      <div><span>INHERITS FROM</span><b>{relationshipIds(selectedImplementation.inheritsFrom).join(", ") || "none"}</b></div>
       {selectedImplementation.python && <div className="wide">
         <span>PYTHON SOURCE</span>
         <code>

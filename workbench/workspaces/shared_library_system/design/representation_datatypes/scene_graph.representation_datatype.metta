@@ -3,14 +3,12 @@
   (id scene_graph)
   (label "Scene Graph")
   (implements (
-    (image (
-      (borrow ([]
-        *
-      ))
-      (exclude ([]))
-    ))
+    (image ())
   ))
-  (specializations (
+  (implementedBy (
+    (json ())
+  ))
+  (inheritedBy (
     (json (
       (lend ([]
         *
@@ -20,10 +18,18 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
   ))
-  (preferredSpecialization json)
+  (preferredImplementation json)
+  (inheritsFrom (
+    (image (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
+  ))
 )

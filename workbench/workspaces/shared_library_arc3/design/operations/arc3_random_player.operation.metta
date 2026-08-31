@@ -12,7 +12,10 @@
   (outputs (
     (games Array)
   ))
-  (specializations (
+  (implementedBy (
+    (arc3_random.discover_games.python ())
+  ))
+  (inheritedBy (
     (arc3_random.discover_games.python (
       (lend ([]
         *
@@ -22,12 +25,12 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
   ))
-  (preferredSpecialization arc3_random.discover_games.python)
+  (preferredImplementation arc3_random.discover_games.python)
 )
 (
   (kind operation)
@@ -52,6 +55,9 @@
     (outputBinding games)
   ))
   (implements (
+    (arc3_random.discover_games ())
+  ))
+  (inheritsFrom (
     (arc3_random.discover_games (
       (borrow ([]
         *
@@ -79,7 +85,10 @@
   (outputs (
     (gallery Object)
   ))
-  (specializations (
+  (implementedBy (
+    (arc3_random.curate_viewable_gallery.python ())
+  ))
+  (inheritedBy (
     (arc3_random.curate_viewable_gallery.python (
       (lend ([]
         *
@@ -89,12 +98,12 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
   ))
-  (preferredSpecialization arc3_random.curate_viewable_gallery.python)
+  (preferredImplementation arc3_random.curate_viewable_gallery.python)
 )
 (
   (kind operation)
@@ -125,6 +134,9 @@
     (outputBinding gallery)
   ))
   (implements (
+    (arc3_random.curate_viewable_gallery ())
+  ))
+  (inheritsFrom (
     (arc3_random.curate_viewable_gallery (
       (borrow ([]
         *
@@ -181,7 +193,11 @@
   (outputs (
     (game Object)
   ))
-  (specializations (
+  (implementedBy (
+    (arc3_random.select_game.random ())
+    (arc3_random.select_game.manual ())
+  ))
+  (inheritedBy (
     (arc3_random.select_game.random (
       (lend ([]
         *
@@ -191,8 +207,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (arc3_random.select_game.manual (
@@ -204,12 +220,12 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
   ))
-  (preferredSpecialization arc3_random.select_game.random)
+  (preferredImplementation arc3_random.select_game.random)
 )
 (
   (kind operation)
@@ -239,6 +255,9 @@
     (outputBinding game)
   ))
   (implements (
+    (arc3_random.select_game ())
+  ))
+  (inheritsFrom (
     (arc3_random.select_game (
       (borrow ([]
         *
@@ -272,6 +291,9 @@
     ))
   ))
   (implements (
+    (arc3_random.select_game ())
+  ))
+  (inheritsFrom (
     (arc3_random.select_game (
       (borrow ([]
         *
@@ -299,7 +321,10 @@
     (controls Array)
     (initial_screenshot Image)
   ))
-  (specializations (
+  (implementedBy (
+    (arc3_random.load_game_metta_data.python ())
+  ))
+  (inheritedBy (
     (arc3_random.load_game_metta_data.python (
       (lend ([]
         *
@@ -309,12 +334,12 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
   ))
-  (preferredSpecialization arc3_random.load_game_metta_data.python)
+  (preferredImplementation arc3_random.load_game_metta_data.python)
 )
 (
   (kind operation)
@@ -341,6 +366,9 @@
     (callable load_game_metta_data)
   ))
   (implements (
+    (arc3_random.load_game_metta_data ())
+  ))
+  (inheritsFrom (
     (arc3_random.load_game_metta_data (
       (borrow ([]
         *
@@ -367,7 +395,10 @@
     (result Object)
     (initial_screenshot Image)
   ))
-  (specializations (
+  (implementedBy (
+    (arc3_random.initialize_selected_game.python ())
+  ))
+  (inheritedBy (
     (arc3_random.initialize_selected_game.python (
       (lend ([]
         *
@@ -377,12 +408,12 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
   ))
-  (preferredSpecialization arc3_random.initialize_selected_game.python)
+  (preferredImplementation arc3_random.initialize_selected_game.python)
 )
 (
   (kind operation)
@@ -408,6 +439,9 @@
     (callable initialize_selected_game)
   ))
   (implements (
+    (arc3_random.initialize_selected_game ())
+  ))
+  (inheritsFrom (
     (arc3_random.initialize_selected_game (
       (borrow ([]
         *
@@ -435,7 +469,10 @@
     (result Object)
     (reset_screenshot Image)
   ))
-  (specializations (
+  (implementedBy (
+    (arc3_random.reset_selected_game.python ())
+  ))
+  (inheritedBy (
     (arc3_random.reset_selected_game.python (
       (lend ([]
         *
@@ -445,12 +482,12 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
   ))
-  (preferredSpecialization arc3_random.reset_selected_game.python)
+  (preferredImplementation arc3_random.reset_selected_game.python)
 )
 (
   (kind operation)
@@ -490,6 +527,9 @@
     ))
   ))
   (implements (
+    (arc3_random.reset_selected_game ())
+  ))
+  (inheritsFrom (
     (arc3_random.reset_selected_game (
       (borrow ([]
         *
@@ -525,7 +565,10 @@
     (replay_gallery Object)
     (animated_replay Image)
   ))
-  (specializations (
+  (implementedBy (
+    (arc3_random.pick_random_move_and_execute.python ())
+  ))
+  (inheritedBy (
     (arc3_random.pick_random_move_and_execute.python (
       (lend ([]
         *
@@ -535,12 +578,12 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
   ))
-  (preferredSpecialization arc3_random.pick_random_move_and_execute.python)
+  (preferredImplementation arc3_random.pick_random_move_and_execute.python)
 )
 (
   (kind operation)
@@ -583,6 +626,9 @@
     ))
   ))
   (implements (
+    (arc3_random.pick_random_move_and_execute ())
+  ))
+  (inheritsFrom (
     (arc3_random.pick_random_move_and_execute (
       (borrow ([]
         *
@@ -610,7 +656,10 @@
   (outputs (
     (observation Object)
   ))
-  (specializations (
+  (implementedBy (
+    (arc3_random.capture_observation.python ())
+  ))
+  (inheritedBy (
     (arc3_random.capture_observation.python (
       (lend ([]
         *
@@ -620,12 +669,12 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
   ))
-  (preferredSpecialization arc3_random.capture_observation.python)
+  (preferredImplementation arc3_random.capture_observation.python)
 )
 (
   (kind operation)
@@ -655,6 +704,9 @@
     (outputBinding observation)
   ))
   (implements (
+    (arc3_random.capture_observation ())
+  ))
+  (inheritsFrom (
     (arc3_random.capture_observation (
       (borrow ([]
         *
@@ -684,7 +736,11 @@
   (outputs (
     (proposal Object)
   ))
-  (specializations (
+  (implementedBy (
+    (arc3_random.propose_action.python ())
+    (arc3_random.propose_action.llm ())
+  ))
+  (inheritedBy (
     (arc3_random.propose_action.python (
       (lend ([]
         *
@@ -694,8 +750,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (arc3_random.propose_action.llm (
@@ -707,12 +763,12 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
   ))
-  (preferredSpecialization arc3_random.propose_action.python)
+  (preferredImplementation arc3_random.propose_action.python)
 )
 (
   (kind operation)
@@ -744,6 +800,9 @@
     (outputBinding proposal)
   ))
   (implements (
+    (arc3_random.propose_action ())
+  ))
+  (inheritsFrom (
     (arc3_random.propose_action (
       (borrow ([]
         *
@@ -791,6 +850,9 @@
     (outputBinding proposal)
   ))
   (implements (
+    (arc3_random.propose_action ())
+  ))
+  (inheritsFrom (
     (arc3_random.propose_action (
       (borrow ([]
         *
@@ -816,7 +878,11 @@
   (outputs (
     (assessment Object)
   ))
-  (specializations (
+  (implementedBy (
+    (arc3_random.assess_transition.python ())
+    (arc3_random.assess_transition.llm ())
+  ))
+  (inheritedBy (
     (arc3_random.assess_transition.python (
       (lend ([]
         *
@@ -826,8 +892,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (arc3_random.assess_transition.llm (
@@ -839,12 +905,12 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
   ))
-  (preferredSpecialization arc3_random.assess_transition.python)
+  (preferredImplementation arc3_random.assess_transition.python)
 )
 (
   (kind operation)
@@ -863,7 +929,10 @@
   (outputs (
     (result Object)
   ))
-  (specializations (
+  (implementedBy (
+    (arc3_random.execute_action.python ())
+  ))
+  (inheritedBy (
     (arc3_random.execute_action.python (
       (lend ([]
         *
@@ -873,12 +942,12 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
   ))
-  (preferredSpecialization arc3_random.execute_action.python)
+  (preferredImplementation arc3_random.execute_action.python)
 )
 (
   (kind operation)
@@ -906,6 +975,9 @@
     (outputBinding result)
   ))
   (implements (
+    (arc3_random.execute_action ())
+  ))
+  (inheritsFrom (
     (arc3_random.execute_action (
       (borrow ([]
         *
@@ -940,6 +1012,9 @@
     (outputBinding assessment)
   ))
   (implements (
+    (arc3_random.assess_transition ())
+  ))
+  (inheritsFrom (
     (arc3_random.assess_transition (
       (borrow ([]
         *
@@ -983,6 +1058,9 @@
     (outputBinding assessment)
   ))
   (implements (
+    (arc3_random.assess_transition ())
+  ))
+  (inheritsFrom (
     (arc3_random.assess_transition (
       (borrow ([]
         *
@@ -1010,7 +1088,10 @@
   (outputs (
     (memory Object)
   ))
-  (specializations (
+  (implementedBy (
+    (arc3_random.update_memory.python ())
+  ))
+  (inheritedBy (
     (arc3_random.update_memory.python (
       (lend ([]
         *
@@ -1020,12 +1101,12 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
   ))
-  (preferredSpecialization arc3_random.update_memory.python)
+  (preferredImplementation arc3_random.update_memory.python)
 )
 (
   (kind operation)
@@ -1055,6 +1136,9 @@
     (outputBinding memory)
   ))
   (implements (
+    (arc3_random.update_memory ())
+  ))
+  (inheritsFrom (
     (arc3_random.update_memory (
       (borrow ([]
         *
@@ -1077,7 +1161,10 @@
   (outputs (
     (rotate Boolean)
   ))
-  (specializations (
+  (implementedBy (
+    (arc3_random.seen_enough.human ())
+  ))
+  (inheritedBy (
     (arc3_random.seen_enough.human (
       (lend ([]
         *
@@ -1087,12 +1174,12 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
   ))
-  (preferredSpecialization arc3_random.seen_enough.human)
+  (preferredImplementation arc3_random.seen_enough.human)
 )
 (
   (kind operation)
@@ -1116,6 +1203,9 @@
     ))
   ))
   (implements (
+    (arc3_random.seen_enough ())
+  ))
+  (inheritsFrom (
     (arc3_random.seen_enough (
       (borrow ([]
         *
@@ -1142,7 +1232,10 @@
   (outputs (
     (rotate Boolean)
   ))
-  (specializations (
+  (implementedBy (
+    (arc3_random.should_rotate.python ())
+  ))
+  (inheritedBy (
     (arc3_random.should_rotate.python (
       (lend ([]
         *
@@ -1152,12 +1245,12 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
   ))
-  (preferredSpecialization arc3_random.should_rotate.python)
+  (preferredImplementation arc3_random.should_rotate.python)
 )
 (
   (kind operation)
@@ -1186,6 +1279,9 @@
     (outputBinding rotate)
   ))
   (implements (
+    (arc3_random.should_rotate ())
+  ))
+  (inheritsFrom (
     (arc3_random.should_rotate (
       (borrow ([]
         *
@@ -1215,7 +1311,10 @@
   (outputs (
     (sessions Array)
   ))
-  (specializations (
+  (implementedBy (
+    (arc3_random.run_session.python ())
+  ))
+  (inheritedBy (
     (arc3_random.run_session.python (
       (lend ([]
         *
@@ -1225,12 +1324,12 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
   ))
-  (preferredSpecialization arc3_random.run_session.python)
+  (preferredImplementation arc3_random.run_session.python)
 )
 (
   (kind operation)
@@ -1290,6 +1389,9 @@
     (outputBinding sessions)
   ))
   (implements (
+    (arc3_random.run_session ())
+  ))
+  (inheritsFrom (
     (arc3_random.run_session (
       (borrow ([]
         *

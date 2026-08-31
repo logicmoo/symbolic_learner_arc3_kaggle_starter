@@ -4,12 +4,7 @@
   (label mistralai/mistral-nemo)
   (description "Discovered from SingularityNET LLM.")
   (implements (
-    (https.llm.c.singularitynet.io.v1 (
-      (borrow ([]
-        *
-      ))
-      (exclude ([]))
-    ))
+    (https.llm.c.singularitynet.io.v1 ())
   ))
   (model mistralai/mistral-nemo)
   (enabled false)
@@ -51,5 +46,13 @@
   ))
   (categories ([]
     filtered/vision
+  ))
+  (inheritsFrom (
+    (https.llm.c.singularitynet.io.v1 (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
 )

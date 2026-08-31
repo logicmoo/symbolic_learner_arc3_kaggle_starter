@@ -24,7 +24,14 @@
       ))
     ))
   ))
-  (specializations (
+  (implements (
+    (evidence ())
+  ))
+  (implementedBy (
+    (prolog_fact_set ())
+    (symbolic_fact_set ())
+  ))
+  (inheritedBy (
     (prolog_fact_set (
       (lend ([]
         *
@@ -34,8 +41,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (symbolic_fact_set (
@@ -47,12 +54,12 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
   ))
-  (implements (
+  (inheritsFrom (
     (evidence (
       (borrow ([]
         *

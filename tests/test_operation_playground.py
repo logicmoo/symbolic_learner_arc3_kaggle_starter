@@ -14,7 +14,12 @@ from operation_api import invoke_operation, read_operation_debug_log
 from operation_library import DEFAULT_WORKSPACES_ROOT, load_shared_operation_documents, resolve_operation_implementation
 from operation_resolution import _prompt_composition_prefix, materialize_workflow_step
 from prompt_library import prompt_hierarchy, resolve_prompt_implementation, resolve_prompt_profile
-from resource_relationships import implements_resource, specializes_resource
+from resource_relationships import (
+    implemented_by_resource,
+    implements_resource,
+    inherited_by_resource,
+    inherits_from_resource,
+)
 from workflow_providers import _llm_complete, _llm_response_text, _load_python_module, _python_callable
 
 
@@ -597,7 +602,8 @@ def test_bidirectional_implementation_link_resolves(tmp_path: Path) -> None:
     directory.mkdir(parents=True)
     (directory / "echo.operation.json").write_text(json.dumps({
         "kind": "operation", "id": "shared.echo", "inputs": {"value": "Any"}, "outputs": {"value": "Any"},
-        "specializations": specializes_resource("shared.echo.prolog"),
+        "implementedBy": implemented_by_resource("shared.echo.prolog"),
+        "inheritedBy": inherited_by_resource("shared.echo.prolog"),
     }), encoding="utf-8")
     implementations = tmp_path / "shared_library_system" / "design" / "operation_implementations"
     implementations.mkdir(parents=True)
@@ -605,6 +611,7 @@ def test_bidirectional_implementation_link_resolves(tmp_path: Path) -> None:
         "kind": "operation_implementation",
         "id": "shared.echo.prolog",
         "implements": implements_resource("shared.echo"),
+        "inheritsFrom": inherits_from_resource("shared.echo"),
         "implementation": "prolog.source",
     }), encoding="utf-8")
 
@@ -615,28 +622,32 @@ def test_bidirectional_implementation_link_resolves(tmp_path: Path) -> None:
     assert resolved["implementation"]["id"] == "shared.echo.prolog"
 
 
-def test_partial_specializations_resolve_through_preferred_runnable_descendant(tmp_path: Path) -> None:
+def test_partial_implementations_resolve_through_preferred_runnable_descendant(tmp_path: Path) -> None:
     directory = tmp_path / "shared_library_system" / "design" / "operations"
     directory.mkdir(parents=True)
     (directory / "job.operation.json").write_text(json.dumps({
         "kind": "operation",
         "id": "job",
         "inputs": {"value": "Text"},
-        "specializations": specializes_resource("job.partial"),
-        "preferredSpecialization": "job.partial",
+        "implementedBy": implemented_by_resource("job.partial"),
+        "inheritedBy": inherited_by_resource("job.partial"),
+        "preferredImplementation": "job.partial",
     }), encoding="utf-8")
     (directory / "job.partial.operation.json").write_text(json.dumps({
         "kind": "operation",
         "id": "job.partial",
         "implements": implements_resource("job"),
-        "specializations": specializes_resource("job.python"),
-        "preferredSpecialization": "job.python",
+        "inheritsFrom": inherits_from_resource("job"),
+        "implementedBy": implemented_by_resource("job.python"),
+        "inheritedBy": inherited_by_resource("job.python"),
+        "preferredImplementation": "job.python",
         "description": "Partially implements the job but has no route.",
     }), encoding="utf-8")
     (directory / "job.python.operation.json").write_text(json.dumps({
         "kind": "operation",
         "id": "job.python",
         "implements": implements_resource("job.partial"),
+        "inheritsFrom": inherits_from_resource("job.partial"),
         "implementation": "python.callable",
     }), encoding="utf-8")
 
@@ -647,34 +658,38 @@ def test_partial_specializations_resolve_through_preferred_runnable_descendant(t
     )
 
     assert resolved["implementation"]["id"] == "job.python"
-    assert resolved["selectedSpecialization"] == "job.partial"
-    assert resolved["resolutionPath"] == ["job", "job.partial", "job.python"]
+    assert resolved["selectedImplementation"] == "job.partial"
+    assert resolved["implementationPath"] == ["job", "job.partial", "job.python"]
     assert resolved["implementation"]["inputs"] == {"value": "Text"}
     assert resolved["implementation"]["id"] == "job.python"
-    assert "job.partial:inputs.value" in resolved["inheritanceResolution"]["borrowed"]
+    assert "job.partial:inputs.value" in resolved["propertyInheritanceResolution"]["borrowed"]
 
 
-def test_partial_prompt_specializations_resolve_to_concrete_text(tmp_path: Path) -> None:
+def test_partial_prompt_implementations_resolve_to_concrete_text(tmp_path: Path) -> None:
     directory = tmp_path / "shared_library_system" / "design" / "prompts"
     directory.mkdir(parents=True)
     (directory / "request.prompt.json").write_text(json.dumps({
         "kind": "prompt",
         "id": "request",
         "inputs": {"value": "Text"},
-        "specializations": specializes_resource("request.partial"),
-        "preferredSpecialization": "request.partial",
+        "implementedBy": implemented_by_resource("request.partial"),
+        "inheritedBy": inherited_by_resource("request.partial"),
+        "preferredImplementation": "request.partial",
     }), encoding="utf-8")
     (directory / "request.partial.prompt.json").write_text(json.dumps({
         "kind": "prompt",
         "id": "request.partial",
         "implements": implements_resource("request"),
-        "specializations": specializes_resource("request.default"),
-        "preferredSpecialization": "request.default",
+        "inheritsFrom": inherits_from_resource("request"),
+        "implementedBy": implemented_by_resource("request.default"),
+        "inheritedBy": inherited_by_resource("request.default"),
+        "preferredImplementation": "request.default",
     }), encoding="utf-8")
     (directory / "request.default.prompt.json").write_text(json.dumps({
         "kind": "prompt",
         "id": "request.default",
         "implements": implements_resource("request.partial"),
+        "inheritsFrom": inherits_from_resource("request.partial"),
         "text": ["Return {{value}}."],
     }), encoding="utf-8")
 
@@ -686,7 +701,7 @@ def test_partial_prompt_specializations_resolve_to_concrete_text(tmp_path: Path)
 
     assert resolved["implementation"]["id"] == "request.default"
     assert resolved["implementation"]["inputs"] == {"value": "Text"}
-    assert resolved["resolutionPath"] == ["request", "request.partial", "request.default"]
+    assert resolved["implementationPath"] == ["request", "request.partial", "request.default"]
 
 
 def test_operation_playground_preserves_provider_rate_limit(monkeypatch: pytest.MonkeyPatch) -> None:

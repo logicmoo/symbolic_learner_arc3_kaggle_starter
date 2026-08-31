@@ -4,6 +4,9 @@
   (label "Goal Satisfaction")
   (description "A structured determination of which Goal criteria are satisfied, unsatisfied, or unknown.")
   (implements (
+    (information ())
+  ))
+  (inheritsFrom (
     (information (
       (borrow ([]
         *

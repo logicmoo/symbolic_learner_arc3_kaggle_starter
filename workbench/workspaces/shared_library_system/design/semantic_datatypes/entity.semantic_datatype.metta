@@ -3,7 +3,14 @@
   (id entity)
   (label Entity)
   (description "A stable thing or candidate object represented independently of any concrete encoding.")
-  (specializations (
+  (implements (
+    (information ())
+  ))
+  (implementedBy (
+    (image_region ())
+    (object_properties ())
+  ))
+  (inheritedBy (
     (image_region (
       (lend ([]
         *
@@ -13,8 +20,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (object_properties (
@@ -26,12 +33,12 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
   ))
-  (implements (
+  (inheritsFrom (
     (information (
       (borrow ([]
         *

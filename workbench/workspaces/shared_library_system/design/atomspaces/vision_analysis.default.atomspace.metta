@@ -4,12 +4,7 @@
   (label "Default Vision Analysis AtomSpaces")
   (description "Binds the standard observation, model, rule, and goal AtomSpaces for a reusable visual-analysis loop.")
   (implements (
-    (vision_analysis (
-      (borrow ([]
-        *
-      ))
-      (exclude ([]))
-    ))
+    (vision_analysis ())
   ))
   (atomspaces (
     (current_scene atomspace:current_scene)
@@ -19,4 +14,12 @@
   ))
   (environment ())
   (parameters ())
+  (inheritsFrom (
+    (vision_analysis (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
+  ))
 )

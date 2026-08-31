@@ -4,12 +4,7 @@
   (label nousresearch/hermes-4-70b)
   (description "Discovered from SingularityNET LLM.")
   (implements (
-    (https.llm.c.singularitynet.io.v1 (
-      (borrow ([]
-        *
-      ))
-      (exclude ([]))
-    ))
+    (https.llm.c.singularitynet.io.v1 ())
   ))
   (model nousresearch/hermes-4-70b)
   (enabled true)
@@ -48,5 +43,16 @@
     (managed true)
     (backendId https.llm.c.singularitynet.io.v1)
     (remoteModelId nousresearch/hermes-4-70b)
+  ))
+  (dependsOn (
+    (https.llm.c.singularitynet.io.v1 ())
+  ))
+  (inheritsFrom (
+    (https.llm.c.singularitynet.io.v1 (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
 )

@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useCollapsingHeaderWheel } from "../lib/collapsingHeaderWheel";
 import { ArtifactTreeCommandContext, type ArtifactTreeCommand } from "./ArtifactTreeBranch";
-import { RepeatSwitch, TreeViewControls } from "./TreeViewControls";
-import { DEFAULT_TREE_VISIBILITY_RULES, type TreeVisibilityRules, useArtifactTreeFilter } from "./useArtifactTreeFilter";
+import { TreeViewControls } from "./TreeViewControls";
+import { DEFAULT_TREE_VISIBILITY_RULES, type TreeRelationshipMode, type TreeVisibilityRules, useArtifactTreeFilter } from "./useArtifactTreeFilter";
 import { CategorizedArtifactNodes } from "./CategorizedArtifactTree";
 import { TreePaneResizer } from "./TreePaneResizer";
 import { ResourceSourceEditor } from "./ResourceSourceEditor";
@@ -55,7 +55,7 @@ export type UniversalArtifactPageProps = {
   onDismissError?: () => void;
 
   /** Rich specification/variant navigator on the left. */
-  leftPane: ReactNode;
+  leftPane: ReactNode | ((relationshipMode: TreeRelationshipMode) => ReactNode);
 
   /** Persistent multi-document tabs. */
   tabs: UniversalArtifactTab[];
@@ -126,7 +126,7 @@ export type StandardSuperControlRequest = {
   initialControlId?: StandardControlId;
   onChange: (value: string) => void;
   onSave: () => void;
-  onCreateSpecialization?: () => void;
+  onCreateImplementation?: () => void;
   saveLabel?: string;
   actions?: StandardSuperControlAction[];
 };
@@ -435,7 +435,7 @@ function EmbeddedSuperControl({
           sourceScope={control.sourceScope}
           onChange={control.onChange}
           resourceHref={resourceHref}
-          onCreateSpecialization={control.onCreateSpecialization}
+          onCreateImplementation={control.onCreateImplementation}
         />
         <section className="super-control-inheritance-section">
           <div className="llm-subhead">
@@ -643,6 +643,11 @@ export function SuperControl(props: SuperControlProps) {
   const [categoryCommand, setCategoryCommand] = useState<ArtifactTreeCommand>(null);
   const [visibilityRules, setVisibilityRules] = useState<TreeVisibilityRules>(DEFAULT_TREE_VISIBILITY_RULES);
   const { treeRef, treeFilter, setTreeFilter, showParents, setShowParents, treeKinds } = useArtifactTreeFilter(visibilityRules);
+  const treeRelationshipTitle = visibilityRules.relationshipMode === "implementation"
+    ? "IMPLEMENTS ↔ IMPLEMENTED BY"
+    : visibilityRules.relationshipMode === "inheritance"
+      ? "INHERITS FROM ↔ INHERITED BY"
+      : "DEPENDS ON ↔ DEPENDED ON BY";
   const commandTree = (action: "collapse" | "expand", target?: string) => setTreeCommand(current => ({ action, target, revision: (current?.revision || 0) + 1 }));
   const commandCategories = (action: "collapse" | "expand") => setCategoryCommand(current => ({ action, revision: (current?.revision || 0) + 1 }));
   const commandBranches = (action: "collapse" | "expand", target: string) => {
@@ -701,18 +706,14 @@ export function SuperControl(props: SuperControlProps) {
     <div className={`operation-hierarchy-layout artifact-editor-body ${hideNavigator?"navigator-hidden":navigatorCollapsed?"navigator-collapsed":"navigator-expanded"}`}>
       {!hideNavigator && <div className={`${treeClassName} artifact-navigator${viewControlsOpen ? " view-controls-open" : ""}`.trim()}>
         <div className="artifact-navigator-toolbar">
-          <span>HIERARCHY</span>
+          <span>RESOURCE TREE</span>
           <div className="artifact-navigator-actions">
-            <label className="artifact-tree-filter"><span>Filter tree</span><input type="search" value={treeFilter} onChange={event=>{const value=event.target.value;setTreeFilter(value);if(value.trim())commandTree("expand")}} placeholder="Filter tree…" /></label>
-            <div className="tree-repeat-permanent"><RepeatSwitch value={visibilityRules.repeats} onChange={repeats=>updateVisibilityRules({...visibilityRules,repeats})} /></div>
-            <button type="button" aria-label="Expand All" onClick={()=>{commandCategories("expand");commandTree("expand")}}><b>Expand All</b></button>
-            <button type="button" aria-label="Collapse All" onClick={()=>{commandTree("collapse");commandCategories("collapse")}}><b>Collapse All</b></button>
-            <button type="button" aria-label="Tree View Controls" aria-expanded={viewControlsOpen} aria-pressed={viewControlsOpen} onClick={()=>setViewControlsOpen(value=>!value)}><b>{viewControlsOpen ? "Hide View" : "Show View"}</b></button>
+            <button type="button" aria-label="Tree Filter Controls" aria-expanded={viewControlsOpen} aria-pressed={viewControlsOpen} onClick={()=>setViewControlsOpen(value=>!value)}><b>{viewControlsOpen ? "Hide Filters" : "Show Filters"}</b></button>
             <button type="button" aria-label={navigatorCollapsed?"Expand hierarchy":"Collapse hierarchy"} aria-expanded={!navigatorCollapsed} onClick={()=>setNavigatorCollapsed(value=>!value)}>{navigatorCollapsed?"›":"‹"}<b>{navigatorCollapsed?"":"Pane"}</b></button>
           </div>
         </div>
-        {viewControlsOpen && <TreeViewControls kinds={treeKinds} rules={visibilityRules} onChange={updateVisibilityRules} showParents={showParents} onShowParentsChange={setShowParents} onBranchAction={commandBranches} />}
-        <ArtifactTreeCommandContext.Provider value={treeCommand}><div className="artifact-navigator-content" ref={treeRef}><CategorizedArtifactNodes onlyCategories={false} categoryCommand={categoryCommand} workspaceId={workspaceId} categoryTree={categoryTree}>{leftPane}</CategorizedArtifactNodes></div></ArtifactTreeCommandContext.Provider>
+        {viewControlsOpen && <TreeViewControls kinds={treeKinds} rules={visibilityRules} onChange={updateVisibilityRules} showParents={showParents} onShowParentsChange={setShowParents} onBranchAction={commandBranches} relationshipModesEnabled={typeof leftPane === "function"} filterValue={treeFilter} onFilterChange={value=>{setTreeFilter(value);if(value.trim())commandTree("expand")}} onExpandAll={()=>{commandCategories("expand");commandTree("expand")}} onCollapseAll={()=>{commandTree("collapse");commandCategories("collapse")}} />}
+        <ArtifactTreeCommandContext.Provider value={treeCommand}><div className="artifact-navigator-content" ref={treeRef}><div className="artifact-tree-chip-title"><span>TREE</span>{typeof leftPane === "function" ? <select aria-label="Tree parent-child relationship" value={visibilityRules.relationshipMode} onChange={event=>updateVisibilityRules({...visibilityRules,relationshipMode:event.target.value as TreeRelationshipMode})}><option value="implementation">IMPLEMENTS ↔ IMPLEMENTED BY</option><option value="inheritance">INHERITS FROM ↔ INHERITED BY</option><option value="dependency">DEPENDS ON ↔ DEPENDED ON BY</option></select> : <b>{treeRelationshipTitle}</b>}</div><CategorizedArtifactNodes onlyCategories={false} categoryCommand={categoryCommand} workspaceId={workspaceId} categoryTree={categoryTree}>{typeof leftPane === "function" ? leftPane(visibilityRules.relationshipMode) : leftPane}</CategorizedArtifactNodes></div></ArtifactTreeCommandContext.Provider>
       </div>}
       <div className={workspaceClassName}>
         <TreePaneResizer />

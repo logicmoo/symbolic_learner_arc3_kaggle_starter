@@ -9,7 +9,23 @@
   (outputs (
     (text text)
   ))
-  (specializations (
+  (example_execute (
+    (action prompt.render)
+    (arguments (
+      (text (
+        (datatype Text)
+        (label "Received text")
+        (default "the quick brown fox")
+      ))
+    ))
+  ))
+  (implementedBy (
+    (titlecase_received_text.default ())
+    (titlecase_received_text.gpt5 ())
+    (titlecase_received_text.multi_modal.claude ())
+    (titlecase_received_text.text_only.claude ())
+  ))
+  (inheritedBy (
     (titlecase_received_text.default (
       (lend ([]
         *
@@ -19,8 +35,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (titlecase_received_text.gpt5 (
@@ -32,8 +48,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (titlecase_received_text.multi_modal.claude (
@@ -45,8 +61,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (titlecase_received_text.text_only.claude (
@@ -58,20 +74,10 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
   ))
-  (preferredSpecialization titlecase_received_text.default)
-  (example_execute (
-    (action prompt.render)
-    (arguments (
-      (text (
-        (datatype Text)
-        (label "Received text")
-        (default "the quick brown fox")
-      ))
-    ))
-  ))
+  (preferredImplementation titlecase_received_text.default)
 )

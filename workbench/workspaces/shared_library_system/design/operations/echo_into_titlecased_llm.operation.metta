@@ -31,15 +31,18 @@
     (outputBinding text)
   ))
   (implements (
+    (echo_into_titlecased ())
+  ))
+  (categories ([]
+    sample-demos
+    systems/systems-llm
+  ))
+  (inheritsFrom (
     (echo_into_titlecased (
       (borrow ([]
         *
       ))
       (exclude ([]))
     ))
-  ))
-  (categories ([]
-    sample-demos
-    systems/systems-llm
   ))
 )

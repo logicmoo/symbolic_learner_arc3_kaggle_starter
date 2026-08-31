@@ -14,7 +14,11 @@
     (maxFailureRate 0.2)
     (continueConcurrentPingsOnFailure true)
   ))
-  (specializations (
+  (implementedBy (
+    (balanced_model_runtime ())
+    (economy_model_runtime ())
+  ))
+  (inheritedBy (
     (balanced_model_runtime (
       (lend ([]
         *
@@ -24,8 +28,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (economy_model_runtime (
@@ -37,10 +41,10 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
   ))
-  (preferredSpecialization balanced_model_runtime)
+  (preferredImplementation balanced_model_runtime)
 )

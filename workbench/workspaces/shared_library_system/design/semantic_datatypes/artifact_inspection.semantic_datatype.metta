@@ -8,6 +8,9 @@
     inspection
   ))
   (implements (
+    (information ())
+  ))
+  (inheritsFrom (
     (information (
       (borrow ([]
         *

@@ -46,13 +46,16 @@ Example:
   (id image)
   (label Image)
   (description "A visual scene independent of its concrete representation.")
-  (specializations (
+  (implementedBy (
+    (bitmap ())
+  ))
+  (inheritedBy (
     (bitmap (
       (lend ([] "*"))
-      (withhold ([] id label description implements specializations preferredSpecialization))
+      (withhold ([] id label description implements implementedBy preferredImplementation inheritsFrom inheritedBy dependsOn dependedOnBy))
     ))
   ))
-  (preferredSpecialization bitmap)
+  (preferredImplementation bitmap)
 )
 ```
 
@@ -68,12 +71,18 @@ A representation says how the same semantic value is encoded.
   (id scene_graph)
   (label "Scene Graph")
   (implements (
+    (image ())
+  ))
+  (inheritsFrom (
     (image ((borrow ([] "*")) (exclude ([]))))
   ))
-  (specializations (
-    (json ((lend ([] "*")) (withhold ([] id label description implements specializations preferredSpecialization))))
+  (implementedBy (
+    (json ())
   ))
-  (preferredSpecialization json)
+  (inheritedBy (
+    (json ((lend ([] "*")) (withhold ([] id label description implements implementedBy preferredImplementation inheritsFrom inheritedBy dependsOn dependedOnBy))))
+  ))
+  (preferredImplementation json)
 )
 ```
 
@@ -86,6 +95,11 @@ Exact encodings are separate resources and may serve several representations:
   (kind concrete_datatype)
   (id json)
   (implements (
+    (json_object ())
+    (object_list ())
+    (scene_graph ())
+  ))
+  (inheritsFrom (
     (json_object ((borrow ([] "*")) (exclude ([]))))
     (object_list ((borrow ([] "*")) (exclude ([]))))
     (scene_graph ((borrow ([] "*")) (exclude ([]))))
@@ -99,7 +113,7 @@ Exact encodings are separate resources and may serve several representations:
 )
 ```
 
-PNG, JPEG, and BMP are concrete specializations of the `bitmap` representation rather than semantic datatypes.
+PNG, JPEG, and BMP are concrete implementations of the `bitmap` representation rather than semantic datatypes.
 
 ## Conversion operations
 

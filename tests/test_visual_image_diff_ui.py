@@ -264,7 +264,7 @@ def test_prolog_transaction_can_switch_from_prompted_llm_to_python(tmp_path: Pat
     ):
         (node / name).write_text(f"artifact('{name}').\n", encoding="utf-8")
 
-    assert "(preferredSpecialization symbolic.get_prolog_evidence.prompted_llm)" in operation_source
+    assert "(preferredImplementation symbolic.get_prolog_evidence.prompted_llm)" in operation_source
     assert "(id symbolic.get_prolog_evidence.prompted_llm)" in operation_source
     assert "(implementation llm.complete)" in operation_source
     assert "visual_image_diff.pipeline.cherry_pick" in operation_source

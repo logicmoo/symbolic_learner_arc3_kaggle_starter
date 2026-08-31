@@ -9,12 +9,7 @@
     systems-workbench
   ))
   (implements (
-    (shared.constant (
-      (borrow ([]
-        *
-      ))
-      (exclude ([]))
-    ))
+    (shared.constant ())
   ))
   (implementation system.workbench)
   (parameters (
@@ -23,5 +18,13 @@
   ))
   (outputs (
     (value Any)
+  ))
+  (inheritsFrom (
+    (shared.constant (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
 )

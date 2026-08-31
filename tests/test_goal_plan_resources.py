@@ -10,7 +10,7 @@ if str(SERVER) not in sys.path:
 
 from goal_plan_library import load_workspace_symbolic_records, symbolic_hierarchy
 from resource_convention import canonical_resource_path
-from resource_relationships import implements_resource, relationship_ids, specializes_resource
+from resource_relationships import implemented_by_resource, implements_resource, relationship_ids
 from resource_store import get_filesystem_provider
 from goal_run_api import start_goal_run
 
@@ -31,7 +31,7 @@ def test_goal_resources_inherit_shared_and_allow_workspace_overrides(tmp_path: P
     assert by_id["learn"]["document"]["label"] == "Override"
     assert by_id["safe"]["source"] == "shared"
     hierarchy = symbolic_hierarchy(records, "goal")
-    assert hierarchy["specializationsByResource"]["learn"][0]["document"]["id"] == "safe"
+    assert hierarchy["implementedByResource"]["learn"][0]["document"]["id"] == "safe"
 
 
 def test_plan_variant_uses_parent_link_and_base_kind_suffix(tmp_path: Path) -> None:
@@ -39,7 +39,7 @@ def test_plan_variant_uses_parent_link_and_base_kind_suffix(tmp_path: Path) -> N
     _write(tmp_path, "shared_library_system", "planning_strategies", "route.fast.planning_strategy.json", {"kind": "planning_strategy", "id": "route.fast", "implements": implements_resource("route")})
     records = load_workspace_symbolic_records(tmp_path / "shared_library_system", "plan", workspaces_root=tmp_path)
     hierarchy = symbolic_hierarchy(records, "plan")
-    assert hierarchy["specializationsByResource"]["route"][0]["document"]["kind"] == "planning_strategy"
+    assert hierarchy["implementedByResource"]["route"][0]["document"]["kind"] == "planning_strategy"
     path = canonical_resource_path(Path("planning_strategies/draft.json"), {"kind": "planning_strategy", "id": "route.fast", "implements": implements_resource("route")})
     assert path.as_posix() == "planning_strategies/route.fast.planning_strategy.json"
 
@@ -70,17 +70,17 @@ def test_shared_workspace_contains_bidirectional_context_examples() -> None:
     contexts = load_workspace_symbolic_records(shared, "context")
     by_id = {record["document"]["id"]: record["document"] for record in contexts}
     assert {document["kind"] for document in by_id.values()} == {"atomspace"}
-    assert relationship_ids(by_id["vision_analysis"]["specializations"]) == ["vision_analysis.default"]
+    assert relationship_ids(by_id["vision_analysis"]["implementedBy"]) == ["vision_analysis.default"]
     assert relationship_ids(by_id["vision_analysis.default"]["implements"]) == ["vision_analysis"]
 
 
 def test_goal_run_api_accepts_atomspace_context_kind(monkeypatch, tmp_path: Path) -> None:
     workspace = tmp_path / "project"
-    _write(tmp_path, "project", "design/goals", "learn.goal.json", {"kind": "goal", "id": "learn", "specializations": specializes_resource("learn.safe"), "preferredSpecialization": "learn.safe"})
+    _write(tmp_path, "project", "design/goals", "learn.goal.json", {"kind": "goal", "id": "learn", "implementedBy": implemented_by_resource("learn.safe"), "preferredImplementation": "learn.safe"})
     _write(tmp_path, "project", "design/goals", "learn.safe.goal.json", {"kind": "goal", "id": "learn.safe", "implements": implements_resource("learn")})
-    _write(tmp_path, "project", "design/planning_strategies", "route.planning_strategy.json", {"kind": "planning_strategy", "id": "route", "goals": ["learn"], "specializations": specializes_resource("route.safe"), "preferredSpecialization": "route.safe"})
+    _write(tmp_path, "project", "design/planning_strategies", "route.planning_strategy.json", {"kind": "planning_strategy", "id": "route", "goals": ["learn"], "implementedBy": implemented_by_resource("route.safe"), "preferredImplementation": "route.safe"})
     _write(tmp_path, "project", "design/planning_strategies", "route.safe.planning_strategy.json", {"kind": "planning_strategy", "id": "route.safe", "implements": implements_resource("route"), "workflow": "run"})
-    _write(tmp_path, "project", "design/atomspaces", "memory.atomspace.json", {"kind": "atomspace", "id": "memory", "specializations": specializes_resource("memory.default"), "preferredSpecialization": "memory.default"})
+    _write(tmp_path, "project", "design/atomspaces", "memory.atomspace.json", {"kind": "atomspace", "id": "memory", "implementedBy": implemented_by_resource("memory.default"), "preferredImplementation": "memory.default"})
     _write(tmp_path, "project", "design/atomspaces", "memory.default.atomspace.json", {"kind": "atomspace", "id": "memory.default", "implements": implements_resource("memory")})
     monkeypatch.setattr("goal_run_api._resolve_workspace", lambda _workspace_id: {"root": str(workspace)})
     monkeypatch.setattr("goal_run_api._workflow_document", lambda _workspace, _workflow_id: {"id": "run", "steps": []})
@@ -93,7 +93,7 @@ def test_goal_run_api_accepts_atomspace_context_kind(monkeypatch, tmp_path: Path
 
 def test_goal_plan_editor_preserves_rich_hierarchy_features() -> None:
     source = (ROOT / "workbench" / "frontend" / "src" / "components" / "GoalPlanLibraryEditor.tsx").read_text(encoding="utf-8")
-    for token in ("HierarchyResourceEditor", "PREFERRED ALTERNATIVE", "Split view", "+ Alternative", "+ Abstract", "ResourceSourceEditor", "preferredSpecialization"):
+    for token in ("HierarchyResourceEditor", "PREFERRED IMPLEMENTATION", "Split view", "+ Implementation", "+ Abstract", "ResourceSourceEditor", "preferredImplementation"):
         assert token in source
     assert 'const endpoint = family === "plan" ? "plans" : directory' in source
 
@@ -134,8 +134,8 @@ def test_pddl_vocabulary_maps_plans_to_workflows() -> None:
     assert "same Workflow" in docs
 
 
-def test_same_kind_goal_plan_and_atomspace_children_are_labeled_alternatives() -> None:
+def test_same_kind_goal_plan_and_atomspace_children_are_labeled_implementations() -> None:
     editor = (ROOT / "workbench" / "frontend" / "src" / "components" / "GoalPlanLibraryEditor.tsx").read_text(encoding="utf-8")
-    assert "PREFERRED ALTERNATIVE" in editor
-    assert "ALTERNATIVE`" in editor
+    assert "PREFERRED IMPLEMENTATION" in editor
+    assert "IMPLEMENTATION`" in editor
     assert "variants · shared inheritance" not in editor

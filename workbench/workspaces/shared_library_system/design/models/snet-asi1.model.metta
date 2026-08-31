@@ -4,12 +4,7 @@
   (label "SingularityNET asi1")
   (description "The asi1 model served by the SingularityNET OpenAI-compatible LLM backend.")
   (implements (
-    (https.llm.c.singularitynet.io.v1 (
-      (borrow ([]
-        *
-      ))
-      (exclude ([]))
-    ))
+    (https.llm.c.singularitynet.io.v1 ())
   ))
   (model asi1)
   (enabled true)
@@ -32,5 +27,16 @@
   ))
   (categories ([]
     models/singularitynet
+  ))
+  (dependsOn (
+    (https.llm.c.singularitynet.io.v1 ())
+  ))
+  (inheritsFrom (
+    (https.llm.c.singularitynet.io.v1 (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
 )

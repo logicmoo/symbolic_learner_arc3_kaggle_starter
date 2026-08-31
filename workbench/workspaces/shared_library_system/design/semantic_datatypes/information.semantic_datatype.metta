@@ -3,7 +3,85 @@
   (id information)
   (label Information)
   (description "Root semantic type for information carried through the workbench.")
-  (specializations (
+  (implementedBy (
+    (executable_view ())
+    (json_object ())
+    (plain_text ())
+    (prolog_fact_set ())
+    (python_object ())
+    (symbolic_fact_set ())
+    (artifact_bundle ())
+    (change_description ())
+    (demonstration_step ())
+    (entity ())
+    (entity_collection ())
+    (evidence ())
+    (evidence_bundle ())
+    (evaluation ())
+    (event ())
+    (file_reference ())
+    (goal ())
+    (goal_set ())
+    (hypothesis ())
+    (hypothesis_set ())
+    (identity_map ())
+    (image ())
+    (atomspace ())
+    (atom ())
+    (atomspace_change ())
+    (atomspace_query_result ())
+    (artifact_category ())
+    (category_match_set ())
+    (datatype_contract ())
+    (datatype_sample ())
+    (conversion_inventory ())
+    (goal_interpretation ())
+    (goal_satisfaction ())
+    (intervention ())
+    (object ())
+    (object_representation_bundle ())
+    (observation ())
+    (observation_collection ())
+    (boolean ())
+    (number ())
+    (program ())
+    (provenance_record ())
+    (planning_strategy ())
+    (planned_workflow ())
+    (policy ())
+    (policy_decision ())
+    (prompt_resource ())
+    (prompt_composition ())
+    (relationship ())
+    (resource ())
+    (resource_validation ())
+    (system_contract ())
+    (system_inspection ())
+    (data_value ())
+    (data_inspection ())
+    (artifact ())
+    (artifact_inspection ())
+    (rule_set ())
+    (simulation_request ())
+    (simulation_result ())
+    (suggested_experiment ())
+    (text ())
+    (string ())
+    (world_analysis_state ())
+    (world_dynamics ())
+    (world_model ())
+    (world_state ())
+    (visual_example_set ())
+    (recognizable_memory ())
+    (agent_exchange ())
+    (llm_reasoning_trace ())
+    (atomese_program ())
+    (symbolic_coverage_assessment ())
+    (symbolic_execution_report ())
+    (weaker_model_control ())
+    (memory_grounding_evidence ())
+  ))
+  (inheritedBy (
     (executable_view (
       (lend ([]
         *
@@ -13,8 +91,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (json_object (
@@ -26,8 +104,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (plain_text (
@@ -39,8 +117,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (prolog_fact_set (
@@ -52,8 +130,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (python_object (
@@ -65,8 +143,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (symbolic_fact_set (
@@ -78,8 +156,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (artifact_bundle (
@@ -91,8 +169,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (change_description (
@@ -104,8 +182,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (demonstration_step (
@@ -117,8 +195,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (entity (
@@ -130,8 +208,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (entity_collection (
@@ -143,8 +221,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (evidence (
@@ -156,8 +234,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (evidence_bundle (
@@ -169,8 +247,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (evaluation (
@@ -182,8 +260,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (event (
@@ -195,8 +273,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (file_reference (
@@ -208,8 +286,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (goal (
@@ -221,8 +299,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (goal_set (
@@ -234,8 +312,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (hypothesis (
@@ -247,8 +325,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (hypothesis_set (
@@ -260,8 +338,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (identity_map (
@@ -273,8 +351,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (image (
@@ -286,8 +364,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (atomspace (
@@ -299,8 +377,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (atom (
@@ -312,8 +390,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (atomspace_change (
@@ -325,8 +403,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (atomspace_query_result (
@@ -338,8 +416,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (artifact_category (
@@ -351,8 +429,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (category_match_set (
@@ -364,8 +442,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (datatype_contract (
@@ -377,8 +455,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (datatype_sample (
@@ -390,8 +468,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (conversion_inventory (
@@ -403,8 +481,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (goal_interpretation (
@@ -416,8 +494,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (goal_satisfaction (
@@ -429,8 +507,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (intervention (
@@ -442,8 +520,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (object (
@@ -455,8 +533,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (object_representation_bundle (
@@ -468,8 +546,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (observation (
@@ -481,8 +559,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (observation_collection (
@@ -494,8 +572,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (boolean (
@@ -507,8 +585,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (number (
@@ -520,8 +598,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (program (
@@ -533,8 +611,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (provenance_record (
@@ -546,8 +624,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (planning_strategy (
@@ -559,8 +637,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (planned_workflow (
@@ -572,8 +650,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (policy (
@@ -585,8 +663,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (policy_decision (
@@ -598,8 +676,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (prompt_resource (
@@ -611,8 +689,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (prompt_composition (
@@ -624,8 +702,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (relationship (
@@ -637,8 +715,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (resource (
@@ -650,8 +728,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (resource_validation (
@@ -663,8 +741,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (system_contract (
@@ -676,8 +754,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (system_inspection (
@@ -689,8 +767,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (data_value (
@@ -702,8 +780,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (data_inspection (
@@ -715,8 +793,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (artifact (
@@ -728,8 +806,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (artifact_inspection (
@@ -741,8 +819,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (rule_set (
@@ -754,8 +832,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (simulation_request (
@@ -767,8 +845,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (simulation_result (
@@ -780,8 +858,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (suggested_experiment (
@@ -793,8 +871,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (text (
@@ -806,8 +884,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (string (
@@ -819,8 +897,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (world_analysis_state (
@@ -832,8 +910,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (world_dynamics (
@@ -845,8 +923,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (world_model (
@@ -858,8 +936,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (world_state (
@@ -871,8 +949,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (visual_example_set (
@@ -884,8 +962,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (recognizable_memory (
@@ -897,8 +975,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (agent_exchange (
@@ -910,8 +988,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (llm_reasoning_trace (
@@ -923,8 +1001,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (atomese_program (
@@ -936,8 +1014,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (symbolic_coverage_assessment (
@@ -949,8 +1027,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (symbolic_execution_report (
@@ -962,8 +1040,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (weaker_model_control (
@@ -975,8 +1053,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (memory_grounding_evidence (
@@ -988,10 +1066,10 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
   ))
-  (preferredSpecialization json_object)
+  (preferredImplementation json_object)
 )

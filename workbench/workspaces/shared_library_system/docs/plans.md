@@ -21,9 +21,9 @@ Planning guidance is serialized only as `planning_strategy`. A strategy with a s
 
 - Strategy specifications use `design/planning_strategies/<id>.planning_strategy.metta`.
 - Alternatives use `design/planning_strategies/<id>.<name>.planning_strategy.metta`.
-- Every alternative declares `implements`; the strategy lists the alternative in `specializations`.
+- Every implementation declares `implements`; the strategy lists it in `implementedBy`.
 - A strategy variant may select an existing Workflow or configure a planner that produces one.
-- `preferredSpecialization` identifies the preferred strategy alternative.
+- `preferredImplementation` identifies the preferred strategy implementation.
 
 Shared strategies are inherited by project workspaces. Workspace resources with the same semantic ID override Shared records.
 

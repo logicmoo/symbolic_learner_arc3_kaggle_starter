@@ -4,12 +4,7 @@
   (label asi1)
   (description "Discovered from ASICloud.")
   (implements (
-    (https.inference.asicloud.cudos.org.v1 (
-      (borrow ([]
-        *
-      ))
-      (exclude ([]))
-    ))
+    (https.inference.asicloud.cudos.org.v1 ())
   ))
   (model asi1)
   (enabled true)
@@ -51,5 +46,16 @@
   ))
   (categories ([]
     filtered/vision
+  ))
+  (dependsOn (
+    (https.inference.asicloud.cudos.org.v1 ())
+  ))
+  (inheritsFrom (
+    (https.inference.asicloud.cudos.org.v1 (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
 )

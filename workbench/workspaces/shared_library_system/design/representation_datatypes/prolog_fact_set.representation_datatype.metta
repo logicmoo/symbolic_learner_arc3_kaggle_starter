@@ -4,6 +4,35 @@
   (label "Prolog Fact Set")
   (language prolog)
   (implements (
+    (information ())
+    (entity_collection ())
+    (relationship ())
+    (world_state ())
+    (world_model ())
+    (transition_evidence ())
+    (hypothesis ())
+    (evaluation ())
+  ))
+  (implementedBy (
+    (prolog_source ())
+  ))
+  (inheritedBy (
+    (prolog_source (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        implementedBy
+        preferredImplementation
+      ))
+    ))
+  ))
+  (preferredImplementation prolog_source)
+  (inheritsFrom (
     (information (
       (borrow ([]
         *
@@ -53,20 +82,4 @@
       (exclude ([]))
     ))
   ))
-  (specializations (
-    (prolog_source (
-      (lend ([]
-        *
-      ))
-      (withhold ([]
-        id
-        label
-        description
-        implements
-        specializations
-        preferredSpecialization
-      ))
-    ))
-  ))
-  (preferredSpecialization prolog_source)
 )

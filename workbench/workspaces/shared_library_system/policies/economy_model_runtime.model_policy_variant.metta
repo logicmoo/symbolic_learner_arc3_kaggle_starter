@@ -21,6 +21,9 @@
     (benchmark off)
   ))
   (implements (
+    (default_model_runtime ())
+  ))
+  (inheritsFrom (
     (default_model_runtime (
       (borrow ([]
         *

@@ -38,9 +38,9 @@ Therefore, workflow generation must not prematurely hard-code an implementation 
 1. A user or model writes an English workflow specification.
 2. A constrained workflow compiler produces MeTTa or JSON containing semantic operations and validated dataflow.
 3. Preflight validates step IDs, bindings, dependencies, loop targets, bounds, and operation availability.
-4. For each semantic operation, the resolver gathers all inherited and workspace-local implementation specializations.
+4. For each semantic operation, the resolver gathers all inherited and workspace-local implementations.
 5. Policy filters out implementations that are unavailable, unhealthy, unauthorized, incompatible, or too costly.
-6. The resolver selects an existing implementation or asks an implementation-producing model to create a new specialization.
+6. The resolver selects an existing implementation or asks an implementation-producing model to create a new implementation.
 7. Generated code or logic is saved as a concrete operation child, never silently embedded into the semantic workflow.
 8. The selected implementation is validated using its declared tests, probes, types, and sandbox policy.
 9. The runtime freezes the resolved mapping with the run so later inspection can reproduce which Python callable, Prolog predicate, LLM prompt/model, or other adapter executed each step.

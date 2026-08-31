@@ -53,7 +53,7 @@ run_workbench.bat 0.0.0.0 5400
 ```
 
 Each invocation gives its API and web command windows port-specific titles,
-and Vite's `/api` proxy is pointed at the FastAPI instance started by that same
+and Vite's `/workbench` proxy is pointed at the FastAPI instance started by that same
 invocation. This allows several workbench instances to run from one checkout
 at the same time as long as their selected ports do not overlap.
 

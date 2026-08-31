@@ -36,7 +36,7 @@ export function ArtifactTreeBranch({ label, header, children, className = "opera
   const branchRef = useRef<HTMLDivElement>(null);
   const hasChildren = children !== undefined && children !== null;
   const kind = resourceKind(searchValue);
-  const role = kind ? `${parentKind === kind ? "specialization" : "top"}-${kind}` : "other";
+  const role = kind ? `${parentKind === kind ? "child" : "top"}-${kind}` : "other";
   const controlled = displayMode !== undefined && onDisplayModeChange !== undefined;
 
   useEffect(() => {

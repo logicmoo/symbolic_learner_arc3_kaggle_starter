@@ -8,12 +8,7 @@
     systems-workbench
   ))
   (implements (
-    (sample.request_number (
-      (borrow ([]
-        *
-      ))
-      (exclude ([]))
-    ))
+    (sample.request_number ())
   ))
   (implementation system.workbench)
   (parameters (
@@ -22,5 +17,13 @@
   ))
   (outputs (
     (value Number)
+  ))
+  (inheritsFrom (
+    (sample.request_number (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
 )

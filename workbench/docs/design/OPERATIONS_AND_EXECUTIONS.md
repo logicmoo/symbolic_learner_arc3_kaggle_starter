@@ -18,9 +18,9 @@ downloaded libraries such as the MIT `pilgram` wrapper all surface through
 `GET /workbench/video-import/filters` and run through `POST
 /workbench/video-import/filter`). Skills graduate into the operations library as
 resources — see `design/operations/image_filter_skills.operation.metta`
-(`skill.apply_image_filter` and its specializations) in the shared library —
+(`skill.apply_image_filter` and its implementations) in the shared library —
 where they gain the full Operation contract: typed inputs/outputs, topics,
-specialization alternatives, playground invocation, and durable Executions.
+implementation alternatives, playground invocation, and durable Executions.
 The distinction to keep: a *skill/Operation* is called by the workbench (or a
 workflow) on its own; a model only enters when an implementation explicitly
 routes to one (for example the Video Import page's turtle-program generation,

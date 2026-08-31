@@ -6,7 +6,11 @@
   (goals ([]
     understand_visual_world
   ))
-  (specializations (
+  (implementedBy (
+    (observe_infer_act.conservative_loop ())
+    (observe_infer_act.fast_probe ())
+  ))
+  (inheritedBy (
     (observe_infer_act.conservative_loop (
       (lend ([]
         *
@@ -16,8 +20,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (observe_infer_act.fast_probe (
@@ -29,12 +33,12 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
   ))
-  (preferredSpecialization observe_infer_act.conservative_loop)
+  (preferredImplementation observe_infer_act.conservative_loop)
 )
 (
   (kind planning_strategy)
@@ -42,6 +46,9 @@
   (label "Observe, Infer, Act / Conservative Loop")
   (description "Prefer verified observations and bounded iteration before committing an action.")
   (implements (
+    (observe_infer_act ())
+  ))
+  (inheritsFrom (
     (observe_infer_act (
       (borrow ([]
         *
@@ -56,6 +63,9 @@
   (label "Observe, Infer, Act / Fast Probe")
   (description "Prefer a small informative action early, then revise the Workflow from the resulting evidence.")
   (implements (
+    (observe_infer_act ())
+  ))
+  (inheritsFrom (
     (observe_infer_act (
       (borrow ([]
         *

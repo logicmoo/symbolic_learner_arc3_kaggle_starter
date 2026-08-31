@@ -3,12 +3,7 @@
   (id jpeg)
   (label Jpeg)
   (implements (
-    (bitmap (
-      (borrow ([]
-        *
-      ))
-      (exclude ([]))
-    ))
+    (bitmap ())
   ))
   (mimeTypes ([]
     image/jpeg
@@ -16,5 +11,13 @@
   (extensions ([]
     .jpg
     .jpeg
+  ))
+  (inheritsFrom (
+    (bitmap (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
 )

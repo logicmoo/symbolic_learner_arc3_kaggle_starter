@@ -12,6 +12,11 @@
     .txt
   ))
   (implements (
+    (image ())
+  ))
+  (implementedBy ())
+  (inheritedBy ())
+  (inheritsFrom (
     (image (
       (borrow ([]
         *
@@ -19,5 +24,4 @@
       (exclude ([]))
     ))
   ))
-  (specializations ())
 )

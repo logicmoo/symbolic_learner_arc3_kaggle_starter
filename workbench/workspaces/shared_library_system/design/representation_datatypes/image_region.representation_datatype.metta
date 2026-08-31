@@ -4,6 +4,12 @@
   (label "Image Region")
   (description "A bounded visual subregion associated with an entity or candidate object.")
   (implements (
+    (image ())
+    (entity ())
+  ))
+  (implementedBy ())
+  (inheritedBy ())
+  (inheritsFrom (
     (image (
       (borrow ([]
         *
@@ -17,5 +23,4 @@
       (exclude ([]))
     ))
   ))
-  (specializations ())
 )

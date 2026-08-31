@@ -4,6 +4,17 @@
   (label "Symbolic Fact Set")
   (description "Language-neutral symbolic facts representing grounded properties, relations, and world knowledge.")
   (implements (
+    (information ())
+    (entity_collection ())
+    (relationship ())
+    (world_state ())
+    (world_model ())
+    (transition_evidence ())
+    (hypothesis ())
+  ))
+  (implementedBy ())
+  (inheritedBy ())
+  (inheritsFrom (
     (information (
       (borrow ([]
         *
@@ -47,5 +58,4 @@
       (exclude ([]))
     ))
   ))
-  (specializations ())
 )

@@ -4,6 +4,9 @@
   (label "Prompt Resource")
   (description "A prompt specification or inherited prompt variant before rendering.")
   (implements (
+    (information ())
+  ))
+  (inheritsFrom (
     (information (
       (borrow ([]
         *

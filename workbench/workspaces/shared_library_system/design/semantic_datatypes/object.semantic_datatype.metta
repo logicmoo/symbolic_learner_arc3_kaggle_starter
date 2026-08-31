@@ -3,7 +3,14 @@
   (id object)
   (label Object)
   (description "A structured symbolic value independent of its in-memory or serialized representation.")
-  (specializations (
+  (implements (
+    (information ())
+  ))
+  (implementedBy (
+    (json_object ())
+    (python_object ())
+  ))
+  (inheritedBy (
     (json_object (
       (lend ([]
         *
@@ -13,8 +20,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (python_object (
@@ -26,13 +33,13 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
   ))
-  (preferredSpecialization json_object)
-  (implements (
+  (preferredImplementation json_object)
+  (inheritsFrom (
     (information (
       (borrow ([]
         *

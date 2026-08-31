@@ -24,22 +24,6 @@
     (defaultBlocking false)
     (specializable true)
   ))
-  (specializations (
-    (gallery.curate_resource.python (
-      (lend ([]
-        *
-      ))
-      (withhold ([]
-        id
-        label
-        description
-        implements
-        specializations
-        preferredSpecialization
-      ))
-    ))
-  ))
-  (preferredSpecialization gallery.curate_resource.python)
   (example_execute (
     (action gallery.curate_resource)
     (arguments (
@@ -68,6 +52,25 @@
       ))
     ))
   ))
+  (implementedBy (
+    (gallery.curate_resource.python ())
+  ))
+  (inheritedBy (
+    (gallery.curate_resource.python (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        implementedBy
+        preferredImplementation
+      ))
+    ))
+  ))
+  (preferredImplementation gallery.curate_resource.python)
 )
 (
   (kind operation)
@@ -98,6 +101,9 @@
     (description_field description)
   ))
   (implements (
+    (gallery.curate_resource ())
+  ))
+  (inheritsFrom (
     (gallery.curate_resource (
       (borrow ([]
         *

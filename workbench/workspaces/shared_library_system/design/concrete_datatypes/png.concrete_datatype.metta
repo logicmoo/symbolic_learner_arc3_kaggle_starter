@@ -3,17 +3,20 @@
   (id png)
   (label Png)
   (implements (
-    (bitmap (
-      (borrow ([]
-        *
-      ))
-      (exclude ([]))
-    ))
+    (bitmap ())
   ))
   (mimeTypes ([]
     image/png
   ))
   (extensions ([]
     .png
+  ))
+  (inheritsFrom (
+    (bitmap (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
 )

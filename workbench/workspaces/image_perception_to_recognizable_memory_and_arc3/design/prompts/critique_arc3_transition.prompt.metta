@@ -3,7 +3,10 @@
   (id arc3_random.critique_transition)
   (label "Critique an ARC3 Transition")
   (description "Classify what an action did well or poorly using before/after evidence.")
-  (specializations (
+  (implementedBy (
+    (arc3_random.critique_transition.default ())
+  ))
+  (inheritedBy (
     (arc3_random.critique_transition.default (
       (lend ([]
         *
@@ -13,12 +16,12 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
   ))
-  (preferredSpecialization arc3_random.critique_transition.default)
+  (preferredImplementation arc3_random.critique_transition.default)
 )
 (
   (kind prompt)
@@ -30,17 +33,20 @@
     vision-chat
   ))
   (implements (
-    (arc3_random.critique_transition (
-      (borrow ([]
-        *
-      ))
-      (exclude ([]))
-    ))
+    (arc3_random.critique_transition ())
   ))
   (text ([]
     "Compare the before and after ARC observations and the chosen action."
     "Classify the result as good, bad, or neutral. Wins and level progress are good; game-over and ineffective repeated moves are bad."
     "State the visible evidence and a concise lesson that can guide a later attempt."
     "Return JSON with rating, reason, evidence, and lesson."
+  ))
+  (inheritsFrom (
+    (arc3_random.critique_transition (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
 )

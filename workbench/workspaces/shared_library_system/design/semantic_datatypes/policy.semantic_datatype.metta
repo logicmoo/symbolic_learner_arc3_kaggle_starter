@@ -4,6 +4,9 @@
   (label Policy)
   (description "A declarative workbench policy whose effective decision may be inherited and evaluated.")
   (implements (
+    (information ())
+  ))
+  (inheritsFrom (
     (information (
       (borrow ([]
         *

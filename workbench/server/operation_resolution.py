@@ -19,7 +19,7 @@ def _prompt_prefix(
     """Resolve abstract prompt IDs to concrete prompt implementations.
 
     Operation implementations bind semantic prompt IDs.  At execution time each
-    prompt resolves through its own preferredSpecialization, optionally
+    prompt resolves through its own preferredImplementation, optionally
     overridden by the caller (for example by the Operation Playground).  This keeps
     operations independent of GPT/Claude/text-only/multimodal prompt variants.
     """

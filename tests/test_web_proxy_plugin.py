@@ -197,7 +197,7 @@ def test_every_plugin_publishes_an_admin_link_the_scanner_reads_from_disk() -> N
     assert payload["manifestName"] == "plugin.json"
     for plugin in payload["plugins"]:
         assert plugin["adminPath"].startswith("/")
-        assert plugin["adminApiPath"] == f"/api{plugin['adminPath']}"
+        assert plugin["adminApiPath"] == f"/workbench{plugin['adminPath']}"
         configure = [page for page in plugin["uiPages"] if page["kind"] in {"configure", "admin"}]
         assert configure, f"{plugin['id']} contributes no configure page"
         assert configure[0]["address"], f"{plugin['id']} configure page has no address"
@@ -243,11 +243,11 @@ def test_plugin_init_mounts_the_requested_path_through_web_proxy() -> None:
     assert mounted.status_code == 200
 
 
-def test_web_proxy_admin_page_is_served_on_the_api_port_and_under_api() -> None:
+def test_web_proxy_admin_page_is_served_on_the_api_port_and_under_workbench() -> None:
     app_module = importlib.import_module("app")
     with TestClient(app_module.app) as client:
         direct = client.get("/web_proxy/admin")
-        mirrored = client.get("/api/web_proxy/admin")
+        mirrored = client.get("/workbench/web_proxy/admin")
     assert direct.status_code == 200
     assert mirrored.status_code == 200
     descriptor = direct.json()
@@ -262,8 +262,8 @@ def test_web_proxy_admin_page_is_served_on_the_api_port_and_under_api() -> None:
 def test_web_proxy_admin_reports_initialization_requirements() -> None:
     app_module = importlib.import_module("app")
     with TestClient(app_module.app) as client:
-        descriptor = client.get("/api/web_proxy/admin").json()
-        initialized = client.post("/api/web_proxy/admin/initialize", json={})
+        descriptor = client.get("/workbench/web_proxy/admin").json()
+        initialized = client.post("/workbench/web_proxy/admin/initialize", json={})
     initialization = descriptor["initialization"]
     assert initialization["ready"] is True
     assert {check["name"] for check in initialization["checks"]} >= {"httpx", "websockets"}
@@ -277,7 +277,7 @@ def test_web_proxy_admin_rejects_an_invalid_timeout_and_keeps_the_manifest() -> 
     before = manifest.read_text(encoding="utf-8")
     with TestClient(app_module.app) as client:
         response = client.put(
-            "/api/web_proxy/admin/settings", json={"values": {"requestTimeoutSeconds": -3}}
+            "/workbench/web_proxy/admin/settings", json={"values": {"requestTimeoutSeconds": -3}}
         )
     assert response.status_code == 400
     assert manifest.read_text(encoding="utf-8") == before
@@ -291,7 +291,7 @@ def test_web_proxy_admin_saves_settings_to_plain_json_not_a_metta_sibling() -> N
     try:
         with TestClient(app_module.app) as client:
             response = client.put(
-                "/api/web_proxy/admin/settings",
+                "/workbench/web_proxy/admin/settings",
                 json={"values": {"requestTimeoutSeconds": 12, "followRedirects": True}},
             )
         assert response.status_code == 200
@@ -390,4 +390,3 @@ def test_peek_plugin_status_reports_dead_and_undeclared_plugins(monkeypatch) -> 
     monkeypatch.setattr(plugin_api, "_route_is_registered", lambda path: False)
     undeclared = plugin_api._peek_plugin_status({"id": "silent", "apiSections": {}})
     assert undeclared == {"alive": None, "address": None, "detail": "no status endpoint declared"}
-

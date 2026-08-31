@@ -85,7 +85,7 @@ def test_shared_policy_examples_form_a_resolvable_reference_graph() -> None:
         "model_health_observation", "model_ping_job", "model_ping_event",
         "benchmark_policy", "benchmark_result",
     }
-    assert by_id["default_model_runtime"]["preferredSpecialization"] in by_id
+    assert by_id["default_model_runtime"]["preferredImplementation"] in by_id
     assert relationship_ids(by_id["balanced_model_runtime"]["implements"]) == ["default_model_runtime"]
     assert by_id["economy_model_runtime"]["enabled"] is False
     assert by_id["openai:gpt-5.6"]["vendorId"] == "openai"

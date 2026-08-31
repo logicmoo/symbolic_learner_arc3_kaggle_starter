@@ -4,6 +4,9 @@
   (label "Prompt Composition")
   (description "An ordered composition of resolved prompt members and separators.")
   (implements (
+    (information ())
+  ))
+  (inheritsFrom (
     (information (
       (borrow ([]
         *

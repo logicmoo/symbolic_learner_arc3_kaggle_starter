@@ -3,14 +3,13 @@
   (id object_list)
   (label "Object List")
   (implements (
-    (image (
-      (borrow ([]
-        *
-      ))
-      (exclude ([]))
-    ))
+    (image ())
   ))
-  (specializations (
+  (implementedBy (
+    (json ())
+    (prolog_facts ())
+  ))
+  (inheritedBy (
     (json (
       (lend ([]
         *
@@ -20,8 +19,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (prolog_facts (
@@ -33,10 +32,18 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
   ))
-  (preferredSpecialization json)
+  (preferredImplementation json)
+  (inheritsFrom (
+    (image (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
+  ))
 )

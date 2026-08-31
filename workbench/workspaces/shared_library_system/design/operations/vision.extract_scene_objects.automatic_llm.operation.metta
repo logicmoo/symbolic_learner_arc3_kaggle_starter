@@ -45,6 +45,9 @@
     (responseFormat json_object)
   ))
   (implements (
+    (vision.extract_scene_objects ())
+  ))
+  (inheritsFrom (
     (vision.extract_scene_objects (
       (borrow ([]
         *

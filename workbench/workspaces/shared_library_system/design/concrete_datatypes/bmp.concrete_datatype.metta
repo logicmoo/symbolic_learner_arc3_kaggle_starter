@@ -3,17 +3,20 @@
   (id bmp)
   (label Bmp)
   (implements (
-    (bitmap (
-      (borrow ([]
-        *
-      ))
-      (exclude ([]))
-    ))
+    (bitmap ())
   ))
   (mimeTypes ([]
     image/bmp
   ))
   (extensions ([]
     .bmp
+  ))
+  (inheritsFrom (
+    (bitmap (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
 )

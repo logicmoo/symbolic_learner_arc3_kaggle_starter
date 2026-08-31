@@ -16,7 +16,15 @@ from model_benchmark import run_benchmark  # noqa: E402
 from model_library import resolve_model_records  # noqa: E402
 from policy_library import effective_model_registry, load_workspace_policy_records  # noqa: E402
 from resource_store import get_filesystem_provider  # noqa: E402
-from resource_relationships import implements_resource, relationship_ids, specializes_resource  # noqa: E402
+from resource_relationships import (  # noqa: E402
+    depended_on_by_resource,
+    depends_on_resource,
+    implemented_by_resource,
+    implements_resource,
+    inherited_by_resource,
+    inherits_from_resource,
+    relationship_ids,
+)
 
 
 def _records(*documents: dict) -> list[dict]:
@@ -52,9 +60,9 @@ def test_catalog_backends_models_and_profiles_load_until_policy_disables_them() 
     backends = [{"kind": "backend", "id": "vendor", "label": "Vendor", "enabled": True}]
     catalog = [
         {"document": {"kind": "model", "id": "model", "label": "Model", "capabilities": ["text"], "pricing": {"prompt": "0.1"}, "properties": {"multimodal": True}},
-         "resolved": {"backendId": "vendor", "model": "remote-model", "enabled": True, "defaults": {}, "inheritance": ["vendor", "model"]}},
+         "resolved": {"backendId": "vendor", "model": "remote-model", "enabled": True, "defaults": {}, "implementationPath": ["vendor", "model"]}},
         {"document": {"kind": "profile", "id": "model-fast", "label": "Fast", "implements": implements_resource("model")},
-         "resolved": {"backendId": "vendor", "model": "remote-model", "enabled": True, "defaults": {}, "inheritance": ["vendor", "model", "model-fast"]}},
+         "resolved": {"backendId": "vendor", "model": "remote-model", "enabled": True, "defaults": {}, "implementationPath": ["vendor", "model", "model-fast"]}},
     ]
     registry = effective_model_registry([], backends, catalog)
     assert [vendor["vendorId"] for vendor in registry["vendors"]] == ["vendor"]
@@ -77,15 +85,58 @@ def test_resolved_model_cache_tracks_catalog_revisions_without_sharing_mutations
     resources = get_filesystem_provider()
     backend = shared / "design" / "backends" / "vendor.backend.json"
     model = shared / "design" / "models" / "model.model.json"
-    resources.write_json(backend, {"kind": "backend", "id": "vendor", "provider": "openai", "configuration": {"defaultModel": "remote"}, "specializations": specializes_resource("model")})
-    resources.write_json(model, {"kind": "model", "id": "model", "implements": implements_resource("vendor"), "defaults": {"temperature": 0}})
+    resources.write_json(backend, {"kind": "backend", "id": "vendor", "provider": "openai", "configuration": {"defaultModel": "remote"}, "implementedBy": implemented_by_resource("model"), "inheritedBy": inherited_by_resource("model")})
+    resources.write_json(model, {"kind": "model", "id": "model", "implements": implements_resource("vendor"), "inheritsFrom": inherits_from_resource("vendor"), "defaults": {"temperature": 0}})
 
     first = resolve_model_records(shared, workspaces_root=tmp_path)
     first[0]["resolved"]["defaults"]["temperature"] = 99
     assert resolve_model_records(shared, workspaces_root=tmp_path)[0]["resolved"]["defaults"]["temperature"] == 0
 
-    resources.write_json(model, {"kind": "model", "id": "model", "implements": implements_resource("vendor"), "defaults": {"temperature": 0.75}})
+    resources.write_json(model, {"kind": "model", "id": "model", "implements": implements_resource("vendor"), "inheritsFrom": inherits_from_resource("vendor"), "defaults": {"temperature": 0.75}})
     assert resolve_model_records(shared, workspaces_root=tmp_path)[0]["resolved"]["defaults"]["temperature"] == 0.75
+
+
+def test_model_enablement_uses_depends_on_not_implements(tmp_path: Path) -> None:
+    shared = tmp_path / "shared_library_system"
+    resources = get_filesystem_provider()
+    backend = shared / "design" / "backends" / "vendor.backend.json"
+    model = shared / "design" / "models" / "model.model.json"
+    resources.write_json(
+        backend,
+        {
+            "kind": "backend",
+            "id": "vendor",
+            "provider": "openai",
+            "enabled": False,
+            "configuration": {"defaultModel": "remote"},
+            "implementedBy": implemented_by_resource("model"),
+            "inheritedBy": inherited_by_resource("model"),
+        },
+    )
+    resources.write_json(
+        model,
+        {
+            "kind": "model",
+            "id": "model",
+            "enabled": True,
+            "implements": implements_resource("vendor"),
+            "dependsOn": {},
+        },
+    )
+
+    independent = resolve_model_records(shared, workspaces_root=tmp_path)[0]
+    assert independent["resolved"]["enabled"] is True
+
+    backend_document = resources.read_json(backend)
+    backend_document["dependedOnBy"] = depended_on_by_resource("model")
+    resources.write_json(backend, backend_document)
+    model_document = resources.read_json(model)
+    model_document["dependsOn"] = depends_on_resource("vendor")
+    resources.write_json(model, model_document)
+
+    dependent = resolve_model_records(shared, workspaces_root=tmp_path)[0]
+    assert dependent["resolved"]["enabled"] is False
+    assert dependent["resolved"]["blockingDependencies"] == ["vendor"]
 
 
 def test_model_overridden_properties_resource_is_applied_with_highest_precedence(tmp_path: Path) -> None:
@@ -94,8 +145,8 @@ def test_model_overridden_properties_resource_is_applied_with_highest_precedence
     backend = shared / "design" / "backends" / "vendor.backend.json"
     model = shared / "design" / "models" / "model.model.json"
     overrides = shared / "design" / "models" / "model_overridden_properties.json"
-    resources.write_json(backend, {"kind": "backend", "id": "vendor", "provider": "openai", "configuration": {"defaultModel": "remote"}, "specializations": specializes_resource("model")})
-    resources.write_json(model, {"kind": "model", "id": "model", "implements": implements_resource("vendor"), "defaults": {"temperature": 0}, "capabilities": {"vision": False}})
+    resources.write_json(backend, {"kind": "backend", "id": "vendor", "provider": "openai", "configuration": {"defaultModel": "remote"}, "implementedBy": implemented_by_resource("model"), "inheritedBy": inherited_by_resource("model")})
+    resources.write_json(model, {"kind": "model", "id": "model", "implements": implements_resource("vendor"), "inheritsFrom": inherits_from_resource("vendor"), "defaults": {"temperature": 0}, "capabilities": {"vision": False}})
     resources.write_json(overrides, {
         "kind": "model_overridden_properties",
         "id": "model_overridden_properties",
@@ -117,8 +168,8 @@ def test_model_categories_are_preserved_on_model_documents(tmp_path: Path) -> No
     resources = get_filesystem_provider()
     backend = shared / "design" / "backends" / "vendor.backend.json"
     model = shared / "design" / "models" / "model.model.json"
-    resources.write_json(backend, {"kind": "backend", "id": "vendor", "provider": "openai", "configuration": {"defaultModel": "remote"}, "specializations": specializes_resource("model")})
-    resources.write_json(model, {"kind": "model", "id": "model", "implements": implements_resource("vendor"), "categories": ["filtered/vision"], "defaults": {"temperature": 0}})
+    resources.write_json(backend, {"kind": "backend", "id": "vendor", "provider": "openai", "configuration": {"defaultModel": "remote"}, "implementedBy": implemented_by_resource("model"), "inheritedBy": inherited_by_resource("model")})
+    resources.write_json(model, {"kind": "model", "id": "model", "implements": implements_resource("vendor"), "inheritsFrom": inherits_from_resource("vendor"), "categories": ["filtered/vision"], "defaults": {"temperature": 0}})
 
     resolved = resolve_model_records(shared, workspaces_root=tmp_path)[0]
     assert resolved["document"]["categories"] == ["filtered/vision"]
@@ -174,11 +225,41 @@ def test_backend_model_discovery_supports_openai_and_ollama_shapes(tmp_path: Pat
     assert [row["id"] for row in discovered] == ["local/a", "local/b"]
     imported = import_discovered_models(tmp_path, backend, discovered[:1])
     assert relationship_ids(imported[0]["implements"]) == ["local"]
+    assert relationship_ids(imported[0]["dependsOn"]) == ["local"]
     assert imported[0]["model"] == "local/a"
     assert set(imported[0]["capabilities"]) >= {"multimodal", "vision", "audio", "tools", "reasoning"}
     assert imported[0]["providerMetadata"]["name"] == "local/a"
     assert imported[0]["properties"]["name"] == "local/a"
     assert (tmp_path / "design" / "models" / "local-local_a.model.metta").is_file()
+
+
+def test_model_import_and_removal_maintain_parent_backlinks(tmp_path: Path) -> None:
+    resources = get_filesystem_provider()
+    backend = {
+        "kind": "backend",
+        "id": "local",
+        "provider": "openai",
+        "configuration": {"baseUrl": "http://localhost:11434/v1"},
+    }
+    backend_path = tmp_path / "design" / "backends" / "local.backend.json"
+    resources.make_directory(backend_path.parent)
+    resources.write_json(backend_path, backend)
+
+    imported = import_discovered_models(
+        tmp_path,
+        backend,
+        [{"id": "remote/model", "label": "Remote"}],
+    )
+    resource_id = imported[0]["id"]
+    updated_backend = resources.read_json(backend_path)
+    assert resource_id in relationship_ids(updated_backend["implementedBy"])
+    assert resource_id in relationship_ids(updated_backend["dependedOnBy"])
+
+    removed = remove_missing_models(tmp_path, backend, [resource_id])
+    updated_backend = resources.read_json(backend_path)
+    assert removed == [resource_id]
+    assert resource_id not in relationship_ids(updated_backend["implementedBy"])
+    assert resource_id not in relationship_ids(updated_backend["dependedOnBy"])
 
 
 def test_model_import_route_always_targets_shared_workspace(tmp_path: Path, monkeypatch) -> None:
@@ -270,10 +351,11 @@ def test_model_discovery_grid_supports_json_property_filters_and_sorting() -> No
 def test_open_model_resource_has_a_persistent_enable_disable_control() -> None:
     models = (ROOT / "workbench" / "frontend" / "src" / "components" / "LlmModelsEditor.tsx").read_text(encoding="utf-8")
     assert "setResourceEnabled" in models
-    assert 'typeof document.enabled === "boolean"' in models
-    assert 'doc.record.resolved?.enabled' in models
+    assert 'typeof doc.record.resolved?.enabled === "boolean"' in models
+    assert "document.enabled !== false" in models
     assert '"Disable Resource" : "Enable Resource"' in models
-    assert "saveDoc({...doc,source,dirty:true})" in models
+    assert "setEnablementRequest" in models
+    assert "applyResourceEnablement" in models
 
 
 def test_open_model_resource_has_the_universal_execution_runner() -> None:
@@ -322,14 +404,14 @@ def test_model_policy_keeps_model_presets_and_prompt_profiles_independent() -> N
     assert "result?.promptProfileId||\"\"" in source
 
 
-def test_model_catalog_infers_presets_and_keeps_disabled_specializations_visible() -> None:
+def test_model_catalog_infers_presets_and_keeps_disabled_implementations_visible() -> None:
     models = (ROOT / "workbench" / "frontend" / "src" / "components" / "LlmModelsEditor.tsx").read_text(encoding="utf-8")
     styles = (ROOT / "workbench" / "frontend" / "src" / "styles" / "models_editor.css").read_text(encoding="utf-8")
     assert 'type NodeKind="system"|"backend"|"model"|"preset"' in models
     assert 'document.kind==="profile"' in models  # legacy compatibility only
     assert 'backendIds.has(modelParent(document))' in models
-    assert 'newSpecialization(item,"preset")' in models and ">+ preset</button>" in models
-    assert '`${nested.length} ${backend?"models":"presets"}`' in models
+    assert 'newImplementation(item,"preset")' in models and ">+ preset</button>" in models
+    assert '`${nested.length} ${relationLabel}`' in models
     assert 'nested.length?nested.map' in models
     assert ".inheritance-status>.resource-enablement-badge" in styles
     assert "width:max-content" in styles

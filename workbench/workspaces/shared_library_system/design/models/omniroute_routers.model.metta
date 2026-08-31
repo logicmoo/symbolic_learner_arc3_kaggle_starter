@@ -4,27 +4,7 @@
   (label "OmniRoute Best Free Router")
   (description "Uses OmniRoute's best-free route across the free providers connected to the local gateway.")
   (implements (
-    (omniroute (
-      (borrow ([]
-        *
-      ))
-      (exclude ([]))
-    ))
-  ))
-  (specializations (
-    (omniroute-free-router-preset-high (
-      (lend ([]
-        *
-      ))
-      (withhold ([]
-        id
-        label
-        description
-        implements
-        specializations
-        preferredSpecialization
-      ))
-    ))
+    (omniroute ())
   ))
   (model auto/best-free)
   (enabled true)
@@ -44,5 +24,37 @@
     (router true)
     (free true)
     (localProxy true)
+  ))
+  (dependsOn (
+    (omniroute ())
+  ))
+  (dependedOnBy (
+    (omniroute-free-router-preset-high ())
+  ))
+  (implementedBy (
+    (omniroute-free-router-preset-high ())
+  ))
+  (inheritedBy (
+    (omniroute-free-router-preset-high (
+      (lend ([]
+        *
+      ))
+      (withhold ([]
+        id
+        label
+        description
+        implements
+        implementedBy
+        preferredImplementation
+      ))
+    ))
+  ))
+  (inheritsFrom (
+    (omniroute (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
 )

@@ -8,9 +8,10 @@ import type {WorkspaceResourceLocation} from "./WorkspaceResourceFileControls";
 import {mettaDocumentToJson} from "../lib/mettaResourceCodec";
 import {ModelResourcePlayground} from "./ModelResourcePlayground";
 import {ResourceExecutionPlayground} from "./ResourceExecutionPlayground";
-import {implementsResource,relationshipIds} from "./resourceRelationships";
+import {dependsOnResource,implementsResource,inheritsFromResource,relationshipIds} from "./resourceRelationships";
 import {ResourceEnablementBadge,enablementClass,resolveResourceEnablement,type ResourceEnablement} from "./resourceEnablement";
 import {displayResourcePath} from "./resourcePath";
+import type {TreeRelationshipMode} from "./useArtifactTreeFilter";
 import "../styles/models_editor.css";
 
 type Source="shared"|"workspace";
@@ -19,17 +20,18 @@ type ModelEditorControlId="file"|"resource"|"actions"|"runner";
 type ModelEditorDisplayMode="tabs"|"stacked"|"single"|"split-v"|"split-h";
 type ModelEditorTabSet="all"|"ctx";
 type RecordFile<T>={path:string;source?:Source;workspaceId?:string;document?:T;error?:string;resolved?:Resolution;isNew?:boolean};
-type BackendDef={kind:"backend";id:string;label?:string;description?:string;provider:string;official?:boolean;enabled?:boolean;capabilities?:string[];configuration?:Record<string,unknown>;modelDefaults?:Record<string,unknown>;example_execute?:ExampleExecute};
-type SystemDef={kind:"system";id:string;label?:string;description?:string;provider:string;systemType?:"runtime"|"llm_caller"|"agent"|"mcp"|"plugin"|string;enabled?:boolean;capabilities?:string[];configuration?:Record<string,unknown>;example_execute?:ExampleExecute};
-type ModelDef={kind:"model"|"profile";id:string;label?:string;description?:string;implements?:Record<string,unknown>;model?:string;enabled?:boolean;capabilities?:string[];defaults?:Record<string,unknown>;environment?:Record<string,unknown>;example_execute?:ExampleExecute};
+type BackendDef={kind:"backend";id:string;label?:string;description?:string;provider:string;official?:boolean;enabled?:boolean;dependsOn?:Record<string,unknown>;dependedOnBy?:Record<string,unknown>;capabilities?:string[];configuration?:Record<string,unknown>;modelDefaults?:Record<string,unknown>;example_execute?:ExampleExecute};
+type SystemDef={kind:"system";id:string;label?:string;description?:string;provider:string;systemType?:"runtime"|"llm_caller"|"agent"|"mcp"|"plugin"|string;enabled?:boolean;dependsOn?:Record<string,unknown>;dependedOnBy?:Record<string,unknown>;capabilities?:string[];configuration?:Record<string,unknown>;example_execute?:ExampleExecute};
+type ModelDef={kind:"model"|"profile";id:string;label?:string;description?:string;implements?:Record<string,unknown>;implementedBy?:Record<string,unknown>;preferredImplementation?:string;inheritsFrom?:Record<string,unknown>;inheritedBy?:Record<string,unknown>;dependsOn?:Record<string,unknown>;dependedOnBy?:Record<string,unknown>;model?:string;enabled?:boolean;capabilities?:string[];defaults?:Record<string,unknown>;environment?:Record<string,unknown>;example_execute?:ExampleExecute};
 type ModelResource=SystemDef|BackendDef|ModelDef;
-type Resolution={parentId?:string;parentKind?:NodeKind;backendId?:string;inheritance?:string[];configuration?:Record<string,unknown>;defaults?:Record<string,unknown>;model?:string;enabled?:boolean};
+type Resolution={parentId?:string;parentKind?:NodeKind;backendId?:string;implementationPath?:string[];propertyInheritanceResolution?:Record<string,unknown>;dependencies?:string[];blockingDependencies?:string[];configuration?:Record<string,unknown>;defaults?:Record<string,unknown>;model?:string;enabled?:boolean};
 type Snapshot={systems:RecordFile<SystemDef>[];backends:RecordFile<BackendDef>[];models:RecordFile<ModelDef>[]};
 type Layout="tiles"|"list";
 type CatalogItem={kind:NodeKind;id:string;label:string;record:RecordFile<SystemDef>|RecordFile<BackendDef>|RecordFile<ModelDef>};
 type OpenDocument={key:string;record:RecordFile<ModelResource>;source:string;dirty:boolean};
 type DiscoveredModel={id:string;label:string;resourceId?:string;status?:"new"|"changed"|"unchanged"|"missing";capabilities?:Record<string,boolean>;limits?:Record<string,unknown>;pricing?:Record<string,unknown>;properties?:Record<string,unknown>;providerMetadata?:Record<string,unknown>};
 type ModelOverrideDocument={kind:"model_overridden_properties";id:"model_overridden_properties";models:Record<string,Record<string,unknown>>;updatedByModel?:string;updatedAt?:string;sources?:string[]};
+type EnablementRequest={resourceId:string;enabled:boolean;includeDependencies:boolean;includeDependents:boolean};
 const MODEL_OVERRIDE_PATH="design/models/model_overridden_properties.json";
 const DEFAULT_MODEL_OVERRIDE_DOCUMENT:ModelOverrideDocument={kind:"model_overridden_properties",id:"model_overridden_properties",models:{}};
 const DEFAULT_MODEL_OVERRIDE_SOURCE=`${JSON.stringify(DEFAULT_MODEL_OVERRIDE_DOCUMENT,null,2)}\n`;
@@ -43,12 +45,14 @@ function isLlmBackend(record:RecordFile<BackendDef>){const item=record.document;
 function num(v:unknown,fallback:number){return typeof v==="number"&&Number.isFinite(v)?v:fallback;}
 const modelParent=(document:ModelDef)=>relationshipIds(document.implements)[0]||"";
 
-function ConfigForm({source,onChange,items}:{source:string;onChange:(v:string)=>void;items:CatalogItem[]}){
+function ConfigForm({source,onChange,items,effectiveEnabled,onEnabledChange}:{source:string;onChange:(v:string)=>void;items:CatalogItem[];effectiveEnabled:boolean;onEnabledChange:(enabled:boolean)=>void}){
  const doc=useMemo<ModelDef|null>(()=>{try{const parsed=JSON.parse(source) as ModelResource;return parsed.kind!=="backend"&&parsed.kind!=="system"?parsed:null}catch{return null}},[source]);
  if(!doc)return <div className="demo-notice"><b>Invalid model/preset JSON</b><span>Fix this item before using the configurator.</span></div>;
  const defaults=doc.defaults||{};const update=(patch:Partial<ModelDef>)=>onChange(JSON.stringify({...doc,...patch},null,2));const updateDefault=(name:string,value:unknown)=>update({defaults:{...defaults,[name]:value}});
  const role=items.find(item=>item.id===modelParent(doc))?.kind==="backend"?"Model":"Model preset";
- return <div className="model-config-form"><label><span>RESOURCE ROLE</span><input readOnly value={role}/></label><label><span>ID</span><input value={doc.id} onChange={e=>update({id:e.target.value})}/></label><label><span>LABEL</span><input value={doc.label||""} onChange={e=>update({label:e.target.value})}/></label><label><span>IMPLEMENTS</span><select value={modelParent(doc)} onChange={e=>update({implements:implementsResource(e.target.value)})}>{items.filter(x=>x.id!==doc.id).map(x=><option key={`${x.kind}:${x.id}`} value={x.id}>{x.kind.toUpperCase()} · {x.label}</option>)}</select></label><label><span>MODEL ID OVERRIDE</span><input value={doc.model||""} placeholder="inherit" onChange={e=>update({model:e.target.value||undefined})}/></label><label><span>TEMPERATURE</span><input type="number" step="0.01" value={num(defaults.temperature,0)} onChange={e=>updateDefault("temperature",Number(e.target.value))}/></label><label><span>TOP P</span><input type="number" step="0.01" value={num(defaults.topP,1)} onChange={e=>updateDefault("topP",Number(e.target.value))}/></label><label><span>MAX OUTPUT TOKENS</span><input type="number" value={num(defaults.maxOutputTokens,12000)} onChange={e=>updateDefault("maxOutputTokens",Number(e.target.value))}/></label><label><span>REASONING EFFORT</span><select value={String(defaults.reasoningEffort||"medium")} onChange={e=>updateDefault("reasoningEffort",e.target.value)}><option>low</option><option>medium</option><option>high</option></select></label><label><span>ANALYSIS LEVEL</span><input type="number" value={num(defaults.analysisLevel,0)} onChange={e=>updateDefault("analysisLevel",Number(e.target.value))}/></label><label><span>TIMEOUT SECONDS</span><input type="number" value={num(defaults.timeoutSeconds,300)} onChange={e=>updateDefault("timeoutSeconds",Number(e.target.value))}/></label><label><span>CURRENT IMAGE DETAIL</span><select value={String(defaults.currentImageDetail||"high")} onChange={e=>updateDefault("currentImageDetail",e.target.value)}><option>low</option><option>high</option></select></label><label><span>PARENT IMAGE DETAIL</span><select value={String(defaults.parentImageDetail||"low")} onChange={e=>updateDefault("parentImageDetail",e.target.value)}><option>low</option><option>high</option></select></label><label className="model-enable-field"><span>AVAILABLE TO OPERATIONS</span><input type="checkbox" checked={doc.enabled!==false} onChange={e=>update({enabled:e.target.checked})}/></label></div>;
+ const dependencyId=relationshipIds(doc.dependsOn)[0]||"";
+ const inheritanceId=relationshipIds(doc.inheritsFrom)[0]||"";
+ return <div className="model-config-form"><label><span>RESOURCE ROLE</span><input readOnly value={role}/></label><label><span>ID</span><input value={doc.id} onChange={e=>update({id:e.target.value})}/></label><label><span>LABEL</span><input value={doc.label||""} onChange={e=>update({label:e.target.value})}/></label><label><span>IMPLEMENTS · classification</span><select value={modelParent(doc)} onChange={e=>update({implements:implementsResource(e.target.value)})}>{items.filter(x=>x.id!==doc.id).map(x=><option key={`${x.kind}:${x.id}`} value={x.id}>{x.kind.toUpperCase()} · {x.label}</option>)}</select></label><label><span>INHERITS FROM · properties</span><select value={inheritanceId} onChange={e=>update({inheritsFrom:e.target.value?inheritsFromResource(e.target.value):{}})}><option value="">No property inheritance</option>{items.filter(x=>x.id!==doc.id).map(x=><option key={`${x.kind}:${x.id}`} value={x.id}>{x.kind.toUpperCase()} · {x.label}</option>)}</select></label><label><span>DEPENDS ON · availability</span><select value={dependencyId} onChange={e=>update({dependsOn:e.target.value?dependsOnResource(e.target.value):{}})}><option value="">No availability dependency</option>{items.filter(x=>x.id!==doc.id).map(x=><option key={`${x.kind}:${x.id}`} value={x.id}>{x.kind.toUpperCase()} · {x.label}</option>)}</select></label><label><span>MODEL ID OVERRIDE</span><input value={doc.model||""} placeholder="inherit" onChange={e=>update({model:e.target.value||undefined})}/></label><label><span>TEMPERATURE</span><input type="number" step="0.01" value={num(defaults.temperature,0)} onChange={e=>updateDefault("temperature",Number(e.target.value))}/></label><label><span>TOP P</span><input type="number" step="0.01" value={num(defaults.topP,1)} onChange={e=>updateDefault("topP",Number(e.target.value))}/></label><label><span>MAX OUTPUT TOKENS</span><input type="number" value={num(defaults.maxOutputTokens,12000)} onChange={e=>updateDefault("maxOutputTokens",Number(e.target.value))}/></label><label><span>REASONING EFFORT</span><select value={String(defaults.reasoningEffort||"medium")} onChange={e=>updateDefault("reasoningEffort",e.target.value)}><option>low</option><option>medium</option><option>high</option></select></label><label><span>ANALYSIS LEVEL</span><input type="number" value={num(defaults.analysisLevel,0)} onChange={e=>updateDefault("analysisLevel",Number(e.target.value))}/></label><label><span>TIMEOUT SECONDS</span><input type="number" value={num(defaults.timeoutSeconds,300)} onChange={e=>updateDefault("timeoutSeconds",Number(e.target.value))}/></label><label><span>CURRENT IMAGE DETAIL</span><select value={String(defaults.currentImageDetail||"high")} onChange={e=>updateDefault("currentImageDetail",e.target.value)}><option>low</option><option>high</option></select></label><label><span>PARENT IMAGE DETAIL</span><select value={String(defaults.parentImageDetail||"low")} onChange={e=>updateDefault("parentImageDetail",e.target.value)}><option>low</option><option>high</option></select></label><label className="model-enable-field"><span>AVAILABLE TO OPERATIONS</span><input type="checkbox" checked={effectiveEnabled} onChange={e=>onEnabledChange(e.target.checked)}/></label></div>;
 }
 
 function SystemConfigForm({source,onChange}:{source:string;onChange:(value:string)=>void}){
@@ -99,6 +103,7 @@ export function LlmModelsEditor({workspaceId,catalogMode="models",topMenuMode="b
  const[backendEditorDisplayModes,setBackendEditorDisplayModes]=useState<Record<string,ModelEditorDisplayMode>>({});
  const[backendEditorTabSets,setBackendEditorTabSets]=useState<Record<string,ModelEditorTabSet>>({});
  const[splitOrientation,setSplitOrientation]=useState<"left"|"right"|"up"|"down">("right");
+ const[enablementRequest,setEnablementRequest]=useState<EnablementRequest|null>(null);
  const load=async()=>{const next=await request(`/workbench/workspaces/${encodeURIComponent(workspaceId)}/snapshot`) as Snapshot;setSnapshot(next);return next};
  useEffect(()=>{setOpenDocs([]);setActiveKey(null);setCompareKey(null);void load().catch(r=>setError(String(r)))},[workspaceId]);
  const systems=useMemo(()=>snapshot?.systems||[],[snapshot]);const backends=useMemo(()=>(snapshot?.backends||[]).filter(isLlmBackend),[snapshot]);const nodes=catalogMode==="systems"?[]:snapshot?.models||[];
@@ -107,9 +112,11 @@ export function LlmModelsEditor({workspaceId,catalogMode="models",topMenuMode="b
  const backendIds=useMemo(()=>new Set(backends.flatMap(record=>record.document?.id?[record.document.id]:[])),[backends]);
  const modelRole=(document:ModelDef):NodeKind=>document.kind==="profile"||(!backendIds.has(modelParent(document))&&Boolean(modelParent(document)))?"preset":"model";
  const items=useMemo<CatalogItem[]>(()=>catalogMode==="systems"?systems.filter(x=>x.document).map(record=>({kind:"system" as const,id:record.document!.id,label:record.document!.label||record.document!.id,record})):[...backends.filter(x=>x.document).map(record=>({kind:"backend" as const,id:record.document!.id,label:record.document!.label||record.document!.id,record})),...nodes.filter(x=>x.document).map(record=>({kind:modelRole(record.document!),id:record.document!.id,label:record.document!.label||record.document!.id,record}))],[catalogMode,systems,backends,nodes,backendIds]);
- const specializations=useMemo(()=>{const map=new Map<string,RecordFile<ModelDef>[]>();for(const record of nodes){const implementedId=record.document?modelParent(record.document):"";if(!implementedId)continue;const rows=map.get(implementedId)||[];rows.push(record);map.set(implementedId,rows)}return map},[nodes]);
+ const recordsById=useMemo(()=>new Map(items.map(item=>[item.id,item.record as RecordFile<ModelResource>])),[items]);
+ const dependencyIdsFor=(resourceId:string)=>{const found:string[]=[];const visit=(id:string)=>{const document=recordsById.get(id)?.document;if(!document)return;for(const dependencyId of relationshipIds(document.dependsOn)){if(found.includes(dependencyId))continue;found.push(dependencyId);visit(dependencyId)}};visit(resourceId);return found};
+ const dependentIdsFor=(resourceId:string)=>{const found:string[]=[];const visit=(id:string)=>{const declared=relationshipIds(recordsById.get(id)?.document?.dependedOnBy);for(const item of items){const document=item.record.document as ModelResource|undefined;if(document&&relationshipIds(document.dependsOn).includes(id)&&!declared.includes(item.id))declared.push(item.id)}for(const dependentId of declared){if(found.includes(dependentId)||!recordsById.has(dependentId))continue;found.push(dependentId);visit(dependentId)}};visit(resourceId);return found};
+ const resourceEnablementFor=(resourceId:string,trail:string[]=[]):ResourceEnablement=>{const record=recordsById.get(resourceId),document=record?.document;if(!record||!document||trail.includes(resourceId))return{enabled:false,source:"dependency"};if(typeof record.resolved?.enabled==="boolean")return{enabled:record.resolved.enabled,source:document.enabled===false?"self":record.resolved.enabled?"self":"dependency"};const dependencies=relationshipIds(document.dependsOn).map(id=>resourceEnablementFor(id,[...trail,resourceId]));return resolveResourceEnablement(document,dependencies)};
  const exampleFor=(document:ModelResource|null):ExampleExecute|null=>{let current=document;const visited=new Set<string>();while(current&&!visited.has(current.id)){visited.add(current.id);if(current.example_execute)return current.example_execute;if(current.kind==="backend"||current.kind==="system")return null;const parent=items.find(item=>item.id===modelParent(current as ModelDef))?.record.document as ModelResource|undefined;current=parent||null}return null};
- const roots=catalogMode==="systems"?systems.filter(x=>x.document).map(record=>({kind:"system" as const,id:record.document!.id,label:record.document!.label||record.document!.id,record})):backends.filter(x=>x.document).map(record=>({kind:"backend" as const,id:record.document!.id,label:record.document!.label||record.document!.id,record}));
  const perform=async(work:()=>Promise<void>)=>{setBusy(true);setError(null);try{await work()}catch(r){setError(r instanceof Error?r.message:String(r))}finally{setBusy(false)}};
  const open=(record:RecordFile<ModelResource>)=>{const key=recordKey(record);setOpenDocs(current=>current.some(doc=>doc.key===key)?current:[...current,{key,record,source:record.document?JSON.stringify(record.document,null,2):"",dirty:Boolean(record.isNew)}]);setActiveKey(key)};
  const close=(key:string)=>{setOpenDocs(current=>{const index=current.findIndex(doc=>doc.key===key);const next=current.filter(doc=>doc.key!==key);if(activeKey===key)setActiveKey(next[Math.max(0,index-1)]?.key||next[0]?.key||null);if(compareKey===key)setCompareKey(null);return next})};
@@ -120,13 +127,47 @@ export function LlmModelsEditor({workspaceId,catalogMode="models",topMenuMode="b
  const chooseComparison=()=>{if(compareKey){setCompareKey(null);return}if(activeKey)setCompareKey(activeKey)};
  const saveDoc=(doc:OpenDocument,location?:WorkspaceResourceLocation)=>perform(async()=>{let document:ModelResource;try{document=JSON.parse(doc.source) as ModelResource}catch{throw new Error("Resource source is invalid")};if((document.kind==="backend"||document.kind==="system")&&!document.provider)throw new Error(`${document.kind==="system"?"System":"Backend"} requires provider`);if(document.kind!=="backend"&&document.kind!=="system"){const implementedId=modelParent(document);if(!implementedId)throw new Error("Model requires implements");document={...document,kind:"model",implements:implementsResource(implementedId)}}const targetWorkspaceId=location?.workspaceId||workspaceId;const directory=document.kind==="system"?"design/systems":document.kind==="backend"?"design/backends":"design/models";const path=location?.path||(!doc.record.isNew?doc.record.path:`${directory}/${slug(document.id)}.${document.kind}.json`);const result=await request(`/workbench/workspaces/${encodeURIComponent(targetWorkspaceId)}/file`,{method:"PUT",body:JSON.stringify({path,content:JSON.stringify(document,null,2)})});if(targetWorkspaceId===workspaceId){const next=await load();const pool:RecordFile<ModelResource>[]=[...(next.systems||[]),...(next.backends||[]),...(next.models||[])];const saved=pool.find(row=>row.document?.id===document.id);if(saved){const newKey=recordKey(saved);setOpenDocs(current=>current.map(item=>item.key===doc.key?{key:newKey,record:saved,source:JSON.stringify(saved.document,null,2),dirty:false}:item));if(activeKey===doc.key)setActiveKey(newKey);if(compareKey===doc.key)setCompareKey(newKey)}}else{const saved:RecordFile<ModelResource>={path:String(result.file?.path||path),source:"workspace",workspaceId:targetWorkspaceId,document};const newKey=recordKey(saved);setOpenDocs(current=>current.map(item=>item.key===doc.key?{key:newKey,record:saved,source:JSON.stringify(document,null,2),dirty:false}:item));if(activeKey===doc.key)setActiveKey(newKey);if(compareKey===doc.key)setCompareKey(newKey)}});
  const loadDoc=(doc:OpenDocument,location:WorkspaceResourceLocation)=>perform(async()=>{const payload=await request(`/workbench/workspaces/${encodeURIComponent(location.workspaceId)}/file?path=${encodeURIComponent(location.path)}`);const raw=String(payload.file?.content||"");let source=raw;let document:ModelResource;try{document=JSON.parse(raw) as ModelResource}catch{source=mettaDocumentToJson(raw);document=JSON.parse(source) as ModelResource}const record:RecordFile<ModelResource>={path:String(payload.file?.path||location.path),source:location.workspaceId==="shared_library_system"?"shared":"workspace",workspaceId:location.workspaceId,document};const newKey=recordKey(record);setOpenDocs(current=>current.map(item=>item.key===doc.key?{key:newKey,record,source:JSON.stringify(document,null,2),dirty:false}:item));if(activeKey===doc.key)setActiveKey(newKey);if(compareKey===doc.key)setCompareKey(newKey)});
- const saveInherited=(doc:OpenDocument,content:string,location?:WorkspaceResourceLocation)=>perform(async()=>{const targetWorkspaceId=location?.workspaceId||workspaceId;const base=(doc.record.path.split("/").at(-1)||"resource.json").replace(/\.(json|metta)$/,"");const path=location?.path||`design/resolved/${base}.resolved.json`;await request(`/workbench/workspaces/${encodeURIComponent(targetWorkspaceId)}/file`,{method:"PUT",body:JSON.stringify({path,content})})});
- const setResourceEnabled=(doc:OpenDocument,document:ModelResource,enabled:boolean)=>{
-  const source=JSON.stringify({...document,enabled},null,2);
-  return saveDoc({...doc,source,dirty:true});
+ const setResourceEnabled=(_doc:OpenDocument,document:ModelResource,enabled:boolean)=>{
+  const dependencyIds=dependencyIdsFor(document.id);
+  const blockedByDependency=enabled&&dependencyIds.some(id=>{
+   const record=recordsById.get(id);
+   return record?.document?.enabled===false||record?.resolved?.enabled===false;
+  });
+  setEnablementRequest({resourceId:document.id,enabled,includeDependencies:blockedByDependency,includeDependents:false});
  };
+ const applyResourceEnablement=()=>perform(async()=>{
+  if(!enablementRequest)return;
+  const ids=new Set([enablementRequest.resourceId]);
+  if(enablementRequest.includeDependencies)for(const id of dependencyIdsFor(enablementRequest.resourceId))ids.add(id);
+  if(enablementRequest.includeDependents)for(const id of dependentIdsFor(enablementRequest.resourceId))ids.add(id);
+  for(const id of ids){
+   const record=recordsById.get(id);
+   const document=record?.document;
+   if(!record||!document)throw new Error(`resource not found: ${id}`);
+   await request(`/workbench/workspaces/${encodeURIComponent(workspaceId)}/file`,{
+    method:"PUT",
+    body:JSON.stringify({path:record.path,content:JSON.stringify({...document,enabled:enablementRequest.enabled},null,2)}),
+   });
+  }
+  const next=await load();
+  const pool:RecordFile<ModelResource>[]=[...(next.systems||[]),...(next.backends||[]),...(next.models||[])];
+  const refreshedById=new Map(pool.filter(record=>record.document).map(record=>[record.document!.id,record]));
+  const keyChanges=new Map<string,string>();
+  const refreshedOpenDocs=openDocs.map(openDocument=>{
+   const id=openDocument.record.document?.id;
+   const refreshed=id?refreshedById.get(id):null;
+   if(!refreshed)return openDocument;
+   const key=recordKey(refreshed);
+   keyChanges.set(openDocument.key,key);
+   return {key,record:refreshed,source:JSON.stringify(refreshed.document,null,2),dirty:false};
+  });
+  setOpenDocs(refreshedOpenDocs);
+  setActiveKey(current=>current?keyChanges.get(current)||current:current);
+  setCompareKey(current=>current?keyChanges.get(current)||current:current);
+  setEnablementRequest(null);
+ });
  const newBackend=()=>{const systemMode=catalogMode==="systems";const id=`${systemMode?"system":"backend"}-${Date.now().toString(36)}`;const document:ModelResource=systemMode?{kind:"system",id,label:"New System",description:"Configure a runtime, agent, MCP server, or plugin.",provider:"system",systemType:"plugin",enabled:true,capabilities:["system.execute"],configuration:{}}:{kind:"backend",id,label:"New LLM Backend",description:"Configure the provider endpoint before pulling models.",provider:"openai",enabled:true,capabilities:["llm"],configuration:{baseUrl:"",apiKeyEnvironmentVariable:""},modelDefaults:{}};open({path:systemMode?`design/systems/${slug(id)}.system.json`:`design/backends/${slug(id)}.backend.json`,source:workspaceId==="shared"?"shared":"workspace",workspaceId,document,isNew:true})};
- const newSpecialization=(parent:CatalogItem,role:"model"|"preset")=>{const id=`${parent.id}-${role}`;const document:ModelDef={kind:"model",id,label:`${parent.label} ${role}`,implements:implementsResource(parent.id),enabled:true,defaults:{temperature:0,topP:1,maxOutputTokens:12000,reasoningEffort:"medium",timeoutSeconds:300}};open({path:`design/models/${slug(id)}.model.json`,source:workspaceId==="shared"?"shared":"workspace",workspaceId,document,isNew:true})};
+ const newImplementation=(parent:CatalogItem,role:"model"|"preset")=>{const id=`${parent.id}-${role}`;const document:ModelDef={kind:"model",id,label:`${parent.label} ${role}`,implements:implementsResource(parent.id),inheritsFrom:inheritsFromResource(parent.id),dependsOn:dependsOnResource(parent.id),enabled:true,defaults:{temperature:0,topP:1,maxOutputTokens:12000,reasoningEffort:"medium",timeoutSeconds:300}};open({path:`design/models/${slug(id)}.model.json`,source:workspaceId==="shared"?"shared":"workspace",workspaceId,document,isNew:true})};
  const pullModels=(backendId:string)=>perform(async()=>{const result=await request(`/workbench/workspaces/${encodeURIComponent(workspaceId)}/models/discover/${encodeURIComponent(backendId)}`);setDiscovery({backendId,models:result.models||[]});setDiscoverySelection(new Set())});
  const purgeAndReload=async()=>{setSnapshot(null);setOpenDocs([]);setActiveKey(null);setCompareKey(null);setDiscovery(null);setDiscoverySelection(new Set());await load()};
  const importModels=(backendId:string)=>perform(async()=>{if(!discovery)return;const models=discovery.models.filter(model=>model.status!=="missing"&&discoverySelection.has(model.id));if(!models.length)throw new Error("Select at least one new or changed model");await request(`/workbench/workspaces/${encodeURIComponent(workspaceId)}/models/import/${encodeURIComponent(backendId)}`,{method:"POST",body:JSON.stringify({models,overwrite:true})});await purgeAndReload()});
@@ -137,7 +178,43 @@ export function LlmModelsEditor({workspaceId,catalogMode="models",topMenuMode="b
  const loadOverrideDocument=async()=>{setOverrideStatus("");try{const payload=await request(`/workbench/workspaces/${encodeURIComponent(workspaceId)}/file?path=${encodeURIComponent(MODEL_OVERRIDE_PATH)}`);const loaded=parseJsonObject(String(payload.file?.content||""));if(loaded&&loaded.kind==="model_overridden_properties"&&loaded.id==="model_overridden_properties"&&loaded.models&&typeof loaded.models==="object"){setOverrideSource(`${JSON.stringify(loaded,null,2)}\n`);setOverrideDirty(false);return}}catch{}setOverrideSource(DEFAULT_MODEL_OVERRIDE_SOURCE);setOverrideDirty(false)};
  const saveOverrideDocument=()=>perform(async()=>{const parsed=parseJsonObject(overrideSource);if(!parsed)throw new Error("Override document must be valid JSON.");if(parsed.kind!=="model_overridden_properties"||parsed.id!=="model_overridden_properties"||!parsed.models||typeof parsed.models!=="object")throw new Error("Override document must include kind/id/models for model_overridden_properties.");const normalized=`${JSON.stringify(parsed,null,2)}\n`;await request(`/workbench/workspaces/${encodeURIComponent(workspaceId)}/file`,{method:"PUT",body:JSON.stringify({path:MODEL_OVERRIDE_PATH,content:normalized})});setOverrideSource(normalized);setOverrideDirty(false);setOverrideStatus("Overrides saved to design/models/model_overridden_properties.json.");await load()});
  useEffect(()=>{if(catalogMode==="models"&&topMenuMode==="override"){void loadOverrideDocument()}},[catalogMode,topMenuMode,workspaceId]);
- const renderTree=(item:CatalogItem,depth=0,parentEnablement?:ResourceEnablement):JSX.Element=>{const backend=item.kind==="backend";const system=item.kind==="system";const systemMode=catalogMode==="systems";const rootResource=backend||system;const record=item.record as RecordFile<ModelResource>;const nested=specializations.get(item.id)||[];const selected=active?.record.document?.id===item.id;const inherited=resolveResourceEnablement(record.document,parentEnablement);const itemEnablement=typeof record.resolved?.enabled==="boolean"?{enabled:record.resolved.enabled,source:record.document?.enabled===undefined&&parentEnablement?"parent":inherited.source} as ResourceEnablement:inherited;return <ArtifactTreeBranch className={`inheritance-node ${layout} ${item.kind}-node`} childrenClassName="inheritance-children" key={`${item.kind}:${item.id}`} label={item.label} initialCollapsed={backend&&!systemMode} searchValue={{document:record.document,resolved:record.resolved}} style={{"--tree-depth":depth} as React.CSSProperties} header={<div className="inheritance-row"><button className={`inheritance-main ${enablementClass(itemEnablement)} ${selected?"selected":""}`} onClick={()=>open(record)}><span>{item.kind.toUpperCase()}</span><b>{item.label}</b><small>{rootResource?(record.document as BackendDef|SystemDef)?.provider:((record as RecordFile<ModelDef>).resolved?.model||(record.document as ModelDef)?.model||`implements ${modelParent(record.document as ModelDef)}`)}</small><div className="inheritance-status"><em>{systemMode?"callable execution system":`${nested.length} ${backend?"models":"presets"}`}{!rootResource&&` · temp ${String((((record as RecordFile<ModelDef>).resolved?.defaults||(record.document as ModelDef)?.defaults||{}).temperature)??"—")}`}</em><ResourceEnablementBadge state={itemEnablement}/></div></button>{!systemMode&&(backend?<button className="hier-mini" onClick={()=>newSpecialization(item,"model")}>+ model</button>:<button className="hier-mini" onClick={()=>newSpecialization(item,"preset")}>+ preset</button>)}</div>}>{nested.length?nested.map(r=>renderTree({kind:modelRole(r.document!),id:r.document!.id,label:r.document!.label||r.document!.id,record:r},depth+1,itemEnablement)):undefined}</ArtifactTreeBranch>};
+ const relationshipParentIds=(document:ModelResource,mode:TreeRelationshipMode)=>relationshipIds(
+  mode==="implementation"
+   ? ("implements" in document?document.implements:undefined)
+   : mode==="inheritance"
+    ? ("inheritsFrom" in document?document.inheritsFrom:undefined)
+    : document.dependsOn,
+ );
+ const relationshipForest=(mode:TreeRelationshipMode)=>{
+  const childrenByParent=new Map<string,CatalogItem[]>();
+  for(const item of items){
+   const document=item.record.document as ModelResource|undefined;
+   if(!document)continue;
+   for(const parentId of relationshipParentIds(document,mode)){
+    const children=childrenByParent.get(parentId)||[];
+    children.push(item);
+    childrenByParent.set(parentId,children);
+   }
+  }
+  const itemIds=new Set(items.map(item=>item.id));
+  const roots=items.filter(item=>{
+   const document=item.record.document as ModelResource|undefined;
+   return !document||!relationshipParentIds(document,mode).some(parentId=>itemIds.has(parentId));
+  });
+  const renderRelationshipTree=(item:CatalogItem,depth=0,trail:string[]=[]):JSX.Element=>{
+   const backend=item.kind==="backend";
+   const system=item.kind==="system";
+   const systemMode=catalogMode==="systems";
+   const rootResource=backend||system;
+   const record=item.record as RecordFile<ModelResource>;
+   const nested=(childrenByParent.get(item.id)||[]).filter(child=>!trail.includes(child.id));
+   const selected=active?.record.document?.id===item.id;
+   const itemEnablement=resourceEnablementFor(item.id);
+   const relationLabel=mode==="implementation"?"implementations":mode==="inheritance"?"inheritors":"dependents";
+   return <ArtifactTreeBranch className={`inheritance-node ${layout} ${item.kind}-node`} childrenClassName="inheritance-children" key={`${mode}:${trail.join(">")}:${item.kind}:${item.id}`} label={item.label} initialCollapsed={backend&&!systemMode} searchValue={{document:record.document,resolved:record.resolved}} style={{"--tree-depth":depth} as React.CSSProperties} header={<div className="inheritance-row"><button className={`inheritance-main ${enablementClass(itemEnablement)} ${selected?"selected":""}`} onClick={()=>open(record)}><span>{item.kind.toUpperCase()}</span><b>{item.label}</b><small>{rootResource?(record.document as BackendDef|SystemDef)?.provider:((record as RecordFile<ModelDef>).resolved?.model||(record.document as ModelDef)?.model||`implements ${modelParent(record.document as ModelDef)}`)}</small><div className="inheritance-status"><em>{systemMode?"callable execution system":`${nested.length} ${relationLabel}`}{!rootResource&&` · temp ${String((((record as RecordFile<ModelDef>).resolved?.defaults||(record.document as ModelDef)?.defaults||{}).temperature)??"—")}`}</em><ResourceEnablementBadge state={itemEnablement}/></div></button>{mode==="implementation"&&!systemMode&&(backend?<button className="hier-mini" onClick={()=>newImplementation(item,"model")}>+ model</button>:<button className="hier-mini" onClick={()=>newImplementation(item,"preset")}>+ preset</button>)}</div>}>{nested.length?nested.map(child=>renderRelationshipTree(child,depth+1,[...trail,item.id])):undefined}</ArtifactTreeBranch>;
+  };
+  return <div className={`inheritance-tree ${layout}`} data-relationship-mode={mode}>{roots.map(root=>renderRelationshipTree(root))}</div>;
+ };
      const renderEditor = (doc: OpenDocument, secondary = false) => {
   let document: ModelResource | null = null;
   try {
@@ -167,9 +244,11 @@ export function LlmModelsEditor({workspaceId,catalogMode="models",topMenuMode="b
   const selectBackendSection=(section:ModelEditorControlId)=>{setBackendEditorModes(current=>({...current,[paneStateKey]:section}));setBackendEditorDisplayModes(current=>({...current,[paneStateKey]:"tabs"}))};
   const backendId = document?.id || "";
   const resourceEnabled = document
-    ? (typeof document.enabled === "boolean"
-      ? document.enabled
-      : (typeof doc.record.resolved?.enabled === "boolean" ? doc.record.resolved.enabled : true))
+    ? (doc.dirty
+      ? document.enabled !== false
+      : (typeof doc.record.resolved?.enabled === "boolean"
+        ? doc.record.resolved.enabled
+        : document.enabled !== false))
     : false;
    const resolvedSource = document
     ? backend
@@ -179,8 +258,8 @@ export function LlmModelsEditor({workspaceId,catalogMode="models",topMenuMode="b
        : JSON.stringify(doc.record.resolved || {},null,2)
     : "";
    const inheritedParentId = document
-    ? doc.record.resolved?.parentId
-      || (!backend && !system ? modelParent(document as ModelDef) : "")
+    ? (!backend && !system ? relationshipIds((document as ModelDef).inheritsFrom)[0] : "")
+      || doc.record.resolved?.parentId
       || doc.record.resolved?.backendId
     : "";
    const inheritedParent = inheritedParentId ? items.find(item=>item.id===inheritedParentId) : null;
@@ -405,7 +484,7 @@ export function LlmModelsEditor({workspaceId,catalogMode="models",topMenuMode="b
       {!backend && !system && <div className="model-config-panes">
        <div className="model-config-pane">
         <div className="studio-section-label">CONFIGURATION</div>
-        <ConfigForm source={doc.source} onChange={src => updateSource(doc.key, src)} items={items} />
+        <ConfigForm source={doc.source} onChange={src => updateSource(doc.key, src)} items={items} effectiveEnabled={resourceEnabled} onEnabledChange={enabled=>setResourceEnabled(doc,document,enabled)} />
        </div>
       </div>}
       {system && <div className="model-config-panes">
@@ -420,19 +499,20 @@ export function LlmModelsEditor({workspaceId,catalogMode="models",topMenuMode="b
       </div>}
       <div className="model-visible-editor resolved-resource-editor">
        <div className="resolved-resource-heading">
-        <div className="studio-section-label">RESOLVED / INHERITED RESOURCE — read-only · save or reload origin only</div>
+        <div className="studio-section-label">EDITABLE RESOURCE OVERRIDE — save writes this workspace resource</div>
         {inheritedParentId&&<a href={inheritedParentHref} onClick={event=>{if(!inheritedParent)return;event.preventDefault();open(inheritedParent.record as RecordFile<ModelResource>)}}>Edit parent · {inheritedParent?.label||inheritedParentId}</a>}
        </div>
-       <ResourceSourceEditor value={resolvedSource} onChange={()=>{}} contentReadOnly showEnablement={false} label="Resolved / inherited resource" fileControls={{
+       <ResourceSourceEditor value={doc.source} onChange={source=>updateSource(doc.key,source)} showEnablement={false} label="Editable resource override" fileControls={{
          currentWorkspaceId:workspaceId,
          workspaceId:workspaceId,
          originWorkspaceId:doc.record.workspaceId||workspaceId,
          relativePath:doc.record.path,
-         dirty:false,
+         dirty:doc.dirty,
          allowLoadDifferent:false,
-         onSave:location=>saveInherited(doc,resolvedSource,location),
+         onSave:location=>saveDoc(doc,location),
          onLoad:location=>loadDoc(doc,location),
        }} />
+       <details className="resolved-resource-preview"><summary>Resolved inheritance preview</summary><pre>{resolvedSource}</pre></details>
       </div>
      </section>}
 
@@ -464,8 +544,25 @@ export function LlmModelsEditor({workspaceId,catalogMode="models",topMenuMode="b
  };
  if(catalogMode==="models"&&topMenuMode==="override")return <section className="resource-view"><div className="resource-heading"><div><span>MODEL OVERRIDE PROPERTIES</span><h1>Edit capability overrides</h1><p>Edit the filesystem-backed overrides at <code>{MODEL_OVERRIDE_PATH}</code>. These values are honored first for model capability and limit metadata.</p></div><div className="studio-actions"><button onClick={()=>void loadOverrideDocument()} disabled={busy}>Reload</button><button className="primary" onClick={saveOverrideDocument} disabled={busy||!overrideDirty}>Save overrides</button></div></div>{overrideStatus&&<div className="validation good">{overrideStatus}</div>}<div className="workflow-fields"><label className="wide"><span>OVERRIDE SOURCE</span><ResourceSourceEditor value={overrideSource} onChange={value=>{setOverrideSource(value);setOverrideDirty(true);setOverrideStatus("")}} showEnablement={false} label="Edit model_overridden_properties resource directly"/></label></div></section>;
  if(!snapshot)return <section className="resource-view"><div className="studio-empty">Loading model catalog…</div></section>;
- const leftPane=<div className={`inheritance-tree ${layout}`}>{roots.map(root=>renderTree(root))}</div>;
+ const leftPane=(relationshipMode:TreeRelationshipMode)=>relationshipForest(relationshipMode);
  const tabs=openDocs.map(doc=>({key:doc.key,kind:doc.record.document?.kind?.toUpperCase()||"ITEM",label:doc.record.document?.label||doc.record.document?.id||doc.record.path,dirty:doc.dirty}));
  const actions=<div className="layout-switch"><button onClick={newBackend}>{catalogMode==="systems"?"+ System":"+ Backend"}</button>{discovery&&<button onClick={()=>setDiscoverySelection(new Set(discovery.models.map(model=>model.id)))} disabled={busy||discoverySelection.size===discovery.models.length}>Select all discovered</button>}{compareKey?<span className="model-split-controls"><b>COMPARE</b><button className={splitOrientation==="left"?"active":""} onClick={()=>setSplitOrientation("left")} title="Other document on the left">⬅</button><button className={splitOrientation==="right"?"active":""} onClick={()=>setSplitOrientation("right")} title="Other document on the right">➡</button><button className={splitOrientation==="up"?"active":""} onClick={()=>setSplitOrientation("up")} title="Other document above">⬆</button><button className={splitOrientation==="down"?"active":""} onClick={()=>setSplitOrientation("down")} title="Other document below">⬇</button><button onClick={chooseComparison}>Single document</button></span>:<button disabled={openDocs.length<2} onClick={chooseComparison}>Compare documents</button>}<button className={layout==="tiles"?"active":""} onClick={()=>setLayout("tiles")}>▦ Tiles</button><button className={layout==="list"?"active":""} onClick={()=>setLayout("list")}>☷ List</button></div>;
- return <HierarchyResourceEditor workspaceId={workspaceId} categoryTree="models" eyebrow={catalogMode==="systems"?"CALLABLE SYSTEMS":"MODEL CATALOG"} title={catalogMode==="systems"?"Systems":"Models & presets"} description={catalogMode==="systems"?"Configure callable execution systems. Python, SWI-Prolog, MeTTa, the LLM caller, OmegaClaw, and Codex are peers at this level.":"Models inherit model backends; reusable presets inherit models or other presets and override invocation defaults without containing prompts."} headerActions={actions} error={error} onDismissError={()=>setError(null)} leftPane={leftPane} tabs={tabs} activeKey={activeKey} compareKey={compareKey} onActivate={setActiveKey} onClose={close} renderEditor={(key,secondary)=>{const doc=openDocs.find(item=>item.key===key);return doc?renderEditor(doc,secondary):null}} emptyEditor={<div className="studio-empty">{catalogMode==="systems"?"Select a system.":"Select a model or preset."}</div>} className="llm-model-editor model-hierarchy-page" treeClassName={`model-tree-pane ${layout}`} workspaceClassName="model-editor-workspace" tabsClassName="model-document-tabs" panesClassName={`model-editor-panes split-${splitOrientation}`}/>;
+ return <>
+  <HierarchyResourceEditor workspaceId={workspaceId} categoryTree="models" eyebrow={catalogMode==="systems"?"CALLABLE SYSTEMS":"MODEL CATALOG"} title={catalogMode==="systems"?"Systems":"Models & presets"} description={catalogMode==="systems"?"Configure callable execution systems. Python, SWI-Prolog, MeTTa, the LLM caller, OmegaClaw, and Codex are peers at this level.":"Models inherit model backends; reusable presets inherit models or other presets and override invocation defaults without containing prompts."} headerActions={actions} error={error} onDismissError={()=>setError(null)} leftPane={leftPane} tabs={tabs} activeKey={activeKey} compareKey={compareKey} onActivate={setActiveKey} onClose={close} renderEditor={(key,secondary)=>{const doc=openDocs.find(item=>item.key===key);return doc?renderEditor(doc,secondary):null}} emptyEditor={<div className="studio-empty">{catalogMode==="systems"?"Select a system.":"Select a model or preset."}</div>} className="llm-model-editor model-hierarchy-page" treeClassName={`model-tree-pane ${layout}`} workspaceClassName="model-editor-workspace" tabsClassName="model-document-tabs" panesClassName={`model-editor-panes split-${splitOrientation}`}/>
+  {enablementRequest&&(()=>{
+   const record=recordsById.get(enablementRequest.resourceId);
+   const dependencyIds=dependencyIdsFor(enablementRequest.resourceId);
+   const dependentIds=dependentIdsFor(enablementRequest.resourceId);
+   const action=enablementRequest.enabled?"Enable":"Disable";
+   return <div className="model-enablement-backdrop" role="presentation">
+    <section className="model-enablement-dialog" role="dialog" aria-modal="true" aria-label={`${action} resource scope`}>
+     <div><span>RESOURCE AVAILABILITY</span><h2>{action} {record?.document?.label||enablementRequest.resourceId}</h2><p>Choose which related resources receive the same explicit state.</p></div>
+     <label><input type="checkbox" checked readOnly/>This resource <small>{enablementRequest.resourceId}</small></label>
+     <label className={dependencyIds.length?"":"is-unavailable"}><input type="checkbox" checked={enablementRequest.includeDependencies} disabled={!dependencyIds.length} onChange={event=>setEnablementRequest(current=>current?{...current,includeDependencies:event.target.checked}:current)}/>Dependencies <small>{dependencyIds.length?dependencyIds.join(", "):"none"}</small></label>
+     <label className={dependentIds.length?"":"is-unavailable"}><input type="checkbox" checked={enablementRequest.includeDependents} disabled={!dependentIds.length} onChange={event=>setEnablementRequest(current=>current?{...current,includeDependents:event.target.checked}:current)}/>Dependents <small>{dependentIds.length?`${dependentIds.length} downstream resource(s)`:"none"}</small></label>
+     <footer><button type="button" onClick={()=>setEnablementRequest(null)} disabled={busy}>Cancel</button><button type="button" className="primary" onClick={()=>void applyResourceEnablement()} disabled={busy}>{action} selected scope</button></footer>
+    </section>
+   </div>;
+  })()}
+ </>;
 }

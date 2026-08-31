@@ -23,7 +23,10 @@
     (preflight_proposals Array)
     (validation_report Object)
   ))
-  (specializations (
+  (implementedBy (
+    (workflow.populate_from_english.json ())
+  ))
+  (inheritedBy (
     (workflow.populate_from_english.json (
       (lend ([]
         *
@@ -33,12 +36,12 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
   ))
-  (preferredSpecialization workflow.populate_from_english.json)
+  (preferredImplementation workflow.populate_from_english.json)
 )
 (
   (kind operation)
@@ -50,12 +53,7 @@
   ))
   (implementation llm.complete)
   (implements (
-    (workflow.populate_from_english (
-      (borrow ([]
-        *
-      ))
-      (exclude ([]))
-    ))
+    (workflow.populate_from_english ())
   ))
   (inputs (
     (english_specification Text)
@@ -92,5 +90,13 @@
     (parseJson true)
     (responseFormat json_object)
     (requiresPreflight true)
+  ))
+  (inheritsFrom (
+    (workflow.populate_from_english (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
   ))
 )

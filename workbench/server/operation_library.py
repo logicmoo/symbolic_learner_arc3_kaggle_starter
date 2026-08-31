@@ -212,24 +212,24 @@ def resolve_operation_implementation(workspace_root: Path, operation_id: str, re
             return bool(route)
         return bool(route) and (is_known_route is None or is_known_route(route))
 
-    def specialization_ids(resource_id: str) -> list[str]:
+    def implementation_ids(resource_id: str) -> list[str]:
         record = all_records.get(resource_id)
         if not record:
             return []
         document = record.get("document") or {}
-        declared = relationship_ids(document.get("specializations"))
+        declared = relationship_ids(document.get("implementedBy"))
         reverse = [
             candidate_id
             for candidate_id, candidate in implementations.items()
             if points_to(candidate.get("document") or {}, "implements", resource_id)
         ]
         ordered = list(dict.fromkeys([*declared, *reverse]))
-        preferred = str(document.get("preferredSpecialization") or "")
+        preferred = str(document.get("preferredImplementation") or "")
         return ([preferred] if preferred in ordered else []) + [candidate_id for candidate_id in ordered if candidate_id != preferred]
 
     def resolve_candidate(candidate_id: str, trail: tuple[str, ...]) -> tuple[dict[str, Any], list[str]] | None:
         if candidate_id in trail:
-            raise ValueError(f"operation specialization cycle: {' -> '.join((*trail, candidate_id))}")
+            raise ValueError(f"operation implementation cycle: {' -> '.join((*trail, candidate_id))}")
         record = all_records.get(candidate_id)
         if not record:
             return None
@@ -237,8 +237,8 @@ def resolve_operation_implementation(workspace_root: Path, operation_id: str, re
         path = [*trail, candidate_id]
         if is_executable(document):
             return record, path
-        for specialization_id in specialization_ids(candidate_id):
-            resolved = resolve_candidate(specialization_id, tuple(path))
+        for implementation_id in implementation_ids(candidate_id):
+            resolved = resolve_candidate(implementation_id, tuple(path))
             if resolved:
                 return resolved
         return None
@@ -253,29 +253,29 @@ def resolve_operation_implementation(workspace_root: Path, operation_id: str, re
                 "implementation": inheritance["document"],
                 "declaredImplementation": operation,
                 "implementationRecord": operation_record,
-                "inheritanceResolution": inheritance,
+                "propertyInheritanceResolution": inheritance,
                 "direct": True,
-                "resolutionPath": [operation_id],
+                "implementationPath": [operation_id],
             }
         raise ValueError(f"operation {operation_id} is not directly runnable")
 
-    direct_specializations = specialization_ids(operation_id)
+    direct_implementations = implementation_ids(operation_id)
     reachable: set[str] = set()
 
     def collect(resource_id: str, trail: tuple[str, ...] = ()) -> None:
         if resource_id in trail:
-            raise ValueError(f"operation specialization cycle: {' -> '.join((*trail, resource_id))}")
-        for specialization_id in specialization_ids(resource_id):
-            if specialization_id in reachable:
+            raise ValueError(f"operation implementation cycle: {' -> '.join((*trail, resource_id))}")
+        for implementation_id in implementation_ids(resource_id):
+            if implementation_id in reachable:
                 continue
-            reachable.add(specialization_id)
-            collect(specialization_id, (*trail, resource_id))
+            reachable.add(implementation_id)
+            collect(implementation_id, (*trail, resource_id))
 
     collect(operation_id)
     if requested and requested not in reachable:
         raise ValueError(f"implementation {requested} is not allowed by operation {operation_id}")
 
-    starts = [requested] if requested else direct_specializations
+    starts = [requested] if requested else direct_implementations
     for candidate_id in starts:
         if not candidate_id:
             continue
@@ -290,9 +290,9 @@ def resolve_operation_implementation(workspace_root: Path, operation_id: str, re
             "implementation": inheritance["document"],
             "declaredImplementation": record["document"],
             "implementationRecord": record,
-            "inheritanceResolution": inheritance,
-            "selectedSpecialization": candidate_id,
-            "resolutionPath": resolution_path,
+            "propertyInheritanceResolution": inheritance,
+            "selectedImplementation": candidate_id,
+            "implementationPath": resolution_path,
         }
 
     if is_executable(operation):
@@ -303,12 +303,12 @@ def resolve_operation_implementation(workspace_root: Path, operation_id: str, re
             "implementation": inheritance["document"],
             "declaredImplementation": operation,
             "implementationRecord": operation_record,
-            "inheritanceResolution": inheritance,
+            "propertyInheritanceResolution": inheritance,
             "direct": True,
-            "resolutionPath": [operation_id],
+            "implementationPath": [operation_id],
         }
     if requested:
-        raise ValueError(f"operation specialization {requested} has no runnable descendant")
+        raise ValueError(f"operation implementation {requested} has no runnable descendant")
     return fallback_result()
 
 
@@ -331,6 +331,6 @@ def legacy_catalog_view(documents: Iterable[dict[str, Any]]) -> list[dict[str, A
         outputs = document.get("outputs") or {}
         left = " + ".join(inputs) or "∅"
         right = " + ".join(outputs) or "∅"
-        routes = str(document.get("preferredSpecialization") or document.get("implementation") or "")
+        routes = str(document.get("preferredImplementation") or document.get("implementation") or "")
         result.append({"id": document["id"], "label": document.get("label") or document["id"], "ports": f"{left} → {right}", "routes": routes, "definition": document, "source": "workbench/workspaces/shared_library_system/design/operations"})
     return sorted(result, key=lambda item: str(item["label"]).lower())

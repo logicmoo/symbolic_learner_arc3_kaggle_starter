@@ -4,14 +4,12 @@
   (label Observation)
   (description "Evidence received from an external world, independent of how that evidence is represented.")
   (implements (
-    (information (
-      (borrow ([]
-        *
-      ))
-      (exclude ([]))
-    ))
+    (information ())
   ))
-  (specializations (
+  (implementedBy (
+    (objectified_observation ())
+  ))
+  (inheritedBy (
     (objectified_observation (
       (lend ([]
         *
@@ -21,9 +19,17 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
+    ))
+  ))
+  (inheritsFrom (
+    (information (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
     ))
   ))
 )

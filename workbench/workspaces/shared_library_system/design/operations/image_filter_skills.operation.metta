@@ -23,21 +23,35 @@
       (imagePath (
         (datatype Text)
         (label "Workspace-relative image to filter")
-        (default "data/VideoImports/previews/testcard.png")
+        (default data/VideoImports/previews/testcard.png)
       ))
       (filterId (
         (datatype Text)
         (label "Filter id from GET /workbench/video-import/filters")
-        (default "cartoon")
+        (default cartoon)
       ))
       (params (
         (datatype Json)
         (label "Filter parameters")
-        (default "{\"colors\": 8, \"scale\": 8}")
+        (default (
+          (__metta_json_string_parts__ ([]
+            (
+              (colors 8)
+              (scale 8)
+            )
+          ))
+        ))
       ))
     ))
   ))
-  (specializations (
+  (implementedBy (
+    (skill.image_filter.cartoon ())
+    (skill.image_filter.pixelate ())
+    (skill.image_filter.downscale ())
+    (skill.image_filter.lut ())
+    (skill.image_filter.python_skill ())
+  ))
+  (inheritedBy (
     (skill.image_filter.cartoon (
       (lend ([]
         *
@@ -47,8 +61,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (skill.image_filter.pixelate (
@@ -60,8 +74,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (skill.image_filter.downscale (
@@ -73,8 +87,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (skill.image_filter.lut (
@@ -86,8 +100,8 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
     (skill.image_filter.python_skill (
@@ -99,12 +113,12 @@
         label
         description
         implements
-        specializations
-        preferredSpecialization
+        implementedBy
+        preferredImplementation
       ))
     ))
   ))
-  (preferredSpecialization skill.image_filter.cartoon)
+  (preferredImplementation skill.image_filter.cartoon)
 )
 (
   (kind operation)
@@ -117,11 +131,14 @@
   ))
   (implementation python.callable)
   (implements (
+    (skill.apply_image_filter ())
+  ))
+  (inheritsFrom (
     (skill.apply_image_filter (
       (borrow ([]
         *
       ))
-      (exclude ())
+      (exclude ([]))
     ))
   ))
 )
@@ -136,11 +153,14 @@
   ))
   (implementation python.callable)
   (implements (
+    (skill.apply_image_filter ())
+  ))
+  (inheritsFrom (
     (skill.apply_image_filter (
       (borrow ([]
         *
       ))
-      (exclude ())
+      (exclude ([]))
     ))
   ))
 )
@@ -155,11 +175,14 @@
   ))
   (implementation python.callable)
   (implements (
+    (skill.apply_image_filter ())
+  ))
+  (inheritsFrom (
     (skill.apply_image_filter (
       (borrow ([]
         *
       ))
-      (exclude ())
+      (exclude ([]))
     ))
   ))
 )
@@ -174,11 +197,14 @@
   ))
   (implementation python.callable)
   (implements (
+    (skill.apply_image_filter ())
+  ))
+  (inheritsFrom (
     (skill.apply_image_filter (
       (borrow ([]
         *
       ))
-      (exclude ())
+      (exclude ([]))
     ))
   ))
 )
@@ -193,11 +219,14 @@
   ))
   (implementation python.callable)
   (implements (
+    (skill.apply_image_filter ())
+  ))
+  (inheritsFrom (
     (skill.apply_image_filter (
       (borrow ([]
         *
       ))
-      (exclude ())
+      (exclude ([]))
     ))
   ))
 )

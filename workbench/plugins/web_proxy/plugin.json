@@ -51,7 +51,7 @@
     },
     {
       "path": "/ws_collab",
-      "redirect": "http://127.0.0.1:8802",
+      "redirect": "http://127.0.0.1:8802/ws_collab",
       "description": "Redirects /ws_collab to the Workspace Collab plugin.",
       "requestedBy": "ws_collab"
     }

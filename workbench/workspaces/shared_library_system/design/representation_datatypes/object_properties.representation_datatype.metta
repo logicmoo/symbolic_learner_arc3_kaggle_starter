@@ -4,6 +4,13 @@
   (label "Object Properties")
   (description "Structured symbolic properties and relationships describing objects independently of the underlying implementation language.")
   (implements (
+    (entity ())
+    (entity_collection ())
+    (world_state ())
+  ))
+  (implementedBy ())
+  (inheritedBy ())
+  (inheritsFrom (
     (entity (
       (borrow ([]
         *
@@ -23,5 +30,4 @@
       (exclude ([]))
     ))
   ))
-  (specializations ())
 )

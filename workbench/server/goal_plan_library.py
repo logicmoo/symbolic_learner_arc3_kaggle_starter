@@ -68,4 +68,4 @@ def symbolic_hierarchy(records: list[dict[str, Any]], parent_kind: str) -> dict[
     for record in variants:
         for parent in relationship_ids(record["document"].get("implements")):
             by_parent.setdefault(parent, []).append(record)
-    return {"specifications": parents, "variants": variants, "specializationsByResource": by_parent}
+    return {"specifications": parents, "variants": variants, "implementedByResource": by_parent}
