@@ -83,11 +83,11 @@ export function selectSubControls(
 /**
  * The Control calls this over REST to enumerate its sub-controls: the built-in list
  * merged with any a plugin contributes via
- * `plugin.subControls` on /api/plugins. Falls back to the built-in list on error.
+ * `plugin.subControls` on /workbench/plugins. Falls back to the built-in list on error.
  */
 export async function fetchSubControls(): Promise<SubControlDescriptor[]> {
   try {
-    const response = await fetch("/api/plugins", { cache: "no-store" });
+    const response = await fetch("/workbench/plugins", { cache: "no-store" });
     if (!response.ok) throw new Error(`plugins ${response.status}`);
     const payload = await response.json();
     const contributed: SubControlDescriptor[] = (payload.plugins || []).flatMap((plugin: {

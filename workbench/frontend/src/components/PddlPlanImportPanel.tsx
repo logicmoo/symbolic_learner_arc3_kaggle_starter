@@ -37,7 +37,7 @@ export function PddlPlanImportPanel({ workspaceId, workflow, onImported }: { wor
     if (catalogLoaded) return;
     setCatalogLoaded(true);
     try {
-      const response = await fetch(`/api/workspaces/${encodeURIComponent(workspaceId)}/snapshot`);
+      const response = await fetch(`/workbench/workspaces/${encodeURIComponent(workspaceId)}/snapshot`);
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.detail || payload.error || response.statusText);
       const records = (payload.operations || []) as OperationRecord[];
@@ -47,7 +47,7 @@ export function PddlPlanImportPanel({ workspaceId, workflow, onImported }: { wor
   const convert = async () => {
     setBusy(true); setMessage("");
     try {
-      const response = await fetch("/api/engine/workflows/import-pddl-plan", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: workflow.id, label: workflow.label, description: workflow.description, inputs: workflow.inputs, outputs: workflow.outputs, planner, domain, problem, sourcePlan, actionMap, actionBindings }) });
+      const response = await fetch("/workbench/engine/workflows/import-pddl-plan", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: workflow.id, label: workflow.label, description: workflow.description, inputs: workflow.inputs, outputs: workflow.outputs, planner, domain, problem, sourcePlan, actionMap, actionBindings }) });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.detail || payload.error || response.statusText);
       onImported(payload.workflow as Workflow);

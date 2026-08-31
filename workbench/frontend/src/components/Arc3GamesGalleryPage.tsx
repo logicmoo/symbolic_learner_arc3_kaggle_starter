@@ -38,7 +38,7 @@ export function Arc3GamesGalleryPage({ pageDefinition, workspaceLabel, onPlayGam
     setLoading(true);
     setError("");
     try {
-      const payload = await request(`/api/arc3-play/games${refresh ? "?refresh=true" : ""}`);
+      const payload = await request(`/workbench/arc3-play/games${refresh ? "?refresh=true" : ""}`);
       setGames((payload.games as GameInfo[]) || []);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : String(reason));
@@ -56,7 +56,7 @@ export function Arc3GamesGalleryPage({ pageDefinition, workspaceLabel, onPlayGam
     setError("");
     setSyncMessage("");
     try {
-      const summary = await request("/api/arc3-play/games/sync", { method: "POST" });
+      const summary = await request("/workbench/arc3-play/games/sync", { method: "POST" });
       if (!summary.available) {
         setSyncMessage("No sibling ../arc-interactive checkout found on this machine -- nothing to import.");
       } else if (summary.copied > 0) {
@@ -136,7 +136,7 @@ export function Arc3GamesGalleryPage({ pageDefinition, workspaceLabel, onPlayGam
                   <div className="arc3-gallery-thumb-placeholder">No preview</div>
                 ) : (
                   <img
-                    src={`/api/arc3-play/games/${encodeURIComponent(shortId)}/preview?nonce=${previewNonce}`}
+                    src={`/workbench/arc3-play/games/${encodeURIComponent(shortId)}/preview?nonce=${previewNonce}`}
                     alt={game.title || shortId}
                     loading="lazy"
                     onError={() => setFailedPreviews((current) => ({ ...current, [shortId]: true }))}

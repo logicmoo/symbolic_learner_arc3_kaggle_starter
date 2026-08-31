@@ -231,7 +231,7 @@ def ensure_relay(
         import urllib.request
 
         request = urllib.request.Request(
-            f"{API_BASE}/api/system/services/mailbox_server/start", method="POST"
+            f"{API_BASE}/workbench/system/services/mailbox_server/start", method="POST"
         )
         with urllib.request.urlopen(request, timeout=5):
             return {"service": "mailbox_server", "state": "starting", "action": "service-monitor"}

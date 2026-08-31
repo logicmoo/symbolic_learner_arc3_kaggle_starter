@@ -12,7 +12,7 @@
     (mailboxDirectory "C:\\snet\\PeTTa\\repos\\mailbox_channel\\mailbox")
     (adapterScript "..\\mailbox_channel\\mailbox-client.cmd")
     (channelRelayDaemon "..\\mailbox_channel\\mailbox-server.cmd")
-    (channelRelayControlApi /api/system/services/mailbox_server)
+    (channelRelayControlApi /workbench/system/services/mailbox_server)
     (channelRelayRecipient mailbox_server)
     (channelRelayHealthUrl "http://127.0.0.1:46667/health")
     (localIdentity symbolic-workbench-codex)

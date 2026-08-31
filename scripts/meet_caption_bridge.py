@@ -275,22 +275,28 @@ def wait_for_meet_tab(cdp: str, timeout: float = 900.0, require_room: bool = Fal
 # classes (the old approach) silently breaks and, worse, can silently DROP
 # captions when a text-pattern heuristic misfires with no visible error.
 # Instead: find the captions region using only its stable semantic
-# aria-label/role (never a class name), verified by picking whichever
-# candidate region actually holds the MOST text — never a narrower/wrong
-# match. Then track each caption ROW by DOM ELEMENT IDENTITY (a stable key
-# assigned the first time that exact node is seen, kept on `window` across
-# polls) rather than by guessing from its text content — a row is either a
-# brand new DOM node (new utterance) or the SAME node still growing
-# (interim speech), which is unambiguous and survives any class-name churn
-# because it depends on nothing but the region's own generic child
-# structure and the browser's DOM identity, both of which are stable.
+# aria-label/role. Prefer an `[aria-live]` match specifically — that's the
+# accessibility signal for a small, transient, live-updating region (the
+# actual live-caption ticker), as opposed to Meet's separate, non-live
+# scrolling transcript/history panel, which can ALSO match a broad
+# aria-label search and (being a full growing history, not a live line)
+# will always have far more text — a "pick whichever has the most text"
+# heuristic actively prefers the WRONG one. Only fall back to the biggest
+# candidate if nothing is marked aria-live at all. Track each caption ROW
+# by DOM ELEMENT IDENTITY (a stable key assigned the first time that exact
+# node is seen, kept on `window` across polls) rather than by guessing from
+# its text content — a row is either a brand new DOM node (new utterance)
+# or the SAME node still growing (interim speech), unambiguous and immune
+# to class-name churn since it depends only on the region's own generic
+# child structure and DOM identity, both stable.
 CAPTIONS_JS = r"""
 (() => {
-  const candidates = [...document.querySelectorAll(
-    'div[aria-label*="aption" i], div[role="region"][aria-label*="ubtitle" i], div[role="region"][aria-label*="aption" i]'
-  )];
+  const labelSel = 'div[aria-label*="aption" i], div[role="region"][aria-label*="ubtitle" i], div[role="region"][aria-label*="aption" i]';
+  const candidates = [...document.querySelectorAll(labelSel)];
+  const liveOnes = candidates.filter((c) => c.hasAttribute("aria-live") || c.closest("[aria-live]"));
   let region = null, bestLen = -1;
-  for (const c of candidates) {
+  const pool = liveOnes.length ? liveOnes : candidates;
+  for (const c of pool) {
     const len = (c.innerText || "").length;
     if (len > bestLen) { region = c; bestLen = len; }
   }
@@ -300,7 +306,16 @@ CAPTIONS_JS = r"""
   }
   window.__meetCaptionRows = window.__meetCaptionRows || new Map();
   const seen = window.__meetCaptionRows;
-  const rowEls = [...region.children].filter(el => (el.innerText || "").trim().length > 0);
+  let rowEls = [...region.children].filter(el => (el.innerText || "").trim().length > 0);
+  // In Meet's "single continuously-growing row" mode the region can hold
+  // its text directly (no per-utterance child elements at all) — fall back
+  // to treating the region itself as the one row rather than silently
+  // dropping everything just because it has no useful children.
+  let fallbackNote = null;
+  if (!rowEls.length && (region.innerText || "").trim()) {
+    rowEls = [region];
+    fallbackNote = `no child rows; using region itself (childCount=${region.children.length})`;
+  }
   const rows = [];
   const liveKeys = [];
   rowEls.forEach((rowEl) => {
@@ -328,7 +343,7 @@ CAPTIONS_JS = r"""
   // Forget rows no longer present at all, so this Map never grows
   // unbounded across a long meeting.
   for (const el of [...seen.keys()]) { if (!rowEls.includes(el)) seen.delete(el); }
-  return JSON.stringify({ ok: true, rows, liveKeys });
+  return JSON.stringify({ ok: true, rows, liveKeys, note: fallbackNote });
 })()
 """
 
@@ -414,58 +429,152 @@ def autojoin_js(policy: str) -> str:
 """ % want
 
 
+# A sentence boundary: one or more .!? immediately followed by whitespace or
+# end-of-string. Deliberately simple (this is ASR captions, not copy-edited
+# prose) — matches the same heuristic already used to count "Transcribe"
+# lines in the admin UI.
+_SENTENCE_END_RE = re.compile(r"[.!?]+(?=\s|$)")
+
+
+def _first_sentence_boundary(text: str) -> int | None:
+    """Index just past the FIRST sentence-ending punctuation in `text`, or
+    None if it doesn't contain one yet."""
+    m = _SENTENCE_END_RE.search(text)
+    return m.end() if m else None
+
+
 class CaptionTracker:
-    """Finalize caption rows by DOM ELEMENT IDENTITY, not by guessed text or
-    speaker patterns. CAPTIONS_JS assigns each row a stable `key` the first
-    time that exact DOM node is seen (kept on `window` across polls); the
-    SAME key reappearing means Meet is still growing that same row (interim
-    speech), while a key that stops appearing means the row is gone from
-    the captions region — permanently, since nothing brings a scrolled-off
-    row back — so it's finalized immediately rather than waiting out
-    `settle` and losing it. This is unambiguous and survives Meet's CSS
-    class churn entirely, since it depends only on DOM node identity.
+    """Trap every row-text CHANGE, keyed by DOM element identity, and relay
+    it immediately — zero latency, no settle timers on the bridge side at
+    all. Google's live captions get revised unpredictably (confirmed live:
+    identical audio produced a "first version", then a few seconds later a
+    completely different "corrected version" of the same stretch of
+    speech) — every attempted "decide what's final on the bridge side"
+    heuristic ended up either hiding updates the listener needed to see,
+    or replaying huge duplicate blobs. So the bridge still never WAITS
+    before relaying a change.
+
+    BUT: Meet frequently keeps the SAME DOM row growing for an entire
+    monologue (one speaker, one row, thousands of characters) rather than
+    starting a new row per utterance — confirmed live (a single row grew
+    past 3000 chars covering many minutes of speech). Relaying that as one
+    ever-growing "line" makes the raw emit stream useless as a log of
+    distinct speech events. So the moment the growing text crosses a
+    completed sentence (`.`/`!`/`?`), that finished sentence is FROZEN
+    under the key it was already growing under (it will never be updated
+    again — "give the last line the old key") and a brand-new key is
+    minted for whatever comes next in the same DOM row — the still-growing
+    line keeps extending in FRONT of what's already been dished out, never
+    behind it.
+
+    Three explicit per-DOM-row buffers:
+      1. `raw`      — an exact mirror of Meet's own row text, untouched.
+      2. `pending`  — the still-unsettled tail of `raw` (tracked as an
+                       offset, not copied) that hasn't crossed a sentence
+                       boundary yet; every CHANGE to it is still relayed
+                       immediately (in place, same key) so the consumer
+                       sees the line growing in real time, same as before.
+      3. `ready`    — completed sentences peeled off of `pending` the
+                       instant they cross a boundary, queued here and then
+                       dished out to the real consumer (mailbox emit(), one
+                       call per sentence) in the SAME poll, in order — a
+                       real queue rather than an inline emit so multiple
+                       sentences completing between two polls are still
+                       dished out as distinct, separately-ordered items.
     """
 
     def __init__(self, settle: float) -> None:
-        self.settle = settle
-        self.live: dict[str, tuple[str, str, float]] = {}  # key -> (speaker, text, since)
-        self.recent: list[str] = []
-        self.emitted: dict[str, str] = {}  # key -> full text already emitted
+        self.settle = settle  # kept for CLI/call-site compatibility; unused
+        # Buffer 1 — RAW: last-seen full text of each DOM row, unmodified.
+        self.raw: dict[str, str] = {}
+        # Buffer 2 — PENDING: how much of `raw` has already been settled
+        # into `ready`/dished-out sentences (an offset into `raw`, not a
+        # copy) + which key is currently receiving updates for what's left.
+        self.settled_len: dict[str, int] = {}
+        self.active_key: dict[str, str] = {}
+        self.clone_seq: dict[str, int] = {}
+        # Per DOM row: what key the CURRENT active_key replaces (the key
+        # that was just frozen when this active_key was minted) — makes the
+        # chain explicit for a consumer (row1 -> row1#1 -> row1#2 is really
+        # one continuous utterance stream Meet never split into separate
+        # rows itself) instead of leaving it to be inferred from the key
+        # naming convention. None for a row's very first/original key.
+        self.replaces: dict[str, str | None] = {}
+        # Buffer 3 — READY: completed sentences waiting to be dished out,
+        # one at a time, to the real consumer. Populated then fully drained
+        # within the same update() call (no added latency) but kept as an
+        # explicit queue so the dispatch step is its own, separate stage.
+        # `final`: True for a completed sentence ("phrase") that will never
+        # be updated again once dished out; False for the still-growing
+        # live remainder — lets a consumer distinguish settled phrases from
+        # in-progress speech without guessing from the text itself.
+        # `replaces`: the key this one continues from (None if it's the
+        # row's original key).
+        self.ready: list[tuple[str, str, str, bool, str | None]] = []  # (key, speaker, text, final, replaces)
+        # On the very first poll after a (re)start, whatever's already
+        # visible could be minutes of accumulated on-screen history (Meet's
+        # captions region keeps a long scroll-back) rather than something
+        # newly said — baseline it silently instead of relaying it as a
+        # wall of "new" updates every single time the bridge restarts.
+        self.baselined = False
 
     def update(self, rows: list[dict[str, str]], live_keys: list[str], emit) -> None:
-        now = time.time()
-        live_set = set(live_keys)
+        if not self.baselined:
+            self.baselined = True
+            for row in rows:
+                self.raw[row["key"]] = row["text"]
+                self.settled_len[row["key"]] = len(row["text"])
+            return
+        seen_keys = set()
         for row in rows:
-            key, speaker, text = row["key"], row["speaker"], row["text"]
-            current = self.live.get(key)
-            if current is None or text != current[1]:
-                self.live[key] = (speaker, text, now)
-            elif now - current[2] >= self.settle:
-                self._emit(key, speaker, text, emit)
-                self.live.pop(key, None)
-        # A row no longer present in the region at all will never grow or
-        # be seen again — finalize it right away instead of waiting.
-        for key in list(self.live):
-            if key not in live_set:
-                speaker, text, _ = self.live.pop(key)
-                self._emit(key, speaker, text, emit)
-                self.emitted.pop(key, None)
-
-    def _emit(self, key: str, speaker: str, text: str, emit) -> None:
-        # Meet GROWS one caption row for a long monologue; emit only what is
-        # NEW since the last emission for THIS row, never the whole wall.
-        prior = self.emitted.get(key, "")
-        delta = text[len(prior):].strip() if prior and text.startswith(prior) else text
-        if len(delta) < 2:
-            self.emitted[key] = text
-            return
-        dedupe_key = f"{key}::{delta}"
-        if dedupe_key in self.recent:
-            return
-        self.recent.append(dedupe_key)
-        del self.recent[:-40]
-        self.emitted[key] = text
-        emit(speaker, delta)
+            dom_key, speaker, text = row["key"], row["speaker"], row["text"]
+            text = text.strip()
+            seen_keys.add(dom_key)
+            if len(text) < 2 or self.raw.get(dom_key) == text:
+                continue
+            self.raw[dom_key] = text  # buffer 1: mirror updated first
+            settled_len = self.settled_len.get(dom_key, 0)
+            active_key = self.active_key.get(dom_key, dom_key)
+            replaces = self.replaces.get(dom_key)
+            # Consume buffer 2 (the still-unsettled tail): peel off every
+            # COMPLETED sentence, queuing each into buffer 3 (`ready`) —
+            # the still-growing part always stays IN FRONT of (after) the
+            # already-settled offset, never overlapping it.
+            while True:
+                pending = text[settled_len:]
+                boundary = _first_sentence_boundary(pending)
+                if boundary is None:
+                    break
+                sentence = pending[:boundary].strip()
+                if sentence:
+                    self.ready.append((active_key, speaker, sentence, True, replaces))
+                settled_len += boundary
+                self.clone_seq[dom_key] = self.clone_seq.get(dom_key, 0) + 1
+                replaces = active_key  # the NEXT key continues from this one
+                active_key = f"{dom_key}#{self.clone_seq[dom_key]}"
+            self.settled_len[dom_key] = settled_len
+            self.active_key[dom_key] = active_key
+            self.replaces[dom_key] = replaces
+            # Whatever hasn't crossed a boundary yet is still relayed live,
+            # in place, under the (still-open) active key — the consumer
+            # keeps seeing the growing line in real time, it just no longer
+            # carries the already-dished-out sentences in front of it.
+            live_pending = text[settled_len:].strip()
+            if live_pending:
+                self.ready.append((active_key, speaker, live_pending, False, replaces))
+        # Dispatch buffer 3: dish out every queued item to the real
+        # consumer, one at a time, in order, then clear the queue.
+        for key, speaker, text, final, replaces in self.ready:
+            emit(key, speaker, text, final=final, replaces=replaces)
+        self.ready.clear()
+        # Forget rows no longer present at all, so these dicts never grow
+        # unbounded across a long meeting.
+        for dom_key in list(self.raw):
+            if dom_key not in seen_keys:
+                self.raw.pop(dom_key, None)
+                self.settled_len.pop(dom_key, None)
+                self.active_key.pop(dom_key, None)
+                self.clone_seq.pop(dom_key, None)
 
 
 # --------------------------------------------------------------------------
@@ -892,38 +1001,73 @@ def main() -> None:
             {"source": "google-meet-bridge", "meetingUrl": meeting_url, "servant": True},
         )
 
-    def emit(speaker: str, text: str) -> None:
+    def emit(key: str, speaker: str, text: str, final: bool = False, replaces: str | None = None) -> None:
         if speaker.strip().lower() in ignore:
             return
         if speaker.strip().lower() in ("you", "sie", "tu", "vous"):
             speaker = args.self_name
         sender = args.sender_prefix + (re.sub(r"[^a-z0-9]+", "-", speaker.lower()).strip("-") or "speaker")
         line = f"{speaker}: {text}"
+        meeting_url_now = holder.get("url")
+        # Full info on every single emit — never make a consumer look
+        # anything up elsewhere: which key, whether it's a settled phrase
+        # or still-growing speech, what key (if any) it continues from, and
+        # which meeting it came from, every time, not just on the first
+        # message for a given key.
+        full_meta = {
+            "source": "google-meet-captions", "speaker": speaker, "key": key,
+            "final": final, "replaces": replaces, "meetingUrl": meeting_url_now,
+        }
         for recipient in recipients:
             try:
-                client.send(recipient, line, sender=sender, metadata={"source": "google-meet-captions", "speaker": speaker})
+                client.send(recipient, line, sender=sender, metadata=dict(full_meta))
             except Exception as error:  # noqa: BLE001
                 print(f"[mailbox] send failed: {error}", file=sys.stderr)
-        status["captionCount"] = int(status.get("captionCount") or 0) + 1
-        status["lastCaptionAt"] = time.strftime("%Y-%m-%dT%H:%M:%S")
+        now_iso = time.strftime("%Y-%m-%dT%H:%M:%S")
         with captions_lock:
-            # Tag each line with the meeting it was captured in — switch_to()
-            # can hop the bridge to a different room without clearing this
-            # ring buffer, so consumers need a way to tell old-meeting lines
-            # apart from the current one (e.g. a "which meeting" dropdown).
-            captions_log.append({
-                "at": time.time(), "iso": status["lastCaptionAt"], "speaker": speaker, "text": text,
-                "meetingUrl": holder.get("url"),
-            })
-            del captions_log[:-200]
+            # ADD the first time this row key is seen, EDIT/UPDATE it in
+            # place (same position, refreshed `updated_at`) every time
+            # after — one evolving entry per utterance, not a growing pile
+            # of overlapping near-duplicate lines. The consumer reassembles
+            # the transcript by watching each key's latest text. `final`
+            # marks a completed sentence ("phrase") that will never be
+            # updated again — a key only ever goes live->final once, so
+            # writing it plainly here is safe (no key is reused after).
+            idx = captions_index.get(key)
+            if idx is not None and idx < len(captions_log) and captions_log[idx].get("key") == key:
+                row = captions_log[idx]
+                row.update({
+                    "text": text, "updated_at": time.time(), "iso": now_iso,
+                    "final": final, "replaces": replaces, "meetingUrl": meeting_url_now,
+                })
+            else:
+                captions_log.append({
+                    "key": key, "at": time.time(), "updated_at": time.time(), "iso": now_iso,
+                    "speaker": speaker, "text": text, "meetingUrl": meeting_url_now,
+                    "final": final, "replaces": replaces,
+                })
+                del captions_log[:-200]
+                # Rebuild the index after any ring-buffer trim shifts positions
+                # (bounded to 200 entries, so this is cheap).
+                captions_index.clear()
+                for i, row in enumerate(captions_log):
+                    captions_index[row["key"]] = i
+        status["captionCount"] = len(captions_log)
+        status["emitCount"] = int(status.get("emitCount") or 0) + 1
+        status["lastCaptionAt"] = now_iso
         print(f"[caption] {line}")
 
     tracker = CaptionTracker(args.settle)
     stop = threading.Event()
 
     # ---- STT-subsystem integration: /health + /captions for consumers ------
-    status: dict[str, Any] = {"ok": True, "service": "meet_caption_bridge", "meetingUrl": holder.get("url"), "lastCaptionAt": None, "captionCount": 0, "outbox": args.outbox, "recipients": recipients}
+    # `captionCount` = distinct stored rows (add/edit collapses to one per
+    # key); `emitCount` = total raw emit() calls ever made (every add AND
+    # every edit counted separately) — the UI shows both: "Emit (N)" for
+    # the raw event count, "Transcribe (M)" for the reassembled line count.
+    status: dict[str, Any] = {"ok": True, "service": "meet_caption_bridge", "meetingUrl": holder.get("url"), "lastCaptionAt": None, "captionCount": 0, "emitCount": 0, "outbox": args.outbox, "recipients": recipients}
     captions_log: list[dict[str, Any]] = []  # ring buffer for the ws_collab STT driver
+    captions_index: dict[str, int] = {}  # row key -> index into captions_log, for in-place ADD/EDIT
     captions_lock = threading.Lock()
 
     # ---- debug/status ring buffer — "other things" the admin UI can show
@@ -973,7 +1117,12 @@ def main() -> None:
                     except ValueError:
                         since = 0.0
                     with captions_lock:
-                        rows = [row for row in captions_log if row["at"] > since]
+                        # Filter by `updated_at`, not `at` (creation time) —
+                        # a row can be EDITED in place long after it was
+                        # first added (Meet revising it), and a poller
+                        # needs to see that edit even though the row's
+                        # creation time is older than their `since` cursor.
+                        rows = [row for row in captions_log if row["updated_at"] > since]
                         # Every meeting URL this buffer has ever seen a caption
                         # for — lets a "which meeting" dropdown list rooms even
                         # ones the current `since` window doesn't include.

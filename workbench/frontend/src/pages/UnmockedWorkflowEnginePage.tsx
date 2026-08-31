@@ -8,7 +8,7 @@ type EngineRun = { id:string; workflowId:string; workflowVersion:number; status:
 const blankWorkflow = (): Workflow => ({ id:"new_workflow", label:"New workflow", inputs:{}, outputs:{}, steps:[] });
 
 async function api(path:string, init?:RequestInit) {
-  const response = await fetch(`/api/engine${path}`, { headers:{"Content-Type":"application/json",...(init?.headers||{})}, ...init });
+  const response = await fetch(`/workbench/engine${path}`, { headers:{"Content-Type":"application/json",...(init?.headers||{})}, ...init });
   const payload = await response.json();
   if(!response.ok) throw new Error(payload.error || payload.detail || response.statusText);
   return payload;

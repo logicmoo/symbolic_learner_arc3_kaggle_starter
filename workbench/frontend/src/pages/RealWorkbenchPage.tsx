@@ -64,9 +64,9 @@ export function RealWorkbenchPage() {
     setBusy(true);
     setError(null);
     try {
-      const health = await fetch("/api/health", { cache: "no-store" });
+      const health = await fetch("/workbench/health", { cache: "no-store" });
       if (!health.ok) throw new Error("FastAPI backend is not responding");
-      const response = await fetch("/api/analyze", {
+      const response = await fetch("/workbench/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ grid: nextGrid }),

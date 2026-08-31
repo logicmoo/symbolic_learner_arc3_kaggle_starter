@@ -655,6 +655,69 @@ values here.
   exit, monitored-port failure detection, and deterministic regression tests.
 - [x] Add a repository-owned Codex heartbeat definition and document its
   mapping to the machine-local installed automation.
+- [x] Move every non-plugin workbench API route from `/api/*` to
+  `/workbench/*`. Plugin routes are untouched everywhere: a plugin's own bare
+  mount (`/web_proxy/...`, `/ws_collab/...`, etc.) and its `/api/{plugin}/admin`
+  mirror (the plugin-admin-mirror mechanism in `plugin_api.py`/`plugin_admin.py`,
+  `API_PREFIX = "/api"`) both still live at `/api`, unchanged, since they are
+  plugin URLs, not core ones. Changed: all 18 `app.include_router(..., prefix=
+  "/api")` calls plus the hardcoded `/api/...` route decorators in
+  `workbench/server/app.py` (health, whoami, analyze, runs, tasks, workflows)
+  now use `/workbench`; the self-referencing health-check URL in
+  `service_monitor_api.py`'s `_builtin_definitions()`; the mockup URLs in
+  `workflow_runner_todo_api.py`; `workbench/scripts/submit_managed_command.py`
+  and `scripts/mailbox_codex_listener.py`'s own calls into the workbench API;
+  `scripts/capture_workflow_runner_visuals.ps1`; all 51 frontend `.tsx`/`.ts`
+  files that called `/api/...` (bulk `/api/` -> `/workbench/` replace, verified
+  none of them referenced a plugin's own `/api/<plugin>` mirror); the matching
+  test-file assertions (mailbox, workspaces, engine, goal-runs, repository,
+  system/services, arc3-play, plugins-meta, plus three stale `app.py`-source
+  string assertions and `test_mailbox_api_lib.py`'s OWN isolated-app fixture,
+  which still mounted at `prefix="/api"` even after its call-site assertions
+  were bulk-renamed — caught by a targeted git-stash A/B pytest diff, not by
+  the bulk regex, since `prefix="/api"` has no trailing slash); reference docs
+  (`workbench/README.md`, `docs/AGENT_MAILBOX.md`, `docs/CHAT_PAGE.md`,
+  `workbench/docs/VIDEO_IMPORT.md`, `workbench/docs/DATA_REPRESENTATIONS.md`,
+  `workbench/docs/design/{OPERATIONS_AND_EXECUTIONS,GOALS_AND_PLANS_ARCHITECTURE,
+  RUNTIME_PERSISTENCE_ARCHITECTURE,CODEX_CURRENT_IMPLEMENTATION_INVENTORY}.md`,
+  `workbench/plugins/README.md`); and the workspace `.metta` resources
+  (`mailbox.system.metta`, `image_filter_skills.operation.metta`,
+  `workbench_api.managed_service.metta`). Left alone (confirmed genuinely
+  unrelated, not this workbench's own `/api`): OmniRoute's own `/api/keys` and
+  `/api/auth/login` on :20128, OpenRouter's `https://openrouter.ai/api/v1`,
+  HuggingFace's `/api/models/...`, unsloth studio's own `/api/inference/*` on
+  :8888, and the fully separate standalone `webui/server.py` tool's own
+  `/api/config`. Root `/` no longer 302-redirects the API port to the Vite
+  port (`http://127.0.0.1:8000/` used to "secretly host" `:5173` via a
+  redirect); it now RELAYS instead, proxying HTTP and the HMR WebSocket
+  through to Vite so the API port serves byte-identical content with the
+  browser never leaving `:8000`'s origin. The relay is deliberately gated:
+  only the exact root, and paths matching the same `VITE_OWNED` allowlist
+  `frontend/vite.config.ts`'s own `API_FALLBACK` proxy rule uses (`@vite`,
+  `@id`, `@fs`, `@react-refresh`, `__vite`, `src/`, `node_modules/`, `assets/`,
+  `index.html`, `favicon.ico`, or any path carrying a query string) are
+  relayed; everything else 404s from the API directly. This guard exists
+  because the first version relayed everything unmatched, and Vite's own
+  `API_FALLBACK` proxy rule sends anything IT doesn't recognize straight back
+  to the API — for a genuinely-removed path like the old `/api/health`,
+  neither side recognized it, so the two catch-alls ping-ponged the request
+  between `:8000` and `:5173` until it timed out. Added `GET
+  /workbench/endpoints`, a full JSON listing of every registered path+method
+  built from `app.openapi()` (so it stays correct without hand-walking
+  `app.routes`, which changed shape under fastapi 0.141's `_IncludedRouter`
+  wrapper). Added `httpx`/`websockets` to the `debugger`/`all` pyproject
+  extras (previously only in `test`) since core `app.py` now imports them
+  directly for the relay, not just tests. Verified: full repo pytest suite
+  33 failed/865 passed both before and after (the 33 are pre-existing,
+  confirmed via `git stash` A/B diff; `test_pycoplex*` collection errors are
+  the pre-existing missing-module issue, also confirmed via A/B diff); `npm
+  run build` succeeds; live-restarted API+Vite and curl-verified `GET
+  /workbench/health`, `GET /workbench/plugins`, `GET /workbench/endpoints`
+  (232 entries), `GET /api/web_proxy/admin` (plugin mirror still works), `GET
+  /` on both `:8000` and `:5173` return 200 with zero redirects
+  (`-MaximumRedirection 0`), `@vite/client`/`src/main.tsx` relay correctly
+  with `text/javascript`, and a made-up path 404s immediately instead of
+  timing out.
 
 ## Next work
 

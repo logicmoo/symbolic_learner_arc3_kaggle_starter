@@ -88,7 +88,7 @@ def test_pycoplex_manifest_and_packaging_contract() -> None:
 def test_pycoplex_is_discovered_loaded_and_serves_capabilities() -> None:
     app_module = importlib.import_module("app")
     with TestClient(app_module.app) as client:
-        catalog = client.get("/api/plugins")
+        catalog = client.get("/workbench/plugins")
         health = client.get("/pycoplex/health")
         capabilities = client.get("/pycoplex/capabilities")
     assert catalog.status_code == 200

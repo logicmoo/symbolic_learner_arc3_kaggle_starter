@@ -21,7 +21,7 @@ The Goal Runs UI exposes explicit Goal interpretation, Planning Strategy alterna
 
 ## Workflow Evidence
 
-Each workflow run persists inputs, outputs, status, timestamps, step attempts, artifacts, events, operation logs, and nested-run relationships. The Runtime navigation reads complete history from `GET /api/engine/runs`, not only React session state:
+Each workflow run persists inputs, outputs, status, timestamps, step attempts, artifacts, events, operation logs, and nested-run relationships. The Runtime navigation reads complete history from `GET /workbench/engine/runs`, not only React session state:
 
 - **Workflows** embeds Workflow Runs beside the Workflow editor so design and execution stay connected.
 - **Executions** flattens persisted Workflow and Operation attempts.

@@ -57,7 +57,7 @@ export function PromptHierarchyPanel({workspaceId}: {workspaceId: string}) {
   const [busy, setBusy] = useState(false);
 
   const refresh = async () => {
-    const payload = await jsonRequest(`/api/workspaces/${encodeURIComponent(workspaceId)}/prompt-hierarchy`);
+    const payload = await jsonRequest(`/workbench/workspaces/${encodeURIComponent(workspaceId)}/prompt-hierarchy`);
     setPrompts(payload.prompts || []);
     setImplementations(payload.promptImplementations || []);
   };
@@ -134,7 +134,7 @@ export function PromptHierarchyPanel({workspaceId}: {workspaceId: string}) {
         throw new Error("Prompt resource must declare id and kind=prompt or kind=prompt_implementation");
       }
       const path = targetPath || `prompts/${slug(document.id)}.${document.kind}.json`;
-      await jsonRequest(`/api/workspaces/${encodeURIComponent(workspaceId)}/file`, {
+      await jsonRequest(`/workbench/workspaces/${encodeURIComponent(workspaceId)}/file`, {
         method: "PUT",
         body: JSON.stringify({path, content: JSON.stringify(document, null, 2)}),
       });
@@ -152,7 +152,7 @@ export function PromptHierarchyPanel({workspaceId}: {workspaceId: string}) {
     setError(null);
     try {
       const query = implementation ? `?implementation=${encodeURIComponent(implementation)}` : "";
-      const payload = await jsonRequest(`/api/workspaces/${encodeURIComponent(workspaceId)}/prompts/${encodeURIComponent(promptId)}/resolve${query}`);
+      const payload = await jsonRequest(`/workbench/workspaces/${encodeURIComponent(workspaceId)}/prompts/${encodeURIComponent(promptId)}/resolve${query}`);
       setResolved(payload);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : String(reason));

@@ -128,7 +128,7 @@ under `path`. A legacy absolute `path` is still accepted.
 Everything is optional. A plugin declaring nothing still gets a configure link
 at `<routePrefix>/admin` and a generated configure page.
 
-The catalog entry returned by `GET /api/plugins` adds:
+The catalog entry returned by `GET /workbench/plugins` adds:
 
 - `adminPath` — the descriptor link the plugin owns on the API port;
 - `adminApiPath` — the same routes mirrored beneath `/api` for the browser;

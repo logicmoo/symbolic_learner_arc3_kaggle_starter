@@ -51,7 +51,7 @@ function RegistryWorkspaceSourceEditor({item, busy, onSaved}: {item: Workspace; 
     if (source || loading) return;
     setLoading(true); setMessage("");
     try {
-      const response=await fetch(`/api/workspaces/${encodeURIComponent(item.id)}/settings`); const payload=await response.json();
+      const response=await fetch(`/workbench/workspaces/${encodeURIComponent(item.id)}/settings`); const payload=await response.json();
       if(!response.ok)throw new Error(payload.detail||response.statusText);
       setSource(JSON.stringify(payload.document,null,2));
     } catch(reason){setMessage(reason instanceof Error?reason.message:String(reason));}
@@ -61,7 +61,7 @@ function RegistryWorkspaceSourceEditor({item, busy, onSaved}: {item: Workspace; 
     setSaving(true); setMessage("");
     try {
       const document=JSON.parse(source);
-      const response=await fetch(`/api/workspaces/${encodeURIComponent(item.id)}/settings`,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({document})});
+      const response=await fetch(`/workbench/workspaces/${encodeURIComponent(item.id)}/settings`,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({document})});
       const payload=await response.json(); if(!response.ok)throw new Error(payload.detail||response.statusText);
       setSource(JSON.stringify(payload.document,null,2)); onSaved(payload.workspace); setMessage("Workspace metadata saved.");
     } catch(reason){setMessage(reason instanceof Error?reason.message:String(reason));}
@@ -101,9 +101,9 @@ export function WorkspaceSettingsPanel({workspace, workspaces, fileCount, implem
 
   useEffect(() => setIncludes(workspace.includes || []), [workspace.id, JSON.stringify(workspace.includes || [])]);
   useEffect(() => setRegistry(workspaces), [workspaces]);
-  const refreshProviderStatus = () => void fetch("/api/system/resource-provider")
+  const refreshProviderStatus = () => void fetch("/workbench/system/resource-provider")
     .then(response => response.json()).then(payload => setProviderStatus(payload)).catch(reason => setMessage(String(reason)));
-  const refreshCredentials = () => void fetch(`/api/workspaces/${encodeURIComponent(credentialTargetId)}/credentials`)
+  const refreshCredentials = () => void fetch(`/workbench/workspaces/${encodeURIComponent(credentialTargetId)}/credentials`)
     .then(async response => {
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.detail || response.statusText);
@@ -111,7 +111,7 @@ export function WorkspaceSettingsPanel({workspace, workspaces, fileCount, implem
     }).catch(reason => setMessage(reason instanceof Error ? reason.message : String(reason)));
   useEffect(refreshProviderStatus, [workspace.id]);
   useEffect(refreshCredentials, [credentialTargetId]);
-  const refreshServices = () => void fetch(mode==="settings"?"/api/system/services?include_hidden=true":"/api/system/services")
+  const refreshServices = () => void fetch(mode==="settings"?"/workbench/system/services?include_hidden=true":"/workbench/system/services")
     .then(async response => {
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.detail || payload.error || response.statusText);
@@ -122,12 +122,12 @@ export function WorkspaceSettingsPanel({workspace, workspaces, fileCount, implem
     const timer = window.setInterval(refreshServices, 5000);
     return () => window.clearInterval(timer);
   }, []);
-  const refreshStartupPolicy = () => void fetch("/api/system/startup").then(response => response.json()).then(payload => {
+  const refreshStartupPolicy = () => void fetch("/workbench/system/startup").then(response => response.json()).then(payload => {
     setStartupPolicy(payload.services || {});
     setStartupPolicySource(JSON.stringify(payload.document || {kind:"workbench_startup_policy",id:"workbench_startup",services:payload.services||{}}, null, 2));
   }).catch(reason => setMessage(String(reason)));
   useEffect(refreshStartupPolicy, []);
-  const modelSelectionEndpoint = mode==="settings"?"/api/system/model-selection":`/api/workspaces/${encodeURIComponent(workspace.id)}/model-selection`;
+  const modelSelectionEndpoint = mode==="settings"?"/workbench/system/model-selection":`/workbench/workspaces/${encodeURIComponent(workspace.id)}/model-selection`;
   const refreshModelSelection = () => {
     if(mode==="processes")return;
     void fetch(modelSelectionEndpoint).then(async response=>{
@@ -161,7 +161,7 @@ export function WorkspaceSettingsPanel({workspace, workspaces, fileCount, implem
   const save = async () => {
     setBusy(true); setMessage("");
     try {
-      const response = await fetch(`/api/workspaces/${encodeURIComponent(workspace.id)}/settings`, {
+      const response = await fetch(`/workbench/workspaces/${encodeURIComponent(workspace.id)}/settings`, {
         method: "PUT", headers: {"Content-Type": "application/json"}, body: JSON.stringify({includes}),
       });
       const payload = await response.json();
@@ -174,7 +174,7 @@ export function WorkspaceSettingsPanel({workspace, workspaces, fileCount, implem
   const mutateCredential = async (name: string, method: "PUT" | "DELETE", body?: object) => {
     setCredentialBusy(name); setMessage("");
     try {
-      const response = await fetch(`/api/workspaces/${encodeURIComponent(credentialTargetId)}/credentials/${encodeURIComponent(name)}`, {
+      const response = await fetch(`/workbench/workspaces/${encodeURIComponent(credentialTargetId)}/credentials/${encodeURIComponent(name)}`, {
         method, headers: {"Content-Type": "application/json"}, body: body ? JSON.stringify(body) : undefined,
       });
       const payload = await response.json();
@@ -191,7 +191,7 @@ export function WorkspaceSettingsPanel({workspace, workspaces, fileCount, implem
     const name = credential.environmentVariable;
     setCredentialBusy(name); setMessage("");
     try {
-      const response = await fetch(`/api/workspaces/${encodeURIComponent(credentialTargetId)}/credentials/${encodeURIComponent(name)}/bootstrap`, {
+      const response = await fetch(`/workbench/workspaces/${encodeURIComponent(credentialTargetId)}/credentials/${encodeURIComponent(name)}/bootstrap`, {
         method: "POST", headers: {"Content-Type": "application/json"},
         body: JSON.stringify({backendId: credential.bootstrap.backendId}),
       });
@@ -206,7 +206,7 @@ export function WorkspaceSettingsPanel({workspace, workspaces, fileCount, implem
   const controlService = async (service: WorkbenchService, action: "start" | "restart" | "stop") => {
     setServiceBusy(`${service.id}:${action}`); setMessage("");
     try {
-      const response = await fetch(`/api/system/services/${encodeURIComponent(service.id)}/${action}`, {method: "POST"});
+      const response = await fetch(`/workbench/system/services/${encodeURIComponent(service.id)}/${action}`, {method: "POST"});
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.detail || payload.error || response.statusText);
       setMessage(`${service.label} ${action} requested.`);
@@ -219,7 +219,7 @@ export function WorkspaceSettingsPanel({workspace, workspaces, fileCount, implem
     if (!window.confirm(`${action === "kill" ? "Stop only" : "Stop only and relaunch"} PID ${pid} for ${service.label}? Its parent and child processes will not be terminated. Use the service-level Stop or Restart only when you intend to terminate the complete listener tree.`)) return;
     setServiceBusy(`${service.id}:${pid}:${action}`); setMessage("");
     try {
-      const response = await fetch(`/api/system/services/${encodeURIComponent(service.id)}/processes/${pid}/${action}`, {method:"POST"});
+      const response = await fetch(`/workbench/system/services/${encodeURIComponent(service.id)}/processes/${pid}/${action}`, {method:"POST"});
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.detail || payload.error || response.statusText);
       setMessage(`${service.label} PID ${pid} ${action} requested.`);
@@ -230,7 +230,7 @@ export function WorkspaceSettingsPanel({workspace, workspaces, fileCount, implem
   const updateRegistryWorkspace = async (item: Workspace, patch: {workspaceType?: "project" | "library"; hidden?: boolean}) => {
     setBusy(true); setMessage("");
     try {
-      const response = await fetch(`/api/workspaces/${encodeURIComponent(item.id)}/settings`, {method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(patch)});
+      const response = await fetch(`/workbench/workspaces/${encodeURIComponent(item.id)}/settings`, {method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(patch)});
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.detail || payload.error || response.statusText);
       setRegistry(current => current.map(candidate => candidate.id === item.id ? {...candidate, ...payload.workspace} : candidate));
@@ -244,7 +244,7 @@ export function WorkspaceSettingsPanel({workspace, workspaces, fileCount, implem
     setBusy(true); setMessage("");
     try {
       const document = JSON.parse(startupPolicySource);
-      const response = await fetch("/api/system/startup", {method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({document})});
+      const response = await fetch("/workbench/system/startup", {method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({document})});
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.detail || payload.error || response.statusText);
       setStartupPolicy(payload.document?.services || {}); setStartupPolicySource(JSON.stringify(payload.document, null, 2)); setMessage("Workbench startup policy saved.");
@@ -286,7 +286,7 @@ export function WorkspaceSettingsPanel({workspace, workspaces, fileCount, implem
     if (!window.confirm(`Delete ${item.label}? The workspace will be moved to the recoverable workspace trash.`)) return;
     setBusy(true); setMessage("");
     try {
-      const response = await fetch(`/api/workspaces/${encodeURIComponent(item.id)}`, {method:"DELETE"});
+      const response = await fetch(`/workbench/workspaces/${encodeURIComponent(item.id)}`, {method:"DELETE"});
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.detail || payload.error || response.statusText);
       setRegistry(current => current.filter(candidate => candidate.id !== item.id));

@@ -162,7 +162,7 @@ this tool from scratch:
 ````markdown
 Build a **Video Import** page (KNOWLEDGE → Video Import) for the workbench:
 a FastAPI router (`workbench/server/video_import_api.py`, mounted under
-`/api/video-import`) plus a React page, storing everything under the
+`/workbench/video-import`) plus a React page, storing everything under the
 workspace's `data/VideoImports/`.
 
 **Import**: download URLs with yt-dlp (quality ceiling combo: 480p lo-fi /

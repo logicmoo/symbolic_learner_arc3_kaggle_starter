@@ -26,7 +26,7 @@ def main() -> int:
     environment = {name: os.environ[name] for name in args.env if name in os.environ}
     payload = json.dumps({"cwd": str(args.cwd.resolve()), "command": command, "environment": environment}).encode("utf-8")
     request = urllib.request.Request(
-        f"{args.api.rstrip('/')}/api/system/services/{args.service}/launch-command",
+        f"{args.api.rstrip('/')}/workbench/system/services/{args.service}/launch-command",
         data=payload,
         headers={"Content-Type": "application/json"},
         method="POST",

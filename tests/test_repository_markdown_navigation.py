@@ -159,7 +159,7 @@ def test_repository_images_are_exposed_as_renderable_assets(tmp_path: Path, monk
 
 def test_help_view_intercepts_repository_markdown_links() -> None:
     source = (ROOT / "workbench" / "frontend" / "src" / "components" / "HelpDocumentTabs.tsx").read_text(encoding="utf-8")
-    assert "/api/repository/markdown?path=" in source
+    assert "/workbench/repository/markdown?path=" in source
     assert "resolveMarkdownPath(document.path,href)" in source
     assert "← Back" in source
     # Link clicks are intercepted by the shared markdown renderer, which the
@@ -192,7 +192,7 @@ def test_repository_markdown_index_and_ui_links(tmp_path: Path, monkeypatch) -> 
     markdown_source = (components / "MarkdownDocument.tsx").read_text(encoding="utf-8")
     docs_source = (components / "RepositoryDocsPage.tsx").read_text(encoding="utf-8")
     assert 'label:"Datatype Guide",repositoryPath:"docs/DATATYPES_MANIFEST_EXPLAINED.md"' in help_source
-    assert "/api/repository/filesystem-index" in docs_source
+    assert "/workbench/repository/filesystem-index" in docs_source
     assert "DOC_SCAN_DIRECTORIES" in docs_source
     assert "DOC_SCAN_INCLUDE_MASKS" in docs_source
     assert "DOC_SCAN_EXCLUDE_MASKS" in docs_source
@@ -204,7 +204,7 @@ def test_repository_markdown_index_and_ui_links(tmp_path: Path, monkeypatch) -> 
     assert "docsExclude" in docs_source
     assert '&refresh=${force?"true":"false"}' in docs_source
     assert "refresh(scanDirectory,filter,exclusions,true)" in docs_source
-    assert "/api/repository/file?path=" in docs_source
+    assert "/workbench/repository/file?path=" in docs_source
     assert 'refreshing?"Refreshing...":"Refresh"' in docs_source
     assert "indexed.checksum!==document.checksum" in docs_source
     assert "dirtyChanged" in docs_source
@@ -237,7 +237,7 @@ def test_repository_markdown_index_and_ui_links(tmp_path: Path, monkeypatch) -> 
     assert "width:100%;height:100%" in docs_styles
     super_control = (components / "UniversalArtifactEditor.tsx").read_text(encoding="utf-8")
     assert 'className="primary" onClick={control.onSave}' in super_control
-    assert "/api/repository/asset?path=" in docs_source
+    assert "/workbench/repository/asset?path=" in docs_source
     assert "Find in Tree" in docs_source
     assert "Find in Navigator" in docs_source
     assert "Find in Full Paths" in docs_source

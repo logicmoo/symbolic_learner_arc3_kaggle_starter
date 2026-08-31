@@ -367,9 +367,9 @@ const ALL_SETUP_SOURCE_PREFIX = "ALL-Setup";
 const IMAGE_SUFFIXES = new Set([".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".svg"]);
 const TEXT_SUFFIXES = new Set([".txt", ".json", ".md", ".yaml", ".yml", ".csv", ".log", ".metta", ".pl"]);
 const repositoryAssetUrl = (path: string) =>
-  `/api/repository/asset?path=${encodeURIComponent(path)}`;
+  `/workbench/repository/asset?path=${encodeURIComponent(path)}`;
 const workspaceAssetUrl = (workspaceId: string, path: string) =>
-  `/api/workspaces/${encodeURIComponent(workspaceId)}/asset?path=${encodeURIComponent(path)}`;
+  `/workbench/workspaces/${encodeURIComponent(workspaceId)}/asset?path=${encodeURIComponent(path)}`;
 const defaultImagePair = (stackKey?: StackKey) => {
   const beforePath = DEFAULT_BEFORE_PATH;
   const afterPath = stackKey === "A" ? DEFAULT_BEFORE_PATH : DEFAULT_AFTER_PATH;
@@ -2176,7 +2176,7 @@ export function Arc3PromptPrologPage({ pageDefinition, workspaceId, workspaceLab
     }));
     try {
       const payload = await request(
-        `/api/workspaces/${encodeURIComponent(workspaceId)}/models/debug-log?path=${encodeURIComponent(path)}`,
+        `/workbench/workspaces/${encodeURIComponent(workspaceId)}/models/debug-log?path=${encodeURIComponent(path)}`,
       );
       setRunnerState(stackIndex, runnerIndex, (runner) => ({
         ...runner,
@@ -2357,7 +2357,7 @@ export function Arc3PromptPrologPage({ pageDefinition, workspaceId, workspaceLab
             isRepairAttempt ? VALIDATION_REPAIR_PROMPT : "",
             passPrompt,
           ].filter(Boolean).join("\n\n");
-          const payload = await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/models/${encodeURIComponent(effectiveModelId)}/invoke`, {
+          const payload = await request(`/workbench/workspaces/${encodeURIComponent(workspaceId)}/models/${encodeURIComponent(effectiveModelId)}/invoke`, {
             method: "POST",
             signal: controller.signal,
             body: JSON.stringify({ prompt, image, timeoutSeconds: invocationTimeoutSeconds }),
@@ -2463,7 +2463,7 @@ export function Arc3PromptPrologPage({ pageDefinition, workspaceId, workspaceLab
               `Candidate output:\n${JSON.stringify(parsedPayload, null, 2)}`,
               validatorPromptText,
             ].join("\n\n");
-            const validatorPayload = await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/models/${encodeURIComponent(effectiveValidatorModelId)}/invoke`, {
+            const validatorPayload = await request(`/workbench/workspaces/${encodeURIComponent(workspaceId)}/models/${encodeURIComponent(effectiveValidatorModelId)}/invoke`, {
               method: "POST",
               signal: controller.signal,
               body: JSON.stringify({ prompt: validatorPrompt, image, timeoutSeconds: invocationTimeoutSeconds }),
@@ -2670,7 +2670,7 @@ export function Arc3PromptPrologPage({ pageDefinition, workspaceId, workspaceLab
     let canceled = false;
     const autoScanDataFiles = async () => {
       try {
-        const payload = await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/data/files`);
+        const payload = await request(`/workbench/workspaces/${encodeURIComponent(workspaceId)}/data/files`);
         if (canceled) return;
         const records = Array.isArray(payload.files) ? payload.files : [];
         const dataFiles = records
@@ -2697,7 +2697,7 @@ export function Arc3PromptPrologPage({ pageDefinition, workspaceId, workspaceLab
     setScanDataBusy(true);
     try {
       await Promise.resolve(onPageDefinitionSaved());
-      const payload = await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/data/files`);
+      const payload = await request(`/workbench/workspaces/${encodeURIComponent(workspaceId)}/data/files`);
       const records = Array.isArray(payload.files) ? payload.files : [];
       const dataFiles = records
         .filter((item): item is WorkspaceFileRecord => Boolean(item)

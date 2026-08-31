@@ -30,7 +30,7 @@ def test_chat_has_collapsible_schema_driven_mailbox_arranger() -> None:
 def test_chat_mailbox_counts_and_opening_use_personal_cursor() -> None:
     source = SOURCE.read_text(encoding="utf-8")
 
-    assert "/api/mailbox/mailboxes?agent=" in source
+    assert "/workbench/mailbox/mailboxes?agent=" in source
     assert "mailboxUnread.get(id)" in source
     assert "Numbers are messages past" in source
     assert '<option value="last-read">Resume at last read</option>' in source

@@ -64,7 +64,7 @@ def test_workspace_picker_explains_template_and_library_roles() -> None:
     assert "Create Workspace" in source
     assert 'setNewWorkspaceTemplateId("default")' in source
     assert "Workspace template" in source
-    assert 'request("/api/workspaces",{method:"POST"' in compact
+    assert 'request("/workbench/workspaces",{method:"POST"' in compact
     assert "EDITABLE STARTER TEMPLATE" in source
     assert "Default is preselected" in source
     assert "independentcopy" in compact

@@ -40,7 +40,7 @@ export function usePluginMenu() {
 
   const load = useCallback(async () => {
     try {
-      const response = await fetch("/api/plugins");
+      const response = await fetch("/workbench/plugins");
       if (!response.ok) return;
       const payload = (await response.json()) as { plugins: PluginRecord[] };
       setEntries(

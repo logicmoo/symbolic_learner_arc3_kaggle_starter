@@ -30,7 +30,7 @@ export function ChatPage({ workspaceId }: { workspaceId: string }) {
   useEffect(() => {
     if (!helpOpen || helpText || helpError) return;
     let cancelled = false;
-    fetch("/api/repository/markdown?path=docs/CHAT_PAGE.md")
+    fetch("/workbench/repository/markdown?path=docs/CHAT_PAGE.md")
       .then(async (response) => {
         const payload = (await response.json()) as Record<string, unknown>;
         if (!response.ok) throw new Error(String(payload.error || payload.detail || response.statusText));

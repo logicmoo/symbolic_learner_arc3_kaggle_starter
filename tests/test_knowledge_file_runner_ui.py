@@ -33,7 +33,7 @@ def test_shared_library_contains_a_real_data_runner_example() -> None:
 def test_workspace_file_runner_loads_assets_through_the_workspace_api() -> None:
     source = (COMPONENTS / "WorkspaceFileRunner.tsx").read_text(encoding="utf-8")
 
-    assert "/api/workspaces/" in source
+    assert "/workbench/workspaces/" in source
     assert "/asset?path=" in source
     assert "ResourceExecutionPlayground" in source
     assert '"data_inspect"' in source

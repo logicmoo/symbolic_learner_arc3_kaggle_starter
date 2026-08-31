@@ -17,7 +17,7 @@ export function WorkflowRunnerTodoReference({
   const [error, setError] = useState("");
 
   useEffect(() => {
-    void fetch("/api/workflow-runner/todo")
+    void fetch("/workbench/workflow-runner/todo")
       .then(async response => {
         const payload = await response.json();
         if (!response.ok) throw new Error(payload.error || payload.detail || response.statusText);

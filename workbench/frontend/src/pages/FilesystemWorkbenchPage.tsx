@@ -808,7 +808,7 @@ async function request(path: string, init?: RequestInit) {
   return payload as Record<string, any>;
 }
 const engine = (path: string, init?: RequestInit) =>
-  request(`/api/engine${path}`, init);
+  request(`/workbench/engine${path}`, init);
 const slug = (value: string) =>
   value
     .toLowerCase()
@@ -1289,7 +1289,7 @@ export function FilesystemWorkbenchPage() {
   useEffect(() => {
     let cancelled = false;
     let detailedTimer = 0;
-    void request("/api/workspaces")
+    void request("/workbench/workspaces")
       .then((payload) => {
         if (cancelled) return;
         const next = (payload.workspaces || []) as Workspace[];
@@ -1304,7 +1304,7 @@ export function FilesystemWorkbenchPage() {
     if (workspaceResourceCountingEnabled) {
       // Defer heavy count hydration so URL-driven workspace/view restore is not blocked.
       detailedTimer = window.setTimeout(() => {
-        void request("/api/workspaces?detailed=true")
+        void request("/workbench/workspaces?detailed=true")
           .then((payload) => {
             if (cancelled) return;
             setWorkspaces((payload.workspaces || []) as Workspace[]);
@@ -1341,7 +1341,7 @@ export function FilesystemWorkbenchPage() {
       return;
     }
     let cancelled = false;
-    void request(`/api/workspaces/${encodeURIComponent(workspace.id)}/file?path=${encodeURIComponent(path)}`)
+    void request(`/workbench/workspaces/${encodeURIComponent(workspace.id)}/file?path=${encodeURIComponent(path)}`)
       .then((payload) => {
         if (cancelled) return;
         const content = String((payload.file as Record<string, unknown>).content || "");
@@ -1361,7 +1361,7 @@ export function FilesystemWorkbenchPage() {
       return;
     let cancelled = false;
     void request(
-      `/api/workspaces/${encodeURIComponent(workspace.id)}/snapshot?scope=shell`,
+      `/workbench/workspaces/${encodeURIComponent(workspace.id)}/snapshot?scope=shell`,
     )
       .then((payload) => {
         if (cancelled) return;
@@ -1413,7 +1413,7 @@ export function FilesystemWorkbenchPage() {
   const refreshSnapshot = async () => {
     if (!workspace) return null;
     const next = (await request(
-      `/api/workspaces/${encodeURIComponent(workspace.id)}/snapshot?scope=shell`,
+      `/workbench/workspaces/${encodeURIComponent(workspace.id)}/snapshot?scope=shell`,
     )) as unknown as Snapshot;
     setWorkspace(next.workspace);
     setSnapshot(next);
@@ -1424,11 +1424,11 @@ export function FilesystemWorkbenchPage() {
       const [snapshotPayload, implementationPayload, operationPayload, modelPayload] =
         await Promise.all([
           request(
-            `/api/workspaces/${encodeURIComponent(workspaceId)}/snapshot?scope=shell`,
+            `/workbench/workspaces/${encodeURIComponent(workspaceId)}/snapshot?scope=shell`,
           ),
           engine("/implementations"),
-          request(`/api/workspaces/${encodeURIComponent(workspaceId)}/operations`),
-          request(`/api/workspaces/${encodeURIComponent(workspaceId)}/models`),
+          request(`/workbench/workspaces/${encodeURIComponent(workspaceId)}/operations`),
+          request(`/workbench/workspaces/${encodeURIComponent(workspaceId)}/models`),
         ]);
       const next = snapshotPayload as unknown as Snapshot;
       setWorkspace(next.workspace);
@@ -1506,7 +1506,7 @@ export function FilesystemWorkbenchPage() {
           ),
         )
         .catch(() => undefined);
-      void request("/api/workspaces")
+      void request("/workbench/workspaces")
         .then((payload) =>
           setWorkspaces((current) =>
             workspaceResourceCountingEnabled &&
@@ -1517,7 +1517,7 @@ export function FilesystemWorkbenchPage() {
         )
         .catch(() => undefined);
       if (workspaceResourceCountingEnabled) {
-        void request("/api/workspaces?detailed=true")
+        void request("/workbench/workspaces?detailed=true")
           .then((payload) =>
             setWorkspaces((payload.workspaces || []) as Workspace[]),
           )
@@ -1573,7 +1573,7 @@ export function FilesystemWorkbenchPage() {
     perform(async () => {
       const label = newWorkspaceLabel.trim();
       if (!label) throw new Error("Enter a workspace name");
-      const payload = await request("/api/workspaces", {
+      const payload = await request("/workbench/workspaces", {
         method: "POST",
         body: JSON.stringify({
           label,
@@ -1617,7 +1617,7 @@ export function FilesystemWorkbenchPage() {
         return;
       }
       const payload = await request(
-        `/api/workspaces/${encodeURIComponent(workspace.id)}/file?path=${encodeURIComponent(path)}`,
+        `/workbench/workspaces/${encodeURIComponent(workspace.id)}/file?path=${encodeURIComponent(path)}`,
       );
       const content = String(
         (payload.file as Record<string, unknown>).content || "",
@@ -1638,7 +1638,7 @@ export function FilesystemWorkbenchPage() {
         throw new Error("Select a valid workflow document first");
       const path = workflowPath || `design/workflows/${slug(workflow.id)}.json`;
       await request(
-        `/api/workspaces/${encodeURIComponent(workspace.id)}/file`,
+        `/workbench/workspaces/${encodeURIComponent(workspace.id)}/file`,
         {
           method: "PUT",
           body: JSON.stringify({
@@ -1654,7 +1654,7 @@ export function FilesystemWorkbenchPage() {
     perform(async () => {
       const path = workflow?.generation?.englishDescriptionPath;
       if (!workspace || !path) throw new Error("This workflow does not declare an editable English description path");
-      await request(`/api/workspaces/${encodeURIComponent(workspace.id)}/file`, {
+      await request(`/workbench/workspaces/${encodeURIComponent(workspace.id)}/file`, {
         method: "PUT",
         body: JSON.stringify({ path, content: workflowEnglishDescription }),
       });
@@ -1701,7 +1701,7 @@ export function FilesystemWorkbenchPage() {
       setWorkflowSource(content);
       const path = workflowPath || `design/workflows/${slug(saved.id)}.json`;
       await request(
-        `/api/workspaces/${encodeURIComponent(workspace.id)}/file`,
+        `/workbench/workspaces/${encodeURIComponent(workspace.id)}/file`,
         { method: "PUT", body: JSON.stringify({ path, content }) },
       );
       setWorkflowPath(path);
@@ -1829,7 +1829,7 @@ export function FilesystemWorkbenchPage() {
       });
       restartToken = restart.token;
       markAllWorkbenchPageSessionsForRestart(restart.requestedAt);
-      const accepted = await request("/api/system/restart", {
+      const accepted = await request("/workbench/system/restart", {
         method: "POST",
         body: "{}",
       });
@@ -1837,7 +1837,7 @@ export function FilesystemWorkbenchPage() {
       for (let attempt = 0; attempt < 80; attempt += 1) {
         await new Promise((resolve) => window.setTimeout(resolve, 250));
         try {
-          const response = await fetch("/api/health", { cache: "no-store" });
+          const response = await fetch("/workbench/health", { cache: "no-store" });
           if (response.ok) {
             const health = (await response.json()) as { instanceId?: string };
             if (health.instanceId && health.instanceId !== previous) {
@@ -2258,7 +2258,7 @@ export function FilesystemWorkbenchPage() {
                 if (!workspaceResourceCountingEnabled) {
                   setWorkspaceResourceCountingEnabled(true);
                 }
-                void request("/api/workspaces?detailed=true")
+                void request("/workbench/workspaces?detailed=true")
                   .then((payload) =>
                     setWorkspaces((payload.workspaces || []) as Workspace[]),
                   )

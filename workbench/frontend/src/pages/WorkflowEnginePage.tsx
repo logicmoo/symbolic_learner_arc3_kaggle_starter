@@ -16,7 +16,7 @@ const sample: Workflow = {
 };
 
 async function api(path:string, init?:RequestInit) {
-  const response = await fetch(`/api/engine${path}`, { headers: { "Content-Type":"application/json", ...(init?.headers||{}) }, ...init });
+  const response = await fetch(`/workbench/engine${path}`, { headers: { "Content-Type":"application/json", ...(init?.headers||{}) }, ...init });
   const payload = await response.json();
   if (!response.ok) throw new Error(payload.error || payload.detail || response.statusText);
   return payload;

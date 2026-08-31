@@ -72,12 +72,12 @@ export function BackendWorkbenchPage() {
   );
 
   const loadCatalog = useCallback(async () => {
-    const payload = await api<Catalog>("/api/workflows");
+    const payload = await api<Catalog>("/workbench/workflows");
     setCatalog(payload);
   }, []);
 
   const createRun = useCallback(async () => {
-    const payload = await api<{ run: Run }>("/api/runs", {
+    const payload = await api<{ run: Run }>("/workbench/runs", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ workflowId: "arc3_human_observation", worldId: "ls20" }),
@@ -88,7 +88,7 @@ export function BackendWorkbenchPage() {
 
   const refreshRun = useCallback(async () => {
     if (!run) return;
-    const payload = await api<{ run: Run }>(`/api/runs/${run.id}`);
+    const payload = await api<{ run: Run }>(`/workbench/runs/${run.id}`);
     setRun(payload.run);
   }, [run]);
 
@@ -97,7 +97,7 @@ export function BackendWorkbenchPage() {
     setBusy(true);
     setError(null);
     try {
-      const payload = await api<{ run: Run }>(`/api/runs/${run.id}/commands`, {
+      const payload = await api<{ run: Run }>(`/workbench/runs/${run.id}/commands`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ command: name, input }),
@@ -115,7 +115,7 @@ export function BackendWorkbenchPage() {
     (async () => {
       try {
         const [healthPayload] = await Promise.all([
-          api<Json>("/api/health"),
+          api<Json>("/workbench/health"),
           loadCatalog(),
         ]);
         if (!cancelled) setHealth(healthPayload);

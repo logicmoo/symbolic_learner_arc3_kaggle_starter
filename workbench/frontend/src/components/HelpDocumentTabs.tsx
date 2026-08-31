@@ -29,7 +29,7 @@ const docTabs:HelpTab[]=[
 ];
 
 async function readShared(path:string){
- const response=await fetch(`/api/workspaces/shared_library_system/file?path=${encodeURIComponent(path)}`);
+ const response=await fetch(`/workbench/workspaces/shared_library_system/file?path=${encodeURIComponent(path)}`);
  const text=await response.text();let payload:any;
  try{payload=JSON.parse(text)}catch{throw new Error(text||response.statusText)}
  if(!response.ok)throw new Error(payload.error||payload.detail||response.statusText);
@@ -37,7 +37,7 @@ async function readShared(path:string){
 }
 
 async function readRepository(path:string){
- const response=await fetch(`/api/repository/markdown?path=${encodeURIComponent(path)}`);
+ const response=await fetch(`/workbench/repository/markdown?path=${encodeURIComponent(path)}`);
  const payload=await response.json();
  if(!response.ok)throw new Error(payload.error||payload.detail||response.statusText);
  return {path:String(payload.path),content:String(payload.content)} as OpenedDocument;

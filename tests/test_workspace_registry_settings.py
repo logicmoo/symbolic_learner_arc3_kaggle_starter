@@ -217,7 +217,7 @@ def test_workspace_chooser_has_enumerate_resource_counts_button() -> None:
     assert "Enumerate resource counts" in source
     assert "Recount resource counts" in source
     assert "setWorkspaceResourceCountingEnabled(true)" in source
-    assert '/api/workspaces?detailed=true' in source
+    assert '/workbench/workspaces?detailed=true' in source
 
 
 def test_workspace_chooser_enumerate_button_is_styled() -> None:

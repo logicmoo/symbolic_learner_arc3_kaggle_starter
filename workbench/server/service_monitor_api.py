@@ -288,7 +288,7 @@ def _service_payload(
 def _builtin_definitions(api_port: int) -> tuple[ServiceDefinition, ...]:
     return (
         ServiceDefinition(
-            "workbench-api", "Workbench API", "Active Python API development server.", api_port, "/api/health",
+            "workbench-api", "Workbench API", "Active Python API development server.", api_port, "/workbench/health",
             command_patterns=("run_api_server.py", "uvicorn", "flask"),
         ),
         ServiceDefinition(

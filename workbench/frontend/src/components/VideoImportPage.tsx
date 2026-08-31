@@ -41,7 +41,7 @@ type Member = {
   step: number; status: "pending" | "accepted" | "rejected"; probeIndex: number; probeLabel: string;
 };
 
-const API = "/api/video-import";
+const API = "/workbench/video-import";
 
 async function api(path: string, body?: unknown): Promise<Record<string, any>> {
   const response = await fetch(path.startsWith("/") ? path : `${API}/${path}`, body === undefined
@@ -827,7 +827,7 @@ export function VideoImportPage({ workspaceId }: { workspaceId: string }) {
   };
   useEffect(() => {
     let cancelled = false;
-    void api(`/api/workspaces/${encodeURIComponent(workspaceId)}/model-policy`).then((payload) => {
+    void api(`/workbench/workspaces/${encodeURIComponent(workspaceId)}/model-policy`).then((payload) => {
       if (cancelled) return;
       const registry = (payload.registry || {}) as Record<string, any>;
       const list = ((registry.models as Array<Record<string, any>>) || [])
@@ -841,7 +841,7 @@ export function VideoImportPage({ workspaceId }: { workspaceId: string }) {
     return () => { cancelled = true; };
   }, [workspaceId]);
   const asDataUrl = async (path: string): Promise<string | null> => {
-    const response = await fetch(`/api/workspaces/${encodeURIComponent(workspaceId)}/player/asset?path=${encodeURIComponent(path)}`, { cache: "no-store" });
+    const response = await fetch(`/workbench/workspaces/${encodeURIComponent(workspaceId)}/player/asset?path=${encodeURIComponent(path)}`, { cache: "no-store" });
     if (!response.ok) return null;
     const blob = await response.blob();
     return new Promise((resolve, reject) => {
@@ -851,7 +851,7 @@ export function VideoImportPage({ workspaceId }: { workspaceId: string }) {
       reader.readAsDataURL(blob);
     });
   };
-  const asset = (path: string) => `/api/workspaces/${encodeURIComponent(workspaceId)}/asset?path=${encodeURIComponent(path)}`;
+  const asset = (path: string) => `/workbench/workspaces/${encodeURIComponent(workspaceId)}/asset?path=${encodeURIComponent(path)}`;
   const extractMembers = () =>
     run("Extracting members", async () => {
       if (!memberModel) return "pick a model first";
@@ -892,7 +892,7 @@ export function VideoImportPage({ workspaceId }: { workspaceId: string }) {
               "Answer ONLY with JSON like {\"name\": \"short name\", \"polygon\": [[x, y], ...]} (3-20 points, pixel coordinates of THIS image).",
               "If no distinct member remains, answer exactly: NONE",
             ].join("\n");
-            const payload = await api(`/api/workspaces/${encodeURIComponent(workspaceId)}/models/${encodeURIComponent(memberModel)}/invoke`, { prompt, image, timeoutSeconds: 120 });
+            const payload = await api(`/workbench/workspaces/${encodeURIComponent(workspaceId)}/models/${encodeURIComponent(memberModel)}/invoke`, { prompt, image, timeoutSeconds: 120 });
             const raw = typeof payload.text === "string" ? payload.text.trim() : "";
             if (/^\s*none[.!]?\s*$/i.test(raw)) break;
             const match = raw.match(/\{[\s\S]*\}/);
@@ -957,12 +957,12 @@ export function VideoImportPage({ workspaceId }: { workspaceId: string }) {
         say(`🐢 ${framePath.split("/").pop()}`);
         const image = await asDataUrl(framePath);
         if (!image) continue;
-        const payload = await api(`/api/workspaces/${encodeURIComponent(workspaceId)}/models/${encodeURIComponent(turtleModel)}/invoke`, {
+        const payload = await api(`/workbench/workspaces/${encodeURIComponent(workspaceId)}/models/${encodeURIComponent(turtleModel)}/invoke`, {
           prompt: "Write a small self-contained Python turtle program that redraws the main objects of the attached image. Use simple shapes and at most ~60 drawing commands. Answer with ONLY the Python code.",
           image, timeoutSeconds: 180,
         });
         const code = typeof payload.text === "string" ? payload.text : JSON.stringify(payload);
-        await api("/api/arc3-play/silo/write", { workspaceId, dir: framePath.slice(0, framePath.lastIndexOf("/")), name: `${(framePath.split("/").pop() || "frame").replace(/\.png$/i, "")}.turtle.py`, content: code });
+        await api("/workbench/arc3-play/silo/write", { workspaceId, dir: framePath.slice(0, framePath.lastIndexOf("/")), name: `${(framePath.split("/").pop() || "frame").replace(/\.png$/i, "")}.turtle.py`, content: code });
         written += 1;
       }
       return `turtle programs written for ${written} frame(s)`;

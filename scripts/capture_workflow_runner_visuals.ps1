@@ -24,7 +24,7 @@ $temporaryProfile = Join-Path ([System.IO.Path]::GetTempPath()) "metta-workbench
 New-Item -ItemType Directory -Path $temporaryProfile -Force | Out-Null
 try {
     if (-not $RunId) {
-        $runRegistry = Invoke-RestMethod "$BaseUrl/api/engine/runs?limit=1"
+        $runRegistry = Invoke-RestMethod "$BaseUrl/workbench/engine/runs?limit=1"
         $RunId = [string]$runRegistry.runs[0].id
     }
     if (-not $RunId) {

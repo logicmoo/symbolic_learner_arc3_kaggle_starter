@@ -2722,22 +2722,22 @@ export function RuntimeHistoryView({
         await Promise.all([
           includeWorkflowRuns
             ? api(
-                `/api/engine/runs?workspace_id=${encodeURIComponent(workspaceId)}&limit=${runLimit}`,
+                `/workbench/engine/runs?workspace_id=${encodeURIComponent(workspaceId)}&limit=${runLimit}`,
               )
             : Promise.resolve({ runs: [] }),
           includeGoalRuns
             ? api(
-                `/api/goal-runs?workspace_id=${encodeURIComponent(workspaceId)}&limit=${goalRunLimit}`,
+                `/workbench/goal-runs?workspace_id=${encodeURIComponent(workspaceId)}&limit=${goalRunLimit}`,
               )
             : Promise.resolve({ goalRuns: [] }),
           includeInvocations
             ? api(
-                `/api/workspaces/${encodeURIComponent(workspaceId)}/operations/invocations?limit=${invocationLimit}`,
+                `/workbench/workspaces/${encodeURIComponent(workspaceId)}/operations/invocations?limit=${invocationLimit}`,
               )
             : Promise.resolve({ invocations: [] }),
           includeInvocations
             ? api(
-                `/api/workspaces/${encodeURIComponent(workspaceId)}/models/invocations?limit=${invocationLimit}`,
+                `/workbench/workspaces/${encodeURIComponent(workspaceId)}/models/invocations?limit=${invocationLimit}`,
               )
             : Promise.resolve({ invocations: [] }),
         ]);
@@ -2759,7 +2759,7 @@ export function RuntimeHistoryView({
         !loadedRuns.some((run: RuntimeRun) => run.id === requestedRunId)
       ) {
         const requestedPayload = await api(
-          `/api/engine/runs/${encodeURIComponent(requestedRunId)}`,
+          `/workbench/engine/runs/${encodeURIComponent(requestedRunId)}`,
         );
         if (requestedPayload.run)
           loadedRuns.unshift(normalizeRun(requestedPayload.run as RuntimeRun));
@@ -2774,7 +2774,7 @@ export function RuntimeHistoryView({
       ) {
         try {
           const requestedPayload = await api(
-            `/api/engine/states/${encodeURIComponent(requestedStateId)}`,
+            `/workbench/engine/states/${encodeURIComponent(requestedStateId)}`,
           );
           if (
             requestedPayload.run &&
@@ -2822,7 +2822,7 @@ export function RuntimeHistoryView({
         )
       ) {
         const requestedPayload = await api(
-          `/api/goal-runs/${encodeURIComponent(requestedGoalRunId)}`,
+          `/workbench/goal-runs/${encodeURIComponent(requestedGoalRunId)}`,
         );
         if (requestedPayload.goalRun)
           loadedGoalRuns.unshift(
@@ -2904,7 +2904,7 @@ export function RuntimeHistoryView({
     setBusy(true);
     setError("");
     try {
-      const payload = await api("/api/goal-runs", {
+      const payload = await api("/workbench/goal-runs", {
         method: "POST",
         body: JSON.stringify({
           workspaceId,
@@ -3006,7 +3006,7 @@ export function RuntimeHistoryView({
     }
     let active = true;
     void api(
-      `/api/engine/workflows/${encodeURIComponent(selectedRun.workflowId)}?version=${selectedRun.workflowVersion}`,
+      `/workbench/engine/workflows/${encodeURIComponent(selectedRun.workflowId)}?version=${selectedRun.workflowVersion}`,
     )
       .then((payload) => {
         if (active) setFrozenWorkflow(payload.workflow as FrozenWorkflow);
@@ -3043,7 +3043,7 @@ export function RuntimeHistoryView({
     setWorkflowDraftLoaded(false);
     setWorkflowDraftStatus("Loading saved draft…");
     void api(
-      `/api/engine/runs/${encodeURIComponent(selectedRun.id)}/steps/${encodeURIComponent(workflowWaitingStep.stepId)}/draft`,
+      `/workbench/engine/runs/${encodeURIComponent(selectedRun.id)}/steps/${encodeURIComponent(workflowWaitingStep.stepId)}/draft`,
     )
       .then((payload) => {
         setWorkflowHumanDraft(payload.draft?.values || {});
@@ -3071,7 +3071,7 @@ export function RuntimeHistoryView({
     setWorkflowDraftStatus("Saving draft…");
     const timer = window.setTimeout(() => {
       void api(
-        `/api/engine/runs/${encodeURIComponent(selectedRun.id)}/steps/${encodeURIComponent(workflowWaitingStep.stepId)}/draft`,
+        `/workbench/engine/runs/${encodeURIComponent(selectedRun.id)}/steps/${encodeURIComponent(workflowWaitingStep.stepId)}/draft`,
         { method: "PUT", body: JSON.stringify(workflowHumanDraft) },
       )
         .then((payload) => {
@@ -3104,7 +3104,7 @@ export function RuntimeHistoryView({
     let active = true;
     const run = selectedGoalRun.workflowRun;
     void api(
-      `/api/engine/workflows/${encodeURIComponent(run.workflowId)}?version=${run.workflowVersion}`,
+      `/workbench/engine/workflows/${encodeURIComponent(run.workflowId)}?version=${run.workflowVersion}`,
     )
       .then((payload) => {
         if (active) setGoalRunWorkflow(payload.workflow as FrozenWorkflow);
@@ -3132,7 +3132,7 @@ export function RuntimeHistoryView({
     setDraftLoaded(false);
     setDraftStatus("Loading saved draft…");
     void api(
-      `/api/engine/runs/${encodeURIComponent(selectedGoalRun.workflowRunId)}/steps/${encodeURIComponent(waitingStep.stepId)}/draft`,
+      `/workbench/engine/runs/${encodeURIComponent(selectedGoalRun.workflowRunId)}/steps/${encodeURIComponent(waitingStep.stepId)}/draft`,
     )
       .then((payload) => {
         setHumanDraft(payload.draft?.values || {});
@@ -3155,7 +3155,7 @@ export function RuntimeHistoryView({
     setDraftStatus("Saving draft…");
     const timer = window.setTimeout(() => {
       void api(
-        `/api/engine/runs/${encodeURIComponent(selectedGoalRun.workflowRunId)}/steps/${encodeURIComponent(waitingStep.stepId)}/draft`,
+        `/workbench/engine/runs/${encodeURIComponent(selectedGoalRun.workflowRunId)}/steps/${encodeURIComponent(waitingStep.stepId)}/draft`,
         { method: "PUT", body: JSON.stringify(humanDraft) },
       )
         .then((payload) => {
@@ -3180,7 +3180,7 @@ export function RuntimeHistoryView({
     setError("");
     try {
       const payload = await api(
-        `/api/engine/runs/${encodeURIComponent(selectedGoalRun.workflowRunId)}/steps/${encodeURIComponent(waitingStep.stepId)}/input`,
+        `/workbench/engine/runs/${encodeURIComponent(selectedGoalRun.workflowRunId)}/steps/${encodeURIComponent(waitingStep.stepId)}/input`,
         { method: "POST", body: JSON.stringify(values) },
       );
       onSelectRun?.(payload.run);
@@ -3199,7 +3199,7 @@ export function RuntimeHistoryView({
     setError("");
     try {
       const payload = await api(
-        `/api/engine/runs/${encodeURIComponent(selectedGoalRun.workflowRunId)}/commands`,
+        `/workbench/engine/runs/${encodeURIComponent(selectedGoalRun.workflowRunId)}/commands`,
         { method: "POST", body: JSON.stringify({ command }) },
       );
       onSelectRun?.(payload.run);
@@ -3218,7 +3218,7 @@ export function RuntimeHistoryView({
     setError("");
     try {
       const payload = await api(
-        `/api/engine/runs/${encodeURIComponent(selectedRun.id)}/commands`,
+        `/workbench/engine/runs/${encodeURIComponent(selectedRun.id)}/commands`,
         { method: "POST", body: JSON.stringify({ command }) },
       );
       const updated = payload.run as RuntimeRun;
@@ -3240,7 +3240,7 @@ export function RuntimeHistoryView({
     setError("");
     try {
       const payload = await api(
-        `/api/engine/runs/${encodeURIComponent(selectedRun.id)}/steps/${encodeURIComponent(workflowWaitingStep.stepId)}/input`,
+        `/workbench/engine/runs/${encodeURIComponent(selectedRun.id)}/steps/${encodeURIComponent(workflowWaitingStep.stepId)}/input`,
         { method: "POST", body: JSON.stringify(values) },
       );
       const updated = payload.run as RuntimeRun;

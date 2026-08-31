@@ -171,20 +171,24 @@ environment values.
 
 ## Main API routes
 
+Non-plugin routes are mounted under `/workbench`; plugins keep their own
+route prefix everywhere (bare and mirrored), so `/web_proxy/...`,
+`/ws_collab/...`, etc. are unaffected.
+
 ```text
-GET  /api/health
-GET  /api/workspaces/{workspace_id}/snapshot
-GET  /api/workspaces/{workspace_id}/operations
-GET  /api/workspaces/{workspace_id}/datatypes
-GET  /api/workspaces/{workspace_id}/representations
-GET  /api/workspaces/{workspace_id}/representation-graph
-GET  /api/workspaces/{workspace_id}/datatypes/{datatype_id}/resolve
-GET  /api/workspaces/{workspace_id}/datatypes/{datatype_id}/plan?source=bitmap&target=logo_program
-POST /api/runs
-GET  /api/runs/{run_id}
-POST /api/runs/{run_id}/commands
-GET  /api/runs/{run_id}/events?after={cursor}
-GET  /api/operations
-GET  /api/workflows
-POST /api/workflows
+GET  /workbench/health
+GET  /workbench/workspaces/{workspace_id}/snapshot
+GET  /workbench/workspaces/{workspace_id}/operations
+GET  /workbench/workspaces/{workspace_id}/datatypes
+GET  /workbench/workspaces/{workspace_id}/representations
+GET  /workbench/workspaces/{workspace_id}/representation-graph
+GET  /workbench/workspaces/{workspace_id}/datatypes/{datatype_id}/resolve
+GET  /workbench/workspaces/{workspace_id}/datatypes/{datatype_id}/plan?source=bitmap&target=logo_program
+POST /workbench/runs
+GET  /workbench/runs/{run_id}
+POST /workbench/runs/{run_id}/commands
+GET  /workbench/runs/{run_id}/events?after={cursor}
+GET  /workbench/operations
+GET  /workbench/workflows
+POST /workbench/workflows
 ```

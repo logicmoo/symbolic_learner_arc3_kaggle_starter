@@ -202,8 +202,9 @@ def _resolve_api_section(plugin_id: str, entry: Any) -> dict[str, Any] | None:
     prefix = f"/{plugin_id}"
     if path == prefix or path.startswith(f"{prefix}/"):
         address = path
-    elif path.startswith("/api/") or path.startswith(("http://", "https://", "ws://", "wss://")):
-        # The workbench's own /api namespace and absolute URLs are never
+    elif path.startswith(("/api/", "/workbench/")) or path.startswith(("http://", "https://", "ws://", "wss://")):
+        # The workbench's own core namespaces (/api for plugin-admin mirrors,
+        # /workbench for everything else) and absolute URLs are never
         # overlaid onto a plugin prefix — a standalone plugin's catch-all
         # mount would otherwise "match" and swallow them.
         address = path
@@ -249,7 +250,7 @@ def _resolved_services_endpoint(plugin_id: str, manifest: dict[str, Any]) -> dic
 
     Points at wherever the plugin's endpoint list can be fetched: a native
     self-description (ws_collab's ``/endpoints``), an OpenAPI document, or the
-    workbench enumerator ``/api/plugins/<id>/endpoints`` for embedded routers.
+    workbench enumerator ``/workbench/plugins/<id>/endpoints`` for embedded routers.
     The Chat page mounts each one as a queryable, read-only mailbox whose
     messages are the endpoints themselves.
     """

@@ -114,7 +114,7 @@ export function PluginManagerPage() {
     setBusy(true);
     setError(null);
     try {
-      const response = await fetch(`/api/plugins${refresh ? "/refresh" : ""}`, {
+      const response = await fetch(`/workbench/plugins${refresh ? "/refresh" : ""}`, {
         method: refresh ? "POST" : "GET",
       });
       if (!response.ok) throw new Error(await response.text());
@@ -131,7 +131,7 @@ export function PluginManagerPage() {
     setBusy(true);
     setError(null);
     try {
-      const response = await fetch(`/api/plugins/${encodeURIComponent(plugin.id)}`, {
+      const response = await fetch(`/workbench/plugins/${encodeURIComponent(plugin.id)}`, {
         method: "PUT",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ scan }),
@@ -155,7 +155,7 @@ export function PluginManagerPage() {
   const loadAssessment = useCallback(async () => {
     setAssessBusy(true);
     try {
-      const response = await fetch("/api/plugins/assessment");
+      const response = await fetch("/workbench/plugins/assessment");
       if (!response.ok) throw new Error(await response.text());
       setAssessment(await response.json());
     } catch (reason) {
@@ -169,7 +169,7 @@ export function PluginManagerPage() {
     const key = `${pluginId}:${phase}`;
     setLifecycleBusy(key);
     try {
-      const response = await fetch(`/api/plugins/${encodeURIComponent(pluginId)}/lifecycle/${encodeURIComponent(phase)}`, {
+      const response = await fetch(`/workbench/plugins/${encodeURIComponent(pluginId)}/lifecycle/${encodeURIComponent(phase)}`, {
         method: "POST",
       });
       const payload = await response.json();

@@ -18,7 +18,7 @@ if str(SERVER) not in sys.path:
 def test_web_proxy_plugin_is_discovered_and_loaded() -> None:
     app_module = importlib.import_module("app")
     with TestClient(app_module.app) as client:
-        response = client.get("/api/plugins")
+        response = client.get("/workbench/plugins")
     assert response.status_code == 200
     plugin = next(item for item in response.json()["plugins"] if item["id"] == "web_proxy")
     assert plugin["scan"] == "startup"
@@ -173,7 +173,7 @@ def test_web_proxy_rejects_targets_outside_manifest_allowlist() -> None:
 def test_plugin_scan_policy_validation() -> None:
     app_module = importlib.import_module("app")
     with TestClient(app_module.app) as client:
-        response = client.put("/api/plugins/web_proxy", json={"scan": "sometimes"})
+        response = client.put("/workbench/plugins/web_proxy", json={"scan": "sometimes"})
     assert response.status_code == 400
 
 
@@ -183,7 +183,7 @@ def test_plugins_navigation_and_page_are_wired() -> None:
     assert 'group: "PLUGINS"' in source
     assert '{ label: "Plugins", view: "plugins"' in source
     assert 'view === "plugins" && <PluginManagerPage />' in source
-    assert 'fetch(`/api/plugins${refresh ? "/refresh" : ""}`' in page
+    assert 'fetch(`/workbench/plugins${refresh ? "/refresh" : ""}`' in page
     assert '<option value="startup">Scan at startup</option>' in page
     assert '<option value="disabled">Disabled</option>' in page
 
@@ -191,7 +191,7 @@ def test_plugins_navigation_and_page_are_wired() -> None:
 def test_every_plugin_publishes_an_admin_link_the_scanner_reads_from_disk() -> None:
     app_module = importlib.import_module("app")
     with TestClient(app_module.app) as client:
-        response = client.get("/api/plugins")
+        response = client.get("/workbench/plugins")
     assert response.status_code == 200
     payload = response.json()
     assert payload["manifestName"] == "plugin.json"
@@ -208,7 +208,7 @@ def test_plugin_directory_never_overwrites_the_declared_admin_path() -> None:
 
     app_module = importlib.import_module("app")
     with TestClient(app_module.app) as client:
-        plugins = {item["id"]: item for item in client.get("/api/plugins").json()["plugins"]}
+        plugins = {item["id"]: item for item in client.get("/workbench/plugins").json()["plugins"]}
     web_proxy = plugins["web_proxy"]
     assert web_proxy["adminPath"] == "/web_proxy/admin"
     assert Path(web_proxy["path"]).name == "web_proxy"
@@ -217,7 +217,7 @@ def test_plugin_directory_never_overwrites_the_declared_admin_path() -> None:
 def test_ws_collab_resolves_its_own_pages_to_the_page_it_serves() -> None:
     app_module = importlib.import_module("app")
     with TestClient(app_module.app) as client:
-        plugins = {item["id"]: item for item in client.get("/api/plugins").json()["plugins"]}
+        plugins = {item["id"]: item for item in client.get("/workbench/plugins").json()["plugins"]}
     ws_collab = plugins["ws_collab"]
     assert ws_collab["configPage"] == "http://127.0.0.1:5173/ws_collab/admin"
     for page in ws_collab["uiPages"]:
@@ -230,7 +230,7 @@ def test_plugin_init_mounts_the_requested_path_through_web_proxy() -> None:
 
     app_module = importlib.import_module("app")
     with TestClient(app_module.app) as client:
-        plugins = {item["id"]: item for item in client.get("/api/plugins").json()["plugins"]}
+        plugins = {item["id"]: item for item in client.get("/workbench/plugins").json()["plugins"]}
         mounted = client.get("/ws_collab/admin")
     results = plugins["ws_collab"]["initCommandResults"]
     assert results, "ws_collab declared plugin-init but nothing ran"

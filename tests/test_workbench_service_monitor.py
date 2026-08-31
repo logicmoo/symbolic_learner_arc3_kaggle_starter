@@ -104,7 +104,7 @@ def test_singleton_service_does_not_launch_when_matching_process_exists(monkeypa
 
 def test_settings_ui_exposes_process_controls_and_log_streams() -> None:
     source = (ROOT / "workbench" / "frontend" / "src" / "components" / "WorkspaceSettingsPanel.tsx").read_text(encoding="utf-8")
-    assert '"/api/system/services?include_hidden=true":"/api/system/services"' in source
+    assert '"/workbench/system/services?include_hidden=true":"/workbench/system/services"' in source
     assert "Hidden-process monitor" in source
     assert "Recent stdout / stderr" in source
     assert "MATCHING OS PROCESS" in source

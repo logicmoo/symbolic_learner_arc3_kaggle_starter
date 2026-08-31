@@ -10,7 +10,7 @@ Every bubble everywhere also has a ✎ button: the bubble grows, tints amber and
 becomes an editor holding the record's complete JSON (sized to show it all).
 Like the other JSON editors it has a **MeTTa** mode toggle (same
 resource codec), **Reload** discards edits, and **Save as..** downloads the
-text to disk. Saving posts the complete record to `POST /api/mailbox/record`
+text to disk. Saving posts the complete record to `POST /workbench/mailbox/record`
 (also available as worker op `edit_record` — mm-side message edits flow
 through the same call):
 
@@ -68,7 +68,7 @@ channel. Each depressed button ANDs one required match:
 
 Only `CHANNEL` is depressed by default (the classic channel view). Depress
 nothing to see the entire log; combine buttons to narrow. The bar queries
-`GET /api/mailbox/messages?filter=1&…` server-side, so results are not limited
+`GET /workbench/mailbox/messages?filter=1&…` server-side, so results are not limited
 to what the browser has loaded.
 
 ## Cursor bar
@@ -87,7 +87,7 @@ Edits the TO agent's **explicit** subscription setting on the viewed channel:
 - **✕ Remove setting** — clear the explicit setting so the default inference
   returns: an agent holding a cursor counts as subscribed.
 
-Backed by `POST /api/mailbox/subscription` (worker op `set_subscription`),
+Backed by `POST /workbench/mailbox/subscription` (worker op `set_subscription`),
 which re-runs the subscription sync after each edit.
 
 ## Composer and channel config

@@ -6,15 +6,15 @@
 
 This living inventory records the active Navigation V2 implementation. `workbench/frontend/src/main.tsx` renders `App`; `workbench/frontend/src/App.tsx` imports and returns only `FilesystemWorkbenchPage`. Therefore `workbench/frontend/src/pages/FilesystemWorkbenchPage.tsx` is the active application. No other page under `src/pages/` is reachable through the current entrypoint.
 
-The backend is FastAPI, launched from `workbench/server/app.py`. The active page uses `/api/workspaces/{id}/snapshot` for filesystem state and `/api/engine/*` for workflow execution.
+The backend is FastAPI, launched from `workbench/server/app.py`. The active page uses `/workbench/workspaces/{id}/snapshot` for filesystem state and `/workbench/engine/*` for workflow execution.
 
 ## Navigation Mapping
 
 | Navigation V2 item | Current backing component/data | Status |
 | --- | --- | --- |
 | Overview | `WorkspaceOverview` and workspace inclusion/configuration APIs | Real, reuse |
-| Goals | `GoalPlanLibraryEditor`, `/api/workspaces/{id}/goals`, shared same-kind alternatives | Real, reuse |
-| Planning | `GoalPlanLibraryEditor`, `/api/workspaces/{id}/plans`, shared planning strategies | Real, reuse |
+| Goals | `GoalPlanLibraryEditor`, `/workbench/workspaces/{id}/goals`, shared same-kind alternatives | Real, reuse |
+| Planning | `GoalPlanLibraryEditor`, `/workbench/workspaces/{id}/plans`, shared planning strategies | Real, reuse |
 | Workflows | Active canvas and raw workflow editor in `FilesystemWorkbenchPage` | Real, reuse |
 | Operations | `OperationLibraryEditor` and `OperationPlayground` | Real, relabel Operations |
 | Source Code | `PromptLibraryEditor` plus language-filtered `OperationLibraryEditor` tabs | Real, reuse |
@@ -25,8 +25,8 @@ The backend is FastAPI, launched from `workbench/server/app.py`. The active page
 | Data | `KnowledgeDataExplorer` over real workspace files | Real |
 | AtomSpaces | `GoalPlanLibraryEditor`, AtomSpace API, shared alternatives | Real, reuse |
 | Artifacts | Persisted/imported workflow artifacts | Real |
-| Goal Runs | `/api/goal-runs` plus `RuntimeHistoryView` | Durable and real |
-| Executions | `/api/engine/runs`, persisted step attempts, and playground invocations | Durable and real |
+| Goal Runs | `/workbench/goal-runs` plus `RuntimeHistoryView` | Durable and real |
+| Executions | `/workbench/engine/runs`, persisted step attempts, and playground invocations | Durable and real |
 | Events | Ordered events across durable engine runs | Real |
 | States | Persisted workflow artifacts and payloads | Real |
 | Logs | Persisted operation streams across runs | Real |
@@ -53,13 +53,13 @@ Some inactive pages expose views not currently promoted to dedicated active navi
 
 Workspace and file APIs:
 
-- `GET /api/workspaces`, `GET /api/workspaces/{id}`
-- `GET /api/workspaces/{id}/snapshot`
-- `GET|PUT /api/workspaces/{id}/file`
+- `GET /workbench/workspaces`, `GET /workbench/workspaces/{id}`
+- `GET /workbench/workspaces/{id}/snapshot`
+- `GET|PUT /workbench/workspaces/{id}/file`
 - Workspace operation, datatype, representation, backend, model, and prompt collection routes
 - Prompt hierarchy, implementation, and resolution routes
 - Datatype resolution, representation graph, inventory, and conversion-planning routes
-- `POST /api/workspaces/{id}/operations/{operation_id}/invoke`
+- `POST /workbench/workspaces/{id}/operations/{operation_id}/invoke`
 
 Workflow-engine and pursuit APIs:
 
@@ -68,7 +68,7 @@ Workflow-engine and pursuit APIs:
 - run create/list/get, commands, human step input, events, and logs
 - Goal Run create/list/get with resolved Goal, Plan, Context, and workflow linkage
 
-The app also exposes health, analysis, SQLite-backed legacy run/event/operation APIs, artifact lookup, and session workflow/reset routes. `/api/workflows` is explicitly deprecated for the retired mock client; Navigation V2 should use workspace snapshots and engine routes.
+The app also exposes health, analysis, SQLite-backed legacy run/event/operation APIs, artifact lookup, and session workflow/reset routes. `/workbench/workflows` is explicitly deprecated for the retired mock client; Navigation V2 should use workspace snapshots and engine routes.
 
 ## Filesystem Resource Kinds
 

@@ -331,8 +331,8 @@ def test_operation_playground_can_run_default_and_populate_from_runtime_artifact
     assert '"empty_null"' in controls
     assert 'className="operation-run-route"' in source
     assert 'className="operation-run-actions"' in source
-    assert "/api/engine/runs?workspace_id=${encodeURIComponent(workspaceId)}&limit=100" in source
-    assert "/api/goal-runs?workspace_id=" in source
+    assert "/workbench/engine/runs?workspace_id=${encodeURIComponent(workspaceId)}&limit=100" in source
+    assert "/workbench/goal-runs?workspace_id=" in source
     assert "artifactScore" in source
     assert "valueShapeMatches" in source
     assert 'if(actualAny&&!valueShapeMatches(expected,artifact.value))return 0' in source

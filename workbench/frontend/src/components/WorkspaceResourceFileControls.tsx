@@ -34,7 +34,7 @@ type FilePickerWindow = Window & {
 };
 
 async function workspaceChoices(): Promise<WorkspaceChoice[]> {
-  const response = await fetch("/api/workspaces", { cache: "no-store" });
+  const response = await fetch("/workbench/workspaces", { cache: "no-store" });
   const text = await response.text();
   const payload = JSON.parse(text || "{}");
   if (!response.ok) throw new Error(payload.error || payload.detail || response.statusText);

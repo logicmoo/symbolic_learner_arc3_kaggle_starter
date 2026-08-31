@@ -37,7 +37,7 @@ def test_english_workflow_page_uses_real_resources_and_native_accordion_stacks()
     assert "<ThreeStateAccordionStack" in host
     assert "/model-selection" in page
     assert "/operations/${encodeURIComponent(contractOperation.id)}/invoke" in page
-    assert "/api/engine/workflows/validate" in page
+    assert "/workbench/engine/workflows/validate" in page
 
 
 def test_generation_order_is_one_call_audited_and_selectively_revisable() -> None:

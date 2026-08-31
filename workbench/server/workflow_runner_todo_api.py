@@ -26,9 +26,9 @@ def get_workflow_runner_todo() -> dict[str, object]:
         "mockupPath": MOCKUP_PATH.relative_to(REPOSITORY_ROOT).as_posix(),
         "mockupAvailable": resources.is_file(MOCKUP_PATH),
         "mockups": [
-            {"view": "Topology", "description": "Dependency and branch structure", "available": resources.is_file(MOCKUP_PATH), "url": "/api/workflow-runner/todo/mockup"},
-            {"view": "Chronology", "description": "Persisted execution order and repeated stages", "available": resources.is_file(CHRONOLOGY_MOCKUP_PATH), "url": "/api/workflow-runner/todo/mockup/chronology"},
-            {"view": "Human Input", "description": "Suspended execution and user-input context", "available": resources.is_file(HUMAN_INPUT_MOCKUP_PATH), "url": "/api/workflow-runner/todo/mockup/human-input"},
+            {"view": "Topology", "description": "Dependency and branch structure", "available": resources.is_file(MOCKUP_PATH), "url": "/workbench/workflow-runner/todo/mockup"},
+            {"view": "Chronology", "description": "Persisted execution order and repeated stages", "available": resources.is_file(CHRONOLOGY_MOCKUP_PATH), "url": "/workbench/workflow-runner/todo/mockup/chronology"},
+            {"view": "Human Input", "description": "Suspended execution and user-input context", "available": resources.is_file(HUMAN_INPUT_MOCKUP_PATH), "url": "/workbench/workflow-runner/todo/mockup/human-input"},
         ],
         "markdown": resources.read_text(TODO_PATH),
     }

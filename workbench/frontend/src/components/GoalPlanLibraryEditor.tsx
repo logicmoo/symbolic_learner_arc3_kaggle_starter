@@ -43,7 +43,7 @@ export function GoalPlanLibraryEditor({ workspaceId, family }: { workspaceId: st
   const [error, setError] = useState<string | null>(null);
 
   const load = async () => {
-    const next = await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/${endpoint}`) as Payload;
+    const next = await request(`/workbench/workspaces/${encodeURIComponent(workspaceId)}/${endpoint}`) as Payload;
     setPayload(next);
     return next;
   };
@@ -76,7 +76,7 @@ export function GoalPlanLibraryEditor({ workspaceId, family }: { workspaceId: st
     try { document = JSON.parse(doc.source) as Resource; } catch { throw new Error(`${familyLabel} resource source is invalid`); }
     if (!document.id || document.kind !== parentKind) throw new Error(`${familyLabel} resource requires id and kind='${parentKind}'`);
     const path = workspaceId === "shared" || doc.record.source === "workspace" ? doc.record.path : `${specificationDirectory}/${slug(document.id)}.${parentKind}.json`;
-    await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/file`, { method: "PUT", body: JSON.stringify({ path, content: JSON.stringify(document, null, 2) }) });
+    await request(`/workbench/workspaces/${encodeURIComponent(workspaceId)}/file`, { method: "PUT", body: JSON.stringify({ path, content: JSON.stringify(document, null, 2) }) });
     const next = await load();
     const saved = next.resources.find(row => row.document?.id === document.id);
     if (saved) { const key = recordKey(saved); setOpenDocs(current => current.map(item => item.key === doc.key ? { key, record: saved, source: JSON.stringify(saved.document, null, 2), dirty: false } : item)); if (activeKey === doc.key) setActiveKey(key); if (compareKey === doc.key) setCompareKey(key); }

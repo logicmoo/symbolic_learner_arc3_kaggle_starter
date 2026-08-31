@@ -56,7 +56,7 @@ their cursors have been coordinated.
 
 ## Canonical channel identity (converted format)
 
-The log has been groomed (`POST /api/mailbox/worker` op `groom_channels`) so
+The log has been groomed (`POST /workbench/mailbox/worker` op `groom_channels`) so
 that every bridged channel has exactly one id — the workspace slug never
 existed:
 
@@ -81,7 +81,7 @@ existed:
   `entries_consumed`/`entry_next` position. A subscription without a cursor is
   auto-materialized at `entry_0`. Channel entries on `server_channels_registry`
   mirror the `subscribers` list. Run op `sync_subscriptions` to re-project.
-- **Typed resolver**: `GET /api/mailbox/resolve` returns `users`,
+- **Typed resolver**: `GET /workbench/mailbox/resolve` returns `users`,
   `workspaces` and `channels` maps (each keyed by its own UUID) plus an
   `aliases` table mapping any name to typed refs, e.g.
   `"test": [{"type": "channel", "key": "<CHANNEL-UUID>"}]`.
@@ -90,7 +90,7 @@ Grooming is a worker op: dry-run by default, `{"apply": true}` rewrites
 `messages.jsonl` in place after a timestamped backup and re-points every
 cursor at the equivalent position in the new file.
 
-Single records are edited the same guarded way: `POST /api/mailbox/record`
+Single records are edited the same guarded way: `POST /workbench/mailbox/record`
 `{id, record, mode}` (worker op `edit_record`) saves a complete record either
 `in-place` (rewrite that line, keep its `id`, timestamped backup + cursor
 re-point) or `at-end` (append as the newest record with a fresh `entry_key`
@@ -105,7 +105,7 @@ only mailbox routing fields alongside. Legacy records that nested the blob
 under `entry` are still read. Each type has two update kinds: `<kind>` is a
 REPLACEMENT and `<kind>_changed_keys` is a MERGE carrying just the keys that
 changed (how adapters note login/logout without erasing the declaration) —
-`POST /api/mailbox/entity` with `merge: true` stores one.
+`POST /workbench/mailbox/entity` with `merge: true` stores one.
 
 ## First-class service agents
 
@@ -154,7 +154,7 @@ changed (how adapters note login/logout without erasing the declaration) —
   (latest per id wins; an empty or self canonical retires the remap, seeds
   included), plus cumulative `remap_usage` records counting how often each
   fold fired per preposition-set (`to+channel_id`, `from`, …). Manage via
-  `POST /api/mailbox/remap`, `GET /api/mailbox/remaps`, worker op `set_remap`.
+  `POST /workbench/mailbox/remap`, `GET /workbench/mailbox/remaps`, worker op `set_remap`.
 - **`server_adapters_relays_registry`** — the delivery plumbing as data:
   `adapter_type_entry` per adapter type the code ships (capabilities plus its
   implementing `python-class` in the sibling repo and rollout state like
@@ -173,15 +173,15 @@ changed (how adapters note login/logout without erasing the declaration) —
   to sockets (one each, pooled) is the adapter's business, and the adapter
   merges login (and best-effort logout) tracking into the stored relay JSONs
   as `relay_entry_changed_keys` patches.
-  `GET /api/mailbox/adapters-relays` merges code seeds ∪ the sibling
+  `GET /workbench/mailbox/adapters-relays` merges code seeds ∪ the sibling
   `config/relays.json` ∪ stored entries.
 
 ## External Mailbox Channel Relay Bridging Proxy
 
 Channel transport is owned by the sibling proxy project, not by Workbench,
 OmegaClaw, or the FastAPI process lifecycle. The Workbench API can start, stop,
-restart, and inspect it through `/api/system/services/channel-relay/{action}`
-and `/api/system/services`.
+restart, and inspect it through `/workbench/system/services/channel-relay/{action}`
+and `/workbench/system/services`.
 It binds loopback port `46667`; `/health` is the machine-local ownership and
 health signal used to detect an already-running relay and prevent overlap.
 

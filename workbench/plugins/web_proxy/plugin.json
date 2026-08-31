@@ -15,7 +15,7 @@
   ],
   "plugin-init": [],
   "servicesEndpoint": {
-    "path": "/api/plugins/web_proxy/endpoints",
+    "path": "/workbench/plugins/web_proxy/endpoints",
     "description": "Workbench enumerator of the proxy's own routes and every mount it serves. web_proxy is the proxy itself -- the one plugin that is never proxied."
   },
   "mounts": [

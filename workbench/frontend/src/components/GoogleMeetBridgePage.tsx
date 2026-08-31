@@ -73,7 +73,7 @@ export function GoogleMeetBridgePage() {
   const command = useCallback(async (text: string, label: string) => {
     setNote(`sending ${label}…`);
     try {
-      const response = await fetch("/api/mailbox/send", {
+      const response = await fetch("/workbench/mailbox/send", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ to: health?.outbox || "google-meet", text, sender: "workbench-meet-page" }),

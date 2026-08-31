@@ -54,8 +54,8 @@ export function WorkspaceSetupPanel({
   useEffect(() => {
     let cancelled = false;
     Promise.all([
-      request("/api/workspaces"),
-      request(`/api/workspaces/${encodeURIComponent(workspace.id)}/data-inventory`),
+      request("/workbench/workspaces"),
+      request(`/workbench/workspaces/${encodeURIComponent(workspace.id)}/data-inventory`),
     ]).then(([workspacePayload, inventoryPayload]) => {
       if (cancelled) return;
       setWorkspaceRoots((workspacePayload.workspaceRoots || []) as string[]);

@@ -392,7 +392,7 @@ def test_state_uuid_deep_link_selects_a_durable_state_record() -> None:
     assert 'mode={view==="states"?"states":"workflowRuns"}' in page_compact
     assert 'parameters.get(mode==="states"?"state":"runtimeRecord")' in runtime_compact
     assert 'url.searchParams.set("state",row.key)' in runtime_compact
-    assert '`/api/engine/states/${encodeURIComponent(requestedStateId)}`' in runtime_history
+    assert '`/workbench/engine/states/${encodeURIComponent(requestedStateId)}`' in runtime_history
     assert "def get_state(self, state_id: str)" in engine
     assert "@router.get('/states/{state_id}')" in api
 
@@ -602,7 +602,7 @@ def test_goal_runs_use_durable_goal_plan_context_contract() -> None:
     page = ACTIVE_PAGE.read_text(encoding="utf-8")
     component = (ROOT / "workbench" / "frontend" / "src" / "components" / "RuntimeHistoryView.tsx").read_text(encoding="utf-8")
     assert '<RuntimeHistoryView mode="goalRuns"' in page
-    assert "/api/goal-runs" in component
+    assert "/workbench/goal-runs" in component
     assert "goalId" in component and "planId" in component and "contextId" in component
     assert "goalVariantId" in component and "planVariantId" in component and "contextVariantId" in component
     assert "Pursue goal" in component

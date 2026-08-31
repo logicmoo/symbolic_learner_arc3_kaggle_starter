@@ -359,7 +359,7 @@ def test_observation_api_persists_a_real_resource(tmp_path: Path, monkeypatch) -
 def test_active_app_registers_model_policy_backend_router() -> None:
     source = (SERVER / "app.py").read_text(encoding="utf-8")
     assert "from policy_api import router as policy_router" in source
-    assert "app.include_router(policy_router, prefix=\"/api\")" in source
+    assert "app.include_router(policy_router, prefix=\"/workbench\")" in source
 
 
 def test_ping_job_persists_independent_health_and_events(tmp_path: Path) -> None:

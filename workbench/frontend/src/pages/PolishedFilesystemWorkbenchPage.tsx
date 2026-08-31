@@ -126,7 +126,7 @@ async function request(path: string, init?: RequestInit) {
   return payload as Record<string, any>;
 }
 
-const engine = (path: string, init?: RequestInit) => request(`/api/engine${path}`, init);
+const engine = (path: string, init?: RequestInit) => request(`/workbench/engine${path}`, init);
 const slug = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "") || "item";
 
 function isLlmBackend(record: RecordFile<BackendDef>) {
@@ -186,7 +186,7 @@ export function PolishedFilesystemWorkbenchPage() {
   }, [snapshot]);
 
   useEffect(() => {
-    void request("/api/workspaces")
+    void request("/workbench/workspaces")
       .then(payload => setWorkspaces((payload.workspaces || []) as Workspace[]))
       .catch(reason => setError(String(reason)));
   }, []);
@@ -211,7 +211,7 @@ export function PolishedFilesystemWorkbenchPage() {
 
   const refreshSnapshot = async () => {
     if (!workspace) return null;
-    const payload = await request(`/api/workspaces/${encodeURIComponent(workspace.id)}/snapshot`);
+    const payload = await request(`/workbench/workspaces/${encodeURIComponent(workspace.id)}/snapshot`);
     const next = payload as unknown as Snapshot;
     setSnapshot(next);
     return next;
@@ -233,7 +233,7 @@ export function PolishedFilesystemWorkbenchPage() {
 
   const loadWorkspace = (item: Workspace) => perform(async () => {
     const [snapshotPayload, implementationPayload, capabilityPayload] = await Promise.all([
-      request(`/api/workspaces/${encodeURIComponent(item.id)}/snapshot`),
+      request(`/workbench/workspaces/${encodeURIComponent(item.id)}/snapshot`),
       engine("/implementations"),
       engine("/capabilities"),
     ]);
@@ -279,7 +279,7 @@ export function PolishedFilesystemWorkbenchPage() {
 
   const openWorkflow = (path: string) => perform(async () => {
     if (!workspace) return;
-    const payload = await request(`/api/workspaces/${encodeURIComponent(workspace.id)}/file?path=${encodeURIComponent(path)}`);
+    const payload = await request(`/workbench/workspaces/${encodeURIComponent(workspace.id)}/file?path=${encodeURIComponent(path)}`);
     const content = String((payload.file as Record<string, unknown>).content || "");
     setWorkflowPath(path);
     setWorkflowSource(content);
@@ -295,7 +295,7 @@ export function PolishedFilesystemWorkbenchPage() {
   const saveWorkflow = () => perform(async () => {
     if (!workspace || !workflow) throw new Error("Select a valid workflow document first");
     const path = workflowPath || `workflows/${slug(workflow.id)}.json`;
-    await request(`/api/workspaces/${encodeURIComponent(workspace.id)}/file`, {
+    await request(`/workbench/workspaces/${encodeURIComponent(workspace.id)}/file`, {
       method: "PUT",
       body: JSON.stringify({path, content: JSON.stringify(workflow, null, 2)}),
     });
@@ -318,7 +318,7 @@ export function PolishedFilesystemWorkbenchPage() {
       const content = JSON.stringify(saved, null, 2);
       setWorkflowSource(content);
       const path = workflowPath || `workflows/${slug(saved.id)}.json`;
-      await request(`/api/workspaces/${encodeURIComponent(workspace.id)}/file`, {
+      await request(`/workbench/workspaces/${encodeURIComponent(workspace.id)}/file`, {
         method: "PUT",
         body: JSON.stringify({path, content}),
       });
@@ -349,7 +349,7 @@ export function PolishedFilesystemWorkbenchPage() {
     const document = JSON.parse(backendSource) as BackendDef;
     if (document.kind !== "backend") throw new Error("Backend must declare kind: backend");
     const path = backendTarget || `backends/${slug(document.id)}.json`;
-    await request(`/api/workspaces/${encodeURIComponent(workspace.id)}/file`, {
+    await request(`/workbench/workspaces/${encodeURIComponent(workspace.id)}/file`, {
       method: "PUT",
       body: JSON.stringify({path, content: JSON.stringify(document, null, 2)}),
     });
@@ -369,7 +369,7 @@ export function PolishedFilesystemWorkbenchPage() {
     if (!workspace) throw new Error("Select a workspace");
     const document = JSON.parse(operationSource) as OperationDef;
     const path = operationTarget || `operations/${slug(document.id)}.json`;
-    await request(`/api/workspaces/${encodeURIComponent(workspace.id)}/file`, {
+    await request(`/workbench/workspaces/${encodeURIComponent(workspace.id)}/file`, {
       method: "PUT",
       body: JSON.stringify({path, content: JSON.stringify(document, null, 2)}),
     });

@@ -69,7 +69,7 @@ export function LoadTextDocuments({
   const lines = Math.max(1, content.split(/\r?\n/).length);
 
   const refreshDocuments = async () => {
-    const payload = await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/text-documents`);
+    const payload = await request(`/workbench/workspaces/${encodeURIComponent(workspaceId)}/text-documents`);
     const records = Array.isArray(payload.documents) ? payload.documents as TextDocumentRecord[] : [];
     setDocuments(records);
     setSelectedKey((current) => {
@@ -99,7 +99,7 @@ export function LoadTextDocuments({
     let cancelled = false;
     setBusy(true);
     setMessage("");
-    void request(`/api/workspaces/${encodeURIComponent(workspaceId)}/text-document?path=${encodeURIComponent(record.path)}&sourceWorkspaceId=${encodeURIComponent(record.workspaceId)}`)
+    void request(`/workbench/workspaces/${encodeURIComponent(workspaceId)}/text-document?path=${encodeURIComponent(record.path)}&sourceWorkspaceId=${encodeURIComponent(record.workspaceId)}`)
       .then((payload) => {
         if (cancelled) return;
         const document = payload.document && typeof payload.document === "object"
@@ -149,7 +149,7 @@ export function LoadTextDocuments({
         onPreferredContentChange(content);
         await onSavePreferredContent();
       } else {
-        await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/file`, {
+        await request(`/workbench/workspaces/${encodeURIComponent(workspaceId)}/file`, {
           method: "PUT",
           body: JSON.stringify({ path: selected.path, content }),
         });

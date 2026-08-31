@@ -403,7 +403,7 @@ export function WorkbenchPage() {
   const createBackendRun = useCallback(async (workflowId = "arc3_human_observation", parentOperationId?: string) => {
     setCommandPending(true);
     try {
-      const response = await fetch("/api/runs", {
+      const response = await fetch("/workbench/runs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ workflowId, worldId: "ls20", parentOperationId }),
@@ -423,7 +423,7 @@ export function WorkbenchPage() {
     if (!run || commandPending) return null;
     setCommandPending(true);
     try {
-      const response = await fetch(`/api/runs/${run.id}/commands`, {
+      const response = await fetch(`/workbench/runs/${run.id}/commands`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ command, input }),
@@ -442,7 +442,7 @@ export function WorkbenchPage() {
 
   const loadCatalog = useCallback(async () => {
     try {
-      const response = await fetch("/api/workflows", { cache: "no-store" });
+      const response = await fetch("/workbench/workflows", { cache: "no-store" });
       const payload = await response.json() as Catalog & { error?: string };
       if (!response.ok) throw new Error(payload.error || "Workflow catalog failed");
       setCatalog(payload);
@@ -469,7 +469,7 @@ export function WorkbenchPage() {
 
   const workflowOperation = async (operation: "new" | "example" | "delete") => {
     try {
-      const response = await fetch("/api/workflows", {
+      const response = await fetch("/workbench/workflows", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ operation, id: operation === "delete" ? selectedWorkflowId : undefined }),
@@ -489,7 +489,7 @@ export function WorkbenchPage() {
     if (!draft) return;
     try {
       const candidate = rawMode ? JSON.parse(rawText) as WorkflowDocument : draft;
-      const response = await fetch("/api/workflows", {
+      const response = await fetch("/workbench/workflows", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ operation: "save", workflow: candidate, originalId: originalWorkflowId }),
@@ -547,7 +547,7 @@ export function WorkbenchPage() {
     if (!run) return;
     const timer = window.setInterval(async () => {
       try {
-        const response = await fetch(`/api/runs/${run.id}/events?after=${cursor.current}`, { cache: "no-store" });
+        const response = await fetch(`/workbench/runs/${run.id}/events?after=${cursor.current}`, { cache: "no-store" });
         if (!response.ok) return;
         const payload = await response.json() as { events: RunEvent[]; cursor: number };
         if (payload.events.length) {

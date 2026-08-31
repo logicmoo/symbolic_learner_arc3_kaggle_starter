@@ -56,7 +56,7 @@ export function TopicsResourceEditor({ workspaceId }: { workspaceId: string }) {
   const pageRootRef = useCollapsingHeaderWheel();
 
   const load = async () => {
-    const payload = await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/artifact-categories`);
+    const payload = await request(`/workbench/workspaces/${encodeURIComponent(workspaceId)}/artifact-categories`);
     const next = ((payload.artifactCategories || []) as TopicRecord[]).filter((record) => record.document && record.document.kind === "artifact_category");
     setRecords(next);
     setLoaded(true);
@@ -134,7 +134,7 @@ export function TopicsResourceEditor({ workspaceId }: { workspaceId: string }) {
     const targetWorkspace = isNew ? workspaceId : (selected?.workspaceId || workspaceId);
     const path = isNew ? `design/categories/${fileSlug(document.id)}.artifact_category.metta` : (selected?.path as string);
     const content = jsonDocumentToMetta(JSON.stringify(document));
-    await request(`/api/workspaces/${encodeURIComponent(targetWorkspace)}/file`, { method: "PUT", body: JSON.stringify({ path, content }) });
+    await request(`/workbench/workspaces/${encodeURIComponent(targetWorkspace)}/file`, { method: "PUT", body: JSON.stringify({ path, content }) });
     await load();
     setSelectedKey(document.id);
     setDirty(false);
@@ -146,7 +146,7 @@ export function TopicsResourceEditor({ workspaceId }: { workspaceId: string }) {
     if (!window.confirm(`Delete topic "${selected.document?.id}"? This removes ${selected.path}.`)) return;
     void perform(async () => {
       const targetWorkspace = selected.workspaceId || workspaceId;
-      await request(`/api/workspaces/${encodeURIComponent(targetWorkspace)}/file?path=${encodeURIComponent(selected.path)}`, { method: "DELETE" });
+      await request(`/workbench/workspaces/${encodeURIComponent(targetWorkspace)}/file?path=${encodeURIComponent(selected.path)}`, { method: "DELETE" });
       await load();
       setSelectedKey(null); setSource(""); setDirty(false);
       setStatus(`Deleted ${selected.document?.id}`);

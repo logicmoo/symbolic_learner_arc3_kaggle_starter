@@ -5,7 +5,7 @@ consumes — viewing and editing the remote mailboxes and the ``server_registry_
 objects. Every mailbox is an object in the ``mailbox_channels`` per-mailbox JSON
 store; there is no legacy ``messages.jsonl`` here.
 
-Endpoints (mounted under ``/api``):
+Endpoints (mounted under ``/workbench``):
 
 * ``GET  /mailbox/agents``            -> {"agents":  [{"id", ...}]}
 * ``POST /mailbox/agents``  {id}      -> register an agent

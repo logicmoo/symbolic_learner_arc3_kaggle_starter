@@ -168,12 +168,12 @@ The current planner uses cost when choosing the shortest available conversion pa
 For a workspace named `arc3`:
 
 ```text
-GET /api/workspaces/arc3/datatypes
-GET /api/workspaces/arc3/representations
-GET /api/workspaces/arc3/representation-graph
-GET /api/workspaces/arc3/datatypes/image/resolve
-GET /api/workspaces/arc3/datatypes/image/resolve?representation=scene_graph
-GET /api/workspaces/arc3/datatypes/image/plan?source=bitmap&target=logo_program
+GET /workbench/workspaces/arc3/datatypes
+GET /workbench/workspaces/arc3/representations
+GET /workbench/workspaces/arc3/representation-graph
+GET /workbench/workspaces/arc3/datatypes/image/resolve
+GET /workbench/workspaces/arc3/datatypes/image/resolve?representation=scene_graph
+GET /workbench/workspaces/arc3/datatypes/image/plan?source=bitmap&target=logo_program
 ```
 
 The representation graph response includes effective shared/workspace datatype resources, representation resources, and conversion edges.

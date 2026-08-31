@@ -20,7 +20,7 @@ async function request(path:string, init?:RequestInit) {
   if(!response.ok) throw new Error(payload.error || payload.detail || response.statusText);
   return payload;
 }
-const engine=(path:string,init?:RequestInit)=>request(`/api/engine${path}`,init);
+const engine=(path:string,init?:RequestInit)=>request(`/workbench/engine${path}`,init);
 
 export function WorkspaceWorkbenchPage(){
   const [workspaces,setWorkspaces]=useState<Workspace[]>([]);
@@ -37,7 +37,7 @@ export function WorkspaceWorkbenchPage(){
   const [busy,setBusy]=useState(false);
   const parsed=useMemo(()=>{try{return document?JSON.parse(document):null}catch{return null}},[document]);
 
-  useEffect(()=>{void request('/api/workspaces').then(p=>setWorkspaces(p.workspaces)).catch(e=>setError(String(e)))},[]);
+  useEffect(()=>{void request('/workbench/workspaces').then(p=>setWorkspaces(p.workspaces)).catch(e=>setError(String(e)))},[]);
   useEffect(()=>{
     if(!run || ["completed","failed","cancelled"].includes(run.status)) return;
     const timer=setInterval(()=>void engine(`/runs/${run.id}`).then(p=>setRun(p.run)).catch(e=>setError(String(e))),1000);
@@ -48,7 +48,7 @@ export function WorkspaceWorkbenchPage(){
 
   const chooseWorkspace=(item:Workspace)=>perform(async()=>{
     const [s,i,c]=await Promise.all([
-      request(`/api/workspaces/${encodeURIComponent(item.id)}/snapshot`),
+      request(`/workbench/workspaces/${encodeURIComponent(item.id)}/snapshot`),
       engine('/implementations'), engine('/capabilities')
     ]);
     setWorkspace(s.workspace); setSnapshot(s); setImplementations(i.implementations); setCapabilities(c.capabilities);
@@ -60,7 +60,7 @@ export function WorkspaceWorkbenchPage(){
 
   const openFile=(path:string)=>perform(async()=>{
     if(!workspace)return;
-    const p=await request(`/api/workspaces/${encodeURIComponent(workspace.id)}/file?path=${encodeURIComponent(path)}`);
+    const p=await request(`/workbench/workspaces/${encodeURIComponent(workspace.id)}/file?path=${encodeURIComponent(path)}`);
     setSelectedPath(path); setDocument(p.file.content); setValidation(null);
   });
 
@@ -68,8 +68,8 @@ export function WorkspaceWorkbenchPage(){
     if(!workspace)throw new Error('Select a workspace');
     const id=parsed?.id || 'workflow';
     const path=selectedPath || `${workspace.workflowDirectoryRelative}/${id}.json`;
-    await request(`/api/workspaces/${encodeURIComponent(workspace.id)}/file`,{method:'PUT',body:JSON.stringify({path,content})});
-    const s=await request(`/api/workspaces/${encodeURIComponent(workspace.id)}/snapshot`);
+    await request(`/workbench/workspaces/${encodeURIComponent(workspace.id)}/file`,{method:'PUT',body:JSON.stringify({path,content})});
+    const s=await request(`/workbench/workspaces/${encodeURIComponent(workspace.id)}/snapshot`);
     setSnapshot(s);setSelectedPath(path);
   };
 

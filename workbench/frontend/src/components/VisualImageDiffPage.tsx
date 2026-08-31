@@ -1003,8 +1003,8 @@ export function VisualImageDiffPage({ pageDefinition, workspaceId, workspaceLabe
     setGeneratedDataFieldNames([]);
     setMessage("Loading filesystem resources…");
     Promise.all([
-      request(`/api/workspaces/${encodeURIComponent(workspaceId)}/file?path=${encodeURIComponent(MANIFEST_PATH)}`),
-      request(`/api/workspaces/${encodeURIComponent(workspaceId)}/prompts`),
+      request(`/workbench/workspaces/${encodeURIComponent(workspaceId)}/file?path=${encodeURIComponent(MANIFEST_PATH)}`),
+      request(`/workbench/workspaces/${encodeURIComponent(workspaceId)}/prompts`),
     ]).then(([manifestPayload, promptPayload]) => {
       if (cancelled) return;
       const file = manifestPayload.file && typeof manifestPayload.file === "object"
@@ -1082,7 +1082,7 @@ export function VisualImageDiffPage({ pageDefinition, workspaceId, workspaceLabe
     let cancelled = false;
     const poll = async () => {
       try {
-        const payload = await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/prompts`);
+        const payload = await request(`/workbench/workspaces/${encodeURIComponent(workspaceId)}/prompts`);
         if (cancelled) return;
         const library = payload.promptLibrary && typeof payload.promptLibrary === "object"
           ? payload.promptLibrary as Record<string, unknown>
@@ -1146,7 +1146,7 @@ export function VisualImageDiffPage({ pageDefinition, workspaceId, workspaceLabe
     setSavingPromptId(prompt.id);
     try {
       const document = JSON.parse(draft) as PromptChoice;
-      const payload = await request(`/api/workspaces/${encodeURIComponent(prompt.workspaceId)}/prompts/${encodeURIComponent(prompt.id)}`, {
+      const payload = await request(`/workbench/workspaces/${encodeURIComponent(prompt.workspaceId)}/prompts/${encodeURIComponent(prompt.id)}`, {
         method: "PUT",
         body: JSON.stringify({ path: prompt.path, document }),
       });
@@ -1181,7 +1181,7 @@ export function VisualImageDiffPage({ pageDefinition, workspaceId, workspaceLabe
     const owner = prompt.workspaceId || workspaceId;
     setReloadingPromptId(prompt.id);
     try {
-      const payload = await request(`/api/workspaces/${encodeURIComponent(owner)}/prompts`);
+      const payload = await request(`/workbench/workspaces/${encodeURIComponent(owner)}/prompts`);
       const library = payload.promptLibrary && typeof payload.promptLibrary === "object"
         ? payload.promptLibrary as Record<string, unknown>
         : {};
@@ -1214,7 +1214,7 @@ export function VisualImageDiffPage({ pageDefinition, workspaceId, workspaceLabe
       id: frame.id,
       label: frame.label,
       assetPath: frame.assetPath,
-      source: `/api/workspaces/${encodeURIComponent(workspaceId)}/asset?path=${encodeURIComponent(frame.assetPath)}`,
+      source: `/workbench/workspaces/${encodeURIComponent(workspaceId)}/asset?path=${encodeURIComponent(frame.assetPath)}`,
     })),
     ...uploadedImages.map((image) => ({ id: image.id, label: image.label, assetPath: "", source: image.dataUrl })),
   ], [document?.frames, uploadedImages, workspaceId]);
@@ -1529,7 +1529,7 @@ export function VisualImageDiffPage({ pageDefinition, workspaceId, workspaceLabe
         sequenceContext ? `SEQUENCE\n${sequenceContext}` : "",
         `PROMPT RESOURCES\n${promptParts.join("\n\n")}`,
       ].filter(Boolean).join("\n\n");
-      const payload = await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/models/${encodeURIComponent(modelId)}/invoke`, {
+      const payload = await request(`/workbench/workspaces/${encodeURIComponent(workspaceId)}/models/${encodeURIComponent(modelId)}/invoke`, {
         method: "POST",
         body: JSON.stringify({ prompt, image, timeoutSeconds: 300 }),
       });
@@ -1613,7 +1613,7 @@ export function VisualImageDiffPage({ pageDefinition, workspaceId, workspaceLabe
       value: `${(document?.frames.length || 0) + uploadedImages.length} images · ${document?.commands.length || 0} commands`, detail: MANIFEST_PATH,
       mode: mode("sequence"), onModeChange: (value) => setMode("sequence", value), baseClass: "english-workflow-panel visual-image-diff-sequence", scrollSize: "680px",
       content: <><div className="visual-image-input-toolbar"><label><b>ADD IMAGES</b><input type="file" accept="image/*" multiple onChange={(event) => { void addUploadedImages(event.target.files); event.target.value = ""; }} /></label><span>Every listed image is submitted in sequence order.</span><button type="button" disabled={!uploadedImages.length} onClick={() => setUploadedImages([])}>Clear added images</button></div>
-        <div className="visual-image-sequence">{document?.frames.map((frame, index) => { const command = commandAfter(frame.id); return <div className="visual-image-sequence-part" key={frame.id}><figure><figcaption><b>{index + 1}</b><span>{frame.label}</span><code>{frame.assetPath}</code></figcaption><img src={`/api/workspaces/${encodeURIComponent(workspaceId)}/asset?path=${encodeURIComponent(frame.assetPath)}`} alt={frame.label} /></figure>{command && <div className="visual-image-command"><span>ENGLISH COMMAND</span><strong>{command.label || command.command}</strong><code>{command.command}</code></div>}</div>; })}{uploadedImages.map((image, index) => <div className="visual-image-sequence-part visual-image-uploaded" key={image.id}><figure><figcaption><b>{(document?.frames.length || 0) + index + 1}</b><span>{image.label}</span><code>Added for this run</code></figcaption><img src={image.dataUrl} alt={image.label} /></figure></div>)}</div></>,
+        <div className="visual-image-sequence">{document?.frames.map((frame, index) => { const command = commandAfter(frame.id); return <div className="visual-image-sequence-part" key={frame.id}><figure><figcaption><b>{index + 1}</b><span>{frame.label}</span><code>{frame.assetPath}</code></figcaption><img src={`/workbench/workspaces/${encodeURIComponent(workspaceId)}/asset?path=${encodeURIComponent(frame.assetPath)}`} alt={frame.label} /></figure>{command && <div className="visual-image-command"><span>ENGLISH COMMAND</span><strong>{command.label || command.command}</strong><code>{command.command}</code></div>}</div>; })}{uploadedImages.map((image, index) => <div className="visual-image-sequence-part visual-image-uploaded" key={image.id}><figure><figcaption><b>{(document?.frames.length || 0) + index + 1}</b><span>{image.label}</span><code>Added for this run</code></figcaption><img src={image.dataUrl} alt={image.label} /></figure></div>)}</div></>,
     }),
     VisualSequenceContext: () => ({
       value: `${document?.commands.length || 0} transitions`, detail: "Filesystem manifest facts available to authoring and workflow steps",

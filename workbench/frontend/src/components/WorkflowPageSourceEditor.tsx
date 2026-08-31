@@ -63,7 +63,7 @@ export function WorkflowPageSourceEditor({ workspaceId, pageId, disabled = false
     setBusy(true);
     setMessage("");
     try {
-      const payload = await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/workflow-pages/${encodeURIComponent(pageId)}/source`) as Record<string, unknown>;
+      const payload = await request(`/workbench/workspaces/${encodeURIComponent(workspaceId)}/workflow-pages/${encodeURIComponent(pageId)}/source`) as Record<string, unknown>;
       const parsed = parseSourcePayload(pageId, payload);
       setContent(parsed.content);
       setSavedContent(parsed.content);
@@ -94,7 +94,7 @@ export function WorkflowPageSourceEditor({ workspaceId, pageId, disabled = false
     let cancelled = false;
     const poll = async () => {
       try {
-        const payload = await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/workflow-pages/${encodeURIComponent(pageId)}/source`) as Record<string, unknown>;
+        const payload = await request(`/workbench/workspaces/${encodeURIComponent(workspaceId)}/workflow-pages/${encodeURIComponent(pageId)}/source`) as Record<string, unknown>;
         if (cancelled) return;
         const parsed = parseSourcePayload(pageId, payload);
         setDiskContent(parsed.content);
@@ -134,7 +134,7 @@ export function WorkflowPageSourceEditor({ workspaceId, pageId, disabled = false
     setBusy(true);
     setMessage("");
     try {
-      const payload = await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/workflow-pages/${encodeURIComponent(pageId)}/source`, {
+      const payload = await request(`/workbench/workspaces/${encodeURIComponent(workspaceId)}/workflow-pages/${encodeURIComponent(pageId)}/source`, {
         method: "PUT",
         body: JSON.stringify({ content }),
       }) as Record<string, unknown>;

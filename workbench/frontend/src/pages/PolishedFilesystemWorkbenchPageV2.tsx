@@ -99,7 +99,7 @@ async function request(path: string, init?: RequestInit) {
   return payload;
 }
 
-const engine = (path: string, init?: RequestInit) => request(`/api/engine${path}`, init);
+const engine = (path: string, init?: RequestInit) => request(`/workbench/engine${path}`, init);
 const slug = (value: string) => value.toLowerCase().replace(/[^a-z0-9.]+/g,"_").replace(/^_+|_+$/g,"") || "item";
 
 function GenericResourceEditor({workspaceId, title, eyebrow, records, directory, kinds, description}: {
@@ -140,7 +140,7 @@ function GenericResourceEditor({workspaceId, title, eyebrow, records, directory,
       const document = JSON.parse(source) as ResourceDef;
       if (!document.id || !kinds.includes(document.kind)) throw new Error(`Expected kind ${kinds.join(" or ")}`);
       const path = targetPath || `${directory}/${slug(document.id)}.${document.kind}.json`;
-      await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/file`, {method:"PUT",body:JSON.stringify({path,content:JSON.stringify(document,null,2)})});
+      await request(`/workbench/workspaces/${encodeURIComponent(workspaceId)}/file`, {method:"PUT",body:JSON.stringify({path,content:JSON.stringify(document,null,2)})});
       setTargetPath(path);
       setMessage(`Saved ${path}`);
     } catch (reason) {
@@ -189,7 +189,7 @@ export function PolishedFilesystemWorkbenchPageV2() {
   const modelRecords = useMemo(() => [...(snapshot?.backends || []),...(snapshot?.models || [])], [snapshot]);
   const operationRecords = useMemo(() => [...(snapshot?.operations || []),...(snapshot?.operationImplementations || [])], [snapshot]);
 
-  useEffect(() => { void request("/api/workspaces").then(payload => setWorkspaces(payload.workspaces || [])).catch(reason => setError(String(reason))); },[]);
+  useEffect(() => { void request("/workbench/workspaces").then(payload => setWorkspaces(payload.workspaces || [])).catch(reason => setError(String(reason))); },[]);
   useEffect(() => {
     if (!run || ["completed","failed","cancelled"].includes(run.status)) return;
     const timer = window.setInterval(() => void engine(`/runs/${run.id}`).then(payload => setRun(payload.run)).catch(reason => setError(String(reason))),1000);
@@ -199,7 +199,7 @@ export function PolishedFilesystemWorkbenchPageV2() {
   const perform = async (work:()=>Promise<void>) => { setBusy(true); setError(null); try { await work(); } catch(reason) { setError(reason instanceof Error ? reason.message : String(reason)); } finally { setBusy(false); } };
 
   const loadWorkspace = (item:Workspace) => perform(async () => {
-    const [payload,caps] = await Promise.all([request(`/api/workspaces/${encodeURIComponent(item.id)}/snapshot`),engine("/capabilities")]);
+    const [payload,caps] = await Promise.all([request(`/workbench/workspaces/${encodeURIComponent(item.id)}/snapshot`),engine("/capabilities")]);
     const next = payload as Snapshot;
     setWorkspace(next.workspace); setSnapshot(next); setCapabilities(caps.capabilities || {});
     const first = next.workflows.find(record => record.document);
@@ -208,9 +208,9 @@ export function PolishedFilesystemWorkbenchPageV2() {
     setRun(null); setValidation(null);
   });
 
-  const refreshSnapshot = async () => { if (!workspace) return; const payload = await request(`/api/workspaces/${encodeURIComponent(workspace.id)}/snapshot`); setSnapshot(payload as Snapshot); };
-  const openWorkflow = async (path:string) => { if (!workspace) return; const payload = await request(`/api/workspaces/${encodeURIComponent(workspace.id)}/file?path=${encodeURIComponent(path)}`); const content = String(payload.file?.content || ""); setWorkflowPath(path); setWorkflowSource(content); try { const doc = JSON.parse(content) as Workflow; setSelectedStepId(doc.steps[0]?.id || null); } catch { setSelectedStepId(null); } };
-  const saveWorkflow = () => perform(async () => { if (!workspace || !workflow) throw new Error("Select valid workflow JSON"); const path = workflowPath || `workflows/${slug(workflow.id)}.workflow.json`; await request(`/api/workspaces/${encodeURIComponent(workspace.id)}/file`,{method:"PUT",body:JSON.stringify({path,content:JSON.stringify(workflow,null,2)})}); setWorkflowPath(path); await refreshSnapshot(); });
+  const refreshSnapshot = async () => { if (!workspace) return; const payload = await request(`/workbench/workspaces/${encodeURIComponent(workspace.id)}/snapshot`); setSnapshot(payload as Snapshot); };
+  const openWorkflow = async (path:string) => { if (!workspace) return; const payload = await request(`/workbench/workspaces/${encodeURIComponent(workspace.id)}/file?path=${encodeURIComponent(path)}`); const content = String(payload.file?.content || ""); setWorkflowPath(path); setWorkflowSource(content); try { const doc = JSON.parse(content) as Workflow; setSelectedStepId(doc.steps[0]?.id || null); } catch { setSelectedStepId(null); } };
+  const saveWorkflow = () => perform(async () => { if (!workspace || !workflow) throw new Error("Select valid workflow JSON"); const path = workflowPath || `workflows/${slug(workflow.id)}.workflow.json`; await request(`/workbench/workspaces/${encodeURIComponent(workspace.id)}/file`,{method:"PUT",body:JSON.stringify({path,content:JSON.stringify(workflow,null,2)})}); setWorkflowPath(path); await refreshSnapshot(); });
   const validateWorkflow = () => perform(async () => { if (!workflow) throw new Error("Invalid workflow JSON"); const payload = await engine("/workflows/validate",{method:"POST",body:JSON.stringify(workflow)}); setValidation(payload.errors || []); });
   const startRun = () => perform(async () => {
     if (!workspace || !workflow) throw new Error("Invalid workflow JSON");
@@ -219,7 +219,7 @@ export function PolishedFilesystemWorkbenchPageV2() {
       const response = await engine("/workflows",{method:"POST",body:JSON.stringify(saved)}); saved = response.workflow as Workflow;
       const path = workflowPath || `workflows/${slug(saved.id)}.workflow.json`;
       const content = JSON.stringify(saved,null,2); setWorkflowSource(content); setWorkflowPath(path);
-      await request(`/api/workspaces/${encodeURIComponent(workspace.id)}/file`,{method:"PUT",body:JSON.stringify({path,content})});
+      await request(`/workbench/workspaces/${encodeURIComponent(workspace.id)}/file`,{method:"PUT",body:JSON.stringify({path,content})});
     }
     const response = await engine("/runs",{method:"POST",body:JSON.stringify({workflowId:saved.id,version:saved.version,inputs:JSON.parse(runInputs)})}); setRun(response.run);
   });

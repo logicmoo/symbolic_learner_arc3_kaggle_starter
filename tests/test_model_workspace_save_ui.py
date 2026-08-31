@@ -32,7 +32,7 @@ def test_model_resource_save_uses_shared_resource_file_controls() -> None:
     assert "Other workspaces" in controls
     assert "originWorkspaceId:doc.record.workspaceId||workspaceId" in source
     assert "targetWorkspaceId=location?.workspaceId||workspaceId" in source
-    assert "/api/workspaces/${encodeURIComponent(targetWorkspaceId)}/file" in source
+    assert "/workbench/workspaces/${encodeURIComponent(targetWorkspaceId)}/file" in source
     assert "design/backends" in source
     assert "design/models" in source
     assert "design/systems" in source

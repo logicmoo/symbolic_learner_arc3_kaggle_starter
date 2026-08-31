@@ -181,7 +181,7 @@ def test_play_page_moves_ordered_numerically_and_importables_sorted() -> None:
 def test_play_router_is_mounted() -> None:
     source = APP.read_text(encoding="utf-8")
     assert "from arc3_play_api import router as arc3_play_router" in source
-    assert 'app.include_router(arc3_play_router, prefix="/api")' in source
+    assert 'app.include_router(arc3_play_router, prefix="/workbench")' in source
 
 
 def test_play_page_embeds_b1b2_runner_stack_in_left_column() -> None:
@@ -228,7 +228,7 @@ def test_play_page_deep_link_auto_resumes_recording_or_savepoint() -> None:
     # Falls back to the most recent matching RESTART-POINT (savepoint).
     assert 'point.game_directory === requested' in source
     # Resumes a live session from whichever savepoint id was found.
-    assert '"/api/arc3-play/sessions"' in source
+    assert '"/workbench/arc3-play/sessions"' in source
     assert "savepointId" in source
     # The resumed session's timeline is populated (not dropped) so the user
     # lands on the ending state but can still slide the timeline back to
@@ -259,13 +259,13 @@ def test_play_page_has_movelist_recording_cross_import_actions() -> None:
     # RECORDINGS panel: full import + materializing Recordings from move-lists.
     assert "importAllImportables(sortedRecordings)" in source
     assert "importAllMovelistsAsRecordings" in source
-    assert "/api/arc3-play/recordings/materialize-movelists" in source
+    assert "/workbench/arc3-play/recordings/materialize-movelists" in source
     # MOVE-LISTS panel: lightweight (move-list only) import + deriving
     # move-lists from existing Recordings.
     assert "importAllImportablesAsMovelists(sortedRecordings)" in source
-    assert "/api/arc3-play/import-movelist" in source
+    assert "/workbench/arc3-play/import-movelist" in source
     assert "importAllRecordingsMoves" in source
-    assert "/api/arc3-play/recordings/import-movelists" in source
+    assert "/workbench/arc3-play/recordings/import-movelists" in source
     # Materializing loops the bounded endpoint while there's remaining work,
     # instead of one call blocking for an unbounded time on large move-lists.
     assert "payload.remaining" in source
@@ -274,9 +274,9 @@ def test_play_page_has_movelist_recording_cross_import_actions() -> None:
 def test_play_page_has_clear_buttons_for_recordings_and_movelists() -> None:
     source = COMPONENT.read_text(encoding="utf-8")
     assert "clearRecordings" in source
-    assert "/api/arc3-play/recordings/clear" in source
+    assert "/workbench/arc3-play/recordings/clear" in source
     assert "clearSavepoints" in source
-    assert "/api/arc3-play/savepoints/clear" in source
+    assert "/workbench/arc3-play/savepoints/clear" in source
     assert "window.confirm(" in source
     styles = STYLES.read_text(encoding="utf-8")
     assert ".arc3-play-rescan.danger" in styles
@@ -348,9 +348,9 @@ def test_play_page_recordings_path_can_be_set_from_the_right_panel() -> None:
 def test_games_gallery_page_exists_and_is_wired_into_navigation() -> None:
     gallery_component = (ROOT / "workbench/frontend/src/components/Arc3GamesGalleryPage.tsx").read_text(encoding="utf-8")
     assert "export function Arc3GamesGalleryPage(" in gallery_component
-    assert "/api/arc3-play/games" in gallery_component
+    assert "/workbench/arc3-play/games" in gallery_component
     assert "/preview" in gallery_component
-    assert "/api/arc3-play/games/sync" in gallery_component
+    assert "/workbench/arc3-play/games/sync" in gallery_component
     assert "onPlayGame" in gallery_component
     assert 'type="search"' in gallery_component
     assert "Sync from arc-interactive" in gallery_component

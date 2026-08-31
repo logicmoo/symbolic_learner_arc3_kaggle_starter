@@ -152,7 +152,7 @@ export function OperationPlayground({workspaceId,operation,variants,models=[],wo
  const galleryArtifact=result?Object.values(result.outputs||{}).find(value=>typeof value==="object"&&value!==null&&String((value as Record<string,unknown>).kind||"").includes("gallery")) as Record<string,unknown>|undefined:undefined;
  const galleryEntries=Array.isArray(galleryArtifact?.entries)?galleryArtifact.entries as Array<Record<string,unknown>>:[];
  const galleryAnimation=typeof galleryArtifact?.animation==="string"?galleryArtifact.animation:"";
- const assetUrl=(path:string)=>path.startsWith("data:")||path.startsWith("http")?path:`/api/workspaces/${encodeURIComponent(workspaceId)}/asset?path=${encodeURIComponent(path)}`;
+ const assetUrl=(path:string)=>path.startsWith("data:")||path.startsWith("http")?path:`/workbench/workspaces/${encodeURIComponent(workspaceId)}/asset?path=${encodeURIComponent(path)}`;
  const visualOutputs=result?Object.entries(result.outputs||{}).flatMap(([name,value])=>{
   const contract=datatypeLabel(operation.outputs?.[name]||"Any");
   if(typeof value==="string"&&/image|bitmap|png|jpe?g/i.test(contract)&&value)return[{name,path:value}];
@@ -175,7 +175,7 @@ export function OperationPlayground({workspaceId,operation,variants,models=[],wo
  const updateParameter=(name:string,value:string)=>{setRawParameters(current=>({...current,[name]:value}));clearInvocationResult()};
  const loadDebugLog=async(path:string)=>{
   setDebugLogPath(path);setDebugLog("Loading complete invocation trace...");
-  try{const payload=await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/operations/debug-log?path=${encodeURIComponent(path)}`);setDebugLog(String(payload.content||""))}
+  try{const payload=await request(`/workbench/workspaces/${encodeURIComponent(workspaceId)}/operations/debug-log?path=${encodeURIComponent(path)}`);setDebugLog(String(payload.content||""))}
   catch(reason){setDebugLog(`Debug trace could not be loaded: ${reason instanceof Error?reason.message:String(reason)}`)}
  };
  const populateInputs=async(populationMode:PopulationMode,targetInput?:string)=>{
@@ -187,7 +187,7 @@ export function OperationPlayground({workspaceId,operation,variants,models=[],wo
    if(populationMode==="empty_null"){
     setRawInputs(current=>({...current,...Object.fromEntries(inputs.filter(([name])=>!targetInput||name===targetInput).map(([name,contract])=>[name,emptyValueFor(contract)]))}));setPopulationMessage(targetInput?`Set ${targetInput} to its empty/null value.`:"Set text and image inputs to empty values; other inputs to null.");return;
    }
-   const responses=await Promise.allSettled([request(`/api/goal-runs?workspace_id=${encodeURIComponent(workspaceId)}&limit=100`),request(`/api/engine/runs?workspace_id=${encodeURIComponent(workspaceId)}&limit=100`)]);
+   const responses=await Promise.allSettled([request(`/workbench/goal-runs?workspace_id=${encodeURIComponent(workspaceId)}&limit=100`),request(`/workbench/engine/runs?workspace_id=${encodeURIComponent(workspaceId)}&limit=100`)]);
    const goalRuns:RuntimeRun[]=responses[0].status==='fulfilled'&&Array.isArray(responses[0].value.goalRuns)?responses[0].value.goalRuns.map((item:any)=>item.workflowRun as RuntimeRun):[];
    const engineRuns:RuntimeRun[]=responses[1].status==='fulfilled'&&Array.isArray(responses[1].value.runs)?responses[1].value.runs as RuntimeRun[]:[];
    ingestRuntimeRuns(workspaceId,[...goalRuns,...engineRuns]);
@@ -208,7 +208,7 @@ export function OperationPlayground({workspaceId,operation,variants,models=[],wo
    for(const[name,datatype]of inputs){const raw=rawInputs[name]??"",label=datatypeLabel(datatype),options=operation.example_execute?.arguments?.[name]?.options,matched=options?.find(option=>(typeof option==="string"?option:JSON.stringify(option))===raw);values[name]=matched!==undefined?matched:parseInput(label,raw)}
    const parameterValues:Record<string,unknown>={};
    for(const[name,fallback]of parameters){const raw=rawParameters[name];if(raw===undefined||raw==="")parameterValues[name]=fallback;else try{parameterValues[name]=JSON.parse(raw)}catch{parameterValues[name]=raw}}
-   const payload=await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/operations/${encodeURIComponent(operation.id)}/invoke`,{method:"POST",body:JSON.stringify({...(implementationVariant?{implementationVariant}:{}),...(selectedModel?{modelSelection:{models:[selectedModel],strategy:"single"}}:{}),inputs:values,parameters:parameterValues})});
+   const payload=await request(`/workbench/workspaces/${encodeURIComponent(workspaceId)}/operations/${encodeURIComponent(operation.id)}/invoke`,{method:"POST",body:JSON.stringify({...(implementationVariant?{implementationVariant}:{}),...(selectedModel?{modelSelection:{models:[selectedModel],strategy:"single"}}:{}),inputs:values,parameters:parameterValues})});
    const invocation=payload as InvocationResult;rememberInvocation(workspaceId,operation,operation.inputs||{},values,operation.outputs||{},invocation.outputs||{});setResult(invocation);onInvocationComplete?.(invocation.outputs||{});onCollapsedChange?.(true);if(invocation.debugLogPath)await loadDebugLog(invocation.debugLogPath);
   }catch(reason){setError(reason instanceof Error?reason.message:String(reason));if(reason instanceof RequestFailure&&typeof reason.detail==="object"&&reason.detail.debugLogPath)await loadDebugLog(reason.detail.debugLogPath)}finally{setRunning(false)}
  };

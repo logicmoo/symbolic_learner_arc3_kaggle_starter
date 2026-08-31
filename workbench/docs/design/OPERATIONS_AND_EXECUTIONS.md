@@ -15,8 +15,8 @@ file exporting `SKILL` metadata plus `apply(image, params)` into
 executes it itself (built-ins, published parameter presets in
 `filter_catalog.json`, `.cube` LUTs in `data/VideoImports/luts/`, and
 downloaded libraries such as the MIT `pilgram` wrapper all surface through
-`GET /api/video-import/filters` and run through `POST
-/api/video-import/filter`). Skills graduate into the operations library as
+`GET /workbench/video-import/filters` and run through `POST
+/workbench/video-import/filter`). Skills graduate into the operations library as
 resources — see `design/operations/image_filter_skills.operation.metta`
 (`skill.apply_image_filter` and its specializations) in the shared library —
 where they gain the full Operation contract: typed inputs/outputs, topics,

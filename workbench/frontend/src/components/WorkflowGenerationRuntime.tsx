@@ -872,7 +872,7 @@ export function GenerateWorkflowPage({
 
   useEffect(() => {
     let cancelled = false;
-    void request(`/api/workspaces/${encodeURIComponent(workspaceId)}/prompts`)
+    void request(`/workbench/workspaces/${encodeURIComponent(workspaceId)}/prompts`)
       .then((payload) => {
         if (cancelled) return;
         const library = payload.promptLibrary && typeof payload.promptLibrary === "object" ? payload.promptLibrary as Record<string, unknown> : {};
@@ -902,10 +902,10 @@ export function GenerateWorkflowPage({
   useEffect(() => {
     let cancelled = false;
     void Promise.all([
-      request(`/api/workspaces/${encodeURIComponent(workspaceId)}/datatypes`),
-      request(`/api/workspaces/${encodeURIComponent(workspaceId)}/representations`),
-      request(`/api/workspaces/${encodeURIComponent(workspaceId)}/concrete-datatypes`),
-      request(`/api/workspaces/${encodeURIComponent(workspaceId)}/snapshot?scope=shell`),
+      request(`/workbench/workspaces/${encodeURIComponent(workspaceId)}/datatypes`),
+      request(`/workbench/workspaces/${encodeURIComponent(workspaceId)}/representations`),
+      request(`/workbench/workspaces/${encodeURIComponent(workspaceId)}/concrete-datatypes`),
+      request(`/workbench/workspaces/${encodeURIComponent(workspaceId)}/snapshot?scope=shell`),
     ]).then(([semantic, representations, concrete, snapshot]) => {
       if (cancelled) return;
       const records = [semantic.datatypes, representations.representations, concrete.concreteDatatypes]
@@ -936,7 +936,7 @@ export function GenerateWorkflowPage({
   useEffect(() => {
     let cancelled = false;
     setGenerationOrder(initialGenerationOrder());
-    void request(`/api/workspaces/${encodeURIComponent(workspaceId)}/file?path=${encodeURIComponent(generationOrderPath)}`)
+    void request(`/workbench/workspaces/${encodeURIComponent(workspaceId)}/file?path=${encodeURIComponent(generationOrderPath)}`)
       .then((payload) => {
         if (cancelled) return;
         const file = payload.file && typeof payload.file === "object" ? payload.file as Record<string, unknown> : {};
@@ -960,7 +960,7 @@ export function GenerateWorkflowPage({
 
   useEffect(() => {
     let cancelled = false;
-    void request(`/api/workspaces/${encodeURIComponent(workspaceId)}/model-selection`)
+    void request(`/workbench/workspaces/${encodeURIComponent(workspaceId)}/model-selection`)
       .then((payload) => {
         if (cancelled) return;
         const available = Array.isArray(payload.models) ? payload.models as ModelChoice[] : models;
@@ -978,7 +978,7 @@ export function GenerateWorkflowPage({
     setBusyAction("model");
     setMessage("");
     try {
-      await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/model-selection`, {
+      await request(`/workbench/workspaces/${encodeURIComponent(workspaceId)}/model-selection`, {
         method: "PUT",
         body: JSON.stringify({ overrideModelId: modelId }),
       });
@@ -1002,7 +1002,7 @@ export function GenerateWorkflowPage({
     setMessage("");
     try {
       const requestedSteps = generationRequest(entries);
-      const payload = await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/operations/${encodeURIComponent(contractOperation.id)}/invoke`, {
+      const payload = await request(`/workbench/workspaces/${encodeURIComponent(workspaceId)}/operations/${encodeURIComponent(contractOperation.id)}/invoke`, {
         method: "POST",
         body: JSON.stringify({
           ...(invocationModel ? { modelSelection: { models: [invocationModel], strategy: "single" } } : {}),
@@ -1033,7 +1033,7 @@ export function GenerateWorkflowPage({
         : null;
       let candidateErrors = ["Candidate Workflow missing from the one-call response."];
       if (candidate) {
-        const validationPayload = await request("/api/engine/workflows/validate", {
+        const validationPayload = await request("/workbench/engine/workflows/validate", {
           method: "POST",
           body: JSON.stringify(candidate),
         });
@@ -1085,7 +1085,7 @@ export function GenerateWorkflowPage({
       recordGenerationStep(runLabel, [
         ...requestedSteps.map(({ name }) => name === "group" ? "Complete Contract + Workflow Group" : name === "summary" ? "Task Summary" : name === "memory" ? `${nextContract.memory.length} Memory Candidates` : name === "checklist" ? `${nextContract.checklist.length} Acceptance Checks` : name === "outputs" ? `${nextContract.outputs.length} Output Requirements` : name === "rules" ? `${nextContract.rules.length} Validation Rules` : name === "englishsteps" ? `${nextContract.englishsteps.length} English Steps` : name === "steps" ? `${nextContract.steps.length} Formal Steps` : name === "libops" ? `${nextContract.libops.length} Library Operations` : name === "matchops" ? `${nextContract.matchops.length} Operation Matches` : name === "inventops" ? `${nextContract.inventops.length} Invented Operation Proposals` : name === "codeops" ? `${nextContract.codeops.length} Operation Implementation Proposals` : name === "promptops" ? `${nextContract.promptops.length} Operation Prompt Proposals` : name === "libdt" ? `${nextContract.libdt.length} Library Datatypes` : name === "matchdt" ? `${nextContract.matchdt.length} Datatype Matches` : name === "inventdt" ? `${nextContract.inventdt.length} Invented Datatype Proposals` : name === "codedt" ? `${nextContract.codedt.length} Datatype Representation Proposals` : name === "libwf" ? `${nextContract.libwf.length} Library Workflows` : name === "matchwf" ? `${nextContract.matchwf.length} Workflow Matches` : name === "inventwf" ? `${nextContract.inventwf.length} Invented Workflow Proposals` : name === "codewf" ? `${nextContract.codewf.length} Workflow Build Reports` : candidate ? `${candidate.steps.length} Workflow Steps` : "Workflow Candidate Missing"),
       ], `${invocationModel || "resolved policy model"} · ${requestedSteps.map((entry) => entry.name).join(" → ")} · saved to ${generationOrderPath}`);
-      await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/file`, {
+      await request(`/workbench/workspaces/${encodeURIComponent(workspaceId)}/file`, {
         method: "PUT",
         body: JSON.stringify({
           path: generationOrderPath,
@@ -1150,7 +1150,7 @@ export function GenerateWorkflowPage({
           (candidate.topics || candidate.categories || []).some((topic) => topic === required || topic.startsWith(`${required}/`)),
         ),
       );
-      const payload = await request(`/api/workspaces/${encodeURIComponent(workspaceId)}/operations/${encodeURIComponent(operation.id)}/invoke`, {
+      const payload = await request(`/workbench/workspaces/${encodeURIComponent(workspaceId)}/operations/${encodeURIComponent(operation.id)}/invoke`, {
         method: "POST",
         body: JSON.stringify({
           ...(selectedModel ? { modelSelection: { models: [selectedModel], strategy: "single" } } : {}),
@@ -1204,7 +1204,7 @@ export function GenerateWorkflowPage({
         `${returnedPlan.values.length} Combined Memory Values`,
       ], `${selectedModel || "resolved policy model"} · ${outputFormat}`);
       setMessage(`Generated ${normalizedWorkflow.steps.length} workflow steps. Validating the returned draft…`);
-      const validationPayload = await request("/api/engine/workflows/validate", {
+      const validationPayload = await request("/workbench/engine/workflows/validate", {
         method: "POST",
         body: JSON.stringify(normalizedWorkflow),
       });
@@ -1212,7 +1212,7 @@ export function GenerateWorkflowPage({
       setValidationErrors(errors);
       setDraftReadyToApply(errors.length === 0);
       setPhase(errors.length ? "generated" : "validated");
-      recordGenerationStep("Validate Draft", [errors.length ? `${errors.length} Validation Issues` : "Backend Validation Passed"], "/api/engine/workflows/validate");
+      recordGenerationStep("Validate Draft", [errors.length ? `${errors.length} Validation Issues` : "Backend Validation Passed"], "/workbench/engine/workflows/validate");
       setMessage(errors.length ? `Draft generated with ${errors.length} validation issues.` : "Draft generated and validated. Review it before applying.");
     } catch (reason) {
       setPhase("error");
@@ -1241,7 +1241,7 @@ export function GenerateWorkflowPage({
     setBusyAction("validate");
     setMessage("");
     try {
-      const payload = await request("/api/engine/workflows/validate", {
+      const payload = await request("/workbench/engine/workflows/validate", {
         method: "POST",
         body: JSON.stringify(draft),
       });
@@ -1251,7 +1251,7 @@ export function GenerateWorkflowPage({
       setPhase(errors.length ? "generated" : "validated");
       recordGenerationStep("Validate Draft", [
         errors.length ? `${errors.length} Validation Issues` : "Backend Validation Passed",
-      ], "/api/engine/workflows/validate");
+      ], "/workbench/engine/workflows/validate");
       setMessage(errors.length ? `Validation found ${errors.length} issues.` : "Backend workflow validation passed.");
     } catch (reason) {
       setPhase("error");
@@ -1294,7 +1294,7 @@ export function GenerateWorkflowPage({
     setSavingPrompt(true);
     try {
       const document = JSON.parse(selectedPromptSource) as PromptChoice;
-      const payload = await request(`/api/workspaces/${encodeURIComponent(selectedPrompt.workspaceId)}/prompts/${encodeURIComponent(selectedPrompt.id)}`, {
+      const payload = await request(`/workbench/workspaces/${encodeURIComponent(selectedPrompt.workspaceId)}/prompts/${encodeURIComponent(selectedPrompt.id)}`, {
         method: "PUT",
         body: JSON.stringify({ path: selectedPrompt.path, document }),
       });

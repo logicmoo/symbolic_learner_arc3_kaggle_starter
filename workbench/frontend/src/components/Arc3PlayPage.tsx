@@ -230,7 +230,7 @@ export function Arc3PlayPage({
   }, [b1b2PageDefinition]);
 
   const assetUrl = useCallback(
-    (path: string) => `/api/workspaces/${encodeURIComponent(workspaceId)}/asset?path=${encodeURIComponent(path)}`,
+    (path: string) => `/workbench/workspaces/${encodeURIComponent(workspaceId)}/asset?path=${encodeURIComponent(path)}`,
     [workspaceId],
   );
 
@@ -238,7 +238,7 @@ export function Arc3PlayPage({
     setGamesLoading(true);
     setError("");
     try {
-      const payload = await request(`/api/arc3-play/games${refresh ? "?refresh=true" : ""}`);
+      const payload = await request(`/workbench/arc3-play/games${refresh ? "?refresh=true" : ""}`);
       setGames((payload.games as GameInfo[]) || []);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : String(reason));
@@ -288,8 +288,8 @@ export function Arc3PlayPage({
     void (async () => {
       try {
         const [savepointsPayload, recordingsPayload] = await Promise.all([
-          request(`/api/arc3-play/savepoints?workspaceId=${encodeURIComponent(workspaceId)}`),
-          request(`/api/arc3-play/recordings?workspaceId=${encodeURIComponent(workspaceId)}`),
+          request(`/workbench/arc3-play/savepoints?workspaceId=${encodeURIComponent(workspaceId)}`),
+          request(`/workbench/arc3-play/recordings?workspaceId=${encodeURIComponent(workspaceId)}`),
         ]);
         const freshSavepoints = (savepointsPayload.savepoints as PlaySavepoint[]) || [];
         const freshRecordings = (recordingsPayload.recordings as PlayRecording[]) || [];
@@ -300,12 +300,12 @@ export function Arc3PlayPage({
         const lastRecording = matchingRecordings[matchingRecordings.length - 1];
         let savepointId: string | null = null;
         if (lastRecording) {
-          const imported = await request("/api/arc3-play/import-recording", {
+          const imported = await request("/workbench/arc3-play/import-recording", {
             method: "POST",
             body: JSON.stringify({ workspaceId, path: lastRecording.path }),
           });
           savepointId = (imported.savepoint as { id?: string } | undefined)?.id || null;
-          const refreshed = await request(`/api/arc3-play/savepoints?workspaceId=${encodeURIComponent(workspaceId)}`);
+          const refreshed = await request(`/workbench/arc3-play/savepoints?workspaceId=${encodeURIComponent(workspaceId)}`);
           setSavepoints((refreshed.savepoints as PlaySavepoint[]) || []);
         }
         if (!savepointId) {
@@ -314,7 +314,7 @@ export function Arc3PlayPage({
           savepointId = freshSavepoints.find((point) => point.game_directory === requested)?.id || null;
         }
         if (!savepointId) return;
-        const payload = await request("/api/arc3-play/sessions", {
+        const payload = await request("/workbench/arc3-play/sessions", {
           method: "POST",
           body: JSON.stringify({ workspaceId, savepointId }),
         });
@@ -341,7 +341,7 @@ export function Arc3PlayPage({
 
   const loadSavepoints = useCallback(async () => {
     try {
-      const payload = await request(`/api/arc3-play/savepoints?workspaceId=${encodeURIComponent(workspaceId)}`);
+      const payload = await request(`/workbench/arc3-play/savepoints?workspaceId=${encodeURIComponent(workspaceId)}`);
       setSavepoints((payload.savepoints as PlaySavepoint[]) || []);
     } catch {
       setSavepoints([]);
@@ -354,7 +354,7 @@ export function Arc3PlayPage({
 
   const loadRecordings = useCallback(async () => {
     try {
-      const payload = await request(`/api/arc3-play/recordings?workspaceId=${encodeURIComponent(workspaceId)}`);
+      const payload = await request(`/workbench/arc3-play/recordings?workspaceId=${encodeURIComponent(workspaceId)}`);
       setRecordings((payload.recordings as PlayRecording[]) || []);
     } catch {
       setRecordings([]);
@@ -376,7 +376,7 @@ export function Arc3PlayPage({
   const siloStopRef = useRef(false);
   useEffect(() => {
     let cancelled = false;
-    void request(`/api/workspaces/${encodeURIComponent(workspaceId)}/prompt-implementations`)
+    void request(`/workbench/workspaces/${encodeURIComponent(workspaceId)}/prompt-implementations`)
       .then((payload) => {
         if (cancelled) return;
         const records = ((payload.prompts as Array<Record<string, unknown>>) || [])
@@ -400,14 +400,14 @@ export function Arc3PlayPage({
     try {
       appendSiloLog(`▶ ${promptId} on ${dir}`);
       const resolved = await request(
-        `/api/workspaces/${encodeURIComponent(workspaceId)}/prompts/${encodeURIComponent(promptId)}/resolve`,
+        `/workbench/workspaces/${encodeURIComponent(workspaceId)}/prompts/${encodeURIComponent(promptId)}/resolve`,
       );
       const implementation = (resolved.implementation || {}) as Record<string, unknown>;
       const rawText = implementation.text;
       const promptText = Array.isArray(rawText) ? rawText.map(String).join("\n") : String(rawText || "");
       if (!promptText.trim()) throw new Error(`prompt ${promptId} resolved to empty text`);
       const filesPayload = await request(
-        `/api/arc3-play/silo/files?workspaceId=${encodeURIComponent(workspaceId)}&dir=${encodeURIComponent(dir)}`,
+        `/workbench/arc3-play/silo/files?workspaceId=${encodeURIComponent(workspaceId)}&dir=${encodeURIComponent(dir)}`,
       ).catch(() => ({ files: [] }));
       const names = ((filesPayload.files as Array<{ name: string }>) || []).map((file) => file.name);
       let stateText = "";
@@ -436,12 +436,12 @@ export function Arc3PlayPage({
       ].filter(Boolean).join("\n\n");
       if (!siloModelId) throw new Error("pick a model first");
       const payload = await request(
-        `/api/workspaces/${encodeURIComponent(workspaceId)}/models/${encodeURIComponent(siloModelId)}/invoke`,
+        `/workbench/workspaces/${encodeURIComponent(workspaceId)}/models/${encodeURIComponent(siloModelId)}/invoke`,
         { method: "POST", body: JSON.stringify({ prompt, image: image || undefined, timeoutSeconds: 180 }) },
       );
       const output = typeof payload.text === "string" ? payload.text : JSON.stringify(payload, null, 2);
       const outName = `${promptId.replace(/[^A-Za-z0-9_.-]/g, "_")}.out.md`;
-      const written = await request("/api/arc3-play/silo/write", {
+      const written = await request("/workbench/arc3-play/silo/write", {
         method: "POST",
         body: JSON.stringify({ workspaceId, dir, name: outName, content: output }),
       });
@@ -507,14 +507,14 @@ export function Arc3PlayPage({
       if (session && !session.closed) {
         if (session.moveCount > 0) {
           // Jumping to another game: save the abandoned position first.
-          await request(`/api/arc3-play/sessions/${encodeURIComponent(session.id)}/fork`, {
+          await request(`/workbench/arc3-play/sessions/${encodeURIComponent(session.id)}/fork`, {
             method: "POST",
             body: JSON.stringify({ label: `auto save (switched to ${gameId})` }),
           }).catch(() => undefined);
         }
-        await request(`/api/arc3-play/sessions/${encodeURIComponent(session.id)}`, { method: "DELETE" }).catch(() => undefined);
+        await request(`/workbench/arc3-play/sessions/${encodeURIComponent(session.id)}`, { method: "DELETE" }).catch(() => undefined);
       }
-      const payload = await request("/api/arc3-play/sessions", {
+      const payload = await request("/workbench/arc3-play/sessions", {
         method: "POST",
         body: JSON.stringify({ workspaceId, gameId }),
       });
@@ -530,7 +530,7 @@ export function Arc3PlayPage({
   const setRecordingEnabled = (enabled: boolean) =>
     perform(async () => {
       if (!session) return;
-      const payload = await request(`/api/arc3-play/sessions/${encodeURIComponent(session.id)}/recording`, {
+      const payload = await request(`/workbench/arc3-play/sessions/${encodeURIComponent(session.id)}/recording`, {
         method: "POST",
         body: JSON.stringify({ enabled }),
       });
@@ -541,7 +541,7 @@ export function Arc3PlayPage({
   const refreshRecording = () =>
     perform(async () => {
       if (!session) return "no active session to refresh";
-      const payload = await request(`/api/arc3-play/sessions/${encodeURIComponent(session.id)}`);
+      const payload = await request(`/workbench/arc3-play/sessions/${encodeURIComponent(session.id)}`);
       const refreshed = payload.session as PlaySessionSnapshot;
       setSession(refreshed);
       return `${refreshed.moveCount} move(s) · level ${refreshed.level ?? "?"} · ${refreshed.levelDir}`;
@@ -550,7 +550,7 @@ export function Arc3PlayPage({
   const setRecordingsPath = (path: string | null) =>
     perform(async () => {
       if (!session) return;
-      const payload = await request(`/api/arc3-play/sessions/${encodeURIComponent(session.id)}/recordings-path`, {
+      const payload = await request(`/workbench/arc3-play/sessions/${encodeURIComponent(session.id)}/recordings-path`, {
         method: "PUT",
         body: JSON.stringify({ path }),
       });
@@ -565,7 +565,7 @@ export function Arc3PlayPage({
       const log = session.replayLog || [];
       const cut = log.findIndex((entry) => entry.directory === move.directory);
       if (cut < 0) return "move not found in this session's history";
-      const payload = await request("/api/arc3-play/sessions", {
+      const payload = await request("/workbench/arc3-play/sessions", {
         method: "POST",
         body: JSON.stringify({
           workspaceId,
@@ -584,7 +584,7 @@ export function Arc3PlayPage({
   const sendAction = (actionId: string, x?: number, y?: number) =>
     perform(async () => {
       if (!session) return;
-      const payload = await request(`/api/arc3-play/sessions/${encodeURIComponent(session.id)}/action`, {
+      const payload = await request(`/workbench/arc3-play/sessions/${encodeURIComponent(session.id)}/action`, {
         method: "POST",
         body: JSON.stringify({ action: actionId, x, y }),
       });
@@ -598,7 +598,7 @@ export function Arc3PlayPage({
   const resetAttempt = () =>
     perform(async () => {
       if (!session) return;
-      const payload = await request(`/api/arc3-play/sessions/${encodeURIComponent(session.id)}/reset`, { method: "POST" });
+      const payload = await request(`/workbench/arc3-play/sessions/${encodeURIComponent(session.id)}/reset`, { method: "POST" });
       setArmedAction(null);
       setReplayScript(null);
       setReplayPlaying(false);
@@ -610,7 +610,7 @@ export function Arc3PlayPage({
   const restartGame = () =>
     perform(async () => {
       if (!session) return;
-      const payload = await request(`/api/arc3-play/sessions/${encodeURIComponent(session.id)}/restart`, { method: "POST" });
+      const payload = await request(`/workbench/arc3-play/sessions/${encodeURIComponent(session.id)}/restart`, { method: "POST" });
       setArmedAction(null);
       setReplayScript(null);
       setReplayPlaying(false);
@@ -622,7 +622,7 @@ export function Arc3PlayPage({
   const undoMove = (count: number) =>
     perform(async () => {
       if (!session) return;
-      const payload = await request(`/api/arc3-play/sessions/${encodeURIComponent(session.id)}/undo`, {
+      const payload = await request(`/workbench/arc3-play/sessions/${encodeURIComponent(session.id)}/undo`, {
         method: "POST",
         body: JSON.stringify({ count }),
       });
@@ -637,7 +637,7 @@ export function Arc3PlayPage({
   const forkSavepoint = () =>
     perform(async () => {
       if (!session) return;
-      await request(`/api/arc3-play/sessions/${encodeURIComponent(session.id)}/fork`, {
+      await request(`/workbench/arc3-play/sessions/${encodeURIComponent(session.id)}/fork`, {
         method: "POST",
         body: JSON.stringify({}),
       });
@@ -648,9 +648,9 @@ export function Arc3PlayPage({
   const resumeSavepoint = (savepointId: string) =>
     perform(async () => {
       if (session && !session.closed) {
-        await request(`/api/arc3-play/sessions/${encodeURIComponent(session.id)}`, { method: "DELETE" }).catch(() => undefined);
+        await request(`/workbench/arc3-play/sessions/${encodeURIComponent(session.id)}`, { method: "DELETE" }).catch(() => undefined);
       }
-      const payload = await request("/api/arc3-play/sessions", {
+      const payload = await request("/workbench/arc3-play/sessions", {
         method: "POST",
         body: JSON.stringify({ workspaceId, savepointId }),
       });
@@ -666,14 +666,14 @@ export function Arc3PlayPage({
       // Load = start a fresh session at move zero with the savepoint's
       // recipe queued, so it can be stepped through one move at a time.
       const detail = await request(
-        `/api/arc3-play/savepoints/${encodeURIComponent(point.id)}?workspaceId=${encodeURIComponent(workspaceId)}`,
+        `/workbench/arc3-play/savepoints/${encodeURIComponent(point.id)}?workspaceId=${encodeURIComponent(workspaceId)}`,
       );
       const full = detail.savepoint as PlaySavepoint & { replay_log?: ReplayOp[] };
       const script = (full.replay_log || []).filter((op) => op.op === "step" || op.op === "reset");
       if (session && !session.closed) {
-        await request(`/api/arc3-play/sessions/${encodeURIComponent(session.id)}`, { method: "DELETE" }).catch(() => undefined);
+        await request(`/workbench/arc3-play/sessions/${encodeURIComponent(session.id)}`, { method: "DELETE" }).catch(() => undefined);
       }
-      const payload = await request("/api/arc3-play/sessions", {
+      const payload = await request("/workbench/arc3-play/sessions", {
         method: "POST",
         body: JSON.stringify({ workspaceId, gameId: full.game_id || full.game_directory }),
       });
@@ -690,9 +690,9 @@ export function Arc3PlayPage({
       const op = replayScript[replayPos];
       let payload;
       if (op.op === "reset") {
-        payload = await request(`/api/arc3-play/sessions/${encodeURIComponent(session.id)}/reset`, { method: "POST" });
+        payload = await request(`/workbench/arc3-play/sessions/${encodeURIComponent(session.id)}/reset`, { method: "POST" });
       } else {
-        payload = await request(`/api/arc3-play/sessions/${encodeURIComponent(session.id)}/action`, {
+        payload = await request(`/workbench/arc3-play/sessions/${encodeURIComponent(session.id)}/action`, {
           method: "POST",
           body: JSON.stringify({ action: op.action, x: op.data?.x, y: op.data?.y }),
         });
@@ -754,7 +754,7 @@ export function Arc3PlayPage({
       if (!session || !replayScript || replayPos <= 0) return;
       const previous = replayScript[replayPos - 1];
       if (previous.op === "step" && session.levelMoveCount > 0) {
-        const payload = await request(`/api/arc3-play/sessions/${encodeURIComponent(session.id)}/undo`, {
+        const payload = await request(`/workbench/arc3-play/sessions/${encodeURIComponent(session.id)}/undo`, {
           method: "POST",
           body: JSON.stringify({ count: 1 }),
         });
@@ -762,8 +762,8 @@ export function Arc3PlayPage({
       } else {
         // Crossed a level/reset boundary: rebuild the session up to the
         // previous position by replaying the truncated recipe.
-        await request(`/api/arc3-play/sessions/${encodeURIComponent(session.id)}`, { method: "DELETE" }).catch(() => undefined);
-        const payload = await request("/api/arc3-play/sessions", {
+        await request(`/workbench/arc3-play/sessions/${encodeURIComponent(session.id)}`, { method: "DELETE" }).catch(() => undefined);
+        const payload = await request("/workbench/arc3-play/sessions", {
           method: "POST",
           body: JSON.stringify({
             workspaceId,
@@ -786,8 +786,8 @@ export function Arc3PlayPage({
       setReplayPlaying(false);
       // Uniform for forward or backward jumps: rebuild the session by
       // replaying the recipe up to the clicked timeline position.
-      await request(`/api/arc3-play/sessions/${encodeURIComponent(session.id)}`, { method: "DELETE" }).catch(() => undefined);
-      const payload = await request("/api/arc3-play/sessions", {
+      await request(`/workbench/arc3-play/sessions/${encodeURIComponent(session.id)}`, { method: "DELETE" }).catch(() => undefined);
+      const payload = await request("/workbench/arc3-play/sessions", {
         method: "POST",
         body: JSON.stringify({
           workspaceId,
@@ -803,7 +803,7 @@ export function Arc3PlayPage({
 
   const dedupeSavepoints = () =>
     perform(async () => {
-      const payload = await request(`/api/arc3-play/savepoints/dedupe?workspaceId=${encodeURIComponent(workspaceId)}`, {
+      const payload = await request(`/workbench/arc3-play/savepoints/dedupe?workspaceId=${encodeURIComponent(workspaceId)}`, {
         method: "POST",
       });
       const note = `de-duplicated save-points: removed ${payload.removed ?? 0}`;
@@ -814,7 +814,7 @@ export function Arc3PlayPage({
 
   const dedupeRecordings = () =>
     perform(async () => {
-      const payload = await request(`/api/arc3-play/recordings/dedupe?workspaceId=${encodeURIComponent(workspaceId)}`, {
+      const payload = await request(`/workbench/arc3-play/recordings/dedupe?workspaceId=${encodeURIComponent(workspaceId)}`, {
         method: "POST",
       });
       const note = `de-duplicated recordings: removed ${payload.count ?? 0} stale level dir(s)`;
@@ -827,7 +827,7 @@ export function Arc3PlayPage({
     perform(async () => {
       const gameParam = filterGameId ? `&gameId=${encodeURIComponent(filterGameId)}` : "";
       const payload = await request(
-        `/api/arc3-play/recordings/sort-by-size?workspaceId=${encodeURIComponent(workspaceId)}${gameParam}`,
+        `/workbench/arc3-play/recordings/sort-by-size?workspaceId=${encodeURIComponent(workspaceId)}${gameParam}`,
         { method: "POST" },
       );
       const note = `sorted by size: renamed ${payload.count ?? 0} imported dir(s)`;
@@ -841,7 +841,7 @@ export function Arc3PlayPage({
       const keep = Math.max(0, parseInt(retainLargestCount, 10) || 0);
       const gameParam = filterGameId ? `&gameId=${encodeURIComponent(filterGameId)}` : "";
       const payload = await request(
-        `/api/arc3-play/recordings/retain-largest?workspaceId=${encodeURIComponent(workspaceId)}&keep=${keep}${gameParam}`,
+        `/workbench/arc3-play/recordings/retain-largest?workspaceId=${encodeURIComponent(workspaceId)}&keep=${keep}${gameParam}`,
         { method: "POST" },
       );
       const note = `retained largest ${keep}: removed ${payload.count ?? 0} smaller imported dir(s)`;
@@ -855,7 +855,7 @@ export function Arc3PlayPage({
       if (!window.confirm("Delete every Recording directory for this Filter scope? This cannot be undone.")) return "cancelled";
       const gameParam = filterGameId ? `&gameId=${encodeURIComponent(filterGameId)}` : "";
       const payload = await request(
-        `/api/arc3-play/recordings/clear?workspaceId=${encodeURIComponent(workspaceId)}${gameParam}`,
+        `/workbench/arc3-play/recordings/clear?workspaceId=${encodeURIComponent(workspaceId)}${gameParam}`,
         { method: "POST" },
       );
       const detached = (payload.detached as string[]) || [];
@@ -864,7 +864,7 @@ export function Arc3PlayPage({
       // The backend detached any live session in scope so cleared dirs are
       // not immediately recreated; sync the local snapshot's record switch.
       if (session && detached.includes(session.id)) {
-        const refreshed = await request(`/api/arc3-play/sessions/${encodeURIComponent(session.id)}`).catch(() => null);
+        const refreshed = await request(`/workbench/arc3-play/sessions/${encodeURIComponent(session.id)}`).catch(() => null);
         if (refreshed) setSession(refreshed.session as PlaySessionSnapshot);
       }
       await loadSavepoints();
@@ -876,7 +876,7 @@ export function Arc3PlayPage({
       if (!window.confirm("Delete every move-list (save-point) for this Filter scope? This cannot be undone.")) return "cancelled";
       const gameParam = filterGameId ? `&gameId=${encodeURIComponent(filterGameId)}` : "";
       const payload = await request(
-        `/api/arc3-play/savepoints/clear?workspaceId=${encodeURIComponent(workspaceId)}${gameParam}`,
+        `/workbench/arc3-play/savepoints/clear?workspaceId=${encodeURIComponent(workspaceId)}${gameParam}`,
         { method: "POST" },
       );
       const note = `cleared move-lists: removed ${payload.count ?? 0}`;
@@ -888,7 +888,7 @@ export function Arc3PlayPage({
   const duplicateSavepoint = (savepointId: string) =>
     perform(async () => {
       await request(
-        `/api/arc3-play/savepoints/${encodeURIComponent(savepointId)}/duplicate?workspaceId=${encodeURIComponent(workspaceId)}`,
+        `/workbench/arc3-play/savepoints/${encodeURIComponent(savepointId)}/duplicate?workspaceId=${encodeURIComponent(workspaceId)}`,
         { method: "POST" },
       );
       await loadSavepoints();
@@ -898,7 +898,7 @@ export function Arc3PlayPage({
   const deleteSavepoint = (savepointId: string) =>
     perform(async () => {
       await request(
-        `/api/arc3-play/savepoints/${encodeURIComponent(savepointId)}?workspaceId=${encodeURIComponent(workspaceId)}`,
+        `/workbench/arc3-play/savepoints/${encodeURIComponent(savepointId)}?workspaceId=${encodeURIComponent(workspaceId)}`,
         { method: "DELETE" },
       );
       await loadSavepoints();
@@ -908,7 +908,7 @@ export function Arc3PlayPage({
   const importRecording = (recording: PlayRecording) =>
     perform(async () => {
       setImportNote("");
-      const payload = await request("/api/arc3-play/import-recording", {
+      const payload = await request("/workbench/arc3-play/import-recording", {
         method: "POST",
         body: JSON.stringify({ workspaceId, path: recording.path }),
       });
@@ -926,7 +926,7 @@ export function Arc3PlayPage({
       let failed = 0;
       for (const recording of list) {
         try {
-          await request("/api/arc3-play/import-recording", {
+          await request("/workbench/arc3-play/import-recording", {
             method: "POST",
             body: JSON.stringify({ workspaceId, path: recording.path }),
           });
@@ -950,7 +950,7 @@ export function Arc3PlayPage({
       let failed = 0;
       for (const recording of list) {
         try {
-          await request("/api/arc3-play/import-movelist", {
+          await request("/workbench/arc3-play/import-movelist", {
             method: "POST",
             body: JSON.stringify({ workspaceId, path: recording.path }),
           });
@@ -971,7 +971,7 @@ export function Arc3PlayPage({
     perform(async () => {
       const gameParam = filterGameId ? `&gameId=${encodeURIComponent(filterGameId)}` : "";
       const payload = await request(
-        `/api/arc3-play/recordings/import-movelists?workspaceId=${encodeURIComponent(workspaceId)}${gameParam}`,
+        `/workbench/arc3-play/recordings/import-movelists?workspaceId=${encodeURIComponent(workspaceId)}${gameParam}`,
         { method: "POST" },
       );
       const note = `created ${payload.created ?? 0} move-list(s) from existing Recordings`;
@@ -992,7 +992,7 @@ export function Arc3PlayPage({
       // can't loop forever either.
       while (remaining > 0 && rounds < 25) {
         const payload = await request(
-          `/api/arc3-play/recordings/materialize-movelists?workspaceId=${encodeURIComponent(workspaceId)}${gameParam}`,
+          `/workbench/arc3-play/recordings/materialize-movelists?workspaceId=${encodeURIComponent(workspaceId)}${gameParam}`,
           { method: "POST" },
         );
         totalMaterialized += Number(payload.count ?? 0);
@@ -1011,7 +1011,7 @@ export function Arc3PlayPage({
   const endSession = () =>
     perform(async () => {
       if (!session) return;
-      const payload = await request(`/api/arc3-play/sessions/${encodeURIComponent(session.id)}`, { method: "DELETE" });
+      const payload = await request(`/workbench/arc3-play/sessions/${encodeURIComponent(session.id)}`, { method: "DELETE" });
       setArmedAction(null);
       setSession(payload.session as PlaySessionSnapshot);
       return `session closed at move ${session.moveCount}`;

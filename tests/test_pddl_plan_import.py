@@ -70,7 +70,7 @@ def test_active_workflow_editor_exposes_unsaved_pddl_conversion() -> None:
     compact = "".join(page.split())
     assert 'view==="editor"&&workflow&&(' in compact
     assert '<PddlPlanImportPanelworkspaceId={workspace.id}' in compact
-    assert "/api/engine/workflows/import-pddl-plan" in panel
+    assert "/workbench/engine/workflows/import-pddl-plan" in panel
     assert "/snapshot" in panel
     assert "ACTION TO OPERATION MAP" in panel
     assert "groundedActions(sourcePlan)" in panel

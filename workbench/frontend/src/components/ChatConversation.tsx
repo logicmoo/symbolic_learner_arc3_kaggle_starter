@@ -203,7 +203,7 @@ function fileUri(path: string): string {
 async function discoverPluginEndpoints(): Promise<PluginEndpointCatalog> {
   const catalog: PluginEndpointCatalog = { directories: [], services: [], websockets: [], configs: [] };
   try {
-    const payload = await readJson(await fetch("/api/plugins"));
+    const payload = await readJson(await fetch("/workbench/plugins"));
     const policyPath = String(payload.policyPath || "");
     if (policyPath) {
       catalog.configs.push({
@@ -351,7 +351,7 @@ async function requestMailboxCursor(
   start?: "beginning" | "now" | "remove",
 ): Promise<CursorInfo> {
   const query = `mailbox=${encodeURIComponent(mailbox)}&agent=${encodeURIComponent(agent)}`;
-  const endpoints = ["/ws_collab/v1/mailbox/cursor", "/api/mailbox/cursor"];
+  const endpoints = ["/ws_collab/v1/mailbox/cursor", "/workbench/mailbox/cursor"];
   let lastError: unknown = null;
   for (const endpoint of endpoints) {
     try {
@@ -808,12 +808,12 @@ export function ChatConversation({
       if (needActivity) directoryParams.set("include_activity", "1");
       // Every plugin that can expose a mailbox directory is queried and merged —
       // the ws_collab relay (the live, richer source: unread counts, activity,
-      // dynamic + virtual mailboxes) and the core /api mailbox_channels surface
+      // dynamic + virtual mailboxes) and the core /workbench mailbox_channels surface
       // (legacy/other-plugin mailboxes) — so no plugin's mailboxes are dropped
       // just because another plugin also answered.
       const emptyMailboxes = { mailboxes: [] } as Record<string, unknown>;
       // Ask every plugin server that declares a `mailboxEndpoint` for its
-      // mailbox list, plus the core /api mailbox surface, so no server's
+      // mailbox list, plus the core /workbench mailbox surface, so no server's
       // mailboxes are dropped just because another server also answered.
       const endpoints = await discoverMailboxEndpoints();
       setDirectorySources((current) => {
@@ -828,7 +828,7 @@ export function ChatConversation({
       const [agentPayload, apiMailboxPayload, ...serverPayloads] = await Promise.all([
         fetch("/ws_collab/v1/mailbox/agents").then(readJson).catch(() => ({ agents: [] } as Record<string, unknown>)),
         includeCore
-          ? fetch(`/api/mailbox/mailboxes?agent=${encodeURIComponent(personalCursor)}`)
+          ? fetch(`/workbench/mailbox/mailboxes?agent=${encodeURIComponent(personalCursor)}`)
             .then(readJson)
             .catch(() => emptyMailboxes)
           : Promise.resolve(emptyMailboxes),
@@ -839,7 +839,7 @@ export function ChatConversation({
       ]);
       setAgents((agentPayload.agents as AgentOption[]) || []);
       const combined = new Map<string, MailboxOption>();
-      // Core /api mailboxes first; each declaring plugin server then refines or
+      // core /workbench mailboxes first; each declaring plugin server then refines or
       // adds entries (later servers win id collisions but keep earlier
       // metadata). Every option is tagged with the server it came from.
       for (const option of (apiMailboxPayload.mailboxes as MailboxOption[]) || []) {
@@ -1123,7 +1123,7 @@ export function ChatConversation({
   // connected — "<address> ⇄ <agent>@<ip>#<connection-id>".
   const clientIdentityRef = useRef<{ ip: string }>({ ip: "" });
   useEffect(() => {
-    void fetch("/api/whoami").then(readJson).then((payload) => {
+    void fetch("/workbench/whoami").then(readJson).then((payload) => {
       clientIdentityRef.current = { ip: String(payload.ip || "") };
     }).catch(() => { /* log names fall back to the agent name alone */ });
   }, []);
@@ -2573,7 +2573,7 @@ export function ChatConversation({
                 onChange={(event) => setDirectorySource(event.target.value)}
               >
                 <option value="all" title="Query every directory server below">all directories</option>
-                <option value="workbench" title="/api/mailbox/mailboxes">workbench — /api/mailbox/mailboxes</option>
+                <option value="workbench" title="/workbench/mailbox/mailboxes">workbench — /workbench/mailbox/mailboxes</option>
                 {directorySources.map((source) => (
                   <option key={source.plugin} value={source.plugin} title={source.address}>
                     {source.plugin} — {source.address}
@@ -3141,7 +3141,7 @@ export function ChatConversation({
           props: string[]; comment: string; from: string; origin?: string; wsAddress?: string;
         };
         const serverLocation = (server: string): string => {
-          if (server === "workbench") return "/api/mailbox/mailboxes";
+          if (server === "workbench") return "/workbench/mailbox/mailboxes";
           return directorySources.find((entry) => entry.plugin === server)?.address || server;
         };
         // The Endpoint column always shows a real URI/URL: http(s) for API
@@ -3391,7 +3391,7 @@ export function ChatConversation({
                   onChange={(event) => setDirectorySource(event.target.value)}
                 >
                   <option value="all">all directories</option>
-                  <option value="workbench" title="/api/mailbox/mailboxes">workbench — /api/mailbox/mailboxes</option>
+                  <option value="workbench" title="/workbench/mailbox/mailboxes">workbench — /workbench/mailbox/mailboxes</option>
                   {directorySources.map((source) => (
                     <option key={source.plugin} value={source.plugin} title={source.address}>
                       {source.plugin} — {source.address}

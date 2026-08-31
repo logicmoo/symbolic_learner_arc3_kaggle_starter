@@ -25,7 +25,7 @@ function useFirstClassCategoryPaths(workspaceId?: string, categoryTree?: string)
   useEffect(() => {
     let active = true;
     if (!workspaceId || !categoryTree) { setPaths(new Set()); return () => { active = false; }; }
-    void fetch(`/api/workspaces/${encodeURIComponent(workspaceId)}/artifact-categories`)
+    void fetch(`/workbench/workspaces/${encodeURIComponent(workspaceId)}/artifact-categories`)
       .then(response => response.ok ? response.json() : Promise.reject(new Error(response.statusText)))
       .then(payload => {
         if (!active) return;

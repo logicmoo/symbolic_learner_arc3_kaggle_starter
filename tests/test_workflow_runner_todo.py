@@ -68,7 +68,7 @@ def test_workflow_runs_page_displays_reference_without_replacing_history() -> No
     assert '<WorkflowRunnerTodoReference displayMode={referenceDisplayMode} onDisplayModeChange={setReferenceDisplayMode}/></Suspense>' in source
     assert '<WorkflowRunSplineWorkspace run={selectedRun} workflow={frozenWorkflow}' in source
     assert '"topology" | "chronology"' in source
-    assert "/api/engine/workflows/" in source
+    assert "/workbench/engine/workflows/" in source
     assert "run.events.map" in source
     assert "commandWorkflowRun" in source
     assert "Replay as new run" in source
@@ -117,7 +117,7 @@ def test_goal_run_human_pause_uses_the_frozen_step_form_contract() -> None:
     assert "run={selectedGoalRun.workflowRun}" in source
     assert 'commands={["pause", "resume", "advance", "cancel"]}' in source
     assert 'get("goalRun")' in source
-    assert '/api/goal-runs/${encodeURIComponent(requestedGoalRunId)}' in source
+    assert '/workbench/goal-runs/${encodeURIComponent(requestedGoalRunId)}' in source
     assert 'persistRuntimeSelection("goalRun", goalRun.id)' in source
     assert 'persistRuntimeSelection("run", run.id)' in source
     assert 'onOpenResource("datatype", datatypeId)' in source
