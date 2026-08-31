@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import asyncio
 from pathlib import Path
 
 import model_selection_settings
+import system_control_api
 
 
 def test_workspace_override_wins_over_forced_system_and_operation_model(
@@ -65,3 +67,32 @@ def test_settings_and_workspace_overview_expose_model_selection_controls() -> No
     assert "Workspace model override" in source
     assert "A workspace override has the highest priority" in source
     assert 'aria-label={mode==="settings"?"Global fallback model":"Workspace model override"}' in source
+
+
+def test_workspace_selection_can_skip_model_enumeration(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    workspace_root = tmp_path / "workspaces" / "project"
+    workspace_root.mkdir(parents=True)
+    monkeypatch.setattr(system_control_api, "WORKSPACES_ROOT", tmp_path / "workspaces")
+    monkeypatch.setattr(system_control_api, "workspace_model_selection", lambda _root: {"overrideModelId": "inherited-model"})
+    monkeypatch.setattr(system_control_api, "system_model_selection", lambda: {"fallbackModelId": "fallback-model"})
+    monkeypatch.setattr(
+        system_control_api,
+        "effective_model_selection",
+        lambda _root, _requested: ({"models": ["inherited-model"], "strategy": "workspace_override"}, "workspace_override"),
+    )
+    monkeypatch.setattr(
+        system_control_api,
+        "_model_choices",
+        lambda _root: (_ for _ in ()).throw(AssertionError("model enumeration should be skipped")),
+    )
+
+    payload = asyncio.run(
+        system_control_api.get_workspace_model_selection("project", include_models=False)
+    )
+
+    assert payload["effective"] == {"models": ["inherited-model"], "strategy": "workspace_override"}
+    assert payload["source"] == "workspace_override"
+    assert payload["models"] == []

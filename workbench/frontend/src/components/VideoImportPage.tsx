@@ -40,6 +40,23 @@ type Member = {
   framePath: string; frameIndex: number; name: string; cutout: string; box: number[];
   step: number; status: "pending" | "accepted" | "rejected"; probeIndex: number; probeLabel: string;
 };
+type MemberInventoryThing = {
+  name: string;
+  description: string;
+  status: "listed" | "extracting" | "extracted" | "accepted" | "returned" | "not_found" | "failed";
+  error?: string;
+};
+type MemberInventory = {
+  id: string;
+  framePath: string;
+  frameIndex: number;
+  probeIndex: number;
+  probeLabel: string;
+  sceneDescription: string;
+  status: "describing" | "extracting" | "done" | "failed";
+  things: MemberInventoryThing[];
+};
+type ModelChoice = { id: string; name: string };
 
 const API = "/workbench/video-import";
 
@@ -279,7 +296,7 @@ export function VideoImportPage({
     if (skipVideoResetRef.current) { skipVideoResetRef.current = false; return; }
     setMarkers(selected?.scenes || []); setSegments(selected?.segments || []); setSelection(null);
     setFrames([]); setPlayerTime(0); setPlayerDuration(0); setJob(null); setPicked(null); setKept(null);
-    if (autoClearDataRef.current) { setOutput([]); setTrail([]); setProbes([]); setMembers([]); setMemberScenes({}); setGallery(null); }
+    if (autoClearDataRef.current) { setOutput([]); setTrail([]); setProbes([]); setMembers([]); setMemberInventories([]); setMemberScenes({}); setGallery(null); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPath]);
   const pct = (value: number) => (duration ? `${Math.min(100, Math.max(0, (value / duration) * 100))}%` : "0%");
@@ -344,8 +361,9 @@ export function VideoImportPage({
   const acceptFrames = (list: JobState["frames"]) => {
     const next = (list || []).map((frame) => ({ ...frame, characters: [], anonymous: 0 }));
     setFrames(next);
-    // The freshly extracted images are the gallery you curate next — show them.
+    // The freshly extracted images are the first named gallery in the flow.
     setCollapsedMap((current) => ({ ...current, inputs: false }));
+    window.setTimeout(() => document.querySelector('[data-section="inputs"]')?.scrollIntoView({ behavior: "smooth", block: "start" }), 200);
     // Prune selection pointers that no longer exist in the fresh extraction.
     setPicked((current) => (current && next.some((frame) => frame.path === current) ? current : null));
     setKept((current) => {
@@ -354,14 +372,14 @@ export function VideoImportPage({
       return surviving.size ? surviving : null;
     });
     if (autoClearDataRef.current) {
-      setOutput([]); setTrail([]); setProbes([]); setMembers([]); setMemberScenes({});
+      setOutput([]); setTrail([]); setProbes([]); setMembers([]); setMemberInventories([]); setMemberScenes({});
       say("stale results cleared (fresh extraction) — turn off auto-clear stale data to keep them");
     }
   };
   const extract = () =>
     run("Extracting frames", async () => {
       const payload = await api("extract", extractBody());
-      watchJob(String(payload.jobId), "extract", (final) => { acceptFrames(final.frames); say(`extracted ${(final.frames || []).length} frame(s)${final.interrupted ? " (interrupted)" : ""}`); });
+      watchJob(String(payload.jobId), "extract", (final) => { acceptFrames(final.frames); say(`Extracted Frame Gallery: ${(final.frames || []).length} image(s)${final.interrupted ? " (interrupted)" : ""}`); });
       return `extracting ≈${payload.estimatedFrames} frame(s)…`;
     });
   const extractAndWait = async (): Promise<Frame[]> => {
@@ -376,7 +394,9 @@ export function VideoImportPage({
       const payload = await api("frame-at", { workspaceId, video: selectedPath, atSeconds: playerTime });
       const grabbed: Frame = { path: String(payload.path), index: Number(payload.index) || 0, atSeconds: Number(payload.atSeconds), characters: [], anonymous: 0 };
       setFrames((current) => (current.some((frame) => frame.path === grabbed.path) ? current : [...current, grabbed].sort((a, b) => (a.atSeconds ?? 0) - (b.atSeconds ?? 0))));
-      return `grabbed frame @ ${grabbed.atSeconds}s`;
+      setCollapsedMap((current) => ({ ...current, inputs: false }));
+      window.setTimeout(() => document.querySelector('[data-section="inputs"]')?.scrollIntoView({ behavior: "smooth", block: "start" }), 200);
+      return `added frame @ ${grabbed.atSeconds}s to Extracted Frame Gallery`;
     });
 
   // group selectors
@@ -681,10 +701,15 @@ export function VideoImportPage({
   // ---- probes + members ----------------------------------------------------------
   const [probes, setProbes] = useState<number[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
+  const [memberInventories, setMemberInventories] = useState<MemberInventory[]>([]);
   const [memberScenes, setMemberScenes] = useState<Record<string, string>>({});
-  const [models, setModels] = useState<Array<{ id: string; name: string }>>([]);
+  const [models, setModels] = useState<ModelChoice[]>([]);
   const [memberModel, setMemberModel] = useState("");
   const [turtleModel, setTurtleModel] = useState("");
+  const [inheritedModelId, setInheritedModelId] = useState("");
+  const inheritedModelRef = useRef("");
+  const memberModelTouchedRef = useRef(false);
+  const turtleModelTouchedRef = useRef(false);
   const [memberGoal, setMemberGoal] = useState<"any" | "faces" | "characters" | "objects" | "text">("any");
   const [memberFill, setMemberFill] = useState<"median" | "blur" | "hole">("median");
   const [memberMax, setMemberMax] = useState("1");
@@ -706,7 +731,7 @@ export function VideoImportPage({
     frames, picked, kept: kept ? [...kept] : null, previewSource, galleryScope,
     filterId, filterParams, chain, candidateCount, fullSelectors,
     gallery, output, outputMode, outputLabel, appliedIds, trail, probes,
-    members, memberScenes, memberGoal, memberFill, memberMax, memberTarget,
+    members, memberInventories, memberScenes, memberGoal, memberFill, memberMax, memberTarget,
     autoClearData, autoClearAlgorithm, autoNext77,
     collapsedMap, pinnedMap,
   });
@@ -745,6 +770,7 @@ export function VideoImportPage({
     if (Array.isArray(s.trail)) setTrail(s.trail);
     if (Array.isArray(s.probes)) setProbes(s.probes);
     if (Array.isArray(s.members)) setMembers(s.members);
+    if (Array.isArray(s.memberInventories)) setMemberInventories(s.memberInventories);
     if (s.memberScenes && typeof s.memberScenes === "object") setMemberScenes(s.memberScenes);
     if (s.memberGoal) setMemberGoal(s.memberGoal);
     if (s.memberFill) setMemberFill(s.memberFill);
@@ -846,7 +872,7 @@ export function VideoImportPage({
   // Manual workflow edits mark the results below them stale (optional clearing).
   const clearStaleResults = (reason: string) => {
     setOutput([]); setOutputMode(null); setOutputLabel(""); setAppliedIds([]);
-    setTrail([]); setProbes([]); setMembers([]); setMemberScenes({});
+    setTrail([]); setProbes([]); setMembers([]); setMemberInventories([]); setMemberScenes({});
     say(`stale results cleared (${reason})`);
   };
   const editChain = (mutate: (current: ChainStep[]) => ChainStep[], truncateAt?: number) => {
@@ -862,6 +888,32 @@ export function VideoImportPage({
   };
   useEffect(() => {
     let cancelled = false;
+    inheritedModelRef.current = "";
+    memberModelTouchedRef.current = false;
+    turtleModelTouchedRef.current = false;
+    setModels([]);
+    setMemberModel("");
+    setTurtleModel("");
+    setInheritedModelId("");
+    const mergeModels = (incoming: ModelChoice[]) => {
+      setModels((current) => {
+        const byId = new Map(current.map((model) => [model.id, model]));
+        for (const model of incoming) byId.set(model.id, model);
+        const inherited = inheritedModelRef.current;
+        if (!inherited) return [...byId.values()];
+        const inheritedChoice = byId.get(inherited) || { id: inherited, name: inherited };
+        return [inheritedChoice, ...[...byId.values()].filter((model) => model.id !== inherited)];
+      });
+    };
+    void api(`/workbench/workspaces/${encodeURIComponent(workspaceId)}/model-selection?include_models=false`).then((payload) => {
+      if (cancelled) return;
+      const inherited = String((payload.effective?.models as unknown[])?.[0] || "");
+      inheritedModelRef.current = inherited;
+      setInheritedModelId(inherited);
+      if (inherited) mergeModels([{ id: inherited, name: inherited }]);
+      if (!memberModelTouchedRef.current) setMemberModel(inherited);
+      if (!turtleModelTouchedRef.current) setTurtleModel(inherited);
+    }).catch(() => undefined);
     void api(`/workbench/workspaces/${encodeURIComponent(workspaceId)}/model-policy`).then((payload) => {
       if (cancelled) return;
       const registry = (payload.registry || {}) as Record<string, any>;
@@ -869,9 +921,10 @@ export function VideoImportPage({
         .filter((model) => model.enabled !== false)
         .map((model) => ({ id: String(model.modelResourceId || model.id || ""), name: String(model.name || model.modelId || model.id) }))
         .filter((model) => model.id);
-      setModels(list);
-      setMemberModel((current) => current || list[0]?.id || "");
-      setTurtleModel((current) => current || list[0]?.id || "");
+      mergeModels(list);
+      const automatic = inheritedModelRef.current || list[0]?.id || "";
+      if (!memberModelTouchedRef.current) setMemberModel(automatic);
+      if (!turtleModelTouchedRef.current) setTurtleModel(automatic);
     }).catch(() => undefined);
     return () => { cancelled = true; };
   }, [workspaceId]);
@@ -887,15 +940,24 @@ export function VideoImportPage({
     });
   };
   const asset = (path: string) => `/workbench/workspaces/${encodeURIComponent(workspaceId)}/asset?path=${encodeURIComponent(path)}`;
+  const updateMemberInventory = (id: string, update: (inventory: MemberInventory) => MemberInventory) => {
+    setMemberInventories((current) => current.map((inventory) => (inventory.id === id ? update(inventory) : inventory)));
+  };
+  const updateInventoryThing = (id: string, thingIndex: number, patch: Partial<MemberInventoryThing>) => {
+    updateMemberInventory(id, (inventory) => ({
+      ...inventory,
+      things: inventory.things.map((thing, index) => (index === thingIndex ? { ...thing, ...patch } : thing)),
+    }));
+  };
   const extractMembers = () =>
-    run("Extracting members", async () => {
+    run("Describing scenes, then extracting members", async () => {
       if (!memberModel) return "pick a model first";
       if (!frames.length) return "extract frames first";
       const target = Math.max(0, Math.min(12, Number(memberTarget) || 0));
       const maxPerFrame = target > 0 ? target : Math.max(1, Math.min(8, Number(memberMax) || 1));
       const activeProbes = trail.length ? (probes.length ? probes.filter((probe) => probe < trail.length) : [trail.length - 1]) : [-1];
       const scenes = { ...memberScenes };
-      let extracted = 0;
+      let listed = 0; let extracted = 0;
       for (const probeIndex of activeProbes) {
         if (stopRef.current) break;
         const level = probeIndex >= 0 ? trail[probeIndex] : null;
@@ -909,53 +971,149 @@ export function VideoImportPage({
           const known = new Set(members.filter((member) => member.framePath === frame.path && member.probeIndex === probeIndex && member.status !== "rejected").map((member) => member.name.toLowerCase()));
           const sceneKey = `${probeIndex}:${frame.path}`;
           let scenePath = scenes[sceneKey] || bySource.get(frame.path) || frame.path;
-          for (let step = 1; step <= maxPerFrame; step++) {
+          const inventoryLimit = target > 0 ? Math.max(0, target - known.size) : maxPerFrame;
+          if (!inventoryLimit) continue;
+          const inventoryId = sceneKey;
+          const initialInventory: MemberInventory = {
+            id: inventoryId,
+            framePath: frame.path,
+            frameIndex: frame.index,
+            probeIndex,
+            probeLabel,
+            sceneDescription: "",
+            status: "describing",
+            things: [],
+          };
+          setMemberInventories((current) => [...current.filter((inventory) => inventory.id !== inventoryId), initialInventory]);
+          say(`① describe [${probeLabel}] #${frame.index}`);
+          const inventoryImage = await asDataUrl(scenePath);
+          if (!inventoryImage) {
+            updateMemberInventory(inventoryId, (inventory) => ({ ...inventory, status: "failed" }));
+            continue;
+          }
+          const inventoryGoal = {
+            any: "List distinct extractable people, characters, creatures, objects, and text/sign elements.",
+            faces: "List each distinct extractable face.",
+            characters: "List each distinct extractable person, character, or creature.",
+            objects: "List each distinct extractable inanimate object.",
+            text: "List each distinct extractable piece of text or signage.",
+          }[memberGoal];
+          const inventoryPrompt = [
+            "STAGE 1 — SCENE INVENTORY.",
+            "Describe this video-frame scene, then make a list of the individual things that can be visually extracted from it.",
+            inventoryGoal,
+            `List at most ${inventoryLimit} things. Do not return polygons or coordinates in this stage.`,
+            known.size ? `Do not list things already extracted: ${[...known].join(", ")}.` : "",
+            "Answer ONLY with JSON: {\"description\":\"scene description\",\"things\":[{\"name\":\"short unique name\",\"description\":\"visual identity and location\"}]}",
+          ].filter(Boolean).join("\n");
+          const inventoryPayload = await api(`/workbench/workspaces/${encodeURIComponent(workspaceId)}/models/${encodeURIComponent(memberModel)}/invoke`, {
+            prompt: inventoryPrompt,
+            image: inventoryImage,
+            timeoutSeconds: 120,
+          });
+          const inventoryRaw = typeof inventoryPayload.text === "string" ? inventoryPayload.text.trim() : "";
+          const inventoryMatch = inventoryRaw.match(/\{[\s\S]*\}/);
+          let sceneDescription = ""; let things: MemberInventoryThing[] = [];
+          if (inventoryMatch) {
+            try {
+              const parsed = JSON.parse(inventoryMatch[0]);
+              sceneDescription = String(parsed.description || parsed.scene || "").trim();
+              const seen = new Set<string>();
+              things = (Array.isArray(parsed.things) ? parsed.things : [])
+                .map((thing: unknown) => {
+                  const value = typeof thing === "string" ? { name: thing, description: thing } : thing as Record<string, unknown>;
+                  return {
+                    name: String(value?.name || "").trim().slice(0, 40),
+                    description: String(value?.description || value?.details || value?.name || "").trim().slice(0, 240),
+                    status: "listed" as const,
+                  };
+                })
+                .filter((thing: MemberInventoryThing) => {
+                  const key = thing.name.toLowerCase();
+                  if (!key || known.has(key) || seen.has(key)) return false;
+                  seen.add(key);
+                  return true;
+                })
+                .slice(0, inventoryLimit);
+            } catch { /* the failed inventory is shown below */ }
+          }
+          if (!things.length) {
+            updateMemberInventory(inventoryId, (inventory) => ({
+              ...inventory,
+              sceneDescription: sceneDescription || inventoryRaw || "No extractable things were listed.",
+              status: inventoryMatch ? "done" : "failed",
+            }));
+            continue;
+          }
+          listed += things.length;
+          setMemberInventories((current) => current.map((inventory) => inventory.id === inventoryId ? {
+            ...inventory,
+            sceneDescription,
+            status: "extracting",
+            things,
+          } : inventory));
+          say(`① [${probeLabel}] #${frame.index}: ${things.length} thing(s) listed`);
+          for (let thingIndex = 0; thingIndex < things.length; thingIndex++) {
             if (stopRef.current) break;
-            say(`👥 [${probeLabel}] #${frame.index} pass ${step}/${maxPerFrame}`);
+            const thing = things[thingIndex];
+            const step = known.size + 1;
+            updateInventoryThing(inventoryId, thingIndex, { status: "extracting", error: undefined });
+            say(`② [${probeLabel}] #${frame.index}: ${thing.name} (${thingIndex + 1}/${things.length})`);
             const image = await asDataUrl(scenePath);
-            if (!image) break;
-            const goalLine = {
-              any: "Identify ONE distinct member (character or object) still visible in it.",
-              faces: "Find ONE distinct FACE still visible in it.",
-              characters: "Identify ONE distinct CHARACTER (person or creature) still visible in it.",
-              objects: "Identify ONE distinct inanimate OBJECT still visible in it.",
-              text: "Find ONE distinct piece of TEXT or signage still visible in it.",
-            }[memberGoal];
+            if (!image) {
+              updateInventoryThing(inventoryId, thingIndex, { status: "failed", error: "Could not load the current scene image." });
+              continue;
+            }
             const prompt = [
-              `You see one video-frame scene. ${goalLine}`,
-              target > 0 ? `The scene should divide into about ${target} members; extracted so far: ${known.size ? [...known].join(", ") : "none"}.` : `Already extracted: ${known.size ? [...known].join(", ") : "none"}.`,
-              "Answer ONLY with JSON like {\"name\": \"short name\", \"polygon\": [[x, y], ...]} (3-20 points, pixel coordinates of THIS image).",
-              "If no distinct member remains, answer exactly: NONE",
+              "STAGE 2 — EXTRACT ONE INVENTORIED THING.",
+              `Locate ONLY this listed thing: ${thing.name}.`,
+              `Inventory description: ${thing.description || thing.name}.`,
+              sceneDescription ? `Scene description: ${sceneDescription}` : "",
+              "Answer ONLY with JSON like {\"name\":\"short name\",\"polygon\":[[x,y],...]} using 3-20 pixel-coordinate points in THIS current image.",
+              "A box [x0,y0,x1,y1] is allowed only when a polygon is not possible.",
+              "If this exact listed thing is no longer visible, answer exactly: NONE",
             ].join("\n");
             const payload = await api(`/workbench/workspaces/${encodeURIComponent(workspaceId)}/models/${encodeURIComponent(memberModel)}/invoke`, { prompt, image, timeoutSeconds: 120 });
             const raw = typeof payload.text === "string" ? payload.text.trim() : "";
-            if (/^\s*none[.!]?\s*$/i.test(raw)) break;
+            if (/^\s*none[.!]?\s*$/i.test(raw)) {
+              updateInventoryThing(inventoryId, thingIndex, { status: "not_found", error: "The model could not locate this listed thing." });
+              continue;
+            }
             const match = raw.match(/\{[\s\S]*\}/);
-            let name = ""; let polygon: number[][] | null = null; let box: number[] | null = null;
+            let polygon: number[][] | null = null; let box: number[] | null = null;
             if (match) {
               try {
                 const parsed = JSON.parse(match[0]);
-                name = String(parsed.name || "").trim().slice(0, 40);
                 polygon = Array.isArray(parsed.polygon) && parsed.polygon.length >= 3 ? parsed.polygon : null;
                 box = Array.isArray(parsed.box) && parsed.box.length === 4 ? parsed.box.map(Number) : null;
               } catch { /* handled below */ }
             }
-            if (!name || (!polygon && !box)) break;
-            if (known.has(name.toLowerCase())) continue;
+            if (!polygon && !box) {
+              updateInventoryThing(inventoryId, thingIndex, { status: "failed", error: "The model returned no usable polygon or box." });
+              continue;
+            }
             try {
-              const cut = await api("member-cut", { workspaceId, image: scenePath, polygon, box, name, step, fill: memberFill });
-              known.add(name.toLowerCase());
+              const cut = await api("member-cut", { workspaceId, image: scenePath, polygon, box, name: thing.name, step, fill: memberFill });
+              known.add(thing.name.toLowerCase());
               scenePath = String(cut.scene);
               scenes[sceneKey] = scenePath;
               setMemberScenes({ ...scenes });
-              setMembers((current) => [...current, { framePath: frame.path, frameIndex: frame.index, name, cutout: String(cut.cutout), box: (cut.box as number[]) || box || [0, 0, 0, 0], step, status: "pending", probeIndex, probeLabel }]);
+              setMembers((current) => [...current, { framePath: frame.path, frameIndex: frame.index, name: thing.name, cutout: String(cut.cutout), box: (cut.box as number[]) || box || [0, 0, 0, 0], step, status: "pending", probeIndex, probeLabel }]);
+              updateInventoryThing(inventoryId, thingIndex, { status: "extracted", error: undefined });
               extracted += 1;
-              say(`✂ [${probeLabel}] #${frame.index} − ${name}`);
-            } catch (reason) { say(`✗ cut failed: ${reason instanceof Error ? reason.message : reason}`); break; }
+              say(`✂ [${probeLabel}] #${frame.index} − ${thing.name}`);
+            } catch (reason) {
+              const message = reason instanceof Error ? reason.message : String(reason);
+              updateInventoryThing(inventoryId, thingIndex, { status: "failed", error: message });
+              say(`✗ ${thing.name}: ${message}`);
+            }
           }
+          updateMemberInventory(inventoryId, (inventory) => ({ ...inventory, status: "done" }));
         }
       }
-      return stopRef.current ? `stopped: ${extracted} member(s) kept` : `extraction done: ${extracted} member(s) across ${activeProbes.length} strip(s)`;
+      return stopRef.current
+        ? `stopped after listing ${listed} and extracting ${extracted} member(s)`
+        : `two-stage extraction done: ${listed} listed, ${extracted} extracted across ${activeProbes.length} strip(s)`;
     });
   const acceptMember = (at: number) => {
     const member = members[at];
@@ -1226,7 +1384,7 @@ export function VideoImportPage({
 
       {userPick && (
         <div className="video-import-userpick-section">
-          <Section {...section("userpick", "❓ YOUR PICK", `${userPick.title} · ${userPick.multi ? (userPick.chosen.size ? `${userPick.chosen.size} of ${userPick.frames.length} selected` : `multi-select — click tiles, then keep/remove`) : `${userPick.frames.length} candidate(s) — click ONE to use it`}`, <button onClick={() => settleUserPick(null)}>✕ skip</button>)}>
+          <Section {...section("userpick", "❓ USER PICK GALLERY", `${userPick.title} · ${userPick.multi ? (userPick.chosen.size ? `${userPick.chosen.size} of ${userPick.frames.length} selected` : `multi-select — click tiles, then keep/remove`) : `${userPick.frames.length} candidate(s) — click ONE to use it`}`, <button onClick={() => settleUserPick(null)}>✕ skip</button>)}>
             <div className="vi2-body video-import-frames video-import-userpick">
               {userPick.frames.map((item) => {
                 const on = userPick.chosen.has(item.current);
@@ -1278,10 +1436,10 @@ export function VideoImportPage({
       )}
 
       {frames.length > 0 && (
-        <Section {...section("inputs", "INPUT IMAGES", `${frames.length} frame(s) · click = preview input · ▲ keeper · ▼ drop`)}>
-          <div className="vi2-body video-import-frames">
+        <Section {...section("inputs", "EXTRACTED FRAME GALLERY", `${frames.length} image(s) · click = preview input · ▲ keeper · ▼ drop`)}>
+          <div className="vi2-body video-import-frames video-import-extracted-gallery" role="list" aria-label="Extracted Frame Gallery">
             {frames.map((frame) => (
-              <article key={frame.path} className={`video-import-frame is-plain${picked === frame.path ? " is-input-pick" : ""}${kept?.has(frame.path) ? " is-group-pick" : ""}`}>
+              <article key={frame.path} role="listitem" className={`video-import-frame is-plain${picked === frame.path ? " is-input-pick" : ""}${kept?.has(frame.path) ? " is-group-pick" : ""}`}>
                 <img
                   src={asset(frame.path)}
                   alt={`frame ${frame.index}`}
@@ -1459,7 +1617,7 @@ export function VideoImportPage({
       )}
 
       {gallery && (
-        <Section {...section("gallery", "GALLERY", `${gallery.filter((tile) => tile.path).length} tile(s) · click = add to chain + apply to ALL frames`, (
+        <Section {...section("gallery", "FILTER EFFECT GALLERY", `${gallery.filter((tile) => tile.path).length} tile(s) · click = add to chain + apply to ALL frames`, (
           <>
             <button
               disabled={busy}
@@ -1528,7 +1686,7 @@ export function VideoImportPage({
       )}
 
       {output.length > 0 && (
-        <Section {...section("output", `OUTPUT${outputMode === "full" ? " · FULL RUN" : " · PREVIEW"}`, `${output.length} frame(s)${outputLabel ? ` · via ${outputLabel}` : ""} · click a frame = new base, ALL effects run on it`, <button disabled={busy} onClick={() => setOutput([])}>× Clear</button>)}>
+        <Section {...section("output", `PROCESSED OUTPUT GALLERY${outputMode === "full" ? " · FULL RUN" : " · PREVIEW"}`, `${output.length} frame(s)${outputLabel ? ` · via ${outputLabel}` : ""} · click a frame = new base, ALL effects run on it`, <button disabled={busy} onClick={() => setOutput([])}>× Clear</button>)}>
           <div className="vi2-body video-import-frames video-import-output">
             {output.map((frame) => (
               <article key={frame.path} className="video-import-frame is-plain">
@@ -1551,7 +1709,7 @@ export function VideoImportPage({
       )}
 
       {trail.length > 0 && (
-        <Section {...section("trail", "TRAIL / PROBES", `${trail.length} level(s) · probes: ${probes.length ? probes.join(", ") : `last (${trail.length - 1})`}`)}>
+        <Section {...section("trail", "PROCESSING TRAIL GALLERY", `${trail.length} level(s) · probes: ${probes.length ? probes.join(", ") : `last (${trail.length - 1})`}`)}>
           <div className="vi2-body video-import-trail" role="list">
             {trail.map((level, index) => {
               const probed = probes.includes(index) || (!probes.length && index === trail.length - 1);
@@ -1568,12 +1726,12 @@ export function VideoImportPage({
       )}
 
       {selected && (
-        <Section {...section("members", "MEMBERS — ENTITY EXTRACTION", `${members.length} member(s) · ${members.filter((member) => member.status === "pending").length} pending`)}>
+        <Section {...section("members", "EXTRACTED MEMBER GALLERY", `${members.length} member(s) · ${members.filter((member) => member.status === "pending").length} pending`)}>
           <div className="vi2-body">
             <div className="video-import-timeline video-import-members">
-              <select value={memberModel} disabled={busy} onChange={(event) => setMemberModel(event.target.value)}>
+              <select value={memberModel} disabled={busy} onChange={(event) => { memberModelTouchedRef.current = true; setMemberModel(event.target.value); }}>
                 {!models.length && <option value="">no enabled models</option>}
-                {models.map((model) => <option key={model.id} value={model.id}>{model.name}</option>)}
+                {models.map((model) => <option key={model.id} value={model.id}>{model.name}{model.id === inheritedModelId ? " · inherited" : ""}</option>)}
               </select>
               <select value={memberGoal} disabled={busy} onChange={(event) => setMemberGoal(event.target.value as typeof memberGoal)}>
                 <option value="any">find any members</option>
@@ -1631,9 +1789,9 @@ export function VideoImportPage({
         <Section {...section("finish", "TURTLE / IMPORT GAME", `${output.length ? "OUTPUT frames feed the finish" : "input frames feed the finish"}`)}>
           <div className="vi2-body video-import-timeline">
             <b>TURTLE</b>
-            <select value={turtleModel} disabled={busy} onChange={(event) => setTurtleModel(event.target.value)}>
+            <select value={turtleModel} disabled={busy} onChange={(event) => { turtleModelTouchedRef.current = true; setTurtleModel(event.target.value); }}>
               {!models.length && <option value="">no enabled models</option>}
-              {models.map((model) => <option key={model.id} value={model.id}>{model.name}</option>)}
+              {models.map((model) => <option key={model.id} value={model.id}>{model.name}{model.id === inheritedModelId ? " · inherited" : ""}</option>)}
             </select>
             <button disabled={busy || !turtleModel || (!frames.length && !output.length)} onClick={() => void generateTurtle()}>🐢 Generate turtle programs</button>
             <b>IMPORT GAME</b>

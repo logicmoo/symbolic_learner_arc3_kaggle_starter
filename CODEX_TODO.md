@@ -14,6 +14,16 @@ values here.
 
 ## Current recovery state
 
+- Video Import now resolves the workspace's inherited effective model through
+  `model-selection?include_models=false` before the full Model Policy registry
+  finishes enumerating. The inherited model stays first and selected in Member
+  Extraction and Turtle controls, while late discovery merges additional
+  choices without overriding a user's manual pick. Its image collections now
+  have distinct names: User Pick Gallery, Extracted Frame Gallery, Filter
+  Effect Gallery, Processed Output Gallery, Processing Trail Gallery, and
+  Extracted Member Gallery. Frame extraction and cursor grabs open and scroll
+  to the Extracted Frame Gallery. Focused tests: 7 passed; frontend build and
+  live UI inspection passed on 2026-08-31.
 - UI acceptance-debug invariant through **2026-09-02**: keep the labeled,
   colored borders for `DEBUG A · APP MENU`, `DEBUG B · DOCS INDEX`,
   `DEBUG C · DOCS SCAN CONTROLS`, `DEBUG D · FILE LIST SCROLLER`, and

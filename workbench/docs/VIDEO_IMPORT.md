@@ -145,8 +145,9 @@ GIF**, removes it from the scene, and continues on the reduced scene:
 - **STATUS strip** — sticky at the top: three rolling log lines, an
   `auto-collapse` switch, and **■ Stop**, which interrupts any job or model
   loop at its next step, keeping partial results.
-- **Galleries collapse** — every gallery (INPUT IMAGES, GALLERY, OUTPUT,
-  TRAIL/PROBES, MEMBER STRIPS) has an expand/collapse header and folds
+- **Galleries collapse** — every named gallery (USER PICK, EXTRACTED FRAME,
+  FILTER EFFECT, PROCESSED OUTPUT, PROCESSING TRAIL, EXTRACTED MEMBER) has an
+  expand/collapse header and folds
   itself after you scroll past it. `📌 pin` any gallery to freeze its state,
   or switch `auto-collapse` off globally.
 - Nothing here overwrites your inputs: filters write copies, member cuts live
@@ -196,8 +197,8 @@ gradient maps. Skills may declare `paramChoices` (combo per param) and
 `paramGrid` (permutation candidates); single-choice skills expand into one
 registry entry per setting.
 
-**The preview system**: no default filter. Extraction OPENS the input-images
-gallery (all other sections start collapsed) — plain tiles (image +
+**The preview system**: no default filter. Extraction OPENS the **EXTRACTED
+FRAME GALLERY** (all other sections start collapsed) — plain tiles (image +
 index/time/source caption, hover ▲ keeper / ▼ drop) — and the GROUP bar
 sits DIRECTLY BELOW that gallery, preset to **Let USER decide which item is
 used**: by default everything passes through, and asking is deferred to

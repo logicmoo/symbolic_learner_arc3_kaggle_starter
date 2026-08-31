@@ -6,6 +6,7 @@ from pathlib import Path
 from uuid import uuid4
 
 from fastapi import APIRouter, BackgroundTasks, Body, HTTPException, Request
+from starlette.concurrency import run_in_threadpool
 from model_library import resolve_model_records
 from model_selection_settings import (
     SYSTEM_POLICY_PATH,
@@ -80,18 +81,22 @@ def update_system_model_selection(
 
 
 @router.get("/workspaces/{workspace_id}/model-selection")
-def get_workspace_model_selection(workspace_id: str) -> dict[str, object]:
+async def get_workspace_model_selection(
+    workspace_id: str,
+    include_models: bool = True,
+) -> dict[str, object]:
     workspace_root = WORKSPACES_ROOT / workspace_id
     if not get_filesystem_provider().is_dir(workspace_root):
         raise HTTPException(status_code=404, detail=f"workspace not found: {workspace_id}")
     document = workspace_model_selection(workspace_root)
     effective, source = effective_model_selection(workspace_root, {})
+    models = await run_in_threadpool(_model_choices, workspace_root) if include_models else []
     return {
         "document": document,
         "system": system_model_selection(),
         "effective": effective,
         "source": source,
-        "models": _model_choices(workspace_root),
+        "models": models,
         "path": str(workspace_policy_path(workspace_root)),
     }
 
