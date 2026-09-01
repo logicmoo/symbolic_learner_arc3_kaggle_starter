@@ -1,0 +1,668 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0010_members/scene_after_11_members/scene_after_26_members/next_pass_54_top_right_quiz_logo_text_planner/order_3bd5f7202d25.png",
+  "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0010_members/scene_after_11_members/scene_after_26_members/next_pass_54_top_right_quiz_logo_text_planner/order_3bd5f7202d25.provenance.json",
+  "createdAt": "2026-09-01T22:49:47.388260Z",
+  "operation": "visualize_planner_order",
+  "dimensions": {
+    "width": 792,
+    "height": 627
+  },
+  "originalDimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "root": {
+    "firstSeenImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0010.png",
+    "dimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "sourceVideo": "data/video_import/guess-the-201-animated-characters-3-seconds-each/video.mp4",
+    "atSeconds": 80.3,
+    "sceneIndex": 32,
+    "videoFrameIndex": 2409
+  },
+  "parent": {
+    "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0010_members/scene_after_11_members/scene_after_26_members/next_pass_54_top_right_quiz_logo_text.png",
+    "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0010_members/scene_after_11_members/scene_after_26_members/next_pass_54_top_right_quiz_logo_text.provenance.json"
+  },
+  "source": {},
+  "transform": {
+    "labels": [
+      {
+        "object": "upper_left_question_mark",
+        "number": 1,
+        "point": [
+          520,
+          120
+        ]
+      },
+      {
+        "object": "upper_right_question_mark",
+        "number": 2,
+        "point": [
+          645,
+          115
+        ]
+      },
+      {
+        "object": "lower_right_question_mark",
+        "number": 3,
+        "point": [
+          685,
+          265
+        ]
+      },
+      {
+        "object": "q_inner_black_hole",
+        "number": 4,
+        "point": [
+          160,
+          280
+        ]
+      },
+      {
+        "object": "lower_diagonal_letter_tail",
+        "number": 5,
+        "point": [
+          560,
+          470
+        ]
+      },
+      {
+        "object": "red_logo_letter_strokes",
+        "number": 6,
+        "point": [
+          355,
+          315
+        ]
+      },
+      {
+        "object": "white_logo_letter_shapes",
+        "number": 7,
+        "point": [
+          120,
+          310
+        ]
+      },
+      {
+        "object": "black_background",
+        "number": 8,
+        "point": [
+          30,
+          30
+        ]
+      }
+    ],
+    "plannerHash": "3bd5f7202d2501ea4d7aab234bbb3f724d2d81c13826654aa2db9f8a51f3a4df"
+  },
+  "lineage": [
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0010.png",
+      "operation": "extract_video_frame",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "mode": "scenes"
+      },
+      "createdAt": "2026-09-01T17:19:34.187676Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0010_members/scene_after_11.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0010.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0010.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          27,
+          15,
+          79,
+          69
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Fill the removed '10' with the same orange badge interior so the circle reads as continuous: a smooth orange gradient with a lighter yellow-orange highlight toward the upper-left and slightly deeper orange toward the lower-right.",
+          "colors": [
+            "#F4A11A",
+            "#F29A10",
+            "#EE8E06",
+            "#E78300"
+          ],
+          "continueEdges": [
+            "Continue the badge’s radial/diagonal orange gradient seamlessly through both digit shapes and the inner hole of the '0'.",
+            "Preserve local luminance flow from surrounding orange pixels at each digit boundary (no hard seams or outlines).",
+            "Do not introduce new edges; only the existing smooth badge shading should pass through the removed text area."
+          ],
+          "texture": "Clean, flat vector-like fill with very subtle soft gradient; no grain or pattern."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:23:03.492842Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0010_members/scene_after_11_members/scene_after_26.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0010_members/scene_after_11.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0010.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          5,
+          6,
+          96,
+          94
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Behind the removed top-left badge is only the base quiz background: a smooth bright-blue gradient field with slightly lighter cyan-blue toward the center-right and darker royal-blue toward the upper-left corner. No independent object sits directly behind this badge area.",
+          "colors": [
+            "#1978E8",
+            "#1E86F3",
+            "#2A97FB",
+            "#166AD8"
+          ],
+          "continueEdges": [
+            "Continue the global blue gradient seamlessly from the surrounding top and left margins through the circular hole",
+            "Preserve the soft luminance transition that brightens gradually toward the middle of the frame",
+            "Do not introduce text or border edges inside the fill; side vertical text remains well below and outside this region"
+          ],
+          "texture": "Mostly flat digital gradient with very subtle soft glow/banding, no distinct pattern or grain."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:28:02.168764Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0010_members/scene_after_11_members/scene_after_26_members/cut_54_top_right_quiz_logo_text.png",
+      "operation": "extract_object_cutout",
+      "dimensions": {
+        "width": 62,
+        "height": 47
+      },
+      "transform": {
+        "inputDimensions": {
+          "width": 854,
+          "height": 480
+        },
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0010_members/scene_after_11_members/scene_after_26.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0010.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "cropBox": [
+          792,
+          6,
+          854,
+          53
+        ],
+        "maskScale": 4,
+        "polygons": [
+          [
+            [
+              797,
+              16
+            ],
+            [
+              803,
+              14
+            ],
+            [
+              811,
+              15
+            ],
+            [
+              817,
+              20
+            ],
+            [
+              819,
+              28
+            ],
+            [
+              817,
+              36
+            ],
+            [
+              811,
+              41
+            ],
+            [
+              803,
+              42
+            ],
+            [
+              797,
+              38
+            ],
+            [
+              794,
+              31
+            ],
+            [
+              794,
+              23
+            ]
+          ],
+          [
+            [
+              814,
+              40
+            ],
+            [
+              820,
+              39
+            ],
+            [
+              823,
+              43
+            ],
+            [
+              822,
+              48
+            ],
+            [
+              817,
+              49
+            ],
+            [
+              813,
+              45
+            ]
+          ],
+          [
+            [
+              815,
+              21
+            ],
+            [
+              821,
+              20
+            ],
+            [
+              826,
+              23
+            ],
+            [
+              829,
+              29
+            ],
+            [
+              830,
+              37
+            ],
+            [
+              828,
+              43
+            ],
+            [
+              823,
+              45
+            ],
+            [
+              818,
+              44
+            ],
+            [
+              815,
+              39
+            ],
+            [
+              814,
+              31
+            ]
+          ],
+          [
+            [
+              829,
+              18
+            ],
+            [
+              834,
+              17
+            ],
+            [
+              837,
+              20
+            ],
+            [
+              837,
+              36
+            ],
+            [
+              834,
+              40
+            ],
+            [
+              830,
+              38
+            ],
+            [
+              828,
+              33
+            ],
+            [
+              828,
+              23
+            ]
+          ],
+          [
+            [
+              832,
+              10
+            ],
+            [
+              835,
+              9
+            ],
+            [
+              837,
+              11
+            ],
+            [
+              836,
+              15
+            ],
+            [
+              833,
+              15
+            ],
+            [
+              832,
+              12
+            ]
+          ],
+          [
+            [
+              837,
+              24
+            ],
+            [
+              846,
+              23
+            ],
+            [
+              850,
+              26
+            ],
+            [
+              847,
+              33
+            ],
+            [
+              843,
+              36
+            ],
+            [
+              849,
+              40
+            ],
+            [
+              850,
+              46
+            ],
+            [
+              847,
+              50
+            ],
+            [
+              839,
+              50
+            ],
+            [
+              836,
+              46
+            ],
+            [
+              841,
+              40
+            ],
+            [
+              845,
+              36
+            ],
+            [
+              837,
+              31
+            ]
+          ],
+          [
+            [
+              845,
+              9
+            ],
+            [
+              849,
+              8
+            ],
+            [
+              852,
+              11
+            ],
+            [
+              851,
+              15
+            ],
+            [
+              847,
+              17
+            ],
+            [
+              844,
+              15
+            ],
+            [
+              844,
+              11
+            ]
+          ],
+          [
+            [
+              846,
+              34
+            ],
+            [
+              851,
+              33
+            ],
+            [
+              853,
+              37
+            ],
+            [
+              852,
+              42
+            ],
+            [
+              848,
+              45
+            ],
+            [
+              845,
+              42
+            ],
+            [
+              844,
+              37
+            ]
+          ]
+        ],
+        "holes": [
+          [
+            [
+              801,
+              22
+            ],
+            [
+              807,
+              21
+            ],
+            [
+              811,
+              25
+            ],
+            [
+              811,
+              32
+            ],
+            [
+              806,
+              36
+            ],
+            [
+              800,
+              35
+            ],
+            [
+              797,
+              30
+            ],
+            [
+              797,
+              25
+            ]
+          ]
+        ]
+      },
+      "createdAt": "2026-09-01T17:36:03.224391Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0010_members/scene_after_11_members/scene_after_26_members/next_pass_54_top_right_quiz_logo_text.png",
+      "operation": "enlarge_object_for_analysis",
+      "dimensions": {
+        "width": 792,
+        "height": 627
+      },
+      "transform": {
+        "sourceDimensions": {
+          "width": 62,
+          "height": 47
+        },
+        "scale": 11,
+        "resizedDimensions": {
+          "width": 682,
+          "height": 517
+        },
+        "padding": {
+          "left": 55,
+          "top": 55,
+          "right": 55,
+          "bottom": 55
+        }
+      },
+      "createdAt": "2026-09-01T17:36:03.346033Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0010_members/scene_after_11_members/scene_after_26_members/next_pass_54_top_right_quiz_logo_text_planner/order_3bd5f7202d25.png",
+      "operation": "visualize_planner_order",
+      "dimensions": {
+        "width": 792,
+        "height": 627
+      },
+      "transform": {
+        "labels": [
+          {
+            "object": "upper_left_question_mark",
+            "number": 1,
+            "point": [
+              520,
+              120
+            ]
+          },
+          {
+            "object": "upper_right_question_mark",
+            "number": 2,
+            "point": [
+              645,
+              115
+            ]
+          },
+          {
+            "object": "lower_right_question_mark",
+            "number": 3,
+            "point": [
+              685,
+              265
+            ]
+          },
+          {
+            "object": "q_inner_black_hole",
+            "number": 4,
+            "point": [
+              160,
+              280
+            ]
+          },
+          {
+            "object": "lower_diagonal_letter_tail",
+            "number": 5,
+            "point": [
+              560,
+              470
+            ]
+          },
+          {
+            "object": "red_logo_letter_strokes",
+            "number": 6,
+            "point": [
+              355,
+              315
+            ]
+          },
+          {
+            "object": "white_logo_letter_shapes",
+            "number": 7,
+            "point": [
+              120,
+              310
+            ]
+          },
+          {
+            "object": "black_background",
+            "number": 8,
+            "point": [
+              30,
+              30
+            ]
+          }
+        ],
+        "plannerHash": "3bd5f7202d2501ea4d7aab234bbb3f724d2d81c13826654aa2db9f8a51f3a4df"
+      },
+      "createdAt": "2026-09-01T22:49:47.388260Z"
+    }
+  ]
+}

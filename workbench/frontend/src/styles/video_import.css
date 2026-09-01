@@ -3,8 +3,70 @@
   padding-left: 10px; padding-bottom: 24px;
   scrollbar-gutter: stable;
   box-sizing: border-box;
+  align-content: start;
+  min-height: 100%;
+  overflow-x: auto;
+  overflow-y: auto;
 }
 .video-import-page > * { min-width: 0; max-width: 100%; }
+.video-import-human-nav {
+  position: sticky;
+  z-index: 8;
+  top: 0;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 4px;
+  margin: 0 18px;
+  padding: 5px;
+  border: 1px solid var(--line, #2a3742);
+  background: #071016f2;
+}
+.video-import-human-nav button {
+  min-width: 0;
+  padding: 7px 5px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted, #8aa);
+}
+.video-import-human-nav button.is-active {
+  border-color: var(--cyan, #27dcc2);
+  background: #27dcc21a;
+  color: var(--cyan, #27dcc2);
+}
+.video-import-page[data-subview] > .vi2-section,
+.video-import-page[data-subview] > .video-import-scene-object-workspace {
+  display: none;
+}
+.video-import-page[data-subview="sources"] > [data-section="intake"],
+.video-import-page[data-subview="sources"] > [data-section="arc3Player"],
+.video-import-page[data-subview="sources"] > [data-section="player"],
+.video-import-page[data-subview="frames"] > [data-section="userpick"],
+.video-import-page[data-subview="frames"] > [data-section="inputs"],
+.video-import-page[data-subview="frames"] > [data-section="prepass"],
+.video-import-page[data-subview="frames"] > [data-section="gallery"],
+.video-import-page[data-subview="frames"] > [data-section="output"],
+.video-import-page[data-subview="frames"] > [data-section="trail"],
+.video-import-page[data-subview="advanced"] > [data-section="config"] {
+  display: block;
+}
+.video-import-page[data-subview="objects"] > .video-import-scene-object-workspace,
+.video-import-page[data-subview="finish"] > .video-import-scene-object-workspace {
+  display: grid;
+}
+.video-import-page[data-subview="objects"] > .video-import-scene-object-workspace > [data-section="finish"] {
+  display: none;
+}
+.video-import-page[data-subview="finish"] > .video-import-scene-object-workspace > * {
+  display: none !important;
+}
+.video-import-page[data-subview="finish"] > .video-import-scene-object-workspace > [data-section="finish"] {
+  display: block !important;
+  grid-column: 1 / -1;
+  grid-row: 1;
+}
+@media (max-width: 720px) {
+  .video-import-human-nav { grid-template-columns: 1fr 1fr; }
+}
 .video-import-note { margin: 0 18px; color: var(--accent, #4dd); }
 .video-import-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 0 18px; }
 .video-import-row input[type="text"] { flex: 1; min-width: 280px; }

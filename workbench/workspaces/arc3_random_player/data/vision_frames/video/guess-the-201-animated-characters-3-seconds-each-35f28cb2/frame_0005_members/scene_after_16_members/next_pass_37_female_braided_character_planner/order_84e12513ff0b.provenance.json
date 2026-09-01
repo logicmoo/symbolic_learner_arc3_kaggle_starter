@@ -1,0 +1,576 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005_members/scene_after_16_members/next_pass_37_female_braided_character_planner/order_84e12513ff0b.png",
+  "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005_members/scene_after_16_members/next_pass_37_female_braided_character_planner/order_84e12513ff0b.provenance.json",
+  "createdAt": "2026-09-01T22:56:21.942206Z",
+  "operation": "visualize_planner_order",
+  "dimensions": {
+    "width": 900,
+    "height": 600
+  },
+  "originalDimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "root": {
+    "firstSeenImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005.png",
+    "dimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "sourceVideo": "data/video_import/guess-the-201-animated-characters-3-seconds-each/video.mp4",
+    "atSeconds": 41.633,
+    "sceneIndex": 17,
+    "videoFrameIndex": 1249
+  },
+  "parent": {
+    "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005_members/scene_after_16_members/next_pass_37_female_braided_character.png",
+    "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005_members/scene_after_16_members/next_pass_37_female_braided_character.provenance.json"
+  },
+  "source": {},
+  "transform": {
+    "labels": [
+      {
+        "object": "red_glow_particle",
+        "number": 1,
+        "point": [
+          468,
+          128
+        ]
+      },
+      {
+        "object": "lower_blue_overlay_band",
+        "number": 2,
+        "point": [
+          430,
+          430
+        ]
+      },
+      {
+        "object": "right_side_braid_segment",
+        "number": 3,
+        "point": [
+          760,
+          255
+        ]
+      },
+      {
+        "object": "fighter_pink_purple_hair",
+        "number": 4,
+        "point": [
+          645,
+          120
+        ]
+      },
+      {
+        "object": "fighter_character_head",
+        "number": 5,
+        "point": [
+          560,
+          250
+        ]
+      },
+      {
+        "object": "fighter_jacket_collar",
+        "number": 6,
+        "point": [
+          438,
+          271
+        ]
+      },
+      {
+        "object": "fighter_extended_left_arm",
+        "number": 7,
+        "point": [
+          290,
+          235
+        ]
+      },
+      {
+        "object": "left_edge_cyan_light_streak",
+        "number": 8,
+        "point": [
+          65,
+          405
+        ]
+      },
+      {
+        "object": "dark_neon_background_patch",
+        "number": 9,
+        "point": [
+          120,
+          320
+        ]
+      },
+      {
+        "object": "black_background",
+        "number": 10,
+        "point": [
+          20,
+          20
+        ]
+      }
+    ],
+    "plannerHash": "84e12513ff0b60ef976093806089fe209fc7ba44b40fc5290a7bd37d1802dec9"
+  },
+  "lineage": [
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005.png",
+      "operation": "extract_video_frame",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "mode": "scenes"
+      },
+      "createdAt": "2026-09-01T17:19:30.576049Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005_members/scene_after_16.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          222,
+          244,
+          643,
+          387
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Behind the removed cyan/white glow, the central card continues as a dark neon scene: deep blue-violet background with soft magenta/cyan bloom, plus the fighter’s underlying lower-arm/jacket area where the streak crosses her body. Reconstruct a smooth continuation of the character’s muted skin/jacket shading and the card’s ambient purple-blue lighting so no bright streak remains.",
+          "colors": [
+            "#0A0F2A",
+            "#1A1F4A",
+            "#2C2B6E",
+            "#4C3F8E",
+            "#6E5FA8",
+            "#2E7FAE"
+          ],
+          "continueEdges": [
+            "Extend the dark purple-blue background gradient from above and below straight through the removed band.",
+            "Continue small soft bokeh/light specks visible near the streak boundaries across the gap with similar blur and spacing.",
+            "Carry the character edge transitions (arm/jacket contour and shadow boundaries) across the removed area to keep limb and clothing shapes coherent.",
+            "Preserve the card’s lower atmospheric haze as subtle, low-contrast cyan-violet tint, but without any concentrated bright beam core."
+          ],
+          "texture": "Soft cinematic neon haze with gentle grain/bokeh and smooth gradient blending; semi-gloss character shading where the streak crossed the arm/jacket."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:23:18.101179Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005_members/scene_after_16_members/cut_37_female_braided_character.png",
+      "operation": "extract_object_cutout",
+      "dimensions": {
+        "width": 388,
+        "height": 238
+      },
+      "transform": {
+        "inputDimensions": {
+          "width": 854,
+          "height": 480
+        },
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005_members/scene_after_16.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "cropBox": [
+          218,
+          102,
+          606,
+          340
+        ],
+        "maskScale": 4,
+        "polygons": [
+          [
+            [
+              253,
+              186
+            ],
+            [
+              277,
+              182
+            ],
+            [
+              305,
+              177
+            ],
+            [
+              336,
+              170
+            ],
+            [
+              365,
+              160
+            ],
+            [
+              393,
+              149
+            ],
+            [
+              420,
+              135
+            ],
+            [
+              444,
+              119
+            ],
+            [
+              470,
+              108
+            ],
+            [
+              497,
+              104
+            ],
+            [
+              519,
+              110
+            ],
+            [
+              535,
+              124
+            ],
+            [
+              548,
+              143
+            ],
+            [
+              562,
+              157
+            ],
+            [
+              579,
+              167
+            ],
+            [
+              596,
+              180
+            ],
+            [
+              603,
+              197
+            ],
+            [
+              597,
+              212
+            ],
+            [
+              581,
+              220
+            ],
+            [
+              571,
+              233
+            ],
+            [
+              574,
+              247
+            ],
+            [
+              586,
+              261
+            ],
+            [
+              598,
+              276
+            ],
+            [
+              601,
+              292
+            ],
+            [
+              593,
+              304
+            ],
+            [
+              579,
+              307
+            ],
+            [
+              561,
+              300
+            ],
+            [
+              545,
+              289
+            ],
+            [
+              532,
+              289
+            ],
+            [
+              526,
+              302
+            ],
+            [
+              523,
+              319
+            ],
+            [
+              514,
+              333
+            ],
+            [
+              500,
+              338
+            ],
+            [
+              486,
+              334
+            ],
+            [
+              471,
+              325
+            ],
+            [
+              461,
+              311
+            ],
+            [
+              451,
+              298
+            ],
+            [
+              438,
+              291
+            ],
+            [
+              421,
+              292
+            ],
+            [
+              404,
+              300
+            ],
+            [
+              386,
+              307
+            ],
+            [
+              368,
+              309
+            ],
+            [
+              350,
+              303
+            ],
+            [
+              336,
+              292
+            ],
+            [
+              326,
+              277
+            ],
+            [
+              320,
+              260
+            ],
+            [
+              313,
+              247
+            ],
+            [
+              301,
+              242
+            ],
+            [
+              287,
+              244
+            ],
+            [
+              273,
+              250
+            ],
+            [
+              263,
+              262
+            ],
+            [
+              255,
+              277
+            ],
+            [
+              247,
+              290
+            ],
+            [
+              237,
+              298
+            ],
+            [
+              226,
+              296
+            ],
+            [
+              220,
+              286
+            ],
+            [
+              223,
+              269
+            ],
+            [
+              233,
+              250
+            ],
+            [
+              244,
+              230
+            ],
+            [
+              251,
+              212
+            ]
+          ]
+        ],
+        "holes": []
+      },
+      "createdAt": "2026-09-01T17:28:38.582001Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005_members/scene_after_16_members/next_pass_37_female_braided_character.png",
+      "operation": "enlarge_object_for_analysis",
+      "dimensions": {
+        "width": 900,
+        "height": 600
+      },
+      "transform": {
+        "sourceDimensions": {
+          "width": 388,
+          "height": 238
+        },
+        "scale": 2,
+        "resizedDimensions": {
+          "width": 776,
+          "height": 476
+        },
+        "padding": {
+          "left": 62,
+          "top": 62,
+          "right": 62,
+          "bottom": 62
+        }
+      },
+      "createdAt": "2026-09-01T17:28:38.682703Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005_members/scene_after_16_members/next_pass_37_female_braided_character_planner/order_84e12513ff0b.png",
+      "operation": "visualize_planner_order",
+      "dimensions": {
+        "width": 900,
+        "height": 600
+      },
+      "transform": {
+        "labels": [
+          {
+            "object": "red_glow_particle",
+            "number": 1,
+            "point": [
+              468,
+              128
+            ]
+          },
+          {
+            "object": "lower_blue_overlay_band",
+            "number": 2,
+            "point": [
+              430,
+              430
+            ]
+          },
+          {
+            "object": "right_side_braid_segment",
+            "number": 3,
+            "point": [
+              760,
+              255
+            ]
+          },
+          {
+            "object": "fighter_pink_purple_hair",
+            "number": 4,
+            "point": [
+              645,
+              120
+            ]
+          },
+          {
+            "object": "fighter_character_head",
+            "number": 5,
+            "point": [
+              560,
+              250
+            ]
+          },
+          {
+            "object": "fighter_jacket_collar",
+            "number": 6,
+            "point": [
+              438,
+              271
+            ]
+          },
+          {
+            "object": "fighter_extended_left_arm",
+            "number": 7,
+            "point": [
+              290,
+              235
+            ]
+          },
+          {
+            "object": "left_edge_cyan_light_streak",
+            "number": 8,
+            "point": [
+              65,
+              405
+            ]
+          },
+          {
+            "object": "dark_neon_background_patch",
+            "number": 9,
+            "point": [
+              120,
+              320
+            ]
+          },
+          {
+            "object": "black_background",
+            "number": 10,
+            "point": [
+              20,
+              20
+            ]
+          }
+        ],
+        "plannerHash": "84e12513ff0b60ef976093806089fe209fc7ba44b40fc5290a7bd37d1802dec9"
+      },
+      "createdAt": "2026-09-01T22:56:21.942206Z"
+    }
+  ]
+}

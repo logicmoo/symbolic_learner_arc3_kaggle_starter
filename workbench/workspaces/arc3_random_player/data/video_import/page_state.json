@@ -1,6 +1,6 @@
 {
   "v": 1,
-  "at": "2026-09-01T20:57:34.958Z",
+  "at": "2026-09-01T23:12:21.071Z",
   "selectedPath": "data/video_import/guess-the-201-animated-characters-3-seconds-each/video.mp4",
   "playerTime": 0,
   "markers": [
@@ -2486,12 +2486,12 @@
       "totalDurationMs": 6758063.099999696
     },
     "planner": {
-      "completed": 110,
-      "totalDurationMs": 4630250.400000274
+      "completed": 123,
+      "totalDurationMs": 5874107.400000334
     },
     "outliner": {
-      "completed": 739,
-      "totalDurationMs": 73856865.00000018
+      "completed": 747,
+      "totalDurationMs": 75237771.30000025
     },
     "extractor": {
       "completed": 221,
@@ -2507,7 +2507,7 @@
     }
   },
   "totalLlmConcurrency": 19,
-  "manualWorkerHold": false,
+  "manualWorkerHold": true,
   "autoClearData": true,
   "autoClearAlgorithm": false,
   "autoNext77": true,

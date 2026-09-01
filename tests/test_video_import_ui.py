@@ -577,6 +577,18 @@ def test_scene_object_flow_is_recursive_describer_planner_outliner_extractor_tre
     assert '{selected && (\n        <section className="video-import-pipe-board"' not in source
     assert 'className="video-import-scene-object-workspace"' in source
     assert 'className="video-import-pipe-column"' in source
+    assert "VIDEO_IMPORT_SUBVIEWS" in source
+    assert 'data-subview={activeSubview}' in source
+    assert 'aria-label="Video Import steps"' in source
+    assert "1 · Sources" in source
+    assert "2 · Frames & Filters" in source
+    assert "3 · Objects" in source
+    assert "4 · Finish" in source
+    assert '.video-import-page[data-subview="sources"]' in styles
+    assert '.video-import-page[data-subview="advanced"] > [data-section="config"]' in styles
+    assert "runnableInventoryIds" in source
+    assert "runnableMemberInventories" in source
+    assert "memberInputPaths.has(inventory.framePath)" in source
     assert "frame extraction stopped: no completed scene list yet; scene detection continues to the end" in source
     assert "stopped: frame extraction is starved while scene detection continues to the end" in source
     assert "scene threshold" in source

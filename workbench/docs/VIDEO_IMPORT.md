@@ -202,6 +202,13 @@ object visuals, and turtle generation, and reports each reuse as a
 
 ## 8. SCENE OBJECT VISUALS
 
+Video Import is presented as five human-sized subviews rather than one
+continuously mounted expert surface: **Sources**, **Frames & Filters**,
+**Objects**, **Finish**, and **Advanced**. The active subview is encoded in the
+URL. Sources is the default; Advanced alone mounts JSON CONFIG. Restored
+inventories are runnable only when their root frame is present in the currently
+selected input set, so stale/orphaned state cannot launch background model work.
+
 All intake, player, frame-selection, filter, output, and trail steps stay
 full-width above the split. The former duplicate full-width Scene Objects
 Textual Description view is removed; Describer controls live in the automation

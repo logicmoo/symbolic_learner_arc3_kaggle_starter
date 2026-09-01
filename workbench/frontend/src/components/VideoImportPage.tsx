@@ -36,6 +36,14 @@ type ExtractedImageSource = {
   kind: "video" | "stream" | "arc" | "curated" | "archive" | "restored";
   frames: Frame[];
 };
+type VideoImportSubview = "sources" | "frames" | "objects" | "finish" | "advanced";
+const VIDEO_IMPORT_SUBVIEWS: Array<{ id: VideoImportSubview; label: string }> = [
+  { id: "sources", label: "1 · Sources" },
+  { id: "frames", label: "2 · Frames & Filters" },
+  { id: "objects", label: "3 · Objects" },
+  { id: "finish", label: "4 · Finish" },
+  { id: "advanced", label: "Advanced" },
+];
 type FilterEntry = {
   id: string; title: string; filter: string; description?: string;
   params?: Record<string, unknown>; paramChoices?: Record<string, string[]>;
@@ -1125,6 +1133,18 @@ export function VideoImportPage({
    * panel) without needing to lift the whole chain/filters state up. */
   onChainSummaryChange?: (steps: VideoImportChainSummaryStep[]) => void;
 }) {
+  const requestedSubview = new URL(window.location.href).searchParams.get("subview")?.toLowerCase();
+  const [activeSubview, setActiveSubview] = useState<VideoImportSubview>(
+    VIDEO_IMPORT_SUBVIEWS.some((entry) => entry.id === requestedSubview)
+      ? requestedSubview as VideoImportSubview
+      : "sources",
+  );
+  const selectSubview = (subview: VideoImportSubview) => {
+    const url = new URL(window.location.href);
+    url.searchParams.set("subview", subview);
+    window.history.replaceState(window.history.state, "", url);
+    setActiveSubview(subview);
+  };
   const hoveredImageRef = useRef<HTMLImageElement | null>(null);
   const [altImageZoom, setAltImageZoom] = useState<AltImageZoom | null>(null);
   const [pinnedAltImageZoom, setPinnedAltImageZoom] = useState<AltImageZoom | null>(null);
@@ -4411,6 +4431,25 @@ export function VideoImportPage({
 
   const automaticStagesRunningRef = useRef(new Set<keyof LlmCallConcurrency>());
   const [automaticSchedulerTick, setAutomaticSchedulerTick] = useState(0);
+  const runnableInventoryIds = new Set(
+    memberInventories
+      .filter((inventory) =>
+        !inventory.parentInventoryId
+        && (
+          memberInputPaths.has(inventory.framePath)
+          || memberInputPaths.has(inventory.sourceImage)
+        ))
+      .map((inventory) => inventory.id),
+  );
+  for (let pass = 0; pass < memberInventories.length; pass += 1) {
+    for (const inventory of memberInventories) {
+      if (inventory.parentInventoryId && runnableInventoryIds.has(inventory.parentInventoryId)) {
+        runnableInventoryIds.add(inventory.id);
+      }
+    }
+  }
+  const runnableMemberInventories = memberInventories.filter((inventory) =>
+    runnableInventoryIds.has(inventory.id));
   useEffect(() => {
     if (!restoredRef.current || workersHeld) return;
     const selectedRootsNeedDescription = frames.some((frame) => {
@@ -4419,17 +4458,17 @@ export function VideoImportPage({
      const inventory = memberInventories.find((candidate) => candidate.id === `input:${frame.path}`);
      return !inventory || (inventory.status === "failed" ? retryReady(inventory.retryAfter) : !inventory.descriptionOutput);
     });
-    const childNeedsDescription = memberInventories.some((inventory) =>
+    const childNeedsDescription = runnableMemberInventories.some((inventory) =>
      inventory.parentInventoryId
      && !automaticDescriptionClaimsRef.current.has(`child:${inventory.id}`)
      && (inventory.status === "pending" || (inventory.status === "failed" && retryReady(inventory.retryAfter)))
     );
-    const inventoryNeedsPlan = memberInventories.some((inventory) =>
+    const inventoryNeedsPlan = runnableMemberInventories.some((inventory) =>
      (inventory.status === "done" || (inventory.status === "failed" && retryReady(inventory.retryAfter)))
      && inventory.things.length > 0
      && !hasVisualizedPlan(inventory)
     );
-    const inventoryNeedsOutline = memberInventories.some((inventory) =>
+    const inventoryNeedsOutline = runnableMemberInventories.some((inventory) =>
      hasVisualizedPlan(inventory)
      && inventory.things.some((thing) =>
        !thing.outputImages?.length
@@ -4437,7 +4476,7 @@ export function VideoImportPage({
        && retryReady(thing.outlineRetryAfter)
      )
     );
-    const inventoryNeedsExtraction = memberInventories.some((inventory) =>
+    const inventoryNeedsExtraction = runnableMemberInventories.some((inventory) =>
      hasVisualizedPlan(inventory)
      && inventoryOutlinesReady(inventory)
      && Boolean(nextUnextractedThing(inventory) && retryReady(nextUnextractedThing(inventory)?.thing.retryAfter))
@@ -4523,24 +4562,24 @@ export function VideoImportPage({
     llmSchedulerRef.current.waiters.filter((waiter) => waiter.type === type).length;
   const llmStageProgress: Record<keyof LlmCallConcurrency, { pending: number; completed: number }> = {
     describer: {
-      pending: schedulerPending("describer") + undiscoveredSelectedRoots + memberInventories.filter((inventory) =>
+      pending: schedulerPending("describer") + undiscoveredSelectedRoots + runnableMemberInventories.filter((inventory) =>
         !inventory.descriptionOutput && inventory.status !== "describing" && inventory.status !== "ordering"
       ).length,
-      completed: memberInventories.filter((inventory) =>
+      completed: runnableMemberInventories.filter((inventory) =>
         Boolean(inventory.descriptionOutput) && !inventory.descriptionOutput.startsWith("ERROR:")
       ).length,
     },
     planner: {
-      pending: schedulerPending("planner") + memberInventories.filter((inventory) =>
+      pending: schedulerPending("planner") + runnableMemberInventories.filter((inventory) =>
         Boolean(inventory.descriptionOutput)
         && inventory.things.length > 0
         && !hasVisualizedPlan(inventory)
         && inventory.status !== "ordering"
       ).length,
-      completed: memberInventories.filter((inventory) => Boolean(inventory.orderOutput)).length,
+      completed: runnableMemberInventories.filter((inventory) => Boolean(inventory.orderOutput)).length,
     },
     outliner: {
-      pending: schedulerPending("outliner") + memberInventories.reduce((count, inventory) => {
+      pending: schedulerPending("outliner") + runnableMemberInventories.reduce((count, inventory) => {
         if (!hasVisualizedPlan(inventory)) return count;
         return count + inventory.things.filter((thing) =>
           !thing.outputImages?.length
@@ -4549,16 +4588,16 @@ export function VideoImportPage({
           && retryReady(thing.outlineRetryAfter)
         ).length;
       }, 0),
-      completed: memberInventories.reduce((count, inventory) =>
+      completed: runnableMemberInventories.reduce((count, inventory) =>
         count + inventory.things.filter(hasAlignedOutline).length, 0),
     },
     extractor: {
-      pending: schedulerPending("extractor") + memberInventories.filter((inventory) => {
+      pending: schedulerPending("extractor") + runnableMemberInventories.filter((inventory) => {
         if (!hasVisualizedPlan(inventory) || !inventoryOutlinesReady(inventory)) return false;
         const next = nextUnextractedThing(inventory)?.thing;
         return Boolean(next && next.status !== "extracting" && retryReady(next.retryAfter));
       }).length,
-      completed: memberInventories.reduce((count, inventory) =>
+      completed: runnableMemberInventories.reduce((count, inventory) =>
         count + inventory.things.filter((thing) => Boolean(thing.outputImages?.length)).length, 0),
     },
     turtle: {
@@ -4750,7 +4789,7 @@ export function VideoImportPage({
 
   // ---- render -----------------------------------------------------------------------
   return (
-    <section className="resource-view video-import-page vi2" onClickCapture={handleImageContextClick} onPointerMove={handleImageZoomPointer} onPointerLeave={() => { hoveredImageRef.current = null; setAltImageZoom(null); setHoverImageContext(null); }}>
+    <section className="resource-view video-import-page vi2" data-subview={activeSubview} onClickCapture={handleImageContextClick} onPointerMove={handleImageZoomPointer} onPointerLeave={() => { hoveredImageRef.current = null; setAltImageZoom(null); setHoverImageContext(null); }}>
       <div className="resource-heading">
         <div>
           <span>KNOWLEDGE INTAKE · GENERATION 2</span>
@@ -4758,6 +4797,11 @@ export function VideoImportPage({
           <p>Rebuilt from its own build prompt (see the help tab appendix): import → timeline → the preview stack for building filter chains → probes and entity strips → materialize. Every gallery collapses, every step interrupts.</p>
         </div>
       </div>
+      <nav className="video-import-human-nav" aria-label="Video Import steps">
+        {VIDEO_IMPORT_SUBVIEWS.map((entry) => (
+          <button key={entry.id} type="button" className={activeSubview === entry.id ? "is-active" : ""} aria-current={activeSubview === entry.id ? "page" : undefined} onClick={() => selectSubview(entry.id)}>{entry.label}</button>
+        ))}
+      </nav>
 
       <div className="video-import-activity" role="status" aria-live="polite">
         <div className="video-import-activity-controls">
@@ -5349,6 +5393,7 @@ export function VideoImportPage({
         </Section>
       )}
 
+      {(activeSubview === "objects" || activeSubview === "finish") && (
       <div className="video-import-scene-object-workspace">
       <div className="video-import-recursive-automation" role="toolbar" aria-label="Recursive extraction automation">
         <div className="video-import-llm-global-row">
@@ -5759,6 +5804,8 @@ export function VideoImportPage({
         </Section>
       )}
       </div>
+      )}
+      {activeSubview === "advanced" && (
       <Section {...section("config", "JSON CONFIG", `the page's exact state as editable JSON${configDraft === null ? " · live" : configValid ? " · editing (applies live)" : " · INVALID JSON — keep typing"}`,
         <>
           <button disabled={busy || configDraft === null} title="Force-apply now and resume tracking the live config" onClick={applyConfigDraft}>⏎ Apply</button>
@@ -5798,6 +5845,7 @@ export function VideoImportPage({
           />
         </div>
       </Section>
+      )}
       {visibleAltImageZoom && (
         <div
           className={`video-import-alt-image-zoom${pinnedAltImageZoom ? " is-pinned" : ""}`}

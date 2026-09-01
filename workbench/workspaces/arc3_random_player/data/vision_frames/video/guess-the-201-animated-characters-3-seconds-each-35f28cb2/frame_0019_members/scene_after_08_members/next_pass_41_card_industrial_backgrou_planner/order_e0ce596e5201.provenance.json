@@ -1,0 +1,457 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019_members/scene_after_08_members/next_pass_41_card_industrial_backgrou_planner/order_e0ce596e5201.png",
+  "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019_members/scene_after_08_members/next_pass_41_card_industrial_backgrou_planner/order_e0ce596e5201.provenance.json",
+  "createdAt": "2026-09-01T22:49:26.023664Z",
+  "operation": "visualize_planner_order",
+  "dimensions": {
+    "width": 970,
+    "height": 712
+  },
+  "originalDimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "root": {
+    "firstSeenImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019.png",
+    "dimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "sourceVideo": "data/video_import/guess-the-201-animated-characters-3-seconds-each/video.mp4",
+    "atSeconds": 149.9,
+    "sceneIndex": 59,
+    "videoFrameIndex": 4497
+  },
+  "parent": {
+    "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019_members/scene_after_08_members/next_pass_41_card_industrial_backgrou.png",
+    "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019_members/scene_after_08_members/next_pass_41_card_industrial_backgrou.provenance.json"
+  },
+  "source": {},
+  "transform": {
+    "labels": [
+      {
+        "object": "small_brown_island_patch",
+        "number": 1,
+        "point": [
+          185,
+          220
+        ]
+      },
+      {
+        "object": "central_black_occlusion",
+        "number": 2,
+        "point": [
+          500,
+          350
+        ]
+      },
+      {
+        "object": "left_robot_fragment",
+        "number": 3,
+        "point": [
+          165,
+          315
+        ]
+      },
+      {
+        "object": "lower_right_tread_fragment",
+        "number": 4,
+        "point": [
+          835,
+          575
+        ]
+      },
+      {
+        "object": "industrial_left_background",
+        "number": 5,
+        "point": [
+          120,
+          180
+        ]
+      },
+      {
+        "object": "industrial_right_background",
+        "number": 6,
+        "point": [
+          860,
+          220
+        ]
+      },
+      {
+        "object": "rounded_card_frame",
+        "number": 7,
+        "point": [
+          80,
+          70
+        ]
+      },
+      {
+        "object": "black_outer_background",
+        "number": 8,
+        "point": [
+          20,
+          20
+        ]
+      }
+    ],
+    "plannerHash": "e0ce596e520184668f10b38fd073dd38f9f9f6de5936780c76eeced3c085e4cc"
+  },
+  "lineage": [
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019.png",
+      "operation": "extract_video_frame",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "mode": "scenes"
+      },
+      "createdAt": "2026-09-01T17:19:41.177136Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019_members/scene_after_08.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          262,
+          167,
+          332,
+          235
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Behind the removed cube, continue WALL-E’s raised left gripper/forearm assembly and a sliver of the dark industrial background. Most of the hole should be filled by off-white/gray metal hand surfaces with worn shading and thin dark seam lines; the rear edge blends into warm brown mechanical arm tones and deep navy-brown background.",
+          "colors": [
+            "#E9E5DA",
+            "#D4CEC0",
+            "#B9B19F",
+            "#8A7B66",
+            "#6B4D2E",
+            "#3B2C20",
+            "#1F2233"
+          ],
+          "continueEdges": [
+            "Extend the left gripper’s curved outer contour diagonally up-right through the cube area.",
+            "Continue finger/joint seam lines and small shadow boundaries across the center of the hole.",
+            "Blend forearm warm-brown metal from lower-left toward mid-right where visible around the cube edges.",
+            "Carry the dark industrial background gradient only at uncovered perimeter gaps behind the hand."
+          ],
+          "texture": "Worn metallic robot texture with soft grime, subtle scratches, and smooth cinematic shading; background remains low-detail, dark, and slightly blurred."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:23:01.428635Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019_members/scene_after_08_members/cut_41_card_industrial_backgrou.png",
+      "operation": "extract_object_cutout",
+      "dimensions": {
+        "width": 418,
+        "height": 289
+      },
+      "transform": {
+        "inputDimensions": {
+          "width": 854,
+          "height": 480
+        },
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019_members/scene_after_08.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "cropBox": [
+          224,
+          103,
+          642,
+          392
+        ],
+        "maskScale": 4,
+        "polygons": [
+          [
+            [
+              225,
+              104
+            ],
+            [
+              378,
+              104
+            ],
+            [
+              378,
+              122
+            ],
+            [
+              372,
+              144
+            ],
+            [
+              360,
+              165
+            ],
+            [
+              343,
+              185
+            ],
+            [
+              324,
+              206
+            ],
+            [
+              307,
+              230
+            ],
+            [
+              294,
+              256
+            ],
+            [
+              286,
+              283
+            ],
+            [
+              281,
+              314
+            ],
+            [
+              279,
+              346
+            ],
+            [
+              280,
+              372
+            ],
+            [
+              286,
+              389
+            ],
+            [
+              225,
+              389
+            ]
+          ],
+          [
+            [
+              505,
+              104
+            ],
+            [
+              639,
+              104
+            ],
+            [
+              639,
+              300
+            ],
+            [
+              623,
+              287
+            ],
+            [
+              606,
+              272
+            ],
+            [
+              588,
+              255
+            ],
+            [
+              570,
+              236
+            ],
+            [
+              555,
+              214
+            ],
+            [
+              544,
+              191
+            ],
+            [
+              536,
+              167
+            ],
+            [
+              530,
+              142
+            ],
+            [
+              525,
+              120
+            ],
+            [
+              525,
+              104
+            ]
+          ],
+          [
+            [
+              590,
+              232
+            ],
+            [
+              639,
+              232
+            ],
+            [
+              639,
+              389
+            ],
+            [
+              553,
+              389
+            ],
+            [
+              564,
+              370
+            ],
+            [
+              574,
+              348
+            ],
+            [
+              582,
+              325
+            ],
+            [
+              588,
+              300
+            ],
+            [
+              590,
+              274
+            ]
+          ]
+        ],
+        "holes": []
+      },
+      "createdAt": "2026-09-01T17:29:21.852582Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019_members/scene_after_08_members/next_pass_41_card_industrial_backgrou.png",
+      "operation": "enlarge_object_for_analysis",
+      "dimensions": {
+        "width": 970,
+        "height": 712
+      },
+      "transform": {
+        "sourceDimensions": {
+          "width": 418,
+          "height": 289
+        },
+        "scale": 2,
+        "resizedDimensions": {
+          "width": 836,
+          "height": 578
+        },
+        "padding": {
+          "left": 67,
+          "top": 67,
+          "right": 67,
+          "bottom": 67
+        }
+      },
+      "createdAt": "2026-09-01T17:29:21.939445Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019_members/scene_after_08_members/next_pass_41_card_industrial_backgrou_planner/order_e0ce596e5201.png",
+      "operation": "visualize_planner_order",
+      "dimensions": {
+        "width": 970,
+        "height": 712
+      },
+      "transform": {
+        "labels": [
+          {
+            "object": "small_brown_island_patch",
+            "number": 1,
+            "point": [
+              185,
+              220
+            ]
+          },
+          {
+            "object": "central_black_occlusion",
+            "number": 2,
+            "point": [
+              500,
+              350
+            ]
+          },
+          {
+            "object": "left_robot_fragment",
+            "number": 3,
+            "point": [
+              165,
+              315
+            ]
+          },
+          {
+            "object": "lower_right_tread_fragment",
+            "number": 4,
+            "point": [
+              835,
+              575
+            ]
+          },
+          {
+            "object": "industrial_left_background",
+            "number": 5,
+            "point": [
+              120,
+              180
+            ]
+          },
+          {
+            "object": "industrial_right_background",
+            "number": 6,
+            "point": [
+              860,
+              220
+            ]
+          },
+          {
+            "object": "rounded_card_frame",
+            "number": 7,
+            "point": [
+              80,
+              70
+            ]
+          },
+          {
+            "object": "black_outer_background",
+            "number": 8,
+            "point": [
+              20,
+              20
+            ]
+          }
+        ],
+        "plannerHash": "e0ce596e520184668f10b38fd073dd38f9f9f6de5936780c76eeced3c085e4cc"
+      },
+      "createdAt": "2026-09-01T22:49:26.023664Z"
+    }
+  ]
+}
