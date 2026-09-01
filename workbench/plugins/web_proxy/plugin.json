@@ -119,12 +119,12 @@
   "ui": {
     "pages": [
       {
-        "id": "configure",
-        "label": "Configure Web Proxy",
-        "kind": "configure",
+        "id": "admin",
+        "label": "Web Proxy Admin",
+        "kind": "admin",
         "descriptor": "/web_proxy/admin",
         "glyph": "\u21c4",
-        "group": "CAPABILITIES"
+        "group": "PLUGINS"
       }
     ]
   }

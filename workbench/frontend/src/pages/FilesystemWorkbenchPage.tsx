@@ -19,12 +19,13 @@ import {
   RuntimeHistoryView,
 } from "../components/RuntimeHistoryView";
 import { jsonValueToMetta } from "../lib/mettaResourceCodec";
+import { LIVE_UI_COMMAND_EVENT, LIVE_UI_STYLE_PROPERTIES, type LiveUiCommand } from "../lib/liveUiCommands";
 import { markAllWorkbenchPageSessionsForRestart, readWorkbenchPageSession, writeWorkbenchPageSession } from "../lib/pageSessionState";
 import { rememberWorkspaceLastPage, resolveWorkspaceOpeningPage } from "../lib/workspacePagePreferences";
-import { acknowledgeUiRestartRecovery, failUiRestart, onUIRestart, permitUiReload, registerOnUIRestart, useUiRestartStatus } from "../lib/uiRestartLifecycle";
+import { acknowledgeUiRestartRecovery, failUiRestart, getUiRestartStatus, onUIRestart, permitUiReload, registerOnUIRestart, useUiRestartStatus } from "../lib/uiRestartLifecycle";
 import { updateUserUiPreferences, useUserUiPreferences } from "../lib/uiPreferences";
-import { useGlobalStatus } from "../lib/globalStatus";
-import "../lib/surgicalUiReloaderClient";
+import { PAGE_PROCESS_ACTIVITY_EVENT, RESTART_PENDING_CHANGE_EVENT, RESTART_PENDING_CLEARED_EVENT, RESTART_PENDING_REQUEST_EVENT, WORKBENCH_PRESENCE_EVENT, clearRestartPending, reportRestartPendingChange, requestRestartPending, useWorkbenchPresence, type PageProcessActivity, type RestartPendingRequest, type WorkbenchPresence } from "../lib/pageProcessActivity";
+import { pushGlobalStatus, useGlobalStatus } from "../lib/globalStatus";
 import {
   ResourceEnablementBadge,
   enablementClass,
@@ -704,21 +705,21 @@ export const NAVIGATION_V2: Array<{
   {
     group: "WORKFLOWS",
     items: [
-      { label: "Workflow Canvas", view: "canvas", glyph: "⌘" },
-      { label: "Current Workflow", view: "currentWorkflow", glyph: "⌘" },
+      { label: "Workflow Canvas", view: "canvas", glyph: "⛓" },
+      { label: "Current Workflow", view: "currentWorkflow", glyph: "⇢" },
       { label: "Page Builder", view: "workflowPageBuilder", glyph: "▦" },
     ],
   },
   {
     group: "CAPABILITIES",
     items: [
-      { label: "Operations", view: "operations", glyph: "▦" },
+      { label: "Operations", view: "operations", glyph: "⚒" },
       { label: "Topics", view: "topics", glyph: "☷" },
-      { label: "Source Code", view: "sourceCode", glyph: "</>" },
-      { label: "Systems", view: "systems", glyph: "⚙" },
+      { label: "Source Code", view: "sourceCode", glyph: "{}" },
+      { label: "Systems", view: "systems", glyph: "▰" },
       { label: "Models", view: "llms", glyph: "✦" },
       { label: "Datatypes", view: "data", glyph: "◆" },
-      { label: "Policies", view: "policies", glyph: "P" },
+      { label: "Policies", view: "policies", glyph: "§" },
     ],
   },
   {
@@ -727,7 +728,7 @@ export const NAVIGATION_V2: Array<{
       { label: "Data", view: "knowledgeData", glyph: "◫" },
       { label: "Video Import", view: "videoImport", glyph: "▷" },
       { label: "AtomSpaces", view: "contexts", glyph: "⚛" },
-      { label: "Resource AtomSpace", view: "resourceAtomspace", glyph: "◎" },
+      { label: "Resource AtomSpace", view: "resourceAtomspace", glyph: "⌬" },
       { label: "Artifacts", view: "knowledgeArtifacts", glyph: "▣" },
     ],
   },
@@ -736,8 +737,8 @@ export const NAVIGATION_V2: Array<{
     items: [
       { label: "Goal Runs", view: "goalRuns", glyph: "◉" },
       { label: "Executions", view: "execs", glyph: "▶" },
-      { label: "Events", view: "events", glyph: "△" },
-      { label: "States", view: "states", glyph: "▣" },
+      { label: "Events", view: "events", glyph: "⚡" },
+      { label: "States", view: "states", glyph: "◧" },
       { label: "Logs", view: "logs", glyph: "▤" },
       { label: "Google Meet", view: "googleMeet", glyph: "◈" },
     ],
@@ -746,10 +747,10 @@ export const NAVIGATION_V2: Array<{
     group: "SYSTEM",
     items: [
       { label: "Docs", view: "docs", glyph: "?" },
-      { label: "Model Policy", view: "modelPolicy", glyph: "⚛" },
-      { label: "Benchmarks", view: "benchmarks", glyph: "⌁" },
-      { label: "Processes", view: "processes", glyph: "◌" },
-      { label: "Settings", view: "setup", glyph: "⚒" },
+      { label: "Model Policy", view: "modelPolicy", glyph: "⚖" },
+      { label: "Benchmarks", view: "benchmarks", glyph: "↗" },
+      { label: "Processes", view: "processes", glyph: "⟳" },
+      { label: "Settings", view: "setup", glyph: "⚙" },
     ],
   },
   {
@@ -843,6 +844,172 @@ export function FilesystemWorkbenchPage() {
   useEffect(() => {
     acknowledgeUiRestartRecovery();
   }, []);
+  const [activePageProcesses, setActivePageProcesses] = useState<Record<string, string>>({});
+  const [restartDeferred, setRestartDeferred] = useState(false);
+  const [restartDeferredReason, setRestartDeferredReason] = useState("");
+  const [restartDeferredChanges, setRestartDeferredChanges] = useState<string[]>([]);
+  const [restartNoticePosition, setRestartNoticePosition] = useState<{ x: number; y: number } | null>(null);
+  const restartNoticeDrag = useRef<{ pointerId: number; offsetX: number; offsetY: number } | null>(null);
+  const restartExecutionStarted = useRef(false);
+  const liveUiRollbacks = useRef<Array<() => void>>([]);
+  const [liveUiPatchCount, setLiveUiPatchCount] = useState(0);
+  const [openWorkbenches, setOpenWorkbenches] = useState<Record<string, WorkbenchPresence>>({});
+  const clearLiveUiPatches = () => {
+    for (const rollback of [...liveUiRollbacks.current].reverse()) rollback();
+    liveUiRollbacks.current = [];
+    setLiveUiPatchCount(0);
+    pushGlobalStatus("Live UI patches cleared", "title-frame");
+  };
+  useEffect(() => {
+    const onProcessActivity = (event: Event) => {
+      const detail = (event as CustomEvent<PageProcessActivity>).detail;
+      const id = String(detail?.id || "").trim();
+      if (!id) return;
+      setActivePageProcesses((current) => {
+        if (detail.active) return { ...current, [id]: String(detail.label || id) };
+        if (!(id in current)) return current;
+        const next = { ...current };
+        delete next[id];
+        return next;
+      });
+    };
+    window.addEventListener(PAGE_PROCESS_ACTIVITY_EVENT, onProcessActivity);
+    return () => window.removeEventListener(PAGE_PROCESS_ACTIVITY_EVENT, onProcessActivity);
+  }, []);
+  useEffect(() => {
+    const onPendingCleared = () => {
+      setRestartDeferred(false);
+      setRestartDeferredReason("");
+      setRestartDeferredChanges([]);
+      setRestartNoticePosition(null);
+    };
+    window.addEventListener(RESTART_PENDING_CLEARED_EVENT, onPendingCleared);
+    return () => window.removeEventListener(RESTART_PENDING_CLEARED_EVENT, onPendingCleared);
+  }, []);
+  useEffect(() => {
+    const onPresence = (event: Event) => {
+      const presence = (event as CustomEvent<WorkbenchPresence>).detail;
+      if (!presence?.tabId) return;
+      setOpenWorkbenches((current) => {
+        if (!presence.active) {
+          if (!(presence.tabId in current)) return current;
+          const next = { ...current };
+          delete next[presence.tabId];
+          return next;
+        }
+        return { ...current, [presence.tabId]: presence };
+      });
+    };
+    window.addEventListener(WORKBENCH_PRESENCE_EVENT, onPresence);
+    const refresh = async () => {
+      try {
+        const response = await fetch("/workbench/system/presence", { cache: "no-store" });
+        if (!response.ok) return;
+        const payload = await response.json() as { workbenches?: WorkbenchPresence[]; restartPending?: RestartPendingRequest | null };
+        setOpenWorkbenches(Object.fromEntries((payload.workbenches || []).map((presence) => [presence.tabId, presence])));
+        if (payload.restartPending) {
+          window.dispatchEvent(new CustomEvent(RESTART_PENDING_REQUEST_EVENT, { detail: payload.restartPending }));
+        }
+      } catch {
+        /* Local broadcast presence remains available while the API is restarting. */
+      }
+    };
+    void refresh();
+    const prune = window.setInterval(() => {
+      void refresh();
+      const cutoff = Date.now() - 60000;
+      setOpenWorkbenches((current) => Object.fromEntries(Object.entries(current).filter(([, presence]) => presence.seenAt >= cutoff)));
+    }, 5000);
+    return () => {
+      window.removeEventListener(WORKBENCH_PRESENCE_EVENT, onPresence);
+      window.clearInterval(prune);
+    };
+  }, []);
+  useEffect(() => {
+    if (!restartDeferred) return;
+    const onPendingChange = (event: Event) => {
+      const change = String((event as CustomEvent<string>).detail || "").trim();
+      if (!change) return;
+      setRestartDeferredChanges((current) => [...current.filter((entry) => entry !== change).slice(-11), change]);
+    };
+    window.addEventListener(RESTART_PENDING_CHANGE_EVENT, onPendingChange);
+    return () => window.removeEventListener(RESTART_PENDING_CHANGE_EVENT, onPendingChange);
+  }, [restartDeferred]);
+  useEffect(() => {
+    const onPendingRequest = (event: Event) => {
+      const request = (event as CustomEvent<RestartPendingRequest>).detail;
+      if (!request?.reason) return;
+      setRestartDeferred(true);
+      setRestartDeferredReason(request.reason);
+      setRestartDeferredChanges((current) => [...new Set([
+        ...current,
+        ...(request.changes || []),
+      ])].slice(-12));
+    };
+    window.addEventListener(RESTART_PENDING_REQUEST_EVENT, onPendingRequest);
+    return () => window.removeEventListener(RESTART_PENDING_REQUEST_EVENT, onPendingRequest);
+  }, []);
+  useEffect(() => {
+    if (!restartDeferred || !latestStatus) return;
+    const change = `${latestStatus.at} · ${latestStatus.source} · ${latestStatus.text}`;
+    setRestartDeferredChanges((current) => current.includes(change) ? current : [...current.slice(-11), change]);
+  }, [latestStatus, restartDeferred]);
+  useEffect(() => {
+    if (!getUiRestartStatus().pending || restartDeferred || restartExecutionStarted.current) return;
+    requestRestartPending({
+      reason: `UI restart lifecycle is ${uiRestartStatus.phase}.`,
+      changes: ["Restart lifecycle is already pending; the page remains usable until reload begins."],
+    });
+  }, [restartDeferred, uiRestartStatus.pending, uiRestartStatus.phase]);
+  useEffect(() => {
+    const allowedStyles = new Set<string>(LIVE_UI_STYLE_PROPERTIES);
+    const onLiveUiCommand = (event: Event) => {
+      const command = (event as CustomEvent<LiveUiCommand>).detail;
+      if (!command || typeof command.selector !== "string" || command.selector.length > 256) return;
+      let elements: HTMLElement[];
+      try {
+        elements = [...document.querySelectorAll<HTMLElement>(command.selector)].slice(0, 200);
+      } catch (reason) {
+        pushGlobalStatus(`Live UI command rejected: ${reason instanceof Error ? reason.message : String(reason)}`, "title-frame");
+        return;
+      }
+      if (!elements.length) {
+        pushGlobalStatus(`Live UI command matched nothing: ${command.selector}`, "title-frame");
+        return;
+      }
+      if (command.kind === "scroll") {
+        elements[0].scrollIntoView({ behavior: "smooth", block: "center" });
+      } else if (command.kind === "class") {
+        if (!/^live-ui-[a-z0-9_-]+$/i.test(command.className)) return;
+        for (const element of elements) {
+          const previous = element.classList.contains(command.className);
+          element.classList.toggle(command.className, command.enabled);
+          liveUiRollbacks.current.push(() => element.classList.toggle(command.className, previous));
+        }
+        setLiveUiPatchCount(liveUiRollbacks.current.length);
+      } else {
+        for (const [property, value] of Object.entries(command.styles)) {
+          if (!allowedStyles.has(property) || typeof value !== "string" || /url\s*\(|expression\s*\(|javascript:|[<>]/i.test(value)) continue;
+          const cssProperty = property.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
+          for (const element of elements) {
+            const previous = element.style.getPropertyValue(cssProperty);
+            const priority = element.style.getPropertyPriority(cssProperty);
+            element.style.setProperty(cssProperty, value);
+            liveUiRollbacks.current.push(() => {
+              if (previous) element.style.setProperty(cssProperty, previous, priority);
+              else element.style.removeProperty(cssProperty);
+            });
+          }
+        }
+        setLiveUiPatchCount(liveUiRollbacks.current.length);
+      }
+      const description = String(command.description || `${command.kind} ${command.selector}`);
+      pushGlobalStatus(`Live UI: ${description}`, "title-frame");
+      reportRestartPendingChange(`Live UI patch: ${description}`);
+    };
+    window.addEventListener(LIVE_UI_COMMAND_EVENT, onLiveUiCommand);
+    return () => window.removeEventListener(LIVE_UI_COMMAND_EVENT, onLiveUiCommand);
+  }, []);
   const [llmsTopMenuMode, setLlmsTopMenuMode] = useState<
     "browse" | "discover" | "override"
   >(() => llmsPageFromLocation());
@@ -856,6 +1023,7 @@ export function FilesystemWorkbenchPage() {
       { view: initial, label: viewLabel(initial), url: window.location.href },
     ];
   });
+  useWorkbenchPresence(workspace?.id || "workspace-chooser", view);
   const [viewTrailIndex, setViewTrailIndex] = useState(0);
   const breadcrumbNavigation = useRef(false);
   const loadingWorkspaceId = useRef<string | null>(null);
@@ -1082,14 +1250,15 @@ export function FilesystemWorkbenchPage() {
       ),
     ),
   );
-  const [navigationWidth, setNavigationWidth] = useState(() =>
-    Math.max(
-      150,
-      Math.min(
-        420,
-        Number(localStorage.getItem("workbench.navigationWidth")) || 220,
-      ),
-    ),
+  const [navigationWidth, setNavigationWidth] = useState(() => {
+    const saved = Number(localStorage.getItem("workbench.navigationWidth")) || 220;
+    return saved <= 36 ? 36 : Math.max(150, Math.min(420, saved));
+  });
+  const expandedNavigationWidthRef = useRef(
+    Number(localStorage.getItem("workbench.navigationExpandedWidth")) || (navigationWidth > 36 ? navigationWidth : 220),
+  );
+  const [navigationTight, setNavigationTight] = useState(
+    () => localStorage.getItem("workbench.navigationTight") === "true",
   );
   const [inspectorWidth, setInspectorWidth] = useState(() =>
     Math.max(
@@ -1097,6 +1266,12 @@ export function FilesystemWorkbenchPage() {
       Number(localStorage.getItem("workbench.inspectorWidth")) || 310,
     ),
   );
+  const videoImportShellWidthsRef = useRef<{
+    navigation: number;
+    resourceBrowser: number;
+    inspector: number;
+  } | null>(null);
+  const previousShellViewRef = useRef<View | null>(null);
   const [docsFilter, setDocsFilter] = useState("");
   const workflow = useMemo<Workflow | null>(() => {
     try {
@@ -1121,6 +1296,13 @@ export function FilesystemWorkbenchPage() {
   // we've built so far" panel above Documentation while on that view.
   const [videoImportChainSummary, setVideoImportChainSummary] = useState<VideoImportChainSummaryStep[]>([]);
   const [expandedPluginGroups, setExpandedPluginGroups] = useState<Record<string, boolean>>({});
+  const [collapsedNavigationGroups, setCollapsedNavigationGroups] = useState<Record<string, boolean>>(() => {
+    try {
+      return JSON.parse(localStorage.getItem("workbench.collapsedNavigationGroups") || "{}") as Record<string, boolean>;
+    } catch {
+      return {};
+    }
+  });
   useEffect(() => {
     if (view !== "pluginPage" || pluginPage || pluginMenu.length === 0) return;
     const params = new URL(window.location.href).searchParams;
@@ -1935,13 +2117,48 @@ export function FilesystemWorkbenchPage() {
     }
     button.click();
   };
+  const activeProcessLabels = [
+    ...(busy ? ["Workspace operation"] : []),
+    ...(run?.status === "running" ? [`Workflow run ${run.id}`] : []),
+    ...Object.values(activePageProcesses),
+  ].filter((label, index, labels) => labels.indexOf(label) === index);
+  const activeProcessSummary = activeProcessLabels.join(" · ");
+  const openWorkbenchList = Object.values(openWorkbenches).sort((left, right) => left.workspaceId.localeCompare(right.workspaceId) || left.pageId.localeCompare(right.pageId));
+  useEffect(() => {
+    const frameWindow = window as Window & {
+      __workbenchGlobalFrameStatus?: {
+        openWorkbenches: WorkbenchPresence[];
+        activeProcesses: Record<string, string>;
+        restartPending: boolean;
+      };
+    };
+    frameWindow.__workbenchGlobalFrameStatus = {
+      openWorkbenches: openWorkbenchList,
+      activeProcesses: activePageProcesses,
+      restartPending: restartDeferred || uiRestartStatus.pending,
+    };
+  }, [activePageProcesses, openWorkbenchList, restartDeferred, uiRestartStatus.pending]);
+  useEffect(() => {
+    if (!restartDeferred) return;
+    const change = `${new Date().toLocaleTimeString([], { hour12: false })} · ${activeProcessSummary ? `Active processes: ${activeProcessSummary}` : "All reported processes finished; restart still awaits confirmation."}`;
+    setRestartDeferredChanges((current) => current[current.length - 1] === change ? current : [...current.slice(-11), change]);
+  }, [activeProcessSummary, restartDeferred]);
   const restartServers = async () => {
+    if (activeProcessLabels.length && !restartDeferred) {
+      requestRestartPending({
+        reason: `Restart was requested while active work was running: ${activeProcessLabels.join(" · ")}`,
+        changes: [`${new Date().toLocaleTimeString([], { hour12: false })} · Restart deferred; page left usable.`],
+      });
+      return;
+    }
     if (
       !window.confirm(
-        `Restart the UI and API servers${run?.status === "running" ? "? The active workflow run may be interrupted." : "?"}`,
+        `Restart the UI and API servers${activeProcessLabels.length ? `? Active work may be interrupted: ${activeProcessLabels.join(", ")}.` : "?"}`,
       )
     )
       return;
+    restartExecutionStarted.current = true;
+    clearRestartPending("restart-started");
     setRestarting(true);
     setError(null);
     let restartToken = "";
@@ -1959,6 +2176,11 @@ export function FilesystemWorkbenchPage() {
         method: "POST",
         body: "{}",
       });
+      if (accepted.status === "already-restarting") {
+        if (!permitUiReload(restart.token)) throw new Error("The UI reload guard rejected a duplicate or stale reload request.");
+        window.location.reload();
+        return;
+      }
       const previous = String(accepted.instanceId || "");
       for (let attempt = 0; attempt < 80; attempt += 1) {
         await new Promise((resolve) => window.setTimeout(resolve, 250));
@@ -1980,6 +2202,7 @@ export function FilesystemWorkbenchPage() {
         "The servers did not return within 20 seconds. Check their command windows.",
       );
     } catch (reason) {
+      restartExecutionStarted.current = false;
       if (restartToken) failUiRestart(restartToken, reason);
       setError(reason instanceof Error ? reason.message : String(reason));
       setRestarting(false);
@@ -2087,7 +2310,17 @@ export function FilesystemWorkbenchPage() {
       "workbench.navigationWidth",
       String(Math.round(navigationWidth)),
     );
+    if (navigationWidth > 36) {
+      expandedNavigationWidthRef.current = navigationWidth;
+      localStorage.setItem("workbench.navigationExpandedWidth", String(Math.round(navigationWidth)));
+    }
   }, [navigationWidth]);
+  useEffect(() => {
+    localStorage.setItem("workbench.collapsedNavigationGroups", JSON.stringify(collapsedNavigationGroups));
+  }, [collapsedNavigationGroups]);
+  useEffect(() => {
+    localStorage.setItem("workbench.navigationTight", navigationTight ? "true" : "false");
+  }, [navigationTight]);
   useEffect(() => {
     localStorage.setItem(
       "workbench.resourceBrowserWidth",
@@ -2104,6 +2337,41 @@ export function FilesystemWorkbenchPage() {
       String(Math.round(inspectorWidth)),
     );
   }, [inspectorWidth]);
+  useEffect(() => {
+    const previousView = previousShellViewRef.current;
+    if (view === "videoImport") {
+      if (!workspace) return;
+      if (previousView !== "videoImport") {
+        videoImportShellWidthsRef.current = {
+          navigation: navigationWidth,
+          resourceBrowser: resourceBrowserWidth,
+          inspector: inspectorWidth,
+        };
+        setTakeoverShellPanel(null);
+        setNavigationWidth(36);
+        setResourceBrowserWidth(36);
+        setInspectorWidth(36);
+        setDebugUiEnabled(false);
+        updateUserUiPreferences({
+          pageUiToolsVisible: false,
+          generationsVisible: false,
+        });
+      }
+      previousShellViewRef.current = view;
+      return;
+    }
+    if (previousView === "videoImport") {
+      const previous = videoImportShellWidthsRef.current;
+      videoImportShellWidthsRef.current = null;
+      if (previous) {
+        setNavigationWidth(previous.navigation);
+        setResourceBrowserWidth(previous.resourceBrowser);
+        setInspectorWidth(previous.inspector);
+      }
+    }
+    previousShellViewRef.current = view;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view, workspace?.id]);
   useEffect(() => {
     if (view !== "canvas" && view !== "states") return;
     const bindings: Array<[HTMLElement | null, () => void, string]> = [
@@ -2977,8 +3245,10 @@ export function FilesystemWorkbenchPage() {
       : browserKind === "runtime"
         ? "Runtime records"
         : `${NAVIGATION_V2.flatMap((section) => section.items).find((item) => item.view === view)?.label || "Workspace"} resources`;
-  const restartPending = restarting || uiRestartStatus.pending;
-  const restartButtonLabel = uiRestartStatus.phase === "preparing"
+  const restartInProgress = restarting || uiRestartStatus.pending;
+  const restartButtonLabel = restartDeferred
+    ? "Restart pending — click to restart"
+    : uiRestartStatus.phase === "preparing"
     ? "Saving UI state…"
     : uiRestartStatus.phase === "prepared"
       ? "Restart pending…"
@@ -3008,6 +3278,54 @@ export function FilesystemWorkbenchPage() {
   return (
     <main className={`workbench ${debugUiEnabled ? "tsx-debug-enabled" : ""}`} data-view={view}>
       {debugUiEnabled && <TsxSourceLocationPopup />}
+      {restartDeferred && (
+        <section
+          className={`restart-pending-float${restartNoticePosition ? "" : " is-centered"}`}
+          style={restartNoticePosition ? { left: restartNoticePosition.x, top: restartNoticePosition.y } : undefined}
+          role="dialog"
+          aria-modal="false"
+          aria-label="Restart pending"
+        >
+          <header
+            onPointerDown={(event) => {
+              const panel = event.currentTarget.parentElement;
+              if (!panel) return;
+              const bounds = panel.getBoundingClientRect();
+              restartNoticeDrag.current = { pointerId: event.pointerId, offsetX: event.clientX - bounds.left, offsetY: event.clientY - bounds.top };
+              event.currentTarget.setPointerCapture(event.pointerId);
+              setRestartNoticePosition({ x: bounds.left, y: bounds.top });
+            }}
+            onPointerMove={(event) => {
+              const drag = restartNoticeDrag.current;
+              if (!drag || drag.pointerId !== event.pointerId) return;
+              setRestartNoticePosition({
+                x: Math.max(8, Math.min(window.innerWidth - 380, event.clientX - drag.offsetX)),
+                y: Math.max(8, Math.min(window.innerHeight - 190, event.clientY - drag.offsetY)),
+              });
+            }}
+            onPointerUp={(event) => {
+              if (restartNoticeDrag.current?.pointerId === event.pointerId) restartNoticeDrag.current = null;
+              event.currentTarget.releasePointerCapture(event.pointerId);
+            }}
+          >
+            <b>RESTART PENDING</b>
+            <span>drag to move</span>
+          </header>
+          <p><b>Why:</b> {restartDeferredReason || "A restart was requested."}</p>
+          <p>{activeProcessLabels.length ? `Active now: ${activeProcessLabels.join(" · ")}` : "The active process has finished."}</p>
+          <small>The page remains fully usable. Restart happens only when you choose it.</small>
+          <section>
+            <b>CHANGES SINCE RESTART BECAME PENDING</b>
+            {restartDeferredChanges.length
+              ? <ol>{restartDeferredChanges.map((change, index) => <li key={`${change}:${index}`}>{change}</li>)}</ol>
+              : <span>No additional page activity yet.</span>}
+          </section>
+          <footer>
+            <button type="button" className="restart-pending-cancel" onClick={() => clearRestartPending("cancelled")}>Cancel restart</button>
+            <button type="button" className="primary restart-pending-confirm" onClick={() => void restartServers()}>Restart now</button>
+          </footer>
+        </section>
+      )}
       <header className="topbar">
         <div className="brand">
           <span className="brand-mark">M</span>
@@ -3098,10 +3416,10 @@ export function FilesystemWorkbenchPage() {
           <button
             className="server-restart-button"
             title="Restart UI and API servers"
-            disabled={restartPending}
+            disabled={restartInProgress}
             onClick={restartServers}
           >
-            {restartPending ? restartButtonLabel : "↻ Restart"}
+            {restartDeferred || restartInProgress ? restartButtonLabel : "↻ Restart"}
           </button>
           <button
             className="icon-button"
@@ -3177,10 +3495,58 @@ export function FilesystemWorkbenchPage() {
         className={`workspace ${relationshipView ? "artifact-focused" : ""} ${view === "modelPolicy" ? "policy-focused" : ""}`}
         style={{ "--inspector-width": `${inspectorWidth}px`, "--nav-rail-width": `${navigationWidth}px` } as CSSProperties}
       >
-        <aside className="rail navigation-v2">
+        <aside className={`rail navigation-v2${navigationWidth <= 36 ? " is-minimized" : ""}${navigationTight ? " is-tight" : ""}`}>
+          <div className="navigation-menu-controls">
+            <button
+              type="button"
+              className="navigation-menu-toggle"
+              title={navigationWidth <= 36 ? "Restore App Menu" : "Minimize App Menu"}
+              aria-label={navigationWidth <= 36 ? "Restore App Menu" : "Minimize App Menu"}
+              onClick={() => setNavigationWidth((width) => width <= 36 ? expandedNavigationWidthRef.current : 36)}
+            >
+              <span>{navigationWidth <= 36 ? "»" : "«"}</span>
+              <small>{navigationWidth <= 36 ? "Show menu" : "Hide menu"}</small>
+            </button>
+            <div className="navigation-density-controls" role="group" aria-label="App Menu spacing">
+              <span aria-hidden="true">[</span>
+              <button type="button" title="Tight App Menu spacing" aria-label="Tight App Menu spacing" aria-pressed={navigationTight} onClick={() => setNavigationTight(true)}>−</button>
+              <i aria-hidden="true">/</i>
+              <button type="button" title="Comfortable App Menu spacing" aria-label="Comfortable App Menu spacing" aria-pressed={!navigationTight} onClick={() => setNavigationTight(false)}>+</button>
+              <span aria-hidden="true">]</span>
+            </div>
+            <div className="navigation-group-controls" role="group" aria-label="App Menu groups">
+              <button
+                type="button"
+                title="Collapse all App Menu groups"
+                aria-label="Collapse all App Menu groups"
+                onClick={() => setCollapsedNavigationGroups(Object.fromEntries(NAVIGATION_V2.map((section) => [section.group, true])))}
+              >
+                <span>−</span><small>Collapse all</small>
+              </button>
+              <button
+                type="button"
+                title="Expand all App Menu groups"
+                aria-label="Expand all App Menu groups"
+                onClick={() => setCollapsedNavigationGroups({})}
+              >
+                <span>+</span><small>Expand all</small>
+              </button>
+            </div>
+          </div>
           {NAVIGATION_V2.map((section) => (
-            <div className="rail-section" key={section.group}>
-              <span>{section.group}</span>
+            <div className={`rail-section${collapsedNavigationGroups[section.group] ? " is-collapsed" : ""}`} key={section.group}>
+              <button
+                type="button"
+                className="rail-section-toggle"
+                title={section.group}
+                aria-expanded={!collapsedNavigationGroups[section.group]}
+                onClick={() => setCollapsedNavigationGroups((current) => ({ ...current, [section.group]: !current[section.group] }))}
+              >
+                <span>{collapsedNavigationGroups[section.group] ? "▸" : "▾"}</span>
+                <b>{section.group}</b>
+              </button>
+              {!collapsedNavigationGroups[section.group] && (
+                <>
               {section.group === "WORKFLOWS" &&
                 workflowNavigationEntries.map((entry) => {
                   const target = WORKBENCH_VIEWS.has(
@@ -3191,6 +3557,7 @@ export function FilesystemWorkbenchPage() {
                   return (
                     <button
                       key={`workflow-page:${entry.id}`}
+                      title={entry.label}
                       data-workflow-page-resource={entry.id}
                       data-workflow-page-placement={entry.menuPlacement}
                       className={`rail-icon ${target === view ? "selected" : ""}`}
@@ -3205,6 +3572,7 @@ export function FilesystemWorkbenchPage() {
               {section.items.map((item) => (
                 <button
                   key={item.label}
+                  title={item.label}
                   data-navigation-label={item.label}
                   className={`rail-icon ${navSelected(item.view) ? "selected" : ""}`}
                   onClick={() => setView(item.view)}
@@ -3224,6 +3592,7 @@ export function FilesystemWorkbenchPage() {
                     pluginPage?.id === entry.id,
                 );
                 const overThreshold =
+                  section.group !== "PLUGINS" &&
                   sectionPluginEntries.length > PLUGIN_MENU_COLLAPSE_THRESHOLD;
                 const explicitToggle = expandedPluginGroups[section.group];
                 const expanded =
@@ -3237,7 +3606,7 @@ export function FilesystemWorkbenchPage() {
                         <button
                           key={`plugin-page:${entry.pluginId}:${entry.id}`}
                           data-plugin-page={`${entry.pluginId}:${entry.id}`}
-                          title={entry.address}
+                          title={`${entry.label} · ${entry.address}`}
                           disabled={!entry.available}
                           className={`rail-icon ${
                             view === "pluginPage" && pluginPage?.pluginId === entry.pluginId && pluginPage?.id === entry.id
@@ -3273,6 +3642,8 @@ export function FilesystemWorkbenchPage() {
                   </>
                 );
               })()}
+              </>
+              )}
             </div>
           ))}
           <div className="rail-bottom">
@@ -3291,7 +3662,7 @@ export function FilesystemWorkbenchPage() {
           role="separator"
           aria-label="Resize App Menu"
           aria-orientation="vertical"
-          aria-valuemin={150}
+          aria-valuemin={36}
           aria-valuemax={420}
           aria-valuenow={Math.round(navigationWidth)}
           tabIndex={0}
@@ -3301,7 +3672,7 @@ export function FilesystemWorkbenchPage() {
             const step = event.shiftKey ? 25 : 10;
             if (event.key === "ArrowLeft") {
               event.preventDefault();
-              setNavigationWidth(width => Math.max(150, width - step));
+              setNavigationWidth(width => Math.max(36, width - step));
             } else if (event.key === "ArrowRight") {
               event.preventDefault();
               setNavigationWidth(width => Math.min(420, width + step));
@@ -4437,8 +4808,26 @@ export function FilesystemWorkbenchPage() {
           <div className="topbar-global-actions" data-stack-scope="global">
             <button
               type="button"
+              className="topbar-panel-restore server-restart-button"
+              title={openWorkbenchList.length
+                ? openWorkbenchList.map((presence) => `${presence.workspaceId} · ${presence.pageId}`).join("\n")
+                : "No workbench heartbeat received yet"}
+            >
+              Open workbenches {openWorkbenchList.length} · Active {Object.keys(activePageProcesses).length}
+            </button>
+            <button
+              type="button"
               className="topbar-panel-restore"
-              disabled={restartPending}
+              disabled={!liveUiPatchCount}
+              title="Clear all ephemeral live UI patches sent through the global title-frame channel"
+              onClick={clearLiveUiPatches}
+            >
+              Live patches {liveUiPatchCount}
+            </button>
+            <button
+              type="button"
+              className="topbar-panel-restore"
+              disabled={restartInProgress}
               onClick={restartServers}
             >
               {restartButtonLabel}

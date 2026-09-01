@@ -60,33 +60,79 @@ def test_chat_file_tab_embeds_super_control_and_selection_controls_source():
 def test_chat_from_and_to_allow_explicit_null_endpoints():
     page = (FRONTEND / "components" / "ChatPage.tsx").read_text(encoding="utf-8")
     conversation = (FRONTEND / "components" / "ChatConversation.tsx").read_text(encoding="utf-8")
+    colored_combobox = (FRONTEND / "components" / "ColoredTagCombobox.tsx").read_text(encoding="utf-8")
 
     assert 'inspectId("FROM", you)' in conversation
     assert ">From</button>" in conversation
     assert 'aria-label="From agent identity"' in conversation
     assert 'aria-label="To agent identity"' in conversation
     assert conversation.count('<option value="">(none/null)</option>') == 2
-    assert '"(none/null)"' in conversation
+    assert '"(none/null)"' in colored_combobox
     assert "!you || !target" in conversation
     assert "Select FROM and TO to send" in conversation
     assert "messages come FROM" in page
 
 
-def test_surgical_ui_reloader_enters_restart_lifecycle():
+def test_ui_reload_is_explicit_not_file_watched():
     vite = (ROOT / "workbench" / "frontend" / "vite.config.ts").read_text(encoding="utf-8")
-    client = (FRONTEND / "lib" / "surgicalUiReloaderClient.ts").read_text(encoding="utf-8")
-    assert 'event: "workbench:surgical-ui-change"' in vite
-    assert 'type: "full-reload"' not in vite
-    assert 'reason: "development-reload"' in client
-    assert "await onUIRestart" in client
-    assert "permitUiReload" in client
+    page = (FRONTEND / "pages" / "FilesystemWorkbenchPage.tsx").read_text(encoding="utf-8")
+    assert "hmr: false" in vite
+    assert "workbench:surgical-ui-change" not in vite
+    assert "surgicalUiReloaderClient" not in page
 
 
 def test_restart_button_reports_pending_lifecycle_phase():
     shell = (FRONTEND / "pages" / "FilesystemWorkbenchPage.tsx").read_text(encoding="utf-8")
     lifecycle = (FRONTEND / "lib" / "uiRestartLifecycle.ts").read_text(encoding="utf-8")
+    activity = (FRONTEND / "lib" / "pageProcessActivity.ts").read_text(encoding="utf-8")
+    styles = (ROOT / "workbench" / "frontend" / "src" / "styles" / "workbench.css").read_text(encoding="utf-8")
     assert "useUiRestartStatus" in shell
+    assert "getUiRestartStatus().pending" in shell
     assert "Saving UI state…" in shell
     assert "Restart pending…" in shell
     assert "Reloading UI…" in shell
+    assert 'accepted.status === "already-restarting"' in shell
     assert "UI_RESTART_STATUS_EVENT" in lifecycle
+    assert 'guard.phase !== "prepared" && guard.phase !== "reloading"' in lifecycle
+    assert "PAGE_PROCESS_ACTIVITY_EVENT" in activity
+    assert "reportPageProcessActivity" in activity
+    assert "reportRestartPendingChange" in activity
+    assert "requestRestartPending" in activity
+    assert 'fetch("/workbench/system/restart-pending"' in activity
+    assert "BroadcastChannel" in activity
+    assert "WORKBENCH_PRESENCE_EVENT" in activity
+    assert "useWorkbenchPresence" in activity
+    assert "payload.restartPending" in shell
+    assert 'fetch("/workbench/system/presence"' in activity
+    assert 'fetch("/workbench/system/presence"' in shell
+    assert "__workbenchGlobalFrameStatus" in shell
+    assert "Open workbenches {openWorkbenchList.length}" in shell
+    assert "Date.now() - 60000" in shell
+    assert "restart-pending-float" in shell
+    assert "CHANGES SINCE RESTART BECAME PENDING" in shell
+    assert "The page remains fully usable." in shell
+    assert "Restart pending — click to restart" in shell
+    assert "Cancel restart" in shell
+    assert "restart-pending-confirm" in shell
+    assert ".server-restart-button:disabled" in styles
+    assert "opacity: 1 !important" in styles
+    assert "#ffad33" in styles
+    assert "#42ffd2" in styles
+    assert "#46d9ff" in styles
+    assert "cursor: move" in styles
+    assert 'aria-modal="false"' in shell
+
+
+def test_global_title_frame_accepts_safe_realtime_ui_commands():
+    shell = (FRONTEND / "pages" / "FilesystemWorkbenchPage.tsx").read_text(encoding="utf-8")
+    channel = (FRONTEND / "lib" / "liveUiCommands.ts").read_text(encoding="utf-8")
+    assert 'LIVE_UI_COMMAND_EVENT = "workbench:live-ui-command"' in channel
+    assert "sendLiveUiCommand" in channel
+    assert "LIVE_UI_STYLE_PROPERTIES" in channel
+    assert "document.querySelectorAll<HTMLElement>" in shell
+    assert "slice(0, 200)" in shell
+    assert "javascript:|[<>]" in shell
+    assert "live-ui-" in shell
+    assert "Live patches {liveUiPatchCount}" in shell
+    assert "clearLiveUiPatches" in shell
+    assert "reportRestartPendingChange" in shell

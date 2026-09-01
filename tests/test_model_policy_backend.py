@@ -10,6 +10,7 @@ sys.path.insert(0, str(SERVER))
 
 import policy_api  # noqa: E402
 import model_benchmark  # noqa: E402
+from backend_library import load_workspace_backend_records  # noqa: E402
 from model_discovery import discover_backend_models, import_discovered_models, reconcile_discovered_models, remove_missing_models  # noqa: E402
 from model_policy_ping import run_ping_job  # noqa: E402
 from model_benchmark import run_benchmark  # noqa: E402
@@ -25,6 +26,17 @@ from resource_relationships import (  # noqa: E402
     inherits_from_resource,
     relationship_ids,
 )
+
+
+def test_emullm_backend_is_explicitly_enabled_in_every_active_layer() -> None:
+    workspaces = ROOT / "workbench" / "workspaces"
+    for workspace_id in ("shared_library_system", "arc3_random_player"):
+        record = next(
+            row
+            for row in load_workspace_backend_records(workspaces / workspace_id)
+            if (row.get("document") or {}).get("id") == "enullm-8801"
+        )
+        assert (record.get("document") or {}).get("enabled") is True
 
 
 def _records(*documents: dict) -> list[dict]:
@@ -231,6 +243,62 @@ def test_backend_model_discovery_supports_openai_and_ollama_shapes(tmp_path: Pat
     assert imported[0]["providerMetadata"]["name"] == "local/a"
     assert imported[0]["properties"]["name"] == "local/a"
     assert (tmp_path / "design" / "models" / "local-local_a.model.metta").is_file()
+
+
+def test_emullm_discovery_enriches_workers_with_backing_model_properties() -> None:
+    payloads = {
+        "http://localhost:8801/v1/models": {
+            "data": [{
+                "id": "worker/same",
+                "display_name": "Worker",
+                "backing_model": "gpt-vision",
+                "context_length": 200_000,
+                "supported_parameters": ["messages", "tools"],
+                "input_modalities": {"image": {"enabled": True}, "audio": {"enabled": False}},
+                "output_modalities": {"image": {"enabled": True}},
+            }],
+        },
+        "http://localhost:8801/emullm/admin/copilots/models": {
+            "models": [{
+                "id": "gpt-vision",
+                "name": "GPT Vision",
+                "task_capabilities": {"image_output": {"enabled": True, "status": "tool_generated"}},
+                "output_modalities": {"image": {"enabled": True, "media_types": ["image/png"]}},
+                "capabilities": {
+                    "limits": {
+                        "max_context_window_tokens": 400_000,
+                        "max_output_tokens": 32_000,
+                        "vision": {"max_prompt_images": 1},
+                    },
+                    "supports": {"vision": True, "structured_outputs": True, "tool_calls": True},
+                },
+            }],
+        },
+    }
+
+    class Response:
+        def __init__(self, payload): self.payload = payload
+        def __enter__(self): return self
+        def __exit__(self, *_args): return None
+        def read(self): return json.dumps(self.payload).encode()
+
+    def opener(request, **_kwargs):
+        return Response(payloads[request.full_url])
+
+    discovered = discover_backend_models(
+        {"id": "emullm", "configuration": {"baseUrl": "http://localhost:8801/v1"}},
+        opener=opener,
+    )
+
+    assert discovered[0]["capabilities"]["vision"] is True
+    assert discovered[0]["capabilities"]["json"] is True
+    assert discovered[0]["capabilities"]["tools"] is True
+    assert discovered[0]["capabilities"]["imageOutput"] is True
+    assert discovered[0]["capabilities"]["imageGeneration"] is True
+    assert discovered[0]["capabilities"]["audio"] is False
+    assert discovered[0]["capabilities"]["text"] is True
+    assert discovered[0]["limits"] == {"contextWindow": 200_000, "maxOutputTokens": 32_000}
+    assert discovered[0]["providerMetadata"]["backingModelMetadata"]["id"] == "gpt-vision"
 
 
 def test_model_import_and_removal_maintain_parent_backlinks(tmp_path: Path) -> None:

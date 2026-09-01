@@ -1,9 +1,20 @@
 (
   (kind model)
   (id enullm-8801-yourself_same)
-  (label "yourself (unmodified)")
+  (label "yourself · (unmodified)")
   (description "Discovered from EMULLM API at http://127.0.0.1:8801/v1.")
   (implements (
+    (enullm-8801 ())
+  ))
+  (inheritsFrom (
+    (enullm-8801 (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
+  ))
+  (dependsOn (
     (enullm-8801 ())
   ))
   (model yourself/same)
@@ -14,6 +25,8 @@
     (functionCalling false)
     (json false)
     (jsonMode false)
+    (imageGeneration false)
+    (imageOutput false)
     (local true)
     (multimodal false)
     (reasoning false)
@@ -29,36 +42,35 @@
   (properties (
     (id yourself/same)
     (object model)
-    (display_name "yourself (unmodified)")
+    (display_name "yourself · (unmodified)")
+    (description "Stable worker ID: yourself. Answer normally, at your full/actual capability.")
     (context_length 200000)
     (supported_parameters ([]))
     (owned_by yourself)
     (connected false)
+    (worker_id yourself)
+    (worker_kind null)
+    (backing_model null)
+    (simulated true)
     (ownedBy yourself)
   ))
   (providerMetadata (
     (id yourself/same)
     (object model)
-    (display_name "yourself (unmodified)")
+    (display_name "yourself · (unmodified)")
+    (description "Stable worker ID: yourself. Answer normally, at your full/actual capability.")
     (context_length 200000)
     (supported_parameters ([]))
     (owned_by yourself)
     (connected false)
+    (worker_id yourself)
+    (worker_kind null)
+    (backing_model null)
+    (simulated true)
   ))
   (discovery (
     (managed true)
     (backendId enullm-8801)
     (remoteModelId yourself/same)
-  ))
-  (dependsOn (
-    (enullm-8801 ())
-  ))
-  (inheritsFrom (
-    (enullm-8801 (
-      (borrow ([]
-        *
-      ))
-      (exclude ([]))
-    ))
   ))
 )

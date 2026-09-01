@@ -136,7 +136,7 @@ export function failUiRestart(token: string, reason: unknown): void {
 
 export function acknowledgeUiRestartRecovery(): UiRestartGuard | null {
   const guard = readGuard();
-  if (!guard || guard.phase !== "reloading") return guard;
+  if (!guard || (guard.phase !== "prepared" && guard.phase !== "reloading")) return guard;
   const recovered = { ...guard, phase: "recovered" as const, recoveredAt: new Date().toISOString() };
   writeGuard(recovered);
   return recovered;

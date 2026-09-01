@@ -1,9 +1,20 @@
 (
   (kind model)
   (id enullm-8801-yourself_percent75)
-  (label "yourself (~75% capable)")
+  (label "yourself · (~75% capable)")
   (description "Discovered from EMULLM API at http://127.0.0.1:8801/v1.")
   (implements (
+    (enullm-8801 ())
+  ))
+  (inheritsFrom (
+    (enullm-8801 (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
+  ))
+  (dependsOn (
     (enullm-8801 ())
   ))
   (model yourself/percent75)
@@ -14,6 +25,8 @@
     (functionCalling false)
     (json false)
     (jsonMode false)
+    (imageGeneration false)
+    (imageOutput false)
     (local true)
     (multimodal false)
     (reasoning false)
@@ -29,36 +42,35 @@
   (properties (
     (id yourself/percent75)
     (object model)
-    (display_name "yourself (~75% capable)")
+    (display_name "yourself · (~75% capable)")
+    (description "Stable worker ID: yourself. Answer as if only about 75% as capable as usual: slightly less careful/thorough, occasional minor omissions.")
     (context_length 200000)
     (supported_parameters ([]))
     (owned_by yourself)
     (connected false)
+    (worker_id yourself)
+    (worker_kind null)
+    (backing_model null)
+    (simulated true)
     (ownedBy yourself)
   ))
   (providerMetadata (
     (id yourself/percent75)
     (object model)
-    (display_name "yourself (~75% capable)")
+    (display_name "yourself · (~75% capable)")
+    (description "Stable worker ID: yourself. Answer as if only about 75% as capable as usual: slightly less careful/thorough, occasional minor omissions.")
     (context_length 200000)
     (supported_parameters ([]))
     (owned_by yourself)
     (connected false)
+    (worker_id yourself)
+    (worker_kind null)
+    (backing_model null)
+    (simulated true)
   ))
   (discovery (
     (managed true)
     (backendId enullm-8801)
     (remoteModelId yourself/percent75)
-  ))
-  (dependsOn (
-    (enullm-8801 ())
-  ))
-  (inheritsFrom (
-    (enullm-8801 (
-      (borrow ([]
-        *
-      ))
-      (exclude ([]))
-    ))
   ))
 )

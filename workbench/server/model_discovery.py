@@ -17,6 +17,19 @@ from resource_relationships import (
 from workspace_credentials import resolve_workspace_credential
 
 
+def _enabled_modalities(value: Any) -> set[str]:
+    if isinstance(value, dict):
+        return {
+            str(name).lower()
+            for name, declaration in value.items()
+            if declaration is True
+            or (isinstance(declaration, dict) and declaration.get("enabled") is True)
+        }
+    if isinstance(value, (list, tuple, set)):
+        return {str(item).lower() for item in value}
+    return set()
+
+
 def _headers(backend: dict[str, Any], workspace_root: Path | None = None) -> dict[str, str]:
     configuration = backend.get("configuration") or {}
     headers = {"Accept": "application/json", "User-Agent": "MeTTaSymbolicLearnerWorkbench/0.6"}
@@ -32,27 +45,72 @@ def _headers(backend: dict[str, Any], workspace_root: Path | None = None) -> dic
 
 def _capabilities(row: dict[str, Any], backend: dict[str, Any], model_id: str) -> dict[str, bool]:
     architecture = row.get("architecture") if isinstance(row.get("architecture"), dict) else {}
-    inputs = {str(value).lower() for value in architecture.get("input_modalities") or row.get("input_modalities") or []}
-    outputs = {str(value).lower() for value in architecture.get("output_modalities") or row.get("output_modalities") or []}
+    inputs = _enabled_modalities(architecture.get("input_modalities") or row.get("input_modalities") or [])
+    outputs = _enabled_modalities(architecture.get("output_modalities") or row.get("output_modalities") or [])
     parameters = {str(value).lower() for value in row.get("supported_parameters") or []}
+    declared = row.get("capabilities") if isinstance(row.get("capabilities"), dict) else {}
+    supports = declared.get("supports") if isinstance(declared.get("supports"), dict) else {}
+    capability_limits = declared.get("limits") if isinstance(declared.get("limits"), dict) else {}
+    task_capabilities = row.get("task_capabilities") if isinstance(row.get("task_capabilities"), dict) else {}
+    output_modalities = row.get("output_modalities") if isinstance(row.get("output_modalities"), dict) else {}
+    image_task = task_capabilities.get("image_output")
+    image_modality = output_modalities.get("image")
     name = model_id.lower()
     base_url = str((backend.get("configuration") or {}).get("baseUrl") or "")
-    vision = "image" in inputs or "vision" in name
+    vision = "image" in inputs or "vision" in name or supports.get("vision") is True or bool(capability_limits.get("vision"))
+    image_output = (
+        "image" in outputs
+        or supports.get("image_output") is True
+        or image_task is True
+        or (isinstance(image_task, dict) and image_task.get("enabled") is True)
+        or image_modality is True
+        or (isinstance(image_modality, dict) and image_modality.get("enabled") is True)
+    )
     audio = "audio" in inputs | outputs or any(token in name for token in ("audio", "realtime", "transcribe", "tts", "whisper"))
-    tools = bool(parameters & {"tools", "tool_choice"})
-    json_mode = bool(parameters & {"response_format", "structured_outputs"})
+    tools = bool(parameters & {"tools", "tool_choice"}) or supports.get("tool_calls") is True
+    json_mode = bool(parameters & {"response_format", "structured_outputs"}) or supports.get("structured_outputs") is True
     return {
         "audio": audio,
         "code": any(token in name for token in ("code", "coder", "codex")),
         "functionCalling": tools,
         "json": json_mode,
         "jsonMode": json_mode,
+        "imageGeneration": image_output,
+        "imageOutput": image_output,
         "local": base_url.startswith(("http://127.0.0.1", "http://localhost")),
         "multimodal": len(inputs | outputs) > 1 or vision or audio,
-        "reasoning": bool(parameters & {"reasoning", "include_reasoning"}) or any(token in name for token in ("reason", "thinking", "deep-research", "o1", "o3", "o4")),
-        "text": not inputs or "text" in inputs,
+        "reasoning": bool(parameters & {"reasoning", "include_reasoning"}) or bool(supports.get("reasoning_effort") or supports.get("reasoningEffort")) or any(token in name for token in ("reason", "thinking", "deep-research", "o1", "o3", "o4")),
+        "text": not inputs or "text" in inputs or "messages" in parameters,
         "tools": tools,
         "vision": vision,
+    }
+
+
+def _backing_model_properties(
+    base_url: str,
+    *,
+    headers: dict[str, str],
+    timeout_seconds: float,
+    opener: Callable[..., Any],
+) -> dict[str, dict[str, Any]]:
+    origin = re.sub(r"/v1/?$", "", base_url.rstrip("/"))
+    request = urllib.request.Request(
+        f"{origin}/emullm/admin/copilots/models",
+        headers=headers,
+        method="GET",
+    )
+    try:
+        with opener(request, timeout=timeout_seconds) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+    except (OSError, ValueError, json.JSONDecodeError):
+        return {}
+    rows = payload.get("models") if isinstance(payload, dict) else None
+    if not isinstance(rows, list):
+        return {}
+    return {
+        str(row.get("id")): row
+        for row in rows
+        if isinstance(row, dict) and str(row.get("id") or "")
     }
 
 
@@ -72,6 +130,14 @@ def discover_backend_models(backend: dict[str, Any], *, timeout_seconds: float =
         rows = payload.get("models")
     if not isinstance(rows, list):
         raise ValueError("backend /models response has no data or models list")
+    backing_properties: dict[str, dict[str, Any]] = {}
+    if any(isinstance(row, dict) and row.get("backing_model") for row in rows):
+        backing_properties = _backing_model_properties(
+            base_url,
+            headers=_headers(backend, workspace_root),
+            timeout_seconds=timeout_seconds,
+            opener=opener,
+        )
     discovered: dict[str, dict[str, Any]] = {}
     for row in rows:
         if isinstance(row, str):
@@ -83,14 +149,26 @@ def discover_backend_models(backend: dict[str, Any], *, timeout_seconds: float =
         else:
             continue
         if model_id:
-            top_provider = metadata.get("top_provider") if isinstance(metadata.get("top_provider"), dict) else {}
+            backing_model = str(metadata.get("backing_model") or "")
+            backing_metadata = backing_properties.get(backing_model, {})
+            enriched_metadata = {
+                **backing_metadata,
+                **metadata,
+                **({"backingModelMetadata": backing_metadata} if backing_metadata else {}),
+            }
+            top_provider = enriched_metadata.get("top_provider") if isinstance(enriched_metadata.get("top_provider"), dict) else {}
+            backing_capabilities = backing_metadata.get("capabilities") if isinstance(backing_metadata.get("capabilities"), dict) else {}
+            backing_limits = backing_capabilities.get("limits") if isinstance(backing_capabilities.get("limits"), dict) else {}
             discovered[model_id] = {
                 "id": model_id, "label": label,
-                "capabilities": _capabilities(metadata, backend, model_id),
-                "limits": {"contextWindow": metadata.get("context_length"), "maxOutputTokens": top_provider.get("max_completion_tokens")},
-                "pricing": metadata.get("pricing") if isinstance(metadata.get("pricing"), dict) else {},
-                "properties": {**metadata, "ownedBy": metadata.get("owned_by") or metadata.get("ownedBy")},
-                "providerMetadata": metadata,
+                "capabilities": _capabilities(enriched_metadata, backend, model_id),
+                "limits": {
+                    "contextWindow": enriched_metadata.get("context_length") or backing_limits.get("max_context_window_tokens"),
+                    "maxOutputTokens": top_provider.get("max_completion_tokens") or backing_limits.get("max_output_tokens"),
+                },
+                "pricing": enriched_metadata.get("pricing") if isinstance(enriched_metadata.get("pricing"), dict) else {},
+                "properties": {**enriched_metadata, "ownedBy": enriched_metadata.get("owned_by") or enriched_metadata.get("ownedBy")},
+                "providerMetadata": enriched_metadata,
             }
     return sorted(discovered.values(), key=lambda row: row["id"].lower())
 

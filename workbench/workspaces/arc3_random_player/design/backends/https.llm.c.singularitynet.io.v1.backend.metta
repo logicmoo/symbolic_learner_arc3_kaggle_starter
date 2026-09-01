@@ -11,7 +11,7 @@
   (provider singularitynet)
   (official true)
   (description "SingularityNET OpenAI-compatible LLM transport. Model resources inherit this backend and provide their provider model identifiers.")
-  (enabled false)
+  (enabled true)
   (capabilities ([]
     llm.complete
     llm.reasoning

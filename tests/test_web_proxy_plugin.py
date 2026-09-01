@@ -195,12 +195,24 @@ def test_every_plugin_publishes_an_admin_link_the_scanner_reads_from_disk() -> N
     assert response.status_code == 200
     payload = response.json()
     assert payload["manifestName"] == "plugin.json"
+    expected_labels = {
+        "coplex": "Coplex Admin",
+        "coplex_stdpy": "CoplexStdPy Admin",
+        "emullm": "EMULLM Admin",
+        "mailbox_chat": "Mailbox Chat Admin",
+        "web_proxy": "Web Proxy Admin",
+        "ws_collab": "WS_COLLAB Admin",
+    }
     for plugin in payload["plugins"]:
         assert plugin["adminPath"].startswith("/")
         assert plugin["adminApiPath"] == f"/workbench{plugin['adminPath']}"
-        configure = [page for page in plugin["uiPages"] if page["kind"] in {"configure", "admin"}]
-        assert configure, f"{plugin['id']} contributes no configure page"
-        assert configure[0]["address"], f"{plugin['id']} configure page has no address"
+        assert len(plugin["uiPages"]) == 1
+        admin = plugin["uiPages"][0]
+        assert admin["id"] == "admin"
+        assert admin["kind"] == "admin"
+        assert admin["group"] == "PLUGINS"
+        assert admin["label"] == expected_labels[plugin["id"]]
+        assert admin["address"], f"{plugin['id']} admin page has no address"
 
 
 def test_plugin_directory_never_overwrites_the_declared_admin_path() -> None:

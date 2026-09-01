@@ -1,9 +1,20 @@
 (
   (kind model)
   (id enullm-8801-yourself_percent25)
-  (label "yourself (~25% capable)")
+  (label "yourself · (~25% capable)")
   (description "Discovered from EMULLM API at http://127.0.0.1:8801/v1.")
   (implements (
+    (enullm-8801 ())
+  ))
+  (inheritsFrom (
+    (enullm-8801 (
+      (borrow ([]
+        *
+      ))
+      (exclude ([]))
+    ))
+  ))
+  (dependsOn (
     (enullm-8801 ())
   ))
   (model yourself/percent25)
@@ -14,6 +25,8 @@
     (functionCalling false)
     (json false)
     (jsonMode false)
+    (imageGeneration false)
+    (imageOutput false)
     (local true)
     (multimodal false)
     (reasoning false)
@@ -29,36 +42,35 @@
   (properties (
     (id yourself/percent25)
     (object model)
-    (display_name "yourself (~25% capable)")
+    (display_name "yourself · (~25% capable)")
+    (description "Stable worker ID: yourself. Answer as if only about 25% as capable as usual: noticeably weaker, terser, more likely to miss nuance -- emulate a much smaller/weaker model's style.")
     (context_length 200000)
     (supported_parameters ([]))
     (owned_by yourself)
     (connected false)
+    (worker_id yourself)
+    (worker_kind null)
+    (backing_model null)
+    (simulated true)
     (ownedBy yourself)
   ))
   (providerMetadata (
     (id yourself/percent25)
     (object model)
-    (display_name "yourself (~25% capable)")
+    (display_name "yourself · (~25% capable)")
+    (description "Stable worker ID: yourself. Answer as if only about 25% as capable as usual: noticeably weaker, terser, more likely to miss nuance -- emulate a much smaller/weaker model's style.")
     (context_length 200000)
     (supported_parameters ([]))
     (owned_by yourself)
     (connected false)
+    (worker_id yourself)
+    (worker_kind null)
+    (backing_model null)
+    (simulated true)
   ))
   (discovery (
     (managed true)
     (backendId enullm-8801)
     (remoteModelId yourself/percent25)
-  ))
-  (dependsOn (
-    (enullm-8801 ())
-  ))
-  (inheritsFrom (
-    (enullm-8801 (
-      (borrow ([]
-        *
-      ))
-      (exclude ([]))
-    ))
   ))
 )

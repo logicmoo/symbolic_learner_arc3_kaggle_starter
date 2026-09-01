@@ -13,12 +13,17 @@ have the rights to import is the caller's responsibility.
 
 from __future__ import annotations
 
+import base64
 import hashlib
+import io
 import json
 import re
 import shutil
 import threading
 import time
+import urllib.error
+import urllib.parse
+import urllib.request
 import uuid
 from pathlib import Path
 from typing import Any, Iterator
@@ -34,6 +39,11 @@ from arc3_play_api import (
     _utc_now,
     _workspace_root,
 )
+from backend_library import backend_matches, load_workspace_backend_records
+from model_library import resolve_model_records
+from operation_resolution import _model_execution_parameters
+from resource_relationships import relationship_ids
+from workspace_credentials import resolve_workspace_credential
 
 router = APIRouter(prefix="/video-import", tags=["video-import"])
 
@@ -50,6 +60,266 @@ def _imports_root(root: Path) -> Path:
 def _slug(value: str) -> str:
     cleaned = re.sub(r"[^A-Za-z0-9_-]+", "-", value).strip("-").lower()
     return cleaned or uuid.uuid4().hex[:8]
+
+
+def _multipart_body(fields: dict[str, str], files: dict[str, tuple[str, str, bytes]]) -> tuple[str, bytes]:
+    boundary = f"----workbench-{uuid.uuid4().hex}"
+    chunks: list[bytes] = []
+    for name, value in fields.items():
+        chunks.extend((
+            f"--{boundary}\r\n".encode(),
+            f'Content-Disposition: form-data; name="{name}"\r\n\r\n'.encode(),
+            value.encode(),
+            b"\r\n",
+        ))
+    for name, (filename, content_type, data) in files.items():
+        chunks.extend((
+            f"--{boundary}\r\n".encode(),
+            f'Content-Disposition: form-data; name="{name}"; filename="{filename}"\r\n'.encode(),
+            f"Content-Type: {content_type}\r\n\r\n".encode(),
+            data,
+            b"\r\n",
+        ))
+    chunks.append(f"--{boundary}--\r\n".encode())
+    return boundary, b"".join(chunks)
+
+
+def _try_model_image_edit(
+    workspace_root: Path,
+    model_id: str,
+    source_image: Any,
+    edit_mask: Any,
+    prompt: str,
+) -> tuple[Any | None, dict[str, Any]]:
+    if not model_id:
+        return None, {"renderer": "boundary_diffusion", "reason": "no image-output model selected"}
+    parameters = _model_execution_parameters(workspace_root, {"models": [model_id], "strategy": "single"})
+    if not parameters.get("baseUrl"):
+        model_record = next(
+            (
+                record for record in resolve_model_records(workspace_root)
+                if str((record.get("document") or {}).get("id") or "") == model_id
+            ),
+            None,
+        )
+        model_document = (model_record or {}).get("document") or {}
+        discovery = model_document.get("discovery") if isinstance(model_document.get("discovery"), dict) else {}
+        backend_ids = [
+            str(discovery.get("backendId") or ""),
+            *relationship_ids(model_document.get("implements")),
+            *relationship_ids(model_document.get("dependsOn")),
+        ]
+        backend_record = next(
+            (
+                record for record in load_workspace_backend_records(workspace_root)
+                if any(backend_id and backend_matches(record.get("document") or {}, backend_id) for backend_id in backend_ids)
+            ),
+            None,
+        )
+        backend = (backend_record or {}).get("document") or {}
+        configuration = backend.get("configuration") if isinstance(backend.get("configuration"), dict) else {}
+        parameters = {
+            **parameters,
+            "model": model_document.get("model") or parameters.get("model") or model_id,
+            "baseUrl": configuration.get("baseUrl"),
+            "apiKeyEnv": configuration.get("apiKeyEnvironmentVariable") or configuration.get("apiKeyEnvironment"),
+            "timeoutSeconds": configuration.get("timeoutSeconds"),
+        }
+    base_url = str(parameters.get("baseUrl") or "").rstrip("/")
+    remote_model = str(parameters.get("model") or model_id)
+    if not base_url:
+        return None, {"renderer": "boundary_diffusion", "modelId": model_id, "reason": "model backend has no base URL"}
+    source_buffer = io.BytesIO()
+    source_image.convert("RGBA").save(source_buffer, format="PNG")
+    mask_buffer = io.BytesIO()
+    edit_mask.convert("RGBA").save(mask_buffer, format="PNG")
+    boundary, request_body = _multipart_body(
+        {
+            "model": remote_model,
+            "prompt": prompt,
+            "n": "1",
+            "size": f"{source_image.width}x{source_image.height}",
+            "response_format": "b64_json",
+        },
+        {
+            "image": ("source.png", "image/png", source_buffer.getvalue()),
+            "mask": ("mask.png", "image/png", mask_buffer.getvalue()),
+        },
+    )
+    headers = {
+        "Accept": "application/json",
+        "Content-Type": f"multipart/form-data; boundary={boundary}",
+        "User-Agent": "MeTTaSymbolicLearnerWorkbench/0.6",
+    }
+    api_key_name = str(parameters.get("apiKeyEnv") or "")
+    api_key = resolve_workspace_credential(workspace_root, api_key_name) if api_key_name else ""
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
+    request = urllib.request.Request(
+        f"{base_url}/images/edits",
+        data=request_body,
+        headers=headers,
+        method="POST",
+    )
+    timeout = max(1, int(parameters.get("timeoutSeconds") or 300))
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+        entry = (payload.get("data") or [{}])[0]
+        artifact = entry.get("artifact") if isinstance(entry.get("artifact"), dict) else {}
+        source = str(entry.get("source") or artifact.get("source") or "provider")
+        metadata = {
+            "renderer": "model_image_edit",
+            "modelId": model_id,
+            "remoteModel": remote_model,
+            "source": source,
+            "artifact": artifact,
+            "inputs": entry.get("inputs"),
+        }
+        if source == "simulated":
+            return None, {**metadata, "renderer": "boundary_diffusion", "reason": "provider returned a simulated image"}
+        raw: bytes | None = None
+        encoded = entry.get("b64_json")
+        if isinstance(encoded, str) and encoded:
+            raw = base64.b64decode(encoded)
+        elif isinstance(entry.get("url") or artifact.get("url"), str):
+            url = urllib.parse.urljoin(f"{base_url}/", str(entry.get("url") or artifact["url"]))
+            with urllib.request.urlopen(url, timeout=timeout) as response:
+                raw = response.read()
+        if not raw:
+            return None, {**metadata, "renderer": "boundary_diffusion", "reason": "provider returned no image bytes"}
+        from PIL import Image  # noqa: PLC0415
+
+        generated = Image.open(io.BytesIO(raw)).convert("RGB")
+        if generated.size != source_image.size:
+            return None, {
+                **metadata,
+                "renderer": "boundary_diffusion",
+                "reason": f"provider returned {generated.size[0]}x{generated.size[1]}, expected {source_image.width}x{source_image.height}",
+            }
+        return generated, metadata
+    except (OSError, ValueError, KeyError, json.JSONDecodeError, urllib.error.URLError) as error:
+        return None, {
+            "renderer": "boundary_diffusion",
+            "modelId": model_id,
+            "remoteModel": remote_model,
+            "reason": str(error),
+        }
+
+
+def _image_provenance_path(image_path: Path) -> Path:
+    return image_path.with_suffix(".provenance.json")
+
+
+def _workspace_relative(root: Path, path: Path) -> str:
+    try:
+        return path.resolve().relative_to(root.resolve()).as_posix()
+    except ValueError:
+        return str(path.resolve())
+
+
+def _read_image_provenance(image_path: Path) -> dict[str, Any] | None:
+    path = _image_provenance_path(image_path)
+    if not path.is_file():
+        return None
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
+def _write_image_provenance(
+    root: Path,
+    image_path: Path,
+    *,
+    dimensions: tuple[int, int],
+    operation: str,
+    parent_image: Path | None = None,
+    source: dict[str, Any] | None = None,
+    transform: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    image_rel = _workspace_relative(root, image_path)
+    size = {"width": int(dimensions[0]), "height": int(dimensions[1])}
+    parent_payload = _read_image_provenance(parent_image) if parent_image else None
+    if parent_image and parent_payload is None and parent_image.is_file():
+        from PIL import Image  # noqa: PLC0415
+
+        with Image.open(parent_image) as parent:
+            parent_payload = _write_image_provenance(
+                root,
+                parent_image,
+                dimensions=parent.size,
+                operation="legacy_source",
+                source={"path": _workspace_relative(root, parent_image)},
+            )
+    parent_rel = _workspace_relative(root, parent_image) if parent_image else None
+    root_record = dict(parent_payload.get("root") or {}) if parent_payload else {
+        "firstSeenImage": image_rel,
+        "dimensions": size,
+    }
+    if source and not parent_payload:
+        root_record.update({
+            key: value
+            for key, value in source.items()
+            if key in {"sourceVideo", "atSeconds", "sceneIndex", "videoFrameIndex"}
+        })
+    step = {
+        "image": image_rel,
+        "operation": operation,
+        "dimensions": size,
+        "transform": transform or {},
+        "createdAt": _utc_now(),
+    }
+    lineage = list(parent_payload.get("lineage") or []) if parent_payload else []
+    lineage.append(step)
+    payload = {
+        "kind": "video_import_image_provenance",
+        "version": 1,
+        "image": image_rel,
+        "provenance": _workspace_relative(root, _image_provenance_path(image_path)),
+        "createdAt": step["createdAt"],
+        "operation": operation,
+        "dimensions": size,
+        "originalDimensions": root_record.get("dimensions", size),
+        "root": root_record,
+        "parent": {
+            "image": parent_rel,
+            "provenance": _workspace_relative(root, _image_provenance_path(parent_image)),
+        } if parent_image else None,
+        "source": source or {},
+        "transform": transform or {},
+        "lineage": lineage,
+    }
+    provenance_path = _image_provenance_path(image_path)
+    temporary = provenance_path.with_suffix(provenance_path.suffix + ".tmp")
+    temporary.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+    temporary.replace(provenance_path)
+    return payload
+
+
+def _save_image_with_provenance(
+    root: Path,
+    image: Any,
+    image_path: Path,
+    *,
+    operation: str,
+    parent_image: Path | None = None,
+    source: dict[str, Any] | None = None,
+    transform: dict[str, Any] | None = None,
+    image_format: str | None = None,
+) -> dict[str, Any]:
+    image_path.parent.mkdir(parents=True, exist_ok=True)
+    image.save(image_path, image_format) if image_format else image.save(image_path)
+    return _write_image_provenance(
+        root,
+        image_path,
+        dimensions=image.size,
+        operation=operation,
+        parent_image=parent_image,
+        source=source,
+        transform=transform,
+    )
 
 
 def _catalog_path(root: Path) -> Path:
@@ -620,11 +890,54 @@ def stream_video(workspaceId: str, path: str, request: Request) -> Response:
     return StreamingResponse(read_range(), status_code=status, media_type=media_type, headers=headers)
 
 
+def _scene_extraction_targets(
+    markers: list[float],
+    *,
+    duration: float | None,
+    start_seconds: float,
+    end_seconds: float | None,
+    start_scene: int,
+    end_scene: int | None,
+    skip_scenes: int,
+    per_scene: int,
+    scene_offset: float,
+    max_frames: int,
+) -> list[tuple[float, int]]:
+    final_boundary = duration if duration is not None else end_seconds
+    if final_boundary is None:
+        return []
+    boundaries = sorted({
+        0.0,
+        *[marker for marker in markers if 0.0 < marker < final_boundary],
+        float(final_boundary),
+    })
+    targets: list[tuple[float, int]] = []
+    stride = skip_scenes + 1
+    for scene_number, (raw_start, raw_end) in enumerate(zip(boundaries, boundaries[1:]), start=1):
+        if scene_number < start_scene or (end_scene is not None and scene_number > end_scene):
+            continue
+        if (scene_number - start_scene) % stride:
+            continue
+        scene_start = max(raw_start, start_seconds)
+        scene_end = min(raw_end, end_seconds) if end_seconds is not None else raw_end
+        length = max(0.0, scene_end - scene_start - scene_offset)
+        spacing = length / per_scene if per_scene > 1 else 0.0
+        for shot in range(per_scene):
+            at = scene_start + scene_offset + shot * spacing
+            if at < scene_end:
+                targets.append((round(at, 3), scene_number))
+                if len(targets) >= max_frames:
+                    return targets
+    return targets
+
+
 @router.post("/extract")
 def extract_frames(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
-    """Start extracting frames (one PNG every N seconds, optionally within a
-    start/end window chosen on the timeline). Returns a job id plus a frame
-    and time estimate; poll /extract/status for the progress bar."""
+    """Start extracting frames by time interval or a bounded/sparse scene set.
+
+    Both modes honor the time window; scene mode additionally honors one-based
+    start/end scene numbers and a skip-scenes stride.
+    """
     workspace_id = str(body.get("workspaceId") or "")
     video_rel = str(body.get("video") or "")
     if not workspace_id or not video_rel:
@@ -641,6 +954,12 @@ def extract_frames(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
     mode = str(body.get("mode") or "interval")
     per_scene = max(1, min(20, int(body.get("perScene") or 1)))
     scene_offset = max(0.0, float(body.get("sceneOffsetSeconds") or 0.3))
+    start_scene = max(1, int(body.get("startScene") or 1))
+    end_scene_raw = body.get("endScene")
+    end_scene = int(end_scene_raw) if end_scene_raw not in (None, "") else None
+    if end_scene is not None and end_scene < start_scene:
+        raise HTTPException(status_code=400, detail="endScene must be at or after startScene")
+    skip_scenes = max(0, min(10000, int(body.get("skipScenes") or 0)))
     root = _workspace_root(workspace_id)
     try:
         video_path = _safe_workspace_child(root, video_rel)
@@ -667,26 +986,23 @@ def extract_frames(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
     window = (window_end - start_seconds) if window_end is not None else None
     # In scenes mode the targets are computed from the saved markers: perScene
     # images spread through each scene, the first one right after the change.
-    scene_targets: list[float] = []
+    scene_targets: list[tuple[float, int]] = []
     if mode == "scenes":
         markers = [float(marker.get("atSeconds") or 0) for marker in (meta.get("scenes") or []) if isinstance(marker, dict)]
         if not markers:
             raise HTTPException(status_code=400, detail="no scene markers saved yet — run Detect scenes first")
-        boundaries = [start_seconds, *[marker for marker in sorted(markers) if marker > start_seconds]]
-        if window_end is not None:
-            boundaries = [boundary for boundary in boundaries if boundary < window_end]
-            boundaries.append(window_end)
-        elif duration:
-            boundaries.append(float(duration))
-        for scene_index in range(len(boundaries) - 1):
-            scene_start, scene_end = boundaries[scene_index], boundaries[scene_index + 1]
-            length = max(0.0, scene_end - scene_start - scene_offset)
-            spacing = length / per_scene if per_scene > 1 else 0.0
-            for shot in range(per_scene):
-                at = scene_start + scene_offset + shot * spacing
-                if at < scene_end:
-                    scene_targets.append(round(at, 3))
-        scene_targets = sorted(set(scene_targets))[:max_frames]
+        scene_targets = _scene_extraction_targets(
+            markers,
+            duration=float(duration) if duration else None,
+            start_seconds=start_seconds,
+            end_seconds=window_end,
+            start_scene=start_scene,
+            end_scene=end_scene,
+            skip_scenes=skip_scenes,
+            per_scene=per_scene,
+            scene_offset=scene_offset,
+            max_frames=max_frames,
+        )
         if not scene_targets:
             raise HTTPException(status_code=400, detail="scene rules produced no target times in this window")
     estimated_frames = len(scene_targets) if mode == "scenes" else (
@@ -725,11 +1041,13 @@ def extract_frames(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
                     if job.get("cancel"):
                         break
                     at = index / fps
+                    scene_index = None
                     if mode == "scenes":
                         # Grab the first frame at or past each scene target.
                         if target_cursor >= len(scene_targets):
                             break
-                        if at < scene_targets[target_cursor]:
+                        target_at, scene_index = scene_targets[target_cursor]
+                        if at < target_at:
                             continue
                         target_cursor += 1
                     else:
@@ -743,11 +1061,27 @@ def extract_frames(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
                     if ordinal >= max_frames:
                         break
                     name = f"frame_{ordinal:04d}.png"
-                    Image.fromarray(frame).save(frames_dir / name)
+                    frame_path = frames_dir / name
+                    frame_provenance = _save_image_with_provenance(
+                        root,
+                        Image.fromarray(frame),
+                        frame_path,
+                        operation="extract_video_frame",
+                        source={
+                            "sourceVideo": video_rel,
+                            "atSeconds": round(at, 3),
+                            "sceneIndex": scene_index,
+                            "videoFrameIndex": index,
+                        },
+                        transform={"mode": mode},
+                        image_format="PNG",
+                    )
                     frames.append({
-                        "path": (frames_dir / name).relative_to(root).as_posix(),
+                        "path": frame_path.relative_to(root).as_posix(),
                         "index": ordinal,
                         "atSeconds": round(at, 2),
+                        "provenance": frame_provenance["provenance"],
+                        **({"sceneIndex": scene_index} if scene_index is not None else {}),
                     })
                     elapsed = time.monotonic() - started
                     job["done"] = len(frames)
@@ -786,6 +1120,9 @@ def extract_frames(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
                 "elapsedSeconds": round(elapsed, 1),
                 "everySeconds": every_seconds if mode == "interval" else None,
                 "perScene": per_scene if mode == "scenes" else None,
+                "startScene": start_scene if mode == "scenes" else None,
+                "endScene": end_scene if mode == "scenes" else None,
+                "skipScenes": skip_scenes if mode == "scenes" else None,
                 "window": [start_seconds, end_seconds],
                 "framesDir": frames_dir.relative_to(root).as_posix(),
                 "at": _utc_now(),
@@ -807,6 +1144,30 @@ def extract_status(jobId: str) -> dict[str, Any]:
     if job is None:
         raise HTTPException(status_code=404, detail=f"unknown extract job: {jobId}")
     return job
+
+
+@router.get("/image-provenance")
+def image_provenance(workspaceId: str, image: str) -> dict[str, Any]:
+    root = _workspace_root(workspaceId)
+    try:
+        image_path = _safe_workspace_child(root, image)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    if not image_path.is_file():
+        raise HTTPException(status_code=404, detail=f"image not found: {image}")
+    payload = _read_image_provenance(image_path)
+    if payload is None:
+        from PIL import Image  # noqa: PLC0415
+
+        with Image.open(image_path) as loaded:
+            payload = _write_image_provenance(
+                root,
+                image_path,
+                dimensions=loaded.size,
+                operation="legacy_source",
+                source={"path": image},
+            )
+    return payload
 
 
 @router.post("/extract/cancel")
@@ -847,19 +1208,32 @@ def frame_at_cursor(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
         except (IndexError, OSError, RuntimeError) as error:
             raise HTTPException(status_code=400, detail=f"no frame at {at_seconds:.2f}s: {error}") from error
         name = f"frame_at_{int(round(at_seconds * 1000)):08d}.png"
-        Image.fromarray(frame).save(frames_dir / name)
+        frame_path = frames_dir / name
+        provenance = _save_image_with_provenance(
+            root,
+            Image.fromarray(frame),
+            frame_path,
+            operation="grab_video_frame",
+            source={
+                "sourceVideo": video_rel,
+                "atSeconds": round(at_seconds, 3),
+                "videoFrameIndex": index,
+            },
+            image_format="PNG",
+        )
     finally:
         reader.close()
     return {
-        "path": (frames_dir / name).relative_to(root).as_posix(),
+        "path": frame_path.relative_to(root).as_posix(),
         "atSeconds": round(at_seconds, 2),
         "index": index,
+        "provenance": provenance["provenance"],
     }
 
 
 @router.post("/member-cut")
 def member_cut(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
-    """Cut one identified member out of a scene as a TRANSPARENT GIF: the
+    """Cut one identified member out of a scene as a precise alpha PNG: the
     member's polygon keeps its pixels, everything else is transparent. The
     member is then erased from the scene (border-median fill) so the
     extraction loop can continue on the reduced scene."""
@@ -867,8 +1241,12 @@ def member_cut(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
     image_rel = str(body.get("image") or "")
     name = str(body.get("name") or "member")
     step = max(1, int(body.get("step") or 1))
+    polygons_raw = body.get("polygons")
+    holes_raw = body.get("holes")
     polygon_raw = body.get("polygon")
     box_raw = body.get("box")
+    outline_source_rel = str(body.get("outlineSourceImage") or "")
+    outline_source_dimensions = body.get("outlineSourceDimensions")
     if not workspace_id or not image_rel:
         raise HTTPException(status_code=400, detail="workspaceId and image are required")
     root = _workspace_root(workspace_id)
@@ -880,52 +1258,236 @@ def member_cut(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
         raise HTTPException(status_code=404, detail=f"image not found: {image_rel}")
     try:
         import numpy as np  # noqa: PLC0415
-        from PIL import Image, ImageDraw, ImageFilter  # noqa: PLC0415
+        from PIL import Image, ImageChops, ImageDraw, ImageFilter  # noqa: PLC0415
     except ImportError as error:
         raise HTTPException(status_code=500, detail="numpy/PIL are not installed in the server environment") from error
-    image = Image.open(image_path).convert("RGB")
-    width, height = image.size
-    # Accept a polygon outline; a box is tolerated and becomes a rectangle.
-    points: list[tuple[int, int]] = []
-    if isinstance(polygon_raw, list) and len(polygon_raw) >= 3:
-        for point in polygon_raw:
+    source_rgba = Image.open(image_path).convert("RGBA")
+    image = Image.new("RGB", source_rgba.size, (0, 0, 0))
+    image.paste(source_rgba, mask=source_rgba.getchannel("A"))
+    width, height = source_rgba.size
+    alignment = {
+        "cutImage": image_rel,
+        "outlineSourceImage": outline_source_rel or image_rel,
+        "dimensions": {"width": width, "height": height},
+        "verified": False,
+    }
+    if outline_source_rel:
+        try:
+            outline_source_path = _safe_workspace_child(root, outline_source_rel)
+        except ValueError as error:
+            raise HTTPException(status_code=400, detail=str(error)) from error
+        if not outline_source_path.is_file():
+            raise HTTPException(status_code=404, detail=f"Outliner source image not found: {outline_source_rel}")
+        with Image.open(outline_source_path) as outline_source:
+            if outline_source.size != source_rgba.size:
+                raise HTTPException(
+                    status_code=409,
+                    detail=(
+                        f"Outliner coordinate space is {outline_source.width}x{outline_source.height}, "
+                        f"but cut image is {width}x{height}"
+                    ),
+                )
+        if isinstance(outline_source_dimensions, dict):
+            expected = (
+                int(outline_source_dimensions.get("width") or 0),
+                int(outline_source_dimensions.get("height") or 0),
+            )
+            if expected != source_rgba.size:
+                raise HTTPException(
+                    status_code=409,
+                    detail=f"Stored Outliner dimensions {expected[0]}x{expected[1]} do not match cut image {width}x{height}",
+                )
+        if outline_source_rel != image_rel:
+            current_provenance = _read_image_provenance(image_path)
+            lineage_images = {
+                str(step_record.get("image") or "")
+                for step_record in (current_provenance or {}).get("lineage") or []
+                if isinstance(step_record, dict)
+            }
+            if outline_source_rel not in lineage_images:
+                raise HTTPException(
+                    status_code=409,
+                    detail=f"Cut image is not a provenance descendant of Outliner source: {outline_source_rel}",
+                )
+        alignment["verified"] = True
+
+    def normalized_polygon(raw: Any, label: str) -> list[tuple[int, int]]:
+        points: list[tuple[int, int]] = []
+        if not isinstance(raw, list):
+            return points
+        for index, point in enumerate(raw):
             if isinstance(point, (list, tuple)) and len(point) == 2:
-                x = max(0, min(width - 1, int(round(float(point[0])))))
-                y = max(0, min(height - 1, int(round(float(point[1])))))
+                try:
+                    x = int(round(float(point[0])))
+                    y = int(round(float(point[1])))
+                except (TypeError, ValueError, OverflowError) as error:
+                    raise HTTPException(status_code=400, detail=f"{label} point {index + 1} is not numeric") from error
+                if not 0 <= x < width or not 0 <= y < height:
+                    raise HTTPException(
+                        status_code=409,
+                        detail=f"{label} point {index + 1} ({x}, {y}) is outside the {width}x{height} Outliner coordinate space",
+                    )
                 points.append((x, y))
-    elif isinstance(box_raw, list) and len(box_raw) == 4:
+        return points
+
+    polygons: list[list[tuple[int, int]]] = []
+    if isinstance(polygons_raw, list):
+        polygons = [points for index, raw in enumerate(polygons_raw) if len(points := normalized_polygon(raw, f"polygon {index + 1}")) >= 3]
+    if not polygons and isinstance(polygon_raw, list):
+        points = normalized_polygon(polygon_raw, "polygon")
+        if len(points) >= 3:
+            polygons = [points]
+    if not polygons and isinstance(box_raw, list) and len(box_raw) == 4:
         bx0, by0, bx1, by1 = (int(round(float(value))) for value in box_raw)
-        bx0, bx1 = sorted((max(0, min(width - 1, bx0)), max(1, min(width, bx1))))
-        by0, by1 = sorted((max(0, min(height - 1, by0)), max(1, min(height, by1))))
-        points = [(bx0, by0), (bx1, by0), (bx1, by1), (bx0, by1)]
-    if len(points) < 3:
-        raise HTTPException(status_code=400, detail="polygon (>= 3 [x, y] points) or box is required")
-    mask = Image.new("L", (width, height), 0)
-    ImageDraw.Draw(mask).polygon(points, fill=255)
-    bbox = mask.getbbox()
+        bx0, bx1 = sorted((bx0, bx1))
+        by0, by1 = sorted((by0, by1))
+        if bx0 < 0 or by0 < 0 or bx1 > width or by1 > height:
+            raise HTTPException(status_code=409, detail=f"box is outside the {width}x{height} Outliner coordinate space")
+        polygons = [[(bx0, by0), (bx1, by0), (bx1, by1), (bx0, by1)]]
+    if not polygons:
+        raise HTTPException(status_code=400, detail="polygons (each >= 3 [x, y] points), polygon, or box is required")
+    holes = [points for index, raw in enumerate(holes_raw) if len(points := normalized_polygon(raw, f"hole {index + 1}")) >= 3] if isinstance(holes_raw, list) else []
+
+    scale = 4
+    mask_large = Image.new("L", (width * scale, height * scale), 0)
+    draw = ImageDraw.Draw(mask_large)
+    for points in polygons:
+        draw.polygon([(x * scale, y * scale) for x, y in points], fill=255)
+    for points in holes:
+        draw.polygon([(x * scale, y * scale) for x, y in points], fill=0)
+    mask = mask_large.resize((width, height), Image.Resampling.LANCZOS)
+    bbox = mask.point(lambda alpha: 255 if alpha > 1 else 0).getbbox()
     if not bbox or (bbox[2] - bbox[0]) < 2 or (bbox[3] - bbox[1]) < 2:
         raise HTTPException(status_code=400, detail=f"polygon too small after clamping to {width}x{height}")
     x0, y0, x1, y1 = bbox
     members_dir = image_path.parent / f"{image_path.stem}_members"
     members_dir.mkdir(parents=True, exist_ok=True)
     slug = _slug(name)[:24] or f"member{step}"
-    # The cutout: member pixels opaque, the rest transparent, saved as GIF.
-    rgba = image.convert("RGBA")
-    rgba.putalpha(mask)
+    # Preserve source transparency and anti-alias the traced silhouette.
+    rgba = source_rgba.copy()
+    rgba.putalpha(ImageChops.multiply(source_rgba.getchannel("A"), mask))
     cut = rgba.crop(bbox)
-    cutout_path = members_dir / f"cut_{step:02d}_{slug}.gif"
-    palette_image = cut.convert("RGB").convert("P", palette=Image.ADAPTIVE, colors=255)
-    transparent_where = cut.getchannel("A").point(lambda alpha: 255 if alpha <= 128 else 0)
-    palette_image.paste(255, mask=transparent_where)
-    palette_image.save(cutout_path, "GIF", transparency=255)
-    # Erase the member from the scene. `fill` picks the removal method:
-    # median inpaint (default), blur fill, or a transparent hole.
-    fill_mode = str(body.get("fill") or "median")
+    cutout_path = members_dir / f"cut_{step:02d}_{slug}.png"
+    cutout_provenance = _save_image_with_provenance(
+        root,
+        cut,
+        cutout_path,
+        operation="extract_object_cutout",
+        parent_image=image_path,
+        source={"objectName": name},
+        transform={
+            "inputDimensions": {"width": width, "height": height},
+            "outlineAlignment": alignment,
+            "cropBox": [x0, y0, x1, y1],
+            "maskScale": scale,
+            "polygons": [[[x, y] for x, y in points] for points in polygons],
+            "holes": [[[x, y] for x, y in points] for points in holes],
+        },
+        image_format="PNG",
+    )
+    # Recursive vision calls need enough pixels to inspect small sub-objects.
+    # Keep the precise cutout unchanged for output, and create a padded,
+    # high-resolution analysis image for the next Describer pass.
+    enlarge_for_next_pass = body.get("enlargeForNextPass") is not False
+    next_pass_scale = 1
+    padding = 0
+    next_pass_path = cutout_path
+    if enlarge_for_next_pass:
+        longest_side = max(cut.size)
+        next_pass_scale = max(1, (640 + longest_side - 1) // longest_side)
+        enlarged = cut.resize(
+            (cut.width * next_pass_scale, cut.height * next_pass_scale),
+            Image.Resampling.LANCZOS,
+        )
+        padding = max(16, round(max(enlarged.size) * 0.08))
+        next_pass = Image.new(
+            "RGBA",
+            (enlarged.width + padding * 2, enlarged.height + padding * 2),
+            (0, 0, 0, 0),
+        )
+        next_pass.alpha_composite(enlarged, (padding, padding))
+        next_pass_path = members_dir / f"next_pass_{step:02d}_{slug}.png"
+        _save_image_with_provenance(
+            root,
+            next_pass,
+            next_pass_path,
+            operation="enlarge_object_for_analysis",
+            parent_image=cutout_path,
+            source={"objectName": name},
+            transform={
+                "sourceDimensions": {"width": cut.width, "height": cut.height},
+                "scale": next_pass_scale,
+                "resizedDimensions": {"width": enlarged.width, "height": enlarged.height},
+                "padding": {"left": padding, "top": padding, "right": padding, "bottom": padding},
+            },
+            image_format="PNG",
+        )
+    # Erase the member from the scene. `fill` picks the removal method.
+    fill_mode = str(body.get("fill") or "inpaint")
+    if fill_mode not in {"inpaint", "median", "blur", "hole"}:
+        raise HTTPException(status_code=400, detail="fill must be inpaint, median, blur, or hole")
+    fill_instructions = body.get("fillInstructions") if isinstance(body.get("fillInstructions"), dict) else {}
+    image_generation_model_id = str(body.get("imageGenerationModelId") or "")
+    image_generation: dict[str, Any] = {"renderer": "boundary_diffusion" if fill_mode == "inpaint" else fill_mode}
     array = np.array(image)
-    mask_array = np.array(mask) > 0
-    if fill_mode == "hole":
-        rgba_scene = image.convert("RGBA")
-        alpha_channel = np.full((height, width), 255, dtype=np.uint8)
+    mask_array = np.array(mask) >= 128
+    if fill_mode == "inpaint":
+        generated_scene = None
+        if image_generation_model_id:
+            mask_alpha = Image.eval(mask, lambda value: 255 - value)
+            edit_mask = Image.new("RGBA", image.size, (255, 255, 255, 255))
+            edit_mask.putalpha(mask_alpha)
+            edit_prompt = (
+                f"Remove only the outlined object '{name}' and reconstruct what belongs behind it. "
+                "Preserve every pixel outside the transparent mask. Return the complete image at the exact input dimensions. "
+                f"Background continuation plan: {json.dumps(fill_instructions, ensure_ascii=True)}"
+            )
+            generated_scene, image_generation = _try_model_image_edit(
+                root,
+                image_generation_model_id,
+                image,
+                edit_mask,
+                edit_prompt,
+            )
+        if generated_scene is not None:
+            scene_image = Image.composite(generated_scene.convert("RGB"), image, mask)
+        else:
+            pad = max(16, min(64, round(max(x1 - x0, y1 - y0) * 0.2)))
+            rx0, ry0 = max(0, x0 - pad), max(0, y0 - pad)
+            rx1, ry1 = min(width, x1 + pad), min(height, y1 + pad)
+            region = array[ry0:ry1, rx0:rx1].astype(np.float64)
+            region_mask = mask_array[ry0:ry1, rx0:rx1]
+            known = ~region_mask
+            for _ in range(max(region.shape[:2])):
+                remaining = ~known
+                if not remaining.any():
+                    break
+                color_sum = np.zeros_like(region)
+                neighbor_count = np.zeros(region.shape[:2], dtype=np.float64)
+                for dy, dx in ((-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)):
+                    dest_y0, dest_y1 = max(0, -dy), min(region.shape[0], region.shape[0] - dy)
+                    dest_x0, dest_x1 = max(0, -dx), min(region.shape[1], region.shape[1] - dx)
+                    source_y = slice(dest_y0 + dy, dest_y1 + dy)
+                    source_x = slice(dest_x0 + dx, dest_x1 + dx)
+                    dest_y = slice(dest_y0, dest_y1)
+                    dest_x = slice(dest_x0, dest_x1)
+                    neighbor_known = known[source_y, source_x]
+                    color_sum[dest_y, dest_x] += region[source_y, source_x] * neighbor_known[..., None]
+                    neighbor_count[dest_y, dest_x] += neighbor_known
+                fillable = remaining & (neighbor_count > 0)
+                if not fillable.any():
+                    fallback = np.median(region[known], axis=0) if known.any() else np.array([127, 127, 127])
+                    region[remaining] = fallback
+                    known[remaining] = True
+                    break
+                region[fillable] = color_sum[fillable] / neighbor_count[fillable, None]
+                known[fillable] = True
+            filled_region = np.clip(region, 0, 255).astype(array.dtype)
+            array[ry0:ry1, rx0:rx1][region_mask] = filled_region[region_mask]
+            scene_image = Image.fromarray(array)
+    elif fill_mode == "hole":
+        rgba_scene = source_rgba.copy()
+        alpha_channel = np.array(source_rgba.getchannel("A"))
         alpha_channel[mask_array] = 0
         rgba_scene.putalpha(Image.fromarray(alpha_channel))
         scene_image = rgba_scene
@@ -944,13 +1506,36 @@ def member_cut(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
         array[mask_array] = fill
         scene_image = Image.fromarray(array)
     scene_path = members_dir / f"scene_after_{step:02d}.png"
-    scene_image.save(scene_path)
+    scene_provenance = _save_image_with_provenance(
+        root,
+        scene_image,
+        scene_path,
+        operation="remove_object_from_scene",
+        parent_image=image_path,
+        source={"objectName": name, "cutout": cutout_path.relative_to(root).as_posix(), "fillInstructions": fill_instructions},
+        transform={"fill": fill_mode, "outlineAlignment": alignment, "removedBox": [x0, y0, x1, y1], "maskScale": scale, "fillInstructions": fill_instructions, "imageGeneration": image_generation},
+        image_format="PNG",
+    )
     return {
         "cutout": cutout_path.relative_to(root).as_posix(),
+        "cutoutProvenance": cutout_provenance["provenance"],
+        "nextPassImage": next_pass_path.relative_to(root).as_posix(),
+        "nextPassProvenance": _workspace_relative(root, _image_provenance_path(next_pass_path)),
+        "nextPassScale": next_pass_scale,
+        "nextPassPadding": padding,
+        "enlargedForNextPass": enlarge_for_next_pass,
         "scene": scene_path.relative_to(root).as_posix(),
+        "sceneProvenance": scene_provenance["provenance"],
         "box": [x0, y0, x1, y1],
         "name": name,
         "fill": fill_mode,
+        "fillInstructions": fill_instructions,
+        "fillRenderer": image_generation.get("renderer"),
+        "imageGeneration": image_generation,
+        "outlineAlignment": alignment,
+        "polygonCount": len(polygons),
+        "holeCount": len(holes),
+        "maskScale": scale,
     }
 
 
@@ -985,8 +1570,193 @@ def member_return(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
     x0, y0 = int(round(float(box_raw[0]))), int(round(float(box_raw[1])))
     scene.paste(cutout, (max(0, x0), max(0, y0)), cutout)
     returned_path = scene_path.parent / f"scene_return_{uuid.uuid4().hex[:6]}.png"
-    scene.save(returned_path)
-    return {"scene": returned_path.relative_to(root).as_posix()}
+    provenance = _save_image_with_provenance(
+        root,
+        scene,
+        returned_path,
+        operation="return_object_to_scene",
+        parent_image=scene_path,
+        source={"returnedCutout": cutout_rel},
+        transform={"pasteAt": [max(0, x0), max(0, y0)], "box": box_raw},
+        image_format="PNG",
+    )
+    return {"scene": returned_path.relative_to(root).as_posix(), "provenance": provenance["provenance"]}
+
+
+@router.post("/turtle-render")
+def turtle_render(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
+    """Persist and safely render a normalized JSON turtle drawing program."""
+    workspace_id = str(body.get("workspaceId") or "")
+    source_rel = str(body.get("sourceImage") or "")
+    raw_program = body.get("program")
+    if not workspace_id or not source_rel or raw_program in (None, ""):
+        raise HTTPException(status_code=400, detail="workspaceId, sourceImage, and program are required")
+    root = _workspace_root(workspace_id)
+    try:
+        source_path = _safe_workspace_child(root, source_rel)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    if not source_path.is_file():
+        raise HTTPException(status_code=404, detail=f"source image not found: {source_rel}")
+
+    if isinstance(raw_program, dict):
+        program = raw_program
+        raw_text = json.dumps(raw_program, indent=2, ensure_ascii=False)
+    else:
+        raw_text = str(raw_program).strip()
+        cleaned = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw_text, flags=re.IGNORECASE)
+        start, end = cleaned.find("{"), cleaned.rfind("}")
+        if start < 0 or end <= start:
+            raise HTTPException(status_code=400, detail="turtle program must contain one JSON object")
+        try:
+            parsed = json.loads(cleaned[start:end + 1])
+        except json.JSONDecodeError as error:
+            raise HTTPException(status_code=400, detail=f"invalid turtle JSON: {error}") from error
+        if not isinstance(parsed, dict):
+            raise HTTPException(status_code=400, detail="turtle program must be a JSON object")
+        program = parsed
+    commands = program.get("commands")
+    if not isinstance(commands, list) or not commands:
+        raise HTTPException(status_code=400, detail="turtle program commands must be a non-empty array")
+    if len(commands) > 200:
+        raise HTTPException(status_code=400, detail="turtle program exceeds the 200-command limit")
+
+    from PIL import Image, ImageColor, ImageDraw  # noqa: PLC0415
+
+    with Image.open(source_path) as source:
+        source_width, source_height = source.size
+    scale = min(1.0, 768 / max(source_width, source_height))
+    width = max(2, round(source_width * scale))
+    height = max(2, round(source_height * scale))
+
+    def color(value: Any, default: str) -> tuple[int, int, int, int]:
+        candidate = default if value in (None, "") else str(value)
+        if candidate.lower() == "transparent":
+            return (0, 0, 0, 0)
+        try:
+            return ImageColor.getcolor(candidate, "RGBA")
+        except ValueError as error:
+            raise HTTPException(status_code=400, detail=f"invalid turtle color: {candidate}") from error
+
+    def point(x: Any, y: Any) -> tuple[int, int]:
+        try:
+            normalized_x = max(0.0, min(1000.0, float(x)))
+            normalized_y = max(0.0, min(1000.0, float(y)))
+        except (TypeError, ValueError, OverflowError) as error:
+            raise HTTPException(status_code=400, detail="turtle coordinates must be numbers from 0 to 1000") from error
+        return (round(normalized_x * width / 1000), round(normalized_y * height / 1000))
+
+    def bounded_int(value: Any, default: int, label: str, maximum: int = 64) -> int:
+        try:
+            return max(1, min(maximum, int(value if value not in (None, "") else default)))
+        except (TypeError, ValueError, OverflowError) as error:
+            raise HTTPException(status_code=400, detail=f"{label} must be a number") from error
+
+    background = color(program.get("background"), "transparent")
+    rendered = Image.new("RGBA", (width, height), background)
+    draw = ImageDraw.Draw(rendered, "RGBA")
+    cursor = (0, 0)
+    pen_color = color(program.get("penColor"), "#ffffff")
+    pen_width = bounded_int(program.get("penWidth"), 4, "penWidth")
+    for index, command in enumerate(commands):
+        if not isinstance(command, dict):
+            raise HTTPException(status_code=400, detail=f"turtle command {index + 1} must be an object")
+        operation = str(command.get("op") or "").lower()
+        if operation == "pen":
+            pen_color = color(command.get("color"), "#ffffff")
+            pen_width = bounded_int(command.get("width"), pen_width, f"command {index + 1} width")
+        elif operation == "move":
+            cursor = point(command.get("x"), command.get("y"))
+        elif operation == "line":
+            target = point(command.get("x"), command.get("y"))
+            draw.line([cursor, target], fill=color(command.get("color"), "#ffffff") if command.get("color") else pen_color, width=bounded_int(command.get("width"), pen_width, f"command {index + 1} width"))
+            cursor = target
+        elif operation in {"polyline", "polygon"}:
+            raw_points = command.get("points")
+            if not isinstance(raw_points, list) or len(raw_points) < (3 if operation == "polygon" else 2):
+                raise HTTPException(status_code=400, detail=f"turtle {operation} command {index + 1} has too few points")
+            points = [point(raw_point[0], raw_point[1]) for raw_point in raw_points if isinstance(raw_point, (list, tuple)) and len(raw_point) == 2]
+            if len(points) != len(raw_points):
+                raise HTTPException(status_code=400, detail=f"turtle {operation} command {index + 1} has invalid points")
+            outline = color(command.get("outline"), "#ffffff") if command.get("outline") else pen_color
+            if operation == "polygon":
+                draw.polygon(points, fill=color(command.get("fill"), "transparent"), outline=outline, width=bounded_int(command.get("width"), pen_width, f"command {index + 1} width"))
+            else:
+                draw.line(points, fill=outline, width=bounded_int(command.get("width"), pen_width, f"command {index + 1} width"), joint="curve")
+            cursor = points[-1]
+        elif operation in {"rectangle", "ellipse"}:
+            box = command.get("box")
+            if not isinstance(box, list) or len(box) != 4:
+                raise HTTPException(status_code=400, detail=f"turtle {operation} command {index + 1} requires box [x0,y0,x1,y1]")
+            first = point(box[0], box[1])
+            second = point(box[2], box[3])
+            bounds = [min(first[0], second[0]), min(first[1], second[1]), max(first[0], second[0]), max(first[1], second[1])]
+            painter = draw.rectangle if operation == "rectangle" else draw.ellipse
+            painter(
+                bounds,
+                fill=color(command.get("fill"), "transparent"),
+                outline=color(command.get("outline"), "#ffffff") if command.get("outline") else pen_color,
+                width=bounded_int(command.get("width"), pen_width, f"command {index + 1} width"),
+            )
+        elif operation == "dot":
+            center = point(command.get("x"), command.get("y"))
+            try:
+                radius_value = float(command.get("radius") or 8)
+            except (TypeError, ValueError, OverflowError) as error:
+                raise HTTPException(status_code=400, detail=f"command {index + 1} radius must be a number") from error
+            radius = max(1, min(min(width, height), round(radius_value * min(width, height) / 1000)))
+            draw.ellipse([center[0] - radius, center[1] - radius, center[0] + radius, center[1] + radius], fill=color(command.get("color"), "#ffffff"))
+        else:
+            raise HTTPException(status_code=400, detail=f"unsupported turtle operation at command {index + 1}: {operation}")
+
+    program_path = source_path.with_suffix(".turtle.json")
+    program_artifact = {
+        "kind": "turtle_program",
+        "version": 1,
+        "sourceImage": source_rel,
+        "subjectName": str(body.get("subjectName") or source_path.stem),
+        "modelId": str(body.get("modelId") or ""),
+        "prompt": str(body.get("prompt") or ""),
+        "rawModelOutput": raw_text,
+        "program": program,
+        "createdAt": _utc_now(),
+    }
+    program_path.write_text(json.dumps(program_artifact, indent=2, ensure_ascii=False), encoding="utf-8")
+    render_path = source_path.with_suffix(".turtle.png")
+    provenance = _save_image_with_provenance(
+        root,
+        rendered,
+        render_path,
+        operation="render_turtle_program",
+        parent_image=source_path,
+        source={"turtleProgram": _workspace_relative(root, program_path)},
+        transform={
+            "coordinateSpace": [1000, 1000],
+            "sourceDimensions": {"width": source_width, "height": source_height},
+            "renderScale": scale,
+            "commandCount": len(commands),
+        },
+        image_format="PNG",
+    )
+    source_provenance = image_provenance(workspace_id, source_rel)
+    source_provenance["terminal"] = {
+        "turtleProgram": _workspace_relative(root, program_path),
+        "renderedImage": _workspace_relative(root, render_path),
+        "renderedProvenance": provenance["provenance"],
+    }
+    provenance_path = _image_provenance_path(source_path)
+    temporary = provenance_path.with_suffix(provenance_path.suffix + ".tmp")
+    temporary.write_text(json.dumps(source_provenance, indent=2, ensure_ascii=False), encoding="utf-8")
+    temporary.replace(provenance_path)
+    return {
+        "program": program,
+        "programPath": _workspace_relative(root, program_path),
+        "renderedImage": _workspace_relative(root, render_path),
+        "provenance": provenance["provenance"],
+        "width": width,
+        "height": height,
+        "commandCount": len(commands),
+    }
 
 
 def _video_meta(video_path: Path) -> tuple[Path, dict[str, Any]]:
@@ -1837,8 +2607,17 @@ def apply_filter(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
             filtered_dir.mkdir(parents=True, exist_ok=True)
             target = filtered_dir / source.name
             with Image.open(source) as image:
-                transform(image.convert("RGB")).save(target)
-            results.append({"source": str(frame_rel), "path": target.relative_to(root).as_posix()})
+                rendered = transform(image.convert("RGB"))
+                provenance = _save_image_with_provenance(
+                    root,
+                    rendered,
+                    target,
+                    operation="apply_filter_chain",
+                    parent_image=source,
+                    source={"filter": label},
+                    transform={"filter": label},
+                )
+            results.append({"source": str(frame_rel), "path": target.relative_to(root).as_posix(), "provenance": provenance["provenance"]})
         return {"filter": label, "frames": results, "count": len(results)}
 
     # applyTo == "video": re-encode the whole video through the filter.
@@ -1987,12 +2766,15 @@ def preview_filter(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
     image_rel = str(body.get("image") or "")
     video_rel = str(body.get("video") or "")
     at_seconds = body.get("atSeconds")
+    base_parent_path: Path | None = None
+    base_source: dict[str, Any] = {}
     if image_rel:
         source_path = _safe_workspace_child(root, image_rel)
         if not source_path.is_file():
             raise HTTPException(status_code=404, detail=f"preview image not found: {image_rel}")
         with Image.open(source_path) as loaded:
             source = loaded.convert("RGB")
+        before_path = source_path
         before_rel = image_rel
     elif video_rel and at_seconds is not None:
         # Grab the exact frame under the player's time cursor.
@@ -2011,20 +2793,37 @@ def preview_filter(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
             reader.close()
         source = Image.fromarray(frame).convert("RGB")
         before_path = previews_dir / "source_frame.png"
-        source.save(before_path)
+        _save_image_with_provenance(
+            root,
+            source,
+            before_path,
+            operation="preview_video_frame",
+            source={"sourceVideo": video_rel, "atSeconds": float(at_seconds), "videoFrameIndex": index},
+            image_format="PNG",
+        )
         before_rel = before_path.relative_to(root).as_posix()
     else:
         source = _complex_test_card()
         before_path = previews_dir / "testcard.png"
-        source.save(before_path)
+        _save_image_with_provenance(root, source, before_path, operation="generate_filter_test_card", image_format="PNG")
         before_rel = before_path.relative_to(root).as_posix()
     filtered = transform(source).convert("RGB")
     after_path = previews_dir / f"preview_{_slug(label)[:60]}.png"
-    filtered.save(after_path)
+    provenance = _save_image_with_provenance(
+        root,
+        filtered,
+        after_path,
+        operation="preview_filter_chain",
+        parent_image=before_path,
+        source={"filter": label},
+        transform={"filter": label},
+        image_format="PNG",
+    )
     return {
         "filter": label,
         "before": before_rel,
         "after": after_path.relative_to(root).as_posix(),
+        "provenance": provenance["provenance"],
     }
 
 
@@ -2105,6 +2904,7 @@ def filter_gallery(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
             raise HTTPException(status_code=404, detail=f"preview image not found: {image_rel}")
         with Image.open(source_path) as loaded:
             base = loaded.convert("RGB")
+        base_parent_path = source_path
     elif video_rel and at_seconds is not None:
         import imageio  # noqa: PLC0415
 
@@ -2120,9 +2920,12 @@ def filter_gallery(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
         finally:
             reader.close()
         base = Image.fromarray(frame).convert("RGB")
+        base_source = {"sourceVideo": video_rel, "atSeconds": float(at_seconds), "videoFrameIndex": index}
     else:
         base = _complex_test_card()
+        base_source = {"generated": "complex_test_card"}
     # Thumbnail size keeps 100+ transforms quick.
+    base_input_size = base.size
     base.thumbnail((320, 320))
     # scope: "included" (active set, default), "excluded" (flagged/disabled
     # only), or "all" — the operator can always still run anything.
@@ -2160,6 +2963,20 @@ def filter_gallery(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
     if gallery_dir.is_dir():
         shutil.rmtree(gallery_dir, ignore_errors=True)
     gallery_dir.mkdir(parents=True, exist_ok=True)
+    gallery_base_path = gallery_dir / "source.png"
+    _save_image_with_provenance(
+        root,
+        base,
+        gallery_base_path,
+        operation="prepare_filter_gallery_source",
+        parent_image=base_parent_path,
+        source=base_source,
+        transform={
+            "sourceDimensions": {"width": base_input_size[0], "height": base_input_size[1]},
+            "thumbnailBounds": {"width": 320, "height": 320},
+        },
+        image_format="PNG",
+    )
     job_id = uuid.uuid4().hex[:12]
     job: dict[str, Any] = {
         "id": job_id, "state": "running", "done": 0, "total": len(entries),
@@ -2191,8 +3008,19 @@ def filter_gallery(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
                     _, transform = _resolve_transform(root, spec)
                     rendered = transform(base.copy()).convert("RGB")
                     name = f"{_slug(str(entry['id']))[:70]}.png"
-                    rendered.save(gallery_dir / name)
-                    record["path"] = (gallery_dir / name).relative_to(root).as_posix()
+                    target = gallery_dir / name
+                    provenance = _save_image_with_provenance(
+                        root,
+                        rendered,
+                        target,
+                        operation="render_filter_gallery_item",
+                        parent_image=gallery_base_path,
+                        source={"filterId": entry["id"], "filterTitle": entry["title"]},
+                        transform={"filter": spec},
+                        image_format="PNG",
+                    )
+                    record["path"] = target.relative_to(root).as_posix()
+                    record["provenance"] = provenance["provenance"]
                 except Exception as error:  # noqa: BLE001 - one bad filter must not sink the grid
                     record["error"] = str(error)
                 results.append(record)

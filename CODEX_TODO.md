@@ -22,8 +22,420 @@ values here.
   have distinct names: User Pick Gallery, Extracted Frame Gallery, Filter
   Effect Gallery, Processed Output Gallery, Processing Trail Gallery, and
   Extracted Member Gallery. Frame extraction and cursor grabs open and scroll
-  to the Extracted Frame Gallery. Focused tests: 7 passed; frontend build and
-  live UI inspection passed on 2026-08-31.
+  to the Extracted Frame Gallery. Member processing is split into two
+  independently started sibling top-level stack sections with no tabs:
+  **Scene Objects Textual Description** persists the description, raw output,
+  and object inventory, then stops for review; **Scene Object Visuals** remains
+  disabled until that text exists, then gives each targeted call the saved text
+  plus current image and extracts one object against the progressively reduced
+  scene. The textual-description prompt is persisted and editable with
+  `{{goal}}` and `{{alreadyExtracted}}` placeholders. Its labeled model selector
+  is directly above the prompt and its input-image-gated Call LLM button is
+  directly below. All prompts are complete before execution: restored
+  description rows render a finished fallback, and visual-extraction prompts
+  are precomputed as soon as text is parsed. No prompt-preparation placeholders
+  remain. Plain and markdown-fenced JSON text output is detected and
+  pretty-printed by default, with the exact raw model response retained in a
+  nested disclosure. The two surfaces expose exact rendered prompts, raw text
+  output, per-call statuses, and each transparent output image.
+  Processing Trail levels may be marked for inspection, but those marks no
+  longer select scene-object model inputs. Textual description and all
+  downstream prompt workflows start from Extracted Frame Gallery input images
+  directly. Visual extraction records each progressively reduced or
+  parent-cutout per-call input and shows the exact image path beside its prompt.
+  The earlier no-description failure was
+  traced to the nonexistent `/player/asset` model-input URL (the real route is
+  `/asset`) before any model invocation occurred. A second issue allowed
+  `copilot-headless-2` despite its explicit `vision: false`; image selectors now
+  exclude text-only models and show unavailable inherited vision models as
+  disabled. The configured SingularityNET backend was enabled because the
+  workspace override already selected its Gemma vision model and `SNET_API_KEY`
+  is present. An earlier live call with `frame_0065.png` returned a valid
+  scene description and four-object JSON inventory in 27.5 seconds.
+  Member count parameters were removed: the textual-description pass inventories
+  every distinct thing it reports and Scene Object Visuals processes that list.
+  The model combo now fills in precedence order from the effective selection,
+  workspace models, included-workspace models, and shared inherited models
+  before merging slower Model Policy discovery. Video Import now uses the
+  shared rich option formatter, so each choice includes backend and capability
+  tags plus effective/inherited/unavailable annotations. STATUS has a wrapping
+  top band containing all four checkboxes plus State and Forget. Its lower row
+  contains the full-width rolling log with Stop aligned beside it.
+  Scene Object Visuals now runs two persisted, editable prompts before
+  extraction. The first creates a normalized `objects_with_sub_objects`
+  artifact: every found object is a root key, recursively decomposed sub-objects
+  are keys under their immediate parents, countable parts carry count metadata,
+  and strongly implied hidden parts carry visibility, reason, and occluder
+  metadata. Fully hidden parts remain available for later reasoning but are not
+  sent to visual extraction. A prompt-writer fan-out then asks the model for a
+  better ready-to-run extraction prompt for every non-hidden root and
+  sub-object, preserving exact writer prompts, outputs, generated prompts, and
+  explicit errors. The next prompt sends the input image plus the saved text
+  and visible hierarchy,
+  validates the returned JSON object names, displays the exact prompt,
+  formatted/raw response, warnings, chosen front-to-back order, and per-object
+  route choice. Roots use `direct_from_scene`; sub-objects may use
+  `direct_from_scene`, `from_parent_cutout`, or both, defaulting to both if the
+  model omits a route. The pipeline runs a progressive direct pass plus an
+  independent recursive parent-reference pass, retaining every route input,
+  prompt, status, and output. The client enforces every sub-object before its
+  parent even if the model orders them incorrectly. Unknown names are reported
+  and ignored; omitted known objects are visibly appended last; a response with
+  no recognized names fails. Extracted variants render at the bottom as one
+  vertical strip per input image. Successful textual-description,
+  `objects_with_sub_objects`, prompt-writer, extraction-order, object-visual, and
+  turtle model responses are cached by model ID, exact prompt, and image
+  content hash. The cache persists in workspace Video Import page state and
+  emits a STATUS cache-hit line when reused. Editable prompt panels and
+  per-route prompt details start collapsed. Every LLM stage has its own explicit
+  Call LLM button, and downstream checkpoint calls replay required upstream
+  prompt workflows through that cache. An always-visible Scene Object Pipe
+  Flow now sits between the collapsed description and visual-extraction nodes:
+  a rendered left-column tree sits beside the Description → Visuals → Turtle
+  stack and connects the Extraction root, persisted
+  inventory-scope, prompt-source, and image-route branch nodes, visible
+  continue/convergence diamonds, and the Turtle / Import Game destination. All
+  36 combinations are routed as curved SVG legs behind the branch cards, with
+  the selected leg highlighted. Clicking a
+  node opens its branch editor/history on the
+  right; clicking a branch endpoint or bottom destination opens a stacked full
+  path. Converged `Both`/model-planned paths provide explicit parent-fork
+  disambiguation without changing execution. Previous/next controls cycle all
+  36 inventory × prompt × image-route paths. Runs append labeled fork/outcome
+  history, and the selected pipes now directly gate roots vs sub-objects,
+  baseline vs rewritten prompt attempts, and direct vs parent-cutout passes.
+  The tree remains visible without an imported video. Live acceptance confirmed
+  one root, three fork levels with 3/3/4 branch cards, one highlighted branch
+  per level, convergence rendering, destination routing, and path cycling on
+  2026-09-01. A live screenshot then exposed the board's grid row collapsing to
+  18px/2px visible height because `overflow: hidden` removed its automatic
+  minimum size; `overflow: visible` now preserves the 628.5px content-sized row,
+  backed by a regression assertion. Focused tests (8), the frontend production
+  build, and the visible spline screenshot passed.
+  The final placement is a true two-column workspace: live geometry put the
+  414px tree at x=56 and the 646px Description / Visuals / Turtle stack at
+  x=498. The tree begins at Extraction, ends at Turtle / Import Game, renders
+  exactly 36 SVG route legs, and highlights exactly one current route.
+  The left tree is now wire-first: thin shared/branch connectors and small
+  glowing root, branch, convergence, and destination orbs replace the former
+  boxed tree cards; labels remain clickable and the right editor remains the
+  only card-style stack. Live computed styles confirmed 36 route lines, one
+  selected route, transparent/no-border branch and stage nodes, and 7px round
+  branch orbs; a live screenshot captures the result.
+  The center is now a strict two-column workspace. A single sticky left
+  `.video-import-pipe-column` physically contains the `VIDEO IMPORT PIPE FLOW`
+  header and spline, joined by an origin orb and continuous 2px cyan stem. The
+  right column owns the fork/path editor and Description → Visuals → Turtle
+  stack. Live geometry confirmed the combined left column at x=56/414px wide,
+  the right editor at x=480, the stack at x=498/646px wide, and a zero-pixel
+  seam between the pipe header bottom and spline top.
+  Entering Video Import also starts with UI Debug, Generations, and UI Config
+  hidden; their existing topbar restore controls remain available.
+  Scene-object LLM stages now ignore Processing Trail marks and consume
+  Extracted Frame Gallery input images directly; restored probe-era inventories
+  and scenes are filtered out. The prior fixed hierarchy/fan-out/route
+  combination has been superseded by one recursive cycle: Describer lists
+  direct children, Planner orders them, Outliner traces one object per
+  independently scheduled call, and Extractor cuts and reconstructs the
+  background from those outlines; every cutout is enqueued through the same cycle
+  until Describer returns no children or the branch reaches the fixed level-9
+  ceiling. Describer, Planner, Outliner, Extractor, and
+  Turtle expose explicit Call LLM buttons and persisted prompts/outputs. The
+  implementation supplies initial templates, but the running system never
+  generates or rewrites prompts. Planner is strictly order-only. Outliner owns
+  precise polygons, holes, clockwise contour instructions, and normalized
+  Turtle traces, with one object per call and no dependency on other outline
+  calls or extraction. Extractor owns cutting and background reconstruction
+  from the stored Outliner geometry. Turtle
+  prefers leaf-object images. The left wire/orb tree is now data-driven from
+  real parentInventoryId links rather than 36 hypothetical routes.
+  `NONE`, unusable geometry, or cut failures stop only that sub-object branch
+  and render as `EXTRACTOR STOP` leaves; other sibling branches continue.
+  Live inspection confirmed zero fixed-route SVG paths, the recursive empty
+  state before Describer runs, the four Describer / Planner / Recursive
+  Extractor / Turtle Call LLM controls.
+  The two-column geometry remains 414px left tree / 672px inspector / 646px
+  right stack. Focused UI tests (9), the frontend production build, and a live
+  recursive-tree screenshot passed.
+  Recursive roots now come only from the new persisted, explicit multi-selection
+  checkboxes in Extracted Frame Gallery; picked inputs, keepers, algorithmic
+  groups, and fallbacks cannot populate that set. The sticky left middle column
+  mirrors real selected inputs, then Extracted Objects and Leftover Backgrounds
+  grouped by recursion level; the right middle column owns the workflow.
+  Extractor now requests multi-part pixel-edge polygons plus hole polygons.
+  `member-cut` supersamples masks at 4×, preserves source alpha, writes
+  anti-aliased RGBA PNG cutouts, and erases the identical mask from the leftover
+  background. Every precise cutout also produces a separate padded next-pass
+  PNG enlarged to at least 640px on its longest side; recursive Describer and
+  terminal Turtle calls use that analysis image while galleries retain the
+  original cutout.
+  Live HMR inspection (without blocking on another test run) showed 111
+  available frame checkboxes, zero implicit selections, a disabled Describer
+  call until explicit selection, the 412px left gallery column, 672px right
+  workflow column, level 0/1 galleries, manual Describer/Planner/Extractor
+  prompts, and Opus 4.8 Fast selected. UI Debug, Generations, and UI Config were
+  hidden on page entry.
+  Recursive automation now has five
+  persisted controls: Describer, Planner, Extractor, advance recursion levels,
+  and next-pass enlargement. Each worker consumes only its own ready queue;
+  failed/not-found objects are not automatically retried. Disabling recursion
+  retains cutouts, and re-enabling it creates their missing child inventories.
+  Next-pass enlargement is now conditional in `member-cut`; when disabled, the
+  exact precision cutout is reused. All pre-extraction sections remain
+  full-width above the two-column area, whose full-width top border is the
+  automation strip; the left side begins with hideable galleries and the right
+  side contains the recursive workflow.
+  The Alt-hover 5× image magnifier now includes a scrollable context sidecar.
+  It resolves the exact filesystem image back to its recursive inventory and
+  shows the saved image description plus every detected object's name,
+  description, and status; unanalyzed images report that no saved context
+  exists.
+  Ordinary non-Alt image hover shows two separate blocks: the exact parent
+  object description that selected a cutout for extraction and that image's
+  latest raw Describer output. A fresh cutout immediately has parent context,
+  then gains its own Describer block without replacing the first.
+  Extracted Images and the other left galleries support additive multi-select
+  through Ctrl-click (or Ctrl+Enter/Space), which toggles only that item while
+  preserving prior selections. Ordinary click exclusively opens the popup and
+  workflow gallery checkboxes are hidden.
+  Extracted Frame Gallery input checkboxes and Select all/none remain enabled
+  during model work, so auto-starting on the first selection cannot lock the
+  user out of adding more images to the same input set.
+  Selected Images mirror tiles no longer repeat selection checkboxes. Clicking
+  an image tile pins its metadata popup at a fixed screen position until the
+  explicit Close button is pressed; ordinary hover remains transient. Popouts
+  auto-size but cap at half the viewport in each dimension, scroll their text,
+  and pinned popouts support bounded two-axis resizing. Normal and Alt popout
+  headers are sticky within their scrollers so Close remains visible.
+  Image popouts now fetch and pretty-print the complete provenance sidecar and
+  pretty-print Describer/Turtle Gen/Turtle PNG JSON locally in the popout
+  without rewriting the raw persisted artifacts.
+  Ordinary pinned and Alt-click image popouts now include the exact
+  pretty-printed Planner output, or a truthful waiting/queued/retrying/leaf
+  status before an output exists.
+  Planner output now includes per-object surgical cutout instructions with
+  include/exclude/occlusion rules, a clockwise contour description, and
+  normalized Turtle-style move/line boundary commands. Extractor injects these
+  instructions and refines the guide into final pixel-edge polygons/holes.
+  Extractor now also returns an LLM-authored background continuation plan.
+  Content-aware removal now prefers the selected image-output model's standard
+  OpenAI-compatible `/images/edits` masked edit, accepts only a real exact-size
+  image, and composites only the cut mask. Simulated/failed output falls back
+  to NumPy boundary diffusion. Model/artifact/fallback metadata and the fill
+  plan are retained in API output and provenance; median, blur, and transparent
+  hole remain selectable.
+  Outliner now records its exact source image and decoded dimensions. Member
+  cutting verifies identical dimensions and same-source/provenance-descendant
+  lineage, rejects out-of-bounds coordinates instead of clamping, and records
+  the alignment proof in both cutout and scene provenance.
+  The ChatConversation colored picker is now the reusable
+  `ColoredTagCombobox.tsx`. Video Import uses it for every model selector, with
+  backend grouping and colored vision/image-output/multimodal/reasoning/tools/
+  JSON/audio/code/text plus preferred/inherited/unavailable chips.
+  Clearing Selected Images now removes each selected root's complete recursive
+  workflow metadata and descendants, scene/Turtle state, response/provenance
+  caches, derived gallery selections, and pinned popups without deleting the
+  source image files.
+  Alt rollover gives the image a full half-width/half-height pane beside the
+  context and scales it aspect-correctly with contain (including above 5× for
+  small tiles). The combined rectangle is clamped onscreen so neither pane
+  covers the other.
+  Alt-click now pins that complete image/context pair across keyup and
+  pointer-leave until its explicit Close button is pressed.
+  Planner output is directly reachable from the controller and selected-cycle
+  status button: the target section is opened and smooth-scrolled to the exact
+  selected inventory. Describer/Extractor status buttons use the same reveal
+  behavior.
+  Concurrent root/output rendering is now sorted by source frame index.
+  Undescribed empty inventories no longer falsely show Planner complete; the
+  selected-cycle/controller status distinguishes waiting for Describer,
+  Planner queued, retrying after error, and output ready. Planner reveal retries
+  its scroll after the collapsed section mounts.
+  All five recursive automation controls default ON only when no saved state
+  exists; subsequent loads restore the exact last persisted toggle values.
+  Frame extraction now supports both short start/end time windows and
+  start/end scene-number windows. Scene mode has a persisted skip-scenes
+  stride, records each output's source scene, and defaults on first use to
+  scene 2 with one skipped scene (2, 4, 6, ...); saved state still wins.
+  The automation border now has a global model and total 1-50 process ceiling,
+  followed by Describer/Planner/Extractor/Turtle Gen/Turtle PNG rows with per-call model,
+  concurrency, and prompt-source selectors. Call models default to `use
+  global`; call limits default to `keep below global limit`.
+  The former six-root cap is removed. Root and recursive-child descriptions
+  share a work-conserving pool, and every call queue fills the selected
+  effective concurrency whenever enough work is ready.
+  The inherited Describer share is a soft one-third of the global ceiling:
+  Describer borrows idle slots, then stops refilling above one-third whenever
+  downstream call types are waiting. A numeric Describer override still wins.
+  All five LLM call types now launch cooperatively at the same time through a
+  shared global semaphore. The scheduler enforces global/per-type limits,
+  selects the least-utilized runnable type, and exposes active/queued counters.
+  Failed calls now cool down for one second, allow other queued work to move
+  ahead, and retry indefinitely. Retries bypass the content cache so invalid
+  prior responses are not replayed forever.
+  Every call type reserves up to two initial slots for due retries while
+  allowing fresh/retry work to borrow unused reservation, keeping all available
+  capacity work-conserving.
+  Restart-pending now drains the cooperative scheduler: active calls may
+  finish, but queued calls and stages about to advance refuse new model work.
+  The controller reports `RESTART PENDING · DRAINING`; cancel resumes queues,
+  while restart-started remains paused through reload.
+  Restart intent is mirrored in the backend presence registry, allowing
+  isolated browser contexts to discover it on their five-second poll and drain
+  workers even when BroadcastChannel is unavailable.
+  Described object leaves now run separate Turtle Gen and Turtle PNG LLM calls,
+  then render through a validated non-Python drawing runtime, and
+  appear first in a Pre-Turtle Leaves gallery before terminating in a separate
+  persisted Turtle Output gallery. Hover metadata shows the program and
+  terminal render.
+  Every generated Video Import PNG now receives a `.provenance.json` sidecar
+  with original/current dimensions, source video/frame/scene, parent links,
+  crop/mask data, resize scale/padding, and flattened lineage back to the
+  first-seen frame. Turtle artifacts are linked into the leaf provenance.
+  Extracted Frame Gallery now has a Clear action that clears frame tiles and
+  their pick/group/LLM-input state while preserving source files. Every
+  workflow gallery now has its own Clear action; recursive level clears reset
+  that level plus descendants so automation regenerates them, and Turtle Output
+  clears/requeues its own persisted program/render gallery.
+  Opening or changing a per-call model, process-limit, or prompt combo exposes
+  that call's complete selected prompt in a full-width 320px-minimum editor
+  directly below the controller bar.
+  The controller prompt editor now has explicit Reload Prompt and Save Prompt
+  actions. Reload updates only the active prompt from filesystem page state;
+  Save immediately persists the current snapshot and browser mirror.
+  The prior Windows Uvicorn/WatchFiles handoff was reproduced: the reloader
+  logged `Reloading`, lost its parent, and left a high-CPU orphan worker without
+  a usable listener. Automatic backend file watching is now disabled on all
+  platforms; the user/operator performs one explicit batched restart after a
+  group of backend edits.
+  Restart Now, Cancel Restart, and topbar Restart controls remain bright,
+  colored, glowing, and full-contrast in pending/preparing states;
+  lifecycle-disabled buttons no longer dim.
+  Frontend Vite HMR and the surgical UI file-change reload hook are also
+  disabled. UI reloads are explicit, so edits can be batched before the browser
+  is refreshed.
+  The global title frame now exposes a page-process/restart-change event
+  channel for every page. Restart requested during active work becomes a
+  draggable, nonmodal center notice that records the original reason and keeps
+  appending global/page changes while the user continues working. The existing
+  Restart controls remain informed and clickable; only explicit Restart Now
+  starts the restart.
+  Open workbench tabs now heartbeat every five seconds through both a cross-tab
+  BroadcastChannel and local backend presence registry with
+  tab/workspace/page/URL identity. The title frame shows
+  Open Workbenches and Active counts and exposes the live snapshot as
+  `window.__workbenchGlobalFrameStatus`, so operators/agents can inspect what
+  is active, including across isolated browser contexts. Restart-pending
+  requests and updates broadcast to every open tab.
+  The global title frame also owns an allowlisted realtime UI command channel
+  for bounded style, `live-ui-*` class, and scroll changes. It rejects
+  executable/network CSS, counts live patches in the topbar, records them in a
+  pending-restart ledger, and can roll all ephemeral changes back without a
+  reload. Arbitrary JavaScript evaluation is intentionally not exposed.
+  Live validation confirmed the restart notice remains nonmodal, moves by its
+  header, records later change-channel messages, and leaves page pointer events
+  enabled.
+  Final focused Video Import/global-frame regressions pass (25 tests), the frontend
+  production build passes, `git diff --check` passes, and the restarted
+  workbench API responds on port 8000.
+  Explicit live rollout verification after the manual browser reload showed
+  all five cooperative call types ON, the persisted global ceiling at 18,
+  Describer auto-reserved at 6, live active/queued counters, Backend connected,
+  and the full Describer prompt editor with Reload Prompt and Save Prompt.
+  The final explicit rollout showed 19 Selected Images tiles with zero repeated
+  checkboxes, a clicked metadata popup remaining pinned after pointer-leave
+  until Close, and Planner Output opening the target visual-output section.
+  After the final manual Vite restart/browser reload, live validation measured
+  the pinned popup at 624×160 inside a 640×360 half-viewport cap with
+  `resize: both`, scrolling, Close, and pretty-printed provenance. A structured
+  title-frame command applied one live patch, showed `Live patches 1`, and
+  restored the original style without reload.
+  A later validated frontend batch is intentionally pending explicit rollout:
+  live Video Import still had 10/18 LLM workers active, so the global
+  nonmodal restart notice was opened instead of interrupting them. Its ledger
+  lists cooperative simultaneous scheduling, two retry-reserved workers per
+  call type, truthful first-image Planner status/order, and bounded resizable
+  pretty-printed popouts. The user can press Restart Now when ready.
+  The latest batch passes 32 focused tests and the frontend production build.
+  Its active-tab draggable restart notice is visible and lists Alt-click sticky
+  image/description, Ctrl-only selection, central backend workbench presence,
+  and explicit restart-supervisor changes. It remains nonmodal while the last
+  four observed LLM workers finish; the user owns pressing Restart Now.
+  The completed rollout now passes 32 focused tests. Live checks confirmed
+  Planner appears in ordinary and Alt popups; Alt-click remains pinned after
+  Alt keyup and pointer-leave; Close stays visible after scrolling; Restart is
+  bright cyan at full opacity; duplicate restart requests debounce to one new
+  API instance; and the central presence endpoint reports both open workbench
+  tabs with workspace/page identity.
+  Every item in those left galleries now has an independently persisted
+  multi-selection checkbox. Input selections share the strict Describer input
+  set; extracted-object and leftover-background selections persist separately
+  for curation.
+  The left gallery order is now all Extracted Images, explicitly Selected
+  Images, then separate Extracted Objects and Leftover Backgrounds panels for
+  every recursion level. Each panel has an independently persisted
+  hide/restore disclosure. Live HMR showed 412px left / 672px right columns,
+  eight level-aware panels for depth 2, one available input checkbox with zero
+  implicit checks, and a disabled Describer until selection.
+  Video Import initially prefers an enabled Claude Opus 4.8/4.8-fast vision
+  model for both object and Turtle selectors, preserves manual choices, and
+  falls back to the effective workspace model when Opus is unavailable. Live
+  reload selected enabled
+  `enullm-8801-copilot-headless-3_percent100` / Claude Opus 4.8 Fast in both
+  object selectors. The live stack shows only the four user-editable initial
+  templates (Description, Planner, Extractor, Turtle) and no generated prompt
+  writer.
+  Legacy saved Extractor templates using `{{objectName}}` are migrated on load
+  to the single shared `{{nextObjectName}}` template. Live reload confirmed the
+  five shared target/order placeholders, no Planner-generated prompt UI, and no
+  per-object prompt display.
+  Any Video Import image now supports Alt-hover magnification through a fixed,
+  pointer-transparent overlay sized to exactly 5× displayed width and 5×
+  displayed height; key release, pointer exit, and window blur remove it. Live
+  geometry confirmed a 299.96×168.59 image produced a 1499.8×842.97 content
+  overlay (exactly 5.0× in both dimensions).
+  The center Video Import scroller
+  uses `scrollbar-gutter: stable`, a constrained `minmax(0,1fr)` track, and
+  border-box sizing. It reserves the live 15px scrollbar width instead of
+  overlaying controls and reclaims 15px of excess left padding; live geometry
+  shows a 28px left inset and 52px minimum right-edge control clearance.
+  Focused integration tests: 10 passed; frontend build and live UI inspection
+  passed on 2026-08-31.
+- The App Menu now has a persisted top minimize/restore button, retaining every
+  destination as its original icon-only button at 36px, plus a persisted
+  `[ - / + ]` density control for zero-gap tight or comfortable spacing. Every
+  menu group heading is an independent persisted disclosure. Video Import
+  temporarily minimizes the App Menu, Resource Browser, and Documentation
+  frames on entry and restores their prior widths on exit. Built-in menu glyphs
+  are distinct and semantic for icon-only use. Every active plugin manifest now
+  exports exactly one `<Plugin Name> Admin` UI page under PLUGINS: Coplex,
+  CoplexStdPy, EMULLM, Mailbox Chat, Web Proxy, and WS_COLLAB. Redundant plugin
+  docs/audio/monitor menu exports were removed; the PLUGINS group itself now
+  owns collapsing those six admin links instead of hiding them behind the
+  generic overflow threshold. Focused Video Import, shell-navigation, and
+  plugin-export tests passed (14 tests), the frontend production build passed,
+  and live geometry confirmed `36px 1166px 36px` on 2026-08-31.
+- EMULLM model assets were refreshed from the live `:8801` relay on 2026-08-31
+  after restarting its managed service. Discovery fetched and imported all 51
+  advertised models, including 21 new resources and every fetched property,
+  provider-metadata field, limit, pricing field, and capability. EMULLM's
+  OpenAI-compatible list omits backing-model capabilities, so discovery now
+  also fetches `/emullm/admin/copilots/models` and embeds the matching Copilot
+  SDK backing metadata. This corrected 28 imported headless assets to
+  `vision: true`; 24 inherited EMULLM vision variants are effectively enabled
+  in the active workspace after updating its three local discovery overrides.
+  Both shared and workspace EMULLM backends are explicitly enabled, enforced by
+  a regression test. Video Import merges availability monotonically so slower
+  Model Policy metadata cannot downgrade a model already confirmed enabled by
+  resolution. Model options keep availability separate and derive a
+  `preferred` / `not preferred: <policy source> selected another model`
+  explanation instead of treating non-preference as disablement.
+  The live Scene Objects selector now has 30 enabled vision choices total,
+  including those 24 EMULLM assets. A real
+  `enullm-8801-copilot-headless-2_percent100` call with `frame_0065.png`
+  returned `SEEN:` and an accurate image description in 7.9 seconds. Model
+  discovery/model-selection/Video Import/SingularityNET focused tests: 49
+  passed.
 - UI acceptance-debug invariant through **2026-09-02**: keep the labeled,
   colored borders for `DEBUG A · APP MENU`, `DEBUG B · DOCS INDEX`,
   `DEBUG C · DOCS SCAN CONTROLS`, `DEBUG D · FILE LIST SCROLLER`, and

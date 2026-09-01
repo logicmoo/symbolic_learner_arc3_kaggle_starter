@@ -75,28 +75,6 @@ function apiProxy(apiTarget: string): Record<string, ProxyOptions> {
   };
 }
 
-function surgicalUiReloader(): Plugin {
-  let reloadTimer: ReturnType<typeof setTimeout> | undefined;
-  const reloadableSource = /(?:^|[\\/])frontend[\\/](?:src[\\/].*\.(?:css|ts|tsx)|index\.html)$/i;
-  return {
-    name: "workbench-surgical-ui-reloader",
-    handleHotUpdate(context) {
-      if (!reloadableSource.test(context.file)) return [];
-      if (reloadTimer) clearTimeout(reloadTimer);
-      reloadTimer = setTimeout(() => {
-        context.server.ws.send({
-          type: "custom",
-          event: "workbench:surgical-ui-change",
-          data: { file: context.file, changedAt: new Date().toISOString() },
-        });
-      }, 180);
-      // Disable component-by-component HMR. One allowlisted, debounced page
-      // reload restores from the application's session-state lifecycle.
-      return [];
-    },
-  };
-}
-
 function tsxSourceLocations(): Plugin {
   const sourceRoot = resolve(HERE, "src");
   const normalizedSourceRoot = sourceRoot.replaceAll("\\", "/").toLowerCase();
@@ -162,11 +140,12 @@ export default defineConfig(({ mode }) => {
   const apiTarget = env.WORKBENCH_API_TARGET || "http://127.0.0.1:8000";
 
   return {
-    plugins: [tsxSourceLocations(), react(), surgicalUiReloader()],
+    plugins: [tsxSourceLocations(), react()],
     server: {
       host,
       port,
       strictPort: true,
+      hmr: false,
       watch: {
         ignored: [
           "**/dist/**",

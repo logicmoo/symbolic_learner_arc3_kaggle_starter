@@ -117,6 +117,7 @@ def test_navigation_v2_has_required_groups_and_labels() -> None:
 def test_plugin_contributed_rail_items_collapse_past_a_threshold() -> None:
     source = ACTIVE_PAGE.read_text(encoding="utf-8")
     assert "PLUGIN_MENU_COLLAPSE_THRESHOLD = 5" in source
+    assert 'section.group !== "PLUGINS"' in source
     assert "sectionPluginEntries.length > PLUGIN_MENU_COLLAPSE_THRESHOLD" in source
     assert "data-plugin-group-toggle={section.group}" in source
     # The currently open plugin page must stay visible even when its group is collapsed.
@@ -125,6 +126,19 @@ def test_plugin_contributed_rail_items_collapse_past_a_threshold() -> None:
         "explicitToggle !== undefined ? explicitToggle : !overThreshold || hasSelectedEntry"
         in source
     )
+
+
+def test_every_navigation_heading_is_a_persisted_disclosure() -> None:
+    source = ACTIVE_PAGE.read_text(encoding="utf-8")
+    styles = (ROOT / "workbench/frontend/src/styles/workbench.css").read_text(encoding="utf-8")
+
+    assert "workbench.collapsedNavigationGroups" in source
+    assert "collapsedNavigationGroups[section.group]" in source
+    assert 'className="rail-section-toggle"' in source
+    assert "aria-expanded={!collapsedNavigationGroups[section.group]}" in source
+    assert "setCollapsedNavigationGroups" in source
+    assert ".rail-section-toggle" in styles
+    assert ".rail-section.is-collapsed" in styles
 
 
 def test_navigation_scrollbar_reserves_space_inside_the_app_menu() -> None:
@@ -139,13 +153,36 @@ def test_navigation_scrollbar_reserves_space_inside_the_app_menu() -> None:
 def test_navigation_menu_is_resizable_and_persistent() -> None:
     source = ACTIVE_PAGE.read_text(encoding="utf-8")
     styles = (ROOT / "workbench/frontend/src/styles/workbench.css").read_text(encoding="utf-8")
+    workflow_layout = (ROOT / "workbench/frontend/src/styles/workflow_layout.css").read_text(encoding="utf-8")
 
     assert "workbench.navigationWidth" in source
+    assert "workbench.navigationExpandedWidth" in source
     assert "beginNavigationResize" in source
     assert 'aria-label="Resize App Menu"' in source
+    assert 'aria-label={navigationWidth <= 36 ? "Restore App Menu" : "Minimize App Menu"}' in source
+    assert 'className="navigation-menu-toggle"' in source
     assert "setNavigationWidth(220)" in source
     assert '"--nav-rail-width": `${navigationWidth}px`' in source
     assert ".navigation-resizer" in styles
+    assert ".rail.navigation-v2.is-minimized" in styles
+    assert ".navigation-menu-toggle" in styles
+    assert ".rail.navigation-v2.is-minimized .rail-icon" in styles
+    assert ".rail.navigation-v2.is-minimized .rail-icon small{display:none!important}" in styles
+    assert "title={item.label}" in source
+    assert "workbench.navigationTight" in source
+    assert 'className="navigation-density-controls"' in source
+    assert 'aria-label="Tight App Menu spacing"' in source
+    assert 'aria-label="Comfortable App Menu spacing"' in source
+    assert "setNavigationTight(true)" in source
+    assert "setNavigationTight(false)" in source
+    assert ".rail.navigation-v2.is-tight .rail-icon" in styles
+    assert "padding-block:0" in styles
+    assert 'grid-template-columns: var(--nav-rail-width, 220px) minmax(0, 1fr) var(--inspector-width) !important' in workflow_layout
+    assert 'aria-label="Collapse all App Menu groups"' in source
+    assert 'aria-label="Expand all App Menu groups"' in source
+    assert "Object.fromEntries(NAVIGATION_V2.map" in source
+    assert 'setCollapsedNavigationGroups({})' in source
+    assert ".navigation-group-controls" in styles
     assert "left:calc(var(--nav-rail-width,220px) - 4px)" in styles
     assert "var(--nav-rail-width,220px) + var(--resource-browser-width,250px)" in styles
     assert ".rail.navigation-v2 .rail-icon{min-height:30px" in styles

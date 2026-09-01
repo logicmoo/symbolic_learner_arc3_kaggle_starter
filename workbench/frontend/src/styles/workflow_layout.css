@@ -1254,7 +1254,7 @@
 }
 
 .workbench:not([data-view="currentWorkflow"]) .workspace {
-  grid-template-columns: 220px minmax(0, 1fr) var(--inspector-width) !important;
+  grid-template-columns: var(--nav-rail-width, 220px) minmax(0, 1fr) var(--inspector-width) !important;
 }
 
 .workbench:not([data-view="currentWorkflow"]) .workspace > .main-stage {
@@ -1268,7 +1268,7 @@
 
 /* Current Workflow hosts the removed Resource Browser content as its own page. */
 .workbench[data-view="currentWorkflow"] .workspace {
-  grid-template-columns: 174px minmax(0, 1fr) var(--inspector-width) !important;
+  grid-template-columns: var(--nav-rail-width, 220px) minmax(0, 1fr) var(--inspector-width) !important;
 }
 
 .workbench[data-view="currentWorkflow"] .workspace > .stages-panel {
@@ -1288,11 +1288,11 @@
 
 @media (max-width: 1180px) {
   .workbench:not([data-view="currentWorkflow"]) .workspace {
-    grid-template-columns: 220px minmax(0, 1fr) !important;
+    grid-template-columns: var(--nav-rail-width, 220px) minmax(0, 1fr) !important;
   }
 
   .workbench[data-view="currentWorkflow"] .workspace {
-    grid-template-columns: 174px minmax(0, 1fr) !important;
+    grid-template-columns: var(--nav-rail-width, 220px) minmax(0, 1fr) !important;
   }
 
   .workbench[data-view="currentWorkflow"] .workspace > .stages-panel {
@@ -1307,11 +1307,11 @@
 
 @media (max-width: 820px) {
   .workbench:not([data-view="currentWorkflow"]) .workspace {
-    grid-template-columns: 54px minmax(0, 1fr) !important;
+    grid-template-columns: var(--nav-rail-width, 54px) minmax(0, 1fr) !important;
   }
 
   .workbench[data-view="currentWorkflow"] .workspace {
-    grid-template-columns: 54px minmax(0, 1fr) !important;
+    grid-template-columns: var(--nav-rail-width, 54px) minmax(0, 1fr) !important;
   }
 
   .workbench[data-view="currentWorkflow"] .workspace > .stages-panel {

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent as ReactMouseEvent } from "react";
 import { MarkdownDocument } from "./MarkdownDocument";
+import { ColoredTagCombobox, type ColoredTag, type ColoredTagDescription } from "./ColoredTagCombobox";
 import { SuperControl, type StandardSuperControlRequest } from "./UniversalArtifactEditor";
 import { jsonDocumentToMetta, mettaDocumentToJson } from "../lib/mettaResourceCodec";
 import "../styles/chat.css";
@@ -384,106 +385,8 @@ const TAG_COLORS: Record<string, string> = {
   "read-only": "#d98c8c",
 };
 
-type StreamTag = { text: string; color: string };
-type StreamDescription = { label: string; groupKey: string; groupLabel: string; tags: StreamTag[] };
-
-// A combobox replacement for the mailbox pickers: a native <select> can only
-// color a whole <option> one color, so to give each property tag its own color
-// we render a custom dropdown whose rows carry independently-colored chips.
-function StreamPicker({
-  value,
-  ids,
-  ariaLabel,
-  allowNone,
-  describe,
-  onChange,
-}: {
-  value: string;
-  ids: string[];
-  ariaLabel: string;
-  allowNone?: boolean;
-  describe: (id: string) => StreamDescription;
-  onChange: (value: string) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement | null>(null);
-  useEffect(() => {
-    if (!open) return;
-    const onDoc = (event: MouseEvent) => {
-      if (ref.current && !ref.current.contains(event.target as Node)) setOpen(false);
-    };
-    const onKey = (event: globalThis.KeyboardEvent) => {
-      if (event.key === "Escape") setOpen(false);
-    };
-    document.addEventListener("mousedown", onDoc);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onDoc);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [open]);
-  const groups = new Map<string, { label: string; ids: string[] }>();
-  for (const id of ids) {
-    const d = describe(id);
-    const g = groups.get(d.groupKey) ?? { label: d.groupLabel, ids: [] };
-    g.ids.push(id);
-    groups.set(d.groupKey, g);
-  }
-  const order = [...groups.keys()].sort((left, right) => left.localeCompare(right));
-  const cur = value ? describe(value) : null;
-  const chips = (tags: StreamTag[]) =>
-    tags.map((t) => (
-      <span key={t.text} className="chat-tag" style={{ color: t.color, borderColor: t.color }}>
-        {t.text}
-      </span>
-    ));
-  return (
-    <div className="chat-streampick" ref={ref}>
-      <button
-        type="button"
-        className="chat-streampick-btn"
-        aria-label={ariaLabel}
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        onClick={() => setOpen((o) => !o)}
-      >
-        <span className="chat-streampick-cur">{cur ? cur.label : "(none/null)"}</span>
-        {cur ? chips(cur.tags) : null}
-        <span className="chat-streampick-caret">▾</span>
-      </button>
-      {open && (
-        <div className="chat-streampick-menu" role="listbox">
-          {allowNone && (
-            <button type="button" className={`chat-streampick-opt${value ? "" : " is-sel"}`} onClick={() => { onChange(""); setOpen(false); }}>
-              <span className="chat-streampick-optlbl">(none/null)</span>
-            </button>
-          )}
-          {order
-            .filter((k) => groups.has(k))
-            .map((k) => (
-              <div key={k} className="chat-streampick-grp">
-                <div className="chat-streampick-grphdr">{groups.get(k)!.label}</div>
-                {groups.get(k)!.ids.map((id) => {
-                  const d = describe(id);
-                  return (
-                    <button
-                      key={id}
-                      type="button"
-                      className={`chat-streampick-opt${id === value ? " is-sel" : ""}`}
-                      onClick={() => { onChange(id); setOpen(false); }}
-                    >
-                      <span className="chat-streampick-optlbl">{d.label}</span>
-                      {chips(d.tags)}
-                    </button>
-                  );
-                })}
-              </div>
-            ))}
-        </div>
-      )}
-    </div>
-  );
-}
+type StreamTag = ColoredTag;
+type StreamDescription = ColoredTagDescription;
 
 // Shared chat surface used by both the full Chat page and the floatable mini-dock.
 // Four editable combos drive it: FROM/TO pick agents, MAILBOX (view) and SEND-TO
@@ -2419,7 +2322,7 @@ export function ChatConversation({
     const unread = mailboxUnread.get(id);
     return typeof unread === "number" ? `${withGlobal} · ${unread}` : withGlobal;
   };
-  // Everything the StreamPicker needs to render one option: label, origin group,
+  // Everything the shared colored combobox needs to render one option: label, origin group,
   // and the per-property colored chips.
   const describeStream = (id: string): StreamDescription => {
     const origin = mailboxOrigins.get(id) || "ws_collab";
@@ -2540,7 +2443,7 @@ export function ChatConversation({
           </label>
           <label className="chat-control chat-address-send chat-match-detail">
             <button type="button" className="chat-label" onClick={() => void inspectId("SEND-TO", sendMailbox)}>Send-to</button>
-            <StreamPicker value={sendMailbox} ids={sendChoices} ariaLabel="Send mailbox" allowNone describe={describeStream} onChange={setSendMailbox} />
+            <ColoredTagCombobox value={sendMailbox} ids={sendChoices} ariaLabel="Send mailbox" allowNone describe={describeStream} onChange={setSendMailbox} />
           </label>
           <label className="chat-control chat-mbrow chat-mailbox-primary">
             <button
@@ -2551,7 +2454,7 @@ export function ChatConversation({
             >
               Source
             </button>
-            <StreamPicker value={mailbox} ids={mailboxChoices} ariaLabel="Viewed source" describe={describeStream} onChange={selectMailbox} />
+            <ColoredTagCombobox value={mailbox} ids={mailboxChoices} ariaLabel="Viewed source" describe={describeStream} onChange={selectMailbox} />
             <span className="chat-mbrow-actions">
               {personalCursor && (
                 <span className="chat-mbrow-cursor" title={`Personal cursor for ${personalCursor} on this mailbox`}>
@@ -2625,7 +2528,7 @@ export function ChatConversation({
           {mergeMailboxes.map((mb, index) => (
             <label className="chat-control chat-mbrow chat-mailbox-merged" key={`merge-row-${index}`}>
               <span className="chat-label">＋ Mailbox</span>
-              <StreamPicker
+              <ColoredTagCombobox
                 value={mb}
                 ids={mailboxChoices}
                 ariaLabel={`Merged mailbox ${index + 1}`}

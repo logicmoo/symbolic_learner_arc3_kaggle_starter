@@ -56,14 +56,16 @@ def test_workbench_launchers_share_the_root_environment() -> None:
     assert "workbench\\.venv" not in launcher + api
 
 
-def test_api_reload_is_limited_to_server_python_sources() -> None:
+def test_api_server_uses_explicit_batched_restarts() -> None:
     api = (ROOT / "workbench" / "scripts" / "run_api_server.bat").read_text(encoding="utf-8")
     runner = (ROOT / "workbench" / "scripts" / "run_api_server.py").read_text(encoding="utf-8")
 
     assert '"%ROOT%\\scripts\\run_api_server.py"' in api
-    assert 'reload_dirs=[str(SERVER_ROOT)]' in runner
-    assert 'reload_includes=["*.py"]' in runner
-    assert '"environment_files/*"' in runner
-    assert '"runtime/*"' in runner
-    assert '"__pycache__/*"' in runner
-    assert '"test_*.py"' in runner
+    assert "reload=False" in runner
+    assert "reload=True" not in runner
+    assert "reload_dirs" not in runner
+    assert "timeout_graceful_shutdown=5" in runner
+    assert "_run_explicit_restart_supervisor" in runner
+    assert "RESTART_EXIT_CODE = 75" in runner
+    assert "WORKBENCH_API_SUPERVISED_WORKER" in runner
+    assert "timeout_graceful_shutdown=5" in runner

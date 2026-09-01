@@ -96,3 +96,26 @@ def test_workspace_selection_can_skip_model_enumeration(
     assert payload["effective"] == {"models": ["inherited-model"], "strategy": "workspace_override"}
     assert payload["source"] == "workspace_override"
     assert payload["models"] == []
+
+
+def test_model_choices_identify_and_order_inherited_workspace_layers(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(system_control_api, "resolve_model_records", lambda _root: [
+        {"source": "shared", "workspaceId": "shared_library_system", "document": {"id": "shared-model", "label": "A shared"}, "resolved": {"enabled": True, "backendId": "shared"}},
+        {"source": "workspace", "workspaceId": "project", "document": {"id": "local-model", "label": "Z local"}, "resolved": {"enabled": True, "backendId": "local"}},
+        {"source": "included", "workspaceId": "team-library", "document": {"id": "team-model", "label": "B team"}, "resolved": {"enabled": True, "backendId": "team"}},
+        {"source": "shared", "workspaceId": "shared_library_system", "document": {"id": "disabled-vision", "label": "Vision", "capabilities": {"vision": True}}, "resolved": {"enabled": False, "backendId": "vision"}},
+    ])
+
+    choices = system_control_api._model_choices(tmp_path / "project")
+
+    assert [choice["id"] for choice in choices] == ["local-model", "team-model", "shared-model"]
+    assert choices[0]["inherited"] is False
+    assert choices[1]["inherited"] is True
+    assert choices[1]["workspaceId"] == "team-library"
+    all_choices = system_control_api._model_choices(tmp_path / "project", include_disabled=True)
+    disabled = next(choice for choice in all_choices if choice["id"] == "disabled-vision")
+    assert disabled["enabled"] is False
+    assert disabled["capabilities"] == {"vision": True}

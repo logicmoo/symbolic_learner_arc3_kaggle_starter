@@ -3,10 +3,19 @@
 The Video Import page (KNOWLEDGE → Video Import) is the full loop for turning
 a video you have the rights to into a playable ARC3 game recording: import →
 timeline editing → frame extraction → a **preview system** for building
-filter chains → entity extraction with probes → materialize.
+filter chains → entity extraction from input images → materialize.
 
 Everything runs in the workbench itself (Python/PIL/scikit-image skills,
 LUTs, yt-dlp) — a model only enters where explicitly chosen (MEMBERS, TURTLE).
+
+Opening Video Import temporarily minimizes the App Menu, Resource Browser, and
+Documentation rails to 36px so the pipeline owns the center width. Their normal
+controls can restore them, and leaving Video Import restores the prior widths.
+UI Debug, Generations, and UI Config start hidden on this page and remain
+available from their normal topbar controls.
+Hover any image and hold **Alt** to show an unclipped magnifier at exactly five
+times its displayed width and five times its displayed height. Releasing Alt,
+leaving the image, or blurring the window closes it immediately.
 
 ---
 
@@ -46,8 +55,14 @@ The EXTRACT row holds the **extract-frames-from-video criteria** — the very
 top of every chain run:
 
 - mode `every N seconds` or `per scene` (N images right after each change,
-  with offset) · start/end window (`⤓ start` / `⤒ end` take the player time)
-  · max frames · a grounded frame/time estimate.
+  with offset) · start/end time window · start/end scene-number window ·
+  skip-scenes stride · max frames · a grounded frame/time estimate.
+- Scene mode can extract short spans and sparse scenes independently. **Skip
+  N scenes** advances by `N + 1`; for example, start scene 2 with skip 1
+  extracts scenes 2, 4, 6, and so on. Each output frame retains its source
+  scene number.
+- First use defaults to scene mode, start scene 2, skip 1, one image per scene,
+  and no end scene. The saved workspace page state overrides these defaults.
 - **Extract frames** runs it as an interruptible job.
 - The GROUP row (appears with more than one frame) applies **group
   selectors**: `N most unique` (farthest-point sampling), `N evenly spread`,
@@ -61,7 +76,35 @@ Plain image tiles: `#index · time · source (extract / ⤵ cursor grab)`.
 
 - **Click an image** to make it the operator-picked input item (blue
   outline) — it feeds Preview / ▦ / permutations.
-- Hover overlay: **▲ keeper** (adds to the group selection, green outline) ·
+- **LLM input checkbox** is a separate explicit multi-selection. Only checked
+  images can enter the recursive Describer → Planner → Outliner → Extractor workflow;
+  picked images, keepers, group selectors, and implicit first/last fallbacks do
+  not populate it. Selection controls remain enabled while model stages run, so
+  choosing one image never locks out additional choices. Select all/none remain
+  explicit user actions.
+- **Clear extracted frames** removes all frame tiles, picked/group state, and
+  recursive input selections from the page. It does not delete image files or
+  already-derived object history.
+- Hovering any image shows two independent context blocks: the parent scene's
+  object description that caused the image to be extracted, and the image's
+  own latest exact Describer output. A new cutout therefore retains useful
+  parent context before its own Describer pass and gains the second block
+  afterward; one never overwrites the other.
+- Hold **Alt** for a fit-to-half-pane image magnifier plus a side
+  context panel. When that image has been described, the panel shows its saved
+  description and every named object with its own description and status.
+  The image and context panel occupy separate non-overlapping columns, with the
+  text sidecar layered above the image. Images without saved analysis say so
+  rather than inventing metadata.
+  The rollover gives the image the entire opposite half-page pane (half width
+  and half height) and enlarges it aspect-correctly with `contain`, including
+  more than 5× for very small tiles. The context owns the other half. Their combined side-by-side
+  rectangle is clamped onscreen, so the magnified image pushes the context
+  aside instead of covering it.
+  Alt-click pins the complete image/context pair. It remains after Alt is
+  released or the pointer leaves and closes only through its explicit Close
+  button.
+- Tile overlay: **▲ keeper** (adds to the group selection, green outline) ·
   **▼ drop** (removes the image from the candidates; files stay on disk).
 - The **first group selection is the selection criteria that decides which
   images feed the chain** in preview mode (preview-only — the full run
@@ -110,28 +153,276 @@ sort** — outputs are ordered most-changed-first, nothing is eliminated.
   made them; `▲ / ▼` on an output image is **credited to the filter(s) —
   and the group selectors — that produced it**.
 
-## 6. TRAIL / PROBES
+## 6. PROCESSING TRAIL
 
 Every run snapshots each step level (`input → each filter/selector → output`).
-Level cards show thumbnails and counts. **Click levels to place extraction
-probes** — several can sit side by side; default is the final output.
+Level cards show thumbnails and counts and may be marked for visual inspection,
+but those marks do not feed the scene-object LLM workflow. Description and all
+downstream prompt stages use Extracted Frame Gallery input images directly.
 
-## 7. MEMBERS — entity extraction
+## 7. SCENE OBJECTS TEXTUAL DESCRIPTION
 
-For each probed level, the loop asks the model to outline **one member per
-pass** (`{name, polygon}`), the workbench cuts it out as a **transparent
-GIF**, removes it from the scene, and continues on the reduced scene:
+This is a top-level stack item, not a substage inside the member gallery. One
+model call per input image describes the scene and returns a named list of
+individual extractable things without coordinates. It stops after saving the
+exact textual output for review. Its prompt is editable in the Description
+Prompt textarea; `{{goal}}` and `{{alreadyExtracted}}` are expanded for each
+input image. Every visual-extraction prompt is fully rendered as soon as the
+textual-description inventory is parsed, so no unfinished prompt placeholders
+are displayed.
 
-- **Probe goal** — find any members / faces / characters / objects /
+Both image-driven model selectors accept only models declaring `vision` or
+`multimodal` capability. Unavailable inherited vision models remain visible but
+disabled; text-only models cannot be sent input images. On initial load, an
+enabled Claude Opus 4.8/4.8-fast vision model is preferred when available;
+otherwise the effective workspace model remains the fallback. Manual choices
+are never overwritten.
+
+Every successful model response is cached by model ID, exact prompt, and image
+content hash. The cache is part of the workspace's persisted Video Import page
+state, survives reloads, covers textual descriptions,
+`objects_with_sub_objects`, extraction-prompt fan-out, extraction planning,
+object visuals, and turtle generation, and reports each reuse as a
+`cached model response` STATUS line.
+
+## 8. SCENE OBJECT VISUALS
+
+All intake, player, frame-selection, filter, output, trail, and initial
+description steps stay full-width above the split. The split begins at the
+Extracted Images gallery. Its full-width top border is a persisted automation
+strip with independent **Describer**, **Planner**, **Outliner**, **Extractor**, **Turtle Gen**,
+**Turtle PNG**, **Next recursion levels**, and **Enlarge subobjects** toggles. The left column contains
+the hideable galleries; the right column contains the recursive tree, selected
+cycle inspector, and visual-extraction/Turtle stack.
+All eight automation toggles default ON for a workspace with no saved page
+state. After any change, the exact toggle state is persisted and restored
+instead of resetting to the defaults.
+
+The automation strip starts with a global **model for all calls** and a total
+1–50 process ceiling. Each Describer, Planner, Outliner, Extractor, Turtle Gen, and
+Turtle PNG row then
+selects its model, maximum concurrent processes, and workspace-edited or
+built-in prompt. Per-call models default to **use global**; per-call process
+caps default to **keep below global limit**. Independent images run concurrently
+up to both caps, while removals from one changing leftover scene remain ordered.
+There is no hidden six-image ceiling: each ready queue uses as many workers as
+the selected cap permits. Root and recursive-child Describer work share one
+work-conserving pool. When Describer inherits its cap, one-third of the global
+maximum is its protected share while downstream work exists. It borrows every
+otherwise-idle global slot at startup, then stops refilling borrowed slots as
+Planner, Outliner, Extractor, Turtle Gen, or Turtle PNG work arrives. An explicit
+Describer per-call limit overrides this soft-share policy.
+
+All enabled call types cooperate through one global semaphore and may run at
+the same time. The scheduler enforces the total cap and every per-call cap,
+prefers the runnable type with the lowest current utilization, and immediately
+fills released slots from the shared queue. The controller reports global and
+per-type active/queued counts.
+All model selectors use the shared colored-tag combobox extracted from
+ChatConversation. Models are grouped by backend, and individually colored chips
+show useful capabilities such as vision, image output, multimodal, reasoning,
+tools, JSON, audio, code, and text, plus preferred/inherited/unavailable state.
+Opening or changing any model, process-limit, or prompt combo in a per-call row
+opens that call's complete selected prompt in a full-width editor directly
+below the controller bar. **Reload prompt** refreshes only that prompt from the
+filesystem-backed page state; **Save prompt** writes the current prompt
+explicitly without requiring a page reload.
+
+Failed Describer, Planner, Extractor, Turtle Gen, and Turtle PNG work receives a
+one-second cooldown and is returned to the queue rather than blocking sibling
+work. Fresh/other ready work continues first; failed items then retry
+indefinitely. Retry calls bypass cached failed/invalid responses so they
+actually invoke the selected model again.
+Each call type reserves up to two of its available initial worker slots for due
+retries. When fewer retries exist, fresh work immediately borrows those slots;
+when fewer fresh tasks exist, retries fill the rest, so capacity is never
+deliberately left idle.
+Restart-pending is a scheduler-wide drain signal. Calls already running may
+finish, but queued calls and every stage about to advance stop before launching
+new model work. The controller shows **RESTART PENDING · DRAINING**. Cancelling
+restart resumes the retry/ready queues; starting restart keeps them paused
+through page reload.
+Restart intent is also stored in the local backend presence registry. Isolated
+workbench tabs discover it during their five-second presence poll, display the
+same notice, and stop advancing their own workers even when BroadcastChannel
+cannot connect their browser contexts.
+
+Each input image follows one cycle:
+
+1. **Describer** — describe the current image and list only its direct visually
+   separable child objects. When the image is already an extracted object, do
+   not relist that parent object.
+2. **Planner** — choose the foreground-first extraction order. It never writes
+   or rewrites another prompt.
+3. **Extractor** — use one persisted user-authored precision template for every
+   call. Substitute only the single next object selected by Planner (name,
+   description, position, and total), call the model, and request a pixel-edge silhouette with
+   separate polygons for disconnected visible parts and hole polygons for
+   enclosed gaps. The backend rasterizes at 4× resolution, downsamples an
+   anti-aliased alpha mask, and saves a full-alpha PNG before precisely removing
+   the same mask from the background. It separately enlarges each cutout to at
+   least 640px on its longest side and adds transparent padding; this analysis
+   image, not the small gallery cutout, feeds the next Describer pass.
+   Planner supplies per-object surgical include/exclude/occlusion instructions,
+   a clockwise landmark contour, and a normalized Turtle-style move/line
+   boundary walk. Extractor treats that walk as a guide and refines it into the
+   final pixel-edge polygons and holes.
+   Extractor also returns an LLM-authored `backgroundFill` plan describing the
+   colors, gradients, continuing edges, and texture expected behind the removed
+   object. The selected Extractor model is used when it advertises image
+   output; otherwise the workbench prefers the enabled GPT-5.3-Codex
+   image-output resource, then the first enabled image-output model. The
+   default content-aware inpaint sends the source PNG, transparent edit mask,
+   and fill plan through that backend's standard OpenAI-compatible
+   `/images/edits` endpoint. Only a real provider/worker image with the exact
+   input dimensions is accepted, and only masked pixels are composited back;
+   simulated, missing, malformed, or failed output falls back to local NumPy
+   boundary diffusion. The renderer, model, provider artifact, and fallback
+   reason are retained in the response and provenance. Median, blur, and
+   transparent-hole modes remain explicit alternatives.
+
+Every successful cutout may be enqueued as a new image and run through the same
+Describer → Planner → Extractor cycle. Each automatic worker processes only its
+own ready queue and never retries failed or `NONE` objects. Turning **Next
+recursion levels** off stops new child inventories without discarding cutouts;
+turning it back on makes prior cutouts eligible again. **Enlarge subobjects**
+controls whether the next pass uses the padded 640px analysis image or the exact
+small cutout. Manual Call LLM buttons remain available regardless of automation.
+An empty direct-child inventory is the normal leaf
+condition; an Extractor `NONE`, unusable geometry, or cut failure terminates
+that specific sub-object branch; level 9 is the fixed safety ceiling; and
+**Stop** remains the manual interrupt. The left tree labels failed branches as
+`EXTRACTOR STOP`.
+
+A successfully described leaf automatically enters Turtle termination.
+**Turtle Gen** writes a constrained normalized-coordinate JSON drawing program.
+**Turtle PNG** uses its independently selected model and prompt to turn that
+draft into the final draw program. The backend validates and executes only the
+supported drawing commands, never arbitrary Python. It saves both programs and renders a terminal PNG,
+lists the terminal source image in **Pre-Turtle Leaves**, and displays the
+rendered PNG in its own **Turtle Output** gallery. Both normal and Alt hover show
+the Turtle program and render alongside the parent-object and image-Describer
+metadata.
+
+Every Video Import-generated image has a neighboring
+`<stem>.provenance.json`. The self-contained record includes output and
+original dimensions, source video/time/scene when applicable, parent image and
+parent sidecar, crop/mask geometry, resize scale/padding, operation metadata,
+and the complete lineage back to the first-seen frame. Turtle program/render
+paths are written into the leaf image's provenance record. Legacy images receive
+a minimal provenance sidecar when queried through `/image-provenance`.
+
+The backend runner disables file watching and automatic reload. Backend edits
+are applied only through an explicit, batched restart by the user or operator;
+this avoids the prior WatchFiles high-CPU orphan/no-listener state.
+The Vite development server also runs with HMR disabled and no surgical
+file-change reload hook. UI edits become visible only after an explicit browser
+reload, allowing the user/operator to batch changes first.
+
+All workbench pages can report active work and restart-relevant changes through
+the global title-frame process channel. Requesting Restart while work is active
+opens a draggable, nonmodal center notice instead of interrupting the page. The
+notice explains why restart was deferred, accumulates status/change entries as
+the user keeps working, and waits for an explicit **Restart now** action.
+Restart and Cancel Restart remain bright, colored, glowing, and full-contrast
+even while lifecycle protection temporarily disables duplicate restart
+submission.
+Every open workbench tab phones the local backend presence registry and global
+frame every five seconds with
+its tab, workspace, page, URL, and activity identity. Presence and process
+events cross tabs through `BroadcastChannel`, appear as Open/Active counts in
+the title frame, and are exposed in `window.__workbenchGlobalFrameStatus` so an
+operator can inspect exactly what is active, even across isolated browser
+contexts where BroadcastChannel is unavailable. Restart-pending requests and their
+change ledgers therefore appear in every open workbench, not only the tab that
+originated them.
+
+The same global title frame accepts structured realtime UI commands for
+allowlisted style, `live-ui-*` class, and scroll changes. This lets an operator
+apply safe ephemeral page adjustments without reload or arbitrary JavaScript
+execution. Selectors and affected element counts are bounded; network-bearing
+or executable CSS values are rejected. **Live patches N** reports applied
+changes and restores every original value in reverse order when cleared.
+
+The left tree is data-driven rather than a fixed possibility diagram: each orb
+is one real input or extracted-object inventory; child lines represent actual
+parent/child cutout relationships; labels show Describer, Planner, and Extractor
+completion counts. Clicking an orb selects that cycle in the right inspector
+and scrolls to its complete prompts, outputs, and errors.
+The controller's **Planner output** action and the inspector's Planner status
+button both open the visual-output section and smooth-scroll directly to the
+selected cycle's expanded Planner response. Describer and Extractor status
+buttons similarly reveal their exact output sections.
+Root inventories and output cards are sorted by original frame index, so the
+first image stays first even when concurrent responses finish out of order.
+Planner is no longer shown complete merely because an undescribed inventory is
+empty; the controller and cycle status explicitly report waiting for
+Describer, queued, retrying after error, or output ready.
+
+The sticky left gallery column contains all Extracted Images, checked Selected
+Images, then per-depth (`LEVEL 0`
+through the deepest discovered node) Extracted Objects and Leftover Backgrounds
+galleries. Each left gallery has its own persisted hide/restore disclosure.
+The right column contains the recursive workflow tree, inspector, prompts, and
+execution stack. No pre-extraction section is placed inside this split.
+Workflow gallery tiles do not show selection checkboxes. An ordinary click
+pins that image's context popup; **Ctrl-click** exclusively selects or unselects
+the tile without clearing prior selections. Input-image selections feed
+Describer, while object/background selections persist for curation across runs.
+The Selected Images mirror uses the same Ctrl-click rule for removal.
+Its **Clear** action removes the selected roots from the workflow and clears
+their complete recursive Describer/Planner/Outliner/Extractor metadata,
+descendant inventories, scene pointers, Turtle state, response/provenance
+caches, derived gallery selections, and pinned metadata popups. Original image
+files and their durable provenance sidecars remain on disk.
+The pinned popup stays at that screen position; pointer movement and hover exit
+do not dismiss it. The popup remains
+until its explicit **Close** button is pressed. Context popouts auto-size for
+their text, never exceed half the viewport width or height, scroll overflow,
+and pinned popouts can be resized in both directions within those bounds. Their
+headers remain sticky inside the scroller so Close is always visible.
+The popout fetches and pretty-prints the image's complete provenance JSON.
+Describer, Turtle Gen, and Turtle PNG JSON are also pretty-printed within the
+popout only; their persisted/raw artifacts are not rewritten.
+Both ordinary pinned and Alt-click popouts also show that image's exact Planner
+output and every available one-object Outliner result. Before Planner output exists, its section truthfully reports waiting for
+Describer, queued, retrying after error, or not required for a no-subobject
+leaf.
+Every workflow gallery has its own Clear action. Clearing an extracted-object
+or leftover-background level also clears its dependent descendants, making the
+enabled automation stages regenerate that branch. Clearing Turtle Output
+requeues leaf programs and renders. Clearing Pre-Turtle Leaves invalidates the
+earliest affected extraction level so the terminal source images are generated
+again before Turtle reruns.
+
+All editable prompts and per-object call details start collapsed. Describer,
+Planner, Outliner, recursive Extractor, and Turtle each have an explicit **Call LLM**
+button. Initial Describer, Planner, Outliner, Extractor, and Turtle templates are supplied
+by this implementation, but the running system never generates or rewrites
+them; users edit and persist the templates directly. Planner returns order only:
+it never returns contours, polygons, or cutout instructions. Outliner receives
+one Planner-selected object per request and returns that object's polygons,
+holes, clockwise contour description, and normalized Turtle trace. Independent
+one-object Outliner jobs do not wait for extraction and run under their own
+process cap; the warm shared workers keep taking jobs while releasing the fair
+global active slot between responses. Extractor waits until an inventory's
+outlines are ready, then removes objects in Planner order and reconstructs each
+background from the corresponding outline. All responses continue to
+use the persistent content-addressed cache.
+Every Outliner result is bound to the exact source image path and decoded pixel
+dimensions included in its prompt. Before cutting, the backend verifies that the
+current scene is that source or a provenance descendant with the same coordinate
+space. Out-of-range polygon/hole/box coordinates and dimension or lineage
+mismatches are rejected rather than silently clamped onto the wrong image.
+
+- **Inventory goal** — find any members / faces / characters / objects /
   text-signs.
 - **Removal method** — median inpaint, blur fill, or transparent hole.
-- **divide into X** — tell the model the scene should split into ~X members.
-- Results land in **side-by-side vertical strips** (one per probe) with
-  counts at the top; every cutout has **✓ accept** (becomes a cast tag on
-  the frame) and **✗ return** (the cutout is composited back into the
-  scene).
+- Results land at the bottom in side-by-side vertical strips, one per input
+  image; every cutout retains its recursive depth and parent inventory and can
+  be accepted or returned.
 
-## 8. TURTLE, IMPORT GAME
+## 9. TURTLE, IMPORT GAME
 
 - **🐢 Generate turtle programs** — the one model-driven drawing step: a
   Python-turtle redraw program per (ideally prepass-reduced) frame, saved
@@ -146,7 +437,7 @@ GIF**, removes it from the scene, and continues on the reduced scene:
   `auto-collapse` switch, and **■ Stop**, which interrupts any job or model
   loop at its next step, keeping partial results.
 - **Galleries collapse** — every named gallery (USER PICK, EXTRACTED FRAME,
-  FILTER EFFECT, PROCESSED OUTPUT, PROCESSING TRAIL, EXTRACTED MEMBER) has an
+  FILTER EFFECT, PROCESSED OUTPUT, PROCESSING TRAIL, SCENE OBJECT VISUALS) has an
   expand/collapse header and folds
   itself after you scroll past it. `📌 pin` any gallery to freeze its state,
   or switch `auto-collapse` off globally.
@@ -254,19 +545,21 @@ without eliminating any. Preview runs flush per step and snapshot every
 level into a TRAIL; the final full-apply mode runs the filters over ALL
 extracted images (group-selector steps join only via an explicit toggle).
 
-**Entity extraction with probes**: TRAIL level cards are clickable probes
-(multi-select, side by side). For each probed level, loop a selectable
-model: it outlines ONE member per pass as `{name, polygon}`; cut the
-polygon out as a transparent GIF, remove it from the scene (median inpaint
-/ blur fill / transparent hole), and continue on the reduced scene until
-NONE or the per-frame cap ("divide into X" tells the model the target
-count). Probe goals: any members / faces / characters / objects /
-text-signs. Results render as one vertical strip per probe with counts at
-the top; each cutout can be accepted (tags the frame's cast) or rejected —
-rejection composites the transparent cutout back into the scene.
+**Entity extraction from input images**: TRAIL level cards are inspectable but
+do not select LLM inputs. For each Extracted Frame Gallery input image, use a
+selectable model to run a recursive Describer → Planner → Outliner → Extractor cycle.
+Describer lists direct children, Planner orders them, Outliner traces each
+object in its own independently scheduled call, and Extractor cuts and
+reconstructs the background from those outlines. Every cutout repeats that
+same cycle until Describer returns no direct children or the branch reaches
+level 9. Inventory goals:
+any members / faces / characters / objects / text-signs. Results render as one
+vertical strip per input image with recursive depth/parent labels; each cutout
+can be accepted or rejected.
 
 **Finish**: a TURTLE row (model writes a small Python-turtle redraw program
-per reduced frame) and IMPORT GAME (materialize the frames as an ARC3
+for leaf-object images, falling back to extracted objects/output/input frames)
+and IMPORT GAME (materialize the frames as an ARC3
 recording whose moves encode the cast diffs; open Play & Record).
 
 **Ergonomics**: THE PAGE MUST BE SCROLLABLE — it lives inside the

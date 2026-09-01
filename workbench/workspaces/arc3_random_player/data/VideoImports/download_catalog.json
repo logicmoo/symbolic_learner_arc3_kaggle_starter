@@ -286,90 +286,6 @@
     "extractions": [
       {
         "kind": "scenes",
-        "count": 120,
-        "threshold": 28.0,
-        "elapsedSeconds": 19.4,
-        "at": "2026-08-28T16:57:15.278074Z"
-      },
-      {
-        "kind": "frames",
-        "mode": "scenes",
-        "count": 40,
-        "elapsedSeconds": 8.8,
-        "everySeconds": null,
-        "perScene": 1,
-        "window": [
-          0.0,
-          null
-        ],
-        "framesDir": "data/VideoImports/guess-the-201-animated-characters-3-seconds-each/frames",
-        "at": "2026-08-28T16:57:48.326518Z"
-      },
-      {
-        "kind": "frames",
-        "mode": "scenes",
-        "count": 40,
-        "elapsedSeconds": 74.9,
-        "everySeconds": null,
-        "perScene": 1,
-        "window": [
-          0.0,
-          null
-        ],
-        "framesDir": "data/VideoImports/guess-the-201-animated-characters-3-seconds-each/frames",
-        "at": "2026-08-28T17:06:44.960505Z"
-      },
-      {
-        "kind": "frames",
-        "mode": "scenes",
-        "count": 40,
-        "elapsedSeconds": 107.0,
-        "everySeconds": null,
-        "perScene": 1,
-        "window": [
-          0.0,
-          null
-        ],
-        "framesDir": "data/VideoImports/guess-the-201-animated-characters-3-seconds-each/frames",
-        "at": "2026-08-28T17:12:27.347469Z"
-      },
-      {
-        "kind": "frames",
-        "mode": "scenes",
-        "count": 16,
-        "elapsedSeconds": 73.2,
-        "everySeconds": null,
-        "perScene": 1,
-        "window": [
-          0.0,
-          null
-        ],
-        "framesDir": "data/VideoImports/guess-the-201-animated-characters-3-seconds-each/frames",
-        "at": "2026-08-28T17:16:08.311809Z"
-      },
-      {
-        "kind": "frames",
-        "mode": "scenes",
-        "count": 40,
-        "elapsedSeconds": 123.9,
-        "everySeconds": null,
-        "perScene": 1,
-        "window": [
-          0.0,
-          null
-        ],
-        "framesDir": "data/VideoImports/guess-the-201-animated-characters-3-seconds-each/frames",
-        "at": "2026-08-28T17:18:49.772982Z"
-      },
-      {
-        "kind": "scenes",
-        "count": 63,
-        "threshold": 28.0,
-        "elapsedSeconds": 106.7,
-        "at": "2026-08-28T19:31:50.633355Z"
-      },
-      {
-        "kind": "scenes",
         "count": 0,
         "threshold": 28.0,
         "elapsedSeconds": 10.0,
@@ -430,6 +346,252 @@
         ],
         "framesDir": "data/VideoImports/guess-the-201-animated-characters-3-seconds-each/frames",
         "at": "2026-08-31T04:59:47.138743Z"
+      },
+      {
+        "kind": "frames",
+        "mode": "scenes",
+        "count": 111,
+        "elapsedSeconds": 68.3,
+        "everySeconds": null,
+        "perScene": 1,
+        "window": [
+          0.0,
+          null
+        ],
+        "framesDir": "data/VideoImports/guess-the-201-animated-characters-3-seconds-each/frames",
+        "at": "2026-09-01T00:31:09.148725Z"
+      },
+      {
+        "kind": "frames",
+        "mode": "scenes",
+        "count": 24,
+        "elapsedSeconds": 127.2,
+        "everySeconds": null,
+        "perScene": 1,
+        "window": [
+          0.0,
+          null
+        ],
+        "framesDir": "data/VideoImports/guess-the-201-animated-characters-3-seconds-each/frames",
+        "at": "2026-09-01T05:49:02.233533Z"
+      },
+      {
+        "kind": "frames",
+        "mode": "scenes",
+        "count": 25,
+        "elapsedSeconds": 66.8,
+        "everySeconds": null,
+        "perScene": 1,
+        "window": [
+          0.0,
+          null
+        ],
+        "framesDir": "data/VideoImports/guess-the-201-animated-characters-3-seconds-each/frames",
+        "at": "2026-09-01T06:11:23.928669Z"
+      },
+      {
+        "kind": "frames",
+        "mode": "scenes",
+        "count": 25,
+        "elapsedSeconds": 10.4,
+        "everySeconds": null,
+        "perScene": 1,
+        "startScene": 2,
+        "endScene": null,
+        "skipScenes": 1,
+        "window": [
+          0.0,
+          null
+        ],
+        "framesDir": "data/VideoImports/guess-the-201-animated-characters-3-seconds-each/frames",
+        "at": "2026-09-01T06:46:47.302633Z"
+      },
+      {
+        "kind": "frames",
+        "mode": "scenes",
+        "count": 25,
+        "elapsedSeconds": 116.8,
+        "everySeconds": null,
+        "perScene": 1,
+        "startScene": 2,
+        "endScene": null,
+        "skipScenes": 1,
+        "window": [
+          0.0,
+          null
+        ],
+        "framesDir": "data/VideoImports/guess-the-201-animated-characters-3-seconds-each/frames",
+        "at": "2026-09-01T06:53:33.236237Z"
+      },
+      {
+        "kind": "frames",
+        "mode": "scenes",
+        "count": 25,
+        "elapsedSeconds": 117.4,
+        "everySeconds": null,
+        "perScene": 1,
+        "startScene": 2,
+        "endScene": null,
+        "skipScenes": 1,
+        "window": [
+          0.0,
+          null
+        ],
+        "framesDir": "data/VideoImports/guess-the-201-animated-characters-3-seconds-each/frames",
+        "at": "2026-09-01T07:08:58.566898Z"
+      },
+      {
+        "kind": "frames",
+        "mode": "scenes",
+        "count": 25,
+        "elapsedSeconds": 54.4,
+        "everySeconds": null,
+        "perScene": 1,
+        "startScene": 2,
+        "endScene": null,
+        "skipScenes": 1,
+        "window": [
+          0.0,
+          null
+        ],
+        "framesDir": "data/VideoImports/guess-the-201-animated-characters-3-seconds-each/frames",
+        "at": "2026-09-01T07:16:08.216058Z"
+      },
+      {
+        "kind": "frames",
+        "mode": "scenes",
+        "count": 5,
+        "elapsedSeconds": 1.1,
+        "everySeconds": null,
+        "perScene": 1,
+        "startScene": 2,
+        "endScene": null,
+        "skipScenes": 0,
+        "window": [
+          0.0,
+          null
+        ],
+        "framesDir": "data/VideoImports/guess-the-201-animated-characters-3-seconds-each/frames",
+        "at": "2026-09-01T07:17:36.225080Z"
+      },
+      {
+        "kind": "frames",
+        "mode": "scenes",
+        "count": 5,
+        "elapsedSeconds": 1.8,
+        "everySeconds": null,
+        "perScene": 1,
+        "startScene": 2,
+        "endScene": null,
+        "skipScenes": 1,
+        "window": [
+          0.0,
+          null
+        ],
+        "framesDir": "data/VideoImports/guess-the-201-animated-characters-3-seconds-each/frames",
+        "at": "2026-09-01T07:17:54.250276Z"
+      },
+      {
+        "kind": "frames",
+        "mode": "scenes",
+        "count": 5,
+        "elapsedSeconds": 2.4,
+        "everySeconds": null,
+        "perScene": 1,
+        "startScene": 2,
+        "endScene": null,
+        "skipScenes": 1,
+        "window": [
+          0.0,
+          null
+        ],
+        "framesDir": "data/VideoImports/guess-the-201-animated-characters-3-seconds-each/frames",
+        "at": "2026-09-01T07:18:20.460440Z"
+      },
+      {
+        "kind": "frames",
+        "mode": "scenes",
+        "count": 5,
+        "elapsedSeconds": 1.1,
+        "everySeconds": null,
+        "perScene": 1,
+        "startScene": 2,
+        "endScene": null,
+        "skipScenes": 0,
+        "window": [
+          0.0,
+          null
+        ],
+        "framesDir": "data/VideoImports/guess-the-201-animated-characters-3-seconds-each/frames",
+        "at": "2026-09-01T07:18:33.031476Z"
+      },
+      {
+        "kind": "frames",
+        "mode": "scenes",
+        "count": 5,
+        "elapsedSeconds": 1.0,
+        "everySeconds": null,
+        "perScene": 1,
+        "startScene": 2,
+        "endScene": null,
+        "skipScenes": 0,
+        "window": [
+          0.0,
+          null
+        ],
+        "framesDir": "data/VideoImports/guess-the-201-animated-characters-3-seconds-each/frames",
+        "at": "2026-09-01T07:18:43.134852Z"
+      },
+      {
+        "kind": "frames",
+        "mode": "scenes",
+        "count": 5,
+        "elapsedSeconds": 1.8,
+        "everySeconds": null,
+        "perScene": 1,
+        "startScene": 2,
+        "endScene": null,
+        "skipScenes": 1,
+        "window": [
+          0.0,
+          null
+        ],
+        "framesDir": "data/VideoImports/guess-the-201-animated-characters-3-seconds-each/frames",
+        "at": "2026-09-01T07:18:56.557379Z"
+      },
+      {
+        "kind": "frames",
+        "mode": "scenes",
+        "count": 5,
+        "elapsedSeconds": 1.8,
+        "everySeconds": null,
+        "perScene": 1,
+        "startScene": 2,
+        "endScene": null,
+        "skipScenes": 2,
+        "window": [
+          0.0,
+          null
+        ],
+        "framesDir": "data/VideoImports/guess-the-201-animated-characters-3-seconds-each/frames",
+        "at": "2026-09-01T07:19:15.608201Z"
+      },
+      {
+        "kind": "frames",
+        "mode": "scenes",
+        "count": 20,
+        "elapsedSeconds": 7.4,
+        "everySeconds": null,
+        "perScene": 1,
+        "startScene": 2,
+        "endScene": null,
+        "skipScenes": 2,
+        "window": [
+          0.0,
+          null
+        ],
+        "framesDir": "data/VideoImports/guess-the-201-animated-characters-3-seconds-each/frames",
+        "at": "2026-09-01T07:19:43.297211Z"
       }
     ]
   },
