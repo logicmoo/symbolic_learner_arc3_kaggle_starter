@@ -375,72 +375,96 @@
     cursor: pointer;
   }
 
+}
+
+/* Overlay chrome: must stay fixed at every viewport width. When these rules
+   lived inside the min-width media query, the stack fell back to static flow
+   below 1181px, became a .workspace grid child, and squashed every page to
+   the first ~60px grid row. */
+.topbar-panel-restore-stack {
+  position: fixed;
+  top: 3px;
+  right: 8px;
+  z-index: 120;
+  display: flex;
+  flex-direction: row-reverse;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 6px;
+  max-width: calc(100vw - 240px);
+  padding: 2px 4px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--bg, #060b10) 88%, transparent);
+}
+
+.topbar-global-actions,
+.topbar-view-actions {
+  display: flex;
+  flex-direction: row-reverse;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.topbar-view-actions {
+  position: fixed;
+  top: 31px;
+  right: 310px;
+  z-index: 115;
+  height: 24px;
+}
+
+.topbar-view-actions:empty {
+  display: none;
+}
+
+@media (max-width: 1180px) {
+  /* Keep the overlay stack clear of the topbar's own controls. */
   .topbar-panel-restore-stack {
-    position: fixed;
-    top: 3px;
+    top: 62px;
+  }
+
+  .topbar-view-actions {
+    top: 90px;
     right: 8px;
-    z-index: 120;
-    display: flex;
-    flex-direction: row-reverse;
-    align-items: center;
-    gap: 6px;
   }
+}
 
-  .topbar-global-actions,
-  .topbar-view-actions {
-    display: flex;
-    flex-direction: row-reverse;
-    align-items: center;
-    gap: 6px;
-  }
+.topbar-panel-restore {
+  height: 24px;
+  border: 1px solid var(--line-strong, #365868);
+  border-radius: 4px;
+  background: var(--panel, #0d1820);
+  color: var(--accent, #78e1ce);
+  font: 600 10px/1 monospace;
+  letter-spacing: .04em;
+}
 
-  .topbar-view-actions {
-    position: fixed;
-    top: 31px;
-    right: 310px;
-    z-index: 115;
-    height: 24px;
-  }
+.topbar-theme-switch {
+  height: 24px;
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--line-strong, #365868);
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--panel, #0d1820);
+  color: var(--muted);
+  font: 600 9px/1 monospace;
+}
 
-  .topbar-view-actions:empty {
-    display: none;
-  }
+.topbar-theme-switch span {
+  padding: 0 6px;
+}
 
-  .topbar-panel-restore {
-    height: 24px;
-    border: 1px solid var(--line-strong, #365868);
-    border-radius: 4px;
-    background: var(--panel, #0d1820);
-    color: var(--accent, #78e1ce);
-    font: 600 10px/1 monospace;
-    letter-spacing: .04em;
-  }
-
-  .topbar-theme-switch {
-    height: 24px;
-    display: flex;
-    align-items: center;
-    border: 1px solid var(--line-strong, #365868);
-    border-radius: 4px;
-    overflow: hidden;
-    background: var(--panel, #0d1820);
-    color: var(--muted);
-    font: 600 9px/1 monospace;
-  }
-
-  .topbar-theme-switch span {
-    padding: 0 6px;
-  }
-
-  .topbar-theme-switch select {
-    height: 100%;
-    max-width: 130px;
-    border: 0;
-    border-left: 1px solid var(--line-strong, #365868);
-    background: var(--panel2, #13232d);
-    color: var(--text);
-    font: inherit;
-  }
+.topbar-theme-switch select {
+  height: 100%;
+  max-width: 130px;
+  border: 0;
+  border-left: 1px solid var(--line-strong, #365868);
+  background: var(--panel2, #13232d);
+  color: var(--text);
+  font: inherit;
 }
 
 /* Legacy workflow outer accordion stack: columns, spline, design reference. */
