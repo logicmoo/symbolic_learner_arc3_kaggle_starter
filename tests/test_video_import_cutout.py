@@ -1,12 +1,47 @@
 import base64
 import io
 import json
+import threading
 from pathlib import Path
 
 from PIL import Image, ImageDraw
 import pytest
 
 import video_import_api
+
+
+def test_concurrent_scene_and_extraction_metadata_updates_are_merged(tmp_path: Path) -> None:
+    video_path = tmp_path / "video.mp4"
+    video_path.write_bytes(b"video")
+    (tmp_path / "video.json").write_text('{"title":"source"}', encoding="utf-8")
+    barrier = threading.Barrier(3)
+
+    def update(payload: dict) -> None:
+        barrier.wait()
+        video_import_api._merge_video_meta(video_path, payload)
+
+    scene_thread = threading.Thread(target=update, args=({"scenes": [{"atSeconds": 1.0}], "lastScenes": {"count": 1}},))
+    extract_thread = threading.Thread(target=update, args=({"lastExtract": {"count": 4}},))
+    scene_thread.start()
+    extract_thread.start()
+    barrier.wait()
+    scene_thread.join()
+    extract_thread.join()
+
+    saved = json.loads((tmp_path / "video.json").read_text(encoding="utf-8"))
+    assert saved["title"] == "source"
+    assert saved["lastScenes"] == {"count": 1}
+    assert saved["lastExtract"] == {"count": 4}
+
+
+def test_video_caption_webvtt_round_trip() -> None:
+    cues = [
+        {"start": 1.25, "end": 3.5, "text": "Hello world"},
+        {"start": 65.0, "end": 67.125, "text": "Second cue"},
+    ]
+    rendered = video_import_api._captions_to_webvtt(cues)
+    assert "00:00:01.250 --> 00:00:03.500" in rendered
+    assert video_import_api._parse_webvtt(rendered) == cues
 
 
 def test_image_edit_falls_back_to_declared_backend_when_model_resolution_is_blocked(

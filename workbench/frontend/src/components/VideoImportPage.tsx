@@ -14,11 +14,14 @@ import "../styles/video_import_page.css";
  * uniform collapsible-section shell for every gallery.
  */
 
+type CaptionCue = { start: number; end: number; text: string; speaker?: string };
 type Video = {
   path: string; title: string; duration?: number | null; sizeBytes?: number;
   frameCount?: number; scenes?: Array<{ atSeconds: number }>;
   segments?: Array<{ start: number; end: number; keep: boolean }>;
   lastExtract?: { secondsPerFrame?: number };
+  captions?: CaptionCue[];
+  captionSource?: string;
 };
 type Frame = { path: string; index: number; atSeconds?: number; sceneIndex?: number; provenance?: string; characters: string[]; anonymous: number };
 type FilterEntry = {
@@ -36,6 +39,7 @@ type JobState = {
   markers?: Array<{ atSeconds: number }>;
   gallery?: Array<{ id: string; title: string; path?: string; error?: string; baseId?: string; params?: Record<string, unknown> }>;
   resultPath?: string | null; interrupted?: boolean; error?: string | null; retinters?: string[];
+  captions?: CaptionCue[]; captionSource?: string;
 };
 type GalleryTile = NonNullable<JobState["gallery"]>[number];
 type TrailLevel = { label: string; frames: Array<{ original: string; path: string }> };
@@ -171,6 +175,12 @@ type AltImageZoom = {
   scale: number;
 };
 type HoverImageContext = Pick<AltImageZoom, "src" | "imagePath" | "alt" | "x" | "y">;
+type WorkflowStageIndicator = {
+  label: "D" | "P" | "O" | "E" | "T" | "I";
+  value: string;
+  state: "waiting" | "active" | "retrying" | "partial" | "complete";
+  detail: string;
+};
 type PipeForkSelections = {
   inventory: "found_objects" | "sub_objects" | "both";
   prompts: "baseline" | "llm_rewrite" | "both";
@@ -208,6 +218,8 @@ type LlmCallConcurrency = {
   turtle: number | null;
   turtlePng: number | null;
 };
+type LlmCallMetric = { completed: number; totalDurationMs: number };
+type LlmCallMetrics = Record<keyof LlmCallConcurrency, LlmCallMetric>;
 type PromptSelection = "workspace" | "default";
 const hasAlignedOutline = (thing: MemberInventoryThing) => Boolean(
   (thing.outlinePolygons?.length || thing.outlineBox?.length === 4)
@@ -236,6 +248,20 @@ const DEFAULT_LLM_CALL_CONCURRENCY: LlmCallConcurrency = {
   extractor: null,
   turtle: null,
   turtlePng: null,
+};
+const emptyLlmCallMetrics = (): LlmCallMetrics => ({
+  describer: { completed: 0, totalDurationMs: 0 },
+  planner: { completed: 0, totalDurationMs: 0 },
+  outliner: { completed: 0, totalDurationMs: 0 },
+  extractor: { completed: 0, totalDurationMs: 0 },
+  turtle: { completed: 0, totalDurationMs: 0 },
+  turtlePng: { completed: 0, totalDurationMs: 0 },
+});
+const formatJobDuration = (durationMs: number) => {
+  if (!Number.isFinite(durationMs) || durationMs <= 0) return "—";
+  if (durationMs < 1000) return `${Math.round(durationMs)}ms`;
+  if (durationMs < 60_000) return `${(durationMs / 1000).toFixed(1)}s`;
+  return `${Math.floor(durationMs / 60_000)}m ${Math.round((durationMs % 60_000) / 1000)}s`;
 };
 const DEFAULT_PIPE_FORKS: PipeForkSelections = {
   inventory: "both",
@@ -514,12 +540,14 @@ const MODEL_CAPABILITY_COLORS: Record<string, string> = {
   inherited: "#d39bff",
   unavailable: "#d98c8c",
   "no vision": "#e0a458",
+  "no audio": "#d98c8c",
 };
 const videoModelDescription = (
   model: ModelChoice | undefined,
   fallbackId: string,
   effectiveModelId: string,
   preferenceSource: string,
+  requiredCapability: "vision" | "audio" = "vision",
 ): ColoredTagDescription => {
   if (!model) return {
     label: fallbackId,
@@ -532,13 +560,14 @@ const videoModelDescription = (
   if (model.id === effectiveModelId) tags.unshift({ text: "preferred", color: MODEL_CAPABILITY_COLORS.preferred });
   if (model.inherited) tags.push({ text: "inherited", color: MODEL_CAPABILITY_COLORS.inherited });
   if (!model.enabled) tags.push({ text: "unavailable", color: MODEL_CAPABILITY_COLORS.unavailable });
-  else if (!model.vision) tags.push({ text: "no vision", color: MODEL_CAPABILITY_COLORS["no vision"] });
+  const compatible = requiredCapability === "audio" ? model.capabilities?.audio === true : model.vision;
+  if (model.enabled && !compatible) tags.push({ text: requiredCapability === "audio" ? "no audio" : "no vision", color: MODEL_CAPABILITY_COLORS[requiredCapability === "audio" ? "no audio" : "no vision"] });
   return {
     label: model.name,
     groupKey: model.backendId || model.origin || "models",
     groupLabel: `${model.backendId || model.origin || "Models"}${model.id === effectiveModelId ? ` · preferred by ${preferenceSourceLabel(preferenceSource)}` : ""}`,
     tags,
-    disabled: !model.enabled || !model.vision,
+    disabled: !model.enabled || !compatible,
   };
 };
 const automaticVideoModelId = (models: ModelChoice[], effectiveModelId: string) => {
@@ -551,6 +580,13 @@ const automaticImageOutputModelId = (models: ModelChoice[], preferredModelId: st
   const runnable = models.filter((model) => model.enabled && model.imageOutput);
   if (runnable.some((model) => model.id === preferredModelId)) return preferredModelId;
   return runnable.find((model) => /gpt[-_.\s]*5[._-]?3[-_.\s]*codex/i.test(`${model.id} ${model.name}`))?.id
+    || runnable[0]?.id
+    || "";
+};
+const automaticAudioModelId = (models: ModelChoice[], preferredModelId: string) => {
+  const runnable = models.filter((model) => model.enabled && model.capabilities?.audio === true);
+  if (runnable.some((model) => model.id === preferredModelId)) return preferredModelId;
+  return runnable.find((model) => /gpt[-_.\s]*4o[-_.\s]*audio/i.test(`${model.id} ${model.name}`))?.id
     || runnable[0]?.id
     || "";
 };
@@ -736,13 +772,14 @@ function WorkflowGalleryPanel({ title, open, onOpenChange, onClear, children }: 
   );
 }
 
-function WorkflowGalleryItem({ src, alt, caption, selected, onSelectedChange, showCheckbox = false }: {
+function WorkflowGalleryItem({ src, alt, caption, selected, onSelectedChange, showCheckbox = false, stageIndicators }: {
   src: string;
   alt: string;
   caption: string;
   selected: boolean;
   onSelectedChange?: (selected: boolean) => void;
   showCheckbox?: boolean;
+  stageIndicators?: WorkflowStageIndicator[];
 }) {
   const toggle = () => onSelectedChange?.(!selected);
   return (
@@ -768,6 +805,15 @@ function WorkflowGalleryItem({ src, alt, caption, selected, onSelectedChange, sh
         <span>select</span>
       </label>}
       <img src={src} alt={alt} />
+      {stageIndicators?.length ? (
+        <div className="video-import-gallery-stage-strip" aria-label="Recursive workflow progress">
+          {stageIndicators.map((indicator) => (
+            <span key={indicator.label} className={`is-${indicator.state}`} title={`${indicator.label} · ${indicator.detail}`}>
+              <b>{indicator.label}</b><small>{indicator.value}</small>
+            </span>
+          ))}
+        </div>
+      ) : null}
       <figcaption>{caption}</figcaption>
     </figure>
   );
@@ -968,13 +1014,17 @@ export function VideoImportPage({
 
   // ---- one job engine -----------------------------------------------------
   const [job, setJob] = useState<JobState | null>(null);
+  const [sceneJob, setSceneJob] = useState<JobState | null>(null);
+  const [frameExtractionJob, setFrameExtractionJob] = useState<JobState | null>(null);
+  const [captionJob, setCaptionJob] = useState<JobState | null>(null);
   usePageProcessActivity(
     "video-import",
-    busy || job?.state === "running",
+    busy || job?.state === "running" || sceneJob?.state === "running" || frameExtractionJob?.state === "running" || captionJob?.state === "running",
     busy ? "Video Import model/image operation" : "Video Import background job",
   );
   const jobDone = useRef<(final: JobState) => void>(() => undefined);
   const pollTimer = useRef(0);
+  const concurrentPollTimersRef = useRef(new Map<string, number>());
   const watchJob = (jobId: string, kind: string, onDone: (final: JobState) => void) => {
     window.clearInterval(pollTimer.current);
     jobDone.current = onDone;
@@ -994,6 +1044,38 @@ export function VideoImportPage({
       }
     }, 500);
   };
+  const watchConcurrentJob = (
+    jobId: string,
+    kind: "scenes" | "extract" | "captions",
+    setCurrentJob: (job: JobState) => void,
+    onDone: (final: JobState) => void,
+  ) => {
+    setCurrentJob({ id: jobId, kind, state: "running", done: 0, total: 1, elapsedSeconds: 0, etaSeconds: 0 });
+    const existing = concurrentPollTimersRef.current.get(kind);
+    if (existing) window.clearInterval(existing);
+    const timer = window.setInterval(async () => {
+      try {
+        const payload = (await api(`extract/status?jobId=${encodeURIComponent(jobId)}`)) as unknown as Omit<JobState, "kind">;
+        const next = { ...payload, kind } as JobState;
+        setCurrentJob(next);
+        if (payload.state !== "running") {
+          window.clearInterval(timer);
+          concurrentPollTimersRef.current.delete(kind);
+          if (payload.state === "done") onDone(next);
+          else setError(payload.error || `${kind} failed`);
+        }
+      } catch (reason) {
+        window.clearInterval(timer);
+        concurrentPollTimersRef.current.delete(kind);
+        setError(reason instanceof Error ? reason.message : String(reason));
+      }
+    }, 500);
+    concurrentPollTimersRef.current.set(kind, timer);
+  };
+  useEffect(() => () => {
+    for (const timer of concurrentPollTimersRef.current.values()) window.clearInterval(timer);
+    concurrentPollTimersRef.current.clear();
+  }, []);
   const awaitJob = (jobId: string, kind: string, onTick?: (state: JobState) => void) =>
     new Promise<JobState>((resolve, reject) => {
       const tick = async () => {
@@ -1011,6 +1093,9 @@ export function VideoImportPage({
   const stopEverything = () => {
     stopRef.current = true;
     if (job && job.state === "running") void api("extract/cancel", { jobId: job.id }).catch(() => undefined);
+    if (sceneJob?.state === "running") void api("extract/cancel", { jobId: sceneJob.id }).catch(() => undefined);
+    if (frameExtractionJob?.state === "running") void api("extract/cancel", { jobId: frameExtractionJob.id }).catch(() => undefined);
+    if (captionJob?.state === "running") void api("extract/cancel", { jobId: captionJob.id }).catch(() => undefined);
     if (userPickResolver.current) settleUserPick(null);
     say("■ stop requested — finishing the current step…");
   };
@@ -1099,6 +1184,14 @@ export function VideoImportPage({
   const [playerDuration, setPlayerDuration] = useState(0);
   const duration = playerDuration || Number(selected?.duration || 0);
   const [markers, setMarkers] = useState<Array<{ atSeconds: number }>>([]);
+  const [captions, setCaptions] = useState<CaptionCue[]>([]);
+  const [captionSource, setCaptionSource] = useState("");
+  const activeCaption = captions.find((cue) => playerTime >= cue.start && playerTime < cue.end);
+  useEffect(() => {
+    if (!selected) return;
+    setCaptions(selected.captions || []);
+    setCaptionSource(selected.captionSource || "");
+  }, [selected?.path, selected?.captions, selected?.captionSource]);
   const [segments, setSegments] = useState<Array<{ start: number; end: number; keep: boolean }>>([]);
   const [selection, setSelection] = useState<{ start: number; end: number } | null>(null);
   const railRef = useRef<HTMLDivElement | null>(null);
@@ -1109,8 +1202,13 @@ export function VideoImportPage({
     // Only a REAL video change resets (not mount, StrictMode re-runs, or restore).
     if (previous === null || previous === selectedPath) return;
     if (skipVideoResetRef.current) { skipVideoResetRef.current = false; return; }
-    setMarkers(selected?.scenes || []); setSegments(selected?.segments || []); setSelection(null);
-    setFrames([]); setPlayerTime(0); setPlayerDuration(0); setJob(null); setPicked(null); setKept(null); setMemberInputPaths(new Set()); setSelectedWorkflowGalleryPaths(new Set());
+    if (sceneJob?.state === "running") void api("extract/cancel", { jobId: sceneJob.id }).catch(() => undefined);
+    if (frameExtractionJob?.state === "running") void api("extract/cancel", { jobId: frameExtractionJob.id }).catch(() => undefined);
+    if (captionJob?.state === "running") void api("extract/cancel", { jobId: captionJob.id }).catch(() => undefined);
+    for (const timer of concurrentPollTimersRef.current.values()) window.clearInterval(timer);
+    concurrentPollTimersRef.current.clear();
+    setMarkers(selected?.scenes || []); setCaptions(selected?.captions || []); setCaptionSource(selected?.captionSource || ""); setSegments(selected?.segments || []); setSelection(null);
+    setFrames([]); setPlayerTime(0); setPlayerDuration(0); setJob(null); setSceneJob(null); setFrameExtractionJob(null); setCaptionJob(null); setPicked(null); setKept(null); setMemberInputPaths(new Set()); setSelectedWorkflowGalleryPaths(new Set());
     if (autoClearDataRef.current) { setOutput([]); setTrail([]); setProbes([]); setMembers([]); setMemberInventories([]); setMemberScenes({}); setGallery(null); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPath]);
@@ -1135,9 +1233,38 @@ export function VideoImportPage({
       // Resume where the last run stopped: start at the last detected marker.
       const resumeAt = markers.length ? Math.max(...markers.map((marker) => marker.atSeconds)) : 0;
       const payload = await api("scenes", { workspaceId, video: selectedPath, startSeconds: resumeAt });
-      watchJob(String(payload.jobId), "scenes", (final) => { setMarkers(final.markers || []); say(`scenes: ${(final.markers || []).length} marker(s) (${resumeAt ? `resumed @ ${resumeAt.toFixed(1)}s` : "from the top"})`); });
+      watchConcurrentJob(String(payload.jobId), "scenes", setSceneJob, (final) => { setMarkers(final.markers || []); say(`scenes: ${(final.markers || []).length} marker(s) (${resumeAt ? `resumed @ ${resumeAt.toFixed(1)}s` : "from the top"})`); });
       return resumeAt ? `scanning for scene changes from ${resumeAt.toFixed(1)}s…` : "scanning for scene changes…";
     });
+  const clearSceneDetection = () => {
+    if (sceneJob?.state === "running") void api("extract/cancel", { jobId: sceneJob.id }).catch(() => undefined);
+    const timer = concurrentPollTimersRef.current.get("scenes");
+    if (timer) window.clearInterval(timer);
+    concurrentPollTimersRef.current.delete("scenes");
+    setSceneJob(null);
+    persistMarkers([]);
+    say("scene detection cleared; next scan starts from the beginning");
+  };
+  const generateCaptions = () =>
+    run("Generating video captions", async () => {
+      const payload = await api("captions", { workspaceId, video: selectedPath, modelId: effectiveCaptionModel, chunkSeconds: 30, concurrency: 4 });
+      watchConcurrentJob(String(payload.jobId), "captions", setCaptionJob, (final) => {
+        setCaptions(final.captions || []);
+        setCaptionSource(final.captionSource || "");
+        say(`captions: ${(final.captions || []).length} cue(s) · ${final.captionSource || "unknown source"}`);
+      });
+      return `captioning ${payload.estimatedChunks || 1} audio chunk(s)…`;
+    });
+  const clearCaptions = () => {
+    if (captionJob?.state === "running") void api("extract/cancel", { jobId: captionJob.id }).catch(() => undefined);
+    const timer = concurrentPollTimersRef.current.get("captions");
+    if (timer) window.clearInterval(timer);
+    concurrentPollTimersRef.current.delete("captions");
+    setCaptionJob(null);
+    setCaptions([]);
+    setCaptionSource("");
+    void api("captions/clear", { workspaceId, video: selectedPath }).then(() => say("video captions cleared")).catch((reason) => setError(reason instanceof Error ? reason.message : String(reason)));
+  };
   const trimVideo = () =>
     run("Trimming", async () => {
       const payload = await api("trim", { workspaceId, video: selectedPath, segments: activeSegments });
@@ -1226,7 +1353,7 @@ export function VideoImportPage({
   const extract = () =>
     run("Extracting frames", async () => {
       const payload = await api("extract", extractBody());
-      watchJob(String(payload.jobId), "extract", (final) => { acceptFrames(final.frames); say(`Extracted Frame Gallery: ${(final.frames || []).length} image(s)${final.interrupted ? " (interrupted)" : ""}`); });
+      watchConcurrentJob(String(payload.jobId), "extract", setFrameExtractionJob, (final) => { acceptFrames(final.frames); say(`Extracted Frame Gallery: ${(final.frames || []).length} image(s)${final.interrupted ? " (interrupted)" : ""}`); });
       return `extracting ≈${payload.estimatedFrames} frame(s)…`;
     });
   const extractAndWait = async (): Promise<Frame[]> => {
@@ -1575,6 +1702,7 @@ export function VideoImportPage({
   const [extractorModel, setExtractorModel] = useState("");
   const [turtleModel, setTurtleModel] = useState("");
   const [turtlePngModel, setTurtlePngModel] = useState("");
+  const [captionModel, setCaptionModel] = useState("");
   const [modelResponseCache, setModelResponseCache] = useState<Record<string, CachedModelResponse>>({});
   const modelResponseCacheRef = useRef<Record<string, CachedModelResponse>>({});
   const [inheritedModelId, setInheritedModelId] = useState("");
@@ -1594,12 +1722,18 @@ export function VideoImportPage({
   const [collapsedLeftGalleries, setCollapsedLeftGalleries] = useState<Record<string, boolean>>({});
   const [recursiveAutomation, setRecursiveAutomation] = useState<RecursiveAutomation>(DEFAULT_RECURSIVE_AUTOMATION);
   const [llmCallConcurrency, setLlmCallConcurrency] = useState<LlmCallConcurrency>(DEFAULT_LLM_CALL_CONCURRENCY);
+  const [llmCallMetrics, setLlmCallMetrics] = useState<LlmCallMetrics>(emptyLlmCallMetrics);
   const [totalLlmConcurrency, setTotalLlmConcurrency] = useState(8);
   const [retryClock, setRetryClock] = useState(Date.now());
   const retryTimerRef = useRef(0);
+  const automaticDescriptionClaimsRef = useRef(new Set<string>());
+  const [manualWorkerHold, setManualWorkerHold] = useState(false);
   const [restartPendingSignal, setRestartPendingSignal] = useState(false);
   const restartPendingSignalRef = useRef(false);
   restartPendingSignalRef.current = restartPendingSignal;
+  const workersHeld = manualWorkerHold || restartPendingSignal;
+  const workersHeldRef = useRef(false);
+  workersHeldRef.current = workersHeld;
   useEffect(() => {
     const pause = () => setRestartPendingSignal(true);
     const clear = (event: Event) => {
@@ -1618,6 +1752,7 @@ export function VideoImportPage({
   const effectiveOutlinerModel = outlinerModel || allCallsModel;
   const effectiveExtractorModel = extractorModel || allCallsModel;
   const effectiveImageOutputModel = automaticImageOutputModelId(models, effectiveExtractorModel);
+  const effectiveCaptionModel = automaticAudioModelId(models, captionModel);
   const effectiveTurtleModel = turtleModel || allCallsModel;
   const effectiveTurtlePngModel = turtlePngModel || allCallsModel;
   const selectedDescriptionPrompt = describerPromptSelection === "default" ? DEFAULT_MEMBER_DESCRIPTION_PROMPT : memberDescriptionPrompt;
@@ -1632,6 +1767,13 @@ export function VideoImportPage({
     id,
     inheritedModelId,
     modelPreferenceSource,
+  );
+  const describeAudioModel = (id: string) => videoModelDescription(
+    models.find((model) => model.id === id),
+    id,
+    inheritedModelId,
+    modelPreferenceSource,
+    "audio",
   );
   const expandedPrompt = expandedCallPrompt === "describer"
     ? { label: "DESCRIBER", value: selectedDescriptionPrompt }
@@ -1676,6 +1818,7 @@ export function VideoImportPage({
   });
   const [llmSchedulerVersion, setLlmSchedulerVersion] = useState(0);
   const pumpLlmScheduler = () => {
+    if (workersHeldRef.current) return;
     const scheduler = llmSchedulerRef.current;
     const limits = llmSchedulerLimitsRef.current;
     while (scheduler.active < limits.total && scheduler.waiters.length) {
@@ -1683,9 +1826,7 @@ export function VideoImportPage({
       let bestUtilization = Number.POSITIVE_INFINITY;
       scheduler.waiters.forEach((waiter, index) => {
         const configured = limits.byType[waiter.type];
-        const downstreamWaiting = waiter.type === "describer" && scheduler.waiters.some((candidate) => candidate.type !== "describer");
-        const inherited = downstreamWaiting ? Math.max(1, Math.ceil(limits.total / 3)) : limits.total;
-        const typeLimit = Math.min(limits.total, configured ?? inherited);
+        const typeLimit = Math.min(limits.total, configured ?? limits.total);
         if (scheduler.byType[waiter.type] >= typeLimit) return;
         const utilization = scheduler.byType[waiter.type] / typeLimit;
         if (utilization < bestUtilization) {
@@ -1711,11 +1852,12 @@ export function VideoImportPage({
   };
   const acquireLlmSlot = (type: keyof LlmCallConcurrency) => new Promise<() => void>((resolve) => {
     llmSchedulerRef.current.waiters.push({ type, resolve });
+    setLlmSchedulerVersion((version) => version + 1);
     pumpLlmScheduler();
   });
   useEffect(() => {
-    pumpLlmScheduler();
-  }, [llmCallConcurrency, totalLlmConcurrency]);
+    if (!workersHeld) pumpLlmScheduler();
+  }, [llmCallConcurrency, totalLlmConcurrency, workersHeld]);
   const retryReady = (retryAfter?: number) => !retryAfter || retryAfter <= retryClock;
   const scheduleRetry = () => {
     window.clearTimeout(retryTimerRef.current);
@@ -1843,14 +1985,14 @@ export function VideoImportPage({
   const buildSnapshot = () => ({
     v: 1,
     at: new Date().toISOString(),
-    selectedPath, playerTime, markers, segments, mode, everySeconds, perScene, sceneOffset, startScene, endScene, skipScenes, rangeStart, rangeEnd, maxFrames,
+    selectedPath, playerTime, markers, captions, captionSource, segments, mode, everySeconds, perScene, sceneOffset, startScene, endScene, skipScenes, rangeStart, rangeEnd, maxFrames,
     frames, picked, kept: kept ? [...kept] : null, memberInputPaths: [...memberInputPaths], selectedWorkflowGalleryPaths: [...selectedWorkflowGalleryPaths], previewSource, galleryScope,
     filterId, filterParams, chain, candidateCount, fullSelectors,
     gallery, output, outputMode, outputLabel, appliedIds, trail, probes,
     members, memberInventories, memberScenes, memberDescriptionPrompt, objectPromptWriter, memberDecompositionPrompt, memberOrderPrompt, memberOutlinerPrompt, memberExtractorPrompt, turtlePrompt, turtlePngPrompt, turtleArtifacts, memberGoal, memberFill,
-    allCallsModel, describerModel, plannerModel, outlinerModel, extractorModel, turtleModel, turtlePngModel,
+    allCallsModel, describerModel, plannerModel, outlinerModel, extractorModel, turtleModel, turtlePngModel, captionModel,
     describerPromptSelection, plannerPromptSelection, outlinerPromptSelection, extractorPromptSelection, turtlePromptSelection, turtlePngPromptSelection,
-    pipeForkSelections, pipeForkHistory, selectedPipeFork, pipeParentView, selectedRecursiveInventoryId, collapsedLeftGalleries, recursiveAutomation, llmCallConcurrency, totalLlmConcurrency,
+    pipeForkSelections, pipeForkHistory, selectedPipeFork, pipeParentView, selectedRecursiveInventoryId, collapsedLeftGalleries, recursiveAutomation, llmCallConcurrency, llmCallMetrics, totalLlmConcurrency, manualWorkerHold,
     modelResponseCache,
     autoClearData, autoClearAlgorithm, autoNext77,
     collapsedMap, pinnedMap,
@@ -1862,6 +2004,8 @@ export function VideoImportPage({
     if (s.selectedPath) { skipVideoResetRef.current = true; setSelectedPath(String(s.selectedPath)); }
     if (typeof s.playerTime === "number") setPlayerTime(s.playerTime);
     if (Array.isArray(s.markers)) setMarkers(s.markers);
+    if (Array.isArray(s.captions)) setCaptions(s.captions);
+    if (typeof s.captionSource === "string") setCaptionSource(s.captionSource);
     if (Array.isArray(s.segments)) setSegments(s.segments);
     if (s.mode === "interval" || s.mode === "scenes") setMode(s.mode);
     if (typeof s.everySeconds === "string") setEverySeconds(s.everySeconds);
@@ -1902,6 +2046,9 @@ export function VideoImportPage({
     if (Array.isArray(s.members)) setMembers(s.members.filter((member: Member) => member.probeIndex < 0));
     if (Array.isArray(s.memberInventories)) setMemberInventories(s.memberInventories.map((inventory: MemberInventory) => ({
       ...inventory,
+      status: (["describing", "ordering", "outlining", "extracting"] as MemberInventory["status"][]).includes(inventory.status)
+        ? inventory.descriptionOutput ? "done" : "pending"
+        : inventory.status,
       descriptionPrompt: normalizeMemberPromptLabels(String(inventory.descriptionPrompt || "")),
       describedThings: Array.isArray(inventory.describedThings) ? inventory.describedThings.map((thing) => ({
         ...thing,
@@ -1909,6 +2056,11 @@ export function VideoImportPage({
       })) : undefined,
       things: Array.isArray(inventory.things) ? inventory.things.map((thing) => ({
         ...thing,
+        status: thing.status === "outlining"
+          ? hasAlignedOutline(thing) ? "outlined" : "listed"
+          : thing.status === "extracting"
+            ? thing.outputImages?.length ? "extracted" : hasAlignedOutline(thing) ? "outlined" : "listed"
+            : thing.status,
         extractionPrompt: normalizeMemberPromptLabels(String(thing.extractionPrompt || "")),
       })) : [],
     })).filter((inventory: MemberInventory) => inventory.probeIndex < 0));
@@ -1940,6 +2092,7 @@ export function VideoImportPage({
     if (typeof s.extractorModel === "string") { extractorModelTouchedRef.current = true; setExtractorModel(s.extractorModel); }
     if (typeof s.turtleModel === "string") { turtleModelTouchedRef.current = true; setTurtleModel(s.turtleModel); }
     if (typeof s.turtlePngModel === "string") { turtlePngModelTouchedRef.current = true; setTurtlePngModel(s.turtlePngModel); }
+    if (typeof s.captionModel === "string") setCaptionModel(s.captionModel);
     if (s.memberGoal) setMemberGoal(s.memberGoal);
     if (s.memberFill) setMemberFill(s.memberFill);
     if (s.pipeForkSelections && typeof s.pipeForkSelections === "object") {
@@ -1988,7 +2141,20 @@ export function VideoImportPage({
       const restored = Math.max(1, Math.min(50, Math.round(s.llmConcurrency)));
       setLlmCallConcurrency({ describer: restored, planner: restored, outliner: restored, extractor: restored, turtle: restored, turtlePng: restored });
     }
+    if (s.llmCallMetrics && typeof s.llmCallMetrics === "object") {
+      const restoredMetrics = emptyLlmCallMetrics();
+      for (const type of Object.keys(restoredMetrics) as Array<keyof LlmCallMetrics>) {
+        const metric = s.llmCallMetrics[type];
+        if (!metric || typeof metric !== "object") continue;
+        restoredMetrics[type] = {
+          completed: Math.max(0, Math.round(Number(metric.completed) || 0)),
+          totalDurationMs: Math.max(0, Number(metric.totalDurationMs) || 0),
+        };
+      }
+      setLlmCallMetrics(restoredMetrics);
+    }
     if (typeof s.totalLlmConcurrency === "number") setTotalLlmConcurrency(Math.max(1, Math.min(50, Math.round(s.totalLlmConcurrency))));
+    if (typeof s.manualWorkerHold === "boolean") setManualWorkerHold(s.manualWorkerHold);
     if (s.describerPromptSelection === "workspace" || s.describerPromptSelection === "default") setDescriberPromptSelection(s.describerPromptSelection);
     if (s.plannerPromptSelection === "workspace" || s.plannerPromptSelection === "default") setPlannerPromptSelection(s.plannerPromptSelection);
     if (s.outlinerPromptSelection === "workspace" || s.outlinerPromptSelection === "default") setOutlinerPromptSelection(s.outlinerPromptSelection);
@@ -2004,6 +2170,7 @@ export function VideoImportPage({
     if (typeof s.autoNext77 === "boolean") setAutoNext77(s.autoNext77);
     if (s.collapsedMap && typeof s.collapsedMap === "object") setCollapsedMap(s.collapsedMap);
     if (s.pinnedMap && typeof s.pinnedMap === "object") setPinnedMap(s.pinnedMap);
+    setAutomaticSchedulerTick((tick) => tick + 1);
     return true;
   };
   useEffect(() => {
@@ -2255,15 +2422,19 @@ export function VideoImportPage({
   }, [workspaceId]);
   const isRunnableVisionModel = (modelId: string) => models.some((model) => model.id === modelId && model.enabled && model.vision);
   const asDataUrl = async (path: string): Promise<string | null> => {
-    const response = await fetch(`/workbench/workspaces/${encodeURIComponent(workspaceId)}/asset?path=${encodeURIComponent(path)}`, { cache: "no-store" });
-    if (!response.ok) return null;
-    const blob = await response.blob();
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(String(reader.result || ""));
-      reader.onerror = () => reject(new Error("could not read frame"));
-      reader.readAsDataURL(blob);
-    });
+    try {
+      const response = await fetch(`/workbench/workspaces/${encodeURIComponent(workspaceId)}/asset?path=${encodeURIComponent(path)}`, { cache: "no-store" });
+      if (!response.ok) return null;
+      const blob = await response.blob();
+      return await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result || ""));
+        reader.onerror = () => reject(new Error("could not read frame"));
+        reader.readAsDataURL(blob);
+      });
+    } catch {
+      return null;
+    }
   };
   const invokeCachedModel = async (
     modelId: string,
@@ -2274,7 +2445,7 @@ export function VideoImportPage({
     bypassCache = false,
     callType: keyof LlmCallConcurrency = "extractor",
   ): Promise<Record<string, any>> => {
-    if (restartPendingSignalRef.current) throw new Error("Restart pending; new LLM work is paused.");
+    if (workersHeldRef.current) throw new Error(restartPendingSignalRef.current ? "Restart pending; new LLM work is paused." : "Workers held; new LLM work is paused.");
     const imageHash = responseCacheHash(image);
     const key = responseCacheHash(`${modelId}\u0000${prompt}\u0000${imageHash}`);
     const cached = modelResponseCacheRef.current[key];
@@ -2283,11 +2454,12 @@ export function VideoImportPage({
       return cached.payload;
     }
     const release = await acquireLlmSlot(callType);
-    if (restartPendingSignalRef.current) {
+    if (workersHeldRef.current) {
       release();
-      throw new Error("Restart pending; queued LLM work was paused before launch.");
+      throw new Error(restartPendingSignalRef.current ? "Restart pending; queued LLM work was paused before launch." : "Workers held; queued LLM work was paused before launch.");
     }
     let payload: Record<string, any>;
+    const startedAt = performance.now();
     try {
       payload = await api(`/workbench/workspaces/${encodeURIComponent(workspaceId)}/models/${encodeURIComponent(modelId)}/invoke`, {
         prompt,
@@ -2295,6 +2467,14 @@ export function VideoImportPage({
         timeoutSeconds,
       });
     } finally {
+      const durationMs = performance.now() - startedAt;
+      setLlmCallMetrics((current) => ({
+        ...current,
+        [callType]: {
+          completed: current[callType].completed + 1,
+          totalDurationMs: current[callType].totalDurationMs + durationMs,
+        },
+      }));
       release();
     }
     const entry: CachedModelResponse = {
@@ -2373,29 +2553,34 @@ export function VideoImportPage({
       const inputFrames = onlyMissing
         ? selectedInputFrames.filter((frame) => {
             const existing = memberInventories.find((inventory) => inventory.id === `input:${frame.path}`);
-            return !existing || (existing.status === "failed" ? retryReady(existing.retryAfter) : !existing.descriptionOutput);
+            return !automaticDescriptionClaimsRef.current.has(`root:${frame.path}`)
+              && (!existing || (existing.status === "failed" ? retryReady(existing.retryAfter) : !existing.descriptionOutput));
           })
         : selectedInputFrames;
         const pendingChildren = memberInventories.filter((inventory) =>
           inventory.parentInventoryId
+          && (!onlyMissing || !automaticDescriptionClaimsRef.current.has(`child:${inventory.id}`))
           && (inventory.status === "pending" || (inventory.status === "failed" && retryReady(inventory.retryAfter)))
         );
       const descriptionTasks = [
         ...inputFrames.map((frame) => ({
           kind: "root" as const,
           frame,
+          claimKey: `root:${frame.path}`,
           retry: memberInventories.find((inventory) => inventory.id === `input:${frame.path}`)?.status === "failed",
         })),
-        ...pendingChildren.map((inventory) => ({ kind: "child" as const, inventory, retry: inventory.status === "failed" })),
+        ...pendingChildren.map((inventory) => ({ kind: "child" as const, inventory, claimKey: `child:${inventory.id}`, retry: inventory.status === "failed" })),
       ];
       const descriptionConcurrency = effectiveCallConcurrency("describer");
       const orderedDescriptionTasks = cooperativeRetryOrder(descriptionTasks, descriptionConcurrency, (task) => task.retry);
-      const queuedDescriptionTasks = onlyMissing
-        ? orderedDescriptionTasks.slice(0, descriptionConcurrency)
-        : orderedDescriptionTasks;
+      const queuedDescriptionTasks = orderedDescriptionTasks;
+      if (onlyMissing) {
+       for (const task of queuedDescriptionTasks) automaticDescriptionClaimsRef.current.add(task.claimKey);
+      }
       let listed = 0;
       await runConcurrent(queuedDescriptionTasks, descriptionConcurrency, async (task) => {
-          if (task.kind === "child") {
+       try {
+         if (task.kind === "child") {
             if (stopRef.current) return;
             const described = await describeRecursiveInventory(task.inventory);
             if (described) listed += described.things.length;
@@ -2522,6 +2707,9 @@ export function VideoImportPage({
             things,
           } : inventory));
           say(`① [input image] #${frame.index}: ${things.length} thing(s) listed`);
+       } finally {
+         if (onlyMissing) automaticDescriptionClaimsRef.current.delete(task.claimKey);
+       }
       });
       return stopRef.current
         ? `Textual description stopped after listing ${listed} thing(s)`
@@ -3639,14 +3827,16 @@ export function VideoImportPage({
   const automaticStagesRunningRef = useRef(new Set<keyof LlmCallConcurrency>());
   const [automaticSchedulerTick, setAutomaticSchedulerTick] = useState(0);
   useEffect(() => {
-    if (restartPendingSignal) return;
+    if (!restoredRef.current || workersHeld) return;
     const selectedRootsNeedDescription = frames.some((frame) => {
      if (!memberInputPaths.has(frame.path)) return false;
+     if (automaticDescriptionClaimsRef.current.has(`root:${frame.path}`)) return false;
      const inventory = memberInventories.find((candidate) => candidate.id === `input:${frame.path}`);
      return !inventory || (inventory.status === "failed" ? retryReady(inventory.retryAfter) : !inventory.descriptionOutput);
     });
     const childNeedsDescription = memberInventories.some((inventory) =>
      inventory.parentInventoryId
+     && !automaticDescriptionClaimsRef.current.has(`child:${inventory.id}`)
      && (inventory.status === "pending" || (inventory.status === "failed" && retryReady(inventory.retryAfter)))
     );
     const inventoryNeedsPlan = memberInventories.some((inventory) =>
@@ -3676,10 +3866,11 @@ export function VideoImportPage({
       return artifact?.status === "generated" || (artifact?.status === "failed" && artifact.failedStage === "png" && retryReady(artifact.retryAfter));
     });
     const launch = (type: keyof LlmCallConcurrency, task: () => Promise<void>) => {
-     if (automaticStagesRunningRef.current.has(type)) return;
-     automaticStagesRunningRef.current.add(type);
+     const allowsOverlappingRefill = type === "describer";
+     if (!allowsOverlappingRefill && automaticStagesRunningRef.current.has(type)) return;
+     if (!allowsOverlappingRefill) automaticStagesRunningRef.current.add(type);
      void task().finally(() => {
-       automaticStagesRunningRef.current.delete(type);
+       if (!allowsOverlappingRefill) automaticStagesRunningRef.current.delete(type);
        setAutomaticSchedulerTick((tick) => tick + 1);
      });
     };
@@ -3706,6 +3897,7 @@ export function VideoImportPage({
     frames,
     memberInputPaths,
     memberInventories,
+    models,
     effectiveDescriberModel,
     effectiveExtractorModel,
     effectiveOutlinerModel,
@@ -3720,11 +3912,15 @@ export function VideoImportPage({
     recursiveAutomation.turtle,
     recursiveAutomation.turtlePng,
     retryClock,
-    restartPendingSignal,
+    workersHeld,
     turtleArtifacts,
   ]);
 
-  const progress = job && job.total > 0 ? Math.min(100, Math.round((job.done / job.total) * 100)) : 0;
+  const visibleJobs = [sceneJob, frameExtractionJob, captionJob, job].filter((candidate): candidate is JobState => Boolean(candidate));
+  const anyBackgroundJobRunning = visibleJobs.some((candidate) => candidate.state === "running");
+  const jobProgress = (candidate: JobState) => candidate.total > 0
+    ? Math.min(100, Math.round((candidate.done / candidate.total) * 100))
+    : 0;
   const selectorScore = (kind: string) => { const score = ledger[`select:${kind}`] || 0; return score ? ` (${score > 0 ? "+" : ""}${score})` : ""; };
   const recursiveRootInventories = memberInventories
     .filter((inventory) => !inventory.parentInventoryId)
@@ -3734,6 +3930,164 @@ export function VideoImportPage({
     || (left.depth || 0) - (right.depth || 0)
     || left.id.localeCompare(right.id)
   );
+  const selectedRootInventories = frames
+    .filter((frame) => memberInputPaths.has(frame.path))
+    .map((frame) => memberInventories.find((inventory) => inventory.id === `input:${frame.path}`));
+  const undiscoveredSelectedRoots = selectedRootInventories.filter((inventory) => !inventory).length;
+  const futureImageObligations = memberInventories.filter((inventory) => !inventory.descriptionOutput).length + undiscoveredSelectedRoots;
+  const schedulerPending = (type: keyof LlmCallConcurrency) =>
+    llmSchedulerRef.current.waiters.filter((waiter) => waiter.type === type).length;
+  const llmStageProgress: Record<keyof LlmCallConcurrency, { pending: number; completed: number }> = {
+    describer: {
+      pending: schedulerPending("describer") + undiscoveredSelectedRoots + memberInventories.filter((inventory) =>
+        !inventory.descriptionOutput && inventory.status !== "describing" && inventory.status !== "ordering"
+      ).length,
+      completed: memberInventories.filter((inventory) =>
+        Boolean(inventory.descriptionOutput) && !inventory.descriptionOutput.startsWith("ERROR:")
+      ).length,
+    },
+    planner: {
+      pending: schedulerPending("planner") + futureImageObligations + memberInventories.filter((inventory) =>
+        Boolean(inventory.descriptionOutput)
+        && inventory.things.length > 0
+        && !inventory.extractionOrder?.length
+        && inventory.status !== "ordering"
+      ).length,
+      completed: memberInventories.filter((inventory) => Boolean(inventory.orderOutput)).length,
+    },
+    outliner: {
+      pending: schedulerPending("outliner") + futureImageObligations + memberInventories.reduce((count, inventory) => {
+        if (!inventory.descriptionOutput || inventory.things.length === 0) return count;
+        if (!inventory.extractionOrder?.length) return count + 1;
+        return count + inventory.things.filter((thing) =>
+          !thing.outputImages?.length && !hasAlignedOutline(thing) && thing.status !== "outlining"
+        ).length;
+      }, 0),
+      completed: memberInventories.reduce((count, inventory) =>
+        count + inventory.things.filter(hasAlignedOutline).length, 0),
+    },
+    extractor: {
+      pending: schedulerPending("extractor") + futureImageObligations + memberInventories.reduce((count, inventory) => {
+        if (!inventory.descriptionOutput || inventory.things.length === 0) return count;
+        return count + inventory.things.filter((thing) =>
+          !thing.outputImages?.length && thing.status !== "extracting"
+        ).length;
+      }, 0),
+      completed: memberInventories.reduce((count, inventory) =>
+        count + inventory.things.filter((thing) => Boolean(thing.outputImages?.length)).length, 0),
+    },
+    turtle: {
+      pending: schedulerPending("turtle") + turtleLeafCandidates.filter((candidate) => {
+        const artifact = turtleArtifacts[candidate.sourceImage];
+        return !artifact || (artifact.status !== "generating" && artifact.status === "failed" && artifact.failedStage === "gen");
+      }).length,
+      completed: Object.values(turtleArtifacts).filter((artifact) => Boolean(artifact.rawProgram)).length,
+    },
+    turtlePng: {
+      pending: schedulerPending("turtlePng") + Object.values(turtleArtifacts).filter((artifact) =>
+        Boolean(artifact.rawProgram) && !artifact.renderedImage && artifact.status !== "drawing"
+      ).length,
+      completed: Object.values(turtleArtifacts).filter((artifact) => Boolean(artifact.renderedImage)).length,
+    },
+  };
+  const selectedImageStageIndicators = (frame: Frame): WorkflowStageIndicator[] => {
+    const inventory = memberInventories.find((candidate) => candidate.id === `input:${frame.path}`);
+    if (!inventory) {
+      const describing = automaticDescriptionClaimsRef.current.has(`root:${frame.path}`);
+      return [
+        { label: "D", value: describing ? "…" : "·", state: describing ? "active" : "waiting", detail: describing ? "Describer active" : "waiting for Describer" },
+        { label: "P", value: "·", state: "waiting", detail: "waiting for Describer" },
+        { label: "O", value: "0/0", state: "waiting", detail: "waiting for Planner" },
+        { label: "E", value: "0/0", state: "waiting", detail: "waiting for aligned outlines" },
+        { label: "T", value: "0/0", state: "waiting", detail: "waiting for terminal leaves" },
+        { label: "I", value: "0/0", state: "waiting", detail: "waiting for Turtle programs" },
+      ];
+    }
+    const described = Boolean(inventory.descriptionOutput) && !inventory.descriptionOutput.startsWith("ERROR:");
+    const leaf = described && inventory.things.length === 0;
+    const outlined = inventory.things.filter(hasAlignedOutline).length;
+    const extracted = inventory.things.filter((thing) => thing.outputImages?.length).length;
+    const outlineActive = inventory.things.some((thing) => thing.status === "outlining");
+    const outlineRetrying = inventory.things.some((thing) => Boolean(thing.outlineError));
+    const extractionActive = inventory.things.some((thing) => thing.status === "extracting");
+    const extractionRetrying = inventory.things.some((thing) => thing.status === "failed" || thing.status === "not_found");
+    const rootLeaves = turtleLeafCandidates.filter((candidate) =>
+      memberInventories.find((candidateInventory) => candidateInventory.id === candidate.inventoryId)?.framePath === frame.path
+    );
+    const generatedTurtles = rootLeaves.filter((candidate) => {
+      const artifact = turtleArtifacts[candidate.sourceImage];
+      return artifact && artifact.status !== "generating" && !(artifact.status === "failed" && artifact.failedStage === "gen");
+    }).length;
+    const renderedImages = rootLeaves.filter((candidate) => turtleArtifacts[candidate.sourceImage]?.status === "rendered").length;
+    const turtleActive = rootLeaves.some((candidate) => turtleArtifacts[candidate.sourceImage]?.status === "generating");
+    const turtleRetrying = rootLeaves.some((candidate) => {
+      const artifact = turtleArtifacts[candidate.sourceImage];
+      return artifact?.status === "failed" && artifact.failedStage === "gen";
+    });
+    const imageActive = rootLeaves.some((candidate) => turtleArtifacts[candidate.sourceImage]?.status === "drawing");
+    const imageRetrying = rootLeaves.some((candidate) => {
+      const artifact = turtleArtifacts[candidate.sourceImage];
+      return artifact?.status === "failed" && artifact.failedStage === "png";
+    });
+    const dState: WorkflowStageIndicator["state"] = inventory.status === "describing"
+      ? "active"
+      : described
+        ? "complete"
+        : inventory.status === "failed"
+          ? "retrying"
+          : "waiting";
+    const pState: WorkflowStageIndicator["state"] = inventory.status === "ordering"
+      ? "active"
+      : inventory.orderOutput || leaf
+        ? "complete"
+        : inventory.orderError
+          ? "retrying"
+          : "waiting";
+    const oState: WorkflowStageIndicator["state"] = leaf || (inventory.things.length > 0 && outlined === inventory.things.length)
+      ? "complete"
+      : outlineActive
+        ? "active"
+        : outlineRetrying
+          ? "retrying"
+          : outlined > 0
+            ? "partial"
+            : "waiting";
+    const eState: WorkflowStageIndicator["state"] = leaf || (inventory.things.length > 0 && extracted === inventory.things.length)
+      ? "complete"
+      : extractionActive
+        ? "active"
+        : extractionRetrying
+          ? "retrying"
+          : extracted > 0
+            ? "partial"
+            : "waiting";
+    const tState: WorkflowStageIndicator["state"] = rootLeaves.length > 0 && generatedTurtles === rootLeaves.length
+      ? "complete"
+      : turtleActive
+        ? "active"
+        : turtleRetrying
+          ? "retrying"
+          : generatedTurtles > 0
+            ? "partial"
+            : "waiting";
+    const iState: WorkflowStageIndicator["state"] = rootLeaves.length > 0 && renderedImages === rootLeaves.length
+      ? "complete"
+      : imageActive
+        ? "active"
+        : imageRetrying
+          ? "retrying"
+          : renderedImages > 0
+            ? "partial"
+            : "waiting";
+    return [
+      { label: "D", value: described ? String(inventory.things.length) : dState === "active" ? "…" : dState === "retrying" ? "!" : "·", state: dState, detail: dState === "complete" ? `${inventory.things.length} object(s) described` : dState === "retrying" ? inventory.sceneDescription || "Describer retrying" : dState === "active" ? "Describer active" : "waiting for Describer" },
+      { label: "P", value: inventory.orderOutput ? String(inventory.extractionOrder?.length || 0) : pState === "active" ? "…" : pState === "retrying" ? "!" : "·", state: pState, detail: pState === "complete" ? leaf ? "not needed for leaf" : `${inventory.extractionOrder?.length || 0} object(s) ordered` : pState === "retrying" ? inventory.orderError || "Planner retrying" : pState === "active" ? "Planner active" : "waiting for described objects" },
+      { label: "O", value: `${outlined}/${inventory.things.length}`, state: oState, detail: leaf ? "not needed for leaf" : `${outlined}/${inventory.things.length} aligned outline(s)${outlineRetrying ? " · retries pending" : ""}` },
+      { label: "E", value: `${extracted}/${inventory.things.length}`, state: eState, detail: leaf ? "not needed for leaf" : `${extracted}/${inventory.things.length} object(s) extracted${extractionRetrying ? " · retries pending" : ""}` },
+      { label: "T", value: `${generatedTurtles}/${rootLeaves.length}`, state: tState, detail: `${generatedTurtles}/${rootLeaves.length} terminal Turtle program(s)${turtleRetrying ? " · retries pending" : ""}` },
+      { label: "I", value: `${renderedImages}/${rootLeaves.length}`, state: iState, detail: `${renderedImages}/${rootLeaves.length} terminal image(s) rendered${imageRetrying ? " · retries pending" : ""}` },
+    ];
+  };
   const selectedRecursiveInventory = memberInventories.find((inventory) => inventory.id === selectedRecursiveInventoryId) || recursiveRootInventories[0] || null;
   const revealRecursiveOutput = (inventoryId: string, sectionId: "memberDescription" | "members", targetPrefix: string) => {
     setCollapsedMap((current) => ({ ...current, [sectionId]: false }));
@@ -3822,7 +4176,7 @@ export function VideoImportPage({
 
       <div className="video-import-activity" role="status" aria-live="polite">
         <div className="video-import-activity-controls">
-          <span className={`video-import-activity-dot${busy || job?.state === "running" ? " is-busy" : ""}`} />
+          <span className={`video-import-activity-dot${busy || anyBackgroundJobRunning ? " is-busy" : ""}`} />
           <b>STATUS</b>
           <label className="video-import-toggle">
             <input type="checkbox" checked={autoCollapseOn} onChange={(event) => setAutoCollapseOn(event.target.checked)} />
@@ -3849,20 +4203,26 @@ export function VideoImportPage({
               <span key={`${line.at}-${index}`} className={index === log.length - 1 ? "is-current" : ""}><code>{line.at}</code> {line.text}</span>
             ))}
           </div>
-          <button className="video-import-stop" disabled={!busy && job?.state !== "running"} onClick={stopEverything}>■ Stop</button>
+          <button className="video-import-stop" disabled={!busy && !anyBackgroundJobRunning} onClick={stopEverything}>■ Stop</button>
         </div>
       </div>
       {error && <div className="backend-error"><b>Video import error</b><span>{error}</span></div>}
-      {job && (
-        <div className="video-import-progress" role="progressbar" aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100}>
-          <div className="video-import-progress-track"><div className="video-import-progress-fill" style={{ width: `${job.state === "done" ? 100 : progress}%` }} /></div>
-          <small>
-            {job.state === "running" && `${job.kind}: ${job.done}/${job.total} · ETA ${job.etaSeconds}s`}
-            {job.state === "done" && `${job.kind} done in ${job.elapsedSeconds}s${job.interrupted ? " (interrupted)" : ""}`}
-            {job.state === "error" && `${job.kind} failed: ${job.error}`}
-          </small>
-        </div>
-      )}
+      {visibleJobs.length > 0 && <section className="video-import-media-job-queue">
+        <header><b>MEDIA JOB QUEUE</b><small>{visibleJobs.filter((visibleJob) => visibleJob.state === "running").length} active · {visibleJobs.length} visible</small></header>
+        {visibleJobs.map((visibleJob) => {
+          const progress = jobProgress(visibleJob);
+          return (
+            <div key={`${visibleJob.kind}:${visibleJob.id}`} className="video-import-progress" role="progressbar" aria-label={`${visibleJob.kind} progress`} aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100}>
+              <div className="video-import-progress-track"><div className="video-import-progress-fill" style={{ width: `${visibleJob.state === "done" ? 100 : progress}%` }} /></div>
+              <small>
+                {visibleJob.state === "running" && `${visibleJob.kind}: ${visibleJob.done}/${visibleJob.total} · ETA ${visibleJob.etaSeconds}s`}
+                {visibleJob.state === "done" && `${visibleJob.kind} done in ${visibleJob.elapsedSeconds}s${visibleJob.interrupted ? " (interrupted)" : ""}`}
+                {visibleJob.state === "error" && `${visibleJob.kind} failed: ${visibleJob.error}`}
+              </small>
+            </div>
+          );
+        })}
+      </section>}
 
       <Section {...section("config", "JSON CONFIG", `the page's exact state as editable JSON${configDraft === null ? " · live" : configValid ? " · editing (applies live)" : " · INVALID JSON — keep typing"}`,
         <>
@@ -3943,15 +4303,18 @@ export function VideoImportPage({
       {selected && (
         <Section {...section("player", "PLAYER / TIMELINE", `${selected.title} · ${seconds(duration)}`)}>
           <div className="vi2-body video-import-player">
-            <video
-              ref={videoRef}
-              key={selected.path}
-              controls
-              preload="metadata"
-              src={`${API}/stream?workspaceId=${encodeURIComponent(workspaceId)}&path=${encodeURIComponent(selected.path)}`}
-              onTimeUpdate={(event) => setPlayerTime((event.target as HTMLVideoElement).currentTime)}
-              onLoadedMetadata={(event) => setPlayerDuration((event.target as HTMLVideoElement).duration || 0)}
-            />
+            <div className="video-import-captioned-media">
+              <video
+                ref={videoRef}
+                key={selected.path}
+                controls
+                preload="metadata"
+                src={`${API}/stream?workspaceId=${encodeURIComponent(workspaceId)}&path=${encodeURIComponent(selected.path)}`}
+                onTimeUpdate={(event) => setPlayerTime((event.target as HTMLVideoElement).currentTime)}
+                onLoadedMetadata={(event) => setPlayerDuration((event.target as HTMLVideoElement).duration || 0)}
+              />
+              {activeCaption && <div className="video-import-active-caption">{activeCaption.speaker && <b>{activeCaption.speaker}</b>}<span>{activeCaption.text}</span></div>}
+            </div>
             <div
               ref={railRef}
               className="video-import-rail"
@@ -3996,7 +4359,14 @@ export function VideoImportPage({
               <small>t = {playerTime.toFixed(1)}s</small>
               <button disabled={busy || !duration} onClick={() => persistMarkers([...markers, { atSeconds: Math.round(playerTime * 100) / 100 }].sort((a, b) => a.atSeconds - b.atSeconds))}>◈ Mark</button>
               <button disabled={busy || !duration} onClick={() => void grabAtCursor()}>⤵ Frame at cursor</button>
-              <button disabled={busy || job?.state === "running"} onClick={() => void detectScenes()}>✨ Detect scenes</button>
+              <button disabled={!selectedPath || sceneJob?.state === "running" || job?.state === "running"} onClick={() => void detectScenes()}>✨ Detect scenes</button>
+              <button disabled={!markers.length && sceneJob?.state !== "running"} onClick={clearSceneDetection}>× Clear scenes</button>
+              <label>captions model
+                <ColoredTagCombobox value={effectiveCaptionModel} ids={videoModelIds} ariaLabel="Video captions model" describe={describeAudioModel} disabled={captionJob?.state === "running"} onChange={setCaptionModel} />
+              </label>
+              <button disabled={captionJob?.state === "running"} onClick={() => void generateCaptions()}>CC Generate captions</button>
+              <button disabled={!captions.length && captionJob?.state !== "running"} onClick={clearCaptions}>× Clear captions</button>
+              <small>{captions.length} cue(s){captionSource ? ` · ${captionSource}` : ""}</small>
               <button disabled={busy || !duration} onClick={() => { const at = playerTime; persistSegments(activeSegments.flatMap((segment) => (at > segment.start && at < segment.end ? [{ ...segment, end: at }, { ...segment, start: at }] : [segment]))); }}>✂ Split at cursor</button>
               <button disabled={busy || job?.state === "running" || activeSegments.every((segment) => segment.keep)} onClick={() => void trimVideo()}>⟿ Trim video</button>
               <button disabled={busy || job?.state === "running" || !selection} onClick={() => void selectionToVideo()}>⤢ Selection → video</button>
@@ -4020,7 +4390,7 @@ export function VideoImportPage({
               <label>start time <input type="number" min={0} step={0.1} value={rangeStart} disabled={busy} onChange={(event) => setRangeStart(event.target.value)} /> s</label>
               <label>end time <input type="number" min={0} step={0.1} value={rangeEnd} placeholder="end" disabled={busy} onChange={(event) => setRangeEnd(event.target.value)} /> s</label>
               <label>max <input type="number" min={1} max={600} value={maxFrames} disabled={busy} onChange={(event) => setMaxFrames(event.target.value)} /></label>
-              <button disabled={busy || job?.state === "running" || (mode === "scenes" && !markers.length)} onClick={() => void extract()}>Extract frames</button>
+              <button disabled={frameExtractionJob?.state === "running" || job?.state === "running" || (mode === "scenes" && !markers.length)} onClick={() => void extract()}>Extract frames</button>
             </div>
           </div>
         </Section>
@@ -4456,6 +4826,21 @@ export function VideoImportPage({
               {Array.from({ length: 50 }, (_, index) => index + 1).map((value) => <option key={value} value={value}>{value}</option>)}
             </select>
           </label>
+          <button
+            type="button"
+            className={`video-import-worker-hold${workersHeld ? " is-held" : ""}`}
+            aria-pressed={workersHeld}
+            title={restartPendingSignal ? "Restart pending is draining active workers." : "Pause new worker admissions before restarting an LLM server; active calls finish."}
+            onClick={() => {
+              if (restartPendingSignal) {
+                say("restart pending owns the worker hold");
+                return;
+              }
+              setManualWorkerHold((held) => !held);
+            }}
+          >
+            {workersHeld ? "▶ WORKERS HELD / DRAINING" : "■ HOLD / DRAIN WORKERS"}
+          </button>
         </div>
         <div className="video-import-llm-call-rows">
           {([
@@ -4465,9 +4850,28 @@ export function VideoImportPage({
             ["extractor", "E · EXTRACTOR", recursiveAutomation.extractor, extractorModel, setExtractorModel, extractorModelTouchedRef, llmCallConcurrency.extractor, extractorPromptSelection, setExtractorPromptSelection],
             ["turtle", "T · TURTLE GEN", recursiveAutomation.turtle, turtleModel, setTurtleModel, turtleModelTouchedRef, llmCallConcurrency.turtle, turtlePromptSelection, setTurtlePromptSelection],
             ["turtlePng", "PNG · TURTLE PNG", recursiveAutomation.turtlePng, turtlePngModel, setTurtlePngModel, turtlePngModelTouchedRef, llmCallConcurrency.turtlePng, turtlePngPromptSelection, setTurtlePngPromptSelection],
-          ] as const).map(([type, label, enabled, model, setModel, touchedRef, concurrency, promptSelection, setPromptSelection]) => (
+          ] as const).map(([type, label, enabled, model, setModel, touchedRef, concurrency, promptSelection, setPromptSelection]) => {
+            const metric = llmCallMetrics[type];
+            const progress = llmStageProgress[type];
+            const completed = Math.max(progress.completed, metric.completed);
+            const averageMs = metric.completed ? metric.totalDurationMs / metric.completed : 0;
+            return (
             <div className="video-import-llm-call-row" key={type}>
-              <button type="button" className={enabled ? "is-on" : ""} aria-pressed={enabled} onClick={() => toggleRecursiveAutomation(type)}>{label} {enabled ? "ON" : "OFF"} · {llmSchedulerRef.current.byType[type]} active</button>
+              <button
+                type="button"
+                className={`${enabled ? "is-on" : ""}${llmSchedulerRef.current.byType[type] ? " has-workers" : ""}`}
+                aria-pressed={enabled}
+                onClick={() => toggleRecursiveAutomation(type)}
+              >
+                <span>{label}</span>
+                <small>{enabled ? "ON" : "OFF"}</small>
+                <em>{llmSchedulerRef.current.byType[type]} ACTIVE WORKER{llmSchedulerRef.current.byType[type] === 1 ? "" : "S"}</em>
+              </button>
+              <div className="video-import-llm-call-metrics" aria-label={`${label} job metrics`}>
+                <span title="All known pipeline obligations waiting for this stage, including work not yet admitted to a worker."><b>{progress.pending}</b><small>PENDING</small></span>
+                <span><b>{completed}</b><small>COMPLETED</small></span>
+                <span title={metric.completed ? `${Math.round(averageMs)}ms average across ${metric.completed} completed job(s)` : "No completed jobs yet"}><b>{formatJobDuration(averageMs)}</b><small>AVG / JOB</small></span>
+              </div>
               <label>model
                 <ColoredTagCombobox
                   value={model}
@@ -4482,7 +4886,7 @@ export function VideoImportPage({
               </label>
               <label>max processes
                 <select value={concurrency ?? ""} onFocus={() => setExpandedCallPrompt(type)} onPointerDown={() => setExpandedCallPrompt(type)} onChange={(event) => { setCallConcurrency(type, event.target.value ? Number(event.target.value) : null); setExpandedCallPrompt(type); }}>
-                  <option value="">{type === "describer" ? `<auto · borrow idle; yield to 1/3 = ${Math.max(1, Math.ceil(totalLlmConcurrency / 3))}>` : "<keep below global limit>"}</option>
+                  <option value="">&lt;use full global capacity&gt;</option>
                   {Array.from({ length: 50 }, (_, index) => index + 1).map((value) => <option key={value} value={value}>{value}</option>)}
                 </select>
               </label>
@@ -4498,7 +4902,8 @@ export function VideoImportPage({
                 </select>
               </label>
             </div>
-          ))}
+            );
+          })}
         </div>
         <div className="video-import-automation-options">
           <button type="button" className={recursiveAutomation.advanceLevels ? "is-on" : ""} aria-pressed={recursiveAutomation.advanceLevels} onClick={() => toggleRecursiveAutomation("advanceLevels")}>Next recursion levels {recursiveAutomation.advanceLevels ? "ON" : "OFF"}</button>
@@ -4532,7 +4937,7 @@ export function VideoImportPage({
               {!frames.length && <small>Extracted Frame Gallery images appear here.</small>}
             </WorkflowGalleryPanel>
             <WorkflowGalleryPanel title={`SELECTED IMAGES · ${memberInputPaths.size}`} open={!collapsedLeftGalleries.selectedImages} onOpenChange={(open) => setLeftGalleryOpen("selectedImages", open)} onClear={clearSelectedImages}>
-              <div className="video-import-workflow-gallery-images">{frames.filter((frame) => memberInputPaths.has(frame.path)).map((frame) => <WorkflowGalleryItem key={frame.path} src={asset(frame.path)} alt={`selected input ${frame.index}`} caption={`input #${frame.index}`} selected onSelectedChange={(selected) => setMemberInputPaths((current) => { const next = new Set(current); if (selected) next.add(frame.path); else next.delete(frame.path); return next; })} />)}</div>
+              <div className="video-import-workflow-gallery-images">{frames.filter((frame) => memberInputPaths.has(frame.path)).map((frame) => <WorkflowGalleryItem key={frame.path} src={asset(frame.path)} alt={`selected input ${frame.index}`} caption={`input #${frame.index}`} selected stageIndicators={selectedImageStageIndicators(frame)} onSelectedChange={(selected) => setMemberInputPaths((current) => { const next = new Set(current); if (selected) next.add(frame.path); else next.delete(frame.path); return next; })} />)}</div>
               {!memberInputPaths.size && <small>Select images in the Extracted Frame Gallery.</small>}
             </WorkflowGalleryPanel>
             {recursiveGalleryDepths.map((depth) => {

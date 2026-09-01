@@ -232,10 +232,29 @@ values here.
   `ColoredTagCombobox.tsx`. Video Import uses it for every model selector, with
   backend grouping and colored vision/image-output/multimodal/reasoning/tools/
   JSON/audio/code/text plus preferred/inherited/unavailable chips.
+  Removed Describer's inherited one-third cap. Every stage now defaults to full
+  global capacity, with fair lowest-utilization dispatch across ready queues.
+  Added a persisted global Hold/Drain Workers control for LLM-server
+  maintenance. It drains active calls, blocks new admissions, resumes on
+  release, and is automatically pressed/owned by restart-pending.
   Clearing Selected Images now removes each selected root's complete recursive
   workflow metadata and descendants, scene/Turtle state, response/provenance
   caches, derived gallery selections, and pinned popups without deleting the
   source image files.
+  Selected Images tiles now expose live D/P/O/E/T/I stage strips with distinct
+  waiting, active, retrying, partial, and complete colors and detailed tooltips.
+  Scene detection and frame extraction now have independent job state, polling,
+  progress, and cancellation, so they can run concurrently. Video metadata
+  writes merge atomically to preserve both completion records.
+  Video captioning is another independent media job: prefer embedded WebVTT,
+  otherwise transcribe 30-second audio chunks concurrently through an enabled
+  audio model; persist `captions.vtt` plus timed `video.json` cues and render
+  the active cue over playback.
+  The LLM controller stage rows expose the full pending pipeline backlog,
+  durable completed counts, and persisted observed average call duration; do
+  not regress Pending to semaphore waiters only.
+  Keep automatic LLM scheduling blocked until page-state restoration completes;
+  otherwise a persisted worker hold leaks fresh calls during reload.
   Alt rollover gives the image a full half-width/half-height pane beside the
   context and scales it aspect-correctly with contain (including above 5× for
   small tiles). The combined rectangle is clamped onscreen so neither pane

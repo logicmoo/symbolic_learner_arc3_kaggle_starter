@@ -65,7 +65,7 @@ def test_inherited_model_is_available_before_full_model_enumeration() -> None:
     assert "videoModelDescription" in source
     assert '"image output": "#ff8bd1"' in source
     assert '"no vision": "#e0a458"' in source
-    assert "disabled: !model.enabled || !model.vision" in source
+    assert "disabled: !model.enabled || !compatible" in source
     assert "preferred by ${preferenceSourceLabel(preferenceSource)}" in source
     assert "preferred:" in source
     display = MODEL_OPTION_DISPLAY.read_text(encoding="utf-8")
@@ -301,6 +301,23 @@ def test_member_gallery_has_two_stage_runner_with_inspectable_prompts() -> None:
     assert "delete imageProvenanceCacheRef.current[path]" in source
     assert "setPinnedImageContext" in source
     assert "their recursive metadata" in source
+    assert "watchConcurrentJob" in source
+    assert "sceneJob?.state === \"running\"" in source
+    assert "frameExtractionJob?.state === \"running\"" in source
+    assert 'watchConcurrentJob(String(payload.jobId), "scenes"' in source
+    assert 'watchConcurrentJob(String(payload.jobId), "extract"' in source
+    assert '<button disabled={!selectedPath || sceneJob?.state === "running" || job?.state === "running"}' in source
+    assert "clearSceneDetection" in source
+    assert "scene detection cleared; next scan starts from the beginning" in source
+    assert '<button disabled={!markers.length && sceneJob?.state !== "running"} onClick={clearSceneDetection}>× Clear scenes</button>' in source
+    assert '<button disabled={frameExtractionJob?.state === "running" || job?.state === "running" || (mode === "scenes" && !markers.length)}' in source
+    assert "captionJob?.state === \"running\"" in source
+    assert 'watchConcurrentJob(String(payload.jobId), "captions"' in source
+    assert "CC Generate captions" in source
+    assert "× Clear captions" in source
+    assert "video-import-active-caption" in source
+    assert "MEDIA JOB QUEUE" in source
+    assert "effectiveCaptionModel" in source
     assert "clearTurtleTerminations" in source
     assert "onClear={clearTurtleTerminations}" in source
     assert "onClear={clearPreTurtleLeaves}" in source
@@ -343,6 +360,16 @@ def test_member_gallery_has_two_stage_runner_with_inspectable_prompts() -> None:
     assert "queuedInventoryIds" in source
     assert 'title={`EXTRACTED IMAGES · ${frames.length}`}' in source
     assert 'title={`SELECTED IMAGES · ${memberInputPaths.size}`}' in source
+    assert "selectedImageStageIndicators" in source
+    assert "stageIndicators={selectedImageStageIndicators(frame)}" in source
+    assert 'label: "T", value: `${generatedTurtles}/${rootLeaves.length}`' in source
+    assert 'label: "I", value: `${renderedImages}/${rootLeaves.length}`' in source
+    assert "grid-template-columns: repeat(6, 1fr)" in styles
+    assert "video-import-gallery-stage-strip" in source
+    assert ".video-import-gallery-stage-strip span.is-active" in styles
+    assert ".video-import-gallery-stage-strip span.is-retrying" in styles
+    assert ".video-import-gallery-stage-strip span.is-partial" in styles
+    assert ".video-import-gallery-stage-strip span.is-complete" in styles
     assert "LEFTOVER BACKGROUNDS" in source
     assert "video-import-workflow-gallery-panel" in source
     assert "outlinePolygons: polygons" in source
@@ -414,12 +441,36 @@ def test_member_gallery_has_two_stage_runner_with_inspectable_prompts() -> None:
     assert "video-import-image-hover-context" in source
     assert "ALL LLM CALLS" in source
     assert "Warm workers fan out ready jobs across the configured capacity." in source
+    assert "ACTIVE WORKER" in source
+    assert "video-import-llm-call-metrics" in source
+    assert "PENDING" in source
+    assert "COMPLETED" in source
+    assert "AVG / JOB" in source
+    assert "performance.now() - startedAt" in source
+    assert "llmCallMetrics" in source
+    assert "llmStageProgress" in source
+    assert "futureImageObligations" in source
+    assert "including work not yet admitted to a worker" in source
+    assert ".video-import-llm-call-metrics" in styles
+    assert '" has-workers"' in source
+    assert ".video-import-llm-call-row > button.has-workers" in styles
+    assert "thing.status === \"outlining\"" in source
+    assert "thing.status === \"extracting\"" in source
+    assert "manualWorkerHold" in source
+    assert "workersHeld = manualWorkerHold || restartPendingSignal" in source
+    assert "if (!restoredRef.current || workersHeld) return;" in source
+    assert 'aria-pressed={workersHeld}' in source
+    assert "■ HOLD / DRAIN WORKERS" in source
+    assert "▶ WORKERS HELD / DRAINING" in source
+    assert "before restarting an LLM server" in source
+    assert ".video-import-worker-hold.is-held" in styles
     assert "noneLabel={`<use global" in source
-    assert '"<keep below global limit>"' in source
-    assert "type === \"describer\"" in source
-    assert "Math.ceil(totalLlmConcurrency / 3)" in source
+    assert "use full global capacity" in source
+    assert "Math.ceil(totalLlmConcurrency / 3)" not in source
     assert "queuedDescriptionTasks" in source
-    assert "orderedDescriptionTasks.slice(0, descriptionConcurrency)" in source
+    assert "orderedDescriptionTasks.slice(0, descriptionConcurrency)" not in source
+    assert "automaticDescriptionClaimsRef" in source
+    assert "allowsOverlappingRefill" in source
     assert "total max processes" in source
     assert "DEFAULT_LLM_CALL_CONCURRENCY" in source
     assert "effectiveCallConcurrency" in source
@@ -436,11 +487,14 @@ def test_member_gallery_has_two_stage_runner_with_inspectable_prompts() -> None:
     assert "acquireLlmSlot" in source
     assert "scheduler.waiters.findIndex" not in source
     assert "bestUtilization" in source
-    assert "downstreamWaiting" in source
-    assert "borrow idle; yield to 1/3" in source
+    assert "downstreamWaiting" not in source
+    assert "use full global capacity" in source
     assert "cooperativeRetryOrder" in source
     assert "retryReserve = Math.min(2" in source
     assert "automaticStagesRunningRef" in source
+    assert "setAutomaticSchedulerTick((tick) => tick + 1)" in source
+    scheduler_dependencies = source[source.index("  }, [", source.index("const automaticStagesRunningRef")):source.index("  ]);", source.index("const automaticStagesRunningRef"))]
+    assert "models," in scheduler_dependencies
     assert "restartPendingSignal" in source
     assert "Restart pending; new LLM work is paused." in source
     assert "queued LLM work was paused before launch" in source

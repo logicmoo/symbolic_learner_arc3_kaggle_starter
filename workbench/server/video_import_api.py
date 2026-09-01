@@ -19,12 +19,14 @@ import io
 import json
 import re
 import shutil
+import subprocess
 import threading
 import time
 import urllib.error
 import urllib.parse
 import urllib.request
 import uuid
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any, Iterator
 
@@ -51,6 +53,8 @@ _VIDEO_SUFFIXES = {".mp4", ".webm", ".mkv", ".mov", ".avi", ".m4v"}
 
 # Running/finished frame-extraction jobs, polled for the progress bar.
 _extract_jobs: dict[str, dict[str, Any]] = {}
+_video_meta_locks: dict[Path, threading.Lock] = {}
+_video_meta_locks_guard = threading.Lock()
 
 
 def _imports_root(root: Path) -> Path:
@@ -84,6 +88,42 @@ def _multipart_body(fields: dict[str, str], files: dict[str, tuple[str, str, byt
     return boundary, b"".join(chunks)
 
 
+def _model_provider_parameters(workspace_root: Path, model_id: str) -> dict[str, Any]:
+    parameters = _model_execution_parameters(workspace_root, {"models": [model_id], "strategy": "single"})
+    if parameters.get("baseUrl"):
+        return parameters
+    model_record = next(
+        (
+            record for record in resolve_model_records(workspace_root)
+            if str((record.get("document") or {}).get("id") or "") == model_id
+        ),
+        None,
+    )
+    model_document = (model_record or {}).get("document") or {}
+    discovery = model_document.get("discovery") if isinstance(model_document.get("discovery"), dict) else {}
+    backend_ids = [
+        str(discovery.get("backendId") or ""),
+        *relationship_ids(model_document.get("implements")),
+        *relationship_ids(model_document.get("dependsOn")),
+    ]
+    backend_record = next(
+        (
+            record for record in load_workspace_backend_records(workspace_root)
+            if any(backend_id and backend_matches(record.get("document") or {}, backend_id) for backend_id in backend_ids)
+        ),
+        None,
+    )
+    backend = (backend_record or {}).get("document") or {}
+    configuration = backend.get("configuration") if isinstance(backend.get("configuration"), dict) else {}
+    return {
+        **parameters,
+        "model": model_document.get("model") or parameters.get("model") or model_id,
+        "baseUrl": configuration.get("baseUrl"),
+        "apiKeyEnv": configuration.get("apiKeyEnvironmentVariable") or configuration.get("apiKeyEnvironment"),
+        "timeoutSeconds": configuration.get("timeoutSeconds"),
+    }
+
+
 def _try_model_image_edit(
     workspace_root: Path,
     model_id: str,
@@ -93,38 +133,7 @@ def _try_model_image_edit(
 ) -> tuple[Any | None, dict[str, Any]]:
     if not model_id:
         return None, {"renderer": "boundary_diffusion", "reason": "no image-output model selected"}
-    parameters = _model_execution_parameters(workspace_root, {"models": [model_id], "strategy": "single"})
-    if not parameters.get("baseUrl"):
-        model_record = next(
-            (
-                record for record in resolve_model_records(workspace_root)
-                if str((record.get("document") or {}).get("id") or "") == model_id
-            ),
-            None,
-        )
-        model_document = (model_record or {}).get("document") or {}
-        discovery = model_document.get("discovery") if isinstance(model_document.get("discovery"), dict) else {}
-        backend_ids = [
-            str(discovery.get("backendId") or ""),
-            *relationship_ids(model_document.get("implements")),
-            *relationship_ids(model_document.get("dependsOn")),
-        ]
-        backend_record = next(
-            (
-                record for record in load_workspace_backend_records(workspace_root)
-                if any(backend_id and backend_matches(record.get("document") or {}, backend_id) for backend_id in backend_ids)
-            ),
-            None,
-        )
-        backend = (backend_record or {}).get("document") or {}
-        configuration = backend.get("configuration") if isinstance(backend.get("configuration"), dict) else {}
-        parameters = {
-            **parameters,
-            "model": model_document.get("model") or parameters.get("model") or model_id,
-            "baseUrl": configuration.get("baseUrl"),
-            "apiKeyEnv": configuration.get("apiKeyEnvironmentVariable") or configuration.get("apiKeyEnvironment"),
-            "timeoutSeconds": configuration.get("timeoutSeconds"),
-        }
+    parameters = _model_provider_parameters(workspace_root, model_id)
     base_url = str(parameters.get("baseUrl") or "").rstrip("/")
     remote_model = str(parameters.get("model") or model_id)
     if not base_url:
@@ -205,6 +214,52 @@ def _try_model_image_edit(
             "remoteModel": remote_model,
             "reason": str(error),
         }
+
+
+def _ffmpeg_executable() -> str:
+    executable = shutil.which("ffmpeg")
+    if executable:
+        return executable
+    try:
+        import imageio_ffmpeg  # noqa: PLC0415
+
+        return imageio_ffmpeg.get_ffmpeg_exe()
+    except ImportError as error:
+        raise RuntimeError("ffmpeg is unavailable") from error
+
+
+def _transcribe_audio_file(workspace_root: Path, model_id: str, audio_path: Path) -> str:
+    parameters = _model_provider_parameters(workspace_root, model_id)
+    base_url = str(parameters.get("baseUrl") or "").rstrip("/")
+    remote_model = str(parameters.get("model") or model_id)
+    if not base_url:
+        raise RuntimeError("caption model backend has no base URL")
+    boundary, request_body = _multipart_body(
+        {"model": remote_model, "response_format": "json"},
+        {"file": ("audio.wav", "audio/wav", audio_path.read_bytes())},
+    )
+    headers = {
+        "Accept": "application/json",
+        "Content-Type": f"multipart/form-data; boundary={boundary}",
+        "User-Agent": "MeTTaSymbolicLearnerWorkbench/0.6",
+    }
+    api_key_name = str(parameters.get("apiKeyEnv") or "")
+    api_key = resolve_workspace_credential(workspace_root, api_key_name) if api_key_name else ""
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
+    request = urllib.request.Request(
+        f"{base_url}/audio/transcriptions",
+        data=request_body,
+        headers=headers,
+        method="POST",
+    )
+    timeout = max(1, int(parameters.get("timeoutSeconds") or 300))
+    with urllib.request.urlopen(request, timeout=timeout) as response:
+        payload = json.loads(response.read().decode("utf-8"))
+    text = str(payload.get("text") or "").strip()
+    if not text or text.lower().startswith("[emullm stub:"):
+        raise RuntimeError("audio transcription provider returned no real transcript")
+    return text
 
 
 def _image_provenance_path(image_path: Path) -> Path:
@@ -593,6 +648,8 @@ def list_videos(workspaceId: str) -> dict[str, Any]:
                     "framesDir": frames_dir.relative_to(root).as_posix() if frames else None,
                     "lastExtract": meta.get("lastExtract"),
                     "scenes": meta.get("scenes") or [],
+                    "captions": meta.get("captions") or [],
+                    "captionSource": meta.get("captionSource"),
                     "segments": meta.get("segments") or [],
                 })
 
@@ -1099,16 +1156,17 @@ def extract_frames(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
                 "interrupted": bool(job.get("cancel")),
             })
             # Remember the pace so the next estimate is grounded in a real run.
-            meta["lastExtract"] = {
+            last_extract = {
                 "count": len(frames),
                 "elapsedSeconds": round(elapsed, 1),
                 "secondsPerFrame": round(elapsed / len(frames), 3) if frames else None,
                 "at": _utc_now(),
             }
-            if duration and not meta.get("duration"):
-                meta["duration"] = duration
             try:
-                meta_path.write_text(json.dumps(meta, indent=2, ensure_ascii=False), encoding="utf-8")
+                _merge_video_meta(video_path, {
+                    "lastExtract": last_extract,
+                    **({"duration": duration} if duration else {}),
+                })
             except OSError:
                 pass
             # The download catalog tracks what has been extracted from each
@@ -1770,6 +1828,67 @@ def _video_meta(video_path: Path) -> tuple[Path, dict[str, Any]]:
     return meta_path, meta
 
 
+def _merge_video_meta(video_path: Path, updates: dict[str, Any]) -> dict[str, Any]:
+    key = video_path.resolve()
+    with _video_meta_locks_guard:
+        lock = _video_meta_locks.setdefault(key, threading.Lock())
+    with lock:
+        meta_path, current = _video_meta(video_path)
+        current.update(updates)
+        temporary = meta_path.with_suffix(meta_path.suffix + ".tmp")
+        temporary.write_text(json.dumps(current, indent=2, ensure_ascii=False), encoding="utf-8")
+        temporary.replace(meta_path)
+        return current
+
+
+def _caption_seconds(value: str) -> float:
+    parts = value.strip().replace(",", ".").split(":")
+    if len(parts) == 2:
+        parts.insert(0, "0")
+    if len(parts) != 3:
+        raise ValueError(f"invalid caption timestamp: {value}")
+    return int(parts[0]) * 3600 + int(parts[1]) * 60 + float(parts[2])
+
+
+def _parse_webvtt(source: str) -> list[dict[str, Any]]:
+    cues: list[dict[str, Any]] = []
+    for block in re.split(r"\r?\n\r?\n+", source):
+        lines = [line.strip() for line in block.splitlines() if line.strip()]
+        timing_index = next((index for index, line in enumerate(lines) if "-->" in line), -1)
+        if timing_index < 0:
+            continue
+        start_text, end_text = (part.strip().split()[0] for part in lines[timing_index].split("-->", 1))
+        try:
+            start = _caption_seconds(start_text)
+            end = _caption_seconds(end_text)
+        except ValueError:
+            continue
+        text = re.sub(r"<[^>]+>", "", " ".join(lines[timing_index + 1:])).strip()
+        if text and end > start:
+            cues.append({"start": round(start, 3), "end": round(end, 3), "text": text})
+    return cues
+
+
+def _caption_timestamp(seconds_value: float) -> str:
+    milliseconds = max(0, round(seconds_value * 1000))
+    hours, remainder = divmod(milliseconds, 3_600_000)
+    minutes, remainder = divmod(remainder, 60_000)
+    seconds, milliseconds = divmod(remainder, 1000)
+    return f"{hours:02d}:{minutes:02d}:{seconds:02d}.{milliseconds:03d}"
+
+
+def _captions_to_webvtt(cues: list[dict[str, Any]]) -> str:
+    blocks = ["WEBVTT", ""]
+    for index, cue in enumerate(cues, 1):
+        blocks.extend((
+            str(index),
+            f"{_caption_timestamp(float(cue['start']))} --> {_caption_timestamp(float(cue['end']))}",
+            str(cue["text"]),
+            "",
+        ))
+    return "\n".join(blocks)
+
+
 def _resolve_video(workspace_id: str, video_rel: str) -> tuple[Path, Path]:
     root = _workspace_root(workspace_id)
     try:
@@ -1779,6 +1898,128 @@ def _resolve_video(workspace_id: str, video_rel: str) -> tuple[Path, Path]:
     if not video_path.is_file():
         raise HTTPException(status_code=404, detail=f"video not found: {video_rel}")
     return root, video_path
+
+
+@router.post("/captions")
+def create_video_captions(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
+    workspace_id = str(body.get("workspaceId") or "")
+    video_rel = str(body.get("video") or "")
+    model_id = str(body.get("modelId") or "")
+    if not workspace_id or not video_rel:
+        raise HTTPException(status_code=400, detail="workspaceId and video are required")
+    root, video_path = _resolve_video(workspace_id, video_rel)
+    _, meta = _video_meta(video_path)
+    duration = float(meta.get("duration") or _probe_duration_seconds(video_path) or 0)
+    chunk_seconds = max(10, min(120, int(body.get("chunkSeconds") or 30)))
+    chunks = max(1, int((duration + chunk_seconds - 0.001) // chunk_seconds)) if duration else 1
+    job_id = uuid.uuid4().hex[:12]
+    job: dict[str, Any] = {
+        "id": job_id, "state": "running", "done": 0, "total": chunks,
+        "elapsedSeconds": 0.0, "etaSeconds": round(duration * 0.3 + 2, 1),
+        "captions": [], "captionSource": None, "error": None,
+    }
+    _extract_jobs[job_id] = job
+
+    def work() -> None:
+        started = time.monotonic()
+        ffmpeg = _ffmpeg_executable()
+        captions_path = video_path.parent / "captions.vtt"
+        embedded_path = video_path.parent / f".captions-{job_id}.vtt"
+        temporary_directory = video_path.parent / f".captions-{job_id}"
+        try:
+            embedded = subprocess.run(
+                [ffmpeg, "-loglevel", "error", "-y", "-i", str(video_path), "-map", "0:s:0", "-f", "webvtt", str(embedded_path)],
+                capture_output=True,
+                check=False,
+                timeout=max(30, int(duration) + 10),
+            )
+            cues = _parse_webvtt(embedded_path.read_text(encoding="utf-8", errors="replace")) if embedded.returncode == 0 and embedded_path.is_file() else []
+            caption_source = "embedded"
+            if not cues:
+                if not model_id:
+                    raise RuntimeError("video has no embedded subtitles and no audio transcription model is selected")
+                temporary_directory.mkdir(parents=True, exist_ok=True)
+                audio_chunks: list[tuple[int, float, float, Path]] = []
+                for index in range(chunks):
+                    if job.get("cancel"):
+                        break
+                    start = index * chunk_seconds
+                    end = min(duration, start + chunk_seconds) if duration else start + chunk_seconds
+                    audio_path = temporary_directory / f"audio-{index:04d}.wav"
+                    extracted = subprocess.run(
+                        [ffmpeg, "-loglevel", "error", "-y", "-ss", str(start), "-t", str(max(0.1, end - start)), "-i", str(video_path), "-vn", "-ac", "1", "-ar", "16000", "-c:a", "pcm_s16le", str(audio_path)],
+                        capture_output=True,
+                        check=False,
+                        timeout=max(30, int(end - start) * 2 + 10),
+                    )
+                    if extracted.returncode == 0 and audio_path.is_file() and audio_path.stat().st_size > 44:
+                        audio_chunks.append((index, start, end, audio_path))
+                if not audio_chunks and not job.get("cancel"):
+                    raise RuntimeError("video has no extractable audio track")
+                cues = []
+                errors: list[str] = []
+                concurrency = max(1, min(8, int(body.get("concurrency") or 4)))
+                with ThreadPoolExecutor(max_workers=concurrency) as executor:
+                    futures = {
+                        executor.submit(_transcribe_audio_file, root, model_id, audio_path): (index, start, end)
+                        for index, start, end, audio_path in audio_chunks
+                    }
+                    for future in as_completed(futures):
+                        index, start, end = futures[future]
+                        if job.get("cancel"):
+                            continue
+                        try:
+                            text = future.result()
+                            cues.append({"start": round(start, 3), "end": round(end, 3), "text": text})
+                        except Exception as error:  # noqa: BLE001 - per-chunk failure is reported with the job
+                            errors.append(f"chunk {index + 1}: {error}")
+                        job["done"] = min(job["total"], job["done"] + 1)
+                        elapsed = time.monotonic() - started
+                        job["elapsedSeconds"] = round(elapsed, 1)
+                        job["etaSeconds"] = round(max(0.0, (job["total"] - job["done"]) * (elapsed / max(1, job["done"]))), 1)
+                cues.sort(key=lambda cue: float(cue["start"]))
+                if not cues and not job.get("cancel"):
+                    raise RuntimeError(errors[0] if errors else "audio transcription returned no captions")
+                caption_source = f"transcribed:{model_id}"
+            captions_path.write_text(_captions_to_webvtt(cues), encoding="utf-8")
+            elapsed = time.monotonic() - started
+            _merge_video_meta(video_path, {
+                "captions": cues,
+                "captionSource": caption_source,
+                "lastCaptions": {
+                    "count": len(cues),
+                    "source": caption_source,
+                    "modelId": model_id or None,
+                    "elapsedSeconds": round(elapsed, 1),
+                    "at": _utc_now(),
+                },
+            })
+            job.update({
+                "state": "done", "done": job["total"], "captions": cues,
+                "captionSource": caption_source, "elapsedSeconds": round(elapsed, 1),
+                "etaSeconds": 0.0, "interrupted": bool(job.get("cancel")),
+            })
+        except Exception as error:  # noqa: BLE001 - surfaced through job status
+            job.update({"state": "error", "error": str(error)})
+        finally:
+            embedded_path.unlink(missing_ok=True)
+            if temporary_directory.is_dir():
+                shutil.rmtree(temporary_directory, ignore_errors=True)
+
+    threading.Thread(target=work, name=f"video-captions-{job_id}", daemon=True).start()
+    return {"jobId": job_id, "estimatedChunks": chunks}
+
+
+@router.post("/captions/clear")
+def clear_video_captions(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
+    workspace_id = str(body.get("workspaceId") or "")
+    video_rel = str(body.get("video") or "")
+    if not workspace_id or not video_rel:
+        raise HTTPException(status_code=400, detail="workspaceId and video are required")
+    _, video_path = _resolve_video(workspace_id, video_rel)
+    (video_path.parent / "captions.vtt").unlink(missing_ok=True)
+    _merge_video_meta(video_path, {"captions": [], "captionSource": None})
+    return {"captions": [], "captionSource": None}
 
 
 @router.post("/scenes")
@@ -1870,8 +2111,7 @@ def detect_scenes(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
                 "interrupted": bool(job.get("cancel")),
                 "elapsedSeconds": round(elapsed, 1), "etaSeconds": 0.0,
             })
-            meta["scenes"] = merged
-            meta["lastScenes"] = {
+            last_scenes = {
                 "count": len(merged),
                 "newThisRun": len(markers),
                 "resumedFromSeconds": start_seconds,
@@ -1880,10 +2120,12 @@ def detect_scenes(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
                 "threshold": threshold,
                 "at": _utc_now(),
             }
-            if duration and not meta.get("duration"):
-                meta["duration"] = duration
             try:
-                meta_path.write_text(json.dumps(meta, indent=2, ensure_ascii=False), encoding="utf-8")
+                _merge_video_meta(video_path, {
+                    "scenes": merged,
+                    "lastScenes": last_scenes,
+                    **({"duration": duration} if duration else {}),
+                })
             except OSError:
                 pass
             _update_catalog_for_video(root, video_path, {}, extraction={
@@ -1922,9 +2164,7 @@ def save_markers(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
         key=lambda marker: marker["atSeconds"],
     )
     _, video_path = _resolve_video(workspace_id, video_rel)
-    meta_path, meta = _video_meta(video_path)
-    meta["scenes"] = cleaned
-    meta_path.write_text(json.dumps(meta, indent=2, ensure_ascii=False), encoding="utf-8")
+    _merge_video_meta(video_path, {"scenes": cleaned})
     return {"markers": cleaned}
 
 
@@ -1948,9 +2188,7 @@ def save_segments(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
             continue
         cleaned.append({"start": round(start, 2), "end": round(end, 2), "keep": bool(segment.get("keep", True))})
     _, video_path = _resolve_video(workspace_id, video_rel)
-    meta_path, meta = _video_meta(video_path)
-    meta["segments"] = cleaned
-    meta_path.write_text(json.dumps(meta, indent=2, ensure_ascii=False), encoding="utf-8")
+    _merge_video_meta(video_path, {"segments": cleaned})
     return {"segments": cleaned}
 
 

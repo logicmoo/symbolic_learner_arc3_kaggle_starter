@@ -42,12 +42,27 @@ marks, and measured extraction pace.
   scene marker at the playhead (click a marker to remove it).
 - **✨ Detect scenes** — scan the video and mark every scene change
   (numpy frame-diff, no model).
+- **× Clear scenes** — cancel the current scan if necessary, clear detected
+  markers from the timeline and filesystem, and make the next scan start from
+  the beginning. Frame extraction continues independently.
 - **Scene lane** — click a scene span to select it whole.
 - **Segment lane + ✂ Split at cursor** — split into parts, click parts to
   keep/delete, `⟿ Trim video` re-encodes only the kept parts into a new
   video; `⤢ Selection → new video` extracts the highlighted range.
 - **⤵ Frame at cursor** — grab the single frame under the playhead into the
   input images.
+- **CC Generate captions** — first imports an embedded subtitle stream when
+  available. Otherwise it extracts 30-second mono audio chunks and transcribes
+  them concurrently through the selected enabled audio model. Timed cues are
+  saved in `video.json` and `captions.vtt` and displayed over playback.
+- **× Clear captions** — cancels caption work and clears saved caption cues
+  without deleting the source video.
+
+Scene detection, frame extraction, and captioning use independent backend jobs and frontend
+pollers. They may run concurrently against the same source video, display
+separate progress rows, and are cancelled independently by the shared Stop
+control. Atomic merge writes preserve both scene and extraction metadata when
+the jobs finish in either order.
 
 ## 3. Extraction (top of the stack)
 
@@ -206,18 +221,36 @@ built-in prompt. Per-call models default to **use global**; per-call process
 caps default to **keep below global limit**. Independent images run concurrently
 up to both caps, while removals from one changing leftover scene remain ordered.
 There is no hidden six-image ceiling: each ready queue uses as many workers as
-the selected cap permits. Root and recursive-child Describer work share one
-work-conserving pool. When Describer inherits its cap, one-third of the global
-maximum is its protected share while downstream work exists. It borrows every
-otherwise-idle global slot at startup, then stops refilling borrowed slots as
-Planner, Outliner, Extractor, Turtle Gen, or Turtle PNG work arrives. An explicit
-Describer per-call limit overrides this soft-share policy.
+the selected cap permits. Root and recursive-child Describer work share one work-conserving pool. Every
+stage inherits the full global capacity unless the user sets an explicit
+per-stage limit. Fair lowest-utilization dispatch distributes available slots
+when several stage queues are ready; no stage has a reserved one-third share.
 
 All enabled call types cooperate through one global semaphore and may run at
 the same time. The scheduler enforces the total cap and every per-call cap,
 prefers the runnable type with the lowest current utilization, and immediately
-fills released slots from the shared queue. The controller reports global and
-per-type active/queued counts.
+fills released slots from the shared queue. The controller reports global
+active/queued counts. Every stage row reports active workers plus **Pending**,
+**Completed**, and **Avg / Job**. Pending is the full known pipeline backlog,
+including selected-image placeholders and known object obligations that have
+not reached the worker semaphore yet; it is not limited to semaphore waiters.
+Completed is reconstructed from the persisted image/object artifacts, while
+average duration is accumulated from timed model calls and persisted with the
+page snapshot.
+Each stage toggle separates its ON/OFF state from a dedicated active-worker
+badge. Running stages receive a bright border, background glow, and
+`N ACTIVE WORKERS` counter; reload recovery converts interrupted persisted
+states back into retryable work so these counters never disagree with phantom
+saved activity. The scheduler also reruns when asynchronous model enumeration
+finishes, so restoring state before the model list arrives cannot leave ready
+work idle.
+The global **HOLD / DRAIN WORKERS** toggle is persisted and intended for model
+server maintenance: it stops new admissions, lets active calls finish, survives
+a page reload, and resumes queued/retry work when released. Restart-pending
+automatically presses the same hold; while restart owns it, the button cannot
+accidentally resume workers. Automatic scheduling remains gated until the
+persisted page state has finished restoring, so a reload cannot briefly launch
+calls before a saved hold becomes visible.
 All model selectors use the shared colored-tag combobox extracted from
 ChatConversation. Models are grouped by backend, and individually colored chips
 show useful capabilities such as vision, image output, multimodal, reasoning,
@@ -370,6 +403,13 @@ pins that image's context popup; **Ctrl-click** exclusively selects or unselects
 the tile without clearing prior selections. Input-image selections feed
 Describer, while object/background selections persist for curation across runs.
 The Selected Images mirror uses the same Ctrl-click rule for removal.
+Each selected tile has a live **D / P / O / E** strip derived from its root
+inventory. Muted, glowing amber, red, cyan, and green indicators distinguish
+waiting, active, retrying, partial, and complete stages; tooltips show object
+counts and retry details. D displays the number of described objects, P the
+planned-order count, O/E display outlined/extracted `n/m` ratios, T displays
+generated Turtle programs over terminal leaves, and I displays rendered images
+over terminal leaves.
 Its **Clear** action removes the selected roots from the workflow and clears
 their complete recursive Describer/Planner/Outliner/Extractor metadata,
 descendant inventories, scene pointers, Turtle state, response/provenance
